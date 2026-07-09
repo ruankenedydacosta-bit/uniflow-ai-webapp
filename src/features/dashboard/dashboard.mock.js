@@ -1,0 +1,75 @@
+export const dashboardMock = {
+  user: {
+    name: 'Ruan',
+  },
+  financial: {
+    balance: 48200,
+    balanceTrend: '+8,4% este mês',
+    income: 28500,
+    expenses: 18420,
+    savings: 10080,
+    status: 'Saudável',
+  },
+  goals: [
+    {
+      id: 'emergency',
+      title: 'Reserva de emergência',
+      target: 60000,
+      current: 48200,
+      progress: 80,
+      status: 'Saudável',
+    },
+    {
+      id: 'car',
+      title: 'Troca do carro',
+      target: 95000,
+      current: 31200,
+      progress: 33,
+      status: 'Em análise',
+    },
+    {
+      id: 'tax',
+      title: 'Impostos trimestrais',
+      target: 18000,
+      current: 9100,
+      progress: 51,
+      status: 'Atenção',
+    },
+  ],
+  insights: [
+    'Se mantiver este ritmo, sua reserva chega ao alvo em aproximadamente quatro meses.',
+    'Delivery e transporte concentraram a maior variação da semana.',
+    'Antecipar parte dos recebíveis reduziria a pressão do fluxo de caixa do próximo ciclo.',
+  ],
+  activities: [
+    {
+      id: 'act-1',
+      title: 'Recebimento de cliente',
+      category: 'Receita',
+      amount: 8200,
+      type: 'income',
+      date: 'Hoje',
+    },
+    {
+      id: 'act-2',
+      title: 'Assinatura de software',
+      category: 'Despesa operacional',
+      amount: 640,
+      type: 'expense',
+      date: 'Ontem',
+    },
+    {
+      id: 'act-3',
+      title: 'Aplicação em reserva',
+      category: 'Objetivo',
+      amount: 2500,
+      type: 'goal',
+      date: 'Segunda',
+    },
+  ],
+  nextSteps: [
+    'Revisar despesas variáveis da semana',
+    'Registrar entradas previstas para os próximos sete dias',
+    'Conversar com a Uni sobre a meta do carro',
+  ],
+};
