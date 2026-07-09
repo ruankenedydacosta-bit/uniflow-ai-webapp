@@ -4,7 +4,7 @@ import { formatCurrency } from '../../../utils/formatters';
 
 function GoalsSummaryCard({ goals }) {
   return (
-    <Card variant="default" padding="lg">
+    <Card variant="default" padding="lg" className="dashboardGoalsCard">
       <div className="dashboardCardHeader">
         <span>Metas financeiras</span>
         <Badge variant="secondary">{goals.length} ativas</Badge>
@@ -16,7 +16,7 @@ function GoalsSummaryCard({ goals }) {
             <div className="dashboardGoalHeader">
               <div>
                 <strong>{goal.title}</strong>
-                <span>{formatCurrency(goal.current)} de {formatCurrency(goal.target)}</span>
+                <span className="dashboardGoalMeta">{formatCurrency(goal.current)} de {formatCurrency(goal.target)}</span>
               </div>
               <Badge variant={goal.status === 'Atenção' ? 'warning' : goal.status === 'Saudável' ? 'success' : 'primary'}>
                 {goal.status}

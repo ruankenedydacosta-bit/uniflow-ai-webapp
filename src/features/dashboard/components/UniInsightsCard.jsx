@@ -4,7 +4,7 @@ import Card from '../../../components/ui/Card';
 
 function UniInsightsCard({ insights }) {
   return (
-    <Card variant="glass" padding="lg">
+    <Card variant="glass" padding="lg" className="dashboardInsightsCard">
       <div className="dashboardInsightHeader">
         <Avatar name="Uni" size="md" status="online" />
         <div>

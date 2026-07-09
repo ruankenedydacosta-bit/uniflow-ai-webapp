@@ -23,7 +23,7 @@ function DashboardPage() {
         <RecentActivityList activities={activities} />
       </section>
 
-      <Card variant="outline" padding="lg">
+      <Card variant="outline" padding="lg" className={styles.nextStepsCard}>
         <div className="dashboardCardHeader">
           <span>Próximos passos</span>
           <Badge variant="warning">Atenção</Badge>

@@ -4,7 +4,7 @@ import { formatCurrency } from '../../../utils/formatters';
 
 function RecentActivityList({ activities }) {
   return (
-    <Card variant="default" padding="lg">
+    <Card variant="default" padding="lg" className="dashboardActivityCard">
       <div className="dashboardCardHeader">
         <span>Atividades recentes</span>
         <Badge variant="outline">Atualizado</Badge>
@@ -13,9 +13,9 @@ function RecentActivityList({ activities }) {
       <ul className="dashboardActivityList">
         {activities.map((activity) => (
           <li key={activity.id}>
-            <div>
+            <div className="dashboardActivityMain">
               <strong>{activity.title}</strong>
-              <span>{activity.category} · {activity.date}</span>
+              <span className="dashboardActivityMeta">{activity.category} · {activity.date}</span>
             </div>
             <strong className={activity.type === 'expense' ? 'dashboardTone-danger' : 'dashboardTone-success'}>
               {activity.type === 'expense' ? '-' : '+'} {formatCurrency(activity.amount)}

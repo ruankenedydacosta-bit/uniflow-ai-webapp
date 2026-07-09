@@ -5,7 +5,7 @@ import { formatCurrency } from '../../../utils/formatters';
 function FinancialSummaryCard({ financial }) {
   return (
     <>
-      <Card variant="glass" padding="lg">
+      <Card variant="glass" padding="lg" className="dashboardBalanceCard">
         <div className="dashboardCardHeader">
           <span>Saldo projetado</span>
           <Badge variant="success">{financial.status}</Badge>
@@ -14,7 +14,7 @@ function FinancialSummaryCard({ financial }) {
         <p className="dashboardMuted">{financial.balanceTrend}</p>
       </Card>
 
-      <Card variant="default" padding="lg">
+      <Card variant="default" padding="lg" className="dashboardFlowCard">
         <div className="dashboardCardHeader">
           <span>Receitas e despesas</span>
           <Badge variant="primary">Em análise</Badge>
