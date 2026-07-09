@@ -1,0 +1,573 @@
+/* ============================================================================
+   UNIFLOW AI — DESIGN SYSTEM · theme.css
+   ============================================================================
+   Fonte de verdade visual do produto. Nenhum componente deve declarar cor,
+   espaçamento, radius, sombra ou fonte "solta" — tudo referencia um token
+   deste arquivo. Se precisar de um valor que não existe aqui, o valor entra
+   aqui primeiro, com um nome semântico, e só depois é usado no componente.
+
+   ARQUITETURA (2 camadas):
+     1) PRIMITIVOS   --uf-{escala}-{step}   → paleta crua, nunca usada direto
+     2) SEMÂNTICOS   --uf-color-{papel}     → o que os componentes consomem
+
+   Isso existe para permitir, no futuro, um Modo Claro completo trocando
+   apenas a camada semântica (ver bloco [data-theme="light"] ao final),
+   sem tocar em nenhum componente da aplicação.
+
+   PERSONALIDADE DA MARCA (ler antes de alterar qualquer valor):
+   A Uni nunca deve parecer banco, ERP, planilha ou dashboard frio.
+   Ela é: inteligente · humana · moderna · premium · sofisticada · calma · clara.
+   Consequência prática: sombras suaves > bordas duras; motion contido, nunca
+   exagerado; fundo escuro é o padrão do produto, não um "modo alternativo".
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   0. FONTE
+   Poppins é a única família da marca. Em produção, prefira <link> com
+   preconnect no index.html (carrega mais cedo que @import). O @import abaixo
+   fica como fallback para ambientes que só importam este arquivo.
+---------------------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+/* Produção (recomendado), no <head> do index.html:
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+*/
+
+:root{
+
+  /* ==========================================================================
+     1. PRIMITIVOS DE COR
+     Escalas completas 50→900. O valor de marca ("BRAND", travado pelo
+     brandbook) está identificado em cada escala — não altere esse step
+     específico sem atualizar o brandbook oficial.
+  ========================================================================== */
+
+  /* --- Azul (Primária — confiança / inteligência / estabilidade) --- */
+  --uf-blue-50:  #EAF1FE;
+  --uf-blue-100: #D3E2FD;
+  --uf-blue-200: #A8C5FB;
+  --uf-blue-300: #7CA8F9;
+  --uf-blue-400: #4B87F4;
+  --uf-blue-500: #2566EA;
+  --uf-blue-600: #104ED8; /* BRAND — azul primário oficial (docx) */
+  --uf-blue-700: #1D4EDB; /* BRAND — "Azul Profundo" (brandbook), usado como hover/active */
+  --uf-blue-800: #15379E;
+  --uf-blue-900: #0F2872;
+
+  /* --- Roxo (Secundária — IA / automação / premium / destaques) --- */
+  --uf-purple-50:  #F3EEFE;
+  --uf-purple-100: #E4D8FC;
+  --uf-purple-200: #CBB3FA;
+  --uf-purple-300: #AC85F7;
+  --uf-purple-400: #9161F2;
+  --uf-purple-500: #8548ED;
+  --uf-purple-600: #7C3AED; /* BRAND — roxo oficial (docx + brandbook) */
+  --uf-purple-700: #6425D6;
+  --uf-purple-800: #4E1CAD;
+  --uf-purple-900: #3B1585;
+
+  /* --- Verde (Sucesso — lucro / economia / metas) --- */
+  --uf-green-50:  #EFFCF6;
+  --uf-green-100: #DAF6EA;
+  --uf-green-200: #B4EBD7;
+  --uf-green-300: #7ADCB9;
+  --uf-green-400: #3FCB9C;
+  --uf-green-500: #10B981; /* BRAND — verde oficial (docx + brandbook) */
+  --uf-green-600: #0EA271;
+  --uf-green-700: #0C8760;
+  --uf-green-800: #0A6B4C;
+  --uf-green-900: #075039;
+
+  /* --- Vermelho (Erro — auxiliar, criado para esta camada) --- */
+  --uf-red-50:  #FDEDED;
+  --uf-red-100: #FBD5D5;
+  --uf-red-200: #F6A8A8;
+  --uf-red-300: #F17B7B;
+  --uf-red-400: #F35454;
+  --uf-red-500: #EF4444;
+  --uf-red-600: #DC2626;
+  --uf-red-700: #B91C1C;
+  --uf-red-800: #8F1616;
+  --uf-red-900: #661010;
+
+  /* --- Âmbar (Warning — auxiliar, criado para esta camada) --- */
+  --uf-amber-50:  #FEF6E7;
+  --uf-amber-100: #FCE8C2;
+  --uf-amber-200: #FAD188;
+  --uf-amber-300: #F7B94F;
+  --uf-amber-400: #F5A623;
+  --uf-amber-500: #F59E0B;
+  --uf-amber-600: #D6870A;
+  --uf-amber-700: #AC6C07;
+  --uf-amber-800: #825105;
+  --uf-amber-900: #593704;
+
+  /* --- Sky (Info — auxiliar; deliberadamente distinto do Azul primário
+         para não confundir "isto é um link/ação" com "isto é um aviso") --- */
+  --uf-sky-50:  #EBF7FE;
+  --uf-sky-100: #CDECFC;
+  --uf-sky-200: #9AD9F9;
+  --uf-sky-300: #63C4F5;
+  --uf-sky-400: #38BDF8;
+  --uf-sky-500: #0EA5E9;
+  --uf-sky-600: #0B84BC;
+  --uf-sky-700: #08678F;
+  --uf-sky-800: #064B69;
+  --uf-sky-900: #033044;
+
+  /* --- Neutros / Cinza (fundo, superfícies, texto secundário) ---
+         --uf-gray-900 é o valor travado pelo brandbook ("Fundo: Cinza
+         Escuro #0F172A" — background/sidebar/navbar/cards).
+         --uf-gray-950 é o canvas por trás de tudo: mais profundo que a
+         superfície, dá hierarquia real de profundidade ao produto. */
+  --uf-gray-50:  #F8FAFC;
+  --uf-gray-100: #EEF2F7;
+  --uf-gray-200: #DCE3EC;
+  --uf-gray-300: #B7C1D1;
+  --uf-gray-400: #8A96AC;
+  --uf-gray-500: #626E85;
+  --uf-gray-600: #47526A;
+  --uf-gray-700: #333D53;
+  --uf-gray-800: #202A3F;
+  --uf-gray-850: #171F32;
+  --uf-gray-900: #0F172A; /* BRAND — fundo oficial (docx) */
+  --uf-gray-950: #05070C; /* canvas — mais profundo que a superfície de marca */
+
+  --uf-white: #FFFFFF; /* BRAND — "Branco: texto principal" (docx) */
+  --uf-black: #000000;
+
+  /* ==========================================================================
+     2. TOKENS SEMÂNTICOS — o que os componentes de fato usam
+  ========================================================================== */
+
+  /* --- Fundos (hierarquia de profundidade) --- */
+  --uf-color-bg-canvas:        var(--uf-gray-950); /* fundo do app, atrás de tudo */
+  --uf-color-bg-surface:       var(--uf-gray-900); /* cards, sidebar, navbar (brand) */
+  --uf-color-bg-surface-hover: var(--uf-gray-850);
+  --uf-color-bg-elevated:      var(--uf-gray-800); /* modais, dropdowns, popovers */
+  --uf-color-bg-sunken:        #02040A;            /* wells, inputs, code blocks */
+
+  /* --- Texto --- */
+  --uf-color-text-primary:   var(--uf-white);   /* BRAND — texto principal */
+  --uf-color-text-secondary: var(--uf-gray-400);
+  --uf-color-text-tertiary:  var(--uf-gray-500);
+  --uf-color-text-disabled:  var(--uf-gray-600);
+  --uf-color-text-inverse:   var(--uf-gray-900); /* texto sobre superfícies claras/coloridas */
+  --uf-color-text-brand:     var(--uf-blue-600);
+  --uf-color-text-ai:        var(--uf-purple-600);
+
+  /* --- Bordas & divisores --- */
+  --uf-color-border-subtle:  rgba(255,255,255,.06);
+  --uf-color-border-default: rgba(255,255,255,.09);
+  --uf-color-border-strong:  rgba(255,255,255,.16);
+  --uf-color-divider:        rgba(255,255,255,.06);
+
+  /* --- Primária (ações, links, elementos ativos) --- */
+  --uf-color-primary:        var(--uf-blue-600);
+  --uf-color-primary-hover:  var(--uf-blue-700);
+  --uf-color-primary-active: var(--uf-blue-800);
+  --uf-color-primary-subtle: rgba(16,78,216,.12);
+  --uf-color-on-primary:     var(--uf-white);
+
+  /* --- IA / Automação / Premium --- */
+  --uf-color-ai:        var(--uf-purple-600);
+  --uf-color-ai-hover:  var(--uf-purple-700);
+  --uf-color-ai-active: var(--uf-purple-800);
+  --uf-color-ai-subtle: rgba(124,58,237,.12);
+  --uf-color-on-ai:     var(--uf-white);
+
+  /* --- Estados semânticos: success / danger / warning / info --- */
+  --uf-color-success:        var(--uf-green-500);
+  --uf-color-success-hover:  var(--uf-green-600);
+  --uf-color-success-subtle: rgba(16,185,129,.12);
+  --uf-color-on-success:     var(--uf-white);
+
+  --uf-color-danger:        var(--uf-red-500);
+  --uf-color-danger-hover:  var(--uf-red-600);
+  --uf-color-danger-subtle: rgba(239,68,68,.12);
+  --uf-color-on-danger:     var(--uf-white);
+
+  --uf-color-warning:        var(--uf-amber-500);
+  --uf-color-warning-hover:  var(--uf-amber-600);
+  --uf-color-warning-subtle: rgba(245,158,11,.12);
+  --uf-color-on-warning:     var(--uf-gray-900);
+
+  --uf-color-info:        var(--uf-sky-400);
+  --uf-color-info-hover:  var(--uf-sky-500);
+  --uf-color-info-subtle: rgba(56,189,248,.12);
+  --uf-color-on-info:     var(--uf-gray-900);
+
+  /* --- Foco / acessibilidade --- */
+  --uf-focus-ring-color:  rgba(16,78,216,.55);
+  --uf-focus-ring-width:  3px;
+  --uf-focus-ring-offset: 2px;
+  --uf-tap-target-min:    44px; /* área mínima de clique (docx) */
+
+
+  /* ==========================================================================
+     3. TIPOGRAFIA — escala oficial (docx), família única: Poppins
+  ========================================================================== */
+  --uf-font-family-base: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --uf-font-family-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* peso */
+  --uf-font-weight-regular:   400;
+  --uf-font-weight-medium:    500;
+  --uf-font-weight-semibold:  600;
+  --uf-font-weight-bold:      700;
+  --uf-font-weight-extrabold: 800;
+
+  /* tamanho + peso + altura de linha por papel (line-height adicionado
+     para robustez — não estava explícito no brandbook, mas é necessário
+     para qualquer implementação real) */
+  --uf-text-display-hero-size:   64px;
+  --uf-text-display-hero-weight: var(--uf-font-weight-bold);
+  --uf-text-display-hero-lh:     1.08;
+
+  --uf-text-h1-size:   48px;
+  --uf-text-h1-weight: var(--uf-font-weight-bold);
+  --uf-text-h1-lh:     1.12;
+
+  --uf-text-h2-size:   36px;
+  --uf-text-h2-weight: var(--uf-font-weight-bold);
+  --uf-text-h2-lh:     1.16;
+
+  --uf-text-h3-size:   28px;
+  --uf-text-h3-weight: var(--uf-font-weight-semibold);
+  --uf-text-h3-lh:     1.2;
+
+  --uf-text-title-size:   24px;
+  --uf-text-title-weight: var(--uf-font-weight-semibold);
+  --uf-text-title-lh:     1.25;
+
+  --uf-text-subtitle-size:   20px;
+  --uf-text-subtitle-weight: var(--uf-font-weight-medium);
+  --uf-text-subtitle-lh:     1.35;
+
+  --uf-text-body-size:   16px; /* fonte mínima de acessibilidade (docx) */
+  --uf-text-body-weight: var(--uf-font-weight-regular);
+  --uf-text-body-lh:     1.5;
+
+  --uf-text-caption-size:   14px;
+  --uf-text-caption-weight: var(--uf-font-weight-regular);
+  --uf-text-caption-lh:     1.5;
+
+  --uf-text-micro-size:   12px;
+  --uf-text-micro-weight: var(--uf-font-weight-regular);
+  --uf-text-micro-lh:     1.4;
+
+  --uf-text-button-size:   16px;
+  --uf-text-button-weight: var(--uf-font-weight-semibold);
+  --uf-text-button-lh:     1.4;
+
+
+  /* ==========================================================================
+     4. ESPAÇAMENTO — escala fechada (docx). Nunca usar valores fora dela.
+  ========================================================================== */
+  --uf-space-4:   4px;
+  --uf-space-8:   8px;
+  --uf-space-12:  12px;
+  --uf-space-16:  16px;
+  --uf-space-20:  20px;
+  --uf-space-24:  24px;
+  --uf-space-32:  32px;
+  --uf-space-40:  40px;
+  --uf-space-48:  48px;
+  --uf-space-56:  56px;
+  --uf-space-64:  64px;
+  --uf-space-80:  80px;
+  --uf-space-96:  96px;
+  --uf-space-120: 120px;
+  --uf-space-160: 160px;
+
+
+  /* ==========================================================================
+     5. BORDER RADIUS — escala fechada (docx)
+  ========================================================================== */
+  --uf-radius-8:    8px;
+  --uf-radius-12:   12px;
+  --uf-radius-16:   16px;
+  --uf-radius-20:   20px;
+  --uf-radius-24:   24px;
+  --uf-radius-32:   32px;
+  --uf-radius-full: 999px; /* pill */
+
+
+  /* ==========================================================================
+     6. SOMBRAS — exatamente 4, como definido no docx: Small, Medium, Large,
+     Glow IA. --uf-shadow-glow-color existe à parte para permitir recolorir
+     o glow contextualmente (ex.: sucesso de meta) sem criar uma 5ª sombra.
+  ========================================================================== */
+  --uf-shadow-color: 2, 6, 20; /* rgb base para composições */
+
+  --uf-shadow-sm: 0 2px 8px -2px rgba(var(--uf-shadow-color), .35);
+  --uf-shadow-md: 0 12px 28px -8px rgba(var(--uf-shadow-color), .45);
+  --uf-shadow-lg: 0 30px 70px -20px rgba(var(--uf-shadow-color), .6);
+
+  --uf-shadow-glow-color: 124, 58, 237; /* roxo IA por padrão */
+  --uf-shadow-glow-ai:
+    0 0 0 1px rgba(255,255,255,.03) inset,
+    0 8px 30px -6px rgba(16,78,216,.35),
+    0 4px 20px -4px rgba(var(--uf-shadow-glow-color), .45);
+
+
+  /* ==========================================================================
+     7. BLUR / GLASS — glassmorphism, usado em cards, modais, navbar, sidebar
+  ========================================================================== */
+  --uf-glass-bg:          rgba(15,23,42,.6);
+  --uf-glass-bg-strong:   rgba(15,23,42,.8);
+  --uf-glass-border:      var(--uf-color-border-default);
+  --uf-glass-blur:        20px;
+  --uf-glass-blur-strong: 32px;
+  --uf-glass-saturate:    160%;
+
+
+  /* ==========================================================================
+     8. GRADIENTES OFICIAIS
+  ========================================================================== */
+  /* Gradiente de marca — o mesmo lido no logomark (U + fluxo) */
+  --uf-gradient-brand: linear-gradient(100deg, var(--uf-blue-600) 0%, var(--uf-purple-600) 55%, var(--uf-green-500) 100%);
+  /* Gradiente "AI" — o mesmo do wordmark "UniFlow AI" e de CTAs de IA */
+  --uf-gradient-ai: linear-gradient(135deg, var(--uf-blue-600), var(--uf-purple-600));
+  /* Estado positivo (patrimônio, metas, economia) */
+  --uf-gradient-success: linear-gradient(135deg, var(--uf-green-500), var(--uf-green-400));
+  /* Sheen sutil para bordas superiores de cards premium */
+  --uf-gradient-hairline: linear-gradient(90deg, var(--uf-blue-600), var(--uf-purple-600), var(--uf-green-500));
+  /* Base para blobs/ambient de fundo (usar com blur alto + baixa opacidade) */
+  --uf-gradient-mesh-1: radial-gradient(circle at 20% 15%, rgba(16,78,216,.28), transparent 55%);
+  --uf-gradient-mesh-2: radial-gradient(circle at 85% 85%, rgba(124,58,237,.22), transparent 55%);
+  --uf-gradient-mesh-3: radial-gradient(circle at 45% 45%, rgba(16,185,129,.12), transparent 55%);
+
+
+  /* ==========================================================================
+     9. MOTION — duração, easing e nomes de animação (docx: Fade, Scale,
+     Slide, Glow, Voice Pulse, Loading Wave, Hover Smooth)
+  ========================================================================== */
+  --uf-duration-instant: 100ms; /* resposta imediata ao clique */
+  --uf-duration-fast:    150ms;
+  --uf-duration-base:    250ms;
+  --uf-duration-slow:    400ms;
+  --uf-duration-slower:  600ms;
+
+  --uf-ease-standard:   cubic-bezier(.4, 0, .2, 1);
+  --uf-ease-decelerate: cubic-bezier(0, 0, .2, 1);
+  --uf-ease-accelerate: cubic-bezier(.4, 0, 1, 1);
+  --uf-ease-smooth:     cubic-bezier(.22, 1, .36, 1); /* "Hover Smooth" oficial */
+
+
+  /* ==========================================================================
+     10. Z-INDEX — não especificado no brandbook, mas essencial para não
+     duplicar/divergir camadas de empilhamento pelos componentes
+  ========================================================================== */
+  --uf-z-dropdown:       1000;
+  --uf-z-sticky:         1100;
+  --uf-z-fixed:          1200;
+  --uf-z-modal-backdrop: 1300;
+  --uf-z-modal:          1400;
+  --uf-z-popover:        1500;
+  --uf-z-toast:          1600;
+  --uf-z-tooltip:        1700;
+
+
+  /* ==========================================================================
+     11. GRID & BREAKPOINTS (docx: Desktop 12 col · Tablet 8 col · Mobile 4 col)
+     CSS vars não funcionam dentro de @media, então estes tokens servem para
+     JS (matchMedia), styled-components, ou apenas como documentação única
+     da regra — os breakpoints reais em @media devem usar os mesmos números.
+  ========================================================================== */
+  --uf-breakpoint-mobile:  480px;
+  --uf-breakpoint-tablet:  768px;
+  --uf-breakpoint-desktop: 1280px;
+
+  --uf-grid-columns-mobile:  4;
+  --uf-grid-columns-tablet:  8;
+  --uf-grid-columns-desktop: 12;
+
+  --uf-grid-gutter: var(--uf-space-24);
+  --uf-container-max-width: 1440px;
+
+
+  /* ==========================================================================
+     12. ÍCONES — regra de uso (docx: sempre outline, mesmo peso/tamanho)
+  ========================================================================== */
+  --uf-icon-stroke-width: 1.8;
+  --uf-icon-size-sm: 16px;
+  --uf-icon-size-md: 20px;
+  --uf-icon-size-lg: 24px;
+}
+
+
+/* ============================================================================
+   13. RESET LEVE + APLICAÇÃO DE TOKENS BASE
+   Este arquivo assume um app React/Vite onde ele é importado uma única vez
+   na raiz (main.jsx / App.jsx). Não é um reset completo — apenas o mínimo
+   para que os tokens acima tenham efeito imediato ao importar o arquivo.
+============================================================================ */
+*,
+*::before,
+*::after{
+  box-sizing: border-box;
+}
+
+html{
+  font-size: 16px; /* base de acessibilidade — nunca reduzir (docx) */
+  -webkit-text-size-adjust: 100%;
+}
+
+body{
+  margin: 0;
+  min-height: 100vh;
+  background: var(--uf-color-bg-canvas);
+  color: var(--uf-color-text-primary);
+  font-family: var(--uf-font-family-base);
+  font-size: var(--uf-text-body-size);
+  font-weight: var(--uf-text-body-weight);
+  line-height: var(--uf-text-body-lh);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6{
+  margin: 0;
+  font-family: var(--uf-font-family-base);
+  font-weight: var(--uf-font-weight-bold);
+  letter-spacing: -.02em;
+  color: var(--uf-color-text-primary);
+}
+
+p{ margin: 0; }
+ul, ol{ margin: 0; padding: 0; list-style: none; }
+a{ color: inherit; text-decoration: none; }
+button{ font-family: inherit; }
+
+/* Foco visível consistente em qualquer elemento interativo — acessibilidade
+   via teclado (docx exige suporte a teclado e leitor de tela) */
+:focus-visible{
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+  border-radius: var(--uf-radius-8);
+}
+
+/* Qualquer alvo clicável deve respeitar a área mínima definida pela marca */
+button, a[role="button"], input[type="checkbox"], input[type="radio"]{
+  min-height: var(--uf-tap-target-min);
+  min-width: var(--uf-tap-target-min);
+}
+
+
+/* ============================================================================
+   14. SCROLLBAR PERSONALIZADA
+============================================================================ */
+*{
+  scrollbar-width: thin;
+  scrollbar-color: var(--uf-gray-700) transparent;
+}
+*::-webkit-scrollbar{
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track{
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb{
+  background-color: var(--uf-gray-700);
+  border-radius: var(--uf-radius-full);
+  border: 2px solid var(--uf-color-bg-canvas);
+}
+*::-webkit-scrollbar-thumb:hover{
+  background-color: var(--uf-gray-600);
+}
+
+
+/* ============================================================================
+   15. SELEÇÃO DE TEXTO
+============================================================================ */
+::selection{
+  background: var(--uf-color-primary-subtle);
+  color: var(--uf-white);
+}
+::-moz-selection{
+  background: var(--uf-color-primary-subtle);
+  color: var(--uf-white);
+}
+
+
+/* ============================================================================
+   16. MOTION PRIMITIVES — as animações nomeadas pelo docx, prontas para uso
+   em qualquer componente (ex.: animation: uf-fade-in var(--uf-duration-base)
+   var(--uf-ease-smooth) both;)
+============================================================================ */
+@keyframes uf-fade-in{
+  from{ opacity: 0; }
+  to{ opacity: 1; }
+}
+
+@keyframes uf-scale-in{
+  from{ opacity: 0; transform: scale(.96); }
+  to{ opacity: 1; transform: scale(1); }
+}
+
+@keyframes uf-slide-up{
+  from{ opacity: 0; transform: translateY(16px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+/* "Glow" — para CTAs de IA e estados de destaque premium */
+@keyframes uf-glow-pulse{
+  0%, 100%{ box-shadow: var(--uf-shadow-glow-ai); }
+  50%{ box-shadow: 0 0 0 1px rgba(255,255,255,.05) inset, 0 10px 40px -4px rgba(var(--uf-shadow-glow-color), .65); }
+}
+
+/* "Voice Pulse" — quando a Uni está ouvindo/falando: anéis concêntricos */
+@keyframes uf-voice-pulse{
+  0%{ box-shadow: 0 0 0 0 rgba(124,58,237,.45); }
+  70%{ box-shadow: 0 0 0 18px rgba(124,58,237,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(124,58,237,0); }
+}
+
+/* "Loading Wave" — carregamento calmo, fiel ao motivo de "fluxo" da marca */
+@keyframes uf-loading-wave{
+  0%{ background-position: 0% 50%; }
+  100%{ background-position: 200% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+
+/* ============================================================================
+   17. MODO CLARO (FUTURO) — ESQUELETO
+   Não solicitado em profundidade agora; deixado pronto para quando entrar
+   em pauta, exatamente como o docx prevê ("Modo Claro (futuro)"). Trocar
+   apenas os tokens semânticos abaixo já é suficiente para os componentes
+   se adaptarem, desde que nenhum componente use um --uf-{escala}-{step}
+   primitivo diretamente.
+============================================================================ */
+/*
+[data-theme="light"]{
+  --uf-color-bg-canvas:        var(--uf-gray-50);
+  --uf-color-bg-surface:       var(--uf-white);
+  --uf-color-bg-surface-hover: var(--uf-gray-100);
+  --uf-color-bg-elevated:      var(--uf-white);
+  --uf-color-bg-sunken:        var(--uf-gray-100);
+
+  --uf-color-text-primary:   var(--uf-gray-900);
+  --uf-color-text-secondary: var(--uf-gray-600);
+  --uf-color-text-tertiary:  var(--uf-gray-500);
+  --uf-color-text-inverse:   var(--uf-white);
+
+  --uf-color-border-subtle:  rgba(15,23,42,.06);
+  --uf-color-border-default: rgba(15,23,42,.1);
+  --uf-color-border-strong:  rgba(15,23,42,.18);
+  --uf-color-divider:        rgba(15,23,42,.06);
+
+  --uf-glass-bg:        rgba(255,255,255,.65);
+  --uf-glass-bg-strong: rgba(255,255,255,.85);
+}
+*/

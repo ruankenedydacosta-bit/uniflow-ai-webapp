@@ -1,0 +1,189 @@
+/* ============================================================================
+   UNIFLOW AI — DESIGN SYSTEM · Sidebar.module.css
+   ============================================================================
+   FILOSOFIA (igual ao Button): este módulo só contém o que é genuinamente
+   específico do Sidebar — largura, transição de colapso, e o tooltip
+   nativo do modo colapsado. Tudo mais já vem de classes utilitárias
+   aplicadas no JSX (uf-flex, uf-gap-*, uf-rounded-md, uf-truncate...).
+
+   O QUE JÁ VEM DE GRAÇA
+   - background --uf-color-bg-surface                → utilities.css (uf-bg-surface, no JSX)
+   - display flex, gap, truncamento, radius            → utilities.css (no JSX)
+   - foco visível em :focus-visible                    → globals.css (global)
+   - área mínima de toque do toggle (44px, é <button>)  → globals.css (global)
+   - font-family Poppins                                → herdado do body
+
+   CAMADAS CONSUMIDAS: theme.css (cores, espaçamento, radius, motion,
+   ícone) + animations.css (uf-hover-smooth não é usado aqui porque a
+   transição de colapso tem timing próprio — ver comentário na seção 2).
+   ============================================================================ */
+
+
+/* ----------------------------------------------------------------------------
+   1. RAIZ — largura e transição de colapso
+   SIDEBAR_WIDTH_EXPANDED (constants.js) é injetada via inline style pelo
+   consumidor do componente OU fixada aqui como padrão; a largura
+   colapsada é 100% derivada de tokens existentes via calc(), não é um
+   valor novo (ver constants.js para a justificativa completa).
+---------------------------------------------------------------------------- */
+.sidebar{
+  --sidebar-w-collapsed: calc(var(--uf-icon-size-lg) + (var(--uf-space-24) * 2));
+
+  width: 280px; /* SIDEBAR_WIDTH_EXPANDED — mantido em sincronia com constants.js */
+  height: 100%;
+  border-right: 1px solid var(--uf-color-border-default);
+  transition: width var(--uf-duration-slow) var(--uf-ease-smooth);
+  overflow: hidden;
+}
+
+.sidebar[data-collapsed]{
+  width: var(--sidebar-w-collapsed);
+}
+
+
+/* ----------------------------------------------------------------------------
+   2. LOGO SLOT
+---------------------------------------------------------------------------- */
+.logoSlot{
+  padding: var(--uf-space-24);
+  min-height: calc(var(--uf-icon-size-lg) + var(--uf-space-24) * 2);
+  border-bottom: 1px solid var(--uf-color-border-subtle);
+}
+
+
+/* ----------------------------------------------------------------------------
+   3. NAV / LISTA
+---------------------------------------------------------------------------- */
+.nav{
+  padding: var(--uf-space-16) var(--uf-space-12);
+}
+
+
+/* ----------------------------------------------------------------------------
+   4. ITEM DE NAVEGAÇÃO
+   Estados: default / hover / active — mapeados 1:1 a tokens semânticos,
+   igual às variants do Button.
+---------------------------------------------------------------------------- */
+.item{
+  position: relative;
+  padding: var(--uf-space-12);
+  color: var(--uf-color-text-secondary);
+  font-weight: var(--uf-font-weight-medium);
+  transition: background-color var(--uf-duration-base) var(--uf-ease-smooth),
+              color var(--uf-duration-base) var(--uf-ease-smooth);
+}
+
+.item:hover{
+  background: var(--uf-color-bg-surface-hover);
+  color: var(--uf-color-text-primary);
+}
+
+.itemActive{
+  background: var(--uf-color-primary-subtle);
+  color: var(--uf-color-text-brand);
+}
+
+.itemActive:hover{
+  background: var(--uf-color-primary-subtle);
+  color: var(--uf-color-text-brand);
+}
+
+.icon{
+  width: var(--uf-icon-size-md);
+  height: var(--uf-icon-size-md);
+  display: inline-flex;
+}
+.icon svg{
+  width: 100%;
+  height: 100%;
+  stroke-width: var(--uf-icon-stroke-width);
+}
+
+.label{
+  min-width: 0; /* permite uf-truncate funcionar dentro do flex */
+}
+
+.badge{
+  padding: 2px var(--uf-space-8);
+  font-weight: var(--uf-font-weight-semibold);
+  margin-left: auto;
+}
+
+
+/* ----------------------------------------------------------------------------
+   5. TOOLTIP NATIVO NO MODO COLAPSADO
+   O componente Tooltip da biblioteca ainda não teve sua API confirmada
+   neste contexto (não fazia parte dos arquivos fornecidos), então o
+   Sidebar usa um tooltip mínimo em CSS puro via [data-tooltip] — mesmo
+   princípio visual (superfície elevada + sombra), sem inventar nenhum
+   token novo. Ação futura: substituir por <Tooltip> real quando sua API
+   for confirmada, removendo este bloco.
+---------------------------------------------------------------------------- */
+.sidebar[data-collapsed] .item{
+  justify-content: center;
+}
+
+.sidebar[data-collapsed] .label,
+.sidebar[data-collapsed] .badge{
+  display: none;
+}
+
+.sidebar[data-collapsed] .item[data-tooltip]:hover::after{
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + var(--uf-space-12));
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--uf-color-bg-elevated);
+  color: var(--uf-color-text-primary);
+  border: 1px solid var(--uf-color-border-default);
+  padding: var(--uf-space-4) var(--uf-space-12);
+  border-radius: var(--uf-radius-8);
+  box-shadow: var(--uf-shadow-md);
+  font-size: var(--uf-text-caption-size);
+  white-space: nowrap;
+  z-index: var(--uf-z-tooltip);
+  pointer-events: none;
+  animation: uf-fade-in var(--uf-duration-fast) var(--uf-ease-smooth) both;
+}
+
+
+/* ----------------------------------------------------------------------------
+   6. FOOTER SLOT
+---------------------------------------------------------------------------- */
+.footerSlot{
+  padding: var(--uf-space-16);
+}
+
+
+/* ----------------------------------------------------------------------------
+   7. BOTÃO DE COLAPSAR
+---------------------------------------------------------------------------- */
+.collapseToggle{
+  padding: var(--uf-space-12);
+  color: var(--uf-color-text-tertiary);
+  background: transparent;
+  transition: color var(--uf-duration-fast) var(--uf-ease-smooth),
+              background-color var(--uf-duration-fast) var(--uf-ease-smooth);
+}
+
+.collapseToggle:hover{
+  color: var(--uf-color-text-primary);
+  background: var(--uf-color-bg-surface-hover);
+}
+
+.collapseIcon{
+  width: var(--uf-icon-size-md);
+  height: var(--uf-icon-size-md);
+  display: inline-flex;
+  transition: transform var(--uf-duration-base) var(--uf-ease-smooth);
+}
+.collapseIcon svg{
+  width: 100%;
+  height: 100%;
+  stroke-width: var(--uf-icon-stroke-width);
+}
+
+.collapseIconFlipped{
+  transform: rotate(180deg);
+}

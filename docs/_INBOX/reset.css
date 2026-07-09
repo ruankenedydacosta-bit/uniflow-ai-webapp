@@ -1,0 +1,105 @@
+/* ============================================================================
+   UNIFLOW AI — DESIGN SYSTEM · reset.css
+   ============================================================================
+   Normalização pura entre navegadores. ZERO identidade visual aqui:
+   nenhuma cor, fonte, sombra, radius ou variável de marca é referenciada
+   neste arquivo — nenhum "--uf-*" deve aparecer abaixo desta linha.
+
+   Objetivo único: eliminar inconsistências de user-agent stylesheet
+   (margens padrão, list-style, tamanhos de formulário, etc.) para que
+   globals.css comece de uma base neutra e previsível.
+
+   Import order: theme.css → reset.css → globals.css → utilities.css
+   ============================================================================ */
+
+/* --- Box model --- */
+*,
+*::before,
+*::after{
+  box-sizing: border-box;
+}
+
+/* --- Remoção de margens padrão do user-agent --- */
+html,
+body,
+h1, h2, h3, h4, h5, h6,
+p,
+blockquote,
+dl, dd,
+figure,
+fieldset{
+  margin: 0;
+}
+
+/* --- Corpo do documento: apenas comportamento estrutural, sem cor/fonte --- */
+html{
+  -webkit-text-size-adjust: 100%; /* evita ajuste automático de fonte em landscape no iOS */
+  text-size-adjust: 100%;
+}
+
+body{
+  min-height: 100vh;
+}
+
+/* --- Listas: remove marcadores e espaçamento padrão do user-agent --- */
+ul, ol{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* --- Mídia: comportamento responsivo padrão, sem estilo visual --- */
+img, picture, video, canvas, svg{
+  display: block;
+  max-width: 100%;
+}
+
+/* --- Formulários: herdam tipografia do contexto em vez do padrão do navegador --- */
+input, button, textarea, select{
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+}
+
+button{
+  cursor: pointer;
+}
+
+button:disabled{
+  cursor: not-allowed;
+}
+
+textarea{
+  resize: vertical; /* impede redimensionamento horizontal quebrando layout */
+}
+
+/* --- Tabelas: normalização estrutural, sem bordas/cores de marca --- */
+table{
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* --- Elementos que carregam estilo nativo indesejado do navegador --- */
+fieldset{
+  border: none;
+  padding: 0;
+}
+
+legend{
+  padding: 0;
+}
+
+hr{
+  border: none;
+  height: 1px;
+}
+
+iframe{
+  border: none;
+}
+
+/* --- Garante que elementos ocultos por atributo nunca "vazem" --- */
+[hidden]{
+  display: none !important;
+}

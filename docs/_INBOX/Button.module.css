@@ -1,0 +1,206 @@
+/* ============================================================================
+   UNIFLOW AI — DESIGN SYSTEM · Button.module.css
+   ============================================================================
+   Componente: Button (referência arquitetural para toda a biblioteca)
+
+   FILOSOFIA DESTE ARQUIVO
+   Este módulo contém só o que é genuinamente específico do Button: as
+   combinações de cor por variant e a escala de tamanho/tipografia/ícone.
+   Todo comportamento genérico é resolvido por classes de utilities.css já
+   aplicadas no JSX (Button.jsx) — nada disso é duplicado aqui.
+
+   O QUE JÁ VEM DE GRAÇA (não precisa ser feito neste arquivo)
+   - border: none / background: none / font: inherit  → reset.css
+   - min-height/min-width 44px (área de toque)          → globals.css
+   - anel de foco em :focus-visible                     → globals.css
+   - font-family Poppins                                → herdado do body
+   - display flex, alinhamento, gap, radius, cursor,
+     seleção de texto, posicionamento relativo           → utilities.css (no JSX)
+   - transição suave de hover (bg/border/shadow/transform) → uf-hover-smooth (no JSX)
+
+   CAMADAS CONSUMIDAS: theme.css (cores, espaçamento, tipografia, radius,
+   ícone) + animations.css (@keyframes uf-loading-wave, reaproveitado para
+   o spinner, em vez de criar uma animação de rotação nova).
+   ============================================================================ */
+
+
+/* ----------------------------------------------------------------------------
+   1. BASE — compartilhado por todas as variants e tamanhos
+---------------------------------------------------------------------------- */
+.button{
+  font-weight: var(--uf-font-weight-semibold); /* reset.css herda "regular" do body; aqui sobrescrevemos de propósito */
+  white-space: nowrap; /* não coberto por utilities.css — legítimo aqui */
+  padding-block: var(--btn-pad-block, var(--uf-space-12));
+  padding-inline: var(--btn-pad-inline, var(--uf-space-20));
+}
+
+.button:active:not(:disabled){
+  transform: scale(0.98); /* feedback tátil de "pressed", igual em toda variant */
+}
+
+.button:disabled{
+  background: var(--uf-color-bg-surface-hover);
+  color: var(--uf-color-text-disabled);
+  border-color: var(--uf-color-border-subtle);
+  cursor: not-allowed;
+}
+
+
+/* ----------------------------------------------------------------------------
+   2. VARIANTS
+   Cada uma mapeia 1:1 para tokens semânticos já existentes em theme.css.
+   Onde não existe um step "-active" dedicado (success/danger), o estado
+   pressed reaproveita o "-hover" — documentado, não é lacuna esquecida.
+---------------------------------------------------------------------------- */
+.variant-primary{
+  background: var(--uf-color-primary);
+  color: var(--uf-color-on-primary);
+  border: none;
+}
+.variant-primary:hover:not(:disabled){ background: var(--uf-color-primary-hover); }
+.variant-primary:active:not(:disabled){ background: var(--uf-color-primary-active); }
+
+.variant-secondary{
+  background: var(--uf-color-bg-surface);
+  color: var(--uf-color-text-primary);
+  border: 1px solid var(--uf-color-border-default);
+}
+.variant-secondary:hover:not(:disabled){
+  background: var(--uf-color-bg-surface-hover);
+  border-color: var(--uf-color-border-strong);
+}
+.variant-secondary:active:not(:disabled){ background: var(--uf-color-bg-elevated); }
+
+.variant-outline{
+  background: transparent;
+  color: var(--uf-color-text-primary);
+  border: 1px solid var(--uf-color-border-strong);
+}
+.variant-outline:hover:not(:disabled){
+  background: var(--uf-color-primary-subtle);
+  border-color: var(--uf-color-primary);
+  color: var(--uf-color-text-brand);
+}
+.variant-outline:active:not(:disabled){ background: var(--uf-color-primary-subtle); }
+
+.variant-ghost{
+  background: transparent;
+  color: var(--uf-color-text-secondary);
+  border: none;
+}
+.variant-ghost:hover:not(:disabled){
+  background: var(--uf-color-bg-surface-hover);
+  color: var(--uf-color-text-primary);
+}
+.variant-ghost:active:not(:disabled){ background: var(--uf-color-bg-elevated); }
+
+.variant-danger{
+  background: var(--uf-color-danger);
+  color: var(--uf-color-on-danger);
+  border: none;
+}
+.variant-danger:hover:not(:disabled){ background: var(--uf-color-danger-hover); }
+.variant-danger:active:not(:disabled){ background: var(--uf-color-danger-hover); } /* sem step "-active" dedicado */
+
+.variant-success{
+  background: var(--uf-color-success);
+  color: var(--uf-color-on-success);
+  border: none;
+}
+.variant-success:hover:not(:disabled){ background: var(--uf-color-success-hover); }
+.variant-success:active:not(:disabled){ background: var(--uf-color-success-hover); } /* sem step "-active" dedicado */
+
+
+/* ----------------------------------------------------------------------------
+   3. SIZES
+   font-size varia pela escala oficial do docx (Microtexto/Legenda/Botão/
+   Subtítulo — nenhum valor novo). font-weight fica constante (seção 1).
+   --btn-icon-size alimenta o ícone e o spinner (seções 4 e 5).
+---------------------------------------------------------------------------- */
+.size-xs{
+  --btn-pad-block: var(--uf-space-4);
+  --btn-pad-inline: var(--uf-space-12);
+  --btn-icon-size: var(--uf-icon-size-sm);
+  font-size: var(--uf-text-micro-size);
+  line-height: var(--uf-text-button-lh);
+}
+.size-sm{
+  --btn-pad-block: var(--uf-space-8);
+  --btn-pad-inline: var(--uf-space-16);
+  --btn-icon-size: var(--uf-icon-size-sm);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-button-lh);
+}
+.size-md{
+  --btn-pad-block: var(--uf-space-12);
+  --btn-pad-inline: var(--uf-space-20);
+  --btn-icon-size: var(--uf-icon-size-md);
+  font-size: var(--uf-text-button-size);
+  line-height: var(--uf-text-button-lh);
+}
+.size-lg{
+  --btn-pad-block: var(--uf-space-16);
+  --btn-pad-inline: var(--uf-space-24);
+  --btn-icon-size: var(--uf-icon-size-lg);
+  font-size: var(--uf-text-button-size);
+  line-height: var(--uf-text-button-lh);
+}
+.size-xl{
+  --btn-pad-block: var(--uf-space-20);
+  --btn-pad-inline: var(--uf-space-32);
+  --btn-icon-size: var(--uf-icon-size-lg);
+  font-size: var(--uf-text-subtitle-size);
+  line-height: var(--uf-text-button-lh);
+}
+
+/* Botão apenas-ícone: usa o valor de padding-block também no eixo inline,
+   resultando numa área de clique quadrada em vez de retangular. */
+.iconOnly{
+  padding-inline: var(--btn-pad-block, var(--uf-space-12));
+}
+
+
+/* ----------------------------------------------------------------------------
+   4. ÍCONE — dimensiona conforme --btn-icon-size definido por cada size
+---------------------------------------------------------------------------- */
+.icon{
+  width: var(--btn-icon-size, var(--uf-icon-size-md));
+  height: var(--btn-icon-size, var(--uf-icon-size-md));
+  display: inline-flex;
+}
+.icon svg{
+  width: 100%;
+  height: 100%;
+  stroke-width: var(--uf-icon-stroke-width);
+}
+
+
+/* ----------------------------------------------------------------------------
+   5. LOADING / SPINNER
+   O conteúdo real (ícones + label) permanece no layout com .uf-opacity-0
+   aplicado no JSX — é isso que garante "preservar largura, não mover
+   layout". O spinner é sobreposto de forma absoluta (utilities: uf-absolute
+   + uf-inset-0 + uf-flex + uf-items-center + uf-justify-center no JSX).
+
+   Reaproveita @uf-loading-wave (animations.css) em vez de um "spin" novo —
+   rotação não faz parte das 7 animações oficiais do docx. A cor usa
+   currentColor, herdando automaticamente o texto correto de cada variant
+   (branco em primary/danger/success, cor de marca em outline/ghost) sem
+   nenhuma cor nova.
+---------------------------------------------------------------------------- */
+.spinner{
+  width: var(--btn-icon-size, var(--uf-icon-size-md));
+  height: var(--btn-icon-size, var(--uf-icon-size-md));
+  border-radius: var(--uf-radius-full);
+  background: linear-gradient(90deg, currentColor 0%, transparent 50%, currentColor 100%);
+  background-size: 200% 100%;
+  animation: uf-loading-wave 1.1s linear infinite;
+}
+
+
+/* ----------------------------------------------------------------------------
+   6. FULL WIDTH
+---------------------------------------------------------------------------- */
+.fullWidth{
+  width: 100%;
+}

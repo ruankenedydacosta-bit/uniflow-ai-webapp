@@ -1,0 +1,594 @@
+/* ============================================================================
+   UNIFLOW AI — DESIGN SYSTEM · utilities.css
+   ============================================================================
+   CAMADA: Helpers reutilizáveis (4ª camada da arquitetura)
+   theme.css → reset.css → globals.css → animations.css → utilities.css → Componentes React
+
+   O QUE ESTE ARQUIVO É
+   Um vocabulário pequeno e deliberado de classes atômicas para resolver
+   necessidades de layout e ajuste fino que se repetem em QUALQUER componente
+   React do produto (Button, Card, Sidebar, Modal...). Cada classe existe
+   porque foi observada como uma necessidade real e recorrente ao construir
+   os próximos ~80 componentes do roadmap — não porque "poderia ser útil
+   algum dia".
+
+   O QUE ESTE ARQUIVO NÃO É
+   Não é um framework tipo Bootstrap ou Tailwind. Não existe aqui uma classe
+   para cada combinação matemática possível de propriedade × valor × direção.
+   Onde o Tailwind daria p-1 até p-96 (dezenas de classes), aqui existe um
+   punhado de tamanhos com nome semântico (xs/sm/md/lg/xl/2xl/3xl) — o
+   suficiente para cobrir os casos reais do produto, documentado o bastante
+   para que qualquer engenheiro entenda a escala em 10 segundos.
+
+   REGRA DE OURO
+   Nenhum valor aqui é inventado. Toda cor, espaçamento, radius, sombra,
+   fonte, duração ou z-index vem de var(--uf-...) definido em theme.css.
+   As únicas exceções são palavras-chave estruturais do próprio CSS que não
+   são decisão de marca — display:flex, position:absolute, cursor:pointer,
+   width:100% — do mesmo jeito que "position: relative" não é um token de
+   design em nenhum sistema, nem aqui.
+
+   NAMING
+   Todas as classes começam com "uf-". A escala de tamanho usada em Gap e
+   Spacing é a mesma em todo o arquivo — aprenda uma vez, use em qualquer
+   contexto:
+     xs → --uf-space-4    sm → --uf-space-8    md  → --uf-space-16
+     lg → --uf-space-24   xl → --uf-space-32   2xl → --uf-space-48
+     3xl → --uf-space-64
+   (Os degraus 12/20/40/56/80/96/120/160 do theme.css continuam existindo
+   e podem ser usados via var() diretamente no CSS de um componente quando
+   o caso for específico o bastante para não merecer uma classe global.)
+
+   CONTAGEM TOTAL: 22 seções, ~145 classes. Abaixo de cada seção: por que
+   ela existe, quando usar, quando NÃO usar, e qual camada ela consome.
+   ============================================================================ */
+
+
+/* ============================================================================
+   1. DISPLAY
+   Por quê: alternar o modo de exibição de um elemento é a operação de
+   layout mais básica que existe — todo componente com renderização
+   condicional (`isOpen && ...`) precisa disso.
+   Quando usar: para alternar display via className condicional no JSX.
+   Quando NÃO usar: para esconder elementos por acessibilidade — isso é
+   `.uf-sr-only` (seção 22), não `.uf-hidden` (que remove do fluxo E da
+   árvore de acessibilidade).
+   Camada consumida: nenhuma — são palavras-chave estruturais do CSS.
+============================================================================ */
+.uf-block{ display: block; }
+.uf-inline-block{ display: inline-block; }
+.uf-inline{ display: inline; }
+.uf-flex{ display: flex; }
+.uf-inline-flex{ display: inline-flex; }
+.uf-grid{ display: grid; }
+.uf-hidden{ display: none; }
+
+
+/* ============================================================================
+   2. FLEX
+   Por quê: flexbox é o modelo de layout dominante do produto — sidebar,
+   navbar, cards, linhas de formulário, mensagens do chat da Uni, todos são
+   flex containers. Isso cobre as combinações que realmente se repetem.
+   Quando usar: junto de `.uf-flex` para compor qualquer linha/coluna.
+   Quando NÃO usar: para grades bidimensionais reais (ver seção 3, Grid).
+   Camada consumida: nenhuma — palavras-chave estruturais do CSS.
+============================================================================ */
+.uf-flex-row{ flex-direction: row; }
+.uf-flex-column{ flex-direction: column; }
+.uf-flex-wrap{ flex-wrap: wrap; }
+.uf-flex-nowrap{ flex-wrap: nowrap; }
+
+.uf-items-start{ align-items: flex-start; }
+.uf-items-center{ align-items: center; }
+.uf-items-end{ align-items: flex-end; }
+.uf-items-stretch{ align-items: stretch; }
+
+.uf-justify-start{ justify-content: flex-start; }
+.uf-justify-center{ justify-content: center; }
+.uf-justify-end{ justify-content: flex-end; }
+.uf-justify-between{ justify-content: space-between; }
+
+.uf-flex-1{ flex: 1 1 0%; }
+.uf-shrink-0{ flex-shrink: 0; } /* essencial para avatares/ícones ao lado de texto que trunca */
+
+
+/* ============================================================================
+   3. GRID
+   Por quê: o grid do produto NÃO é genérico — o docx define exatamente
+   12 colunas (desktop), 8 (tablet) e 4 (mobile). Em vez de expor classes
+   arbitrárias tipo Tailwind (col-2, col-3, col-6...), expomos exatamente
+   a grade oficial da marca, lida diretamente dos tokens de breakpoint.
+   Quando usar: no container raiz de uma página ou seção que segue a grade.
+   Quando NÃO usar: para alinhar 2-3 elementos em linha — isso é Flex (seção 2).
+   Camada consumida: theme.css (--uf-grid-columns-*).
+============================================================================ */
+.uf-grid-cols-desktop{ grid-template-columns: repeat(var(--uf-grid-columns-desktop), 1fr); }
+.uf-grid-cols-tablet{ grid-template-columns: repeat(var(--uf-grid-columns-tablet), 1fr); }
+.uf-grid-cols-mobile{ grid-template-columns: repeat(var(--uf-grid-columns-mobile), 1fr); }
+.uf-col-span-full{ grid-column: 1 / -1; }
+
+
+/* ============================================================================
+   4. GAP
+   Por quê: gap é a forma correta e moderna de espaçar itens dentro de um
+   flex/grid container — evita margin em filhos (que quebra em wrap) e
+   evita o "owl selector" (* + * { margin }).
+   Quando usar: sempre que dois+ elementos são espaçados dentro do mesmo
+   flex/grid container.
+   Quando NÃO usar: para espaçar o container em relação ao que está fora
+   dele — isso é Spacing (seção 5).
+   Camada consumida: theme.css (--uf-space-*).
+============================================================================ */
+.uf-gap-xs{  gap: var(--uf-space-4); }
+.uf-gap-sm{  gap: var(--uf-space-8); }
+.uf-gap-md{  gap: var(--uf-space-16); }
+.uf-gap-lg{  gap: var(--uf-space-24); }
+.uf-gap-xl{  gap: var(--uf-space-32); }
+.uf-gap-2xl{ gap: var(--uf-space-48); }
+.uf-gap-3xl{ gap: var(--uf-space-64); }
+
+
+/* ============================================================================
+   5. SPACING (margin e padding)
+   Por quê: deliberadamente restrito a DOIS casos reais — padding interno
+   uniforme (containers, cards) e margin-bottom para empilhar elementos em
+   fluxo vertical (parágrafos, itens de lista, seções de formulário). Não
+   existe aqui uma matriz completa de mt/mr/mb/ml/mx/my × 7 tamanhos —
+   isso seria a "explosão combinatória" que este arquivo existe para evitar.
+   Quando usar: `.uf-p-*` no wrapper de um componente; `.uf-mb-*` entre
+   irmãos em um fluxo vertical.
+   Quando NÃO usar: espaçamento *interno* de um componente específico
+   (ex.: padding exato do Button) é decisão do componente, não uma classe
+   utilitária global — vive no CSS do próprio componente, referenciando
+   var(--uf-space-*) diretamente.
+   Camada consumida: theme.css (--uf-space-*).
+============================================================================ */
+.uf-p-xs{ padding: var(--uf-space-4); }
+.uf-p-sm{ padding: var(--uf-space-8); }
+.uf-p-md{ padding: var(--uf-space-16); }
+.uf-p-lg{ padding: var(--uf-space-24); }
+.uf-p-xl{ padding: var(--uf-space-32); }
+
+.uf-mb-sm{ margin-bottom: var(--uf-space-8); }
+.uf-mb-md{ margin-bottom: var(--uf-space-16); }
+.uf-mb-lg{ margin-bottom: var(--uf-space-24); }
+.uf-mb-xl{ margin-bottom: var(--uf-space-32); }
+
+.uf-mx-auto{ margin-inline: auto; } /* centralizar cards/modais horizontalmente */
+
+
+/* ============================================================================
+   6. WIDTH
+   Por quê: os cinco casos de largura que aparecem em praticamente toda
+   tela do produto — ocupar o pai, respeitar conteúdo, ou travar num teto.
+   Quando usar: `.uf-w-full` em inputs/botões dentro de um form; `.uf-max-w-container`
+   no wrapper raiz de uma página.
+   Quando NÃO usar: larguras fixas específicas de um componente (ex.: 320px
+   de uma sidebar) — isso é decisão de layout do componente, não utilitário.
+   Camada consumida: theme.css (--uf-container-max-width) + palavras-chave CSS.
+============================================================================ */
+.uf-w-full{ width: 100%; }
+.uf-w-auto{ width: auto; }
+.uf-w-fit{ width: fit-content; }
+.uf-max-w-container{ max-width: var(--uf-container-max-width); }
+.uf-min-w-0{ min-width: 0; } /* corrige truncamento de texto (ellipsis) dentro de flex */
+
+
+/* ============================================================================
+   7. HEIGHT
+   Por quê: espelha a seção Width para o eixo vertical — os dois casos que
+   realmente aparecem são "ocupar 100% do pai" e "ocupar a viewport inteira"
+   (telas de auth em tela cheia, layouts split-screen).
+   Quando usar: `.uf-h-screen` no shell raiz de uma página full-screen.
+   Quando NÃO usar: alturas específicas de componente (ex.: 56px de um input)
+   — decisão local do componente.
+   Camada consumida: palavras-chave estruturais do CSS.
+============================================================================ */
+.uf-h-full{ height: 100%; }
+.uf-h-auto{ height: auto; }
+.uf-h-screen{ height: 100vh; }
+.uf-min-h-screen{ min-height: 100vh; }
+.uf-min-h-0{ min-height: 0; } /* corrige overflow em filhos flex que precisam scrollar */
+
+
+/* ============================================================================
+   8. BORDER RADIUS
+   Por quê: mapeia 1:1 a escala oficial do docx (8/12/16/24/32/pill), com
+   nomes semânticos em vez de números — assim o componente comunica
+   intenção ("isto é um card grande") em vez de um valor cru.
+   Quando usar: em qualquer superfície (card, input, botão, modal, avatar).
+   Quando NÃO usar: nunca escreva `border-radius: 12px` direto num
+   componente — sempre esta classe ou var(--uf-radius-*) direto no CSS dele.
+   Camada consumida: theme.css (--uf-radius-*).
+============================================================================ */
+.uf-rounded-sm{   border-radius: var(--uf-radius-8); }
+.uf-rounded-md{   border-radius: var(--uf-radius-12); }
+.uf-rounded-lg{   border-radius: var(--uf-radius-16); }
+.uf-rounded-xl{   border-radius: var(--uf-radius-24); }
+.uf-rounded-2xl{  border-radius: var(--uf-radius-32); }
+.uf-rounded-full{ border-radius: var(--uf-radius-full); } /* pills, avatares, badges */
+.uf-rounded-none{ border-radius: 0; } /* escape hatch: remover radius herdado num contexto aninhado */
+
+
+/* ============================================================================
+   9. BORDERS
+   Por quê: três intensidades de borda (a mesma hierarquia subtle/default/
+   strong de theme.css) cobrem 100% dos casos reais — divisórias de card,
+   contorno de input, separador de lista.
+   Quando usar: `.uf-border` como padrão; `.uf-border-t`/`.uf-border-b` para
+   separadores de linha (itens de sidebar, linhas de tabela).
+   Quando NÃO usar: bordas coloridas semânticas (erro, sucesso) — essas
+   pertencem ao CSS do componente (Input com estado de erro), pois exigem
+   lógica combinada com outros estados.
+   Camada consumida: theme.css (--uf-color-border-*).
+============================================================================ */
+.uf-border{         border: 1px solid var(--uf-color-border-default); }
+.uf-border-subtle{  border: 1px solid var(--uf-color-border-subtle); }
+.uf-border-strong{  border: 1px solid var(--uf-color-border-strong); }
+.uf-border-none{     border: none; }
+.uf-border-t{ border-top: 1px solid var(--uf-color-divider); }
+.uf-border-b{ border-bottom: 1px solid var(--uf-color-divider); }
+
+
+/* ============================================================================
+   10. BACKGROUNDS
+   Por quê: dois grupos com motivos distintos —
+     (a) hierarquia de profundidade (canvas/surface/elevated/sunken), usada
+         para comunicar "o que está por cima do quê" (docx: sidebar/navbar/
+         cards vs. modais vs. inputs);
+     (b) fundos "subtle" semânticos, usados em Badge/Toast/Alert/Chip para
+         tingir sutilmente sem competir com o texto.
+   Quando usar: (a) no wrapper estrutural de layout; (b) no fundo de um
+   badge/chip/alerta de status.
+   Quando NÃO usar: fundos sólidos de cor de marca (ex.: fundo azul cheio de
+   um botão primário) — isso é decisão do componente Button, que combina
+   cor + hover + texto-sobre-cor, lógica demais para uma classe atômica.
+   Camada consumida: theme.css (--uf-color-bg-*, --uf-color-*-subtle).
+============================================================================ */
+.uf-bg-canvas{   background: var(--uf-color-bg-canvas); }
+.uf-bg-surface{  background: var(--uf-color-bg-surface); }
+.uf-bg-elevated{ background: var(--uf-color-bg-elevated); }
+.uf-bg-sunken{   background: var(--uf-color-bg-sunken); }
+
+.uf-bg-primary-subtle{ background: var(--uf-color-primary-subtle); }
+.uf-bg-ai-subtle{      background: var(--uf-color-ai-subtle); }
+.uf-bg-success-subtle{ background: var(--uf-color-success-subtle); }
+.uf-bg-danger-subtle{  background: var(--uf-color-danger-subtle); }
+.uf-bg-warning-subtle{ background: var(--uf-color-warning-subtle); }
+.uf-bg-info-subtle{    background: var(--uf-color-info-subtle); }
+
+
+/* ============================================================================
+   11. TEXT COLORS
+   Por quê: mapeia 1:1 cada papel semântico de texto já definido em
+   theme.css. Nenhuma cor nova — só exposição como classe do que já existe.
+   Inclui os quatro estados (success/danger/warning/info) porque o produto
+   exibe valores financeiros com cor de significado (receita em verde,
+   despesa em vermelho — visto no wireframe do docx).
+   Quando usar: em qualquer texto que precise de um papel semântico
+   diferente do texto padrão do body.
+   Quando NÃO usar: para texto dentro de um botão/badge que já resolve sua
+   própria cor via `--uf-color-on-*` no CSS do componente.
+   Camada consumida: theme.css (--uf-color-text-*, --uf-color-{estado}).
+============================================================================ */
+.uf-text-primary{   color: var(--uf-color-text-primary); }
+.uf-text-secondary{ color: var(--uf-color-text-secondary); }
+.uf-text-tertiary{  color: var(--uf-color-text-tertiary); }
+.uf-text-disabled{  color: var(--uf-color-text-disabled); }
+.uf-text-inverse{   color: var(--uf-color-text-inverse); }
+.uf-text-brand{     color: var(--uf-color-text-brand); }
+.uf-text-ai{         color: var(--uf-color-text-ai); }
+.uf-text-success{   color: var(--uf-color-success); }
+.uf-text-danger{    color: var(--uf-color-danger); }
+.uf-text-warning{   color: var(--uf-color-warning); }
+.uf-text-info{      color: var(--uf-color-info); }
+
+
+/* ============================================================================
+   12. TYPOGRAPHY HELPERS
+   Por quê: globals.css já mapeou Display-Hero/H1/H2/H3 para as tags
+   semânticas <h1>-<h3>. Mas a escala do docx tem MAIS papéis do que tags
+   HTML disponíveis — Título, Subtítulo, Legenda e Microtexto não têm uma
+   tag própria (um "Título" pode estar dentro de uma <span> num card). Estas
+   classes preenchem exatamente essa lacuna, mais os ajustes de texto que
+   se repetem em qualquer componente (alinhamento, truncamento, peso).
+   Quando usar: qualquer texto que precise do papel Título/Subtítulo/
+   Legenda/Microtexto/Botão sem ser um heading semântico.
+   Quando NÃO usar: para h1/h2/h3 reais — esses já vêm estilizados por
+   globals.css automaticamente, não precisam de classe.
+   Camada consumida: theme.css (--uf-text-*, --uf-font-weight-*).
+============================================================================ */
+.uf-text-display-hero{
+  font-size: var(--uf-text-display-hero-size);
+  font-weight: var(--uf-text-display-hero-weight);
+  line-height: var(--uf-text-display-hero-lh);
+}
+.uf-text-title{
+  font-size: var(--uf-text-title-size);
+  font-weight: var(--uf-text-title-weight);
+  line-height: var(--uf-text-title-lh);
+}
+.uf-text-subtitle{
+  font-size: var(--uf-text-subtitle-size);
+  font-weight: var(--uf-text-subtitle-weight);
+  line-height: var(--uf-text-subtitle-lh);
+}
+.uf-text-caption{
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-text-caption-weight);
+  line-height: var(--uf-text-caption-lh);
+}
+.uf-text-micro{
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-text-micro-weight);
+  line-height: var(--uf-text-micro-lh);
+}
+.uf-text-button{
+  font-size: var(--uf-text-button-size);
+  font-weight: var(--uf-text-button-weight);
+  line-height: var(--uf-text-button-lh);
+}
+
+.uf-font-medium{   font-weight: var(--uf-font-weight-medium); }
+.uf-font-semibold{ font-weight: var(--uf-font-weight-semibold); }
+.uf-font-bold{      font-weight: var(--uf-font-weight-bold); }
+
+.uf-text-left{   text-align: left; }
+.uf-text-center{ text-align: center; }
+.uf-text-right{  text-align: right; }
+
+.uf-truncate{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ============================================================================
+   13. SHADOWS
+   Por quê: mapeia exatamente as 4 sombras oficiais do docx — nem uma a
+   mais. "Small/Medium/Large" para elevação, "Glow" para destaque de IA.
+   Quando usar: em qualquer superfície elevada (card, dropdown, modal).
+   `.uf-shadow-glow` para estados estáticos de destaque premium (o estado
+   *animado* — pulsando — vive em animations.css, `.uf-glow-active`).
+   Quando NÃO usar: não combine mais de uma sombra no mesmo elemento —
+   se a superfície precisa de elevação E glow ao mesmo tempo, isso é uma
+   variante de componente (ex.: Card--ai), não empilhamento de utilitários.
+   Camada consumida: theme.css (--uf-shadow-*).
+============================================================================ */
+.uf-shadow-sm{   box-shadow: var(--uf-shadow-sm); }
+.uf-shadow-md{   box-shadow: var(--uf-shadow-md); }
+.uf-shadow-lg{   box-shadow: var(--uf-shadow-lg); }
+.uf-shadow-glow{ box-shadow: var(--uf-shadow-glow-ai); }
+.uf-shadow-none{ box-shadow: none; }
+
+
+/* ============================================================================
+   14. OVERFLOW
+   Por quê: controle de overflow aparece em praticamente todo container
+   scrollável do produto (sidebar com muitos itens, modal com conteúdo
+   longo, chat da Uni).
+   Quando usar: `.uf-overflow-y-auto` no corpo scrollável de um Modal/Sidebar.
+   Quando NÃO usar: para truncar texto — isso é `.uf-truncate` (seção 12).
+   Camada consumida: nenhuma — palavras-chave estruturais do CSS.
+============================================================================ */
+.uf-overflow-hidden{  overflow: hidden; }
+.uf-overflow-auto{    overflow: auto; }
+.uf-overflow-visible{ overflow: visible; }
+.uf-overflow-x-auto{  overflow-x: auto; }
+.uf-overflow-y-auto{  overflow-y: auto; }
+
+
+/* ============================================================================
+   15. POSITION
+   Por quê: os cinco valores de position do CSS, mais o atalho mais comum
+   de "preencher o pai" (inset-0), usado em overlays/backdrops/spotlights
+   (o efeito de spotlight do login, por exemplo).
+   Quando usar: `.uf-relative` no container pai de um elemento posicionado;
+   `.uf-absolute` + `.uf-inset-0` para overlays de loading/backdrop.
+   Quando NÃO usar: para popovers/dropdowns complexos com cálculo de
+   posição dinâmica — isso é responsabilidade de JS/componente, não CSS puro.
+   Camada consumida: nenhuma — palavras-chave estruturais do CSS.
+============================================================================ */
+.uf-relative{ position: relative; }
+.uf-absolute{ position: absolute; }
+.uf-fixed{    position: fixed; }
+.uf-sticky{   position: sticky; }
+.uf-static{   position: static; }
+.uf-inset-0{ top: 0; right: 0; bottom: 0; left: 0; }
+
+
+/* ============================================================================
+   16. Z-INDEX
+   Por quê: EXATAMENTE os 8 níveis de empilhamento já definidos em
+   theme.css — nem um a mais. Isso existe para impedir que qualquer
+   componente escreva `z-index: 999` "porque funcionou" e quebre a ordem
+   de empilhamento de outro componente meses depois.
+   Quando usar: sempre. Nenhum componente deve ter um z-index fora desta
+   lista — se precisar de uma nova camada, o token entra em theme.css
+   primeiro (mesma regra do resto do sistema).
+   Quando NÃO usar: nunca escreva z-index numérico direto em um componente.
+   Camada consumida: theme.css (--uf-z-*).
+============================================================================ */
+.uf-z-dropdown{       z-index: var(--uf-z-dropdown); }
+.uf-z-sticky{         z-index: var(--uf-z-sticky); }
+.uf-z-fixed{          z-index: var(--uf-z-fixed); }
+.uf-z-modal-backdrop{ z-index: var(--uf-z-modal-backdrop); }
+.uf-z-modal{          z-index: var(--uf-z-modal); }
+.uf-z-popover{        z-index: var(--uf-z-popover); }
+.uf-z-toast{          z-index: var(--uf-z-toast); }
+.uf-z-tooltip{        z-index: var(--uf-z-tooltip); }
+
+
+/* ============================================================================
+   17. CURSOR
+   Por quê: sinaliza affordance de interação — o usuário precisa saber o
+   que é clicável, o que está carregando, o que está bloqueado.
+   Quando usar: `.uf-cursor-not-allowed` num elemento com estado disabled
+   que não seja um <button> nativo (que já ganha isso do navegador).
+   Quando NÃO usar: não é substituto para `pointer-events: none` (seção 19)
+   — cursor é só visual, não impede o clique de fato.
+   Camada consumida: nenhuma — palavras-chave estruturais do CSS.
+============================================================================ */
+.uf-cursor-pointer{     cursor: pointer; }
+.uf-cursor-not-allowed{ cursor: not-allowed; }
+.uf-cursor-default{     cursor: default; }
+.uf-cursor-wait{        cursor: wait; }
+
+
+/* ============================================================================
+   18. OPACITY
+   Por quê: deliberadamente restrito aos dois extremos universais —
+   totalmente invisível e totalmente visível — para servir como gancho de
+   estado controlado por JS/transição (ex.: fade controlado por React,
+   alternando esta classe). Um valor intermediário (ex.: 50%) seria uma
+   decisão de marca sem token correspondente em theme.css — por isso não
+   existe aqui. Estado "disabled" tem seu próprio tratamento com
+   `--uf-color-text-disabled` (seção 11), não opacity.
+   Quando usar: como gancho de transição de entrada/saída controlado por JS.
+   Quando NÃO usar: para simular estado disabled — use as cores semânticas.
+   Camada consumida: nenhuma — 0 e 1 são extremos universais, não tokens de marca.
+============================================================================ */
+.uf-opacity-0{   opacity: 0; }
+.uf-opacity-100{ opacity: 1; }
+
+
+/* ============================================================================
+   19. POINTER EVENTS
+   Por quê: necessário sempre que um ícone/decoração visual fica por cima
+   de um elemento clicável (ex.: ícone dentro de um Input, spotlight sobre
+   um Card) e não pode "roubar" o clique do elemento de baixo.
+   Quando usar: `.uf-pointer-events-none` em ícones decorativos absolutos;
+   `.uf-pointer-events-auto` para reverter isso num filho específico.
+   Quando NÃO usar: para desabilitar um botão de verdade — use o atributo
+   `disabled` nativo, que também cuida de foco e semântica.
+   Camada consumida: nenhuma — palavras-chave estruturais do CSS.
+============================================================================ */
+.uf-pointer-events-none{ pointer-events: none; }
+.uf-pointer-events-auto{ pointer-events: auto; }
+
+
+/* ============================================================================
+   20. USER SELECT
+   Por quê: elementos de "chrome" da interface (botões, badges, ícones de
+   navegação) não devem ficar selecionáveis como texto — quebra a sensação
+   premium ao arrastar o mouse. O inverso (select-all) resolve o padrão
+   comum de "clique para copiar" em campos de API key / valores financeiros.
+   Quando usar: `.uf-select-none` em qualquer elemento de UI não-textual;
+   `.uf-select-all` em campos read-only pensados para cópia rápida.
+   Quando NÃO usar: nunca em texto de leitura normal (parágrafos, mensagens
+   do chat) — prejudica acessibilidade e a expectativa do usuário.
+   Camada consumida: nenhuma — palavras-chave estruturais do CSS.
+============================================================================ */
+.uf-select-none{ user-select: none; }
+.uf-select-text{ user-select: text; }
+.uf-select-all{  user-select: all; }
+
+
+/* ============================================================================
+   21. HELPERS
+   Por quê: dois tokens inteiros do theme.css — Glass (seção 7) e
+   Gradientes (seção 8) — foram definidos mas nunca aplicados em nenhuma
+   camada anterior (reset/globals/animations). Esta seção é onde eles
+   finalmente viram utilitário reutilizável, junto de dois padrões
+   estruturais que se repetem em toda página (container e divisor).
+   Quando usar: `.uf-glass`/`.uf-glass-strong` em cards, navbar e modais
+   (o efeito de vidro fosco é parte documentada da identidade visual);
+   `.uf-gradient-text` no wordmark "UniFlow AI" e títulos premium;
+   `.uf-container` no wrapper raiz de qualquer página.
+   Quando NÃO usar: `.uf-glass` sobre um fundo que já é `--uf-color-bg-sunken`
+   (wells/inputs) — o contraste de profundidade se perde.
+   Camada consumida: theme.css (--uf-glass-*, --uf-gradient-*, --uf-container-max-width).
+============================================================================ */
+.uf-container{
+  width: 100%;
+  max-width: var(--uf-container-max-width);
+  margin-inline: auto;
+  padding-inline: var(--uf-grid-gutter);
+}
+
+.uf-divider{
+  height: 1px;
+  width: 100%;
+  background: var(--uf-color-divider);
+  border: none;
+}
+
+.uf-glass{
+  background: var(--uf-glass-bg);
+  -webkit-backdrop-filter: saturate(var(--uf-glass-saturate)) blur(var(--uf-glass-blur));
+  backdrop-filter: saturate(var(--uf-glass-saturate)) blur(var(--uf-glass-blur));
+  border: 1px solid var(--uf-glass-border);
+}
+
+.uf-glass-strong{
+  background: var(--uf-glass-bg-strong);
+  -webkit-backdrop-filter: saturate(var(--uf-glass-saturate)) blur(var(--uf-glass-blur-strong));
+  backdrop-filter: saturate(var(--uf-glass-saturate)) blur(var(--uf-glass-blur-strong));
+  border: 1px solid var(--uf-glass-border);
+}
+
+.uf-gradient-text{
+  background: var(--uf-gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.uf-gradient-border-top{
+  border-top: 2px solid transparent;
+  border-image: var(--uf-gradient-hairline) 1;
+}
+
+
+/* ============================================================================
+   22. ACCESSIBILITY HELPERS
+   Por quê: o docx exige suporte explícito a teclado e leitor de tela.
+   Estas quatro classes cobrem os padrões de acessibilidade que reset.css/
+   globals.css não cobrem por serem *opt-in* (aplicados deliberadamente
+   pelo componente), não comportamento automático do documento inteiro.
+   Quando usar: `.uf-sr-only` em texto que só o leitor de tela deve anunciar
+   (ex.: label de um ícone-botão sem texto visível); `.uf-skip-link` no
+   primeiro elemento focável da página; `.uf-focus-ring` em componentes
+   customizados (uma <div role="button">) que não herdam :focus-visible
+   nativamente; `.uf-tap-target` para garantir 44×44px em elementos
+   clicáveis que não são <button>/<a> nativos.
+   Quando NÃO usar: `.uf-focus-ring` NUNCA deve ser usado para remover o
+   foco — só para aplicá-lo manualmente onde o nativo não alcança.
+   Camada consumida: theme.css (--uf-focus-ring-*, --uf-tap-target-min).
+============================================================================ */
+.uf-sr-only{
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: none;
+}
+
+.uf-skip-link{
+  position: absolute;
+  top: -100%;
+  left: var(--uf-space-16);
+  z-index: var(--uf-z-tooltip);
+  background: var(--uf-color-bg-elevated);
+  color: var(--uf-color-text-primary);
+  padding: var(--uf-space-8) var(--uf-space-16);
+  border-radius: var(--uf-radius-8);
+}
+.uf-skip-link:focus{
+  top: var(--uf-space-16);
+}
+
+.uf-focus-ring{
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.uf-tap-target{
+  min-height: var(--uf-tap-target-min);
+  min-width: var(--uf-tap-target-min);
+}

@@ -1,0 +1,189 @@
+/* ============================================================================
+   UNIFLOW AI — DESIGN SYSTEM · globals.css
+   ============================================================================
+   Aplicação da identidade visual global do produto. Este arquivo NÃO define
+   nenhuma cor, tamanho, sombra ou animação nova — cada valor abaixo é uma
+   referência var(--uf-*) a um token já existente em theme.css.
+
+   Diferença para theme.css (seções 13–15): theme.css inclui um reset mínimo
+   inline para garantir efeito imediato caso ele seja importado sozinho.
+   Este arquivo é a camada oficial e completa de identidade global, e cobre
+   coisas que ainda não tinham um lar: escala tipográfica aplicada aos
+   elementos semânticos (h1/h2/h3), links, placeholders, autofill, seleção
+   de texto em elementos interativos e comportamento padrão de navegação.
+   Redundâncias com theme.css são intencionais e inofensivas (mesmos tokens,
+   mesmos valores) — nunca conflitantes.
+
+   Import order: theme.css → reset.css → globals.css → utilities.css
+   ============================================================================ */
+
+
+/* ----------------------------------------------------------------------------
+   1. HTML / BODY — fundo, cor de texto e fonte base da marca
+---------------------------------------------------------------------------- */
+html{
+  font-size: 16px; /* base de acessibilidade — nunca reduzir (docx) */
+  color-scheme: dark; /* fundo escuro é o padrão do produto, não alternativo */
+  scroll-behavior: smooth;
+}
+
+body{
+  background: var(--uf-color-bg-canvas);
+  color: var(--uf-color-text-primary);
+  font-family: var(--uf-font-family-base);
+  font-size: var(--uf-text-body-size);
+  font-weight: var(--uf-text-body-weight);
+  line-height: var(--uf-text-body-lh);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent; /* remove flash cinza padrão no toque mobile */
+}
+
+
+/* ----------------------------------------------------------------------------
+   2. ESCALA TIPOGRÁFICA — mapeia os tokens de texto (docx) para as tags
+   semânticas reais. h1/h2/h3 têm papel definido no brandbook; h4–h6 não
+   fazem parte da escala oficial e por isso herdam apenas o tratamento
+   estrutural comum, sem tamanho fixo — papéis como Título/Subtítulo/Legenda
+   que não são heading semântico ganham classes utilitárias em utilities.css.
+---------------------------------------------------------------------------- */
+h1, h2, h3, h4, h5, h6{
+  font-family: var(--uf-font-family-base);
+  color: var(--uf-color-text-primary);
+  letter-spacing: -.02em;
+}
+
+h1{
+  font-size: var(--uf-text-h1-size);
+  font-weight: var(--uf-text-h1-weight);
+  line-height: var(--uf-text-h1-lh);
+}
+
+h2{
+  font-size: var(--uf-text-h2-size);
+  font-weight: var(--uf-text-h2-weight);
+  line-height: var(--uf-text-h2-lh);
+}
+
+h3{
+  font-size: var(--uf-text-h3-size);
+  font-weight: var(--uf-text-h3-weight);
+  line-height: var(--uf-text-h3-lh);
+}
+
+p{
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
+}
+
+
+/* ----------------------------------------------------------------------------
+   3. LINKS — cor de marca, hover e foco consistentes em todo o produto
+---------------------------------------------------------------------------- */
+a{
+  color: var(--uf-color-text-brand);
+  text-decoration: none;
+  transition: color var(--uf-duration-fast) var(--uf-ease-smooth);
+}
+
+a:hover{
+  color: var(--uf-color-primary-hover);
+}
+
+a:active{
+  color: var(--uf-color-primary-active);
+}
+
+
+/* ----------------------------------------------------------------------------
+   4. FORMULÁRIOS — placeholder e autofill alinhados à marca
+   (evita o amarelo padrão do Chrome quebrando o fundo escuro premium)
+---------------------------------------------------------------------------- */
+::placeholder{
+  color: var(--uf-color-text-tertiary);
+  opacity: 1;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus{
+  -webkit-text-fill-color: var(--uf-color-text-primary);
+  -webkit-box-shadow: 0 0 0 1000px var(--uf-color-bg-sunken) inset;
+  transition: background-color 9999s ease-in-out 0s; /* trava a cor do autofill */
+}
+
+
+/* ----------------------------------------------------------------------------
+   5. FOCO & ACESSIBILIDADE — anel de foco visível e área mínima de clique
+---------------------------------------------------------------------------- */
+:focus-visible{
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+  border-radius: var(--uf-radius-8);
+}
+
+button, a[role="button"], input[type="checkbox"], input[type="radio"]{
+  min-height: var(--uf-tap-target-min);
+  min-width: var(--uf-tap-target-min);
+}
+
+
+/* ----------------------------------------------------------------------------
+   6. SELEÇÃO DE TEXTO
+---------------------------------------------------------------------------- */
+::selection{
+  background: var(--uf-color-primary-subtle);
+  color: var(--uf-white);
+}
+::-moz-selection{
+  background: var(--uf-color-primary-subtle);
+  color: var(--uf-white);
+}
+
+
+/* ----------------------------------------------------------------------------
+   7. SCROLLBAR PERSONALIZADA
+---------------------------------------------------------------------------- */
+*{
+  scrollbar-width: thin;
+  scrollbar-color: var(--uf-gray-700) transparent;
+}
+*::-webkit-scrollbar{
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track{
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb{
+  background-color: var(--uf-gray-700);
+  border-radius: var(--uf-radius-full);
+  border: 2px solid var(--uf-color-bg-canvas);
+}
+*::-webkit-scrollbar-thumb:hover{
+  background-color: var(--uf-gray-600);
+}
+
+
+/* ----------------------------------------------------------------------------
+   8. IMAGENS — o produto não usa fotografia (docx: sempre ícones inline em
+   SVG, nunca imagens externas), então o único cuidado global é garantir que
+   qualquer mídia eventual (ex.: preview de anexo no chat da Uni) nunca
+   estoure o layout nem quebre o cantos-arredondados consistentes da marca.
+---------------------------------------------------------------------------- */
+img, video{
+  border-radius: var(--uf-radius-12);
+}
+
+
+/* ----------------------------------------------------------------------------
+   9. COMPORTAMENTO PADRÃO — reduced motion (mesma regra de theme.css,
+   repetida aqui por ser garantia de acessibilidade e não identidade visual;
+   values idênticos, nunca conflitantes)
+---------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce){
+  html{
+    scroll-behavior: auto;
+  }
+}

@@ -1,0 +1,31 @@
+/* ============================================================================
+   UNIFLOW AI — DashboardGrid.module.css
+   ============================================================================
+   utilities.css dá uf-grid-cols-desktop/tablet/mobile (a grade base de
+   12/8/4 colunas) e uf-col-span-full — mas nenhum span PARCIAL (ex.:
+   "este card ocupa 8 das 12 colunas"), porque isso dependeria do
+   conteúdo de cada tela, não é genérico o bastante para virar utility.
+   Esta é a exceção legítima: span números são mecânica estrutural do
+   CSS Grid (como "1fr"), não tokens de marca — nenhum valor de cor,
+   espaçamento, radius ou sombra é definido aqui.
+   ============================================================================ */
+
+.grid{
+  display: grid;
+  grid-template-columns: repeat(var(--uf-grid-columns-desktop), 1fr);
+  gap: var(--uf-grid-gutter);
+}
+
+.spanFinancial{ grid-column: span 7; }
+.spanGoals{     grid-column: span 5; }
+.spanActivity{  grid-column: span 7; }
+.spanInsights{  grid-column: span 5; }
+
+@media (max-width: 767px){
+  .grid{
+    grid-template-columns: repeat(var(--uf-grid-columns-mobile), 1fr);
+  }
+  .spanFinancial, .spanGoals, .spanActivity, .spanInsights{
+    grid-column: span 4; /* uma coluna por linha no mobile */
+  }
+}
