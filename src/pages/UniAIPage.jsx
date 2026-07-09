@@ -106,6 +106,13 @@ function getSpeechRecognition() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
+function isProbablySafari() {
+  if (typeof navigator === 'undefined') return false;
+
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('safari') && !userAgent.includes('chrome') && !userAgent.includes('chromium');
+}
+
 function getPortugueseVoice(voices) {
   return voices.find((voice) => voice.lang === 'pt-BR') ?? voices.find((voice) => voice.lang?.startsWith('pt')) ?? null;
 }
@@ -163,11 +170,16 @@ function UniAIPage() {
 
   useEffect(() => () => {
     recognitionRef.current?.abort?.();
+
     if (animationFrameRef.current) {
       window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
+
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
-    audioContextRef.current?.close?.();
+    audioStreamRef.current = null;
+    audioContextRef.current?.close?.().catch?.(() => {});
+    audioContextRef.current = null;
 
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -192,12 +204,14 @@ function UniAIPage() {
     if (!canSendMessage) return;
 
     setVoiceNotice('');
+    setInterimTranscript('');
     sendMessage(draftMessage);
     setDraftMessage('');
   }
 
   function handleSuggestionClick(suggestion) {
     setVoiceNotice('');
+    setInterimTranscript('');
     sendMessage(suggestion);
   }
 
@@ -205,7 +219,7 @@ function UniAIPage() {
     setVoiceVolume(0);
     setHasAudioMeter(false);
 
-    if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) return;
+    if (typeof window === 'undefined' || isProbablySafari() || !navigator.mediaDevices?.getUserMedia) return;
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
 
@@ -252,16 +266,18 @@ function UniAIPage() {
 
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = null;
-    audioContextRef.current?.close?.();
+    audioContextRef.current?.close?.().catch?.(() => {});
     audioContextRef.current = null;
     setHasAudioMeter(false);
     setVoiceVolume(0);
   }
 
   function stopVoiceCapture() {
+    shouldShowEmptyCaptureNoticeRef.current = false;
     recognitionRef.current?.abort?.();
     recognitionRef.current = null;
     setIsListening(false);
+    setInterimTranscript('');
     stopAudioMeter();
   }
 
@@ -281,8 +297,12 @@ function UniAIPage() {
 
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
+    finalTranscriptRef.current = '';
+    shouldShowEmptyCaptureNoticeRef.current = true;
+    setInterimTranscript('');
+    setVoiceNotice('');
     recognition.lang = 'pt-BR';
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
@@ -291,20 +311,41 @@ function UniAIPage() {
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results?.[0]?.[0]?.transcript ?? '';
+      let partialTranscript = '';
 
-      if (transcript.trim()) {
-        sendMessage(transcript);
-        setVoiceNotice('Capturei sua fala e organizei a pergunta no chat.');
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const transcript = result?.[0]?.transcript ?? '';
+
+        if (result?.isFinal) {
+          finalTranscriptRef.current = `${finalTranscriptRef.current} ${transcript}`.trim();
+        } else {
+          partialTranscript = `${partialTranscript} ${transcript}`.trim();
+        }
       }
+
+      setInterimTranscript(partialTranscript);
     };
 
     recognition.onerror = () => {
-      setVoiceNotice('Não consegui capturar sua fala agora. Você pode digitar sua pergunta para a Uni.');
+      shouldShowEmptyCaptureNoticeRef.current = false;
+      setVoiceNotice('Não consegui capturar sua fala agora. Se quiser, repita com calma ou digite sua pergunta.');
     };
 
     recognition.onend = () => {
+      const finalTranscript = finalTranscriptRef.current.trim();
+
+      if (finalTranscript) {
+        sendMessage(finalTranscript);
+        setVoiceNotice('Áudio captado.');
+      } else if (shouldShowEmptyCaptureNoticeRef.current) {
+        setVoiceNotice('Não captei uma pergunta completa. Se quiser, repita com calma.');
+      }
+
       setIsListening(false);
+      setInterimTranscript('');
+      finalTranscriptRef.current = '';
+      shouldShowEmptyCaptureNoticeRef.current = false;
       recognitionRef.current = null;
       stopAudioMeter();
     };
@@ -316,6 +357,8 @@ function UniAIPage() {
     } catch {
       stopAudioMeter();
       recognitionRef.current = null;
+      shouldShowEmptyCaptureNoticeRef.current = false;
+      setInterimTranscript('');
       setVoiceNotice('Não consegui iniciar a captura de voz agora. Você pode digitar sua pergunta para a Uni.');
     }
   }
@@ -353,10 +396,12 @@ function UniAIPage() {
     };
     utterance.onend = () => {
       setIsSpeaking(false);
+      synthesis.onvoiceschanged = null;
       setVoiceNotice('');
     };
     utterance.onerror = () => {
       setIsSpeaking(false);
+      synthesis.onvoiceschanged = null;
       setVoiceNotice('Não consegui reproduzir a resposta em voz agora.');
     };
 
@@ -424,11 +469,11 @@ function UniAIPage() {
               </div>
               <div className={styles.voiceCaptureCopy}>
                 <strong>Uni está ouvindo</strong>
-                <span>Estou ouvindo... fale naturalmente</span>
-                <p>{voiceIntensity.message}</p>
+                <span>{interimTranscript ? `Ouvindo: ${interimTranscript}` : 'Estou ouvindo... fale naturalmente.'}</span>
+                <p>{voiceFeedback.message}</p>
               </div>
               <div
-                className={`${styles.voiceWaves} ${styles[voiceIntensity.className]}`}
+                className={`${styles.voiceWaves} ${styles[voiceFeedback.className]}`}
                 role="meter"
                 aria-label="Intensidade do áudio"
                 aria-valuemin="0"
@@ -441,9 +486,6 @@ function UniAIPage() {
                 <span />
                 <span />
               </div>
-              <Badge variant={voiceIntensity.label === 'baixo' ? 'warning' : 'success'} size="sm">
-                {voiceIntensity.label}
-              </Badge>
             </div>
           ) : null}
 
