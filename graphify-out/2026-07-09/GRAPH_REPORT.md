@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-09)
 
 ## Corpus Check
-- 112 files · ~23,609 words
+- 112 files · ~23,727 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 363 nodes · 436 edges · 58 communities (49 shown, 9 thin omitted)
+- 364 nodes · 437 edges · 58 communities (49 shown, 9 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ce815678`
+- Built from commit: `b7709615`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -84,8 +84,8 @@ Cohesion: 0.09
 Nodes (22): dependencies, react, react-dom, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh (+14 more)
 
 ### Community 2 - "cx"
-Cohesion: 0.18
-Nodes (7): Input, contextItems, conversationMessages, getLastUniMessage(), getVoiceIntensity(), quickSuggestions, UniAIPage()
+Cohesion: 0.16
+Nodes (7): Input, contextItems, conversationMessages, getLastUniMessage(), getVoiceFeedback(), quickSuggestions, UniAIPage()
 
 ### Community 3 - "MainDashboard.jsx"
 Cohesion: 0.17

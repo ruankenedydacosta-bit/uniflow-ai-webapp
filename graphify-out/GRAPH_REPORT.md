@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-09)
 
 ## Corpus Check
-- 112 files · ~23,727 words
+- 121 files · ~24,011 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 364 nodes · 437 edges · 58 communities (49 shown, 9 thin omitted)
+- 379 nodes · 505 edges · 59 communities (50 shown, 9 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b7709615`
+- Built from commit: `c8dc049e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -35,6 +35,7 @@
 - crm.service.js
 - Button.jsx
 - UI
+- UniAIPage.jsx
 - Módulos oficiais do produto
 - Implementação ativa observada
 - Módulo Projetos — Arquitetura (documento de planejamento, sem código)
@@ -47,45 +48,45 @@
 - React + Vite
 
 ## God Nodes (most connected - your core abstractions)
-1. `cx()` - 15 edges
-2. `Módulos oficiais do produto` - 13 edges
-3. `Badge()` - 12 edges
-4. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
-5. `Kit Base UniFlow AI` - 11 edges
-6. `Regras do Projeto` - 11 edges
-7. `Card()` - 9 edges
-8. `Prompts Base para Agentes` - 9 edges
-9. `formatCurrency()` - 8 edges
-10. `Button()` - 7 edges
+1. `Badge()` - 16 edges
+2. `cx()` - 15 edges
+3. `Módulos oficiais do produto` - 13 edges
+4. `Card()` - 12 edges
+5. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
+6. `Kit Base UniFlow AI` - 11 edges
+7. `Regras do Projeto` - 11 edges
+8. `UniAIPage()` - 9 edges
+9. `Prompts Base para Agentes` - 9 edges
+10. `Button()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `Badge()` --calls--> `cx()`  [EXTRACTED]
+  src/components/ui/Badge/Badge.jsx → src/utils/cx.js
+- `Button()` --calls--> `cx()`  [EXTRACTED]
+  src/components/ui/Button/Button.jsx → src/utils/cx.js
+- `Card()` --calls--> `cx()`  [EXTRACTED]
+  src/components/ui/Card/Card.jsx → src/utils/cx.js
 - `Loader()` --calls--> `cx()`  [EXTRACTED]
   src/components/ui/Loader/Loader.jsx → src/utils/cx.js
 - `Modal()` --calls--> `cx()`  [EXTRACTED]
   src/components/ui/Modal/Modal.jsx → src/utils/cx.js
-- `Tooltip()` --calls--> `cx()`  [EXTRACTED]
-  src/components/ui/Tooltip/Tooltip.jsx → src/utils/cx.js
-- `MetricRow()` --calls--> `formatCurrency()`  [EXTRACTED]
-  src/features/dashboard/components/FinancialSummaryCard.jsx → src/utils/formatters.js
-- `Badge()` --calls--> `cx()`  [EXTRACTED]
-  src/components/ui/Badge/Badge.jsx → src/utils/cx.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (58 total, 9 thin omitted)
+## Communities (59 total, 9 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
-Cohesion: 0.12
-Nodes (16): Avatar, Badge(), Button(), Card(), Loader(), Modal(), Tooltip(), DashboardGreeting() (+8 more)
+Cohesion: 0.17
+Nodes (14): Avatar, Badge(), Button(), Card(), DashboardGreeting(), FinancialSummaryCard(), MetricRow(), GoalsSummaryCard() (+6 more)
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.09
 Nodes (22): dependencies, react, react-dom, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh (+14 more)
 
 ### Community 2 - "cx"
-Cohesion: 0.16
-Nodes (7): Input, contextItems, conversationMessages, getLastUniMessage(), getVoiceFeedback(), quickSuggestions, UniAIPage()
+Cohesion: 0.17
+Nodes (5): Input, Loader(), Modal(), Tooltip(), cx()
 
 ### Community 3 - "MainDashboard.jsx"
 Cohesion: 0.17
@@ -118,6 +119,10 @@ Nodes (3): useTopbarMenu(), Sidebar, Topbar
 ### Community 11 - "Card.jsx"
 Cohesion: 0.33
 Nodes (4): Card, CardBody, CardFooter, CardHeader
+
+### Community 39 - "UniAIPage.jsx"
+Cohesion: 0.27
+Nodes (15): createMessage(), getLastUniMessage(), getMockUniResponse(), getPortugueseVoice(), getSpeechRecognition(), getVoiceFeedback(), isProbablySafari(), contextItems (+7 more)
 
 ### Community 48 - "Módulos oficiais do produto"
 Cohesion: 0.08
@@ -160,24 +165,24 @@ Cohesion: 0.50
 Nodes (3): Expanding the ESLint configuration, React Compiler, React + Vite
 
 ## Knowledge Gaps
-- **136 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+131 more)
+- **133 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+128 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cx()` connect `DashboardPage.jsx` to `cx`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `Badge()` connect `DashboardPage.jsx` to `cx`, `AppShell.jsx`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `Card()` connect `DashboardPage.jsx` to `cx`, `AppShell.jsx`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **Why does `cx()` connect `cx` to `DashboardPage.jsx`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `Badge()` connect `DashboardPage.jsx` to `cx`, `AppShell.jsx`, `UniAIPage.jsx`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `Card()` connect `DashboardPage.jsx` to `cx`, `AppShell.jsx`, `UniAIPage.jsx`?**
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _136 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.11962833914053426 - nodes in this community are weakly interconnected._
+  _133 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
 - **Should `AppShell.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.11182795698924732 - nodes in this community are weakly interconnected._
+- **Should `Módulos oficiais do produto` be split into smaller, more focused modules?**
+  _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
