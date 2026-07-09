@@ -6,6 +6,7 @@ import Input from '../components/ui/Input';
 import Avatar from '../components/ui/Avatar';
 import Loader from '../components/ui/Loader';
 import Modal from '../components/ui/Modal';
+import Tooltip from '../components/ui/Tooltip';
 import heroImage from '../assets/hero.png';
 
 function App() {
@@ -115,8 +116,12 @@ function App() {
         >
           <Button>Começar</Button>
           <Button variant="secondary">Uni AI</Button>
-          <Button variant="outline">Ver detalhes</Button>
-          <Button variant="ghost">Cancelar</Button>
+          <Tooltip content="Mostra a explicação do estado atual" position="top">
+            <Button variant="outline">Ver detalhes</Button>
+          </Tooltip>
+          <Tooltip content="Fecha esta ação sem salvar mudanças" position="right">
+            <Button variant="ghost">Cancelar</Button>
+          </Tooltip>
           <Button variant="success" onClick={() => setModalOpen(true)}>
             Abrir modal
           </Button>
