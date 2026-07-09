@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Avatar from '../components/ui/Avatar';
 import Loader from '../components/ui/Loader';
+import Modal from '../components/ui/Modal';
 import heroImage from '../assets/hero.png';
 
 function App() {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <main
       style={{
@@ -113,8 +117,42 @@ function App() {
           <Button variant="secondary">Uni AI</Button>
           <Button variant="outline">Ver detalhes</Button>
           <Button variant="ghost">Cancelar</Button>
+          <Button variant="success" onClick={() => setModalOpen(true)}>
+            Abrir modal
+          </Button>
         </div>
       </Card>
+
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Plano financeiro inicial"
+        description="A Uni transforma objetivos em próximos passos claros."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setModalOpen(false)}>
+              Agora não
+            </Button>
+            <Button onClick={() => setModalOpen(false)}>Continuar</Button>
+          </>
+        }
+      >
+        <div
+          style={{
+            display: 'grid',
+            gap: 'var(--uf-space-16)',
+          }}
+        >
+          <Badge variant="secondary" dot>
+            Uni AI
+          </Badge>
+          <p>
+            Com base no seu objetivo, a Uni pode organizar prioridades, acompanhar progresso e sugerir ajustes sem
+            aumentar seu esforço manual.
+          </p>
+          <Input label="Primeiro objetivo" placeholder="Ex: reserva de emergência" fullWidth />
+        </div>
+      </Modal>
     </main>
   );
 }
