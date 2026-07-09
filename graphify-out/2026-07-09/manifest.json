@@ -370,9 +370,9 @@
     "semantic_hash": "870aebf66ef235cdeaef9522f07786c3"
   },
   "src/features/dashboard/DashboardPage.jsx": {
-    "mtime": 1783605235.7842278,
-    "ast_hash": "1db8100bb33bd7a9d97275ca5786e6be",
-    "semantic_hash": "1db8100bb33bd7a9d97275ca5786e6be"
+    "mtime": 1783607196.913844,
+    "ast_hash": "614f05dcdbb1b157c3e545b2082bcc77",
+    "semantic_hash": ""
   },
   "src/features/dashboard/components/DashboardGreeting.jsx": {
     "mtime": 1783605235.3257596,
@@ -380,24 +380,24 @@
     "semantic_hash": "bb3f501e85e53b3a9f6e68baf6bca01c"
   },
   "src/features/dashboard/components/FinancialSummaryCard.jsx": {
-    "mtime": 1783605235.423651,
-    "ast_hash": "90b0a4b6c16b2e8d722343c0ed5e7daa",
-    "semantic_hash": "90b0a4b6c16b2e8d722343c0ed5e7daa"
+    "mtime": 1783607196.466572,
+    "ast_hash": "015ef7f8ef5ca70970d20b3f0a5c30d6",
+    "semantic_hash": ""
   },
   "src/features/dashboard/components/GoalsSummaryCard.jsx": {
-    "mtime": 1783605235.5132744,
-    "ast_hash": "2d7619138c41226a384fd08495e2d63b",
-    "semantic_hash": "2d7619138c41226a384fd08495e2d63b"
+    "mtime": 1783607196.6192818,
+    "ast_hash": "2013044d55149c0ca461f93856b07603",
+    "semantic_hash": ""
   },
   "src/features/dashboard/components/RecentActivityList.jsx": {
-    "mtime": 1783605235.6945457,
-    "ast_hash": "92bad26dc576da3018e5fc78b776a6bc",
-    "semantic_hash": "92bad26dc576da3018e5fc78b776a6bc"
+    "mtime": 1783607196.815433,
+    "ast_hash": "c8108486054497999fac907cfeb04775",
+    "semantic_hash": ""
   },
   "src/features/dashboard/components/UniInsightsCard.jsx": {
-    "mtime": 1783605235.6048594,
-    "ast_hash": "09d6b7eb2b110103b4f5847cf61d2d32",
-    "semantic_hash": "09d6b7eb2b110103b4f5847cf61d2d32"
+    "mtime": 1783607196.719621,
+    "ast_hash": "974276d6755a8ff818a9ee06f85518af",
+    "semantic_hash": ""
   },
   "src/features/dashboard/dashboard.mock.js": {
     "mtime": 1783605235.2290897,
@@ -463,5 +463,90 @@
     "mtime": 1783594386.8217554,
     "ast_hash": "88439104b3c207f17d33ef3160e3b080",
     "semantic_hash": "88439104b3c207f17d33ef3160e3b080"
+  },
+  "AGENTS.md": {
+    "mtime": 1783599919.7088609,
+    "ast_hash": "4178c7214316e2243aaecfc9c87a1590",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1783594386.826346,
+    "ast_hash": "a28dc4cb878325f3e9e5649f3e1469ac",
+    "semantic_hash": ""
+  },
+  "docs/00-master/PROMPTS_BASE.md": {
+    "mtime": 1783601408.226548,
+    "ast_hash": "f335bfb439895eced1f25a4221154aa4",
+    "semantic_hash": ""
+  },
+  "docs/00-master/README_MASTER.md": {
+    "mtime": 1783601407.8440912,
+    "ast_hash": "db28ce5a8318eb3966281cc237caee3a",
+    "semantic_hash": ""
+  },
+  "docs/00-master/REGRAS_DO_PROJETO.md": {
+    "mtime": 1783601408.0363302,
+    "ast_hash": "fa0628f09ad66de57cc26bd59d22afef",
+    "semantic_hash": ""
+  },
+  "docs/00-master/ROADMAP.md": {
+    "mtime": 1783601407.942069,
+    "ast_hash": "3369dcce83a7837bf767c7c9f32bb26a",
+    "semantic_hash": ""
+  },
+  "docs/00-master/STATUS_ATUAL.md": {
+    "mtime": 1783601408.1308,
+    "ast_hash": "11fb459fc4c6c1515953cfbcf91b00c8",
+    "semantic_hash": ""
+  },
+  "docs/01-arquitetura/ARQUITETURA.md": {
+    "mtime": 1783301397.2028205,
+    "ast_hash": "254ad02465ad666474da04e4dd22862b",
+    "semantic_hash": ""
+  },
+  "docs/01-arquitetura/PHASE_1_README.md": {
+    "mtime": 1783284662.9889627,
+    "ast_hash": "df7284b7f9e9ecb793ebd7a349321003",
+    "semantic_hash": ""
+  },
+  "docs/06-modules/README.md": {
+    "mtime": 1783301181.5696752,
+    "ast_hash": "d533b7d0be74193a68232b31dd3fe812",
+    "semantic_hash": ""
+  },
+  "docs/_INBOX/00-MASTER/02-roadmap.md": {
+    "mtime": 1783197997.4043539,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1783594386.8094978,
+    "ast_hash": "8a7f9d59ee1c5cd87c4b4df826aacb69",
+    "semantic_hash": ""
+  },
+  "public/favicon.svg": {
+    "mtime": 1783594386.8108196,
+    "ast_hash": "7e840862161341271697daa99a40d76b",
+    "semantic_hash": ""
+  },
+  "public/icons.svg": {
+    "mtime": 1783594386.8115406,
+    "ast_hash": "3b4fcfcf393eca4d264dca4a4663bc37",
+    "semantic_hash": ""
+  },
+  "src/assets/hero.png": {
+    "mtime": 1783594386.8168354,
+    "ast_hash": "aead493361b27e7510691c5d7072dfc1",
+    "semantic_hash": ""
+  },
+  "src/assets/react.svg": {
+    "mtime": 1783594386.8184683,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": ""
+  },
+  "src/assets/vite.svg": {
+    "mtime": 1783594386.8195133,
+    "ast_hash": "9960a24288958394ac50e57ff638b036",
+    "semantic_hash": ""
   }
 }

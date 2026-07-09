@@ -240,9 +240,9 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783605236.0614395,
-    "ast_hash": "815e7d6698ce093744f3ae1c320db764",
-    "semantic_hash": "815e7d6698ce093744f3ae1c320db764"
+    "mtime": 1783607861.4484668,
+    "ast_hash": "b2a4c69deaf74351b2ae5b220de2c54d",
+    "semantic_hash": ""
   },
   "src/app/main.jsx": {
     "mtime": 1783598313.5513682,
@@ -250,9 +250,9 @@
     "semantic_hash": "093d1255ac32efccd41332e8f21c2361"
   },
   "src/app/routes.jsx": {
-    "mtime": 1783595728.2525387,
-    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+    "mtime": 1783607861.3517845,
+    "ast_hash": "58f551ac09dc9cb4faab4427d4eb3a86",
+    "semantic_hash": ""
   },
   "src/components/index.js": {
     "mtime": 1783595944.841744,
@@ -260,9 +260,9 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "src/components/layout/AppShell/AppShell.jsx": {
-    "mtime": 1783604906.3336575,
-    "ast_hash": "dfdc83a95f7d20b4539b3391622828f2",
-    "semantic_hash": "dfdc83a95f7d20b4539b3391622828f2"
+    "mtime": 1783607861.5417876,
+    "ast_hash": "c6ce6fb124b83c8f9e03e473ec8538ba",
+    "semantic_hash": ""
   },
   "src/components/layout/AppShell/index.js": {
     "mtime": 1783604906.5221353,
@@ -270,9 +270,9 @@
     "semantic_hash": "b96a4743cebc2e3c628b7c6d4ffba32e"
   },
   "src/components/layout/Sidebar/Sidebar.jsx": {
-    "mtime": 1783604906.615882,
-    "ast_hash": "6f8792f63e95d24bc3b4dc0495294d23",
-    "semantic_hash": "6f8792f63e95d24bc3b4dc0495294d23"
+    "mtime": 1783607861.629867,
+    "ast_hash": "defb05b6ee897aef538fc3ef9e22d8c5",
+    "semantic_hash": ""
   },
   "src/components/layout/Sidebar/index.js": {
     "mtime": 1783604906.8063698,
@@ -547,6 +547,46 @@
   "src/assets/vite.svg": {
     "mtime": 1783594386.8195133,
     "ast_hash": "9960a24288958394ac50e57ff638b036",
+    "semantic_hash": ""
+  },
+  "src/pages/AgendaPage.jsx": {
+    "mtime": 1783607862.255464,
+    "ast_hash": "31bf2a737f1c72950bc2aa9cc37cf0b1",
+    "semantic_hash": ""
+  },
+  "src/pages/CRMPage.jsx": {
+    "mtime": 1783607862.0794353,
+    "ast_hash": "d4fba3f1808526e8e191e6460a9915b8",
+    "semantic_hash": ""
+  },
+  "src/pages/FinancePage.jsx": {
+    "mtime": 1783607861.9911277,
+    "ast_hash": "dafa24d3df4e9895f45ccb0b5fb0bbc4",
+    "semantic_hash": ""
+  },
+  "src/pages/PageScaffold.jsx": {
+    "mtime": 1783607861.7188687,
+    "ast_hash": "547fa36eeaaa60bcafb1a7ba0bd2d2a7",
+    "semantic_hash": ""
+  },
+  "src/pages/ProjectsPage.jsx": {
+    "mtime": 1783607862.1666481,
+    "ast_hash": "6fadea417df01ddb6c74dfdaf0abbb42",
+    "semantic_hash": ""
+  },
+  "src/pages/ReportsPage.jsx": {
+    "mtime": 1783607862.3458714,
+    "ast_hash": "0bce5014bfcf2c03ba557e05cdf6c1e4",
+    "semantic_hash": ""
+  },
+  "src/pages/SettingsPage.jsx": {
+    "mtime": 1783607862.4363887,
+    "ast_hash": "b8162698e75f1b5bc4a3592558ad7d67",
+    "semantic_hash": ""
+  },
+  "src/pages/UniAIPage.jsx": {
+    "mtime": 1783607861.8995755,
+    "ast_hash": "e58d8306f41825967226fc94654bfae1",
     "semantic_hash": ""
   }
 }

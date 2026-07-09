@@ -1,11 +1,29 @@
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppShell from '../components/layout/AppShell';
-import DashboardPage from '../features/dashboard';
+import { appRoutes } from './routes';
+
+function AppContent() {
+  const location = useLocation();
+  const activeRoute = appRoutes.find((route) => route.path === location.pathname);
+
+  return (
+    <AppShell title={activeRoute?.title ?? 'Dashboard'}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {appRoutes.map((route) => (
+          <Route key={route.path} path={route.path} element={route.element} />
+        ))}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </AppShell>
+  );
+}
 
 function App() {
   return (
-    <AppShell title="Dashboard">
-      <DashboardPage />
-    </AppShell>
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 

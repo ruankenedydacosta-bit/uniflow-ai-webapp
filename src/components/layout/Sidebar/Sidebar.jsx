@@ -1,18 +1,9 @@
+import { NavLink } from 'react-router-dom';
+import { navigationItems } from '../../../app/routes';
 import Badge from '../../ui/Badge';
 import styles from './Sidebar.module.css';
 
-const navItems = [
-  'Dashboard',
-  'Uni AI',
-  'Financeiro',
-  'CRM',
-  'Projetos',
-  'Agenda',
-  'Relatórios',
-  'Configurações',
-];
-
-function Sidebar({ activeItem = 'Dashboard' }) {
+function Sidebar() {
   return (
     <aside className={styles.sidebar} aria-label="Navegação principal">
       <div className={styles.brand}>
@@ -26,25 +17,24 @@ function Sidebar({ activeItem = 'Dashboard' }) {
       </div>
 
       <nav className={styles.nav}>
-        {navItems.map((item) => {
-          const isActive = item === activeItem;
-
-          return (
-            <a
-              key={item}
-              href="#"
-              className={isActive ? `${styles.item} ${styles.active}` : styles.item}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <span>{item}</span>
-              {isActive ? (
-                <Badge variant="primary" size="sm">
-                  Ativo
-                </Badge>
-              ) : null}
-            </a>
-          );
-        })}
+        {navigationItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) => (isActive ? `${styles.item} ${styles.active}` : styles.item)}
+          >
+            {({ isActive }) => (
+              <>
+                <span>{item.label}</span>
+                {isActive ? (
+                  <Badge variant="primary" size="sm">
+                    Ativo
+                  </Badge>
+                ) : null}
+              </>
+            )}
+          </NavLink>
+        ))}
       </nav>
     </aside>
   );

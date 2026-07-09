@@ -5,7 +5,7 @@ import styles from './AppShell.module.css';
 function AppShell({ title = 'Dashboard', children }) {
   return (
     <div className={styles.shell}>
-      <Sidebar activeItem="Dashboard" />
+      <Sidebar />
 
       <div className={styles.workspace}>
         <Topbar title={title} />
