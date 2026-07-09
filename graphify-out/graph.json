@@ -1810,7 +1810,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 0,
+      "community": 2,
       "norm_label": "input.jsx"
     },
     {
@@ -1820,7 +1820,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_input_input_input",
-      "community": 0,
+      "community": 2,
       "norm_label": "input"
     },
     {
@@ -1830,7 +1830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_index",
-      "community": 0,
+      "community": 2,
       "norm_label": "index.js"
     },
     {
@@ -2250,7 +2250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uniaipage",
-      "community": 0,
+      "community": 2,
       "norm_label": "uniaipage.jsx"
     },
     {
@@ -2260,7 +2260,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uniaipage_conversationmessages",
-      "community": 0,
+      "community": 2,
       "norm_label": "conversationmessages"
     },
     {
@@ -2270,7 +2270,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_pages_uniaipage_contextitems",
-      "community": 0,
+      "community": 2,
       "norm_label": "contextitems"
     },
     {
@@ -2280,7 +2280,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_pages_uniaipage_quicksuggestions",
-      "community": 0,
+      "community": 2,
       "norm_label": "quicksuggestions"
     },
     {
@@ -2290,7 +2290,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_pages_uniaipage_createmessage",
-      "community": 0,
+      "community": 2,
       "norm_label": "createmessage()"
     },
     {
@@ -2300,17 +2300,57 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "src_pages_uniaipage_getmockuniresponse",
-      "community": 0,
+      "community": 2,
       "norm_label": "getmockuniresponse()"
+    },
+    {
+      "label": "getSpeechRecognition()",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L103",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_getspeechrecognition",
+      "community": 2,
+      "norm_label": "getspeechrecognition()"
+    },
+    {
+      "label": "getPortugueseVoice()",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L109",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_getportuguesevoice",
+      "community": 2,
+      "norm_label": "getportuguesevoice()"
+    },
+    {
+      "label": "getLastUniMessage()",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L113",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_getlastunimessage",
+      "community": 2,
+      "norm_label": "getlastunimessage()"
+    },
+    {
+      "label": "getVoiceIntensity()",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L117",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_getvoiceintensity",
+      "community": 2,
+      "norm_label": "getvoiceintensity()"
     },
     {
       "label": "UniAIPage()",
       "file_type": "code",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L103",
+      "source_location": "L149",
       "_origin": "ast",
       "id": "src_pages_uniaipage_uniaipage",
-      "community": 0,
+      "community": 2,
       "norm_label": "uniaipage()"
     },
     {
@@ -6980,10 +7020,50 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_getlastunimessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
       "source_location": "L73",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uniaipage_getmockuniresponse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L109",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_getportuguesevoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L103",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_getspeechrecognition",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L117",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_getvoiceintensity",
       "confidence_score": 1.0
     },
     {
@@ -7000,10 +7080,32 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L103",
+      "source_location": "L149",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uniaipage_uniaipage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L162",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage_uniaipage",
+      "target": "src_pages_uniaipage_getlastunimessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L163",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage_uniaipage",
+      "target": "src_pages_uniaipage_getvoiceintensity",
       "confidence_score": 1.0
     },
     {
@@ -8078,5 +8180,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "ebb5640935fd201049bfaa58fd623a874ed0b552"
+  "built_at_commit": "ce8156783e27ddcd8f0f0f529ea9dae35e5f4b57"
 }

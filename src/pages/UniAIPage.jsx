@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Avatar from '../components/ui/Avatar';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
@@ -100,10 +100,79 @@ function getMockUniResponse(question) {
   return 'Posso te ajudar a transformar essa pergunta em um próximo passo financeiro mais claro. Para começar, eu olharia o impacto no saldo projetado, nas metas ativas e nas despesas que pedem atenção nesta semana.';
 }
 
+function getSpeechRecognition() {
+  if (typeof window === 'undefined') return null;
+
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function getPortugueseVoice(voices) {
+  return voices.find((voice) => voice.lang === 'pt-BR') ?? voices.find((voice) => voice.lang?.startsWith('pt')) ?? null;
+}
+
+function getLastUniMessage(messages) {
+  return [...messages].reverse().find((message) => message.role === 'uni');
+}
+
+function getVoiceFeedback(volume, hasAudioMeter) {
+  if (!hasAudioMeter) {
+    return {
+      message: 'Estou ouvindo... fale naturalmente.',
+      className: 'volumeMedium',
+    };
+  }
+
+  if (volume < 0.18) {
+    return {
+      message: 'Estou ajustando a escuta... pode falar naturalmente.',
+      className: 'volumeLow',
+    };
+  }
+
+  if (volume < 0.5) {
+    return {
+      message: 'Áudio claro.',
+      className: 'volumeMedium',
+    };
+  }
+
+  return {
+    message: 'Áudio claro.',
+    className: 'volumeHigh',
+  };
+}
+
 function UniAIPage() {
   const [messages, setMessages] = useState(conversationMessages);
   const [draftMessage, setDraftMessage] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceVolume, setVoiceVolume] = useState(0);
+  const [hasAudioMeter, setHasAudioMeter] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [voiceNotice, setVoiceNotice] = useState('');
+  const recognitionRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const audioStreamRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const finalTranscriptRef = useRef('');
+  const shouldShowEmptyCaptureNoticeRef = useRef(false);
   const canSendMessage = draftMessage.trim().length > 0;
+  const lastUniMessage = getLastUniMessage(messages);
+  const voiceFeedback = getVoiceFeedback(voiceVolume, hasAudioMeter);
+
+  useEffect(() => () => {
+    recognitionRef.current?.abort?.();
+    if (animationFrameRef.current) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+    }
+    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    audioContextRef.current?.close?.();
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, []);
 
   function sendMessage(content) {
     const trimmedContent = content.trim();
@@ -122,12 +191,176 @@ function UniAIPage() {
 
     if (!canSendMessage) return;
 
+    setVoiceNotice('');
     sendMessage(draftMessage);
     setDraftMessage('');
   }
 
   function handleSuggestionClick(suggestion) {
+    setVoiceNotice('');
     sendMessage(suggestion);
+  }
+
+  async function startAudioMeter() {
+    setVoiceVolume(0);
+    setHasAudioMeter(false);
+
+    if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) return;
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContext) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+
+      analyser.fftSize = 256;
+      const samples = new Uint8Array(analyser.fftSize);
+      source.connect(analyser);
+      audioStreamRef.current = stream;
+      audioContextRef.current = audioContext;
+      setHasAudioMeter(true);
+
+      function updateVolume() {
+        analyser.getByteTimeDomainData(samples);
+
+        const sum = samples.reduce((total, sample) => {
+          const centeredSample = (sample - 128) / 128;
+          return total + centeredSample * centeredSample;
+        }, 0);
+        const rms = Math.sqrt(sum / samples.length);
+
+        setVoiceVolume(Math.min(rms * 6, 1));
+        animationFrameRef.current = window.requestAnimationFrame(updateVolume);
+      }
+
+      updateVolume();
+    } catch {
+      setHasAudioMeter(false);
+      setVoiceVolume(0);
+    }
+  }
+
+  function stopAudioMeter() {
+    if (animationFrameRef.current) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    audioStreamRef.current = null;
+    audioContextRef.current?.close?.();
+    audioContextRef.current = null;
+    setHasAudioMeter(false);
+    setVoiceVolume(0);
+  }
+
+  function stopVoiceCapture() {
+    recognitionRef.current?.abort?.();
+    recognitionRef.current = null;
+    setIsListening(false);
+    stopAudioMeter();
+  }
+
+  function startVoiceCapture() {
+    if (isListening) {
+      stopVoiceCapture();
+      setVoiceNotice('Escuta encerrada. Você pode digitar ou falar novamente quando quiser.');
+      return;
+    }
+
+    const SpeechRecognition = getSpeechRecognition();
+
+    if (!SpeechRecognition) {
+      setVoiceNotice('Seu navegador ainda não suporta captura de voz aqui. Você pode digitar sua pergunta para a Uni.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceNotice('Ouvindo...');
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript ?? '';
+
+      if (transcript.trim()) {
+        sendMessage(transcript);
+        setVoiceNotice('Capturei sua fala e organizei a pergunta no chat.');
+      }
+    };
+
+    recognition.onerror = () => {
+      setVoiceNotice('Não consegui capturar sua fala agora. Você pode digitar sua pergunta para a Uni.');
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+      stopAudioMeter();
+    };
+
+    startAudioMeter();
+
+    try {
+      recognition.start();
+    } catch {
+      stopAudioMeter();
+      recognitionRef.current = null;
+      setVoiceNotice('Não consegui iniciar a captura de voz agora. Você pode digitar sua pergunta para a Uni.');
+    }
+  }
+
+  function speakLastResponse() {
+    if (
+      !lastUniMessage ||
+      typeof window === 'undefined' ||
+      !('speechSynthesis' in window) ||
+      !window.SpeechSynthesisUtterance
+    ) {
+      setVoiceNotice('A leitura em voz alta ainda não está disponível neste navegador.');
+      return;
+    }
+
+    const synthesis = window.speechSynthesis;
+    synthesis.cancel();
+
+    const utterance = new window.SpeechSynthesisUtterance(lastUniMessage.content);
+    utterance.lang = 'pt-BR';
+
+    function applyPortugueseVoice() {
+      const portugueseVoice = getPortugueseVoice(synthesis.getVoices());
+
+      if (portugueseVoice) {
+        utterance.voice = portugueseVoice;
+      }
+    }
+
+    applyPortugueseVoice();
+    synthesis.onvoiceschanged = applyPortugueseVoice;
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setVoiceNotice('Falando...');
+    };
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setVoiceNotice('');
+    };
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setVoiceNotice('Não consegui reproduzir a resposta em voz agora.');
+    };
+
+    synthesis.speak(utterance);
   }
 
   return (
@@ -159,8 +392,60 @@ function UniAIPage() {
               <span className={styles.cardTitle}>Conversa financeira</span>
               <p>Simulação visual da orientação da Uni com base no seu contexto.</p>
             </div>
-            <Badge variant="glass">Mock</Badge>
+            <div className={styles.chatActions}>
+              <Badge variant={isListening ? 'success' : isSpeaking ? 'primary' : 'glass'}>
+                {isListening ? 'Ouvindo...' : isSpeaking ? 'Falando...' : 'Mock'}
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={startVoiceCapture}
+                aria-pressed={isListening}
+              >
+                {isListening ? 'Parar escuta' : 'Falar com a Uni'}
+              </Button>
+              <Button variant="outline" size="sm" onClick={speakLastResponse} disabled={!lastUniMessage || isSpeaking}>
+                {isSpeaking ? 'Falando...' : 'Ouvir resposta'}
+              </Button>
+            </div>
           </div>
+
+          {voiceNotice ? (
+            <p className={styles.voiceNotice} role="status" aria-live="polite">
+              {voiceNotice}
+            </p>
+          ) : null}
+
+          {isListening ? (
+            <div className={styles.voiceCapturePanel} aria-live="polite">
+              <div className={styles.microphone} aria-hidden="true">
+                <span className={styles.microphoneHead} />
+                <span className={styles.microphoneStem} />
+              </div>
+              <div className={styles.voiceCaptureCopy}>
+                <strong>Uni está ouvindo</strong>
+                <span>Estou ouvindo... fale naturalmente</span>
+                <p>{voiceIntensity.message}</p>
+              </div>
+              <div
+                className={`${styles.voiceWaves} ${styles[voiceIntensity.className]}`}
+                role="meter"
+                aria-label="Intensidade do áudio"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={Math.round(voiceVolume * 100)}
+              >
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+              <Badge variant={voiceIntensity.label === 'baixo' ? 'warning' : 'success'} size="sm">
+                {voiceIntensity.label}
+              </Badge>
+            </div>
+          ) : null}
 
           <div className={styles.messages} aria-label="Mensagens simuladas">
             {messages.map((message) => (
