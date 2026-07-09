@@ -1,5 +1,6 @@
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import Input from '../components/ui/Input';
 
 function App() {
   return (
@@ -23,6 +24,23 @@ function App() {
       >
         <h1>UniFlow AI</h1>
         <p>Design System iniciado com sucesso.</p>
+
+        <div
+          style={{
+            marginTop: 'var(--uf-space-24)',
+            display: 'grid',
+            gap: 'var(--uf-space-16)',
+          }}
+        >
+          <Input label="Nome" placeholder="Digite seu nome" fullWidth />
+          <Input label="Email" placeholder="email@exemplo.com" error="Informe um email válido." fullWidth />
+          <Input
+            label="Objetivo"
+            placeholder="Comprar um apartamento"
+            helperText="A Uni usa isso para criar uma projeção mais clara."
+            fullWidth
+          />
+        </div>
 
         <div
           style={{
