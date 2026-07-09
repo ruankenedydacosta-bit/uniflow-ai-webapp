@@ -240,7 +240,7 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783607861.4484668,
+    "mtime": 1783610263.856266,
     "ast_hash": "b2a4c69deaf74351b2ae5b220de2c54d",
     "semantic_hash": ""
   },
@@ -250,7 +250,7 @@
     "semantic_hash": "093d1255ac32efccd41332e8f21c2361"
   },
   "src/app/routes.jsx": {
-    "mtime": 1783607861.3517845,
+    "mtime": 1783610263.6074574,
     "ast_hash": "58f551ac09dc9cb4faab4427d4eb3a86",
     "semantic_hash": ""
   },
@@ -460,12 +460,12 @@
     "semantic_hash": "eef7cf998b8e07d9463b84381817223c"
   },
   "vite.config.js": {
-    "mtime": 1783594386.8217554,
-    "ast_hash": "88439104b3c207f17d33ef3160e3b080",
-    "semantic_hash": "88439104b3c207f17d33ef3160e3b080"
+    "mtime": 1783610270.070921,
+    "ast_hash": "2bcd39cf2e365f591705607d7b51d21c",
+    "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1783599919.7088609,
+    "mtime": 1783608238.961271,
     "ast_hash": "4178c7214316e2243aaecfc9c87a1590",
     "semantic_hash": ""
   },
