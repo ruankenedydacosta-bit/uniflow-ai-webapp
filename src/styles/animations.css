@@ -1,0 +1,159 @@
+/* ============================================================================
+   UNIFLOW AI — DESIGN SYSTEM · animations.css
+   ============================================================================
+   Camada de APLICAÇÃO sobre os primitivos de motion já definidos em
+   theme.css (seção 16). Este arquivo NÃO redeclara nenhum @keyframes,
+   duração, easing ou variável já existente — ele consome exclusivamente
+   os tokens de theme.css e adiciona:
+
+     1) Classes utilitárias prontas para uso direto em componentes
+        (entrada: fade / scale / slide já existentes em theme.css)
+     2) Variantes de SAÍDA (fade-out, scale-out, slide-down) — únicos
+        @keyframes novos deste arquivo, pois o docx só previa animações
+        de entrada/estado; toda UI real precisa do par de saída para
+        Modal, Toast e Pop-up fecharem com a mesma qualidade com que abrem.
+        Construídos 100% com tokens existentes (duração/easing).
+     3) Estados ativáveis para Glow e Voice Pulse (a Uni "ganha vida")
+     4) Utilitário de Loading Wave aplicado como skeleton shimmer
+     5) Hover Smooth como classe de transição genérica + variante de lift
+     6) Stagger (coreografia de listas) — Insights da Uni, feature lists
+
+   Pré-requisito: theme.css deve ser importado ANTES deste arquivo.
+   Reduced motion já é tratado globalmente em theme.css — nada aqui
+   precisa (ou deve) duplicar essa regra.
+   ============================================================================ */
+
+
+/* ----------------------------------------------------------------------------
+   1. ENTRADA — aplica os keyframes já existentes em theme.css
+   Uso: <div class="uf-animate-fade-in"> ou combine com --uf-stagger-N (seção 6)
+---------------------------------------------------------------------------- */
+.uf-animate-fade-in{
+  animation: uf-fade-in var(--uf-duration-base) var(--uf-ease-smooth) both;
+}
+
+.uf-animate-scale-in{
+  animation: uf-scale-in var(--uf-duration-base) var(--uf-ease-smooth) both;
+}
+
+.uf-animate-slide-up{
+  animation: uf-slide-up var(--uf-duration-slow) var(--uf-ease-decelerate) both;
+}
+
+/* Variante mais rápida para elementos pequenos (badges, tooltips, itens de lista) */
+.uf-animate-fade-in-fast{
+  animation: uf-fade-in var(--uf-duration-fast) var(--uf-ease-standard) both;
+}
+
+
+/* ----------------------------------------------------------------------------
+   2. SAÍDA — pares inversos, necessários para fechar Modal / Toast / Pop-up
+   com a mesma linguagem visual da entrada. Únicos @keyframes novos deste
+   arquivo; usam somente --uf-duration-* e --uf-ease-* já existentes.
+---------------------------------------------------------------------------- */
+@keyframes uf-fade-out{
+  from{ opacity: 1; }
+  to{ opacity: 0; }
+}
+
+@keyframes uf-scale-out{
+  from{ opacity: 1; transform: scale(1); }
+  to{ opacity: 0; transform: scale(.96); }
+}
+
+@keyframes uf-slide-down{
+  from{ opacity: 1; transform: translateY(0); }
+  to{ opacity: 0; transform: translateY(16px); }
+}
+
+.uf-animate-fade-out{
+  animation: uf-fade-out var(--uf-duration-fast) var(--uf-ease-accelerate) both;
+}
+
+.uf-animate-scale-out{
+  animation: uf-scale-out var(--uf-duration-fast) var(--uf-ease-accelerate) both;
+}
+
+.uf-animate-slide-down{
+  animation: uf-slide-down var(--uf-duration-fast) var(--uf-ease-accelerate) both;
+}
+
+
+/* ----------------------------------------------------------------------------
+   3. GLOW & VOICE PULSE — estados ativáveis via classe (JS liga/desliga)
+   Glow: CTAs de IA e destaques premium (ex.: botão "Conversar com Uni")
+   Voice Pulse: avatar da Uni enquanto ouve/fala — "o avatar ganha vida"
+---------------------------------------------------------------------------- */
+.uf-glow-active{
+  animation: uf-glow-pulse 2.4s var(--uf-ease-standard) infinite;
+}
+
+.uf-voice-pulse-active{
+  animation: uf-voice-pulse 1.6s var(--uf-ease-standard) infinite;
+}
+
+/* Recolore o glow contextualmente (ex.: meta concluída = verde, não roxo)
+   sem precisar de um 5º tipo de sombra — só troca a variável de cor. */
+.uf-glow-active--success{
+  --uf-shadow-glow-color: 16, 185, 129; /* uf-green-500 em rgb */
+}
+
+
+/* ----------------------------------------------------------------------------
+   4. LOADING WAVE — aplicado como skeleton shimmer para estados de loading
+   Uso: <div class="uf-skeleton" style="width:120px;height:16px" />
+---------------------------------------------------------------------------- */
+.uf-skeleton{
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    var(--uf-gray-800) 0%,
+    var(--uf-gray-700) 50%,
+    var(--uf-gray-800) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--uf-radius-8);
+  animation: uf-loading-wave 1.6s linear infinite;
+}
+
+
+/* ----------------------------------------------------------------------------
+   5. HOVER SMOOTH — transição genérica para qualquer elemento interativo
+   Classe base (aplique em botões, cards, links) + variante de lift para
+   cards financeiros e cards de IA que devem "responder" ao hover.
+---------------------------------------------------------------------------- */
+.uf-hover-smooth{
+  transition: transform var(--uf-duration-base) var(--uf-ease-smooth),
+              box-shadow var(--uf-duration-base) var(--uf-ease-smooth),
+              background-color var(--uf-duration-base) var(--uf-ease-smooth),
+              border-color var(--uf-duration-base) var(--uf-ease-smooth);
+}
+
+.uf-hover-lift.uf-hover-smooth:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--uf-shadow-md);
+}
+
+
+/* ----------------------------------------------------------------------------
+   6. STAGGER — coreografia de listas (Insights da Uni, feature list, cards)
+   Uso: aplique .uf-animate-fade-in (ou slide-up) + .uf-stagger-N em cada
+   item filho, N de 1 a 6. Acima de 6 itens, reutilize uf-stagger-6.
+---------------------------------------------------------------------------- */
+.uf-stagger-1{ animation-delay: var(--uf-duration-instant); }
+.uf-stagger-2{ animation-delay: calc(var(--uf-duration-fast) * 1); }
+.uf-stagger-3{ animation-delay: calc(var(--uf-duration-fast) * 2); }
+.uf-stagger-4{ animation-delay: calc(var(--uf-duration-fast) * 3); }
+.uf-stagger-5{ animation-delay: calc(var(--uf-duration-fast) * 4); }
+.uf-stagger-6{ animation-delay: calc(var(--uf-duration-fast) * 5); }
+
+
+/* ----------------------------------------------------------------------------
+   NOTA — "Confete discreto" (meta concluída)
+   O docx cita essa microinteração, mas ela é inerentemente um efeito de
+   partículas (posicionamento aleatório, física simples), o que não é
+   responsabilidade de uma folha de estilo estática. Fica documentado aqui
+   como pendência para uma implementação em JS/Canvas quando o componente
+   de Metas for construído — usando --uf-color-success e --uf-color-ai
+   como paleta de partículas, para manter consistência com o theme.css.
+---------------------------------------------------------------------------- */
