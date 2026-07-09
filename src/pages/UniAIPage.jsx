@@ -1,42 +1,55 @@
 import { useEffect, useRef, useState } from 'react';
-import Badge from '../components/ui/Badge';
-import Card from '../components/ui/Card';
 import {
+  EXPERIENCE_STATES,
+  EXPERIENCE_TIMING,
   contextItems,
   conversationMessages,
+  createInsightReport,
   createMessage,
-  getLastUniMessage,
   getMockUniResponse,
   getPortugueseVoice,
   getSpeechRecognition,
-  getVoiceFeedback,
   isProbablySafari,
   quickSuggestions,
-  UniAIHero,
-  UniChatPanel,
-  UniContextPanel,
-  UniQuickSuggestions,
+  thinkingSteps,
+  UniExperienceShell,
 } from './uni-ai';
 import styles from './UniAIPage.module.css';
 
 function UniAIPage() {
   const [messages, setMessages] = useState(conversationMessages);
   const [draftMessage, setDraftMessage] = useState('');
+  const [hasStarted, setHasStarted] = useState(false);
+  const [currentReport, setCurrentReport] = useState(null);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [voiceVolume, setVoiceVolume] = useState(0);
-  const [hasAudioMeter, setHasAudioMeter] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [confirmedTranscript, setConfirmedTranscript] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
+  const [isResponding, setIsResponding] = useState(false);
+  const [thinkingStepIndex, setThinkingStepIndex] = useState(0);
   const [voiceNotice, setVoiceNotice] = useState('');
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [textComposerOpen, setTextComposerOpen] = useState(false);
   const recognitionRef = useRef(null);
+  const activeUtteranceRef = useRef(null);
   const audioContextRef = useRef(null);
   const audioStreamRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const thinkingTimersRef = useRef([]);
+  const responseRevealTimerRef = useRef(null);
+  const mutedRef = useRef(false);
   const finalTranscriptRef = useRef('');
   const shouldShowEmptyCaptureNoticeRef = useRef(false);
-  const canSendMessage = draftMessage.trim().length > 0;
-  const lastUniMessage = getLastUniMessage(messages);
-  const voiceFeedback = getVoiceFeedback(voiceVolume, hasAudioMeter);
+  const canSendMessage = draftMessage.trim().length > 0 && !isThinking;
+  const experienceState = getExperienceState();
+
+  useEffect(() => {
+    mutedRef.current = isMuted;
+  }, [isMuted]);
 
   useEffect(() => () => {
     recognitionRef.current?.abort?.();
@@ -46,6 +59,10 @@ function UniAIPage() {
       animationFrameRef.current = null;
     }
 
+    thinkingTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    thinkingTimersRef.current = [];
+    window.clearTimeout(responseRevealTimerRef.current);
+
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = null;
     audioContextRef.current?.close?.().catch?.(() => {});
@@ -54,18 +71,163 @@ function UniAIPage() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    activeUtteranceRef.current = null;
   }, []);
 
-  function sendMessage(content) {
+  function getExperienceState() {
+    if (isListening) return EXPERIENCE_STATES.LISTENING;
+    if (isThinking) return EXPERIENCE_STATES.THINKING;
+    if (isSpeaking || isPaused) return EXPERIENCE_STATES.SPEAKING;
+    if (currentReport) return EXPERIENCE_STATES.READY;
+    return EXPERIENCE_STATES.IDLE;
+  }
+
+  function clearThinkingTimers() {
+    thinkingTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    thinkingTimersRef.current = [];
+  }
+
+  function runThinkingSequence(content) {
+    clearThinkingTimers();
+    setIsThinking(true);
+    setIsResponding(false);
+    setThinkingStepIndex(0);
+
+    thinkingSteps.forEach((_, index) => {
+      const timer = window.setTimeout(() => {
+        setThinkingStepIndex(index);
+      }, index * 520);
+
+      thinkingTimersRef.current.push(timer);
+    });
+
+    const responseTimer = window.setTimeout(() => {
+      const responseContent = getMockUniResponse(content);
+      const report = createInsightReport(content, responseContent);
+
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        createMessage('uni', responseContent),
+      ]);
+      setCurrentReport(report);
+      setIsThinking(false);
+      setIsResponding(true);
+      setThinkingStepIndex(0);
+      thinkingTimersRef.current = [];
+
+      if (!mutedRef.current) {
+        const speechTimer = window.setTimeout(() => {
+          speakResponse(responseContent, { automatic: true });
+        }, EXPERIENCE_TIMING.responseReady);
+
+        thinkingTimersRef.current.push(speechTimer);
+      }
+
+      window.clearTimeout(responseRevealTimerRef.current);
+      responseRevealTimerRef.current = window.setTimeout(() => {
+        setIsResponding(false);
+      }, EXPERIENCE_TIMING.responseReveal);
+    }, thinkingSteps.length * EXPERIENCE_TIMING.thinkingStep + 220);
+
+    thinkingTimersRef.current.push(responseTimer);
+  }
+
+  function stopSpeech() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.onvoiceschanged = null;
+    }
+
+    activeUtteranceRef.current = null;
+    setIsSpeaking(false);
+    setIsPaused(false);
+    setVoiceNotice('');
+  }
+
+  function speakResponse(content, options = {}) {
+    if (
+      !content ||
+      typeof window === 'undefined' ||
+      !('speechSynthesis' in window) ||
+      !window.SpeechSynthesisUtterance
+    ) {
+      if (!options.automatic) {
+        setVoiceNotice('A leitura em voz alta ainda não está disponível neste navegador.');
+      }
+      return;
+    }
+
+    if (options.automatic && mutedRef.current) return;
+
+    const synthesis = window.speechSynthesis;
+    synthesis.cancel();
+    synthesis.onvoiceschanged = null;
+    setIsPaused(false);
+
+    const utterance = new window.SpeechSynthesisUtterance(content);
+    activeUtteranceRef.current = utterance;
+    utterance.lang = 'pt-BR';
+
+    function applyPortugueseVoice() {
+      const portugueseVoice = getPortugueseVoice(synthesis.getVoices());
+
+      if (portugueseVoice) {
+        utterance.voice = portugueseVoice;
+      }
+    }
+
+    applyPortugueseVoice();
+    synthesis.onvoiceschanged = applyPortugueseVoice;
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setVoiceNotice('Uni falando a orientação...');
+    };
+    utterance.onend = () => {
+      if (activeUtteranceRef.current !== utterance) return;
+
+      activeUtteranceRef.current = null;
+      setIsSpeaking(false);
+      setIsPaused(false);
+      synthesis.onvoiceschanged = null;
+      setVoiceNotice('');
+    };
+    utterance.onerror = () => {
+      if (activeUtteranceRef.current !== utterance) return;
+
+      activeUtteranceRef.current = null;
+      setIsSpeaking(false);
+      setIsPaused(false);
+      synthesis.onvoiceschanged = null;
+
+      if (!options.automatic) {
+        setVoiceNotice('Não consegui reproduzir a resposta em voz agora.');
+      }
+    };
+
+    synthesis.speak(utterance);
+  }
+
+  function sendMessage(content, options = {}) {
     const trimmedContent = content.trim();
 
-    if (!trimmedContent) return;
+    if (!trimmedContent || isThinking) return;
 
+    setHasStarted(true);
+    setCurrentReport(null);
+    setIsResponding(false);
+
+    if (options.confirmTranscript) {
+      setConfirmedTranscript(trimmedContent);
+    } else {
+      setConfirmedTranscript('');
+    }
+
+    setVoiceNotice('');
     setMessages((currentMessages) => [
       ...currentMessages,
       createMessage('user', trimmedContent),
-      createMessage('uni', getMockUniResponse(trimmedContent)),
     ]);
+    runThinkingSequence(trimmedContent);
   }
 
   function handleSubmit(event) {
@@ -82,12 +244,14 @@ function UniAIPage() {
   function handleSuggestionClick(suggestion) {
     setVoiceNotice('');
     setInterimTranscript('');
+    setConfirmedTranscript('');
+    setSuggestionsOpen(false);
+    setTextComposerOpen(false);
     sendMessage(suggestion);
   }
 
   async function startAudioMeter() {
     setVoiceVolume(0);
-    setHasAudioMeter(false);
 
     if (typeof window === 'undefined' || isProbablySafari() || !navigator.mediaDevices?.getUserMedia) return;
 
@@ -106,7 +270,6 @@ function UniAIPage() {
       source.connect(analyser);
       audioStreamRef.current = stream;
       audioContextRef.current = audioContext;
-      setHasAudioMeter(true);
 
       function updateVolume() {
         analyser.getByteTimeDomainData(samples);
@@ -123,7 +286,6 @@ function UniAIPage() {
 
       updateVolume();
     } catch {
-      setHasAudioMeter(false);
       setVoiceVolume(0);
     }
   }
@@ -138,7 +300,6 @@ function UniAIPage() {
     audioStreamRef.current = null;
     audioContextRef.current?.close?.().catch?.(() => {});
     audioContextRef.current = null;
-    setHasAudioMeter(false);
     setVoiceVolume(0);
   }
 
@@ -158,10 +319,18 @@ function UniAIPage() {
       return;
     }
 
+    stopSpeech();
+    setHasStarted(true);
+    setCurrentReport(null);
+    setConfirmedTranscript('');
+    setSuggestionsOpen(false);
+    setTextComposerOpen(false);
+
     const SpeechRecognition = getSpeechRecognition();
 
     if (!SpeechRecognition) {
       setVoiceNotice('Seu navegador ainda não suporta captura de voz aqui. Você pode digitar sua pergunta para a Uni.');
+      setTextComposerOpen(true);
       return;
     }
 
@@ -206,8 +375,8 @@ function UniAIPage() {
       const finalTranscript = finalTranscriptRef.current.trim();
 
       if (finalTranscript) {
-        sendMessage(finalTranscript);
-        setVoiceNotice('Áudio captado.');
+        sendMessage(finalTranscript, { confirmTranscript: true });
+        setVoiceNotice('Áudio captado. A Uni vai organizar isso com calma.');
       } else if (shouldShowEmptyCaptureNoticeRef.current) {
         setVoiceNotice('Não captei uma pergunta completa. Se quiser, repita com calma.');
       }
@@ -233,84 +402,103 @@ function UniAIPage() {
     }
   }
 
-  function speakLastResponse() {
-    if (
-      !lastUniMessage ||
-      typeof window === 'undefined' ||
-      !('speechSynthesis' in window) ||
-      !window.SpeechSynthesisUtterance
-    ) {
-      setVoiceNotice('A leitura em voz alta ainda não está disponível neste navegador.');
+  function pauseAudio() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.pause();
+    }
+
+    setIsPaused(true);
+    setIsSpeaking(false);
+    setVoiceNotice('Áudio pausado.');
+  }
+
+  function resumeAudio() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.resume();
+    }
+
+    setIsPaused(false);
+    setIsSpeaking(true);
+    setVoiceNotice('Uni continuando a explicação...');
+  }
+
+  function replayAudio() {
+    speakResponse(currentReport?.response);
+  }
+
+  function toggleMute() {
+    const nextMutedState = !isMuted;
+
+    setIsMuted(nextMutedState);
+    mutedRef.current = nextMutedState;
+
+    if (nextMutedState) {
+      stopSpeech();
+      setVoiceNotice('Áudio automático silenciado.');
       return;
     }
 
-    const synthesis = window.speechSynthesis;
-    synthesis.cancel();
+    setVoiceNotice('Áudio automático ativado.');
+  }
 
-    const utterance = new window.SpeechSynthesisUtterance(lastUniMessage.content);
-    utterance.lang = 'pt-BR';
+  function handleNewQuestion() {
+    stopSpeech();
+    clearThinkingTimers();
+    window.clearTimeout(responseRevealTimerRef.current);
+    setCurrentReport(null);
+    setConfirmedTranscript('');
+    setInterimTranscript('');
+    setVoiceNotice('');
+    setIsThinking(false);
+    setIsResponding(false);
+    setHasStarted(false);
+    setSuggestionsOpen(false);
+    setTextComposerOpen(false);
+    setDraftMessage('');
+  }
 
-    function applyPortugueseVoice() {
-      const portugueseVoice = getPortugueseVoice(synthesis.getVoices());
-
-      if (portugueseVoice) {
-        utterance.voice = portugueseVoice;
-      }
-    }
-
-    applyPortugueseVoice();
-    synthesis.onvoiceschanged = applyPortugueseVoice;
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setVoiceNotice('Falando...');
-    };
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      synthesis.onvoiceschanged = null;
-      setVoiceNotice('');
-    };
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-      synthesis.onvoiceschanged = null;
-      setVoiceNotice('Não consegui reproduzir a resposta em voz agora.');
-    };
-
-    synthesis.speak(utterance);
+  function handleReportAction(action) {
+    setVoiceNotice(`${action} será conectado em uma próxima etapa. Por enquanto, posso continuar orientando por voz.`);
   }
 
   return (
     <div className={styles.page}>
-      <UniAIHero />
-
-      <section className={styles.mainGrid} aria-label="Experiência principal da Uni AI">
-        <UniChatPanel
-          messages={messages}
-          draftMessage={draftMessage}
-          canSendMessage={canSendMessage}
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          lastUniMessage={lastUniMessage}
-          voiceNotice={voiceNotice}
-          interimTranscript={interimTranscript}
-          voiceFeedback={voiceFeedback}
-          voiceVolume={voiceVolume}
-          onDraftChange={setDraftMessage}
-          onSubmit={handleSubmit}
-          onStartVoiceCapture={startVoiceCapture}
-          onSpeakLastResponse={speakLastResponse}
-        />
-        <UniContextPanel contextItems={contextItems} />
-      </section>
-
-      <UniQuickSuggestions suggestions={quickSuggestions} onSuggestionClick={handleSuggestionClick} />
-
-      <Card variant="outline" padding="md" className={styles.safetyCard}>
-        <Badge variant="secondary">Limite da experiência</Badge>
-        <p>
-          A Uni orienta e recomenda caminhos possíveis, mas as decisões finais continuam sendo suas. Esta tela ainda usa
-          dados mockados; a IA real será conectada em uma etapa futura.
-        </p>
-      </Card>
+      <UniExperienceShell
+        experienceState={experienceState}
+        hasStarted={hasStarted}
+        messages={messages}
+        contextItems={contextItems}
+        suggestions={quickSuggestions}
+        report={currentReport}
+        draftMessage={draftMessage}
+        canSendMessage={canSendMessage}
+        isListening={isListening}
+        isThinking={isThinking}
+        isSpeaking={isSpeaking}
+        isPaused={isPaused}
+        isMuted={isMuted}
+        isResponding={isResponding}
+        voiceVolume={voiceVolume}
+        interimTranscript={interimTranscript}
+        confirmedTranscript={confirmedTranscript}
+        voiceNotice={voiceNotice}
+        thinkingSteps={thinkingSteps}
+        thinkingStepIndex={thinkingStepIndex}
+        suggestionsOpen={suggestionsOpen}
+        textComposerOpen={textComposerOpen}
+        onDraftChange={setDraftMessage}
+        onSubmit={handleSubmit}
+        onStartVoiceCapture={startVoiceCapture}
+        onNewQuestion={handleNewQuestion}
+        onPauseAudio={pauseAudio}
+        onResumeAudio={resumeAudio}
+        onReplayAudio={replayAudio}
+        onToggleMute={toggleMute}
+        onToggleSuggestions={() => setSuggestionsOpen((currentValue) => !currentValue)}
+        onSuggestionClick={handleSuggestionClick}
+        onToggleTextComposer={() => setTextComposerOpen((currentValue) => !currentValue)}
+        onReportAction={handleReportAction}
+      />
     </div>
   );
 }

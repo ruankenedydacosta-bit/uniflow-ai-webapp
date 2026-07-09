@@ -9,7 +9,7 @@ function UniMessageBubble({ message }) {
       <Avatar
         name={isUserMessage ? 'Você' : 'Uni'}
         initials={isUserMessage ? 'VC' : 'U'}
-        size="sm"
+        size="xs"
         status={isUserMessage ? undefined : 'online'}
       />
       <div className={styles.bubble}>

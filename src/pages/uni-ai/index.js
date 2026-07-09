@@ -1,11 +1,22 @@
+export { default as UniAudioControls } from './UniAudioControls';
 export { default as UniAIHero } from './UniAIHero';
 export { default as UniChatPanel } from './UniChatPanel';
 export { default as UniContextPanel } from './UniContextPanel';
+export { default as UniExperienceShell } from './UniExperienceShell';
+export { default as UniInsightReport } from './UniInsightReport';
+export { default as UniLiveContextPanel } from './UniLiveContextPanel';
 export { default as UniMessageBubble } from './UniMessageBubble';
 export { default as UniQuickSuggestions } from './UniQuickSuggestions';
+export { default as UniRecentConversations } from './UniRecentConversations';
+export { default as UniSuggestionDrawer } from './UniSuggestionDrawer';
+export { default as UniThinkingSequence } from './UniThinkingSequence';
+export { default as UniTranscriptPanel } from './UniTranscriptPanel';
 export { default as UniVoiceCapture } from './UniVoiceCapture';
+export { default as UniVoiceStage } from './UniVoiceStage';
 export { contextItems, conversationMessages, quickSuggestions } from './uniAI.mock';
+export { EXPERIENCE_STATES, EXPERIENCE_TIMING, audioControlLabels } from './uniAI.experience';
 export {
+  createInsightReport,
   createMessage,
   getLastUniMessage,
   getMockUniResponse,
@@ -13,4 +24,5 @@ export {
   getSpeechRecognition,
   getVoiceFeedback,
   isProbablySafari,
+  thinkingSteps,
 } from './uniAI.helpers';
