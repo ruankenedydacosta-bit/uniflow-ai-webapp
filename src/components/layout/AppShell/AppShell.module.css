@@ -1,0 +1,24 @@
+.shell {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+  background:
+    var(--uf-gradient-mesh-1),
+    var(--uf-gradient-mesh-2),
+    var(--uf-color-bg-canvas);
+  color: var(--uf-color-text-primary);
+}
+
+.workspace {
+  display: flex;
+  flex: 1 1 calc(var(--uf-space-160) * 4);
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: var(--uf-space-32);
+}
