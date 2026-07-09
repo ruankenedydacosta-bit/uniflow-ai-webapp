@@ -1,3 +1,4 @@
+import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
@@ -40,6 +41,27 @@ function App() {
             helperText="A Uni usa isso para criar uma projeção mais clara."
             fullWidth
           />
+        </div>
+
+        <div
+          style={{
+            marginTop: 'var(--uf-space-24)',
+            display: 'flex',
+            gap: 'var(--uf-space-8)',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <Badge variant="default">Base</Badge>
+          <Badge variant="primary" dot>
+            Primário
+          </Badge>
+          <Badge variant="secondary">Uni AI</Badge>
+          <Badge variant="success">Meta em dia</Badge>
+          <Badge variant="warning">Atenção</Badge>
+          <Badge variant="danger">Risco</Badge>
+          <Badge variant="glass">Glass</Badge>
+          <Badge variant="outline">Outline</Badge>
         </div>
 
         <div

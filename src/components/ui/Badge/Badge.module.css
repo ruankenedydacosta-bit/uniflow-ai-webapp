@@ -1,0 +1,96 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  border: 1px solid transparent;
+  border-radius: var(--uf-radius-full);
+  font-weight: var(--uf-font-weight-medium);
+  line-height: var(--uf-text-caption-lh);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.default {
+  background: var(--uf-color-bg-elevated);
+  border-color: var(--uf-color-border-subtle);
+  color: var(--uf-color-text-secondary);
+}
+
+.primary {
+  background: var(--uf-color-primary-subtle);
+  color: var(--uf-color-primary);
+}
+
+.secondary {
+  background: var(--uf-color-ai-subtle);
+  color: var(--uf-color-ai);
+}
+
+.success {
+  background: var(--uf-color-success-subtle);
+  color: var(--uf-color-success);
+}
+
+.warning {
+  background: var(--uf-color-warning-subtle);
+  color: var(--uf-color-warning);
+}
+
+.danger {
+  background: var(--uf-color-danger-subtle);
+  color: var(--uf-color-danger);
+}
+
+.glass {
+  background: var(--uf-glass-bg);
+  border-color: var(--uf-glass-border);
+  color: var(--uf-color-text-primary);
+  backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
+}
+
+.outline {
+  background: transparent;
+  border-color: var(--uf-color-border-default);
+  color: var(--uf-color-text-primary);
+}
+
+.sm {
+  gap: var(--uf-space-4);
+  min-height: var(--uf-space-24);
+  padding: 0 var(--uf-space-8);
+  font-size: var(--uf-text-micro-size);
+}
+
+.md {
+  gap: var(--uf-space-8);
+  min-height: var(--uf-space-32);
+  padding: 0 var(--uf-space-12);
+  font-size: var(--uf-text-caption-size);
+}
+
+.lg {
+  gap: var(--uf-space-8);
+  min-height: var(--uf-space-40);
+  padding: 0 var(--uf-space-16);
+  font-size: var(--uf-text-body-size);
+}
+
+.dot {
+  width: var(--uf-space-8);
+  height: var(--uf-space-8);
+  border-radius: var(--uf-radius-full);
+  background: currentColor;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+}
