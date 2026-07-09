@@ -28,6 +28,7 @@ function UniExperienceShell({
   voiceVolume,
   interimTranscript,
   confirmedTranscript,
+  transcriptFallback,
   voiceNotice,
   thinkingSteps,
   thinkingStepIndex,
@@ -74,6 +75,7 @@ function UniExperienceShell({
         <UniTranscriptPanel
           interimTranscript={interimTranscript}
           confirmedTranscript={confirmedTranscript}
+          transcriptFallback={transcriptFallback}
           isListening={isListening}
         />
 

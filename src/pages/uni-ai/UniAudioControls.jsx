@@ -28,9 +28,11 @@ function UniAudioControls({
         </Button>
       ) : null}
 
-      <Button variant="secondary" size="sm" onClick={onReplay}>
-        {audioControlLabels.replay}
-      </Button>
+      {!isSpeaking && !isPaused ? (
+        <Button variant="secondary" size="sm" onClick={onReplay}>
+          {audioControlLabels.replay}
+        </Button>
+      ) : null}
 
       <Button variant="ghost" size="sm" onClick={onToggleMute}>
         {isMuted ? audioControlLabels.unmute : audioControlLabels.mute}

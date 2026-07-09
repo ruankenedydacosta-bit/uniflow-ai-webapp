@@ -14,7 +14,7 @@ export const EXPERIENCE_TIMING = {
 };
 
 export const audioControlLabels = {
-  pause: 'Pausar',
+  pause: 'Parar áudio',
   resume: 'Continuar',
   replay: 'Ouvir novamente',
   mute: 'Silenciar',

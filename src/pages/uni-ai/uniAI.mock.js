@@ -35,12 +35,6 @@ export const contextItems = [
     status: 'Atenção',
     variant: 'warning',
   },
-  {
-    label: 'Próxima decisão recomendada',
-    value: 'Revisar variáveis',
-    status: 'Próximo passo',
-    variant: 'secondary',
-  },
 ];
 
 export const quickSuggestions = [

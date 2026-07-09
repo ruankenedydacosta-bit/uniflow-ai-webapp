@@ -28,6 +28,7 @@ function UniAIPage() {
   const [voiceVolume, setVoiceVolume] = useState(0);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [confirmedTranscript, setConfirmedTranscript] = useState('');
+  const [transcriptFallback, setTranscriptFallback] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isResponding, setIsResponding] = useState(false);
   const [thinkingStepIndex, setThinkingStepIndex] = useState(0);
@@ -118,7 +119,7 @@ function UniAIPage() {
       if (!mutedRef.current) {
         const speechTimer = window.setTimeout(() => {
           speakResponse(responseContent, { automatic: true });
-        }, EXPERIENCE_TIMING.responseReady);
+        }, 120);
 
         thinkingTimersRef.current.push(speechTimer);
       }
@@ -161,12 +162,14 @@ function UniAIPage() {
 
     const synthesis = window.speechSynthesis;
     synthesis.cancel();
+    synthesis.resume?.();
     synthesis.onvoiceschanged = null;
     setIsPaused(false);
 
     const utterance = new window.SpeechSynthesisUtterance(content);
     activeUtteranceRef.current = utterance;
     utterance.lang = 'pt-BR';
+    let hasStartedSpeaking = false;
 
     function applyPortugueseVoice() {
       const portugueseVoice = getPortugueseVoice(synthesis.getVoices());
@@ -176,8 +179,21 @@ function UniAIPage() {
       }
     }
 
+    function startSpeaking() {
+      if (hasStartedSpeaking || activeUtteranceRef.current !== utterance) return;
+
+      hasStartedSpeaking = true;
+      applyPortugueseVoice();
+      setIsSpeaking(true);
+      setVoiceNotice('Uni falando a orientação...');
+      synthesis.speak(utterance);
+    }
+
     applyPortugueseVoice();
-    synthesis.onvoiceschanged = applyPortugueseVoice;
+    synthesis.onvoiceschanged = () => {
+      applyPortugueseVoice();
+      startSpeaking();
+    };
     utterance.onstart = () => {
       setIsSpeaking(true);
       setVoiceNotice('Uni falando a orientação...');
@@ -204,7 +220,11 @@ function UniAIPage() {
       }
     };
 
-    synthesis.speak(utterance);
+    if (synthesis.getVoices().length > 0) {
+      startSpeaking();
+    } else {
+      window.setTimeout(startSpeaking, 250);
+    }
   }
 
   function sendMessage(content, options = {}) {
@@ -212,9 +232,11 @@ function UniAIPage() {
 
     if (!trimmedContent || isThinking) return;
 
+    stopSpeech();
     setHasStarted(true);
     setCurrentReport(null);
     setIsResponding(false);
+    setTranscriptFallback('');
 
     if (options.confirmTranscript) {
       setConfirmedTranscript(trimmedContent);
@@ -237,6 +259,7 @@ function UniAIPage() {
 
     setVoiceNotice('');
     setInterimTranscript('');
+    setTranscriptFallback('');
     sendMessage(draftMessage);
     setDraftMessage('');
   }
@@ -245,6 +268,7 @@ function UniAIPage() {
     setVoiceNotice('');
     setInterimTranscript('');
     setConfirmedTranscript('');
+    setTranscriptFallback('');
     setSuggestionsOpen(false);
     setTextComposerOpen(false);
     sendMessage(suggestion);
@@ -323,6 +347,7 @@ function UniAIPage() {
     setHasStarted(true);
     setCurrentReport(null);
     setConfirmedTranscript('');
+    setTranscriptFallback('');
     setSuggestionsOpen(false);
     setTextComposerOpen(false);
 
@@ -339,6 +364,7 @@ function UniAIPage() {
     finalTranscriptRef.current = '';
     shouldShowEmptyCaptureNoticeRef.current = true;
     setInterimTranscript('');
+    setTranscriptFallback('');
     setVoiceNotice('');
     recognition.lang = 'pt-BR';
     recognition.interimResults = true;
@@ -350,20 +376,24 @@ function UniAIPage() {
     };
 
     recognition.onresult = (event) => {
+      let finalTranscript = '';
       let partialTranscript = '';
 
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      for (let index = 0; index < event.results.length; index += 1) {
         const result = event.results[index];
         const transcript = result?.[0]?.transcript ?? '';
 
         if (result?.isFinal) {
-          finalTranscriptRef.current = `${finalTranscriptRef.current} ${transcript}`.trim();
+          finalTranscript = `${finalTranscript} ${transcript}`.trim();
         } else {
           partialTranscript = `${partialTranscript} ${transcript}`.trim();
         }
       }
 
-      setInterimTranscript(partialTranscript);
+      const recognizedTranscript = `${finalTranscript} ${partialTranscript}`.trim();
+
+      finalTranscriptRef.current = finalTranscript || recognizedTranscript;
+      setInterimTranscript(recognizedTranscript);
     };
 
     recognition.onerror = () => {
@@ -378,11 +408,12 @@ function UniAIPage() {
         sendMessage(finalTranscript, { confirmTranscript: true });
         setVoiceNotice('Áudio captado. A Uni vai organizar isso com calma.');
       } else if (shouldShowEmptyCaptureNoticeRef.current) {
-        setVoiceNotice('Não captei uma pergunta completa. Se quiser, repita com calma.');
+        setTranscriptFallback('Não consegui ouvir tudo. Pode tentar novamente?');
+        setVoiceNotice('Não consegui ouvir tudo. Pode tentar novamente?');
       }
 
       setIsListening(false);
-      setInterimTranscript('');
+      setInterimTranscript(finalTranscript);
       finalTranscriptRef.current = '';
       shouldShowEmptyCaptureNoticeRef.current = false;
       recognitionRef.current = null;
@@ -398,18 +429,14 @@ function UniAIPage() {
       recognitionRef.current = null;
       shouldShowEmptyCaptureNoticeRef.current = false;
       setInterimTranscript('');
+      setTranscriptFallback('Não consegui ouvir tudo. Pode tentar novamente?');
       setVoiceNotice('Não consegui iniciar a captura de voz agora. Você pode digitar sua pergunta para a Uni.');
     }
   }
 
   function pauseAudio() {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.pause();
-    }
-
-    setIsPaused(true);
-    setIsSpeaking(false);
-    setVoiceNotice('Áudio pausado.');
+    stopSpeech();
+    setVoiceNotice('');
   }
 
   function resumeAudio() {
@@ -448,6 +475,7 @@ function UniAIPage() {
     setCurrentReport(null);
     setConfirmedTranscript('');
     setInterimTranscript('');
+    setTranscriptFallback('');
     setVoiceNotice('');
     setIsThinking(false);
     setIsResponding(false);
@@ -481,6 +509,7 @@ function UniAIPage() {
         voiceVolume={voiceVolume}
         interimTranscript={interimTranscript}
         confirmedTranscript={confirmedTranscript}
+        transcriptFallback={transcriptFallback}
         voiceNotice={voiceNotice}
         thinkingSteps={thinkingSteps}
         thinkingStepIndex={thinkingStepIndex}

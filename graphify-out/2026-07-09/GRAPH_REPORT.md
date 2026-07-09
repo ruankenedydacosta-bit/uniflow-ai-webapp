@@ -1,11 +1,11 @@
 # Graph Report - uniflow-ai-app  (2026-07-09)
 
 ## Corpus Check
-- 129 files · ~32,163 words
+- 139 files · ~33,807 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 454 nodes · 598 edges · 66 communities (52 shown, 14 thin omitted)
+- 477 nodes · 656 edges · 66 communities (52 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
@@ -55,15 +55,15 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `Uni AI Experience Reference` - 19 edges
-2. `Badge()` - 16 edges
+2. `Badge()` - 17 edges
 3. `cx()` - 15 edges
-4. `Módulos oficiais do produto` - 13 edges
-5. `Card()` - 12 edges
-6. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
-7. `DashboardView` - 11 edges
-8. `Kit Base UniFlow AI` - 11 edges
-9. `Regras do Projeto` - 11 edges
-10. `VoiceView` - 9 edges
+4. `Card()` - 14 edges
+5. `Módulos oficiais do produto` - 13 edges
+6. `Button()` - 12 edges
+7. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
+8. `DashboardView` - 11 edges
+9. `Kit Base UniFlow AI` - 11 edges
+10. `Regras do Projeto` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Loader()` --calls--> `cx()`  [EXTRACTED]
@@ -83,7 +83,7 @@
 ## Communities (66 total, 14 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (19): Avatar, Badge(), Button(), Card(), Input, Loader(), Modal(), Tooltip() (+11 more)
 
 ### Community 1 - "devDependencies"
@@ -127,8 +127,8 @@ Cohesion: 0.33
 Nodes (4): Card, CardBody, CardFooter, CardHeader
 
 ### Community 39 - "UniAIPage.jsx"
-Cohesion: 0.26
-Nodes (16): createMessage(), getLastUniMessage(), getMockUniResponse(), getPortugueseVoice(), getSpeechRecognition(), getVoiceFeedback(), isProbablySafari(), thinkingSteps (+8 more)
+Cohesion: 0.13
+Nodes (25): audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse(), getPortugueseVoice() (+17 more)
 
 ### Community 48 - "Módulos oficiais do produto"
 Cohesion: 0.08
@@ -184,12 +184,12 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Badge()` connect `DashboardPage.jsx` to `AppShell.jsx`, `UniAIPage.jsx`?**
   _High betweenness centrality (0.010) - this node is a cross-community bridge._
-- **Why does `Card()` connect `DashboardPage.jsx` to `AppShell.jsx`, `UniAIPage.jsx`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+- **Why does `Button()` connect `DashboardPage.jsx` to `AppShell.jsx`, `UniAIPage.jsx`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
   _157 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.09941944847605225 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08771929824561403 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**

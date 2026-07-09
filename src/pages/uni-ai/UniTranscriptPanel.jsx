@@ -1,13 +1,13 @@
 import styles from '../UniAIPage.module.css';
 
-function UniTranscriptPanel({ interimTranscript, confirmedTranscript, isListening }) {
-  const text = confirmedTranscript || interimTranscript;
+function UniTranscriptPanel({ interimTranscript, confirmedTranscript, transcriptFallback, isListening }) {
+  const text = confirmedTranscript || interimTranscript || transcriptFallback;
 
   if (!text && !isListening) return null;
 
   return (
     <section className={styles.transcriptPanel} aria-live="polite">
-      <span>{confirmedTranscript ? 'Fala reconhecida' : 'Transcrição em tempo real'}</span>
+      <span>Fala reconhecida</span>
       <p>
         {text
           ? text.split(' ').map((word, index) => (
@@ -15,7 +15,7 @@ function UniTranscriptPanel({ interimTranscript, confirmedTranscript, isListenin
                 {word}
               </strong>
             ))
-          : 'Estou ouvindo... pode falar naturalmente.'}
+          : 'Estou ouvindo...'}
       </p>
     </section>
   );
