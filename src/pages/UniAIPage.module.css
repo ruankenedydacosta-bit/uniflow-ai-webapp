@@ -1,0 +1,287 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-32);
+  padding-bottom: var(--uf-space-64);
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-24);
+  flex-wrap: wrap;
+  padding: var(--uf-space-32);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-24);
+  background: var(--uf-glass-bg);
+  box-shadow: var(--uf-shadow-md);
+  backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
+}
+
+.heroCopy {
+  display: flex;
+  flex: 1 1 calc(var(--uf-space-160) * 3);
+  flex-direction: column;
+  gap: var(--uf-space-12);
+  min-width: 0;
+}
+
+.heroCopy h2 {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-h2-size);
+  font-weight: var(--uf-text-h2-weight);
+  line-height: var(--uf-text-h2-lh);
+}
+
+.heroCopy p,
+.cardHeader p,
+.safetyCard p {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
+}
+
+.heroAction {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-16);
+  flex-wrap: wrap;
+}
+
+.heroButtons {
+  display: flex;
+  gap: var(--uf-space-12);
+  flex-wrap: wrap;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: repeat(var(--uf-grid-columns-desktop), minmax(0, 1fr));
+  gap: var(--uf-grid-gutter);
+  align-items: stretch;
+}
+
+.chatCard {
+  display: flex;
+  grid-column: span 8;
+  flex-direction: column;
+  gap: var(--uf-space-24);
+  min-height: calc(var(--uf-space-160) * 3);
+}
+
+.sideColumn {
+  display: flex;
+  grid-column: span 4;
+  min-width: 0;
+}
+
+.contextCard {
+  width: 100%;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--uf-space-16);
+}
+
+.cardHeader div,
+.sectionHeader div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+}
+
+.cardTitle,
+.sectionHeader h3 {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-title-size);
+  font-weight: var(--uf-text-title-weight);
+  line-height: var(--uf-text-title-lh);
+}
+
+.messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.uniMessage,
+.userMessage {
+  display: flex;
+  gap: var(--uf-space-12);
+  max-width: calc(var(--uf-space-160) * 4);
+}
+
+.userMessage {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-sunken);
+}
+
+.userMessage .bubble {
+  background: var(--uf-color-primary-subtle);
+  border-color: var(--uf-color-border-default);
+}
+
+.bubble span {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.bubble p {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--uf-space-12);
+  padding-top: var(--uf-space-16);
+  border-top: 1px solid var(--uf-color-border-subtle);
+}
+
+.contextList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-12);
+  margin-top: var(--uf-space-24);
+}
+
+.contextItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-16);
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-sunken);
+}
+
+.contextItem div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+  min-width: 0;
+}
+
+.contextLabel {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.contextItem strong {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-16);
+}
+
+.suggestionGrid {
+  display: grid;
+  grid-template-columns: repeat(var(--uf-grid-columns-desktop), minmax(0, 1fr));
+  gap: var(--uf-space-16);
+}
+
+.suggestionCard {
+  grid-column: span 3;
+}
+
+.suggestionCard span {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-medium);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.safetyCard {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-16);
+  flex-wrap: wrap;
+}
+
+.safetyCard p {
+  flex: 1 1 calc(var(--uf-space-160) * 3);
+}
+
+@media (max-width: 1180px) {
+  .mainGrid,
+  .suggestionGrid {
+    grid-template-columns: repeat(var(--uf-grid-columns-tablet), minmax(0, 1fr));
+  }
+
+  .chatCard,
+  .sideColumn {
+    grid-column: span 8;
+  }
+
+  .suggestionCard {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    gap: var(--uf-space-24);
+    padding-bottom: var(--uf-space-48);
+  }
+
+  .hero {
+    align-items: flex-start;
+    padding: var(--uf-space-24);
+  }
+
+  .mainGrid,
+  .suggestionGrid {
+    grid-template-columns: repeat(var(--uf-grid-columns-mobile), minmax(0, 1fr));
+  }
+
+  .chatCard,
+  .sideColumn,
+  .suggestionCard {
+    grid-column: span 4;
+  }
+
+  .cardHeader,
+  .composer,
+  .contextItem {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .uniMessage,
+  .userMessage {
+    max-width: 100%;
+  }
+}

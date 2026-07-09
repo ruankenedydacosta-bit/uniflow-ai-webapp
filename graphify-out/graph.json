@@ -1680,7 +1680,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 2,
+      "community": 0,
       "norm_label": "avatar.jsx"
     },
     {
@@ -1690,7 +1690,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 2,
+      "community": 0,
       "norm_label": "getinitials()"
     },
     {
@@ -1720,7 +1720,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge",
-      "community": 2,
+      "community": 0,
       "norm_label": "badge.jsx"
     },
     {
@@ -1750,7 +1750,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_button_button",
-      "community": 2,
+      "community": 0,
       "norm_label": "button.jsx"
     },
     {
@@ -1780,7 +1780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_card_card",
-      "community": 2,
+      "community": 0,
       "norm_label": "card.jsx"
     },
     {
@@ -1810,7 +1810,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 2,
+      "community": 0,
       "norm_label": "input.jsx"
     },
     {
@@ -1820,7 +1820,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_input_input_input",
-      "community": 2,
+      "community": 0,
       "norm_label": "input"
     },
     {
@@ -1830,7 +1830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_index",
-      "community": 2,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -1840,7 +1840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_loader",
-      "community": 2,
+      "community": 0,
       "norm_label": "loader.jsx"
     },
     {
@@ -1850,7 +1850,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_loader_loader_loader",
-      "community": 2,
+      "community": 0,
       "norm_label": "loader()"
     },
     {
@@ -1860,7 +1860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_index",
-      "community": 2,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -1870,7 +1870,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal",
-      "community": 2,
+      "community": 0,
       "norm_label": "modal.jsx"
     },
     {
@@ -1880,7 +1880,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal_modal",
-      "community": 2,
+      "community": 0,
       "norm_label": "modal()"
     },
     {
@@ -1890,7 +1890,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_index",
-      "community": 2,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -1900,7 +1900,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltip",
-      "community": 2,
+      "community": 0,
       "norm_label": "tooltip.jsx"
     },
     {
@@ -1910,7 +1910,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltip_tooltip",
-      "community": 2,
+      "community": 0,
       "norm_label": "tooltip()"
     },
     {
@@ -1920,7 +1920,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_index",
-      "community": 2,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -2170,7 +2170,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_pagescaffold",
-      "community": 0,
+      "community": 4,
       "norm_label": "pagescaffold.jsx"
     },
     {
@@ -2250,17 +2250,67 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uniaipage",
-      "community": 4,
+      "community": 0,
       "norm_label": "uniaipage.jsx"
+    },
+    {
+      "label": "conversationMessages",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_conversationmessages",
+      "community": 0,
+      "norm_label": "conversationmessages"
+    },
+    {
+      "label": "contextItems",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_contextitems",
+      "community": 0,
+      "norm_label": "contextitems"
+    },
+    {
+      "label": "quickSuggestions",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L54",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_quicksuggestions",
+      "community": 0,
+      "norm_label": "quicksuggestions"
+    },
+    {
+      "label": "createMessage()",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L63",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_createmessage",
+      "community": 0,
+      "norm_label": "createmessage()"
+    },
+    {
+      "label": "getMockUniResponse()",
+      "file_type": "code",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L73",
+      "_origin": "ast",
+      "id": "src_pages_uniaipage_getmockuniresponse",
+      "community": 0,
+      "norm_label": "getmockuniresponse()"
     },
     {
       "label": "UniAIPage()",
       "file_type": "code",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L3",
+      "source_location": "L103",
       "_origin": "ast",
       "id": "src_pages_uniaipage_uniaipage",
-      "community": 4,
+      "community": 0,
       "norm_label": "uniaipage()"
     },
     {
@@ -2320,7 +2370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_cx",
-      "community": 2,
+      "community": 0,
       "norm_label": "cx.js"
     },
     {
@@ -2330,7 +2380,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_cx_cx",
-      "community": 2,
+      "community": 0,
       "norm_label": "cx()"
     },
     {
@@ -5511,6 +5561,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_components_ui_avatar_avatar_avatar",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -5529,6 +5590,17 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_features_dashboard_components_uniinsightscard",
+      "target": "src_components_ui_avatar_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
       "target": "src_components_ui_avatar_index",
       "confidence_score": 1.0
     },
@@ -5664,6 +5736,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_components_ui_badge_badge_badge",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -5737,6 +5820,17 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_pages_pagescaffold",
+      "target": "src_components_ui_badge_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
       "target": "src_components_ui_badge_index",
       "confidence_score": 1.0
     },
@@ -5828,6 +5922,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -5857,6 +5962,17 @@
       "source_location": "L2",
       "weight": 1.0,
       "source": "src_pages_pagescaffold",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
       "target": "src_components_ui_button_index",
       "confidence_score": 1.0
     },
@@ -5981,6 +6097,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_components_ui_card_card_card",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -6047,6 +6174,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_components_ui_card_index",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "re_exports",
       "context": "export",
       "confidence": "EXTRACTED",
@@ -6087,6 +6225,28 @@
       "weight": 1.0,
       "source": "src_components_ui_input_input",
       "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_components_ui_input_input_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_components_ui_input_index",
       "confidence_score": 1.0
     },
     {
@@ -6724,17 +6884,6 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "src_pages_uniaipage",
-      "target": "src_pages_pagescaffold",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -6764,17 +6913,6 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_pages_settingspage",
-      "target": "src_pages_pagescaffold_pagescaffold",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "src_pages_uniaipage",
       "target": "src_pages_pagescaffold_pagescaffold",
       "confidence_score": 1.0
     },
@@ -6812,7 +6950,57 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L3",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_contextitems",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_conversationmessages",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L63",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_createmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L73",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_getmockuniresponse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_pages_uniaipage_quicksuggestions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L103",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uniaipage_uniaipage",
@@ -7890,5 +8078,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "6d629a2fa3fdfbaa0247fed23962c7efa1d7cb54"
+  "built_at_commit": "ebb5640935fd201049bfaa58fd623a874ed0b552"
 }

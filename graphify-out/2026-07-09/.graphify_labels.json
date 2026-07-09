@@ -1,7 +1,6 @@
 {
   "0": "DashboardPage.jsx",
   "1": "devDependencies",
-  "2": "cx",
   "3": "MainDashboard.jsx",
   "4": "AppShell.jsx",
   "5": "CustomerBoard.jsx",
@@ -38,7 +37,6 @@
   "36": "eslint.config.js",
   "37": "UI",
   "38": "main.jsx",
-  "39": "routes.jsx",
   "40": "index.js",
   "41": "index.js",
   "42": "auth.service.js",
