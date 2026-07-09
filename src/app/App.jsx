@@ -3,6 +3,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Avatar from '../components/ui/Avatar';
+import Loader from '../components/ui/Loader';
 import heroImage from '../assets/hero.png';
 
 function App() {
@@ -80,6 +81,23 @@ function App() {
           <Avatar name="Ruan Weber" size="lg" status="away" />
           <Avatar initials="UF" variant="rounded" status="busy" />
           <Avatar variant="square" status="offline" />
+        </div>
+
+        <div
+          style={{
+            marginTop: 'var(--uf-space-24)',
+            display: 'flex',
+            gap: 'var(--uf-space-16)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <Loader size="xs" variant="neutral" />
+          <Loader size="sm" variant="primary" />
+          <Loader size="md" variant="secondary" label="Sincronizando" />
+          <Loader size="lg" variant="success" />
+          <Loader size="xl" variant="primary" label="Carregando" />
         </div>
 
         <div

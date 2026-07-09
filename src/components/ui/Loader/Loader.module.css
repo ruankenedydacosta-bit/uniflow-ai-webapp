@@ -1,0 +1,91 @@
+.loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--uf-space-8);
+  color: var(--uf-color-primary);
+}
+
+.fullScreen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--uf-z-modal);
+  min-height: 100vh;
+  background: var(--uf-color-bg-canvas);
+}
+
+.spinner {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border: calc(var(--uf-space-4) / 2) solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--uf-radius-full);
+  animation: uf-loader-spin var(--uf-duration-slower) var(--uf-ease-standard) infinite;
+}
+
+.label {
+  color: var(--uf-color-text-secondary);
+  font-weight: var(--uf-font-weight-medium);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.xs .spinner {
+  width: var(--uf-space-16);
+  height: var(--uf-space-16);
+}
+
+.sm .spinner {
+  width: var(--uf-space-20);
+  height: var(--uf-space-20);
+}
+
+.md .spinner {
+  width: var(--uf-space-24);
+  height: var(--uf-space-24);
+}
+
+.lg .spinner {
+  width: var(--uf-space-32);
+  height: var(--uf-space-32);
+}
+
+.xl .spinner {
+  width: var(--uf-space-40);
+  height: var(--uf-space-40);
+}
+
+.xs .label,
+.sm .label {
+  font-size: var(--uf-text-micro-size);
+}
+
+.md .label,
+.lg .label {
+  font-size: var(--uf-text-caption-size);
+}
+
+.xl .label {
+  font-size: var(--uf-text-body-size);
+}
+
+.primary {
+  color: var(--uf-color-primary);
+}
+
+.secondary {
+  color: var(--uf-color-ai);
+}
+
+.success {
+  color: var(--uf-color-success);
+}
+
+.neutral {
+  color: var(--uf-color-text-secondary);
+}
+
+@keyframes uf-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
