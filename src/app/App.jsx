@@ -2,6 +2,8 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
+import Avatar from '../components/ui/Avatar';
+import heroImage from '../assets/hero.png';
 
 function App() {
   return (
@@ -62,6 +64,22 @@ function App() {
           <Badge variant="danger">Risco</Badge>
           <Badge variant="glass">Glass</Badge>
           <Badge variant="outline">Outline</Badge>
+        </div>
+
+        <div
+          style={{
+            marginTop: 'var(--uf-space-24)',
+            display: 'flex',
+            gap: 'var(--uf-space-12)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <Avatar src={heroImage} alt="UniFlow AI" size="xl" status="online" />
+          <Avatar name="Ruan Weber" size="lg" status="away" />
+          <Avatar initials="UF" variant="rounded" status="busy" />
+          <Avatar variant="square" status="offline" />
         </div>
 
         <div
