@@ -1,0 +1,66 @@
+.card {
+  display: block;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--uf-radius-16);
+  color: var(--uf-color-text-primary);
+  transition:
+    background-color var(--uf-duration-fast) var(--uf-ease-smooth),
+    border-color var(--uf-duration-fast) var(--uf-ease-smooth),
+    box-shadow var(--uf-duration-fast) var(--uf-ease-smooth),
+    transform var(--uf-duration-fast) var(--uf-ease-smooth);
+}
+
+.default {
+  background: var(--uf-color-bg-surface);
+  border-color: var(--uf-color-border-subtle);
+  box-shadow: var(--uf-shadow-sm);
+}
+
+.elevated {
+  background: var(--uf-color-bg-elevated);
+  border-color: var(--uf-color-border-default);
+  box-shadow: var(--uf-shadow-md);
+}
+
+.glass {
+  background: var(--uf-glass-bg);
+  border-color: var(--uf-glass-border);
+  box-shadow: var(--uf-shadow-glow-ai);
+  backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
+}
+
+.outline {
+  background: transparent;
+  border-color: var(--uf-color-border-default);
+}
+
+.none {
+  padding: 0;
+}
+
+.sm {
+  padding: var(--uf-space-16);
+}
+
+.md {
+  padding: var(--uf-space-24);
+}
+
+.lg {
+  padding: var(--uf-space-32);
+}
+
+.interactive {
+  cursor: pointer;
+}
+
+.interactive:hover {
+  border-color: var(--uf-color-border-strong);
+  transform: translateY(-1px);
+}
+
+.interactive:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}

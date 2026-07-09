@@ -1,4 +1,5 @@
 import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 
 function App() {
   return (
@@ -13,7 +14,13 @@ function App() {
         padding: 'var(--uf-space-24)',
       }}
     >
-      <section style={{ textAlign: 'center' }}>
+      <Card
+        variant="glass"
+        padding="lg"
+        style={{
+          textAlign: 'center',
+        }}
+      >
         <h1>UniFlow AI</h1>
         <p>Design System iniciado com sucesso.</p>
 
@@ -31,7 +38,7 @@ function App() {
           <Button variant="outline">Ver detalhes</Button>
           <Button variant="ghost">Cancelar</Button>
         </div>
-      </section>
+      </Card>
     </main>
   );
 }
