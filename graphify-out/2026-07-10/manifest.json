@@ -370,8 +370,8 @@
     "semantic_hash": "870aebf66ef235cdeaef9522f07786c3"
   },
   "src/features/dashboard/DashboardPage.jsx": {
-    "mtime": 1783607196.913844,
-    "ast_hash": "614f05dcdbb1b157c3e545b2082bcc77",
+    "mtime": 1783711069.3189404,
+    "ast_hash": "120090d4c0c8be5d59dea893b0eb02b0",
     "semantic_hash": ""
   },
   "src/features/dashboard/components/DashboardGreeting.jsx": {
@@ -400,9 +400,9 @@
     "semantic_hash": ""
   },
   "src/features/dashboard/dashboard.mock.js": {
-    "mtime": 1783605235.2290897,
-    "ast_hash": "37ce7db2c439fa972b0f870d86507e99",
-    "semantic_hash": "37ce7db2c439fa972b0f870d86507e99"
+    "mtime": 1783711099.287374,
+    "ast_hash": "344af03201fcee0f38335f4133c3a5d0",
+    "semantic_hash": ""
   },
   "src/features/dashboard/index.js": {
     "mtime": 1783605235.9662547,

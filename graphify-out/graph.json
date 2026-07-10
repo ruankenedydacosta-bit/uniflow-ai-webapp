@@ -2580,7 +2580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 0,
+      "community": 4,
       "norm_label": "topbar.jsx"
     },
     {
@@ -2590,7 +2590,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar_topbar",
-      "community": 68,
+      "community": 4,
       "norm_label": "topbar()"
     },
     {
@@ -2600,7 +2600,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_index",
-      "community": 68,
+      "community": 4,
       "norm_label": "index.js"
     },
     {
@@ -3800,7 +3800,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel",
-      "community": 0,
+      "community": 39,
       "norm_label": "unilivecontextpanel.jsx"
     },
     {
@@ -5642,6 +5642,446 @@
       "id": "docs_00_master_status_atual_aten\u00e7\u00f5es_importantes",
       "community": 49,
       "norm_label": "atencoes importantes"
+    },
+    {
+      "label": "SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan",
+      "community": 72,
+      "norm_label": "supabase_auth_and_data_plan.md"
+    },
+    {
+      "label": "Supabase Auth and Data Plan",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "community": 72,
+      "norm_label": "supabase auth and data plan"
+    },
+    {
+      "label": "1. Objetivo da Fase 2",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_1_objetivo_da_fase_2",
+      "community": 72,
+      "norm_label": "1. objetivo da fase 2"
+    },
+    {
+      "label": "2. Principios",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_2_principios",
+      "community": 72,
+      "norm_label": "2. principios"
+    },
+    {
+      "label": "3. Modelo inicial de autenticacao",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_3_modelo_inicial_de_autenticacao",
+      "community": 72,
+      "norm_label": "3. modelo inicial de autenticacao"
+    },
+    {
+      "label": "`auth.users`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_auth_users",
+      "community": 72,
+      "norm_label": "`auth.users`"
+    },
+    {
+      "label": "`profiles`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_profiles",
+      "community": 72,
+      "norm_label": "`profiles`"
+    },
+    {
+      "label": "`user_preferences`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L70",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_user_preferences",
+      "community": 72,
+      "norm_label": "`user_preferences`"
+    },
+    {
+      "label": "`plans` e `subscriptions`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L93",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_plans_e_subscriptions",
+      "community": 72,
+      "norm_label": "`plans` e `subscriptions`"
+    },
+    {
+      "label": "Relacao entre usuario e workspace",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L121",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_relacao_entre_usuario_e_workspace",
+      "community": 72,
+      "norm_label": "relacao entre usuario e workspace"
+    },
+    {
+      "label": "4. Modelo de workspaces",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L127",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_4_modelo_de_workspaces",
+      "community": 72,
+      "norm_label": "4. modelo de workspaces"
+    },
+    {
+      "label": "`workspaces`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L129",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_workspaces",
+      "community": 72,
+      "norm_label": "`workspaces`"
+    },
+    {
+      "label": "Workspace pessoal",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L143",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_workspace_pessoal",
+      "community": 72,
+      "norm_label": "workspace pessoal"
+    },
+    {
+      "label": "Workspace empresarial",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L155",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_workspace_empresarial",
+      "community": 72,
+      "norm_label": "workspace empresarial"
+    },
+    {
+      "label": "Usuario com ambos",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L169",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_usuario_com_ambos",
+      "community": 72,
+      "norm_label": "usuario com ambos"
+    },
+    {
+      "label": "Membership e roles futuros",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L179",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_membership_e_roles_futuros",
+      "community": 72,
+      "norm_label": "membership e roles futuros"
+    },
+    {
+      "label": "5. Tabelas sugeridas por modulo",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L200",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_5_tabelas_sugeridas_por_modulo",
+      "community": 72,
+      "norm_label": "5. tabelas sugeridas por modulo"
+    },
+    {
+      "label": "Pessoal e financeiro",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L202",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_pessoal_e_financeiro",
+      "community": 72,
+      "norm_label": "pessoal e financeiro"
+    },
+    {
+      "label": "`accounts`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L204",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_accounts",
+      "community": 72,
+      "norm_label": "`accounts`"
+    },
+    {
+      "label": "`transactions`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L219",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_transactions",
+      "community": 72,
+      "norm_label": "`transactions`"
+    },
+    {
+      "label": "`categories`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L238",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_categories",
+      "community": 72,
+      "norm_label": "`categories`"
+    },
+    {
+      "label": "`objectives`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L252",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_objectives",
+      "community": 72,
+      "norm_label": "`objectives`"
+    },
+    {
+      "label": "`agenda_items`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L270",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_agenda_items",
+      "community": 72,
+      "norm_label": "`agenda_items`"
+    },
+    {
+      "label": "`reports_snapshots`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L287",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_reports_snapshots",
+      "community": 72,
+      "norm_label": "`reports_snapshots`"
+    },
+    {
+      "label": "Empresarial",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L302",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_empresarial",
+      "community": 72,
+      "norm_label": "empresarial"
+    },
+    {
+      "label": "`companies`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L304",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_companies",
+      "community": 72,
+      "norm_label": "`companies`"
+    },
+    {
+      "label": "`clients`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L318",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_clients",
+      "community": 72,
+      "norm_label": "`clients`"
+    },
+    {
+      "label": "`crm_pipeline_stages`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L335",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_crm_pipeline_stages",
+      "community": 72,
+      "norm_label": "`crm_pipeline_stages`"
+    },
+    {
+      "label": "`crm_opportunities`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L349",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_crm_opportunities",
+      "community": 72,
+      "norm_label": "`crm_opportunities`"
+    },
+    {
+      "label": "`projects`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L368",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_projects",
+      "community": 72,
+      "norm_label": "`projects`"
+    },
+    {
+      "label": "`project_milestones`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L386",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_project_milestones",
+      "community": 72,
+      "norm_label": "`project_milestones`"
+    },
+    {
+      "label": "Uni e IA",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L402",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_uni_e_ia",
+      "community": 72,
+      "norm_label": "uni e ia"
+    },
+    {
+      "label": "`uni_conversations`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L404",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_uni_conversations",
+      "community": 72,
+      "norm_label": "`uni_conversations`"
+    },
+    {
+      "label": "`uni_insights`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L418",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_uni_insights",
+      "community": 72,
+      "norm_label": "`uni_insights`"
+    },
+    {
+      "label": "`uni_recommendations`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L433",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_uni_recommendations",
+      "community": 72,
+      "norm_label": "`uni_recommendations`"
+    },
+    {
+      "label": "`user_cognitive_profile`",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L449",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_user_cognitive_profile",
+      "community": 72,
+      "norm_label": "`user_cognitive_profile`"
+    },
+    {
+      "label": "6. Regras de RLS",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L463",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_6_regras_de_rls",
+      "community": 72,
+      "norm_label": "6. regras de rls"
+    },
+    {
+      "label": "7. Ordem de implementacao recomendada",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L484",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_7_ordem_de_implementacao_recomendada",
+      "community": 72,
+      "norm_label": "7. ordem de implementacao recomendada"
+    },
+    {
+      "label": "8. Estrategia de migracao do mock para real",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L505",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_8_estrategia_de_migracao_do_mock_para_real",
+      "community": 72,
+      "norm_label": "8. estrategia de migracao do mock para real"
+    },
+    {
+      "label": "9. Estrutura de services futura",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L526",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_9_estrutura_de_services_futura",
+      "community": 72,
+      "norm_label": "9. estrutura de services futura"
+    },
+    {
+      "label": "10. Variaveis de ambiente futuras",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L550",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_10_variaveis_de_ambiente_futuras",
+      "community": 72,
+      "norm_label": "10. variaveis de ambiente futuras"
+    },
+    {
+      "label": "11. Riscos",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L561",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_11_riscos",
+      "community": 72,
+      "norm_label": "11. riscos"
+    },
+    {
+      "label": "12. Checklist da Fase 2",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L574",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_12_checklist_da_fase_2",
+      "community": 72,
+      "norm_label": "12. checklist da fase 2"
+    },
+    {
+      "label": "13. Decisao oficial",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L597",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_13_decisao_oficial",
+      "community": 72,
+      "norm_label": "13. decisao oficial"
     },
     {
       "label": "UNI_AI_EXPERIENCE_REFERENCE.md",
@@ -16678,6 +17118,436 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L550",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_10_variaveis_de_ambiente_futuras",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L561",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_11_riscos",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L574",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_12_checklist_da_fase_2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L597",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_13_decisao_oficial",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_1_objetivo_da_fase_2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_2_principios",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_3_modelo_inicial_de_autenticacao",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L127",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_4_modelo_de_workspaces",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L200",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_5_tabelas_sugeridas_por_modulo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L463",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_6_regras_de_rls",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L484",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_7_ordem_de_implementacao_recomendada",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L505",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_8_estrategia_de_migracao_do_mock_para_real",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L526",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_9_estrutura_de_services_futura",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_3_modelo_inicial_de_autenticacao",
+      "target": "docs_00_master_supabase_auth_and_data_plan_auth_users",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L93",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_3_modelo_inicial_de_autenticacao",
+      "target": "docs_00_master_supabase_auth_and_data_plan_plans_e_subscriptions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_3_modelo_inicial_de_autenticacao",
+      "target": "docs_00_master_supabase_auth_and_data_plan_profiles",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L121",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_3_modelo_inicial_de_autenticacao",
+      "target": "docs_00_master_supabase_auth_and_data_plan_relacao_entre_usuario_e_workspace",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_3_modelo_inicial_de_autenticacao",
+      "target": "docs_00_master_supabase_auth_and_data_plan_user_preferences",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L179",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_4_modelo_de_workspaces",
+      "target": "docs_00_master_supabase_auth_and_data_plan_membership_e_roles_futuros",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L169",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_4_modelo_de_workspaces",
+      "target": "docs_00_master_supabase_auth_and_data_plan_usuario_com_ambos",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L155",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_4_modelo_de_workspaces",
+      "target": "docs_00_master_supabase_auth_and_data_plan_workspace_empresarial",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L143",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_4_modelo_de_workspaces",
+      "target": "docs_00_master_supabase_auth_and_data_plan_workspace_pessoal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L129",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_4_modelo_de_workspaces",
+      "target": "docs_00_master_supabase_auth_and_data_plan_workspaces",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L302",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_5_tabelas_sugeridas_por_modulo",
+      "target": "docs_00_master_supabase_auth_and_data_plan_empresarial",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L202",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_5_tabelas_sugeridas_por_modulo",
+      "target": "docs_00_master_supabase_auth_and_data_plan_pessoal_e_financeiro",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L402",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_5_tabelas_sugeridas_por_modulo",
+      "target": "docs_00_master_supabase_auth_and_data_plan_uni_e_ia",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L204",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_pessoal_e_financeiro",
+      "target": "docs_00_master_supabase_auth_and_data_plan_accounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L270",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_pessoal_e_financeiro",
+      "target": "docs_00_master_supabase_auth_and_data_plan_agenda_items",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L238",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_pessoal_e_financeiro",
+      "target": "docs_00_master_supabase_auth_and_data_plan_categories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L252",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_pessoal_e_financeiro",
+      "target": "docs_00_master_supabase_auth_and_data_plan_objectives",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L287",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_pessoal_e_financeiro",
+      "target": "docs_00_master_supabase_auth_and_data_plan_reports_snapshots",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L219",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_pessoal_e_financeiro",
+      "target": "docs_00_master_supabase_auth_and_data_plan_transactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L318",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_empresarial",
+      "target": "docs_00_master_supabase_auth_and_data_plan_clients",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L304",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_empresarial",
+      "target": "docs_00_master_supabase_auth_and_data_plan_companies",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L349",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_empresarial",
+      "target": "docs_00_master_supabase_auth_and_data_plan_crm_opportunities",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L335",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_empresarial",
+      "target": "docs_00_master_supabase_auth_and_data_plan_crm_pipeline_stages",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L386",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_empresarial",
+      "target": "docs_00_master_supabase_auth_and_data_plan_project_milestones",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L368",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_empresarial",
+      "target": "docs_00_master_supabase_auth_and_data_plan_projects",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L404",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_uni_e_ia",
+      "target": "docs_00_master_supabase_auth_and_data_plan_uni_conversations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L418",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_uni_e_ia",
+      "target": "docs_00_master_supabase_auth_and_data_plan_uni_insights",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L433",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_uni_e_ia",
+      "target": "docs_00_master_supabase_auth_and_data_plan_uni_recommendations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L449",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_uni_e_ia",
+      "target": "docs_00_master_supabase_auth_and_data_plan_user_cognitive_profile",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_AI_EXPERIENCE_REFERENCE.md",
       "source_location": "L1",
       "weight": 1.0,
@@ -17587,5 +18457,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "4492be3b07fe9a6c1812f11beeee19928f97fb75"
+  "built_at_commit": "12687e22124b04a0c6aa97ae015252720a3bd4fa"
 }
