@@ -240,8 +240,8 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783647394.5610104,
-    "ast_hash": "a54cedb65d6dfc500107d39dc3454a5c",
+    "mtime": 1783709381.2226312,
+    "ast_hash": "66e97ab41116a9d6f44da904fbdce005",
     "semantic_hash": ""
   },
   "src/app/main.jsx": {
@@ -250,8 +250,8 @@
     "semantic_hash": "093d1255ac32efccd41332e8f21c2361"
   },
   "src/app/routes.jsx": {
-    "mtime": 1783701488.5326495,
-    "ast_hash": "ced1399939a0749e1a3dc1519fb6161d",
+    "mtime": 1783709374.0863466,
+    "ast_hash": "5446eccf783f63252efd4f41fe355be0",
     "semantic_hash": ""
   },
   "src/components/index.js": {
@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1783686040.803261,
-    "ast_hash": "a6cbbe825235468d5a1c13a4b03dbe2f",
+    "mtime": 1783710403.6991138,
+    "ast_hash": "0775b80995e0f924b26f0f4c94545e60",
     "semantic_hash": ""
   },
   "README.md": {
@@ -570,8 +570,8 @@
     "semantic_hash": ""
   },
   "src/pages/ProjectsPage.jsx": {
-    "mtime": 1783607862.1666481,
-    "ast_hash": "6fadea417df01ddb6c74dfdaf0abbb42",
+    "mtime": 1783708993.0184019,
+    "ast_hash": "395a965f421465f4468bb5f0fedc82be",
     "semantic_hash": ""
   },
   "src/pages/ReportsPage.jsx": {
@@ -775,8 +775,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/OBSIDIAN_WORKFLOW.md": {
-    "mtime": 1783686030.3595026,
-    "ast_hash": "e3645ae7ee2cd873085f57da81c86a55",
+    "mtime": 1783710418.0188298,
+    "ast_hash": "4dbf0ba6553392e1bc0b5487bbb157a2",
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceProjectionChart.jsx": {
@@ -822,6 +822,21 @@
   "src/pages/crm/crm.mock.js": {
     "mtime": 1783708119.1089022,
     "ast_hash": "0e29a4034acd8b8dd90fc23e8aeb09d1",
+    "semantic_hash": ""
+  },
+  "src/pages/projetos/projects.mock.js": {
+    "mtime": 1783709008.6509442,
+    "ast_hash": "22dd3a9b273f736883459fec9e4149b8",
+    "semantic_hash": ""
+  },
+  "src/pages/LoginPage.jsx": {
+    "mtime": 1783709391.9551048,
+    "ast_hash": "961b83ce3d3175e306e2ec7f430c2950",
+    "semantic_hash": ""
+  },
+  "src/pages/OnboardingPage.jsx": {
+    "mtime": 1783709449.3274686,
+    "ast_hash": "60a6474bc239475b7889b5da00577585",
     "semantic_hash": ""
   }
 }

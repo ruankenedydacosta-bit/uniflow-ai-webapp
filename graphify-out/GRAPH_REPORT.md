@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 158 files · ~47,388 words
+- 161 files · ~48,602 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 647 nodes · 980 edges · 71 communities (57 shown, 14 thin omitted)
+- 655 nodes · 1026 edges · 71 communities (57 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9ec7c802`
+- Built from commit: `8623405b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -59,13 +59,13 @@
 - FinanceProjectionChart.jsx
 
 ## God Nodes (most connected - your core abstractions)
-1. `cx()` - 27 edges
-2. `Badge()` - 23 edges
-3. `Card()` - 21 edges
-4. `formatCurrency()` - 20 edges
-5. `useAccess()` - 19 edges
-6. `Uni AI Experience Reference` - 19 edges
-7. `Button()` - 18 edges
+1. `cx()` - 29 edges
+2. `Badge()` - 26 edges
+3. `Card()` - 24 edges
+4. `useAccess()` - 23 edges
+5. `formatCurrency()` - 22 edges
+6. `Button()` - 21 edges
+7. `Uni AI Experience Reference` - 19 edges
 8. `User Modes and Plans` - 15 edges
 9. `App Structure Map` - 13 edges
 10. `6. Catalogo oficial de modulos` - 13 edges
@@ -89,7 +89,7 @@
 
 ### Community 0 - "DashboardPage.jsx"
 Cohesion: 0.06
-Nodes (50): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), WORKSPACE_TYPES, AccessContext, useAccess(), Avatar, Badge() (+42 more)
+Nodes (55): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, useAccess() (+47 more)
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.08
@@ -185,7 +185,7 @@ Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao fut
 
 ### Community 68 - "navigation.js"
 Cohesion: 0.08
-Nodes (23): PLANS, USER_MODES, AccessProvider(), App(), ALL_MODES, ALL_PLANS, BUSINESS_MODES, BUSINESS_PLANS (+15 more)
+Nodes (22): AccessProvider(), App(), ALL_MODES, ALL_PLANS, BUSINESS_MODES, BUSINESS_PLANS, filterNavigationItems(), navigationItems (+14 more)
 
 ### Community 69 - "Obsidian Workflow"
 Cohesion: 0.22
@@ -200,7 +200,7 @@ Cohesion: 0.36
 Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointCoordinates(), getSeriesTotal(), getSeriesValues(), PADDING, SERIES_CLASSES
 
 ## Knowledge Gaps
-- **247 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+242 more)
+- **248 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+243 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -210,13 +210,13 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `cx()` connect `DashboardPage.jsx` to `UniAIPage.jsx`?**
   _High betweenness centrality (0.010) - this node is a cross-community bridge._
 - **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `UniAIPage.jsx`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **Why does `Button()` connect `DashboardPage.jsx` to `UniAIPage.jsx`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _247 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _248 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.059932785660941 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.059549624687239365 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**

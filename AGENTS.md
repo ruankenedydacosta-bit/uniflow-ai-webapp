@@ -75,9 +75,13 @@ O Obsidian e a base oficial de conhecimento viva da UniFlow AI.
 
 Regras para o Codex:
 
-- Sempre que uma alteracao representar decisao importante, sugerir ou criar nota no Obsidian.
-- Sempre que um prompt estrutural for aprovado, registrar em `09 - Prompts Codex`.
-- Sempre que mudar uma regra de produto, UX ou arquitetura, registrar em `10 - Decisões do Projeto`.
+- Sempre que uma tarefa envolver decisao estrutural, produto, UX, arquitetura, navegacao, plano, modo, modulo novo ou regra importante, registrar nota no Obsidian com:
+  `npm run obsidian:note -- --type decision --title "..." --content "..."`
+- Sempre que um prompt estrutural importante for criado ou aprovado, registrar nota no Obsidian com:
+  `npm run obsidian:note -- --type prompt --title "..." --content "..."`
+- Quando o Codex puder rodar o comando, nao pedir para o usuario registrar manualmente.
+- Ao finalizar uma tarefa importante, informar se registrou nota no Obsidian, o titulo da nota criada e o caminho da nota.
+- Registrar mudancas de regra de produto, UX ou arquitetura em `10 - Decisões do Projeto`.
 - Nao registrar alteracoes triviais.
-- Nao registrar logs tecnicos pequenos.
+- Nao registrar ajustes visuais pequenos, bugs tecnicos simples, cache, logs tecnicos pequenos ou resultados repetitivos de build/lint.
 - Nao poluir o Obsidian.

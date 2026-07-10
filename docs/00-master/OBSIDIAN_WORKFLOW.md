@@ -11,6 +11,7 @@ O cofre `UniFlow AI - Base de Conhecimento` funciona como memoria operacional do
 Use o Obsidian para registrar:
 
 - decisoes importantes de produto, UX ou arquitetura;
+- decisoes estruturais sobre navegacao, planos, modos, modulos novos ou regras importantes;
 - prompts estruturais aprovados para Codex;
 - mudancas relevantes no roadmap;
 - aprendizados sobre WebApp, Landing, Design System ou Banco de Dados;
@@ -19,6 +20,9 @@ Use o Obsidian para registrar:
 Nao use o Obsidian para registrar:
 
 - ajustes triviais;
+- ajustes visuais pequenos;
+- bugs tecnicos simples;
+- cache ou atualizacoes mecanicas;
 - logs tecnicos pequenos;
 - resultados repetitivos de build/lint;
 - detalhes que ja estao claros no commit ou no proprio codigo.
@@ -61,6 +65,8 @@ Comando base:
 npm run obsidian:note -- --type decision --title "Financeiro menos poluído" --content "A tela Financeiro deve priorizar gráficos, leitura da Uni e próximos passos, evitando excesso de números soltos."
 ```
 
+Quando a tarefa envolver decisao estrutural, produto, UX, arquitetura, navegacao, plano, modo, modulo novo ou regra importante, o Codex deve rodar o comando diretamente quando tiver permissao para isso. Nao deve pedir para o usuario registrar manualmente se puder executar o workflow.
+
 Exemplo para prompt aprovado:
 
 ```bash
@@ -85,9 +91,12 @@ Se o cofre estiver em outro local, ajuste essa constante em `scripts/obsidian/cr
 
 ## Regras para agentes
 
-- Sugerir ou criar nota no Obsidian quando uma alteracao representar decisao importante.
-- Registrar prompts estruturais aprovados em `09 - Prompts Codex`.
-- Registrar mudancas de regra de produto, UX ou arquitetura em `10 - Decisões do Projeto`.
+- Registrar nota no Obsidian quando uma alteracao representar decisao importante de produto, UX, arquitetura, navegacao, planos, modos, modulos ou regras.
+- Usar `type: decision` para decisoes estruturais e registrar em `10 - Decisões do Projeto`.
+- Usar `type: prompt` para prompts estruturais importantes aprovados e registrar em `09 - Prompts Codex`.
+- Ao finalizar uma tarefa importante, informar se a nota foi registrada, o titulo da nota criada e o caminho da nota.
+- Nao pedir para o usuario registrar manualmente quando o Codex puder rodar `npm run obsidian:note`.
 - Nao registrar alteracoes triviais.
-- Nao poluir o Obsidian com logs pequenos.
+- Nao registrar ajustes visuais pequenos, bugs tecnicos simples, cache, logs tecnicos pequenos ou resultados repetitivos de build/lint.
+- Nao poluir o Obsidian com notas inuteis.
 - Manter notas claras, curtas e uteis para agentes futuros.
