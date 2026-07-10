@@ -1,4 +1,6 @@
 .topbar {
+  position: relative;
+  z-index: var(--uf-z-popover);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -8,6 +10,7 @@
   border-bottom: 1px solid var(--uf-color-border-subtle);
   background: var(--uf-glass-bg);
   backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
+  overflow: visible;
 }
 
 .heading {
@@ -25,9 +28,12 @@
 }
 
 .actions {
+  position: relative;
+  z-index: var(--uf-z-popover);
   display: flex;
   align-items: center;
   gap: var(--uf-space-12);
   flex-wrap: wrap;
   justify-content: flex-end;
+  overflow: visible;
 }

@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-09)
 
 ## Corpus Check
-- 144 files · ~36,161 words
+- 144 files · ~36,195 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 547 nodes · 746 edges · 68 communities (54 shown, 14 thin omitted)
+- 547 nodes · 744 edges · 68 communities (54 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a462005b`
+- Built from commit: `ba5e233f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -62,9 +62,9 @@
 4. `User Modes and Plans` - 15 edges
 5. `Card()` - 14 edges
 6. `Módulos oficiais do produto` - 13 edges
-7. `Button()` - 12 edges
-8. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
-9. `DashboardView` - 11 edges
+7. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
+8. `DashboardView` - 11 edges
+9. `Button()` - 11 edges
 10. `Kit Base UniFlow AI` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -193,13 +193,13 @@ Nodes (29): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLA
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
 - **Why does `Button()` connect `DashboardPage.jsx` to `UniAIPage.jsx`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
   _199 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.09000584453535944 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08883693746347165 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**

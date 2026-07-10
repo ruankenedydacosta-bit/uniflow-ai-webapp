@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppShell from '../components/layout/AppShell';
-import AccessModeSwitcher from '../components/dev/AccessModeSwitcher';
 import { AccessProvider } from './AccessContext';
 import { appRoutes } from './routes';
 
@@ -27,7 +26,6 @@ function App() {
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
-      <AccessModeSwitcher />
     </AccessProvider>
   );
 }

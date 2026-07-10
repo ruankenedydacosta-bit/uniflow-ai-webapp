@@ -240,8 +240,8 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783646447.0173702,
-    "ast_hash": "20da93c5d9b2e876f6e1f2bed11dd14b",
+    "mtime": 1783647394.5610104,
+    "ast_hash": "a54cedb65d6dfc500107d39dc3454a5c",
     "semantic_hash": ""
   },
   "src/app/main.jsx": {
@@ -280,9 +280,9 @@
     "semantic_hash": "8fab1a1acd7cdb167fead5b9e1153936"
   },
   "src/components/layout/Topbar/Topbar.jsx": {
-    "mtime": 1783604906.9002218,
-    "ast_hash": "76f749d67a708703ee444053ccba5fdd",
-    "semantic_hash": "76f749d67a708703ee444053ccba5fdd"
+    "mtime": 1783647394.6613839,
+    "ast_hash": "686f0e67d0a2d32849f42485589b5409",
+    "semantic_hash": ""
   },
   "src/components/layout/Topbar/index.js": {
     "mtime": 1783604907.089592,
@@ -750,8 +750,8 @@
     "semantic_hash": ""
   },
   "src/components/dev/AccessModeSwitcher.jsx": {
-    "mtime": 1783647023.6877763,
-    "ast_hash": "ac6c2b8986542b6f2ed116b76fcdaaf3",
+    "mtime": 1783679626.4232512,
+    "ast_hash": "5812989a5283caf53e806e187dad08ff",
     "semantic_hash": ""
   }
 }

@@ -1,6 +1,6 @@
 import Avatar from '../../ui/Avatar';
 import Badge from '../../ui/Badge';
-import Button from '../../ui/Button';
+import AccessModeSwitcher from '../../dev/AccessModeSwitcher';
 import styles from './Topbar.module.css';
 
 function Topbar({ title }) {
@@ -14,10 +14,8 @@ function Topbar({ title }) {
       </div>
 
       <div className={styles.actions}>
-        <Button variant="outline" size="sm">
-          Nova ação
-        </Button>
-        <Avatar name="UniFlow AI" size="sm" status="online" />
+        <AccessModeSwitcher />
+        <Avatar name="UniFlow Demo" size="sm" status="online" />
       </div>
     </header>
   );

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { PLANS, USER_MODES, WORKSPACE_TYPES } from '../../app/access.js';
 import { useAccess } from '../../app/AccessContext';
 import styles from './AccessModeSwitcher.module.css';
@@ -57,11 +58,13 @@ function normalizeAccessForPlan(plan) {
   };
 }
 
-// Temporario para desenvolvimento; sera substituido por onboarding/login e dados reais.
+// Temporario para desenvolvimento; futuramente sera substituido pelo menu real de perfil/onboarding/login.
 function AccessModeSwitcher() {
   const { access, setAccess } = useAccess();
+  const [isOpen, setIsOpen] = useState(false);
   const canChooseWorkspace = access.userMode === USER_MODES.BOTH;
   const userModeOptions = getModeOptionsForPlan(access.plan);
+  const accessSummary = `${USER_MODE_LABELS[access.userMode]} · ${PLAN_LABELS[access.plan]}`;
 
   function handleUserModeChange(event) {
     const nextUserMode = event.target.value;
@@ -94,47 +97,62 @@ function AccessModeSwitcher() {
   }
 
   return (
-    <aside className={styles.switcher} aria-label="Seletor temporário de acesso demo">
-      <div className={styles.header}>
-        <span className={styles.kicker}>Acesso Demo</span>
-        <span className={styles.summary}>
-          {USER_MODE_LABELS[access.userMode]} / {PLAN_LABELS[access.plan]}
+    <div className={styles.switcher}>
+      <button
+        type="button"
+        className={styles.profileButton}
+        aria-expanded={isOpen}
+        aria-controls="access-demo-panel"
+        onClick={() => setIsOpen((currentIsOpen) => !currentIsOpen)}
+      >
+        <span className={styles.profileText}>
+          <span className={styles.profileName}>UniFlow Demo</span>
+          <span className={styles.profileSummary}>{accessSummary}</span>
         </span>
-      </div>
+      </button>
 
-      <label className={styles.field}>
-        <span>Modo de uso</span>
-        <select value={access.userMode} onChange={handleUserModeChange}>
-          {userModeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      {isOpen ? (
+        <aside id="access-demo-panel" className={styles.panel} aria-label="Seletor temporário de acesso demo">
+          <div className={styles.header}>
+            <span className={styles.kicker}>Perfil de teste</span>
+            <span className={styles.description}>Ambiente temporário de desenvolvimento</span>
+          </div>
 
-      <label className={styles.field}>
-        <span>Plano</span>
-        <select value={access.plan} onChange={handlePlanChange}>
-          {PLAN_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+          <label className={styles.field}>
+            <span>Plano</span>
+            <select value={access.plan} onChange={handlePlanChange}>
+              {PLAN_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <label className={styles.field}>
-        <span>Espaço atual</span>
-        <select value={access.currentWorkspace} onChange={handleWorkspaceChange} disabled={!canChooseWorkspace}>
-          {WORKSPACE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-    </aside>
+          <label className={styles.field}>
+            <span>Modo de uso</span>
+            <select value={access.userMode} onChange={handleUserModeChange}>
+              {userModeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className={styles.field}>
+            <span>Espaço atual</span>
+            <select value={access.currentWorkspace} onChange={handleWorkspaceChange} disabled={!canChooseWorkspace}>
+              {WORKSPACE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </aside>
+      ) : null}
+    </div>
   );
 }
 

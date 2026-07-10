@@ -1,62 +1,146 @@
 .switcher {
-  position: fixed;
-  right: var(--uf-space-16);
-  bottom: var(--uf-space-16);
+  position: relative;
   z-index: var(--uf-z-popover);
+}
+
+.profileButton {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: calc(var(--uf-space-160) * 2);
+  min-height: var(--uf-space-48);
+  padding: 0 var(--uf-space-12);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-glass-bg);
+  color: var(--uf-color-text-primary);
+  cursor: pointer;
+  backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
+  transition:
+    background-color var(--uf-duration-fast) var(--uf-ease-smooth),
+    border-color var(--uf-duration-fast) var(--uf-ease-smooth),
+    box-shadow var(--uf-duration-fast) var(--uf-ease-smooth);
+}
+
+.profileButton:hover {
+  border-color: var(--uf-color-border-default);
+  background: var(--uf-color-primary-subtle);
+  box-shadow: var(--uf-shadow-sm);
+}
+
+.profileButton:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.profileText {
   display: grid;
-  width: min(100% - var(--uf-space-32), calc(var(--uf-space-160) * 2));
-  gap: var(--uf-space-8);
-  padding: var(--uf-space-12);
+  gap: var(--uf-space-4);
+  min-width: 0;
+  text-align: right;
+}
+
+.profileName {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: var(--uf-text-caption-lh);
+  white-space: nowrap;
+}
+
+.profileSummary {
+  color: var(--uf-color-text-tertiary);
+  font-size: var(--uf-text-micro-size);
+  line-height: var(--uf-text-micro-lh);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + var(--uf-space-8));
+  right: 0;
+  z-index: var(--uf-z-modal);
+  display: grid;
+  width: min(calc(var(--uf-space-160) * 2), calc(100vw - var(--uf-space-32)));
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-16);
   border: 1px solid var(--uf-color-border-default);
   border-radius: var(--uf-radius-16);
-  background: var(--uf-glass-bg-strong);
+  background:
+    var(--uf-color-ai-subtle),
+    var(--uf-glass-bg-strong);
   box-shadow: var(--uf-shadow-lg);
   color: var(--uf-color-text-primary);
   backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--uf-space-8);
+  display: grid;
+  gap: var(--uf-space-4);
+  padding-bottom: var(--uf-space-8);
+  border-bottom: 1px solid var(--uf-color-border-subtle);
 }
 
 .kicker {
   color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: var(--uf-text-caption-lh);
+  white-space: nowrap;
+}
+
+.description {
+  color: var(--uf-color-text-tertiary);
   font-size: var(--uf-text-micro-size);
-  font-weight: var(--uf-font-weight-bold);
   line-height: var(--uf-text-micro-lh);
-  text-transform: uppercase;
 }
 
 .summary {
   color: var(--uf-color-text-tertiary);
   font-size: var(--uf-text-micro-size);
   line-height: var(--uf-text-micro-lh);
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .field {
   display: grid;
-  gap: var(--uf-space-4);
+  gap: var(--uf-space-8);
   color: var(--uf-color-text-secondary);
   font-size: var(--uf-text-micro-size);
   line-height: var(--uf-text-micro-lh);
 }
 
 .field select {
+  appearance: none;
   min-height: var(--uf-space-40);
-  padding: 0 var(--uf-space-8);
-  border: 1px solid var(--uf-color-border-default);
-  border-radius: var(--uf-radius-8);
-  background: var(--uf-color-bg-sunken);
+  width: 100%;
+  padding: 0 var(--uf-space-12);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-12);
+  background:
+    linear-gradient(135deg, var(--uf-color-bg-sunken), var(--uf-color-bg-surface)),
+    var(--uf-color-bg-sunken);
   color: var(--uf-color-text-primary);
   font: inherit;
+  font-weight: var(--uf-font-weight-medium);
+  transition:
+    border-color var(--uf-duration-fast) var(--uf-ease-smooth),
+    box-shadow var(--uf-duration-fast) var(--uf-ease-smooth);
+}
+
+.field select:hover {
+  border-color: var(--uf-color-border-default);
 }
 
 .field select:focus-visible {
   outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
   outline-offset: var(--uf-focus-ring-offset);
+  box-shadow: var(--uf-shadow-sm);
 }
 
 .field select:disabled {
