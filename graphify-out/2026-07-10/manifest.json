@@ -240,8 +240,8 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783709381.2226312,
-    "ast_hash": "66e97ab41116a9d6f44da904fbdce005",
+    "mtime": 1783710697.4917536,
+    "ast_hash": "f6511b7d6d7a4f5e2048012a680db052",
     "semantic_hash": ""
   },
   "src/app/main.jsx": {
@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1783686040.803261,
-    "ast_hash": "a6cbbe825235468d5a1c13a4b03dbe2f",
+    "mtime": 1783710403.6991138,
+    "ast_hash": "0775b80995e0f924b26f0f4c94545e60",
     "semantic_hash": ""
   },
   "README.md": {
@@ -730,8 +730,8 @@
     "semantic_hash": ""
   },
   "src/app/navigation.js": {
-    "mtime": 1783701493.376706,
-    "ast_hash": "3acc6ce96b1ff1875707935b57038156",
+    "mtime": 1783710670.3845155,
+    "ast_hash": "6b9e548c22d2ac4fa316fa154a737ade",
     "semantic_hash": ""
   },
   "docs/00-master/USER_MODES_AND_PLANS.md": {
@@ -775,8 +775,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/OBSIDIAN_WORKFLOW.md": {
-    "mtime": 1783686030.3595026,
-    "ast_hash": "e3645ae7ee2cd873085f57da81c86a55",
+    "mtime": 1783710418.0188298,
+    "ast_hash": "4dbf0ba6553392e1bc0b5487bbb157a2",
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceProjectionChart.jsx": {
@@ -837,6 +837,11 @@
   "src/pages/OnboardingPage.jsx": {
     "mtime": 1783709449.3274686,
     "ast_hash": "60a6474bc239475b7889b5da00577585",
+    "semantic_hash": ""
+  },
+  "src/app/accessRules.js": {
+    "mtime": 1783710651.6006048,
+    "ast_hash": "79750f197804ad2566190b2fb3d50b92",
     "semantic_hash": ""
   }
 }

@@ -240,8 +240,8 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783709381.2226312,
-    "ast_hash": "66e97ab41116a9d6f44da904fbdce005",
+    "mtime": 1783710697.4917536,
+    "ast_hash": "f6511b7d6d7a4f5e2048012a680db052",
     "semantic_hash": ""
   },
   "src/app/main.jsx": {
@@ -370,8 +370,8 @@
     "semantic_hash": "870aebf66ef235cdeaef9522f07786c3"
   },
   "src/features/dashboard/DashboardPage.jsx": {
-    "mtime": 1783607196.913844,
-    "ast_hash": "614f05dcdbb1b157c3e545b2082bcc77",
+    "mtime": 1783711069.3189404,
+    "ast_hash": "120090d4c0c8be5d59dea893b0eb02b0",
     "semantic_hash": ""
   },
   "src/features/dashboard/components/DashboardGreeting.jsx": {
@@ -400,9 +400,9 @@
     "semantic_hash": ""
   },
   "src/features/dashboard/dashboard.mock.js": {
-    "mtime": 1783605235.2290897,
-    "ast_hash": "37ce7db2c439fa972b0f870d86507e99",
-    "semantic_hash": "37ce7db2c439fa972b0f870d86507e99"
+    "mtime": 1783711099.287374,
+    "ast_hash": "344af03201fcee0f38335f4133c3a5d0",
+    "semantic_hash": ""
   },
   "src/features/dashboard/index.js": {
     "mtime": 1783605235.9662547,
@@ -730,8 +730,8 @@
     "semantic_hash": ""
   },
   "src/app/navigation.js": {
-    "mtime": 1783701493.376706,
-    "ast_hash": "3acc6ce96b1ff1875707935b57038156",
+    "mtime": 1783710670.3845155,
+    "ast_hash": "6b9e548c22d2ac4fa316fa154a737ade",
     "semantic_hash": ""
   },
   "docs/00-master/USER_MODES_AND_PLANS.md": {
@@ -837,6 +837,11 @@
   "src/pages/OnboardingPage.jsx": {
     "mtime": 1783709449.3274686,
     "ast_hash": "60a6474bc239475b7889b5da00577585",
+    "semantic_hash": ""
+  },
+  "src/app/accessRules.js": {
+    "mtime": 1783710651.6006048,
+    "ast_hash": "79750f197804ad2566190b2fb3d50b92",
     "semantic_hash": ""
   }
 }

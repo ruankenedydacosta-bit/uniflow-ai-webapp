@@ -3,11 +3,28 @@ import AgendaPage from '../pages/AgendaPage';
 import ClientesPage from '../pages/ClientesPage';
 import CRMPage from '../pages/CRMPage';
 import FinancePage from '../pages/FinancePage';
+import LoginPage from '../pages/LoginPage';
 import ObjetivosPage from '../pages/ObjetivosPage';
+import OnboardingPage from '../pages/OnboardingPage';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
 import UniAIPage from '../pages/UniAIPage';
+
+export const publicRoutes = [
+  {
+    path: '/login',
+    label: 'Login',
+    title: 'Login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/onboarding',
+    label: 'Onboarding',
+    title: 'Onboarding',
+    element: <OnboardingPage />,
+  },
+];
 
 export const appRoutes = [
   {

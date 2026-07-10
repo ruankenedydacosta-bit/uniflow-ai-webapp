@@ -1,9 +1,12 @@
-import { PLANS, USER_MODES } from './access.js';
+import { PLANS, USER_MODES, WORKSPACE_TYPES } from './access.js';
+import { canAccessNavigationItem } from './accessRules.js';
 
 const ALL_MODES = [USER_MODES.PERSONAL, USER_MODES.BUSINESS, USER_MODES.BOTH];
 const ALL_PLANS = [PLANS.FREE, PLANS.PRO, PLANS.BUSINESS, PLANS.ENTERPRISE];
+const ALL_WORKSPACES = [WORKSPACE_TYPES.PERSONAL, WORKSPACE_TYPES.BUSINESS];
 const BUSINESS_MODES = [USER_MODES.BUSINESS, USER_MODES.BOTH];
 const BUSINESS_PLANS = [PLANS.BUSINESS, PLANS.ENTERPRISE];
+const BUSINESS_WORKSPACES = [WORKSPACE_TYPES.BUSINESS];
 
 export const navigationItems = [
   {
@@ -11,6 +14,7 @@ export const navigationItems = [
     path: '/dashboard',
     modes: ALL_MODES,
     plans: ALL_PLANS,
+    workspaces: ALL_WORKSPACES,
     description: 'Visão inicial do espaço financeiro ativo.',
   },
   {
@@ -18,6 +22,7 @@ export const navigationItems = [
     path: '/uni-ai',
     modes: ALL_MODES,
     plans: ALL_PLANS,
+    workspaces: ALL_WORKSPACES,
     description: 'Consultora financeira inteligente da UniFlow AI.',
   },
   {
@@ -25,6 +30,7 @@ export const navigationItems = [
     path: '/financeiro',
     modes: ALL_MODES,
     plans: ALL_PLANS,
+    workspaces: ALL_WORKSPACES,
     description: 'Receitas, despesas, saldo e fluxo financeiro.',
   },
   {
@@ -32,6 +38,7 @@ export const navigationItems = [
     path: '/objetivos',
     modes: ALL_MODES,
     plans: ALL_PLANS,
+    workspaces: ALL_WORKSPACES,
     description: 'Destinos financeiros conectados ao GPS da UniFlow AI.',
   },
   {
@@ -39,6 +46,7 @@ export const navigationItems = [
     path: '/crm',
     modes: BUSINESS_MODES,
     plans: BUSINESS_PLANS,
+    workspaces: BUSINESS_WORKSPACES,
     description: 'Relacionamento comercial e oportunidades de negócio.',
   },
   {
@@ -46,6 +54,7 @@ export const navigationItems = [
     path: '/clientes',
     modes: BUSINESS_MODES,
     plans: BUSINESS_PLANS,
+    workspaces: BUSINESS_WORKSPACES,
     description: 'Relacionamentos, cobranças e próximos passos empresariais.',
   },
   {
@@ -53,6 +62,7 @@ export const navigationItems = [
     path: '/projetos',
     modes: BUSINESS_MODES,
     plans: BUSINESS_PLANS,
+    workspaces: BUSINESS_WORKSPACES,
     description: 'Projetos e entregas ligados ao espaço empresarial.',
   },
   {
@@ -60,6 +70,7 @@ export const navigationItems = [
     path: '/agenda',
     modes: ALL_MODES,
     plans: ALL_PLANS,
+    workspaces: ALL_WORKSPACES,
     description: 'Compromissos, decisões e eventos financeiros.',
   },
   {
@@ -67,6 +78,7 @@ export const navigationItems = [
     path: '/relatorios',
     modes: ALL_MODES,
     plans: [PLANS.PRO, PLANS.BUSINESS, PLANS.ENTERPRISE],
+    workspaces: ALL_WORKSPACES,
     description: 'Leituras e análises do contexto financeiro.',
   },
   {
@@ -74,11 +86,12 @@ export const navigationItems = [
     path: '/configuracoes',
     modes: ALL_MODES,
     plans: ALL_PLANS,
+    workspaces: ALL_WORKSPACES,
     description: 'Preferências do usuário, espaço e produto.',
   },
 ];
 
-// O filtro será ativado depois do onboarding/login, quando userMode e plan forem reais.
-export function filterNavigationItems(items, { userMode, plan }) {
-  return items.filter((item) => item.modes.includes(userMode) && item.plans.includes(plan));
+// O filtro usa o acesso demo hoje; depois será alimentado pelo onboarding/login reais.
+export function filterNavigationItems(items, access) {
+  return items.filter((item) => canAccessNavigationItem(item, access));
 }

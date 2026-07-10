@@ -1,309 +1,244 @@
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: var(--uf-space-32);
+  gap: var(--uf-space-24);
   padding-bottom: var(--uf-space-64);
 }
 
-.dashboard :global(.dashboardHero) {
-  display: flex;
+.hero,
+.directionGrid,
+.clarityGrid {
+  display: grid;
+  gap: var(--uf-grid-gutter);
+}
+
+.hero {
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--uf-space-24);
-  flex-wrap: wrap;
   padding: var(--uf-space-32);
   border: 1px solid var(--uf-color-border-subtle);
   border-radius: var(--uf-radius-24);
-  background: var(--uf-glass-bg);
+  background:
+    var(--uf-color-primary-subtle),
+    var(--uf-glass-bg);
   box-shadow: var(--uf-shadow-md);
   backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
 }
 
-.dashboard :global(.dashboardHeroCopy) {
+.heroCopy,
+.directionCard,
+.nextStepCard,
+.signalCard,
+.summaryCard,
+.uniCard {
   display: flex;
-  flex: 1 1 calc(var(--uf-space-160) * 2);
   flex-direction: column;
-  gap: var(--uf-space-12);
+  gap: var(--uf-space-16);
   min-width: 0;
 }
 
-.dashboard :global(.dashboardHeroCopy h2) {
+.heroCopy {
+  gap: var(--uf-space-12);
+}
+
+.heroCopy h2,
+.cardHeader h3,
+.sectionHeader h3,
+.signalCard h4 {
   color: var(--uf-color-text-primary);
+}
+
+.heroCopy h2 {
   font-size: var(--uf-text-h2-size);
   font-weight: var(--uf-text-h2-weight);
   line-height: var(--uf-text-h2-lh);
 }
 
-.dashboard :global(.dashboardHeroCopy p),
-.dashboard :global(.dashboardMuted) {
+.heroCopy p,
+.sectionHeader p,
+.signalCard p,
+.summaryItem span,
+.uniCard p,
+.eyebrow {
   color: var(--uf-color-text-secondary);
-  font-size: var(--uf-text-body-size);
-  line-height: var(--uf-text-body-lh);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
 }
 
-.dashboard :global(.dashboardHeroAction) {
+.heroActions,
+.shortcuts {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--uf-space-12);
   flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(var(--uf-grid-columns-desktop), minmax(0, 1fr));
-  gap: var(--uf-grid-gutter);
+.directionGrid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
   align-items: stretch;
 }
 
-.dashboard :global(.dashboardBalanceCard),
-.dashboard :global(.dashboardFlowCard),
-.dashboard :global(.dashboardGoalsCard),
-.dashboard :global(.dashboardInsightsCard),
-.dashboard :global(.dashboardActivityCard) {
-  height: 100%;
+.directionCard {
+  border-color: var(--uf-color-border-default);
+  background:
+    var(--uf-color-ai-subtle),
+    var(--uf-glass-bg);
+  box-shadow: var(--uf-shadow-sm);
 }
 
-.dashboard :global(.dashboardBalanceCard) {
-  grid-column: span 5;
-}
-
-.dashboard :global(.dashboardFlowCard) {
-  grid-column: span 7;
-}
-
-.dashboard :global(.dashboardGoalsCard) {
-  grid-column: span 5;
-}
-
-.dashboard :global(.dashboardInsightsCard) {
-  grid-column: span 7;
-}
-
-.dashboard :global(.dashboardActivityCard) {
-  grid-column: span 12;
-}
-
-.dashboard :global(.dashboardCardHeader) {
+.cardHeader,
+.sectionHeader,
+.signalTop {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--uf-space-12);
-  margin-bottom: var(--uf-space-20);
-  color: var(--uf-color-text-primary);
+  gap: var(--uf-space-16);
+}
+
+.cardHeader h3,
+.sectionHeader h3 {
   font-size: var(--uf-text-title-size);
   font-weight: var(--uf-text-title-weight);
   line-height: var(--uf-text-title-lh);
 }
 
-.dashboard :global(.dashboardMetric) {
+.eyebrow {
   display: block;
-  margin-bottom: var(--uf-space-8);
+  margin-bottom: var(--uf-space-4);
+  color: var(--uf-color-text-muted);
+  font-weight: var(--uf-font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.directionCard > strong {
+  max-width: 920px;
   color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-h1-size);
-  font-weight: var(--uf-text-h1-weight);
-  line-height: var(--uf-text-h1-lh);
+  font-size: var(--uf-text-subtitle-size);
+  line-height: var(--uf-text-subtitle-lh);
 }
 
-.dashboard :global(.dashboardRows),
-.dashboard :global(.dashboardGoals),
-.dashboard :global(.dashboardInsightList),
-.dashboard :global(.dashboardActivityList) {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-16);
-}
-
-.dashboard :global(.dashboardRow),
-.dashboard :global(.dashboardActivityList li),
-.dashboard :global(.dashboardGoalHeader) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--uf-space-16);
-}
-
-.dashboard :global(.dashboardRow span),
-.dashboard :global(.dashboardActivityMeta),
-.dashboard :global(.dashboardGoalMeta),
-.dashboard :global(.dashboardInsightHeader p) {
-  color: var(--uf-color-text-secondary);
-  font-size: var(--uf-text-caption-size);
-  line-height: var(--uf-text-caption-lh);
-}
-
-.dashboard :global(.dashboardTone-success) {
-  color: var(--uf-color-success);
-}
-
-.dashboard :global(.dashboardTone-danger) {
-  color: var(--uf-color-danger);
-}
-
-.dashboard :global(.dashboardTone-primary) {
-  color: var(--uf-color-primary);
-}
-
-.dashboard :global(.dashboardGoal) {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-12);
-}
-
-.dashboard :global(.dashboardGoalHeader div) {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-4);
-}
-
-.dashboard :global(.dashboardProgress) {
-  overflow: hidden;
-  height: var(--uf-space-8);
-  border-radius: var(--uf-radius-full);
-  background: var(--uf-color-bg-sunken);
-}
-
-.dashboard :global(.dashboardProgress span) {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--uf-gradient-success);
-}
-
-.dashboard :global(.dashboardInsightHeader) {
-  display: flex;
-  align-items: center;
-  gap: var(--uf-space-12);
-  margin-bottom: var(--uf-space-20);
-}
-
-.dashboard :global(.dashboardInsightHeader span) {
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-title-size);
-  font-weight: var(--uf-text-title-weight);
-}
-
-.dashboard :global(.dashboardInsightList li) {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--uf-space-12);
-}
-
-.dashboard :global(.dashboardInsightList li > span:last-child) {
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-caption-size);
-  line-height: var(--uf-text-caption-lh);
-}
-
-.dashboard :global(.dashboardActivityList) {
-  gap: var(--uf-space-12);
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.dashboard :global(.dashboardActivityList li) {
-  padding: var(--uf-space-16);
-  border: 1px solid var(--uf-color-border-subtle);
-  border-radius: var(--uf-radius-16);
-  background: var(--uf-color-bg-sunken);
-}
-
-.dashboard :global(.dashboardActivityMain) {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-4);
-  min-width: 0;
-}
-
-.dashboard :global(.dashboardActivityMain strong) {
+.nextStepCard > strong {
   color: var(--uf-color-text-primary);
   font-size: var(--uf-text-body-size);
   line-height: var(--uf-text-body-lh);
 }
 
-.nextStepsCard {
-  background: var(--uf-glass-bg);
-  box-shadow: var(--uf-shadow-sm);
-  backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
-}
-
-.nextSteps {
+.directionDetails {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(calc(var(--uf-space-160) * 2), 1fr));
-  gap: var(--uf-space-16);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--uf-space-12);
 }
 
-.nextStep {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--uf-space-12);
-  padding: var(--uf-space-16);
+.directionDetails div,
+.summaryItem {
+  display: grid;
+  gap: var(--uf-space-6);
+  padding: var(--uf-space-12);
   border: 1px solid var(--uf-color-border-subtle);
   border-radius: var(--uf-radius-16);
   background: var(--uf-color-bg-sunken);
-  color: var(--uf-color-text-primary);
+}
+
+.directionDetails span {
+  color: var(--uf-color-text-muted);
   font-size: var(--uf-text-caption-size);
   line-height: var(--uf-text-caption-lh);
 }
 
-.actions {
+.directionDetails strong,
+.summaryItem strong {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
+}
+
+.attentionSection,
+.shortcutsSection {
   display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.signalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--uf-space-16);
+}
+
+.signalCard {
+  background: var(--uf-glass-bg);
+}
+
+.signalDot {
+  width: var(--uf-space-12);
+  height: var(--uf-space-12);
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-color-primary);
+  box-shadow: var(--uf-shadow-glow-ai);
+}
+
+.signalCard h4 {
+  margin-bottom: var(--uf-space-8);
+  font-size: var(--uf-text-body-size);
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: var(--uf-text-body-lh);
+}
+
+.clarityGrid {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: stretch;
+}
+
+.summaryList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--uf-space-12);
-  flex-wrap: wrap;
-  margin-top: var(--uf-space-24);
+}
+
+.uniCard {
+  background:
+    var(--uf-color-ai-subtle),
+    var(--uf-glass-bg);
+}
+
+.shortcuts {
+  justify-content: flex-start;
 }
 
 @media (max-width: 1180px) {
-  .grid {
-    grid-template-columns: repeat(var(--uf-grid-columns-tablet), minmax(0, 1fr));
+  .hero,
+  .directionGrid,
+  .clarityGrid {
+    grid-template-columns: 1fr;
   }
 
-  .dashboard :global(.dashboardBalanceCard),
-  .dashboard :global(.dashboardFlowCard),
-  .dashboard :global(.dashboardGoalsCard),
-  .dashboard :global(.dashboardInsightsCard) {
-    grid-column: span 4;
+  .heroActions {
+    justify-content: flex-start;
   }
 
-  .dashboard :global(.dashboardActivityCard) {
-    grid-column: span 8;
+  .signalGrid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 760px) {
   .dashboard {
-    gap: var(--uf-space-24);
     padding-bottom: var(--uf-space-48);
   }
 
-  .dashboard :global(.dashboardHero) {
+  .hero {
     padding: var(--uf-space-24);
   }
 
-  .dashboard :global(.dashboardHeroAction) {
-    justify-content: flex-start;
-  }
-
-  .grid {
-    grid-template-columns: repeat(var(--uf-grid-columns-mobile), minmax(0, 1fr));
-  }
-
-  .dashboard :global(.dashboardBalanceCard),
-  .dashboard :global(.dashboardFlowCard),
-  .dashboard :global(.dashboardGoalsCard),
-  .dashboard :global(.dashboardInsightsCard),
-  .dashboard :global(.dashboardActivityCard) {
-    grid-column: span 4;
-  }
-
-  .dashboard :global(.dashboardActivityList li),
-  .dashboard :global(.dashboardGoalHeader) {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .nextSteps {
+  .directionDetails,
+  .summaryList {
     grid-template-columns: 1fr;
+  }
+
+  .cardHeader,
+  .sectionHeader,
+  .signalTop {
+    flex-direction: column;
   }
 }
