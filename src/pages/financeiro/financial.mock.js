@@ -48,6 +48,23 @@ export const financialMock = {
       { label: '7 dias', value: 19780, description: 'após entradas previstas' },
       { label: '30 dias', value: 21300, description: 'projeção se nada mudar' },
     ],
+    signals: [
+      {
+        label: 'Entradas confirmadas',
+        description: 'Salário e renda extra já sustentam o mês.',
+        tone: 'signalSuccess',
+      },
+      {
+        label: 'Despesas variáveis subiram',
+        description: 'Transporte e alimentação puxaram a semana.',
+        tone: 'signalWarning',
+      },
+      {
+        label: 'Assinaturas merecem revisão',
+        description: 'Há pequenos valores recorrentes para aliviar.',
+        tone: 'signalPrimary',
+      },
+    ],
     movements: [
       {
         id: 'personal-income-salary',
@@ -90,7 +107,7 @@ export const financialMock = {
       { name: 'Assinaturas', amount: 340, percentage: 6, status: 'Revisar' },
     ],
     uniReading:
-      'Suas despesas variáveis cresceram nesta semana, mas o cenário ainda está confortável. A Uni recomenda revisar transporte e assinaturas antes do fechamento para proteger sua reserva sem cortar o essencial.',
+      'O cenário segue confortável. O melhor ajuste agora é aliviar gastos variáveis sem cortar o essencial.',
   },
   business: {
     subtitle: 'Entenda o caixa da empresa, os próximos movimentos e a decisão mais segura agora.',
@@ -141,6 +158,23 @@ export const financialMock = {
       { label: '7 dias', value: 51700, description: 'após compromissos próximos' },
       { label: '30 dias', value: 56300, description: 'projeção se nada mudar' },
     ],
+    signals: [
+      {
+        label: 'Entradas confirmadas',
+        description: 'Recebimentos recentes fortaleceram o caixa.',
+        tone: 'signalSuccess',
+      },
+      {
+        label: 'Operacional concentrou saídas',
+        description: 'Fornecedores e software pesaram no curto prazo.',
+        tone: 'signalWarning',
+      },
+      {
+        label: 'Impostos pedem reserva',
+        description: 'Separar margem agora evita pressão depois.',
+        tone: 'signalPrimary',
+      },
+    ],
     movements: [
       {
         id: 'business-client-paid',
@@ -183,6 +217,6 @@ export const financialMock = {
       { name: 'Impostos', amount: 2520, percentage: 14, status: 'Reservar' },
     ],
     uniReading:
-      'O fluxo de caixa está saudável, mas há concentração de despesas operacionais nos próximos dias. A Uni recomenda reservar margem antes de assumir novos compromissos, mantendo espaço para decisões sem pressa.',
+      'O caixa está saudável. A decisão mais segura é reservar margem antes de assumir novos compromissos.',
   },
 };

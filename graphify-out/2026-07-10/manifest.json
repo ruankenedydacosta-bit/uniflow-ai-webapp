@@ -755,18 +755,18 @@
     "semantic_hash": ""
   },
   "src/pages/FinanceiroPage.jsx": {
-    "mtime": 1783680711.742989,
-    "ast_hash": "6c69464171141d5eb5952051c7b09a25",
+    "mtime": 1783685606.9986057,
+    "ast_hash": "8abcdac81d8ad94b49a780dc4180b87e",
     "semantic_hash": ""
   },
   "src/pages/financeiro/financial.mock.js": {
-    "mtime": 1783680711.502759,
-    "ast_hash": "10ad3a5b43d55d8486e8daa5ec7531cf",
+    "mtime": 1783685619.432448,
+    "ast_hash": "496c25d505de0baf1c12e4fdb5ed9057",
     "semantic_hash": ""
   },
   "docs/00-master/APP_STRUCTURE_MAP.md": {
-    "mtime": 1783680361.8088078,
-    "ast_hash": "efbec1d581055463246246282cb48424",
+    "mtime": 1783681052.4349272,
+    "ast_hash": "b9ab19d1ae58b3fcf02dfda53c045732",
     "semantic_hash": ""
   }
 }

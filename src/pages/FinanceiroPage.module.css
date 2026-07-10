@@ -1,16 +1,20 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: var(--uf-space-32);
+  gap: var(--uf-space-24);
   padding-bottom: var(--uf-space-64);
 }
 
+.hero,
+.focusGrid,
+.guidanceGrid {
+  display: grid;
+  gap: var(--uf-grid-gutter);
+}
+
 .hero {
-  display: flex;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--uf-space-24);
-  flex-wrap: wrap;
   padding: var(--uf-space-32);
   border: 1px solid var(--uf-color-border-subtle);
   border-radius: var(--uf-radius-24);
@@ -21,14 +25,12 @@
 
 .heroCopy {
   display: flex;
-  flex: 1 1 calc(var(--uf-space-160) * 2);
   flex-direction: column;
   gap: var(--uf-space-12);
   min-width: 0;
 }
 
 .heroCopy h2,
-.sectionTitle h3,
 .sectionHeader h3 {
   color: var(--uf-color-text-primary);
 }
@@ -40,54 +42,37 @@
 }
 
 .heroCopy p,
-.sectionTitle p,
 .sectionHeader p,
-.detail,
+.signalItem p,
 .movementMeta,
-.cashflowItem p,
-.attentionCard p {
+.uniCard p {
   color: var(--uf-color-text-secondary);
   font-size: var(--uf-text-caption-size);
   line-height: var(--uf-text-caption-lh);
 }
 
-.actions,
-.nextActions {
+.actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--uf-space-12);
   flex-wrap: wrap;
 }
 
-.actions {
-  justify-content: flex-end;
-}
-
-.clarityGrid,
-.contentGrid,
-.guidanceGrid {
-  display: grid;
-  gap: var(--uf-grid-gutter);
+.focusGrid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
   align-items: stretch;
 }
 
-.clarityGrid {
-  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
-}
-
-.contentGrid {
-  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
-  align-items: start;
-}
-
 .guidanceGrid {
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  align-items: stretch;
 }
 
 .directionCard,
+.signalsCard,
 .nextStepCard,
-.uniCard,
-.attentionCard {
+.uniCard {
   display: flex;
   flex-direction: column;
   gap: var(--uf-space-16);
@@ -100,47 +85,8 @@
   backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
 }
 
-.directionCard strong {
-  max-width: 880px;
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-h3-size);
-  font-weight: var(--uf-text-h3-weight);
-  line-height: var(--uf-text-h3-lh);
-}
-
-.directionCard p,
-.uniCard p {
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-body-size);
-  line-height: var(--uf-text-body-lh);
-}
-
-.nextStepCard strong,
-.attentionCard strong {
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-title-size);
-  font-weight: var(--uf-text-title-weight);
-  line-height: var(--uf-text-title-lh);
-}
-
-.eyebrow {
-  color: var(--uf-color-text-muted);
-  font-size: var(--uf-text-caption-size);
-  font-weight: var(--uf-font-weight-semibold);
-  letter-spacing: 0;
-  line-height: var(--uf-text-caption-lh);
-  text-transform: uppercase;
-}
-
-.summarySection {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-16);
-}
-
-.sectionTitle,
-.sectionHeader,
 .cardHeader,
+.sectionHeader,
 .movementRow {
   display: flex;
   align-items: center;
@@ -148,102 +94,142 @@
   gap: var(--uf-space-16);
 }
 
-.sectionTitle h3,
-.sectionHeader h3,
-.cardHeader span {
+.cardHeader span,
+.sectionHeader h3 {
+  color: var(--uf-color-text-primary);
   font-size: var(--uf-text-title-size);
   font-weight: var(--uf-text-title-weight);
   line-height: var(--uf-text-title-lh);
 }
 
-.sectionHeader,
-.cardHeader {
-  margin-bottom: var(--uf-space-16);
-}
-
-.summaryGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--uf-grid-gutter);
-}
-
-.summaryCard {
-  min-height: calc(var(--uf-space-160) + var(--uf-space-8));
-}
-
-.metric {
-  display: block;
-  margin-bottom: var(--uf-space-8);
+.directionCard > strong {
+  max-width: 860px;
   color: var(--uf-color-text-primary);
   font-size: var(--uf-text-h3-size);
   font-weight: var(--uf-text-h3-weight);
   line-height: var(--uf-text-h3-lh);
 }
 
-.toneSuccess {
-  color: var(--uf-color-success);
+.directionCard > p,
+.nextStepCard > strong {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
 }
 
-.tonePrimary {
-  color: var(--uf-color-primary);
+.cashflowChart {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--uf-space-16);
+  align-items: end;
+  min-height: calc(var(--uf-space-160) + var(--uf-space-24));
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-20);
+  background: var(--uf-color-bg-sunken);
 }
 
-.toneWarning {
-  color: var(--uf-color-warning);
+.chartColumn {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: var(--uf-space-12);
+  min-width: 0;
 }
 
-.cashflowCard {
-  min-height: 100%;
+.chartTrack {
+  display: flex;
+  align-items: end;
+  min-height: var(--uf-space-120);
+  overflow: hidden;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-elevated);
 }
 
-.cashflowList,
+.chartTrack span {
+  display: block;
+  width: 100%;
+  min-height: var(--uf-space-24);
+  border-radius: inherit;
+  background: var(--uf-gradient-ai);
+  box-shadow: var(--uf-shadow-glow-ai);
+}
+
+.chartColumn span,
+.chartColumn strong {
+  display: block;
+}
+
+.chartColumn span {
+  color: var(--uf-color-text-muted);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.chartColumn strong {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.signalList,
 .list {
   display: flex;
   flex-direction: column;
   gap: var(--uf-space-12);
 }
 
-.cashflowItem {
+.signalItem {
   display: grid;
-  grid-template-columns: var(--uf-space-24) minmax(0, 1fr);
+  grid-template-columns: var(--uf-space-12) minmax(0, 1fr);
   gap: var(--uf-space-12);
   align-items: start;
+  padding: var(--uf-space-12);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-sunken);
 }
 
-.cashflowItem span {
-  color: var(--uf-color-text-muted);
-  font-size: var(--uf-text-caption-size);
-  line-height: var(--uf-text-caption-lh);
-}
-
-.cashflowItem strong {
+.signalItem strong {
   display: block;
-  margin: var(--uf-space-4) 0;
+  margin-bottom: var(--uf-space-4);
   color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-title-size);
-  line-height: var(--uf-text-title-lh);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
 }
 
-.cashflowMarker {
-  display: flex;
-  justify-content: center;
-  padding-top: var(--uf-space-4);
-}
-
-.cashflowMarker span {
+.signalDot {
   width: var(--uf-space-10);
   height: var(--uf-space-10);
+  margin-top: var(--uf-space-6);
   border-radius: var(--uf-radius-full);
-  background: var(--uf-color-border-default);
-  box-shadow: 0 0 0 var(--uf-space-4) var(--uf-color-bg-sunken);
+  background: var(--uf-color-primary);
+  box-shadow: var(--uf-shadow-glow-ai);
 }
 
-.cashflowMarker .markerActive {
+.signalSuccess {
+  background: var(--uf-color-success);
+}
+
+.signalWarning {
+  background: var(--uf-color-warning);
+}
+
+.signalPrimary {
   background: var(--uf-color-primary);
 }
 
+.nextStepCard {
+  border-color: var(--uf-color-border-default);
+  background: var(--uf-glass-bg);
+}
+
+.movementsSection {
+  max-width: 920px;
+}
+
 .movementRow {
-  padding: var(--uf-space-16);
+  padding: var(--uf-space-12) var(--uf-space-16);
   border: 1px solid var(--uf-color-border-subtle);
   border-radius: var(--uf-radius-16);
   background: var(--uf-color-bg-sunken);
@@ -278,22 +264,15 @@
   color: var(--uf-color-danger);
 }
 
-.uniCard {
-  border-color: var(--uf-color-border-default);
-  background: var(--uf-glass-bg);
-  box-shadow: var(--uf-shadow-sm);
-  backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
-}
-
 @media (max-width: 1180px) {
-  .clarityGrid,
-  .contentGrid,
+  .hero,
+  .focusGrid,
   .guidanceGrid {
     grid-template-columns: 1fr;
   }
 
-  .summaryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .actions {
+    justify-content: flex-start;
   }
 }
 
@@ -307,19 +286,13 @@
     padding: var(--uf-space-24);
   }
 
-  .actions,
-  .nextActions {
-    justify-content: flex-start;
+  .cashflowChart {
+    min-height: auto;
   }
 
-  .summaryGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .sectionTitle,
+  .movementRow,
   .sectionHeader,
-  .cardHeader,
-  .movementRow {
+  .cardHeader {
     align-items: flex-start;
     flex-direction: column;
   }

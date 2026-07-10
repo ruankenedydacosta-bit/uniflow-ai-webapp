@@ -1814,10 +1814,20 @@
       "norm_label": "lint"
     },
     {
-      "label": "preview",
+      "label": "obsidian:note",
       "file_type": "code",
       "source_file": "package.json",
       "source_location": "L10",
+      "_origin": "ast",
+      "id": "package_scripts_obsidian_note",
+      "community": 1,
+      "norm_label": "obsidian:note"
+    },
+    {
+      "label": "preview",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L11",
       "_origin": "ast",
       "id": "package_scripts_preview",
       "community": 1,
@@ -1827,7 +1837,7 @@
       "label": "dependencies",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L12",
+      "source_location": "L13",
       "_origin": "ast",
       "id": "package_dependencies",
       "community": 1,
@@ -1837,7 +1847,7 @@
       "label": "react",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L13",
+      "source_location": "L14",
       "_origin": "ast",
       "id": "package_dependencies_react",
       "community": 1,
@@ -1847,7 +1857,7 @@
       "label": "react-dom",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L14",
+      "source_location": "L15",
       "_origin": "ast",
       "id": "package_dependencies_react_dom",
       "community": 1,
@@ -1857,7 +1867,7 @@
       "label": "devDependencies",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L16",
+      "source_location": "L17",
       "_origin": "ast",
       "id": "package_devdependencies",
       "community": 1,
@@ -1867,7 +1877,7 @@
       "label": "@eslint/js",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L17",
+      "source_location": "L18",
       "_origin": "ast",
       "id": "package_devdependencies_eslint_js",
       "community": 1,
@@ -1877,7 +1887,7 @@
       "label": "@types/react",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L18",
+      "source_location": "L19",
       "_origin": "ast",
       "id": "package_devdependencies_types_react",
       "community": 1,
@@ -1887,7 +1897,7 @@
       "label": "@types/react-dom",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L19",
+      "source_location": "L20",
       "_origin": "ast",
       "id": "package_devdependencies_types_react_dom",
       "community": 1,
@@ -1897,7 +1907,7 @@
       "label": "@vitejs/plugin-react",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L20",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "package_devdependencies_vitejs_plugin_react",
       "community": 1,
@@ -1907,7 +1917,7 @@
       "label": "eslint",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L21",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "package_devdependencies_eslint",
       "community": 1,
@@ -1917,7 +1927,7 @@
       "label": "eslint-plugin-react-hooks",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L22",
+      "source_location": "L23",
       "_origin": "ast",
       "id": "package_devdependencies_eslint_plugin_react_hooks",
       "community": 1,
@@ -1927,7 +1937,7 @@
       "label": "eslint-plugin-react-refresh",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L23",
+      "source_location": "L24",
       "_origin": "ast",
       "id": "package_devdependencies_eslint_plugin_react_refresh",
       "community": 1,
@@ -1937,7 +1947,7 @@
       "label": "globals",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L24",
+      "source_location": "L25",
       "_origin": "ast",
       "id": "package_devdependencies_globals",
       "community": 1,
@@ -1947,11 +1957,101 @@
       "label": "vite",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L25",
+      "source_location": "L26",
       "_origin": "ast",
       "id": "package_devdependencies_vite",
       "community": 1,
       "norm_label": "vite"
+    },
+    {
+      "label": "create-note.js",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note",
+      "community": 70,
+      "norm_label": "create-note.js"
+    },
+    {
+      "label": "NOTE_TYPES",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note_note_types",
+      "community": 70,
+      "norm_label": "note_types"
+    },
+    {
+      "label": "parseArgs()",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note_parseargs",
+      "community": 70,
+      "norm_label": "parseargs()"
+    },
+    {
+      "label": "slugify()",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L42",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note_slugify",
+      "community": 70,
+      "norm_label": "slugify()"
+    },
+    {
+      "label": "getDateParts()",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L52",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note_getdateparts",
+      "community": 70,
+      "norm_label": "getdateparts()"
+    },
+    {
+      "label": "getUniqueFilePath()",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L66",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note_getuniquefilepath",
+      "community": 70,
+      "norm_label": "getuniquefilepath()"
+    },
+    {
+      "label": "buildNote()",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L78",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note_buildnote",
+      "community": 70,
+      "norm_label": "buildnote()"
+    },
+    {
+      "label": "validateInput()",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note_validateinput",
+      "community": 70,
+      "norm_label": "validateinput()"
+    },
+    {
+      "label": "createNote()",
+      "file_type": "code",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L112",
+      "_origin": "ast",
+      "id": "scripts_obsidian_create_note_createnote",
+      "community": 70,
+      "norm_label": "createnote()"
     },
     {
       "label": "App.jsx",
@@ -2924,20 +3024,10 @@
       "norm_label": "financeiropage.jsx"
     },
     {
-      "label": "toneClasses",
-      "file_type": "code",
-      "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L11",
-      "_origin": "ast",
-      "id": "src_pages_financeiropage_toneclasses",
-      "community": 0,
-      "norm_label": "toneclasses"
-    },
-    {
       "label": "getFinancialContext()",
       "file_type": "code",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L17",
+      "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_financeiropage_getfinancialcontext",
       "community": 0,
@@ -2947,7 +3037,7 @@
       "label": "FinanceiroPage()",
       "file_type": "code",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L21",
+      "source_location": "L15",
       "_origin": "ast",
       "id": "src_pages_financeiropage_financeiropage",
       "community": 0,
@@ -3110,7 +3200,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols_uniaudiocontrols",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniaudiocontrols()"
     },
     {
@@ -3160,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniexperienceshell.jsx"
     },
     {
@@ -3170,7 +3260,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniexperienceshell()"
     },
     {
@@ -3190,7 +3280,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport_uniinsightreport",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniinsightreport()"
     },
     {
@@ -3210,7 +3300,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel_unilivecontextpanel",
-      "community": 39,
+      "community": 0,
       "norm_label": "unilivecontextpanel()"
     },
     {
@@ -3240,7 +3330,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniquicksuggestions.jsx"
     },
     {
@@ -3250,7 +3340,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions_uniquicksuggestions",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniquicksuggestions()"
     },
     {
@@ -3260,7 +3350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations",
-      "community": 39,
+      "community": 0,
       "norm_label": "unirecentconversations.jsx"
     },
     {
@@ -3270,7 +3360,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations_unirecentconversations",
-      "community": 39,
+      "community": 0,
       "norm_label": "unirecentconversations()"
     },
     {
@@ -3290,7 +3380,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer_unisuggestiondrawer",
-      "community": 39,
+      "community": 0,
       "norm_label": "unisuggestiondrawer()"
     },
     {
@@ -3300,7 +3390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence",
-      "community": 39,
+      "community": 0,
       "norm_label": "unithinkingsequence.jsx"
     },
     {
@@ -3310,7 +3400,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence_unithinkingsequence",
-      "community": 39,
+      "community": 0,
       "norm_label": "unithinkingsequence()"
     },
     {
@@ -3360,7 +3450,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage",
-      "community": 39,
+      "community": 0,
       "norm_label": "univoicestage.jsx"
     },
     {
@@ -3370,7 +3460,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage_univoicestage",
-      "community": 39,
+      "community": 0,
       "norm_label": "univoicestage()"
     },
     {
@@ -3792,6 +3882,16 @@
       "id": "agents_commits",
       "community": 54,
       "norm_label": "commits"
+    },
+    {
+      "label": "Obsidian Knowledge Base",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L72",
+      "_origin": "ast",
+      "id": "agents_obsidian_knowledge_base",
+      "community": 54,
+      "norm_label": "obsidian knowledge base"
     },
     {
       "label": "README.md",
@@ -4232,6 +4332,96 @@
       "id": "docs_00_master_app_structure_map_12_decisao_final_deste_mapa",
       "community": 66,
       "norm_label": "12. decisao final deste mapa"
+    },
+    {
+      "label": "OBSIDIAN_WORKFLOW.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow",
+      "community": 69,
+      "norm_label": "obsidian_workflow.md"
+    },
+    {
+      "label": "Obsidian Workflow",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "community": 69,
+      "norm_label": "obsidian workflow"
+    },
+    {
+      "label": "Papel do Obsidian",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow_papel_do_obsidian",
+      "community": 69,
+      "norm_label": "papel do obsidian"
+    },
+    {
+      "label": "Fonte principal do app",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow_fonte_principal_do_app",
+      "community": 69,
+      "norm_label": "fonte principal do app"
+    },
+    {
+      "label": "Tipos de nota",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow_tipos_de_nota",
+      "community": 69,
+      "norm_label": "tipos de nota"
+    },
+    {
+      "label": "Pastas do Obsidian",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L44",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow_pastas_do_obsidian",
+      "community": 69,
+      "norm_label": "pastas do obsidian"
+    },
+    {
+      "label": "Como criar uma nota",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L56",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow_como_criar_uma_nota",
+      "community": 69,
+      "norm_label": "como criar uma nota"
+    },
+    {
+      "label": "Caminho do cofre",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L76",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow_caminho_do_cofre",
+      "community": 69,
+      "norm_label": "caminho do cofre"
+    },
+    {
+      "label": "Regras para agentes",
+      "file_type": "document",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L86",
+      "_origin": "ast",
+      "id": "docs_00_master_obsidian_workflow_regras_para_agentes",
+      "community": 69,
+      "norm_label": "regras para agentes"
     },
     {
       "label": "PROMPTS_BASE.md",
@@ -7765,7 +7955,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L12",
+      "source_location": "L13",
       "weight": 1.0,
       "source": "package",
       "target": "package_dependencies",
@@ -7775,7 +7965,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0,
       "source": "package",
       "target": "package_devdependencies",
@@ -7868,17 +8058,17 @@
       "source_location": "L10",
       "weight": 1.0,
       "source": "package_scripts",
-      "target": "package_scripts_preview",
+      "target": "package_scripts_obsidian_note",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L13",
+      "source_location": "L11",
       "weight": 1.0,
-      "source": "package_dependencies",
-      "target": "package_dependencies_react",
+      "source": "package_scripts",
+      "target": "package_scripts_preview",
       "confidence_score": 1.0
     },
     {
@@ -7888,27 +8078,17 @@
       "source_location": "L14",
       "weight": 1.0,
       "source": "package_dependencies",
+      "target": "package_dependencies_react",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "package_dependencies",
       "target": "package_dependencies_react_dom",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "package.json",
-      "source_location": "L21",
-      "weight": 1.0,
-      "source": "package_devdependencies",
-      "target": "package_devdependencies_eslint",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "package.json",
-      "source_location": "L17",
-      "weight": 1.0,
-      "source": "package_devdependencies",
-      "target": "package_devdependencies_eslint_js",
       "confidence_score": 1.0
     },
     {
@@ -7918,27 +8098,7 @@
       "source_location": "L22",
       "weight": 1.0,
       "source": "package_devdependencies",
-      "target": "package_devdependencies_eslint_plugin_react_hooks",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "package.json",
-      "source_location": "L23",
-      "weight": 1.0,
-      "source": "package_devdependencies",
-      "target": "package_devdependencies_eslint_plugin_react_refresh",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "package.json",
-      "source_location": "L24",
-      "weight": 1.0,
-      "source": "package_devdependencies",
-      "target": "package_devdependencies_globals",
+      "target": "package_devdependencies_eslint",
       "confidence_score": 1.0
     },
     {
@@ -7948,17 +8108,27 @@
       "source_location": "L18",
       "weight": 1.0,
       "source": "package_devdependencies",
-      "target": "package_devdependencies_types_react",
+      "target": "package_devdependencies_eslint_js",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L19",
+      "source_location": "L23",
       "weight": 1.0,
       "source": "package_devdependencies",
-      "target": "package_devdependencies_types_react_dom",
+      "target": "package_devdependencies_eslint_plugin_react_hooks",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "package_devdependencies",
+      "target": "package_devdependencies_eslint_plugin_react_refresh",
       "confidence_score": 1.0
     },
     {
@@ -7968,7 +8138,17 @@
       "source_location": "L25",
       "weight": 1.0,
       "source": "package_devdependencies",
-      "target": "package_devdependencies_vite",
+      "target": "package_devdependencies_globals",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "package_devdependencies",
+      "target": "package_devdependencies_types_react",
       "confidence_score": 1.0
     },
     {
@@ -7978,7 +8158,184 @@
       "source_location": "L20",
       "weight": 1.0,
       "source": "package_devdependencies",
+      "target": "package_devdependencies_types_react_dom",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "package_devdependencies",
+      "target": "package_devdependencies_vite",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "package_devdependencies",
       "target": "package_devdependencies_vitejs_plugin_react",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L78",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note",
+      "target": "scripts_obsidian_create_note_buildnote",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L112",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note",
+      "target": "scripts_obsidian_create_note_createnote",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note",
+      "target": "scripts_obsidian_create_note_getdateparts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note",
+      "target": "scripts_obsidian_create_note_getuniquefilepath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note",
+      "target": "scripts_obsidian_create_note_note_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note",
+      "target": "scripts_obsidian_create_note_parseargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note",
+      "target": "scripts_obsidian_create_note_slugify",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note",
+      "target": "scripts_obsidian_create_note_validateinput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note_createnote",
+      "target": "scripts_obsidian_create_note_parseargs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L123",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note_createnote",
+      "target": "scripts_obsidian_create_note_slugify",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L79",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note_buildnote",
+      "target": "scripts_obsidian_create_note_getdateparts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L122",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note_createnote",
+      "target": "scripts_obsidian_create_note_getdateparts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L124",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note_createnote",
+      "target": "scripts_obsidian_create_note_getuniquefilepath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L125",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note_createnote",
+      "target": "scripts_obsidian_create_note_buildnote",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/obsidian/create-note.js",
+      "source_location": "L118",
+      "weight": 1.0,
+      "source": "scripts_obsidian_create_note_createnote",
+      "target": "scripts_obsidian_create_note_validateinput",
       "confidence_score": 1.0
     },
     {
@@ -8158,7 +8515,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L22",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_app_accesscontext_useaccess",
@@ -10815,7 +11172,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L21",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiropage_financeiropage",
@@ -10825,20 +11182,10 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L17",
-      "weight": 1.0,
-      "source": "src_pages_financeiropage",
-      "target": "src_pages_financeiropage_getfinancialcontext",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L11",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
-      "target": "src_pages_financeiropage_toneclasses",
+      "target": "src_pages_financeiropage_getfinancialcontext",
       "confidence_score": 1.0
     },
     {
@@ -10890,7 +11237,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L23",
+      "source_location": "L17",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_pages_financeiropage_getfinancialcontext",
@@ -10901,7 +11248,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L88",
+      "source_location": "L75",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_utils_cx_cx",
@@ -10912,7 +11259,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L88",
+      "source_location": "L57",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_utils_formatters_formatcurrency",
@@ -12317,6 +12664,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "AGENTS.md",
+      "source_location": "L72",
+      "weight": 1.0,
+      "source": "agents_uniflow_ai_regras_do_projeto",
+      "target": "agents_obsidian_knowledge_base",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
       "source_location": "L18",
       "weight": 1.0,
       "source": "agents_uniflow_ai_regras_do_projeto",
@@ -12761,6 +13118,86 @@
       "weight": 1.0,
       "source": "docs_00_master_app_structure_map_11_checklist_ate_o_mvp_demonstravel",
       "target": "docs_00_master_app_structure_map_qualidade_e_coerencia",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_obsidian_workflow",
+      "target": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L76",
+      "weight": 1.0,
+      "source": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "target": "docs_00_master_obsidian_workflow_caminho_do_cofre",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L56",
+      "weight": 1.0,
+      "source": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "target": "docs_00_master_obsidian_workflow_como_criar_uma_nota",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "target": "docs_00_master_obsidian_workflow_fonte_principal_do_app",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "target": "docs_00_master_obsidian_workflow_papel_do_obsidian",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "target": "docs_00_master_obsidian_workflow_pastas_do_obsidian",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L86",
+      "weight": 1.0,
+      "source": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "target": "docs_00_master_obsidian_workflow_regras_para_agentes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OBSIDIAN_WORKFLOW.md",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "docs_00_master_obsidian_workflow_obsidian_workflow",
+      "target": "docs_00_master_obsidian_workflow_tipos_de_nota",
       "confidence_score": 1.0
     },
     {
@@ -14335,5 +14772,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "0a833f827c0bbaba12ee56c3794b5785fd6707a5"
+  "built_at_commit": "52f853c9b554ef709d57532aaf97d012c6b28020"
 }

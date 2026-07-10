@@ -8,12 +8,6 @@ import { formatCurrency } from '../utils/formatters';
 import { financialMock } from './financeiro/financial.mock.js';
 import styles from './FinanceiroPage.module.css';
 
-const toneClasses = {
-  success: styles.toneSuccess,
-  primary: styles.tonePrimary,
-  warning: styles.toneWarning,
-};
-
 function getFinancialContext(currentWorkspace) {
   return currentWorkspace === WORKSPACE_TYPES.PERSONAL ? financialMock.personal : financialMock.business;
 }
@@ -21,6 +15,8 @@ function getFinancialContext(currentWorkspace) {
 function FinanceiroPage() {
   const { access } = useAccess();
   const financial = getFinancialContext(access.currentWorkspace);
+  const maxCashflowValue = Math.max(...financial.cashflow.map((item) => item.value));
+  const recentMovements = financial.movements.slice(0, 3);
 
   return (
     <div className={styles.page}>
@@ -39,7 +35,7 @@ function FinanceiroPage() {
         </div>
       </section>
 
-      <section className={styles.clarityGrid} aria-label="Clareza financeira">
+      <section className={styles.focusGrid} aria-label="GPS financeiro">
         <Card variant="glass" padding="lg" className={styles.directionCard}>
           <div className={styles.cardHeader}>
             <span>Clareza financeira</span>
@@ -49,90 +45,79 @@ function FinanceiroPage() {
           </div>
           <strong>{financial.clarity.direction}</strong>
           <p>{financial.clarity.changed}</p>
-        </Card>
 
-        <Card variant="outline" padding="lg" className={styles.nextStepCard}>
-          <span className={styles.eyebrow}>Próximo passo sugerido</span>
-          <strong>{financial.clarity.nextStep}</strong>
-          <div className={styles.nextActions}>
-            <Button size="sm">Nova entrada</Button>
-            <Button variant="outline" size="sm">
-              Nova saída
-            </Button>
-          </div>
-        </Card>
-      </section>
-
-      <section className={styles.summarySection} aria-labelledby="financeiro-summary-title">
-        <div className={styles.sectionTitle}>
-          <div>
-            <h3 id="financeiro-summary-title">Resumo do mês</h3>
-            <p>Dados mockados organizados para virar decisão, não apenas relatório.</p>
-          </div>
-        </div>
-
-        <div className={styles.summaryGrid}>
-          {financial.summary.map((item, index) => (
-            <Card
-              key={item.label}
-              variant={index === 0 ? 'glass' : 'default'}
-              padding="lg"
-              className={styles.summaryCard}
-            >
-              <div className={styles.cardHeader}>
-                <span>{item.label}</span>
-                <Badge variant={item.badgeVariant} size="sm">
-                  {item.badge}
-                </Badge>
-              </div>
-              <strong className={cx(styles.metric, toneClasses[item.tone])}>{formatCurrency(item.value)}</strong>
-              <p className={styles.detail}>{item.detail}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className={styles.contentGrid} aria-label="Fluxo de caixa e movimentações">
-        <Card variant="outline" padding="lg" className={styles.cashflowCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Fluxo de caixa</h3>
-              <p>Uma rota simples do presente para os próximos dias.</p>
-            </div>
-            <Badge variant="secondary" size="sm">
-              Projetado
-            </Badge>
-          </div>
-
-          <div className={styles.cashflowList}>
-            {financial.cashflow.map((item, index) => (
-              <div key={item.label} className={styles.cashflowItem}>
-                <div className={styles.cashflowMarker} aria-hidden="true">
-                  <span className={index === financial.cashflow.length - 1 ? styles.markerActive : undefined} />
+          <div className={styles.cashflowChart} aria-label="Projeção de fluxo de caixa">
+            {financial.cashflow.map((item) => (
+              <div key={item.label} className={styles.chartColumn}>
+                <div className={styles.chartTrack}>
+                  <span style={{ height: `${Math.max((item.value / maxCashflowValue) * 100, 18)}%` }} />
                 </div>
                 <div>
                   <span>{item.label}</span>
                   <strong>{formatCurrency(item.value)}</strong>
-                  <p>{item.description}</p>
                 </div>
               </div>
             ))}
           </div>
         </Card>
 
+        <Card variant="outline" padding="lg" className={styles.signalsCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h3>O que mudou</h3>
+              <p>Três sinais suficientes para decidir sem ruído.</p>
+            </div>
+          </div>
+
+          <div className={styles.signalList}>
+            {financial.signals.map((signal) => (
+              <div key={signal.label} className={styles.signalItem}>
+                <span className={cx(styles.signalDot, styles[signal.tone])} aria-hidden="true" />
+                <div>
+                  <strong>{signal.label}</strong>
+                  <p>{signal.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      <section className={styles.guidanceGrid} aria-label="Orientação financeira">
+        <Card variant="glass" padding="lg" className={styles.nextStepCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h3>Próximo passo</h3>
+              <p>Uma ação simples para manter a rota sem esforço extra.</p>
+            </div>
+            <Badge variant="glass" size="sm" dot>
+              Uni
+            </Badge>
+          </div>
+          <strong>{financial.clarity.nextStep}</strong>
+        </Card>
+
+        <Card variant="default" padding="lg" className={styles.uniCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h3>Leitura da Uni</h3>
+              <p>O que os dados indicam agora.</p>
+            </div>
+          </div>
+          <p>{financial.uniReading}</p>
+        </Card>
+      </section>
+
+      <section className={styles.movementsSection} aria-label="Movimentações recentes">
         <Card variant="outline" padding="lg">
           <div className={styles.sectionHeader}>
             <div>
               <h3>Movimentações recentes</h3>
-              <p>Eventos que alimentam a leitura financeira deste espaço.</p>
+              <p>Últimos eventos usados para alimentar a leitura da Uni.</p>
             </div>
-            <Badge variant="primary" size="sm">
-              Mock
-            </Badge>
           </div>
-
           <div className={styles.list}>
-            {financial.movements.map((movement) => (
+            {recentMovements.map((movement) => (
               <div key={movement.id} className={styles.movementRow}>
                 <div className={styles.movementMain}>
                   <strong>{movement.description}</strong>
@@ -147,30 +132,6 @@ function FinanceiroPage() {
               </div>
             ))}
           </div>
-        </Card>
-      </section>
-
-      <section className={styles.guidanceGrid} aria-label="Orientação financeira">
-        <Card variant="glass" padding="lg" className={styles.uniCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Leitura da Uni</h3>
-              <p>Uma leitura calma sobre o que os dados indicam agora.</p>
-            </div>
-            <Badge variant="glass" size="sm" dot>
-              Uni
-            </Badge>
-          </div>
-          <p>{financial.uniReading}</p>
-          <Button variant="outline" size="sm">
-            Perguntar à Uni
-          </Button>
-        </Card>
-
-        <Card variant="default" padding="lg" className={styles.attentionCard}>
-          <span className={styles.eyebrow}>O que merece atenção</span>
-          <strong>{financial.clarity.attention}</strong>
-          <p>Sem urgência artificial. A ideia é ajustar cedo, com clareza.</p>
         </Card>
       </section>
     </div>
