@@ -1974,6 +1974,46 @@
       "norm_label": "app()"
     },
     {
+      "label": "AccessContext.jsx",
+      "file_type": "code",
+      "source_file": "src/app/AccessContext.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_app_accesscontext",
+      "community": 68,
+      "norm_label": "accesscontext.jsx"
+    },
+    {
+      "label": "AccessContext",
+      "file_type": "code",
+      "source_file": "src/app/AccessContext.jsx",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "src_app_accesscontext_accesscontext",
+      "community": 68,
+      "norm_label": "accesscontext"
+    },
+    {
+      "label": "AccessProvider()",
+      "file_type": "code",
+      "source_file": "src/app/AccessContext.jsx",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "src_app_accesscontext_accessprovider",
+      "community": 68,
+      "norm_label": "accessprovider()"
+    },
+    {
+      "label": "useAccess()",
+      "file_type": "code",
+      "source_file": "src/app/AccessContext.jsx",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "src_app_accesscontext_useaccess",
+      "community": 68,
+      "norm_label": "useaccess()"
+    },
+    {
       "label": "App.jsx",
       "file_type": "code",
       "source_file": "src/app/App.jsx",
@@ -1987,7 +2027,7 @@
       "label": "AppContent()",
       "file_type": "code",
       "source_file": "src/app/App.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "_origin": "ast",
       "id": "src_app_app_appcontent",
       "community": 68,
@@ -1997,7 +2037,7 @@
       "label": "App()",
       "file_type": "code",
       "source_file": "src/app/App.jsx",
-      "source_location": "L22",
+      "source_location": "L23",
       "_origin": "ast",
       "id": "src_app_app_app",
       "community": 68,
@@ -2290,7 +2330,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 66,
+      "community": 0,
       "norm_label": "avatar.jsx"
     },
     {
@@ -2300,7 +2340,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 66,
+      "community": 0,
       "norm_label": "getinitials()"
     },
     {
@@ -2330,7 +2370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge",
-      "community": 66,
+      "community": 0,
       "norm_label": "badge.jsx"
     },
     {
@@ -2360,7 +2400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_button_button",
-      "community": 66,
+      "community": 0,
       "norm_label": "button.jsx"
     },
     {
@@ -2390,7 +2430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_card_card",
-      "community": 66,
+      "community": 0,
       "norm_label": "card.jsx"
     },
     {
@@ -2450,7 +2490,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_loader",
-      "community": 66,
+      "community": 0,
       "norm_label": "loader.jsx"
     },
     {
@@ -2460,7 +2500,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_loader_loader_loader",
-      "community": 66,
+      "community": 0,
       "norm_label": "loader()"
     },
     {
@@ -2470,7 +2510,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_index",
-      "community": 66,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -2480,7 +2520,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal",
-      "community": 66,
+      "community": 0,
       "norm_label": "modal.jsx"
     },
     {
@@ -2490,7 +2530,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal_modal",
-      "community": 66,
+      "community": 0,
       "norm_label": "modal()"
     },
     {
@@ -2500,7 +2540,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_index",
-      "community": 66,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -2510,7 +2550,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltip",
-      "community": 66,
+      "community": 0,
       "norm_label": "tooltip.jsx"
     },
     {
@@ -2520,7 +2560,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltip_tooltip",
-      "community": 66,
+      "community": 0,
       "norm_label": "tooltip()"
     },
     {
@@ -2530,7 +2570,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_index",
-      "community": 66,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -3430,7 +3470,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_cx",
-      "community": 66,
+      "community": 0,
       "norm_label": "cx.js"
     },
     {
@@ -3440,7 +3480,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_cx_cx",
-      "community": 66,
+      "community": 0,
       "norm_label": "cx()"
     },
     {
@@ -7392,23 +7432,55 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "imports_from",
+      "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/app/App.jsx",
-      "source_location": "L22",
+      "source_file": "src/app/AccessContext.jsx",
+      "source_location": "L3",
       "weight": 1.0,
-      "source": "src_app_app_jsx_src_app_app",
-      "target": "src_app_app_app",
+      "source": "src_app_accesscontext",
+      "target": "src_app_access",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/AccessContext.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_app_accesscontext",
+      "target": "src_app_access_default_demo_access",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "src/app/App.jsx",
+      "source_file": "src/app/AccessContext.jsx",
       "source_location": "L5",
       "weight": 1.0,
-      "source": "src_app_app_jsx_src_app_app",
-      "target": "src_app_app_appcontent",
+      "source": "src_app_accesscontext",
+      "target": "src_app_accesscontext_accesscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/AccessContext.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_app_accesscontext",
+      "target": "src_app_accesscontext_accessprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/AccessContext.jsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_app_accesscontext",
+      "target": "src_app_accesscontext_useaccess",
       "confidence_score": 1.0
     },
     {
@@ -7419,7 +7491,18 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "src_app_app_jsx_src_app_app",
-      "target": "src_app_routes",
+      "target": "src_app_accesscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_components_layout_sidebar_sidebar",
+      "target": "src_app_accesscontext",
       "confidence_score": 1.0
     },
     {
@@ -7428,6 +7511,70 @@
       "confidence": "EXTRACTED",
       "source_file": "src/app/App.jsx",
       "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_app_app_jsx_src_app_app",
+      "target": "src_app_accesscontext_accessprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_components_layout_sidebar_sidebar",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_components_layout_sidebar_sidebar_sidebar",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/App.jsx",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_app_app_jsx_src_app_app",
+      "target": "src_app_app_app",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/App.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_app_app_jsx_src_app_app",
+      "target": "src_app_app_appcontent",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/App.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_app_app_jsx_src_app_app",
+      "target": "src_app_routes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/App.jsx",
+      "source_location": "L4",
       "weight": 1.0,
       "source": "src_app_app_jsx_src_app_app",
       "target": "src_app_routes_approutes",
@@ -7548,17 +7695,6 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "source": "src_components_layout_sidebar_sidebar",
-      "target": "src_app_access",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -7578,17 +7714,6 @@
       "weight": 1.0,
       "source": "src_app_navigation",
       "target": "src_app_access_plans",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "source": "src_components_layout_sidebar_sidebar",
-      "target": "src_app_access_default_demo_access",
       "confidence_score": 1.0
     },
     {
@@ -7700,7 +7825,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
-      "source_location": "L8",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_components_layout_sidebar_sidebar_sidebar",
       "target": "src_app_navigation_filternavigationitems",
@@ -12811,5 +12936,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "3fbe25e5ff08652b1447ba0f6febb1fc989fcf20"
+  "built_at_commit": "64e2fc522b9612b4d5d83832d34845cff03bec37"
 }

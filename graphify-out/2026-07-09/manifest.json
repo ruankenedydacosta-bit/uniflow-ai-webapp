@@ -270,8 +270,8 @@
     "semantic_hash": "b96a4743cebc2e3c628b7c6d4ffba32e"
   },
   "src/components/layout/Sidebar/Sidebar.jsx": {
-    "mtime": 1783645463.4887395,
-    "ast_hash": "09f3186b8a73a55efe4d5763978b1606",
+    "mtime": 1783645800.447347,
+    "ast_hash": "cc46e6fc669baa09d53909abbfeca79b",
     "semantic_hash": ""
   },
   "src/components/layout/Sidebar/index.js": {
@@ -730,8 +730,8 @@
     "semantic_hash": ""
   },
   "src/app/navigation.js": {
-    "mtime": 1783645640.43659,
-    "ast_hash": "29c22a32ece6b41cc353ce60d4c47bda",
+    "mtime": 1783645822.1161292,
+    "ast_hash": "fbb25c2937995e5ee2b58a33d5bff818",
     "semantic_hash": ""
   },
   "docs/00-master/USER_MODES_AND_PLANS.md": {

@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { DEFAULT_DEMO_ACCESS } from '../../../app/access';
+import { useAccess } from '../../../app/AccessContext';
 import { filterNavigationItems, navigationItems } from '../../../app/navigation';
 import Badge from '../../ui/Badge';
 import styles from './Sidebar.module.css';
 
 function Sidebar() {
-  const visibleNavigationItems = filterNavigationItems(navigationItems, DEFAULT_DEMO_ACCESS);
+  const { access } = useAccess();
+  const visibleNavigationItems = filterNavigationItems(navigationItems, access);
 
   return (
     <aside className={styles.sidebar} aria-label="Navegação principal">

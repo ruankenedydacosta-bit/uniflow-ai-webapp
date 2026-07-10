@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppShell from '../components/layout/AppShell';
+import { AccessProvider } from './AccessContext';
 import { appRoutes } from './routes';
 
 function AppContent() {
@@ -21,9 +22,11 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <AccessProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </AccessProvider>
   );
 }
 
