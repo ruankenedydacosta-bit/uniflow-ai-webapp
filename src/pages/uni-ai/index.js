@@ -13,7 +13,7 @@ export { default as UniThinkingSequence } from './UniThinkingSequence';
 export { default as UniTranscriptPanel } from './UniTranscriptPanel';
 export { default as UniVoiceCapture } from './UniVoiceCapture';
 export { default as UniVoiceStage } from './UniVoiceStage';
-export { contextItems, conversationMessages, quickSuggestions } from './uniAI.mock';
+export { contextItems, contextualSuggestions, conversationMessages, quickSuggestions } from './uniAI.mock';
 export { EXPERIENCE_STATES, EXPERIENCE_TIMING, audioControlLabels } from './uniAI.experience';
 export {
   createInsightReport,

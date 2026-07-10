@@ -5,18 +5,14 @@ function UniVoiceCapture({
   isThinking,
   isSpeaking,
   isResponding,
-  interimTranscript,
-  confirmedTranscript,
   voiceFeedback,
   voiceVolume,
   onStartVoiceCapture,
 }) {
-  const hasConfirmedTranscript = Boolean(confirmedTranscript);
-  const transcriptText = interimTranscript ? `Ouvindo: ${interimTranscript}` : 'Estou ouvindo... fale naturalmente.';
   let stageStatus = 'Toque no microfone e fale naturalmente.';
 
   if (isListening) {
-    stageStatus = transcriptText;
+    stageStatus = 'Estou ouvindo... fale naturalmente.';
   } else if (isThinking) {
     stageStatus = 'Uni organizando seu contexto financeiro.';
   } else if (isResponding) {
@@ -58,7 +54,7 @@ function UniVoiceCapture({
 
       <div
         className={`${styles.voiceWaves} ${styles[voiceFeedback.className]} ${
-          hasConfirmedTranscript || isResponding ? styles.voiceWavesConfirmed : ''
+          isResponding ? styles.voiceWavesConfirmed : ''
         }`}
         aria-hidden="true"
       >
@@ -72,7 +68,7 @@ function UniVoiceCapture({
       </div>
 
       <div
-        className={hasConfirmedTranscript ? styles.voiceConfirmationPanel : styles.voiceCapturePanel}
+        className={styles.voiceCapturePanel}
         role="meter"
         aria-label="Estado da captura de voz"
         aria-valuemin="0"
@@ -80,9 +76,9 @@ function UniVoiceCapture({
         aria-valuenow={Math.round(voiceVolume * 100)}
       >
         <div className={styles.voiceCaptureCopy}>
-          <strong>{hasConfirmedTranscript ? 'Fala reconhecida' : isListening ? 'Uni está ouvindo' : 'Pronta para ouvir'}</strong>
-          <span>{hasConfirmedTranscript ? confirmedTranscript : stageStatus}</span>
-          <p>{hasConfirmedTranscript ? 'A Uni vai analisar antes de responder.' : voiceFeedback.message}</p>
+          <strong>{isListening ? 'Uni está ouvindo' : 'Pronta para ouvir'}</strong>
+          <span>{stageStatus}</span>
+          <p>{voiceFeedback.message}</p>
         </div>
       </div>
     </section>

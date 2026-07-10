@@ -16,8 +16,6 @@ function UniChatPanel({
   isResponding,
   lastUniMessage,
   voiceNotice,
-  interimTranscript,
-  confirmedTranscript,
   thinkingStep,
   thinkingSteps,
   thinkingStepIndex,
@@ -67,8 +65,6 @@ function UniChatPanel({
         isThinking={isThinking}
         isSpeaking={isSpeaking}
         isResponding={isResponding}
-        interimTranscript={interimTranscript}
-        confirmedTranscript={confirmedTranscript}
         voiceFeedback={voiceFeedback}
         voiceVolume={voiceVolume}
         onStartVoiceCapture={onStartVoiceCapture}

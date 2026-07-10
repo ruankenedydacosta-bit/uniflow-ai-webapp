@@ -4,9 +4,9 @@ import UniAudioControls from './UniAudioControls';
 import UniInsightReport from './UniInsightReport';
 import UniLiveContextPanel from './UniLiveContextPanel';
 import UniRecentConversations from './UniRecentConversations';
+import UniQuickSuggestions from './UniQuickSuggestions';
 import UniSuggestionDrawer from './UniSuggestionDrawer';
 import UniThinkingSequence from './UniThinkingSequence';
-import UniTranscriptPanel from './UniTranscriptPanel';
 import UniVoiceStage from './UniVoiceStage';
 import styles from '../UniAIPage.module.css';
 
@@ -15,6 +15,7 @@ function UniExperienceShell({
   hasStarted,
   messages,
   contextItems,
+  initialSuggestions,
   suggestions,
   report,
   draftMessage,
@@ -26,9 +27,6 @@ function UniExperienceShell({
   isMuted,
   isResponding,
   voiceVolume,
-  interimTranscript,
-  confirmedTranscript,
-  transcriptFallback,
   voiceNotice,
   thinkingSteps,
   thinkingStepIndex,
@@ -72,12 +70,9 @@ function UniExperienceShell({
           </p>
         ) : null}
 
-        <UniTranscriptPanel
-          interimTranscript={interimTranscript}
-          confirmedTranscript={confirmedTranscript}
-          transcriptFallback={transcriptFallback}
-          isListening={isListening}
-        />
+        {!hasStarted ? (
+          <UniQuickSuggestions suggestions={initialSuggestions} onSuggestionClick={onSuggestionClick} />
+        ) : null}
 
         <UniThinkingSequence active={isThinking} steps={thinkingSteps} activeIndex={thinkingStepIndex} />
 

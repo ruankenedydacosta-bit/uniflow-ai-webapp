@@ -3,6 +3,7 @@ import {
   EXPERIENCE_STATES,
   EXPERIENCE_TIMING,
   contextItems,
+  contextualSuggestions,
   conversationMessages,
   createInsightReport,
   createMessage,
@@ -26,9 +27,6 @@ function UniAIPage() {
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [voiceVolume, setVoiceVolume] = useState(0);
-  const [interimTranscript, setInterimTranscript] = useState('');
-  const [confirmedTranscript, setConfirmedTranscript] = useState('');
-  const [transcriptFallback, setTranscriptFallback] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isResponding, setIsResponding] = useState(false);
   const [thinkingStepIndex, setThinkingStepIndex] = useState(0);
@@ -42,8 +40,12 @@ function UniAIPage() {
   const animationFrameRef = useRef(null);
   const thinkingTimersRef = useRef([]);
   const responseRevealTimerRef = useRef(null);
+  const autoSpeechTimerRef = useRef(null);
+  const responseSequenceRef = useRef(0);
+  const lastAutoSpokenReportRef = useRef(null);
   const mutedRef = useRef(false);
   const finalTranscriptRef = useRef('');
+  const recognizedTranscriptRef = useRef('');
   const shouldShowEmptyCaptureNoticeRef = useRef(false);
   const canSendMessage = draftMessage.trim().length > 0 && !isThinking;
   const experienceState = getExperienceState();
@@ -63,6 +65,7 @@ function UniAIPage() {
     thinkingTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     thinkingTimersRef.current = [];
     window.clearTimeout(responseRevealTimerRef.current);
+    window.clearTimeout(autoSpeechTimerRef.current);
 
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = null;
@@ -104,7 +107,11 @@ function UniAIPage() {
 
     const responseTimer = window.setTimeout(() => {
       const responseContent = getMockUniResponse(content);
-      const report = createInsightReport(content, responseContent);
+      responseSequenceRef.current += 1;
+      const report = {
+        ...createInsightReport(content, responseContent),
+        speechId: responseSequenceRef.current,
+      };
 
       setMessages((currentMessages) => [
         ...currentMessages,
@@ -115,14 +122,7 @@ function UniAIPage() {
       setIsResponding(true);
       setThinkingStepIndex(0);
       thinkingTimersRef.current = [];
-
-      if (!mutedRef.current) {
-        const speechTimer = window.setTimeout(() => {
-          speakResponse(responseContent, { automatic: true });
-        }, 120);
-
-        thinkingTimersRef.current.push(speechTimer);
-      }
+      queueAutomaticSpeech(report.speechId, report.response);
 
       window.clearTimeout(responseRevealTimerRef.current);
       responseRevealTimerRef.current = window.setTimeout(() => {
@@ -143,6 +143,19 @@ function UniAIPage() {
     setIsSpeaking(false);
     setIsPaused(false);
     setVoiceNotice('');
+  }
+
+  function queueAutomaticSpeech(responseId, responseContent) {
+    window.clearTimeout(autoSpeechTimerRef.current);
+
+    if (!responseId || !responseContent || mutedRef.current) return;
+
+    autoSpeechTimerRef.current = window.setTimeout(() => {
+      if (mutedRef.current || lastAutoSpokenReportRef.current === responseId) return;
+
+      lastAutoSpokenReportRef.current = responseId;
+      speakResponse(responseContent, { automatic: true });
+    }, 120);
   }
 
   function speakResponse(content, options = {}) {
@@ -227,22 +240,16 @@ function UniAIPage() {
     }
   }
 
-  function sendMessage(content, options = {}) {
+  function sendMessage(content) {
     const trimmedContent = content.trim();
 
     if (!trimmedContent || isThinking) return;
 
+    window.clearTimeout(autoSpeechTimerRef.current);
     stopSpeech();
     setHasStarted(true);
     setCurrentReport(null);
     setIsResponding(false);
-    setTranscriptFallback('');
-
-    if (options.confirmTranscript) {
-      setConfirmedTranscript(trimmedContent);
-    } else {
-      setConfirmedTranscript('');
-    }
 
     setVoiceNotice('');
     setMessages((currentMessages) => [
@@ -258,20 +265,17 @@ function UniAIPage() {
     if (!canSendMessage) return;
 
     setVoiceNotice('');
-    setInterimTranscript('');
-    setTranscriptFallback('');
     sendMessage(draftMessage);
     setDraftMessage('');
   }
 
   function handleSuggestionClick(suggestion) {
+    const suggestionLabel = typeof suggestion === 'string' ? suggestion : suggestion.prompt ?? suggestion.label;
+
     setVoiceNotice('');
-    setInterimTranscript('');
-    setConfirmedTranscript('');
-    setTranscriptFallback('');
     setSuggestionsOpen(false);
     setTextComposerOpen(false);
-    sendMessage(suggestion);
+    sendMessage(suggestionLabel);
   }
 
   async function startAudioMeter() {
@@ -332,7 +336,6 @@ function UniAIPage() {
     recognitionRef.current?.abort?.();
     recognitionRef.current = null;
     setIsListening(false);
-    setInterimTranscript('');
     stopAudioMeter();
   }
 
@@ -343,11 +346,10 @@ function UniAIPage() {
       return;
     }
 
+    window.clearTimeout(autoSpeechTimerRef.current);
     stopSpeech();
     setHasStarted(true);
     setCurrentReport(null);
-    setConfirmedTranscript('');
-    setTranscriptFallback('');
     setSuggestionsOpen(false);
     setTextComposerOpen(false);
 
@@ -362,9 +364,8 @@ function UniAIPage() {
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
     finalTranscriptRef.current = '';
+    recognizedTranscriptRef.current = '';
     shouldShowEmptyCaptureNoticeRef.current = true;
-    setInterimTranscript('');
-    setTranscriptFallback('');
     setVoiceNotice('');
     recognition.lang = 'pt-BR';
     recognition.interimResults = true;
@@ -393,7 +394,7 @@ function UniAIPage() {
       const recognizedTranscript = `${finalTranscript} ${partialTranscript}`.trim();
 
       finalTranscriptRef.current = finalTranscript || recognizedTranscript;
-      setInterimTranscript(recognizedTranscript);
+      recognizedTranscriptRef.current = recognizedTranscript || finalTranscriptRef.current;
     };
 
     recognition.onerror = () => {
@@ -402,19 +403,18 @@ function UniAIPage() {
     };
 
     recognition.onend = () => {
-      const finalTranscript = finalTranscriptRef.current.trim();
+      const finalTranscript = (finalTranscriptRef.current || recognizedTranscriptRef.current).trim();
 
       if (finalTranscript) {
-        sendMessage(finalTranscript, { confirmTranscript: true });
+        sendMessage(finalTranscript);
         setVoiceNotice('Áudio captado. A Uni vai organizar isso com calma.');
       } else if (shouldShowEmptyCaptureNoticeRef.current) {
-        setTranscriptFallback('Não consegui ouvir tudo. Pode tentar novamente?');
         setVoiceNotice('Não consegui ouvir tudo. Pode tentar novamente?');
       }
 
       setIsListening(false);
-      setInterimTranscript(finalTranscript);
       finalTranscriptRef.current = '';
+      recognizedTranscriptRef.current = '';
       shouldShowEmptyCaptureNoticeRef.current = false;
       recognitionRef.current = null;
       stopAudioMeter();
@@ -428,8 +428,6 @@ function UniAIPage() {
       stopAudioMeter();
       recognitionRef.current = null;
       shouldShowEmptyCaptureNoticeRef.current = false;
-      setInterimTranscript('');
-      setTranscriptFallback('Não consegui ouvir tudo. Pode tentar novamente?');
       setVoiceNotice('Não consegui iniciar a captura de voz agora. Você pode digitar sua pergunta para a Uni.');
     }
   }
@@ -460,6 +458,7 @@ function UniAIPage() {
     mutedRef.current = nextMutedState;
 
     if (nextMutedState) {
+      lastAutoSpokenReportRef.current = currentReport?.speechId ?? lastAutoSpokenReportRef.current;
       stopSpeech();
       setVoiceNotice('Áudio automático silenciado.');
       return;
@@ -469,13 +468,11 @@ function UniAIPage() {
   }
 
   function handleNewQuestion() {
+    window.clearTimeout(autoSpeechTimerRef.current);
     stopSpeech();
     clearThinkingTimers();
     window.clearTimeout(responseRevealTimerRef.current);
     setCurrentReport(null);
-    setConfirmedTranscript('');
-    setInterimTranscript('');
-    setTranscriptFallback('');
     setVoiceNotice('');
     setIsThinking(false);
     setIsResponding(false);
@@ -496,6 +493,7 @@ function UniAIPage() {
         hasStarted={hasStarted}
         messages={messages}
         contextItems={contextItems}
+        initialSuggestions={contextualSuggestions}
         suggestions={quickSuggestions}
         report={currentReport}
         draftMessage={draftMessage}
@@ -507,9 +505,6 @@ function UniAIPage() {
         isMuted={isMuted}
         isResponding={isResponding}
         voiceVolume={voiceVolume}
-        interimTranscript={interimTranscript}
-        confirmedTranscript={confirmedTranscript}
-        transcriptFallback={transcriptFallback}
         voiceNotice={voiceNotice}
         thinkingSteps={thinkingSteps}
         thinkingStepIndex={thinkingStepIndex}
