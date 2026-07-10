@@ -843,5 +843,10 @@
     "mtime": 1783710651.6006048,
     "ast_hash": "79750f197804ad2566190b2fb3d50b92",
     "semantic_hash": ""
+  },
+  "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
+    "mtime": 1783711913.8430586,
+    "ast_hash": "3419d16d6dec4ffdf5f7b999816e2943",
+    "semantic_hash": ""
   }
 }
