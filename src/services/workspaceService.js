@@ -1,3 +1,5 @@
+import { isSupabaseConfigured } from './supabaseClient';
+
 function createWorkspaceSchemaPendingResult(data = null) {
   return {
     data,
@@ -5,7 +7,7 @@ function createWorkspaceSchemaPendingResult(data = null) {
       message:
         'Workspaces reais serao implementados apos schema Supabase, RLS e membership.',
     },
-    isConfigured: false,
+    isConfigured: isSupabaseConfigured,
   };
 }
 
@@ -24,4 +26,3 @@ export async function createPersonalWorkspace() {
 export async function createBusinessWorkspace() {
   return createWorkspaceSchemaPendingResult(null);
 }
-

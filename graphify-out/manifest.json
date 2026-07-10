@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783686034.9006233,
-    "ast_hash": "21e2ece2ddfc235e6fc0c5644fe09183",
+    "mtime": 1783727384.7006361,
+    "ast_hash": "46632267f7c1e131e6759bb1fde50586",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -850,23 +850,23 @@
     "semantic_hash": ""
   },
   "src/services/authService.js": {
-    "mtime": 1783712313.6961405,
-    "ast_hash": "7b22d12b091d605017156d4fea09d4e1",
+    "mtime": 1783727756.111457,
+    "ast_hash": "96497b754d1db61b77aaea764c58d95e",
     "semantic_hash": ""
   },
   "src/services/supabaseClient.js": {
-    "mtime": 1783712313.6005256,
-    "ast_hash": "49f51eba592debea9ff567edadcb18d3",
+    "mtime": 1783727755.9846978,
+    "ast_hash": "474e75dc2537836b116b7e91c3287c71",
     "semantic_hash": ""
   },
   "src/services/workspaceService.js": {
-    "mtime": 1783712313.7923894,
-    "ast_hash": "770dd77965a1ab54154d8f66ff2c7b6d",
+    "mtime": 1783727756.2259727,
+    "ast_hash": "b47d6fb82bdb9e9a4b60c8c831d80817",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_ENV_SETUP.md": {
-    "mtime": 1783712313.8875253,
-    "ast_hash": "f787bf3a975d216c8b0226c854277c07",
+    "mtime": 1783727756.34198,
+    "ast_hash": "4fac39fc74de5e9c077fd43e7d181f43",
     "semantic_hash": ""
   }
 }

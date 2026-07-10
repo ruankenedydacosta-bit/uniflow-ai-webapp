@@ -1,4 +1,4 @@
-import { getSupabaseConfigStatus, supabaseClient } from './supabaseClient';
+import { getSupabaseConfigStatus, supabase } from './supabaseClient';
 
 function createServiceUnavailableResult() {
   return {
@@ -12,7 +12,7 @@ function createServiceUnavailableResult() {
 }
 
 export async function getCurrentUser() {
-  if (!supabaseClient) {
+  if (!supabase) {
     return {
       data: {
         user: null,
@@ -22,7 +22,7 @@ export async function getCurrentUser() {
     };
   }
 
-  const { data, error } = await supabaseClient.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
 
   return {
     data,
@@ -32,11 +32,11 @@ export async function getCurrentUser() {
 }
 
 export async function signInWithEmail({ email, password } = {}) {
-  if (!supabaseClient) {
+  if (!supabase) {
     return createServiceUnavailableResult();
   }
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -49,11 +49,11 @@ export async function signInWithEmail({ email, password } = {}) {
 }
 
 export async function signUpWithEmail({ email, password } = {}) {
-  if (!supabaseClient) {
+  if (!supabase) {
     return createServiceUnavailableResult();
   }
 
-  const { data, error } = await supabaseClient.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
   });
@@ -66,11 +66,11 @@ export async function signUpWithEmail({ email, password } = {}) {
 }
 
 export async function signOut() {
-  if (!supabaseClient) {
+  if (!supabase) {
     return createServiceUnavailableResult();
   }
 
-  const { error } = await supabaseClient.auth.signOut();
+  const { error } = await supabase.auth.signOut();
 
   return {
     data: null,
@@ -78,4 +78,3 @@ export async function signOut() {
     isConfigured: true,
   };
 }
-

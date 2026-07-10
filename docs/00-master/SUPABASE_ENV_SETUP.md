@@ -27,15 +27,15 @@ Use `.env.example` como referencia.
 
 ## Estado atual
 
-O demo atual continua funcionando sem `.env` e sem Supabase configurado.
+`@supabase/supabase-js` esta instalado no projeto. O cliente real em `src/services/supabaseClient.js` usa `createClient` somente quando `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` estao preenchidas.
 
-Nesta etapa, `src/services/supabaseClient.js`, `authService.js` e `workspaceService.js` existem apenas como base tecnica. Eles nao substituem os mocks e nao conectam Login, Onboarding ou paginas internas ao Supabase.
+Sem `.env`, `supabase` e `supabaseClient` permanecem `null`, e o demo continua funcionando normalmente. `authService.js` retorna respostas controladas nesse estado, enquanto `workspaceService.js` permanece como stub ate a criacao do schema e das politicas RLS.
+
+Esses services nao substituem os mocks e ainda nao conectam Login, Onboarding ou paginas internas ao Supabase.
 
 ## Proxima etapa
 
-Quando a dependencia `@supabase/supabase-js` for instalada e o projeto Supabase estiver criado, o cliente real deve ser ativado em `src/services/supabaseClient.js`.
-
-Depois disso, a migracao deve acontecer por modulo, preservando o demo:
+Quando o projeto Supabase estiver criado e as variaveis locais configuradas, a migracao deve acontecer por modulo, preservando o demo:
 
 1. Auth basica.
 2. Profiles.
@@ -43,4 +43,3 @@ Depois disso, a migracao deve acontecer por modulo, preservando o demo:
 4. Membership/RLS.
 5. Access real substituindo o mock gradualmente.
 6. Modulos reais por dominio.
-

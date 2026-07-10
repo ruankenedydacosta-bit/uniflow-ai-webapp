@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 163 files · ~51,156 words
+- 167 files · ~51,651 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 706 nodes · 1085 edges · 73 communities (59 shown, 14 thin omitted)
+- 728 nodes · 1113 edges · 76 communities (62 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `12687e22`
+- Built from commit: `d059fa3d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -59,6 +59,9 @@
 - create-note.js
 - FinanceProjectionChart.jsx
 - Supabase Auth and Data Plan
+- authService.js
+- Supabase Env Setup
+- workspaceService.js
 
 ## God Nodes (most connected - your core abstractions)
 1. `cx()` - 29 edges
@@ -87,11 +90,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (73 total, 14 thin omitted)
+## Communities (76 total, 14 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
-Cohesion: 0.06
-Nodes (54): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, useAccess() (+46 more)
+Cohesion: 0.05
+Nodes (55): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, useAccess() (+47 more)
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.08
@@ -134,8 +137,8 @@ Cohesion: 0.33
 Nodes (4): Card, CardBody, CardFooter, CardHeader
 
 ### Community 39 - "UniAIPage.jsx"
-Cohesion: 0.09
-Nodes (29): Input, audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse() (+21 more)
+Cohesion: 0.10
+Nodes (28): Input, audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse() (+20 more)
 
 ### Community 48 - "Módulos oficiais do produto"
 Cohesion: 0.08
@@ -209,8 +212,20 @@ Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointC
 Cohesion: 0.05
 Nodes (43): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 1. Objetivo da Fase 2, 2. Principios, 3. Modelo inicial de autenticacao, 4. Modelo de workspaces (+35 more)
 
+### Community 73 - "authService.js"
+Cohesion: 0.36
+Nodes (7): createServiceUnavailableResult(), getCurrentUser(), signInWithEmail(), signOut(), signUpWithEmail(), getSupabaseConfigStatus(), isSupabaseConfigured
+
+### Community 74 - "Supabase Env Setup"
+Cohesion: 0.29
+Nodes (6): Estado atual, Objetivo, Proxima etapa, Regras de seguranca, Supabase Env Setup, Variaveis necessarias
+
+### Community 75 - "workspaceService.js"
+Cohesion: 0.60
+Nodes (5): createBusinessWorkspace(), createPersonalWorkspace(), createWorkspaceSchemaPendingResult(), getCurrentWorkspace(), listWorkspaces()
+
 ## Knowledge Gaps
-- **286 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+281 more)
+- **292 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+287 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -218,15 +233,15 @@ Nodes (43): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `cx()` connect `DashboardPage.jsx` to `UniAIPage.jsx`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Why does `useAccess()` connect `DashboardPage.jsx` to `navigation.js`, `AccessModeSwitcher.jsx`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `AccessModeSwitcher.jsx`, `UniAIPage.jsx`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `AccessModeSwitcher.jsx`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _286 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _292 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.057985257985257985 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.054758800521512385 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**

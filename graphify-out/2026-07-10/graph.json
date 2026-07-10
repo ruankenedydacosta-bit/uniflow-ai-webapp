@@ -3720,7 +3720,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel",
-      "community": 39,
+      "community": 0,
       "norm_label": "unichatpanel.jsx"
     },
     {
@@ -3730,7 +3730,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel_unichatpanel",
-      "community": 39,
+      "community": 0,
       "norm_label": "unichatpanel()"
     },
     {
@@ -3780,7 +3780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniinsightreport.jsx"
     },
     {
@@ -3800,7 +3800,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel",
-      "community": 39,
+      "community": 0,
       "norm_label": "unilivecontextpanel.jsx"
     },
     {
@@ -3820,7 +3820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble",
-      "community": 39,
+      "community": 0,
       "norm_label": "unimessagebubble.jsx"
     },
     {
@@ -3830,7 +3830,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble_unimessagebubble",
-      "community": 39,
+      "community": 0,
       "norm_label": "unimessagebubble()"
     },
     {
@@ -3880,7 +3880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer",
-      "community": 39,
+      "community": 0,
       "norm_label": "unisuggestiondrawer.jsx"
     },
     {
@@ -4184,6 +4184,66 @@
       "norm_label": "auth.service.js"
     },
     {
+      "label": "authService.js",
+      "file_type": "code",
+      "source_file": "src/services/authService.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_services_authservice",
+      "community": 73,
+      "norm_label": "authservice.js"
+    },
+    {
+      "label": "createServiceUnavailableResult()",
+      "file_type": "code",
+      "source_file": "src/services/authService.js",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "src_services_authservice_createserviceunavailableresult",
+      "community": 73,
+      "norm_label": "createserviceunavailableresult()"
+    },
+    {
+      "label": "getCurrentUser()",
+      "file_type": "code",
+      "source_file": "src/services/authService.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_services_authservice_getcurrentuser",
+      "community": 73,
+      "norm_label": "getcurrentuser()"
+    },
+    {
+      "label": "signInWithEmail()",
+      "file_type": "code",
+      "source_file": "src/services/authService.js",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "src_services_authservice_signinwithemail",
+      "community": 73,
+      "norm_label": "signinwithemail()"
+    },
+    {
+      "label": "signUpWithEmail()",
+      "file_type": "code",
+      "source_file": "src/services/authService.js",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "src_services_authservice_signupwithemail",
+      "community": 73,
+      "norm_label": "signupwithemail()"
+    },
+    {
+      "label": "signOut()",
+      "file_type": "code",
+      "source_file": "src/services/authService.js",
+      "source_location": "L68",
+      "_origin": "ast",
+      "id": "src_services_authservice_signout",
+      "community": 73,
+      "norm_label": "signout()"
+    },
+    {
       "label": "client.js",
       "file_type": "code",
       "source_file": "src/services/client.js",
@@ -4212,6 +4272,96 @@
       "id": "src_services_storage_service",
       "community": 45,
       "norm_label": "storage.service.js"
+    },
+    {
+      "label": "supabaseClient.js",
+      "file_type": "code",
+      "source_file": "src/services/supabaseClient.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_services_supabaseclient",
+      "community": 73,
+      "norm_label": "supabaseclient.js"
+    },
+    {
+      "label": "isSupabaseConfigured",
+      "file_type": "code",
+      "source_file": "src/services/supabaseClient.js",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "src_services_supabaseclient_issupabaseconfigured",
+      "community": 73,
+      "norm_label": "issupabaseconfigured"
+    },
+    {
+      "label": "getSupabaseConfigStatus()",
+      "file_type": "code",
+      "source_file": "src/services/supabaseClient.js",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "src_services_supabaseclient_getsupabaseconfigstatus",
+      "community": 73,
+      "norm_label": "getsupabaseconfigstatus()"
+    },
+    {
+      "label": "workspaceService.js",
+      "file_type": "code",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_services_workspaceservice",
+      "community": 75,
+      "norm_label": "workspaceservice.js"
+    },
+    {
+      "label": "createWorkspaceSchemaPendingResult()",
+      "file_type": "code",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_services_workspaceservice_createworkspaceschemapendingresult",
+      "community": 75,
+      "norm_label": "createworkspaceschemapendingresult()"
+    },
+    {
+      "label": "listWorkspaces()",
+      "file_type": "code",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "src_services_workspaceservice_listworkspaces",
+      "community": 75,
+      "norm_label": "listworkspaces()"
+    },
+    {
+      "label": "getCurrentWorkspace()",
+      "file_type": "code",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "src_services_workspaceservice_getcurrentworkspace",
+      "community": 75,
+      "norm_label": "getcurrentworkspace()"
+    },
+    {
+      "label": "createPersonalWorkspace()",
+      "file_type": "code",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "src_services_workspaceservice_createpersonalworkspace",
+      "community": 75,
+      "norm_label": "createpersonalworkspace()"
+    },
+    {
+      "label": "createBusinessWorkspace()",
+      "file_type": "code",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "src_services_workspaceservice_createbusinessworkspace",
+      "community": 75,
+      "norm_label": "createbusinessworkspace()"
     },
     {
       "label": "constants.js",
@@ -6082,6 +6232,76 @@
       "id": "docs_00_master_supabase_auth_and_data_plan_13_decisao_oficial",
       "community": 72,
       "norm_label": "13. decisao oficial"
+    },
+    {
+      "label": "SUPABASE_ENV_SETUP.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_env_setup",
+      "community": 74,
+      "norm_label": "supabase_env_setup.md"
+    },
+    {
+      "label": "Supabase Env Setup",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_env_setup_supabase_env_setup",
+      "community": 74,
+      "norm_label": "supabase env setup"
+    },
+    {
+      "label": "Objetivo",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_env_setup_objetivo",
+      "community": 74,
+      "norm_label": "objetivo"
+    },
+    {
+      "label": "Variaveis necessarias",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_env_setup_variaveis_necessarias",
+      "community": 74,
+      "norm_label": "variaveis necessarias"
+    },
+    {
+      "label": "Regras de seguranca",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_env_setup_regras_de_seguranca",
+      "community": 74,
+      "norm_label": "regras de seguranca"
+    },
+    {
+      "label": "Estado atual",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_env_setup_estado_atual",
+      "community": 74,
+      "norm_label": "estado atual"
+    },
+    {
+      "label": "Proxima etapa",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_env_setup_proxima_etapa",
+      "community": 74,
+      "norm_label": "proxima etapa"
     },
     {
       "label": "UNI_AI_EXPERIENCE_REFERENCE.md",
@@ -15828,6 +16048,236 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_services_authservice",
+      "target": "src_services_authservice_createserviceunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_services_authservice",
+      "target": "src_services_authservice_getcurrentuser",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "src_services_authservice",
+      "target": "src_services_authservice_signinwithemail",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L68",
+      "weight": 1.0,
+      "source": "src_services_authservice",
+      "target": "src_services_authservice_signout",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "src_services_authservice",
+      "target": "src_services_authservice_signupwithemail",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_authservice",
+      "target": "src_services_supabaseclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_authservice",
+      "target": "src_services_supabaseclient_getsupabaseconfigstatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "src_services_authservice_signinwithemail",
+      "target": "src_services_authservice_createserviceunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "src_services_authservice_signout",
+      "target": "src_services_authservice_createserviceunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/authService.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_services_authservice_signupwithemail",
+      "target": "src_services_authservice_createserviceunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/authService.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_services_authservice_getcurrentuser",
+      "target": "src_services_supabaseclient_getsupabaseconfigstatus"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/supabaseClient.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_services_supabaseclient",
+      "target": "src_services_supabaseclient_getsupabaseconfigstatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/supabaseClient.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_services_supabaseclient",
+      "target": "src_services_supabaseclient_issupabaseconfigured",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice",
+      "target": "src_services_workspaceservice_createbusinessworkspace",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice",
+      "target": "src_services_workspaceservice_createpersonalworkspace",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice",
+      "target": "src_services_workspaceservice_createworkspaceschemapendingresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice",
+      "target": "src_services_workspaceservice_getcurrentworkspace",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice",
+      "target": "src_services_workspaceservice_listworkspaces",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice_createbusinessworkspace",
+      "target": "src_services_workspaceservice_createworkspaceschemapendingresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice_createpersonalworkspace",
+      "target": "src_services_workspaceservice_createworkspaceschemapendingresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice_getcurrentworkspace",
+      "target": "src_services_workspaceservice_createworkspaceschemapendingresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/workspaceService.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_services_workspaceservice_listworkspaces",
+      "target": "src_services_workspaceservice_createworkspaceschemapendingresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "src/utils/cx.js",
       "source_location": "L1",
       "weight": 1.0,
@@ -17548,6 +17998,66 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_env_setup",
+      "target": "docs_00_master_supabase_env_setup_supabase_env_setup",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_env_setup_supabase_env_setup",
+      "target": "docs_00_master_supabase_env_setup_estado_atual",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_env_setup_supabase_env_setup",
+      "target": "docs_00_master_supabase_env_setup_objetivo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_env_setup_supabase_env_setup",
+      "target": "docs_00_master_supabase_env_setup_proxima_etapa",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_env_setup_supabase_env_setup",
+      "target": "docs_00_master_supabase_env_setup_regras_de_seguranca",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_env_setup_supabase_env_setup",
+      "target": "docs_00_master_supabase_env_setup_variaveis_necessarias",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_AI_EXPERIENCE_REFERENCE.md",
       "source_location": "L1",
       "weight": 1.0,
@@ -18457,5 +18967,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "12687e22124b04a0c6aa97ae015252720a3bd4fa"
+  "built_at_commit": "d059fa3d6198a0b659cca3cbd35ded2516ee1326"
 }
