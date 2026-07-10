@@ -1,9 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { navigationItems } from '../../../app/navigation';
+import { DEFAULT_DEMO_ACCESS } from '../../../app/access';
+import { filterNavigationItems, navigationItems } from '../../../app/navigation';
 import Badge from '../../ui/Badge';
 import styles from './Sidebar.module.css';
 
 function Sidebar() {
+  const visibleNavigationItems = filterNavigationItems(navigationItems, DEFAULT_DEMO_ACCESS);
+
   return (
     <aside className={styles.sidebar} aria-label="Navegação principal">
       <div className={styles.brand}>
@@ -17,7 +20,7 @@ function Sidebar() {
       </div>
 
       <nav className={styles.nav}>
-        {navigationItems.map((item) => (
+        {visibleNavigationItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

@@ -2004,6 +2004,86 @@
       "norm_label": "app()"
     },
     {
+      "label": "access.js",
+      "file_type": "code",
+      "source_file": "src/app/access.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_app_access",
+      "community": 68,
+      "norm_label": "access.js"
+    },
+    {
+      "label": "USER_MODES",
+      "file_type": "code",
+      "source_file": "src/app/access.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_app_access_user_modes",
+      "community": 68,
+      "norm_label": "user_modes"
+    },
+    {
+      "label": "PLANS",
+      "file_type": "code",
+      "source_file": "src/app/access.js",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "src_app_access_plans",
+      "community": 68,
+      "norm_label": "plans"
+    },
+    {
+      "label": "WORKSPACE_TYPES",
+      "file_type": "code",
+      "source_file": "src/app/access.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_app_access_workspace_types",
+      "community": 68,
+      "norm_label": "workspace_types"
+    },
+    {
+      "label": "DEFAULT_DEMO_ACCESS",
+      "file_type": "code",
+      "source_file": "src/app/access.js",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "src_app_access_default_demo_access",
+      "community": 68,
+      "norm_label": "default_demo_access"
+    },
+    {
+      "label": "isBusinessMode()",
+      "file_type": "code",
+      "source_file": "src/app/access.js",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_app_access_isbusinessmode",
+      "community": 68,
+      "norm_label": "isbusinessmode()"
+    },
+    {
+      "label": "isPersonalMode()",
+      "file_type": "code",
+      "source_file": "src/app/access.js",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "src_app_access_ispersonalmode",
+      "community": 68,
+      "norm_label": "ispersonalmode()"
+    },
+    {
+      "label": "canUseBusinessFeatures()",
+      "file_type": "code",
+      "source_file": "src/app/access.js",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "src_app_access_canusebusinessfeatures",
+      "community": 68,
+      "norm_label": "canusebusinessfeatures()"
+    },
+    {
       "label": "main.jsx",
       "file_type": "code",
       "source_file": "src/app/main.jsx",
@@ -2027,7 +2107,7 @@
       "label": "ALL_MODES",
       "file_type": "code",
       "source_file": "src/app/navigation.js",
-      "source_location": "L1",
+      "source_location": "L3",
       "_origin": "ast",
       "id": "src_app_navigation_all_modes",
       "community": 68,
@@ -2037,7 +2117,7 @@
       "label": "ALL_PLANS",
       "file_type": "code",
       "source_file": "src/app/navigation.js",
-      "source_location": "L2",
+      "source_location": "L4",
       "_origin": "ast",
       "id": "src_app_navigation_all_plans",
       "community": 68,
@@ -2047,7 +2127,7 @@
       "label": "BUSINESS_MODES",
       "file_type": "code",
       "source_file": "src/app/navigation.js",
-      "source_location": "L3",
+      "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_navigation_business_modes",
       "community": 68,
@@ -2057,7 +2137,7 @@
       "label": "BUSINESS_PLANS",
       "file_type": "code",
       "source_file": "src/app/navigation.js",
-      "source_location": "L4",
+      "source_location": "L6",
       "_origin": "ast",
       "id": "src_app_navigation_business_plans",
       "community": 68,
@@ -2067,7 +2147,7 @@
       "label": "navigationItems",
       "file_type": "code",
       "source_file": "src/app/navigation.js",
-      "source_location": "L6",
+      "source_location": "L8",
       "_origin": "ast",
       "id": "src_app_navigation_navigationitems",
       "community": 68,
@@ -2077,7 +2157,7 @@
       "label": "filterNavigationItems()",
       "file_type": "code",
       "source_file": "src/app/navigation.js",
-      "source_location": "L66",
+      "source_location": "L68",
       "_origin": "ast",
       "id": "src_app_navigation_filternavigationitems",
       "community": 68,
@@ -2820,7 +2900,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols",
-      "community": 0,
+      "community": 39,
       "norm_label": "uniaudiocontrols.jsx"
     },
     {
@@ -7389,21 +7469,115 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "src/app/navigation.js",
-      "source_location": "L1",
+      "source_file": "src/app/access.js",
+      "source_location": "L34",
       "weight": 1.0,
-      "source": "src_app_navigation",
-      "target": "src_app_navigation_all_modes",
+      "source": "src_app_access",
+      "target": "src_app_access_canusebusinessfeatures",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "src/app/access.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "src_app_access",
+      "target": "src_app_access_default_demo_access",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/access.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_app_access",
+      "target": "src_app_access_isbusinessmode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/access.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "src_app_access",
+      "target": "src_app_access_ispersonalmode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/access.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_app_access",
+      "target": "src_app_access_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/access.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_app_access",
+      "target": "src_app_access_user_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/access.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_app_access",
+      "target": "src_app_access_workspace_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/app/navigation.js",
-      "source_location": "L2",
+      "source_location": "L1",
       "weight": 1.0,
       "source": "src_app_navigation",
-      "target": "src_app_navigation_all_plans",
+      "target": "src_app_access",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_app_navigation",
+      "target": "src_app_access_user_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_app_navigation",
+      "target": "src_app_access_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/access.js",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "src_app_access_canusebusinessfeatures",
+      "target": "src_app_access_isbusinessmode",
       "confidence_score": 1.0
     },
     {
@@ -7413,7 +7587,7 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "src_app_navigation",
-      "target": "src_app_navigation_business_modes",
+      "target": "src_app_navigation_all_modes",
       "confidence_score": 1.0
     },
     {
@@ -7423,6 +7597,26 @@
       "source_location": "L4",
       "weight": 1.0,
       "source": "src_app_navigation",
+      "target": "src_app_navigation_all_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_app_navigation",
+      "target": "src_app_navigation_business_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_app_navigation",
       "target": "src_app_navigation_business_plans",
       "confidence_score": 1.0
     },
@@ -7430,7 +7624,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/navigation.js",
-      "source_location": "L66",
+      "source_location": "L68",
       "weight": 1.0,
       "source": "src_app_navigation",
       "target": "src_app_navigation_filternavigationitems",
@@ -7440,7 +7634,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/navigation.js",
-      "source_location": "L6",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_app_navigation",
       "target": "src_app_navigation_navigationitems",
@@ -12573,5 +12767,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "4621d259f165b861d011d59c2515e8b53a70a5fc"
+  "built_at_commit": "7bc2794ff503b99600a28566611b1b06505afcc8"
 }

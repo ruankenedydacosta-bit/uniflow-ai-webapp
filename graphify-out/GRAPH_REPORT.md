@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-09)
 
 ## Corpus Check
-- 142 files · ~35,730 words
+- 142 files · ~35,742 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 532 nodes · 712 edges · 69 communities (55 shown, 14 thin omitted)
+- 532 nodes · 716 edges · 69 communities (55 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7bc2794f`
+- Built from commit: `3fbe25e5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -186,11 +186,11 @@ Cohesion: 0.05
 Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao futura de estrutura tecnica, 13. Roadmap de implementacao, 1. Objetivo da separacao, 2. App unico, experiencias diferentes, 3. Modos de uso, 4. Planos (+31 more)
 
 ### Community 68 - "navigation.js"
-Cohesion: 0.09
-Nodes (16): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, App(), ALL_MODES (+8 more)
+Cohesion: 0.10
+Nodes (17): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, App(), ALL_MODES (+9 more)
 
 ## Knowledge Gaps
-- **195 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+190 more)
+- **194 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+189 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -204,7 +204,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `Button()` connect `DashboardPage.jsx` to `cx`, `AppShell.jsx`, `UniAIPage.jsx`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _195 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _194 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.09155844155844156 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
