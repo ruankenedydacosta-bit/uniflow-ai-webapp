@@ -755,13 +755,13 @@
     "semantic_hash": ""
   },
   "src/pages/FinanceiroPage.jsx": {
-    "mtime": 1783685606.9986057,
-    "ast_hash": "8abcdac81d8ad94b49a780dc4180b87e",
+    "mtime": 1783686794.2291656,
+    "ast_hash": "9a94466c1d9e4f76d5c4643578ca04fc",
     "semantic_hash": ""
   },
   "src/pages/financeiro/financial.mock.js": {
-    "mtime": 1783685619.432448,
-    "ast_hash": "496c25d505de0baf1c12e4fdb5ed9057",
+    "mtime": 1783687264.4219456,
+    "ast_hash": "2bdbf0b0892742b43c61af041d05dae4",
     "semantic_hash": ""
   },
   "docs/00-master/APP_STRUCTURE_MAP.md": {
@@ -777,6 +777,11 @@
   "docs/00-master/OBSIDIAN_WORKFLOW.md": {
     "mtime": 1783686030.3595026,
     "ast_hash": "e3645ae7ee2cd873085f57da81c86a55",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/FinanceProjectionChart.jsx": {
+    "mtime": 1783688526.4546597,
+    "ast_hash": "a93dd5f2926b3d56f1e3ddfcc52f9d37",
     "semantic_hash": ""
   }
 }

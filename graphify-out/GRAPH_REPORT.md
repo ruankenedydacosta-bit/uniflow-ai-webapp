@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 149 files · ~42,146 words
+- 150 files · ~43,372 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 611 nodes · 829 edges · 71 communities (57 shown, 14 thin omitted)
+- 621 nodes · 850 edges · 72 communities (58 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `52f853c9`
+- Built from commit: `8d06a91e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -57,6 +57,7 @@
 - navigation.js
 - Obsidian Workflow
 - create-note.js
+- FinanceProjectionChart.jsx
 
 ## God Nodes (most connected - your core abstractions)
 1. `Uni AI Experience Reference` - 19 edges
@@ -68,7 +69,7 @@
 7. `6. Catalogo oficial de modulos` - 13 edges
 8. `Módulos oficiais do produto` - 13 edges
 9. `Button()` - 12 edges
-10. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
+10. `formatCurrency()` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `FinanceiroPage()` --calls--> `useAccess()`  [EXTRACTED]
@@ -85,7 +86,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (71 total, 14 thin omitted)
+## Communities (72 total, 14 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
 Cohesion: 0.07
@@ -199,8 +200,12 @@ Nodes (8): Caminho do cofre, Como criar uma nota, Fonte principal do app, Obsidi
 Cohesion: 0.42
 Nodes (8): buildNote(), createNote(), getDateParts(), getUniqueFilePath(), NOTE_TYPES, parseArgs(), slugify(), validateInput()
 
+### Community 71 - "FinanceProjectionChart.jsx"
+Cohesion: 0.36
+Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointCoordinates(), getSeriesTotal(), getSeriesValues(), PADDING, SERIES_CLASSES
+
 ## Knowledge Gaps
-- **243 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+238 more)
+- **245 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+240 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -210,9 +215,9 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `AppShell.jsx`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **Why does `Button()` connect `DashboardPage.jsx` to `AppShell.jsx`, `UniAIPage.jsx`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _243 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _245 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.06664388243335612 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**

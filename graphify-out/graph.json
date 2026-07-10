@@ -3027,7 +3027,7 @@
       "label": "getFinancialContext()",
       "file_type": "code",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_financeiropage_getfinancialcontext",
       "community": 0,
@@ -3037,7 +3037,7 @@
       "label": "FinanceiroPage()",
       "file_type": "code",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L15",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "src_pages_financeiropage_financeiropage",
       "community": 0,
@@ -3142,6 +3142,106 @@
       "id": "src_pages_uniaipage_uniaipage",
       "community": 39,
       "norm_label": "uniaipage()"
+    },
+    {
+      "label": "FinanceProjectionChart.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart",
+      "community": 71,
+      "norm_label": "financeprojectionchart.jsx"
+    },
+    {
+      "label": "PADDING",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_padding",
+      "community": 71,
+      "norm_label": "padding"
+    },
+    {
+      "label": "SERIES_CLASSES",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_series_classes",
+      "community": 71,
+      "norm_label": "series_classes"
+    },
+    {
+      "label": "getSeriesValues()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_getseriesvalues",
+      "community": 71,
+      "norm_label": "getseriesvalues()"
+    },
+    {
+      "label": "getPointCoordinates()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_getpointcoordinates",
+      "community": 71,
+      "norm_label": "getpointcoordinates()"
+    },
+    {
+      "label": "buildLinePath()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_buildlinepath",
+      "community": 71,
+      "norm_label": "buildlinepath()"
+    },
+    {
+      "label": "buildAreaPath()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_buildareapath",
+      "community": 71,
+      "norm_label": "buildareapath()"
+    },
+    {
+      "label": "getSeriesTotal()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L62",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_getseriestotal",
+      "community": 71,
+      "norm_label": "getseriestotal()"
+    },
+    {
+      "label": "getYAtX()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L69",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_getyatx",
+      "community": 71,
+      "norm_label": "getyatx()"
+    },
+    {
+      "label": "FinanceProjectionChart()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L94",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "community": 71,
+      "norm_label": "financeprojectionchart()"
     },
     {
       "label": "financial.mock.js",
@@ -8515,7 +8615,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_app_accesscontext_useaccess",
@@ -11154,7 +11254,7 @@
       "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
-      "target": "src_pages_financeiro_financial_mock",
+      "target": "src_pages_financeiro_financeprojectionchart",
       "confidence_score": 1.0
     },
     {
@@ -11165,6 +11265,28 @@
       "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financial_mock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
       "target": "src_pages_financeiro_financial_mock_financialmock",
       "confidence_score": 1.0
     },
@@ -11172,7 +11294,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L15",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiropage_financeiropage",
@@ -11182,7 +11304,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiropage_getfinancialcontext",
@@ -11237,7 +11359,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_pages_financeiropage_getfinancialcontext",
@@ -11248,7 +11370,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L75",
+      "source_location": "L63",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_utils_cx_cx",
@@ -11259,7 +11381,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L57",
+      "source_location": "L118",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_utils_formatters_formatcurrency",
@@ -11610,6 +11732,206 @@
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_isprobablysafari",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_buildareapath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_buildlinepath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_getpointcoordinates",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_getseriestotal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_getseriesvalues",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L69",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_getyatx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_padding",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_series_classes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_utils_formatters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L101",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_getseriesvalues",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L63",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart_getseriestotal",
+      "target": "src_pages_financeiro_financeprojectionchart_getseriesvalues",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L106",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_getpointcoordinates",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart_buildareapath",
+      "target": "src_pages_financeiro_financeprojectionchart_buildlinepath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L111",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_buildlinepath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L110",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_buildareapath",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "target": "src_pages_financeiro_financeprojectionchart_getseriestotal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
+      "source_location": "L170",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
+      "target": "src_utils_formatters_formatcurrency",
       "confidence_score": 1.0
     },
     {
@@ -14772,5 +15094,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "52f853c9b554ef709d57532aaf97d012c6b28020"
+  "built_at_commit": "8d06a91eec0b8cd2d682039540f323cdd49f83c4"
 }

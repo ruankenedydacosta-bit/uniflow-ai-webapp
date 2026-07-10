@@ -230,9 +230,9 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783594386.825818,
-    "ast_hash": "1a1e7d096661a2698d9d8de78f3276ba",
-    "semantic_hash": "1a1e7d096661a2698d9d8de78f3276ba"
+    "mtime": 1783686034.9006233,
+    "ast_hash": "21e2ece2ddfc235e6fc0c5644fe09183",
+    "semantic_hash": ""
   },
   "src/App.jsx": {
     "mtime": 1783596372.6437984,
@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1783612751.7476838,
-    "ast_hash": "4178c7214316e2243aaecfc9c87a1590",
+    "mtime": 1783686040.803261,
+    "ast_hash": "a6cbbe825235468d5a1c13a4b03dbe2f",
     "semantic_hash": ""
   },
   "README.md": {
@@ -755,18 +755,33 @@
     "semantic_hash": ""
   },
   "src/pages/FinanceiroPage.jsx": {
-    "mtime": 1783685606.9986057,
-    "ast_hash": "8abcdac81d8ad94b49a780dc4180b87e",
+    "mtime": 1783686794.2291656,
+    "ast_hash": "9a94466c1d9e4f76d5c4643578ca04fc",
     "semantic_hash": ""
   },
   "src/pages/financeiro/financial.mock.js": {
-    "mtime": 1783685619.432448,
-    "ast_hash": "496c25d505de0baf1c12e4fdb5ed9057",
+    "mtime": 1783687264.4219456,
+    "ast_hash": "2bdbf0b0892742b43c61af041d05dae4",
     "semantic_hash": ""
   },
   "docs/00-master/APP_STRUCTURE_MAP.md": {
     "mtime": 1783681052.4349272,
     "ast_hash": "b9ab19d1ae58b3fcf02dfda53c045732",
+    "semantic_hash": ""
+  },
+  "scripts/obsidian/create-note.js": {
+    "mtime": 1783686010.3698924,
+    "ast_hash": "750de6ad28723e6809210525b0aa2fa8",
+    "semantic_hash": ""
+  },
+  "docs/00-master/OBSIDIAN_WORKFLOW.md": {
+    "mtime": 1783686030.3595026,
+    "ast_hash": "e3645ae7ee2cd873085f57da81c86a55",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/FinanceProjectionChart.jsx": {
+    "mtime": 1783687962.2536263,
+    "ast_hash": "91c8ff7bc84491dcf9865be0e8e6e63a",
     "semantic_hash": ""
   }
 }

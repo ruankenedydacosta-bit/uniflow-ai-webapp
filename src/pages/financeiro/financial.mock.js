@@ -48,6 +48,45 @@ export const financialMock = {
       { label: '7 dias', value: 19780, description: 'após entradas previstas' },
       { label: '30 dias', value: 21300, description: 'projeção se nada mudar' },
     ],
+    projectionChart: {
+      series: [
+        {
+          key: 'income',
+          label: 'Entradas',
+          summary: 'Recebimentos confirmados nos próximos dias.',
+          insight: 'As entradas sustentam a rota atual sem exigir pressa.',
+        },
+        {
+          key: 'expenses',
+          label: 'Despesas variáveis',
+          summary: 'Gastos variáveis previstos para os próximos dias.',
+          insight: 'Os gastos variáveis sobem, mas ainda podem ser ajustados com calma.',
+        },
+        {
+          key: 'subscriptions',
+          label: 'Assinaturas',
+          summary: 'Valores recorrentes pequenos que reduzem margem.',
+          insight: 'Algumas assinaturas podem ser revistas sem afetar o essencial.',
+        },
+        {
+          key: 'goals',
+          label: 'Metas',
+          summary: 'Valor protegido para reserva e objetivos.',
+          insight: 'A rota das metas continua saudável se a contribuição for mantida.',
+        },
+        {
+          key: 'balance',
+          label: 'Saldo projetado',
+          summary: 'Projeção do saldo se o ritmo atual continuar.',
+          insight: 'A reserva segue em avanço para os próximos 30 dias.',
+        },
+      ],
+      points: [
+        { label: 'Hoje', income: 9200, expenses: 4200, subscriptions: 340, goals: 1800, balance: 18450 },
+        { label: '7 dias', income: 9800, expenses: 4700, subscriptions: 410, goals: 1900, balance: 19780 },
+        { label: '30 dias', income: 10500, expenses: 5200, subscriptions: 480, goals: 2100, balance: 21300 },
+      ],
+    },
     signals: [
       {
         label: 'Entradas confirmadas',
@@ -158,6 +197,45 @@ export const financialMock = {
       { label: '7 dias', value: 51700, description: 'após compromissos próximos' },
       { label: '30 dias', value: 56300, description: 'projeção se nada mudar' },
     ],
+    projectionChart: {
+      series: [
+        {
+          key: 'income',
+          label: 'Recebimentos',
+          summary: 'Recebimentos confirmados nos próximos dias.',
+          insight: 'Os recebimentos recentes fortalecem o caixa da empresa.',
+        },
+        {
+          key: 'expenses',
+          label: 'Despesas operacionais',
+          summary: 'Despesas previstas que merecem atenção.',
+          insight: 'Operacional e impostos pedem reserva antes de novos compromissos.',
+        },
+        {
+          key: 'taxes',
+          label: 'Impostos',
+          summary: 'Tributos previstos no ciclo atual.',
+          insight: 'Separar essa margem agora reduz pressão no fechamento.',
+        },
+        {
+          key: 'suppliers',
+          label: 'Fornecedores',
+          summary: 'Compromissos com fornecedores nos próximos dias.',
+          insight: 'Os fornecedores concentram parte importante das saídas futuras.',
+        },
+        {
+          key: 'balance',
+          label: 'Caixa projetado',
+          summary: 'Projeção do caixa se o ritmo atual continuar.',
+          insight: 'O caixa segue saudável nos próximos 30 dias.',
+        },
+      ],
+      points: [
+        { label: 'Hoje', income: 48200, expenses: 18400, taxes: 2100, suppliers: 5600, balance: 48200 },
+        { label: '7 dias', income: 51700, expenses: 20100, taxes: 2600, suppliers: 6800, balance: 51700 },
+        { label: '30 dias', income: 56300, expenses: 23800, taxes: 3400, suppliers: 7900, balance: 56300 },
+      ],
+    },
     signals: [
       {
         label: 'Entradas confirmadas',

@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 147 files · ~41,184 words
+- 150 files · ~43,345 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 591 nodes · 804 edges · 69 communities (55 shown, 14 thin omitted)
+- 621 nodes · 850 edges · 72 communities (58 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `52f853c9`
+- Built from commit: `8d06a91e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -55,6 +55,9 @@
 - App Structure Map
 - User Modes and Plans
 - navigation.js
+- Obsidian Workflow
+- create-note.js
+- FinanceProjectionChart.jsx
 
 ## God Nodes (most connected - your core abstractions)
 1. `Uni AI Experience Reference` - 19 edges
@@ -66,7 +69,7 @@
 7. `6. Catalogo oficial de modulos` - 13 edges
 8. `Módulos oficiais do produto` - 13 edges
 9. `Button()` - 12 edges
-10. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
+10. `formatCurrency()` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `FinanceiroPage()` --calls--> `useAccess()`  [EXTRACTED]
@@ -83,15 +86,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (69 total, 14 thin omitted)
+## Communities (72 total, 14 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
 Cohesion: 0.07
 Nodes (31): Avatar, Badge(), Button(), Card(), Input, Loader(), Modal(), Tooltip() (+23 more)
 
 ### Community 1 - "devDependencies"
-Cohesion: 0.09
-Nodes (22): dependencies, react, react-dom, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh (+14 more)
+Cohesion: 0.08
+Nodes (23): dependencies, react, react-dom, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh (+15 more)
 
 ### Community 2 - "cx"
 Cohesion: 0.07
@@ -102,7 +105,7 @@ Cohesion: 0.17
 Nodes (8): DashboardGreeting(), currency, FinancialSummaryCard(), GoalsSummaryCard(), currency, dateFormatter, RecentActivityList(), UniInsightsCard()
 
 ### Community 4 - "AppShell.jsx"
-Cohesion: 0.22
+Cohesion: 0.24
 Nodes (7): DashboardPage(), AgendaPage(), CRMPage(), PageScaffold(), ProjectsPage(), ReportsPage(), SettingsPage()
 
 ### Community 5 - "CustomerBoard.jsx"
@@ -158,8 +161,8 @@ Cohesion: 0.20
 Nodes (9): Prompt 1: leitura inicial obrigatória, Prompt 2: preparar uma implementação pequena, Prompt 3: criar componente base, Prompt 4: criar uma tela, Prompt 5: criar serviço, Prompt 6: criar módulo de produto, Prompt 7: revisar código, Prompt 8: tom de voz da Uni (+1 more)
 
 ### Community 54 - "UniFlow AI — Regras do Projeto"
-Cohesion: 0.22
-Nodes (8): Commits, Estado atual, Estrutura oficial, graphify, Papel do agente, Prioridade atual, Regras absolutas, UniFlow AI — Regras do Projeto
+Cohesion: 0.20
+Nodes (9): Commits, Estado atual, Estrutura oficial, graphify, Obsidian Knowledge Base, Papel do agente, Prioridade atual, Regras absolutas (+1 more)
 
 ### Community 55 - "UniFlow AI — Fase 1: Autenticação, Login, Cadastro e Onboarding Inteligente"
 Cohesion: 0.25
@@ -189,24 +192,36 @@ Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao fut
 Cohesion: 0.07
 Nodes (29): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, AccessProvider() (+21 more)
 
+### Community 69 - "Obsidian Workflow"
+Cohesion: 0.22
+Nodes (8): Caminho do cofre, Como criar uma nota, Fonte principal do app, Obsidian Workflow, Papel do Obsidian, Pastas do Obsidian, Regras para agentes, Tipos de nota
+
+### Community 70 - "create-note.js"
+Cohesion: 0.42
+Nodes (8): buildNote(), createNote(), getDateParts(), getUniqueFilePath(), NOTE_TYPES, parseArgs(), slugify(), validateInput()
+
+### Community 71 - "FinanceProjectionChart.jsx"
+Cohesion: 0.36
+Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointCoordinates(), getSeriesTotal(), getSeriesValues(), PADDING, SERIES_CLASSES
+
 ## Knowledge Gaps
-- **233 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+228 more)
+- **245 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+240 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`?**
+- **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `AppShell.jsx`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `Button()` connect `DashboardPage.jsx` to `UniAIPage.jsx`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **Why does `Button()` connect `DashboardPage.jsx` to `AppShell.jsx`, `UniAIPage.jsx`?**
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _233 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _245 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.06693306693306693 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06664388243335612 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
-  _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
 - **Should `Módulos oficiais do produto` be split into smaller, more focused modules?**

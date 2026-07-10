@@ -5,6 +5,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { cx } from '../utils/cx';
 import { formatCurrency } from '../utils/formatters';
+import FinanceProjectionChart from './financeiro/FinanceProjectionChart';
 import { financialMock } from './financeiro/financial.mock.js';
 import styles from './FinanceiroPage.module.css';
 
@@ -15,7 +16,6 @@ function getFinancialContext(currentWorkspace) {
 function FinanceiroPage() {
   const { access } = useAccess();
   const financial = getFinancialContext(access.currentWorkspace);
-  const maxCashflowValue = Math.max(...financial.cashflow.map((item) => item.value));
   const recentMovements = financial.movements.slice(0, 3);
 
   return (
@@ -46,19 +46,7 @@ function FinanceiroPage() {
           <strong>{financial.clarity.direction}</strong>
           <p>{financial.clarity.changed}</p>
 
-          <div className={styles.cashflowChart} aria-label="Projeção de fluxo de caixa">
-            {financial.cashflow.map((item) => (
-              <div key={item.label} className={styles.chartColumn}>
-                <div className={styles.chartTrack}>
-                  <span style={{ height: `${Math.max((item.value / maxCashflowValue) * 100, 18)}%` }} />
-                </div>
-                <div>
-                  <span>{item.label}</span>
-                  <strong>{formatCurrency(item.value)}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
+          <FinanceProjectionChart chart={financial.projectionChart} />
         </Card>
 
         <Card variant="outline" padding="lg" className={styles.signalsCard}>
