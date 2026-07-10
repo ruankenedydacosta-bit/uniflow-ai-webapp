@@ -57,5 +57,3 @@ export const appRoutes = [
     element: <SettingsPage />,
   },
 ];
-
-export const navigationItems = appRoutes.map(({ path, label }) => ({ path, label }));

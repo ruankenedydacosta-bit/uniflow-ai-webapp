@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { navigationItems } from '../../../app/routes';
+import { navigationItems } from '../../../app/navigation';
 import Badge from '../../ui/Badge';
 import styles from './Sidebar.module.css';
 

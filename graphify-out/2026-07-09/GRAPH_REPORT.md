@@ -1,7 +1,7 @@
 # Graph Report - uniflow-ai-app  (2026-07-09)
 
 ## Corpus Check
-- 139 files · ~33,829 words
+- 139 files · ~33,859 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary

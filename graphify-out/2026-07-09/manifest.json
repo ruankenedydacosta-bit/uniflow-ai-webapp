@@ -610,8 +610,8 @@
     "semantic_hash": ""
   },
   "src/pages/uni-ai/UniQuickSuggestions.jsx": {
-    "mtime": 1783642574.2618146,
-    "ast_hash": "010fb9e74ca25041c14ed85ea851562f",
+    "mtime": 1783644045.1061049,
+    "ast_hash": "e38d958ff27ca6e8f6e22176940c0cba",
     "semantic_hash": ""
   },
   "src/pages/uni-ai/UniVoiceCapture.jsx": {
@@ -630,8 +630,8 @@
     "semantic_hash": ""
   },
   "src/pages/uni-ai/uniAI.mock.js": {
-    "mtime": 1783642557.3091896,
-    "ast_hash": "5bbe4cc12b6377b568ace70a9c90f5ff",
+    "mtime": 1783643982.6579058,
+    "ast_hash": "f3f99acd8fb07eb81f720f5b73c0010f",
     "semantic_hash": ""
   },
   "docs/08-references/landing-uni-demo/uni-demo_app.js": {
