@@ -2027,7 +2027,7 @@
       "label": "AppContent()",
       "file_type": "code",
       "source_file": "src/app/App.jsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_app_appcontent",
       "community": 68,
@@ -2037,7 +2037,7 @@
       "label": "App()",
       "file_type": "code",
       "source_file": "src/app/App.jsx",
-      "source_location": "L23",
+      "source_location": "L24",
       "_origin": "ast",
       "id": "src_app_app_app",
       "community": 68,
@@ -2222,6 +2222,116 @@
       "id": "src_app_routes_approutes",
       "community": 68,
       "norm_label": "approutes"
+    },
+    {
+      "label": "AccessModeSwitcher.jsx",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher",
+      "community": 68,
+      "norm_label": "accessmodeswitcher.jsx"
+    },
+    {
+      "label": "USER_MODE_OPTIONS",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_user_mode_options",
+      "community": 68,
+      "norm_label": "user_mode_options"
+    },
+    {
+      "label": "PLAN_OPTIONS",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_plan_options",
+      "community": 68,
+      "norm_label": "plan_options"
+    },
+    {
+      "label": "WORKSPACE_OPTIONS",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_workspace_options",
+      "community": 68,
+      "norm_label": "workspace_options"
+    },
+    {
+      "label": "PERSONAL_PLANS",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_personal_plans",
+      "community": 68,
+      "norm_label": "personal_plans"
+    },
+    {
+      "label": "USER_MODE_LABELS",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_user_mode_labels",
+      "community": 68,
+      "norm_label": "user_mode_labels"
+    },
+    {
+      "label": "PLAN_LABELS",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_plan_labels",
+      "community": 68,
+      "norm_label": "plan_labels"
+    },
+    {
+      "label": "getWorkspaceForMode()",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_getworkspaceformode",
+      "community": 68,
+      "norm_label": "getworkspaceformode()"
+    },
+    {
+      "label": "getModeOptionsForPlan()",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
+      "community": 68,
+      "norm_label": "getmodeoptionsforplan()"
+    },
+    {
+      "label": "normalizeAccessForPlan()",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L46",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_normalizeaccessforplan",
+      "community": 68,
+      "norm_label": "normalizeaccessforplan()"
+    },
+    {
+      "label": "AccessModeSwitcher()",
+      "file_type": "code",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L61",
+      "_origin": "ast",
+      "id": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
+      "community": 68,
+      "norm_label": "accessmodeswitcher()"
     },
     {
       "label": "index.js",
@@ -2820,7 +2930,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_pagescaffold",
-      "community": 4,
+      "community": 0,
       "norm_label": "pagescaffold.jsx"
     },
     {
@@ -2950,7 +3060,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols_uniaudiocontrols",
-      "community": 0,
+      "community": 39,
       "norm_label": "uniaudiocontrols()"
     },
     {
@@ -3000,7 +3110,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell",
-      "community": 0,
+      "community": 39,
       "norm_label": "uniexperienceshell.jsx"
     },
     {
@@ -3010,7 +3120,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
-      "community": 0,
+      "community": 39,
       "norm_label": "uniexperienceshell()"
     },
     {
@@ -3030,7 +3140,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport_uniinsightreport",
-      "community": 0,
+      "community": 39,
       "norm_label": "uniinsightreport()"
     },
     {
@@ -3050,7 +3160,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel_unilivecontextpanel",
-      "community": 0,
+      "community": 39,
       "norm_label": "unilivecontextpanel()"
     },
     {
@@ -3080,7 +3190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions",
-      "community": 0,
+      "community": 39,
       "norm_label": "uniquicksuggestions.jsx"
     },
     {
@@ -3090,7 +3200,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions_uniquicksuggestions",
-      "community": 0,
+      "community": 39,
       "norm_label": "uniquicksuggestions()"
     },
     {
@@ -3100,7 +3210,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations",
-      "community": 0,
+      "community": 39,
       "norm_label": "unirecentconversations.jsx"
     },
     {
@@ -3110,7 +3220,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations_unirecentconversations",
-      "community": 0,
+      "community": 39,
       "norm_label": "unirecentconversations()"
     },
     {
@@ -3130,7 +3240,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer_unisuggestiondrawer",
-      "community": 0,
+      "community": 39,
       "norm_label": "unisuggestiondrawer()"
     },
     {
@@ -3140,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence",
-      "community": 0,
+      "community": 39,
       "norm_label": "unithinkingsequence.jsx"
     },
     {
@@ -3150,7 +3260,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence_unithinkingsequence",
-      "community": 0,
+      "community": 39,
       "norm_label": "unithinkingsequence()"
     },
     {
@@ -3200,7 +3310,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage",
-      "community": 0,
+      "community": 39,
       "norm_label": "univoicestage.jsx"
     },
     {
@@ -3210,7 +3320,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage_univoicestage",
-      "community": 0,
+      "community": 39,
       "norm_label": "univoicestage()"
     },
     {
@@ -7488,9 +7598,20 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/App.jsx",
-      "source_location": "L3",
+      "source_location": "L4",
       "weight": 1.0,
       "source": "src_app_app_jsx_src_app_app",
+      "target": "src_app_accesscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
       "target": "src_app_accesscontext",
       "confidence_score": 1.0
     },
@@ -7510,10 +7631,32 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/App.jsx",
-      "source_location": "L3",
+      "source_location": "L4",
       "weight": 1.0,
       "source": "src_app_app_jsx_src_app_app",
       "target": "src_app_accesscontext_accessprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
+      "target": "src_app_accesscontext_useaccess",
       "confidence_score": 1.0
     },
     {
@@ -7542,7 +7685,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/App.jsx",
-      "source_location": "L23",
+      "source_location": "L24",
       "weight": 1.0,
       "source": "src_app_app_jsx_src_app_app",
       "target": "src_app_app_app",
@@ -7552,7 +7695,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/App.jsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_app_app_jsx_src_app_app",
       "target": "src_app_app_appcontent",
@@ -7563,7 +7706,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/App.jsx",
-      "source_location": "L4",
+      "source_location": "L5",
       "weight": 1.0,
       "source": "src_app_app_jsx_src_app_app",
       "target": "src_app_routes",
@@ -7574,10 +7717,32 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/App.jsx",
-      "source_location": "L4",
+      "source_location": "L5",
       "weight": 1.0,
       "source": "src_app_app_jsx_src_app_app",
       "target": "src_app_routes_approutes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/App.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_app_app_jsx_src_app_app",
+      "target": "src_components_dev_accessmodeswitcher",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/App.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_app_app_jsx_src_app_app",
+      "target": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
       "confidence_score": 1.0
     },
     {
@@ -7695,6 +7860,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_app_access",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -7709,11 +7885,44 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_app_access_user_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/app/navigation.js",
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_app_navigation",
       "target": "src_app_access_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_app_access_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_app_access_workspace_types",
       "confidence_score": 1.0
     },
     {
@@ -8015,6 +8224,139 @@
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_uniaipage_uniaipage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_getworkspaceformode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_normalizeaccessforplan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_personal_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_plan_labels",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_plan_options",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_user_mode_labels",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_user_mode_options",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_workspace_options",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
+      "target": "src_components_dev_accessmodeswitcher_personal_plans"
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L47",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher_normalizeaccessforplan",
+      "target": "src_components_dev_accessmodeswitcher_personal_plans"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/dev/AccessModeSwitcher.jsx",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
+      "target": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
       "confidence_score": 1.0
     },
     {
@@ -12936,5 +13278,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "64e2fc522b9612b4d5d83832d34845cff03bec37"
+  "built_at_commit": "a462005b22c181aa8309f134cc9d372f7c600fad"
 }

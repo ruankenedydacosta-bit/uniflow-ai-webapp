@@ -240,8 +240,8 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783610263.856266,
-    "ast_hash": "b2a4c69deaf74351b2ae5b220de2c54d",
+    "mtime": 1783646447.0173702,
+    "ast_hash": "20da93c5d9b2e876f6e1f2bed11dd14b",
     "semantic_hash": ""
   },
   "src/app/main.jsx": {
@@ -270,8 +270,8 @@
     "semantic_hash": "b96a4743cebc2e3c628b7c6d4ffba32e"
   },
   "src/components/layout/Sidebar/Sidebar.jsx": {
-    "mtime": 1783645800.447347,
-    "ast_hash": "cc46e6fc669baa09d53909abbfeca79b",
+    "mtime": 1783646139.9128032,
+    "ast_hash": "c3bca52b50086e0c06648669d9892844",
     "semantic_hash": ""
   },
   "src/components/layout/Sidebar/index.js": {
@@ -742,6 +742,16 @@
   "src/app/access.js": {
     "mtime": 1783645630.017977,
     "ast_hash": "c26737e593915a2efcc973e9a3a9d528",
+    "semantic_hash": ""
+  },
+  "src/app/AccessContext.jsx": {
+    "mtime": 1783646156.5705082,
+    "ast_hash": "41fb22ab8e7425b1304fb0a6d3f6b05f",
+    "semantic_hash": ""
+  },
+  "src/components/dev/AccessModeSwitcher.jsx": {
+    "mtime": 1783646446.8228931,
+    "ast_hash": "9a85b718307aca67ddb3a83b917c48e3",
     "semantic_hash": ""
   }
 }
