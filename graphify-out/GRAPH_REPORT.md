@@ -1,16 +1,16 @@
-# Graph Report - uniflow-ai-app  (2026-07-09)
+# Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 144 files · ~36,195 words
+- 147 files · ~41,197 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 547 nodes · 744 edges · 68 communities (54 shown, 14 thin omitted)
+- 592 nodes · 805 edges · 69 communities (55 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ba5e233f`
+- Built from commit: `0a833f82`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -52,22 +52,25 @@
 - VoiceTimeline
 - DemoController
 - uni-demo_app.js
+- App Structure Map
 - User Modes and Plans
 - navigation.js
 
 ## God Nodes (most connected - your core abstractions)
 1. `Uni AI Experience Reference` - 19 edges
-2. `Badge()` - 16 edges
-3. `cx()` - 15 edges
-4. `User Modes and Plans` - 15 edges
-5. `Card()` - 14 edges
-6. `Módulos oficiais do produto` - 13 edges
-7. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
-8. `DashboardView` - 11 edges
-9. `Button()` - 11 edges
-10. `Kit Base UniFlow AI` - 11 edges
+2. `Badge()` - 17 edges
+3. `cx()` - 17 edges
+4. `Card()` - 15 edges
+5. `User Modes and Plans` - 15 edges
+6. `App Structure Map` - 13 edges
+7. `6. Catalogo oficial de modulos` - 13 edges
+8. `Módulos oficiais do produto` - 13 edges
+9. `Button()` - 12 edges
+10. `Módulo Projetos — Arquitetura (documento de planejamento, sem código)` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `FinanceiroPage()` --calls--> `useAccess()`  [EXTRACTED]
+  src/pages/FinanceiroPage.jsx → src/app/AccessContext.jsx
 - `Loader()` --calls--> `cx()`  [EXTRACTED]
   src/components/ui/Loader/Loader.jsx → src/utils/cx.js
 - `Modal()` --calls--> `cx()`  [EXTRACTED]
@@ -76,17 +79,15 @@
   src/components/ui/Tooltip/Tooltip.jsx → src/utils/cx.js
 - `MetricRow()` --calls--> `formatCurrency()`  [EXTRACTED]
   src/features/dashboard/components/FinancialSummaryCard.jsx → src/utils/formatters.js
-- `AccessModeSwitcher()` --calls--> `useAccess()`  [EXTRACTED]
-  src/components/dev/AccessModeSwitcher.jsx → src/app/AccessContext.jsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (68 total, 14 thin omitted)
+## Communities (69 total, 14 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
-Cohesion: 0.09
-Nodes (19): Avatar, Badge(), Button(), Card(), Input, Loader(), Modal(), Tooltip() (+11 more)
+Cohesion: 0.08
+Nodes (23): Avatar, Badge(), Button(), Card(), Input, Loader(), Modal(), Tooltip() (+15 more)
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.09
@@ -101,8 +102,8 @@ Cohesion: 0.17
 Nodes (8): DashboardGreeting(), currency, FinancialSummaryCard(), GoalsSummaryCard(), currency, dateFormatter, RecentActivityList(), UniInsightsCard()
 
 ### Community 4 - "AppShell.jsx"
-Cohesion: 0.22
-Nodes (8): DashboardPage(), AgendaPage(), CRMPage(), FinancePage(), PageScaffold(), ProjectsPage(), ReportsPage(), SettingsPage()
+Cohesion: 0.24
+Nodes (7): DashboardPage(), AgendaPage(), CRMPage(), PageScaffold(), ProjectsPage(), ReportsPage(), SettingsPage()
 
 ### Community 5 - "CustomerBoard.jsx"
 Cohesion: 0.29
@@ -176,6 +177,10 @@ Nodes (3): Expanding the ESLint configuration, React Compiler, React + Vite
 Cohesion: 0.29
 Nodes (5): clamp(), FinanceState, getReasoningChain(), pickRandom(), randomBetween()
 
+### Community 66 - "App Structure Map"
+Cohesion: 0.05
+Nodes (39): 10. Regras de evolucao, 11. Checklist ate o MVP demonstravel, 12. Decisao final deste mapa, 1. Objetivo do app, 2. Fontes oficiais e hierarquia, 3. Estrutura pessoal e empresarial, 4. Modulos do modo pessoal, 5. Modulos do modo empresarial (+31 more)
+
 ### Community 67 - "User Modes and Plans"
 Cohesion: 0.05
 Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao futura de estrutura tecnica, 13. Roadmap de implementacao, 1. Objetivo da separacao, 2. App unico, experiencias diferentes, 3. Modos de uso, 4. Planos (+31 more)
@@ -185,21 +190,21 @@ Cohesion: 0.07
 Nodes (29): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, AccessProvider() (+21 more)
 
 ## Knowledge Gaps
-- **199 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+194 more)
+- **234 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+229 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`?**
-  _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `Button()` connect `DashboardPage.jsx` to `UniAIPage.jsx`?**
+- **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `AppShell.jsx`?**
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `Button()` connect `DashboardPage.jsx` to `AppShell.jsx`, `UniAIPage.jsx`?**
   _High betweenness centrality (0.005) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _199 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _234 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.08883693746347165 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0818452380952381 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**

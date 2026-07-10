@@ -560,8 +560,8 @@
     "semantic_hash": ""
   },
   "src/pages/FinancePage.jsx": {
-    "mtime": 1783607861.9911277,
-    "ast_hash": "dafa24d3df4e9895f45ccb0b5fb0bbc4",
+    "mtime": 1783680711.860812,
+    "ast_hash": "67b8051a5850d9e7e86a64d285d1206a",
     "semantic_hash": ""
   },
   "src/pages/PageScaffold.jsx": {
@@ -752,6 +752,21 @@
   "src/components/dev/AccessModeSwitcher.jsx": {
     "mtime": 1783679626.4232512,
     "ast_hash": "5812989a5283caf53e806e187dad08ff",
+    "semantic_hash": ""
+  },
+  "src/pages/FinanceiroPage.jsx": {
+    "mtime": 1783685000.156137,
+    "ast_hash": "c328a6d739ef974ad440370ac80d4aeb",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/financial.mock.js": {
+    "mtime": 1783684920.1999562,
+    "ast_hash": "b5b3ba7502620959ba9d556f2c25078b",
+    "semantic_hash": ""
+  },
+  "docs/00-master/APP_STRUCTURE_MAP.md": {
+    "mtime": 1783681052.4349272,
+    "ast_hash": "b9ab19d1ae58b3fcf02dfda53c045732",
     "semantic_hash": ""
   }
 }
