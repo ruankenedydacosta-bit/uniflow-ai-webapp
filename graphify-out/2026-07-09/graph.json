@@ -1980,7 +1980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_app_jsx_src_app_app",
-      "community": 4,
+      "community": 68,
       "norm_label": "app.jsx"
     },
     {
@@ -1990,7 +1990,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_app_appcontent",
-      "community": 4,
+      "community": 68,
       "norm_label": "appcontent()"
     },
     {
@@ -2000,7 +2000,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_app_app_app",
-      "community": 4,
+      "community": 68,
       "norm_label": "app()"
     },
     {
@@ -2012,6 +2012,76 @@
       "id": "src_app_main",
       "community": 38,
       "norm_label": "main.jsx"
+    },
+    {
+      "label": "navigation.js",
+      "file_type": "code",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_app_navigation",
+      "community": 68,
+      "norm_label": "navigation.js"
+    },
+    {
+      "label": "ALL_MODES",
+      "file_type": "code",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_app_navigation_all_modes",
+      "community": 68,
+      "norm_label": "all_modes"
+    },
+    {
+      "label": "ALL_PLANS",
+      "file_type": "code",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L2",
+      "_origin": "ast",
+      "id": "src_app_navigation_all_plans",
+      "community": 68,
+      "norm_label": "all_plans"
+    },
+    {
+      "label": "BUSINESS_MODES",
+      "file_type": "code",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "src_app_navigation_business_modes",
+      "community": 68,
+      "norm_label": "business_modes"
+    },
+    {
+      "label": "BUSINESS_PLANS",
+      "file_type": "code",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "src_app_navigation_business_plans",
+      "community": 68,
+      "norm_label": "business_plans"
+    },
+    {
+      "label": "navigationItems",
+      "file_type": "code",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "src_app_navigation_navigationitems",
+      "community": 68,
+      "norm_label": "navigationitems"
+    },
+    {
+      "label": "filterNavigationItems()",
+      "file_type": "code",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L66",
+      "_origin": "ast",
+      "id": "src_app_navigation_filternavigationitems",
+      "community": 68,
+      "norm_label": "filternavigationitems()"
     },
     {
       "label": "routes.jsx",
@@ -2030,18 +2100,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_app_routes_approutes",
-      "community": 4,
+      "community": 68,
       "norm_label": "approutes"
-    },
-    {
-      "label": "navigationItems",
-      "file_type": "code",
-      "source_file": "src/app/routes.jsx",
-      "source_location": "L61",
-      "_origin": "ast",
-      "id": "src_app_routes_navigationitems",
-      "community": 4,
-      "norm_label": "navigationitems"
     },
     {
       "label": "index.js",
@@ -2060,7 +2120,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_appshell_appshell",
-      "community": 4,
+      "community": 68,
       "norm_label": "appshell.jsx"
     },
     {
@@ -2070,7 +2130,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_layout_appshell_appshell_appshell",
-      "community": 4,
+      "community": 68,
       "norm_label": "appshell()"
     },
     {
@@ -2080,7 +2140,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_appshell_index",
-      "community": 4,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -2090,7 +2150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_sidebar",
-      "community": 4,
+      "community": 68,
       "norm_label": "sidebar.jsx"
     },
     {
@@ -2100,7 +2160,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_sidebar_sidebar",
-      "community": 4,
+      "community": 68,
       "norm_label": "sidebar()"
     },
     {
@@ -2110,7 +2170,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_index",
-      "community": 4,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -2130,7 +2190,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar_topbar",
-      "community": 4,
+      "community": 68,
       "norm_label": "topbar()"
     },
     {
@@ -2140,7 +2200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_index",
-      "community": 4,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -2280,7 +2340,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 66,
+      "community": 0,
       "norm_label": "input.jsx"
     },
     {
@@ -2290,7 +2350,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_input_input_input",
-      "community": 66,
+      "community": 0,
       "norm_label": "input"
     },
     {
@@ -2300,7 +2360,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_index",
-      "community": 66,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -2570,7 +2630,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_main",
-      "community": 4,
+      "community": 68,
       "norm_label": "main.jsx"
     },
     {
@@ -2760,7 +2820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniaudiocontrols.jsx"
     },
     {
@@ -2770,7 +2830,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols_uniaudiocontrols",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniaudiocontrols()"
     },
     {
@@ -2820,7 +2880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniexperienceshell.jsx"
     },
     {
@@ -2830,7 +2890,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniexperienceshell()"
     },
     {
@@ -2850,7 +2910,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport_uniinsightreport",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniinsightreport()"
     },
     {
@@ -2870,7 +2930,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel_unilivecontextpanel",
-      "community": 39,
+      "community": 0,
       "norm_label": "unilivecontextpanel()"
     },
     {
@@ -2900,7 +2960,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniquicksuggestions.jsx"
     },
     {
@@ -2910,7 +2970,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions_uniquicksuggestions",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniquicksuggestions()"
     },
     {
@@ -2920,7 +2980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations",
-      "community": 39,
+      "community": 0,
       "norm_label": "unirecentconversations.jsx"
     },
     {
@@ -2930,7 +2990,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations_unirecentconversations",
-      "community": 39,
+      "community": 0,
       "norm_label": "unirecentconversations()"
     },
     {
@@ -2950,7 +3010,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer_unisuggestiondrawer",
-      "community": 39,
+      "community": 0,
       "norm_label": "unisuggestiondrawer()"
     },
     {
@@ -2960,7 +3020,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence",
-      "community": 39,
+      "community": 0,
       "norm_label": "unithinkingsequence.jsx"
     },
     {
@@ -2970,7 +3030,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence_unithinkingsequence",
-      "community": 39,
+      "community": 0,
       "norm_label": "unithinkingsequence()"
     },
     {
@@ -3020,7 +3080,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage",
-      "community": 39,
+      "community": 0,
       "norm_label": "univoicestage.jsx"
     },
     {
@@ -3030,7 +3090,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage_univoicestage",
-      "community": 39,
+      "community": 0,
       "norm_label": "univoicestage()"
     },
     {
@@ -4472,6 +4532,406 @@
       "id": "docs_00_master_uni_ai_experience_reference_18_regras_de_ux_e_tom_da_uni",
       "community": 2,
       "norm_label": "18. regras de ux e tom da uni"
+    },
+    {
+      "label": "USER_MODES_AND_PLANS.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans",
+      "community": 67,
+      "norm_label": "user_modes_and_plans.md"
+    },
+    {
+      "label": "User Modes and Plans",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "community": 67,
+      "norm_label": "user modes and plans"
+    },
+    {
+      "label": "1. Objetivo da separacao",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_1_objetivo_da_separacao",
+      "community": 67,
+      "norm_label": "1. objetivo da separacao"
+    },
+    {
+      "label": "2. App unico, experiencias diferentes",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_2_app_unico_experiencias_diferentes",
+      "community": 67,
+      "norm_label": "2. app unico, experiencias diferentes"
+    },
+    {
+      "label": "3. Modos de uso",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_3_modos_de_uso",
+      "community": 67,
+      "norm_label": "3. modos de uso"
+    },
+    {
+      "label": "`personal`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_personal",
+      "community": 67,
+      "norm_label": "`personal`"
+    },
+    {
+      "label": "`business`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L62",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_business",
+      "community": 67,
+      "norm_label": "`business`"
+    },
+    {
+      "label": "`both`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L80",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_both",
+      "community": 67,
+      "norm_label": "`both`"
+    },
+    {
+      "label": "4. Planos",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L93",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_4_planos",
+      "community": 67,
+      "norm_label": "4. planos"
+    },
+    {
+      "label": "`free`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L95",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_free",
+      "community": 67,
+      "norm_label": "`free`"
+    },
+    {
+      "label": "`pro`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L111",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_pro",
+      "community": 67,
+      "norm_label": "`pro`"
+    },
+    {
+      "label": "`business`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L126",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_business_126",
+      "community": 67,
+      "norm_label": "`business`"
+    },
+    {
+      "label": "`enterprise` futuro",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L143",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_enterprise_futuro",
+      "community": 67,
+      "norm_label": "`enterprise` futuro"
+    },
+    {
+      "label": "5. Modulos para pessoa fisica",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L159",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_5_modulos_para_pessoa_fisica",
+      "community": 67,
+      "norm_label": "5. modulos para pessoa fisica"
+    },
+    {
+      "label": "6. Modulos para empresario",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L173",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_6_modulos_para_empresario",
+      "community": 67,
+      "norm_label": "6. modulos para empresario"
+    },
+    {
+      "label": "7. Modulos no modo duplo",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L190",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_7_modulos_no_modo_duplo",
+      "community": 67,
+      "norm_label": "7. modulos no modo duplo"
+    },
+    {
+      "label": "8. Navegacao futura",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L208",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_8_navegacao_futura",
+      "community": 67,
+      "norm_label": "8. navegacao futura"
+    },
+    {
+      "label": "9. Comportamento da Uni AI por modo",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L236",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_9_comportamento_da_uni_ai_por_modo",
+      "community": 67,
+      "norm_label": "9. comportamento da uni ai por modo"
+    },
+    {
+      "label": "Uni no modo `personal`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L238",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_uni_no_modo_personal",
+      "community": 67,
+      "norm_label": "uni no modo `personal`"
+    },
+    {
+      "label": "Uni no modo `business`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L257",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_uni_no_modo_business",
+      "community": 67,
+      "norm_label": "uni no modo `business`"
+    },
+    {
+      "label": "Uni no modo `both`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L277",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_uni_no_modo_both",
+      "community": 67,
+      "norm_label": "uni no modo `both`"
+    },
+    {
+      "label": "10. Como evitar mistura de dados",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L283",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_10_como_evitar_mistura_de_dados",
+      "community": 67,
+      "norm_label": "10. como evitar mistura de dados"
+    },
+    {
+      "label": "11. Regras de UX",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L300",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_11_regras_de_ux",
+      "community": 67,
+      "norm_label": "11. regras de ux"
+    },
+    {
+      "label": "Pessoa fisica",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L302",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_pessoa_fisica",
+      "community": 67,
+      "norm_label": "pessoa fisica"
+    },
+    {
+      "label": "Empresario",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L309",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_empresario",
+      "community": 67,
+      "norm_label": "empresario"
+    },
+    {
+      "label": "Modo duplo",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L316",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_modo_duplo",
+      "community": 67,
+      "norm_label": "modo duplo"
+    },
+    {
+      "label": "12. Sugestao futura de estrutura tecnica",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L324",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_12_sugestao_futura_de_estrutura_tecnica",
+      "community": 67,
+      "norm_label": "12. sugestao futura de estrutura tecnica"
+    },
+    {
+      "label": "`userMode`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L340",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_usermode",
+      "community": 67,
+      "norm_label": "`usermode`"
+    },
+    {
+      "label": "`currentWorkspace`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L350",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_currentworkspace",
+      "community": 67,
+      "norm_label": "`currentworkspace`"
+    },
+    {
+      "label": "`plan`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L359",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_plan",
+      "community": 67,
+      "norm_label": "`plan`"
+    },
+    {
+      "label": "`navigationItems`",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L370",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_navigationitems",
+      "community": 67,
+      "norm_label": "`navigationitems`"
+    },
+    {
+      "label": "13. Roadmap de implementacao",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L386",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "community": 67,
+      "norm_label": "13. roadmap de implementacao"
+    },
+    {
+      "label": "Etapa 1: Documentacao",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L388",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_etapa_1_documentacao",
+      "community": 67,
+      "norm_label": "etapa 1: documentacao"
+    },
+    {
+      "label": "Etapa 2: Modelo conceitual",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L394",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_etapa_2_modelo_conceitual",
+      "community": 67,
+      "norm_label": "etapa 2: modelo conceitual"
+    },
+    {
+      "label": "Etapa 3: Mock local",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L401",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_etapa_3_mock_local",
+      "community": 67,
+      "norm_label": "etapa 3: mock local"
+    },
+    {
+      "label": "Etapa 4: UX de alternancia",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L408",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_etapa_4_ux_de_alternancia",
+      "community": 67,
+      "norm_label": "etapa 4: ux de alternancia"
+    },
+    {
+      "label": "Etapa 5: Uni AI por contexto",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L414",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_etapa_5_uni_ai_por_contexto",
+      "community": 67,
+      "norm_label": "etapa 5: uni ai por contexto"
+    },
+    {
+      "label": "Etapa 6: Backend futuro",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L420",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_etapa_6_backend_futuro",
+      "community": 67,
+      "norm_label": "etapa 6: backend futuro"
+    },
+    {
+      "label": "Etapa 7: Planos e limites",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L427",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_etapa_7_planos_e_limites",
+      "community": 67,
+      "norm_label": "etapa 7: planos e limites"
+    },
+    {
+      "label": "Regra final",
+      "file_type": "document",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L434",
+      "_origin": "ast",
+      "id": "docs_00_master_user_modes_and_plans_regra_final",
+      "community": 67,
+      "norm_label": "regra final"
     },
     {
       "label": "ARQUITETURA.md",
@@ -6929,21 +7389,93 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "src/app/routes.jsx",
-      "source_location": "L10",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L1",
       "weight": 1.0,
-      "source": "src_app_routes",
-      "target": "src_app_routes_approutes",
+      "source": "src_app_navigation",
+      "target": "src_app_navigation_all_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_app_navigation",
+      "target": "src_app_navigation_all_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_app_navigation",
+      "target": "src_app_navigation_business_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_app_navigation",
+      "target": "src_app_navigation_business_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "src_app_navigation",
+      "target": "src_app_navigation_filternavigationitems",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/navigation.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_app_navigation",
+      "target": "src_app_navigation_navigationitems",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_components_layout_sidebar_sidebar",
+      "target": "src_app_navigation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_components_layout_sidebar_sidebar",
+      "target": "src_app_navigation_navigationitems",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L61",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_app_routes",
-      "target": "src_app_routes_navigationitems",
+      "target": "src_app_routes_approutes",
       "confidence_score": 1.0
     },
     {
@@ -7120,28 +7652,6 @@
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_uniaipage_uniaipage",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "source": "src_components_layout_sidebar_sidebar",
-      "target": "src_app_routes",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/components/layout/Sidebar/Sidebar.jsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "source": "src_components_layout_sidebar_sidebar",
-      "target": "src_app_routes_navigationitems",
       "confidence_score": 1.0
     },
     {
@@ -11414,6 +11924,396 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L283",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_10_como_evitar_mistura_de_dados",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L300",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_11_regras_de_ux",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L324",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_12_sugestao_futura_de_estrutura_tecnica",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L386",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_1_objetivo_da_separacao",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_2_app_unico_experiencias_diferentes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_3_modos_de_uso",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L93",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_4_planos",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L159",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_5_modulos_para_pessoa_fisica",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L173",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_6_modulos_para_empresario",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L190",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_7_modulos_no_modo_duplo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L208",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_8_navegacao_futura",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L236",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_9_comportamento_da_uni_ai_por_modo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L434",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_user_modes_and_plans",
+      "target": "docs_00_master_user_modes_and_plans_regra_final",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L80",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_3_modos_de_uso",
+      "target": "docs_00_master_user_modes_and_plans_both",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_3_modos_de_uso",
+      "target": "docs_00_master_user_modes_and_plans_business",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_3_modos_de_uso",
+      "target": "docs_00_master_user_modes_and_plans_personal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L126",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_4_planos",
+      "target": "docs_00_master_user_modes_and_plans_business_126",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L143",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_4_planos",
+      "target": "docs_00_master_user_modes_and_plans_enterprise_futuro",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L95",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_4_planos",
+      "target": "docs_00_master_user_modes_and_plans_free",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L111",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_4_planos",
+      "target": "docs_00_master_user_modes_and_plans_pro",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L277",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_9_comportamento_da_uni_ai_por_modo",
+      "target": "docs_00_master_user_modes_and_plans_uni_no_modo_both",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L257",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_9_comportamento_da_uni_ai_por_modo",
+      "target": "docs_00_master_user_modes_and_plans_uni_no_modo_business",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L238",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_9_comportamento_da_uni_ai_por_modo",
+      "target": "docs_00_master_user_modes_and_plans_uni_no_modo_personal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L309",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_11_regras_de_ux",
+      "target": "docs_00_master_user_modes_and_plans_empresario",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L316",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_11_regras_de_ux",
+      "target": "docs_00_master_user_modes_and_plans_modo_duplo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L302",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_11_regras_de_ux",
+      "target": "docs_00_master_user_modes_and_plans_pessoa_fisica",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L350",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_12_sugestao_futura_de_estrutura_tecnica",
+      "target": "docs_00_master_user_modes_and_plans_currentworkspace",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L370",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_12_sugestao_futura_de_estrutura_tecnica",
+      "target": "docs_00_master_user_modes_and_plans_navigationitems",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L359",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_12_sugestao_futura_de_estrutura_tecnica",
+      "target": "docs_00_master_user_modes_and_plans_plan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L340",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_12_sugestao_futura_de_estrutura_tecnica",
+      "target": "docs_00_master_user_modes_and_plans_usermode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L388",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "target": "docs_00_master_user_modes_and_plans_etapa_1_documentacao",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L394",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "target": "docs_00_master_user_modes_and_plans_etapa_2_modelo_conceitual",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L401",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "target": "docs_00_master_user_modes_and_plans_etapa_3_mock_local",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L408",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "target": "docs_00_master_user_modes_and_plans_etapa_4_ux_de_alternancia",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L414",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "target": "docs_00_master_user_modes_and_plans_etapa_5_uni_ai_por_contexto",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L420",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "target": "docs_00_master_user_modes_and_plans_etapa_6_backend_futuro",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/USER_MODES_AND_PLANS.md",
+      "source_location": "L427",
+      "weight": 1.0,
+      "source": "docs_00_master_user_modes_and_plans_13_roadmap_de_implementacao",
+      "target": "docs_00_master_user_modes_and_plans_etapa_7_planos_e_limites",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "docs/01-arquitetura/ARQUITETURA.md",
       "source_location": "L1",
       "weight": 1.0,
@@ -11673,5 +12573,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "248b94b81defa2fa37e8f4b1048b6c92ca5e92f4"
+  "built_at_commit": "4621d259f165b861d011d59c2515e8b53a70a5fc"
 }

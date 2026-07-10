@@ -250,8 +250,8 @@
     "semantic_hash": "093d1255ac32efccd41332e8f21c2361"
   },
   "src/app/routes.jsx": {
-    "mtime": 1783610263.6074574,
-    "ast_hash": "58f551ac09dc9cb4faab4427d4eb3a86",
+    "mtime": 1783645469.147441,
+    "ast_hash": "be306426525479dadb790f1d03df90dd",
     "semantic_hash": ""
   },
   "src/components/index.js": {
@@ -270,8 +270,8 @@
     "semantic_hash": "b96a4743cebc2e3c628b7c6d4ffba32e"
   },
   "src/components/layout/Sidebar/Sidebar.jsx": {
-    "mtime": 1783607861.629867,
-    "ast_hash": "defb05b6ee897aef538fc3ef9e22d8c5",
+    "mtime": 1783645463.4887395,
+    "ast_hash": "09f3186b8a73a55efe4d5763978b1606",
     "semantic_hash": ""
   },
   "src/components/layout/Sidebar/index.js": {
@@ -727,6 +727,16 @@
   "src/pages/uni-ai/uniAI.experience.js": {
     "mtime": 1783629479.4145553,
     "ast_hash": "0fcfb7b3c1c3d970674fa8379d70cd1a",
+    "semantic_hash": ""
+  },
+  "src/app/navigation.js": {
+    "mtime": 1783645457.3811426,
+    "ast_hash": "526caba9781e97b8c28beae3b0b53621",
+    "semantic_hash": ""
+  },
+  "docs/00-master/USER_MODES_AND_PLANS.md": {
+    "mtime": 1783645238.8972309,
+    "ast_hash": "460507ae75ea3a9a9ae1f6200ac79767",
     "semantic_hash": ""
   }
 }

@@ -730,13 +730,18 @@
     "semantic_hash": ""
   },
   "src/app/navigation.js": {
-    "mtime": 1783645457.3811426,
-    "ast_hash": "526caba9781e97b8c28beae3b0b53621",
+    "mtime": 1783645640.43659,
+    "ast_hash": "29c22a32ece6b41cc353ce60d4c47bda",
     "semantic_hash": ""
   },
   "docs/00-master/USER_MODES_AND_PLANS.md": {
     "mtime": 1783645238.8972309,
     "ast_hash": "460507ae75ea3a9a9ae1f6200ac79767",
+    "semantic_hash": ""
+  },
+  "src/app/access.js": {
+    "mtime": 1783645630.017977,
+    "ast_hash": "c26737e593915a2efcc973e9a3a9d528",
     "semantic_hash": ""
   }
 }

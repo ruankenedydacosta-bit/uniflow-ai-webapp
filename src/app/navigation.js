@@ -1,7 +1,9 @@
-const ALL_MODES = ['personal', 'business', 'both'];
-const ALL_PLANS = ['free', 'pro', 'business', 'enterprise'];
-const BUSINESS_MODES = ['business', 'both'];
-const BUSINESS_PLANS = ['business', 'enterprise'];
+import { PLANS, USER_MODES } from './access';
+
+const ALL_MODES = [USER_MODES.PERSONAL, USER_MODES.BUSINESS, USER_MODES.BOTH];
+const ALL_PLANS = [PLANS.FREE, PLANS.PRO, PLANS.BUSINESS, PLANS.ENTERPRISE];
+const BUSINESS_MODES = [USER_MODES.BUSINESS, USER_MODES.BOTH];
+const BUSINESS_PLANS = [PLANS.BUSINESS, PLANS.ENTERPRISE];
 
 export const navigationItems = [
   {
@@ -50,7 +52,7 @@ export const navigationItems = [
     label: 'Relatórios',
     path: '/relatorios',
     modes: ALL_MODES,
-    plans: ['pro', 'business', 'enterprise'],
+    plans: [PLANS.PRO, PLANS.BUSINESS, PLANS.ENTERPRISE],
     description: 'Leituras e análises do contexto financeiro.',
   },
   {
