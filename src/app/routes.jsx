@@ -1,5 +1,6 @@
 import DashboardPage from '../features/dashboard';
 import AgendaPage from '../pages/AgendaPage';
+import ClientesPage from '../pages/ClientesPage';
 import CRMPage from '../pages/CRMPage';
 import FinancePage from '../pages/FinancePage';
 import ObjetivosPage from '../pages/ObjetivosPage';
@@ -38,6 +39,12 @@ export const appRoutes = [
     label: 'CRM',
     title: 'CRM',
     element: <CRMPage />,
+  },
+  {
+    path: '/clientes',
+    label: 'Clientes',
+    title: 'Clientes',
+    element: <ClientesPage />,
   },
   {
     path: '/projetos',

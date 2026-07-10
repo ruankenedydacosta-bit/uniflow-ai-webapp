@@ -42,6 +42,13 @@ export const navigationItems = [
     description: 'Relacionamento comercial e oportunidades de negócio.',
   },
   {
+    label: 'Clientes',
+    path: '/clientes',
+    modes: BUSINESS_MODES,
+    plans: BUSINESS_PLANS,
+    description: 'Relacionamentos, cobranças e próximos passos empresariais.',
+  },
+  {
     label: 'Projetos',
     path: '/projetos',
     modes: BUSINESS_MODES,

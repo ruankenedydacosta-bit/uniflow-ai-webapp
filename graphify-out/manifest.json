@@ -250,8 +250,8 @@
     "semantic_hash": "093d1255ac32efccd41332e8f21c2361"
   },
   "src/app/routes.jsx": {
-    "mtime": 1783698721.5905037,
-    "ast_hash": "8030c17fdc1bbbd9a69a54059ce765ae",
+    "mtime": 1783701488.5326495,
+    "ast_hash": "ced1399939a0749e1a3dc1519fb6161d",
     "semantic_hash": ""
   },
   "src/components/index.js": {
@@ -550,13 +550,13 @@
     "semantic_hash": ""
   },
   "src/pages/AgendaPage.jsx": {
-    "mtime": 1783607862.255464,
-    "ast_hash": "31bf2a737f1c72950bc2aa9cc37cf0b1",
+    "mtime": 1783700746.9320772,
+    "ast_hash": "39c66bf61a02cb498f38761a6b0e8008",
     "semantic_hash": ""
   },
   "src/pages/CRMPage.jsx": {
-    "mtime": 1783607862.0794353,
-    "ast_hash": "d4fba3f1808526e8e191e6460a9915b8",
+    "mtime": 1783708645.9349942,
+    "ast_hash": "05aae6e32ed3ecc677090bad2cd8d9e2",
     "semantic_hash": ""
   },
   "src/pages/FinancePage.jsx": {
@@ -580,8 +580,8 @@
     "semantic_hash": ""
   },
   "src/pages/SettingsPage.jsx": {
-    "mtime": 1783607862.4363887,
-    "ast_hash": "b8162698e75f1b5bc4a3592558ad7d67",
+    "mtime": 1783701063.101433,
+    "ast_hash": "1de943f084d8ce0f20f85958d11d965a",
     "semantic_hash": ""
   },
   "src/pages/UniAIPage.jsx": {
@@ -730,8 +730,8 @@
     "semantic_hash": ""
   },
   "src/app/navigation.js": {
-    "mtime": 1783698726.2958856,
-    "ast_hash": "a089ef99f184f28ee1893827083270ad",
+    "mtime": 1783701493.376706,
+    "ast_hash": "3acc6ce96b1ff1875707935b57038156",
     "semantic_hash": ""
   },
   "docs/00-master/USER_MODES_AND_PLANS.md": {
@@ -797,6 +797,31 @@
   "src/pages/relatorios/reports.mock.js": {
     "mtime": 1783700384.3456361,
     "ast_hash": "6cc0bf79bead222b6f8412a1a27a527e",
+    "semantic_hash": ""
+  },
+  "src/pages/agenda/agenda.mock.js": {
+    "mtime": 1783700718.5809467,
+    "ast_hash": "ac597ec9d395c7c991160484ddc144f1",
+    "semantic_hash": ""
+  },
+  "src/pages/configuracoes/settings.mock.js": {
+    "mtime": 1783701020.581785,
+    "ast_hash": "cb88af31ce57610eac725f324cce331d",
+    "semantic_hash": ""
+  },
+  "src/pages/ClientesPage.jsx": {
+    "mtime": 1783701447.984988,
+    "ast_hash": "df0e9b8c73329985df5cbb2bb6779be4",
+    "semantic_hash": ""
+  },
+  "src/pages/clientes/clients.mock.js": {
+    "mtime": 1783701421.4466317,
+    "ast_hash": "c1ad684ddb182ad4004dd4becedcc042",
+    "semantic_hash": ""
+  },
+  "src/pages/crm/crm.mock.js": {
+    "mtime": 1783708119.1089022,
+    "ast_hash": "0e29a4034acd8b8dd90fc23e8aeb09d1",
     "semantic_hash": ""
   }
 }

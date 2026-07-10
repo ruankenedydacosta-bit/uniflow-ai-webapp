@@ -2080,7 +2080,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_accesscontext",
-      "community": 68,
+      "community": 0,
       "norm_label": "accesscontext.jsx"
     },
     {
@@ -2090,7 +2090,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_accesscontext_accesscontext",
-      "community": 68,
+      "community": 0,
       "norm_label": "accesscontext"
     },
     {
@@ -2150,7 +2150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_access",
-      "community": 68,
+      "community": 0,
       "norm_label": "access.js"
     },
     {
@@ -2190,7 +2190,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_app_access_default_demo_access",
-      "community": 68,
+      "community": 0,
       "norm_label": "default_demo_access"
     },
     {
@@ -2200,7 +2200,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_app_access_isbusinessmode",
-      "community": 68,
+      "community": 0,
       "norm_label": "isbusinessmode()"
     },
     {
@@ -2210,7 +2210,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_app_access_ispersonalmode",
-      "community": 68,
+      "community": 0,
       "norm_label": "ispersonalmode()"
     },
     {
@@ -2220,7 +2220,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_app_access_canusebusinessfeatures",
-      "community": 68,
+      "community": 0,
       "norm_label": "canusebusinessfeatures()"
     },
     {
@@ -2297,7 +2297,7 @@
       "label": "filterNavigationItems()",
       "file_type": "code",
       "source_file": "src/app/navigation.js",
-      "source_location": "L75",
+      "source_location": "L82",
       "_origin": "ast",
       "id": "src_app_navigation_filternavigationitems",
       "community": 68,
@@ -2310,14 +2310,14 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_routes",
-      "community": 4,
+      "community": 0,
       "norm_label": "routes.jsx"
     },
     {
       "label": "appRoutes",
       "file_type": "code",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "src_app_routes_approutes",
       "community": 68,
@@ -2430,7 +2430,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
-      "community": 0,
+      "community": 68,
       "norm_label": "accessmodeswitcher()"
     },
     {
@@ -2510,7 +2510,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 0,
+      "community": 68,
       "norm_label": "topbar.jsx"
     },
     {
@@ -2670,7 +2670,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 0,
+      "community": 39,
       "norm_label": "input.jsx"
     },
     {
@@ -2680,7 +2680,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_input_input_input",
-      "community": 0,
+      "community": 39,
       "norm_label": "input"
     },
     {
@@ -2690,7 +2690,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_index",
-      "community": 0,
+      "community": 39,
       "norm_label": "index.js"
     },
     {
@@ -2800,7 +2800,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_dashboardpage",
-      "community": 4,
+      "community": 0,
       "norm_label": "dashboardpage()"
     },
     {
@@ -2940,7 +2940,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_index",
-      "community": 4,
+      "community": 0,
       "norm_label": "index.js"
     },
     {
@@ -2970,17 +2970,27 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agendapage",
-      "community": 4,
+      "community": 0,
       "norm_label": "agendapage.jsx"
+    },
+    {
+      "label": "getAgendaContext()",
+      "file_type": "code",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "src_pages_agendapage_getagendacontext",
+      "community": 0,
+      "norm_label": "getagendacontext()"
     },
     {
       "label": "AgendaPage()",
       "file_type": "code",
       "source_file": "src/pages/AgendaPage.jsx",
-      "source_location": "L3",
+      "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_agendapage_agendapage",
-      "community": 4,
+      "community": 0,
       "norm_label": "agendapage()"
     },
     {
@@ -2990,18 +3000,38 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crmpage",
-      "community": 4,
+      "community": 0,
       "norm_label": "crmpage.jsx"
     },
     {
       "label": "CRMPage()",
       "file_type": "code",
       "source_file": "src/pages/CRMPage.jsx",
-      "source_location": "L3",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_crmpage_crmpage",
-      "community": 4,
+      "community": 0,
       "norm_label": "crmpage()"
+    },
+    {
+      "label": "ClientesPage.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_clientespage",
+      "community": 0,
+      "norm_label": "clientespage.jsx"
+    },
+    {
+      "label": "ClientesPage()",
+      "file_type": "code",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_pages_clientespage_clientespage",
+      "community": 0,
+      "norm_label": "clientespage()"
     },
     {
       "label": "FinancePage.jsx",
@@ -3010,7 +3040,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financepage",
-      "community": 4,
+      "community": 0,
       "norm_label": "financepage.jsx"
     },
     {
@@ -3090,7 +3120,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_pagescaffold",
-      "community": 4,
+      "community": 0,
       "norm_label": "pagescaffold.jsx"
     },
     {
@@ -3100,7 +3130,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_pagescaffold_pagescaffold",
-      "community": 4,
+      "community": 0,
       "norm_label": "pagescaffold()"
     },
     {
@@ -3110,7 +3140,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projectspage",
-      "community": 4,
+      "community": 0,
       "norm_label": "projectspage.jsx"
     },
     {
@@ -3120,7 +3150,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_projectspage_projectspage",
-      "community": 4,
+      "community": 0,
       "norm_label": "projectspage()"
     },
     {
@@ -3190,17 +3220,47 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 4,
+      "community": 0,
       "norm_label": "settingspage.jsx"
+    },
+    {
+      "label": "USER_MODE_LABELS",
+      "file_type": "code",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_pages_settingspage_user_mode_labels",
+      "community": 0,
+      "norm_label": "user_mode_labels"
+    },
+    {
+      "label": "PLAN_LABELS",
+      "file_type": "code",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "src_pages_settingspage_plan_labels",
+      "community": 0,
+      "norm_label": "plan_labels"
+    },
+    {
+      "label": "getSettingsContext()",
+      "file_type": "code",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "src_pages_settingspage_getsettingscontext",
+      "community": 0,
+      "norm_label": "getsettingscontext()"
     },
     {
       "label": "SettingsPage()",
       "file_type": "code",
       "source_file": "src/pages/SettingsPage.jsx",
-      "source_location": "L3",
+      "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 4,
+      "community": 0,
       "norm_label": "settingspage()"
     },
     {
@@ -3222,6 +3282,86 @@
       "id": "src_pages_uniaipage_uniaipage",
       "community": 39,
       "norm_label": "uniaipage()"
+    },
+    {
+      "label": "agenda.mock.js",
+      "file_type": "code",
+      "source_file": "src/pages/agenda/agenda.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_agenda_agenda_mock",
+      "community": 0,
+      "norm_label": "agenda.mock.js"
+    },
+    {
+      "label": "agendaMock",
+      "file_type": "code",
+      "source_file": "src/pages/agenda/agenda.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_agenda_agenda_mock_agendamock",
+      "community": 0,
+      "norm_label": "agendamock"
+    },
+    {
+      "label": "clients.mock.js",
+      "file_type": "code",
+      "source_file": "src/pages/clientes/clients.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_clientes_clients_mock",
+      "community": 0,
+      "norm_label": "clients.mock.js"
+    },
+    {
+      "label": "clientsMock",
+      "file_type": "code",
+      "source_file": "src/pages/clientes/clients.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_clientes_clients_mock_clientsmock",
+      "community": 0,
+      "norm_label": "clientsmock"
+    },
+    {
+      "label": "settings.mock.js",
+      "file_type": "code",
+      "source_file": "src/pages/configuracoes/settings.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_configuracoes_settings_mock",
+      "community": 0,
+      "norm_label": "settings.mock.js"
+    },
+    {
+      "label": "settingsMock",
+      "file_type": "code",
+      "source_file": "src/pages/configuracoes/settings.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_configuracoes_settings_mock_settingsmock",
+      "community": 0,
+      "norm_label": "settingsmock"
+    },
+    {
+      "label": "crm.mock.js",
+      "file_type": "code",
+      "source_file": "src/pages/crm/crm.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_crm_crm_mock",
+      "community": 0,
+      "norm_label": "crm.mock.js"
+    },
+    {
+      "label": "crmMock",
+      "file_type": "code",
+      "source_file": "src/pages/crm/crm.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_crm_crm_mock_crmmock",
+      "community": 0,
+      "norm_label": "crmmock"
     },
     {
       "label": "FinanceProjectionChart.jsx",
@@ -3430,7 +3570,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel",
-      "community": 0,
+      "community": 39,
       "norm_label": "unichatpanel.jsx"
     },
     {
@@ -3440,7 +3580,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel_unichatpanel",
-      "community": 0,
+      "community": 39,
       "norm_label": "unichatpanel()"
     },
     {
@@ -3530,7 +3670,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble",
-      "community": 0,
+      "community": 39,
       "norm_label": "unimessagebubble.jsx"
     },
     {
@@ -3540,7 +3680,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble_unimessagebubble",
-      "community": 0,
+      "community": 39,
       "norm_label": "unimessagebubble()"
     },
     {
@@ -3650,7 +3790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture",
-      "community": 0,
+      "community": 39,
       "norm_label": "univoicecapture.jsx"
     },
     {
@@ -3660,7 +3800,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture_univoicecapture",
-      "community": 0,
+      "community": 39,
       "norm_label": "univoicecapture()"
     },
     {
@@ -8657,6 +8797,39 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_app_accesscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_app_accesscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_app_accesscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L1",
       "weight": 1.0,
@@ -8683,6 +8856,17 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_pages_reportspage",
+      "target": "src_app_accesscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_app_accesscontext",
       "confidence_score": 1.0
     },
@@ -8738,6 +8922,72 @@
       "source_location": "L8",
       "weight": 1.0,
       "source": "src_components_layout_sidebar_sidebar_sidebar",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_pages_agendapage_agendapage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_pages_clientespage_clientespage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_pages_crmpage_crmpage",
       "target": "src_app_accesscontext_useaccess",
       "confidence_score": 1.0
     },
@@ -8804,6 +9054,28 @@
       "source_location": "L99",
       "weight": 1.0,
       "source": "src_pages_reportspage_reportspage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "src_pages_settingspage_settingspage",
       "target": "src_app_accesscontext_useaccess",
       "confidence_score": 1.0
     },
@@ -8978,6 +9250,39 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_app_access",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_app_access",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_app_access",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L2",
       "weight": 1.0,
@@ -9008,6 +9313,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_app_access",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -9026,6 +9342,17 @@
       "source_location": "L2",
       "weight": 1.0,
       "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_app_access_user_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_app_access_user_modes",
       "confidence_score": 1.0
     },
@@ -9055,10 +9382,54 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_app_access_plans",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/components/dev/AccessModeSwitcher.jsx",
       "source_location": "L2",
       "weight": 1.0,
       "source": "src_components_dev_accessmodeswitcher",
+      "target": "src_app_access_workspace_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_app_access_workspace_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_app_access_workspace_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
       "target": "src_app_access_workspace_types",
       "confidence_score": 1.0
     },
@@ -9092,6 +9463,17 @@
       "source_location": "L2",
       "weight": 1.0,
       "source": "src_pages_reportspage",
+      "target": "src_app_access_workspace_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_app_access_workspace_types",
       "confidence_score": 1.0
     },
@@ -9150,7 +9532,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/navigation.js",
-      "source_location": "L75",
+      "source_location": "L82",
       "weight": 1.0,
       "source": "src_app_navigation",
       "target": "src_app_navigation_filternavigationitems",
@@ -9214,7 +9596,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_app_routes_approutes",
@@ -9272,7 +9654,7 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "src_app_routes",
-      "target": "src_pages_crmpage",
+      "target": "src_pages_clientespage",
       "confidence_score": 1.0
     },
     {
@@ -9283,7 +9665,18 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "src_app_routes",
-      "target": "src_pages_crmpage_crmpage",
+      "target": "src_pages_clientespage_clientespage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/routes.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_app_routes",
+      "target": "src_pages_crmpage",
       "confidence_score": 1.0
     },
     {
@@ -9292,6 +9685,17 @@
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
       "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_app_routes",
+      "target": "src_pages_crmpage_crmpage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/routes.jsx",
+      "source_location": "L5",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_financeiropage_financeiropage",
@@ -9302,7 +9706,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L4",
+      "source_location": "L5",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_financepage",
@@ -9313,7 +9717,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_objetivospage",
@@ -9324,7 +9728,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_objetivospage_objetivospage",
@@ -9335,7 +9739,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_projectspage",
@@ -9346,7 +9750,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_projectspage_projectspage",
@@ -9357,7 +9761,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_reportspage",
@@ -9368,7 +9772,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_reportspage_reportspage",
@@ -9379,7 +9783,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L8",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_settingspage",
@@ -9390,7 +9794,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L8",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_settingspage_settingspage",
@@ -9401,7 +9805,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L9",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_uniaipage",
@@ -9412,7 +9816,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L9",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_uniaipage_uniaipage",
@@ -9825,6 +10229,17 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_components_ui_avatar_avatar_avatar",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniAIHero.jsx",
       "source_location": "L1",
       "weight": 1.0,
@@ -9862,6 +10277,17 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_features_dashboard_components_uniinsightscard",
+      "target": "src_components_ui_avatar_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_components_ui_avatar_index",
       "confidence_score": 1.0
     },
@@ -10011,6 +10437,39 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_components_ui_badge_badge_badge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_components_ui_badge_badge_badge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_components_ui_badge_badge_badge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L3",
       "weight": 1.0,
@@ -10048,6 +10507,17 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "src_pages_reportspage",
+      "target": "src_components_ui_badge_badge_badge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_components_ui_badge_badge_badge",
       "confidence_score": 1.0
     },
@@ -10176,6 +10646,39 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_components_ui_badge_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_components_ui_badge_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_components_ui_badge_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L3",
       "weight": 1.0,
@@ -10213,6 +10716,17 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "src_pages_reportspage",
+      "target": "src_components_ui_badge_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_components_ui_badge_index",
       "confidence_score": 1.0
     },
@@ -10351,6 +10865,39 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L4",
       "weight": 1.0,
@@ -10388,6 +10935,17 @@
       "source_location": "L4",
       "weight": 1.0,
       "source": "src_pages_reportspage",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_components_ui_button_button_button",
       "confidence_score": 1.0
     },
@@ -10483,6 +11041,39 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L4",
       "weight": 1.0,
@@ -10520,6 +11111,17 @@
       "source_location": "L4",
       "weight": 1.0,
       "source": "src_pages_reportspage",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_components_ui_button_index",
       "confidence_score": 1.0
     },
@@ -10702,6 +11304,39 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_components_ui_card_card_card",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_components_ui_card_card_card",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_components_ui_card_card_card",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L5",
       "weight": 1.0,
@@ -10739,6 +11374,17 @@
       "source_location": "L5",
       "weight": 1.0,
       "source": "src_pages_reportspage",
+      "target": "src_components_ui_card_card_card",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_components_ui_card_card_card",
       "confidence_score": 1.0
     },
@@ -10867,6 +11513,39 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_components_ui_card_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_components_ui_card_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_components_ui_card_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L5",
       "weight": 1.0,
@@ -10904,6 +11583,17 @@
       "source_location": "L5",
       "weight": 1.0,
       "source": "src_pages_reportspage",
+      "target": "src_components_ui_card_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
       "target": "src_components_ui_card_index",
       "confidence_score": 1.0
     },
@@ -11556,24 +12246,14 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/AgendaPage.jsx",
-      "source_location": "L3",
-      "weight": 1.0,
-      "source": "src_pages_agendapage",
-      "target": "src_pages_agendapage_agendapage",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/AgendaPage.jsx",
-      "source_location": "L1",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_pages_agendapage",
-      "target": "src_pages_pagescaffold",
+      "target": "src_pages_agenda_agenda_mock",
       "confidence_score": 1.0
     },
     {
@@ -11581,17 +12261,103 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/AgendaPage.jsx",
-      "source_location": "L1",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_pages_agendapage",
-      "target": "src_pages_pagescaffold_pagescaffold",
+      "target": "src_pages_agenda_agenda_mock_agendamock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_pages_agendapage_agendapage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_pages_agendapage_getagendacontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_utils_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_agendapage",
+      "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_pages_agendapage_agendapage",
+      "target": "src_pages_agendapage_getagendacontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/AgendaPage.jsx",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "src_pages_agendapage_agendapage",
+      "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_pages_crm_crm_mock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_pages_crm_crm_mock_crmmock",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/CRMPage.jsx",
-      "source_location": "L3",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_crmpage",
       "target": "src_pages_crmpage_crmpage",
@@ -11602,10 +12368,10 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/CRMPage.jsx",
-      "source_location": "L1",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_pages_crmpage",
-      "target": "src_pages_pagescaffold",
+      "target": "src_utils_cx",
       "confidence_score": 1.0
     },
     {
@@ -11613,10 +12379,152 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/CRMPage.jsx",
-      "source_location": "L1",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_pages_crmpage",
-      "target": "src_pages_pagescaffold_pagescaffold",
+      "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_utils_formatters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_crmpage",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "src_pages_crmpage_crmpage",
+      "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/CRMPage.jsx",
+      "source_location": "L123",
+      "weight": 1.0,
+      "source": "src_pages_crmpage_crmpage",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_pages_clientes_clients_mock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_pages_clientes_clients_mock_clientsmock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_pages_clientespage_clientespage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_utils_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_utils_formatters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_clientespage",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L132",
+      "weight": 1.0,
+      "source": "src_pages_clientespage_clientespage",
+      "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ClientesPage.jsx",
+      "source_location": "L106",
+      "weight": 1.0,
+      "source": "src_pages_clientespage_clientespage",
+      "target": "src_utils_formatters_formatcurrency",
       "confidence_score": 1.0
     },
     {
@@ -11900,17 +12808,6 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/SettingsPage.jsx",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "src_pages_settingspage",
-      "target": "src_pages_pagescaffold",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -11918,17 +12815,6 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_pages_projectspage",
-      "target": "src_pages_pagescaffold_pagescaffold",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/SettingsPage.jsx",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "src_pages_settingspage",
       "target": "src_pages_pagescaffold_pagescaffold",
       "confidence_score": 1.0
     },
@@ -12114,13 +13000,109 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_pages_configuracoes_settings_mock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_pages_configuracoes_settings_mock_settingsmock",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/SettingsPage.jsx",
-      "source_location": "L3",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_pages_settingspage_getsettingscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_pages_settingspage_plan_labels",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L28",
       "weight": 1.0,
       "source": "src_pages_settingspage",
       "target": "src_pages_settingspage_settingspage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_pages_settingspage_user_mode_labels",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_utils_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_settingspage",
+      "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "src_pages_settingspage_settingspage",
+      "target": "src_pages_settingspage_getsettingscontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/SettingsPage.jsx",
+      "source_location": "L88",
+      "weight": 1.0,
+      "source": "src_pages_settingspage_settingspage",
+      "target": "src_utils_cx_cx",
       "confidence_score": 1.0
     },
     {
@@ -12362,6 +13344,46 @@
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_isprobablysafari",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/agenda/agenda.mock.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_agenda_agenda_mock",
+      "target": "src_pages_agenda_agenda_mock_agendamock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/clientes/clients.mock.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_clientes_clients_mock",
+      "target": "src_pages_clientes_clients_mock_clientsmock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/configuracoes/settings.mock.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_configuracoes_settings_mock",
+      "target": "src_pages_configuracoes_settings_mock_settingsmock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/crm/crm.mock.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_crm_crm_mock",
+      "target": "src_pages_crm_crm_mock_crmmock",
       "confidence_score": 1.0
     },
     {
@@ -15744,5 +16766,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "4fac73f8cb306e3b1c2052fc849642fa308dfc6c"
+  "built_at_commit": "9ec7c8026219d6e0f3e10934590c8bc132a84faf"
 }
