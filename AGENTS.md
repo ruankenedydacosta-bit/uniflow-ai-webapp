@@ -68,3 +68,16 @@ Já existe:
 ## Commits
 
 Ao terminar uma etapa, sugerir uma mensagem de commit.
+
+## Obsidian Knowledge Base
+
+O Obsidian e a base oficial de conhecimento viva da UniFlow AI.
+
+Regras para o Codex:
+
+- Sempre que uma alteracao representar decisao importante, sugerir ou criar nota no Obsidian.
+- Sempre que um prompt estrutural for aprovado, registrar em `09 - Prompts Codex`.
+- Sempre que mudar uma regra de produto, UX ou arquitetura, registrar em `10 - Decisões do Projeto`.
+- Nao registrar alteracoes triviais.
+- Nao registrar logs tecnicos pequenos.
+- Nao poluir o Obsidian.
