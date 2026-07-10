@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PLANS, USER_MODES, WORKSPACE_TYPES } from '../../app/access.js';
 import { useAccess } from '../../app/AccessContext';
 import styles from './AccessModeSwitcher.module.css';
@@ -62,9 +62,36 @@ function normalizeAccessForPlan(plan) {
 function AccessModeSwitcher() {
   const { access, setAccess } = useAccess();
   const [isOpen, setIsOpen] = useState(false);
+  const switcherRef = useRef(null);
   const canChooseWorkspace = access.userMode === USER_MODES.BOTH;
   const userModeOptions = getModeOptionsForPlan(access.plan);
   const accessSummary = `${USER_MODE_LABELS[access.userMode]} · ${PLAN_LABELS[access.plan]}`;
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event) {
+      if (!switcherRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   function handleUserModeChange(event) {
     const nextUserMode = event.target.value;
@@ -97,7 +124,7 @@ function AccessModeSwitcher() {
   }
 
   return (
-    <div className={styles.switcher}>
+    <div className={styles.switcher} ref={switcherRef}>
       <button
         type="button"
         className={styles.profileButton}

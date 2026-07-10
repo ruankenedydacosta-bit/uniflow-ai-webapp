@@ -250,8 +250,8 @@
     "semantic_hash": "093d1255ac32efccd41332e8f21c2361"
   },
   "src/app/routes.jsx": {
-    "mtime": 1783645469.147441,
-    "ast_hash": "be306426525479dadb790f1d03df90dd",
+    "mtime": 1783698721.5905037,
+    "ast_hash": "8030c17fdc1bbbd9a69a54059ce765ae",
     "semantic_hash": ""
   },
   "src/components/index.js": {
@@ -730,8 +730,8 @@
     "semantic_hash": ""
   },
   "src/app/navigation.js": {
-    "mtime": 1783645822.1161292,
-    "ast_hash": "fbb25c2937995e5ee2b58a33d5bff818",
+    "mtime": 1783698726.2958856,
+    "ast_hash": "a089ef99f184f28ee1893827083270ad",
     "semantic_hash": ""
   },
   "docs/00-master/USER_MODES_AND_PLANS.md": {
@@ -750,8 +750,8 @@
     "semantic_hash": ""
   },
   "src/components/dev/AccessModeSwitcher.jsx": {
-    "mtime": 1783679626.4232512,
-    "ast_hash": "5812989a5283caf53e806e187dad08ff",
+    "mtime": 1783700008.607828,
+    "ast_hash": "f71b6927fc44a0756917e987b75bd6d8",
     "semantic_hash": ""
   },
   "src/pages/FinanceiroPage.jsx": {
@@ -780,8 +780,18 @@
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceProjectionChart.jsx": {
-    "mtime": 1783687962.2536263,
-    "ast_hash": "91c8ff7bc84491dcf9865be0e8e6e63a",
+    "mtime": 1783688526.4546597,
+    "ast_hash": "a93dd5f2926b3d56f1e3ddfcc52f9d37",
+    "semantic_hash": ""
+  },
+  "src/pages/ObjetivosPage.jsx": {
+    "mtime": 1783700024.349442,
+    "ast_hash": "7d18fe84c582bdf76852a97378858b82",
+    "semantic_hash": ""
+  },
+  "src/pages/objetivos/objectives.mock.js": {
+    "mtime": 1783700032.5543745,
+    "ast_hash": "eec2dd3e781847d008898a7f2016d6b5",
     "semantic_hash": ""
   }
 }

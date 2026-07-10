@@ -2297,7 +2297,7 @@
       "label": "filterNavigationItems()",
       "file_type": "code",
       "source_file": "src/app/navigation.js",
-      "source_location": "L68",
+      "source_location": "L75",
       "_origin": "ast",
       "id": "src_app_navigation_filternavigationitems",
       "community": 68,
@@ -2317,7 +2317,7 @@
       "label": "appRoutes",
       "file_type": "code",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L10",
+      "source_location": "L11",
       "_origin": "ast",
       "id": "src_app_routes_approutes",
       "community": 68,
@@ -3044,6 +3044,46 @@
       "norm_label": "financeiropage()"
     },
     {
+      "label": "ObjetivosPage.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_objetivospage",
+      "community": 68,
+      "norm_label": "objetivospage.jsx"
+    },
+    {
+      "label": "getObjectivesContext()",
+      "file_type": "code",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "src_pages_objetivospage_getobjectivescontext",
+      "community": 68,
+      "norm_label": "getobjectivescontext()"
+    },
+    {
+      "label": "getProgress()",
+      "file_type": "code",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_pages_objetivospage_getprogress",
+      "community": 68,
+      "norm_label": "getprogress()"
+    },
+    {
+      "label": "ObjetivosPage()",
+      "file_type": "code",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "src_pages_objetivospage_objetivospage",
+      "community": 68,
+      "norm_label": "objetivospage()"
+    },
+    {
       "label": "PageScaffold.jsx",
       "file_type": "code",
       "source_file": "src/pages/PageScaffold.jsx",
@@ -3264,6 +3304,26 @@
       "norm_label": "financialmock"
     },
     {
+      "label": "objectives.mock.js",
+      "file_type": "code",
+      "source_file": "src/pages/objetivos/objectives.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_objetivos_objectives_mock",
+      "community": 68,
+      "norm_label": "objectives.mock.js"
+    },
+    {
+      "label": "objectivesMock",
+      "file_type": "code",
+      "source_file": "src/pages/objetivos/objectives.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_objetivos_objectives_mock_objectivesmock",
+      "community": 68,
+      "norm_label": "objectivesmock"
+    },
+    {
       "label": "UniAIHero.jsx",
       "file_type": "code",
       "source_file": "src/pages/uni-ai/UniAIHero.jsx",
@@ -3290,7 +3350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols",
-      "community": 39,
+      "community": 0,
       "norm_label": "uniaudiocontrols.jsx"
     },
     {
@@ -8545,6 +8605,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_app_accesscontext",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -8618,6 +8689,28 @@
       "source_location": "L17",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_app_accesscontext_useaccess",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage_objetivospage",
       "target": "src_app_accesscontext_useaccess",
       "confidence_score": 1.0
     },
@@ -8800,6 +8893,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_app_access",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -8866,6 +8970,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_app_access_workspace_types",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -8920,7 +9035,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/navigation.js",
-      "source_location": "L68",
+      "source_location": "L75",
       "weight": 1.0,
       "source": "src_app_navigation",
       "target": "src_app_navigation_filternavigationitems",
@@ -8984,7 +9099,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_app_routes_approutes",
@@ -9086,7 +9201,7 @@
       "source_location": "L5",
       "weight": 1.0,
       "source": "src_app_routes",
-      "target": "src_pages_projectspage",
+      "target": "src_pages_objetivospage",
       "confidence_score": 1.0
     },
     {
@@ -9097,7 +9212,7 @@
       "source_location": "L5",
       "weight": 1.0,
       "source": "src_app_routes",
-      "target": "src_pages_projectspage_projectspage",
+      "target": "src_pages_objetivospage_objetivospage",
       "confidence_score": 1.0
     },
     {
@@ -9106,6 +9221,28 @@
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
       "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_app_routes",
+      "target": "src_pages_projectspage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/routes.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_app_routes",
+      "target": "src_pages_projectspage_projectspage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/app/routes.jsx",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_reportspage",
@@ -9116,7 +9253,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_reportspage_reportspage",
@@ -9127,7 +9264,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_settingspage",
@@ -9138,7 +9275,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_settingspage_settingspage",
@@ -9149,7 +9286,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L8",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_uniaipage",
@@ -9160,7 +9297,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/app/routes.jsx",
-      "source_location": "L8",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_app_routes",
       "target": "src_pages_uniaipage_uniaipage",
@@ -9304,7 +9441,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/components/dev/AccessModeSwitcher.jsx",
-      "source_location": "L66",
+      "source_location": "L67",
       "weight": 1.0,
       "source": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
       "target": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
@@ -9770,6 +9907,17 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_components_ui_badge_badge_badge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/PageScaffold.jsx",
       "source_location": "L1",
       "weight": 1.0,
@@ -9906,6 +10054,17 @@
       "source_location": "L3",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
+      "target": "src_components_ui_badge_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
       "target": "src_components_ui_badge_index",
       "confidence_score": 1.0
     },
@@ -10066,6 +10225,17 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/PageScaffold.jsx",
       "source_location": "L2",
       "weight": 1.0,
@@ -10169,6 +10339,17 @@
       "source_location": "L4",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
       "target": "src_components_ui_button_index",
       "confidence_score": 1.0
     },
@@ -10373,6 +10554,17 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_components_ui_card_card_card",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/PageScaffold.jsx",
       "source_location": "L3",
       "weight": 1.0,
@@ -10509,6 +10701,17 @@
       "source_location": "L5",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
+      "target": "src_components_ui_card_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
       "target": "src_components_ui_card_index",
       "confidence_score": 1.0
     },
@@ -11388,6 +11591,113 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_pages_objetivos_objectives_mock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_pages_objetivos_objectives_mock_objectivesmock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_pages_objetivospage_getobjectivescontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_pages_objetivospage_getprogress",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_pages_objetivospage_objetivospage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_utils_formatters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage_objetivospage",
+      "target": "src_pages_objetivospage_getobjectivescontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage_objetivospage",
+      "target": "src_pages_objetivospage_getprogress",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/ObjetivosPage.jsx",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "src_pages_objetivospage_objetivospage",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/PageScaffold.jsx",
@@ -11928,7 +12238,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
-      "source_location": "L156",
+      "source_location": "L170",
       "weight": 1.0,
       "source": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
       "target": "src_utils_formatters_formatcurrency",
@@ -11942,6 +12252,16 @@
       "weight": 1.0,
       "source": "src_pages_financeiro_financial_mock",
       "target": "src_pages_financeiro_financial_mock_financialmock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/objetivos/objectives.mock.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_objetivos_objectives_mock",
+      "target": "src_pages_objetivos_objectives_mock_objectivesmock",
       "confidence_score": 1.0
     },
     {
@@ -15094,5 +15414,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "8d06a91eec0b8cd2d682039540f323cdd49f83c4"
+  "built_at_commit": "4fac73f8cb306e3b1c2052fc849642fa308dfc6c"
 }

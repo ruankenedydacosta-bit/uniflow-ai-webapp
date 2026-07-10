@@ -28,6 +28,13 @@ export const navigationItems = [
     description: 'Receitas, despesas, saldo e fluxo financeiro.',
   },
   {
+    label: 'Objetivos',
+    path: '/objetivos',
+    modes: ALL_MODES,
+    plans: ALL_PLANS,
+    description: 'Destinos financeiros conectados ao GPS da UniFlow AI.',
+  },
+  {
     label: 'CRM',
     path: '/crm',
     modes: BUSINESS_MODES,

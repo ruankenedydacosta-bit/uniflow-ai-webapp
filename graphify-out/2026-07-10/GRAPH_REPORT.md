@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 150 files · ~43,345 words
+- 152 files · ~44,106 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 621 nodes · 850 edges · 72 communities (58 shown, 14 thin omitted)
+- 627 nodes · 874 edges · 72 communities (58 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8d06a91e`
+- Built from commit: `4fac73f8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -61,15 +61,15 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `Uni AI Experience Reference` - 19 edges
-2. `Badge()` - 17 edges
+2. `Badge()` - 18 edges
 3. `cx()` - 17 edges
-4. `Card()` - 15 edges
+4. `Card()` - 16 edges
 5. `User Modes and Plans` - 15 edges
-6. `App Structure Map` - 13 edges
-7. `6. Catalogo oficial de modulos` - 13 edges
-8. `Módulos oficiais do produto` - 13 edges
-9. `Button()` - 12 edges
-10. `formatCurrency()` - 12 edges
+6. `formatCurrency()` - 14 edges
+7. `Button()` - 13 edges
+8. `App Structure Map` - 13 edges
+9. `6. Catalogo oficial de modulos` - 13 edges
+10. `Módulos oficiais do produto` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `FinanceiroPage()` --calls--> `useAccess()`  [EXTRACTED]
@@ -133,7 +133,7 @@ Cohesion: 0.33
 Nodes (4): Card, CardBody, CardFooter, CardHeader
 
 ### Community 39 - "UniAIPage.jsx"
-Cohesion: 0.21
+Cohesion: 0.22
 Nodes (17): audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse(), getPortugueseVoice() (+9 more)
 
 ### Community 48 - "Módulos oficiais do produto"
@@ -190,7 +190,7 @@ Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao fut
 
 ### Community 68 - "navigation.js"
 Cohesion: 0.07
-Nodes (29): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, AccessProvider() (+21 more)
+Nodes (33): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, AccessProvider() (+25 more)
 
 ### Community 69 - "Obsidian Workflow"
 Cohesion: 0.22
@@ -214,12 +214,12 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `AppShell.jsx`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `Button()` connect `DashboardPage.jsx` to `AppShell.jsx`, `UniAIPage.jsx`?**
+- **Why does `Button()` connect `DashboardPage.jsx` to `navigation.js`, `AppShell.jsx`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
   _245 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.06664388243335612 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06626706626706627 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**

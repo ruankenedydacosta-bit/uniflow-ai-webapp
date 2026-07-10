@@ -1,6 +1,6 @@
 .switcher {
   position: relative;
-  z-index: var(--uf-z-popover);
+  z-index: var(--uf-z-tooltip);
 }
 
 .profileButton {
@@ -61,9 +61,11 @@
   position: absolute;
   top: calc(100% + var(--uf-space-8));
   right: 0;
-  z-index: var(--uf-z-modal);
+  z-index: var(--uf-z-tooltip);
   display: grid;
   width: min(calc(var(--uf-space-160) * 2), calc(100vw - var(--uf-space-32)));
+  max-height: calc(100vh - var(--uf-space-120));
+  overflow-y: auto;
   gap: var(--uf-space-12);
   padding: var(--uf-space-16);
   border: 1px solid var(--uf-color-border-default);

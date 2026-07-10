@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 150 files · ~43,372 words
+- 153 files · ~44,950 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 621 nodes · 850 edges · 72 communities (58 shown, 14 thin omitted)
+- 633 nodes · 899 edges · 72 communities (58 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8d06a91e`
+- Built from commit: `4fac73f8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -60,20 +60,20 @@
 - FinanceProjectionChart.jsx
 
 ## God Nodes (most connected - your core abstractions)
-1. `Uni AI Experience Reference` - 19 edges
-2. `Badge()` - 17 edges
-3. `cx()` - 17 edges
-4. `Card()` - 15 edges
-5. `User Modes and Plans` - 15 edges
-6. `App Structure Map` - 13 edges
-7. `6. Catalogo oficial de modulos` - 13 edges
-8. `Módulos oficiais do produto` - 13 edges
-9. `Button()` - 12 edges
-10. `formatCurrency()` - 12 edges
+1. `Badge()` - 19 edges
+2. `cx()` - 19 edges
+3. `Uni AI Experience Reference` - 19 edges
+4. `Card()` - 17 edges
+5. `formatCurrency()` - 16 edges
+6. `User Modes and Plans` - 15 edges
+7. `Button()` - 14 edges
+8. `App Structure Map` - 13 edges
+9. `6. Catalogo oficial de modulos` - 13 edges
+10. `Módulos oficiais do produto` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `FinanceiroPage()` --calls--> `useAccess()`  [EXTRACTED]
-  src/pages/FinanceiroPage.jsx → src/app/AccessContext.jsx
+- `Sidebar()` --calls--> `useAccess()`  [EXTRACTED]
+  src/components/layout/Sidebar/Sidebar.jsx → src/app/AccessContext.jsx
 - `Loader()` --calls--> `cx()`  [EXTRACTED]
   src/components/ui/Loader/Loader.jsx → src/utils/cx.js
 - `Modal()` --calls--> `cx()`  [EXTRACTED]
@@ -90,7 +90,7 @@
 
 ### Community 0 - "DashboardPage.jsx"
 Cohesion: 0.07
-Nodes (31): Avatar, Badge(), Button(), Card(), Input, Loader(), Modal(), Tooltip() (+23 more)
+Nodes (35): WORKSPACE_TYPES, useAccess(), AccessModeSwitcher(), Avatar, Badge(), Button(), Card(), Input (+27 more)
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.08
@@ -105,8 +105,8 @@ Cohesion: 0.17
 Nodes (8): DashboardGreeting(), currency, FinancialSummaryCard(), GoalsSummaryCard(), currency, dateFormatter, RecentActivityList(), UniInsightsCard()
 
 ### Community 4 - "AppShell.jsx"
-Cohesion: 0.24
-Nodes (7): DashboardPage(), AgendaPage(), CRMPage(), PageScaffold(), ProjectsPage(), ReportsPage(), SettingsPage()
+Cohesion: 0.26
+Nodes (6): DashboardPage(), AgendaPage(), CRMPage(), PageScaffold(), ProjectsPage(), SettingsPage()
 
 ### Community 5 - "CustomerBoard.jsx"
 Cohesion: 0.29
@@ -133,8 +133,8 @@ Cohesion: 0.33
 Nodes (4): Card, CardBody, CardFooter, CardHeader
 
 ### Community 39 - "UniAIPage.jsx"
-Cohesion: 0.21
-Nodes (17): audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse(), getPortugueseVoice() (+9 more)
+Cohesion: 0.12
+Nodes (26): audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse(), getPortugueseVoice() (+18 more)
 
 ### Community 48 - "Módulos oficiais do produto"
 Cohesion: 0.08
@@ -190,7 +190,7 @@ Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao fut
 
 ### Community 68 - "navigation.js"
 Cohesion: 0.07
-Nodes (29): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, AccessProvider() (+21 more)
+Nodes (26): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, AccessContext, AccessProvider(), App() (+18 more)
 
 ### Community 69 - "Obsidian Workflow"
 Cohesion: 0.22
@@ -219,10 +219,10 @@ _Questions this graph is uniquely positioned to answer:_
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
   _245 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.06664388243335612 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0680379746835443 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
-- **Should `Módulos oficiais do produto` be split into smaller, more focused modules?**
-  _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
+- **Should `UniAIPage.jsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.11875843454790823 - nodes in this community are weakly interconnected._

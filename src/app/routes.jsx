@@ -2,6 +2,7 @@ import DashboardPage from '../features/dashboard';
 import AgendaPage from '../pages/AgendaPage';
 import CRMPage from '../pages/CRMPage';
 import FinancePage from '../pages/FinancePage';
+import ObjetivosPage from '../pages/ObjetivosPage';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
@@ -25,6 +26,12 @@ export const appRoutes = [
     label: 'Financeiro',
     title: 'Financeiro',
     element: <FinancePage />,
+  },
+  {
+    path: '/objetivos',
+    label: 'Objetivos',
+    title: 'Objetivos',
+    element: <ObjetivosPage />,
   },
   {
     path: '/crm',
