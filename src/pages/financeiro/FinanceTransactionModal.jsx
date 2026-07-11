@@ -10,21 +10,15 @@ import {
   SelectField,
 } from './FinanceCrudPrimitives';
 import { getFinanceErrorMessage } from './financeUiUtils';
-
-function createEmptyForm() {
-  return {
-    account_id: '',
-    destination_account_id: '',
-    category_id: '',
-    transaction_type: 'expense',
-    description: '',
-    amount: '',
-    transaction_date: new Date().toISOString().slice(0, 10),
-  };
-}
+import {
+  buildTransactionMutationPayload,
+  createEmptyTransactionForm,
+  createTransactionEditForm,
+  getSelectableTransactionAccounts,
+} from './transactionFormUtils';
 
 function FinanceTransactionModal({ accountState, categoryState, onClose, open, transactionState }) {
-  const [form, setForm] = useState(createEmptyForm);
+  const [form, setForm] = useState(createEmptyTransactionForm);
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const filteredCategories = useMemo(
@@ -36,9 +30,13 @@ function FinanceTransactionModal({ accountState, categoryState, onClose, open, t
       ),
     [categoryState.categories, form.transaction_type],
   );
+  const selectableAccounts = useMemo(
+    () => getSelectableTransactionAccounts(accountState.accounts, editingId, form),
+    [accountState.accounts, editingId, form],
+  );
 
   function resetForm() {
-    setForm(createEmptyForm());
+    setForm(createEmptyTransactionForm());
     setEditingId(null);
     setPendingDeleteId(null);
   }
@@ -53,31 +51,13 @@ function FinanceTransactionModal({ accountState, categoryState, onClose, open, t
     transactionState.clearError();
     setEditingId(transaction.id);
     setPendingDeleteId(null);
-    setForm({
-      account_id: transaction.account_id,
-      destination_account_id: transaction.destination_account_id ?? '',
-      category_id: transaction.category_id ?? '',
-      transaction_type: transaction.transaction_type,
-      description: transaction.description,
-      amount: String(transaction.amount),
-      transaction_date: transaction.transaction_date,
-    });
+    setForm(createTransactionEditForm(transaction));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     const result = await transactionState.saveTransaction(
-      {
-        account_id: form.account_id,
-        destination_account_id:
-          form.transaction_type === 'transfer' ? form.destination_account_id : null,
-        category_id: form.category_id || null,
-        transaction_type: form.transaction_type,
-        description: form.description,
-        amount: form.amount,
-        transaction_date: form.transaction_date,
-        status: 'completed',
-      },
+      buildTransactionMutationPayload(form),
       editingId,
     );
 
@@ -139,9 +119,10 @@ function FinanceTransactionModal({ accountState, categoryState, onClose, open, t
             required
           >
             <option value="">Selecione uma conta</option>
-            {accountState.accounts.map((account) => (
+            {selectableAccounts.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name}
+                {account.is_active === false ? ' (arquivada)' : ''}
               </option>
             ))}
           </SelectField>
@@ -159,7 +140,7 @@ function FinanceTransactionModal({ accountState, categoryState, onClose, open, t
               required
             >
               <option value="">Selecione a conta de destino</option>
-              {accountState.accounts
+              {selectableAccounts
                 .filter((account) => account.id !== form.account_id)
                 .map((account) => (
                   <option key={account.id} value={account.id}>
@@ -217,7 +198,7 @@ function FinanceTransactionModal({ accountState, categoryState, onClose, open, t
             required
             fullWidth
           />
-          {!accountState.accounts.length ? (
+          {!accountState.activeAccounts.length && !editingId ? (
             <FormMessage tone="info">Crie uma conta antes do primeiro lançamento.</FormMessage>
           ) : null}
           <FormMessage>

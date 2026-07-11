@@ -134,7 +134,7 @@ function FinanceAccountModal({ accountState, onClose, open }) {
         </form>
 
         <div className="uf-flex uf-flex-column uf-gap-sm">
-          {accountState.accounts.map((account) => (
+          {accountState.activeAccounts.map((account) => (
             <CrudRow
               key={account.id}
               title={account.name}
@@ -159,7 +159,7 @@ function FinanceAccountModal({ accountState, onClose, open }) {
               />
             </CrudRow>
           ))}
-          {!accountState.accounts.length ? (
+          {!accountState.activeAccounts.length ? (
             <FormMessage tone="info">Nenhuma conta cadastrada neste espaço.</FormMessage>
           ) : null}
         </div>

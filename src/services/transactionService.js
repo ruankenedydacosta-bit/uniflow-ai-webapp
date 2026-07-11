@@ -202,6 +202,27 @@ export async function createTransaction(workspaceId, transaction = {}) {
   return createResult(data, error);
 }
 
+export function buildTransactionUpdatePayload(changes = {}) {
+  return pickDefined(changes, [
+    'account_id',
+    'destination_account_id',
+    'category_id',
+    'transaction_type',
+    'description',
+    'amount',
+    'transaction_date',
+    'competence_date',
+    'status',
+    'payment_method',
+    'notes',
+    'is_recurring',
+    'recurrence_rule',
+    'installment_number',
+    'installment_total',
+    'metadata',
+  ]);
+}
+
 export async function updateTransaction(
   workspaceId,
   transactionId,
@@ -210,7 +231,6 @@ export async function updateTransaction(
   if (!supabase) {
     return createUnavailableResult(null);
   }
-
   if (!isValidUuid(workspaceId) || !isValidUuid(transactionId)) {
     return createValidationResult('Workspace ou transacao invalida.');
   }
@@ -233,24 +253,7 @@ export async function updateTransaction(
     }
   }
 
-  const payload = pickDefined(changes, [
-    'account_id',
-    'destination_account_id',
-    'category_id',
-    'transaction_type',
-    'description',
-    'amount',
-    'transaction_date',
-    'competence_date',
-    'status',
-    'payment_method',
-    'notes',
-    'is_recurring',
-    'recurrence_rule',
-    'installment_number',
-    'installment_total',
-    'metadata',
-  ]);
+  const payload = buildTransactionUpdatePayload(changes);
 
   if (typeof payload.description === 'string') {
     payload.description = payload.description.trim();
@@ -281,7 +284,6 @@ export async function deleteTransaction(workspaceId, transactionId) {
   if (!supabase) {
     return createUnavailableResult(null);
   }
-
   if (!isValidUuid(workspaceId) || !isValidUuid(transactionId)) {
     return createValidationResult('Workspace ou transacao invalida.');
   }

@@ -11,7 +11,6 @@ import {
   cloneRecords,
   createDemoRecord,
   createDemoResult,
-  removeRecord,
   upsertRecord,
 } from './financialHookUtils.js';
 
@@ -50,7 +49,7 @@ export function useAccounts({
 
     setIsLoading(true);
     const [accountsResult, typesResult] = await Promise.all([
-      listAccounts(workspaceId),
+      listAccounts(workspaceId, { activeOnly: false }),
       listAccountTypes(),
     ]);
 
@@ -109,23 +108,29 @@ export function useAccounts({
       setIsMutating(true);
       setError(null);
       const result = !isSupabaseConfigured
-        ? createDemoResult({ id: accountId })
+        ? createDemoResult({
+            ...accounts.find((account) => account.id === accountId),
+            id: accountId,
+            is_active: false,
+            updated_at: new Date().toISOString(),
+          })
         : await archiveAccount(workspaceId, accountId);
 
       if (result.error) {
         setError(result.error);
-      } else {
-        setAccounts((current) => removeRecord(current, accountId));
+      } else if (result.data) {
+        setAccounts((current) => upsertRecord(current, result.data));
       }
 
       setIsMutating(false);
       return result;
     },
-    [workspaceId],
+    [accounts, workspaceId],
   );
 
   return {
     accounts,
+    activeAccounts: accounts.filter((account) => account.is_active !== false),
     accountTypes,
     error,
     isDemoMode: !isSupabaseConfigured,

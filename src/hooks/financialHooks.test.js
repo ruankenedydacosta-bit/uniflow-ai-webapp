@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { useAccounts } from './useAccounts.js';
 import { useCategories } from './useCategories.js';
 import { useTransactions } from './useTransactions.js';
+import { buildTransactionUpdatePayload } from '../services/transactionService.js';
 import {
   cloneRecords,
   createDemoRecord,
@@ -13,6 +14,11 @@ import {
   upsertRecord,
 } from './financialHookUtils.js';
 import { getFinanceErrorMessage } from '../pages/financeiro/financeUiUtils.js';
+import {
+  buildTransactionMutationPayload,
+  createTransactionEditForm,
+  getSelectableTransactionAccounts,
+} from '../pages/financeiro/transactionFormUtils.js';
 
 function renderHook(useHook, props) {
   let observedState;
@@ -108,4 +114,55 @@ test('Financeiro usa workspace da sessao nos tres hooks', async () => {
 
   assert.match(source, /useSession\(\)/);
   assert.equal(workspaceBindings.length, 3);
+});
+
+test('edicao preserva conta arquivada vinculada e monta payload seguro', () => {
+  const transaction = {
+    id: 'transaction-id',
+    workspace_id: 'workspace-id',
+    account_id: 'archived-account',
+    destination_account_id: null,
+    category_id: 'category-id',
+    transaction_type: 'expense',
+    description: 'Mercado original',
+    amount: '120.50',
+    transaction_date: '2026-07-10',
+    status: 'pending',
+    source_type: 'manual',
+  };
+  const form = createTransactionEditForm(transaction);
+  const selectableAccounts = getSelectableTransactionAccounts(
+    [
+      { id: 'active-account', is_active: true },
+      { id: 'archived-account', is_active: false },
+      { id: 'other-archived-account', is_active: false },
+    ],
+    transaction.id,
+    form,
+  );
+  const modalPayload = buildTransactionMutationPayload({
+    ...form,
+    description: 'Mercado atualizado',
+    amount: '145.90',
+  });
+  const servicePayload = buildTransactionUpdatePayload({
+    ...transaction,
+    ...modalPayload,
+    external_provider: 'nao-enviar',
+    created_by: 'nao-enviar',
+  });
+
+  assert.deepEqual(
+    selectableAccounts.map((account) => account.id),
+    ['active-account', 'archived-account'],
+  );
+  assert.equal(form.account_id, 'archived-account');
+  assert.equal(servicePayload.description, 'Mercado atualizado');
+  assert.equal(servicePayload.amount, '145.90');
+  assert.equal(servicePayload.status, 'pending');
+  assert.equal('id' in servicePayload, false);
+  assert.equal('workspace_id' in servicePayload, false);
+  assert.equal('source_type' in servicePayload, false);
+  assert.equal('external_provider' in servicePayload, false);
+  assert.equal('created_by' in servicePayload, false);
 });
