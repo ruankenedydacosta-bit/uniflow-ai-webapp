@@ -9,12 +9,12 @@ import {
   useState,
 } from 'react';
 import {
-  getProfile,
   getSession,
   onAuthStateChange,
   signInWithPassword as signInWithPasswordService,
   signOut as signOutService,
 } from '../services/authService';
+import { getProfile } from '../services/profileService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import {
   getCurrentWorkspace,
@@ -411,6 +411,9 @@ function SessionProvider({ children }) {
       isSupabaseConfigured,
       isDemoMode: !isSupabaseConfigured,
       isAuthenticated: Boolean(state.session?.user),
+      needsOnboarding:
+        state.profileMissing ||
+        Boolean(state.profile && !state.profile.onboarding_completed),
       signInWithPassword,
       signOut,
       refreshSession: () => synchronizeSession(state.session),

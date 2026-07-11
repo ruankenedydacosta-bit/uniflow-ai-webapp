@@ -97,10 +97,97 @@ export async function getWorkspaceSubscription(workspaceId) {
   };
 }
 
-export async function createPersonalWorkspace() {
-  return createWorkspaceSchemaPendingResult(null);
+export async function createWorkspace({
+  name,
+  workspaceType,
+  ownerUserId,
+} = {}) {
+  if (!supabase) {
+    return createWorkspaceSchemaPendingResult(null);
+  }
+
+  if (!name || !workspaceType || !ownerUserId) {
+    return {
+      data: null,
+      error: {
+        code: 'INVALID_WORKSPACE_PAYLOAD',
+        message: 'Dados insuficientes para criar o workspace.',
+      },
+      isConfigured: true,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('workspaces')
+    .insert({
+      name,
+      workspace_type: workspaceType,
+      owner_user_id: ownerUserId,
+    })
+    .select('id, name, workspace_type, owner_user_id, created_at, updated_at')
+    .single();
+
+  return {
+    data,
+    error,
+    isConfigured: true,
+  };
 }
 
-export async function createBusinessWorkspace() {
-  return createWorkspaceSchemaPendingResult(null);
+export async function deleteOwnedWorkspace(workspaceId, ownerUserId) {
+  if (!supabase) {
+    return createWorkspaceSchemaPendingResult(null);
+  }
+
+  if (!workspaceId || !ownerUserId) {
+    return {
+      data: null,
+      error: {
+        code: 'INVALID_WORKSPACE_ROLLBACK',
+        message: 'Nao foi possivel validar o workspace para desfazer a criacao.',
+      },
+      isConfigured: true,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('workspaces')
+    .delete()
+    .eq('id', workspaceId)
+    .eq('owner_user_id', ownerUserId)
+    .select('id')
+    .maybeSingle();
+
+  if (!error && !data) {
+    return {
+      data: null,
+      error: {
+        code: 'WORKSPACE_ROLLBACK_NO_ROWS',
+        message: 'O workspace criado nao estava mais disponivel para limpeza.',
+      },
+      isConfigured: true,
+    };
+  }
+
+  return {
+    data,
+    error,
+    isConfigured: true,
+  };
+}
+
+export async function createPersonalWorkspace({ name, ownerUserId } = {}) {
+  return createWorkspace({
+    name,
+    workspaceType: 'personal',
+    ownerUserId,
+  });
+}
+
+export async function createBusinessWorkspace({ name, ownerUserId } = {}) {
+  return createWorkspace({
+    name,
+    workspaceType: 'business',
+    ownerUserId,
+  });
 }

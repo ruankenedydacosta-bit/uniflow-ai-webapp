@@ -13,6 +13,7 @@ function AppContent() {
     error: sessionError,
     isLoading: isSessionLoading,
     isSupabaseConfigured,
+    needsOnboarding,
     profile,
     profileMissing,
     session,
@@ -28,8 +29,13 @@ function AppContent() {
 
   if (isPublicRoute) {
     if (isSupabaseConfigured) {
-      if (location.pathname === '/login' && session && profile && !sessionError) {
-        return <Navigate to="/dashboard" replace />;
+      if (location.pathname === '/login' && session && !sessionError) {
+        return (
+          <Navigate
+            to={needsOnboarding ? '/onboarding' : '/dashboard'}
+            replace
+          />
+        );
       }
 
       if (location.pathname === '/onboarding') {
@@ -37,7 +43,7 @@ function AppContent() {
           return <Navigate to="/login" replace />;
         }
 
-        if (profile && !sessionError) {
+        if (profile?.onboarding_completed && !sessionError) {
           return <Navigate to="/dashboard" replace />;
         }
       }
@@ -58,7 +64,7 @@ function AppContent() {
       return <Navigate to="/login" replace state={{ from: location.pathname }} />;
     }
 
-    if (profileMissing) {
+    if (profileMissing || needsOnboarding) {
       return <Navigate to="/onboarding" replace />;
     }
   }

@@ -1,9 +1,12 @@
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccess } from '../app/AccessContext';
+import { useSession } from '../app/SessionContext';
 import { PLANS, USER_MODES, WORKSPACE_TYPES } from '../app/access.js';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import { completeOnboarding } from '../services/onboardingService';
 import styles from './OnboardingPage.module.css';
 
 const onboardingOptions = [
@@ -45,10 +48,56 @@ const onboardingOptions = [
 function OnboardingPage() {
   const navigate = useNavigate();
   const { setAccess } = useAccess();
+  const {
+    isDemoMode,
+    refreshSession,
+    user,
+  } = useSession();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const submissionRef = useRef(false);
 
-  function handleSelect(option) {
-    setAccess(option.access);
-    navigate('/dashboard');
+  async function handleSelect(option) {
+    if (submissionRef.current) {
+      return;
+    }
+
+    if (isDemoMode) {
+      setAccess(option.access);
+      navigate('/dashboard');
+      return;
+    }
+
+    submissionRef.current = true;
+    setIsSubmitting(true);
+    setStatusMessage('Preparando sua experiência');
+
+    try {
+      const result = await completeOnboarding({
+        user,
+        userMode: option.access.userMode,
+        currentWorkspace: option.access.currentWorkspace,
+      });
+
+      if (result.error) {
+        setStatusMessage('Não foi possível concluir. Tente novamente');
+        return;
+      }
+
+      const refreshResult = await refreshSession();
+
+      if (refreshResult.error) {
+        setStatusMessage('Não foi possível atualizar sua sessão');
+        return;
+      }
+
+      navigate('/dashboard', { replace: true });
+    } catch {
+      setStatusMessage('Não foi possível concluir. Tente novamente');
+    } finally {
+      submissionRef.current = false;
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -56,7 +105,7 @@ function OnboardingPage() {
       <section className={styles.shell} aria-labelledby="onboarding-title">
         <div className={styles.header}>
           <Badge variant="glass" dot>
-            Onboarding mockado
+            {statusMessage || (isDemoMode ? 'Onboarding mockado' : 'Onboarding seguro')}
           </Badge>
           <span className={styles.brand}>UniFlow AI</span>
           <h1 id="onboarding-title">Como você quer usar a UniFlow AI?</h1>
@@ -74,6 +123,7 @@ function OnboardingPage() {
               interactive
               className={styles.optionCard}
               onClick={() => handleSelect(option)}
+              aria-disabled={isSubmitting}
             >
               <div className={styles.optionTop}>
                 <span className={styles.optionDot} aria-hidden="true" />
@@ -91,7 +141,11 @@ function OnboardingPage() {
         </div>
 
         <div className={styles.footerActions}>
-          <Button variant="ghost" onClick={() => navigate('/login')}>
+          <Button
+            variant="ghost"
+            disabled={isSubmitting}
+            onClick={() => navigate('/login')}
+          >
             Voltar ao login
           </Button>
         </div>

@@ -25,10 +25,13 @@ Responsavel por encapsular:
 - `signOut`;
 - `getSession`;
 - `onAuthStateChange`;
-- leitura do profile autenticado;
 - respostas controladas quando Supabase nao esta configurado.
 
 As paginas nao chamam `supabase.auth` diretamente.
+
+### `profileService.js`
+
+Responsavel pela leitura e atualizacao do profile autenticado. O Login e o SessionContext usam esse service sem criar profiles diretamente no frontend.
 
 ### `workspaceService.js`
 
@@ -88,11 +91,17 @@ Callbacks do listener sao processados depois do retorno do evento de Auth para e
 - O Login usa email e senha com `signInWithPassword`.
 - Erros sao apresentados em linguagem generica, sem expor detalhes tecnicos.
 
-### Com sessao e profile
+### Com sessao e profile concluido
 
 - Profile e workspace sao carregados.
 - O access real e derivado.
 - O usuario e redirecionado para `/dashboard`.
+
+### Com sessao e onboarding incompleto
+
+- O profile existe, mas `onboarding_completed` e falso.
+- O usuario e redirecionado para `/onboarding`.
+- O Onboarding real persiste a configuracao inicial antes do Dashboard.
 
 ### Com sessao e sem profile
 
@@ -111,8 +120,9 @@ Com Supabase configurado:
 
 - rota privada sem sessao -> `/login`;
 - sessao sem profile -> `/onboarding`;
-- sessao com profile -> rota solicitada;
-- `/login` com sessao/profile validos -> `/dashboard`;
+- sessao com profile concluido -> rota solicitada;
+- sessao com onboarding incompleto -> `/onboarding`;
+- `/login` com sessao/profile concluidos -> `/dashboard`;
 - `/onboarding` sem sessao -> `/login`;
 - `/onboarding` com profile existente -> `/dashboard`.
 

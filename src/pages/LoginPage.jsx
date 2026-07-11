@@ -41,7 +41,11 @@ function LoginPage() {
         return;
       }
 
-      navigate(result.profileMissing ? '/onboarding' : '/dashboard', {
+      const requiresOnboarding =
+        result.profileMissing ||
+        !result.data?.profile?.onboarding_completed;
+
+      navigate(requiresOnboarding ? '/onboarding' : '/dashboard', {
         replace: true,
       });
     } catch {
