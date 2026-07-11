@@ -12,6 +12,16 @@ Este documento registra a conexao do nucleo financeiro com a pagina Financeiro e
 - Nenhuma migration foi executada remotamente nesta etapa.
 - Producao nao foi acessada.
 
+## Regra de produto: automation-first
+
+> A UniFlow AI e automation-first. Lancamentos manuais existem apenas como fallback, correcao ou excecao. O fluxo principal futuro sera a sincronizacao automatica via Open Finance, com consentimento do usuario. A Uni devera categorizar, conciliar, detectar recorrencias e sugerir ou criar categorias com minima intervencao humana.
+
+O CRUD desta fase garante correcao, contingencia e desenvolvimento incremental. Ele nao define a experiencia principal futura.
+
+Open Finance conectara instituicoes financeiras reais mediante consentimento concedido e revogavel pelo usuario. Contas e transacoes serao sincronizadas automaticamente; a Uni organizara e conciliara os dados antes de orientar.
+
+Tokens e segredos ficarao somente em backend seguro. Edge Functions ou outro backend controlado serao necessarios para consentimento, callbacks e sincronizacao. n8n podera executar automacoes assincronas auxiliares, mas nao sera a camada principal de consentimento bancario nem armazenara segredos no frontend.
+
 ## Pre-requisitos para dados reais
 
 O CRUD real depende destas migrations, nesta ordem:
@@ -112,6 +122,12 @@ Campos desta fase:
 
 O frontend cria apenas `source_type = manual` por meio dos defaults e grants do banco. Campos externos, provider e payload bruto nao fazem parte do formulario.
 
+### Edicao e contas arquivadas
+
+Lancamentos historicos podem continuar vinculados a contas arquivadas. Ao editar, a conta arquivada ligada ao registro permanece disponivel apenas naquele formulario e aparece identificada como arquivada. Novos lancamentos continuam limitados a contas ativas.
+
+O payload de update inclui somente campos autorizados pelos grants. `id`, `workspace_id`, `source_type`, ownership e campos externos nao sao enviados. O retorno do Supabase substitui imediatamente o registro no estado do hook, e o reload confirma a persistencia.
+
 ## Modo demo
 
 Quando Supabase nao esta configurado:
@@ -171,6 +187,8 @@ Testes autenticados de CRUD e RLS devem ser adicionados somente depois que as mi
 - sem sincronizacao em tempo real;
 - sem alteracao dos cards de clareza e projecao;
 - sem persistencia do CRUD demo apos recarregar.
+
+Esses limites reforcam que o lancamento manual e uma capacidade de fallback, nao o destino final da experiencia financeira.
 
 ## Proxima validacao segura
 

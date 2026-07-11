@@ -19,6 +19,21 @@ O nucleo financeiro deve sustentar o GPS Financeiro: onde o usuario esta, o que 
 
 As tabelas registram fatos financeiros consistentes. A interpretacao, a projecao e a orientacao da Uni permanecem em camadas de dominio futuras. O banco nao deve empurrar a experiencia para uma planilha nem obrigar o usuario a preencher o que a Uni podera compreender.
 
+## Principio automation-first
+
+> A UniFlow AI e automation-first. Lancamentos manuais existem apenas como fallback, correcao ou excecao. O fluxo principal futuro sera a sincronizacao automatica via Open Finance, com consentimento do usuario. A Uni devera categorizar, conciliar, detectar recorrencias e sugerir ou criar categorias com minima intervencao humana.
+
+Consequencias para o dominio:
+
+- Open Finance sera uma integracao real com instituicoes financeiras, nao uma importacao manual disfarçada;
+- o usuario devera conceder, acompanhar e revogar consentimentos;
+- contas e transacoes autorizadas serao sincronizadas automaticamente;
+- a Uni transformara dados normalizados em categorias, conciliacoes, recorrencias e sinais de decisao;
+- lancamento manual nao sera tratado como experiencia principal do produto;
+- tokens, segredos, certificados e credenciais permanecerao somente em backend seguro;
+- Edge Functions ou backend seguro serao necessarios para consentimento, callbacks e sincronizacao;
+- n8n podera apoiar tarefas assincronas e operacionais, mas nao sera a camada principal de consentimento bancario ou custodia de segredos.
+
 ## Fronteira de isolamento
 
 `workspace_id` separa dados pessoais e empresariais.
@@ -202,6 +217,8 @@ Nao existem nesta etapa:
 Tokens e segredos nunca devem entrar em `accounts`, `transactions`, `metadata` ou `raw_provider_data`. Conexoes reais exigirao backend seguro ou Edge Function, criptografia adequada e ciclo de consentimento com expiracao e revogacao.
 
 Dados externos devem ser normalizados antes de alimentar o dominio financeiro. A interface nunca deve consumir `raw_provider_data` diretamente.
+
+O ciclo futuro de consentimento devera registrar finalidade, escopo, instituicao, expiracao e revogacao em uma camada propria. A sincronizacao devera ser idempotente e auditavel, sem expor tokens ao frontend, ao Obsidian ou a automacoes genericas.
 
 ## RLS e privilegios
 

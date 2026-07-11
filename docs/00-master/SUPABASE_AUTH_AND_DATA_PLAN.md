@@ -729,3 +729,21 @@ A pagina Financeiro agora consome `accountService`, `categoryService` e `transac
 O layout e os mocks de clareza financeira foram preservados. O CRUD aparece em modais base existentes e usa `SessionContext.workspace.id` como escopo real. Sem Supabase, as mesmas operacoes funcionam apenas em estado local e sao descartadas ao recarregar.
 
 Esta integracao nao altera Dashboard, nao recalcula saldo por transacao e nao implementa Open Finance. O CRUD real deve ser validado apenas depois da aplicacao das migrations 002 e 003 no `UniFlow DEV`.
+
+## 22. Direcao automation-first e Open Finance
+
+A UniFlow AI e automation-first. Lancamentos manuais existem apenas como fallback, correcao ou excecao. O fluxo principal futuro sera a sincronizacao automatica via Open Finance, com consentimento do usuario. A Uni devera categorizar, conciliar, detectar recorrencias e sugerir ou criar categorias com minima intervencao humana.
+
+Diretrizes oficiais:
+
+- Open Finance conectara instituicoes financeiras reais;
+- o usuario concedera e podera revogar consentimento;
+- contas e transacoes autorizadas serao sincronizadas automaticamente;
+- dados externos serao normalizados antes de entrar no nucleo financeiro;
+- a Uni apoiara categorizacao, conciliacao, recorrencias e evolucao do catalogo;
+- lancamento manual nao sera promovido como fluxo principal;
+- tokens, certificados e segredos existirao somente em backend seguro;
+- Edge Functions ou backend seguro cuidarao de consentimento, callbacks e sincronizacao;
+- n8n podera apoiar filas e automacoes assincronas, mas nao sera a camada principal de consentimento bancario nem de custodia de tokens.
+
+Essa direcao nao implementa Open Finance nesta fase e nao autoriza acesso a producao.
