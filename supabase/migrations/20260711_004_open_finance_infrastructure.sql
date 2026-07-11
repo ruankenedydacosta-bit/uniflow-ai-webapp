@@ -3,6 +3,15 @@ begin;
 -- Infraestrutura de dominio para Open Finance. Esta migration nao conecta
 -- provedores, nao armazena credenciais e deve ser aplicada primeiro no DEV.
 
+-- As FKs de conciliacao usam workspace primeiro para tornar o isolamento
+-- explicito. Os indices sao nao parciais e podem complementar schemas DEV
+-- criados por versoes anteriores das migrations financeiras.
+create unique index if not exists accounts_workspace_id_id_uidx
+  on public.accounts (workspace_id, id);
+
+create unique index if not exists transactions_workspace_id_id_uidx
+  on public.transactions (workspace_id, id);
+
 create table public.open_finance_consents (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references public.workspaces(id) on delete cascade,
@@ -142,8 +151,8 @@ create table public.external_accounts (
     references public.open_finance_consents(id, workspace_id, provider)
     on delete cascade,
   constraint external_accounts_normalized_workspace_fkey
-    foreign key (normalized_account_id, workspace_id)
-    references public.accounts(id, workspace_id)
+    foreign key (workspace_id, normalized_account_id)
+    references public.accounts(workspace_id, id)
     on delete set null (normalized_account_id),
   constraint external_accounts_provider_not_blank
     check (length(btrim(provider)) > 0),
@@ -199,8 +208,8 @@ create table public.external_transactions (
     references public.external_accounts(id, workspace_id, provider)
     on delete cascade,
   constraint external_transactions_normalized_workspace_fkey
-    foreign key (normalized_transaction_id, workspace_id)
-    references public.transactions(id, workspace_id)
+    foreign key (workspace_id, normalized_transaction_id)
+    references public.transactions(workspace_id, id)
     on delete set null (normalized_transaction_id),
   constraint external_transactions_provider_not_blank
     check (length(btrim(provider)) > 0),
