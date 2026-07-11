@@ -706,3 +706,18 @@ A proxima fronteira de dados reais e o nucleo financeiro. A migration versionada
 A migration foi apenas criada e ainda nao foi aplicada no `UniFlow DEV` nem em producao. Os mocks e as telas permanecem inalterados.
 
 Open Finance foi preparado somente no modelo: origem, IDs externos, status de sincronizacao e payload sanitizado opcional. Consentimentos, tokens, certificados, webhooks, providers e Edge Functions ficam para migrations e camadas seguras futuras. Nenhum segredo bancario pertence ao dominio financeiro publico.
+
+## 20. Financeiro Fase 1: catalogos e services
+
+A migration `supabase/migrations/20260711_003_financial_catalog_seeds.sql` prepara um catalogo global e somente leitura de tipos de conta, alem de um seed pequeno de categorias globais do sistema. Ela depende da migration 002 e ainda nao foi aplicada.
+
+Os services `accountService.js`, `categoryService.js` e `transactionService.js` foram preparados para consultas e operacoes isoladas por workspace. Eles nao estao conectados as telas e mantem resposta controlada sem Supabase configurado.
+
+Nesta fase:
+
+- mocks continuam ativos;
+- apenas lancamentos manuais sao aceitos pelo frontend;
+- saldo nao e recalculado no cliente;
+- Open Finance continua sem integracao;
+- 002 e 003 devem ser aplicadas e validadas primeiro no `UniFlow DEV`;
+- producao permanece sem alteracoes.

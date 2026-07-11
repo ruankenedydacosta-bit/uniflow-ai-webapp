@@ -1,10 +1,13 @@
 # Financial Core Data Model
 
-Este documento descreve o primeiro dominio financeiro real da UniFlow AI. A migration versionada e `supabase/migrations/20260711_002_financial_core.sql`.
+Este documento descreve o primeiro dominio financeiro real da UniFlow AI. A base usa duas migrations versionadas:
+
+- `supabase/migrations/20260711_002_financial_core.sql`;
+- `supabase/migrations/20260711_003_financial_catalog_seeds.sql`.
 
 ## Status
 
-- Migration criada localmente e ainda nao aplicada.
+- Migrations criadas localmente e ainda nao aplicadas.
 - Nenhuma conexao com Supabase remoto foi realizada nesta etapa.
 - Telas e mocks continuam inalterados.
 - O primeiro ambiente permitido para aplicacao futura e o `UniFlow DEV`.
@@ -45,6 +48,20 @@ Instituicao e identificadores externos sao opcionais. Uma conta manual nao preci
 
 Os valores usam `numeric(18,2)`. Valores monetarios nunca usam `float`.
 
+### Catalogo de tipos de conta
+
+`account_types` transforma os codigos aceitos pela constraint em um catalogo global legivel pela interface. O seed inicial contem:
+
+- conta corrente;
+- poupanca;
+- dinheiro;
+- cartao de credito;
+- investimentos;
+- carteira digital;
+- outra conta.
+
+O catalogo e somente leitura para o frontend autenticado. `accounts.account_type` possui FK para o codigo, enquanto o check da migration base permanece como protecao adicional.
+
 ## Categories
 
 `categories` organiza entradas, despesas e transferencias.
@@ -56,7 +73,41 @@ Existem dois escopos:
 
 Indices unicos evitam duplicidade simples de nome e tipo, ignorando diferenca entre maiusculas e minusculas. O trigger de hierarquia impede parent em outro workspace e ciclos.
 
-Esta migration nao inclui um catalogo grande. Categorias padrao devem entrar depois de uma decisao de produto pequena e revisavel.
+A migration 003 inclui um catalogo inicial pequeno, global e sistemico:
+
+- entradas: salario, receita de vendas, rendimentos e outras entradas;
+- despesas: moradia, alimentacao, transporte, saude, educacao, lazer, assinaturas, impostos, fornecedores, operacional e outras despesas;
+- transferencia: transferencia.
+
+O seed nao define cor ou icone para evitar antecipar decisoes do Design System. Novas categorias globais entram por migration; categorias do usuario continuam pertencendo ao workspace.
+
+## Services da Fase 1
+
+As telas ainda nao usam dados reais. Os services formam a fronteira para a migracao gradual dos mocks.
+
+### `accountService.js`
+
+- lista tipos de conta;
+- lista e consulta contas por workspace;
+- cria e atualiza somente campos permitidos ao frontend;
+- arquiva ou exclui conforme RLS.
+
+### `categoryService.js`
+
+- lista categorias globais;
+- combina catalogo global e categorias do workspace;
+- cria, atualiza e exclui somente categorias customizadas.
+
+### `transactionService.js`
+
+- lista transacoes com filtros e limite controlado;
+- consulta por workspace e ID;
+- cria, atualiza e exclui lancamentos manuais;
+- nunca aceita campos de provider, importacao ou payload bruto pelo frontend.
+
+Todos retornam respostas controladas sem Supabase configurado. IDs de workspace e entidades sao validados antes de compor consultas. RLS permanece como autoridade final.
+
+Criar uma transacao nao recalcula `current_balance` no cliente. Essa regra dependera de uma funcao transacional/RPC futura para evitar divergencia de saldo.
 
 ## Transactions
 
@@ -182,6 +233,7 @@ RLS e grants por coluna trabalham juntos. `service_role` nunca pertence ao front
 - policies e grants;
 - triggers;
 - ausencia de campos destinados a tokens ou segredos.
+- catalogo de tipos de conta e categorias globais iniciais.
 
 Consulta no SQL Editor como `postgres` nao valida RLS real. Depois da aplicacao no DEV sera necessario um teste com supabase-js, chave publica e usuarios autenticados nos papeis owner, admin, member e viewer.
 
@@ -199,11 +251,10 @@ Consulta no SQL Editor como `postgres` nao valida RLS real. Depois da aplicacao 
 
 ## Proxima etapa segura
 
-1. Revisar a migration e este modelo.
-2. Aplicar somente no `UniFlow DEV`.
+1. Revisar as migrations e este modelo.
+2. Aplicar 002 e depois 003 somente no `UniFlow DEV`.
 3. Executar a validacao estatica.
 4. Criar fixtures descartaveis para papeis diferentes.
 5. Validar RLS com cliente autenticado.
 6. Corrigir por nova migration, sem editar migration aplicada.
 7. Somente depois criar `financeService` e migrar um fluxo por vez.
-
