@@ -85,5 +85,17 @@
   "83": "Empresarial",
   "84": "3. Modelo inicial de autenticacao",
   "85": "4. Modelo de workspaces",
-  "86": "Uni e IA"
+  "86": "Uni e IA",
+  "87": "useAccess",
+  "88": "cx",
+  "89": "index.js",
+  "90": "routes.jsx",
+  "91": "accountService.js",
+  "92": "transactionService.js",
+  "93": "categoryService.js",
+  "94": "ReportsPage.jsx",
+  "95": "SettingsPage.jsx",
+  "96": "FinanceiroPage.jsx",
+  "97": "ObjetivosPage.jsx",
+  "98": "AgendaPage.jsx"
 }

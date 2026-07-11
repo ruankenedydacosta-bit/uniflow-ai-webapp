@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783778423.3145688,
-    "ast_hash": "882fd01abfc49d67aff4f729ef24d870",
+    "mtime": 1783783428.5432851,
+    "ast_hash": "5f7de2aeb15d9e82d2ad7a8bab53a138",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
@@ -875,8 +875,8 @@
     "semantic_hash": ""
   },
   "supabase/README.md": {
-    "mtime": 1783737000.9611988,
-    "ast_hash": "18e6ef2df34dab89aff660c18694d72e",
+    "mtime": 1783783428.4498746,
+    "ast_hash": "3ea18c8dd777ed24503675fd94cd4aa8",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
@@ -922,6 +922,41 @@
   "docs/00-master/ONBOARDING_REAL_INTEGRATION.md": {
     "mtime": 1783778423.2223675,
     "ast_hash": "06f87c90c8b7d5e555d351e61bb24f8a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260711_002_financial_core.sql": {
+    "mtime": 1783779602.3636613,
+    "ast_hash": "4de6e8c96d3bb601b1523bb3e07aa979",
+    "semantic_hash": ""
+  },
+  "supabase/tests/financial_core_validation.sql": {
+    "mtime": 1783783517.845093,
+    "ast_hash": "554d3b7ea502f3ca6985d58d368f6c7a",
+    "semantic_hash": ""
+  },
+  "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md": {
+    "mtime": 1783783428.3572707,
+    "ast_hash": "b20bb8d123644f4ce99d35d85fffded8",
+    "semantic_hash": ""
+  },
+  "src/services/accountService.js": {
+    "mtime": 1783783457.1383097,
+    "ast_hash": "f4be6f19f2910c5d2db63e8ec5381dd3",
+    "semantic_hash": ""
+  },
+  "src/services/categoryService.js": {
+    "mtime": 1783783457.228318,
+    "ast_hash": "768686ade32e8f79fd529f3f3dc5b05e",
+    "semantic_hash": ""
+  },
+  "src/services/transactionService.js": {
+    "mtime": 1783783457.3195243,
+    "ast_hash": "c6f3b410a8c7e124e393ce03c36d2110",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260711_003_financial_catalog_seeds.sql": {
+    "mtime": 1783783517.7533975,
+    "ast_hash": "a20c5817bad892b9474567951649b6c9",
     "semantic_hash": ""
   }
 }

@@ -2210,7 +2210,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_accesscontext",
-      "community": 0,
+      "community": 87,
       "norm_label": "accesscontext.jsx"
     },
     {
@@ -2220,7 +2220,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_accesscontext_accesscontext",
-      "community": 0,
+      "community": 87,
       "norm_label": "accesscontext"
     },
     {
@@ -2240,7 +2240,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_app_accesscontext_useaccess",
-      "community": 0,
+      "community": 87,
       "norm_label": "useaccess()"
     },
     {
@@ -2370,7 +2370,7 @@
       "source_location": "L431",
       "_origin": "ast",
       "id": "src_app_sessioncontext_usesession",
-      "community": 0,
+      "community": 90,
       "norm_label": "usesession()"
     },
     {
@@ -2380,7 +2380,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_access",
-      "community": 0,
+      "community": 87,
       "norm_label": "access.js"
     },
     {
@@ -2390,7 +2390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_access_user_modes",
-      "community": 0,
+      "community": 87,
       "norm_label": "user_modes"
     },
     {
@@ -2400,7 +2400,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_access_plans",
-      "community": 0,
+      "community": 87,
       "norm_label": "plans"
     },
     {
@@ -2410,7 +2410,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_app_access_workspace_types",
-      "community": 0,
+      "community": 87,
       "norm_label": "workspace_types"
     },
     {
@@ -2420,7 +2420,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_app_access_default_demo_access",
-      "community": 0,
+      "community": 87,
       "norm_label": "default_demo_access"
     },
     {
@@ -2430,7 +2430,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_app_access_isbusinessmode",
-      "community": 0,
+      "community": 87,
       "norm_label": "isbusinessmode()"
     },
     {
@@ -2440,7 +2440,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_app_access_ispersonalmode",
-      "community": 0,
+      "community": 87,
       "norm_label": "ispersonalmode()"
     },
     {
@@ -2450,7 +2450,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_app_access_canusebusinessfeatures",
-      "community": 0,
+      "community": 87,
       "norm_label": "canusebusinessfeatures()"
     },
     {
@@ -2510,7 +2510,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_navigation",
-      "community": 68,
+      "community": 87,
       "norm_label": "navigation.js"
     },
     {
@@ -2520,7 +2520,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_app_navigation_all_modes",
-      "community": 68,
+      "community": 87,
       "norm_label": "all_modes"
     },
     {
@@ -2530,7 +2530,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_navigation_all_plans",
-      "community": 68,
+      "community": 87,
       "norm_label": "all_plans"
     },
     {
@@ -2540,7 +2540,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_app_navigation_all_workspaces",
-      "community": 68,
+      "community": 87,
       "norm_label": "all_workspaces"
     },
     {
@@ -2550,7 +2550,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_navigation_business_modes",
-      "community": 68,
+      "community": 87,
       "norm_label": "business_modes"
     },
     {
@@ -2560,7 +2560,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_app_navigation_business_plans",
-      "community": 68,
+      "community": 87,
       "norm_label": "business_plans"
     },
     {
@@ -2570,7 +2570,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_app_navigation_business_workspaces",
-      "community": 68,
+      "community": 87,
       "norm_label": "business_workspaces"
     },
     {
@@ -2580,7 +2580,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_app_navigation_navigationitems",
-      "community": 68,
+      "community": 87,
       "norm_label": "navigationitems"
     },
     {
@@ -2590,7 +2590,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_app_navigation_filternavigationitems",
-      "community": 68,
+      "community": 87,
       "norm_label": "filternavigationitems()"
     },
     {
@@ -2600,7 +2600,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_routes",
-      "community": 0,
+      "community": 90,
       "norm_label": "routes.jsx"
     },
     {
@@ -2780,7 +2780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_sidebar",
-      "community": 68,
+      "community": 87,
       "norm_label": "sidebar.jsx"
     },
     {
@@ -2790,7 +2790,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_sidebar_sidebar",
-      "community": 68,
+      "community": 87,
       "norm_label": "sidebar()"
     },
     {
@@ -2840,7 +2840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 0,
+      "community": 88,
       "norm_label": "avatar.jsx"
     },
     {
@@ -2850,7 +2850,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 0,
+      "community": 88,
       "norm_label": "getinitials()"
     },
     {
@@ -2880,7 +2880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge",
-      "community": 0,
+      "community": 88,
       "norm_label": "badge.jsx"
     },
     {
@@ -2910,7 +2910,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_button_button",
-      "community": 0,
+      "community": 88,
       "norm_label": "button.jsx"
     },
     {
@@ -2940,7 +2940,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_card_card",
-      "community": 0,
+      "community": 88,
       "norm_label": "card.jsx"
     },
     {
@@ -2960,7 +2960,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_card_index",
-      "community": 0,
+      "community": 89,
       "norm_label": "index.js"
     },
     {
@@ -2970,7 +2970,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 39,
+      "community": 90,
       "norm_label": "input.jsx"
     },
     {
@@ -2980,7 +2980,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_input_input_input",
-      "community": 39,
+      "community": 90,
       "norm_label": "input"
     },
     {
@@ -2990,7 +2990,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_index",
-      "community": 39,
+      "community": 90,
       "norm_label": "index.js"
     },
     {
@@ -3030,7 +3030,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal",
-      "community": 0,
+      "community": 88,
       "norm_label": "modal.jsx"
     },
     {
@@ -3040,7 +3040,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal_modal",
-      "community": 0,
+      "community": 88,
       "norm_label": "modal()"
     },
     {
@@ -3050,7 +3050,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_index",
-      "community": 0,
+      "community": 88,
       "norm_label": "index.js"
     },
     {
@@ -3060,7 +3060,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltip",
-      "community": 0,
+      "community": 88,
       "norm_label": "tooltip.jsx"
     },
     {
@@ -3070,7 +3070,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_tooltip_tooltip",
-      "community": 0,
+      "community": 88,
       "norm_label": "tooltip()"
     },
     {
@@ -3080,7 +3080,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_tooltip_index",
-      "community": 0,
+      "community": 88,
       "norm_label": "index.js"
     },
     {
@@ -3090,7 +3090,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage",
-      "community": 0,
+      "community": 90,
       "norm_label": "dashboardpage.jsx"
     },
     {
@@ -3100,7 +3100,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_getdashboardcontext",
-      "community": 0,
+      "community": 90,
       "norm_label": "getdashboardcontext()"
     },
     {
@@ -3110,7 +3110,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_dashboardpage",
-      "community": 0,
+      "community": 90,
       "norm_label": "dashboardpage()"
     },
     {
@@ -3140,7 +3140,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_financialsummarycard",
-      "community": 0,
+      "community": 89,
       "norm_label": "financialsummarycard.jsx"
     },
     {
@@ -3150,7 +3150,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_financialsummarycard_financialsummarycard",
-      "community": 0,
+      "community": 89,
       "norm_label": "financialsummarycard()"
     },
     {
@@ -3160,7 +3160,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_features_dashboard_components_financialsummarycard_metricrow",
-      "community": 0,
+      "community": 89,
       "norm_label": "metricrow()"
     },
     {
@@ -3170,7 +3170,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_goalssummarycard",
-      "community": 0,
+      "community": 89,
       "norm_label": "goalssummarycard.jsx"
     },
     {
@@ -3180,7 +3180,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_goalssummarycard_goalssummarycard",
-      "community": 0,
+      "community": 89,
       "norm_label": "goalssummarycard()"
     },
     {
@@ -3190,7 +3190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_recentactivitylist",
-      "community": 0,
+      "community": 89,
       "norm_label": "recentactivitylist.jsx"
     },
     {
@@ -3200,7 +3200,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_recentactivitylist_recentactivitylist",
-      "community": 0,
+      "community": 89,
       "norm_label": "recentactivitylist()"
     },
     {
@@ -3230,7 +3230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock",
-      "community": 0,
+      "community": 90,
       "norm_label": "dashboard.mock.js"
     },
     {
@@ -3240,7 +3240,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock_dashboardmock",
-      "community": 0,
+      "community": 90,
       "norm_label": "dashboardmock"
     },
     {
@@ -3250,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_index",
-      "community": 0,
+      "community": 90,
       "norm_label": "index.js"
     },
     {
@@ -3280,7 +3280,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agendapage",
-      "community": 0,
+      "community": 98,
       "norm_label": "agendapage.jsx"
     },
     {
@@ -3290,7 +3290,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_agendapage_getagendacontext",
-      "community": 0,
+      "community": 98,
       "norm_label": "getagendacontext()"
     },
     {
@@ -3300,7 +3300,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_agendapage_agendapage",
-      "community": 0,
+      "community": 98,
       "norm_label": "agendapage()"
     },
     {
@@ -3310,7 +3310,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crmpage",
-      "community": 0,
+      "community": 87,
       "norm_label": "crmpage.jsx"
     },
     {
@@ -3320,7 +3320,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_crmpage_crmpage",
-      "community": 0,
+      "community": 87,
       "norm_label": "crmpage()"
     },
     {
@@ -3330,7 +3330,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientespage",
-      "community": 0,
+      "community": 89,
       "norm_label": "clientespage.jsx"
     },
     {
@@ -3340,7 +3340,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_clientespage_clientespage",
-      "community": 0,
+      "community": 89,
       "norm_label": "clientespage()"
     },
     {
@@ -3350,7 +3350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financepage",
-      "community": 0,
+      "community": 96,
       "norm_label": "financepage.jsx"
     },
     {
@@ -3360,7 +3360,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiropage",
-      "community": 0,
+      "community": 96,
       "norm_label": "financeiropage.jsx"
     },
     {
@@ -3370,7 +3370,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_financeiropage_getfinancialcontext",
-      "community": 0,
+      "community": 96,
       "norm_label": "getfinancialcontext()"
     },
     {
@@ -3380,7 +3380,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_pages_financeiropage_financeiropage",
-      "community": 0,
+      "community": 96,
       "norm_label": "financeiropage()"
     },
     {
@@ -3390,7 +3390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_loginpage",
-      "community": 0,
+      "community": 90,
       "norm_label": "loginpage.jsx"
     },
     {
@@ -3400,7 +3400,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_loginpage_loginpage",
-      "community": 0,
+      "community": 90,
       "norm_label": "loginpage()"
     },
     {
@@ -3410,7 +3410,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivospage",
-      "community": 0,
+      "community": 97,
       "norm_label": "objetivospage.jsx"
     },
     {
@@ -3420,7 +3420,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_objetivospage_getobjectivescontext",
-      "community": 0,
+      "community": 97,
       "norm_label": "getobjectivescontext()"
     },
     {
@@ -3430,7 +3430,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_objetivospage_getprogress",
-      "community": 0,
+      "community": 97,
       "norm_label": "getprogress()"
     },
     {
@@ -3440,7 +3440,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_pages_objetivospage_objetivospage",
-      "community": 0,
+      "community": 97,
       "norm_label": "objetivospage()"
     },
     {
@@ -3450,7 +3450,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_onboardingpage",
-      "community": 0,
+      "community": 87,
       "norm_label": "onboardingpage.jsx"
     },
     {
@@ -3460,7 +3460,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingoptions",
-      "community": 0,
+      "community": 87,
       "norm_label": "onboardingoptions"
     },
     {
@@ -3470,7 +3470,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingpage",
-      "community": 0,
+      "community": 90,
       "norm_label": "onboardingpage()"
     },
     {
@@ -3500,7 +3500,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projectspage",
-      "community": 0,
+      "community": 88,
       "norm_label": "projectspage.jsx"
     },
     {
@@ -3510,7 +3510,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_projectspage_projectspage",
-      "community": 0,
+      "community": 88,
       "norm_label": "projectspage()"
     },
     {
@@ -3520,7 +3520,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_reportspage",
-      "community": 0,
+      "community": 94,
       "norm_label": "reportspage.jsx"
     },
     {
@@ -3530,7 +3530,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_pages_reportspage_getreportscontext",
-      "community": 0,
+      "community": 94,
       "norm_label": "getreportscontext()"
     },
     {
@@ -3540,7 +3540,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_pages_reportspage_buildchartpoints",
-      "community": 0,
+      "community": 94,
       "norm_label": "buildchartpoints()"
     },
     {
@@ -3550,7 +3550,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_pages_reportspage_getlinepath",
-      "community": 0,
+      "community": 94,
       "norm_label": "getlinepath()"
     },
     {
@@ -3560,7 +3560,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_pages_reportspage_evolutionchart",
-      "community": 0,
+      "community": 94,
       "norm_label": "evolutionchart()"
     },
     {
@@ -3570,7 +3570,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "src_pages_reportspage_reportspage",
-      "community": 0,
+      "community": 94,
       "norm_label": "reportspage()"
     },
     {
@@ -3580,7 +3580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 0,
+      "community": 95,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -3590,7 +3590,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 0,
+      "community": 95,
       "norm_label": "user_mode_labels"
     },
     {
@@ -3600,7 +3600,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 0,
+      "community": 95,
       "norm_label": "plan_labels"
     },
     {
@@ -3610,7 +3610,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 0,
+      "community": 95,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -3620,7 +3620,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 0,
+      "community": 95,
       "norm_label": "settingspage()"
     },
     {
@@ -3650,7 +3650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock",
-      "community": 0,
+      "community": 98,
       "norm_label": "agenda.mock.js"
     },
     {
@@ -3660,7 +3660,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock_agendamock",
-      "community": 0,
+      "community": 98,
       "norm_label": "agendamock"
     },
     {
@@ -3670,7 +3670,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock",
-      "community": 0,
+      "community": 89,
       "norm_label": "clients.mock.js"
     },
     {
@@ -3680,7 +3680,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock_clientsmock",
-      "community": 0,
+      "community": 89,
       "norm_label": "clientsmock"
     },
     {
@@ -3690,7 +3690,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 0,
+      "community": 95,
       "norm_label": "settings.mock.js"
     },
     {
@@ -3700,7 +3700,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 0,
+      "community": 95,
       "norm_label": "settingsmock"
     },
     {
@@ -3710,7 +3710,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock",
-      "community": 0,
+      "community": 87,
       "norm_label": "crm.mock.js"
     },
     {
@@ -3720,7 +3720,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock_crmmock",
-      "community": 0,
+      "community": 87,
       "norm_label": "crmmock"
     },
     {
@@ -3830,7 +3830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiro_financial_mock",
-      "community": 0,
+      "community": 96,
       "norm_label": "financial.mock.js"
     },
     {
@@ -3840,7 +3840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiro_financial_mock_financialmock",
-      "community": 0,
+      "community": 96,
       "norm_label": "financialmock"
     },
     {
@@ -3850,7 +3850,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivos_objectives_mock",
-      "community": 0,
+      "community": 97,
       "norm_label": "objectives.mock.js"
     },
     {
@@ -3860,7 +3860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivos_objectives_mock_objectivesmock",
-      "community": 0,
+      "community": 97,
       "norm_label": "objectivesmock"
     },
     {
@@ -3870,7 +3870,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock",
-      "community": 0,
+      "community": 88,
       "norm_label": "projects.mock.js"
     },
     {
@@ -3880,7 +3880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock_projectsmock",
-      "community": 0,
+      "community": 88,
       "norm_label": "projectsmock"
     },
     {
@@ -3890,7 +3890,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_relatorios_reports_mock",
-      "community": 0,
+      "community": 94,
       "norm_label": "reports.mock.js"
     },
     {
@@ -3900,7 +3900,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_relatorios_reports_mock_reportsmock",
-      "community": 0,
+      "community": 94,
       "norm_label": "reportsmock"
     },
     {
@@ -3950,7 +3950,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel",
-      "community": 39,
+      "community": 0,
       "norm_label": "unichatpanel.jsx"
     },
     {
@@ -3960,7 +3960,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel_unichatpanel",
-      "community": 39,
+      "community": 0,
       "norm_label": "unichatpanel()"
     },
     {
@@ -4050,7 +4050,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble",
-      "community": 39,
+      "community": 0,
       "norm_label": "unimessagebubble.jsx"
     },
     {
@@ -4060,7 +4060,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble_unimessagebubble",
-      "community": 39,
+      "community": 0,
       "norm_label": "unimessagebubble()"
     },
     {
@@ -4404,6 +4404,146 @@
       "norm_label": "quicksuggestions"
     },
     {
+      "label": "accountService.js",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_services_accountservice",
+      "community": 91,
+      "norm_label": "accountservice.js"
+    },
+    {
+      "label": "createResult()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "src_services_accountservice_createresult",
+      "community": 91,
+      "norm_label": "createresult()"
+    },
+    {
+      "label": "createUnavailableResult()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_services_accountservice_createunavailableresult",
+      "community": 91,
+      "norm_label": "createunavailableresult()"
+    },
+    {
+      "label": "createValidationResult()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "src_services_accountservice_createvalidationresult",
+      "community": 91,
+      "norm_label": "createvalidationresult()"
+    },
+    {
+      "label": "isValidUuid()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "src_services_accountservice_isvaliduuid",
+      "community": 91,
+      "norm_label": "isvaliduuid()"
+    },
+    {
+      "label": "pickDefined()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "src_services_accountservice_pickdefined",
+      "community": 91,
+      "norm_label": "pickdefined()"
+    },
+    {
+      "label": "normalizeSingleResult()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L44",
+      "_origin": "ast",
+      "id": "src_services_accountservice_normalizesingleresult",
+      "community": 91,
+      "norm_label": "normalizesingleresult()"
+    },
+    {
+      "label": "listAccountTypes()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L55",
+      "_origin": "ast",
+      "id": "src_services_accountservice_listaccounttypes",
+      "community": 91,
+      "norm_label": "listaccounttypes()"
+    },
+    {
+      "label": "listAccounts()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L69",
+      "_origin": "ast",
+      "id": "src_services_accountservice_listaccounts",
+      "community": 91,
+      "norm_label": "listaccounts()"
+    },
+    {
+      "label": "getAccount()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "src_services_accountservice_getaccount",
+      "community": 91,
+      "norm_label": "getaccount()"
+    },
+    {
+      "label": "createAccount()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L111",
+      "_origin": "ast",
+      "id": "src_services_accountservice_createaccount",
+      "community": 91,
+      "norm_label": "createaccount()"
+    },
+    {
+      "label": "updateAccount()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L156",
+      "_origin": "ast",
+      "id": "src_services_accountservice_updateaccount",
+      "community": 91,
+      "norm_label": "updateaccount()"
+    },
+    {
+      "label": "archiveAccount()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L200",
+      "_origin": "ast",
+      "id": "src_services_accountservice_archiveaccount",
+      "community": 91,
+      "norm_label": "archiveaccount()"
+    },
+    {
+      "label": "deleteAccount()",
+      "file_type": "code",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L204",
+      "_origin": "ast",
+      "id": "src_services_accountservice_deleteaccount",
+      "community": 91,
+      "norm_label": "deleteaccount()"
+    },
+    {
       "label": "auth.service.js",
       "file_type": "code",
       "source_file": "src/services/auth.service.js",
@@ -4492,6 +4632,126 @@
       "id": "src_services_authservice_signout",
       "community": 73,
       "norm_label": "signout()"
+    },
+    {
+      "label": "categoryService.js",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_services_categoryservice",
+      "community": 93,
+      "norm_label": "categoryservice.js"
+    },
+    {
+      "label": "createResult()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_createresult",
+      "community": 93,
+      "norm_label": "createresult()"
+    },
+    {
+      "label": "createUnavailableResult()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_createunavailableresult",
+      "community": 93,
+      "norm_label": "createunavailableresult()"
+    },
+    {
+      "label": "createValidationResult()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_createvalidationresult",
+      "community": 93,
+      "norm_label": "createvalidationresult()"
+    },
+    {
+      "label": "isValidUuid()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_isvaliduuid",
+      "community": 93,
+      "norm_label": "isvaliduuid()"
+    },
+    {
+      "label": "pickDefined()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_pickdefined",
+      "community": 93,
+      "norm_label": "pickdefined()"
+    },
+    {
+      "label": "normalizeSingleResult()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L42",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_normalizesingleresult",
+      "community": 93,
+      "norm_label": "normalizesingleresult()"
+    },
+    {
+      "label": "listGlobalCategories()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_listglobalcategories",
+      "community": 93,
+      "norm_label": "listglobalcategories()"
+    },
+    {
+      "label": "listCategories()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L78",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_listcategories",
+      "community": 93,
+      "norm_label": "listcategories()"
+    },
+    {
+      "label": "createCategory()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L109",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_createcategory",
+      "community": 93,
+      "norm_label": "createcategory()"
+    },
+    {
+      "label": "updateCategory()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L156",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_updatecategory",
+      "community": 93,
+      "norm_label": "updatecategory()"
+    },
+    {
+      "label": "deleteCategory()",
+      "file_type": "code",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L210",
+      "_origin": "ast",
+      "id": "src_services_categoryservice_deletecategory",
+      "community": 93,
+      "norm_label": "deletecategory()"
     },
     {
       "label": "client.js",
@@ -4734,6 +4994,136 @@
       "norm_label": "getsupabaseconfigstatus()"
     },
     {
+      "label": "transactionService.js",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_services_transactionservice",
+      "community": 92,
+      "norm_label": "transactionservice.js"
+    },
+    {
+      "label": "createResult()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_createresult",
+      "community": 92,
+      "norm_label": "createresult()"
+    },
+    {
+      "label": "createUnavailableResult()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_createunavailableresult",
+      "community": 92,
+      "norm_label": "createunavailableresult()"
+    },
+    {
+      "label": "createValidationResult()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_createvalidationresult",
+      "community": 92,
+      "norm_label": "createvalidationresult()"
+    },
+    {
+      "label": "isValidUuid()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_isvaliduuid",
+      "community": 92,
+      "norm_label": "isvaliduuid()"
+    },
+    {
+      "label": "pickDefined()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_pickdefined",
+      "community": 92,
+      "norm_label": "pickdefined()"
+    },
+    {
+      "label": "normalizeSingleResult()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L42",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_normalizesingleresult",
+      "community": 92,
+      "norm_label": "normalizesingleresult()"
+    },
+    {
+      "label": "hasRequiredTransactionFields()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_hasrequiredtransactionfields",
+      "community": 92,
+      "norm_label": "hasrequiredtransactionfields()"
+    },
+    {
+      "label": "listTransactions()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L68",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_listtransactions",
+      "community": 92,
+      "norm_label": "listtransactions()"
+    },
+    {
+      "label": "getTransaction()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L127",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_gettransaction",
+      "community": 92,
+      "norm_label": "gettransaction()"
+    },
+    {
+      "label": "createTransaction()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L145",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_createtransaction",
+      "community": 92,
+      "norm_label": "createtransaction()"
+    },
+    {
+      "label": "updateTransaction()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L205",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_updatetransaction",
+      "community": 92,
+      "norm_label": "updatetransaction()"
+    },
+    {
+      "label": "deleteTransaction()",
+      "file_type": "code",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L280",
+      "_origin": "ast",
+      "id": "src_services_transactionservice_deletetransaction",
+      "community": 92,
+      "norm_label": "deletetransaction()"
+    },
+    {
       "label": "workspaceService.js",
       "file_type": "code",
       "source_file": "src/services/workspaceService.js",
@@ -4840,7 +5230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_cx",
-      "community": 0,
+      "community": 88,
       "norm_label": "cx.js"
     },
     {
@@ -4850,7 +5240,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_cx_cx",
-      "community": 0,
+      "community": 88,
       "norm_label": "cx()"
     },
     {
@@ -4860,7 +5250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_formatters",
-      "community": 0,
+      "community": 89,
       "norm_label": "formatters.js"
     },
     {
@@ -4870,7 +5260,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_formatters_formatcurrency",
-      "community": 0,
+      "community": 89,
       "norm_label": "formatcurrency()"
     },
     {
@@ -4880,7 +5270,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_utils_formatters_formatdate",
-      "community": 0,
+      "community": 89,
       "norm_label": "formatdate()"
     },
     {
@@ -5477,7 +5867,7 @@
       "label": "Status",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L5",
+      "source_location": "L8",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_status",
       "community": 81,
@@ -5487,7 +5877,7 @@
       "label": "Objetivo de produto",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L13",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_objetivo_de_produto",
       "community": 81,
@@ -5497,7 +5887,7 @@
       "label": "Fronteira de isolamento",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L19",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_fronteira_de_isolamento",
       "community": 81,
@@ -5507,27 +5897,77 @@
       "label": "Accounts",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L31",
+      "source_location": "L34",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_accounts",
       "community": 81,
       "norm_label": "accounts"
     },
     {
+      "label": "Catalogo de tipos de conta",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_core_data_model_catalogo_de_tipos_de_conta",
+      "community": 81,
+      "norm_label": "catalogo de tipos de conta"
+    },
+    {
       "label": "Categories",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L48",
+      "source_location": "L65",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_categories",
       "community": 81,
       "norm_label": "categories"
     },
     {
+      "label": "Services da Fase 1",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L84",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "community": 81,
+      "norm_label": "services da fase 1"
+    },
+    {
+      "label": "`accountService.js`",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L88",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_core_data_model_accountservice_js",
+      "community": 81,
+      "norm_label": "`accountservice.js`"
+    },
+    {
+      "label": "`categoryService.js`",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L95",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_core_data_model_categoryservice_js",
+      "community": 81,
+      "norm_label": "`categoryservice.js`"
+    },
+    {
+      "label": "`transactionService.js`",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L101",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_core_data_model_transactionservice_js",
+      "community": 81,
+      "norm_label": "`transactionservice.js`"
+    },
+    {
       "label": "Transactions",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L61",
+      "source_location": "L112",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_transactions",
       "community": 81,
@@ -5537,7 +5977,7 @@
       "label": "Transferencias",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L74",
+      "source_location": "L125",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_transferencias",
       "community": 81,
@@ -5547,7 +5987,7 @@
       "label": "Recorrencia e parcelas",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L87",
+      "source_location": "L138",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_recorrencia_e_parcelas",
       "community": 81,
@@ -5557,7 +5997,7 @@
       "label": "Dados manuais e externos",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L95",
+      "source_location": "L146",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_dados_manuais_e_externos",
       "community": 81,
@@ -5567,7 +6007,7 @@
       "label": "Deduplicacao externa",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L117",
+      "source_location": "L168",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_deduplicacao_externa",
       "community": 81,
@@ -5577,7 +6017,7 @@
       "label": "Open Finance futuro",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L128",
+      "source_location": "L179",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_open_finance_futuro",
       "community": 81,
@@ -5587,7 +6027,7 @@
       "label": "RLS e privilegios",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L147",
+      "source_location": "L198",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_rls_e_privilegios",
       "community": 81,
@@ -5597,9 +6037,9 @@
       "label": "Accounts",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L149",
+      "source_location": "L200",
       "_origin": "ast",
-      "id": "docs_00_master_financial_core_data_model_accounts_149",
+      "id": "docs_00_master_financial_core_data_model_accounts_200",
       "community": 81,
       "norm_label": "accounts"
     },
@@ -5607,9 +6047,9 @@
       "label": "Categories",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L157",
+      "source_location": "L208",
       "_origin": "ast",
-      "id": "docs_00_master_financial_core_data_model_categories_157",
+      "id": "docs_00_master_financial_core_data_model_categories_208",
       "community": 81,
       "norm_label": "categories"
     },
@@ -5617,9 +6057,9 @@
       "label": "Transactions",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L165",
+      "source_location": "L216",
       "_origin": "ast",
-      "id": "docs_00_master_financial_core_data_model_transactions_165",
+      "id": "docs_00_master_financial_core_data_model_transactions_216",
       "community": 81,
       "norm_label": "transactions"
     },
@@ -5627,7 +6067,7 @@
       "label": "Validacao",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L175",
+      "source_location": "L226",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_validacao",
       "community": 81,
@@ -5637,7 +6077,7 @@
       "label": "Decisoes pendentes",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L188",
+      "source_location": "L240",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_decisoes_pendentes",
       "community": 81,
@@ -5647,7 +6087,7 @@
       "label": "Proxima etapa segura",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L200",
+      "source_location": "L252",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_proxima_etapa_segura",
       "community": 81,
@@ -7354,6 +7794,16 @@
       "norm_label": "19. nucleo financeiro real preparado"
     },
     {
+      "label": "20. Financeiro Fase 1: catalogos e services",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L710",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_20_financeiro_fase_1_catalogos_e_services",
+      "community": 72,
+      "norm_label": "20. financeiro fase 1: catalogos e services"
+    },
+    {
       "label": "SUPABASE_ENV_SETUP.md",
       "file_type": "document",
       "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
@@ -8857,7 +9307,7 @@
       "label": "Validacoes concluidas no DEV",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L38",
+      "source_location": "L40",
       "_origin": "ast",
       "id": "supabase_readme_validacoes_concluidas_no_dev",
       "community": 4,
@@ -8867,7 +9317,7 @@
       "label": "Proximo passo",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "_origin": "ast",
       "id": "supabase_readme_proximo_passo",
       "community": 4,
@@ -8877,7 +9327,7 @@
       "label": "Ordem inicial",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L73",
+      "source_location": "L75",
       "_origin": "ast",
       "id": "supabase_readme_ordem_inicial",
       "community": 4,
@@ -8887,7 +9337,7 @@
       "label": "Seguranca",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L83",
+      "source_location": "L85",
       "_origin": "ast",
       "id": "supabase_readme_seguranca",
       "community": 4,
@@ -8897,7 +9347,7 @@
       "label": "Novas migrations",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L98",
+      "source_location": "L100",
       "_origin": "ast",
       "id": "supabase_readme_novas_migrations",
       "community": 4,
@@ -8907,7 +9357,7 @@
       "label": "Decisoes ainda pendentes",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L114",
+      "source_location": "L116",
       "_origin": "ast",
       "id": "supabase_readme_decisoes_ainda_pendentes",
       "community": 4,
@@ -18545,6 +18995,477 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L200",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_archiveaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L111",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_createaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L204",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_deleteaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_getaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L69",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_listaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_listaccounttypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L156",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_accountservice_updateaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_supabaseclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_supabaseclient_issupabaseconfigured",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_accountservice",
+      "target": "src_services_supabaseclient_supabase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L153",
+      "weight": 1.0,
+      "source": "src_services_accountservice_createaccount",
+      "target": "src_services_accountservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "src_services_accountservice_createunavailableresult",
+      "target": "src_services_accountservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_services_accountservice_createvalidationresult",
+      "target": "src_services_accountservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L89",
+      "weight": 1.0,
+      "source": "src_services_accountservice_listaccounts",
+      "target": "src_services_accountservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "src_services_accountservice_listaccounttypes",
+      "target": "src_services_accountservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "src_services_accountservice_normalizesingleresult",
+      "target": "src_services_accountservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "src_services_accountservice_createaccount",
+      "target": "src_services_accountservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L206",
+      "weight": 1.0,
+      "source": "src_services_accountservice_deleteaccount",
+      "target": "src_services_accountservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "src_services_accountservice_getaccount",
+      "target": "src_services_accountservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L71",
+      "weight": 1.0,
+      "source": "src_services_accountservice_listaccounts",
+      "target": "src_services_accountservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L57",
+      "weight": 1.0,
+      "source": "src_services_accountservice_listaccounttypes",
+      "target": "src_services_accountservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L158",
+      "weight": 1.0,
+      "source": "src_services_accountservice_updateaccount",
+      "target": "src_services_accountservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L117",
+      "weight": 1.0,
+      "source": "src_services_accountservice_createaccount",
+      "target": "src_services_accountservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L210",
+      "weight": 1.0,
+      "source": "src_services_accountservice_deleteaccount",
+      "target": "src_services_accountservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L98",
+      "weight": 1.0,
+      "source": "src_services_accountservice_getaccount",
+      "target": "src_services_accountservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "src_services_accountservice_listaccounts",
+      "target": "src_services_accountservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L162",
+      "weight": 1.0,
+      "source": "src_services_accountservice_updateaccount",
+      "target": "src_services_accountservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L116",
+      "weight": 1.0,
+      "source": "src_services_accountservice_createaccount",
+      "target": "src_services_accountservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L209",
+      "weight": 1.0,
+      "source": "src_services_accountservice_deleteaccount",
+      "target": "src_services_accountservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L97",
+      "weight": 1.0,
+      "source": "src_services_accountservice_getaccount",
+      "target": "src_services_accountservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "src_services_accountservice_listaccounts",
+      "target": "src_services_accountservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L161",
+      "weight": 1.0,
+      "source": "src_services_accountservice_updateaccount",
+      "target": "src_services_accountservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L131",
+      "weight": 1.0,
+      "source": "src_services_accountservice_createaccount",
+      "target": "src_services_accountservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L165",
+      "weight": 1.0,
+      "source": "src_services_accountservice_updateaccount",
+      "target": "src_services_accountservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L221",
+      "weight": 1.0,
+      "source": "src_services_accountservice_deleteaccount",
+      "target": "src_services_accountservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L108",
+      "weight": 1.0,
+      "source": "src_services_accountservice_getaccount",
+      "target": "src_services_accountservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L197",
+      "weight": 1.0,
+      "source": "src_services_accountservice_updateaccount",
+      "target": "src_services_accountservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/accountService.js",
+      "source_location": "L201",
+      "weight": 1.0,
+      "source": "src_services_accountservice_archiveaccount",
+      "target": "src_services_accountservice_updateaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "src/services/authService.js",
       "source_location": "L3",
       "weight": 1.0,
@@ -18688,6 +19609,402 @@
       "weight": 1.0,
       "source": "src_services_authservice_getcurrentuser",
       "target": "src_services_supabaseclient_getsupabaseconfigstatus"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L109",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_createcategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L210",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_deletecategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L78",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_listcategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_listglobalcategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L156",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_categoryservice_updatecategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_supabaseclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_supabaseclient_issupabaseconfigured",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_categoryservice",
+      "target": "src_services_supabaseclient_supabase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L153",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_createcategory",
+      "target": "src_services_categoryservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_createunavailableresult",
+      "target": "src_services_categoryservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_createvalidationresult",
+      "target": "src_services_categoryservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L106",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_listcategories",
+      "target": "src_services_categoryservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_listglobalcategories",
+      "target": "src_services_categoryservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_normalizesingleresult",
+      "target": "src_services_categoryservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L111",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_createcategory",
+      "target": "src_services_categoryservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L212",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_deletecategory",
+      "target": "src_services_categoryservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_listcategories",
+      "target": "src_services_categoryservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_listglobalcategories",
+      "target": "src_services_categoryservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L162",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_updatecategory",
+      "target": "src_services_categoryservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L115",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_createcategory",
+      "target": "src_services_categoryservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L216",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_deletecategory",
+      "target": "src_services_categoryservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_listcategories",
+      "target": "src_services_categoryservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L166",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_updatecategory",
+      "target": "src_services_categoryservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L114",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_createcategory",
+      "target": "src_services_categoryservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L215",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_deletecategory",
+      "target": "src_services_categoryservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L86",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_listcategories",
+      "target": "src_services_categoryservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L165",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_updatecategory",
+      "target": "src_services_categoryservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L136",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_createcategory",
+      "target": "src_services_categoryservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L176",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_updatecategory",
+      "target": "src_services_categoryservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L227",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_deletecategory",
+      "target": "src_services_categoryservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/categoryService.js",
+      "source_location": "L203",
+      "weight": 1.0,
+      "source": "src_services_categoryservice_updatecategory",
+      "target": "src_services_categoryservice_normalizesingleresult",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -19247,6 +20564,17 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_supabaseclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/services/workspaceService.js",
       "source_location": "L1",
       "weight": 1.0,
@@ -19258,11 +20586,439 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_supabaseclient_issupabaseconfigured",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/services/workspaceService.js",
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_services_workspaceservice",
       "target": "src_services_supabaseclient_issupabaseconfigured",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_supabaseclient_supabase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L145",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_createtransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L280",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_deletetransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L127",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_gettransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_hasrequiredtransactionfields",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L68",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_listtransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L205",
+      "weight": 1.0,
+      "source": "src_services_transactionservice",
+      "target": "src_services_transactionservice_updatetransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L202",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_createtransaction",
+      "target": "src_services_transactionservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_createunavailableresult",
+      "target": "src_services_transactionservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_createvalidationresult",
+      "target": "src_services_transactionservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L124",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_listtransactions",
+      "target": "src_services_transactionservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_normalizesingleresult",
+      "target": "src_services_transactionservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L147",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_createtransaction",
+      "target": "src_services_transactionservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L282",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_deletetransaction",
+      "target": "src_services_transactionservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L129",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_gettransaction",
+      "target": "src_services_transactionservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_listtransactions",
+      "target": "src_services_transactionservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L211",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_updatetransaction",
+      "target": "src_services_transactionservice_createunavailableresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L150",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_createtransaction",
+      "target": "src_services_transactionservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L286",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_deletetransaction",
+      "target": "src_services_transactionservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L132",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_gettransaction",
+      "target": "src_services_transactionservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L84",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_listtransactions",
+      "target": "src_services_transactionservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L215",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_updatetransaction",
+      "target": "src_services_transactionservice_createvalidationresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L149",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_createtransaction",
+      "target": "src_services_transactionservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L285",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_deletetransaction",
+      "target": "src_services_transactionservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L131",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_gettransaction",
+      "target": "src_services_transactionservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_listtransactions",
+      "target": "src_services_transactionservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L214",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_updatetransaction",
+      "target": "src_services_transactionservice_isvaliduuid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L175",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_createtransaction",
+      "target": "src_services_transactionservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L236",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_updatetransaction",
+      "target": "src_services_transactionservice_pickdefined",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L297",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_deletetransaction",
+      "target": "src_services_transactionservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L142",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_gettransaction",
+      "target": "src_services_transactionservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L273",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_updatetransaction",
+      "target": "src_services_transactionservice_normalizesingleresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/transactionService.js",
+      "source_location": "L167",
+      "weight": 1.0,
+      "source": "src_services_transactionservice_createtransaction",
+      "target": "src_services_transactionservice_hasrequiredtransactionfields",
       "confidence_score": 1.0
     },
     {
@@ -19997,7 +21753,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L31",
+      "source_location": "L34",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_accounts",
@@ -20007,7 +21763,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L48",
+      "source_location": "L65",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_categories",
@@ -20017,7 +21773,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L95",
+      "source_location": "L146",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_dados_manuais_e_externos",
@@ -20027,7 +21783,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L188",
+      "source_location": "L240",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_decisoes_pendentes",
@@ -20037,7 +21793,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L117",
+      "source_location": "L168",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_deduplicacao_externa",
@@ -20047,7 +21803,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L19",
+      "source_location": "L22",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_fronteira_de_isolamento",
@@ -20057,7 +21813,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L13",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_objetivo_de_produto",
@@ -20067,7 +21823,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L128",
+      "source_location": "L179",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_open_finance_futuro",
@@ -20077,7 +21833,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L200",
+      "source_location": "L252",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_proxima_etapa_segura",
@@ -20087,7 +21843,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L87",
+      "source_location": "L138",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_recorrencia_e_parcelas",
@@ -20097,7 +21853,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L147",
+      "source_location": "L198",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_rls_e_privilegios",
@@ -20107,7 +21863,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L5",
+      "source_location": "L84",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
+      "target": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_status",
@@ -20117,7 +21883,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L61",
+      "source_location": "L112",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_transactions",
@@ -20127,7 +21893,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L74",
+      "source_location": "L125",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_transferencias",
@@ -20137,7 +21903,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L175",
+      "source_location": "L226",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_validacao",
@@ -20147,30 +21913,70 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L149",
+      "source_location": "L51",
       "weight": 1.0,
-      "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
-      "target": "docs_00_master_financial_core_data_model_accounts_149",
+      "source": "docs_00_master_financial_core_data_model_accounts",
+      "target": "docs_00_master_financial_core_data_model_catalogo_de_tipos_de_conta",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L157",
+      "source_location": "L88",
       "weight": 1.0,
-      "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
-      "target": "docs_00_master_financial_core_data_model_categories_157",
+      "source": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "target": "docs_00_master_financial_core_data_model_accountservice_js",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L165",
+      "source_location": "L95",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "target": "docs_00_master_financial_core_data_model_categoryservice_js",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L101",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "target": "docs_00_master_financial_core_data_model_transactionservice_js",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L200",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
-      "target": "docs_00_master_financial_core_data_model_transactions_165",
+      "target": "docs_00_master_financial_core_data_model_accounts_200",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L208",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
+      "target": "docs_00_master_financial_core_data_model_categories_208",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L216",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
+      "target": "docs_00_master_financial_core_data_model_transactions_216",
       "confidence_score": 1.0
     },
     {
@@ -21411,6 +23217,16 @@
       "weight": 1.0,
       "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
       "target": "docs_00_master_supabase_auth_and_data_plan_1_objetivo_da_fase_2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L710",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_20_financeiro_fase_1_catalogos_e_services",
       "confidence_score": 1.0
     },
     {
@@ -23167,7 +24983,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L114",
+      "source_location": "L116",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_decisoes_ainda_pendentes",
@@ -23197,7 +25013,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L98",
+      "source_location": "L100",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_novas_migrations",
@@ -23207,7 +25023,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L73",
+      "source_location": "L75",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_ordem_inicial",
@@ -23217,7 +25033,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L63",
+      "source_location": "L65",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_proximo_passo",
@@ -23227,7 +25043,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L83",
+      "source_location": "L85",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_seguranca",
@@ -23237,7 +25053,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L38",
+      "source_location": "L40",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_validacoes_concluidas_no_dev",
@@ -23245,5 +25061,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "172c40c7022d154a6745d1edc089dbdff341e616"
+  "built_at_commit": "564c1ae25c728d74147a1d2cb4f286fb7da691d5"
 }
