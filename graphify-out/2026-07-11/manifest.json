@@ -410,8 +410,8 @@
     "semantic_hash": "481676a1cf9a8627c4c8e18f65ed4c88"
   },
   "src/hooks/index.js": {
-    "mtime": 1783785842.4836903,
-    "ast_hash": "9c511035df4d053eba1e45710a283de8",
+    "mtime": 1783805436.8360062,
+    "ast_hash": "82a038a468b60e63e38251cee0ea9033",
     "semantic_hash": ""
   },
   "src/main.jsx": {
@@ -1022,6 +1022,36 @@
   "src/pages/financeiro/transactionFormUtils.js": {
     "mtime": 1783800417.6027012,
     "ast_hash": "e2acce26342ad6904a270c3989346c0a",
+    "semantic_hash": ""
+  },
+  "src/hooks/useOpenFinance.js": {
+    "mtime": 1783805436.7427793,
+    "ast_hash": "f573637f4bff7813d8f8e50372421748",
+    "semantic_hash": ""
+  },
+  "src/services/externalAccountService.js": {
+    "mtime": 1783805436.648628,
+    "ast_hash": "eb2bf427ed21b309d04357cfd2441c60",
+    "semantic_hash": ""
+  },
+  "src/services/openFinanceService.js": {
+    "mtime": 1783805399.490503,
+    "ast_hash": "a16ec334e48036a8b19c31cfa43e2c52",
+    "semantic_hash": ""
+  },
+  "src/services/syncService.js": {
+    "mtime": 1783805399.6788614,
+    "ast_hash": "2086a7459da9050e0b97f274a2692b04",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260711_004_open_finance_infrastructure.sql": {
+    "mtime": 1783805549.6458638,
+    "ast_hash": "e199e0be5f00ffd502c60995f851eb66",
+    "semantic_hash": ""
+  },
+  "docs/00-master/OPEN_FINANCE_ARCHITECTURE.md": {
+    "mtime": 1783805549.7400227,
+    "ast_hash": "289897b7dadcf07c2926070e4479e01a",
     "semantic_hash": ""
   }
 }
