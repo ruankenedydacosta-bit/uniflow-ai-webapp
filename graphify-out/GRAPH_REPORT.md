@@ -1,7 +1,7 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 170 files · ~55,514 words
+- 170 files · ~55,638 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2366049a`
+- Built from commit: `f51987fb`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -110,7 +110,7 @@ Nodes (8): DashboardGreeting(), currency, FinancialSummaryCard(), GoalsSummaryCa
 
 ### Community 4 - "AccessModeSwitcher.jsx"
 Cohesion: 0.25
-Nodes (7): Antes de aplicar, Decisoes ainda pendentes, Estado atual, Novas migrations, Ordem inicial, Seguranca, Supabase
+Nodes (7): Decisoes ainda pendentes, Estado atual, Novas migrations, Ordem inicial, Proxima validacao no DEV, Seguranca, Supabase
 
 ### Community 5 - "CustomerBoard.jsx"
 Cohesion: 0.29

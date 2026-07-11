@@ -1,11 +1,11 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 169 files · ~53,737 words
+- 170 files · ~55,514 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 739 nodes · 1125 edges · 75 communities (61 shown, 14 thin omitted)
+- 768 nodes · 1153 edges · 76 communities (62 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
@@ -61,6 +61,7 @@
 - Supabase Auth and Data Plan
 - authService.js
 - Supabase Env Setup
+- 5. Consultas de diagnostico
 
 ## God Nodes (most connected - your core abstractions)
 1. `cx()` - 29 edges
@@ -70,7 +71,7 @@
 5. `formatCurrency()` - 22 edges
 6. `Button()` - 21 edges
 7. `Uni AI Experience Reference` - 19 edges
-8. `Supabase Auth and Data Plan` - 15 edges
+8. `Supabase Auth and Data Plan` - 16 edges
 9. `User Modes and Plans` - 15 edges
 10. `WORKSPACE_TYPES` - 13 edges
 
@@ -89,7 +90,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (75 total, 14 thin omitted)
+## Communities (76 total, 14 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
 Cohesion: 0.06
@@ -209,7 +210,7 @@ Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointC
 
 ### Community 72 - "Supabase Auth and Data Plan"
 Cohesion: 0.04
-Nodes (44): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 1. Objetivo da Fase 2, 2. Principios, 3. Modelo inicial de autenticacao (+36 more)
+Nodes (45): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 1. Objetivo da Fase 2, 2. Principios (+37 more)
 
 ### Community 73 - "authService.js"
 Cohesion: 0.21
@@ -219,8 +220,12 @@ Nodes (13): createServiceUnavailableResult(), getCurrentUser(), signInWithEmail(
 Cohesion: 0.29
 Nodes (6): Estado atual, Objetivo, Proxima etapa, Regras de seguranca, Supabase Env Setup, Variaveis necessarias
 
+### Community 75 - "5. Consultas de diagnostico"
+Cohesion: 0.07
+Nodes (27): 1. Decisao de ambientes, 2. Identificacao do projeto atual do site, 3. Checklist de inventario, 4. Matriz de possiveis colisoes, 5. Consultas de diagnostico, 6. Classificacao do resultado, 7. Criterios para liberar teste em DEV, 8. Seguranca e producao (+19 more)
+
 ## Knowledge Gaps
-- **300 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+295 more)
+- **324 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+319 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -234,9 +239,9 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `UniAIPage.jsx`?**
   _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _300 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _324 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.0568234746157429 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05720606826801517 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.08 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**

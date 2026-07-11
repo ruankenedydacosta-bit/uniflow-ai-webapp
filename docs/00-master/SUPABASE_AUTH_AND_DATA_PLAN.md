@@ -619,7 +619,9 @@ Ela inclui:
 - triggers de `updated_at`;
 - constraints, indices, grants minimos e RLS.
 
-A migration ainda nao foi aplicada em nenhum projeto Supabase. Ela deve passar por revisao estatica e depois ser validada em ambiente local ou descartavel antes de qualquer aplicacao remota.
+A migration foi aplicada com sucesso somente no projeto Supabase `UniFlow DEV`. O ambiente de producao permanece sem alteracoes.
+
+O status `aplicada` nao encerra a validacao. Antes de qualquer evolucao ou preparacao para producao, ainda devem ser verificados no DEV: tabelas e colunas, catalogo de planos, triggers de profile/workspace/`updated_at`, grants e policies RLS para cada role prevista.
 
 No MVP, site e aplicativo compartilharao o mesmo projeto Supabase. Essa decisao reduz duplicacao de identidade e permite converter leads em usuarios sem sincronizar bancos separados. O isolamento continua obrigatorio: o site possui apenas permissao publica de captura, enquanto dados privados e operacoes administrativas permanecem protegidos por RLS e backend futuro.
 
@@ -635,3 +637,10 @@ Regras operacionais:
 - antes do primeiro teste em DEV, o projeto atual do site deve ser auditado com `SUPABASE_EXISTING_PROJECT_AUDIT.md`;
 - compatibilidades e conflitos devem gerar uma migration de adaptacao revisavel, sem alterar silenciosamente o schema de producao;
 - a aplicacao em producao so pode ser preparada depois de testes de Auth, leads, profiles, workspaces, memberships, grants e RLS no projeto DEV.
+
+Status da migration inicial:
+
+- aplicada no `UniFlow DEV`;
+- ainda em validacao funcional e de seguranca;
+- nao aplicada em producao;
+- sem conexao com Login, Onboarding ou mocks do aplicativo nesta etapa.

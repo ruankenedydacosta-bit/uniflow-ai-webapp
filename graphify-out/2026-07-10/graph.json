@@ -3790,7 +3790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport",
-      "community": 0,
+      "community": 39,
       "norm_label": "uniinsightreport.jsx"
     },
     {
@@ -6254,6 +6254,16 @@
       "norm_label": "14. schema inicial versionado"
     },
     {
+      "label": "15. Estrategia de ambientes",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L626",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_15_estrategia_de_ambientes",
+      "community": 72,
+      "norm_label": "15. estrategia de ambientes"
+    },
+    {
       "label": "SUPABASE_ENV_SETUP.md",
       "file_type": "document",
       "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
@@ -6322,6 +6332,286 @@
       "id": "docs_00_master_supabase_env_setup_proxima_etapa",
       "community": 74,
       "norm_label": "proxima etapa"
+    },
+    {
+      "label": "SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit",
+      "community": 75,
+      "norm_label": "supabase_existing_project_audit.md"
+    },
+    {
+      "label": "Supabase Existing Project Audit",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "community": 75,
+      "norm_label": "supabase existing project audit"
+    },
+    {
+      "label": "1. Decisao de ambientes",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_1_decisao_de_ambientes",
+      "community": 75,
+      "norm_label": "1. decisao de ambientes"
+    },
+    {
+      "label": "2. Identificacao do projeto atual do site",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_2_identificacao_do_projeto_atual_do_site",
+      "community": 75,
+      "norm_label": "2. identificacao do projeto atual do site"
+    },
+    {
+      "label": "3. Checklist de inventario",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_3_checklist_de_inventario",
+      "community": 75,
+      "norm_label": "3. checklist de inventario"
+    },
+    {
+      "label": "Banco e schema",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_banco_e_schema",
+      "community": 75,
+      "norm_label": "banco e schema"
+    },
+    {
+      "label": "Supabase Auth",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_supabase_auth",
+      "community": 75,
+      "norm_label": "supabase auth"
+    },
+    {
+      "label": "Lista VIP e formularios do site",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L73",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_lista_vip_e_formularios_do_site",
+      "community": 75,
+      "norm_label": "lista vip e formularios do site"
+    },
+    {
+      "label": "Edge Functions e Storage",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L86",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_edge_functions_e_storage",
+      "community": 75,
+      "norm_label": "edge functions e storage"
+    },
+    {
+      "label": "4. Matriz de possiveis colisoes",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L96",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_4_matriz_de_possiveis_colisoes",
+      "community": 75,
+      "norm_label": "4. matriz de possiveis colisoes"
+    },
+    {
+      "label": "5. Consultas de diagnostico",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L119",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "community": 75,
+      "norm_label": "5. consultas de diagnostico"
+    },
+    {
+      "label": "Tabelas do schema public",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L123",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_tabelas_do_schema_public",
+      "community": 75,
+      "norm_label": "tabelas do schema public"
+    },
+    {
+      "label": "Colunas",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L135",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_colunas",
+      "community": 75,
+      "norm_label": "colunas"
+    },
+    {
+      "label": "Constraints",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L152",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_constraints",
+      "community": 75,
+      "norm_label": "constraints"
+    },
+    {
+      "label": "Indices",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L170",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_indices",
+      "community": 75,
+      "norm_label": "indices"
+    },
+    {
+      "label": "Funcoes",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L183",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_funcoes",
+      "community": 75,
+      "norm_label": "funcoes"
+    },
+    {
+      "label": "Triggers",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L203",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_triggers",
+      "community": 75,
+      "norm_label": "triggers"
+    },
+    {
+      "label": "Policies RLS",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L223",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_policies_rls",
+      "community": 75,
+      "norm_label": "policies rls"
+    },
+    {
+      "label": "Status de RLS",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L240",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_status_de_rls",
+      "community": 75,
+      "norm_label": "status de rls"
+    },
+    {
+      "label": "Buckets do Storage",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L256",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_buckets_do_storage",
+      "community": 75,
+      "norm_label": "buckets do storage"
+    },
+    {
+      "label": "6. Classificacao do resultado",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L271",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_6_classificacao_do_resultado",
+      "community": 75,
+      "norm_label": "6. classificacao do resultado"
+    },
+    {
+      "label": "Compativel",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L273",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_compativel",
+      "community": 75,
+      "norm_label": "compativel"
+    },
+    {
+      "label": "Conflito simples",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L280",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_conflito_simples",
+      "community": 75,
+      "norm_label": "conflito simples"
+    },
+    {
+      "label": "Conflito estrutural",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L286",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_conflito_estrutural",
+      "community": 75,
+      "norm_label": "conflito estrutural"
+    },
+    {
+      "label": "Exige migration de adaptacao",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L293",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_exige_migration_de_adaptacao",
+      "community": 75,
+      "norm_label": "exige migration de adaptacao"
+    },
+    {
+      "label": "7. Criterios para liberar teste em DEV",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L302",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_7_criterios_para_liberar_teste_em_dev",
+      "community": 75,
+      "norm_label": "7. criterios para liberar teste em dev"
+    },
+    {
+      "label": "8. Seguranca e producao",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L315",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_8_seguranca_e_producao",
+      "community": 75,
+      "norm_label": "8. seguranca e producao"
+    },
+    {
+      "label": "9. Resultado da auditoria",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L326",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_existing_project_audit_9_resultado_da_auditoria",
+      "community": 75,
+      "norm_label": "9. resultado da auditoria"
     },
     {
       "label": "UNI_AI_EXPERIENCE_REFERENCE.md",
@@ -17782,6 +18072,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L626",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_15_estrategia_de_ambientes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
       "source_location": "L7",
       "weight": 1.0,
       "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
@@ -18216,6 +18516,276 @@
       "weight": 1.0,
       "source": "docs_00_master_supabase_env_setup_supabase_env_setup",
       "target": "docs_00_master_supabase_env_setup_variaveis_necessarias",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_1_decisao_de_ambientes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_2_identificacao_do_projeto_atual_do_site",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_3_checklist_de_inventario",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L96",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_4_matriz_de_possiveis_colisoes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L119",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L271",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_6_classificacao_do_resultado",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L302",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_7_criterios_para_liberar_teste_em_dev",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L315",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_8_seguranca_e_producao",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L326",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_supabase_existing_project_audit",
+      "target": "docs_00_master_supabase_existing_project_audit_9_resultado_da_auditoria",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_3_checklist_de_inventario",
+      "target": "docs_00_master_supabase_existing_project_audit_banco_e_schema",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L86",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_3_checklist_de_inventario",
+      "target": "docs_00_master_supabase_existing_project_audit_edge_functions_e_storage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L73",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_3_checklist_de_inventario",
+      "target": "docs_00_master_supabase_existing_project_audit_lista_vip_e_formularios_do_site",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_3_checklist_de_inventario",
+      "target": "docs_00_master_supabase_existing_project_audit_supabase_auth",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L256",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_buckets_do_storage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L135",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_colunas",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L152",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_constraints",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L183",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_funcoes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L170",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_indices",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L223",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_policies_rls",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L240",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_status_de_rls",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L123",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_tabelas_do_schema_public",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L203",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_5_consultas_de_diagnostico",
+      "target": "docs_00_master_supabase_existing_project_audit_triggers",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L273",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_6_classificacao_do_resultado",
+      "target": "docs_00_master_supabase_existing_project_audit_compativel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L286",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_6_classificacao_do_resultado",
+      "target": "docs_00_master_supabase_existing_project_audit_conflito_estrutural",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L280",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_6_classificacao_do_resultado",
+      "target": "docs_00_master_supabase_existing_project_audit_conflito_simples",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md",
+      "source_location": "L293",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_existing_project_audit_6_classificacao_do_resultado",
+      "target": "docs_00_master_supabase_existing_project_audit_exige_migration_de_adaptacao",
       "confidence_score": 1.0
     },
     {
