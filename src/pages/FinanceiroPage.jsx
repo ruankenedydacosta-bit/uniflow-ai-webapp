@@ -1,11 +1,21 @@
+import { useMemo, useState } from 'react';
 import { useAccess } from '../app/AccessContext';
+import { useSession } from '../app/SessionContext';
 import { WORKSPACE_TYPES } from '../app/access.js';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import { useAccounts, useCategories, useTransactions } from '../hooks';
 import { cx } from '../utils/cx';
 import { formatCurrency } from '../utils/formatters';
+import FinanceAccountModal from './financeiro/FinanceAccountModal';
+import FinanceCategoryModal from './financeiro/FinanceCategoryModal';
 import FinanceProjectionChart from './financeiro/FinanceProjectionChart';
+import FinanceTransactionModal from './financeiro/FinanceTransactionModal';
+import {
+  fallbackAccountTypes,
+  financialCrudMock,
+} from './financeiro/financialCrud.mock.js';
 import { financialMock } from './financeiro/financial.mock.js';
 import styles from './FinanceiroPage.module.css';
 
@@ -13,10 +23,61 @@ function getFinancialContext(currentWorkspace) {
   return currentWorkspace === WORKSPACE_TYPES.PERSONAL ? financialMock.personal : financialMock.business;
 }
 
+function getCrudContext(currentWorkspace) {
+  return currentWorkspace === WORKSPACE_TYPES.PERSONAL
+    ? financialCrudMock.personal
+    : financialCrudMock.business;
+}
+
+function formatMovementDate(value) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('pt-BR').format(new Date(`${value}T12:00:00`));
+}
+
 function FinanceiroPage() {
   const { access } = useAccess();
+  const { workspace } = useSession();
+  const [activeDialog, setActiveDialog] = useState(null);
   const financial = getFinancialContext(access.currentWorkspace);
-  const recentMovements = financial.movements.slice(0, 3);
+  const crudFallback = getCrudContext(access.currentWorkspace);
+  const accountState = useAccounts({
+    workspaceId: workspace?.id,
+    fallbackAccounts: crudFallback.accounts,
+    fallbackAccountTypes,
+  });
+  const categoryState = useCategories({
+    workspaceId: workspace?.id,
+    fallbackCategories: crudFallback.categories,
+  });
+  const transactionState = useTransactions({
+    workspaceId: workspace?.id,
+    fallbackTransactions: crudFallback.transactions,
+  });
+  const recentMovements = useMemo(
+    () =>
+      transactionState.transactions.slice(0, 3).map((transaction) => ({
+        ...transaction,
+        category:
+          categoryState.categories.find(
+            (category) => category.id === transaction.category_id,
+          )?.name ?? 'Sem categoria',
+        date: formatMovementDate(transaction.transaction_date),
+        type:
+          transaction.transaction_type === 'income'
+            ? 'entrada'
+            : transaction.transaction_type === 'expense'
+              ? 'saida'
+              : 'neutro',
+      })),
+    [categoryState.categories, transactionState.transactions],
+  );
+
+  function openDialog(dialog) {
+    accountState.clearError();
+    categoryState.clearError();
+    transactionState.clearError();
+    setActiveDialog(dialog);
+  }
 
   return (
     <div className={styles.page}>
@@ -103,6 +164,17 @@ function FinanceiroPage() {
               <h3>Movimentações recentes</h3>
               <p>Últimos eventos usados para alimentar a leitura da Uni.</p>
             </div>
+            <div className={styles.actions}>
+              <Button variant="ghost" size="sm" onClick={() => openDialog('accounts')}>
+                Contas
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => openDialog('categories')}>
+                Categorias
+              </Button>
+              <Button size="sm" onClick={() => openDialog('transactions')}>
+                Novo lançamento
+              </Button>
+            </div>
           </div>
           <div className={styles.list}>
             {recentMovements.map((movement) => (
@@ -119,9 +191,45 @@ function FinanceiroPage() {
                 </span>
               </div>
             ))}
+            {!recentMovements.length ? (
+              <div className={styles.movementRow}>
+                <div className={styles.movementMain}>
+                  <strong>
+                    {transactionState.isLoading
+                      ? 'Carregando lançamentos'
+                      : transactionState.error
+                        ? 'Não foi possível carregar os lançamentos'
+                        : 'Nenhum lançamento registrado'}
+                  </strong>
+                  <span className={styles.movementMeta}>
+                    {transactionState.error
+                      ? 'Tente novamente pelo gerenciador de lançamentos.'
+                      : 'Use “Novo lançamento” para começar.'}
+                  </span>
+                </div>
+              </div>
+            ) : null}
           </div>
         </Card>
       </section>
+
+      <FinanceAccountModal
+        open={activeDialog === 'accounts'}
+        onClose={() => setActiveDialog(null)}
+        accountState={accountState}
+      />
+      <FinanceCategoryModal
+        open={activeDialog === 'categories'}
+        onClose={() => setActiveDialog(null)}
+        categoryState={categoryState}
+      />
+      <FinanceTransactionModal
+        open={activeDialog === 'transactions'}
+        onClose={() => setActiveDialog(null)}
+        accountState={accountState}
+        categoryState={categoryState}
+        transactionState={transactionState}
+      />
     </div>
   );
 }

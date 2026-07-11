@@ -1,0 +1,130 @@
+const today = new Date().toISOString().slice(0, 10);
+
+export const fallbackAccountTypes = [
+  { code: 'checking', name: 'Conta corrente', display_order: 1 },
+  { code: 'savings', name: 'Poupança', display_order: 2 },
+  { code: 'cash', name: 'Dinheiro', display_order: 3 },
+  { code: 'credit_card', name: 'Cartão de crédito', display_order: 4 },
+  { code: 'investment', name: 'Investimentos', display_order: 5 },
+  { code: 'digital_wallet', name: 'Carteira digital', display_order: 6 },
+  { code: 'other', name: 'Outra conta', display_order: 7 },
+];
+
+const baseCategories = [
+  { id: 'demo-income', name: 'Outras entradas', category_type: 'income' },
+  { id: 'demo-food', name: 'Alimentação', category_type: 'expense' },
+  { id: 'demo-transport', name: 'Transporte', category_type: 'expense' },
+  { id: 'demo-subscriptions', name: 'Assinaturas', category_type: 'expense' },
+  { id: 'demo-operational', name: 'Operacional', category_type: 'expense' },
+  { id: 'demo-suppliers', name: 'Fornecedores', category_type: 'expense' },
+  { id: 'demo-taxes', name: 'Impostos', category_type: 'expense' },
+  { id: 'demo-transfer', name: 'Transferência', category_type: 'transfer' },
+].map((category) => ({
+  ...category,
+  workspace_id: null,
+  is_system: true,
+  is_active: true,
+}));
+
+export const financialCrudMock = {
+  personal: {
+    accounts: [
+      {
+        id: 'demo-personal-account',
+        name: 'Conta principal',
+        account_type: 'checking',
+        current_balance: 18450,
+        initial_balance: 18450,
+        currency_code: 'BRL',
+        is_active: true,
+        source_type: 'manual',
+      },
+    ],
+    categories: baseCategories,
+    transactions: [
+      {
+        id: 'personal-income-salary',
+        account_id: 'demo-personal-account',
+        category_id: 'demo-income',
+        transaction_type: 'income',
+        description: 'Salário',
+        amount: 8200,
+        transaction_date: today,
+        status: 'completed',
+        source_type: 'manual',
+      },
+      {
+        id: 'personal-market',
+        account_id: 'demo-personal-account',
+        category_id: 'demo-food',
+        transaction_type: 'expense',
+        description: 'Mercado',
+        amount: 640,
+        transaction_date: today,
+        status: 'completed',
+        source_type: 'manual',
+      },
+      {
+        id: 'personal-transport',
+        account_id: 'demo-personal-account',
+        category_id: 'demo-transport',
+        transaction_type: 'expense',
+        description: 'Transporte',
+        amount: 220,
+        transaction_date: today,
+        status: 'completed',
+        source_type: 'manual',
+      },
+    ],
+  },
+  business: {
+    accounts: [
+      {
+        id: 'demo-business-account',
+        name: 'Caixa empresarial',
+        account_type: 'checking',
+        current_balance: 48200,
+        initial_balance: 48200,
+        currency_code: 'BRL',
+        is_active: true,
+        source_type: 'manual',
+      },
+    ],
+    categories: baseCategories,
+    transactions: [
+      {
+        id: 'business-client-paid',
+        account_id: 'demo-business-account',
+        category_id: 'demo-income',
+        transaction_type: 'income',
+        description: 'Cliente recebido',
+        amount: 8200,
+        transaction_date: today,
+        status: 'completed',
+        source_type: 'manual',
+      },
+      {
+        id: 'business-software',
+        account_id: 'demo-business-account',
+        category_id: 'demo-operational',
+        transaction_type: 'expense',
+        description: 'Software',
+        amount: 640,
+        transaction_date: today,
+        status: 'completed',
+        source_type: 'manual',
+      },
+      {
+        id: 'business-supplier',
+        account_id: 'demo-business-account',
+        category_id: 'demo-suppliers',
+        transaction_type: 'expense',
+        description: 'Fornecedor',
+        amount: 3200,
+        transaction_date: today,
+        status: 'completed',
+        source_type: 'manual',
+      },
+    ],
+  },
+};
