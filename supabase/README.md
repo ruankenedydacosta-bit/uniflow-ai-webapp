@@ -20,6 +20,21 @@ Ela prepara:
 
 Nenhuma tabela financeira ou de produto foi criada nesta migration.
 
+## Migration financeira pendente
+
+A migration `migrations/20260711_002_financial_core.sql` foi criada localmente e ainda nao foi aplicada em nenhum projeto Supabase.
+
+Ela prepara:
+
+- `accounts`, `categories` e `transactions` isoladas por workspace;
+- dados manuais e origens externas normalizadas;
+- identificadores e indices para deduplicacao futura;
+- integridade entre transacao, contas e categorias;
+- RLS para owner, admin, member e viewer;
+- grants por coluna para impedir que o frontend forje origem externa.
+
+Antes de qualquer aplicacao, a migration deve ser revisada e testada somente no `UniFlow DEV`. Producao permanece sem alteracoes.
+
 ## Validacoes concluidas no DEV
 
 Os testes manuais foram realizados somente no projeto `UniFlow DEV` e confirmaram:
@@ -74,6 +89,11 @@ Nao existe criacao automatica de workspace no cadastro nesta migration.
 - Escritas administrativas em `subscriptions` e `site_leads` devem passar futuramente por backend seguro ou Edge Function.
 - O site pode apenas inserir os campos publicos de captura de lead; nao pode ler leads nem definir conversao/status administrativo.
 - Policies privadas nao usam `USING (true)`.
+- A anon/publishable key acessa o nucleo financeiro somente conforme grants e RLS.
+- Tokens Open Finance, credenciais, certificados e segredos nunca ficam em `accounts`, `transactions`, `metadata` ou payload bruto.
+- `raw_provider_data` deve ser sanitizado e nunca consumido diretamente pela interface.
+- Integracoes Open Finance reais exigirao backend seguro ou Edge Function.
+- Consentimentos terao expiracao e revogacao em uma migration futura.
 
 ## Novas migrations
 

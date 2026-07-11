@@ -582,7 +582,7 @@ Nao colocar chaves reais em documentacao, commits ou prints.
 - [x] `workspace_members` criado e owner ativo validado no DEV.
 - [ ] Access real substitui parcialmente `DEFAULT_DEMO_ACCESS`.
 - [ ] Login mockado evolui para login real sem quebrar demo.
-- [ ] Onboarding mockado evolui para criacao real de perfil/workspace.
+- [x] Onboarding integrado ao profile/workspace real no `UniFlow DEV`.
 - [ ] Financeiro conectado por service.
 - [ ] Objetivos conectado por service.
 - [ ] Agenda conectada por service.
@@ -676,4 +676,33 @@ Resultado:
 - `subscriptions` protegido contra escrita do cliente;
 - producao sem alteracoes.
 
-Esse resultado libera a preparacao da integracao real do Login existente. Ele nao libera ainda a substituicao do Onboarding mockado nem dos mocks dos modulos.
+Esse resultado liberou a integracao real do Login e do Onboarding existentes. Os mocks dos modulos permanecem preservados.
+
+## 18. Onboarding real integrado
+
+O Onboarding agora usa a sessao autenticada para:
+
+- atualizar `full_name`, `phone` e `user_mode`;
+- reutilizar ou criar o workspace padrao;
+- definir `current_workspace_id`;
+- marcar `onboarding_completed = true`;
+- recarregar o `SessionContext` antes do Dashboard.
+
+O visual foi preservado e o modo demo continua disponivel sem configuracao Supabase. Nenhum modulo de produto deixou de usar mocks nesta etapa.
+
+A implementacao tambem trata duas bordas de consistencia: atualizacoes de profile que afetem zero linhas encerram com erro controlado; se a atualizacao final falhar depois de criar um workspace, somente o workspace novo daquela tentativa e removido. Workspaces reutilizados permanecem intactos.
+
+## 19. Nucleo financeiro real preparado
+
+A proxima fronteira de dados reais e o nucleo financeiro. A migration versionada `supabase/migrations/20260711_002_financial_core.sql` cria a base para:
+
+- contas por workspace;
+- categorias globais do sistema e customizadas por workspace;
+- transacoes com integridade entre conta, destino e categoria;
+- origem manual, importada, automatizada ou sincronizada;
+- deduplicacao por provider e identificador externo;
+- RLS e grants por papel.
+
+A migration foi apenas criada e ainda nao foi aplicada no `UniFlow DEV` nem em producao. Os mocks e as telas permanecem inalterados.
+
+Open Finance foi preparado somente no modelo: origem, IDs externos, status de sincronizacao e payload sanitizado opcional. Consentimentos, tokens, certificados, webhooks, providers e Edge Functions ficam para migrations e camadas seguras futuras. Nenhum segredo bancario pertence ao dominio financeiro publico.

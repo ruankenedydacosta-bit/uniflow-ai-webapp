@@ -240,8 +240,8 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783737649.330985,
-    "ast_hash": "89873ca4eec7acd8146bdd6a9d9ad5d8",
+    "mtime": 1783739942.3123546,
+    "ast_hash": "43bfb1a50ef1c1a7cbf18e5c4a61f4c5",
     "semantic_hash": ""
   },
   "src/app/main.jsx": {
@@ -830,13 +830,13 @@
     "semantic_hash": ""
   },
   "src/pages/LoginPage.jsx": {
-    "mtime": 1783737841.4030395,
-    "ast_hash": "3ddc457dae27df8e8e3c2a708b566660",
+    "mtime": 1783739942.4053047,
+    "ast_hash": "cc446a444ad71234b6ea978ceae6f93c",
     "semantic_hash": ""
   },
   "src/pages/OnboardingPage.jsx": {
-    "mtime": 1783709449.3274686,
-    "ast_hash": "60a6474bc239475b7889b5da00577585",
+    "mtime": 1783739942.502244,
+    "ast_hash": "3eec37e779b9ec53641c76c7a1bcbec4",
     "semantic_hash": ""
   },
   "src/app/accessRules.js": {
@@ -845,13 +845,13 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783737001.1445608,
-    "ast_hash": "bb8fdf98b68d6962b2a88af9f02f54c5",
+    "mtime": 1783779710.4935145,
+    "ast_hash": "a0d8fa592b77caaad0a4b794cd1079f7",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
-    "mtime": 1783737649.0550258,
-    "ast_hash": "5e091afc57cf4bed78baff0f3f46a4ba",
+    "mtime": 1783739942.0374367,
+    "ast_hash": "a1024ae471b11210a300584713b07d25",
     "semantic_hash": ""
   },
   "src/services/supabaseClient.js": {
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "src/services/workspaceService.js": {
-    "mtime": 1783737791.7811656,
-    "ast_hash": "1fa5479c5a205c7f991b975ae6ddb9ef",
+    "mtime": 1783778423.0294197,
+    "ast_hash": "cdc860ec76759dba9f13c737257bd980",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_ENV_SETUP.md": {
@@ -875,8 +875,8 @@
     "semantic_hash": ""
   },
   "supabase/README.md": {
-    "mtime": 1783737000.9611988,
-    "ast_hash": "18e6ef2df34dab89aff660c18694d72e",
+    "mtime": 1783779710.4008193,
+    "ast_hash": "9e164adcd9b51af79b14c63ae4dc53ba",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
@@ -900,13 +900,43 @@
     "semantic_hash": ""
   },
   "src/app/SessionContext.jsx": {
-    "mtime": 1783737841.3111196,
-    "ast_hash": "64ceaffede5f0a7ccd9bcce78c92c882",
+    "mtime": 1783739942.2202938,
+    "ast_hash": "789496edfba01eb8952ecff9d6828f55",
     "semantic_hash": ""
   },
   "docs/00-master/LOGIN_AUTH_INTEGRATION.md": {
-    "mtime": 1783737791.871162,
-    "ast_hash": "d570d5dac5e88263006ae5c77cc90524",
+    "mtime": 1783740018.0111146,
+    "ast_hash": "3ec8333822565a4e26e6789dd016ed53",
+    "semantic_hash": ""
+  },
+  "src/services/onboardingService.js": {
+    "mtime": 1783778423.1277785,
+    "ast_hash": "7da5ea664f37166d24e6232bd4155ec4",
+    "semantic_hash": ""
+  },
+  "src/services/profileService.js": {
+    "mtime": 1783778422.9290113,
+    "ast_hash": "9ba611654540c1f237551d7b4b44f6db",
+    "semantic_hash": ""
+  },
+  "docs/00-master/ONBOARDING_REAL_INTEGRATION.md": {
+    "mtime": 1783778423.2223675,
+    "ast_hash": "06f87c90c8b7d5e555d351e61bb24f8a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260711_002_financial_core.sql": {
+    "mtime": 1783779602.3636613,
+    "ast_hash": "4de6e8c96d3bb601b1523bb3e07aa979",
+    "semantic_hash": ""
+  },
+  "supabase/tests/financial_core_validation.sql": {
+    "mtime": 1783779710.2056932,
+    "ast_hash": "39bd0304980af5c834870e6d637b0e0d",
+    "semantic_hash": ""
+  },
+  "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md": {
+    "mtime": 1783779710.306888,
+    "ast_hash": "819b32b7fe1e441ab116247c250ec552",
     "semantic_hash": ""
   }
 }

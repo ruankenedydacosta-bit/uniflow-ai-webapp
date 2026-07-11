@@ -1,16 +1,16 @@
-# Graph Report - uniflow-ai-app  (2026-07-10)
+# Graph Report - uniflow-ai-app  (2026-07-11)
 
 ## Corpus Check
-- 175 files · ~60,764 words
+- 181 files · ~67,053 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 833 nodes · 1266 edges · 80 communities (65 shown, 15 thin omitted)
+- 894 nodes · 1365 edges · 87 communities (72 shown, 15 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d3df8312`
+- Built from commit: `172c40c7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -66,6 +66,13 @@
 - index.js
 - Login Auth Integration
 - signInWithEmail
+- Onboarding Real Integration
+- Financial Core Data Model
+- Pessoal e financeiro
+- Empresarial
+- 3. Modelo inicial de autenticacao
+- 4. Modelo de workspaces
+- Uni e IA
 
 ## God Nodes (most connected - your core abstractions)
 1. `useAccess()` - 29 edges
@@ -74,10 +81,10 @@
 4. `Card()` - 24 edges
 5. `formatCurrency()` - 22 edges
 6. `Button()` - 21 edges
-7. `Uni AI Experience Reference` - 19 edges
-8. `Supabase Auth and Data Plan` - 18 edges
-9. `User Modes and Plans` - 15 edges
-10. `WORKSPACE_TYPES` - 14 edges
+7. `Supabase Auth and Data Plan` - 20 edges
+8. `Uni AI Experience Reference` - 19 edges
+9. `Financial Core Data Model` - 16 edges
+10. `User Modes and Plans` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `AppContent()` --calls--> `useAccess()`  [EXTRACTED]
@@ -88,17 +95,17 @@
   src/components/dev/AccessModeSwitcher.jsx → src/app/AccessContext.jsx
 - `Sidebar()` --calls--> `useAccess()`  [EXTRACTED]
   src/components/layout/Sidebar/Sidebar.jsx → src/app/AccessContext.jsx
-- `LoginPage()` --calls--> `useSession()`  [EXTRACTED]
-  src/pages/LoginPage.jsx → src/app/SessionContext.jsx
+- `AppContent()` --calls--> `useSession()`  [EXTRACTED]
+  src/app/App.jsx → src/app/SessionContext.jsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (80 total, 15 thin omitted)
+## Communities (87 total, 15 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
 Cohesion: 0.06
-Nodes (53): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, useAccess() (+45 more)
+Nodes (54): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, useAccess() (+46 more)
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.08
@@ -113,8 +120,8 @@ Cohesion: 0.17
 Nodes (8): DashboardGreeting(), currency, FinancialSummaryCard(), GoalsSummaryCard(), currency, dateFormatter, RecentActivityList(), UniInsightsCard()
 
 ### Community 4 - "AccessModeSwitcher.jsx"
-Cohesion: 0.22
-Nodes (8): Decisoes ainda pendentes, Estado atual, Novas migrations, Ordem inicial, Proximo passo, Seguranca, Supabase, Validacoes concluidas no DEV
+Cohesion: 0.20
+Nodes (9): Decisoes ainda pendentes, Estado atual, Migration financeira pendente, Novas migrations, Ordem inicial, Proximo passo, Seguranca, Supabase (+1 more)
 
 ### Community 5 - "CustomerBoard.jsx"
 Cohesion: 0.29
@@ -198,7 +205,7 @@ Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao fut
 
 ### Community 68 - "navigation.js"
 Cohesion: 0.07
-Nodes (30): AccessProvider(), canAccessNavigationItem(), canAccessRoute(), getFallbackRoute(), App(), AppContent(), ALL_MODES, ALL_PLANS (+22 more)
+Nodes (29): AccessProvider(), canAccessNavigationItem(), canAccessRoute(), getFallbackRoute(), App(), AppContent(), ALL_MODES, ALL_PLANS (+21 more)
 
 ### Community 69 - "Obsidian Workflow"
 Cohesion: 0.22
@@ -213,12 +220,12 @@ Cohesion: 0.36
 Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointCoordinates(), getSeriesTotal(), getSeriesValues(), PADDING, SERIES_CLASSES
 
 ### Community 72 - "Supabase Auth and Data Plan"
-Cohesion: 0.04
-Nodes (47): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 16. Validacao inicial de Auth e workspaces, 17. RLS autenticado validado (+39 more)
+Cohesion: 0.11
+Nodes (17): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 16. Validacao inicial de Auth e workspaces, 17. RLS autenticado validado (+9 more)
 
 ### Community 73 - "authService.js"
-Cohesion: 0.16
-Nodes (25): getAccessFromSession(), INITIAL_SESSION_STATE, logAuthDevelopment(), SessionContext, SessionProvider(), VALID_PLANS, VALID_USER_MODES, VALID_WORKSPACE_TYPES (+17 more)
+Cohesion: 0.10
+Nodes (42): getAccessFromSession(), INITIAL_SESSION_STATE, logAuthDevelopment(), SessionContext, SessionProvider(), VALID_PLANS, VALID_USER_MODES, VALID_WORKSPACE_TYPES (+34 more)
 
 ### Community 74 - "Supabase Env Setup"
 Cohesion: 0.29
@@ -237,11 +244,39 @@ Cohesion: 0.35
 Nodes (10): addResult(), EXPECTED_PLAN_IDS, getJwtRole(), getSafeErrorCode(), isPermissionDenied(), isServerOnlyKey(), readConfiguration(), REQUIRED_ENVIRONMENT_VARIABLES (+2 more)
 
 ### Community 78 - "Login Auth Integration"
+Cohesion: 0.09
+Nodes (22): Arquitetura, `authService.js`, Com sessao e onboarding incompleto, Com sessao e profile concluido, Com sessao e sem profile, Fluxo com Supabase ativo, Limites desta etapa, Login Auth Integration (+14 more)
+
+### Community 80 - "Onboarding Real Integration"
+Cohesion: 0.12
+Nodes (16): Atualizacao da sessao, Idempotencia e retomada, Limites desta etapa, Logs, Modo demo, Objetivo, Onboarding Real Integration, `onboardingService.js` (+8 more)
+
+### Community 81 - "Financial Core Data Model"
 Cohesion: 0.10
-Nodes (20): Arquitetura, `authService.js`, Com sessao e profile, Com sessao e sem profile, Fluxo com Supabase ativo, Limites desta etapa, Login Auth Integration, Login visual (+12 more)
+Nodes (19): Accounts, Accounts, Categories, Categories, Dados manuais e externos, Decisoes pendentes, Deduplicacao externa, Financial Core Data Model (+11 more)
+
+### Community 82 - "Pessoal e financeiro"
+Cohesion: 0.29
+Nodes (7): `accounts`, `agenda_items`, `categories`, `objectives`, Pessoal e financeiro, `reports_snapshots`, `transactions`
+
+### Community 83 - "Empresarial"
+Cohesion: 0.29
+Nodes (7): `clients`, `companies`, `crm_opportunities`, `crm_pipeline_stages`, Empresarial, `project_milestones`, `projects`
+
+### Community 84 - "3. Modelo inicial de autenticacao"
+Cohesion: 0.33
+Nodes (6): 3. Modelo inicial de autenticacao, `auth.users`, `plans` e `subscriptions`, `profiles`, Relacao entre usuario e workspace, `user_preferences`
+
+### Community 85 - "4. Modelo de workspaces"
+Cohesion: 0.33
+Nodes (6): 4. Modelo de workspaces, Membership e roles futuros, Usuario com ambos, Workspace empresarial, Workspace pessoal, `workspaces`
+
+### Community 86 - "Uni e IA"
+Cohesion: 0.33
+Nodes (6): 5. Tabelas sugeridas por modulo, `uni_conversations`, Uni e IA, `uni_insights`, `uni_recommendations`, `user_cognitive_profile`
 
 ## Knowledge Gaps
-- **360 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+355 more)
+- **398 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+393 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -255,9 +290,9 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `UniAIPage.jsx`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _360 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _398 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.05913185913185913 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05871943371943372 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**
