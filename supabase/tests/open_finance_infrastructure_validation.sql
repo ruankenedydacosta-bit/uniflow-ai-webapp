@@ -82,6 +82,60 @@ where source_schema.nspname = 'public'
   and constraint_definition.contype = 'f'
 order by source_table.relname, constraint_definition.conname;
 
+-- 4a. Toda FK composta deve apontar para um indice/constraint UNIQUE valido,
+-- nao parcial, com as mesmas colunas e na mesma ordem. Esperado:
+-- compatible_unique_key = true em todas as linhas.
+select
+  source_table.relname as source_table,
+  constraint_definition.conname as constraint_name,
+  target_table.relname as referenced_table,
+  pg_get_constraintdef(constraint_definition.oid) as definition,
+  exists (
+    select 1
+    from pg_index as unique_index
+    where unique_index.indrelid = constraint_definition.confrelid
+      and unique_index.indisunique = true
+      and unique_index.indisvalid = true
+      and unique_index.indisready = true
+      and unique_index.indpred is null
+      and unique_index.indexprs is null
+      and unique_index.indnkeyatts = cardinality(
+        constraint_definition.confkey
+      )
+      and unique_index.indkey::text = array_to_string(
+        constraint_definition.confkey,
+        ' '
+      )
+  ) as compatible_unique_key
+from pg_constraint as constraint_definition
+join pg_class as source_table
+  on source_table.oid = constraint_definition.conrelid
+join pg_namespace as source_schema
+  on source_schema.oid = source_table.relnamespace
+join pg_class as target_table
+  on target_table.oid = constraint_definition.confrelid
+where source_schema.nspname = 'public'
+  and source_table.relname in (
+    'open_finance_consents',
+    'external_accounts',
+    'external_transactions',
+    'sync_jobs'
+  )
+  and constraint_definition.contype = 'f'
+  and cardinality(constraint_definition.confkey) > 1
+order by source_table.relname, constraint_definition.conname;
+
+-- 4b. Indices workspace-first exigidos pela conciliacao com o dominio
+-- normalizado. Esperado: duas linhas, UNIQUE, validas e nao parciais.
+select schemaname, tablename, indexname, indexdef
+from pg_indexes
+where schemaname = 'public'
+  and indexname in (
+    'accounts_workspace_id_id_uidx',
+    'transactions_workspace_id_id_uidx'
+  )
+order by indexname;
+
 -- 5. Constraints de dominio e integridade temporal.
 select
   constraint_table.relname as table_name,
@@ -408,6 +462,46 @@ existing_foreign_keys as (
     and constraint_definition.contype = 'f'
     and constraint_table.relname in (select table_name from target_tables)
 ),
+incompatible_composite_foreign_keys as (
+  select constraint_definition.conname as constraint_name
+  from pg_constraint as constraint_definition
+  join pg_class as constraint_table
+    on constraint_table.oid = constraint_definition.conrelid
+  join pg_namespace as table_schema
+    on table_schema.oid = constraint_table.relnamespace
+  where table_schema.nspname = 'public'
+    and constraint_definition.contype = 'f'
+    and constraint_table.relname in (select table_name from target_tables)
+    and cardinality(constraint_definition.confkey) > 1
+    and not exists (
+      select 1
+      from pg_index as unique_index
+      where unique_index.indrelid = constraint_definition.confrelid
+        and unique_index.indisunique = true
+        and unique_index.indisvalid = true
+        and unique_index.indisready = true
+        and unique_index.indpred is null
+        and unique_index.indexprs is null
+        and unique_index.indnkeyatts = cardinality(
+          constraint_definition.confkey
+        )
+        and unique_index.indkey::text = array_to_string(
+          constraint_definition.confkey,
+          ' '
+        )
+    )
+),
+required_normalized_indexes(index_name) as (
+  values
+    ('accounts_workspace_id_id_uidx'),
+    ('transactions_workspace_id_id_uidx')
+),
+existing_normalized_indexes as (
+  select indexname as index_name
+  from pg_indexes
+  where schemaname = 'public'
+    and indexname in (select index_name from required_normalized_indexes)
+),
 expected_indexes(index_name) as (
   values
     ('open_finance_consents_provider_id_uidx'),
@@ -524,6 +618,17 @@ union all
 select 'twelve_foreign_keys_exist', count(*) = 12
 from expected_foreign_keys
 where constraint_name in (select constraint_name from existing_foreign_keys)
+
+union all
+
+select 'all_composite_fks_have_compatible_unique_key', count(*) = 0
+from incompatible_composite_foreign_keys
+
+union all
+
+select 'two_workspace_first_unique_indexes_exist', count(*) = 2
+from required_normalized_indexes
+where index_name in (select index_name from existing_normalized_indexes)
 
 union all
 
