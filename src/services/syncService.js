@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const SYNC_JOB_FIELDS =
-  'id, workspace_id, consent_id, external_account_id, provider, job_type, trigger_type, status, idempotency_key, webhook_event_id, attempt_count, max_attempts, requested_by, requested_at, started_at, finished_at, records_received, records_created, records_updated, records_skipped, error_code, error_message, created_at, updated_at';
+  'id, workspace_id, consent_id, external_account_id, provider, job_type, trigger_type, status, attempt_count, max_attempts, requested_at, started_at, completed_at, next_retry_at, records_received, records_created, records_updated, records_skipped, error_code, error_message, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

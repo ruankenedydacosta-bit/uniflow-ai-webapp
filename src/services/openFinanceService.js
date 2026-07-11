@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const CONSENT_FIELDS =
-  'id, workspace_id, user_id, provider, institution_id, institution_name, provider_consent_id, status, purpose, legal_basis, scopes, terms_version, privacy_policy_version, requested_at, authorized_at, expires_at, revoked_at, data_retention_until, last_error_code, last_error_at, metadata, created_at, updated_at';
+  'id, workspace_id, user_id, provider, institution_id, institution_name, status, purpose, purpose_version, legal_basis, scopes, scopes_version, terms_version, privacy_policy_version, requested_at, granted_at, expires_at, revoked_at, data_retention_until, last_error_code, last_error_at, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

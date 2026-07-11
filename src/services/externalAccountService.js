@@ -1,9 +1,9 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const EXTERNAL_ACCOUNT_FIELDS =
-  'id, workspace_id, consent_id, normalized_account_id, provider, provider_account_id, institution_id, institution_name, display_name, account_type, account_subtype, currency_code, masked_number, status, sync_status, current_balance, available_balance, balance_captured_at, last_synced_at, created_at, updated_at';
+  'id, workspace_id, consent_id, normalized_account_id, provider, institution_id, institution_name, display_name, account_type, account_subtype, currency_code, masked_number, status, sync_status, current_balance, available_balance, balance_captured_at, last_synced_at, created_at, updated_at';
 const EXTERNAL_TRANSACTION_FIELDS =
-  'id, workspace_id, external_account_id, normalized_transaction_id, provider, provider_transaction_id, transaction_direction, description, amount, currency_code, transaction_date, posted_at, status, merchant_name, category_hint, fingerprint, imported_at, created_at, updated_at';
+  'id, workspace_id, external_account_id, normalized_transaction_id, provider, transaction_direction, description, amount, currency_code, transaction_date, posted_at, status, merchant_name, category_hint, imported_at, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
