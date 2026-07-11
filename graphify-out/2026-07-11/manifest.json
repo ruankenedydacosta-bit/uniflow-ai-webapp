@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783785951.2791393,
-    "ast_hash": "c7dcf91ee4362bcf26cd03b0a3f69bc3",
+    "mtime": 1783800485.4669747,
+    "ast_hash": "05882e87bd40d0a9c71c8e0c8a71dfea",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
@@ -935,8 +935,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md": {
-    "mtime": 1783785951.187136,
-    "ast_hash": "459cb0e9990de059e63d531da23b66f5",
+    "mtime": 1783800485.274502,
+    "ast_hash": "bb9a72017cc11a962357c1d0688d5f1e",
     "semantic_hash": ""
   },
   "src/services/accountService.js": {
@@ -950,8 +950,8 @@
     "semantic_hash": ""
   },
   "src/services/transactionService.js": {
-    "mtime": 1783785842.1236286,
-    "ast_hash": "6a6c3bc2a1aa802ca822afcf6de2cd4d",
+    "mtime": 1783800436.929487,
+    "ast_hash": "8f54e34e45b639e9a5cd43de28063909",
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_003_financial_catalog_seeds.sql": {
@@ -965,13 +965,13 @@
     "semantic_hash": ""
   },
   "src/hooks/financialHooks.test.js": {
-    "mtime": 1783796715.492975,
-    "ast_hash": "69eed275dfe4b486806753bf4ddb1df4",
+    "mtime": 1783800417.9235082,
+    "ast_hash": "1ab110842eec15bb3a1e9cd25e2e17a8",
     "semantic_hash": ""
   },
   "src/hooks/useAccounts.js": {
-    "mtime": 1783796697.4648128,
-    "ast_hash": "ea3f60e11f5ea1f42a1838cd461e3671",
+    "mtime": 1783800374.2148535,
+    "ast_hash": "0b223737e373d7e712660e90a585c804",
     "semantic_hash": ""
   },
   "src/hooks/useCategories.js": {
@@ -985,8 +985,8 @@
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceAccountModal.jsx": {
-    "mtime": 1783796697.704736,
-    "ast_hash": "e584971f9b4184db6ff59c2d18f9f576",
+    "mtime": 1783800374.3199062,
+    "ast_hash": "8595d40897e131f2eabafeec98fb38bd",
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceCategoryModal.jsx": {
@@ -1000,8 +1000,8 @@
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceTransactionModal.jsx": {
-    "mtime": 1783785972.8498662,
-    "ast_hash": "dc9907b1f559a99850740b2707ff87bd",
+    "mtime": 1783800436.8391364,
+    "ast_hash": "2ab5a51fc3f8cc2373de2ef32a3f9298",
     "semantic_hash": ""
   },
   "src/pages/financeiro/financeUiUtils.js": {
@@ -1015,8 +1015,13 @@
     "semantic_hash": ""
   },
   "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md": {
-    "mtime": 1783796697.8058822,
-    "ast_hash": "d5fe65322fc4b0ead05bf286e1397873",
+    "mtime": 1783800485.3666236,
+    "ast_hash": "17ffbf55955aab7ba7498e702a3bc506",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/transactionFormUtils.js": {
+    "mtime": 1783800417.6027012,
+    "ast_hash": "e2acce26342ad6904a270c3989346c0a",
     "semantic_hash": ""
   }
 }
