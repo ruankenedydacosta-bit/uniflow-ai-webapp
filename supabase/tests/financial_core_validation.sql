@@ -1,5 +1,6 @@
 -- UniFlow AI - validacao estatica do nucleo financeiro
--- Migration alvo: 20260711_002_financial_core.sql
+-- Migrations alvo: 20260711_002_financial_core.sql e
+-- 20260711_003_financial_catalog_seeds.sql
 -- Ambiente permitido apos revisao: somente Supabase UniFlow DEV.
 --
 -- Este arquivo contem apenas consultas de diagnostico. Ele nao aplica migration,
@@ -15,10 +16,10 @@
 select table_schema, table_name
 from information_schema.tables
 where table_schema = 'public'
-  and table_name in ('accounts', 'categories', 'transactions')
+  and table_name in ('account_types', 'accounts', 'categories', 'transactions')
 order by table_name;
 
--- Esperado: 3 linhas.
+-- Esperado depois das migrations 002 e 003: 4 linhas.
 
 -- 2. Colunas e tipos. Valores monetarios devem aparecer como numeric, nunca float.
 select
@@ -32,7 +33,7 @@ select
   column_default
 from information_schema.columns
 where table_schema = 'public'
-  and table_name in ('accounts', 'categories', 'transactions')
+  and table_name in ('account_types', 'accounts', 'categories', 'transactions')
 order by table_name, ordinal_position;
 
 -- 3. Constraints, incluindo checks de tipos, status, valores e escopo de contas.
@@ -47,7 +48,12 @@ join pg_class as constraint_table
 join pg_namespace as table_schema
   on table_schema.oid = constraint_table.relnamespace
 where table_schema.nspname = 'public'
-  and constraint_table.relname in ('accounts', 'categories', 'transactions')
+  and constraint_table.relname in (
+    'account_types',
+    'accounts',
+    'categories',
+    'transactions'
+  )
 order by constraint_table.relname, constraint_definition.conname;
 
 -- 4. Checks essenciais de dominio. Esperado: uma linha para cada constraint.
@@ -78,10 +84,10 @@ order by constraint_definition.conname;
 select tablename, indexname, indexdef
 from pg_indexes
 where schemaname = 'public'
-  and tablename in ('accounts', 'categories', 'transactions')
+  and tablename in ('account_types', 'accounts', 'categories', 'transactions')
 order by tablename, indexname;
 
--- 6. RLS deve estar ativo nas tres tabelas.
+-- 6. RLS deve estar ativo nas quatro tabelas.
 select
   table_definition.relname as table_name,
   table_definition.relrowsecurity as rls_enabled,
@@ -90,7 +96,12 @@ from pg_class as table_definition
 join pg_namespace as table_schema
   on table_schema.oid = table_definition.relnamespace
 where table_schema.nspname = 'public'
-  and table_definition.relname in ('accounts', 'categories', 'transactions')
+  and table_definition.relname in (
+    'account_types',
+    'accounts',
+    'categories',
+    'transactions'
+  )
 order by table_definition.relname;
 
 -- Esperado: rls_enabled = true para todas.
@@ -105,7 +116,7 @@ select
   with_check
 from pg_policies
 where schemaname = 'public'
-  and tablename in ('accounts', 'categories', 'transactions')
+  and tablename in ('account_types', 'accounts', 'categories', 'transactions')
 order by tablename, cmd, policyname;
 
 -- 8. Triggers de escopo e updated_at.
@@ -117,7 +128,12 @@ select
   action_statement
 from information_schema.triggers
 where trigger_schema = 'public'
-  and event_object_table in ('accounts', 'categories', 'transactions')
+  and event_object_table in (
+    'account_types',
+    'accounts',
+    'categories',
+    'transactions'
+  )
 order by event_object_table, trigger_name, event_manipulation;
 
 -- 9. Privilegios por tabela/coluna. Anon nao deve ter acesso; authenticated
@@ -125,14 +141,14 @@ order by event_object_table, trigger_name, event_manipulation;
 select grantee, table_name, privilege_type
 from information_schema.role_table_grants
 where table_schema = 'public'
-  and table_name in ('accounts', 'categories', 'transactions')
+  and table_name in ('account_types', 'accounts', 'categories', 'transactions')
   and grantee in ('anon', 'authenticated')
 order by table_name, grantee, privilege_type;
 
 select grantee, table_name, column_name, privilege_type
 from information_schema.role_column_grants
 where table_schema = 'public'
-  and table_name in ('accounts', 'categories', 'transactions')
+  and table_name in ('account_types', 'accounts', 'categories', 'transactions')
   and grantee in ('anon', 'authenticated')
 order by table_name, grantee, privilege_type, column_name;
 
@@ -173,3 +189,14 @@ where table_schema.nspname = 'public'
   )
 order by table_definition.relname, column_definition.attname;
 
+-- 12. Catalogo de tipos de conta. Esperado: 7 codigos ativos.
+select code, name, display_order, is_active
+from public.account_types
+order by display_order;
+
+-- 13. Categorias globais iniciais. Esperado: catalogo pequeno, global,
+-- sistemico e sem created_by.
+select name, category_type, is_system, is_active, created_by
+from public.categories
+where workspace_id is null
+order by category_type, name;
