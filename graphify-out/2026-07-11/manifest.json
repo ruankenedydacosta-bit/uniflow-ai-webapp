@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783735243.4642184,
-    "ast_hash": "48d320c4f6fcdc14bc7ffc921432d9cf",
+    "mtime": 1783785811.2985075,
+    "ast_hash": "ea6181cefb3b50d38af121388a5995c1",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -410,9 +410,9 @@
     "semantic_hash": "481676a1cf9a8627c4c8e18f65ed4c88"
   },
   "src/hooks/index.js": {
-    "mtime": 1783595909.088092,
-    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+    "mtime": 1783785842.4836903,
+    "ast_hash": "9c511035df4d053eba1e45710a283de8",
+    "semantic_hash": ""
   },
   "src/main.jsx": {
     "mtime": 1783598544.7196205,
@@ -755,8 +755,8 @@
     "semantic_hash": ""
   },
   "src/pages/FinanceiroPage.jsx": {
-    "mtime": 1783686794.2291656,
-    "ast_hash": "9a94466c1d9e4f76d5c4643578ca04fc",
+    "mtime": 1783785769.3178024,
+    "ast_hash": "35990559caf3842ebd162ef1feef812c",
     "semantic_hash": ""
   },
   "src/pages/financeiro/financial.mock.js": {
@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783783428.5432851,
-    "ast_hash": "5f7de2aeb15d9e82d2ad7a8bab53a138",
+    "mtime": 1783785951.2791393,
+    "ast_hash": "c7dcf91ee4362bcf26cd03b0a3f69bc3",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
@@ -875,8 +875,8 @@
     "semantic_hash": ""
   },
   "supabase/README.md": {
-    "mtime": 1783783428.4498746,
-    "ast_hash": "3ea18c8dd777ed24503675fd94cd4aa8",
+    "mtime": 1783785951.3756423,
+    "ast_hash": "88c3715a9e79cabf49d6bce7fe152ddd",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
@@ -935,28 +935,88 @@
     "semantic_hash": ""
   },
   "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md": {
-    "mtime": 1783783428.3572707,
-    "ast_hash": "b20bb8d123644f4ce99d35d85fffded8",
+    "mtime": 1783785951.187136,
+    "ast_hash": "459cb0e9990de059e63d531da23b66f5",
     "semantic_hash": ""
   },
   "src/services/accountService.js": {
-    "mtime": 1783783457.1383097,
-    "ast_hash": "f4be6f19f2910c5d2db63e8ec5381dd3",
+    "mtime": 1783785841.9383333,
+    "ast_hash": "72ee8bd18f8f33b3f3e23cc1552e34ee",
     "semantic_hash": ""
   },
   "src/services/categoryService.js": {
-    "mtime": 1783783457.228318,
-    "ast_hash": "768686ade32e8f79fd529f3f3dc5b05e",
+    "mtime": 1783785842.031616,
+    "ast_hash": "159e5a2cd068682bfe6323348a48948d",
     "semantic_hash": ""
   },
   "src/services/transactionService.js": {
-    "mtime": 1783783599.3826382,
-    "ast_hash": "73acdbda0282dd386bc30352ea0872bc",
+    "mtime": 1783785842.1236286,
+    "ast_hash": "6a6c3bc2a1aa802ca822afcf6de2cd4d",
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_003_financial_catalog_seeds.sql": {
     "mtime": 1783783517.7533975,
     "ast_hash": "a20c5817bad892b9474567951649b6c9",
+    "semantic_hash": ""
+  },
+  "src/hooks/financialHookUtils.js": {
+    "mtime": 1783785857.3555229,
+    "ast_hash": "5ee34c698839abb10c265e332a712b33",
+    "semantic_hash": ""
+  },
+  "src/hooks/financialHooks.test.js": {
+    "mtime": 1783796715.492975,
+    "ast_hash": "69eed275dfe4b486806753bf4ddb1df4",
+    "semantic_hash": ""
+  },
+  "src/hooks/useAccounts.js": {
+    "mtime": 1783796697.4648128,
+    "ast_hash": "ea3f60e11f5ea1f42a1838cd461e3671",
+    "semantic_hash": ""
+  },
+  "src/hooks/useCategories.js": {
+    "mtime": 1783785842.3030224,
+    "ast_hash": "a9bf4027659c209100b03bc1190dc16e",
+    "semantic_hash": ""
+  },
+  "src/hooks/useTransactions.js": {
+    "mtime": 1783785842.3928876,
+    "ast_hash": "118b0998b528918a0b9f2b7dd22c8d34",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/FinanceAccountModal.jsx": {
+    "mtime": 1783796697.704736,
+    "ast_hash": "e584971f9b4184db6ff59c2d18f9f576",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/FinanceCategoryModal.jsx": {
+    "mtime": 1783785972.7603226,
+    "ast_hash": "07d3a777496e8a3ab5d1ef635cb98d9f",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/FinanceCrudPrimitives.jsx": {
+    "mtime": 1783796697.6039383,
+    "ast_hash": "14015b523f493a67fedab8ea447c9c4f",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/FinanceTransactionModal.jsx": {
+    "mtime": 1783785972.8498662,
+    "ast_hash": "dc9907b1f559a99850740b2707ff87bd",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/financeUiUtils.js": {
+    "mtime": 1783785972.4905343,
+    "ast_hash": "6c6c8eeaedf42a96780793c69bf26ed3",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/financialCrud.mock.js": {
+    "mtime": 1783785567.1553388,
+    "ast_hash": "fd56a97cfc2af9f24633ee534f7a0639",
+    "semantic_hash": ""
+  },
+  "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md": {
+    "mtime": 1783796697.8058822,
+    "ast_hash": "d5fe65322fc4b0ead05bf286e1397873",
     "semantic_hash": ""
   }
 }

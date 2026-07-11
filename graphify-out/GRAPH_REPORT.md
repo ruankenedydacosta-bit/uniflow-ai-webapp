@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-11)
 
 ## Corpus Check
-- 197 files · ~74,218 words
+- 198 files · ~75,057 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 999 nodes · 1701 edges · 96 communities (81 shown, 15 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.5)
+- 1008 nodes · 1722 edges · 96 communities (81 shown, 15 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `172cf48e`
+- Built from commit: `1fa63a05`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -91,10 +91,10 @@
 4. `formatCurrency()` - 26 edges
 5. `Button()` - 25 edges
 6. `Card()` - 24 edges
-7. `Supabase Auth and Data Plan` - 22 edges
+7. `Supabase Auth and Data Plan` - 23 edges
 8. `Uni AI Experience Reference` - 19 edges
-9. `Financial Core Data Model` - 17 edges
-10. `useAccounts()` - 15 edges
+9. `Financial Core Data Model` - 18 edges
+10. `Financial Phase 2 UI Integration` - 16 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `AppContent()` --calls--> `useAccess()`  [EXTRACTED]
@@ -105,8 +105,8 @@
   src/components/dev/AccessModeSwitcher.jsx → src/app/AccessContext.jsx
 - `Sidebar()` --calls--> `useAccess()`  [EXTRACTED]
   src/components/layout/Sidebar/Sidebar.jsx → src/app/AccessContext.jsx
-- `AgendaPage()` --calls--> `useAccess()`  [EXTRACTED]
-  src/pages/AgendaPage.jsx → src/app/AccessContext.jsx
+- `DashboardPage()` --calls--> `useAccess()`  [EXTRACTED]
+  src/features/dashboard/DashboardPage.jsx → src/app/AccessContext.jsx
 
 ## Import Cycles
 - None detected.
@@ -114,8 +114,8 @@
 ## Communities (96 total, 15 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
-Cohesion: 0.14
-Nodes (10): AccessModeSwitcher(), getModeOptionsForPlan(), normalizeAccessForPlan(), PERSONAL_PLANS, PLAN_LABELS, PLAN_OPTIONS, USER_MODE_LABELS, USER_MODE_OPTIONS (+2 more)
+Cohesion: 0.11
+Nodes (20): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, AccessModeSwitcher() (+12 more)
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.07
@@ -158,12 +158,12 @@ Cohesion: 0.33
 Nodes (4): Card, CardBody, CardFooter, CardHeader
 
 ### Community 39 - "UniAIPage.jsx"
-Cohesion: 0.12
-Nodes (26): audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse(), getPortugueseVoice() (+18 more)
+Cohesion: 0.10
+Nodes (28): audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse(), getPortugueseVoice() (+20 more)
 
 ### Community 41 - "index.js"
-Cohesion: 0.15
-Nodes (17): Input, Modal(), EMPTY_FORM, FinanceAccountModal(), CATEGORY_LABELS, EMPTY_FORM, FinanceCategoryModal(), CrudRow() (+9 more)
+Cohesion: 0.17
+Nodes (18): Input, Modal(), EMPTY_FORM, FinanceAccountModal(), CATEGORY_LABELS, EMPTY_FORM, FinanceCategoryModal(), CrudRow() (+10 more)
 
 ### Community 48 - "Módulos oficiais do produto"
 Cohesion: 0.08
@@ -235,7 +235,7 @@ Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointC
 
 ### Community 72 - "Supabase Auth and Data Plan"
 Cohesion: 0.10
-Nodes (19): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 16. Validacao inicial de Auth e workspaces, 17. RLS autenticado validado (+11 more)
+Nodes (20): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 16. Validacao inicial de Auth e workspaces, 17. RLS autenticado validado (+12 more)
 
 ### Community 73 - "authService.js"
 Cohesion: 0.10
@@ -267,7 +267,7 @@ Nodes (16): Atualizacao da sessao, Idempotencia e retomada, Limites desta etapa,
 
 ### Community 81 - "Financial Core Data Model"
 Cohesion: 0.08
-Nodes (24): Accounts, Accounts, `accountService.js`, Catalogo de tipos de conta, Categories, Categories, `categoryService.js`, Dados manuais e externos (+16 more)
+Nodes (25): Accounts, Accounts, `accountService.js`, Catalogo de tipos de conta, Categories, Categories, `categoryService.js`, Dados manuais e externos (+17 more)
 
 ### Community 82 - "Pessoal e financeiro"
 Cohesion: 0.29
@@ -291,27 +291,27 @@ Nodes (6): 5. Tabelas sugeridas por modulo, `uni_conversations`, Uni e IA, `uni_
 
 ### Community 87 - "useAccess"
 Cohesion: 0.18
-Nodes (12): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, AccessContext, settingsMock, onboardingOptions (+4 more)
+Nodes (8): Avatar, Badge(), Button(), settingsMock, getSettingsContext(), PLAN_LABELS, SettingsPage(), USER_MODE_LABELS
 
 ### Community 88 - "cx"
-Cohesion: 0.19
-Nodes (8): Button(), Tooltip(), agendaMock, AgendaPage(), getAgendaContext(), crmMock, CRMPage(), cx()
+Cohesion: 0.24
+Nodes (4): Tooltip(), ProjectsPage(), projectsMock, cx()
 
 ### Community 89 - "index.js"
-Cohesion: 0.19
-Nodes (9): Badge(), Card(), FinancialSummaryCard(), MetricRow(), GoalsSummaryCard(), RecentActivityList(), clientsMock, ClientesPage() (+1 more)
+Cohesion: 0.20
+Nodes (8): Card(), FinancialSummaryCard(), MetricRow(), GoalsSummaryCard(), RecentActivityList(), crmMock, CRMPage(), formatCurrency()
 
 ### Community 90 - "routes.jsx"
-Cohesion: 0.26
-Nodes (7): WORKSPACE_TYPES, useAccess(), dashboardMock, DashboardPage(), getDashboardContext(), ProjectsPage(), projectsMock
+Cohesion: 0.31
+Nodes (6): useAccess(), agendaMock, AgendaPage(), getAgendaContext(), clientsMock, ClientesPage()
 
 ### Community 91 - "accountService.js"
 Cohesion: 0.14
-Nodes (45): cloneRecords(), createDemoRecord(), createDemoResult(), removeRecord(), upsertRecord(), useAccounts(), useCategories(), useTransactions() (+37 more)
+Nodes (46): cloneRecords(), createDemoRecord(), createDemoResult(), removeRecord(), upsertRecord(), useAccounts(), useCategories(), useTransactions() (+38 more)
 
 ### Community 92 - "transactionService.js"
-Cohesion: 0.11
-Nodes (18): CRUD de categorias, CRUD de contas, CRUD de lancamentos, Financial Phase 2 UI Integration, Fluxo de dados, Hooks, Integracao visual, Limites desta fase (+10 more)
+Cohesion: 0.10
+Nodes (20): CRUD de categorias, CRUD de contas, CRUD de lancamentos, Edicao e contas arquivadas, Financial Phase 2 UI Integration, Fluxo de dados, Hooks, Integracao visual (+12 more)
 
 ### Community 94 - "ReportsPage.jsx"
 Cohesion: 0.39
@@ -326,7 +326,7 @@ Cohesion: 0.53
 Nodes (4): objectivesMock, getObjectivesContext(), getProgress(), ObjetivosPage()
 
 ## Knowledge Gaps
-- **425 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+420 more)
+- **428 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+423 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -334,15 +334,15 @@ Nodes (4): objectivesMock, getObjectivesContext(), getProgress(), ObjetivosPage(
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `useAccess()` connect `routes.jsx` to `DashboardPage.jsx`, `FinanceiroPage.jsx`, `ObjetivosPage.jsx`, `navigation.js`, `authService.js`, `useAccess`, `cx`, `index.js`, `ReportsPage.jsx`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Why does `cx()` connect `cx` to `FinanceiroPage.jsx`, `navigation.js`, `index.js`, `useAccess`, `index.js`, `routes.jsx`, `ReportsPage.jsx`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `Button()` connect `cx` to `DashboardPage.jsx`, `FinanceiroPage.jsx`, `ObjetivosPage.jsx`, `UniAIPage.jsx`, `index.js`, `useAccess`, `index.js`, `routes.jsx`, `ReportsPage.jsx`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Why does `useAccounts()` connect `accountService.js` to `FinanceiroPage.jsx`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Why does `useCategories()` connect `accountService.js` to `FinanceiroPage.jsx`?**
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _425 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _428 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.1368421052631579 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11083743842364532 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**
