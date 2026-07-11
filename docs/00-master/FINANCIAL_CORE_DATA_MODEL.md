@@ -81,9 +81,9 @@ A migration 003 inclui um catalogo inicial pequeno, global e sistemico:
 
 O seed nao define cor ou icone para evitar antecipar decisoes do Design System. Novas categorias globais entram por migration; categorias do usuario continuam pertencendo ao workspace.
 
-## Services da Fase 1
+## Services e hooks
 
-As telas ainda nao usam dados reais. Os services formam a fronteira para a migracao gradual dos mocks.
+Os services formam a fronteira para a migracao gradual dos mocks. Na Fase 2, a pagina Financeiro passou a consumi-los por hooks, mantendo fallback local quando Supabase nao esta configurado.
 
 ### `accountService.js`
 
@@ -108,6 +108,14 @@ As telas ainda nao usam dados reais. Os services formam a fronteira para a migra
 Todos retornam respostas controladas sem Supabase configurado. IDs de workspace e entidades sao validados antes de compor consultas. RLS permanece como autoridade final.
 
 Criar uma transacao nao recalcula `current_balance` no cliente. Essa regra dependera de uma funcao transacional/RPC futura para evitar divergencia de saldo.
+
+Hooks correspondentes:
+
+- `useAccounts`;
+- `useCategories`;
+- `useTransactions`.
+
+A integracao visual e os limites da Fase 2 estao em `docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md`.
 
 ## Transactions
 

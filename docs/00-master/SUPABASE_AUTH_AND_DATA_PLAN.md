@@ -721,3 +721,11 @@ Nesta fase:
 - Open Finance continua sem integracao;
 - 002 e 003 devem ser aplicadas e validadas primeiro no `UniFlow DEV`;
 - producao permanece sem alteracoes.
+
+## 21. Financeiro Fase 2: integracao com a UI
+
+A pagina Financeiro agora consome `accountService`, `categoryService` e `transactionService` por meio de `useAccounts`, `useCategories` e `useTransactions`.
+
+O layout e os mocks de clareza financeira foram preservados. O CRUD aparece em modais base existentes e usa `SessionContext.workspace.id` como escopo real. Sem Supabase, as mesmas operacoes funcionam apenas em estado local e sao descartadas ao recarregar.
+
+Esta integracao nao altera Dashboard, nao recalcula saldo por transacao e nao implementa Open Finance. O CRUD real deve ser validado apenas depois da aplicacao das migrations 002 e 003 no `UniFlow DEV`.

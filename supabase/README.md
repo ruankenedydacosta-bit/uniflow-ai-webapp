@@ -37,6 +37,8 @@ Antes de qualquer aplicacao, a migration deve ser revisada e testada somente no 
 
 A migration dependente `migrations/20260711_003_financial_catalog_seeds.sql` tambem permanece somente local. Ela cria o catalogo global `account_types`, vincula `accounts.account_type` por FK e adiciona um seed pequeno de categorias globais do sistema. A ordem obrigatoria de aplicacao no DEV e 002 seguida de 003.
 
+O frontend da Fase 2 ja possui hooks e CRUD preparados, mas continua em fallback mockado enquanto essas migrations nao forem aplicadas no `UniFlow DEV`. A integracao nao acessa producao e nao contorna RLS.
+
 ## Validacoes concluidas no DEV
 
 Os testes manuais foram realizados somente no projeto `UniFlow DEV` e confirmaram:
