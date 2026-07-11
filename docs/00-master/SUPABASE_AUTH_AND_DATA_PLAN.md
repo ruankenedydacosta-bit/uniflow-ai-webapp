@@ -599,3 +599,39 @@ Nao colocar chaves reais em documentacao, commits ou prints.
 A Fase 2 deve comecar por Supabase Auth, profiles, workspaces, membership e RLS.
 
 Somente depois disso os modulos devem migrar de mock para dados reais. Essa ordem protege a coerencia da UniFlow AI: primeiro identidade, contexto e seguranca; depois dados; depois automacoes e IA real.
+
+## 14. Schema inicial versionado
+
+A primeira migration da Fase 2 foi versionada em:
+
+`supabase/migrations/20260710_001_auth_profiles_workspaces.sql`
+
+Ela inclui:
+
+- `profiles` ligado a `auth.users`;
+- `workspaces` pessoais e empresariais;
+- `workspace_members` com roles e status;
+- `plans` como catalogo inicial;
+- `subscriptions` vinculadas ao workspace;
+- `site_leads` para captura compartilhada entre site e aplicativo;
+- criacao automatica apenas do profile apos cadastro;
+- criacao da membership owner quando um workspace for criado explicitamente;
+- triggers de `updated_at`;
+- constraints, indices, grants minimos e RLS.
+
+A migration ainda nao foi aplicada em nenhum projeto Supabase. Ela deve passar por revisao estatica e depois ser validada em ambiente local ou descartavel antes de qualquer aplicacao remota.
+
+No MVP, site e aplicativo compartilharao o mesmo projeto Supabase. Essa decisao reduz duplicacao de identidade e permite converter leads em usuarios sem sincronizar bancos separados. O isolamento continua obrigatorio: o site possui apenas permissao publica de captura, enquanto dados privados e operacoes administrativas permanecem protegidos por RLS e backend futuro.
+
+## 15. Estrategia de ambientes
+
+Desenvolvimento e migrations serao testados em projeto Supabase DEV. No lancamento, site e aplicativo compartilharao o mesmo projeto de producao para Auth, leads e perfis.
+
+Regras operacionais:
+
+- a mesma conta Supabase pode administrar DEV e producao;
+- o projeto `UniFlow DEV` deve ser separado do projeto que contem dados reais do site;
+- nenhuma migration deve ser testada diretamente em producao;
+- antes do primeiro teste em DEV, o projeto atual do site deve ser auditado com `SUPABASE_EXISTING_PROJECT_AUDIT.md`;
+- compatibilidades e conflitos devem gerar uma migration de adaptacao revisavel, sem alterar silenciosamente o schema de producao;
+- a aplicacao em producao so pode ser preparada depois de testes de Auth, leads, profiles, workspaces, memberships, grants e RLS no projeto DEV.

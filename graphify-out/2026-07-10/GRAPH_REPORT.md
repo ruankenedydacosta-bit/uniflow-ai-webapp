@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 167 files · ~51,651 words
+- 169 files · ~53,737 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 728 nodes · 1113 edges · 76 communities (62 shown, 14 thin omitted)
+- 739 nodes · 1125 edges · 75 communities (61 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d059fa3d`
+- Built from commit: `2366049a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -61,7 +61,6 @@
 - Supabase Auth and Data Plan
 - authService.js
 - Supabase Env Setup
-- workspaceService.js
 
 ## God Nodes (most connected - your core abstractions)
 1. `cx()` - 29 edges
@@ -71,8 +70,8 @@
 5. `formatCurrency()` - 22 edges
 6. `Button()` - 21 edges
 7. `Uni AI Experience Reference` - 19 edges
-8. `User Modes and Plans` - 15 edges
-9. `Supabase Auth and Data Plan` - 14 edges
+8. `Supabase Auth and Data Plan` - 15 edges
+9. `User Modes and Plans` - 15 edges
 10. `WORKSPACE_TYPES` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -90,15 +89,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (76 total, 14 thin omitted)
+## Communities (75 total, 14 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
-Cohesion: 0.05
-Nodes (55): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, useAccess() (+47 more)
+Cohesion: 0.06
+Nodes (54): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, useAccess() (+46 more)
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.08
-Nodes (23): dependencies, react, react-dom, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh (+15 more)
+Nodes (24): dependencies, react, react-dom, @supabase/supabase-js, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks (+16 more)
 
 ### Community 2 - "cx"
 Cohesion: 0.07
@@ -109,8 +108,8 @@ Cohesion: 0.17
 Nodes (8): DashboardGreeting(), currency, FinancialSummaryCard(), GoalsSummaryCard(), currency, dateFormatter, RecentActivityList(), UniInsightsCard()
 
 ### Community 4 - "AccessModeSwitcher.jsx"
-Cohesion: 0.19
-Nodes (10): AccessModeSwitcher(), getModeOptionsForPlan(), normalizeAccessForPlan(), PERSONAL_PLANS, PLAN_LABELS, PLAN_OPTIONS, USER_MODE_LABELS, USER_MODE_OPTIONS (+2 more)
+Cohesion: 0.25
+Nodes (7): Antes de aplicar, Decisoes ainda pendentes, Estado atual, Novas migrations, Ordem inicial, Seguranca, Supabase
 
 ### Community 5 - "CustomerBoard.jsx"
 Cohesion: 0.29
@@ -137,8 +136,8 @@ Cohesion: 0.33
 Nodes (4): Card, CardBody, CardFooter, CardHeader
 
 ### Community 39 - "UniAIPage.jsx"
-Cohesion: 0.10
-Nodes (28): Input, audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse() (+20 more)
+Cohesion: 0.09
+Nodes (29): Input, audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport(), createMessage(), getLastUniMessage(), getMockUniResponse() (+21 more)
 
 ### Community 48 - "Módulos oficiais do produto"
 Cohesion: 0.08
@@ -193,8 +192,8 @@ Cohesion: 0.05
 Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao futura de estrutura tecnica, 13. Roadmap de implementacao, 1. Objetivo da separacao, 2. App unico, experiencias diferentes, 3. Modos de uso, 4. Planos (+31 more)
 
 ### Community 68 - "navigation.js"
-Cohesion: 0.12
-Nodes (18): AccessProvider(), canAccessNavigationItem(), canAccessRoute(), getFallbackRoute(), App(), AppContent(), ALL_MODES, ALL_PLANS (+10 more)
+Cohesion: 0.08
+Nodes (28): AccessProvider(), canAccessNavigationItem(), canAccessRoute(), getFallbackRoute(), App(), AppContent(), ALL_MODES, ALL_PLANS (+20 more)
 
 ### Community 69 - "Obsidian Workflow"
 Cohesion: 0.22
@@ -209,23 +208,19 @@ Cohesion: 0.36
 Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointCoordinates(), getSeriesTotal(), getSeriesValues(), PADDING, SERIES_CLASSES
 
 ### Community 72 - "Supabase Auth and Data Plan"
-Cohesion: 0.05
-Nodes (43): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 1. Objetivo da Fase 2, 2. Principios, 3. Modelo inicial de autenticacao, 4. Modelo de workspaces (+35 more)
+Cohesion: 0.04
+Nodes (44): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 1. Objetivo da Fase 2, 2. Principios, 3. Modelo inicial de autenticacao (+36 more)
 
 ### Community 73 - "authService.js"
-Cohesion: 0.36
-Nodes (7): createServiceUnavailableResult(), getCurrentUser(), signInWithEmail(), signOut(), signUpWithEmail(), getSupabaseConfigStatus(), isSupabaseConfigured
+Cohesion: 0.21
+Nodes (13): createServiceUnavailableResult(), getCurrentUser(), signInWithEmail(), signOut(), signUpWithEmail(), getSupabaseConfigStatus(), isSupabaseConfigured, supabase (+5 more)
 
 ### Community 74 - "Supabase Env Setup"
 Cohesion: 0.29
 Nodes (6): Estado atual, Objetivo, Proxima etapa, Regras de seguranca, Supabase Env Setup, Variaveis necessarias
 
-### Community 75 - "workspaceService.js"
-Cohesion: 0.60
-Nodes (5): createBusinessWorkspace(), createPersonalWorkspace(), createWorkspaceSchemaPendingResult(), getCurrentWorkspace(), listWorkspaces()
-
 ## Knowledge Gaps
-- **292 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+287 more)
+- **300 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+295 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -234,15 +229,15 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `cx()` connect `DashboardPage.jsx` to `UniAIPage.jsx`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Why does `useAccess()` connect `DashboardPage.jsx` to `navigation.js`, `AccessModeSwitcher.jsx`?**
+- **Why does `useAccess()` connect `DashboardPage.jsx` to `navigation.js`?**
   _High betweenness centrality (0.007) - this node is a cross-community bridge._
-- **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `AccessModeSwitcher.jsx`?**
+- **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `UniAIPage.jsx`?**
   _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _292 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _300 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.054758800521512385 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0568234746157429 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
-  _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._

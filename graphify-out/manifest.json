@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783711913.8430586,
-    "ast_hash": "3419d16d6dec4ffdf5f7b999816e2943",
+    "mtime": 1783729586.9903412,
+    "ast_hash": "e505231139df031b085c72fc368f362a",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
@@ -867,6 +867,21 @@
   "docs/00-master/SUPABASE_ENV_SETUP.md": {
     "mtime": 1783727756.34198,
     "ast_hash": "4fac39fc74de5e9c077fd43e7d181f43",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260710_001_auth_profiles_workspaces.sql": {
+    "mtime": 1783728627.251559,
+    "ast_hash": "5441001dd8a48b9dc83f1b87f8531ac0",
+    "semantic_hash": ""
+  },
+  "supabase/README.md": {
+    "mtime": 1783728727.5952387,
+    "ast_hash": "41228169f4c8e86ed30de4952e818351",
+    "semantic_hash": ""
+  },
+  "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
+    "mtime": 1783729605.6680622,
+    "ast_hash": "2691d68a6efe7fba48e265ce0df4b1d7",
     "semantic_hash": ""
   }
 }
