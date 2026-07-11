@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const CATEGORY_FIELDS =
   'id, workspace_id, name, category_type, parent_category_id, icon, color, is_system, is_active, created_by, created_at, updated_at';

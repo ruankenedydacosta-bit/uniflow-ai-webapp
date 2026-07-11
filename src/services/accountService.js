@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const ACCOUNT_FIELDS =
   'id, workspace_id, name, account_type, institution_name, currency_code, initial_balance, current_balance, credit_limit, closing_day, due_day, is_active, source_type, external_provider, external_account_id, last_synced_at, sync_status, metadata, created_by, created_at, updated_at';
