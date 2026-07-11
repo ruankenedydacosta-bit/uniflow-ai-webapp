@@ -576,10 +576,10 @@ Nao colocar chaves reais em documentacao, commits ou prints.
 - [ ] Projeto Supabase criado.
 - [ ] Variaveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` configuradas localmente.
 - [ ] Cliente Supabase criado.
-- [ ] Auth basica funcionando.
-- [ ] `profiles` criado com RLS.
-- [ ] `workspaces` criado com RLS.
-- [ ] `workspace_members` criado com RLS.
+- [x] Auth base validado manualmente no `UniFlow DEV`.
+- [x] `profiles` criado e leitura autenticada validada no DEV.
+- [x] `workspaces` criado e leitura por membership validada no DEV.
+- [x] `workspace_members` criado e owner ativo validado no DEV.
 - [ ] Access real substitui parcialmente `DEFAULT_DEMO_ACCESS`.
 - [ ] Login mockado evolui para login real sem quebrar demo.
 - [ ] Onboarding mockado evolui para criacao real de perfil/workspace.
@@ -621,7 +621,7 @@ Ela inclui:
 
 A migration foi aplicada com sucesso somente no projeto Supabase `UniFlow DEV`. O ambiente de producao permanece sem alteracoes.
 
-O status `aplicada` nao encerra a validacao. Antes de qualquer evolucao ou preparacao para producao, ainda devem ser verificados no DEV: tabelas e colunas, catalogo de planos, triggers de profile/workspace/`updated_at`, grants e policies RLS para cada role prevista.
+Os fluxos manuais de Auth, profile automatico, workspace pessoal e membership owner ativa foram confirmados no DEV. A validacao autenticada de RLS tambem foi concluida com 8/8 testes aprovados para o usuario owner preparado.
 
 No MVP, site e aplicativo compartilharao o mesmo projeto Supabase. Essa decisao reduz duplicacao de identidade e permite converter leads em usuarios sem sincronizar bancos separados. O isolamento continua obrigatorio: o site possui apenas permissao publica de captura, enquanto dados privados e operacoes administrativas permanecem protegidos por RLS e backend futuro.
 
@@ -641,6 +641,39 @@ Regras operacionais:
 Status da migration inicial:
 
 - aplicada no `UniFlow DEV`;
-- ainda em validacao funcional e de seguranca;
+- Auth e RLS base validados no DEV;
 - nao aplicada em producao;
 - sem conexao com Login, Onboarding ou mocks do aplicativo nesta etapa.
+
+## 16. Validacao inicial de Auth e workspaces
+
+O teste manual no projeto `UniFlow DEV` confirmou:
+
+- criacao de usuario em Supabase Auth;
+- criacao automatica de `profiles` pelo trigger de `auth.users`;
+- criacao manual de workspace pessoal;
+- criacao automatica de `workspace_members` pelo trigger do workspace;
+- membership do proprietario com `role = owner` e `status = active`.
+
+Esses resultados validam o fluxo estrutural inicial, mas ainda nao conectam o Login ou o Onboarding do aplicativo.
+
+O roteiro autenticado confirmou 8/8 testes: profile proprio, workspaces permitidos, membership owner, plans, bloqueio de leitura de `site_leads`, bloqueio de escrita em `subscriptions`, autenticacao e `signOut`.
+
+A proxima etapa e integrar o Login real por `authService`, mantendo o visual atual. O Onboarding permanece mockado durante essa integracao, assim como os dados dos modulos.
+
+O ambiente de producao permanece sem alteracoes.
+
+## 17. RLS autenticado validado
+
+Em 2026-07-10, o script `scripts/supabase/test-rls.js` foi executado contra o projeto `UniFlow DEV` com anon/publishable key e usuario autenticado.
+
+Resultado:
+
+- 8/8 testes aprovados;
+- `service_role` nao utilizada;
+- acesso permitido apenas aos dados esperados do owner;
+- `site_leads` protegido contra leitura autenticada;
+- `subscriptions` protegido contra escrita do cliente;
+- producao sem alteracoes.
+
+Esse resultado libera a preparacao da integracao real do Login existente. Ele nao libera ainda a substituicao do Onboarding mockado nem dos mocks dos modulos.

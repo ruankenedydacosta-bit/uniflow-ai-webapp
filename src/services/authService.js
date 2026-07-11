@@ -31,7 +31,69 @@ export async function getCurrentUser() {
   };
 }
 
-export async function signInWithEmail({ email, password } = {}) {
+export async function getSession() {
+  if (!supabase) {
+    return {
+      data: {
+        session: null,
+      },
+      error: null,
+      isConfigured: false,
+    };
+  }
+
+  const { data, error } = await supabase.auth.getSession();
+
+  return {
+    data,
+    error,
+    isConfigured: true,
+  };
+}
+
+export function onAuthStateChange(callback) {
+  if (!supabase) {
+    return {
+      unsubscribe() {},
+    };
+  }
+
+  const { data } = supabase.auth.onAuthStateChange(callback);
+
+  return data.subscription;
+}
+
+export async function getProfile(userId) {
+  if (!supabase) {
+    return createServiceUnavailableResult();
+  }
+
+  if (!userId) {
+    return {
+      data: null,
+      error: {
+        message: 'Usuario ausente para carregar o profile.',
+      },
+      isConfigured: true,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(
+      'id, full_name, avatar_url, phone, user_mode, current_workspace_id, onboarding_completed, created_at, updated_at',
+    )
+    .eq('id', userId)
+    .maybeSingle();
+
+  return {
+    data,
+    error,
+    isConfigured: true,
+  };
+}
+
+export async function signInWithPassword({ email, password } = {}) {
   if (!supabase) {
     return createServiceUnavailableResult();
   }
@@ -47,6 +109,8 @@ export async function signInWithEmail({ email, password } = {}) {
     isConfigured: true,
   };
 }
+
+export const signInWithEmail = signInWithPassword;
 
 export async function signUpWithEmail({ email, password } = {}) {
   if (!supabase) {

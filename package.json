@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "obsidian:note": "node scripts/obsidian/create-note.js",
+    "supabase:test-rls": "node scripts/supabase/test-rls.js",
     "preview": "vite preview"
   },
   "dependencies": {

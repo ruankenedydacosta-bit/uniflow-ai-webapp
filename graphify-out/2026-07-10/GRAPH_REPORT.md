@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-10)
 
 ## Corpus Check
-- 170 files · ~55,514 words
+- 173 files · ~58,411 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 768 nodes · 1153 edges · 76 communities (62 shown, 14 thin omitted)
+- 797 nodes · 1189 edges · 78 communities (64 shown, 14 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2366049a`
+- Built from commit: `d3df8312`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -62,6 +62,8 @@
 - authService.js
 - Supabase Env Setup
 - 5. Consultas de diagnostico
+- Badge
+- index.js
 
 ## God Nodes (most connected - your core abstractions)
 1. `cx()` - 29 edges
@@ -71,7 +73,7 @@
 5. `formatCurrency()` - 22 edges
 6. `Button()` - 21 edges
 7. `Uni AI Experience Reference` - 19 edges
-8. `Supabase Auth and Data Plan` - 16 edges
+8. `Supabase Auth and Data Plan` - 18 edges
 9. `User Modes and Plans` - 15 edges
 10. `WORKSPACE_TYPES` - 13 edges
 
@@ -90,7 +92,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (76 total, 14 thin omitted)
+## Communities (78 total, 14 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
 Cohesion: 0.06
@@ -98,7 +100,7 @@ Nodes (54): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLA
 
 ### Community 1 - "devDependencies"
 Cohesion: 0.08
-Nodes (24): dependencies, react, react-dom, @supabase/supabase-js, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks (+16 more)
+Nodes (25): dependencies, react, react-dom, @supabase/supabase-js, devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks (+17 more)
 
 ### Community 2 - "cx"
 Cohesion: 0.07
@@ -109,8 +111,8 @@ Cohesion: 0.17
 Nodes (8): DashboardGreeting(), currency, FinancialSummaryCard(), GoalsSummaryCard(), currency, dateFormatter, RecentActivityList(), UniInsightsCard()
 
 ### Community 4 - "AccessModeSwitcher.jsx"
-Cohesion: 0.25
-Nodes (7): Antes de aplicar, Decisoes ainda pendentes, Estado atual, Novas migrations, Ordem inicial, Seguranca, Supabase
+Cohesion: 0.22
+Nodes (8): Decisoes ainda pendentes, Estado atual, Novas migrations, Ordem inicial, Proximo passo, Seguranca, Supabase, Validacoes concluidas no DEV
 
 ### Community 5 - "CustomerBoard.jsx"
 Cohesion: 0.29
@@ -210,7 +212,7 @@ Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointC
 
 ### Community 72 - "Supabase Auth and Data Plan"
 Cohesion: 0.04
-Nodes (45): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 1. Objetivo da Fase 2, 2. Principios (+37 more)
+Nodes (47): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 16. Validacao inicial de Auth e workspaces, 17. RLS autenticado validado (+39 more)
 
 ### Community 73 - "authService.js"
 Cohesion: 0.21
@@ -224,8 +226,16 @@ Nodes (6): Estado atual, Objetivo, Proxima etapa, Regras de seguranca, Supabase 
 Cohesion: 0.07
 Nodes (27): 1. Decisao de ambientes, 2. Identificacao do projeto atual do site, 3. Checklist de inventario, 4. Matriz de possiveis colisoes, 5. Consultas de diagnostico, 6. Classificacao do resultado, 7. Criterios para liberar teste em DEV, 8. Seguranca e producao (+19 more)
 
+### Community 76 - "Badge"
+Cohesion: 0.14
+Nodes (13): Anon key, Chaves Supabase, Checagem antes de rodar, Execucao sem configuracao, Limites desta etapa, Por que usar um cliente autenticado, Publishable key, Resultados esperados (+5 more)
+
+### Community 77 - "index.js"
+Cohesion: 0.35
+Nodes (10): addResult(), EXPECTED_PLAN_IDS, getJwtRole(), getSafeErrorCode(), isPermissionDenied(), isServerOnlyKey(), readConfiguration(), REQUIRED_ENVIRONMENT_VARIABLES (+2 more)
+
 ## Knowledge Gaps
-- **324 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+319 more)
+- **341 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+336 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -233,16 +243,16 @@ Nodes (27): 1. Decisao de ambientes, 2. Identificacao do projeto atual do site, 
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `cx()` connect `DashboardPage.jsx` to `UniAIPage.jsx`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **Why does `useAccess()` connect `DashboardPage.jsx` to `navigation.js`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **Why does `Badge()` connect `DashboardPage.jsx` to `navigation.js`, `UniAIPage.jsx`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _324 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _341 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.05720606826801517 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0568234746157429 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**
-  _Cohesion score 0.08 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
 - **Should `cx` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._

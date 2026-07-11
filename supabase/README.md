@@ -20,15 +20,38 @@ Ela prepara:
 
 Nenhuma tabela financeira ou de produto foi criada nesta migration.
 
-## Proxima validacao no DEV
+## Validacoes concluidas no DEV
 
-1. Confirmar as seis tabelas e suas colunas no schema `public`.
-2. Confirmar os quatro registros iniciais em `plans`.
-3. Validar os triggers de `updated_at`, profile e owner membership.
-4. Testar as policies com `anon`, `authenticated`, owner, admin, member e viewer.
-5. Confirmar que `subscriptions` nao aceita escrita pelo cliente.
-6. Confirmar que `site_leads` aceita somente captura publica controlada e nao permite leitura publica.
-7. Registrar os resultados antes de preparar qualquer migration seguinte.
+Os testes manuais foram realizados somente no projeto `UniFlow DEV` e confirmaram:
+
+- criacao de usuario em `auth.users`;
+- criacao automatica do registro correspondente em `profiles`;
+- criacao manual de workspace pessoal;
+- criacao automatica da membership do proprietario;
+- membership com `role = owner` e `status = active`.
+
+Em 2026-07-10, o roteiro autenticado de RLS tambem foi concluido com 8/8 testes aprovados:
+
+- autenticacao do usuario de teste;
+- leitura do proprio profile;
+- leitura dos workspaces permitidos;
+- leitura da membership owner ativa;
+- leitura do catalogo de plans;
+- bloqueio de leitura de `site_leads`;
+- bloqueio de escrita em `subscriptions`;
+- encerramento da sessao com `signOut`.
+
+Os testes usaram cliente autenticado e chave publica. `service_role` nao foi usada.
+
+O projeto de producao permanece sem alteracoes.
+
+## Proximo passo
+
+1. Integrar Supabase Auth ao Login existente sem alterar o visual.
+2. Manter o Onboarding mockado nesta proxima etapa.
+3. Manter os mocks dos modulos enquanto o access real entra gradualmente.
+4. Preservar o fallback seguro quando Supabase nao estiver configurado.
+5. Validar os papeis admin, member e viewer em uma etapa posterior com fixtures controladas.
 
 A Supabase CLI nao esta instalada neste repositorio. A aplicacao no `UniFlow DEV` foi realizada fora deste workflow local; nenhuma credencial e versionada aqui.
 

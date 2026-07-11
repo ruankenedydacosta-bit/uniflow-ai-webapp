@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783727384.7006361,
-    "ast_hash": "46632267f7c1e131e6759bb1fde50586",
+    "mtime": 1783735243.4642184,
+    "ast_hash": "48d320c4f6fcdc14bc7ffc921432d9cf",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783729586.9903412,
-    "ast_hash": "e505231139df031b085c72fc368f362a",
+    "mtime": 1783737001.1445608,
+    "ast_hash": "bb8fdf98b68d6962b2a88af9f02f54c5",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
@@ -875,13 +875,28 @@
     "semantic_hash": ""
   },
   "supabase/README.md": {
-    "mtime": 1783728727.5952387,
-    "ast_hash": "41228169f4c8e86ed30de4952e818351",
+    "mtime": 1783737000.9611988,
+    "ast_hash": "18e6ef2df34dab89aff660c18694d72e",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
     "mtime": 1783729605.6680622,
     "ast_hash": "2691d68a6efe7fba48e265ce0df4b1d7",
+    "semantic_hash": ""
+  },
+  "scripts/supabase/test-rls.js": {
+    "mtime": 1783735243.2808971,
+    "ast_hash": "7cf089578c37b343a86e999c990e00e8",
+    "semantic_hash": ""
+  },
+  "supabase/tests/rls_validation.sql": {
+    "mtime": 1783735268.0696516,
+    "ast_hash": "f53f1ecb2807211e0eb758b5955c68df",
+    "semantic_hash": ""
+  },
+  "docs/00-master/SUPABASE_RLS_TESTING.md": {
+    "mtime": 1783737001.0529387,
+    "ast_hash": "2a84c215eba3c493af5eea13f11c5fd1",
     "semantic_hash": ""
   }
 }
