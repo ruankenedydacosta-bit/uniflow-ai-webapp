@@ -2220,7 +2220,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_accesscontext",
-      "community": 0,
+      "community": 95,
       "norm_label": "accesscontext.jsx"
     },
     {
@@ -2230,7 +2230,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_accesscontext_accesscontext",
-      "community": 0,
+      "community": 95,
       "norm_label": "accesscontext"
     },
     {
@@ -2240,7 +2240,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_accesscontext_accessprovider",
-      "community": 68,
+      "community": 95,
       "norm_label": "accessprovider()"
     },
     {
@@ -2250,7 +2250,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_app_accesscontext_useaccess",
-      "community": 0,
+      "community": 68,
       "norm_label": "useaccess()"
     },
     {
@@ -2290,7 +2290,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_sessioncontext",
-      "community": 73,
+      "community": 95,
       "norm_label": "sessioncontext.jsx"
     },
     {
@@ -2300,7 +2300,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_app_sessioncontext_sessioncontext",
-      "community": 73,
+      "community": 95,
       "norm_label": "sessioncontext"
     },
     {
@@ -2310,7 +2310,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_app_sessioncontext_initial_session_state",
-      "community": 73,
+      "community": 95,
       "norm_label": "initial_session_state"
     },
     {
@@ -2320,7 +2320,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_app_sessioncontext_valid_user_modes",
-      "community": 73,
+      "community": 95,
       "norm_label": "valid_user_modes"
     },
     {
@@ -2330,7 +2330,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "src_app_sessioncontext_valid_plans",
-      "community": 73,
+      "community": 95,
       "norm_label": "valid_plans"
     },
     {
@@ -2340,7 +2340,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_app_sessioncontext_valid_workspace_types",
-      "community": 73,
+      "community": 95,
       "norm_label": "valid_workspace_types"
     },
     {
@@ -2360,7 +2360,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_app_sessioncontext_getaccessfromsession",
-      "community": 73,
+      "community": 95,
       "norm_label": "getaccessfromsession()"
     },
     {
@@ -2380,7 +2380,7 @@
       "source_location": "L431",
       "_origin": "ast",
       "id": "src_app_sessioncontext_usesession",
-      "community": 96,
+      "community": 68,
       "norm_label": "usesession()"
     },
     {
@@ -2390,7 +2390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_access",
-      "community": 0,
+      "community": 95,
       "norm_label": "access.js"
     },
     {
@@ -2410,7 +2410,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_access_plans",
-      "community": 0,
+      "community": 95,
       "norm_label": "plans"
     },
     {
@@ -2430,7 +2430,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_app_access_default_demo_access",
-      "community": 0,
+      "community": 95,
       "norm_label": "default_demo_access"
     },
     {
@@ -2440,7 +2440,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_app_access_isbusinessmode",
-      "community": 0,
+      "community": 95,
       "norm_label": "isbusinessmode()"
     },
     {
@@ -2450,7 +2450,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_app_access_ispersonalmode",
-      "community": 0,
+      "community": 95,
       "norm_label": "ispersonalmode()"
     },
     {
@@ -2460,7 +2460,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_app_access_canusebusinessfeatures",
-      "community": 0,
+      "community": 95,
       "norm_label": "canusebusinessfeatures()"
     },
     {
@@ -2610,7 +2610,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_routes",
-      "community": 0,
+      "community": 68,
       "norm_label": "routes.jsx"
     },
     {
@@ -2760,7 +2760,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_appshell_appshell",
-      "community": 68,
+      "community": 89,
       "norm_label": "appshell.jsx"
     },
     {
@@ -2770,7 +2770,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_layout_appshell_appshell_appshell",
-      "community": 68,
+      "community": 89,
       "norm_label": "appshell()"
     },
     {
@@ -2780,7 +2780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_appshell_index",
-      "community": 68,
+      "community": 89,
       "norm_label": "index.js"
     },
     {
@@ -2810,7 +2810,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_index",
-      "community": 68,
+      "community": 89,
       "norm_label": "index.js"
     },
     {
@@ -2820,7 +2820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 87,
+      "community": 89,
       "norm_label": "topbar.jsx"
     },
     {
@@ -2830,7 +2830,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar_topbar",
-      "community": 68,
+      "community": 89,
       "norm_label": "topbar()"
     },
     {
@@ -2840,7 +2840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_index",
-      "community": 68,
+      "community": 89,
       "norm_label": "index.js"
     },
     {
@@ -2870,7 +2870,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_avatar",
-      "community": 87,
+      "community": 41,
       "norm_label": "avatar"
     },
     {
@@ -2880,7 +2880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_index",
-      "community": 87,
+      "community": 41,
       "norm_label": "index.js"
     },
     {
@@ -3130,7 +3130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_dashboardgreeting",
-      "community": 87,
+      "community": 41,
       "norm_label": "dashboardgreeting.jsx"
     },
     {
@@ -3140,7 +3140,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_dashboardgreeting_dashboardgreeting",
-      "community": 87,
+      "community": 41,
       "norm_label": "dashboardgreeting()"
     },
     {
@@ -3150,7 +3150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_financialsummarycard",
-      "community": 89,
+      "community": 87,
       "norm_label": "financialsummarycard.jsx"
     },
     {
@@ -3160,7 +3160,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_financialsummarycard_financialsummarycard",
-      "community": 89,
+      "community": 87,
       "norm_label": "financialsummarycard()"
     },
     {
@@ -3170,7 +3170,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_features_dashboard_components_financialsummarycard_metricrow",
-      "community": 89,
+      "community": 87,
       "norm_label": "metricrow()"
     },
     {
@@ -3180,7 +3180,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_goalssummarycard",
-      "community": 89,
+      "community": 87,
       "norm_label": "goalssummarycard.jsx"
     },
     {
@@ -3190,7 +3190,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_goalssummarycard_goalssummarycard",
-      "community": 89,
+      "community": 87,
       "norm_label": "goalssummarycard()"
     },
     {
@@ -3200,7 +3200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_recentactivitylist",
-      "community": 89,
+      "community": 87,
       "norm_label": "recentactivitylist.jsx"
     },
     {
@@ -3210,7 +3210,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_recentactivitylist_recentactivitylist",
-      "community": 89,
+      "community": 87,
       "norm_label": "recentactivitylist()"
     },
     {
@@ -3490,7 +3490,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crmpage",
-      "community": 0,
+      "community": 87,
       "norm_label": "crmpage.jsx"
     },
     {
@@ -3500,7 +3500,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_crmpage_crmpage",
-      "community": 0,
+      "community": 68,
       "norm_label": "crmpage()"
     },
     {
@@ -3510,7 +3510,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientespage",
-      "community": 89,
+      "community": 87,
       "norm_label": "clientespage.jsx"
     },
     {
@@ -3520,7 +3520,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_clientespage_clientespage",
-      "community": 89,
+      "community": 68,
       "norm_label": "clientespage()"
     },
     {
@@ -3530,7 +3530,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financepage",
-      "community": 0,
+      "community": 96,
       "norm_label": "financepage.jsx"
     },
     {
@@ -3600,7 +3600,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_loginpage_loginpage",
-      "community": 0,
+      "community": 68,
       "norm_label": "loginpage()"
     },
     {
@@ -3610,7 +3610,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivospage",
-      "community": 97,
+      "community": 87,
       "norm_label": "objetivospage.jsx"
     },
     {
@@ -3620,7 +3620,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_objetivospage_getobjectivescontext",
-      "community": 97,
+      "community": 87,
       "norm_label": "getobjectivescontext()"
     },
     {
@@ -3630,7 +3630,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_objetivospage_getprogress",
-      "community": 97,
+      "community": 87,
       "norm_label": "getprogress()"
     },
     {
@@ -3640,7 +3640,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_pages_objetivospage_objetivospage",
-      "community": 97,
+      "community": 87,
       "norm_label": "objetivospage()"
     },
     {
@@ -3650,7 +3650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_onboardingpage",
-      "community": 0,
+      "community": 95,
       "norm_label": "onboardingpage.jsx"
     },
     {
@@ -3660,7 +3660,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingoptions",
-      "community": 0,
+      "community": 95,
       "norm_label": "onboardingoptions"
     },
     {
@@ -3670,7 +3670,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingpage",
-      "community": 0,
+      "community": 68,
       "norm_label": "onboardingpage()"
     },
     {
@@ -3700,7 +3700,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projectspage",
-      "community": 0,
+      "community": 88,
       "norm_label": "projectspage.jsx"
     },
     {
@@ -3710,7 +3710,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_projectspage_projectspage",
-      "community": 0,
+      "community": 88,
       "norm_label": "projectspage()"
     },
     {
@@ -3780,7 +3780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 87,
+      "community": 97,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -3790,7 +3790,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 87,
+      "community": 97,
       "norm_label": "user_mode_labels"
     },
     {
@@ -3800,7 +3800,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 87,
+      "community": 97,
       "norm_label": "plan_labels"
     },
     {
@@ -3810,7 +3810,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 0,
+      "community": 97,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -3820,7 +3820,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 0,
+      "community": 97,
       "norm_label": "settingspage()"
     },
     {
@@ -3870,7 +3870,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock",
-      "community": 89,
+      "community": 87,
       "norm_label": "clients.mock.js"
     },
     {
@@ -3880,7 +3880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock_clientsmock",
-      "community": 89,
+      "community": 87,
       "norm_label": "clientsmock"
     },
     {
@@ -3890,7 +3890,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 87,
+      "community": 97,
       "norm_label": "settings.mock.js"
     },
     {
@@ -3900,7 +3900,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 87,
+      "community": 97,
       "norm_label": "settingsmock"
     },
     {
@@ -3910,7 +3910,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock",
-      "community": 0,
+      "community": 87,
       "norm_label": "crm.mock.js"
     },
     {
@@ -3920,7 +3920,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock_crmmock",
-      "community": 0,
+      "community": 87,
       "norm_label": "crmmock"
     },
     {
@@ -4320,7 +4320,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivos_objectives_mock",
-      "community": 97,
+      "community": 87,
       "norm_label": "objectives.mock.js"
     },
     {
@@ -4330,7 +4330,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivos_objectives_mock_objectivesmock",
-      "community": 97,
+      "community": 87,
       "norm_label": "objectivesmock"
     },
     {
@@ -4340,7 +4340,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock",
-      "community": 0,
+      "community": 88,
       "norm_label": "projects.mock.js"
     },
     {
@@ -4350,7 +4350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock_projectsmock",
-      "community": 0,
+      "community": 88,
       "norm_label": "projectsmock"
     },
     {
@@ -4380,7 +4380,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero",
-      "community": 87,
+      "community": 41,
       "norm_label": "uniaihero.jsx"
     },
     {
@@ -4390,7 +4390,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero_uniaihero",
-      "community": 87,
+      "community": 41,
       "norm_label": "uniaihero()"
     },
     {
@@ -4420,7 +4420,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel",
-      "community": 87,
+      "community": 41,
       "norm_label": "unichatpanel.jsx"
     },
     {
@@ -4430,7 +4430,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel_unichatpanel",
-      "community": 87,
+      "community": 41,
       "norm_label": "unichatpanel()"
     },
     {
@@ -4520,7 +4520,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble",
-      "community": 87,
+      "community": 41,
       "norm_label": "unimessagebubble.jsx"
     },
     {
@@ -4530,7 +4530,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble_unimessagebubble",
-      "community": 87,
+      "community": 41,
       "norm_label": "unimessagebubble()"
     },
     {
@@ -4640,7 +4640,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture",
-      "community": 87,
+      "community": 41,
       "norm_label": "univoicecapture.jsx"
     },
     {
@@ -4650,7 +4650,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture_univoicecapture",
-      "community": 87,
+      "community": 41,
       "norm_label": "univoicecapture()"
     },
     {
@@ -5620,7 +5620,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_supabaseclient",
-      "community": 73,
+      "community": 91,
       "norm_label": "supabaseclient.js"
     },
     {
@@ -5630,7 +5630,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_services_supabaseclient_issupabaseconfigured",
-      "community": 73,
+      "community": 91,
       "norm_label": "issupabaseconfigured"
     },
     {
@@ -5990,7 +5990,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_formatters",
-      "community": 89,
+      "community": 87,
       "norm_label": "formatters.js"
     },
     {
@@ -6000,7 +6000,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_utils_formatters_formatcurrency",
-      "community": 89,
+      "community": 87,
       "norm_label": "formatcurrency()"
     },
     {
@@ -6010,7 +6010,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_utils_formatters_formatdate",
-      "community": 89,
+      "community": 87,
       "norm_label": "formatdate()"
     },
     {
@@ -7807,17 +7807,37 @@
       "label": "Resultado",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L21",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_resultado",
       "community": 98,
       "norm_label": "resultado"
     },
     {
+      "label": "Incidente PostgreSQL 42830",
+      "file_type": "document",
+      "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "docs_00_master_open_finance_migration_review_incidente_postgresql_42830",
+      "community": 98,
+      "norm_label": "incidente postgresql 42830"
+    },
+    {
+      "label": "Auditoria da tentativa que falhou",
+      "file_type": "document",
+      "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
+      "source_location": "L74",
+      "_origin": "ast",
+      "id": "docs_00_master_open_finance_migration_review_auditoria_da_tentativa_que_falhou",
+      "community": 98,
+      "norm_label": "auditoria da tentativa que falhou"
+    },
+    {
       "label": "Compatibilidade com migrations anteriores",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L30",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_compatibilidade_com_migrations_anteriores",
       "community": 98,
@@ -7827,7 +7847,7 @@
       "label": "Dependencias confirmadas",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L32",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_dependencias_confirmadas",
       "community": 98,
@@ -7837,7 +7857,7 @@
       "label": "Ordem de criacao confirmada",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L45",
+      "source_location": "L111",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_ordem_de_criacao_confirmada",
       "community": 98,
@@ -7847,7 +7867,7 @@
       "label": "Problemas encontrados e correcoes",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L61",
+      "source_location": "L145",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
       "community": 98,
@@ -7857,7 +7877,7 @@
       "label": "1. Ciclo de consentimento ambiguo",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L63",
+      "source_location": "L147",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_1_ciclo_de_consentimento_ambiguo",
       "community": 98,
@@ -7867,7 +7887,7 @@
       "label": "2. Consentimento legivel depois da perda de membership",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L83",
+      "source_location": "L167",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_2_consentimento_legivel_depois_da_perda_de_membership",
       "community": 98,
@@ -7877,7 +7897,7 @@
       "label": "3. IDs externos com escopo insuficiente",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L94",
+      "source_location": "L178",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_3_ids_externos_com_escopo_insuficiente",
       "community": 98,
@@ -7887,7 +7907,7 @@
       "label": "4. Jobs duplicados em paralelo",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L108",
+      "source_location": "L192",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_4_jobs_duplicados_em_paralelo",
       "community": 98,
@@ -7897,7 +7917,7 @@
       "label": "5. Retry e timestamps incompletos",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L120",
+      "source_location": "L204",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_5_retry_e_timestamps_incompletos",
       "community": 98,
@@ -7907,7 +7927,7 @@
       "label": "6. Exposicao ampla de colunas por SELECT",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L137",
+      "source_location": "L221",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_6_exposicao_ampla_de_colunas_por_select",
       "community": 98,
@@ -7917,7 +7937,7 @@
       "label": "7. Nome de payload pouco explicito",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L150",
+      "source_location": "L234",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_7_nome_de_payload_pouco_explicito",
       "community": 98,
@@ -7927,7 +7947,7 @@
       "label": "Resumo das policies",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L160",
+      "source_location": "L244",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_resumo_das_policies",
       "community": 98,
@@ -7937,7 +7957,7 @@
       "label": "`open_finance_consents`",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L162",
+      "source_location": "L246",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_open_finance_consents",
       "community": 98,
@@ -7947,7 +7967,7 @@
       "label": "`external_accounts`",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L169",
+      "source_location": "L253",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_external_accounts",
       "community": 98,
@@ -7957,7 +7977,7 @@
       "label": "`external_transactions`",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L173",
+      "source_location": "L257",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_external_transactions",
       "community": 98,
@@ -7967,7 +7987,7 @@
       "label": "`sync_jobs`",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L177",
+      "source_location": "L261",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_sync_jobs",
       "community": 98,
@@ -7977,7 +7997,7 @@
       "label": "Normalizacao e conciliacao futura",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L186",
+      "source_location": "L270",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_normalizacao_e_conciliacao_futura",
       "community": 98,
@@ -7987,7 +8007,7 @@
       "label": "Validacao estatica criada",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L206",
+      "source_location": "L290",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_validacao_estatica_criada",
       "community": 98,
@@ -7997,7 +8017,7 @@
       "label": "Riscos pendentes",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L225",
+      "source_location": "L310",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_riscos_pendentes",
       "community": 98,
@@ -8007,7 +8027,7 @@
       "label": "Checklist para aplicacao no UniFlow DEV",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L242",
+      "source_location": "L328",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_checklist_para_aplicacao_no_uniflow_dev",
       "community": 98,
@@ -8017,7 +8037,7 @@
       "label": "Checklist de rollback no DEV",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L261",
+      "source_location": "L351",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_checklist_de_rollback_no_dev",
       "community": 98,
@@ -8027,7 +8047,7 @@
       "label": "Confirmacao de nao integracao",
       "file_type": "document",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L275",
+      "source_location": "L365",
       "_origin": "ast",
       "id": "docs_00_master_open_finance_migration_review_confirmacao_de_nao_integracao",
       "community": 98,
@@ -27584,7 +27604,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L261",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
+      "target": "docs_00_master_open_finance_migration_review_auditoria_da_tentativa_que_falhou",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
+      "source_location": "L351",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_checklist_de_rollback_no_dev",
@@ -27594,7 +27624,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L242",
+      "source_location": "L328",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_checklist_para_aplicacao_no_uniflow_dev",
@@ -27604,7 +27634,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L30",
+      "source_location": "L96",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_compatibilidade_com_migrations_anteriores",
@@ -27614,7 +27644,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L275",
+      "source_location": "L365",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_confirmacao_de_nao_integracao",
@@ -27634,7 +27664,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L186",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
+      "target": "docs_00_master_open_finance_migration_review_incidente_postgresql_42830",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
+      "source_location": "L270",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_normalizacao_e_conciliacao_futura",
@@ -27644,7 +27684,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L61",
+      "source_location": "L145",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
@@ -27654,7 +27694,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L21",
+      "source_location": "L22",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_resultado",
@@ -27664,7 +27704,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L160",
+      "source_location": "L244",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_resumo_das_policies",
@@ -27674,7 +27714,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L225",
+      "source_location": "L310",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_riscos_pendentes",
@@ -27684,7 +27724,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L206",
+      "source_location": "L290",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_open_finance_migration_review",
       "target": "docs_00_master_open_finance_migration_review_validacao_estatica_criada",
@@ -27694,7 +27734,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L32",
+      "source_location": "L98",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_compatibilidade_com_migrations_anteriores",
       "target": "docs_00_master_open_finance_migration_review_dependencias_confirmadas",
@@ -27704,7 +27744,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L45",
+      "source_location": "L111",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_compatibilidade_com_migrations_anteriores",
       "target": "docs_00_master_open_finance_migration_review_ordem_de_criacao_confirmada",
@@ -27714,7 +27754,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L63",
+      "source_location": "L147",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
       "target": "docs_00_master_open_finance_migration_review_1_ciclo_de_consentimento_ambiguo",
@@ -27724,7 +27764,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L83",
+      "source_location": "L167",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
       "target": "docs_00_master_open_finance_migration_review_2_consentimento_legivel_depois_da_perda_de_membership",
@@ -27734,7 +27774,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L94",
+      "source_location": "L178",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
       "target": "docs_00_master_open_finance_migration_review_3_ids_externos_com_escopo_insuficiente",
@@ -27744,7 +27784,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L108",
+      "source_location": "L192",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
       "target": "docs_00_master_open_finance_migration_review_4_jobs_duplicados_em_paralelo",
@@ -27754,7 +27794,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L120",
+      "source_location": "L204",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
       "target": "docs_00_master_open_finance_migration_review_5_retry_e_timestamps_incompletos",
@@ -27764,7 +27804,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L137",
+      "source_location": "L221",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
       "target": "docs_00_master_open_finance_migration_review_6_exposicao_ampla_de_colunas_por_select",
@@ -27774,7 +27814,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L150",
+      "source_location": "L234",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_problemas_encontrados_e_correcoes",
       "target": "docs_00_master_open_finance_migration_review_7_nome_de_payload_pouco_explicito",
@@ -27784,7 +27824,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L169",
+      "source_location": "L253",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_resumo_das_policies",
       "target": "docs_00_master_open_finance_migration_review_external_accounts",
@@ -27794,7 +27834,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L173",
+      "source_location": "L257",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_resumo_das_policies",
       "target": "docs_00_master_open_finance_migration_review_external_transactions",
@@ -27804,7 +27844,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L162",
+      "source_location": "L246",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_resumo_das_policies",
       "target": "docs_00_master_open_finance_migration_review_open_finance_consents",
@@ -27814,7 +27854,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md",
-      "source_location": "L177",
+      "source_location": "L261",
       "weight": 1.0,
       "source": "docs_00_master_open_finance_migration_review_resumo_das_policies",
       "target": "docs_00_master_open_finance_migration_review_sync_jobs",
@@ -30462,5 +30502,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "d4d0f5d558d6960ed4bf1a7c17695070b0cbdfa9"
+  "built_at_commit": "d1ccc0f7bf565ff9d09937ee231172fb18890047"
 }

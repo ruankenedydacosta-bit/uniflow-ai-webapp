@@ -1030,28 +1030,38 @@
     "semantic_hash": ""
   },
   "src/services/externalAccountService.js": {
-    "mtime": 1783805436.648628,
-    "ast_hash": "eb2bf427ed21b309d04357cfd2441c60",
+    "mtime": 1783806497.1940095,
+    "ast_hash": "7512afa920928b30ac38daabe70b8deb",
     "semantic_hash": ""
   },
   "src/services/openFinanceService.js": {
-    "mtime": 1783805399.490503,
-    "ast_hash": "a16ec334e48036a8b19c31cfa43e2c52",
+    "mtime": 1783806497.0967638,
+    "ast_hash": "a1484c0805d771cf3ca0d1b521d4659d",
     "semantic_hash": ""
   },
   "src/services/syncService.js": {
-    "mtime": 1783805399.6788614,
-    "ast_hash": "2086a7459da9050e0b97f274a2692b04",
+    "mtime": 1783806497.296182,
+    "ast_hash": "10b27dcfc1a56619b4fd615dc6ab2195",
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_004_open_finance_infrastructure.sql": {
-    "mtime": 1783805549.6458638,
-    "ast_hash": "e199e0be5f00ffd502c60995f851eb66",
+    "mtime": 1783806823.0897362,
+    "ast_hash": "ce472c66d55bf9f287262317ba614696",
     "semantic_hash": ""
   },
   "docs/00-master/OPEN_FINANCE_ARCHITECTURE.md": {
-    "mtime": 1783805549.7400227,
-    "ast_hash": "289897b7dadcf07c2926070e4479e01a",
+    "mtime": 1783806659.6583238,
+    "ast_hash": "28b9bbea601aea9b54372b1ced9e0dc6",
+    "semantic_hash": ""
+  },
+  "supabase/tests/open_finance_infrastructure_validation.sql": {
+    "mtime": 1783806852.55261,
+    "ast_hash": "48eddf26ed4baa30c0c6c2d894686e30",
+    "semantic_hash": ""
+  },
+  "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md": {
+    "mtime": 1783806785.2280543,
+    "ast_hash": "9d5356f30b29a2381584309e5b0cd8d9",
     "semantic_hash": ""
   }
 }

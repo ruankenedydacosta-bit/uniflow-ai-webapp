@@ -1045,8 +1045,8 @@
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_004_open_finance_infrastructure.sql": {
-    "mtime": 1783806823.0897362,
-    "ast_hash": "ce472c66d55bf9f287262317ba614696",
+    "mtime": 1783809603.4201798,
+    "ast_hash": "3bfcafb501b89bf0dbf51bffbc8569c5",
     "semantic_hash": ""
   },
   "docs/00-master/OPEN_FINANCE_ARCHITECTURE.md": {
@@ -1055,13 +1055,18 @@
     "semantic_hash": ""
   },
   "supabase/tests/open_finance_infrastructure_validation.sql": {
-    "mtime": 1783806852.55261,
-    "ast_hash": "48eddf26ed4baa30c0c6c2d894686e30",
+    "mtime": 1783809663.2878366,
+    "ast_hash": "8561b63eed7b953c5f969d653795fc14",
     "semantic_hash": ""
   },
   "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md": {
-    "mtime": 1783806785.2280543,
-    "ast_hash": "9d5356f30b29a2381584309e5b0cd8d9",
+    "mtime": 1783809700.7667692,
+    "ast_hash": "e7877cd65e95f85cf683c2d75e163c73",
+    "semantic_hash": ""
+  },
+  "supabase/tests/open_finance_failed_apply_audit.sql": {
+    "mtime": 1783809638.7804732,
+    "ast_hash": "b4c2496c9f1158b8d3e749fd4091544b",
     "semantic_hash": ""
   }
 }
