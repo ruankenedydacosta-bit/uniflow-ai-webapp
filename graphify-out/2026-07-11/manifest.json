@@ -950,8 +950,8 @@
     "semantic_hash": ""
   },
   "src/services/transactionService.js": {
-    "mtime": 1783783457.3195243,
-    "ast_hash": "c6f3b410a8c7e124e393ce03c36d2110",
+    "mtime": 1783783599.3826382,
+    "ast_hash": "73acdbda0282dd386bc30352ea0872bc",
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_003_financial_catalog_seeds.sql": {

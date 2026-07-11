@@ -1814,10 +1814,20 @@
       "norm_label": "lint"
     },
     {
-      "label": "obsidian:note",
+      "label": "test",
       "file_type": "code",
       "source_file": "package.json",
       "source_location": "L10",
+      "_origin": "ast",
+      "id": "package_scripts_test",
+      "community": 1,
+      "norm_label": "test"
+    },
+    {
+      "label": "obsidian:note",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L11",
       "_origin": "ast",
       "id": "package_scripts_obsidian_note",
       "community": 1,
@@ -1827,7 +1837,7 @@
       "label": "supabase:test-rls",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L11",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "package_scripts_supabase_test_rls",
       "community": 1,
@@ -1837,7 +1847,7 @@
       "label": "preview",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L12",
+      "source_location": "L13",
       "_origin": "ast",
       "id": "package_scripts_preview",
       "community": 1,
@@ -1847,7 +1857,7 @@
       "label": "dependencies",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L14",
+      "source_location": "L15",
       "_origin": "ast",
       "id": "package_dependencies",
       "community": 1,
@@ -1857,7 +1867,7 @@
       "label": "@supabase/supabase-js",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L15",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "package_dependencies_supabase_supabase_js",
       "community": 1,
@@ -1867,7 +1877,7 @@
       "label": "react",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L16",
+      "source_location": "L17",
       "_origin": "ast",
       "id": "package_dependencies_react",
       "community": 1,
@@ -1877,7 +1887,7 @@
       "label": "react-dom",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L17",
+      "source_location": "L18",
       "_origin": "ast",
       "id": "package_dependencies_react_dom",
       "community": 1,
@@ -1887,7 +1897,7 @@
       "label": "devDependencies",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L19",
+      "source_location": "L20",
       "_origin": "ast",
       "id": "package_devdependencies",
       "community": 1,
@@ -1897,7 +1907,7 @@
       "label": "@eslint/js",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L20",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "package_devdependencies_eslint_js",
       "community": 1,
@@ -1907,7 +1917,7 @@
       "label": "@types/react",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L21",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "package_devdependencies_types_react",
       "community": 1,
@@ -1917,7 +1927,7 @@
       "label": "@types/react-dom",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L22",
+      "source_location": "L23",
       "_origin": "ast",
       "id": "package_devdependencies_types_react_dom",
       "community": 1,
@@ -1927,7 +1937,7 @@
       "label": "@vitejs/plugin-react",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L23",
+      "source_location": "L24",
       "_origin": "ast",
       "id": "package_devdependencies_vitejs_plugin_react",
       "community": 1,
@@ -1937,7 +1947,7 @@
       "label": "eslint",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L24",
+      "source_location": "L25",
       "_origin": "ast",
       "id": "package_devdependencies_eslint",
       "community": 1,
@@ -1947,7 +1957,7 @@
       "label": "eslint-plugin-react-hooks",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L25",
+      "source_location": "L26",
       "_origin": "ast",
       "id": "package_devdependencies_eslint_plugin_react_hooks",
       "community": 1,
@@ -1957,7 +1967,7 @@
       "label": "eslint-plugin-react-refresh",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L26",
+      "source_location": "L27",
       "_origin": "ast",
       "id": "package_devdependencies_eslint_plugin_react_refresh",
       "community": 1,
@@ -1967,7 +1977,7 @@
       "label": "globals",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L27",
+      "source_location": "L28",
       "_origin": "ast",
       "id": "package_devdependencies_globals",
       "community": 1,
@@ -1977,7 +1987,7 @@
       "label": "vite",
       "file_type": "code",
       "source_file": "package.json",
-      "source_location": "L28",
+      "source_location": "L29",
       "_origin": "ast",
       "id": "package_devdependencies_vite",
       "community": 1,
@@ -2240,7 +2250,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_app_accesscontext_useaccess",
-      "community": 87,
+      "community": 90,
       "norm_label": "useaccess()"
     },
     {
@@ -2370,7 +2380,7 @@
       "source_location": "L431",
       "_origin": "ast",
       "id": "src_app_sessioncontext_usesession",
-      "community": 90,
+      "community": 96,
       "norm_label": "usesession()"
     },
     {
@@ -2410,7 +2420,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_app_access_workspace_types",
-      "community": 87,
+      "community": 90,
       "norm_label": "workspace_types"
     },
     {
@@ -2510,7 +2520,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_navigation",
-      "community": 87,
+      "community": 68,
       "norm_label": "navigation.js"
     },
     {
@@ -2520,7 +2530,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_app_navigation_all_modes",
-      "community": 87,
+      "community": 68,
       "norm_label": "all_modes"
     },
     {
@@ -2530,7 +2540,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_navigation_all_plans",
-      "community": 87,
+      "community": 68,
       "norm_label": "all_plans"
     },
     {
@@ -2540,7 +2550,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_app_navigation_all_workspaces",
-      "community": 87,
+      "community": 68,
       "norm_label": "all_workspaces"
     },
     {
@@ -2550,7 +2560,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_navigation_business_modes",
-      "community": 87,
+      "community": 68,
       "norm_label": "business_modes"
     },
     {
@@ -2560,7 +2570,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_app_navigation_business_plans",
-      "community": 87,
+      "community": 68,
       "norm_label": "business_plans"
     },
     {
@@ -2570,7 +2580,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_app_navigation_business_workspaces",
-      "community": 87,
+      "community": 68,
       "norm_label": "business_workspaces"
     },
     {
@@ -2580,7 +2590,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_app_navigation_navigationitems",
-      "community": 87,
+      "community": 68,
       "norm_label": "navigationitems"
     },
     {
@@ -2590,7 +2600,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_app_navigation_filternavigationitems",
-      "community": 87,
+      "community": 68,
       "norm_label": "filternavigationitems()"
     },
     {
@@ -2600,7 +2610,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_routes",
-      "community": 90,
+      "community": 96,
       "norm_label": "routes.jsx"
     },
     {
@@ -2630,7 +2640,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher",
-      "community": 68,
+      "community": 0,
       "norm_label": "accessmodeswitcher.jsx"
     },
     {
@@ -2640,7 +2650,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_options",
-      "community": 68,
+      "community": 0,
       "norm_label": "user_mode_options"
     },
     {
@@ -2650,7 +2660,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_options",
-      "community": 68,
+      "community": 0,
       "norm_label": "plan_options"
     },
     {
@@ -2660,7 +2670,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_workspace_options",
-      "community": 68,
+      "community": 0,
       "norm_label": "workspace_options"
     },
     {
@@ -2670,7 +2680,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_personal_plans",
-      "community": 68,
+      "community": 0,
       "norm_label": "personal_plans"
     },
     {
@@ -2680,7 +2690,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_labels",
-      "community": 68,
+      "community": 0,
       "norm_label": "user_mode_labels"
     },
     {
@@ -2690,7 +2700,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_labels",
-      "community": 68,
+      "community": 0,
       "norm_label": "plan_labels"
     },
     {
@@ -2700,7 +2710,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getworkspaceformode",
-      "community": 68,
+      "community": 0,
       "norm_label": "getworkspaceformode()"
     },
     {
@@ -2710,7 +2720,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
-      "community": 68,
+      "community": 0,
       "norm_label": "getmodeoptionsforplan()"
     },
     {
@@ -2720,7 +2730,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_normalizeaccessforplan",
-      "community": 68,
+      "community": 0,
       "norm_label": "normalizeaccessforplan()"
     },
     {
@@ -2730,7 +2740,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
-      "community": 68,
+      "community": 0,
       "norm_label": "accessmodeswitcher()"
     },
     {
@@ -2780,7 +2790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_sidebar",
-      "community": 87,
+      "community": 68,
       "norm_label": "sidebar.jsx"
     },
     {
@@ -2790,7 +2800,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_sidebar_sidebar",
-      "community": 87,
+      "community": 68,
       "norm_label": "sidebar()"
     },
     {
@@ -2810,7 +2820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 68,
+      "community": 0,
       "norm_label": "topbar.jsx"
     },
     {
@@ -2840,7 +2850,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 88,
+      "community": 0,
       "norm_label": "avatar.jsx"
     },
     {
@@ -2850,7 +2860,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 88,
+      "community": 0,
       "norm_label": "getinitials()"
     },
     {
@@ -2890,7 +2900,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge_badge",
-      "community": 0,
+      "community": 89,
       "norm_label": "badge()"
     },
     {
@@ -2900,7 +2910,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge_index",
-      "community": 0,
+      "community": 89,
       "norm_label": "index.js"
     },
     {
@@ -2920,7 +2930,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_button_button_button",
-      "community": 0,
+      "community": 88,
       "norm_label": "button()"
     },
     {
@@ -2930,7 +2940,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_button_index",
-      "community": 0,
+      "community": 88,
       "norm_label": "index.js"
     },
     {
@@ -2950,7 +2960,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_card_card_card",
-      "community": 0,
+      "community": 89,
       "norm_label": "card()"
     },
     {
@@ -2970,7 +2980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 90,
+      "community": 41,
       "norm_label": "input.jsx"
     },
     {
@@ -2980,7 +2990,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_input_input_input",
-      "community": 90,
+      "community": 41,
       "norm_label": "input"
     },
     {
@@ -2990,7 +3000,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_index",
-      "community": 90,
+      "community": 41,
       "norm_label": "index.js"
     },
     {
@@ -3030,7 +3040,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal",
-      "community": 88,
+      "community": 41,
       "norm_label": "modal.jsx"
     },
     {
@@ -3040,7 +3050,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal_modal",
-      "community": 88,
+      "community": 41,
       "norm_label": "modal()"
     },
     {
@@ -3050,7 +3060,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_index",
-      "community": 88,
+      "community": 41,
       "norm_label": "index.js"
     },
     {
@@ -3210,7 +3220,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_uniinsightscard",
-      "community": 0,
+      "community": 89,
       "norm_label": "uniinsightscard.jsx"
     },
     {
@@ -3220,7 +3230,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_uniinsightscard_uniinsightscard",
-      "community": 0,
+      "community": 89,
       "norm_label": "uniinsightscard()"
     },
     {
@@ -3254,14 +3264,154 @@
       "norm_label": "index.js"
     },
     {
+      "label": "financialHookUtils.js",
+      "file_type": "code",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_hooks_financialhookutils",
+      "community": 91,
+      "norm_label": "financialhookutils.js"
+    },
+    {
+      "label": "cloneRecords()",
+      "file_type": "code",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_hooks_financialhookutils_clonerecords",
+      "community": 91,
+      "norm_label": "clonerecords()"
+    },
+    {
+      "label": "upsertRecord()",
+      "file_type": "code",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "src_hooks_financialhookutils_upsertrecord",
+      "community": 91,
+      "norm_label": "upsertrecord()"
+    },
+    {
+      "label": "removeRecord()",
+      "file_type": "code",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "src_hooks_financialhookutils_removerecord",
+      "community": 91,
+      "norm_label": "removerecord()"
+    },
+    {
+      "label": "createDemoRecord()",
+      "file_type": "code",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "src_hooks_financialhookutils_createdemorecord",
+      "community": 91,
+      "norm_label": "createdemorecord()"
+    },
+    {
+      "label": "createDemoResult()",
+      "file_type": "code",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L35",
+      "_origin": "ast",
+      "id": "src_hooks_financialhookutils_createdemoresult",
+      "community": 91,
+      "norm_label": "createdemoresult()"
+    },
+    {
+      "label": "financialHooks.test.js",
+      "file_type": "code",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_hooks_financialhooks_test",
+      "community": 91,
+      "norm_label": "financialhooks.test.js"
+    },
+    {
+      "label": "renderHook()",
+      "file_type": "code",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "src_hooks_financialhooks_test_renderhook",
+      "community": 91,
+      "norm_label": "renderhook()"
+    },
+    {
       "label": "index.js",
       "file_type": "code",
       "source_file": "src/hooks/index.js",
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_index",
-      "community": 41,
+      "community": 91,
       "norm_label": "index.js"
+    },
+    {
+      "label": "useAccounts.js",
+      "file_type": "code",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_hooks_useaccounts",
+      "community": 91,
+      "norm_label": "useaccounts.js"
+    },
+    {
+      "label": "useAccounts()",
+      "file_type": "code",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_hooks_useaccounts_useaccounts",
+      "community": 91,
+      "norm_label": "useaccounts()"
+    },
+    {
+      "label": "useCategories.js",
+      "file_type": "code",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_hooks_usecategories",
+      "community": 91,
+      "norm_label": "usecategories.js"
+    },
+    {
+      "label": "useCategories()",
+      "file_type": "code",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "src_hooks_usecategories_usecategories",
+      "community": 91,
+      "norm_label": "usecategories()"
+    },
+    {
+      "label": "useTransactions.js",
+      "file_type": "code",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_hooks_usetransactions",
+      "community": 91,
+      "norm_label": "usetransactions.js"
+    },
+    {
+      "label": "useTransactions()",
+      "file_type": "code",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "src_hooks_usetransactions_usetransactions",
+      "community": 91,
+      "norm_label": "usetransactions()"
     },
     {
       "label": "main.jsx",
@@ -3280,7 +3430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agendapage",
-      "community": 98,
+      "community": 88,
       "norm_label": "agendapage.jsx"
     },
     {
@@ -3290,7 +3440,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_agendapage_getagendacontext",
-      "community": 98,
+      "community": 88,
       "norm_label": "getagendacontext()"
     },
     {
@@ -3300,7 +3450,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_agendapage_agendapage",
-      "community": 98,
+      "community": 88,
       "norm_label": "agendapage()"
     },
     {
@@ -3310,7 +3460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crmpage",
-      "community": 87,
+      "community": 88,
       "norm_label": "crmpage.jsx"
     },
     {
@@ -3320,7 +3470,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_crmpage_crmpage",
-      "community": 87,
+      "community": 88,
       "norm_label": "crmpage()"
     },
     {
@@ -3367,17 +3517,37 @@
       "label": "getFinancialContext()",
       "file_type": "code",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L12",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "src_pages_financeiropage_getfinancialcontext",
       "community": 96,
       "norm_label": "getfinancialcontext()"
     },
     {
+      "label": "getCrudContext()",
+      "file_type": "code",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_pages_financeiropage_getcrudcontext",
+      "community": 96,
+      "norm_label": "getcrudcontext()"
+    },
+    {
+      "label": "formatMovementDate()",
+      "file_type": "code",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "src_pages_financeiropage_formatmovementdate",
+      "community": 96,
+      "norm_label": "formatmovementdate()"
+    },
+    {
       "label": "FinanceiroPage()",
       "file_type": "code",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L16",
+      "source_location": "L37",
       "_origin": "ast",
       "id": "src_pages_financeiropage_financeiropage",
       "community": 96,
@@ -3390,7 +3560,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_loginpage",
-      "community": 90,
+      "community": 96,
       "norm_label": "loginpage.jsx"
     },
     {
@@ -3400,7 +3570,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_loginpage_loginpage",
-      "community": 90,
+      "community": 96,
       "norm_label": "loginpage()"
     },
     {
@@ -3470,7 +3640,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingpage",
-      "community": 90,
+      "community": 96,
       "norm_label": "onboardingpage()"
     },
     {
@@ -3480,7 +3650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_pagescaffold",
-      "community": 0,
+      "community": 89,
       "norm_label": "pagescaffold.jsx"
     },
     {
@@ -3490,7 +3660,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_pagescaffold_pagescaffold",
-      "community": 0,
+      "community": 89,
       "norm_label": "pagescaffold()"
     },
     {
@@ -3500,7 +3670,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projectspage",
-      "community": 88,
+      "community": 90,
       "norm_label": "projectspage.jsx"
     },
     {
@@ -3510,7 +3680,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_projectspage_projectspage",
-      "community": 88,
+      "community": 90,
       "norm_label": "projectspage()"
     },
     {
@@ -3580,7 +3750,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 95,
+      "community": 87,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -3590,7 +3760,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 95,
+      "community": 87,
       "norm_label": "user_mode_labels"
     },
     {
@@ -3600,7 +3770,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 95,
+      "community": 87,
       "norm_label": "plan_labels"
     },
     {
@@ -3610,7 +3780,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 95,
+      "community": 87,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -3620,7 +3790,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 95,
+      "community": 87,
       "norm_label": "settingspage()"
     },
     {
@@ -3650,7 +3820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock",
-      "community": 98,
+      "community": 88,
       "norm_label": "agenda.mock.js"
     },
     {
@@ -3660,7 +3830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock_agendamock",
-      "community": 98,
+      "community": 88,
       "norm_label": "agendamock"
     },
     {
@@ -3690,7 +3860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 95,
+      "community": 87,
       "norm_label": "settings.mock.js"
     },
     {
@@ -3700,7 +3870,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 95,
+      "community": 87,
       "norm_label": "settingsmock"
     },
     {
@@ -3710,7 +3880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock",
-      "community": 87,
+      "community": 88,
       "norm_label": "crm.mock.js"
     },
     {
@@ -3720,8 +3890,128 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock_crmmock",
-      "community": 87,
+      "community": 88,
       "norm_label": "crmmock"
+    },
+    {
+      "label": "FinanceAccountModal.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeaccountmodal",
+      "community": 41,
+      "norm_label": "financeaccountmodal.jsx"
+    },
+    {
+      "label": "EMPTY_FORM",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeaccountmodal_empty_form",
+      "community": 41,
+      "norm_label": "empty_form"
+    },
+    {
+      "label": "FinanceAccountModal()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeaccountmodal_financeaccountmodal",
+      "community": 41,
+      "norm_label": "financeaccountmodal()"
+    },
+    {
+      "label": "FinanceCategoryModal.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecategorymodal",
+      "community": 41,
+      "norm_label": "financecategorymodal.jsx"
+    },
+    {
+      "label": "EMPTY_FORM",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecategorymodal_empty_form",
+      "community": 41,
+      "norm_label": "empty_form"
+    },
+    {
+      "label": "CATEGORY_LABELS",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecategorymodal_category_labels",
+      "community": 41,
+      "norm_label": "category_labels"
+    },
+    {
+      "label": "FinanceCategoryModal()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecategorymodal_financecategorymodal",
+      "community": 41,
+      "norm_label": "financecategorymodal()"
+    },
+    {
+      "label": "FinanceCrudPrimitives.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecrudprimitives",
+      "community": 41,
+      "norm_label": "financecrudprimitives.jsx"
+    },
+    {
+      "label": "SelectField()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecrudprimitives_selectfield",
+      "community": 41,
+      "norm_label": "selectfield()"
+    },
+    {
+      "label": "FormMessage()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecrudprimitives_formmessage",
+      "community": 41,
+      "norm_label": "formmessage()"
+    },
+    {
+      "label": "CrudRow()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecrudprimitives_crudrow",
+      "community": 41,
+      "norm_label": "crudrow()"
+    },
+    {
+      "label": "DeleteActions()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financecrudprimitives_deleteactions",
+      "community": 41,
+      "norm_label": "deleteactions()"
     },
     {
       "label": "FinanceProjectionChart.jsx",
@@ -3824,6 +4114,66 @@
       "norm_label": "financeprojectionchart()"
     },
     {
+      "label": "FinanceTransactionModal.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financetransactionmodal",
+      "community": 41,
+      "norm_label": "financetransactionmodal.jsx"
+    },
+    {
+      "label": "createEmptyForm()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financetransactionmodal_createemptyform",
+      "community": 41,
+      "norm_label": "createemptyform()"
+    },
+    {
+      "label": "FinanceTransactionModal()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financetransactionmodal_financetransactionmodal",
+      "community": 41,
+      "norm_label": "financetransactionmodal()"
+    },
+    {
+      "label": "financeUiUtils.js",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/financeUiUtils.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeuiutils",
+      "community": 41,
+      "norm_label": "financeuiutils.js"
+    },
+    {
+      "label": "SAFE_ERROR_CODES",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/financeUiUtils.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeuiutils_safe_error_codes",
+      "community": 41,
+      "norm_label": "safe_error_codes"
+    },
+    {
+      "label": "getFinanceErrorMessage()",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/financeUiUtils.js",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "community": 41,
+      "norm_label": "getfinanceerrormessage()"
+    },
+    {
       "label": "financial.mock.js",
       "file_type": "code",
       "source_file": "src/pages/financeiro/financial.mock.js",
@@ -3842,6 +4192,56 @@
       "id": "src_pages_financeiro_financial_mock_financialmock",
       "community": 96,
       "norm_label": "financialmock"
+    },
+    {
+      "label": "financialCrud.mock.js",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financialcrud_mock",
+      "community": 96,
+      "norm_label": "financialcrud.mock.js"
+    },
+    {
+      "label": "today",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financialcrud_mock_today",
+      "community": 96,
+      "norm_label": "today"
+    },
+    {
+      "label": "fallbackAccountTypes",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financialcrud_mock_fallbackaccounttypes",
+      "community": 96,
+      "norm_label": "fallbackaccounttypes"
+    },
+    {
+      "label": "baseCategories",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financialcrud_mock_basecategories",
+      "community": 96,
+      "norm_label": "basecategories"
+    },
+    {
+      "label": "financialCrudMock",
+      "file_type": "code",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "src_pages_financeiro_financialcrud_mock_financialcrudmock",
+      "community": 96,
+      "norm_label": "financialcrudmock"
     },
     {
       "label": "objectives.mock.js",
@@ -3870,7 +4270,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock",
-      "community": 88,
+      "community": 90,
       "norm_label": "projects.mock.js"
     },
     {
@@ -3880,7 +4280,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock_projectsmock",
-      "community": 88,
+      "community": 90,
       "norm_label": "projectsmock"
     },
     {
@@ -3950,7 +4350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel",
-      "community": 0,
+      "community": 41,
       "norm_label": "unichatpanel.jsx"
     },
     {
@@ -3960,7 +4360,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel_unichatpanel",
-      "community": 0,
+      "community": 41,
       "norm_label": "unichatpanel()"
     },
     {
@@ -3970,7 +4370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel",
-      "community": 0,
+      "community": 89,
       "norm_label": "unicontextpanel.jsx"
     },
     {
@@ -3980,7 +4380,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel_unicontextpanel",
-      "community": 0,
+      "community": 89,
       "norm_label": "unicontextpanel()"
     },
     {
@@ -4010,7 +4410,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport",
-      "community": 0,
+      "community": 88,
       "norm_label": "uniinsightreport.jsx"
     },
     {
@@ -4030,7 +4430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel",
-      "community": 0,
+      "community": 89,
       "norm_label": "unilivecontextpanel.jsx"
     },
     {
@@ -4050,7 +4450,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble",
-      "community": 0,
+      "community": 41,
       "norm_label": "unimessagebubble.jsx"
     },
     {
@@ -4060,7 +4460,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble_unimessagebubble",
-      "community": 0,
+      "community": 41,
       "norm_label": "unimessagebubble()"
     },
     {
@@ -4110,7 +4510,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer",
-      "community": 0,
+      "community": 88,
       "norm_label": "unisuggestiondrawer.jsx"
     },
     {
@@ -4170,7 +4570,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture",
-      "community": 39,
+      "community": 41,
       "norm_label": "univoicecapture.jsx"
     },
     {
@@ -4180,7 +4580,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture_univoicecapture",
-      "community": 39,
+      "community": 41,
       "norm_label": "univoicecapture()"
     },
     {
@@ -4640,7 +5040,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_categoryservice",
-      "community": 93,
+      "community": 91,
       "norm_label": "categoryservice.js"
     },
     {
@@ -4650,7 +5050,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_services_categoryservice_createresult",
-      "community": 93,
+      "community": 91,
       "norm_label": "createresult()"
     },
     {
@@ -4660,7 +5060,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_services_categoryservice_createunavailableresult",
-      "community": 93,
+      "community": 91,
       "norm_label": "createunavailableresult()"
     },
     {
@@ -4670,7 +5070,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_services_categoryservice_createvalidationresult",
-      "community": 93,
+      "community": 91,
       "norm_label": "createvalidationresult()"
     },
     {
@@ -4680,7 +5080,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_services_categoryservice_isvaliduuid",
-      "community": 93,
+      "community": 91,
       "norm_label": "isvaliduuid()"
     },
     {
@@ -4690,7 +5090,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_services_categoryservice_pickdefined",
-      "community": 93,
+      "community": 91,
       "norm_label": "pickdefined()"
     },
     {
@@ -4700,7 +5100,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_services_categoryservice_normalizesingleresult",
-      "community": 93,
+      "community": 91,
       "norm_label": "normalizesingleresult()"
     },
     {
@@ -4710,7 +5110,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_services_categoryservice_listglobalcategories",
-      "community": 93,
+      "community": 91,
       "norm_label": "listglobalcategories()"
     },
     {
@@ -4720,7 +5120,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_services_categoryservice_listcategories",
-      "community": 93,
+      "community": 91,
       "norm_label": "listcategories()"
     },
     {
@@ -4730,7 +5130,7 @@
       "source_location": "L109",
       "_origin": "ast",
       "id": "src_services_categoryservice_createcategory",
-      "community": 93,
+      "community": 91,
       "norm_label": "createcategory()"
     },
     {
@@ -4740,7 +5140,7 @@
       "source_location": "L156",
       "_origin": "ast",
       "id": "src_services_categoryservice_updatecategory",
-      "community": 93,
+      "community": 91,
       "norm_label": "updatecategory()"
     },
     {
@@ -4750,7 +5150,7 @@
       "source_location": "L210",
       "_origin": "ast",
       "id": "src_services_categoryservice_deletecategory",
-      "community": 93,
+      "community": 91,
       "norm_label": "deletecategory()"
     },
     {
@@ -4970,7 +5370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_supabaseclient",
-      "community": 73,
+      "community": 91,
       "norm_label": "supabaseclient.js"
     },
     {
@@ -4980,7 +5380,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_services_supabaseclient_issupabaseconfigured",
-      "community": 73,
+      "community": 91,
       "norm_label": "issupabaseconfigured"
     },
     {
@@ -5000,7 +5400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_transactionservice",
-      "community": 92,
+      "community": 91,
       "norm_label": "transactionservice.js"
     },
     {
@@ -5010,7 +5410,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_services_transactionservice_createresult",
-      "community": 92,
+      "community": 91,
       "norm_label": "createresult()"
     },
     {
@@ -5020,7 +5420,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_services_transactionservice_createunavailableresult",
-      "community": 92,
+      "community": 91,
       "norm_label": "createunavailableresult()"
     },
     {
@@ -5030,7 +5430,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_services_transactionservice_createvalidationresult",
-      "community": 92,
+      "community": 91,
       "norm_label": "createvalidationresult()"
     },
     {
@@ -5040,7 +5440,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_services_transactionservice_isvaliduuid",
-      "community": 92,
+      "community": 91,
       "norm_label": "isvaliduuid()"
     },
     {
@@ -5050,7 +5450,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_services_transactionservice_pickdefined",
-      "community": 92,
+      "community": 91,
       "norm_label": "pickdefined()"
     },
     {
@@ -5060,7 +5460,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_services_transactionservice_normalizesingleresult",
-      "community": 92,
+      "community": 91,
       "norm_label": "normalizesingleresult()"
     },
     {
@@ -5070,7 +5470,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_services_transactionservice_hasrequiredtransactionfields",
-      "community": 92,
+      "community": 91,
       "norm_label": "hasrequiredtransactionfields()"
     },
     {
@@ -5080,7 +5480,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "src_services_transactionservice_listtransactions",
-      "community": 92,
+      "community": 91,
       "norm_label": "listtransactions()"
     },
     {
@@ -5090,7 +5490,7 @@
       "source_location": "L127",
       "_origin": "ast",
       "id": "src_services_transactionservice_gettransaction",
-      "community": 92,
+      "community": 91,
       "norm_label": "gettransaction()"
     },
     {
@@ -5100,7 +5500,7 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "src_services_transactionservice_createtransaction",
-      "community": 92,
+      "community": 91,
       "norm_label": "createtransaction()"
     },
     {
@@ -5110,7 +5510,7 @@
       "source_location": "L205",
       "_origin": "ast",
       "id": "src_services_transactionservice_updatetransaction",
-      "community": 92,
+      "community": 91,
       "norm_label": "updatetransaction()"
     },
     {
@@ -5120,7 +5520,7 @@
       "source_location": "L280",
       "_origin": "ast",
       "id": "src_services_transactionservice_deletetransaction",
-      "community": 92,
+      "community": 91,
       "norm_label": "deletetransaction()"
     },
     {
@@ -5924,14 +6324,14 @@
       "norm_label": "categories"
     },
     {
-      "label": "Services da Fase 1",
+      "label": "Services e hooks",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
       "source_location": "L84",
       "_origin": "ast",
-      "id": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "id": "docs_00_master_financial_core_data_model_services_e_hooks",
       "community": 81,
-      "norm_label": "services da fase 1"
+      "norm_label": "services e hooks"
     },
     {
       "label": "`accountService.js`",
@@ -5967,7 +6367,7 @@
       "label": "Transactions",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L112",
+      "source_location": "L120",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_transactions",
       "community": 81,
@@ -5977,7 +6377,7 @@
       "label": "Transferencias",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L125",
+      "source_location": "L133",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_transferencias",
       "community": 81,
@@ -5987,7 +6387,7 @@
       "label": "Recorrencia e parcelas",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L138",
+      "source_location": "L146",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_recorrencia_e_parcelas",
       "community": 81,
@@ -5997,7 +6397,7 @@
       "label": "Dados manuais e externos",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L146",
+      "source_location": "L154",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_dados_manuais_e_externos",
       "community": 81,
@@ -6007,7 +6407,7 @@
       "label": "Deduplicacao externa",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L168",
+      "source_location": "L176",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_deduplicacao_externa",
       "community": 81,
@@ -6017,7 +6417,7 @@
       "label": "Open Finance futuro",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L179",
+      "source_location": "L187",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_open_finance_futuro",
       "community": 81,
@@ -6027,7 +6427,7 @@
       "label": "RLS e privilegios",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L198",
+      "source_location": "L206",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_rls_e_privilegios",
       "community": 81,
@@ -6037,9 +6437,9 @@
       "label": "Accounts",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L200",
+      "source_location": "L208",
       "_origin": "ast",
-      "id": "docs_00_master_financial_core_data_model_accounts_200",
+      "id": "docs_00_master_financial_core_data_model_accounts_208",
       "community": 81,
       "norm_label": "accounts"
     },
@@ -6047,9 +6447,9 @@
       "label": "Categories",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L208",
+      "source_location": "L216",
       "_origin": "ast",
-      "id": "docs_00_master_financial_core_data_model_categories_208",
+      "id": "docs_00_master_financial_core_data_model_categories_216",
       "community": 81,
       "norm_label": "categories"
     },
@@ -6057,9 +6457,9 @@
       "label": "Transactions",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L216",
+      "source_location": "L224",
       "_origin": "ast",
-      "id": "docs_00_master_financial_core_data_model_transactions_216",
+      "id": "docs_00_master_financial_core_data_model_transactions_224",
       "community": 81,
       "norm_label": "transactions"
     },
@@ -6067,7 +6467,7 @@
       "label": "Validacao",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L226",
+      "source_location": "L234",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_validacao",
       "community": 81,
@@ -6077,7 +6477,7 @@
       "label": "Decisoes pendentes",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L240",
+      "source_location": "L248",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_decisoes_pendentes",
       "community": 81,
@@ -6087,11 +6487,201 @@
       "label": "Proxima etapa segura",
       "file_type": "document",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L252",
+      "source_location": "L260",
       "_origin": "ast",
       "id": "docs_00_master_financial_core_data_model_proxima_etapa_segura",
       "community": 81,
       "norm_label": "proxima etapa segura"
+    },
+    {
+      "label": "FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration",
+      "community": 92,
+      "norm_label": "financial_phase_2_ui_integration.md"
+    },
+    {
+      "label": "Financial Phase 2 UI Integration",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "community": 92,
+      "norm_label": "financial phase 2 ui integration"
+    },
+    {
+      "label": "Status",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_status",
+      "community": 92,
+      "norm_label": "status"
+    },
+    {
+      "label": "Pre-requisitos para dados reais",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_pre_requisitos_para_dados_reais",
+      "community": 92,
+      "norm_label": "pre-requisitos para dados reais"
+    },
+    {
+      "label": "Fluxo de dados",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_fluxo_de_dados",
+      "community": 92,
+      "norm_label": "fluxo de dados"
+    },
+    {
+      "label": "Hooks",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L37",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_hooks",
+      "community": 92,
+      "norm_label": "hooks"
+    },
+    {
+      "label": "`useAccounts`",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_useaccounts",
+      "community": 92,
+      "norm_label": "`useaccounts`"
+    },
+    {
+      "label": "`useCategories`",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_usecategories",
+      "community": 92,
+      "norm_label": "`usecategories`"
+    },
+    {
+      "label": "`useTransactions`",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_usetransactions",
+      "community": 92,
+      "norm_label": "`usetransactions`"
+    },
+    {
+      "label": "Integracao visual",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L70",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_integracao_visual",
+      "community": 92,
+      "norm_label": "integracao visual"
+    },
+    {
+      "label": "CRUD de contas",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L82",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_crud_de_contas",
+      "community": 92,
+      "norm_label": "crud de contas"
+    },
+    {
+      "label": "CRUD de categorias",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_crud_de_categorias",
+      "community": 92,
+      "norm_label": "crud de categorias"
+    },
+    {
+      "label": "CRUD de lancamentos",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L101",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_crud_de_lancamentos",
+      "community": 92,
+      "norm_label": "crud de lancamentos"
+    },
+    {
+      "label": "Modo demo",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L115",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_modo_demo",
+      "community": 92,
+      "norm_label": "modo demo"
+    },
+    {
+      "label": "Supabase e RLS",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L125",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_supabase_e_rls",
+      "community": 92,
+      "norm_label": "supabase e rls"
+    },
+    {
+      "label": "Saldo",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L138",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_saldo",
+      "community": 92,
+      "norm_label": "saldo"
+    },
+    {
+      "label": "Testes basicos",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L144",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_testes_basicos",
+      "community": 92,
+      "norm_label": "testes basicos"
+    },
+    {
+      "label": "Limites desta fase",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L163",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_limites_desta_fase",
+      "community": 92,
+      "norm_label": "limites desta fase"
+    },
+    {
+      "label": "Proxima validacao segura",
+      "file_type": "document",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L175",
+      "_origin": "ast",
+      "id": "docs_00_master_financial_phase_2_ui_integration_proxima_validacao_segura",
+      "community": 92,
+      "norm_label": "proxima validacao segura"
     },
     {
       "label": "LOGIN_AUTH_INTEGRATION.md",
@@ -7804,6 +8394,16 @@
       "norm_label": "20. financeiro fase 1: catalogos e services"
     },
     {
+      "label": "21. Financeiro Fase 2: integracao com a UI",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L725",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_21_financeiro_fase_2_integracao_com_a_ui",
+      "community": 72,
+      "norm_label": "21. financeiro fase 2: integracao com a ui"
+    },
+    {
       "label": "SUPABASE_ENV_SETUP.md",
       "file_type": "document",
       "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
@@ -9307,7 +9907,7 @@
       "label": "Validacoes concluidas no DEV",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L40",
+      "source_location": "L42",
       "_origin": "ast",
       "id": "supabase_readme_validacoes_concluidas_no_dev",
       "community": 4,
@@ -9317,7 +9917,7 @@
       "label": "Proximo passo",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L65",
+      "source_location": "L67",
       "_origin": "ast",
       "id": "supabase_readme_proximo_passo",
       "community": 4,
@@ -9327,7 +9927,7 @@
       "label": "Ordem inicial",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L75",
+      "source_location": "L77",
       "_origin": "ast",
       "id": "supabase_readme_ordem_inicial",
       "community": 4,
@@ -9337,7 +9937,7 @@
       "label": "Seguranca",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L85",
+      "source_location": "L87",
       "_origin": "ast",
       "id": "supabase_readme_seguranca",
       "community": 4,
@@ -9347,7 +9947,7 @@
       "label": "Novas migrations",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L100",
+      "source_location": "L102",
       "_origin": "ast",
       "id": "supabase_readme_novas_migrations",
       "community": 4,
@@ -9357,7 +9957,7 @@
       "label": "Decisoes ainda pendentes",
       "file_type": "document",
       "source_file": "supabase/README.md",
-      "source_location": "L116",
+      "source_location": "L118",
       "_origin": "ast",
       "id": "supabase_readme_decisoes_ainda_pendentes",
       "community": 4,
@@ -11235,7 +11835,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "package",
       "target": "package_dependencies",
@@ -11245,7 +11845,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L19",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "package",
       "target": "package_devdependencies",
@@ -11335,7 +11935,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "package_scripts",
       "target": "package_scripts_obsidian_note",
@@ -11345,7 +11945,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L12",
+      "source_location": "L13",
       "weight": 1.0,
       "source": "package_scripts",
       "target": "package_scripts_preview",
@@ -11355,7 +11955,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "package_scripts",
       "target": "package_scripts_supabase_test_rls",
@@ -11365,10 +11965,10 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L16",
+      "source_location": "L10",
       "weight": 1.0,
-      "source": "package_dependencies",
-      "target": "package_dependencies_react",
+      "source": "package_scripts",
+      "target": "package_scripts_test",
       "confidence_score": 1.0
     },
     {
@@ -11378,6 +11978,16 @@
       "source_location": "L17",
       "weight": 1.0,
       "source": "package_dependencies",
+      "target": "package_dependencies_react",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "package.json",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "package_dependencies",
       "target": "package_dependencies_react_dom",
       "confidence_score": 1.0
     },
@@ -11385,7 +11995,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L15",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "package_dependencies",
       "target": "package_dependencies_supabase_supabase_js",
@@ -11395,7 +12005,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L24",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_eslint",
@@ -11405,7 +12015,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L20",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_eslint_js",
@@ -11415,7 +12025,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L25",
+      "source_location": "L26",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_eslint_plugin_react_hooks",
@@ -11425,7 +12035,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L26",
+      "source_location": "L27",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_eslint_plugin_react_refresh",
@@ -11435,7 +12045,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L27",
+      "source_location": "L28",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_globals",
@@ -11445,7 +12055,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L21",
+      "source_location": "L22",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_types_react",
@@ -11455,7 +12065,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L22",
+      "source_location": "L23",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_types_react_dom",
@@ -11465,7 +12075,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L28",
+      "source_location": "L29",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_vite",
@@ -11475,7 +12085,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
-      "source_location": "L23",
+      "source_location": "L24",
       "weight": 1.0,
       "source": "package_devdependencies",
       "target": "package_devdependencies_vitejs_plugin_react",
@@ -11992,7 +12602,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L1",
+      "source_location": "L2",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_app_accesscontext",
@@ -12245,7 +12855,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L1",
+      "source_location": "L2",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_app_accesscontext_useaccess",
@@ -12256,7 +12866,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L17",
+      "source_location": "L38",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_app_accesscontext_useaccess",
@@ -12871,6 +13481,17 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_app_sessioncontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/LoginPage.jsx",
       "source_location": "L3",
       "weight": 1.0,
@@ -13019,6 +13640,28 @@
       "weight": 1.0,
       "source": "src_app_sessioncontext_sessionprovider",
       "target": "src_services_workspaceservice_getworkspacesubscription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_app_sessioncontext_usesession",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage_financeiropage",
+      "target": "src_app_sessioncontext_usesession",
       "confidence_score": 1.0
     },
     {
@@ -13206,7 +13849,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L2",
+      "source_location": "L4",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_app_access",
@@ -13426,7 +14069,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L2",
+      "source_location": "L4",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_app_access_workspace_types",
@@ -14629,7 +15272,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L3",
+      "source_location": "L5",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_components_ui_badge_badge_badge",
@@ -14871,7 +15514,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L3",
+      "source_location": "L5",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_components_ui_badge_index",
@@ -15122,8 +15765,52 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecrudprimitives",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L4",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_components_ui_button_button_button",
@@ -15331,8 +16018,52 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecrudprimitives",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L4",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_components_ui_button_index",
@@ -15628,7 +16359,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L5",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_components_ui_card_card_card",
@@ -15870,7 +16601,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L5",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_components_ui_card_index",
@@ -16066,6 +16797,39 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_components_ui_input_input_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_components_ui_input_input_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_components_ui_input_input_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/LoginPage.jsx",
       "source_location": "L7",
       "weight": 1.0,
@@ -16093,6 +16857,39 @@
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_components_ui_input_input_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_components_ui_input_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_components_ui_input_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_components_ui_input_index",
       "confidence_score": 1.0
     },
     {
@@ -16234,6 +17031,72 @@
       "weight": 1.0,
       "source": "src_components_ui_modal_modal_modal",
       "target": "src_utils_cx_cx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_components_ui_modal_modal_modal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_components_ui_modal_modal_modal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_components_ui_modal_modal_modal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_components_ui_modal_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_components_ui_modal_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_components_ui_modal_index",
       "confidence_score": 1.0
     },
     {
@@ -16538,6 +17401,1130 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_financialhookutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_hooks_financialhookutils",
+      "target": "src_hooks_financialhookutils_clonerecords",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "src_hooks_financialhookutils",
+      "target": "src_hooks_financialhookutils_createdemorecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "src_hooks_financialhookutils",
+      "target": "src_hooks_financialhookutils_createdemoresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_hooks_financialhookutils",
+      "target": "src_hooks_financialhookutils_removerecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHookUtils.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_financialhookutils",
+      "target": "src_hooks_financialhookutils_upsertrecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_hooks_financialhookutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_hooks_financialhookutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_hooks_financialhookutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_financialhookutils_clonerecords",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_hooks_financialhookutils_clonerecords",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_hooks_financialhookutils_clonerecords"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_hooks_financialhookutils_clonerecords",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_hooks_financialhookutils_clonerecords"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_hooks_financialhookutils_clonerecords",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_hooks_financialhookutils_clonerecords"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_financialhookutils_upsertrecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_hooks_financialhookutils_upsertrecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L98",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_hooks_financialhookutils_upsertrecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_hooks_financialhookutils_upsertrecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_hooks_financialhookutils_upsertrecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_hooks_financialhookutils_upsertrecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_hooks_financialhookutils_upsertrecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_financialhookutils_removerecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_hooks_financialhookutils_removerecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L118",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_hooks_financialhookutils_removerecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_hooks_financialhookutils_removerecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L114",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_hooks_financialhookutils_removerecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_hooks_financialhookutils_removerecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L114",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_hooks_financialhookutils_removerecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_financialhookutils_createdemorecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_hooks_financialhookutils_createdemorecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L89",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_hooks_financialhookutils_createdemorecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_hooks_financialhookutils_createdemorecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L80",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_hooks_financialhookutils_createdemorecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_hooks_financialhookutils_createdemorecord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L85",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_hooks_financialhookutils_createdemorecord"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_hooks_financialhookutils_createdemoresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_hooks_financialhookutils_createdemoresult"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_hooks_financialhookutils_createdemoresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L33",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_hooks_financialhookutils_createdemoresult"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_hooks_financialhookutils_createdemoresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_hooks_financialhookutils_createdemoresult"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_financialhooks_test_renderhook",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_useaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_useaccounts_useaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_usecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_usecategories_usecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_usetransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_hooks_usetransactions_usetransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_pages_financeiro_financeuiutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/financialHooks.test.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_hooks_financialhooks_test",
+      "target": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_hooks_index",
+      "target": "src_hooks_useaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_hooks_index",
+      "target": "src_hooks_useaccounts_useaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/index.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_index",
+      "target": "src_hooks_usecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/index.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_index",
+      "target": "src_hooks_usecategories_usecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/index.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_hooks_index",
+      "target": "src_hooks_usetransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/index.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_hooks_index",
+      "target": "src_hooks_usetransactions_usetransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_hooks_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_hooks_useaccounts_useaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_services_accountservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_services_accountservice_archiveaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_services_accountservice_createaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_services_accountservice_listaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_services_accountservice_listaccounttypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_services_accountservice_updateaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_services_supabaseclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts",
+      "target": "src_services_supabaseclient_issupabaseconfigured",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_services_accountservice_archiveaccount"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L93",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_services_accountservice_createaccount"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_services_accountservice_listaccounts"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_services_accountservice_listaccounttypes"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useAccounts.js",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "src_hooks_useaccounts_useaccounts",
+      "target": "src_services_accountservice_updateaccount"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_hooks_useaccounts_useaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage_financeiropage",
+      "target": "src_hooks_useaccounts_useaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_hooks_usecategories_usecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_services_categoryservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_services_categoryservice_createcategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_services_categoryservice_deletecategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_services_categoryservice_listcategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_services_categoryservice_updatecategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_services_supabaseclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories",
+      "target": "src_services_supabaseclient_issupabaseconfigured",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L89",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_services_categoryservice_createcategory"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L109",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_services_categoryservice_deletecategory"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_services_categoryservice_listcategories"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useCategories.js",
+      "source_location": "L88",
+      "weight": 1.0,
+      "source": "src_hooks_usecategories_usecategories",
+      "target": "src_services_categoryservice_updatecategory"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_hooks_usecategories_usecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage_financeiropage",
+      "target": "src_hooks_usecategories_usecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_hooks_usetransactions_usetransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_services_supabaseclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_services_supabaseclient_issupabaseconfigured",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_services_transactionservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_services_transactionservice_createtransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_services_transactionservice_deletetransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_services_transactionservice_listtransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions",
+      "target": "src_services_transactionservice_updatetransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L89",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_services_transactionservice_createtransaction"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L109",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_services_transactionservice_deletetransaction"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_services_transactionservice_listtransactions"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/hooks/useTransactions.js",
+      "source_location": "L88",
+      "weight": 1.0,
+      "source": "src_hooks_usetransactions_usetransactions",
+      "target": "src_services_transactionservice_updatetransaction"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_hooks_usetransactions_usetransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage_financeiropage",
+      "target": "src_hooks_usetransactions_usetransactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/AgendaPage.jsx",
       "source_location": "L7",
       "weight": 1.0,
@@ -16832,7 +18819,51 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L8",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financeaccountmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financeaccountmodal_financeaccountmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financecategorymodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financecategorymodal_financecategorymodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L13",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiro_financeprojectionchart",
@@ -16843,7 +18874,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L8",
+      "source_location": "L13",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiro_financeprojectionchart_financeprojectionchart",
@@ -16854,7 +18885,29 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L9",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financetransactionmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financetransactionmodal_financetransactionmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiro_financial_mock",
@@ -16865,17 +18918,50 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L9",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiro_financial_mock_financialmock",
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financialcrud_mock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financialcrud_mock_fallbackaccounttypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiro_financialcrud_mock_financialcrudmock",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L16",
+      "source_location": "L37",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiropage_financeiropage",
@@ -16885,7 +18971,27 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L12",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiropage_formatmovementdate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage",
+      "target": "src_pages_financeiropage_getcrudcontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L22",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_pages_financeiropage_getfinancialcontext",
@@ -16896,7 +19002,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L6",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_utils_cx",
@@ -16907,7 +19013,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L6",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_utils_cx_cx",
@@ -16918,7 +19024,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L7",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_utils_formatters",
@@ -16929,7 +19035,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L7",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_pages_financeiropage",
       "target": "src_utils_formatters_formatcurrency",
@@ -16940,7 +19046,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L18",
+      "source_location": "L41",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_pages_financeiropage_getfinancialcontext",
@@ -16951,7 +19057,29 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L63",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage_financeiropage",
+      "target": "src_pages_financeiropage_getcrudcontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "src_pages_financeiropage_financeiropage",
+      "target": "src_pages_financeiropage_formatmovementdate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/FinanceiroPage.jsx",
+      "source_location": "L124",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_utils_cx_cx",
@@ -16962,7 +19090,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
-      "source_location": "L118",
+      "source_location": "L190",
       "weight": 1.0,
       "source": "src_pages_financeiropage_financeiropage",
       "target": "src_utils_formatters_formatcurrency",
@@ -17807,6 +19935,360 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financeaccountmodal_empty_form",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financeaccountmodal_financeaccountmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financecrudprimitives",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financecrudprimitives_crudrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financecrudprimitives_deleteactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financecrudprimitives_formmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financecrudprimitives_selectfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financeuiutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_utils_formatters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L119",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal_financeaccountmodal",
+      "target": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceAccountModal.jsx",
+      "source_location": "L141",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeaccountmodal_financeaccountmodal",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financecategorymodal_category_labels",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financecategorymodal_empty_form",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financecategorymodal_financecategorymodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financecrudprimitives",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financecrudprimitives_crudrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financecrudprimitives_deleteactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financecrudprimitives_formmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financecrudprimitives_selectfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financeuiutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal",
+      "target": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCategoryModal.jsx",
+      "source_location": "L91",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecategorymodal_financecategorymodal",
+      "target": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecrudprimitives",
+      "target": "src_pages_financeiro_financecrudprimitives_crudrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecrudprimitives",
+      "target": "src_pages_financeiro_financecrudprimitives_deleteactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecrudprimitives",
+      "target": "src_pages_financeiro_financecrudprimitives_formmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceCrudPrimitives.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financecrudprimitives",
+      "target": "src_pages_financeiro_financecrudprimitives_selectfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financecrudprimitives",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financecrudprimitives_selectfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financecrudprimitives_formmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financecrudprimitives_crudrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financecrudprimitives_deleteactions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/financeiro/FinanceProjectionChart.jsx",
       "source_location": "L53",
       "weight": 1.0,
@@ -18007,11 +20489,179 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financetransactionmodal_createemptyform",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financetransactionmodal_financetransactionmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financeuiutils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_utils_formatters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal_financetransactionmodal",
+      "target": "src_pages_financeiro_financetransactionmodal_createemptyform",
+      "confidence_score": 0.5
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L224",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal_financetransactionmodal",
+      "target": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/FinanceTransactionModal.jsx",
+      "source_location": "L246",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financetransactionmodal_financetransactionmodal",
+      "target": "src_utils_formatters_formatcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/financeUiUtils.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeuiutils",
+      "target": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/financeUiUtils.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeuiutils",
+      "target": "src_pages_financeiro_financeuiutils_safe_error_codes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/pages/financeiro/financeUiUtils.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financeuiutils_getfinanceerrormessage",
+      "target": "src_pages_financeiro_financeuiutils_safe_error_codes"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/financeiro/financial.mock.js",
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_pages_financeiro_financial_mock",
       "target": "src_pages_financeiro_financial_mock_financialmock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financialcrud_mock",
+      "target": "src_pages_financeiro_financialcrud_mock_basecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financialcrud_mock",
+      "target": "src_pages_financeiro_financialcrud_mock_fallbackaccounttypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financialcrud_mock",
+      "target": "src_pages_financeiro_financialcrud_mock_financialcrudmock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/financeiro/financialCrud.mock.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_financeiro_financialcrud_mock",
+      "target": "src_pages_financeiro_financialcrud_mock_today",
       "confidence_score": 1.0
     },
     {
@@ -21773,7 +24423,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L146",
+      "source_location": "L154",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_dados_manuais_e_externos",
@@ -21783,7 +24433,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L240",
+      "source_location": "L248",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_decisoes_pendentes",
@@ -21793,7 +24443,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L168",
+      "source_location": "L176",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_deduplicacao_externa",
@@ -21823,7 +24473,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L179",
+      "source_location": "L187",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_open_finance_futuro",
@@ -21833,7 +24483,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L252",
+      "source_location": "L260",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_proxima_etapa_segura",
@@ -21843,7 +24493,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L138",
+      "source_location": "L146",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_recorrencia_e_parcelas",
@@ -21853,7 +24503,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L198",
+      "source_location": "L206",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_rls_e_privilegios",
@@ -21866,7 +24516,7 @@
       "source_location": "L84",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
-      "target": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "target": "docs_00_master_financial_core_data_model_services_e_hooks",
       "confidence_score": 1.0
     },
     {
@@ -21883,7 +24533,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L112",
+      "source_location": "L120",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_transactions",
@@ -21893,7 +24543,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L125",
+      "source_location": "L133",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_transferencias",
@@ -21903,7 +24553,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L226",
+      "source_location": "L234",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_financial_core_data_model",
       "target": "docs_00_master_financial_core_data_model_validacao",
@@ -21925,7 +24575,7 @@
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
       "source_location": "L88",
       "weight": 1.0,
-      "source": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "source": "docs_00_master_financial_core_data_model_services_e_hooks",
       "target": "docs_00_master_financial_core_data_model_accountservice_js",
       "confidence_score": 1.0
     },
@@ -21935,7 +24585,7 @@
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
       "source_location": "L95",
       "weight": 1.0,
-      "source": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "source": "docs_00_master_financial_core_data_model_services_e_hooks",
       "target": "docs_00_master_financial_core_data_model_categoryservice_js",
       "confidence_score": 1.0
     },
@@ -21945,18 +24595,8 @@
       "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
       "source_location": "L101",
       "weight": 1.0,
-      "source": "docs_00_master_financial_core_data_model_services_da_fase_1",
+      "source": "docs_00_master_financial_core_data_model_services_e_hooks",
       "target": "docs_00_master_financial_core_data_model_transactionservice_js",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
-      "source_location": "L200",
-      "weight": 1.0,
-      "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
-      "target": "docs_00_master_financial_core_data_model_accounts_200",
       "confidence_score": 1.0
     },
     {
@@ -21966,7 +24606,7 @@
       "source_location": "L208",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
-      "target": "docs_00_master_financial_core_data_model_categories_208",
+      "target": "docs_00_master_financial_core_data_model_accounts_208",
       "confidence_score": 1.0
     },
     {
@@ -21976,7 +24616,197 @@
       "source_location": "L216",
       "weight": 1.0,
       "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
-      "target": "docs_00_master_financial_core_data_model_transactions_216",
+      "target": "docs_00_master_financial_core_data_model_categories_216",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md",
+      "source_location": "L224",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_core_data_model_rls_e_privilegios",
+      "target": "docs_00_master_financial_core_data_model_transactions_224",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_crud_de_categorias",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L82",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_crud_de_contas",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L101",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_crud_de_lancamentos",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_fluxo_de_dados",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_hooks",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_integracao_visual",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L163",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_limites_desta_fase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L115",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_modo_demo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_pre_requisitos_para_dados_reais",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L175",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_proxima_validacao_segura",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L138",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_saldo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_status",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L125",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_supabase_e_rls",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L144",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_financial_phase_2_ui_integration",
+      "target": "docs_00_master_financial_phase_2_ui_integration_testes_basicos",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_hooks",
+      "target": "docs_00_master_financial_phase_2_ui_integration_useaccounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_hooks",
+      "target": "docs_00_master_financial_phase_2_ui_integration_usecategories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/FINANCIAL_PHASE_2_UI_INTEGRATION.md",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "docs_00_master_financial_phase_2_ui_integration_hooks",
+      "target": "docs_00_master_financial_phase_2_ui_integration_usetransactions",
       "confidence_score": 1.0
     },
     {
@@ -23227,6 +26057,16 @@
       "weight": 1.0,
       "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
       "target": "docs_00_master_supabase_auth_and_data_plan_20_financeiro_fase_1_catalogos_e_services",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L725",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_21_financeiro_fase_2_integracao_com_a_ui",
       "confidence_score": 1.0
     },
     {
@@ -24983,7 +27823,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L116",
+      "source_location": "L118",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_decisoes_ainda_pendentes",
@@ -25013,7 +27853,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L100",
+      "source_location": "L102",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_novas_migrations",
@@ -25023,7 +27863,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L75",
+      "source_location": "L77",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_ordem_inicial",
@@ -25033,7 +27873,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L65",
+      "source_location": "L67",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_proximo_passo",
@@ -25043,7 +27883,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L85",
+      "source_location": "L87",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_seguranca",
@@ -25053,7 +27893,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "supabase/README.md",
-      "source_location": "L40",
+      "source_location": "L42",
       "weight": 1.0,
       "source": "supabase_readme_supabase",
       "target": "supabase_readme_validacoes_concluidas_no_dev",
@@ -25061,5 +27901,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "564c1ae25c728d74147a1d2cb4f286fb7da691d5"
+  "built_at_commit": "172cf48ea6eef373d60afd9546b5ee13c07fc2b5"
 }
