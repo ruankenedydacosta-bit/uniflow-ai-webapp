@@ -60,13 +60,17 @@ Responsabilidades:
 
 Estados:
 
-- `pending`;
+- `created`;
 - `awaiting_authorization`;
+- `authorized`;
 - `active`;
 - `expired`;
 - `revoked`;
-- `rejected`;
-- `error`.
+- `failed`.
+
+`purpose_version` e `scopes_version` preservam a versao da finalidade e dos
+escopos apresentados ao usuario. `granted_at`, `expires_at` e `revoked_at`
+possuem constraints de ordem temporal e coerencia com o estado.
 
 O consentimento nao guarda access token, refresh token, authorization code,
 certificado ou credencial.
@@ -114,7 +118,7 @@ Responsabilidades:
 - guardar apenas payload minimizado e sanitizado.
 
 Indices unicos impedem que o mesmo identificador ou fingerprint seja importado
-duas vezes para o mesmo workspace e provedor.
+duas vezes para a mesma conta externa, workspace e provedor.
 
 ### `sync_jobs`
 
@@ -130,25 +134,30 @@ Tipos:
 
 Estados:
 
-- `queued`;
+- `pending`;
 - `running`;
-- `succeeded`;
+- `completed`;
 - `partial`;
 - `failed`;
 - `canceled`.
 
 Cada job possui chave de idempotencia, contadores, tentativas, cursor e erro
-sanitizado. O identificador do evento externo deduplica webhooks.
+sanitizado. `next_retry_at` agenda uma nova tentativa depois de falha ou
+resultado parcial. `started_at` e `completed_at` possuem constraints de ordem
+temporal. O identificador do evento externo deduplica webhooks.
 
 ## Idempotencia
 
 A importacao automatica deve ser segura para retries.
 
-- Consentimento: identidade unica por workspace, provedor e ID externo.
-- Conta: identidade unica por workspace, provedor e ID externo.
-- Transacao: identidade unica por workspace, provedor e ID externo.
-- Fingerprint: segunda barreira para provedores com IDs instaveis.
+- Consentimento: identidade unica por workspace, provedor, instituicao e ID
+  externo.
+- Conta: identidade unica por workspace, provedor, instituicao e ID externo.
+- Transacao: identidade unica por workspace, provedor, conta externa e ID
+  externo.
+- Fingerprint: segunda barreira por conta para provedores com IDs instaveis.
 - Job: chave unica por workspace, provedor e operacao logica.
+- Job ativo: apenas um `pending` ou `running` por consentimento, conta e tipo.
 - Webhook: evento unico por provedor e ID recebido.
 
 O backend futuro devera usar `upsert` ou operacoes transacionais baseadas nessas
@@ -162,6 +171,8 @@ As quatro tabelas usam `workspace_id` como fronteira de isolamento.
 - O titular do consentimento e owners/admins podem ler o consentimento.
 - Membros ativos podem ler contas, transacoes e jobs do workspace conforme RLS.
 - O frontend autenticado nao recebe grants de insert, update ou delete.
+- Grants de leitura sao por coluna; IDs operacionais, chaves de idempotencia,
+  cursores e payloads sanitizados permanecem backend-only.
 - Consentimentos, callbacks, webhooks e sincronizacoes sao backend-only.
 - `service_role` nunca entra no frontend ou em variavel `VITE_*`.
 - Tokens e certificados devem usar secret store do backend, fora das tabelas
@@ -227,7 +238,7 @@ Esses nomes sao referencia de arquitetura, nao APIs implementadas nesta etapa.
 
 - lista e consulta contas externas por workspace;
 - lista transacoes externas com filtros simples;
-- nao expoe `provider_data` ao frontend.
+- nao expoe `sanitized_provider_data` ao frontend.
 
 ### `syncService.js`
 
