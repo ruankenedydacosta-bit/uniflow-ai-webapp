@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783874427.066292,
-    "ast_hash": "ecbf5a78553a1c1ca02b6d00c2380109",
+    "mtime": 1783875355.402334,
+    "ast_hash": "dd02d4c15b9fac0e4d30f41677bd589d",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -585,8 +585,8 @@
     "semantic_hash": ""
   },
   "src/pages/UniAIPage.jsx": {
-    "mtime": 1783874486.1329267,
-    "ast_hash": "288d2241bf081220cfc9c33b6b9b858a",
+    "mtime": 1783875355.113337,
+    "ast_hash": "18aeb90f97a60c1b4fb62fc56fc7af4b",
     "semantic_hash": ""
   },
   "src/pages/uni-ai/UniAIHero.jsx": {
@@ -620,13 +620,13 @@
     "semantic_hash": ""
   },
   "src/pages/uni-ai/index.js": {
-    "mtime": 1783874414.8402753,
-    "ast_hash": "a62a37b3a9f95b8f3ae27887ba840d78",
+    "mtime": 1783875629.8491156,
+    "ast_hash": "c6be3aa2fd101329ea6cc991ecb44b94",
     "semantic_hash": ""
   },
   "src/pages/uni-ai/uniAI.helpers.js": {
-    "mtime": 1783626879.7995412,
-    "ast_hash": "425bb996b02e0fe780683e573aa096b0",
+    "mtime": 1783875629.7494996,
+    "ast_hash": "f7a6c88dc14114d24103e37eb1d4e25c",
     "semantic_hash": ""
   },
   "src/pages/uni-ai/uniAI.mock.js": {
@@ -670,8 +670,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/UNI_AI_EXPERIENCE_REFERENCE.md": {
-    "mtime": 1783822548.9365644,
-    "ast_hash": "4c00d6089918f0e40d7261dcdc75f97e",
+    "mtime": 1783875629.9580672,
+    "ast_hash": "1b21ddd44595cc56de9fc99deca20df7",
     "semantic_hash": ""
   },
   "docs/08-references/landing-uni-demo/index.html": {
@@ -1170,8 +1170,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md": {
-    "mtime": 1783874534.611611,
-    "ast_hash": "435aeba07234fde54be85e1917960fb5",
+    "mtime": 1783875401.709341,
+    "ast_hash": "6716f31202815ca3413c2fd25196e7e6",
     "semantic_hash": ""
   },
   "src/features/uni-memory/anomalyDetector.js": {
@@ -1355,8 +1355,43 @@
     "semantic_hash": ""
   },
   "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md": {
-    "mtime": 1783874534.4188015,
-    "ast_hash": "7018a09782e95d99cdd62974c3b7deee",
+    "mtime": 1783875401.9890814,
+    "ast_hash": "c4cafe1fdff0c219724d31ef15bbd8dd",
+    "semantic_hash": ""
+  },
+  "src/features/uni-voice/index.js": {
+    "mtime": 1783875240.0156689,
+    "ast_hash": "9e2ed075d76ec8e0506d61348f313b90",
+    "semantic_hash": ""
+  },
+  "src/features/uni-voice/speechRecognitionAdapter.js": {
+    "mtime": 1783875427.5198076,
+    "ast_hash": "82e65b7681e6e4c91ef752ca397782b6",
+    "semantic_hash": ""
+  },
+  "src/features/uni-voice/uniVoiceInput.test.js": {
+    "mtime": 1783875355.2567656,
+    "ast_hash": "b29f9b250a50900873423d776a9bfa7c",
+    "semantic_hash": ""
+  },
+  "src/features/uni-voice/useUniVoiceInput.js": {
+    "mtime": 1783875354.9680152,
+    "ast_hash": "1ab93b6ae485d744bcc41b9c50cd420b",
+    "semantic_hash": ""
+  },
+  "src/features/uni-voice/voiceCaptureReducer.js": {
+    "mtime": 1783875239.5828846,
+    "ast_hash": "724292f1c829c564b3c86a024e620a2d",
+    "semantic_hash": ""
+  },
+  "src/features/uni-voice/voiceInputMessages.js": {
+    "mtime": 1783875239.8012574,
+    "ast_hash": "4dfaeb7b750fd3584cc1715d7c22418c",
+    "semantic_hash": ""
+  },
+  "docs/00-master/UNI_VOICE_INPUT_V1.md": {
+    "mtime": 1783875401.5468333,
+    "ast_hash": "e1d81750f1abf4b1e424c32e4b1a18ce",
     "semantic_hash": ""
   }
 }

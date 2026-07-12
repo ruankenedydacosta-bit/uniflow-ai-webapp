@@ -2470,7 +2470,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_app_accesscontext_useaccess",
-      "community": 68,
+      "community": 101,
       "norm_label": "useaccess()"
     },
     {
@@ -2600,7 +2600,7 @@
       "source_location": "L431",
       "_origin": "ast",
       "id": "src_app_sessioncontext_usesession",
-      "community": 109,
+      "community": 39,
       "norm_label": "usesession()"
     },
     {
@@ -2620,7 +2620,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_access_user_modes",
-      "community": 101,
+      "community": 68,
       "norm_label": "user_modes"
     },
     {
@@ -2630,7 +2630,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_access_plans",
-      "community": 101,
+      "community": 111,
       "norm_label": "plans"
     },
     {
@@ -2830,7 +2830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_routes",
-      "community": 109,
+      "community": 101,
       "norm_label": "routes.jsx"
     },
     {
@@ -2840,7 +2840,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_app_routes_publicroutes",
-      "community": 68,
+      "community": 101,
       "norm_label": "publicroutes"
     },
     {
@@ -2850,7 +2850,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_app_routes_approutes",
-      "community": 68,
+      "community": 101,
       "norm_label": "approutes"
     },
     {
@@ -2860,7 +2860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher",
-      "community": 101,
+      "community": 111,
       "norm_label": "accessmodeswitcher.jsx"
     },
     {
@@ -2870,7 +2870,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_options",
-      "community": 101,
+      "community": 111,
       "norm_label": "user_mode_options"
     },
     {
@@ -2880,7 +2880,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_options",
-      "community": 101,
+      "community": 111,
       "norm_label": "plan_options"
     },
     {
@@ -2890,7 +2890,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_workspace_options",
-      "community": 101,
+      "community": 111,
       "norm_label": "workspace_options"
     },
     {
@@ -2900,7 +2900,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_personal_plans",
-      "community": 101,
+      "community": 111,
       "norm_label": "personal_plans"
     },
     {
@@ -2910,7 +2910,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_labels",
-      "community": 101,
+      "community": 111,
       "norm_label": "user_mode_labels"
     },
     {
@@ -2920,7 +2920,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_labels",
-      "community": 101,
+      "community": 111,
       "norm_label": "plan_labels"
     },
     {
@@ -2930,7 +2930,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getworkspaceformode",
-      "community": 101,
+      "community": 111,
       "norm_label": "getworkspaceformode()"
     },
     {
@@ -2940,7 +2940,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
-      "community": 101,
+      "community": 111,
       "norm_label": "getmodeoptionsforplan()"
     },
     {
@@ -2950,7 +2950,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_normalizeaccessforplan",
-      "community": 101,
+      "community": 111,
       "norm_label": "normalizeaccessforplan()"
     },
     {
@@ -2960,7 +2960,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
-      "community": 101,
+      "community": 111,
       "norm_label": "accessmodeswitcher()"
     },
     {
@@ -3040,7 +3040,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 68,
+      "community": 99,
       "norm_label": "topbar.jsx"
     },
     {
@@ -3050,7 +3050,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar_topbar",
-      "community": 68,
+      "community": 99,
       "norm_label": "topbar()"
     },
     {
@@ -3060,7 +3060,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_index",
-      "community": 68,
+      "community": 99,
       "norm_label": "index.js"
     },
     {
@@ -3070,7 +3070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 88,
+      "community": 99,
       "norm_label": "avatar.jsx"
     },
     {
@@ -3080,7 +3080,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 88,
+      "community": 99,
       "norm_label": "getinitials()"
     },
     {
@@ -3090,7 +3090,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_avatar",
-      "community": 88,
+      "community": 99,
       "norm_label": "avatar"
     },
     {
@@ -3130,7 +3130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge_index",
-      "community": 87,
+      "community": 99,
       "norm_label": "index.js"
     },
     {
@@ -3150,7 +3150,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_button_button_button",
-      "community": 99,
+      "community": 41,
       "norm_label": "button()"
     },
     {
@@ -3160,7 +3160,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_button_index",
-      "community": 99,
+      "community": 41,
       "norm_label": "index.js"
     },
     {
@@ -3180,7 +3180,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_card_card_card",
-      "community": 87,
+      "community": 99,
       "norm_label": "card()"
     },
     {
@@ -3190,7 +3190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_card_index",
-      "community": 87,
+      "community": 99,
       "norm_label": "index.js"
     },
     {
@@ -3200,7 +3200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 41,
+      "community": 88,
       "norm_label": "input.jsx"
     },
     {
@@ -3250,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_index",
-      "community": 88,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -3260,7 +3260,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal",
-      "community": 41,
+      "community": 88,
       "norm_label": "modal.jsx"
     },
     {
@@ -3350,7 +3350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_dashboardgreeting",
-      "community": 99,
+      "community": 41,
       "norm_label": "dashboardgreeting.jsx"
     },
     {
@@ -3360,7 +3360,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_dashboardgreeting_dashboardgreeting",
-      "community": 99,
+      "community": 41,
       "norm_label": "dashboardgreeting()"
     },
     {
@@ -3440,7 +3440,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_uniinsightscard",
-      "community": 87,
+      "community": 99,
       "norm_label": "uniinsightscard.jsx"
     },
     {
@@ -3450,7 +3450,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_uniinsightscard_uniinsightscard",
-      "community": 87,
+      "community": 99,
       "norm_label": "uniinsightscard()"
     },
     {
@@ -3484,163 +3484,293 @@
       "norm_label": "index.js"
     },
     {
+      "label": "accountProvisioning.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountprovisioning",
+      "community": 100,
+      "norm_label": "accountprovisioning.js"
+    },
+    {
+      "label": "createError()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountprovisioning_createerror",
+      "community": 100,
+      "norm_label": "createerror()"
+    },
+    {
+      "label": "getHandlers()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountprovisioning_gethandlers",
+      "community": 100,
+      "norm_label": "gethandlers()"
+    },
+    {
+      "label": "provisionAccountAndTransaction()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountprovisioning_provisionaccountandtransaction",
+      "community": 100,
+      "norm_label": "provisionaccountandtransaction()"
+    },
+    {
+      "label": "createAccountProvisioningCoordinator()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L74",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountprovisioning_createaccountprovisioningcoordinator",
+      "community": 100,
+      "norm_label": "createaccountprovisioningcoordinator()"
+    },
+    {
+      "label": "accountResolution.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution",
+      "community": 100,
+      "norm_label": "accountresolution.js"
+    },
+    {
+      "label": "ACCOUNT_RESOLUTION_STATUS",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_account_resolution_status",
+      "community": 100,
+      "norm_label": "account_resolution_status"
+    },
+    {
+      "label": "cleanAccountName()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_cleanaccountname",
+      "community": 100,
+      "norm_label": "cleanaccountname()"
+    },
+    {
+      "label": "normalizeAccountIdentity()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_normalizeaccountidentity",
+      "community": 100,
+      "norm_label": "normalizeaccountidentity()"
+    },
+    {
+      "label": "accountMatches()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_accountmatches",
+      "community": 100,
+      "norm_label": "accountmatches()"
+    },
+    {
+      "label": "selectAccountType()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_selectaccounttype",
+      "community": 100,
+      "norm_label": "selectaccounttype()"
+    },
+    {
+      "label": "createProposedAccount()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_createproposedaccount",
+      "community": 100,
+      "norm_label": "createproposedaccount()"
+    },
+    {
+      "label": "resolveFinancialAccount()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L70",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_resolvefinancialaccount",
+      "community": 100,
+      "norm_label": "resolvefinancialaccount()"
+    },
+    {
+      "label": "accountResolution.test.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_test",
+      "community": 100,
+      "norm_label": "accountresolution.test.js"
+    },
+    {
+      "label": "accountTypes",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_test_accounttypes",
+      "community": 100,
+      "norm_label": "accounttypes"
+    },
+    {
+      "label": "categories",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_test_categories",
+      "community": 100,
+      "norm_label": "categories"
+    },
+    {
+      "label": "createAction()",
+      "file_type": "code",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_features_uni_conversation_accountresolution_test_createaction",
+      "community": 100,
+      "norm_label": "createaction()"
+    },
+    {
       "label": "financialIntentAction.js",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction",
-      "community": 89,
+      "community": 100,
       "norm_label": "financialintentaction.js"
     },
     {
       "label": "ACTION_INTENTS",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L3",
+      "source_location": "L8",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_action_intents",
-      "community": 89,
+      "community": 100,
       "norm_label": "action_intents"
     },
     {
       "label": "TYPE_LABELS",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L9",
+      "source_location": "L14",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_type_labels",
-      "community": 89,
+      "community": 100,
       "norm_label": "type_labels"
     },
     {
       "label": "ISSUE_PRIORITY",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L15",
+      "source_location": "L20",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_issue_priority",
-      "community": 89,
+      "community": 100,
       "norm_label": "issue_priority"
-    },
-    {
-      "label": "normalize()",
-      "file_type": "code",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L25",
-      "_origin": "ast",
-      "id": "src_features_uni_conversation_financialintentaction_normalize",
-      "community": 89,
-      "norm_label": "normalize()"
     },
     {
       "label": "isValidDate()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L29",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_isvaliddate",
-      "community": 89,
+      "community": 100,
       "norm_label": "isvaliddate()"
     },
     {
       "label": "sanitizeDescription()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L35",
+      "source_location": "L36",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_sanitizedescription",
-      "community": 89,
+      "community": 100,
       "norm_label": "sanitizedescription()"
-    },
-    {
-      "label": "accountSearchTerms()",
-      "file_type": "code",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L50",
-      "_origin": "ast",
-      "id": "src_features_uni_conversation_financialintentaction_accountsearchterms",
-      "community": 89,
-      "norm_label": "accountsearchterms()"
-    },
-    {
-      "label": "accountMatchesInput()",
-      "file_type": "code",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L57",
-      "_origin": "ast",
-      "id": "src_features_uni_conversation_financialintentaction_accountmatchesinput",
-      "community": 89,
-      "norm_label": "accountmatchesinput()"
-    },
-    {
-      "label": "resolveAccount()",
-      "file_type": "code",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L65",
-      "_origin": "ast",
-      "id": "src_features_uni_conversation_financialintentaction_resolveaccount",
-      "community": 89,
-      "norm_label": "resolveaccount()"
     },
     {
       "label": "categorySimilarity()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L111",
+      "source_location": "L51",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_categorysimilarity",
-      "community": 89,
+      "community": 100,
       "norm_label": "categorysimilarity()"
     },
     {
       "label": "resolveCategory()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L121",
+      "source_location": "L61",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_resolvecategory",
-      "community": 89,
+      "community": 100,
       "norm_label": "resolvecategory()"
     },
     {
       "label": "createIssue()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L152",
+      "source_location": "L92",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_createissue",
-      "community": 89,
+      "community": 100,
       "norm_label": "createissue()"
     },
     {
       "label": "isFinancialTransactionIntent()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L156",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_isfinancialtransactionintent",
-      "community": 89,
+      "community": 100,
       "norm_label": "isfinancialtransactionintent()"
     },
     {
       "label": "buildFinancialIntentAction()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L160",
+      "source_location": "L100",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
-      "community": 89,
+      "community": 100,
       "norm_label": "buildfinancialintentaction()"
     },
     {
       "label": "executeFinancialIntentAction()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L251",
+      "source_location": "L210",
       "_origin": "ast",
       "id": "src_features_uni_conversation_financialintentaction_executefinancialintentaction",
-      "community": 89,
+      "community": 100,
       "norm_label": "executefinancialintentaction()"
     },
     {
@@ -3650,7 +3780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_uni_conversation_index",
-      "community": 89,
+      "community": 100,
       "norm_label": "index.js"
     },
     {
@@ -3660,7 +3790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversation_test",
-      "community": 89,
+      "community": 100,
       "norm_label": "uniconversation.test.js"
     },
     {
@@ -3670,7 +3800,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversation_test_accounts",
-      "community": 89,
+      "community": 100,
       "norm_label": "accounts"
     },
     {
@@ -3680,7 +3810,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversation_test_categories",
-      "community": 89,
+      "community": 100,
       "norm_label": "categories"
     },
     {
@@ -3690,7 +3820,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversation_test_createaction",
-      "community": 89,
+      "community": 100,
       "norm_label": "createaction()"
     },
     {
@@ -3700,7 +3830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversationreducer",
-      "community": 89,
+      "community": 100,
       "norm_label": "uniconversationreducer.js"
     },
     {
@@ -3710,7 +3840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversationreducer_uni_conversation_states",
-      "community": 89,
+      "community": 100,
       "norm_label": "uni_conversation_states"
     },
     {
@@ -3720,7 +3850,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversationreducer_initialuniconversationstate",
-      "community": 89,
+      "community": 100,
       "norm_label": "initialuniconversationstate"
     },
     {
@@ -3730,7 +3860,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversationreducer_uniconversationreducer",
-      "community": 89,
+      "community": 100,
       "norm_label": "uniconversationreducer()"
     },
     {
@@ -3740,7 +3870,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder",
-      "community": 89,
+      "community": 100,
       "norm_label": "uniresponsebuilder.js"
     },
     {
@@ -3750,7 +3880,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder_profile_copy",
-      "community": 89,
+      "community": 100,
       "norm_label": "profile_copy"
     },
     {
@@ -3760,7 +3890,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder_issue_messages",
-      "community": 89,
+      "community": 100,
       "norm_label": "issue_messages"
     },
     {
@@ -3770,7 +3900,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder_resolvecopy",
-      "community": 89,
+      "community": 100,
       "norm_label": "resolvecopy()"
     },
     {
@@ -3780,7 +3910,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder_buildconfirmationresponse",
-      "community": 89,
+      "community": 100,
       "norm_label": "buildconfirmationresponse()"
     },
     {
@@ -3790,7 +3920,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder_buildclarificationresponse",
-      "community": 89,
+      "community": 100,
       "norm_label": "buildclarificationresponse()"
     },
     {
@@ -3800,7 +3930,7 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder_buildcompletionresponse",
-      "community": 89,
+      "community": 100,
       "norm_label": "buildcompletionresponse()"
     },
     {
@@ -3810,7 +3940,7 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder_buildcanceledresponse",
-      "community": 89,
+      "community": 100,
       "norm_label": "buildcanceledresponse()"
     },
     {
@@ -3820,7 +3950,7 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniresponsebuilder_buildexecutionerrorresponse",
-      "community": 89,
+      "community": 100,
       "norm_label": "buildexecutionerrorresponse()"
     },
     {
@@ -3830,17 +3960,17 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_uni_conversation_useuniconversation",
-      "community": 89,
+      "community": 100,
       "norm_label": "useuniconversation.js"
     },
     {
       "label": "useUniConversation()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L22",
+      "source_location": "L23",
       "_origin": "ast",
       "id": "src_features_uni_conversation_useuniconversation_useuniconversation",
-      "community": 89,
+      "community": 100,
       "norm_label": "useuniconversation()"
     },
     {
@@ -4560,7 +4690,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_features_uni_memory_integration_useconversationmemory_conversation_memory_states",
-      "community": 95,
+      "community": 39,
       "norm_label": "conversation_memory_states"
     },
     {
@@ -5850,7 +5980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crmpage",
-      "community": 88,
+      "community": 101,
       "norm_label": "crmpage.jsx"
     },
     {
@@ -5860,7 +5990,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_crmpage_crmpage",
-      "community": 88,
+      "community": 101,
       "norm_label": "crmpage()"
     },
     {
@@ -5870,7 +6000,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientespage",
-      "community": 87,
+      "community": 101,
       "norm_label": "clientespage.jsx"
     },
     {
@@ -5880,7 +6010,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_clientespage_clientespage",
-      "community": 87,
+      "community": 101,
       "norm_label": "clientespage()"
     },
     {
@@ -5890,7 +6020,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financepage",
-      "community": 109,
+      "community": 91,
       "norm_label": "financepage.jsx"
     },
     {
@@ -5900,7 +6030,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiropage",
-      "community": 109,
+      "community": 91,
       "norm_label": "financeiropage.jsx"
     },
     {
@@ -5910,7 +6040,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_pages_financeiropage_getfinancialcontext",
-      "community": 109,
+      "community": 91,
       "norm_label": "getfinancialcontext()"
     },
     {
@@ -5920,7 +6050,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_pages_financeiropage_getcrudcontext",
-      "community": 109,
+      "community": 91,
       "norm_label": "getcrudcontext()"
     },
     {
@@ -5930,7 +6060,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_pages_financeiropage_formatmovementdate",
-      "community": 109,
+      "community": 91,
       "norm_label": "formatmovementdate()"
     },
     {
@@ -5940,7 +6070,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_pages_financeiropage_financeiropage",
-      "community": 109,
+      "community": 91,
       "norm_label": "financeiropage()"
     },
     {
@@ -5950,7 +6080,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_loginpage",
-      "community": 109,
+      "community": 41,
       "norm_label": "loginpage.jsx"
     },
     {
@@ -5960,7 +6090,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_loginpage_loginpage",
-      "community": 109,
+      "community": 39,
       "norm_label": "loginpage()"
     },
     {
@@ -5970,7 +6100,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivospage",
-      "community": 111,
+      "community": 87,
       "norm_label": "objetivospage.jsx"
     },
     {
@@ -5980,7 +6110,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_objetivospage_getobjectivescontext",
-      "community": 111,
+      "community": 87,
       "norm_label": "getobjectivescontext()"
     },
     {
@@ -5990,7 +6120,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_objetivospage_getprogress",
-      "community": 111,
+      "community": 87,
       "norm_label": "getprogress()"
     },
     {
@@ -6000,7 +6130,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_pages_objetivospage_objetivospage",
-      "community": 111,
+      "community": 87,
       "norm_label": "objetivospage()"
     },
     {
@@ -6040,7 +6170,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingpage",
-      "community": 109,
+      "community": 101,
       "norm_label": "onboardingpage()"
     },
     {
@@ -6070,7 +6200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projectspage",
-      "community": 87,
+      "community": 101,
       "norm_label": "projectspage.jsx"
     },
     {
@@ -6080,7 +6210,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_projectspage_projectspage",
-      "community": 87,
+      "community": 101,
       "norm_label": "projectspage()"
     },
     {
@@ -6150,7 +6280,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 101,
+      "community": 112,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -6160,7 +6290,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 101,
+      "community": 112,
       "norm_label": "user_mode_labels"
     },
     {
@@ -6170,7 +6300,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 101,
+      "community": 112,
       "norm_label": "plan_labels"
     },
     {
@@ -6180,7 +6310,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 101,
+      "community": 112,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -6190,7 +6320,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 101,
+      "community": 112,
       "norm_label": "settingspage()"
     },
     {
@@ -6250,7 +6380,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock",
-      "community": 87,
+      "community": 101,
       "norm_label": "clients.mock.js"
     },
     {
@@ -6260,7 +6390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock_clientsmock",
-      "community": 87,
+      "community": 101,
       "norm_label": "clientsmock"
     },
     {
@@ -6270,7 +6400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 101,
+      "community": 112,
       "norm_label": "settings.mock.js"
     },
     {
@@ -6280,7 +6410,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 101,
+      "community": 112,
       "norm_label": "settingsmock"
     },
     {
@@ -6290,7 +6420,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock",
-      "community": 88,
+      "community": 101,
       "norm_label": "crm.mock.js"
     },
     {
@@ -6300,7 +6430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock_crmmock",
-      "community": 88,
+      "community": 101,
       "norm_label": "crmmock"
     },
     {
@@ -6580,7 +6710,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiro_financial_mock",
-      "community": 109,
+      "community": 91,
       "norm_label": "financial.mock.js"
     },
     {
@@ -6590,7 +6720,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiro_financial_mock_financialmock",
-      "community": 109,
+      "community": 91,
       "norm_label": "financialmock"
     },
     {
@@ -6700,7 +6830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivos_objectives_mock",
-      "community": 111,
+      "community": 87,
       "norm_label": "objectives.mock.js"
     },
     {
@@ -6710,7 +6840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivos_objectives_mock_objectivesmock",
-      "community": 111,
+      "community": 87,
       "norm_label": "objectivesmock"
     },
     {
@@ -6720,7 +6850,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock",
-      "community": 87,
+      "community": 101,
       "norm_label": "projects.mock.js"
     },
     {
@@ -6730,7 +6860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock_projectsmock",
-      "community": 87,
+      "community": 101,
       "norm_label": "projectsmock"
     },
     {
@@ -6790,7 +6920,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols_uniaudiocontrols",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniaudiocontrols()"
     },
     {
@@ -6820,7 +6950,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel",
-      "community": 87,
+      "community": 99,
       "norm_label": "unicontextpanel.jsx"
     },
     {
@@ -6830,7 +6960,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel_unicontextpanel",
-      "community": 87,
+      "community": 99,
       "norm_label": "unicontextpanel()"
     },
     {
@@ -6840,7 +6970,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniexperienceshell.jsx"
     },
     {
@@ -6850,7 +6980,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniexperienceshell()"
     },
     {
@@ -6860,37 +6990,37 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unifinancialactioncard",
-      "community": 99,
+      "community": 100,
       "norm_label": "unifinancialactioncard.jsx"
     },
     {
       "label": "CURRENCY_FORMATTER",
       "file_type": "code",
       "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
-      "source_location": "L9",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unifinancialactioncard_currency_formatter",
-      "community": 99,
+      "community": 100,
       "norm_label": "currency_formatter"
     },
     {
       "label": "formatDate()",
       "file_type": "code",
       "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
-      "source_location": "L14",
+      "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unifinancialactioncard_formatdate",
-      "community": 99,
+      "community": 100,
       "norm_label": "formatdate()"
     },
     {
       "label": "UniFinancialActionCard()",
       "file_type": "code",
       "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
-      "source_location": "L19",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unifinancialactioncard_unifinancialactioncard",
-      "community": 99,
+      "community": 100,
       "norm_label": "unifinancialactioncard()"
     },
     {
@@ -6900,7 +7030,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniinsightreport.jsx"
     },
     {
@@ -6910,7 +7040,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport_uniinsightreport",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniinsightreport()"
     },
     {
@@ -6920,7 +7050,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel",
-      "community": 87,
+      "community": 99,
       "norm_label": "unilivecontextpanel.jsx"
     },
     {
@@ -6930,7 +7060,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel_unilivecontextpanel",
-      "community": 87,
+      "community": 39,
       "norm_label": "unilivecontextpanel()"
     },
     {
@@ -6940,7 +7070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimemoryinfluencenotice",
-      "community": 99,
+      "community": 39,
       "norm_label": "unimemoryinfluencenotice.jsx"
     },
     {
@@ -6950,7 +7080,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimemoryinfluencenotice_unimemoryinfluencenotice",
-      "community": 99,
+      "community": 39,
       "norm_label": "unimemoryinfluencenotice()"
     },
     {
@@ -6960,7 +7090,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimemorysuggestioncard",
-      "community": 99,
+      "community": 39,
       "norm_label": "unimemorysuggestioncard.jsx"
     },
     {
@@ -6970,7 +7100,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimemorysuggestioncard_unimemorysuggestioncard",
-      "community": 99,
+      "community": 39,
       "norm_label": "unimemorysuggestioncard()"
     },
     {
@@ -7000,7 +7130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniquicksuggestions.jsx"
     },
     {
@@ -7010,7 +7140,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions_uniquicksuggestions",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniquicksuggestions()"
     },
     {
@@ -7020,7 +7150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations",
-      "community": 87,
+      "community": 39,
       "norm_label": "unirecentconversations.jsx"
     },
     {
@@ -7030,7 +7160,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations_unirecentconversations",
-      "community": 87,
+      "community": 39,
       "norm_label": "unirecentconversations()"
     },
     {
@@ -7040,7 +7170,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer",
-      "community": 99,
+      "community": 39,
       "norm_label": "unisuggestiondrawer.jsx"
     },
     {
@@ -7050,7 +7180,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer_unisuggestiondrawer",
-      "community": 99,
+      "community": 39,
       "norm_label": "unisuggestiondrawer()"
     },
     {
@@ -7060,7 +7190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence",
-      "community": 99,
+      "community": 39,
       "norm_label": "unithinkingsequence.jsx"
     },
     {
@@ -7070,7 +7200,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence_unithinkingsequence",
-      "community": 99,
+      "community": 39,
       "norm_label": "unithinkingsequence()"
     },
     {
@@ -7120,7 +7250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage",
-      "community": 99,
+      "community": 39,
       "norm_label": "univoicestage.jsx"
     },
     {
@@ -7130,7 +7260,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage_univoicestage",
-      "community": 99,
+      "community": 39,
       "norm_label": "univoicestage()"
     },
     {
@@ -12874,6 +13004,136 @@
       "norm_label": "19. personalidade e tom adaptavel"
     },
     {
+      "label": "UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1",
+      "community": 109,
+      "norm_label": "uni_automatic_account_resolution_v1.md"
+    },
+    {
+      "label": "Uni Automatic Account Resolution V1",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "community": 109,
+      "norm_label": "uni automatic account resolution v1"
+    },
+    {
+      "label": "Objetivo",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_objetivo",
+      "community": 109,
+      "norm_label": "objetivo"
+    },
+    {
+      "label": "Fluxo oficial",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_fluxo_oficial",
+      "community": 109,
+      "norm_label": "fluxo oficial"
+    },
+    {
+      "label": "Conta ativa existente",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_conta_ativa_existente",
+      "community": 109,
+      "norm_label": "conta ativa existente"
+    },
+    {
+      "label": "Conta inexistente",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_conta_inexistente",
+      "community": 109,
+      "norm_label": "conta inexistente"
+    },
+    {
+      "label": "Confirma\u00e7\u00e3o \u00fanica e duplicidade",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L61",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_confirma\u00e7\u00e3o_\u00fanica_e_duplicidade",
+      "community": 109,
+      "norm_label": "confirmacao unica e duplicidade"
+    },
+    {
+      "label": "Conta arquivada",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L74",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_conta_arquivada",
+      "community": 109,
+      "norm_label": "conta arquivada"
+    },
+    {
+      "label": "Ambiguidade",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L87",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_ambiguidade",
+      "community": 109,
+      "norm_label": "ambiguidade"
+    },
+    {
+      "label": "Modo demo",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L93",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_modo_demo",
+      "community": 109,
+      "norm_label": "modo demo"
+    },
+    {
+      "label": "Supabase e seguran\u00e7a",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L105",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_supabase_e_seguran\u00e7a",
+      "community": 109,
+      "norm_label": "supabase e seguranca"
+    },
+    {
+      "label": "Falhas parciais",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L121",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_falhas_parciais",
+      "community": 109,
+      "norm_label": "falhas parciais"
+    },
+    {
+      "label": "Limites da V1",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L131",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_automatic_account_resolution_v1_limites_da_v1",
+      "community": 109,
+      "norm_label": "limites da v1"
+    },
+    {
       "label": "UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
@@ -12907,7 +13167,7 @@
       "label": "Fluxo oficial",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L9",
+      "source_location": "L10",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_fluxo_oficial",
       "community": 102,
@@ -12917,7 +13177,7 @@
       "label": "Estados",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L21",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_estados",
       "community": 102,
@@ -12927,7 +13187,7 @@
       "label": "Seguran\u00e7a e workspace",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L32",
+      "source_location": "L33",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_seguran\u00e7a_e_workspace",
       "community": 102,
@@ -12937,7 +13197,7 @@
       "label": "Contas e categorias",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L41",
+      "source_location": "L42",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_contas_e_categorias",
       "community": 102,
@@ -12947,7 +13207,7 @@
       "label": "Corre\u00e7\u00e3o e campos ausentes",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L47",
+      "source_location": "L52",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_corre\u00e7\u00e3o_e_campos_ausentes",
       "community": 102,
@@ -12957,7 +13217,7 @@
       "label": "Personalidade",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L57",
+      "source_location": "L62",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_personalidade",
       "community": 102,
@@ -12967,7 +13227,7 @@
       "label": "Supabase e modo demo",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L63",
+      "source_location": "L68",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_supabase_e_modo_demo",
       "community": 102,
@@ -12977,7 +13237,7 @@
       "label": "Mem\u00f3ria expl\u00edcita",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L69",
+      "source_location": "L78",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_mem\u00f3ria_expl\u00edcita",
       "community": 102,
@@ -12987,7 +13247,7 @@
       "label": "Limites da V1",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L77",
+      "source_location": "L86",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_limites_da_v1",
       "community": 102,
@@ -12997,7 +13257,7 @@
       "label": "Evolu\u00e7\u00e3o futura",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L86",
+      "source_location": "L95",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_evolu\u00e7\u00e3o_futura",
       "community": 102,
@@ -23444,151 +23704,298 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L57",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L74",
       "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_accountmatchesinput",
+      "source": "src_features_uni_conversation_accountprovisioning",
+      "target": "src_features_uni_conversation_accountprovisioning_createaccountprovisioningcoordinator",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L50",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L1",
       "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_accountsearchterms",
+      "source": "src_features_uni_conversation_accountprovisioning",
+      "target": "src_features_uni_conversation_accountprovisioning_createerror",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L3",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L5",
       "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_action_intents",
+      "source": "src_features_uni_conversation_accountprovisioning",
+      "target": "src_features_uni_conversation_accountprovisioning_gethandlers",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L160",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L12",
       "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
+      "source": "src_features_uni_conversation_accountprovisioning",
+      "target": "src_features_uni_conversation_accountprovisioning_provisionaccountandtransaction",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "imports_from",
+      "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L111",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_categorysimilarity",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L152",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_createissue",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L251",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_executefinancialintentaction",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L156",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_isfinancialtransactionintent",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L15",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_issue_priority",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L29",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_isvaliddate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L25",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_normalize",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L65",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_resolveaccount",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L121",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_resolvecategory",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L35",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_sanitizedescription",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
       "source_location": "L9",
       "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountprovisioning",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L5",
+      "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_type_labels",
+      "target": "src_features_uni_conversation_accountprovisioning",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/index.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_index",
+      "target": "src_features_uni_conversation_accountprovisioning",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/useUniConversation.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_useuniconversation",
+      "target": "src_features_uni_conversation_accountprovisioning",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountprovisioning_provisionaccountandtransaction",
+      "target": "src_features_uni_conversation_accountprovisioning_createerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountProvisioning.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountprovisioning_provisionaccountandtransaction",
+      "target": "src_features_uni_conversation_accountprovisioning_gethandlers",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountprovisioning_provisionaccountandtransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_accountprovisioning_provisionaccountandtransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L217",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction_executefinancialintentaction",
+      "target": "src_features_uni_conversation_accountprovisioning_provisionaccountandtransaction"
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/index.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_index",
+      "target": "src_features_uni_conversation_accountprovisioning_provisionaccountandtransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountprovisioning_createaccountprovisioningcoordinator",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/index.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_index",
+      "target": "src_features_uni_conversation_accountprovisioning_createaccountprovisioningcoordinator",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/useUniConversation.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_useuniconversation",
+      "target": "src_features_uni_conversation_accountprovisioning_createaccountprovisioningcoordinator",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-conversation/useUniConversation.js",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
+      "target": "src_features_uni_conversation_accountprovisioning_createaccountprovisioningcoordinator"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_conversation_accountresolution_account_resolution_status",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_conversation_accountresolution_accountmatches",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_conversation_accountresolution_cleanaccountname",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_conversation_accountresolution_createproposedaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_conversation_accountresolution_normalizeaccountidentity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_conversation_accountresolution_resolvefinancialaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_conversation_accountresolution_selectaccounttype",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_intents_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution",
+      "target": "src_features_uni_intents_intentclassifier_normalizefinancialtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountresolution",
       "confidence_score": 1.0
     },
     {
@@ -23599,7 +24006,29 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction",
-      "target": "src_features_uni_intents_index",
+      "target": "src_features_uni_conversation_accountresolution",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/index.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_index",
+      "target": "src_features_uni_conversation_accountresolution",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountresolution_account_resolution_status",
       "confidence_score": 1.0
     },
     {
@@ -23610,6 +24039,443 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_accountresolution_account_resolution_status",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/index.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_index",
+      "target": "src_features_uni_conversation_accountresolution_account_resolution_status",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unifinancialactioncard",
+      "target": "src_features_uni_conversation_accountresolution_account_resolution_status",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_createproposedaccount",
+      "target": "src_features_uni_conversation_accountresolution_cleanaccountname",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L154",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_resolvefinancialaccount",
+      "target": "src_features_uni_conversation_accountresolution_cleanaccountname",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_accountmatches",
+      "target": "src_features_uni_conversation_accountresolution_normalizeaccountidentity",
+      "confidence_score": 0.5
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_normalizeaccountidentity",
+      "target": "src_features_uni_intents_intentclassifier_normalizefinancialtext"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L80",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_resolvefinancialaccount",
+      "target": "src_features_uni_conversation_accountresolution_normalizeaccountidentity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountresolution_normalizeaccountidentity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/index.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_index",
+      "target": "src_features_uni_conversation_accountresolution_normalizeaccountidentity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L131",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_resolvefinancialaccount",
+      "target": "src_features_uni_conversation_accountresolution_accountmatches",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_createproposedaccount",
+      "target": "src_features_uni_conversation_accountresolution_selectaccounttype",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L41",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_selectaccounttype",
+      "target": "src_features_uni_intents_intentclassifier_normalizefinancialtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.js",
+      "source_location": "L107",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_resolvefinancialaccount",
+      "target": "src_features_uni_conversation_accountresolution_createproposedaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_accountresolution_resolvefinancialaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L123",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
+      "target": "src_features_uni_conversation_accountresolution_resolvefinancialaccount"
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/index.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_index",
+      "target": "src_features_uni_conversation_accountresolution_resolvefinancialaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountresolution_test_accounttypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountresolution_test_categories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_accountresolution_test_createaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_financialintentaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_financialintentaction_executefinancialintentaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_uniresponsebuilder",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_conversation_uniresponsebuilder_buildexecutionerrorresponse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_intents_financialparser_parsefinancialtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test",
+      "target": "src_features_uni_intents_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test_createaction",
+      "target": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/accountResolution.test.js",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_accountresolution_test_createaction",
+      "target": "src_features_uni_intents_financialparser_parsefinancialtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_action_intents",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L100",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L51",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_categorysimilarity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_createissue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L210",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_executefinancialintentaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L96",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_isfinancialtransactionintent",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_issue_priority",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_isvaliddate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_resolvecategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_sanitizedescription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_conversation_financialintentaction_type_labels",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
+      "target": "src_features_uni_intents_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-conversation/financialIntentAction.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_financialintentaction",
       "target": "src_features_uni_intents_intentclassifier_normalizefinancialtext",
       "confidence_score": 1.0
     },
@@ -23618,7 +24484,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L2",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_financialintentaction",
@@ -23651,62 +24517,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L58",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction_accountmatchesinput",
-      "target": "src_features_uni_conversation_financialintentaction_normalize",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "indirect_call",
-      "context": "argument",
-      "confidence": "INFERRED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L53",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction_accountsearchterms",
-      "target": "src_features_uni_conversation_financialintentaction_normalize",
-      "confidence_score": 0.5
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L112",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction_categorysimilarity",
-      "target": "src_features_uni_conversation_financialintentaction_normalize",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L26",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction_normalize",
-      "target": "src_features_uni_intents_intentclassifier_normalizefinancialtext",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L67",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction_resolveaccount",
-      "target": "src_features_uni_conversation_financialintentaction_normalize",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L211",
+      "source_location": "L166",
       "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
       "target": "src_features_uni_conversation_financialintentaction_isvaliddate",
@@ -23717,7 +24528,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L179",
+      "source_location": "L120",
       "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
       "target": "src_features_uni_conversation_financialintentaction_sanitizedescription",
@@ -23728,10 +24539,10 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L78",
+      "source_location": "L52",
       "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction_resolveaccount",
-      "target": "src_features_uni_conversation_financialintentaction_accountsearchterms",
+      "source": "src_features_uni_conversation_financialintentaction_categorysimilarity",
+      "target": "src_features_uni_intents_intentclassifier_normalizefinancialtext",
       "confidence_score": 1.0
     },
     {
@@ -23739,29 +24550,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L87",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction_resolveaccount",
-      "target": "src_features_uni_conversation_financialintentaction_accountmatchesinput",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L182",
-      "weight": 1.0,
-      "source": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
-      "target": "src_features_uni_conversation_financialintentaction_resolveaccount",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L137",
+      "source_location": "L77",
       "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction_resolvecategory",
       "target": "src_features_uni_conversation_financialintentaction_categorysimilarity",
@@ -23772,7 +24561,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L188",
+      "source_location": "L132",
       "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
       "target": "src_features_uni_conversation_financialintentaction_resolvecategory",
@@ -23783,7 +24572,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L197",
+      "source_location": "L141",
       "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
       "target": "src_features_uni_conversation_financialintentaction_createissue",
@@ -23794,7 +24583,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/financialIntentAction.js",
-      "source_location": "L167",
+      "source_location": "L108",
       "weight": 1.0,
       "source": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
       "target": "src_features_uni_conversation_financialintentaction_isfinancialtransactionintent",
@@ -23805,7 +24594,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L2",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_financialintentaction_isfinancialtransactionintent",
@@ -23816,7 +24605,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L2",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction",
@@ -23861,7 +24650,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L44",
+      "source_location": "L52",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction"
@@ -23871,7 +24660,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L2",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_financialintentaction_executefinancialintentaction",
@@ -23900,12 +24689,12 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L142",
+      "source_location": "L43",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_financialintentaction_executefinancialintentaction"
@@ -23915,7 +24704,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L7",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniconversationreducer",
@@ -23926,7 +24715,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L7",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniconversationreducer_initialuniconversationstate",
@@ -23937,7 +24726,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L7",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniconversationreducer_uni_conversation_states",
@@ -23948,7 +24737,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L7",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniconversationreducer_uniconversationreducer",
@@ -23959,7 +24748,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L12",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniresponsebuilder",
@@ -23970,7 +24759,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L12",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildcanceledresponse",
@@ -23981,7 +24770,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L12",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildclarificationresponse",
@@ -23992,7 +24781,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L12",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildcompletionresponse",
@@ -24003,7 +24792,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L12",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildconfirmationresponse",
@@ -24014,7 +24803,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/index.js",
-      "source_location": "L12",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_features_uni_conversation_index",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildexecutionerrorresponse",
@@ -24228,7 +25017,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniconversationreducer",
@@ -24261,7 +25050,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniconversationreducer_initialuniconversationstate",
@@ -24272,7 +25061,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniconversationreducer_uniconversationreducer",
@@ -24284,7 +25073,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L33",
+      "source_location": "L36",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniconversationreducer_uniconversationreducer"
@@ -24407,7 +25196,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder",
@@ -24495,7 +25284,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildconfirmationresponse",
@@ -24507,7 +25296,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L111",
+      "source_location": "L120",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildconfirmationresponse"
@@ -24517,7 +25306,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildclarificationresponse",
@@ -24529,7 +25318,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L100",
+      "source_location": "L109",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildclarificationresponse"
@@ -24539,7 +25328,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildcompletionresponse",
@@ -24551,7 +25340,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L151",
+      "source_location": "L179",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildcompletionresponse"
@@ -24561,7 +25350,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildcanceledresponse",
@@ -24573,7 +25362,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L157",
+      "source_location": "L195",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildcanceledresponse"
@@ -24583,7 +25372,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildexecutionerrorresponse",
@@ -24595,7 +25384,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L146",
+      "source_location": "L161",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildexecutionerrorresponse"
@@ -24604,7 +25393,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L22",
+      "source_location": "L23",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation",
       "target": "src_features_uni_conversation_useuniconversation_useuniconversation",
@@ -24649,7 +25438,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L36",
+      "source_location": "L39",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_intents_conversationcontext_createconversationcontext"
@@ -24660,7 +25449,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L57",
+      "source_location": "L66",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_intents_financialparser_parsefinancialtext"
@@ -24671,7 +25460,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L45",
+      "source_location": "L53",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_memory_integration_conversationmemory_test_parsed"
@@ -24692,7 +25481,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L56",
+      "source_location": "L57",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_features_uni_conversation_useuniconversation_useuniconversation",
@@ -27094,7 +27883,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L52",
+      "source_location": "L53",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
@@ -30022,7 +30811,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L89",
+      "source_location": "L92",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_features_uni_voice_useunivoiceinput_useunivoiceinput",
@@ -31196,7 +31985,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L44",
+      "source_location": "L45",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_hooks_usecategories_usecategories",
@@ -31600,7 +32389,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L48",
+      "source_location": "L49",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_hooks_usetransactions_usetransactions",
@@ -32765,6 +33554,17 @@
       "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
+      "target": "src_pages_financeiro_financialcrud_mock_fallbackaccounttypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
       "target": "src_pages_financeiro_financialcrud_mock_financialcrudmock",
       "confidence_score": 1.0
     },
@@ -32947,7 +33747,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L62",
+      "source_location": "L65",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uniaipage_getlocalisodate",
@@ -32958,7 +33758,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L164",
+      "source_location": "L167",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createinsightreport",
@@ -32969,7 +33769,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L170",
+      "source_location": "L173",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createmessage",
@@ -32980,7 +33780,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L161",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getmockuniresponse",
@@ -32991,7 +33791,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L240",
+      "source_location": "L243",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getportuguesevoice",
@@ -33002,7 +33802,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L363",
+      "source_location": "L366",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_isprobablysafari",
@@ -34356,7 +35156,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
-      "source_location": "L9",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uni_ai_unifinancialactioncard",
       "target": "src_pages_uni_ai_unifinancialactioncard_currency_formatter",
@@ -34366,7 +35166,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
-      "source_location": "L14",
+      "source_location": "L17",
       "weight": 1.0,
       "source": "src_pages_uni_ai_unifinancialactioncard",
       "target": "src_pages_uni_ai_unifinancialactioncard_formatdate",
@@ -34376,7 +35176,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
-      "source_location": "L19",
+      "source_location": "L22",
       "weight": 1.0,
       "source": "src_pages_uni_ai_unifinancialactioncard",
       "target": "src_pages_uni_ai_unifinancialactioncard_unifinancialactioncard",
@@ -34388,7 +35188,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
-      "source_location": "L148",
+      "source_location": "L234",
       "weight": 1.0,
       "source": "src_pages_uni_ai_unifinancialactioncard_unifinancialactioncard",
       "target": "src_pages_uni_ai_unifinancialactioncard_currency_formatter"
@@ -34398,7 +35198,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniFinancialActionCard.jsx",
-      "source_location": "L152",
+      "source_location": "L245",
       "weight": 1.0,
       "source": "src_pages_uni_ai_unifinancialactioncard_unifinancialactioncard",
       "target": "src_pages_uni_ai_unifinancialactioncard_formatdate",
@@ -42821,6 +43621,126 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_ambiguidade",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_confirma\u00e7\u00e3o_\u00fanica_e_duplicidade",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_conta_arquivada",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_conta_ativa_existente",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_conta_inexistente",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L121",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_falhas_parciais",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_fluxo_oficial",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L131",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_limites_da_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L93",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_modo_demo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_objetivo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md",
+      "source_location": "L105",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_automatic_account_resolution_v1_uni_automatic_account_resolution_v1",
+      "target": "docs_00_master_uni_automatic_account_resolution_v1_supabase_e_seguran\u00e7a",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
       "source_location": "L1",
       "weight": 1.0,
@@ -42832,7 +43752,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L41",
+      "source_location": "L42",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_contas_e_categorias",
@@ -42842,7 +43762,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L47",
+      "source_location": "L52",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_corre\u00e7\u00e3o_e_campos_ausentes",
@@ -42852,7 +43772,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L21",
+      "source_location": "L22",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_estados",
@@ -42862,7 +43782,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L86",
+      "source_location": "L95",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_evolu\u00e7\u00e3o_futura",
@@ -42872,7 +43792,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L9",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_fluxo_oficial",
@@ -42882,7 +43802,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L77",
+      "source_location": "L86",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_limites_da_v1",
@@ -42892,7 +43812,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L69",
+      "source_location": "L78",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_mem\u00f3ria_expl\u00edcita",
@@ -42912,7 +43832,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L57",
+      "source_location": "L62",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_personalidade",
@@ -42922,7 +43842,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L32",
+      "source_location": "L33",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_seguran\u00e7a_e_workspace",
@@ -42932,7 +43852,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L63",
+      "source_location": "L68",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_supabase_e_modo_demo",
@@ -45020,5 +45940,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "627c1a690f8ef18b89b9145eafdbc4409eb50943"
+  "built_at_commit": "1459448c9014eca75327d020b73800729f128fe1"
 }
