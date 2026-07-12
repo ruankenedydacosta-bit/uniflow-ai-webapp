@@ -62,6 +62,21 @@ npm run supabase:test-memory-rls
 
 O bloqueio de correção de tipo inferido é protegido estruturalmente pela RPC. Como o frontend não possui permissão para criar tipos inferidos, este roteiro comprova primeiro que eles não podem ser inseridos e não fabrica uma fixture privilegiada. Uma validação backend futura poderá criar uma fixture inferida controlada para exercitar esse ramo diretamente.
 
+### Código P0001 nos tipos inferidos
+
+Os três inserts inferidos chegam à trigger
+`protect_uni_memory_frontend_insert()`. Ela executa deliberadamente:
+
+```text
+Frontend may only create its own explicit memory candidates
+```
+
+O PostgreSQL retorna essa exceção com código `P0001`. O teste considera esse
+bloqueio aprovado somente quando código e mensagem sanitizada correspondem
+exatamente à proteção esperada. Um `P0001` com outra mensagem continua como
+falha. Erros de autenticação, indisponibilidade e ausência de erro também nunca
+são tratados como bloqueio seguro.
+
 ## Resultado esperado
 
 Cada linha deve aparecer como `[PASS]`. Qualquer falha crítica define exit code `1`. RLS pode bloquear uma operação com erro de permissão ou ocultar uma linha; o script diferencia esses comportamentos conforme a operação testada.

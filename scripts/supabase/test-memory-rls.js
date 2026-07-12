@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
 const DEV_PROJECT_HOST = 'ikulazofzufeblzrhtif.supabase.co';
@@ -18,6 +19,8 @@ const MEMORY_FIELDS = [
   'requires_confirmation', 'first_observed_at', 'last_observed_at',
   'expires_at', 'superseded_by_id', 'created_at', 'updated_at',
 ].join(',');
+const INFERRED_TYPE_BLOCK_MESSAGE =
+  'Frontend may only create its own explicit memory candidates';
 
 function jwtRole(key) {
   const parts = key.split('.');
@@ -75,6 +78,51 @@ function denied(error) {
   );
 }
 
+function normalizedMessage(error) {
+  return String(error?.message ?? '').trim().toLowerCase();
+}
+
+export function classifyInferredTypeBlock(error) {
+  if (!error) {
+    return { passed: false, kind: 'missing_error' };
+  }
+
+  const code = error.code ?? '';
+  const message = normalizedMessage(error);
+
+  if (
+    ['PGRST301', 'AUTH_REQUIRED', 'INVALID_JWT'].includes(code) ||
+    message.includes('jwt expired') ||
+    message.includes('not authenticated')
+  ) {
+    return { passed: false, kind: 'authentication_failure' };
+  }
+
+  if (
+    ['PGRST000', 'PGRST001', 'PGRST002', 'FETCH_ERROR'].includes(code) ||
+    message.includes('failed to fetch') ||
+    message.includes('connection')
+  ) {
+    return { passed: false, kind: 'unavailable' };
+  }
+
+  if (
+    code === 'P0001' &&
+    message === INFERRED_TYPE_BLOCK_MESSAGE.toLowerCase()
+  ) {
+    return { passed: true, kind: 'expected_memory_protection_trigger' };
+  }
+
+  if (
+    code === '42501' &&
+    (message.includes('permission denied') || message.includes('row-level security'))
+  ) {
+    return { passed: true, kind: 'expected_permission_denial' };
+  }
+
+  return { passed: false, kind: 'unexpected_error' };
+}
+
 function safeCode(error) {
   return error?.code ?? error?.name ?? 'erro_sem_codigo';
 }
@@ -118,6 +166,21 @@ async function expectInsertDenied(supabase, results, name, payload) {
     denied(result.error) ? 'bloqueado como esperado' : result.error ? `erro inesperado ${safeCode(result.error)}` : 'escrita indevida aceita');
 }
 
+async function expectInferredTypeDenied(supabase, results, name, payload) {
+  const result = await supabase.from('uni_financial_memories').insert(payload);
+  const classification = classifyInferredTypeBlock(result.error);
+  record(
+    results,
+    name,
+    classification.passed,
+    classification.passed
+      ? `bloqueado como esperado (${classification.kind})`
+      : result.error
+        ? `erro inesperado ${safeCode(result.error)} (${classification.kind})`
+        : 'escrita indevida aceita',
+  );
+}
+
 async function testProtectedInserts(supabase, context, otherUserId, results) {
   const base = {
     workspace_id: context.workspaceId,
@@ -127,7 +190,7 @@ async function testProtectedInserts(supabase, context, otherUserId, results) {
     source: 'explicit_user',
   };
   for (const type of ['recurring_income', 'recurring_expense', 'spending_pattern']) {
-    await expectInsertDenied(supabase, results, `Bloqueio do tipo inferido ${type}`, {
+    await expectInferredTypeDenied(supabase, results, `Bloqueio do tipo inferido ${type}`, {
       ...base, memory_key: `rls-${type}-${randomUUID()}`, memory_type: type,
     });
   }
@@ -282,4 +345,6 @@ async function main() {
   }
 }
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}
