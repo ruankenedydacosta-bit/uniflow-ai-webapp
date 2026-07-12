@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783855867.7376244,
-    "ast_hash": "c99d52cc4f43f0f9e0ddd93481271372",
+    "mtime": 1783870904.4378057,
+    "ast_hash": "fafd54db9bd7abb733edb67efda25f41",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -1255,13 +1255,13 @@
     "semantic_hash": ""
   },
   "scripts/supabase/test-memory-rls.js": {
-    "mtime": 1783855867.6155035,
-    "ast_hash": "eab8447e72c03392b889bc2b2dfb16a2",
+    "mtime": 1783870904.1822264,
+    "ast_hash": "03707696c8af85ada04e09611d29c3a9",
     "semantic_hash": ""
   },
   "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md": {
-    "mtime": 1783855867.8577752,
-    "ast_hash": "634a3bb94e5c027b7097beaa2fec2bde",
+    "mtime": 1783870904.613057,
+    "ast_hash": "3c1137c6be154cd10ddb022109df42cd",
     "semantic_hash": ""
   },
   "supabase/migrations/20260712_006_ensure_authenticated_profile.sql": {
@@ -1287,6 +1287,11 @@
   "docs/00-master/WORKSPACE_ONBOARDING_RLS_FIX.md": {
     "mtime": 1783867744.6085665,
     "ast_hash": "9e357c3c14fc7ded1746e73d3e414b9a",
+    "semantic_hash": ""
+  },
+  "scripts/supabase/test-memory-rls-errors.test.js": {
+    "mtime": 1783870904.3010025,
+    "ast_hash": "eaa26b0da38dff4622852e0e1d1796e7",
     "semantic_hash": ""
   }
 }

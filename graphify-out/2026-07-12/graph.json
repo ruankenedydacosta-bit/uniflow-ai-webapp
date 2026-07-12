@@ -2094,6 +2094,16 @@
       "norm_label": "createnote()"
     },
     {
+      "label": "test-memory-rls-errors.test.js",
+      "file_type": "code",
+      "source_file": "scripts/supabase/test-memory-rls-errors.test.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "scripts_supabase_test_memory_rls_errors_test",
+      "community": 90,
+      "norm_label": "test-memory-rls-errors.test.js"
+    },
+    {
       "label": "test-memory-rls.js",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
@@ -2107,7 +2117,7 @@
       "label": "REQUIRED_ENV",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L7",
+      "source_location": "L8",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_required_env",
       "community": 90,
@@ -2117,7 +2127,7 @@
       "label": "MEMORY_FIELDS",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L15",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_memory_fields",
       "community": 90,
@@ -2127,7 +2137,7 @@
       "label": "jwtRole()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L22",
+      "source_location": "L25",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_jwtrole",
       "community": 90,
@@ -2137,7 +2147,7 @@
       "label": "readConfig()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L32",
+      "source_location": "L35",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_readconfig",
       "community": 90,
@@ -2147,7 +2157,7 @@
       "label": "client()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L62",
+      "source_location": "L65",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_client",
       "community": 90,
@@ -2157,17 +2167,37 @@
       "label": "denied()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L68",
+      "source_location": "L71",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_denied",
       "community": 90,
       "norm_label": "denied()"
     },
     {
+      "label": "normalizedMessage()",
+      "file_type": "code",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L81",
+      "_origin": "ast",
+      "id": "scripts_supabase_test_memory_rls_normalizedmessage",
+      "community": 90,
+      "norm_label": "normalizedmessage()"
+    },
+    {
+      "label": "classifyInferredTypeBlock()",
+      "file_type": "code",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L85",
+      "_origin": "ast",
+      "id": "scripts_supabase_test_memory_rls_classifyinferredtypeblock",
+      "community": 90,
+      "norm_label": "classifyinferredtypeblock()"
+    },
+    {
       "label": "safeCode()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L78",
+      "source_location": "L126",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_safecode",
       "community": 90,
@@ -2177,7 +2207,7 @@
       "label": "record()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L82",
+      "source_location": "L130",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_record",
       "community": 90,
@@ -2187,7 +2217,7 @@
       "label": "signIn()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L87",
+      "source_location": "L135",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_signin",
       "community": 90,
@@ -2197,7 +2227,7 @@
       "label": "contextFor()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L95",
+      "source_location": "L143",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_contextfor",
       "community": 90,
@@ -2207,7 +2237,7 @@
       "label": "createExplicit()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L105",
+      "source_location": "L153",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_createexplicit",
       "community": 90,
@@ -2217,17 +2247,27 @@
       "label": "expectInsertDenied()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L115",
+      "source_location": "L163",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_expectinsertdenied",
       "community": 90,
       "norm_label": "expectinsertdenied()"
     },
     {
+      "label": "expectInferredTypeDenied()",
+      "file_type": "code",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L169",
+      "_origin": "ast",
+      "id": "scripts_supabase_test_memory_rls_expectinferredtypedenied",
+      "community": 90,
+      "norm_label": "expectinferredtypedenied()"
+    },
+    {
       "label": "testProtectedInserts()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L121",
+      "source_location": "L184",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_testprotectedinserts",
       "community": 90,
@@ -2237,7 +2277,7 @@
       "label": "testEvidenceWrites()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L147",
+      "source_location": "L210",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_testevidencewrites",
       "community": 90,
@@ -2247,7 +2287,7 @@
       "label": "runChecks()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L161",
+      "source_location": "L224",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_runchecks",
       "community": 90,
@@ -2257,7 +2297,7 @@
       "label": "main()",
       "file_type": "code",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L267",
+      "source_location": "L330",
       "_origin": "ast",
       "id": "scripts_supabase_test_memory_rls_main",
       "community": 90,
@@ -2560,7 +2600,7 @@
       "source_location": "L431",
       "_origin": "ast",
       "id": "src_app_sessioncontext_usesession",
-      "community": 68,
+      "community": 96,
       "norm_label": "usesession()"
     },
     {
@@ -2700,7 +2740,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_navigation",
-      "community": 101,
+      "community": 68,
       "norm_label": "navigation.js"
     },
     {
@@ -2710,7 +2750,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_app_navigation_all_modes",
-      "community": 101,
+      "community": 68,
       "norm_label": "all_modes"
     },
     {
@@ -2720,7 +2760,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_navigation_all_plans",
-      "community": 101,
+      "community": 68,
       "norm_label": "all_plans"
     },
     {
@@ -2730,7 +2770,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_app_navigation_all_workspaces",
-      "community": 101,
+      "community": 68,
       "norm_label": "all_workspaces"
     },
     {
@@ -2740,7 +2780,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_navigation_business_modes",
-      "community": 101,
+      "community": 68,
       "norm_label": "business_modes"
     },
     {
@@ -2750,7 +2790,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_app_navigation_business_plans",
-      "community": 101,
+      "community": 68,
       "norm_label": "business_plans"
     },
     {
@@ -2760,7 +2800,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_app_navigation_business_workspaces",
-      "community": 101,
+      "community": 68,
       "norm_label": "business_workspaces"
     },
     {
@@ -2770,7 +2810,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_app_navigation_navigationitems",
-      "community": 101,
+      "community": 68,
       "norm_label": "navigationitems"
     },
     {
@@ -2780,7 +2820,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "src_app_navigation_filternavigationitems",
-      "community": 101,
+      "community": 68,
       "norm_label": "filternavigationitems()"
     },
     {
@@ -2790,7 +2830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_routes",
-      "community": 68,
+      "community": 96,
       "norm_label": "routes.jsx"
     },
     {
@@ -2820,7 +2860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher",
-      "community": 105,
+      "community": 101,
       "norm_label": "accessmodeswitcher.jsx"
     },
     {
@@ -2830,7 +2870,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_options",
-      "community": 105,
+      "community": 101,
       "norm_label": "user_mode_options"
     },
     {
@@ -2840,7 +2880,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_options",
-      "community": 105,
+      "community": 101,
       "norm_label": "plan_options"
     },
     {
@@ -2850,7 +2890,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_workspace_options",
-      "community": 105,
+      "community": 101,
       "norm_label": "workspace_options"
     },
     {
@@ -2860,7 +2900,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_personal_plans",
-      "community": 105,
+      "community": 101,
       "norm_label": "personal_plans"
     },
     {
@@ -2870,7 +2910,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_labels",
-      "community": 105,
+      "community": 101,
       "norm_label": "user_mode_labels"
     },
     {
@@ -2880,7 +2920,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_labels",
-      "community": 105,
+      "community": 101,
       "norm_label": "plan_labels"
     },
     {
@@ -2890,7 +2930,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getworkspaceformode",
-      "community": 105,
+      "community": 101,
       "norm_label": "getworkspaceformode()"
     },
     {
@@ -2900,7 +2940,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
-      "community": 105,
+      "community": 101,
       "norm_label": "getmodeoptionsforplan()"
     },
     {
@@ -2910,7 +2950,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_normalizeaccessforplan",
-      "community": 105,
+      "community": 101,
       "norm_label": "normalizeaccessforplan()"
     },
     {
@@ -2920,7 +2960,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
-      "community": 105,
+      "community": 101,
       "norm_label": "accessmodeswitcher()"
     },
     {
@@ -2940,7 +2980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_appshell_appshell",
-      "community": 105,
+      "community": 68,
       "norm_label": "appshell.jsx"
     },
     {
@@ -2950,7 +2990,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_layout_appshell_appshell_appshell",
-      "community": 105,
+      "community": 68,
       "norm_label": "appshell()"
     },
     {
@@ -2960,7 +3000,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_appshell_index",
-      "community": 105,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -2970,7 +3010,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_sidebar",
-      "community": 101,
+      "community": 68,
       "norm_label": "sidebar.jsx"
     },
     {
@@ -2980,7 +3020,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_sidebar_sidebar",
-      "community": 101,
+      "community": 68,
       "norm_label": "sidebar()"
     },
     {
@@ -2990,7 +3030,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_index",
-      "community": 101,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -3030,7 +3070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 88,
+      "community": 105,
       "norm_label": "avatar.jsx"
     },
     {
@@ -3040,7 +3080,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 88,
+      "community": 105,
       "norm_label": "getinitials()"
     },
     {
@@ -3050,7 +3090,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_avatar",
-      "community": 99,
+      "community": 105,
       "norm_label": "avatar"
     },
     {
@@ -3060,7 +3100,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_index",
-      "community": 99,
+      "community": 105,
       "norm_label": "index.js"
     },
     {
@@ -3080,7 +3120,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge_badge",
-      "community": 99,
+      "community": 87,
       "norm_label": "badge()"
     },
     {
@@ -3280,7 +3320,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage",
-      "community": 108,
+      "community": 101,
       "norm_label": "dashboardpage.jsx"
     },
     {
@@ -3290,7 +3330,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_getdashboardcontext",
-      "community": 108,
+      "community": 101,
       "norm_label": "getdashboardcontext()"
     },
     {
@@ -3300,7 +3340,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_dashboardpage",
-      "community": 108,
+      "community": 101,
       "norm_label": "dashboardpage()"
     },
     {
@@ -3420,7 +3460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock",
-      "community": 108,
+      "community": 101,
       "norm_label": "dashboard.mock.js"
     },
     {
@@ -3430,7 +3470,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock_dashboardmock",
-      "community": 108,
+      "community": 101,
       "norm_label": "dashboardmock"
     },
     {
@@ -3440,7 +3480,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_index",
-      "community": 108,
+      "community": 101,
       "norm_label": "index.js"
     },
     {
@@ -4630,7 +4670,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_features_uni_memory_unimemory_test_transaction",
-      "community": 95,
+      "community": 41,
       "norm_label": "transaction()"
     },
     {
@@ -5030,7 +5070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_hooks_useopenfinance",
-      "community": 73,
+      "community": 108,
       "norm_label": "useopenfinance.js"
     },
     {
@@ -5040,7 +5080,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_hooks_useopenfinance_empty_data",
-      "community": 73,
+      "community": 108,
       "norm_label": "empty_data"
     },
     {
@@ -5050,7 +5090,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_hooks_useopenfinance_useopenfinance",
-      "community": 73,
+      "community": 108,
       "norm_label": "useopenfinance()"
     },
     {
@@ -5090,7 +5130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agendapage",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendapage.jsx"
     },
     {
@@ -5100,7 +5140,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_agendapage_getagendacontext",
-      "community": 101,
+      "community": 88,
       "norm_label": "getagendacontext()"
     },
     {
@@ -5110,7 +5150,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_agendapage_agendapage",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendapage()"
     },
     {
@@ -5220,7 +5260,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_loginpage",
-      "community": 68,
+      "community": 96,
       "norm_label": "loginpage.jsx"
     },
     {
@@ -5230,7 +5270,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_loginpage_loginpage",
-      "community": 68,
+      "community": 96,
       "norm_label": "loginpage()"
     },
     {
@@ -5310,7 +5350,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingpage",
-      "community": 68,
+      "community": 96,
       "norm_label": "onboardingpage()"
     },
     {
@@ -5320,7 +5360,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_pagescaffold",
-      "community": 99,
+      "community": 87,
       "norm_label": "pagescaffold.jsx"
     },
     {
@@ -5330,7 +5370,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_pagescaffold_pagescaffold",
-      "community": 99,
+      "community": 87,
       "norm_label": "pagescaffold()"
     },
     {
@@ -5420,7 +5460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 99,
+      "community": 109,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -5430,7 +5470,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 99,
+      "community": 109,
       "norm_label": "user_mode_labels"
     },
     {
@@ -5440,7 +5480,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 99,
+      "community": 109,
       "norm_label": "plan_labels"
     },
     {
@@ -5450,7 +5490,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 99,
+      "community": 109,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -5460,7 +5500,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 99,
+      "community": 109,
       "norm_label": "settingspage()"
     },
     {
@@ -5500,7 +5540,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock",
-      "community": 101,
+      "community": 88,
       "norm_label": "agenda.mock.js"
     },
     {
@@ -5510,7 +5550,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock_agendamock",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendamock"
     },
     {
@@ -5540,7 +5580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 99,
+      "community": 109,
       "norm_label": "settings.mock.js"
     },
     {
@@ -5550,7 +5590,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 99,
+      "community": 109,
       "norm_label": "settingsmock"
     },
     {
@@ -6030,7 +6070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero",
-      "community": 99,
+      "community": 105,
       "norm_label": "uniaihero.jsx"
     },
     {
@@ -6040,7 +6080,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero_uniaihero",
-      "community": 99,
+      "community": 105,
       "norm_label": "uniaihero()"
     },
     {
@@ -6060,7 +6100,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols_uniaudiocontrols",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniaudiocontrols()"
     },
     {
@@ -6070,7 +6110,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel",
-      "community": 99,
+      "community": 105,
       "norm_label": "unichatpanel.jsx"
     },
     {
@@ -6080,7 +6120,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel_unichatpanel",
-      "community": 99,
+      "community": 105,
       "norm_label": "unichatpanel()"
     },
     {
@@ -6110,7 +6150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniexperienceshell.jsx"
     },
     {
@@ -6120,7 +6160,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniexperienceshell()"
     },
     {
@@ -6180,7 +6220,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport_uniinsightreport",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniinsightreport()"
     },
     {
@@ -6200,7 +6240,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel_unilivecontextpanel",
-      "community": 39,
+      "community": 99,
       "norm_label": "unilivecontextpanel()"
     },
     {
@@ -6210,7 +6250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble",
-      "community": 99,
+      "community": 105,
       "norm_label": "unimessagebubble.jsx"
     },
     {
@@ -6220,7 +6260,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble_unimessagebubble",
-      "community": 99,
+      "community": 105,
       "norm_label": "unimessagebubble()"
     },
     {
@@ -6230,7 +6270,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniquicksuggestions.jsx"
     },
     {
@@ -6240,7 +6280,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions_uniquicksuggestions",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniquicksuggestions()"
     },
     {
@@ -6250,7 +6290,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations",
-      "community": 39,
+      "community": 99,
       "norm_label": "unirecentconversations.jsx"
     },
     {
@@ -6260,7 +6300,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations_unirecentconversations",
-      "community": 39,
+      "community": 99,
       "norm_label": "unirecentconversations()"
     },
     {
@@ -6280,7 +6320,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer_unisuggestiondrawer",
-      "community": 39,
+      "community": 99,
       "norm_label": "unisuggestiondrawer()"
     },
     {
@@ -6290,7 +6330,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence",
-      "community": 39,
+      "community": 99,
       "norm_label": "unithinkingsequence.jsx"
     },
     {
@@ -6300,7 +6340,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unithinkingsequence_unithinkingsequence",
-      "community": 39,
+      "community": 99,
       "norm_label": "unithinkingsequence()"
     },
     {
@@ -6330,7 +6370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture",
-      "community": 99,
+      "community": 105,
       "norm_label": "univoicecapture.jsx"
     },
     {
@@ -6340,7 +6380,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture_univoicecapture",
-      "community": 99,
+      "community": 105,
       "norm_label": "univoicecapture()"
     },
     {
@@ -6350,7 +6390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage",
-      "community": 39,
+      "community": 99,
       "norm_label": "univoicestage.jsx"
     },
     {
@@ -6360,7 +6400,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicestage_univoicestage",
-      "community": 39,
+      "community": 99,
       "norm_label": "univoicestage()"
     },
     {
@@ -6940,7 +6980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_externalaccountservice",
-      "community": 73,
+      "community": 108,
       "norm_label": "externalaccountservice.js"
     },
     {
@@ -6950,7 +6990,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_services_externalaccountservice_createresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createresult()"
     },
     {
@@ -6960,7 +7000,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_services_externalaccountservice_createunavailableresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createunavailableresult()"
     },
     {
@@ -6970,7 +7010,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_services_externalaccountservice_createvalidationresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createvalidationresult()"
     },
     {
@@ -6980,7 +7020,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_services_externalaccountservice_isvaliduuid",
-      "community": 73,
+      "community": 108,
       "norm_label": "isvaliduuid()"
     },
     {
@@ -6990,7 +7030,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_services_externalaccountservice_listexternalaccounts",
-      "community": 73,
+      "community": 108,
       "norm_label": "listexternalaccounts()"
     },
     {
@@ -7000,7 +7040,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "src_services_externalaccountservice_getexternalaccount",
-      "community": 73,
+      "community": 108,
       "norm_label": "getexternalaccount()"
     },
     {
@@ -7010,7 +7050,7 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "src_services_externalaccountservice_listexternaltransactions",
-      "community": 73,
+      "community": 108,
       "norm_label": "listexternaltransactions()"
     },
     {
@@ -7160,7 +7200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_openfinanceservice",
-      "community": 73,
+      "community": 108,
       "norm_label": "openfinanceservice.js"
     },
     {
@@ -7170,7 +7210,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_createresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createresult()"
     },
     {
@@ -7180,7 +7220,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_createunavailableresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createunavailableresult()"
     },
     {
@@ -7190,7 +7230,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_createvalidationresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createvalidationresult()"
     },
     {
@@ -7200,7 +7240,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_createbackendrequiredresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createbackendrequiredresult()"
     },
     {
@@ -7210,7 +7250,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_isvaliduuid",
-      "community": 73,
+      "community": 108,
       "norm_label": "isvaliduuid()"
     },
     {
@@ -7220,7 +7260,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_listopenfinanceconsents",
-      "community": 73,
+      "community": 108,
       "norm_label": "listopenfinanceconsents()"
     },
     {
@@ -7230,7 +7270,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_getopenfinanceconsent",
-      "community": 73,
+      "community": 108,
       "norm_label": "getopenfinanceconsent()"
     },
     {
@@ -7240,7 +7280,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_startopenfinanceconsent",
-      "community": 73,
+      "community": 108,
       "norm_label": "startopenfinanceconsent()"
     },
     {
@@ -7250,7 +7290,7 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "src_services_openfinanceservice_revokeopenfinanceconsent",
-      "community": 73,
+      "community": 108,
       "norm_label": "revokeopenfinanceconsent()"
     },
     {
@@ -7330,7 +7370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_supabaseclient",
-      "community": 73,
+      "community": 91,
       "norm_label": "supabaseclient.js"
     },
     {
@@ -7340,7 +7380,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_services_supabaseclient_issupabaseconfigured",
-      "community": 73,
+      "community": 91,
       "norm_label": "issupabaseconfigured"
     },
     {
@@ -7360,7 +7400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_syncservice",
-      "community": 73,
+      "community": 108,
       "norm_label": "syncservice.js"
     },
     {
@@ -7370,7 +7410,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_services_syncservice_createresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createresult()"
     },
     {
@@ -7380,7 +7420,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_services_syncservice_createunavailableresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createunavailableresult()"
     },
     {
@@ -7390,7 +7430,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_services_syncservice_createvalidationresult",
-      "community": 73,
+      "community": 108,
       "norm_label": "createvalidationresult()"
     },
     {
@@ -7400,7 +7440,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_services_syncservice_isvaliduuid",
-      "community": 73,
+      "community": 108,
       "norm_label": "isvaliduuid()"
     },
     {
@@ -7410,7 +7450,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_services_syncservice_listsyncjobs",
-      "community": 73,
+      "community": 108,
       "norm_label": "listsyncjobs()"
     },
     {
@@ -7420,7 +7460,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_services_syncservice_getsyncjob",
-      "community": 73,
+      "community": 108,
       "norm_label": "getsyncjob()"
     },
     {
@@ -7430,7 +7470,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "src_services_syncservice_requestopenfinancesync",
-      "community": 73,
+      "community": 108,
       "norm_label": "requestopenfinancesync()"
     },
     {
@@ -12454,10 +12494,20 @@
       "norm_label": "cenarios"
     },
     {
-      "label": "Resultado esperado",
+      "label": "C\u00f3digo P0001 nos tipos inferidos",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md",
       "source_location": "L65",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_rls_testing_c\u00f3digo_p0001_nos_tipos_inferidos",
+      "community": 106,
+      "norm_label": "codigo p0001 nos tipos inferidos"
+    },
+    {
+      "label": "Resultado esperado",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md",
+      "source_location": "L80",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_rls_testing_resultado_esperado",
       "community": 106,
@@ -12467,7 +12517,7 @@
       "label": "Limpeza e limites",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md",
-      "source_location": "L69",
+      "source_location": "L84",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_rls_testing_limpeza_e_limites",
       "community": 106,
@@ -12477,7 +12527,7 @@
       "label": "Estado",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md",
-      "source_location": "L75",
+      "source_location": "L90",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_rls_testing_estado",
       "community": 106,
@@ -16409,10 +16459,42 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls-errors.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_errors_test",
+      "target": "scripts_supabase_test_memory_rls",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls-errors.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_errors_test",
+      "target": "scripts_supabase_test_memory_rls_classifyinferredtypeblock",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L62",
+      "source_location": "L85",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls",
+      "target": "scripts_supabase_test_memory_rls_classifyinferredtypeblock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L65",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_client",
@@ -16422,7 +16504,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L95",
+      "source_location": "L143",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_contextfor",
@@ -16432,7 +16514,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L105",
+      "source_location": "L153",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_createexplicit",
@@ -16442,7 +16524,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L68",
+      "source_location": "L71",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_denied",
@@ -16452,7 +16534,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L115",
+      "source_location": "L169",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls",
+      "target": "scripts_supabase_test_memory_rls_expectinferredtypedenied",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L163",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_expectinsertdenied",
@@ -16462,7 +16554,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L22",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_jwtrole",
@@ -16472,7 +16564,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L267",
+      "source_location": "L330",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_main",
@@ -16482,7 +16574,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L15",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_memory_fields",
@@ -16492,7 +16584,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L32",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls",
+      "target": "scripts_supabase_test_memory_rls_normalizedmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L35",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_readconfig",
@@ -16502,7 +16604,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L82",
+      "source_location": "L130",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_record",
@@ -16512,7 +16614,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_required_env",
@@ -16522,7 +16624,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L161",
+      "source_location": "L224",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_runchecks",
@@ -16532,7 +16634,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L78",
+      "source_location": "L126",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_safecode",
@@ -16542,7 +16644,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L87",
+      "source_location": "L135",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_signin",
@@ -16552,7 +16654,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L147",
+      "source_location": "L210",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_testevidencewrites",
@@ -16562,7 +16664,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L121",
+      "source_location": "L184",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls",
       "target": "scripts_supabase_test_memory_rls_testprotectedinserts",
@@ -16573,7 +16675,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L42",
+      "source_location": "L45",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_readconfig",
       "target": "scripts_supabase_test_memory_rls_jwtrole",
@@ -16584,7 +16686,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L270",
+      "source_location": "L333",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_main",
       "target": "scripts_supabase_test_memory_rls_readconfig",
@@ -16595,7 +16697,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L163",
+      "source_location": "L226",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_runchecks",
       "target": "scripts_supabase_test_memory_rls_client",
@@ -16606,7 +16708,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L117",
+      "source_location": "L165",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_expectinsertdenied",
       "target": "scripts_supabase_test_memory_rls_denied",
@@ -16617,7 +16719,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L198",
+      "source_location": "L261",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_runchecks",
       "target": "scripts_supabase_test_memory_rls_denied",
@@ -16628,43 +16730,10 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L156",
+      "source_location": "L219",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_testevidencewrites",
       "target": "scripts_supabase_test_memory_rls_denied",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L101",
-      "weight": 1.0,
-      "source": "scripts_supabase_test_memory_rls_contextfor",
-      "target": "scripts_supabase_test_memory_rls_safecode",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L118",
-      "weight": 1.0,
-      "source": "scripts_supabase_test_memory_rls_expectinsertdenied",
-      "target": "scripts_supabase_test_memory_rls_safecode",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L184",
-      "weight": 1.0,
-      "source": "scripts_supabase_test_memory_rls_runchecks",
-      "target": "scripts_supabase_test_memory_rls_safecode",
       "confidence_score": 1.0
     },
     {
@@ -16674,6 +16743,72 @@
       "source_file": "scripts/supabase/test-memory-rls.js",
       "source_location": "L91",
       "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_classifyinferredtypeblock",
+      "target": "scripts_supabase_test_memory_rls_normalizedmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L171",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_expectinferredtypedenied",
+      "target": "scripts_supabase_test_memory_rls_classifyinferredtypeblock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L149",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_contextfor",
+      "target": "scripts_supabase_test_memory_rls_safecode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L179",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_expectinferredtypedenied",
+      "target": "scripts_supabase_test_memory_rls_safecode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L166",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_expectinsertdenied",
+      "target": "scripts_supabase_test_memory_rls_safecode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L247",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_runchecks",
+      "target": "scripts_supabase_test_memory_rls_safecode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L139",
+      "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_signin",
       "target": "scripts_supabase_test_memory_rls_safecode",
       "confidence_score": 1.0
@@ -16683,7 +16818,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L157",
+      "source_location": "L220",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_testevidencewrites",
       "target": "scripts_supabase_test_memory_rls_safecode",
@@ -16694,7 +16829,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L99",
+      "source_location": "L147",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_contextfor",
       "target": "scripts_supabase_test_memory_rls_record",
@@ -16705,7 +16840,18 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L117",
+      "source_location": "L172",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_expectinferredtypedenied",
+      "target": "scripts_supabase_test_memory_rls_record",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L165",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_expectinsertdenied",
       "target": "scripts_supabase_test_memory_rls_record",
@@ -16716,7 +16862,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L182",
+      "source_location": "L245",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_runchecks",
       "target": "scripts_supabase_test_memory_rls_record",
@@ -16727,7 +16873,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L90",
+      "source_location": "L138",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_signin",
       "target": "scripts_supabase_test_memory_rls_record",
@@ -16738,7 +16884,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L156",
+      "source_location": "L219",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_testevidencewrites",
       "target": "scripts_supabase_test_memory_rls_record",
@@ -16749,7 +16895,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L170",
+      "source_location": "L233",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_runchecks",
       "target": "scripts_supabase_test_memory_rls_signin",
@@ -16760,7 +16906,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L173",
+      "source_location": "L236",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_runchecks",
       "target": "scripts_supabase_test_memory_rls_contextfor",
@@ -16771,7 +16917,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L177",
+      "source_location": "L240",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_runchecks",
       "target": "scripts_supabase_test_memory_rls_createexplicit",
@@ -16782,7 +16928,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L130",
+      "source_location": "L204",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_testprotectedinserts",
       "target": "scripts_supabase_test_memory_rls_expectinsertdenied",
@@ -16793,7 +16939,18 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L196",
+      "source_location": "L193",
+      "weight": 1.0,
+      "source": "scripts_supabase_test_memory_rls_testprotectedinserts",
+      "target": "scripts_supabase_test_memory_rls_expectinferredtypedenied",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/supabase/test-memory-rls.js",
+      "source_location": "L259",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_runchecks",
       "target": "scripts_supabase_test_memory_rls_testprotectedinserts",
@@ -16804,7 +16961,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L244",
+      "source_location": "L307",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_runchecks",
       "target": "scripts_supabase_test_memory_rls_testevidencewrites",
@@ -16815,7 +16972,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/supabase/test-memory-rls.js",
-      "source_location": "L276",
+      "source_location": "L339",
       "weight": 1.0,
       "source": "scripts_supabase_test_memory_rls_main",
       "target": "scripts_supabase_test_memory_rls_runchecks",
@@ -39642,7 +39799,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md",
-      "source_location": "L75",
+      "source_location": "L90",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_rls_testing_teste_autenticado_da_mem\u00f3ria_financeira_v1",
       "target": "docs_00_master_uni_financial_memory_rls_testing_estado",
@@ -39662,7 +39819,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md",
-      "source_location": "L69",
+      "source_location": "L84",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_rls_testing_teste_autenticado_da_mem\u00f3ria_financeira_v1",
       "target": "docs_00_master_uni_financial_memory_rls_testing_limpeza_e_limites",
@@ -39692,7 +39849,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md",
-      "source_location": "L65",
+      "source_location": "L80",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_rls_testing_teste_autenticado_da_mem\u00f3ria_financeira_v1",
       "target": "docs_00_master_uni_financial_memory_rls_testing_resultado_esperado",
@@ -39706,6 +39863,16 @@
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_rls_testing_teste_autenticado_da_mem\u00f3ria_financeira_v1",
       "target": "docs_00_master_uni_financial_memory_rls_testing_vari\u00e1veis",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_rls_testing_cen\u00e1rios",
+      "target": "docs_00_master_uni_financial_memory_rls_testing_c\u00f3digo_p0001_nos_tipos_inferidos",
       "confidence_score": 1.0
     },
     {
