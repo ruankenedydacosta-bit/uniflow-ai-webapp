@@ -4,6 +4,8 @@ import UniAudioControls from './UniAudioControls';
 import UniFinancialActionCard from './UniFinancialActionCard';
 import UniInsightReport from './UniInsightReport';
 import UniLiveContextPanel from './UniLiveContextPanel';
+import UniMemoryInfluenceNotice from './UniMemoryInfluenceNotice';
+import UniMemorySuggestionCard from './UniMemorySuggestionCard';
 import UniRecentConversations from './UniRecentConversations';
 import UniQuickSuggestions from './UniQuickSuggestions';
 import UniSuggestionDrawer from './UniSuggestionDrawer';
@@ -49,6 +51,11 @@ function UniExperienceShell({
   onConfirmFinancialAction,
   onCorrectFinancialAction,
   onCancelFinancialAction,
+  memoryInfluence,
+  memorySuggestion,
+  memoryStatus,
+  memoryError,
+  onMemorySuggestionChoice,
 }) {
   const showFocusedFlow = isListening || isThinking;
   const showSideExperience = hasStarted && !showFocusedFlow;
@@ -81,11 +88,19 @@ function UniExperienceShell({
 
         <UniThinkingSequence active={isThinking} steps={thinkingSteps} activeIndex={thinkingStepIndex} />
 
+        <UniMemoryInfluenceNotice influence={memoryInfluence} error={memoryError} />
+
         <UniFinancialActionCard
           conversation={financialConversation}
           onConfirm={onConfirmFinancialAction}
           onCorrect={onCorrectFinancialAction}
           onCancel={onCancelFinancialAction}
+        />
+
+        <UniMemorySuggestionCard
+          suggestion={memorySuggestion}
+          status={memoryStatus}
+          onChoose={onMemorySuggestionChoice}
         />
 
         {!isThinking ? (

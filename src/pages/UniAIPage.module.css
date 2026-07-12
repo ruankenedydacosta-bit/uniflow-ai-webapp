@@ -413,6 +413,39 @@
   line-height: var(--uf-text-body-lh);
 }
 
+.memoryInfluenceNotice,
+.memorySuggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-12);
+  width: min(100%, calc(var(--uf-space-160) * 5));
+  padding: var(--uf-space-12) var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-glass-bg);
+}
+
+.memoryInfluenceNotice p,
+.memorySuggestion p {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.memorySuggestion > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-12);
+  min-width: 0;
+}
+
+.memorySuggestionActions {
+  display: flex;
+  gap: var(--uf-space-8);
+  flex-wrap: wrap;
+}
+
 .financialActionDetails {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1459,8 +1492,10 @@
   .secondaryComposer,
   .reportHeader,
   .reportActions,
-  .financialActionHeader {
+  .financialActionHeader,
+  .memorySuggestion {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .financialActionDetails,

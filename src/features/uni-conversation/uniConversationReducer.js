@@ -16,6 +16,7 @@ export const initialUniConversationState = Object.freeze({
   response: '',
   result: null,
   error: null,
+  memory: null,
 });
 
 export function uniConversationReducer(state, event) {
@@ -32,6 +33,7 @@ export function uniConversationReducer(state, event) {
         parsed: event.parsed,
         action: event.action,
         response: event.response,
+        memory: event.memory ?? null,
         error: null,
       };
     case 'AWAIT_CONFIRMATION':
@@ -41,6 +43,7 @@ export function uniConversationReducer(state, event) {
         parsed: event.parsed,
         action: event.action,
         response: event.response,
+        memory: event.memory ?? null,
         error: null,
       };
     case 'EXECUTE':

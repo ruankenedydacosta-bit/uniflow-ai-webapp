@@ -27,6 +27,7 @@ export function useUniConversation({
   workspaceType = 'personal',
   cognitiveMap,
   referenceDate,
+  resolveParsedMemory,
 } = {}) {
   const [state, dispatch] = useReducer(
     uniConversationReducer,
@@ -58,23 +59,65 @@ export function useUniConversation({
       referenceDate,
     });
     contextRef.current = parsed.nextContext;
-    const action = buildAction(parsed);
+    const memory = typeof resolveParsedMemory === 'function'
+      ? resolveParsedMemory(parsed, { accounts, categories, profileId })
+      : null;
+    const parsedForAction = memory?.resolvedResult ?? parsed;
+    const action = buildAction(parsedForAction, memory?.memoryOverrides);
 
     if (action.status === 'unsupported') {
       dispatch({ type: 'RESET' });
       return { handled: false, parsed, action };
     }
 
+    if (memory?.conflicts?.length) {
+      const conflict = memory.conflicts[0];
+      const conflictAction = {
+        ...action,
+        status: 'needs_clarification',
+        payload: null,
+        issues: [{
+          field: conflict.field,
+          code: 'memory_conflict',
+          candidates: conflict.field === 'account'
+            ? action.options.accounts
+            : action.options.categories,
+        }],
+        memoryConflict: conflict,
+      };
+      const response = { text: conflict.explanation };
+      dispatch({
+        type: 'NEEDS_CLARIFICATION',
+        parsed: parsedForAction,
+        action: conflictAction,
+        response: response.text,
+        memory,
+      });
+      return { handled: true, parsed: parsedForAction, action: conflictAction, response, memory };
+    }
+
     if (action.status === 'needs_clarification') {
       const response = buildClarificationResponse(action, responseOptions);
-      dispatch({ type: 'NEEDS_CLARIFICATION', parsed, action, response: response.text });
-      return { handled: true, parsed, action, response };
+      dispatch({
+        type: 'NEEDS_CLARIFICATION',
+        parsed: parsedForAction,
+        action,
+        response: response.text,
+        memory,
+      });
+      return { handled: true, parsed: parsedForAction, action, response, memory };
     }
 
     const response = buildConfirmationResponse(action, responseOptions);
-    dispatch({ type: 'AWAIT_CONFIRMATION', parsed, action, response: response.text });
-    return { handled: true, parsed, action, response };
-  }, [buildAction, referenceDate, responseOptions]);
+    dispatch({
+      type: 'AWAIT_CONFIRMATION',
+      parsed: parsedForAction,
+      action,
+      response: response.text,
+      memory,
+    });
+    return { handled: true, parsed: parsedForAction, action, response, memory };
+  }, [accounts, buildAction, categories, profileId, referenceDate, resolveParsedMemory, responseOptions]);
 
   const correct = useCallback((overrides) => {
     if (!state.parsed) return null;
@@ -88,9 +131,10 @@ export function useUniConversation({
       parsed: state.parsed,
       action,
       response: response.text,
+      memory: state.memory,
     });
     return { action, response };
-  }, [buildAction, responseOptions, state.parsed]);
+  }, [buildAction, responseOptions, state.memory, state.parsed]);
 
   const confirm = useCallback(async () => {
     if (state.action?.status !== 'ready') return null;

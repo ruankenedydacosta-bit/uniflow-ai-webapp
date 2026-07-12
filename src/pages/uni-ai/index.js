@@ -6,6 +6,8 @@ export { default as UniExperienceShell } from './UniExperienceShell';
 export { default as UniFinancialActionCard } from './UniFinancialActionCard';
 export { default as UniInsightReport } from './UniInsightReport';
 export { default as UniLiveContextPanel } from './UniLiveContextPanel';
+export { default as UniMemoryInfluenceNotice } from './UniMemoryInfluenceNotice';
+export { default as UniMemorySuggestionCard } from './UniMemorySuggestionCard';
 export { default as UniMessageBubble } from './UniMessageBubble';
 export { default as UniQuickSuggestions } from './UniQuickSuggestions';
 export { default as UniRecentConversations } from './UniRecentConversations';

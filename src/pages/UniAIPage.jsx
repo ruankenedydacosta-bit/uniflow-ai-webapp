@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAccess } from '../app/AccessContext';
 import { useSession } from '../app/SessionContext';
 import { UNI_CONVERSATION_STATES, useUniConversation } from '../features/uni-conversation';
+import { useConversationMemory } from '../features/uni-memory-integration';
 import { useAccounts, useCategories, useTransactions } from '../hooks';
 import { financialCrudMock } from './financeiro/financialCrud.mock.js';
 import {
@@ -48,13 +49,18 @@ function UniAIPage() {
     workspaceId: workspace?.id,
     fallbackTransactions: financialFallback.transactions,
   });
+  const conversationMemory = useConversationMemory();
+  const personalityProfileId = conversationMemory.preferredProfileId
+    ?? profile?.uni_personality_profile
+    ?? 'balanced';
   const financialConversation = useUniConversation({
     accounts: accountState.accounts,
     categories: categoryState.categories,
     saveTransaction: transactionState.saveTransaction,
-    profileId: profile?.uni_personality_profile ?? 'balanced',
+    profileId: personalityProfileId,
     workspaceType: access.currentWorkspace,
     referenceDate: getLocalIsoDate(),
+    resolveParsedMemory: conversationMemory.resolveParsed,
   });
   const [messages, setMessages] = useState(conversationMessages);
   const [draftMessage, setDraftMessage] = useState('');
@@ -463,7 +469,7 @@ function UniAIPage() {
       const finalTranscript = (finalTranscriptRef.current || recognizedTranscriptRef.current).trim();
 
       if (finalTranscript) {
-        sendMessage(finalTranscript);
+        sendMessage(finalTranscript, { allowFinancialAction: true });
         setVoiceNotice('Áudio captado. A Uni vai organizar isso com calma.');
       } else if (shouldShowEmptyCaptureNoticeRef.current) {
         setVoiceNotice('Não consegui ouvir tudo. Pode tentar novamente?');
@@ -538,6 +544,7 @@ function UniAIPage() {
     setTextComposerOpen(false);
     setDraftMessage('');
     financialConversation.reset();
+    conversationMemory.resetInteraction();
   }
 
   async function handleConfirmFinancialAction() {
@@ -553,7 +560,17 @@ function UniAIPage() {
   }
 
   function handleCorrectFinancialAction(corrections) {
-    financialConversation.correct(corrections);
+    const previousAction = financialConversation.state.action;
+    const correction = financialConversation.correct(corrections);
+
+    if (correction?.action) {
+      conversationMemory.suggestFromCorrection({
+        parsedResult: financialConversation.state.parsed,
+        previousAction,
+        correctedAction: correction.action,
+        corrections,
+      });
+    }
   }
 
   function handleCancelFinancialAction() {
@@ -608,6 +625,11 @@ function UniAIPage() {
         onConfirmFinancialAction={handleConfirmFinancialAction}
         onCorrectFinancialAction={handleCorrectFinancialAction}
         onCancelFinancialAction={handleCancelFinancialAction}
+        memoryInfluence={conversationMemory.influence}
+        memorySuggestion={conversationMemory.pendingSuggestion}
+        memoryStatus={conversationMemory.status}
+        memoryError={conversationMemory.error}
+        onMemorySuggestionChoice={conversationMemory.chooseSuggestion}
       />
     </div>
   );
