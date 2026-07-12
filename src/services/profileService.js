@@ -48,6 +48,32 @@ export async function getProfile(userId) {
   };
 }
 
+export async function ensureOwnProfile() {
+  if (!supabase) {
+    return createUnavailableResult();
+  }
+
+  const { data, error } = await supabase.rpc('ensure_own_profile');
+
+  if (error || !data?.id) {
+    return {
+      data: null,
+      error: {
+        code: 'PROFILE_ENSURE_FAILED',
+        message:
+          'Não foi possível preparar seu perfil. Entre novamente e tente de novo.',
+      },
+      isConfigured: true,
+    };
+  }
+
+  return {
+    data,
+    error: null,
+    isConfigured: true,
+  };
+}
+
 export async function updateProfile(userId, changes = {}) {
   if (!supabase) {
     return createUnavailableResult();
