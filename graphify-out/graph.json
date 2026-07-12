@@ -2220,7 +2220,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_accesscontext",
-      "community": 101,
+      "community": 68,
       "norm_label": "accesscontext.jsx"
     },
     {
@@ -2230,7 +2230,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_accesscontext_accesscontext",
-      "community": 101,
+      "community": 68,
       "norm_label": "accesscontext"
     },
     {
@@ -2240,7 +2240,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_accesscontext_accessprovider",
-      "community": 101,
+      "community": 68,
       "norm_label": "accessprovider()"
     },
     {
@@ -2390,7 +2390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_access",
-      "community": 101,
+      "community": 68,
       "norm_label": "access.js"
     },
     {
@@ -2400,7 +2400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_access_user_modes",
-      "community": 97,
+      "community": 68,
       "norm_label": "user_modes"
     },
     {
@@ -2420,7 +2420,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_app_access_workspace_types",
-      "community": 101,
+      "community": 96,
       "norm_label": "workspace_types"
     },
     {
@@ -2430,7 +2430,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_app_access_default_demo_access",
-      "community": 101,
+      "community": 68,
       "norm_label": "default_demo_access"
     },
     {
@@ -2440,7 +2440,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_app_access_isbusinessmode",
-      "community": 101,
+      "community": 68,
       "norm_label": "isbusinessmode()"
     },
     {
@@ -2450,7 +2450,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_app_access_ispersonalmode",
-      "community": 101,
+      "community": 68,
       "norm_label": "ispersonalmode()"
     },
     {
@@ -2460,7 +2460,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_app_access_canusebusinessfeatures",
-      "community": 101,
+      "community": 68,
       "norm_label": "canusebusinessfeatures()"
     },
     {
@@ -2640,7 +2640,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher",
-      "community": 97,
+      "community": 68,
       "norm_label": "accessmodeswitcher.jsx"
     },
     {
@@ -2650,7 +2650,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_options",
-      "community": 97,
+      "community": 68,
       "norm_label": "user_mode_options"
     },
     {
@@ -2660,7 +2660,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_options",
-      "community": 97,
+      "community": 68,
       "norm_label": "plan_options"
     },
     {
@@ -2670,7 +2670,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_workspace_options",
-      "community": 97,
+      "community": 68,
       "norm_label": "workspace_options"
     },
     {
@@ -2680,7 +2680,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_personal_plans",
-      "community": 97,
+      "community": 68,
       "norm_label": "personal_plans"
     },
     {
@@ -2690,7 +2690,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_labels",
-      "community": 97,
+      "community": 68,
       "norm_label": "user_mode_labels"
     },
     {
@@ -2700,7 +2700,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_labels",
-      "community": 97,
+      "community": 68,
       "norm_label": "plan_labels"
     },
     {
@@ -2710,7 +2710,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getworkspaceformode",
-      "community": 97,
+      "community": 68,
       "norm_label": "getworkspaceformode()"
     },
     {
@@ -2720,7 +2720,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
-      "community": 97,
+      "community": 68,
       "norm_label": "getmodeoptionsforplan()"
     },
     {
@@ -2730,7 +2730,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_normalizeaccessforplan",
-      "community": 97,
+      "community": 68,
       "norm_label": "normalizeaccessforplan()"
     },
     {
@@ -2740,7 +2740,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
-      "community": 97,
+      "community": 68,
       "norm_label": "accessmodeswitcher()"
     },
     {
@@ -2760,7 +2760,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_appshell_appshell",
-      "community": 97,
+      "community": 68,
       "norm_label": "appshell.jsx"
     },
     {
@@ -2770,7 +2770,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_layout_appshell_appshell_appshell",
-      "community": 97,
+      "community": 68,
       "norm_label": "appshell()"
     },
     {
@@ -2780,7 +2780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_appshell_index",
-      "community": 97,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -2810,7 +2810,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_sidebar_index",
-      "community": 97,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -2820,7 +2820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 97,
+      "community": 68,
       "norm_label": "topbar.jsx"
     },
     {
@@ -2830,7 +2830,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar_topbar",
-      "community": 97,
+      "community": 68,
       "norm_label": "topbar()"
     },
     {
@@ -2840,7 +2840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_index",
-      "community": 97,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -2850,7 +2850,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 99,
+      "community": 88,
       "norm_label": "avatar.jsx"
     },
     {
@@ -2860,7 +2860,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 99,
+      "community": 88,
       "norm_label": "getinitials()"
     },
     {
@@ -2870,7 +2870,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_avatar",
-      "community": 99,
+      "community": 41,
       "norm_label": "avatar"
     },
     {
@@ -2880,7 +2880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_index",
-      "community": 99,
+      "community": 41,
       "norm_label": "index.js"
     },
     {
@@ -2930,7 +2930,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_button_button_button",
-      "community": 99,
+      "community": 41,
       "norm_label": "button()"
     },
     {
@@ -2940,7 +2940,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_button_index",
-      "community": 99,
+      "community": 41,
       "norm_label": "index.js"
     },
     {
@@ -2980,7 +2980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 41,
+      "community": 88,
       "norm_label": "input.jsx"
     },
     {
@@ -3030,7 +3030,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_index",
-      "community": 68,
+      "community": 88,
       "norm_label": "index.js"
     },
     {
@@ -3040,7 +3040,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal",
-      "community": 41,
+      "community": 88,
       "norm_label": "modal.jsx"
     },
     {
@@ -3100,7 +3100,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage",
-      "community": 101,
+      "community": 96,
       "norm_label": "dashboardpage.jsx"
     },
     {
@@ -3110,7 +3110,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_getdashboardcontext",
-      "community": 101,
+      "community": 96,
       "norm_label": "getdashboardcontext()"
     },
     {
@@ -3120,7 +3120,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_dashboardpage",
-      "community": 101,
+      "community": 96,
       "norm_label": "dashboardpage()"
     },
     {
@@ -3130,7 +3130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_dashboardgreeting",
-      "community": 99,
+      "community": 41,
       "norm_label": "dashboardgreeting.jsx"
     },
     {
@@ -3140,7 +3140,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_dashboardgreeting_dashboardgreeting",
-      "community": 99,
+      "community": 41,
       "norm_label": "dashboardgreeting()"
     },
     {
@@ -3240,7 +3240,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock",
-      "community": 101,
+      "community": 96,
       "norm_label": "dashboard.mock.js"
     },
     {
@@ -3250,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock_dashboardmock",
-      "community": 101,
+      "community": 96,
       "norm_label": "dashboardmock"
     },
     {
@@ -4247,7 +4247,7 @@
       "label": "normalizeMemoryText()",
       "file_type": "code",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L41",
+      "source_location": "L47",
       "_origin": "ast",
       "id": "src_features_uni_memory_memorytypes_normalizememorytext",
       "community": 95,
@@ -4257,7 +4257,7 @@
       "label": "roundMoney()",
       "file_type": "code",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L52",
+      "source_location": "L58",
       "_origin": "ast",
       "id": "src_features_uni_memory_memorytypes_roundmoney",
       "community": 95,
@@ -4267,7 +4267,7 @@
       "label": "deepFreeze()",
       "file_type": "code",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L56",
+      "source_location": "L62",
       "_origin": "ast",
       "id": "src_features_uni_memory_memorytypes_deepfreeze",
       "community": 95,
@@ -4277,7 +4277,7 @@
       "label": "isValidMemoryType()",
       "file_type": "code",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L62",
+      "source_location": "L68",
       "_origin": "ast",
       "id": "src_features_uni_memory_memorytypes_isvalidmemorytype",
       "community": 95,
@@ -4287,7 +4287,7 @@
       "label": "toIsoDate()",
       "file_type": "code",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L66",
+      "source_location": "L72",
       "_origin": "ast",
       "id": "src_features_uni_memory_memorytypes_toisodate",
       "community": 95,
@@ -4297,7 +4297,7 @@
       "label": "daysBetween()",
       "file_type": "code",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L74",
+      "source_location": "L80",
       "_origin": "ast",
       "id": "src_features_uni_memory_memorytypes_daysbetween",
       "community": 95,
@@ -4427,7 +4427,7 @@
       "label": "accounts",
       "file_type": "code",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L15",
+      "source_location": "L20",
       "_origin": "ast",
       "id": "src_features_uni_memory_unimemory_test_accounts",
       "community": 95,
@@ -4437,7 +4437,7 @@
       "label": "categories",
       "file_type": "code",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L19",
+      "source_location": "L24",
       "_origin": "ast",
       "id": "src_features_uni_memory_unimemory_test_categories",
       "community": 95,
@@ -4447,10 +4447,10 @@
       "label": "transaction()",
       "file_type": "code",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L25",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "src_features_uni_memory_unimemory_test_transaction",
-      "community": 95,
+      "community": 41,
       "norm_label": "transaction()"
     },
     {
@@ -4940,7 +4940,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crmpage",
-      "community": 101,
+      "community": 87,
       "norm_label": "crmpage.jsx"
     },
     {
@@ -4950,7 +4950,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_crmpage_crmpage",
-      "community": 101,
+      "community": 87,
       "norm_label": "crmpage()"
     },
     {
@@ -5040,7 +5040,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_loginpage",
-      "community": 87,
+      "community": 96,
       "norm_label": "loginpage.jsx"
     },
     {
@@ -5150,7 +5150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projectspage",
-      "community": 88,
+      "community": 87,
       "norm_label": "projectspage.jsx"
     },
     {
@@ -5160,7 +5160,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_projectspage_projectspage",
-      "community": 88,
+      "community": 87,
       "norm_label": "projectspage()"
     },
     {
@@ -5230,7 +5230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 105,
+      "community": 101,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -5240,7 +5240,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 105,
+      "community": 101,
       "norm_label": "user_mode_labels"
     },
     {
@@ -5250,7 +5250,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 105,
+      "community": 101,
       "norm_label": "plan_labels"
     },
     {
@@ -5260,7 +5260,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 105,
+      "community": 101,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -5270,7 +5270,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 105,
+      "community": 101,
       "norm_label": "settingspage()"
     },
     {
@@ -5350,7 +5350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 105,
+      "community": 101,
       "norm_label": "settings.mock.js"
     },
     {
@@ -5360,7 +5360,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 105,
+      "community": 101,
       "norm_label": "settingsmock"
     },
     {
@@ -5370,7 +5370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock",
-      "community": 101,
+      "community": 87,
       "norm_label": "crm.mock.js"
     },
     {
@@ -5380,7 +5380,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock_crmmock",
-      "community": 101,
+      "community": 87,
       "norm_label": "crmmock"
     },
     {
@@ -5800,7 +5800,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock",
-      "community": 88,
+      "community": 87,
       "norm_label": "projects.mock.js"
     },
     {
@@ -5810,7 +5810,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock_projectsmock",
-      "community": 88,
+      "community": 87,
       "norm_label": "projectsmock"
     },
     {
@@ -5840,7 +5840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero",
-      "community": 99,
+      "community": 41,
       "norm_label": "uniaihero.jsx"
     },
     {
@@ -5850,7 +5850,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero_uniaihero",
-      "community": 99,
+      "community": 41,
       "norm_label": "uniaihero()"
     },
     {
@@ -5880,7 +5880,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel",
-      "community": 99,
+      "community": 41,
       "norm_label": "unichatpanel.jsx"
     },
     {
@@ -5890,7 +5890,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel_unichatpanel",
-      "community": 99,
+      "community": 41,
       "norm_label": "unichatpanel()"
     },
     {
@@ -5980,7 +5980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniinsightreport",
-      "community": 87,
+      "community": 41,
       "norm_label": "uniinsightreport.jsx"
     },
     {
@@ -6020,7 +6020,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble",
-      "community": 99,
+      "community": 41,
       "norm_label": "unimessagebubble.jsx"
     },
     {
@@ -6030,7 +6030,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble_unimessagebubble",
-      "community": 99,
+      "community": 41,
       "norm_label": "unimessagebubble()"
     },
     {
@@ -6080,7 +6080,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unisuggestiondrawer",
-      "community": 87,
+      "community": 41,
       "norm_label": "unisuggestiondrawer.jsx"
     },
     {
@@ -6140,7 +6140,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture",
-      "community": 99,
+      "community": 41,
       "norm_label": "univoicecapture.jsx"
     },
     {
@@ -6150,7 +6150,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture_univoicecapture",
-      "community": 99,
+      "community": 41,
       "norm_label": "univoicecapture()"
     },
     {
@@ -7377,17 +7377,27 @@
       "label": "USER_WRITABLE_SOURCES",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L6",
+      "source_location": "L10",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_user_writable_sources",
       "community": 95,
       "norm_label": "user_writable_sources"
     },
     {
+      "label": "USER_WRITABLE_TYPES",
+      "file_type": "code",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_services_unimemoryservice_user_writable_types",
+      "community": 95,
+      "norm_label": "user_writable_types"
+    },
+    {
       "label": "createResult()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L8",
+      "source_location": "L19",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_createresult",
       "community": 95,
@@ -7397,7 +7407,7 @@
       "label": "unavailable()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L12",
+      "source_location": "L23",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_unavailable",
       "community": 95,
@@ -7407,47 +7417,107 @@
       "label": "invalid()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L19",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_invalid",
       "community": 95,
       "norm_label": "invalid()"
     },
     {
+      "label": "withSafeError()",
+      "file_type": "code",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "src_services_unimemoryservice_withsafeerror",
+      "community": 95,
+      "norm_label": "withsafeerror()"
+    },
+    {
       "label": "isForbiddenKey()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L23",
+      "source_location": "L38",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_isforbiddenkey",
       "community": 95,
       "norm_label": "isforbiddenkey()"
     },
     {
+      "label": "isSafeMemoryKey()",
+      "file_type": "code",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "src_services_unimemoryservice_issafememorykey",
+      "community": 95,
+      "norm_label": "issafememorykey()"
+    },
+    {
       "label": "sanitizeMemoryValue()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L28",
+      "source_location": "L48",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_sanitizememoryvalue",
       "community": 95,
       "norm_label": "sanitizememoryvalue()"
     },
     {
+      "label": "prepareMemoryValue()",
+      "file_type": "code",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "src_services_unimemoryservice_preparememoryvalue",
+      "community": 95,
+      "norm_label": "preparememoryvalue()"
+    },
+    {
+      "label": "isFrontendWritableMemoryType()",
+      "file_type": "code",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L75",
+      "_origin": "ast",
+      "id": "src_services_unimemoryservice_isfrontendwritablememorytype",
+      "community": 95,
+      "norm_label": "isfrontendwritablememorytype()"
+    },
+    {
+      "label": "getAuthenticatedUserId()",
+      "file_type": "code",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L79",
+      "_origin": "ast",
+      "id": "src_services_unimemoryservice_getauthenticateduserid",
+      "community": 95,
+      "norm_label": "getauthenticateduserid()"
+    },
+    {
       "label": "validateIds()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L43",
+      "source_location": "L87",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_validateids",
       "community": 95,
       "norm_label": "validateids()"
     },
     {
+      "label": "readWorkspaceId()",
+      "file_type": "code",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L91",
+      "_origin": "ast",
+      "id": "src_services_unimemoryservice_readworkspaceid",
+      "community": 95,
+      "norm_label": "readworkspaceid()"
+    },
+    {
       "label": "listFinancialMemories()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L47",
+      "source_location": "L95",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_listfinancialmemories",
       "community": 95,
@@ -7457,7 +7527,7 @@
       "label": "getFinancialMemory()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L67",
+      "source_location": "L118",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_getfinancialmemory",
       "community": 95,
@@ -7467,7 +7537,7 @@
       "label": "createExplicitMemoryCandidate()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L79",
+      "source_location": "L131",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_createexplicitmemorycandidate",
       "community": 95,
@@ -7477,17 +7547,27 @@
       "label": "decideFinancialMemory()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L120",
+      "source_location": "L172",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_decidefinancialmemory",
       "community": 95,
       "norm_label": "decidefinancialmemory()"
     },
     {
+      "label": "correctExplicitFinancialMemory()",
+      "file_type": "code",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L188",
+      "_origin": "ast",
+      "id": "src_services_unimemoryservice_correctexplicitfinancialmemory",
+      "community": 95,
+      "norm_label": "correctexplicitfinancialmemory()"
+    },
+    {
       "label": "deleteFinancialMemory()",
       "file_type": "code",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L136",
+      "source_location": "L202",
       "_origin": "ast",
       "id": "src_services_unimemoryservice_deletefinancialmemory",
       "community": 95,
@@ -11824,6 +11904,236 @@
       "norm_label": "evolucao futura"
     },
     {
+      "label": "UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review",
+      "community": 97,
+      "norm_label": "uni_financial_memory_migration_review.md"
+    },
+    {
+      "label": "Uni Financial Memory Migration Review",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "community": 97,
+      "norm_label": "uni financial memory migration review"
+    },
+    {
+      "label": "Escopo",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_escopo",
+      "community": 97,
+      "norm_label": "escopo"
+    },
+    {
+      "label": "Resultado",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_resultado",
+      "community": 97,
+      "norm_label": "resultado"
+    },
+    {
+      "label": "Problemas encontrados e corre\u00e7\u00f5es",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "community": 97,
+      "norm_label": "problemas encontrados e correcoes"
+    },
+    {
+      "label": "Leitura ampla demais no workspace",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_leitura_ampla_demais_no_workspace",
+      "community": 97,
+      "norm_label": "leitura ampla demais no workspace"
+    },
+    {
+      "label": "Metadados privilegiados grav\u00e1veis pelo frontend",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_metadados_privilegiados_grav\u00e1veis_pelo_frontend",
+      "community": 97,
+      "norm_label": "metadados privilegiados gravaveis pelo frontend"
+    },
+    {
+      "label": "Tipos inferidos dispon\u00edveis ao frontend",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L47",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_tipos_inferidos_dispon\u00edveis_ao_frontend",
+      "community": 97,
+      "norm_label": "tipos inferidos disponiveis ao frontend"
+    },
+    {
+      "label": "Updates diretos e promo\u00e7\u00e3o arbitr\u00e1ria",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L68",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_updates_diretos_e_promo\u00e7\u00e3o_arbitr\u00e1ria",
+      "community": 97,
+      "norm_label": "updates diretos e promocao arbitraria"
+    },
+    {
+      "label": "Sanitiza\u00e7\u00e3o sem limites estruturais",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L79",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_sanitiza\u00e7\u00e3o_sem_limites_estruturais",
+      "community": 97,
+      "norm_label": "sanitizacao sem limites estruturais"
+    },
+    {
+      "label": "Integridade de expira\u00e7\u00e3o e supersess\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L94",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_integridade_de_expira\u00e7\u00e3o_e_supersess\u00e3o",
+      "community": 97,
+      "norm_label": "integridade de expiracao e supersessao"
+    },
+    {
+      "label": "Exclus\u00e3o de refer\u00eancias financeiras",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L107",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_exclus\u00e3o_de_refer\u00eancias_financeiras",
+      "community": 97,
+      "norm_label": "exclusao de referencias financeiras"
+    },
+    {
+      "label": "Modelo final de permiss\u00f5es",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L113",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_modelo_final_de_permiss\u00f5es",
+      "community": 97,
+      "norm_label": "modelo final de permissoes"
+    },
+    {
+      "label": "`uni_financial_memories`",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L115",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memories",
+      "community": 97,
+      "norm_label": "`uni_financial_memories`"
+    },
+    {
+      "label": "`uni_memory_evidence`",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L126",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_uni_memory_evidence",
+      "community": 97,
+      "norm_label": "`uni_memory_evidence`"
+    },
+    {
+      "label": "Grants",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L134",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_grants",
+      "community": 97,
+      "norm_label": "grants"
+    },
+    {
+      "label": "Privacidade",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L141",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_privacidade",
+      "community": 97,
+      "norm_label": "privacidade"
+    },
+    {
+      "label": "Falha parcial",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L154",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_falha_parcial",
+      "community": 97,
+      "norm_label": "falha parcial"
+    },
+    {
+      "label": "Checklist antes de aplicar no DEV",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L164",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_checklist_antes_de_aplicar_no_dev",
+      "community": 97,
+      "norm_label": "checklist antes de aplicar no dev"
+    },
+    {
+      "label": "Checklist ap\u00f3s eventual falha",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L174",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_checklist_ap\u00f3s_eventual_falha",
+      "community": 97,
+      "norm_label": "checklist apos eventual falha"
+    },
+    {
+      "label": "Checklist de valida\u00e7\u00e3o ap\u00f3s aplica\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L183",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_checklist_de_valida\u00e7\u00e3o_ap\u00f3s_aplica\u00e7\u00e3o",
+      "community": 97,
+      "norm_label": "checklist de validacao apos aplicacao"
+    },
+    {
+      "label": "Riscos pendentes",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L199",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_riscos_pendentes",
+      "community": 97,
+      "norm_label": "riscos pendentes"
+    },
+    {
+      "label": "Confirma\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L207",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_financial_memory_migration_review_confirma\u00e7\u00e3o",
+      "community": 97,
+      "norm_label": "confirmacao"
+    },
+    {
       "label": "UNI_FINANCIAL_MEMORY_V1.md",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
@@ -12007,7 +12317,7 @@
       "label": "Privacidade",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L131",
+      "source_location": "L133",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_v1_privacidade",
       "community": 104,
@@ -12017,7 +12327,7 @@
       "label": "Reten\u00e7\u00e3o",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L145",
+      "source_location": "L147",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_v1_reten\u00e7\u00e3o",
       "community": 104,
@@ -12027,7 +12337,7 @@
       "label": "Rela\u00e7\u00e3o com o Mapa Cognitivo",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L156",
+      "source_location": "L158",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_v1_rela\u00e7\u00e3o_com_o_mapa_cognitivo",
       "community": 104,
@@ -12037,7 +12347,7 @@
       "label": "Open Finance futuro",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L162",
+      "source_location": "L164",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_v1_open_finance_futuro",
       "community": 104,
@@ -12047,7 +12357,7 @@
       "label": "GPS Financeiro futuro",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L168",
+      "source_location": "L170",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_v1_gps_financeiro_futuro",
       "community": 104,
@@ -12057,7 +12367,7 @@
       "label": "Limites da V1",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L180",
+      "source_location": "L182",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_v1_limites_da_v1",
       "community": 104,
@@ -23460,7 +23770,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L4",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_anomalydetector_detectfinancialanomalies",
@@ -23655,7 +23965,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L4",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_financialsnapshot_createfinancialsnapshot",
@@ -23853,7 +24163,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L4",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_index",
@@ -24026,7 +24336,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L4",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_memorycandidatebuilder_buildmemorycandidates",
@@ -24057,7 +24367,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L4",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_memoryexplanation_explainmemoryevidence",
@@ -24228,7 +24538,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L4",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_memoryresolver_resolvememorycandidate",
@@ -24238,7 +24548,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L74",
+      "source_location": "L80",
       "weight": 1.0,
       "source": "src_features_uni_memory_memorytypes",
       "target": "src_features_uni_memory_memorytypes_daysbetween",
@@ -24248,7 +24558,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L56",
+      "source_location": "L62",
       "weight": 1.0,
       "source": "src_features_uni_memory_memorytypes",
       "target": "src_features_uni_memory_memorytypes_deepfreeze",
@@ -24268,7 +24578,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L62",
+      "source_location": "L68",
       "weight": 1.0,
       "source": "src_features_uni_memory_memorytypes",
       "target": "src_features_uni_memory_memorytypes_isvalidmemorytype",
@@ -24308,7 +24618,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L41",
+      "source_location": "L47",
       "weight": 1.0,
       "source": "src_features_uni_memory_memorytypes",
       "target": "src_features_uni_memory_memorytypes_normalizememorytext",
@@ -24318,7 +24628,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L52",
+      "source_location": "L58",
       "weight": 1.0,
       "source": "src_features_uni_memory_memorytypes",
       "target": "src_features_uni_memory_memorytypes_roundmoney",
@@ -24328,7 +24638,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L66",
+      "source_location": "L72",
       "weight": 1.0,
       "source": "src_features_uni_memory_memorytypes",
       "target": "src_features_uni_memory_memorytypes_toisodate",
@@ -24362,10 +24672,32 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L63",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "src_features_uni_memory_memorytypes_isvalidmemorytype",
       "target": "src_features_uni_memory_memorytypes_memory_types"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_features_uni_memory_memorytypes_memory_statuses",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L103",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_listfinancialmemories",
+      "target": "src_features_uni_memory_memorytypes_memory_statuses"
     },
     {
       "relation": "imports",
@@ -24384,7 +24716,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L25",
+      "source_location": "L40",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_isforbiddenkey",
       "target": "src_features_uni_memory_memorytypes_forbidden_memory_keys"
@@ -24516,7 +24848,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L90",
+      "source_location": "L142",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
       "target": "src_features_uni_memory_memorytypes_isvalidmemorytype"
@@ -24525,8 +24857,19 @@
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L104",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_listfinancialmemories",
+      "target": "src_features_uni_memory_memorytypes_isvalidmemorytype"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/memoryTypes.js",
-      "source_location": "L75",
+      "source_location": "L81",
       "weight": 1.0,
       "source": "src_features_uni_memory_memorytypes_daysbetween",
       "target": "src_features_uni_memory_memorytypes_toisodate",
@@ -24729,7 +25072,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L4",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_recurrencedetector_detectrecurrences",
@@ -24792,7 +25135,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L4",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_spendingpatternanalyzer_analyzespendingpatterns",
@@ -24802,7 +25145,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L15",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_unimemory_test_accounts",
@@ -24812,7 +25155,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L19",
+      "source_location": "L24",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_unimemory_test_categories",
@@ -24822,7 +25165,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-memory/uniMemory.test.js",
-      "source_location": "L25",
+      "source_location": "L30",
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_features_uni_memory_unimemory_test_transaction",
@@ -24837,6 +25180,28 @@
       "weight": 1.0,
       "source": "src_features_uni_memory_unimemory_test",
       "target": "src_services_unimemoryservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory/uniMemory.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_unimemory_test",
+      "target": "src_services_unimemoryservice_isfrontendwritablememorytype",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory/uniMemory.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_unimemory_test",
+      "target": "src_services_unimemoryservice_issafememorykey",
       "confidence_score": 1.0
     },
     {
@@ -32426,7 +32791,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L2",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_supabaseclient",
@@ -32470,7 +32835,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L2",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_supabaseclient_issupabaseconfigured",
@@ -33132,7 +33497,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L2",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_supabaseclient_supabase",
@@ -33142,7 +33507,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L79",
+      "source_location": "L188",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_correctexplicitfinancialmemory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L131",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_unimemoryservice_createexplicitmemorycandidate",
@@ -33152,7 +33527,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L8",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_unimemoryservice_createresult",
@@ -33162,7 +33537,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L120",
+      "source_location": "L172",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_unimemoryservice_decidefinancialmemory",
@@ -33172,7 +33547,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L136",
+      "source_location": "L202",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_unimemoryservice_deletefinancialmemory",
@@ -33182,7 +33557,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L67",
+      "source_location": "L79",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_getauthenticateduserid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L118",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_unimemoryservice_getfinancialmemory",
@@ -33192,7 +33577,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L19",
+      "source_location": "L30",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_unimemoryservice_invalid",
@@ -33202,7 +33587,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L23",
+      "source_location": "L38",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
       "target": "src_services_unimemoryservice_isforbiddenkey",
@@ -33212,40 +33597,10 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L47",
+      "source_location": "L75",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
-      "target": "src_services_unimemoryservice_listfinancialmemories",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L28",
-      "weight": 1.0,
-      "source": "src_services_unimemoryservice",
-      "target": "src_services_unimemoryservice_sanitizememoryvalue",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L12",
-      "weight": 1.0,
-      "source": "src_services_unimemoryservice",
-      "target": "src_services_unimemoryservice_unavailable",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L6",
-      "weight": 1.0,
-      "source": "src_services_unimemoryservice",
-      "target": "src_services_unimemoryservice_user_writable_sources",
+      "target": "src_services_unimemoryservice_isfrontendwritablememorytype",
       "confidence_score": 1.0
     },
     {
@@ -33255,7 +33610,97 @@
       "source_location": "L43",
       "weight": 1.0,
       "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_issafememorykey",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L95",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_listfinancialmemories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_preparememoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L91",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_readworkspaceid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_sanitizememoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_unavailable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_user_writable_sources",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_user_writable_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
       "target": "src_services_unimemoryservice_validateids",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice",
+      "target": "src_services_unimemoryservice_withsafeerror",
       "confidence_score": 1.0
     },
     {
@@ -33264,52 +33709,30 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L93",
+      "source_location": "L145",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
       "target": "src_services_unimemoryservice_user_writable_sources"
     },
     {
-      "relation": "calls",
+      "relation": "references",
       "context": "call",
       "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L117",
-      "weight": 1.0,
-      "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
-      "target": "src_services_unimemoryservice_createresult",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L133",
-      "weight": 1.0,
-      "source": "src_services_unimemoryservice_decidefinancialmemory",
-      "target": "src_services_unimemoryservice_createresult",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L144",
-      "weight": 1.0,
-      "source": "src_services_unimemoryservice_deletefinancialmemory",
-      "target": "src_services_unimemoryservice_createresult",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "src/services/uniMemoryService.js",
       "source_location": "L76",
       "weight": 1.0,
-      "source": "src_services_unimemoryservice_getfinancialmemory",
+      "source": "src_services_unimemoryservice_isfrontendwritablememorytype",
+      "target": "src_services_unimemoryservice_user_writable_types"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L84",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_getauthenticateduserid",
       "target": "src_services_unimemoryservice_createresult",
       "confidence_score": 1.0
     },
@@ -33318,7 +33741,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L20",
+      "source_location": "L31",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_invalid",
       "target": "src_services_unimemoryservice_createresult",
@@ -33329,9 +33752,9 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L64",
+      "source_location": "L72",
       "weight": 1.0,
-      "source": "src_services_unimemoryservice_listfinancialmemories",
+      "source": "src_services_unimemoryservice_preparememoryvalue",
       "target": "src_services_unimemoryservice_createresult",
       "confidence_score": 1.0
     },
@@ -33340,7 +33763,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L13",
+      "source_location": "L24",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_unavailable",
       "target": "src_services_unimemoryservice_createresult",
@@ -33351,7 +33774,29 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L88",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_withsafeerror",
+      "target": "src_services_unimemoryservice_createresult",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L189",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_correctexplicitfinancialmemory",
+      "target": "src_services_unimemoryservice_unavailable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L139",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
       "target": "src_services_unimemoryservice_unavailable",
@@ -33362,10 +33807,54 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L121",
+      "source_location": "L173",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_decidefinancialmemory",
       "target": "src_services_unimemoryservice_unavailable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L203",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_deletefinancialmemory",
+      "target": "src_services_unimemoryservice_unavailable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L119",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_getfinancialmemory",
+      "target": "src_services_unimemoryservice_unavailable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L100",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_listfinancialmemories",
+      "target": "src_services_unimemoryservice_unavailable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L191",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_correctexplicitfinancialmemory",
+      "target": "src_services_unimemoryservice_invalid",
       "confidence_score": 1.0
     },
     {
@@ -33375,39 +33864,6 @@
       "source_file": "src/services/uniMemoryService.js",
       "source_location": "L137",
       "weight": 1.0,
-      "source": "src_services_unimemoryservice_deletefinancialmemory",
-      "target": "src_services_unimemoryservice_unavailable",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L68",
-      "weight": 1.0,
-      "source": "src_services_unimemoryservice_getfinancialmemory",
-      "target": "src_services_unimemoryservice_unavailable",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L52",
-      "weight": 1.0,
-      "source": "src_services_unimemoryservice_listfinancialmemories",
-      "target": "src_services_unimemoryservice_unavailable",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L86",
-      "weight": 1.0,
       "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
       "target": "src_services_unimemoryservice_invalid",
       "confidence_score": 1.0
@@ -33417,7 +33873,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L122",
+      "source_location": "L175",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_decidefinancialmemory",
       "target": "src_services_unimemoryservice_invalid",
@@ -33428,7 +33884,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L138",
+      "source_location": "L205",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_deletefinancialmemory",
       "target": "src_services_unimemoryservice_invalid",
@@ -33439,7 +33895,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L69",
+      "source_location": "L121",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_getfinancialmemory",
       "target": "src_services_unimemoryservice_invalid",
@@ -33450,7 +33906,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L53",
+      "source_location": "L102",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_listfinancialmemories",
       "target": "src_services_unimemoryservice_invalid",
@@ -33461,7 +33917,106 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L38",
+      "source_location": "L67",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_preparememoryvalue",
+      "target": "src_services_unimemoryservice_invalid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L199",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_correctexplicitfinancialmemory",
+      "target": "src_services_unimemoryservice_withsafeerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L169",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
+      "target": "src_services_unimemoryservice_withsafeerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L185",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_decidefinancialmemory",
+      "target": "src_services_unimemoryservice_withsafeerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L211",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_deletefinancialmemory",
+      "target": "src_services_unimemoryservice_withsafeerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L82",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_getauthenticateduserid",
+      "target": "src_services_unimemoryservice_withsafeerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L128",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_getfinancialmemory",
+      "target": "src_services_unimemoryservice_withsafeerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L115",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_listfinancialmemories",
+      "target": "src_services_unimemoryservice_withsafeerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_issafememorykey",
+      "target": "src_services_unimemoryservice_isforbiddenkey",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L59",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_sanitizememoryvalue",
       "target": "src_services_unimemoryservice_isforbiddenkey",
@@ -33472,9 +34027,20 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L102",
+      "source_location": "L142",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
+      "target": "src_services_unimemoryservice_issafememorykey",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_preparememoryvalue",
       "target": "src_services_unimemoryservice_sanitizememoryvalue",
       "confidence_score": 1.0
     },
@@ -33483,7 +34049,62 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L89",
+      "source_location": "L192",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_correctexplicitfinancialmemory",
+      "target": "src_services_unimemoryservice_preparememoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L154",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
+      "target": "src_services_unimemoryservice_preparememoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L142",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
+      "target": "src_services_unimemoryservice_isfrontendwritablememorytype",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L152",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
+      "target": "src_services_unimemoryservice_getauthenticateduserid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L191",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_correctexplicitfinancialmemory",
+      "target": "src_services_unimemoryservice_validateids",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L141",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
       "target": "src_services_unimemoryservice_validateids",
@@ -33494,7 +34115,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L122",
+      "source_location": "L175",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_decidefinancialmemory",
       "target": "src_services_unimemoryservice_validateids",
@@ -33505,7 +34126,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L138",
+      "source_location": "L205",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_deletefinancialmemory",
       "target": "src_services_unimemoryservice_validateids",
@@ -33516,7 +34137,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L69",
+      "source_location": "L121",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_getfinancialmemory",
       "target": "src_services_unimemoryservice_validateids",
@@ -33527,10 +34148,76 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/uniMemoryService.js",
-      "source_location": "L53",
+      "source_location": "L102",
       "weight": 1.0,
       "source": "src_services_unimemoryservice_listfinancialmemories",
       "target": "src_services_unimemoryservice_validateids",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L190",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_correctexplicitfinancialmemory",
+      "target": "src_services_unimemoryservice_readworkspaceid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L140",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_createexplicitmemorycandidate",
+      "target": "src_services_unimemoryservice_readworkspaceid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L174",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_decidefinancialmemory",
+      "target": "src_services_unimemoryservice_readworkspaceid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L204",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_deletefinancialmemory",
+      "target": "src_services_unimemoryservice_readworkspaceid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L120",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_getfinancialmemory",
+      "target": "src_services_unimemoryservice_readworkspaceid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/services/uniMemoryService.js",
+      "source_location": "L101",
+      "weight": 1.0,
+      "source": "src_services_unimemoryservice_listfinancialmemories",
+      "target": "src_services_unimemoryservice_readworkspaceid",
       "confidence_score": 1.0
     },
     {
@@ -37684,6 +38371,226 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L164",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_checklist_antes_de_aplicar_no_dev",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L174",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_checklist_ap\u00f3s_eventual_falha",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L183",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_checklist_de_valida\u00e7\u00e3o_ap\u00f3s_aplica\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L207",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_confirma\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_escopo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L154",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_falha_parcial",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L134",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_grants",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_modelo_final_de_permiss\u00f5es",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L141",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_privacidade",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_resultado",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L199",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
+      "target": "docs_00_master_uni_financial_memory_migration_review_riscos_pendentes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L107",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_exclus\u00e3o_de_refer\u00eancias_financeiras",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_integridade_de_expira\u00e7\u00e3o_e_supersess\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_leitura_ampla_demais_no_workspace",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_metadados_privilegiados_grav\u00e1veis_pelo_frontend",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L79",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_sanitiza\u00e7\u00e3o_sem_limites_estruturais",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L47",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_tipos_inferidos_dispon\u00edveis_ao_frontend",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L68",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_problemas_encontrados_e_corre\u00e7\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_updates_diretos_e_promo\u00e7\u00e3o_arbitr\u00e1ria",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L115",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_modelo_final_de_permiss\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
+      "source_location": "L126",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_financial_memory_migration_review_modelo_final_de_permiss\u00f5es",
+      "target": "docs_00_master_uni_financial_memory_migration_review_uni_memory_evidence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
       "source_location": "L1",
       "weight": 1.0,
@@ -37715,7 +38622,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L168",
+      "source_location": "L170",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_v1_uni_financial_memory_v1",
       "target": "docs_00_master_uni_financial_memory_v1_gps_financeiro_futuro",
@@ -37735,7 +38642,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L180",
+      "source_location": "L182",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_v1_uni_financial_memory_v1",
       "target": "docs_00_master_uni_financial_memory_v1_limites_da_v1",
@@ -37755,7 +38662,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L162",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_v1_uni_financial_memory_v1",
       "target": "docs_00_master_uni_financial_memory_v1_open_finance_futuro",
@@ -37795,7 +38702,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L131",
+      "source_location": "L133",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_v1_uni_financial_memory_v1",
       "target": "docs_00_master_uni_financial_memory_v1_privacidade",
@@ -37805,7 +38712,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L156",
+      "source_location": "L158",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_v1_uni_financial_memory_v1",
       "target": "docs_00_master_uni_financial_memory_v1_rela\u00e7\u00e3o_com_o_mapa_cognitivo",
@@ -37825,7 +38732,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md",
-      "source_location": "L145",
+      "source_location": "L147",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_v1_uni_financial_memory_v1",
       "target": "docs_00_master_uni_financial_memory_v1_reten\u00e7\u00e3o",
@@ -39123,5 +40030,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "09c28014fedbc455c2431cb5c150e364e7f04069"
+  "built_at_commit": "cee2e31d55e2b600301225d293115a7492d49471"
 }

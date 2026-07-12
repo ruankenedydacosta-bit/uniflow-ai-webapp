@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783824322.3489509,
-    "ast_hash": "51e6882ef3d9b5d8852b3dd5056b1be2",
+    "mtime": 1783847962.4057963,
+    "ast_hash": "3ba5ca0a2fe151e862ffdb7a0fcb1794",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -1172,6 +1172,86 @@
   "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md": {
     "mtime": 1783824522.3277538,
     "ast_hash": "a4bb7a08c73457cda6bc28e621a4458e",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/anomalyDetector.js": {
+    "mtime": 1783826611.7876854,
+    "ast_hash": "f2f408fe7bdc8f742d2c7ba2413a44ac",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/financialSnapshot.js": {
+    "mtime": 1783826611.4977016,
+    "ast_hash": "e33d691ad63bc1fde5ae5cdb65212b06",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/index.js": {
+    "mtime": 1783826690.661384,
+    "ast_hash": "bd86499dad5ec9524990118235d8dc75",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/memoryCandidateBuilder.js": {
+    "mtime": 1783826806.666677,
+    "ast_hash": "46e7e6f01eeefcf9c93ba8fde1e0e87f",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/memoryExplanation.js": {
+    "mtime": 1783826690.3851829,
+    "ast_hash": "5052f57ba4965d9a782becc786c6617a",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/memoryResolver.js": {
+    "mtime": 1783826690.5679433,
+    "ast_hash": "7c47faaa7a67f4daa5a336725c06670b",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/memoryTypes.js": {
+    "mtime": 1783849378.9825478,
+    "ast_hash": "5034d0beb1ae2cd9c4f22bd70f661a5f",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/recurrenceDetector.js": {
+    "mtime": 1783826611.602025,
+    "ast_hash": "c81d01744d92081d1b537a358b79f002",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/spendingPatternAnalyzer.js": {
+    "mtime": 1783826611.695145,
+    "ast_hash": "cb12bd1ddfdd697e851da71ea37ebc63",
+    "semantic_hash": ""
+  },
+  "src/features/uni-memory/uniMemory.test.js": {
+    "mtime": 1783849664.9951587,
+    "ast_hash": "9fe42ccf242d0eb6a8f7cd9068bc5706",
+    "semantic_hash": ""
+  },
+  "src/services/uniMemoryService.js": {
+    "mtime": 1783849664.8799317,
+    "ast_hash": "8fb44556ec4ae04947517d8628cf456e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260711_005_uni_financial_memory.sql": {
+    "mtime": 1783849664.762737,
+    "ast_hash": "8981b31d3a16df1fc560c6233fb05d9d",
+    "semantic_hash": ""
+  },
+  "supabase/tests/uni_financial_memory_validation.sql": {
+    "mtime": 1783849665.1124706,
+    "ast_hash": "8d7b2b6b2d996d78e6a45bc155dbc6ef",
+    "semantic_hash": ""
+  },
+  "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md": {
+    "mtime": 1783849592.6122622,
+    "ast_hash": "3978e689151a6d511d0121c284f996a0",
+    "semantic_hash": ""
+  },
+  "supabase/tests/uni_financial_memory_failed_apply_audit.sql": {
+    "mtime": 1783849693.7033813,
+    "ast_hash": "664e9237e793ec1341de391ba1d3a6f2",
+    "semantic_hash": ""
+  },
+  "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md": {
+    "mtime": 1783849631.9606905,
+    "ast_hash": "c59f07bf3f7bc6fdb59ccfe2f225eea9",
     "semantic_hash": ""
   }
 }
