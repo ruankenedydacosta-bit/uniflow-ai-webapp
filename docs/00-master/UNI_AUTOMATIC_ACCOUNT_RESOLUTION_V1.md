@@ -118,15 +118,15 @@ Com Supabase configurado:
 Não foi necessária migration. Os grants e policies atuais já permitem a criação
 manual controlada de contas e transações para membros autorizados.
 
-## Falhas parciais
+## Evolução para atomicidade
 
-Se a criação da conta falhar, a transação não é tentada. Se a conta for criada e
-a transação falhar, a conta confirmada permanece ativa e será reutilizada na
-próxima tentativa. Isso evita criar uma segunda conta, mas revela um limite da
-V1: as duas escritas ainda não são uma transação atômica no banco.
+A migration local `20260712_008_atomic_financial_action.sql` prepara a RPC que
+elimina falhas parciais no modo Supabase. Depois de aplicada e validada no DEV,
+criação ou reativação de conta e transação acontecerão na mesma operação
+PostgreSQL, com rollback completo e chave de idempotência.
 
-Uma RPC transacional poderá ser avaliada futuramente somente com migration,
-RLS e testes próprios. Esta etapa não altera o banco.
+O modo demo continua sequencial e local. A migration 008 ainda não foi aplicada;
+detalhes e roteiro estão em `UNI_ATOMIC_FINANCIAL_ACTION_V1.md`.
 
 ## Limites da V1
 
@@ -134,6 +134,6 @@ RLS e testes próprios. Esta etapa não altera o banco.
 - sem busca aproximada por nomes;
 - sem criação automática de novos tipos de conta;
 - sem confirmação por voz;
-- sem operação atômica entre criação da conta e lançamento;
+- operação atômica Supabase preparada, mas ainda pendente de aplicação no DEV;
 - sem Open Finance;
 - sem persistência do modo demo após recarregar.

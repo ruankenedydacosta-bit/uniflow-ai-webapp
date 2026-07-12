@@ -67,10 +67,11 @@ Não há chamada de IA externa, ElevenLabs, OpenAI ou outro LLM nesta V1.
 
 ## Supabase e modo demo
 
-Com Supabase configurado, a confirmação usa `useAccounts` quando houver
-provisionamento e `useTransactions` para o lançamento. Ambos respeitam RLS e o
-workspace autenticado. O estado dos hooks é atualizado imediatamente após cada
-resposta do service.
+Com Supabase configurado, a confirmação está preparada para usar somente a RPC
+`execute_confirmed_financial_action`. Ela deriva o workspace do profile,
+executa conta e transação atomicamente e protege retries com
+`client_operation_id`. Após sucesso, os hooks de contas e transações são
+recarregados. A migration 008 ainda precisa ser aplicada e validada no DEV.
 
 Sem Supabase, os mesmos hooks mantêm fallback local editável. A confirmação
 adiciona conta e lançamento à sessão atual, sem persistência após recarregar.

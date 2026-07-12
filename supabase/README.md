@@ -177,6 +177,22 @@ Antes da aplicação, executar
 `tests/workspace_onboarding_rls_validation.sql`. A migration ainda não foi
 aplicada remotamente e produção permanece intacta.
 
+### Ação financeira atômica
+
+A migration local `20260712_008_atomic_financial_action.sql` prepara a RPC
+`execute_confirmed_financial_action`, idempotência por operação e unicidade de
+contas ativas equivalentes. Conta e transação passam a compartilhar a mesma
+transação PostgreSQL depois da aplicação.
+
+Antes de aplicar no UniFlow DEV, executar
+`tests/atomic_financial_action_failed_apply_audit.sql` e exigir
+`atomic_financial_action_ready_for_migration`. Depois, executar
+`tests/atomic_financial_action_validation.sql` e exigir 18/18 checks. O teste
+autenticado está preparado em
+`scripts/supabase/test-atomic-financial-action.js`, mas não foi executado.
+
+A migration 008 não foi aplicada remotamente. Produção permanece intacta.
+
 Formato recomendado:
 
 ```text

@@ -788,3 +788,19 @@ são persistidos pelo frontend.
 Correções permanecem locais até o usuário escolher “Lembrar”. O payload de
 memória é mínimo e nunca inclui valor, data, workspace arbitrário ou dados
 bancários brutos. RLS e a confirmação financeira continuam obrigatórias.
+
+## 26. Ação financeira atômica preparada
+
+A migration `20260712_008_atomic_financial_action.sql` prepara a RPC
+`execute_confirmed_financial_action` para criação ou reativação de conta junto
+da transação em uma única operação PostgreSQL. O workspace vem de
+`profiles.current_workspace_id`, membership é validada explicitamente e o
+frontend não envia `user_id` nem `workspace_id`.
+
+`transactions.client_operation_id` e índices únicos por workspace protegem
+retry e concorrência. Uma chave repetida com o mesmo payload retorna o resultado
+existente; payload diferente é rejeitado. O modo demo permanece local.
+
+A migration ainda não foi aplicada. Auditoria, validação e teste autenticado
+devem rodar somente no UniFlow DEV conforme
+`UNI_ATOMIC_FINANCIAL_ACTION_V1.md`. Produção permanece intacta.
