@@ -102,5 +102,7 @@
   "100": "ObjetivosPage.jsx",
   "101": "AgendaPage.jsx",
   "102": "Uni Conversation Financial Actions V1",
-  "103": "UniFinancialActionCard.jsx"
+  "103": "UniFinancialActionCard.jsx",
+  "104": "Uni Financial Memory V1",
+  "105": "SettingsPage.jsx"
 }
