@@ -427,6 +427,15 @@ Regras praticas:
 - A Uni nunca deve prometer resultado financeiro.
 - A Uni nunca deve criar urgencia artificial.
 
+### Implementacao V1 da entrada de voz
+
+A captura real do WebApp usa `SpeechRecognition` ou
+`webkitSpeechRecognition` quando disponível. O resultado parcial é apenas
+feedback visual; somente a transcrição final sanitizada entra no mesmo fluxo
+de texto, parser, memória e confirmação financeira. A confirmação permanece
+visual e nenhuma gravação é armazenada ou enviada ao banco. O contrato técnico
+está em `docs/00-master/UNI_VOICE_INPUT_V1.md`.
+
 Frase guia:
 
 "A Uni pode recomendar o melhor proximo passo, mas a decisao final continua sendo do usuario."

@@ -87,6 +87,7 @@ Memória não altera amount, date, workspace ou a confirmação obrigatória.
 
 1. Persistir preferência de personalidade e mapa cognitivo.
 2. Ampliar esclarecimentos sequenciais e correções conversacionais.
-3. Integrar voz ao mesmo contrato de confirmação.
+3. Evoluir a entrada de voz, já integrada ao mesmo contrato de interpretação e
+   confirmação visual, sem criar confirmação falada automática.
 4. Conectar LLM como camada de interpretação, preservando validação determinística.
 5. Reconciliar ações conversacionais com dados automáticos de Open Finance.

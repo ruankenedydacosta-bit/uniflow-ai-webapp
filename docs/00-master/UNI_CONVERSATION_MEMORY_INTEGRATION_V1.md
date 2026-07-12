@@ -62,6 +62,14 @@ se deve lembrar.
 Não são armazenados frase completa, valor, data, payload bancário bruto,
 tokens, áudio ou transcrição.
 
+## Entrada de voz
+
+A transcrição final do microfone entra pelo mesmo `sendMessage` da entrada
+textual e somente depois passa pelo parser e por esta camada de memória. Áudio,
+transcrição parcial e transcrição completa não são memórias. Apenas fatos
+financeiros confirmados e preferências explícitas seguem as regras de
+persistência já definidas.
+
 ## Supabase
 
 O hook usa exclusivamente `SessionContext` e não recebe `user_id` ou
