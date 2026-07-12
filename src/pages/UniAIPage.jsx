@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAccess } from '../app/AccessContext';
+import { useSession } from '../app/SessionContext';
+import { UNI_CONVERSATION_STATES, useUniConversation } from '../features/uni-conversation';
+import { useAccounts, useCategories, useTransactions } from '../hooks';
+import { financialCrudMock } from './financeiro/financialCrud.mock.js';
 import {
   EXPERIENCE_STATES,
   EXPERIENCE_TIMING,
@@ -17,7 +22,40 @@ import {
 } from './uni-ai';
 import styles from './UniAIPage.module.css';
 
+function getLocalIsoDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function UniAIPage() {
+  const { access } = useAccess();
+  const { profile, workspace } = useSession();
+  const financialFallback = access.currentWorkspace === 'personal'
+    ? financialCrudMock.personal
+    : financialCrudMock.business;
+  const accountState = useAccounts({
+    workspaceId: workspace?.id,
+    fallbackAccounts: financialFallback.accounts,
+  });
+  const categoryState = useCategories({
+    workspaceId: workspace?.id,
+    fallbackCategories: financialFallback.categories,
+  });
+  const transactionState = useTransactions({
+    workspaceId: workspace?.id,
+    fallbackTransactions: financialFallback.transactions,
+  });
+  const financialConversation = useUniConversation({
+    accounts: accountState.accounts,
+    categories: categoryState.categories,
+    saveTransaction: transactionState.saveTransaction,
+    profileId: profile?.uni_personality_profile ?? 'balanced',
+    workspaceType: access.currentWorkspace,
+    referenceDate: getLocalIsoDate(),
+  });
   const [messages, setMessages] = useState(conversationMessages);
   const [draftMessage, setDraftMessage] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
@@ -47,7 +85,13 @@ function UniAIPage() {
   const finalTranscriptRef = useRef('');
   const recognizedTranscriptRef = useRef('');
   const shouldShowEmptyCaptureNoticeRef = useRef(false);
-  const canSendMessage = draftMessage.trim().length > 0 && !isThinking;
+  const hasPendingFinancialAction = [
+    UNI_CONVERSATION_STATES.INTERPRETING,
+    UNI_CONVERSATION_STATES.NEEDS_CLARIFICATION,
+    UNI_CONVERSATION_STATES.AWAITING_CONFIRMATION,
+    UNI_CONVERSATION_STATES.EXECUTING,
+  ].includes(financialConversation.state.status);
+  const canSendMessage = draftMessage.trim().length > 0 && !isThinking && !hasPendingFinancialAction;
   const experienceState = getExperienceState();
 
   useEffect(() => {
@@ -240,7 +284,7 @@ function UniAIPage() {
     }
   }
 
-  function sendMessage(content) {
+  function sendMessage(content, { allowFinancialAction = false } = {}) {
     const trimmedContent = content.trim();
 
     if (!trimmedContent || isThinking) return;
@@ -256,6 +300,19 @@ function UniAIPage() {
       ...currentMessages,
       createMessage('user', trimmedContent),
     ]);
+
+    if (allowFinancialAction) {
+      const interpretation = financialConversation.interpret(trimmedContent);
+
+      if (interpretation.handled) {
+        setMessages((currentMessages) => [
+          ...currentMessages,
+          createMessage('uni', interpretation.response.text),
+        ]);
+        return;
+      }
+    }
+
     runThinkingSequence(trimmedContent);
   }
 
@@ -265,7 +322,7 @@ function UniAIPage() {
     if (!canSendMessage) return;
 
     setVoiceNotice('');
-    sendMessage(draftMessage);
+    sendMessage(draftMessage, { allowFinancialAction: true });
     setDraftMessage('');
   }
 
@@ -480,6 +537,31 @@ function UniAIPage() {
     setSuggestionsOpen(false);
     setTextComposerOpen(false);
     setDraftMessage('');
+    financialConversation.reset();
+  }
+
+  async function handleConfirmFinancialAction() {
+    const completion = await financialConversation.confirm();
+    if (!completion?.response) return;
+
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      createMessage('uni', completion.response.text),
+    ]);
+    responseSequenceRef.current += 1;
+    queueAutomaticSpeech(responseSequenceRef.current, completion.response.text);
+  }
+
+  function handleCorrectFinancialAction(corrections) {
+    financialConversation.correct(corrections);
+  }
+
+  function handleCancelFinancialAction() {
+    const response = financialConversation.cancel();
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      createMessage('uni', response.text),
+    ]);
   }
 
   function handleReportAction(action) {
@@ -522,6 +604,10 @@ function UniAIPage() {
         onSuggestionClick={handleSuggestionClick}
         onToggleTextComposer={() => setTextComposerOpen((currentValue) => !currentValue)}
         onReportAction={handleReportAction}
+        financialConversation={financialConversation.state}
+        onConfirmFinancialAction={handleConfirmFinancialAction}
+        onCorrectFinancialAction={handleCorrectFinancialAction}
+        onCancelFinancialAction={handleCancelFinancialAction}
       />
     </div>
   );

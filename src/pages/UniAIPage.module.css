@@ -368,6 +368,119 @@
   animation: responseReveal var(--uf-duration-slower) var(--uf-ease-smooth);
 }
 
+.financialActionCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-20);
+  width: min(100%, calc(var(--uf-space-160) * 5));
+  border-color: var(--uf-color-border-default);
+  box-shadow: var(--uf-shadow-lg), var(--uf-shadow-glow-ai);
+  animation: responseReveal var(--uf-duration-slower) var(--uf-ease-smooth);
+}
+
+.financialActionHeader,
+.financialActionButtons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-12);
+  flex-wrap: wrap;
+}
+
+.financialActionHeader > div {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-12);
+  flex-wrap: wrap;
+}
+
+.financialActionHeader h3 {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-title-size);
+  line-height: var(--uf-text-title-lh);
+}
+
+.financialActionHeader > span,
+.financialCorrectionField > span {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.financialActionResponse {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
+}
+
+.financialActionDetails {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--uf-space-12);
+  margin: 0;
+}
+
+.financialActionDetails > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+  min-width: 0;
+  padding: var(--uf-space-12);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-sunken);
+}
+
+.financialActionDetails dt {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+  line-height: var(--uf-text-micro-lh);
+}
+
+.financialActionDetails dd {
+  overflow-wrap: anywhere;
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.financialCorrectionForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--uf-space-12);
+  padding-top: var(--uf-space-16);
+  border-top: 1px solid var(--uf-color-border-subtle);
+}
+
+.financialCorrectionField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+  min-width: 0;
+}
+
+.financialCorrectionField select {
+  width: 100%;
+  min-height: var(--uf-space-40);
+  padding: 0 var(--uf-space-12);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-8);
+  color: var(--uf-color-text-primary);
+  background: var(--uf-color-bg-elevated);
+  font: inherit;
+}
+
+.financialCorrectionField select:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.financialCorrectionForm .financialActionButtons {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+}
+
 .reportHeader,
 .reportActions {
   display: flex;
@@ -1345,8 +1458,14 @@
   .reasoningPanel,
   .secondaryComposer,
   .reportHeader,
-  .reportActions {
+  .reportActions,
+  .financialActionHeader {
     flex-direction: column;
+  }
+
+  .financialActionDetails,
+  .financialCorrectionForm {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .suggestionDrawerGrid {

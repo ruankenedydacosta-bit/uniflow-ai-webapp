@@ -1,6 +1,7 @@
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import UniAudioControls from './UniAudioControls';
+import UniFinancialActionCard from './UniFinancialActionCard';
 import UniInsightReport from './UniInsightReport';
 import UniLiveContextPanel from './UniLiveContextPanel';
 import UniRecentConversations from './UniRecentConversations';
@@ -44,6 +45,10 @@ function UniExperienceShell({
   onSuggestionClick,
   onToggleTextComposer,
   onReportAction,
+  financialConversation,
+  onConfirmFinancialAction,
+  onCorrectFinancialAction,
+  onCancelFinancialAction,
 }) {
   const showFocusedFlow = isListening || isThinking;
   const showSideExperience = hasStarted && !showFocusedFlow;
@@ -75,6 +80,13 @@ function UniExperienceShell({
         ) : null}
 
         <UniThinkingSequence active={isThinking} steps={thinkingSteps} activeIndex={thinkingStepIndex} />
+
+        <UniFinancialActionCard
+          conversation={financialConversation}
+          onConfirm={onConfirmFinancialAction}
+          onCorrect={onCorrectFinancialAction}
+          onCancel={onCancelFinancialAction}
+        />
 
         {!isThinking ? (
           <UniInsightReport report={report} onNewQuestion={onNewQuestion} onAction={onReportAction} />

@@ -38,11 +38,13 @@ function titleCase(value) {
   return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`;
 }
 
-export function extractAccount(input) {
+export function extractAccount(input, intent = 'register_transfer') {
   if (typeof input !== 'string') return null;
 
+  const transferPattern = /\b(?:para|pro|pra)\s+(?:(?:a\s+)?conta\s+|o\s+|a\s+)?([\p{L}\d][\p{L}\d._ -]*?)(?=\s+(?:hoje|ontem|amanh[ãa]|dia\s+\d)\b|[.!?,;:]|$)/iu;
+  const paymentPattern = /\b(?:pelo|pela|na\s+conta|no\s+banco|da\s+conta|do\s+banco)\s+([\p{L}\d][\p{L}\d._ -]*?)(?=\s+(?:hoje|ontem|amanh[ãa]|dia\s+\d)\b|[.!?,;:]|$)/iu;
   const match = input.match(
-    /\b(?:para|pro|pra)\s+(?:(?:a\s+)?conta\s+|o\s+|a\s+)?([\p{L}\d][\p{L}\d._ -]*?)(?=\s+(?:hoje|ontem|amanh[ãa]|dia\s+\d)\b|[.!?,;:]|$)/iu,
+    intent === 'register_transfer' ? transferPattern : paymentPattern,
   );
 
   return match ? titleCase(match[1]) : null;
@@ -91,6 +93,15 @@ function extractDescription(input, intent, account) {
   }
 
   let description = cleanInput.replace(MONEY_PATTERN, ' ');
+  if (account) {
+    description = description.replace(
+      new RegExp(
+        `\\b(?:pelo|pela|na\\s+conta|no\\s+banco|da\\s+conta|do\\s+banco)\\s+${account.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
+        'iu',
+      ),
+      ' ',
+    );
+  }
   description = description
     .replace(/^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|recebi|ganhei|faturei|entrou|caiu|custou|saiu)\b/iu, '')
     .replace(/^(?:quero\s+)?(?:juntar|guardar|economizar)\b/iu, '')
@@ -108,7 +119,9 @@ export function extractEntities(input, options = {}) {
   const safeOptions = options && typeof options === 'object' ? options : {};
   const intent = safeOptions.intent ?? 'question';
   const referenceDate = safeOptions.referenceDate ?? null;
-  const account = intent === 'register_transfer' ? extractAccount(input) : null;
+  const account = ['register_income', 'register_expense', 'register_transfer'].includes(intent)
+    ? extractAccount(input, intent)
+    : null;
 
   return {
     amount: extractAmount(input),

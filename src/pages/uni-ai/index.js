@@ -3,6 +3,7 @@ export { default as UniAIHero } from './UniAIHero';
 export { default as UniChatPanel } from './UniChatPanel';
 export { default as UniContextPanel } from './UniContextPanel';
 export { default as UniExperienceShell } from './UniExperienceShell';
+export { default as UniFinancialActionCard } from './UniFinancialActionCard';
 export { default as UniInsightReport } from './UniInsightReport';
 export { default as UniLiveContextPanel } from './UniLiveContextPanel';
 export { default as UniMessageBubble } from './UniMessageBubble';
