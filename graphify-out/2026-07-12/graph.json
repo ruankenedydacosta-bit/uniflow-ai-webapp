@@ -2460,7 +2460,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_accesscontext_accessprovider",
-      "community": 101,
+      "community": 68,
       "norm_label": "accessprovider()"
     },
     {
@@ -3040,7 +3040,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 105,
+      "community": 101,
       "norm_label": "topbar.jsx"
     },
     {
@@ -3050,7 +3050,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar_topbar",
-      "community": 105,
+      "community": 68,
       "norm_label": "topbar()"
     },
     {
@@ -3060,7 +3060,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_index",
-      "community": 105,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -3070,7 +3070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 105,
+      "community": 99,
       "norm_label": "avatar.jsx"
     },
     {
@@ -3080,7 +3080,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 105,
+      "community": 99,
       "norm_label": "getinitials()"
     },
     {
@@ -3090,7 +3090,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_avatar",
-      "community": 105,
+      "community": 99,
       "norm_label": "avatar"
     },
     {
@@ -3100,7 +3100,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_index",
-      "community": 105,
+      "community": 99,
       "norm_label": "index.js"
     },
     {
@@ -3120,7 +3120,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_badge_badge_badge",
-      "community": 87,
+      "community": 99,
       "norm_label": "badge()"
     },
     {
@@ -3130,7 +3130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_badge_index",
-      "community": 87,
+      "community": 99,
       "norm_label": "index.js"
     },
     {
@@ -3180,7 +3180,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_card_card_card",
-      "community": 87,
+      "community": 99,
       "norm_label": "card()"
     },
     {
@@ -3190,7 +3190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_card_index",
-      "community": 87,
+      "community": 99,
       "norm_label": "index.js"
     },
     {
@@ -3200,7 +3200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_input_input",
-      "community": 41,
+      "community": 88,
       "norm_label": "input.jsx"
     },
     {
@@ -3230,7 +3230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_loader",
-      "community": 88,
+      "community": 68,
       "norm_label": "loader.jsx"
     },
     {
@@ -3240,7 +3240,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_loader_loader_loader",
-      "community": 88,
+      "community": 68,
       "norm_label": "loader()"
     },
     {
@@ -3250,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_index",
-      "community": 88,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -3260,7 +3260,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_modal_modal",
-      "community": 41,
+      "community": 88,
       "norm_label": "modal.jsx"
     },
     {
@@ -3440,7 +3440,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_uniinsightscard",
-      "community": 87,
+      "community": 99,
       "norm_label": "uniinsightscard.jsx"
     },
     {
@@ -3450,7 +3450,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_uniinsightscard_uniinsightscard",
-      "community": 87,
+      "community": 99,
       "norm_label": "uniinsightscard()"
     },
     {
@@ -5130,7 +5130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agendapage",
-      "community": 88,
+      "community": 101,
       "norm_label": "agendapage.jsx"
     },
     {
@@ -5140,7 +5140,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_agendapage_getagendacontext",
-      "community": 88,
+      "community": 101,
       "norm_label": "getagendacontext()"
     },
     {
@@ -5150,7 +5150,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_agendapage_agendapage",
-      "community": 88,
+      "community": 101,
       "norm_label": "agendapage()"
     },
     {
@@ -5160,7 +5160,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crmpage",
-      "community": 87,
+      "community": 88,
       "norm_label": "crmpage.jsx"
     },
     {
@@ -5170,7 +5170,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_crmpage_crmpage",
-      "community": 87,
+      "community": 88,
       "norm_label": "crmpage()"
     },
     {
@@ -5180,7 +5180,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientespage",
-      "community": 101,
+      "community": 87,
       "norm_label": "clientespage.jsx"
     },
     {
@@ -5190,7 +5190,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_clientespage_clientespage",
-      "community": 101,
+      "community": 87,
       "norm_label": "clientespage()"
     },
     {
@@ -5360,7 +5360,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_pagescaffold",
-      "community": 87,
+      "community": 99,
       "norm_label": "pagescaffold.jsx"
     },
     {
@@ -5370,7 +5370,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_pagescaffold_pagescaffold",
-      "community": 87,
+      "community": 99,
       "norm_label": "pagescaffold()"
     },
     {
@@ -5460,7 +5460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 109,
+      "community": 101,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -5470,7 +5470,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 109,
+      "community": 101,
       "norm_label": "user_mode_labels"
     },
     {
@@ -5480,7 +5480,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 109,
+      "community": 101,
       "norm_label": "plan_labels"
     },
     {
@@ -5490,7 +5490,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 109,
+      "community": 101,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -5500,7 +5500,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 109,
+      "community": 101,
       "norm_label": "settingspage()"
     },
     {
@@ -5540,7 +5540,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock",
-      "community": 88,
+      "community": 101,
       "norm_label": "agenda.mock.js"
     },
     {
@@ -5550,7 +5550,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock_agendamock",
-      "community": 88,
+      "community": 101,
       "norm_label": "agendamock"
     },
     {
@@ -5560,7 +5560,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock",
-      "community": 101,
+      "community": 87,
       "norm_label": "clients.mock.js"
     },
     {
@@ -5570,7 +5570,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock_clientsmock",
-      "community": 101,
+      "community": 87,
       "norm_label": "clientsmock"
     },
     {
@@ -5580,7 +5580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 109,
+      "community": 101,
       "norm_label": "settings.mock.js"
     },
     {
@@ -5590,7 +5590,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 109,
+      "community": 101,
       "norm_label": "settingsmock"
     },
     {
@@ -5600,7 +5600,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock",
-      "community": 87,
+      "community": 88,
       "norm_label": "crm.mock.js"
     },
     {
@@ -5610,7 +5610,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock_crmmock",
-      "community": 87,
+      "community": 88,
       "norm_label": "crmmock"
     },
     {
@@ -6070,7 +6070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero",
-      "community": 105,
+      "community": 99,
       "norm_label": "uniaihero.jsx"
     },
     {
@@ -6080,7 +6080,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero_uniaihero",
-      "community": 105,
+      "community": 99,
       "norm_label": "uniaihero()"
     },
     {
@@ -6100,7 +6100,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols_uniaudiocontrols",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniaudiocontrols()"
     },
     {
@@ -6110,7 +6110,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel",
-      "community": 105,
+      "community": 99,
       "norm_label": "unichatpanel.jsx"
     },
     {
@@ -6120,7 +6120,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unichatpanel_unichatpanel",
-      "community": 105,
+      "community": 99,
       "norm_label": "unichatpanel()"
     },
     {
@@ -6130,7 +6130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel",
-      "community": 87,
+      "community": 99,
       "norm_label": "unicontextpanel.jsx"
     },
     {
@@ -6140,7 +6140,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel_unicontextpanel",
-      "community": 87,
+      "community": 99,
       "norm_label": "unicontextpanel()"
     },
     {
@@ -6160,7 +6160,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
-      "community": 99,
+      "community": 39,
       "norm_label": "uniexperienceshell()"
     },
     {
@@ -6230,7 +6230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unilivecontextpanel",
-      "community": 87,
+      "community": 99,
       "norm_label": "unilivecontextpanel.jsx"
     },
     {
@@ -6250,7 +6250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble",
-      "community": 105,
+      "community": 99,
       "norm_label": "unimessagebubble.jsx"
     },
     {
@@ -6260,7 +6260,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unimessagebubble_unimessagebubble",
-      "community": 105,
+      "community": 99,
       "norm_label": "unimessagebubble()"
     },
     {
@@ -6370,7 +6370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture",
-      "community": 105,
+      "community": 99,
       "norm_label": "univoicecapture.jsx"
     },
     {
@@ -6380,7 +6380,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "src_pages_uni_ai_univoicecapture_univoicecapture",
-      "community": 105,
+      "community": 99,
       "norm_label": "univoicecapture()"
     },
     {
@@ -7347,7 +7347,7 @@
       "label": "updateProfile()",
       "file_type": "code",
       "source_file": "src/services/profileService.js",
-      "source_location": "L71",
+      "source_location": "L77",
       "_origin": "ast",
       "id": "src_services_profileservice_updateprofile",
       "community": 73,
@@ -8552,6 +8552,66 @@
       "id": "docs_00_master_app_structure_map_12_decisao_final_deste_mapa",
       "community": 66,
       "norm_label": "12. decisao final deste mapa"
+    },
+    {
+      "label": "ENSURE_AUTHENTICATED_PROFILE.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_ensure_authenticated_profile",
+      "community": 105,
+      "norm_label": "ensure_authenticated_profile.md"
+    },
+    {
+      "label": "Ensure Authenticated Profile",
+      "file_type": "document",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_ensure_authenticated_profile_ensure_authenticated_profile",
+      "community": 105,
+      "norm_label": "ensure authenticated profile"
+    },
+    {
+      "label": "Objetivo",
+      "file_type": "document",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "docs_00_master_ensure_authenticated_profile_objetivo",
+      "community": 105,
+      "norm_label": "objetivo"
+    },
+    {
+      "label": "Modelo de seguran\u00e7a",
+      "file_type": "document",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "docs_00_master_ensure_authenticated_profile_modelo_de_seguran\u00e7a",
+      "community": 105,
+      "norm_label": "modelo de seguranca"
+    },
+    {
+      "label": "Service",
+      "file_type": "document",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "docs_00_master_ensure_authenticated_profile_service",
+      "community": 105,
+      "norm_label": "service"
+    },
+    {
+      "label": "Aplica\u00e7\u00e3o no UniFlow DEV",
+      "file_type": "document",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "docs_00_master_ensure_authenticated_profile_aplica\u00e7\u00e3o_no_uniflow_dev",
+      "community": 105,
+      "norm_label": "aplicacao no uniflow dev"
     },
     {
       "label": "FINANCIAL_CORE_DATA_MODEL.md",
@@ -33764,7 +33824,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/services/profileService.js",
-      "source_location": "L71",
+      "source_location": "L77",
       "weight": 1.0,
       "source": "src_services_profileservice",
       "target": "src_services_profileservice_updateprofile",
@@ -33830,7 +33890,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/profileService.js",
-      "source_location": "L73",
+      "source_location": "L79",
       "weight": 1.0,
       "source": "src_services_profileservice_updateprofile",
       "target": "src_services_profileservice_createunavailableresult",
@@ -33852,7 +33912,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/profileService.js",
-      "source_location": "L77",
+      "source_location": "L83",
       "weight": 1.0,
       "source": "src_services_profileservice_updateprofile",
       "target": "src_services_profileservice_createmissinguserresult",
@@ -33863,7 +33923,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/services/profileService.js",
-      "source_location": "L93",
+      "source_location": "L99",
       "weight": 1.0,
       "source": "src_services_profileservice_updateprofile",
       "target": "src_services_profileservice_getprofile",
@@ -36093,6 +36153,56 @@
       "weight": 1.0,
       "source": "docs_00_master_app_structure_map_11_checklist_ate_o_mvp_demonstravel",
       "target": "docs_00_master_app_structure_map_qualidade_e_coerencia",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_ensure_authenticated_profile",
+      "target": "docs_00_master_ensure_authenticated_profile_ensure_authenticated_profile",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "docs_00_master_ensure_authenticated_profile_ensure_authenticated_profile",
+      "target": "docs_00_master_ensure_authenticated_profile_aplica\u00e7\u00e3o_no_uniflow_dev",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "docs_00_master_ensure_authenticated_profile_ensure_authenticated_profile",
+      "target": "docs_00_master_ensure_authenticated_profile_modelo_de_seguran\u00e7a",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "docs_00_master_ensure_authenticated_profile_ensure_authenticated_profile",
+      "target": "docs_00_master_ensure_authenticated_profile_objetivo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "docs_00_master_ensure_authenticated_profile_ensure_authenticated_profile",
+      "target": "docs_00_master_ensure_authenticated_profile_service",
       "confidence_score": 1.0
     },
     {
@@ -41417,5 +41527,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "f5fe64ee8d72d901d029ee08c8b5e27aba3c446d"
+  "built_at_commit": "aba2c6bfb70d0930c3e4d47b3d103d2acdf1994a"
 }

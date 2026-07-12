@@ -915,8 +915,8 @@
     "semantic_hash": ""
   },
   "src/services/profileService.js": {
-    "mtime": 1783858211.2776763,
-    "ast_hash": "ecdf31ebfc3e1d90835d6a4813ffd9bc",
+    "mtime": 1783872253.1724007,
+    "ast_hash": "b015adb166f47e9bf14ffb4b2c7237e5",
     "semantic_hash": ""
   },
   "docs/00-master/ONBOARDING_REAL_INTEGRATION.md": {
@@ -1265,8 +1265,8 @@
     "semantic_hash": ""
   },
   "supabase/migrations/20260712_006_ensure_authenticated_profile.sql": {
-    "mtime": 1783858211.1133454,
-    "ast_hash": "5b341ae1bf716951f1a59e0000b99f00",
+    "mtime": 1783872253.0579796,
+    "ast_hash": "a3b4f7fd71dc4e9efdb988de4e5be11d",
     "semantic_hash": ""
   },
   "supabase/migrations/20260712_007_workspace_owner_select_policy.sql": {
@@ -1292,6 +1292,21 @@
   "scripts/supabase/test-memory-rls-errors.test.js": {
     "mtime": 1783870904.3010025,
     "ast_hash": "eaa26b0da38dff4622852e0e1d1796e7",
+    "semantic_hash": ""
+  },
+  "supabase/tests/ensure_authenticated_profile_failed_apply_audit.sql": {
+    "mtime": 1783872362.088043,
+    "ast_hash": "b11c92afc582a6b0196f20823f302701",
+    "semantic_hash": ""
+  },
+  "supabase/tests/ensure_authenticated_profile_validation.sql": {
+    "mtime": 1783872337.5535629,
+    "ast_hash": "cc5f540998834f21d3a374d322e65cb8",
+    "semantic_hash": ""
+  },
+  "docs/00-master/ENSURE_AUTHENTICATED_PROFILE.md": {
+    "mtime": 1783872307.7702694,
+    "ast_hash": "b3f1573b812e64ac12745f7f6d402300",
     "semantic_hash": ""
   }
 }
