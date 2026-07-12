@@ -2460,7 +2460,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_accesscontext_accessprovider",
-      "community": 68,
+      "community": 101,
       "norm_label": "accessprovider()"
     },
     {
@@ -2470,7 +2470,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_app_accesscontext_useaccess",
-      "community": 101,
+      "community": 68,
       "norm_label": "useaccess()"
     },
     {
@@ -2600,7 +2600,7 @@
       "source_location": "L431",
       "_origin": "ast",
       "id": "src_app_sessioncontext_usesession",
-      "community": 96,
+      "community": 68,
       "norm_label": "usesession()"
     },
     {
@@ -2830,7 +2830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_routes",
-      "community": 96,
+      "community": 68,
       "norm_label": "routes.jsx"
     },
     {
@@ -3040,7 +3040,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 101,
+      "community": 99,
       "norm_label": "topbar.jsx"
     },
     {
@@ -3070,7 +3070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar",
-      "community": 99,
+      "community": 88,
       "norm_label": "avatar.jsx"
     },
     {
@@ -3080,7 +3080,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_getinitials",
-      "community": 99,
+      "community": 88,
       "norm_label": "getinitials()"
     },
     {
@@ -3180,7 +3180,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_card_card_card",
-      "community": 99,
+      "community": 87,
       "norm_label": "card()"
     },
     {
@@ -3190,7 +3190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_card_index",
-      "community": 99,
+      "community": 87,
       "norm_label": "index.js"
     },
     {
@@ -3230,7 +3230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_loader",
-      "community": 68,
+      "community": 88,
       "norm_label": "loader.jsx"
     },
     {
@@ -3240,7 +3240,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_loader_loader_loader",
-      "community": 68,
+      "community": 88,
       "norm_label": "loader()"
     },
     {
@@ -3250,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_loader_index",
-      "community": 68,
+      "community": 88,
       "norm_label": "index.js"
     },
     {
@@ -3320,7 +3320,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage",
-      "community": 101,
+      "community": 68,
       "norm_label": "dashboardpage.jsx"
     },
     {
@@ -3330,7 +3330,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_getdashboardcontext",
-      "community": 101,
+      "community": 68,
       "norm_label": "getdashboardcontext()"
     },
     {
@@ -3340,7 +3340,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_dashboardpage",
-      "community": 101,
+      "community": 68,
       "norm_label": "dashboardpage()"
     },
     {
@@ -3460,7 +3460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock",
-      "community": 101,
+      "community": 68,
       "norm_label": "dashboard.mock.js"
     },
     {
@@ -3470,7 +3470,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock_dashboardmock",
-      "community": 101,
+      "community": 68,
       "norm_label": "dashboardmock"
     },
     {
@@ -3480,7 +3480,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_index",
-      "community": 101,
+      "community": 68,
       "norm_label": "index.js"
     },
     {
@@ -3727,7 +3727,7 @@
       "label": "uniConversationReducer()",
       "file_type": "code",
       "source_file": "src/features/uni-conversation/uniConversationReducer.js",
-      "source_location": "L21",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "src_features_uni_conversation_uniconversationreducer_uniconversationreducer",
       "community": 89,
@@ -4192,6 +4192,416 @@
       "id": "src_features_uni_intents_intents_test_assertentityshape",
       "community": 89,
       "norm_label": "assertentityshape()"
+    },
+    {
+      "label": "conversationMemory.test.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemory_test",
+      "community": 95,
+      "norm_label": "conversationmemory.test.js"
+    },
+    {
+      "label": "NOW",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemory_test_now",
+      "community": 95,
+      "norm_label": "now"
+    },
+    {
+      "label": "accounts",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemory_test_accounts",
+      "community": 95,
+      "norm_label": "accounts"
+    },
+    {
+      "label": "categories",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemory_test_categories",
+      "community": 95,
+      "norm_label": "categories"
+    },
+    {
+      "label": "rawMemory()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemory_test_rawmemory",
+      "community": 95,
+      "norm_label": "rawmemory()"
+    },
+    {
+      "label": "context()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemory_test_context",
+      "community": 95,
+      "norm_label": "context()"
+    },
+    {
+      "label": "parsed()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemory_test_parsed",
+      "community": 95,
+      "norm_label": "parsed()"
+    },
+    {
+      "label": "resolve()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemory_test_resolve",
+      "community": 95,
+      "norm_label": "resolve()"
+    },
+    {
+      "label": "conversationMemoryContext.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemorycontext",
+      "community": 95,
+      "norm_label": "conversationmemorycontext.js"
+    },
+    {
+      "label": "CONVERSATION_MEMORY_TYPES",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemorycontext_conversation_memory_types",
+      "community": 95,
+      "norm_label": "conversation_memory_types"
+    },
+    {
+      "label": "EXPLICIT_SOURCES",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemorycontext_explicit_sources",
+      "community": 95,
+      "norm_label": "explicit_sources"
+    },
+    {
+      "label": "VALUE_FIELDS",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemorycontext_value_fields",
+      "community": 95,
+      "norm_label": "value_fields"
+    },
+    {
+      "label": "pickValue()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemorycontext_pickvalue",
+      "community": 95,
+      "norm_label": "pickvalue()"
+    },
+    {
+      "label": "isActive()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemorycontext_isactive",
+      "community": 95,
+      "norm_label": "isactive()"
+    },
+    {
+      "label": "createConversationMemoryContext()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "community": 95,
+      "norm_label": "createconversationmemorycontext()"
+    },
+    {
+      "label": "explicitMemoryResolver.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "community": 95,
+      "norm_label": "explicitmemoryresolver.js"
+    },
+    {
+      "label": "memoryValue()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_explicitmemoryresolver_memoryvalue",
+      "community": 95,
+      "norm_label": "memoryvalue()"
+    },
+    {
+      "label": "transactionType()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_explicitmemoryresolver_transactiontype",
+      "community": 95,
+      "norm_label": "transactiontype()"
+    },
+    {
+      "label": "findCategory()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_explicitmemoryresolver_findcategory",
+      "community": 95,
+      "norm_label": "findcategory()"
+    },
+    {
+      "label": "findAccount()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L31",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_explicitmemoryresolver_findaccount",
+      "community": 95,
+      "norm_label": "findaccount()"
+    },
+    {
+      "label": "matchesTransaction()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_explicitmemoryresolver_matchestransaction",
+      "community": 95,
+      "norm_label": "matchestransaction()"
+    },
+    {
+      "label": "merchantMatch()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L48",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_explicitmemoryresolver_merchantmatch",
+      "community": 95,
+      "norm_label": "merchantmatch()"
+    },
+    {
+      "label": "applyExplicitMemories()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "community": 95,
+      "norm_label": "applyexplicitmemories()"
+    },
+    {
+      "label": "index.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_index",
+      "community": 95,
+      "norm_label": "index.js"
+    },
+    {
+      "label": "memoryInfluenceExplanation.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memoryInfluenceExplanation.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memoryinfluenceexplanation",
+      "community": 95,
+      "norm_label": "memoryinfluenceexplanation.js"
+    },
+    {
+      "label": "COPY",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memoryInfluenceExplanation.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memoryinfluenceexplanation_copy",
+      "community": 95,
+      "norm_label": "copy"
+    },
+    {
+      "label": "buildMemoryInfluenceExplanation()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memoryInfluenceExplanation.js",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryinfluenceexplanation",
+      "community": 95,
+      "norm_label": "buildmemoryinfluenceexplanation()"
+    },
+    {
+      "label": "buildMemoryConflictExplanation()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memoryInfluenceExplanation.js",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryconflictexplanation",
+      "community": 95,
+      "norm_label": "buildmemoryconflictexplanation()"
+    },
+    {
+      "label": "memorySuggestionBuilder.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "community": 95,
+      "norm_label": "memorysuggestionbuilder.js"
+    },
+    {
+      "label": "GENERIC_DESCRIPTIONS",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memorysuggestionbuilder_generic_descriptions",
+      "community": 95,
+      "norm_label": "generic_descriptions"
+    },
+    {
+      "label": "isSpecificDescription()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memorysuggestionbuilder_isspecificdescription",
+      "community": 95,
+      "norm_label": "isspecificdescription()"
+    },
+    {
+      "label": "hasDuplicate()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memorysuggestionbuilder_hasduplicate",
+      "community": 95,
+      "norm_label": "hasduplicate()"
+    },
+    {
+      "label": "buildMemorySuggestion()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion",
+      "community": 95,
+      "norm_label": "buildmemorysuggestion()"
+    },
+    {
+      "label": "buildExplicitMemoryPayload()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L81",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memorysuggestionbuilder_buildexplicitmemorypayload",
+      "community": 95,
+      "norm_label": "buildexplicitmemorypayload()"
+    },
+    {
+      "label": "resolveMemorySuggestionChoice()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L87",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_memorysuggestionbuilder_resolvememorysuggestionchoice",
+      "community": 95,
+      "norm_label": "resolvememorysuggestionchoice()"
+    },
+    {
+      "label": "useConversationMemory.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_useconversationmemory",
+      "community": 95,
+      "norm_label": "useconversationmemory.js"
+    },
+    {
+      "label": "CONVERSATION_MEMORY_STATES",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_useconversationmemory_conversation_memory_states",
+      "community": 95,
+      "norm_label": "conversation_memory_states"
+    },
+    {
+      "label": "PERSONALITY_PROFILES",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L26",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_useconversationmemory_personality_profiles",
+      "community": 95,
+      "norm_label": "personality_profiles"
+    },
+    {
+      "label": "DEMO_MEMORIES",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_useconversationmemory_demo_memories",
+      "community": 95,
+      "norm_label": "demo_memories"
+    },
+    {
+      "label": "createDemoMemory()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L54",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_useconversationmemory_createdemomemory",
+      "community": 95,
+      "norm_label": "createdemomemory()"
+    },
+    {
+      "label": "useConversationMemory()",
+      "file_type": "code",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L67",
+      "_origin": "ast",
+      "id": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "community": 95,
+      "norm_label": "useconversationmemory()"
     },
     {
       "label": "anomalyDetector.js",
@@ -4670,7 +5080,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_features_uni_memory_unimemory_test_transaction",
-      "community": 41,
+      "community": 95,
       "norm_label": "transaction()"
     },
     {
@@ -5130,7 +5540,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agendapage",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendapage.jsx"
     },
     {
@@ -5140,7 +5550,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_agendapage_getagendacontext",
-      "community": 101,
+      "community": 88,
       "norm_label": "getagendacontext()"
     },
     {
@@ -5150,7 +5560,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_agendapage_agendapage",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendapage()"
     },
     {
@@ -5160,7 +5570,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crmpage",
-      "community": 88,
+      "community": 87,
       "norm_label": "crmpage.jsx"
     },
     {
@@ -5170,7 +5580,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_pages_crmpage_crmpage",
-      "community": 88,
+      "community": 87,
       "norm_label": "crmpage()"
     },
     {
@@ -5180,7 +5590,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientespage",
-      "community": 87,
+      "community": 101,
       "norm_label": "clientespage.jsx"
     },
     {
@@ -5190,7 +5600,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_clientespage_clientespage",
-      "community": 87,
+      "community": 101,
       "norm_label": "clientespage()"
     },
     {
@@ -5200,7 +5610,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financepage",
-      "community": 96,
+      "community": 68,
       "norm_label": "financepage.jsx"
     },
     {
@@ -5210,7 +5620,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiropage",
-      "community": 96,
+      "community": 41,
       "norm_label": "financeiropage.jsx"
     },
     {
@@ -5220,7 +5630,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_pages_financeiropage_getfinancialcontext",
-      "community": 96,
+      "community": 91,
       "norm_label": "getfinancialcontext()"
     },
     {
@@ -5230,7 +5640,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_pages_financeiropage_getcrudcontext",
-      "community": 96,
+      "community": 91,
       "norm_label": "getcrudcontext()"
     },
     {
@@ -5240,7 +5650,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_pages_financeiropage_formatmovementdate",
-      "community": 96,
+      "community": 91,
       "norm_label": "formatmovementdate()"
     },
     {
@@ -5250,7 +5660,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_pages_financeiropage_financeiropage",
-      "community": 96,
+      "community": 91,
       "norm_label": "financeiropage()"
     },
     {
@@ -5260,7 +5670,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_loginpage",
-      "community": 96,
+      "community": 99,
       "norm_label": "loginpage.jsx"
     },
     {
@@ -5270,7 +5680,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_loginpage_loginpage",
-      "community": 96,
+      "community": 68,
       "norm_label": "loginpage()"
     },
     {
@@ -5280,7 +5690,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivospage",
-      "community": 100,
+      "community": 87,
       "norm_label": "objetivospage.jsx"
     },
     {
@@ -5290,7 +5700,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_objetivospage_getobjectivescontext",
-      "community": 100,
+      "community": 87,
       "norm_label": "getobjectivescontext()"
     },
     {
@@ -5300,7 +5710,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_objetivospage_getprogress",
-      "community": 100,
+      "community": 87,
       "norm_label": "getprogress()"
     },
     {
@@ -5310,7 +5720,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_pages_objetivospage_objetivospage",
-      "community": 100,
+      "community": 87,
       "norm_label": "objetivospage()"
     },
     {
@@ -5350,7 +5760,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingpage",
-      "community": 96,
+      "community": 68,
       "norm_label": "onboardingpage()"
     },
     {
@@ -5380,7 +5790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projectspage",
-      "community": 87,
+      "community": 88,
       "norm_label": "projectspage.jsx"
     },
     {
@@ -5390,7 +5800,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_projectspage_projectspage",
-      "community": 87,
+      "community": 88,
       "norm_label": "projectspage()"
     },
     {
@@ -5517,7 +5927,7 @@
       "label": "getLocalIsoDate()",
       "file_type": "code",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L25",
+      "source_location": "L26",
       "_origin": "ast",
       "id": "src_pages_uniaipage_getlocalisodate",
       "community": 39,
@@ -5527,7 +5937,7 @@
       "label": "UniAIPage()",
       "file_type": "code",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L33",
+      "source_location": "L34",
       "_origin": "ast",
       "id": "src_pages_uniaipage_uniaipage",
       "community": 39,
@@ -5540,7 +5950,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock",
-      "community": 101,
+      "community": 88,
       "norm_label": "agenda.mock.js"
     },
     {
@@ -5550,7 +5960,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock_agendamock",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendamock"
     },
     {
@@ -5560,7 +5970,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock",
-      "community": 87,
+      "community": 101,
       "norm_label": "clients.mock.js"
     },
     {
@@ -5570,7 +5980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_clientes_clients_mock_clientsmock",
-      "community": 87,
+      "community": 101,
       "norm_label": "clientsmock"
     },
     {
@@ -5600,7 +6010,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock",
-      "community": 88,
+      "community": 87,
       "norm_label": "crm.mock.js"
     },
     {
@@ -5610,7 +6020,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_crm_crm_mock_crmmock",
-      "community": 88,
+      "community": 87,
       "norm_label": "crmmock"
     },
     {
@@ -5890,7 +6300,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiro_financial_mock",
-      "community": 96,
+      "community": 41,
       "norm_label": "financial.mock.js"
     },
     {
@@ -5900,7 +6310,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_financeiro_financial_mock_financialmock",
-      "community": 96,
+      "community": 41,
       "norm_label": "financialmock"
     },
     {
@@ -6010,7 +6420,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivos_objectives_mock",
-      "community": 100,
+      "community": 87,
       "norm_label": "objectives.mock.js"
     },
     {
@@ -6020,7 +6430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_objetivos_objectives_mock_objectivesmock",
-      "community": 100,
+      "community": 87,
       "norm_label": "objectivesmock"
     },
     {
@@ -6030,7 +6440,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock",
-      "community": 87,
+      "community": 88,
       "norm_label": "projects.mock.js"
     },
     {
@@ -6040,7 +6450,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock_projectsmock",
-      "community": 87,
+      "community": 88,
       "norm_label": "projectsmock"
     },
     {
@@ -6090,7 +6500,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniaudiocontrols.jsx"
     },
     {
@@ -6100,7 +6510,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols_uniaudiocontrols",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniaudiocontrols()"
     },
     {
@@ -6130,7 +6540,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel",
-      "community": 99,
+      "community": 87,
       "norm_label": "unicontextpanel.jsx"
     },
     {
@@ -6140,7 +6550,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel_unicontextpanel",
-      "community": 99,
+      "community": 87,
       "norm_label": "unicontextpanel()"
     },
     {
@@ -6157,7 +6567,7 @@
       "label": "UniExperienceShell()",
       "file_type": "code",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L14",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
       "community": 39,
@@ -6244,6 +6654,46 @@
       "norm_label": "unilivecontextpanel()"
     },
     {
+      "label": "UniMemoryInfluenceNotice.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/uni-ai/UniMemoryInfluenceNotice.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_uni_ai_unimemoryinfluencenotice",
+      "community": 99,
+      "norm_label": "unimemoryinfluencenotice.jsx"
+    },
+    {
+      "label": "UniMemoryInfluenceNotice()",
+      "file_type": "code",
+      "source_file": "src/pages/uni-ai/UniMemoryInfluenceNotice.jsx",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "src_pages_uni_ai_unimemoryinfluencenotice_unimemoryinfluencenotice",
+      "community": 99,
+      "norm_label": "unimemoryinfluencenotice()"
+    },
+    {
+      "label": "UniMemorySuggestionCard.jsx",
+      "file_type": "code",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_pages_uni_ai_unimemorysuggestioncard",
+      "community": 99,
+      "norm_label": "unimemorysuggestioncard.jsx"
+    },
+    {
+      "label": "UniMemorySuggestionCard()",
+      "file_type": "code",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "src_pages_uni_ai_unimemorysuggestioncard_unimemorysuggestioncard",
+      "community": 99,
+      "norm_label": "unimemorysuggestioncard()"
+    },
+    {
       "label": "UniMessageBubble.jsx",
       "file_type": "code",
       "source_file": "src/pages/uni-ai/UniMessageBubble.jsx",
@@ -6270,7 +6720,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions",
-      "community": 99,
+      "community": 87,
       "norm_label": "uniquicksuggestions.jsx"
     },
     {
@@ -6280,7 +6730,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions_uniquicksuggestions",
-      "community": 99,
+      "community": 87,
       "norm_label": "uniquicksuggestions()"
     },
     {
@@ -6290,7 +6740,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations",
-      "community": 99,
+      "community": 87,
       "norm_label": "unirecentconversations.jsx"
     },
     {
@@ -6300,7 +6750,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations_unirecentconversations",
-      "community": 99,
+      "community": 87,
       "norm_label": "unirecentconversations()"
     },
     {
@@ -11364,6 +11814,16 @@
       "norm_label": "24. policy de leitura do owner no onboarding"
     },
     {
+      "label": "25. Mem\u00f3ria expl\u00edcita na conversa financeira",
+      "file_type": "document",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L781",
+      "_origin": "ast",
+      "id": "docs_00_master_supabase_auth_and_data_plan_25_mem\u00f3ria_expl\u00edcita_na_conversa_financeira",
+      "community": 72,
+      "norm_label": "25. memoria explicita na conversa financeira"
+    },
+    {
       "label": "SUPABASE_ENV_SETUP.md",
       "file_type": "document",
       "source_file": "docs/00-master/SUPABASE_ENV_SETUP.md",
@@ -12177,7 +12637,7 @@
       "label": "Estados",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L20",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_estados",
       "community": 102,
@@ -12187,7 +12647,7 @@
       "label": "Seguran\u00e7a e workspace",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L31",
+      "source_location": "L32",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_seguran\u00e7a_e_workspace",
       "community": 102,
@@ -12197,7 +12657,7 @@
       "label": "Contas e categorias",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L40",
+      "source_location": "L41",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_contas_e_categorias",
       "community": 102,
@@ -12207,7 +12667,7 @@
       "label": "Corre\u00e7\u00e3o e campos ausentes",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L46",
+      "source_location": "L47",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_corre\u00e7\u00e3o_e_campos_ausentes",
       "community": 102,
@@ -12217,7 +12677,7 @@
       "label": "Personalidade",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L56",
+      "source_location": "L57",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_personalidade",
       "community": 102,
@@ -12227,17 +12687,27 @@
       "label": "Supabase e modo demo",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L62",
+      "source_location": "L63",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_supabase_e_modo_demo",
       "community": 102,
       "norm_label": "supabase e modo demo"
     },
     {
+      "label": "Mem\u00f3ria expl\u00edcita",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
+      "source_location": "L69",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_financial_actions_v1_mem\u00f3ria_expl\u00edcita",
+      "community": 102,
+      "norm_label": "memoria explicita"
+    },
+    {
       "label": "Limites da V1",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L68",
+      "source_location": "L77",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_limites_da_v1",
       "community": 102,
@@ -12247,11 +12717,131 @@
       "label": "Evolu\u00e7\u00e3o futura",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L77",
+      "source_location": "L86",
       "_origin": "ast",
       "id": "docs_00_master_uni_conversation_financial_actions_v1_evolu\u00e7\u00e3o_futura",
       "community": 102,
       "norm_label": "evolucao futura"
+    },
+    {
+      "label": "UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1",
+      "community": 96,
+      "norm_label": "uni_conversation_memory_integration_v1.md"
+    },
+    {
+      "label": "Uni Conversation Memory Integration V1",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "community": 96,
+      "norm_label": "uni conversation memory integration v1"
+    },
+    {
+      "label": "Objetivo",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_objetivo",
+      "community": 96,
+      "norm_label": "objetivo"
+    },
+    {
+      "label": "Fluxo",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_fluxo",
+      "community": 96,
+      "norm_label": "fluxo"
+    },
+    {
+      "label": "Mem\u00f3rias permitidas",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_mem\u00f3rias_permitidas",
+      "community": 96,
+      "norm_label": "memorias permitidas"
+    },
+    {
+      "label": "Prioridade e invariantes",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_prioridade_e_invariantes",
+      "community": 96,
+      "norm_label": "prioridade e invariantes"
+    },
+    {
+      "label": "Conflitos",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L46",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_conflitos",
+      "community": 96,
+      "norm_label": "conflitos"
+    },
+    {
+      "label": "Corre\u00e7\u00e3o e consentimento",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L52",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_corre\u00e7\u00e3o_e_consentimento",
+      "community": 96,
+      "norm_label": "correcao e consentimento"
+    },
+    {
+      "label": "Supabase",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L65",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_supabase",
+      "community": 96,
+      "norm_label": "supabase"
+    },
+    {
+      "label": "Modo demo",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L75",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_modo_demo",
+      "community": 96,
+      "norm_label": "modo demo"
+    },
+    {
+      "label": "Direitos do usu\u00e1rio",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L81",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_direitos_do_usu\u00e1rio",
+      "community": 96,
+      "norm_label": "direitos do usuario"
+    },
+    {
+      "label": "Limites",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L86",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_conversation_memory_integration_v1_limites",
+      "community": 96,
+      "norm_label": "limites"
     },
     {
       "label": "UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
@@ -15479,6 +16069,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "docs/08-references/landing-uni-demo/uni-demo_chat.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "docs_08_references_landing_uni_demo_uni_demo_chat_sleep",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_resolve"
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -17799,7 +18400,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L34",
+      "source_location": "L35",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_app_accesscontext_useaccess",
@@ -18304,6 +18905,17 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_app_sessioncontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L3",
       "weight": 1.0,
@@ -18480,6 +19092,28 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_app_sessioncontext_usesession",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L68",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "target": "src_app_sessioncontext_usesession"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/FinanceiroPage.jsx",
       "source_location": "L3",
       "weight": 1.0,
@@ -18558,7 +19192,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L35",
+      "source_location": "L36",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_app_sessioncontext_usesession",
@@ -20278,6 +20912,28 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemoryInfluenceNotice.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemoryinfluencenotice",
+      "target": "src_components_ui_badge_badge_badge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemorysuggestioncard",
+      "target": "src_components_ui_badge_badge_badge",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -20527,6 +21183,28 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "src_pages_uni_ai_unilivecontextpanel",
+      "target": "src_components_ui_badge_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemoryInfluenceNotice.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemoryinfluencenotice",
+      "target": "src_components_ui_badge_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemorysuggestioncard",
       "target": "src_components_ui_badge_index",
       "confidence_score": 1.0
     },
@@ -20841,6 +21519,17 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemorysuggestioncard",
+      "target": "src_components_ui_button_button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniSuggestionDrawer.jsx",
       "source_location": "L1",
       "weight": 1.0,
@@ -21098,6 +21787,17 @@
       "source_location": "L2",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniinsightreport",
+      "target": "src_components_ui_button_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemorysuggestioncard",
       "target": "src_components_ui_button_index",
       "confidence_score": 1.0
     },
@@ -22761,7 +23461,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L43",
+      "source_location": "L44",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_financialintentaction_buildfinancialintentaction"
@@ -22805,7 +23505,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L98",
+      "source_location": "L142",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_financialintentaction_executefinancialintentaction"
@@ -23117,7 +23817,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-conversation/uniConversationReducer.js",
-      "source_location": "L21",
+      "source_location": "L22",
       "weight": 1.0,
       "source": "src_features_uni_conversation_uniconversationreducer",
       "target": "src_features_uni_conversation_uniconversationreducer_uniconversationreducer",
@@ -23184,7 +23884,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L32",
+      "source_location": "L33",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniconversationreducer_uniconversationreducer"
@@ -23407,7 +24107,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L74",
+      "source_location": "L111",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildconfirmationresponse"
@@ -23429,7 +24129,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L69",
+      "source_location": "L100",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildclarificationresponse"
@@ -23451,7 +24151,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L107",
+      "source_location": "L151",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildcompletionresponse"
@@ -23473,7 +24173,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L113",
+      "source_location": "L157",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildcanceledresponse"
@@ -23495,7 +24195,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L102",
+      "source_location": "L146",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_conversation_uniresponsebuilder_buildexecutionerrorresponse"
@@ -23549,7 +24249,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L35",
+      "source_location": "L36",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_intents_conversationcontext_createconversationcontext"
@@ -23560,10 +24260,21 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/features/uni-conversation/useUniConversation.js",
-      "source_location": "L56",
+      "source_location": "L57",
       "weight": 1.0,
       "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
       "target": "src_features_uni_intents_financialparser_parsefinancialtext"
+    },
+    {
+      "relation": "indirect_call",
+      "context": "collection",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/features/uni-conversation/useUniConversation.js",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "src_features_uni_conversation_useuniconversation_useuniconversation",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_parsed"
     },
     {
       "relation": "imports",
@@ -23581,7 +24292,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L51",
+      "source_location": "L56",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_features_uni_conversation_useuniconversation_useuniconversation",
@@ -24511,6 +25222,28 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_intents_financialparser_parsefinancialtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L50",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test_parsed",
+      "target": "src_features_uni_intents_financialparser_parsefinancialtext",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "re_exports",
       "context": "re-export",
       "confidence": "EXTRACTED",
@@ -24588,6 +25321,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_intents_index",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/features/uni-intents/intentClassifier.js",
@@ -24646,6 +25390,1314 @@
       "weight": 1.0,
       "source": "src_features_uni_intents_intents_test",
       "target": "src_features_uni_intents_intents_test_assertentityshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_accounts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_categories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_context",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_now",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_parsed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_rawmemory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_resolve",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryinfluenceexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_resolvememorysuggestionchoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test_context",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test_resolve",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_context",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test_resolve",
+      "target": "src_features_uni_memory_integration_conversationmemory_test_parsed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemory.test.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemory_test_resolve",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_conversation_memory_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_explicit_sources",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_isactive",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_pickvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_value_fields",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_memorytypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_memorytypes_deepfreeze",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_conversation_memory_types"
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_conversation_memory_types",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext_isactive",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_explicit_sources"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_pickvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L56",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_isactive",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L50",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "target": "src_features_uni_memory_memorytypes_deepfreeze"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/conversationMemoryContext.js",
+      "source_location": "L60",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext"
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "target": "src_features_uni_memory_integration_conversationmemorycontext_createconversationmemorycontext"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_findaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_findcategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_matchestransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_memoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_merchantmatch",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_transactiontype",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryconflictexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryinfluenceexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_memorytypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_findaccount",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_memoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_findcategory",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_memoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_matchestransaction",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_memoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_merchantmatch",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_memoryvalue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_transactiontype",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L86",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_findcategory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_findcategory",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L109",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_findaccount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L33",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_findaccount",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_matchestransaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_merchantmatch",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_merchantmatch",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L140",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryconflictexplanation"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L142",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryinfluenceexplanation"
+    },
+    {
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/features/uni-memory-integration/explicitMemoryResolver.js",
+      "source_location": "L113",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext"
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L125",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "target": "src_features_uni_memory_integration_explicitmemoryresolver_applyexplicitmemories"
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryconflictexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryinfluenceexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_buildexplicitmemorypayload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_resolvememorysuggestionchoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_useconversationmemory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_useconversationmemory_conversation_memory_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/index.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_index",
+      "target": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemorysuggestioncard",
+      "target": "src_features_uni_memory_integration_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_features_uni_memory_integration_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memoryInfluenceExplanation.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memoryinfluenceexplanation",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryconflictexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memoryInfluenceExplanation.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memoryinfluenceexplanation",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_buildmemoryinfluenceexplanation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memoryInfluenceExplanation.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memoryinfluenceexplanation",
+      "target": "src_features_uni_memory_integration_memoryinfluenceexplanation_copy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_buildexplicitmemorypayload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_generic_descriptions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_hasduplicate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_isspecificdescription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_resolvememorysuggestionchoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "target": "src_features_uni_memory_memorytypes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder_isspecificdescription",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_generic_descriptions"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_isspecificdescription",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder_isspecificdescription",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_hasduplicate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder_hasduplicate",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion",
+      "target": "src_features_uni_memory_memorytypes_normalizememorytext"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L138",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_buildmemorysuggestion"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/memorySuggestionBuilder.js",
+      "source_location": "L93",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_memorysuggestionbuilder_resolvememorysuggestionchoice",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_buildexplicitmemorypayload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_resolvememorysuggestionchoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "target": "src_features_uni_memory_integration_memorysuggestionbuilder_resolvememorysuggestionchoice"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_useconversationmemory_conversation_memory_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_useconversationmemory_createdemomemory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_useconversationmemory_demo_memories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_useconversationmemory_personality_profiles",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L67",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_services_unimemoryservice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_services_unimemoryservice_createexplicitmemorycandidate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory",
+      "target": "src_services_unimemoryservice_listfinancialmemories",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemorysuggestioncard",
+      "target": "src_features_uni_memory_integration_useconversationmemory_conversation_memory_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L168",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "target": "src_features_uni_memory_integration_useconversationmemory_createdemomemory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L175",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "target": "src_services_unimemoryservice_createexplicitmemorycandidate"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-memory-integration/useConversationMemory.js",
+      "source_location": "L105",
+      "weight": 1.0,
+      "source": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "target": "src_services_unimemoryservice_listfinancialmemories"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage_uniaipage",
+      "target": "src_features_uni_memory_integration_useconversationmemory_useconversationmemory",
       "confidence_score": 1.0
     },
     {
@@ -27624,7 +29676,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_hooks_index",
@@ -27810,7 +29862,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_hooks_useaccounts_useaccounts",
@@ -27821,7 +29873,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L39",
+      "source_location": "L40",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_hooks_useaccounts_useaccounts",
@@ -27985,7 +30037,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_hooks_usecategories_usecategories",
@@ -27996,7 +30048,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L43",
+      "source_location": "L44",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_hooks_usecategories_usecategories",
@@ -28389,7 +30441,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L5",
+      "source_location": "L6",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_hooks_usetransactions_usetransactions",
@@ -28400,7 +30452,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L47",
+      "source_location": "L48",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_hooks_usetransactions_usetransactions",
@@ -29551,7 +31603,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_financeiro_financialcrud_mock",
@@ -29562,7 +31614,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_financeiro_financialcrud_mock_financialcrudmock",
@@ -29573,7 +31625,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_index",
@@ -29584,7 +31636,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_experience_experience_states",
@@ -29595,7 +31647,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_experience_experience_timing",
@@ -29606,7 +31658,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createinsightreport",
@@ -29617,7 +31669,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createmessage",
@@ -29628,7 +31680,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getmockuniresponse",
@@ -29639,7 +31691,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getportuguesevoice",
@@ -29650,7 +31702,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getspeechrecognition",
@@ -29661,7 +31713,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_isprobablysafari",
@@ -29672,7 +31724,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_thinkingsteps",
@@ -29683,7 +31735,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_mock_contextitems",
@@ -29694,7 +31746,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_mock_contextualsuggestions",
@@ -29705,7 +31757,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_mock_conversationmessages",
@@ -29716,7 +31768,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_mock_quicksuggestions",
@@ -29727,7 +31779,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
@@ -29737,7 +31789,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L25",
+      "source_location": "L26",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uniaipage_getlocalisodate",
@@ -29747,7 +31799,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L33",
+      "source_location": "L34",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uniaipage_uniaipage",
@@ -29758,7 +31810,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L57",
+      "source_location": "L62",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uniaipage_getlocalisodate",
@@ -29769,7 +31821,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L156",
+      "source_location": "L162",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createinsightreport",
@@ -29780,7 +31832,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L162",
+      "source_location": "L168",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createmessage",
@@ -29791,7 +31843,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L153",
+      "source_location": "L159",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getmockuniresponse",
@@ -29802,7 +31854,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L232",
+      "source_location": "L238",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getportuguesevoice",
@@ -29813,7 +31865,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L413",
+      "source_location": "L419",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getspeechrecognition",
@@ -29824,7 +31876,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L341",
+      "source_location": "L347",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_isprobablysafari",
@@ -30937,7 +32989,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
@@ -31014,7 +33066,51 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_uniexperienceshell",
+      "target": "src_pages_uni_ai_unimemoryinfluencenotice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_uniexperienceshell",
+      "target": "src_pages_uni_ai_unimemoryinfluencenotice_unimemoryinfluencenotice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
       "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_uniexperienceshell",
+      "target": "src_pages_uni_ai_unimemorysuggestioncard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_uniexperienceshell",
+      "target": "src_pages_uni_ai_unimemorysuggestioncard_unimemorysuggestioncard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_uniquicksuggestions",
@@ -31025,7 +33121,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L8",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_uniquicksuggestions_uniquicksuggestions",
@@ -31036,7 +33132,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L7",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_unirecentconversations",
@@ -31047,7 +33143,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L7",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_unirecentconversations_unirecentconversations",
@@ -31058,7 +33154,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L9",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_unisuggestiondrawer",
@@ -31069,7 +33165,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L9",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_unisuggestiondrawer_unisuggestiondrawer",
@@ -31080,7 +33176,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L10",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_unithinkingsequence",
@@ -31091,7 +33187,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L10",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_unithinkingsequence_unithinkingsequence",
@@ -31102,7 +33198,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L11",
+      "source_location": "L13",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_univoicestage",
@@ -31113,7 +33209,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/UniExperienceShell.jsx",
-      "source_location": "L11",
+      "source_location": "L13",
       "weight": 1.0,
       "source": "src_pages_uni_ai_uniexperienceshell",
       "target": "src_pages_uni_ai_univoicestage_univoicestage",
@@ -31232,6 +33328,48 @@
       "source_location": "L9",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
+      "target": "src_pages_uni_ai_unimemoryinfluencenotice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemoryInfluenceNotice.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemoryinfluencenotice",
+      "target": "src_pages_uni_ai_unimemoryinfluencenotice_unimemoryinfluencenotice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/index.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_index",
+      "target": "src_pages_uni_ai_unimemorysuggestioncard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniMemorySuggestionCard.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_unimemorysuggestioncard",
+      "target": "src_pages_uni_ai_unimemorysuggestioncard_unimemorysuggestioncard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/index.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_unimessagebubble",
       "confidence_score": 1.0
     },
@@ -31250,7 +33388,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L10",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniquicksuggestions",
@@ -31271,7 +33409,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L11",
+      "source_location": "L13",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_unirecentconversations",
@@ -31292,7 +33430,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L12",
+      "source_location": "L14",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_unisuggestiondrawer",
@@ -31313,7 +33451,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L13",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_unithinkingsequence",
@@ -31334,7 +33472,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_unitranscriptpanel",
@@ -31355,7 +33493,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L15",
+      "source_location": "L17",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_univoicecapture",
@@ -31376,7 +33514,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L16",
+      "source_location": "L18",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_univoicestage",
@@ -31397,7 +33535,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L18",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_experience",
@@ -31408,7 +33546,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L18",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_experience_audiocontrollabels",
@@ -31419,7 +33557,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L18",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_experience_experience_states",
@@ -31430,7 +33568,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L18",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_experience_experience_timing",
@@ -31441,7 +33579,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers",
@@ -31452,7 +33590,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_createinsightreport",
@@ -31463,7 +33601,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_createmessage",
@@ -31474,7 +33612,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_getlastunimessage",
@@ -31485,7 +33623,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_getmockuniresponse",
@@ -31496,7 +33634,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_getportuguesevoice",
@@ -31507,7 +33645,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_getspeechrecognition",
@@ -31518,7 +33656,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_getvoicefeedback",
@@ -31529,7 +33667,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_isprobablysafari",
@@ -31540,7 +33678,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_helpers_thinkingsteps",
@@ -31551,7 +33689,7 @@
       "context": "export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L17",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_mock",
@@ -31562,7 +33700,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L17",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_mock_contextitems",
@@ -31573,7 +33711,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L17",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_mock_contextualsuggestions",
@@ -31584,7 +33722,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L17",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_mock_conversationmessages",
@@ -31595,7 +33733,7 @@
       "context": "re-export",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/uni-ai/index.js",
-      "source_location": "L17",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniai_mock_quicksuggestions",
@@ -38459,6 +40597,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
+      "source_location": "L781",
+      "weight": 1.0,
+      "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
+      "target": "docs_00_master_supabase_auth_and_data_plan_25_mem\u00f3ria_expl\u00edcita_na_conversa_financeira",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md",
       "source_location": "L22",
       "weight": 1.0,
       "source": "docs_00_master_supabase_auth_and_data_plan_supabase_auth_and_data_plan",
@@ -39569,7 +41717,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L40",
+      "source_location": "L41",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_contas_e_categorias",
@@ -39579,7 +41727,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L46",
+      "source_location": "L47",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_corre\u00e7\u00e3o_e_campos_ausentes",
@@ -39589,7 +41737,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L20",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_estados",
@@ -39599,7 +41747,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L77",
+      "source_location": "L86",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_evolu\u00e7\u00e3o_futura",
@@ -39619,10 +41767,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L68",
+      "source_location": "L77",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_limites_da_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
+      "source_location": "L69",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
+      "target": "docs_00_master_uni_conversation_financial_actions_v1_mem\u00f3ria_expl\u00edcita",
       "confidence_score": 1.0
     },
     {
@@ -39639,7 +41797,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L56",
+      "source_location": "L57",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_personalidade",
@@ -39649,7 +41807,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L31",
+      "source_location": "L32",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_seguran\u00e7a_e_workspace",
@@ -39659,10 +41817,120 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_CONVERSATION_FINANCIAL_ACTIONS_V1.md",
-      "source_location": "L62",
+      "source_location": "L63",
       "weight": 1.0,
       "source": "docs_00_master_uni_conversation_financial_actions_v1_uni_conversation_financial_actions_v1",
       "target": "docs_00_master_uni_conversation_financial_actions_v1_supabase_e_modo_demo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L46",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_conflitos",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_corre\u00e7\u00e3o_e_consentimento",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_direitos_do_usu\u00e1rio",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_fluxo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L86",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_limites",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_mem\u00f3rias_permitidas",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_modo_demo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_objetivo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_prioridade_e_invariantes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_conversation_memory_integration_v1_uni_conversation_memory_integration_v1",
+      "target": "docs_00_master_uni_conversation_memory_integration_v1_supabase",
       "confidence_score": 1.0
     },
     {
@@ -41527,5 +43795,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "aba2c6bfb70d0930c3e4d47b3d103d2acdf1994a"
+  "built_at_commit": "4388a2f68321a4b3ccdc3d8f63449eaaba2dd9ea"
 }

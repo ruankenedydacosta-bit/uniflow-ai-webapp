@@ -99,6 +99,7 @@
   "97": "ObjetivosPage.jsx",
   "98": "Open Finance Migration Review",
   "99": "AccessModeSwitcher.jsx",
+  "100": "index.js",
   "101": "AgendaPage.jsx",
   "102": "Uni Conversation Financial Actions V1",
   "103": "UniFinancialActionCard.jsx",
@@ -106,5 +107,8 @@
   "105": "AccessModeSwitcher.jsx",
   "106": "Teste autenticado da Memória Financeira V1",
   "107": "Workspace Onboarding RLS Fix",
-  "108": "DashboardPage.jsx"
+  "108": "DashboardPage.jsx",
+  "109": "FinanceiroPage.jsx",
+  "110": "Uni Voice Input V1",
+  "111": "ObjetivosPage.jsx"
 }
