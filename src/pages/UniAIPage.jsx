@@ -3,6 +3,7 @@ import { useAccess } from '../app/AccessContext';
 import { useSession } from '../app/SessionContext';
 import { UNI_CONVERSATION_STATES, useUniConversation } from '../features/uni-conversation';
 import { useConversationMemory } from '../features/uni-memory-integration';
+import { useUniVoiceInput } from '../features/uni-voice';
 import { useAccounts, useCategories, useTransactions } from '../hooks';
 import { financialCrudMock } from './financeiro/financialCrud.mock.js';
 import {
@@ -15,7 +16,6 @@ import {
   createMessage,
   getMockUniResponse,
   getPortugueseVoice,
-  getSpeechRecognition,
   isProbablySafari,
   quickSuggestions,
   thinkingSteps,
@@ -66,7 +66,6 @@ function UniAIPage() {
   const [draftMessage, setDraftMessage] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
   const [currentReport, setCurrentReport] = useState(null);
-  const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -77,7 +76,6 @@ function UniAIPage() {
   const [voiceNotice, setVoiceNotice] = useState('');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [textComposerOpen, setTextComposerOpen] = useState(false);
-  const recognitionRef = useRef(null);
   const activeUtteranceRef = useRef(null);
   const audioContextRef = useRef(null);
   const audioStreamRef = useRef(null);
@@ -88,9 +86,15 @@ function UniAIPage() {
   const responseSequenceRef = useRef(0);
   const lastAutoSpokenReportRef = useRef(null);
   const mutedRef = useRef(false);
-  const finalTranscriptRef = useRef('');
-  const recognizedTranscriptRef = useRef('');
-  const shouldShowEmptyCaptureNoticeRef = useRef(false);
+  const voiceInput = useUniVoiceInput({
+    profileId: personalityProfileId,
+    onBeforeStart: prepareVoiceCapture,
+    onCaptureStart: startAudioMeter,
+    onCaptureEnd: stopAudioMeter,
+    onFinalTranscript: handleVoiceTranscript,
+    onUnsupported: () => setTextComposerOpen(true),
+  });
+  const isListening = voiceInput.isListening;
   const hasPendingFinancialAction = [
     UNI_CONVERSATION_STATES.INTERPRETING,
     UNI_CONVERSATION_STATES.NEEDS_CLARIFICATION,
@@ -105,8 +109,6 @@ function UniAIPage() {
   }, [isMuted]);
 
   useEffect(() => () => {
-    recognitionRef.current?.abort?.();
-
     if (animationFrameRef.current) {
       window.cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -341,6 +343,20 @@ function UniAIPage() {
     sendMessage(suggestionLabel);
   }
 
+  function prepareVoiceCapture() {
+    window.clearTimeout(autoSpeechTimerRef.current);
+    stopSpeech();
+    setHasStarted(true);
+    setCurrentReport(null);
+    setSuggestionsOpen(false);
+    setTextComposerOpen(false);
+    setVoiceNotice('');
+  }
+
+  function handleVoiceTranscript(transcript) {
+    sendMessage(transcript, { allowFinancialAction: true });
+  }
+
   async function startAudioMeter() {
     setVoiceVolume(0);
 
@@ -394,107 +410,6 @@ function UniAIPage() {
     setVoiceVolume(0);
   }
 
-  function stopVoiceCapture() {
-    shouldShowEmptyCaptureNoticeRef.current = false;
-    recognitionRef.current?.abort?.();
-    recognitionRef.current = null;
-    setIsListening(false);
-    stopAudioMeter();
-  }
-
-  function startVoiceCapture() {
-    if (isListening) {
-      stopVoiceCapture();
-      setVoiceNotice('Escuta encerrada. Você pode digitar ou falar novamente quando quiser.');
-      return;
-    }
-
-    window.clearTimeout(autoSpeechTimerRef.current);
-    stopSpeech();
-    setHasStarted(true);
-    setCurrentReport(null);
-    setSuggestionsOpen(false);
-    setTextComposerOpen(false);
-
-    const SpeechRecognition = getSpeechRecognition();
-
-    if (!SpeechRecognition) {
-      setVoiceNotice('Seu navegador ainda não suporta captura de voz aqui. Você pode digitar sua pergunta para a Uni.');
-      setTextComposerOpen(true);
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    finalTranscriptRef.current = '';
-    recognizedTranscriptRef.current = '';
-    shouldShowEmptyCaptureNoticeRef.current = true;
-    setVoiceNotice('');
-    recognition.lang = 'pt-BR';
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setVoiceNotice('Ouvindo...');
-    };
-
-    recognition.onresult = (event) => {
-      let finalTranscript = '';
-      let partialTranscript = '';
-
-      for (let index = 0; index < event.results.length; index += 1) {
-        const result = event.results[index];
-        const transcript = result?.[0]?.transcript ?? '';
-
-        if (result?.isFinal) {
-          finalTranscript = `${finalTranscript} ${transcript}`.trim();
-        } else {
-          partialTranscript = `${partialTranscript} ${transcript}`.trim();
-        }
-      }
-
-      const recognizedTranscript = `${finalTranscript} ${partialTranscript}`.trim();
-
-      finalTranscriptRef.current = finalTranscript || recognizedTranscript;
-      recognizedTranscriptRef.current = recognizedTranscript || finalTranscriptRef.current;
-    };
-
-    recognition.onerror = () => {
-      shouldShowEmptyCaptureNoticeRef.current = false;
-      setVoiceNotice('Não consegui capturar sua fala agora. Se quiser, repita com calma ou digite sua pergunta.');
-    };
-
-    recognition.onend = () => {
-      const finalTranscript = (finalTranscriptRef.current || recognizedTranscriptRef.current).trim();
-
-      if (finalTranscript) {
-        sendMessage(finalTranscript, { allowFinancialAction: true });
-        setVoiceNotice('Áudio captado. A Uni vai organizar isso com calma.');
-      } else if (shouldShowEmptyCaptureNoticeRef.current) {
-        setVoiceNotice('Não consegui ouvir tudo. Pode tentar novamente?');
-      }
-
-      setIsListening(false);
-      finalTranscriptRef.current = '';
-      recognizedTranscriptRef.current = '';
-      shouldShowEmptyCaptureNoticeRef.current = false;
-      recognitionRef.current = null;
-      stopAudioMeter();
-    };
-
-    startAudioMeter();
-
-    try {
-      recognition.start();
-    } catch {
-      stopAudioMeter();
-      recognitionRef.current = null;
-      shouldShowEmptyCaptureNoticeRef.current = false;
-      setVoiceNotice('Não consegui iniciar a captura de voz agora. Você pode digitar sua pergunta para a Uni.');
-    }
-  }
-
   function pauseAudio() {
     stopSpeech();
     setVoiceNotice('');
@@ -531,6 +446,7 @@ function UniAIPage() {
   }
 
   function handleNewQuestion() {
+    voiceInput.reset();
     window.clearTimeout(autoSpeechTimerRef.current);
     stopSpeech();
     clearThinkingTimers();
@@ -604,14 +520,14 @@ function UniAIPage() {
         isMuted={isMuted}
         isResponding={isResponding}
         voiceVolume={voiceVolume}
-        voiceNotice={voiceNotice}
+        voiceNotice={voiceNotice || voiceInput.message}
         thinkingSteps={thinkingSteps}
         thinkingStepIndex={thinkingStepIndex}
         suggestionsOpen={suggestionsOpen}
         textComposerOpen={textComposerOpen}
         onDraftChange={setDraftMessage}
         onSubmit={handleSubmit}
-        onStartVoiceCapture={startVoiceCapture}
+        onStartVoiceCapture={voiceInput.toggle}
         onNewQuestion={handleNewQuestion}
         onPauseAudio={pauseAudio}
         onResumeAudio={resumeAudio}

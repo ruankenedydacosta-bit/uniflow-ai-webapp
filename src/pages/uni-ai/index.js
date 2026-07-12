@@ -24,7 +24,6 @@ export {
   getLastUniMessage,
   getMockUniResponse,
   getPortugueseVoice,
-  getSpeechRecognition,
   getVoiceFeedback,
   isProbablySafari,
   thinkingSteps,
