@@ -29,32 +29,37 @@ objects as (
     to_regclass('public.accounts_workspace_active_identity_uidx') is not null
       as account_identity_index
 ),
-active_identity_duplicates as (
-  select count(*) as duplicate_groups
-  from (
-    select
-      account.workspace_id,
+active_account_identities as (
+  select
+    account.workspace_id,
+    regexp_replace(
       regexp_replace(
-        regexp_replace(
-          translate(
-            lower(btrim(account.name)),
-            'áàâãäéèêëíìîïóòôõöúùûüç',
-            'aaaaaeeeeiiiiooooouuuuc'
-          ),
-          '\m(conta|cartao|banco|carteira)\M',
-          ' ',
-          'g'
+        translate(
+          lower(btrim(account.name)),
+          'áàâãäéèêëíìîïóòôõöúùûüç',
+          'aaaaaeeeeiiiiooooouuuuc'
         ),
-        '[^a-z0-9]+',
-        '',
+        '\m(conta|cartao|banco|carteira)\M',
+        ' ',
         'g'
-      ) as normalized_identity
-    from public.accounts as account
-    where account.is_active = true
-  ) as identity
+      ),
+      '[^a-z0-9]+',
+      '',
+      'g'
+    ) as normalized_identity
+  from public.accounts as account
+  where account.is_active = true
+),
+active_identity_duplicate_groups as (
+  select identity.workspace_id, identity.normalized_identity
+  from active_account_identities as identity
   where identity.normalized_identity <> ''
   group by identity.workspace_id, identity.normalized_identity
   having count(*) > 1
+),
+active_identity_duplicates as (
+  select count(*) as duplicate_groups
+  from active_identity_duplicate_groups
 ),
 state as (
   select
