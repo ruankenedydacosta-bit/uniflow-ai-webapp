@@ -179,6 +179,24 @@ Eles registram apenas eventos operacionais, como workspace criado/reutilizado e 
 - Nao existe RPC transacional para o onboarding.
 - Nao existe interface para editar nome e telefone durante esta etapa.
 
+## Preferencia de comunicacao futura
+
+A Personalidade V1 define que o usuario deve conhecer brevemente a Uni e,
+depois, poder escolher um tom inicial: `balanced`, `direct`, `warm` ou
+`strategic`.
+
+Essa escolha nao foi adicionada ao fluxo atual. Quando entrar:
+
+- sera curta, opcional e posterior a apresentacao da identidade da Uni;
+- usara `balanced` quando o usuario pular;
+- nao alterara `user_mode`, plano ou workspace;
+- podera ser modificada a qualquer momento em Configuracoes;
+- permanecera separada do mapa cognitivo inferido;
+- nao podera remover as regras centrais descritas em
+  `UNI_PERSONALITY_V1.md`.
+
+Nenhum dado de personalidade foi persistido nesta etapa.
+
 ## Validacao recomendada no UniFlow DEV
 
 1. Usar um usuario com profile e `onboarding_completed = false`.

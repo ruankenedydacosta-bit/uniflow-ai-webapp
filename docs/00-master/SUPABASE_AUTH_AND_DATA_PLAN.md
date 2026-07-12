@@ -76,7 +76,9 @@ Campos sugeridos:
 - `id`;
 - `user_id`;
 - `uni_tone`;
+- `uni_personality_profile`: `balanced`, `direct`, `warm` ou `strategic`;
 - `explanation_level`;
+- `communication_adaptation_enabled`;
 - `voice_enabled`;
 - `auto_audio_enabled`;
 - `notification_level`;
@@ -87,6 +89,7 @@ Uso no app:
 
 - Configuracoes;
 - comportamento da Uni;
+- preferencia explicita separada do mapa cognitivo inferido;
 - voz e interacao;
 - alertas com baixa carga cognitiva.
 

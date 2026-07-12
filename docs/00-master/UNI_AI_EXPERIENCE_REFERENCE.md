@@ -430,3 +430,18 @@ Regras praticas:
 Frase guia:
 
 "A Uni pode recomendar o melhor proximo passo, mas a decisao final continua sendo do usuario."
+
+## 19. Personalidade e tom adaptavel
+
+`UNI_PERSONALITY_V1.md` passa a ser a referencia oficial para a forma de
+comunicacao da Uni.
+
+- A identidade central e unica e imutavel.
+- O usuario escolhe um perfil inicial de comunicacao.
+- Contexto PF/PJ, situacao e mapa cognitivo fazem apenas ajustes temporarios.
+- A preferencia explicita continua sendo a base.
+- Nenhum perfil pode gerar culpa, ansiedade ou decidir pelo usuario.
+- Voz sintetizada e IA real deverao consumir a mesma resolucao de
+  personalidade no futuro.
+
+A pagina Uni AI ainda nao consome essa camada nesta etapa.

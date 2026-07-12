@@ -528,6 +528,7 @@ Principais cards:
 
 - perfil;
 - plano;
+- personalidade e tom inicial da Uni;
 - notificacoes;
 - seguranca;
 - privacidade;
@@ -536,7 +537,7 @@ Principais cards:
 Principais acoes:
 
 - editar preferencias;
-- ajustar tom/notificacoes da Uni;
+- ajustar perfil de comunicacao e notificacoes da Uni;
 - trocar plano no futuro;
 - gerenciar espacos;
 - revisar privacidade.
@@ -548,12 +549,15 @@ Dados mockados necessarios:
 - plano atual;
 - modo de uso;
 - preferencias;
+- perfil de personalidade mockado (`balanced`, `direct`, `warm` ou
+  `strategic`);
 - status de seguranca.
 
 Dados reais futuros no Supabase:
 
 - `profiles`;
 - `user_settings`;
+- `user_preferences.uni_personality_profile` futuro;
 - `plans`;
 - `subscriptions`;
 - `notification_preferences`;
@@ -563,7 +567,8 @@ Relacao com a Uni AI:
 
 - a Uni deve respeitar preferencias;
 - usar modo e plano como contexto;
-- adaptar linguagem ao usuario;
+- usar a preferencia explicita como base e adaptar linguagem de forma gradual;
+- preservar a identidade central definida em `UNI_PERSONALITY_V1.md`;
 - explicar configuracoes sem tecnicismo.
 
 Identidade das referencias:
