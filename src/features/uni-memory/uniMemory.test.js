@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { listFinancialMemories, sanitizeMemoryValue } from '../../services/uniMemoryService.js';
+import {
+  isFrontendWritableMemoryType,
+  isSafeMemoryKey,
+  listFinancialMemories,
+  sanitizeMemoryValue,
+} from '../../services/uniMemoryService.js';
 import {
   analyzeSpendingPatterns,
   buildMemoryCandidates,
@@ -217,8 +222,22 @@ test('sanitização remove campos proibidos em qualquer nível', () => {
   assert.deepEqual(sanitized, { merchant: 'Mercado', nested: { amount: 80 } });
 });
 
+test('frontend aceita fatos explícitos e bloqueia tipos inferidos', () => {
+  assert.equal(isFrontendWritableMemoryType('category_preference'), true);
+  assert.equal(isFrontendWritableMemoryType('merchant_category_mapping'), true);
+  assert.equal(isFrontendWritableMemoryType('recurring_income'), false);
+  assert.equal(isFrontendWritableMemoryType('recurring_expense'), false);
+  assert.equal(isFrontendWritableMemoryType('spending_pattern'), false);
+});
+
+test('chaves operacionais sensíveis são rejeitadas', () => {
+  assert.equal(isSafeMemoryKey('merchant:mercado'), true);
+  assert.equal(isSafeMemoryKey('access_token_bancario'), false);
+  assert.equal(isSafeMemoryKey('private_key'), false);
+});
+
 test('service retorna fallback seguro quando Supabase não está configurado', async () => {
-  const result = await listFinancialMemories(WORKSPACE_ID);
+  const result = await listFinancialMemories({ workspace: { id: WORKSPACE_ID } });
 
   assert.deepEqual(result.data, []);
   assert.equal(result.error.code, 'SUPABASE_NOT_CONFIGURED');
