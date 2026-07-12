@@ -2750,7 +2750,7 @@
       "source_location": "L431",
       "_origin": "ast",
       "id": "src_app_sessioncontext_usesession",
-      "community": 111,
+      "community": 101,
       "norm_label": "usesession()"
     },
     {
@@ -2770,7 +2770,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_access_user_modes",
-      "community": 101,
+      "community": 114,
       "norm_label": "user_modes"
     },
     {
@@ -2780,7 +2780,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "src_app_access_plans",
-      "community": 101,
+      "community": 114,
       "norm_label": "plans"
     },
     {
@@ -2980,7 +2980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_routes",
-      "community": 111,
+      "community": 101,
       "norm_label": "routes.jsx"
     },
     {
@@ -3010,7 +3010,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher",
-      "community": 101,
+      "community": 114,
       "norm_label": "accessmodeswitcher.jsx"
     },
     {
@@ -3020,7 +3020,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_options",
-      "community": 101,
+      "community": 114,
       "norm_label": "user_mode_options"
     },
     {
@@ -3030,7 +3030,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_options",
-      "community": 101,
+      "community": 114,
       "norm_label": "plan_options"
     },
     {
@@ -3040,7 +3040,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_workspace_options",
-      "community": 101,
+      "community": 114,
       "norm_label": "workspace_options"
     },
     {
@@ -3050,7 +3050,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_personal_plans",
-      "community": 101,
+      "community": 114,
       "norm_label": "personal_plans"
     },
     {
@@ -3060,7 +3060,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_user_mode_labels",
-      "community": 101,
+      "community": 114,
       "norm_label": "user_mode_labels"
     },
     {
@@ -3070,7 +3070,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_plan_labels",
-      "community": 101,
+      "community": 114,
       "norm_label": "plan_labels"
     },
     {
@@ -3080,7 +3080,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getworkspaceformode",
-      "community": 101,
+      "community": 114,
       "norm_label": "getworkspaceformode()"
     },
     {
@@ -3090,7 +3090,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_getmodeoptionsforplan",
-      "community": 101,
+      "community": 114,
       "norm_label": "getmodeoptionsforplan()"
     },
     {
@@ -3100,7 +3100,7 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_normalizeaccessforplan",
-      "community": 101,
+      "community": 114,
       "norm_label": "normalizeaccessforplan()"
     },
     {
@@ -3110,7 +3110,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_components_dev_accessmodeswitcher_accessmodeswitcher",
-      "community": 101,
+      "community": 114,
       "norm_label": "accessmodeswitcher()"
     },
     {
@@ -3190,7 +3190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_layout_topbar_topbar",
-      "community": 99,
+      "community": 114,
       "norm_label": "topbar.jsx"
     },
     {
@@ -3240,7 +3240,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_components_ui_avatar_avatar_avatar",
-      "community": 99,
+      "community": 41,
       "norm_label": "avatar"
     },
     {
@@ -3250,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_avatar_index",
-      "community": 99,
+      "community": 41,
       "norm_label": "index.js"
     },
     {
@@ -3330,7 +3330,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_components_ui_card_card_card",
-      "community": 87,
+      "community": 99,
       "norm_label": "card()"
     },
     {
@@ -3340,7 +3340,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_components_ui_card_index",
-      "community": 87,
+      "community": 99,
       "norm_label": "index.js"
     },
     {
@@ -3500,7 +3500,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_components_dashboardgreeting",
-      "community": 99,
+      "community": 41,
       "norm_label": "dashboardgreeting.jsx"
     },
     {
@@ -3510,7 +3510,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_features_dashboard_components_dashboardgreeting_dashboardgreeting",
-      "community": 99,
+      "community": 41,
       "norm_label": "dashboardgreeting()"
     },
     {
@@ -3630,7 +3630,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_index",
-      "community": 111,
+      "community": 101,
       "norm_label": "index.js"
     },
     {
@@ -5634,6 +5634,416 @@
       "norm_label": "resolvepersonality()"
     },
     {
+      "label": "browserVoiceProvider.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/browserVoiceProvider.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_browservoiceprovider",
+      "community": 113,
+      "norm_label": "browservoiceprovider.js"
+    },
+    {
+      "label": "selectPortugueseVoice()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/browserVoiceProvider.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_browservoiceprovider_selectportuguesevoice",
+      "community": 113,
+      "norm_label": "selectportuguesevoice()"
+    },
+    {
+      "label": "createBrowserVoiceProvider()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/browserVoiceProvider.js",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_browservoiceprovider_createbrowservoiceprovider",
+      "community": 113,
+      "norm_label": "createbrowservoiceprovider()"
+    },
+    {
+      "label": "index.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_index",
+      "community": 113,
+      "norm_label": "index.js"
+    },
+    {
+      "label": "premiumVoiceProvider.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/premiumVoiceProvider.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_premiumvoiceprovider",
+      "community": 113,
+      "norm_label": "premiumvoiceprovider.js"
+    },
+    {
+      "label": "createProviderError()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/premiumVoiceProvider.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_premiumvoiceprovider_createprovidererror",
+      "community": 113,
+      "norm_label": "createprovidererror()"
+    },
+    {
+      "label": "createPremiumVoiceProvider()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/premiumVoiceProvider.js",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_premiumvoiceprovider_createpremiumvoiceprovider",
+      "community": 113,
+      "norm_label": "createpremiumvoiceprovider()"
+    },
+    {
+      "label": "uniVoiceOutput.test.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test",
+      "community": 113,
+      "norm_label": "univoiceoutput.test.js"
+    },
+    {
+      "label": "EDGE_SOURCE",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_edge_source",
+      "community": 113,
+      "norm_label": "edge_source"
+    },
+    {
+      "label": "HOOK_SOURCE",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_hook_source",
+      "community": 113,
+      "norm_label": "hook_source"
+    },
+    {
+      "label": "PAGE_SOURCE",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_page_source",
+      "community": 113,
+      "norm_label": "page_source"
+    },
+    {
+      "label": "PROVIDER_SOURCE",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_provider_source",
+      "community": 113,
+      "norm_label": "provider_source"
+    },
+    {
+      "label": "createBrowserRuntime()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_createbrowserruntime",
+      "community": 113,
+      "norm_label": "createbrowserruntime()"
+    },
+    {
+      "label": "createPremiumRuntime()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L42",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_createpremiumruntime",
+      "community": 113,
+      "norm_label": "createpremiumruntime()"
+    },
+    {
+      "label": "Utterance",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L84",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_utterance",
+      "community": 113,
+      "norm_label": "utterance"
+    },
+    {
+      "label": "cancel()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L87",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_cancel",
+      "community": 113,
+      "norm_label": "cancel()"
+    },
+    {
+      "label": "speak()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L87",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_univoiceoutput_test_speak",
+      "community": 113,
+      "norm_label": "speak()"
+    },
+    {
+      "label": "useUniVoiceOutput.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_useunivoiceoutput",
+      "community": 113,
+      "norm_label": "useunivoiceoutput.js"
+    },
+    {
+      "label": "statusFromError()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_useunivoiceoutput_statusfromerror",
+      "community": 113,
+      "norm_label": "statusfromerror()"
+    },
+    {
+      "label": "useUniVoiceOutput()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "community": 113,
+      "norm_label": "useunivoiceoutput()"
+    },
+    {
+      "label": "voiceOutputMessages.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputMessages.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputmessages",
+      "community": 113,
+      "norm_label": "voiceoutputmessages.js"
+    },
+    {
+      "label": "VOICE_OUTPUT_MESSAGES",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputMessages.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputmessages_voice_output_messages",
+      "community": 113,
+      "norm_label": "voice_output_messages"
+    },
+    {
+      "label": "getVoiceOutputMessage()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputMessages.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputmessages_getvoiceoutputmessage",
+      "community": 113,
+      "norm_label": "getvoiceoutputmessage()"
+    },
+    {
+      "label": "voiceOutputPolicy.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy",
+      "community": 113,
+      "norm_label": "voiceoutputpolicy.js"
+    },
+    {
+      "label": "VOICE_OUTPUT_MODES",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_voice_output_modes",
+      "community": 113,
+      "norm_label": "voice_output_modes"
+    },
+    {
+      "label": "VALID_MODES",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_valid_modes",
+      "community": 113,
+      "norm_label": "valid_modes"
+    },
+    {
+      "label": "SENSITIVE_PATTERNS",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_sensitive_patterns",
+      "community": 113,
+      "norm_label": "sensitive_patterns"
+    },
+    {
+      "label": "VOICE_PERSONALITY_PRESETS",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_voice_personality_presets",
+      "community": 113,
+      "norm_label": "voice_personality_presets"
+    },
+    {
+      "label": "resolveVoiceOutputMode()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoiceoutputmode",
+      "community": 113,
+      "norm_label": "resolvevoiceoutputmode()"
+    },
+    {
+      "label": "resolveVoicePreset()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoicepreset",
+      "community": 113,
+      "norm_label": "resolvevoicepreset()"
+    },
+    {
+      "label": "sanitizeVoiceOutputText()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L33",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_sanitizevoiceoutputtext",
+      "community": 113,
+      "norm_label": "sanitizevoiceoutputtext()"
+    },
+    {
+      "label": "containsSensitiveVoiceData()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L55",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_containssensitivevoicedata",
+      "community": 113,
+      "norm_label": "containssensitivevoicedata()"
+    },
+    {
+      "label": "prepareVoiceOutputText()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_preparevoiceoutputtext",
+      "community": 113,
+      "norm_label": "preparevoiceoutputtext()"
+    },
+    {
+      "label": "createPremiumSessionGuard()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L85",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputpolicy_createpremiumsessionguard",
+      "community": 113,
+      "norm_label": "createpremiumsessionguard()"
+    },
+    {
+      "label": "voiceOutputProvider.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputprovider",
+      "community": 113,
+      "norm_label": "voiceoutputprovider.js"
+    },
+    {
+      "label": "createVoiceOutputProviders()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputprovider_createvoiceoutputproviders",
+      "community": 113,
+      "norm_label": "createvoiceoutputproviders()"
+    },
+    {
+      "label": "getVoiceOutputProvider()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputprovider_getvoiceoutputprovider",
+      "community": 113,
+      "norm_label": "getvoiceoutputprovider()"
+    },
+    {
+      "label": "voiceOutputReducer.js",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputReducer.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputreducer",
+      "community": 113,
+      "norm_label": "voiceoutputreducer.js"
+    },
+    {
+      "label": "VOICE_OUTPUT_STATES",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputReducer.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputreducer_voice_output_states",
+      "community": 113,
+      "norm_label": "voice_output_states"
+    },
+    {
+      "label": "INITIAL_VOICE_OUTPUT_STATE",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputReducer.js",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputreducer_initial_voice_output_state",
+      "community": 113,
+      "norm_label": "initial_voice_output_state"
+    },
+    {
+      "label": "voiceOutputReducer()",
+      "file_type": "code",
+      "source_file": "src/features/uni-voice-output/voiceOutputReducer.js",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "src_features_uni_voice_output_voiceoutputreducer_voiceoutputreducer",
+      "community": 113,
+      "norm_label": "voiceoutputreducer()"
+    },
+    {
       "label": "index.js",
       "file_type": "code",
       "source_file": "src/features/uni-voice/index.js",
@@ -5750,7 +6160,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_features_uni_voice_univoiceinput_test_fakerecognition_stop",
-      "community": 103,
+      "community": 113,
       "norm_label": ".stop()"
     },
     {
@@ -6170,7 +6580,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_clientespage_clientespage",
-      "community": 111,
+      "community": 101,
       "norm_label": "clientespage()"
     },
     {
@@ -6240,7 +6650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_loginpage",
-      "community": 111,
+      "community": 101,
       "norm_label": "loginpage.jsx"
     },
     {
@@ -6250,7 +6660,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_loginpage_loginpage",
-      "community": 111,
+      "community": 101,
       "norm_label": "loginpage()"
     },
     {
@@ -6330,7 +6740,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_pages_onboardingpage_onboardingpage",
-      "community": 111,
+      "community": 101,
       "norm_label": "onboardingpage()"
     },
     {
@@ -6360,7 +6770,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projectspage",
-      "community": 87,
+      "community": 101,
       "norm_label": "projectspage.jsx"
     },
     {
@@ -6370,7 +6780,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_projectspage_projectspage",
-      "community": 87,
+      "community": 101,
       "norm_label": "projectspage()"
     },
     {
@@ -6380,7 +6790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_reportspage",
-      "community": 88,
+      "community": 117,
       "norm_label": "reportspage.jsx"
     },
     {
@@ -6390,7 +6800,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_pages_reportspage_getreportscontext",
-      "community": 88,
+      "community": 117,
       "norm_label": "getreportscontext()"
     },
     {
@@ -6400,7 +6810,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_pages_reportspage_buildchartpoints",
-      "community": 88,
+      "community": 117,
       "norm_label": "buildchartpoints()"
     },
     {
@@ -6410,7 +6820,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_pages_reportspage_getlinepath",
-      "community": 88,
+      "community": 117,
       "norm_label": "getlinepath()"
     },
     {
@@ -6420,7 +6830,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_pages_reportspage_evolutionchart",
-      "community": 88,
+      "community": 117,
       "norm_label": "evolutionchart()"
     },
     {
@@ -6430,7 +6840,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "src_pages_reportspage_reportspage",
-      "community": 88,
+      "community": 117,
       "norm_label": "reportspage()"
     },
     {
@@ -6440,7 +6850,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 101,
+      "community": 114,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -6450,7 +6860,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 101,
+      "community": 114,
       "norm_label": "user_mode_labels"
     },
     {
@@ -6460,7 +6870,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 101,
+      "community": 114,
       "norm_label": "plan_labels"
     },
     {
@@ -6470,7 +6880,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 101,
+      "community": 114,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -6480,7 +6890,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 101,
+      "community": 114,
       "norm_label": "settingspage()"
     },
     {
@@ -6560,7 +6970,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 101,
+      "community": 114,
       "norm_label": "settings.mock.js"
     },
     {
@@ -6570,7 +6980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 101,
+      "community": 114,
       "norm_label": "settingsmock"
     },
     {
@@ -7010,7 +7420,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock",
-      "community": 87,
+      "community": 101,
       "norm_label": "projects.mock.js"
     },
     {
@@ -7020,7 +7430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_projetos_projects_mock_projectsmock",
-      "community": 87,
+      "community": 101,
       "norm_label": "projectsmock"
     },
     {
@@ -7030,7 +7440,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_relatorios_reports_mock",
-      "community": 88,
+      "community": 117,
       "norm_label": "reports.mock.js"
     },
     {
@@ -7040,7 +7450,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_relatorios_reports_mock_reportsmock",
-      "community": 88,
+      "community": 117,
       "norm_label": "reportsmock"
     },
     {
@@ -7050,7 +7460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero",
-      "community": 99,
+      "community": 41,
       "norm_label": "uniaihero.jsx"
     },
     {
@@ -7060,7 +7470,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaihero_uniaihero",
-      "community": 99,
+      "community": 41,
       "norm_label": "uniaihero()"
     },
     {
@@ -7070,7 +7480,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniaudiocontrols.jsx"
     },
     {
@@ -7080,7 +7490,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniaudiocontrols_uniaudiocontrols",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniaudiocontrols()"
     },
     {
@@ -7110,7 +7520,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel",
-      "community": 87,
+      "community": 99,
       "norm_label": "unicontextpanel.jsx"
     },
     {
@@ -7120,7 +7530,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unicontextpanel_unicontextpanel",
-      "community": 87,
+      "community": 99,
       "norm_label": "unicontextpanel()"
     },
     {
@@ -7140,7 +7550,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
-      "community": 39,
+      "community": 99,
       "norm_label": "uniexperienceshell()"
     },
     {
@@ -7290,7 +7700,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions",
-      "community": 87,
+      "community": 99,
       "norm_label": "uniquicksuggestions.jsx"
     },
     {
@@ -7300,7 +7710,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_uniquicksuggestions_uniquicksuggestions",
-      "community": 87,
+      "community": 99,
       "norm_label": "uniquicksuggestions()"
     },
     {
@@ -7310,7 +7720,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations",
-      "community": 87,
+      "community": 99,
       "norm_label": "unirecentconversations.jsx"
     },
     {
@@ -7320,7 +7730,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_pages_uni_ai_unirecentconversations_unirecentconversations",
-      "community": 87,
+      "community": 99,
       "norm_label": "unirecentconversations()"
     },
     {
@@ -7980,7 +8390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice",
-      "community": 100,
+      "community": 39,
       "norm_label": "confirmedfinancialactionservice.js"
     },
     {
@@ -7990,7 +8400,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice_rpc_error_messages",
-      "community": 100,
+      "community": 39,
       "norm_label": "rpc_error_messages"
     },
     {
@@ -8000,7 +8410,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice_createresult",
-      "community": 100,
+      "community": 39,
       "norm_label": "createresult()"
     },
     {
@@ -8010,7 +8420,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice_createsafeerror",
-      "community": 100,
+      "community": 39,
       "norm_label": "createsafeerror()"
     },
     {
@@ -8020,7 +8430,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice_getconfirmedaccountmode",
-      "community": 100,
+      "community": 39,
       "norm_label": "getconfirmedaccountmode()"
     },
     {
@@ -8030,7 +8440,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice_buildconfirmedfinancialactionrpcpayload",
-      "community": 100,
+      "community": 39,
       "norm_label": "buildconfirmedfinancialactionrpcpayload()"
     },
     {
@@ -8040,7 +8450,7 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice_executeconfirmedfinancialaction",
-      "community": 100,
+      "community": 39,
       "norm_label": "executeconfirmedfinancialaction()"
     },
     {
@@ -8050,7 +8460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice_test",
-      "community": 100,
+      "community": 39,
       "norm_label": "confirmedfinancialactionservice.test.js"
     },
     {
@@ -8060,7 +8470,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_services_confirmedfinancialactionservice_test_createaction",
-      "community": 100,
+      "community": 39,
       "norm_label": "createaction()"
     },
     {
@@ -9102,6 +9512,106 @@
       "id": "src_utils_helpers_isempty",
       "community": 35,
       "norm_label": "isempty()"
+    },
+    {
+      "label": "index.ts",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index",
+      "community": 116,
+      "norm_label": "index.ts"
+    },
+    {
+      "label": "activeUsers",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_activeusers",
+      "community": 116,
+      "norm_label": "activeusers"
+    },
+    {
+      "label": "CORS_HEADERS",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_cors_headers",
+      "community": 116,
+      "norm_label": "cors_headers"
+    },
+    {
+      "label": "PRESETS",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_presets",
+      "community": 116,
+      "norm_label": "presets"
+    },
+    {
+      "label": "PersonalityProfile",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_personalityprofile",
+      "community": 116,
+      "norm_label": "personalityprofile"
+    },
+    {
+      "label": "jsonResponse()",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_jsonresponse",
+      "community": 116,
+      "norm_label": "jsonresponse()"
+    },
+    {
+      "label": "sanitizeText()",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_sanitizetext",
+      "community": 116,
+      "norm_label": "sanitizetext()"
+    },
+    {
+      "label": "containsSensitiveData()",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_containssensitivedata",
+      "community": 116,
+      "norm_label": "containssensitivedata()"
+    },
+    {
+      "label": "readAllowlist()",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L52",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_readallowlist",
+      "community": 116,
+      "norm_label": "readallowlist()"
+    },
+    {
+      "label": "getAuthenticatedUserId()",
+      "file_type": "code",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L56",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_index_getauthenticateduserid",
+      "community": 116,
+      "norm_label": "getauthenticateduserid()"
     },
     {
       "label": "vite.config.js",
@@ -14464,10 +14974,20 @@
       "norm_label": "3. identidade central imutavel"
     },
     {
-      "label": "4. Arquetipos variaveis",
+      "label": "Rela\u00e7\u00e3o com sa\u00edda de voz",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
       "source_location": "L67",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_personality_v1_rela\u00e7\u00e3o_com_sa\u00edda_de_voz",
+      "community": 0,
+      "norm_label": "relacao com saida de voz"
+    },
+    {
+      "label": "4. Arquetipos variaveis",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
+      "source_location": "L74",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_4_arquetipos_variaveis",
       "community": 0,
@@ -14477,7 +14997,7 @@
       "label": "`elegant`",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L69",
+      "source_location": "L76",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_elegant",
       "community": 0,
@@ -14487,7 +15007,7 @@
       "label": "`warm`",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L79",
+      "source_location": "L86",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_warm",
       "community": 0,
@@ -14497,7 +15017,7 @@
       "label": "`strategic`",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L89",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_strategic",
       "community": 0,
@@ -14507,7 +15027,7 @@
       "label": "5. Perfis iniciais",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L99",
+      "source_location": "L106",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_5_perfis_iniciais",
       "community": 0,
@@ -14517,7 +15037,7 @@
       "label": "6. Perfil `balanced`",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L111",
+      "source_location": "L118",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_6_perfil_balanced",
       "community": 0,
@@ -14527,7 +15047,7 @@
       "label": "Intencao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L113",
+      "source_location": "L120",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_intencao",
       "community": 0,
@@ -14537,7 +15057,7 @@
       "label": "Comunicacao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L118",
+      "source_location": "L125",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_comunicacao",
       "community": 0,
@@ -14547,7 +15067,7 @@
       "label": "Exemplo",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L127",
+      "source_location": "L134",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_exemplo",
       "community": 0,
@@ -14557,7 +15077,7 @@
       "label": "Proibido",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L133",
+      "source_location": "L140",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_proibido",
       "community": 0,
@@ -14567,7 +15087,7 @@
       "label": "7. Perfil `direct`",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L140",
+      "source_location": "L147",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_7_perfil_direct",
       "community": 0,
@@ -14577,9 +15097,9 @@
       "label": "Intencao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L142",
+      "source_location": "L149",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_intencao_142",
+      "id": "docs_00_master_uni_personality_v1_intencao_149",
       "community": 0,
       "norm_label": "intencao"
     },
@@ -14587,9 +15107,9 @@
       "label": "Comunicacao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L147",
+      "source_location": "L154",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_comunicacao_147",
+      "id": "docs_00_master_uni_personality_v1_comunicacao_154",
       "community": 0,
       "norm_label": "comunicacao"
     },
@@ -14597,9 +15117,9 @@
       "label": "Exemplo",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L156",
+      "source_location": "L163",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_exemplo_156",
+      "id": "docs_00_master_uni_personality_v1_exemplo_163",
       "community": 0,
       "norm_label": "exemplo"
     },
@@ -14607,9 +15127,9 @@
       "label": "Proibido",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L162",
+      "source_location": "L169",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_proibido_162",
+      "id": "docs_00_master_uni_personality_v1_proibido_169",
       "community": 0,
       "norm_label": "proibido"
     },
@@ -14617,7 +15137,7 @@
       "label": "8. Perfil `warm`",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L170",
+      "source_location": "L177",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_8_perfil_warm",
       "community": 0,
@@ -14627,9 +15147,9 @@
       "label": "Intencao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L172",
+      "source_location": "L179",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_intencao_172",
+      "id": "docs_00_master_uni_personality_v1_intencao_179",
       "community": 0,
       "norm_label": "intencao"
     },
@@ -14637,9 +15157,9 @@
       "label": "Comunicacao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L177",
+      "source_location": "L184",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_comunicacao_177",
+      "id": "docs_00_master_uni_personality_v1_comunicacao_184",
       "community": 0,
       "norm_label": "comunicacao"
     },
@@ -14647,9 +15167,9 @@
       "label": "Exemplo",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L186",
+      "source_location": "L193",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_exemplo_186",
+      "id": "docs_00_master_uni_personality_v1_exemplo_193",
       "community": 0,
       "norm_label": "exemplo"
     },
@@ -14657,9 +15177,9 @@
       "label": "Proibido",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L192",
+      "source_location": "L199",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_proibido_192",
+      "id": "docs_00_master_uni_personality_v1_proibido_199",
       "community": 0,
       "norm_label": "proibido"
     },
@@ -14667,7 +15187,7 @@
       "label": "9. Perfil `strategic`",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L200",
+      "source_location": "L207",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_9_perfil_strategic",
       "community": 0,
@@ -14677,9 +15197,9 @@
       "label": "Intencao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L202",
+      "source_location": "L209",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_intencao_202",
+      "id": "docs_00_master_uni_personality_v1_intencao_209",
       "community": 0,
       "norm_label": "intencao"
     },
@@ -14687,9 +15207,9 @@
       "label": "Comunicacao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L207",
+      "source_location": "L214",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_comunicacao_207",
+      "id": "docs_00_master_uni_personality_v1_comunicacao_214",
       "community": 0,
       "norm_label": "comunicacao"
     },
@@ -14697,9 +15217,9 @@
       "label": "Exemplo",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L216",
+      "source_location": "L223",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_exemplo_216",
+      "id": "docs_00_master_uni_personality_v1_exemplo_223",
       "community": 0,
       "norm_label": "exemplo"
     },
@@ -14707,9 +15227,9 @@
       "label": "Proibido",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L222",
+      "source_location": "L229",
       "_origin": "ast",
-      "id": "docs_00_master_uni_personality_v1_proibido_222",
+      "id": "docs_00_master_uni_personality_v1_proibido_229",
       "community": 0,
       "norm_label": "proibido"
     },
@@ -14717,7 +15237,7 @@
       "label": "10. Regra de adaptacao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L231",
+      "source_location": "L238",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
       "community": 0,
@@ -14727,7 +15247,7 @@
       "label": "Ordem de prioridade",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L233",
+      "source_location": "L240",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_ordem_de_prioridade",
       "community": 0,
@@ -14737,7 +15257,7 @@
       "label": "Contexto pessoal",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L245",
+      "source_location": "L252",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_contexto_pessoal",
       "community": 0,
@@ -14747,7 +15267,7 @@
       "label": "Contexto empresarial",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L251",
+      "source_location": "L258",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_contexto_empresarial",
       "community": 0,
@@ -14757,7 +15277,7 @@
       "label": "Emergencia financeira",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L257",
+      "source_location": "L264",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_emergencia_financeira",
       "community": 0,
@@ -14767,7 +15287,7 @@
       "label": "Conhecimento financeiro",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L265",
+      "source_location": "L272",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_conhecimento_financeiro",
       "community": 0,
@@ -14777,7 +15297,7 @@
       "label": "Forma de decidir",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L271",
+      "source_location": "L278",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_forma_de_decidir",
       "community": 0,
@@ -14787,7 +15307,7 @@
       "label": "Limites da adaptacao",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L277",
+      "source_location": "L284",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_limites_da_adaptacao",
       "community": 0,
@@ -14797,7 +15317,7 @@
       "label": "11. Onboarding futuro",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L288",
+      "source_location": "L295",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_11_onboarding_futuro",
       "community": 0,
@@ -14807,7 +15327,7 @@
       "label": "12. Configuracoes futuras",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L301",
+      "source_location": "L308",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_12_configuracoes_futuras",
       "community": 0,
@@ -14817,7 +15337,7 @@
       "label": "13. Arquitetura de codigo V1",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L315",
+      "source_location": "L322",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_13_arquitetura_de_codigo_v1",
       "community": 0,
@@ -14827,7 +15347,7 @@
       "label": "14. Dados futuros",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L334",
+      "source_location": "L341",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_14_dados_futuros",
       "community": 0,
@@ -14837,7 +15357,7 @@
       "label": "15. Fora do escopo da V1",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L349",
+      "source_location": "L356",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_15_fora_do_escopo_da_v1",
       "community": 0,
@@ -14847,7 +15367,7 @@
       "label": "16. Criterios para integracao futura",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L362",
+      "source_location": "L369",
       "_origin": "ast",
       "id": "docs_00_master_uni_personality_v1_16_criterios_para_integracao_futura",
       "community": 0,
@@ -14954,14 +15474,184 @@
       "norm_label": "limites da v1"
     },
     {
-      "label": "Pr\u00f3xima fase",
+      "label": "Sa\u00edda de voz separada",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_VOICE_INPUT_V1.md",
       "source_location": "L112",
       "_origin": "ast",
-      "id": "docs_00_master_uni_voice_input_v1_pr\u00f3xima_fase",
+      "id": "docs_00_master_uni_voice_input_v1_sa\u00edda_de_voz_separada",
       "community": 110,
-      "norm_label": "proxima fase"
+      "norm_label": "saida de voz separada"
+    },
+    {
+      "label": "UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1",
+      "community": 115,
+      "norm_label": "uni_voice_output_premium_demo_v1.md"
+    },
+    {
+      "label": "Uni Voice Output Premium Demo V1",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "community": 115,
+      "norm_label": "uni voice output premium demo v1"
+    },
+    {
+      "label": "1. Objetivo",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_1_objetivo",
+      "community": 115,
+      "norm_label": "1. objetivo"
+    },
+    {
+      "label": "2. Arquitetura de providers",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_2_arquitetura_de_providers",
+      "community": 115,
+      "norm_label": "2. arquitetura de providers"
+    },
+    {
+      "label": "3. Modos e acionamento",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_3_modos_e_acionamento",
+      "community": 115,
+      "norm_label": "3. modos e acionamento"
+    },
+    {
+      "label": "4. Voz padr\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_4_voz_padr\u00e3o",
+      "community": 115,
+      "norm_label": "4. voz padrao"
+    },
+    {
+      "label": "5. Voz premium e Edge Function",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L58",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_5_voz_premium_e_edge_function",
+      "community": 115,
+      "norm_label": "5. voz premium e edge function"
+    },
+    {
+      "label": "6. Segredos e configura\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L69",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_6_segredos_e_configura\u00e7\u00e3o",
+      "community": 115,
+      "norm_label": "6. segredos e configuracao"
+    },
+    {
+      "label": "7. Autoriza\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L83",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_7_autoriza\u00e7\u00e3o",
+      "community": 115,
+      "norm_label": "7. autorizacao"
+    },
+    {
+      "label": "8. Limites da demonstra\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L93",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_8_limites_da_demonstra\u00e7\u00e3o",
+      "community": 115,
+      "norm_label": "8. limites da demonstracao"
+    },
+    {
+      "label": "9. Personalidade",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L110",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_9_personalidade",
+      "community": 115,
+      "norm_label": "9. personalidade"
+    },
+    {
+      "label": "10. Sanitiza\u00e7\u00e3o e privacidade",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L117",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_10_sanitiza\u00e7\u00e3o_e_privacidade",
+      "community": 115,
+      "norm_label": "10. sanitizacao e privacidade"
+    },
+    {
+      "label": "11. Estados e mensagens",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L133",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_11_estados_e_mensagens",
+      "community": 115,
+      "norm_label": "11. estados e mensagens"
+    },
+    {
+      "label": "12. Modo sem configura\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L145",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_12_modo_sem_configura\u00e7\u00e3o",
+      "community": 115,
+      "norm_label": "12. modo sem configuracao"
+    },
+    {
+      "label": "13. Sequ\u00eancia segura para habilitar uma demonstra\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L155",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_13_sequ\u00eancia_segura_para_habilitar_uma_demonstra\u00e7\u00e3o",
+      "community": 115,
+      "norm_label": "13. sequencia segura para habilitar uma demonstracao"
+    },
+    {
+      "label": "14. Limites e pr\u00f3ximos passos",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L167",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_14_limites_e_pr\u00f3ximos_passos",
+      "community": 115,
+      "norm_label": "14. limites e proximos passos"
+    },
+    {
+      "label": "15. Estado da implementa\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L175",
+      "_origin": "ast",
+      "id": "docs_00_master_uni_voice_output_premium_demo_v1_15_estado_da_implementa\u00e7\u00e3o",
+      "community": 115,
+      "norm_label": "15. estado da implementacao"
     },
     {
       "label": "USER_MODES_AND_PLANS.md",
@@ -15892,6 +16582,56 @@
       "id": "supabase_readme_decisoes_ainda_pendentes",
       "community": 4,
       "norm_label": "decisoes ainda pendentes"
+    },
+    {
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_readme",
+      "community": 118,
+      "norm_label": "readme.md"
+    },
+    {
+      "label": "Generate Uni Premium Voice",
+      "file_type": "document",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_readme_generate_uni_premium_voice",
+      "community": 118,
+      "norm_label": "generate uni premium voice"
+    },
+    {
+      "label": "Segredos obrigat\u00f3rios",
+      "file_type": "document",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_readme_segredos_obrigat\u00f3rios",
+      "community": 118,
+      "norm_label": "segredos obrigatorios"
+    },
+    {
+      "label": "Contrato",
+      "file_type": "document",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_readme_contrato",
+      "community": 118,
+      "norm_label": "contrato"
+    },
+    {
+      "label": "Estado",
+      "file_type": "document",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L34",
+      "_origin": "ast",
+      "id": "supabase_functions_generate_uni_premium_voice_readme_estado",
+      "community": 118,
+      "norm_label": "estado"
     },
     {
       "label": "signInWithEmail",
@@ -26293,7 +27033,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L59",
+      "source_location": "L60",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_features_uni_conversation_useuniconversation_useuniconversation",
@@ -30964,6 +31704,1206 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/browserVoiceProvider.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_browservoiceprovider",
+      "target": "src_features_uni_voice_output_browservoiceprovider_createbrowservoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/browserVoiceProvider.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_browservoiceprovider",
+      "target": "src_features_uni_voice_output_browservoiceprovider_selectportuguesevoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_browservoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_browservoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputprovider",
+      "target": "src_features_uni_voice_output_browservoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_browservoiceprovider_selectportuguesevoice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "indirect_call",
+      "context": "collection",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/features/uni-voice-output/browserVoiceProvider.js",
+      "source_location": "L73",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_browservoiceprovider_createbrowservoiceprovider",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_speak"
+    },
+    {
+      "relation": "indirect_call",
+      "context": "collection",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/features/uni-voice-output/browserVoiceProvider.js",
+      "source_location": "L73",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_browservoiceprovider_createbrowservoiceprovider",
+      "target": "src_features_uni_voice_univoiceinput_test_fakerecognition_stop"
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_browservoiceprovider_createbrowservoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_browservoiceprovider_createbrowservoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputprovider",
+      "target": "src_features_uni_voice_output_browservoiceprovider_createbrowservoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputprovider_createvoiceoutputproviders",
+      "target": "src_features_uni_voice_output_browservoiceprovider_createbrowservoiceprovider"
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider_createpremiumvoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_useunivoiceoutput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputmessages",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputmessages_getvoiceoutputmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputmessages_voice_output_messages",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_containssensitivevoicedata",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_createpremiumsessionguard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_preparevoiceoutputtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoiceoutputmode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoicepreset",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_sanitizevoiceoutputtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_voice_output_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_voice_personality_presets",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputprovider_createvoiceoutputproviders",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputprovider_getvoiceoutputprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputreducer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_initial_voice_output_state",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_voice_output_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "re_exports",
+      "context": "re-export",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/index.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_index",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_voiceoutputreducer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniAudioControls.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_uniaudiocontrols",
+      "target": "src_features_uni_voice_output_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_features_uni_voice_output_index",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/premiumVoiceProvider.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_premiumvoiceprovider",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider_createpremiumvoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/premiumVoiceProvider.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_premiumvoiceprovider",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider_createprovidererror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputprovider",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "indirect_call",
+      "context": "collection",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/features/uni-voice-output/premiumVoiceProvider.js",
+      "source_location": "L120",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_premiumvoiceprovider_createpremiumvoiceprovider",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_speak"
+    },
+    {
+      "relation": "indirect_call",
+      "context": "collection",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/features/uni-voice-output/premiumVoiceProvider.js",
+      "source_location": "L120",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_premiumvoiceprovider_createpremiumvoiceprovider",
+      "target": "src_features_uni_voice_univoiceinput_test_fakerecognition_stop"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider_createpremiumvoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputprovider",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider_createpremiumvoiceprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputprovider_createvoiceoutputproviders",
+      "target": "src_features_uni_voice_output_premiumvoiceprovider_createpremiumvoiceprovider"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_cancel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_createbrowserruntime",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_createpremiumruntime",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_edge_source",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_hook_source",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_page_source",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_provider_source",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_speak",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L84",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_utterance",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_createpremiumsessionguard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_preparevoiceoutputtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoicepreset",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_sanitizevoiceoutputtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "indirect_call",
+      "context": "collection",
+      "confidence": "INFERRED",
+      "source_file": "src/features/uni-voice-output/uniVoiceOutput.test.js",
+      "source_location": "L39",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_univoiceoutput_test_createbrowserruntime",
+      "target": "src_features_uni_voice_output_univoiceoutput_test_utterance",
+      "confidence_score": 0.5
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_useunivoiceoutput_statusfromerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputmessages",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputmessages_getvoiceoutputmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_createpremiumsessionguard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_preparevoiceoutputtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoiceoutputmode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoicepreset",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_voice_output_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputprovider_createvoiceoutputproviders",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputreducer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_initial_voice_output_state",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_voice_output_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_voiceoutputreducer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_services_supabaseclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput",
+      "target": "src_services_supabaseclient_supabase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L143",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_useunivoiceoutput_statusfromerror",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L117",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputmessages_getvoiceoutputmessage"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_createpremiumsessionguard"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_preparevoiceoutputtext"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoiceoutputmode"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoicepreset"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L31",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputprovider_createvoiceoutputproviders"
+    },
+    {
+      "relation": "indirect_call",
+      "context": "argument",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/features/uni-voice-output/useUniVoiceOutput.js",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_voiceoutputreducer"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage_uniaipage",
+      "target": "src_features_uni_voice_output_useunivoiceoutput_useunivoiceoutput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputMessages.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputmessages",
+      "target": "src_features_uni_voice_output_voiceoutputmessages_getvoiceoutputmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputMessages.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputmessages",
+      "target": "src_features_uni_voice_output_voiceoutputmessages_voice_output_messages",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_containssensitivevoicedata",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L85",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_createpremiumsessionguard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_preparevoiceoutputtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoiceoutputmode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoicepreset",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L33",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_sanitizevoiceoutputtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_sensitive_patterns",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_valid_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_voice_output_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_voice_personality_presets",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/uni-ai/UniAudioControls.jsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_pages_uni_ai_uniaudiocontrols",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_voice_output_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/pages/UniAIPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_pages_uniaipage",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_voice_output_modes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy_resolvevoiceoutputmode",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_valid_modes"
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L56",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy_containssensitivevoicedata",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_sensitive_patterns"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L60",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy_preparevoiceoutputtext",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_sanitizevoiceoutputtext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputPolicy.js",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputpolicy_preparevoiceoutputtext",
+      "target": "src_features_uni_voice_output_voiceoutputpolicy_containssensitivevoicedata",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputprovider",
+      "target": "src_features_uni_voice_output_voiceoutputprovider_createvoiceoutputproviders",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputProvider.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputprovider",
+      "target": "src_features_uni_voice_output_voiceoutputprovider_getvoiceoutputprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputReducer.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputreducer",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_initial_voice_output_state",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputReducer.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputreducer",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_voice_output_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/features/uni-voice-output/voiceOutputReducer.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_features_uni_voice_output_voiceoutputreducer",
+      "target": "src_features_uni_voice_output_voiceoutputreducer_voiceoutputreducer",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "re_exports",
       "context": "export",
       "confidence": "EXTRACTED",
@@ -31623,7 +33563,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L95",
+      "source_location": "L88",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_features_uni_voice_useunivoiceinput_useunivoiceinput",
@@ -32425,7 +34365,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_hooks_index",
@@ -32611,7 +34551,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_hooks_useaccounts_useaccounts",
@@ -32786,7 +34726,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_hooks_usecategories_usecategories",
@@ -33190,7 +35130,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L7",
+      "source_location": "L8",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_hooks_usetransactions_usetransactions",
@@ -34352,7 +36292,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_financeiro_financialcrud_mock",
@@ -34363,7 +36303,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_financeiro_financialcrud_mock_fallbackaccounttypes",
@@ -34374,7 +36314,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_financeiro_financialcrud_mock_financialcrudmock",
@@ -34385,7 +36325,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_index",
@@ -34396,7 +36336,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_experience_experience_states",
@@ -34407,7 +36347,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_experience_experience_timing",
@@ -34418,7 +36358,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createinsightreport",
@@ -34429,7 +36369,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createmessage",
@@ -34440,7 +36380,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getmockuniresponse",
@@ -34451,18 +36391,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "src_pages_uniaipage",
-      "target": "src_pages_uni_ai_uniai_helpers_getportuguesevoice",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_isprobablysafari",
@@ -34473,7 +36402,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_thinkingsteps",
@@ -34484,7 +36413,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_mock_contextitems",
@@ -34495,7 +36424,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_mock_contextualsuggestions",
@@ -34506,7 +36435,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_mock_conversationmessages",
@@ -34517,7 +36446,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniai_mock_quicksuggestions",
@@ -34528,7 +36457,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L11",
+      "source_location": "L12",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_pages_uni_ai_uniexperienceshell_uniexperienceshell",
@@ -34559,7 +36488,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L8",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_services_confirmedfinancialactionservice",
@@ -34570,7 +36499,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L8",
+      "source_location": "L9",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_services_confirmedfinancialactionservice_executeconfirmedfinancialaction",
@@ -34581,7 +36510,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L9",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_services_supabaseclient",
@@ -34592,7 +36521,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L9",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "src_pages_uniaipage",
       "target": "src_services_supabaseclient_issupabaseconfigured",
@@ -34603,7 +36532,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L68",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uniaipage_getlocalisodate",
@@ -34614,7 +36543,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L179",
+      "source_location": "L161",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createinsightreport",
@@ -34625,7 +36554,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L185",
+      "source_location": "L165",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_createmessage",
@@ -34636,7 +36565,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L176",
+      "source_location": "L160",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_getmockuniresponse",
@@ -34647,18 +36576,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L255",
-      "weight": 1.0,
-      "source": "src_pages_uniaipage_uniaipage",
-      "target": "src_pages_uni_ai_uniai_helpers_getportuguesevoice",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L378",
+      "source_location": "L248",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_pages_uni_ai_uniai_helpers_isprobablysafari",
@@ -34669,7 +36587,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/pages/UniAIPage.jsx",
-      "source_location": "L114",
+      "source_location": "L107",
       "weight": 1.0,
       "source": "src_pages_uniaipage_uniaipage",
       "target": "src_services_confirmedfinancialactionservice_executeconfirmedfinancialaction",
@@ -35625,28 +37543,6 @@
       "weight": 1.0,
       "source": "src_pages_uni_ai_index",
       "target": "src_pages_uni_ai_uniaudiocontrols",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/uni-ai/UniAudioControls.jsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "source": "src_pages_uni_ai_uniaudiocontrols",
-      "target": "src_pages_uni_ai_uniai_experience",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/pages/uni-ai/UniAudioControls.jsx",
-      "source_location": "L2",
-      "weight": 1.0,
-      "source": "src_pages_uni_ai_uniaudiocontrols",
-      "target": "src_pages_uni_ai_uniai_experience_audiocontrollabels",
       "confidence_score": 1.0
     },
     {
@@ -40749,6 +42645,96 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_activeusers",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_containssensitivedata",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_cors_headers",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L56",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_getauthenticateduserid",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_jsonresponse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_personalityprofile",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_presets",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_readallowlist",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/index.ts",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_index",
+      "target": "supabase_functions_generate_uni_premium_voice_index_sanitizetext",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "AGENTS.md",
       "source_location": "L1",
       "weight": 1.0,
@@ -45750,7 +47736,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L231",
+      "source_location": "L238",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
@@ -45760,7 +47746,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L288",
+      "source_location": "L295",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_11_onboarding_futuro",
@@ -45770,7 +47756,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L301",
+      "source_location": "L308",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_12_configuracoes_futuras",
@@ -45780,7 +47766,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L315",
+      "source_location": "L322",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_13_arquitetura_de_codigo_v1",
@@ -45790,7 +47776,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L334",
+      "source_location": "L341",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_14_dados_futuros",
@@ -45800,7 +47786,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L349",
+      "source_location": "L356",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_15_fora_do_escopo_da_v1",
@@ -45810,7 +47796,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L362",
+      "source_location": "L369",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_16_criterios_para_integracao_futura",
@@ -45850,7 +47836,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L67",
+      "source_location": "L74",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_4_arquetipos_variaveis",
@@ -45860,7 +47846,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L99",
+      "source_location": "L106",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_5_perfis_iniciais",
@@ -45870,7 +47856,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L111",
+      "source_location": "L118",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_6_perfil_balanced",
@@ -45880,7 +47866,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L140",
+      "source_location": "L147",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_7_perfil_direct",
@@ -45890,7 +47876,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L170",
+      "source_location": "L177",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_8_perfil_warm",
@@ -45900,7 +47886,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L200",
+      "source_location": "L207",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_uni_personality_v1",
       "target": "docs_00_master_uni_personality_v1_9_perfil_strategic",
@@ -45940,7 +47926,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L69",
+      "source_location": "L67",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_personality_v1_3_identidade_central_imutavel",
+      "target": "docs_00_master_uni_personality_v1_rela\u00e7\u00e3o_com_sa\u00edda_de_voz",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
+      "source_location": "L76",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_4_arquetipos_variaveis",
       "target": "docs_00_master_uni_personality_v1_elegant",
@@ -45950,7 +47946,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L89",
+      "source_location": "L96",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_4_arquetipos_variaveis",
       "target": "docs_00_master_uni_personality_v1_strategic",
@@ -45960,7 +47956,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L79",
+      "source_location": "L86",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_4_arquetipos_variaveis",
       "target": "docs_00_master_uni_personality_v1_warm",
@@ -45970,7 +47966,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L118",
+      "source_location": "L125",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_6_perfil_balanced",
       "target": "docs_00_master_uni_personality_v1_comunicacao",
@@ -45980,7 +47976,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L127",
+      "source_location": "L134",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_6_perfil_balanced",
       "target": "docs_00_master_uni_personality_v1_exemplo",
@@ -45990,7 +47986,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L113",
+      "source_location": "L120",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_6_perfil_balanced",
       "target": "docs_00_master_uni_personality_v1_intencao",
@@ -46000,7 +47996,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L133",
+      "source_location": "L140",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_6_perfil_balanced",
       "target": "docs_00_master_uni_personality_v1_proibido",
@@ -46010,127 +48006,127 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L147",
+      "source_location": "L154",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_7_perfil_direct",
-      "target": "docs_00_master_uni_personality_v1_comunicacao_147",
+      "target": "docs_00_master_uni_personality_v1_comunicacao_154",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L156",
+      "source_location": "L163",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_7_perfil_direct",
-      "target": "docs_00_master_uni_personality_v1_exemplo_156",
+      "target": "docs_00_master_uni_personality_v1_exemplo_163",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L142",
+      "source_location": "L149",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_7_perfil_direct",
-      "target": "docs_00_master_uni_personality_v1_intencao_142",
+      "target": "docs_00_master_uni_personality_v1_intencao_149",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L162",
+      "source_location": "L169",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_7_perfil_direct",
-      "target": "docs_00_master_uni_personality_v1_proibido_162",
+      "target": "docs_00_master_uni_personality_v1_proibido_169",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L177",
+      "source_location": "L184",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_8_perfil_warm",
-      "target": "docs_00_master_uni_personality_v1_comunicacao_177",
+      "target": "docs_00_master_uni_personality_v1_comunicacao_184",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L186",
+      "source_location": "L193",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_8_perfil_warm",
-      "target": "docs_00_master_uni_personality_v1_exemplo_186",
+      "target": "docs_00_master_uni_personality_v1_exemplo_193",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L172",
+      "source_location": "L179",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_8_perfil_warm",
-      "target": "docs_00_master_uni_personality_v1_intencao_172",
+      "target": "docs_00_master_uni_personality_v1_intencao_179",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L192",
+      "source_location": "L199",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_8_perfil_warm",
-      "target": "docs_00_master_uni_personality_v1_proibido_192",
+      "target": "docs_00_master_uni_personality_v1_proibido_199",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L207",
+      "source_location": "L214",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_9_perfil_strategic",
-      "target": "docs_00_master_uni_personality_v1_comunicacao_207",
+      "target": "docs_00_master_uni_personality_v1_comunicacao_214",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L216",
+      "source_location": "L223",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_9_perfil_strategic",
-      "target": "docs_00_master_uni_personality_v1_exemplo_216",
+      "target": "docs_00_master_uni_personality_v1_exemplo_223",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L202",
+      "source_location": "L209",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_9_perfil_strategic",
-      "target": "docs_00_master_uni_personality_v1_intencao_202",
+      "target": "docs_00_master_uni_personality_v1_intencao_209",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L222",
+      "source_location": "L229",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_9_perfil_strategic",
-      "target": "docs_00_master_uni_personality_v1_proibido_222",
+      "target": "docs_00_master_uni_personality_v1_proibido_229",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L265",
+      "source_location": "L272",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
       "target": "docs_00_master_uni_personality_v1_conhecimento_financeiro",
@@ -46140,7 +48136,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L251",
+      "source_location": "L258",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
       "target": "docs_00_master_uni_personality_v1_contexto_empresarial",
@@ -46150,7 +48146,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L245",
+      "source_location": "L252",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
       "target": "docs_00_master_uni_personality_v1_contexto_pessoal",
@@ -46160,7 +48156,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L257",
+      "source_location": "L264",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
       "target": "docs_00_master_uni_personality_v1_emergencia_financeira",
@@ -46170,7 +48166,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L271",
+      "source_location": "L278",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
       "target": "docs_00_master_uni_personality_v1_forma_de_decidir",
@@ -46180,7 +48176,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L277",
+      "source_location": "L284",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
       "target": "docs_00_master_uni_personality_v1_limites_da_adaptacao",
@@ -46190,7 +48186,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_PERSONALITY_V1.md",
-      "source_location": "L233",
+      "source_location": "L240",
       "weight": 1.0,
       "source": "docs_00_master_uni_personality_v1_10_regra_de_adaptacao",
       "target": "docs_00_master_uni_personality_v1_ordem_de_prioridade",
@@ -46283,7 +48279,7 @@
       "source_location": "L112",
       "weight": 1.0,
       "source": "docs_00_master_uni_voice_input_v1_uni_voice_input_v1",
-      "target": "docs_00_master_uni_voice_input_v1_pr\u00f3xima_fase",
+      "target": "docs_00_master_uni_voice_input_v1_sa\u00edda_de_voz_separada",
       "confidence_score": 1.0
     },
     {
@@ -46294,6 +48290,166 @@
       "weight": 1.0,
       "source": "docs_00_master_uni_voice_input_v1_uni_voice_input_v1",
       "target": "docs_00_master_uni_voice_input_v1_web_speech_api_e_compatibilidade",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L117",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_10_sanitiza\u00e7\u00e3o_e_privacidade",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L133",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_11_estados_e_mensagens",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L145",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_12_modo_sem_configura\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L155",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_13_sequ\u00eancia_segura_para_habilitar_uma_demonstra\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L167",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_14_limites_e_pr\u00f3ximos_passos",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L175",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_15_estado_da_implementa\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_1_objetivo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_2_arquitetura_de_providers",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_3_modos_e_acionamento",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_4_voz_padr\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L58",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_5_voz_premium_e_edge_function",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L69",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_6_segredos_e_configura\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_7_autoriza\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L93",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_8_limites_da_demonstra\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/00-master/UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md",
+      "source_location": "L110",
+      "weight": 1.0,
+      "source": "docs_00_master_uni_voice_output_premium_demo_v1_uni_voice_output_premium_demo_v1",
+      "target": "docs_00_master_uni_voice_output_premium_demo_v1_9_personalidade",
       "confidence_score": 1.0
     },
     {
@@ -47155,8 +49311,48 @@
       "source": "supabase_readme_novas_migrations",
       "target": "supabase_readme_recuperacao_segura_de_profiles_antigos",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_readme",
+      "target": "supabase_functions_generate_uni_premium_voice_readme_generate_uni_premium_voice",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_readme_generate_uni_premium_voice",
+      "target": "supabase_functions_generate_uni_premium_voice_readme_contrato",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_readme_generate_uni_premium_voice",
+      "target": "supabase_functions_generate_uni_premium_voice_readme_estado",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/functions/generate-uni-premium-voice/README.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "supabase_functions_generate_uni_premium_voice_readme_generate_uni_premium_voice",
+      "target": "supabase_functions_generate_uni_premium_voice_readme_segredos_obrigat\u00f3rios",
+      "confidence_score": 1.0
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "a66039856db389450aacf12201b50a8445e47a1a"
+  "built_at_commit": "0b28a40ff41ec5b1598476cd80c0d5542afb3a75"
 }
