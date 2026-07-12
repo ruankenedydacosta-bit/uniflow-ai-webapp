@@ -2,22 +2,26 @@
 
 ## Status
 
-Esta etapa cria somente a arquitetura e o dominio local de Open Finance.
+Em 2026-07-11, a infraestrutura de dominio foi aplicada e validada somente no
+projeto Supabase `UniFlow DEV`.
 
-- Nenhuma migration foi aplicada.
-- Nenhum projeto Supabase remoto foi acessado.
+- A migration 004 foi aplicada com sucesso no DEV.
+- A validacao estatica concluiu 12/12 verificacoes.
+- Quatro tabelas, RLS, policies, FKs, indices e triggers foram confirmados.
+- Nenhuma escrita foi liberada ao frontend.
+- Nenhuma coluna proibida destinada a segredo foi encontrada.
 - Nenhuma instituicao financeira foi conectada.
 - Nenhum token, certificado, segredo ou credencial bancaria foi criado.
 - Producao permanece sem alteracoes.
 - Paginas, CSS e mocks atuais permanecem inalterados.
 
-A migration proposta e:
+A migration aprovada no DEV e:
 
 `supabase/migrations/20260711_004_open_finance_infrastructure.sql`
 
-Ela depende das migrations de identidade, workspaces e nucleo financeiro. Sua
-primeira aplicacao futura deve ocorrer exclusivamente no `UniFlow DEV`, depois
-de revisao e testes controlados de RLS.
+Ela depende das migrations de identidade, workspaces e nucleo financeiro. A
+aprovacao no DEV nao autoriza promocao para producao nem conexao de um
+provedor.
 
 ## Principio do produto
 
@@ -272,15 +276,15 @@ tokens, validacao de webhooks bancarios ou acesso privilegiado ao banco.
 
 ## Proximas etapas seguras
 
-1. Revisar a migration e suas policies.
-2. Aplicar somente no `UniFlow DEV`.
-3. Criar roteiro autenticado de leitura/RLS.
-4. Definir provedor e requisitos regulatorios sem incluir credenciais.
+1. Pesquisar provedores com cobertura brasileira e sandbox.
+2. Comparar PF/PJ, dados suportados, webhooks, seguranca, SLA e custos.
+3. Selecionar um provedor somente depois de uma matriz documentada.
+4. Definir requisitos regulatorios sem incluir credenciais no repositorio.
 5. Criar Edge Functions com secrets apenas no DEV.
 6. Implementar consentimento sandbox do provedor escolhido.
-7. Validar idempotencia, retries, revogacao e expiracao.
-8. Conciliar contas externas com `accounts`.
-9. Conciliar transacoes externas com `transactions`.
+7. Criar roteiro autenticado de leitura/RLS para o fluxo integrado.
+8. Validar idempotencia, retries, revogacao e expiracao.
+9. Conciliar contas e transacoes externas com o dominio normalizado.
 10. Conectar interface somente depois dos testes de seguranca.
 
 ## Criterios antes de producao

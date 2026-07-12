@@ -20,9 +20,11 @@ Ela prepara:
 
 Nenhuma tabela financeira ou de produto foi criada nesta migration.
 
-## Migration financeira pendente
+## Nucleo financeiro no DEV
 
-A migration `migrations/20260711_002_financial_core.sql` foi criada localmente e ainda nao foi aplicada em nenhum projeto Supabase.
+A migration `migrations/20260711_002_financial_core.sql` esta aplicada no
+`UniFlow DEV` e sustenta o Financeiro real usado nos testes de contas,
+categorias e lancamentos.
 
 Ela prepara:
 
@@ -33,11 +35,40 @@ Ela prepara:
 - RLS para owner, admin, member e viewer;
 - grants por coluna para impedir que o frontend forje origem externa.
 
-Antes de qualquer aplicacao, a migration deve ser revisada e testada somente no `UniFlow DEV`. Producao permanece sem alteracoes.
+A migration dependente `migrations/20260711_003_financial_catalog_seeds.sql`
+tambem foi preparada para o catalogo global `account_types`, FK de tipo de
+conta e categorias sistemicas. A ordem no DEV permanece 002 seguida de 003.
 
-A migration dependente `migrations/20260711_003_financial_catalog_seeds.sql` tambem permanece somente local. Ela cria o catalogo global `account_types`, vincula `accounts.account_type` por FK e adiciona um seed pequeno de categorias globais do sistema. A ordem obrigatoria de aplicacao no DEV e 002 seguida de 003.
+O frontend conserva fallback mockado quando Supabase nao esta configurado. No
+ambiente autenticado, o CRUD respeita workspace e RLS. Producao permanece sem
+alteracoes.
 
-O frontend da Fase 2 ja possui hooks e CRUD preparados, mas continua em fallback mockado enquanto essas migrations nao forem aplicadas no `UniFlow DEV`. A integracao nao acessa producao e nao contorna RLS.
+## Open Finance validado no DEV
+
+Em 2026-07-11, a migration
+`migrations/20260711_004_open_finance_infrastructure.sql` foi aplicada e
+validada somente no projeto Supabase `UniFlow DEV`.
+
+Resultado: 12/12 verificacoes aprovadas.
+
+- quatro tabelas criadas;
+- RLS ativo nas quatro tabelas;
+- quatro policies seguras de `SELECT`;
+- nenhuma escrita liberada ao frontend;
+- nenhuma coluna com nome destinado a token, secret, password, certificate ou
+  private key;
+- doze foreign keys presentes;
+- todas as FKs compostas apoiadas por unicidade compativel;
+- sete indices de idempotencia presentes;
+- dois indices workspace-first presentes;
+- triggers de `updated_at` presentes.
+
+A migration 004 esta aprovada no DEV. Ela ainda nao conecta bancos, nao possui
+credenciais e nao implementa provedor ou Edge Function. Producao nao recebeu a
+migration e permanece intacta.
+
+O proximo passo e pesquisar e selecionar um provedor Open Finance com sandbox,
+usando `docs/00-master/OPEN_FINANCE_PROVIDER_SELECTION.md` como roteiro.
 
 ## Validacoes concluidas no DEV
 
