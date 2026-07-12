@@ -4,6 +4,7 @@ import { useSession } from '../app/SessionContext';
 import { UNI_CONVERSATION_STATES, useUniConversation } from '../features/uni-conversation';
 import { useConversationMemory } from '../features/uni-memory-integration';
 import { useUniVoiceInput } from '../features/uni-voice';
+import { useUniVoiceOutput, VOICE_OUTPUT_MODES } from '../features/uni-voice-output';
 import { useAccounts, useCategories, useTransactions } from '../hooks';
 import { executeConfirmedFinancialAction } from '../services/confirmedFinancialActionService.js';
 import { isSupabaseConfigured } from '../services/supabaseClient.js';
@@ -17,7 +18,6 @@ import {
   createInsightReport,
   createMessage,
   getMockUniResponse,
-  getPortugueseVoice,
   isProbablySafari,
   quickSuggestions,
   thinkingSteps,
@@ -56,6 +56,7 @@ function UniAIPage() {
   const personalityProfileId = conversationMemory.preferredProfileId
     ?? profile?.uni_personality_profile
     ?? 'balanced';
+  const voiceOutput = useUniVoiceOutput({ personalityProfileId });
   const financialConversation = useUniConversation({
     accounts: accountState.accounts,
     accountTypes: accountState.accountTypes,
@@ -72,9 +73,6 @@ function UniAIPage() {
   const [draftMessage, setDraftMessage] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
   const [currentReport, setCurrentReport] = useState(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [voiceVolume, setVoiceVolume] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
   const [isResponding, setIsResponding] = useState(false);
@@ -82,16 +80,11 @@ function UniAIPage() {
   const [voiceNotice, setVoiceNotice] = useState('');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [textComposerOpen, setTextComposerOpen] = useState(false);
-  const activeUtteranceRef = useRef(null);
   const audioContextRef = useRef(null);
   const audioStreamRef = useRef(null);
   const animationFrameRef = useRef(null);
   const thinkingTimersRef = useRef([]);
   const responseRevealTimerRef = useRef(null);
-  const autoSpeechTimerRef = useRef(null);
-  const responseSequenceRef = useRef(0);
-  const lastAutoSpokenReportRef = useRef(null);
-  const mutedRef = useRef(false);
   const voiceInput = useUniVoiceInput({
     profileId: personalityProfileId,
     onBeforeStart: prepareVoiceCapture,
@@ -119,10 +112,6 @@ function UniAIPage() {
     return result;
   }
 
-  useEffect(() => {
-    mutedRef.current = isMuted;
-  }, [isMuted]);
-
   useEffect(() => () => {
     if (animationFrameRef.current) {
       window.cancelAnimationFrame(animationFrameRef.current);
@@ -132,23 +121,18 @@ function UniAIPage() {
     thinkingTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     thinkingTimersRef.current = [];
     window.clearTimeout(responseRevealTimerRef.current);
-    window.clearTimeout(autoSpeechTimerRef.current);
 
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = null;
     audioContextRef.current?.close?.().catch?.(() => {});
     audioContextRef.current = null;
 
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-    activeUtteranceRef.current = null;
   }, []);
 
   function getExperienceState() {
     if (isListening) return EXPERIENCE_STATES.LISTENING;
     if (isThinking) return EXPERIENCE_STATES.THINKING;
-    if (isSpeaking || isPaused) return EXPERIENCE_STATES.SPEAKING;
+    if (voiceOutput.isPlaying) return EXPERIENCE_STATES.SPEAKING;
     if (currentReport) return EXPERIENCE_STATES.READY;
     return EXPERIENCE_STATES.IDLE;
   }
@@ -174,11 +158,7 @@ function UniAIPage() {
 
     const responseTimer = window.setTimeout(() => {
       const responseContent = getMockUniResponse(content);
-      responseSequenceRef.current += 1;
-      const report = {
-        ...createInsightReport(content, responseContent),
-        speechId: responseSequenceRef.current,
-      };
+      const report = createInsightReport(content, responseContent);
 
       setMessages((currentMessages) => [
         ...currentMessages,
@@ -189,7 +169,6 @@ function UniAIPage() {
       setIsResponding(true);
       setThinkingStepIndex(0);
       thinkingTimersRef.current = [];
-      queueAutomaticSpeech(report.speechId, report.response);
 
       window.clearTimeout(responseRevealTimerRef.current);
       responseRevealTimerRef.current = window.setTimeout(() => {
@@ -200,120 +179,12 @@ function UniAIPage() {
     thinkingTimersRef.current.push(responseTimer);
   }
 
-  function stopSpeech() {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.onvoiceschanged = null;
-    }
-
-    activeUtteranceRef.current = null;
-    setIsSpeaking(false);
-    setIsPaused(false);
-    setVoiceNotice('');
-  }
-
-  function queueAutomaticSpeech(responseId, responseContent) {
-    window.clearTimeout(autoSpeechTimerRef.current);
-
-    if (!responseId || !responseContent || mutedRef.current) return;
-
-    autoSpeechTimerRef.current = window.setTimeout(() => {
-      if (mutedRef.current || lastAutoSpokenReportRef.current === responseId) return;
-
-      lastAutoSpokenReportRef.current = responseId;
-      speakResponse(responseContent, { automatic: true });
-    }, 120);
-  }
-
-  function speakResponse(content, options = {}) {
-    if (
-      !content ||
-      typeof window === 'undefined' ||
-      !('speechSynthesis' in window) ||
-      !window.SpeechSynthesisUtterance
-    ) {
-      if (!options.automatic) {
-        setVoiceNotice('A leitura em voz alta ainda não está disponível neste navegador.');
-      }
-      return;
-    }
-
-    if (options.automatic && mutedRef.current) return;
-
-    const synthesis = window.speechSynthesis;
-    synthesis.cancel();
-    synthesis.resume?.();
-    synthesis.onvoiceschanged = null;
-    setIsPaused(false);
-
-    const utterance = new window.SpeechSynthesisUtterance(content);
-    activeUtteranceRef.current = utterance;
-    utterance.lang = 'pt-BR';
-    let hasStartedSpeaking = false;
-
-    function applyPortugueseVoice() {
-      const portugueseVoice = getPortugueseVoice(synthesis.getVoices());
-
-      if (portugueseVoice) {
-        utterance.voice = portugueseVoice;
-      }
-    }
-
-    function startSpeaking() {
-      if (hasStartedSpeaking || activeUtteranceRef.current !== utterance) return;
-
-      hasStartedSpeaking = true;
-      applyPortugueseVoice();
-      setIsSpeaking(true);
-      setVoiceNotice('Uni falando a orientação...');
-      synthesis.speak(utterance);
-    }
-
-    applyPortugueseVoice();
-    synthesis.onvoiceschanged = () => {
-      applyPortugueseVoice();
-      startSpeaking();
-    };
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setVoiceNotice('Uni falando a orientação...');
-    };
-    utterance.onend = () => {
-      if (activeUtteranceRef.current !== utterance) return;
-
-      activeUtteranceRef.current = null;
-      setIsSpeaking(false);
-      setIsPaused(false);
-      synthesis.onvoiceschanged = null;
-      setVoiceNotice('');
-    };
-    utterance.onerror = () => {
-      if (activeUtteranceRef.current !== utterance) return;
-
-      activeUtteranceRef.current = null;
-      setIsSpeaking(false);
-      setIsPaused(false);
-      synthesis.onvoiceschanged = null;
-
-      if (!options.automatic) {
-        setVoiceNotice('Não consegui reproduzir a resposta em voz agora.');
-      }
-    };
-
-    if (synthesis.getVoices().length > 0) {
-      startSpeaking();
-    } else {
-      window.setTimeout(startSpeaking, 250);
-    }
-  }
-
   function sendMessage(content, { allowFinancialAction = false } = {}) {
     const trimmedContent = content.trim();
 
     if (!trimmedContent || isThinking) return;
 
-    window.clearTimeout(autoSpeechTimerRef.current);
-    stopSpeech();
+    voiceOutput.stop();
     setHasStarted(true);
     setCurrentReport(null);
     setIsResponding(false);
@@ -359,8 +230,7 @@ function UniAIPage() {
   }
 
   function prepareVoiceCapture() {
-    window.clearTimeout(autoSpeechTimerRef.current);
-    stopSpeech();
+    voiceOutput.stop();
     setHasStarted(true);
     setCurrentReport(null);
     setSuggestionsOpen(false);
@@ -425,45 +295,25 @@ function UniAIPage() {
     setVoiceVolume(0);
   }
 
-  function pauseAudio() {
-    stopSpeech();
-    setVoiceNotice('');
+  function handleVoiceOutputModeChange(mode) {
+    voiceOutput.setMode(mode);
   }
 
-  function resumeAudio() {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.resume();
-    }
-
-    setIsPaused(false);
-    setIsSpeaking(true);
-    setVoiceNotice('Uni continuando a explicação...');
+  function handleSpeakBrowser() {
+    voiceOutput.setMode(VOICE_OUTPUT_MODES.BROWSER);
+    voiceOutput.speakBrowser(currentReport?.response);
   }
 
-  function replayAudio() {
-    speakResponse(currentReport?.response);
-  }
-
-  function toggleMute() {
-    const nextMutedState = !isMuted;
-
-    setIsMuted(nextMutedState);
-    mutedRef.current = nextMutedState;
-
-    if (nextMutedState) {
-      lastAutoSpokenReportRef.current = currentReport?.speechId ?? lastAutoSpokenReportRef.current;
-      stopSpeech();
-      setVoiceNotice('Áudio automático silenciado.');
-      return;
-    }
-
-    setVoiceNotice('Áudio automático ativado.');
+  function handleSpeakPremium() {
+    voiceOutput.setMode(VOICE_OUTPUT_MODES.PREMIUM);
+    voiceOutput.speakPremium(currentReport?.summary, {
+      fallbackText: currentReport?.response,
+    });
   }
 
   function handleNewQuestion() {
     voiceInput.reset();
-    window.clearTimeout(autoSpeechTimerRef.current);
-    stopSpeech();
+    voiceOutput.stop();
     clearThinkingTimers();
     window.clearTimeout(responseRevealTimerRef.current);
     setCurrentReport(null);
@@ -486,8 +336,6 @@ function UniAIPage() {
       ...currentMessages,
       createMessage('uni', completion.response.text),
     ]);
-    responseSequenceRef.current += 1;
-    queueAutomaticSpeech(responseSequenceRef.current, completion.response.text);
   }
 
   function handleCorrectFinancialAction(corrections) {
@@ -530,12 +378,14 @@ function UniAIPage() {
         canSendMessage={canSendMessage}
         isListening={isListening}
         isThinking={isThinking}
-        isSpeaking={isSpeaking}
-        isPaused={isPaused}
-        isMuted={isMuted}
+        isSpeaking={voiceOutput.isPlaying}
+        isMuted={voiceOutput.mode === VOICE_OUTPUT_MODES.OFF}
+        voiceOutputMode={voiceOutput.mode}
+        voiceOutputBusy={voiceOutput.isBusy}
+        premiumVoiceSupported={voiceOutput.premiumSupported}
         isResponding={isResponding}
         voiceVolume={voiceVolume}
-        voiceNotice={voiceNotice || voiceInput.message}
+        voiceNotice={voiceOutput.message || voiceNotice || voiceInput.message}
         thinkingSteps={thinkingSteps}
         thinkingStepIndex={thinkingStepIndex}
         suggestionsOpen={suggestionsOpen}
@@ -544,10 +394,10 @@ function UniAIPage() {
         onSubmit={handleSubmit}
         onStartVoiceCapture={voiceInput.toggle}
         onNewQuestion={handleNewQuestion}
-        onPauseAudio={pauseAudio}
-        onResumeAudio={resumeAudio}
-        onReplayAudio={replayAudio}
-        onToggleMute={toggleMute}
+        onVoiceOutputModeChange={handleVoiceOutputModeChange}
+        onSpeakBrowser={handleSpeakBrowser}
+        onSpeakPremium={handleSpeakPremium}
+        onStopVoiceOutput={voiceOutput.stop}
         onToggleSuggestions={() => setSuggestionsOpen((currentValue) => !currentValue)}
         onSuggestionClick={handleSuggestionClick}
         onToggleTextComposer={() => setTextComposerOpen((currentValue) => !currentValue)}

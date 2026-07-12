@@ -26,8 +26,10 @@ function UniExperienceShell({
   isListening,
   isThinking,
   isSpeaking,
-  isPaused,
   isMuted,
+  voiceOutputMode,
+  voiceOutputBusy,
+  premiumVoiceSupported,
   isResponding,
   voiceVolume,
   voiceNotice,
@@ -39,10 +41,10 @@ function UniExperienceShell({
   onSubmit,
   onStartVoiceCapture,
   onNewQuestion,
-  onPauseAudio,
-  onResumeAudio,
-  onReplayAudio,
-  onToggleMute,
+  onVoiceOutputModeChange,
+  onSpeakBrowser,
+  onSpeakPremium,
+  onStopVoiceOutput,
   onToggleSuggestions,
   onSuggestionClick,
   onToggleTextComposer,
@@ -109,13 +111,14 @@ function UniExperienceShell({
 
         <UniAudioControls
           hasResponse={Boolean(report)}
+          mode={voiceOutputMode}
           isSpeaking={isSpeaking}
-          isPaused={isPaused}
-          isMuted={isMuted}
-          onPause={onPauseAudio}
-          onResume={onResumeAudio}
-          onReplay={onReplayAudio}
-          onToggleMute={onToggleMute}
+          isBusy={voiceOutputBusy}
+          premiumSupported={premiumVoiceSupported}
+          onModeChange={onVoiceOutputModeChange}
+          onSpeakBrowser={onSpeakBrowser}
+          onSpeakPremium={onSpeakPremium}
+          onStop={onStopVoiceOutput}
         />
 
         {hasStarted ? (

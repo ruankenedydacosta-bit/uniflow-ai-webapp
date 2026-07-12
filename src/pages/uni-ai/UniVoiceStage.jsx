@@ -20,9 +20,9 @@ function UniVoiceStage({
   }
 
   if (isMuted) {
-    supportText = 'Áudio automático silenciado.';
+    supportText = 'Saída de voz desligada. O microfone continua disponível.';
   } else if (experienceState !== 'idle') {
-    supportText = 'Tudo continua local e mockado nesta etapa.';
+    supportText = 'Você controla quando a Uni reproduz uma resposta.';
   }
 
   return (
