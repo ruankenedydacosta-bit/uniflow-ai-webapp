@@ -9,11 +9,12 @@ O fluxo inicial opera por texto. Voz, LLM e serviços externos não fazem parte 
 ## Fluxo oficial
 
 1. **Interpretar:** `financialParser` classifica a intenção e extrai entidades candidatas.
-2. **Validar:** a camada `uni-conversation` revalida valor, tipo, conta, categoria, descrição e data contra os dados atuais do workspace.
-3. **Esclarecer:** quando faltar informação, a Uni pergunta somente pelo primeiro dado necessário.
-4. **Confirmar:** quando os dados estiverem completos, a Uni apresenta um resumo antes de qualquer escrita.
-5. **Executar:** somente o botão `Confirmar` chama `saveTransaction` do hook financeiro.
-6. **Responder:** o resultado é comunicado com o perfil de personalidade resolvido localmente.
+2. **Contextualizar:** preferências explícitas ou confirmadas podem complementar categoria, conta e tom, sem alterar valor ou data.
+3. **Validar:** a camada `uni-conversation` revalida valor, tipo, conta, categoria, descrição e data contra os dados atuais do workspace.
+4. **Esclarecer:** quando faltar informação ou houver conflito de memória, a Uni pergunta pelo dado necessário.
+5. **Confirmar:** quando os dados estiverem completos, a Uni apresenta um resumo antes de qualquer escrita.
+6. **Executar:** somente o botão `Confirmar` chama `saveTransaction` do hook financeiro.
+7. **Responder:** o resultado é comunicado com o perfil de personalidade resolvido localmente.
 
 Nenhuma entidade extraída pelo parser é considerada confiável sem validação de domínio.
 
@@ -64,6 +65,14 @@ Não há chamada de IA externa, ElevenLabs, OpenAI ou outro LLM nesta V1.
 Com Supabase configurado, a confirmação usa `useTransactions`, respeita RLS e persiste no workspace autenticado. O estado do hook é atualizado imediatamente após a resposta do serviço.
 
 Sem Supabase, o mesmo hook mantém um fallback local editável. A confirmação atualiza a experiência atual em memória, sem persistência após recarregar a aplicação.
+
+## Memória explícita
+
+A memória entra depois do parser e antes da validação da ação. Ela pode sugerir
+categoria, conta ativa ou perfil de redação. Conflitos exigem escolha; correções
+só viram memória após “Lembrar”. “Só desta vez” e “Cancelar” não persistem.
+
+Memória não altera amount, date, workspace ou a confirmação obrigatória.
 
 ## Limites da V1
 

@@ -184,14 +184,15 @@ Memória melhora contexto e continuidade, mas não decide pelo usuário nem subs
 ## Limites da V1
 
 - regras determinísticas e heurísticas simples;
-- nenhuma integração com `UniAIPage`;
-- nenhuma persistência automática;
+- integração controlada com `UniAIPage` somente para memórias explícitas ou confirmadas;
+- nenhuma persistência automática: apenas “Lembrar” após consentimento;
 - migration aplicada e validada estruturalmente somente no UniFlow DEV;
-- isolamento autenticado entre dois usuários ainda pendente de execução;
+- isolamento autenticado validado em 31/31 testes no UniFlow DEV;
 - nenhuma política de limpeza automatizada executando;
 - nenhuma API externa, LLM, voz ou Open Finance real;
 - sem aprendizagem estatística avançada;
 - sem inferência de atributos sensíveis.
 
-A próxima etapa segura é executar `scripts/supabase/test-memory-rls.js` com dois
-usuários autenticados no UniFlow DEV antes de integrar a memória à conversa.
+A integração conversacional V1 está documentada em
+`UNI_CONVERSATION_MEMORY_INTEGRATION_V1.md`. O gerenciamento completo de
+memórias e inferências automáticas permanece futuro.

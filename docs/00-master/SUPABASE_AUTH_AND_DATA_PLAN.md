@@ -775,4 +775,16 @@ A migration 007 substitui somente essa policy de SELECT. O owner passa a ler
 por `owner_user_id = auth.uid()` e membros ativos continuam autorizados por
 `is_workspace_member(id)`. RLS, isolamento entre usuarios e ausencia de acesso
 anon permanecem preservados. A migration esta preparada localmente e ainda nao
-foi aplicada em DEV ou producao.
+foi aplicada em producao. No UniFlow DEV, a migration 007 foi aplicada e
+validada em 9/9 checks.
+
+## 25. Memória explícita na conversa financeira
+
+A conversa financeira usa memórias do titular carregadas por
+`uniMemoryService` e `SessionContext`. Somente preferências explícitas ou
+confirmadas influenciam categoria, conta ativa e redação. Tipos inferidos não
+são persistidos pelo frontend.
+
+Correções permanecem locais até o usuário escolher “Lembrar”. O payload de
+memória é mínimo e nunca inclui valor, data, workspace arbitrário ou dados
+bancários brutos. RLS e a confirmação financeira continuam obrigatórias.
