@@ -25,6 +25,12 @@ Centraliza:
 - respostas controladas sem Supabase;
 - tratamento de usuario ausente.
 
+Contas autenticadas criadas antes do trigger podem não possuir a linha em
+`profiles`. A migration `20260712_006_ensure_authenticated_profile.sql`
+adiciona a RPC `ensure_own_profile`, que cria exclusivamente o profile do
+próprio `auth.uid()` sem conceder `INSERT` direto ao frontend. O onboarding usa
+essa recuperação somente quando a leitura inicial não encontra o profile.
+
 Campos usados nesta etapa:
 
 - `full_name`;
@@ -90,6 +96,16 @@ O nome usa o nome resolvido do usuario:
 
 No modo `both`, esta etapa prepara o workspace empresarial como contexto inicial. A criacao adicional do workspace pessoal fica para uma evolucao controlada do gerenciamento de espacos.
 
+### Leitura do workspace recém-criado
+
+A migration `20260712_007_workspace_owner_select_policy.sql` corrige o retorno
+do `INSERT ... RETURNING` usado pelo onboarding. A policy de SELECT passa a
+permitir o proprietário por `owner_user_id = auth.uid()` ou membros ativos por
+`is_workspace_member(id)`, sem abrir leitura entre workspaces.
+
+O `owner_user_id` enviado na criação e usado no rollback agora vem
+exclusivamente da sessão Supabase, não de parâmetro externo.
+
 ## Idempotencia e retomada
 
 O onboarding usa varias operacoes protegidas por RLS, mas ainda nao existe uma RPC transacional para agrupa-las.
@@ -147,7 +163,8 @@ Se nao houver sessao, o guard envia para `/login`. Se o profile nao existir, o O
 
 - Supabase ausente: fallback demo.
 - Usuario ausente: pede novo login.
-- Profile ausente: interrompe sem criar workspace orfao.
+- Profile ausente: tenta garantir de forma segura o profile do próprio usuário;
+  se a RPC falhar, interrompe sem criar workspace órfão.
 - Profile atualizado com zero linhas: erro controlado antes da criacao do workspace.
 - Workspace existente: reutiliza.
 - Falha ao concluir profile depois de criar workspace: remove a criacao da tentativa atual.
@@ -199,15 +216,17 @@ Nenhum dado de personalidade foi persistido nesta etapa.
 
 ## Validacao recomendada no UniFlow DEV
 
-1. Usar um usuario com profile e `onboarding_completed = false`.
-2. Entrar pelo Login real.
-3. Confirmar redirecionamento para `/onboarding`.
-4. Escolher um modo.
-5. Confirmar profile atualizado.
-6. Confirmar workspace criado ou reutilizado.
-7. Confirmar membership owner ativa.
-8. Confirmar `current_workspace_id` e `onboarding_completed = true`.
-9. Confirmar redirecionamento para `/dashboard`.
-10. Repetir em modo demo sem variaveis Supabase.
+1. Aplicar e revisar a migration 006 somente no UniFlow DEV.
+2. Usar um usuário autenticado sem profile para validar a recuperação segura.
+3. Repetir com um usuário com profile e `onboarding_completed = false`.
+4. Entrar pelo Login real.
+5. Confirmar redirecionamento para `/onboarding`.
+6. Escolher um modo.
+7. Confirmar profile atualizado.
+8. Confirmar workspace criado ou reutilizado.
+9. Confirmar membership owner ativa.
+10. Confirmar `current_workspace_id` e `onboarding_completed = true`.
+11. Confirmar redirecionamento para `/dashboard`.
+12. Repetir em modo demo sem variáveis Supabase.
 
 Nunca executar essa validacao contra producao.

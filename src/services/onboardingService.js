@@ -1,4 +1,8 @@
-import { getProfile, updateProfile } from './profileService';
+import {
+  ensureOwnProfile,
+  getProfile,
+  updateProfile,
+} from './profileService';
 import { isSupabaseConfigured } from './supabaseClient';
 import {
   createWorkspace,
@@ -13,6 +17,17 @@ function logOnboardingDevelopment(message) {
   if (import.meta.env.DEV) {
     console.info(`[Onboarding DEV] ${message}`);
   }
+}
+
+function logOnboardingFailure(operation, error) {
+  if (!import.meta.env.DEV) {
+    return;
+  }
+
+  const safeCode = error?.code ?? error?.name ?? 'UNKNOWN_ERROR';
+  console.error(
+    `[Onboarding DEV] operation=${operation} code=${safeCode}`,
+  );
 }
 
 function createError(code, message) {
@@ -86,10 +101,11 @@ function findReusableWorkspace(workspaces, profile, workspaceType, userId) {
   );
 }
 
-async function rollbackCreatedWorkspace(workspace, userId, originalError) {
-  const rollbackResult = await deleteOwnedWorkspace(workspace.id, userId);
+async function rollbackCreatedWorkspace(workspace, originalError) {
+  const rollbackResult = await deleteOwnedWorkspace(workspace.id);
 
   if (rollbackResult.error) {
+    logOnboardingFailure('rollback_created_workspace', rollbackResult.error);
     logOnboardingDevelopment('Falha ao limpar workspace da tentativa incompleta.');
 
     return {
@@ -157,21 +173,33 @@ export async function completeOnboarding({
     };
   }
 
-  const profileResult = await getProfile(user.id);
+  let profileResult = await getProfile(user.id);
 
   if (profileResult.error) {
+    logOnboardingFailure('get_profile', profileResult.error);
     return profileResult;
   }
 
   if (!profileResult.data) {
-    return {
-      data: null,
-      error: createError(
-        'PROFILE_NOT_FOUND',
-        'Seu profile ainda nao esta disponivel. Tente entrar novamente.',
-      ),
-      isConfigured: true,
-    };
+    logOnboardingDevelopment('Profile ausente; tentando garantir o profile autenticado.');
+    profileResult = await ensureOwnProfile();
+
+    if (profileResult.error || !profileResult.data) {
+      logOnboardingFailure(
+        'ensure_own_profile',
+        profileResult.error ?? createError('PROFILE_ENSURE_NO_DATA', ''),
+      );
+      return {
+        data: null,
+        error:
+          profileResult.error ??
+          createError(
+            'PROFILE_NOT_FOUND',
+            'Seu perfil ainda não está disponível. Entre novamente e tente de novo.',
+          ),
+        isConfigured: true,
+      };
+    }
   }
 
   const resolvedFullName = resolveFullName(
@@ -187,10 +215,15 @@ export async function completeOnboarding({
   });
 
   if (initialProfileResult.error) {
+    logOnboardingFailure('update_profile_identity', initialProfileResult.error);
     return initialProfileResult;
   }
 
   if (!initialProfileResult.data) {
+    logOnboardingFailure(
+      'update_profile_identity',
+      createError('PROFILE_UPDATE_NOT_FOUND', ''),
+    );
     return {
       data: null,
       error: createError(
@@ -204,6 +237,7 @@ export async function completeOnboarding({
   const workspacesResult = await listWorkspaces();
 
   if (workspacesResult.error) {
+    logOnboardingFailure('list_workspaces', workspacesResult.error);
     return workspacesResult;
   }
 
@@ -220,16 +254,20 @@ export async function completeOnboarding({
     const workspaceResult = await createWorkspace({
       name: getWorkspaceName(resolvedFullName, currentWorkspace),
       workspaceType: currentWorkspace,
-      ownerUserId: user.id,
     });
 
     if (workspaceResult.error) {
+      logOnboardingFailure('create_workspace', workspaceResult.error);
       return workspaceResult;
     }
 
     workspace = workspaceResult.data;
 
     if (!workspace) {
+      logOnboardingFailure(
+        'create_workspace',
+        createError('WORKSPACE_NOT_CREATED', ''),
+      );
       return {
         data: null,
         error: createError(
@@ -253,10 +291,13 @@ export async function completeOnboarding({
   });
 
   if (completedProfileResult.error) {
+    logOnboardingFailure(
+      'complete_profile',
+      completedProfileResult.error,
+    );
     if (createdWorkspace) {
       return rollbackCreatedWorkspace(
         workspace,
-        user.id,
         completedProfileResult.error,
       );
     }
@@ -269,9 +310,10 @@ export async function completeOnboarding({
       'ONBOARDING_PROFILE_NOT_FOUND',
       'Nao foi possivel concluir seu profile. Entre novamente e tente de novo.',
     );
+    logOnboardingFailure('complete_profile', completionError);
 
     if (createdWorkspace) {
-      return rollbackCreatedWorkspace(workspace, user.id, completionError);
+      return rollbackCreatedWorkspace(workspace, completionError);
     }
 
     return {

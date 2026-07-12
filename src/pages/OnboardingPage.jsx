@@ -45,6 +45,17 @@ const onboardingOptions = [
   },
 ];
 
+function logOnboardingPageFailure(operation, error) {
+  if (!import.meta.env.DEV) {
+    return;
+  }
+
+  const safeCode = error?.code ?? error?.name ?? 'UNKNOWN_ERROR';
+  console.error(
+    `[Onboarding DEV] operation=${operation} code=${safeCode}`,
+  );
+}
+
 function OnboardingPage() {
   const navigate = useNavigate();
   const { setAccess } = useAccess();
@@ -80,6 +91,7 @@ function OnboardingPage() {
       });
 
       if (result.error) {
+        logOnboardingPageFailure('complete_onboarding', result.error);
         setStatusMessage('Não foi possível concluir. Tente novamente');
         return;
       }
@@ -87,12 +99,14 @@ function OnboardingPage() {
       const refreshResult = await refreshSession();
 
       if (refreshResult.error) {
+        logOnboardingPageFailure('refresh_session', refreshResult.error);
         setStatusMessage('Não foi possível atualizar sua sessão');
         return;
       }
 
       navigate('/dashboard', { replace: true });
-    } catch {
+    } catch (error) {
+      logOnboardingPageFailure('unexpected_page_error', error);
       setStatusMessage('Não foi possível concluir. Tente novamente');
     } finally {
       submissionRef.current = false;

@@ -11,6 +11,22 @@ function createWorkspaceSchemaPendingResult(data = null) {
   };
 }
 
+async function getAuthenticatedUserId() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data?.user?.id) {
+    return {
+      data: null,
+      error: {
+        code: error?.code ?? 'AUTH_REQUIRED',
+        message: 'Entre novamente para alterar seus espaços.',
+      },
+    };
+  }
+
+  return { data: data.user.id, error: null };
+}
+
 export async function listWorkspaces() {
   if (!supabase) {
     return createWorkspaceSchemaPendingResult([]);
@@ -100,13 +116,12 @@ export async function getWorkspaceSubscription(workspaceId) {
 export async function createWorkspace({
   name,
   workspaceType,
-  ownerUserId,
 } = {}) {
   if (!supabase) {
     return createWorkspaceSchemaPendingResult(null);
   }
 
-  if (!name || !workspaceType || !ownerUserId) {
+  if (!name || !workspaceType) {
     return {
       data: null,
       error: {
@@ -117,12 +132,22 @@ export async function createWorkspace({
     };
   }
 
+  const userResult = await getAuthenticatedUserId();
+
+  if (userResult.error) {
+    return {
+      data: null,
+      error: userResult.error,
+      isConfigured: true,
+    };
+  }
+
   const { data, error } = await supabase
     .from('workspaces')
     .insert({
       name,
       workspace_type: workspaceType,
-      owner_user_id: ownerUserId,
+      owner_user_id: userResult.data,
     })
     .select('id, name, workspace_type, owner_user_id, created_at, updated_at')
     .single();
@@ -134,12 +159,12 @@ export async function createWorkspace({
   };
 }
 
-export async function deleteOwnedWorkspace(workspaceId, ownerUserId) {
+export async function deleteOwnedWorkspace(workspaceId) {
   if (!supabase) {
     return createWorkspaceSchemaPendingResult(null);
   }
 
-  if (!workspaceId || !ownerUserId) {
+  if (!workspaceId) {
     return {
       data: null,
       error: {
@@ -150,11 +175,21 @@ export async function deleteOwnedWorkspace(workspaceId, ownerUserId) {
     };
   }
 
+  const userResult = await getAuthenticatedUserId();
+
+  if (userResult.error) {
+    return {
+      data: null,
+      error: userResult.error,
+      isConfigured: true,
+    };
+  }
+
   const { data, error } = await supabase
     .from('workspaces')
     .delete()
     .eq('id', workspaceId)
-    .eq('owner_user_id', ownerUserId)
+    .eq('owner_user_id', userResult.data)
     .select('id')
     .maybeSingle();
 
@@ -176,18 +211,16 @@ export async function deleteOwnedWorkspace(workspaceId, ownerUserId) {
   };
 }
 
-export async function createPersonalWorkspace({ name, ownerUserId } = {}) {
+export async function createPersonalWorkspace({ name } = {}) {
   return createWorkspace({
     name,
     workspaceType: 'personal',
-    ownerUserId,
   });
 }
 
-export async function createBusinessWorkspace({ name, ownerUserId } = {}) {
+export async function createBusinessWorkspace({ name } = {}) {
   return createWorkspace({
     name,
     workspaceType: 'business',
-    ownerUserId,
   });
 }
