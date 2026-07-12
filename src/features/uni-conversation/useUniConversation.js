@@ -7,7 +7,10 @@ import {
   buildFinancialIntentAction,
   executeFinancialIntentAction,
 } from './financialIntentAction.js';
-import { createAccountProvisioningCoordinator } from './accountProvisioning.js';
+import {
+  createAccountProvisioningCoordinator,
+  createClientOperationId,
+} from './accountProvisioning.js';
 import {
   initialUniConversationState,
   uniConversationReducer,
@@ -24,6 +27,7 @@ export function useUniConversation({
   accounts = [],
   accountTypes = [],
   categories = [],
+  executeAtomicAction,
   saveAccount,
   saveTransaction,
   profileId = 'balanced',
@@ -62,7 +66,8 @@ export function useUniConversation({
 
   const interpret = useCallback((content) => {
     dispatch({ type: 'INTERPRET' });
-    overridesRef.current = {};
+    const clientOperationId = createClientOperationId();
+    overridesRef.current = { clientOperationId };
     const parsed = parseFinancialText(content, {
       context: contextRef.current,
       referenceDate,
@@ -72,7 +77,11 @@ export function useUniConversation({
       ? resolveParsedMemory(parsed, { accounts, categories, profileId })
       : null;
     const parsedForAction = memory?.resolvedResult ?? parsed;
-    const action = buildAction(parsedForAction, memory?.memoryOverrides);
+    overridesRef.current = {
+      ...memory?.memoryOverrides,
+      clientOperationId,
+    };
+    const action = buildAction(parsedForAction, overridesRef.current);
 
     if (action.status === 'unsupported') {
       dispatch({ type: 'RESET' });
@@ -152,6 +161,7 @@ export function useUniConversation({
     const confirmationPromise = (async () => {
       dispatch({ type: 'EXECUTE' });
       const result = await provisioningCoordinator.execute(state.action, {
+        executeAtomicAction,
         saveAccount,
         saveTransaction,
       });
@@ -189,7 +199,7 @@ export function useUniConversation({
         confirmationPromiseRef.current = null;
       }
     }
-  }, [provisioningCoordinator, responseOptions, saveAccount, saveTransaction, state.action]);
+  }, [executeAtomicAction, provisioningCoordinator, responseOptions, saveAccount, saveTransaction, state.action]);
 
   const cancel = useCallback(() => {
     const response = buildCanceledResponse(responseOptions);

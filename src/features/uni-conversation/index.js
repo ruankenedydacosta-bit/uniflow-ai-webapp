@@ -6,6 +6,7 @@ export {
 } from './accountResolution.js';
 export {
   createAccountProvisioningCoordinator,
+  createClientOperationId,
   provisionAccountAndTransaction,
 } from './accountProvisioning.js';
 export {

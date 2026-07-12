@@ -192,6 +192,7 @@ export function buildFinancialIntentAction({
     date: isValidDate(date) ? date : null,
     description,
     account: accountResult.account ?? null,
+    clientOperationId: overrides.clientOperationId ?? null,
     accountResolution: accountResult,
     proposedAccount: accountResult.proposedAccount ?? null,
     requestedAccountName: overrides.accountName ?? parsed.entities.account ?? null,

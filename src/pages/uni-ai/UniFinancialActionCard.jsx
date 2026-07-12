@@ -27,6 +27,7 @@ function UniFinancialActionCard({ conversation, onConfirm, onCorrect, onCancel }
   const isClarifying = status === UNI_CONVERSATION_STATES.NEEDS_CLARIFICATION;
   const isAwaiting = status === UNI_CONVERSATION_STATES.AWAITING_CONFIRMATION;
   const isExecuting = status === UNI_CONVERSATION_STATES.EXECUTING;
+  const hasExecutionError = status === UNI_CONVERSATION_STATES.ERROR;
   const showEditor = isClarifying || isCorrecting;
   const accountResolutionStatus = action?.accountResolution?.status;
 
@@ -301,9 +302,11 @@ function UniFinancialActionCard({ conversation, onConfirm, onCorrect, onCancel }
         </form>
       ) : null}
 
-      {isAwaiting && !isCorrecting ? (
+      {(isAwaiting || hasExecutionError) && !isCorrecting ? (
         <footer className={styles.financialActionButtons}>
-          <Button size="sm" onClick={onConfirm} disabled={isExecuting}>Confirmar e registrar</Button>
+          <Button size="sm" onClick={onConfirm} disabled={isExecuting}>
+            {hasExecutionError ? 'Tentar novamente' : 'Confirmar e registrar'}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setIsCorrecting(true)}>Corrigir</Button>
           <Button variant="ghost" size="sm" onClick={onCancel}>Cancelar</Button>
         </footer>

@@ -5,6 +5,8 @@ import { UNI_CONVERSATION_STATES, useUniConversation } from '../features/uni-con
 import { useConversationMemory } from '../features/uni-memory-integration';
 import { useUniVoiceInput } from '../features/uni-voice';
 import { useAccounts, useCategories, useTransactions } from '../hooks';
+import { executeConfirmedFinancialAction } from '../services/confirmedFinancialActionService.js';
+import { isSupabaseConfigured } from '../services/supabaseClient.js';
 import { fallbackAccountTypes, financialCrudMock } from './financeiro/financialCrud.mock.js';
 import {
   EXPERIENCE_STATES,
@@ -58,6 +60,7 @@ function UniAIPage() {
     accounts: accountState.accounts,
     accountTypes: accountState.accountTypes,
     categories: categoryState.categories,
+    executeAtomicAction: isSupabaseConfigured ? executeAtomicFinancialAction : null,
     saveAccount: accountState.saveAccount,
     saveTransaction: transactionState.saveTransaction,
     profileId: personalityProfileId,
@@ -106,6 +109,15 @@ function UniAIPage() {
   ].includes(financialConversation.state.status);
   const canSendMessage = draftMessage.trim().length > 0 && !isThinking && !hasPendingFinancialAction;
   const experienceState = getExperienceState();
+
+  async function executeAtomicFinancialAction(action) {
+    const result = await executeConfirmedFinancialAction(action);
+
+    if (!result.error && result.data) {
+      await Promise.all([accountState.refresh(), transactionState.refresh()]);
+    }
+    return result;
+  }
 
   useEffect(() => {
     mutedRef.current = isMuted;
