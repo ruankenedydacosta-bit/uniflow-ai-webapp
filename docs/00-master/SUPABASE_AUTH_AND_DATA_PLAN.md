@@ -750,3 +750,17 @@ Diretrizes oficiais:
 - n8n podera apoiar filas e automacoes assincronas, mas nao sera a camada principal de consentimento bancario nem de custodia de tokens.
 
 Essa direcao nao implementa Open Finance nesta fase e nao autoriza acesso a producao.
+
+## 23. Memoria Financeira V1 no DEV
+
+Em 2026-07-12, a migration
+`20260711_005_uni_financial_memory.sql` foi aplicada somente no UniFlow DEV.
+A consulta consolidada de validacao retornou 21/21 checks verdadeiros para
+tabelas, colunas, RLS, policies, grants, RPCs, constraints, sanitizacao,
+indices e triggers.
+
+O isolamento real entre titulares e as RPCs controladas ainda precisam ser
+validados com dois clientes autenticados. O roteiro reproduzivel esta em
+`scripts/supabase/test-memory-rls.js` e deve usar somente anon/publishable key,
+sem `service_role`. A integracao visual com a Uni permanece bloqueada ate essa
+validacao. Producao nao recebeu a migration 005.

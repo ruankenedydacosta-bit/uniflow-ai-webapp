@@ -95,6 +95,21 @@ Os testes usaram cliente autenticado e chave publica. `service_role` nao foi usa
 
 O projeto de producao permanece sem alteracoes.
 
+## Memoria Financeira V1 no DEV
+
+Em 2026-07-12, a migration
+`migrations/20260711_005_uni_financial_memory.sql` foi aplicada somente no
+projeto `UniFlow DEV`.
+
+A validacao estatica consolidada foi concluida com 21/21 checks aprovados,
+cobrindo tabelas, colunas, RLS, policies, grants, RPCs, constraints,
+sanitizacao, indices e triggers. Producao permanece sem a migration 005.
+
+O roteiro autenticado de dois usuarios esta disponivel em
+`scripts/supabase/test-memory-rls.js`, mas ainda nao foi executado. Ele deve ser
+rodado manualmente apenas no DEV, com anon/publishable key e credenciais locais
+dos dois usuarios de teste.
+
 ## Proximo passo
 
 1. Integrar Supabase Auth ao Login existente sem alterar o visual.

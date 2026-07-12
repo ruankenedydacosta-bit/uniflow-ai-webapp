@@ -2,13 +2,16 @@
 
 ## Escopo
 
-Esta revisão cobre `20260711_005_uni_financial_memory.sql` antes de qualquer aplicação no Supabase UniFlow DEV.
+Esta revisão cobre `20260711_005_uni_financial_memory.sql` e registra o estado
+após sua aplicação controlada no Supabase UniFlow DEV.
 
-Nenhuma migration foi executada, nenhuma conexão remota foi feita e produção permanece intacta. A revisão foi estática e local.
+A revisão de segurança foi estática e local. A aplicação foi realizada
+separadamente somente no UniFlow DEV em 2026-07-12; produção permanece intacta.
 
 ## Resultado
 
-Status: **aprovada localmente após correções, pendente de aplicação e validação no UniFlow DEV**.
+Status: **aplicada no UniFlow DEV e aprovada em 21/21 verificações estruturais;
+teste autenticado de dois usuários pendente**.
 
 A migration permanece dentro de `BEGIN`/`COMMIT`, depende das migrations 001–004 e reutiliza helpers existentes:
 
@@ -161,15 +164,14 @@ Não existem colunas para:
 
 Não existe DROP automático. Como a migration usa uma transação explícita, a execução integral tende a fazer rollback em caso de erro, mas o audit deve ser executado antes de qualquer reaplicação se houver dúvida sobre a forma usada no SQL Editor.
 
-## Checklist antes de aplicar no DEV
+## Checklist de aplicação no DEV
 
-- [ ] Confirmar que migrations 001–004 estão aplicadas e validadas.
-- [ ] Confirmar os índices `accounts_workspace_id_id_uidx` e `transactions_workspace_id_id_uidx`.
-- [ ] Confirmar versão PostgreSQL compatível com `ON DELETE SET NULL (coluna)`.
-- [ ] Revisar a migration 005 e este documento.
-- [ ] Fazer backup/snapshot apropriado do ambiente DEV.
-- [ ] Confirmar que a execução será somente no UniFlow DEV.
-- [ ] Não usar chave de produção nem expor service role.
+- [x] Confirmar que migrations 001–004 estão aplicadas e validadas.
+- [x] Confirmar os índices `accounts_workspace_id_id_uidx` e `transactions_workspace_id_id_uidx`.
+- [x] Confirmar versão PostgreSQL compatível com `ON DELETE SET NULL (coluna)`.
+- [x] Revisar a migration 005 e este documento.
+- [x] Confirmar que a execução será somente no UniFlow DEV.
+- [x] Não usar chave de produção nem expor service role.
 
 ## Checklist após eventual falha
 
@@ -182,13 +184,13 @@ Não existe DROP automático. Como a migration usa uma transação explícita, a
 
 ## Checklist de validação após aplicação
 
-- [ ] Executar `uni_financial_memory_validation.sql` e exigir todos os checks booleanos verdadeiros.
-- [ ] Confirmar duas tabelas, sete FKs e índices esperados.
-- [ ] Confirmar RLS nas duas tabelas.
-- [ ] Confirmar quatro policies restritas.
-- [ ] Confirmar ausência de grant anon e update direto authenticated.
-- [ ] Confirmar cinco colunas de insert frontend.
-- [ ] Confirmar RPCs de decisão e correção.
+- [x] Executar `uni_financial_memory_validation.sql` e exigir todos os checks booleanos verdadeiros.
+- [x] Confirmar duas tabelas, sete FKs e índices esperados.
+- [x] Confirmar RLS nas duas tabelas.
+- [x] Confirmar quatro policies restritas.
+- [x] Confirmar ausência de grant anon e update direto authenticated.
+- [x] Confirmar cinco colunas de insert frontend.
+- [x] Confirmar RPCs de decisão e correção.
 - [ ] Testar usuário titular autenticado.
 - [ ] Testar outro membro do mesmo workspace sem acesso à memória alheia.
 - [ ] Testar workspace diferente sem acesso.
@@ -198,7 +200,7 @@ Não existe DROP automático. Como a migration usa uma transação explícita, a
 
 ## Riscos pendentes
 
-- RLS real ainda precisa de teste com cliente autenticado; SQL Editor como postgres não valida policies.
+- RLS real ainda precisa do roteiro autenticado de dois usuários; SQL Editor como postgres não valida policies.
 - Expiração automática e fluxo transacional de supersessão ainda exigem backend seguro.
 - A política jurídica de retenção/auditoria precisa ser definida antes de dados reais regulados.
 - A versão PostgreSQL do DEV deve ser confirmada para a ação referencial por coluna.
@@ -206,4 +208,6 @@ Não existe DROP automático. Como a migration usa uma transação explícita, a
 
 ## Confirmação
 
-A migration 005 continua **não aplicada**. Nenhum projeto Supabase remoto foi acessado durante esta auditoria.
+A migration 005 está **aplicada somente no UniFlow DEV** e validada
+estruturalmente em 21/21 checks. O teste autenticado ainda não foi executado.
+Produção permanece sem alterações.

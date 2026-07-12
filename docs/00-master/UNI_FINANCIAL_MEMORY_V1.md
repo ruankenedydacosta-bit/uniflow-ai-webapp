@@ -113,7 +113,9 @@ A migration local `20260711_005_uni_financial_memory.sql` prepara:
 - triggers de proteção do frontend e `updated_at`;
 - RLS por workspace.
 
-A migration está apenas preparada localmente. Ela não foi aplicada no UniFlow DEV nem em produção.
+A migration foi aplicada somente no UniFlow DEV em 2026-07-12 e passou em
+21/21 verificações estruturais. O teste autenticado entre dois usuários ainda
+está pendente. Produção permanece sem alterações.
 
 ## Policies e fronteira de escrita
 
@@ -184,10 +186,12 @@ Memória melhora contexto e continuidade, mas não decide pelo usuário nem subs
 - regras determinísticas e heurísticas simples;
 - nenhuma integração com `UniAIPage`;
 - nenhuma persistência automática;
-- migration ainda não aplicada;
+- migration aplicada e validada estruturalmente somente no UniFlow DEV;
+- isolamento autenticado entre dois usuários ainda pendente de execução;
 - nenhuma política de limpeza automatizada executando;
 - nenhuma API externa, LLM, voz ou Open Finance real;
 - sem aprendizagem estatística avançada;
 - sem inferência de atributos sensíveis.
 
-A próxima etapa segura é revisar estaticamente a migration, executar `uni_financial_memory_validation.sql` após aplicação somente no UniFlow DEV e validar RLS com cliente autenticado antes de integrar a memória à conversa.
+A próxima etapa segura é executar `scripts/supabase/test-memory-rls.js` com dois
+usuários autenticados no UniFlow DEV antes de integrar a memória à conversa.
