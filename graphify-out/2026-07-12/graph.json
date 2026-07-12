@@ -2420,7 +2420,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_app_access_workspace_types",
-      "community": 101,
+      "community": 96,
       "norm_label": "workspace_types"
     },
     {
@@ -3100,7 +3100,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage",
-      "community": 101,
+      "community": 96,
       "norm_label": "dashboardpage.jsx"
     },
     {
@@ -3110,7 +3110,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_getdashboardcontext",
-      "community": 101,
+      "community": 96,
       "norm_label": "getdashboardcontext()"
     },
     {
@@ -3120,7 +3120,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboardpage_dashboardpage",
-      "community": 101,
+      "community": 96,
       "norm_label": "dashboardpage()"
     },
     {
@@ -3240,7 +3240,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock",
-      "community": 101,
+      "community": 96,
       "norm_label": "dashboard.mock.js"
     },
     {
@@ -3250,7 +3250,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_dashboard_mock_dashboardmock",
-      "community": 101,
+      "community": 96,
       "norm_label": "dashboardmock"
     },
     {
@@ -3260,7 +3260,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_features_dashboard_index",
-      "community": 101,
+      "community": 96,
       "norm_label": "index.js"
     },
     {
@@ -4910,7 +4910,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agendapage",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendapage.jsx"
     },
     {
@@ -4920,7 +4920,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_pages_agendapage_getagendacontext",
-      "community": 101,
+      "community": 88,
       "norm_label": "getagendacontext()"
     },
     {
@@ -4930,7 +4930,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_pages_agendapage_agendapage",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendapage()"
     },
     {
@@ -5230,7 +5230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_settingspage",
-      "community": 88,
+      "community": 101,
       "norm_label": "settingspage.jsx"
     },
     {
@@ -5240,7 +5240,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_pages_settingspage_user_mode_labels",
-      "community": 88,
+      "community": 101,
       "norm_label": "user_mode_labels"
     },
     {
@@ -5250,7 +5250,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_pages_settingspage_plan_labels",
-      "community": 88,
+      "community": 101,
       "norm_label": "plan_labels"
     },
     {
@@ -5260,7 +5260,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_pages_settingspage_getsettingscontext",
-      "community": 88,
+      "community": 101,
       "norm_label": "getsettingscontext()"
     },
     {
@@ -5270,7 +5270,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_pages_settingspage_settingspage",
-      "community": 88,
+      "community": 101,
       "norm_label": "settingspage()"
     },
     {
@@ -5310,7 +5310,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock",
-      "community": 101,
+      "community": 88,
       "norm_label": "agenda.mock.js"
     },
     {
@@ -5320,7 +5320,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_agenda_agenda_mock_agendamock",
-      "community": 101,
+      "community": 88,
       "norm_label": "agendamock"
     },
     {
@@ -5350,7 +5350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock",
-      "community": 88,
+      "community": 101,
       "norm_label": "settings.mock.js"
     },
     {
@@ -5360,7 +5360,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_pages_configuracoes_settings_mock_settingsmock",
-      "community": 88,
+      "community": 101,
       "norm_label": "settingsmock"
     },
     {
@@ -12057,7 +12057,7 @@
       "label": "Grants",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L133",
+      "source_location": "L134",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_migration_review_grants",
       "community": 97,
@@ -12067,7 +12067,7 @@
       "label": "Privacidade",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L140",
+      "source_location": "L141",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_migration_review_privacidade",
       "community": 97,
@@ -12077,7 +12077,7 @@
       "label": "Falha parcial",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L153",
+      "source_location": "L154",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_migration_review_falha_parcial",
       "community": 97,
@@ -12087,7 +12087,7 @@
       "label": "Checklist antes de aplicar no DEV",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L163",
+      "source_location": "L164",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_migration_review_checklist_antes_de_aplicar_no_dev",
       "community": 97,
@@ -12097,7 +12097,7 @@
       "label": "Checklist ap\u00f3s eventual falha",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L173",
+      "source_location": "L174",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_migration_review_checklist_ap\u00f3s_eventual_falha",
       "community": 97,
@@ -12107,7 +12107,7 @@
       "label": "Checklist de valida\u00e7\u00e3o ap\u00f3s aplica\u00e7\u00e3o",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L182",
+      "source_location": "L183",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_migration_review_checklist_de_valida\u00e7\u00e3o_ap\u00f3s_aplica\u00e7\u00e3o",
       "community": 97,
@@ -12117,7 +12117,7 @@
       "label": "Riscos pendentes",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L198",
+      "source_location": "L199",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_migration_review_riscos_pendentes",
       "community": 97,
@@ -12127,7 +12127,7 @@
       "label": "Confirma\u00e7\u00e3o",
       "file_type": "document",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L206",
+      "source_location": "L207",
       "_origin": "ast",
       "id": "docs_00_master_uni_financial_memory_migration_review_confirma\u00e7\u00e3o",
       "community": 97,
@@ -38382,7 +38382,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L163",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
       "target": "docs_00_master_uni_financial_memory_migration_review_checklist_antes_de_aplicar_no_dev",
@@ -38392,7 +38392,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L173",
+      "source_location": "L174",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
       "target": "docs_00_master_uni_financial_memory_migration_review_checklist_ap\u00f3s_eventual_falha",
@@ -38402,7 +38402,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L182",
+      "source_location": "L183",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
       "target": "docs_00_master_uni_financial_memory_migration_review_checklist_de_valida\u00e7\u00e3o_ap\u00f3s_aplica\u00e7\u00e3o",
@@ -38412,7 +38412,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L206",
+      "source_location": "L207",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
       "target": "docs_00_master_uni_financial_memory_migration_review_confirma\u00e7\u00e3o",
@@ -38432,7 +38432,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L153",
+      "source_location": "L154",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
       "target": "docs_00_master_uni_financial_memory_migration_review_falha_parcial",
@@ -38442,7 +38442,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L133",
+      "source_location": "L134",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
       "target": "docs_00_master_uni_financial_memory_migration_review_grants",
@@ -38462,7 +38462,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L140",
+      "source_location": "L141",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
       "target": "docs_00_master_uni_financial_memory_migration_review_privacidade",
@@ -38492,7 +38492,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md",
-      "source_location": "L198",
+      "source_location": "L199",
       "weight": 1.0,
       "source": "docs_00_master_uni_financial_memory_migration_review_uni_financial_memory_migration_review",
       "target": "docs_00_master_uni_financial_memory_migration_review_riscos_pendentes",

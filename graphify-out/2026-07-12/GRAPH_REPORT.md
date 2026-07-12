@@ -1,7 +1,7 @@
 # Graph Report - uniflow-ai-app  (2026-07-12)
 
 ## Corpus Check
-- 244 files · ~102,671 words
+- 244 files · ~102,801 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -303,8 +303,8 @@ Cohesion: 0.15
 Nodes (13): Badge(), Card(), FinancialSummaryCard(), MetricRow(), GoalsSummaryCard(), RecentActivityList(), clientsMock, ClientesPage() (+5 more)
 
 ### Community 88 - "cx"
-Cohesion: 0.15
-Nodes (8): Loader(), Tooltip(), settingsMock, getSettingsContext(), PLAN_LABELS, SettingsPage(), USER_MODE_LABELS, cx()
+Cohesion: 0.17
+Nodes (6): Loader(), Tooltip(), agendaMock, AgendaPage(), getAgendaContext(), cx()
 
 ### Community 89 - "index.js"
 Cohesion: 0.08
@@ -335,8 +335,8 @@ Cohesion: 0.10
 Nodes (57): amountClose(), descriptionSimilarity(), detectFinancialAnomalies(), createFinancialSnapshot(), incrementAggregate(), inPeriod(), addDays(), buildMemoryCandidates() (+49 more)
 
 ### Community 96 - "FinanceiroPage.jsx"
-Cohesion: 0.25
-Nodes (9): useSession(), financialMock, FinanceiroPage(), formatMovementDate(), getCrudContext(), getFinancialContext(), LoginPage(), onboardingOptions (+1 more)
+Cohesion: 0.16
+Nodes (13): WORKSPACE_TYPES, useSession(), dashboardMock, DashboardPage(), getDashboardContext(), financialMock, FinanceiroPage(), formatMovementDate() (+5 more)
 
 ### Community 97 - "ObjetivosPage.jsx"
 Cohesion: 0.09
@@ -355,8 +355,8 @@ Cohesion: 0.53
 Nodes (4): objectivesMock, getObjectivesContext(), getProgress(), ObjetivosPage()
 
 ### Community 101 - "AgendaPage.jsx"
-Cohesion: 0.23
-Nodes (7): WORKSPACE_TYPES, dashboardMock, DashboardPage(), getDashboardContext(), agendaMock, AgendaPage(), getAgendaContext()
+Cohesion: 0.38
+Nodes (5): settingsMock, getSettingsContext(), PLAN_LABELS, SettingsPage(), USER_MODE_LABELS
 
 ### Community 102 - "Uni Conversation Financial Actions V1"
 Cohesion: 0.17

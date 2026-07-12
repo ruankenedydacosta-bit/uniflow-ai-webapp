@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783847962.4057963,
-    "ast_hash": "3ba5ca0a2fe151e862ffdb7a0fcb1794",
+    "mtime": 1783855867.7376244,
+    "ast_hash": "c99d52cc4f43f0f9e0ddd93481271372",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783822548.812373,
-    "ast_hash": "a4ce072c8d2bf3856a4f179caa6d17cf",
+    "mtime": 1783855908.019591,
+    "ast_hash": "528061c52a2d3faede393e0530b75fbd",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
@@ -875,8 +875,8 @@
     "semantic_hash": ""
   },
   "supabase/README.md": {
-    "mtime": 1783812279.9079661,
-    "ast_hash": "c435fd1d23b4442c00ea452c333a63b2",
+    "mtime": 1783855907.617694,
+    "ast_hash": "b30e3ad253bd6faab3a6478bfd24974b",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
@@ -1240,8 +1240,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md": {
-    "mtime": 1783849592.6122622,
-    "ast_hash": "3978e689151a6d511d0121c284f996a0",
+    "mtime": 1783855907.7814088,
+    "ast_hash": "45605e6b760b78fe520cd5e8a410dd0f",
     "semantic_hash": ""
   },
   "supabase/tests/uni_financial_memory_failed_apply_audit.sql": {
@@ -1250,8 +1250,18 @@
     "semantic_hash": ""
   },
   "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md": {
-    "mtime": 1783849767.6595552,
-    "ast_hash": "2606890166b5887f81cba03d8b1a5c48",
+    "mtime": 1783855907.901204,
+    "ast_hash": "978c71ba972b0971e6b6f73a9a5ed730",
+    "semantic_hash": ""
+  },
+  "scripts/supabase/test-memory-rls.js": {
+    "mtime": 1783855867.6155035,
+    "ast_hash": "eab8447e72c03392b889bc2b2dfb16a2",
+    "semantic_hash": ""
+  },
+  "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md": {
+    "mtime": 1783855867.8577752,
+    "ast_hash": "634a3bb94e5c027b7097beaa2fec2bde",
     "semantic_hash": ""
   }
 }

@@ -1230,13 +1230,13 @@
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_005_uni_financial_memory.sql": {
-    "mtime": 1783849664.762737,
-    "ast_hash": "8981b31d3a16df1fc560c6233fb05d9d",
+    "mtime": 1783849767.2952018,
+    "ast_hash": "3acb4c1062812ab16d1f23861c94fd8e",
     "semantic_hash": ""
   },
   "supabase/tests/uni_financial_memory_validation.sql": {
-    "mtime": 1783849665.1124706,
-    "ast_hash": "8d7b2b6b2d996d78e6a45bc155dbc6ef",
+    "mtime": 1783849800.2428076,
+    "ast_hash": "aaf10fedb44a3b5dddadd3a4142a5ca2",
     "semantic_hash": ""
   },
   "docs/00-master/UNI_FINANCIAL_MEMORY_V1.md": {
@@ -1245,13 +1245,13 @@
     "semantic_hash": ""
   },
   "supabase/tests/uni_financial_memory_failed_apply_audit.sql": {
-    "mtime": 1783849693.7033813,
-    "ast_hash": "664e9237e793ec1341de391ba1d3a6f2",
+    "mtime": 1783849767.5349395,
+    "ast_hash": "ab5216dd7b8fefdc82dd3d137aa88c2d",
     "semantic_hash": ""
   },
   "docs/00-master/UNI_FINANCIAL_MEMORY_MIGRATION_REVIEW.md": {
-    "mtime": 1783849631.9606905,
-    "ast_hash": "c59f07bf3f7bc6fdb59ccfe2f225eea9",
+    "mtime": 1783849767.6595552,
+    "ast_hash": "2606890166b5887f81cba03d8b1a5c48",
     "semantic_hash": ""
   }
 }
