@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783785811.2985075,
-    "ast_hash": "ea6181cefb3b50d38af121388a5995c1",
+    "mtime": 1783822456.3542123,
+    "ast_hash": "3eb3ce9cc0893a84f3423c665d5f240c",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -670,8 +670,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/UNI_AI_EXPERIENCE_REFERENCE.md": {
-    "mtime": 1783623820.5449057,
-    "ast_hash": "745c8e5f0b303f0a49cf5e83f03e3e4f",
+    "mtime": 1783822548.9365644,
+    "ast_hash": "4c00d6089918f0e40d7261dcdc75f97e",
     "semantic_hash": ""
   },
   "docs/08-references/landing-uni-demo/index.html": {
@@ -765,8 +765,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/APP_STRUCTURE_MAP.md": {
-    "mtime": 1783681052.4349272,
-    "ast_hash": "b9ab19d1ae58b3fcf02dfda53c045732",
+    "mtime": 1783822548.7142665,
+    "ast_hash": "ba4e7183dbe1c63e25f17617e7bd4709",
     "semantic_hash": ""
   },
   "scripts/obsidian/create-note.js": {
@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783800485.4669747,
-    "ast_hash": "05882e87bd40d0a9c71c8e0c8a71dfea",
+    "mtime": 1783822548.812373,
+    "ast_hash": "a4ce072c8d2bf3856a4f179caa6d17cf",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
@@ -875,8 +875,8 @@
     "semantic_hash": ""
   },
   "supabase/README.md": {
-    "mtime": 1783785951.3756423,
-    "ast_hash": "88c3715a9e79cabf49d6bce7fe152ddd",
+    "mtime": 1783812279.9079661,
+    "ast_hash": "c435fd1d23b4442c00ea452c333a63b2",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
@@ -920,8 +920,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/ONBOARDING_REAL_INTEGRATION.md": {
-    "mtime": 1783778423.2223675,
-    "ast_hash": "06f87c90c8b7d5e555d351e61bb24f8a",
+    "mtime": 1783822548.6146965,
+    "ast_hash": "d017b9f2cf8fdd9b56fe213ed836cf06",
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_002_financial_core.sql": {
@@ -1045,23 +1045,58 @@
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_004_open_finance_infrastructure.sql": {
-    "mtime": 1783806823.0897362,
-    "ast_hash": "ce472c66d55bf9f287262317ba614696",
+    "mtime": 1783809603.4201798,
+    "ast_hash": "3bfcafb501b89bf0dbf51bffbc8569c5",
     "semantic_hash": ""
   },
   "docs/00-master/OPEN_FINANCE_ARCHITECTURE.md": {
-    "mtime": 1783806659.6583238,
-    "ast_hash": "28b9bbea601aea9b54372b1ced9e0dc6",
+    "mtime": 1783812296.3701231,
+    "ast_hash": "7b72aa251082632b8511c5e9d26eb94a",
     "semantic_hash": ""
   },
   "supabase/tests/open_finance_infrastructure_validation.sql": {
-    "mtime": 1783806852.55261,
-    "ast_hash": "48eddf26ed4baa30c0c6c2d894686e30",
+    "mtime": 1783809663.2878366,
+    "ast_hash": "8561b63eed7b953c5f969d653795fc14",
     "semantic_hash": ""
   },
   "docs/00-master/OPEN_FINANCE_MIGRATION_REVIEW.md": {
-    "mtime": 1783806785.2280543,
-    "ast_hash": "9d5356f30b29a2381584309e5b0cd8d9",
+    "mtime": 1783809700.7667692,
+    "ast_hash": "e7877cd65e95f85cf683c2d75e163c73",
+    "semantic_hash": ""
+  },
+  "supabase/tests/open_finance_failed_apply_audit.sql": {
+    "mtime": 1783809638.7804732,
+    "ast_hash": "b4c2496c9f1158b8d3e749fd4091544b",
+    "semantic_hash": ""
+  },
+  "src/features/uni-personality/index.js": {
+    "mtime": 1783822427.8324873,
+    "ast_hash": "1890b8c1cd0775872d90a000010d7c26",
+    "semantic_hash": ""
+  },
+  "src/features/uni-personality/personality.test.js": {
+    "mtime": 1783822651.9732084,
+    "ast_hash": "3e592b0403ded70aaef15c7888562a9d",
+    "semantic_hash": ""
+  },
+  "src/features/uni-personality/personalityProfiles.js": {
+    "mtime": 1783822427.5192604,
+    "ast_hash": "34c0dbd2ca2e8c6dc382b18999b795ab",
+    "semantic_hash": ""
+  },
+  "src/features/uni-personality/personalityPromptBuilder.js": {
+    "mtime": 1783822651.879293,
+    "ast_hash": "8d7aabf23f772df88271229df3974758",
+    "semantic_hash": ""
+  },
+  "src/features/uni-personality/personalityResolver.js": {
+    "mtime": 1783822677.7547731,
+    "ast_hash": "d5cfc169a9b47ff45bb340af187acb0c",
+    "semantic_hash": ""
+  },
+  "docs/00-master/UNI_PERSONALITY_V1.md": {
+    "mtime": 1783822518.8443274,
+    "ast_hash": "aab443424e312c8525de95230cf35dc0",
     "semantic_hash": ""
   }
 }
