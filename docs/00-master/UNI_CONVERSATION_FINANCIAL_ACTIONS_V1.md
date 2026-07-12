@@ -4,13 +4,14 @@
 
 Esta V1 conecta a interpretação determinística de linguagem financeira da Uni ao domínio financeiro existente. A conversa passa a ser a experiência principal para registrar movimentações, enquanto formulários permanecem como fallback para correções e exceções.
 
-O fluxo inicial opera por texto. Voz, LLM e serviços externos não fazem parte desta etapa.
+O fluxo opera por texto e pela transcrição final do microfone, ambos usando o
+mesmo `sendMessage`. LLM e serviços externos não fazem parte desta etapa.
 
 ## Fluxo oficial
 
 1. **Interpretar:** `financialParser` classifica a intenção e extrai entidades candidatas.
 2. **Contextualizar:** preferências explícitas ou confirmadas podem complementar categoria, conta e tom, sem alterar valor ou data.
-3. **Validar:** a camada `uni-conversation` revalida valor, tipo, conta, categoria, descrição e data contra os dados atuais do workspace.
+3. **Validar:** a camada `uni-conversation` revalida valor, tipo, conta, categoria, descrição e data contra os dados atuais do workspace. Uma conta mencionada e inexistente pode ser preparada, sem escrita, para criação após a confirmação.
 4. **Esclarecer:** quando faltar informação ou houver conflito de memória, a Uni pergunta pelo dado necessário.
 5. **Confirmar:** quando os dados estiverem completos, a Uni apresenta um resumo antes de qualquer escrita.
 6. **Executar:** somente o botão `Confirmar` chama `saveTransaction` do hook financeiro.
@@ -40,7 +41,11 @@ Nenhuma entidade extraída pelo parser é considerada confiável sem validação
 
 ## Contas e categorias
 
-A resolução de contas considera nome e instituição, com correspondência aproximada controlada. Ausência, ambiguidade ou conta arquivada geram uma pergunta humana antes da confirmação.
+A resolução de contas considera nome e instituição por identidade normalizada
+exata, sem correspondência vaga. Uma conta ativa única é reutilizada; uma conta
+inexistente é proposta e criada somente após confirmação; ambiguidade exige
+escolha; conta arquivada exige reativação ou criação nova explícita. O contrato
+completo está em `UNI_AUTOMATIC_ACCOUNT_RESOLUTION_V1.md`.
 
 A categoria inferida é comparada ao catálogo global e personalizado já carregado. A Uni pode sugerir uma categoria existente por aproximação, mas não cria categorias automaticamente nesta etapa. Se não houver correspondência segura, o usuário escolhe uma categoria existente.
 
@@ -62,9 +67,13 @@ Não há chamada de IA externa, ElevenLabs, OpenAI ou outro LLM nesta V1.
 
 ## Supabase e modo demo
 
-Com Supabase configurado, a confirmação usa `useTransactions`, respeita RLS e persiste no workspace autenticado. O estado do hook é atualizado imediatamente após a resposta do serviço.
+Com Supabase configurado, a confirmação usa `useAccounts` quando houver
+provisionamento e `useTransactions` para o lançamento. Ambos respeitam RLS e o
+workspace autenticado. O estado dos hooks é atualizado imediatamente após cada
+resposta do service.
 
-Sem Supabase, o mesmo hook mantém um fallback local editável. A confirmação atualiza a experiência atual em memória, sem persistência após recarregar a aplicação.
+Sem Supabase, os mesmos hooks mantêm fallback local editável. A confirmação
+adiciona conta e lançamento à sessão atual, sem persistência após recarregar.
 
 ## Memória explícita
 
