@@ -7,10 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "node --test src/hooks/financialHooks.test.js src/features/uni-personality/personality.test.js src/features/uni-intents/intents.test.js src/features/uni-conversation/uniConversation.test.js src/features/uni-conversation/accountResolution.test.js src/features/uni-memory/uniMemory.test.js src/features/uni-memory-integration/conversationMemory.test.js src/features/uni-voice/uniVoiceInput.test.js scripts/supabase/test-memory-rls-errors.test.js",
+    "test": "node --test src/hooks/financialHooks.test.js src/features/uni-personality/personality.test.js src/features/uni-intents/intents.test.js src/features/uni-conversation/uniConversation.test.js src/features/uni-conversation/accountResolution.test.js src/features/uni-memory/uniMemory.test.js src/features/uni-memory-integration/conversationMemory.test.js src/features/uni-voice/uniVoiceInput.test.js src/services/confirmedFinancialActionService.test.js scripts/supabase/test-memory-rls-errors.test.js",
     "obsidian:note": "node scripts/obsidian/create-note.js",
     "supabase:test-rls": "node scripts/supabase/test-rls.js",
     "supabase:test-memory-rls": "node scripts/supabase/test-memory-rls.js",
+    "supabase:test-atomic-financial-action": "node scripts/supabase/test-atomic-financial-action.js",
     "preview": "vite preview"
   },
   "dependencies": {
