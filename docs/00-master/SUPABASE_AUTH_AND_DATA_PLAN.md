@@ -764,3 +764,15 @@ validados com dois clientes autenticados. O roteiro reproduzivel esta em
 `scripts/supabase/test-memory-rls.js` e deve usar somente anon/publishable key,
 sem `service_role`. A integracao visual com a Uni permanece bloqueada ate essa
 validacao. Producao nao recebeu a migration 005.
+
+## 24. Policy de leitura do owner no onboarding
+
+O teste do segundo usuario confirmou que `workspaces_insert_owner` aceitava o
+insert, mas `workspaces_select_active_member` bloqueava o retorno da linha em
+`insert(...).select(...)` antes que a leitura por membership fosse observavel.
+
+A migration 007 substitui somente essa policy de SELECT. O owner passa a ler
+por `owner_user_id = auth.uid()` e membros ativos continuam autorizados por
+`is_workspace_member(id)`. RLS, isolamento entre usuarios e ausencia de acesso
+anon permanecem preservados. A migration esta preparada localmente e ainda nao
+foi aplicada em DEV ou producao.

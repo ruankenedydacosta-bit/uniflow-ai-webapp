@@ -155,6 +155,28 @@ Nao existe criacao automatica de workspace no cadastro nesta migration.
 - Incluir RLS, grants, indices e comentarios de seguranca junto da tabela criada.
 - Nunca editar uma migration que ja tenha sido aplicada em producao; criar outra migration corretiva.
 
+### Recuperacao segura de profiles antigos
+
+A migration `20260712_006_ensure_authenticated_profile.sql` corrige o caso de
+contas Auth antigas que não receberam `profiles` pelo trigger. Ela cria a RPC
+`ensure_own_profile`, limitada ao próprio `auth.uid()`, e mantém o frontend sem
+grant direto de `INSERT` em `profiles`.
+
+Essa migration está preparada localmente e ainda precisa ser aplicada e
+validada somente no UniFlow DEV. Produção não foi acessada nem alterada.
+
+### Policy de SELECT de workspaces no onboarding
+
+A migration `20260712_007_workspace_owner_select_policy.sql` corrige o `403`
+do `INSERT ... RETURNING` de workspaces. Ela substitui apenas a policy de
+SELECT, permitindo leitura pelo `owner_user_id` autenticado ou por membership
+ativa. A policy de INSERT, RLS e grants permanecem inalterados.
+
+Antes da aplicação, executar
+`tests/workspace_onboarding_rls_failed_apply_audit.sql`. Depois, exigir 9/9 em
+`tests/workspace_onboarding_rls_validation.sql`. A migration ainda não foi
+aplicada remotamente e produção permanece intacta.
+
 Formato recomendado:
 
 ```text
