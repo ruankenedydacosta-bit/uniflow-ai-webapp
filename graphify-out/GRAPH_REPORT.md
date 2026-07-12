@@ -1,16 +1,16 @@
 # Graph Report - uniflow-ai-app  (2026-07-12)
 
 ## Corpus Check
-- 246 files · ~104,771 words
+- 252 files · ~106,954 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1398 nodes · 2549 edges · 108 communities (93 shown, 15 thin omitted)
+- 1419 nodes · 2582 edges · 110 communities (95 shown, 15 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 8 edges (avg confidence: 0.76)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8bdac07a`
+- Built from commit: `f5fe64ee`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -92,9 +92,11 @@
 - Uni Conversation Financial Actions V1
 - UniFinancialActionCard.jsx
 - Uni Financial Memory V1
-- UniChatPanel.jsx
+- AccessModeSwitcher.jsx
 - Teste autenticado da Memória Financeira V1
+- Workspace Onboarding RLS Fix
 - DashboardPage.jsx
+- SettingsPage.jsx
 
 ## God Nodes (most connected - your core abstractions)
 1. `useAccess()` - 31 edges
@@ -103,7 +105,7 @@
 4. `Button()` - 26 edges
 5. `formatCurrency()` - 26 edges
 6. `Card()` - 25 edges
-7. `Supabase Auth and Data Plan` - 24 edges
+7. `Supabase Auth and Data Plan` - 25 edges
 8. `Uni AI Experience Reference` - 20 edges
 9. `Financial Core Data Model` - 18 edges
 10. `Uni Financial Memory V1` - 17 edges
@@ -113,17 +115,17 @@
   src/features/uni-memory/anomalyDetector.js → src/features/uni-memory/uniMemory.test.js
 - `detectRecurrences()` --indirect_call--> `transaction()`  [INFERRED]
   src/features/uni-memory/recurrenceDetector.js → src/features/uni-memory/uniMemory.test.js
+- `AppContent()` --calls--> `useAccess()`  [EXTRACTED]
+  src/app/App.jsx → src/app/AccessContext.jsx
 - `SessionProvider()` --calls--> `useAccess()`  [EXTRACTED]
   src/app/SessionContext.jsx → src/app/AccessContext.jsx
-- `AccessModeSwitcher()` --calls--> `useAccess()`  [EXTRACTED]
-  src/components/dev/AccessModeSwitcher.jsx → src/app/AccessContext.jsx
-- `DashboardPage()` --calls--> `useAccess()`  [EXTRACTED]
-  src/features/dashboard/DashboardPage.jsx → src/app/AccessContext.jsx
+- `Sidebar()` --calls--> `useAccess()`  [EXTRACTED]
+  src/components/layout/Sidebar/Sidebar.jsx → src/app/AccessContext.jsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (108 total, 15 thin omitted)
+## Communities (110 total, 15 thin omitted)
 
 ### Community 0 - "DashboardPage.jsx"
 Cohesion: 0.04
@@ -142,8 +144,8 @@ Cohesion: 0.17
 Nodes (8): DashboardGreeting(), currency, FinancialSummaryCard(), GoalsSummaryCard(), currency, dateFormatter, RecentActivityList(), UniInsightsCard()
 
 ### Community 4 - "AccessModeSwitcher.jsx"
-Cohesion: 0.17
-Nodes (11): Decisoes ainda pendentes, Estado atual, Memoria Financeira V1 no DEV, Novas migrations, Nucleo financeiro no DEV, Open Finance validado no DEV, Ordem inicial, Proximo passo (+3 more)
+Cohesion: 0.14
+Nodes (13): Decisoes ainda pendentes, Estado atual, Memoria Financeira V1 no DEV, Novas migrations, Nucleo financeiro no DEV, Open Finance validado no DEV, Ordem inicial, Policy de SELECT de workspaces no onboarding (+5 more)
 
 ### Community 5 - "CustomerBoard.jsx"
 Cohesion: 0.29
@@ -170,12 +172,12 @@ Cohesion: 0.33
 Nodes (4): Card, CardBody, CardFooter, CardHeader
 
 ### Community 39 - "UniAIPage.jsx"
-Cohesion: 0.14
-Nodes (24): baseCategories, fallbackAccountTypes, financialCrudMock, today, audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport() (+16 more)
+Cohesion: 0.15
+Nodes (22): baseCategories, fallbackAccountTypes, financialCrudMock, today, audioControlLabels, EXPERIENCE_STATES, EXPERIENCE_TIMING, createInsightReport() (+14 more)
 
 ### Community 41 - "index.js"
-Cohesion: 0.14
-Nodes (20): Button(), Input, Modal(), transaction(), EMPTY_FORM, FinanceAccountModal(), CATEGORY_LABELS, EMPTY_FORM (+12 more)
+Cohesion: 0.17
+Nodes (19): Input, Modal(), transaction(), EMPTY_FORM, FinanceAccountModal(), CATEGORY_LABELS, EMPTY_FORM, FinanceCategoryModal() (+11 more)
 
 ### Community 48 - "Módulos oficiais do produto"
 Cohesion: 0.08
@@ -230,8 +232,8 @@ Cohesion: 0.05
 Nodes (39): 10. Como evitar mistura de dados, 11. Regras de UX, 12. Sugestao futura de estrutura tecnica, 13. Roadmap de implementacao, 1. Objetivo da separacao, 2. App unico, experiencias diferentes, 3. Modos de uso, 4. Planos (+31 more)
 
 ### Community 68 - "navigation.js"
-Cohesion: 0.15
-Nodes (16): useAccess(), canAccessNavigationItem(), canAccessRoute(), getFallbackRoute(), App(), AppContent(), ALL_MODES, ALL_PLANS (+8 more)
+Cohesion: 0.13
+Nodes (17): canAccessNavigationItem(), canAccessRoute(), getFallbackRoute(), App(), AppContent(), ALL_MODES, ALL_PLANS, ALL_WORKSPACES (+9 more)
 
 ### Community 69 - "Obsidian Workflow"
 Cohesion: 0.22
@@ -247,11 +249,11 @@ Nodes (8): buildAreaPath(), buildLinePath(), FinanceProjectionChart(), getPointC
 
 ### Community 72 - "Supabase Auth and Data Plan"
 Cohesion: 0.09
-Nodes (21): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 16. Validacao inicial de Auth e workspaces, 17. RLS autenticado validado (+13 more)
+Nodes (22): 10. Variaveis de ambiente futuras, 11. Riscos, 12. Checklist da Fase 2, 13. Decisao oficial, 14. Schema inicial versionado, 15. Estrategia de ambientes, 16. Validacao inicial de Auth e workspaces, 17. RLS autenticado validado (+14 more)
 
 ### Community 73 - "authService.js"
-Cohesion: 0.07
-Nodes (67): getAccessFromSession(), INITIAL_SESSION_STATE, logAuthDevelopment(), SessionContext, SessionProvider(), VALID_PLANS, VALID_USER_MODES, VALID_WORKSPACE_TYPES (+59 more)
+Cohesion: 0.10
+Nodes (44): getAccessFromSession(), INITIAL_SESSION_STATE, logAuthDevelopment(), SessionContext, SessionProvider(), VALID_PLANS, VALID_USER_MODES, VALID_WORKSPACE_TYPES (+36 more)
 
 ### Community 74 - "Supabase Env Setup"
 Cohesion: 0.29
@@ -275,7 +277,7 @@ Nodes (22): Arquitetura, `authService.js`, Com sessao e onboarding incompleto, C
 
 ### Community 80 - "Onboarding Real Integration"
 Cohesion: 0.11
-Nodes (17): Atualizacao da sessao, Idempotencia e retomada, Limites desta etapa, Logs, Modo demo, Objetivo, Onboarding Real Integration, `onboardingService.js` (+9 more)
+Nodes (18): Atualizacao da sessao, Idempotencia e retomada, Leitura do workspace recém-criado, Limites desta etapa, Logs, Modo demo, Objetivo, Onboarding Real Integration (+10 more)
 
 ### Community 81 - "Financial Core Data Model"
 Cohesion: 0.08
@@ -302,11 +304,11 @@ Cohesion: 0.33
 Nodes (6): 5. Tabelas sugeridas por modulo, `uni_conversations`, Uni e IA, `uni_insights`, `uni_recommendations`, `user_cognitive_profile`
 
 ### Community 87 - "useAccess"
-Cohesion: 0.15
-Nodes (13): Badge(), Card(), FinancialSummaryCard(), MetricRow(), GoalsSummaryCard(), RecentActivityList(), clientsMock, ClientesPage() (+5 more)
+Cohesion: 0.17
+Nodes (11): Badge(), Card(), FinancialSummaryCard(), MetricRow(), GoalsSummaryCard(), RecentActivityList(), crmMock, CRMPage() (+3 more)
 
 ### Community 88 - "cx"
-Cohesion: 0.20
+Cohesion: 0.22
 Nodes (6): Loader(), Tooltip(), agendaMock, AgendaPage(), getAgendaContext(), cx()
 
 ### Community 89 - "index.js"
@@ -314,12 +316,12 @@ Cohesion: 0.08
 Nodes (57): accountMatchesInput(), accountSearchTerms(), ACTION_INTENTS, buildFinancialIntentAction(), categorySimilarity(), createIssue(), executeFinancialIntentAction(), isFinancialTransactionIntent() (+49 more)
 
 ### Community 90 - "routes.jsx"
-Cohesion: 0.29
-Nodes (16): client(), contextFor(), createExplicit(), denied(), expectInsertDenied(), jwtRole(), main(), MEMORY_FIELDS (+8 more)
+Cohesion: 0.23
+Nodes (19): classifyInferredTypeBlock(), client(), contextFor(), createExplicit(), denied(), expectInferredTypeDenied(), expectInsertDenied(), jwtRole() (+11 more)
 
 ### Community 91 - "accountService.js"
 Cohesion: 0.14
-Nodes (45): cloneRecords(), createDemoRecord(), createDemoResult(), removeRecord(), upsertRecord(), useAccounts(), useCategories(), useTransactions() (+37 more)
+Nodes (46): cloneRecords(), createDemoRecord(), createDemoResult(), removeRecord(), upsertRecord(), useAccounts(), useCategories(), useTransactions() (+38 more)
 
 ### Community 92 - "transactionService.js"
 Cohesion: 0.10
@@ -338,8 +340,8 @@ Cohesion: 0.10
 Nodes (57): amountClose(), descriptionSimilarity(), detectFinancialAnomalies(), createFinancialSnapshot(), incrementAggregate(), inPeriod(), addDays(), buildMemoryCandidates() (+49 more)
 
 ### Community 96 - "FinanceiroPage.jsx"
-Cohesion: 0.23
-Nodes (10): appRoutes, publicRoutes, useSession(), financialMock, FinanceiroPage(), formatMovementDate(), getCrudContext(), getFinancialContext() (+2 more)
+Cohesion: 0.28
+Nodes (8): useSession(), financialMock, FinanceiroPage(), formatMovementDate(), getCrudContext(), getFinancialContext(), LoginPage(), OnboardingPage()
 
 ### Community 97 - "ObjetivosPage.jsx"
 Cohesion: 0.09
@@ -350,16 +352,16 @@ Cohesion: 0.07
 Nodes (27): 1. Ciclo de consentimento ambiguo, 2. Consentimento legivel depois da perda de membership, 3. IDs externos com escopo insuficiente, 4. Jobs duplicados em paralelo, 5. Retry e timestamps incompletos, 6. Exposicao ampla de colunas por SELECT, 7. Nome de payload pouco explicito, Auditoria da tentativa que falhou (+19 more)
 
 ### Community 99 - "AccessModeSwitcher.jsx"
-Cohesion: 0.17
-Nodes (10): CURRENCY_FORMATTER, formatDate(), UniFinancialActionCard(), UniInsightReport(), UniLiveContextPanel(), UniQuickSuggestions(), UniRecentConversations(), UniSuggestionDrawer() (+2 more)
+Cohesion: 0.14
+Nodes (13): Button(), UniAudioControls(), UniExperienceShell(), CURRENCY_FORMATTER, formatDate(), UniFinancialActionCard(), UniInsightReport(), UniLiveContextPanel() (+5 more)
 
 ### Community 100 - "ObjetivosPage.jsx"
 Cohesion: 0.53
 Nodes (4): objectivesMock, getObjectivesContext(), getProgress(), ObjetivosPage()
 
 ### Community 101 - "AgendaPage.jsx"
-Cohesion: 0.11
-Nodes (23): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, AccessProvider() (+15 more)
+Cohesion: 0.10
+Nodes (24): canUseBusinessFeatures(), DEFAULT_DEMO_ACCESS, isBusinessMode(), PLANS, USER_MODES, WORKSPACE_TYPES, AccessContext, AccessProvider() (+16 more)
 
 ### Community 102 - "Uni Conversation Financial Actions V1"
 Cohesion: 0.17
@@ -373,34 +375,42 @@ Nodes (19): ARCHETYPES, CORE_IDENTITY, getPersonalityProfile(), isValidPersonali
 Cohesion: 0.08
 Nodes (23): Anomalias, Confiança, Contexto, Explicabilidade, GPS Financeiro futuro, Histórico, Histórico, contexto e memória, Limites da V1 (+15 more)
 
-### Community 105 - "UniChatPanel.jsx"
-Cohesion: 0.21
+### Community 105 - "AccessModeSwitcher.jsx"
+Cohesion: 0.18
 Nodes (4): Topbar(), Avatar, UniMessageBubble(), UniVoiceCapture()
 
 ### Community 106 - "Teste autenticado da Memória Financeira V1"
-Cohesion: 0.20
-Nodes (9): Cenários, Estado, Execução, Limpeza e limites, Objetivo, Pré-requisitos, Resultado esperado, Teste autenticado da Memória Financeira V1 (+1 more)
+Cohesion: 0.18
+Nodes (10): Cenários, Código P0001 nos tipos inferidos, Estado, Execução, Limpeza e limites, Objetivo, Pré-requisitos, Resultado esperado (+2 more)
 
-### Community 107 - "DashboardPage.jsx"
-Cohesion: 0.47
-Nodes (3): dashboardMock, DashboardPage(), getDashboardContext()
+### Community 107 - "Workspace Onboarding RLS Fix"
+Cohesion: 0.25
+Nodes (7): Aplicação segura no DEV, Causa, Correção versionada, Estado do usuário B, Ownership no frontend, Sintoma confirmado, Workspace Onboarding RLS Fix
+
+### Community 108 - "DashboardPage.jsx"
+Cohesion: 0.20
+Nodes (25): EMPTY_DATA, useOpenFinance(), createResult(), createUnavailableResult(), createValidationResult(), getExternalAccount(), isValidUuid(), listExternalAccounts() (+17 more)
+
+### Community 109 - "SettingsPage.jsx"
+Cohesion: 0.38
+Nodes (5): settingsMock, getSettingsContext(), PLAN_LABELS, SettingsPage(), USER_MODE_LABELS
 
 ## Knowledge Gaps
-- **592 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+587 more)
+- **600 isolated node(s):** `Avatar`, `AvatarGroup`, `Badge`, `Button`, `Card` (+595 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `isSupabaseConfigured` connect `authService.js` to `accountService.js`, `AccessModeSwitcher.jsx`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+- **Why does `isSupabaseConfigured` connect `accountService.js` to `authService.js`, `DashboardPage.jsx`, `AccessModeSwitcher.jsx`?**
+  _High betweenness centrality (0.023) - this node is a cross-community bridge._
 - **Why does `FinanceTransactionModal()` connect `index.js` to `FinanceiroPage.jsx`, `useAccess`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
+- **Why does `useUniConversation()` connect `index.js` to `UniAIPage.jsx`?**
   _High betweenness centrality (0.015) - this node is a cross-community bridge._
-- **Why does `transaction()` connect `index.js` to `AccessModeSwitcher.jsx`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
 - **What connects `Avatar`, `AvatarGroup`, `Badge` to the rest of the system?**
-  _592 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _600 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardPage.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.0425531914893617 - nodes in this community are weakly interconnected._
 - **Should `devDependencies` be split into smaller, more focused modules?**

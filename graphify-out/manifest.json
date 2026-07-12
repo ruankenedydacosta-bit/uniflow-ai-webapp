@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783855867.7376244,
-    "ast_hash": "c99d52cc4f43f0f9e0ddd93481271372",
+    "mtime": 1783870904.4378057,
+    "ast_hash": "fafd54db9bd7abb733edb67efda25f41",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -835,8 +835,8 @@
     "semantic_hash": ""
   },
   "src/pages/OnboardingPage.jsx": {
-    "mtime": 1783739942.502244,
-    "ast_hash": "3eec37e779b9ec53641c76c7a1bcbec4",
+    "mtime": 1783859501.8156815,
+    "ast_hash": "39a0786872a48f9ff05c400835817b3c",
     "semantic_hash": ""
   },
   "src/app/accessRules.js": {
@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_AUTH_AND_DATA_PLAN.md": {
-    "mtime": 1783855908.019591,
-    "ast_hash": "528061c52a2d3faede393e0530b75fbd",
+    "mtime": 1783867744.8069298,
+    "ast_hash": "dca831e65a325805b7a2fe05dcf9beca",
     "semantic_hash": ""
   },
   "src/services/authService.js": {
@@ -860,8 +860,8 @@
     "semantic_hash": ""
   },
   "src/services/workspaceService.js": {
-    "mtime": 1783778423.0294197,
-    "ast_hash": "cdc860ec76759dba9f13c737257bd980",
+    "mtime": 1783867675.4862242,
+    "ast_hash": "d5ecca5a29268b6a464430f4e45ee103",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_ENV_SETUP.md": {
@@ -875,8 +875,8 @@
     "semantic_hash": ""
   },
   "supabase/README.md": {
-    "mtime": 1783855907.617694,
-    "ast_hash": "b30e3ad253bd6faab3a6478bfd24974b",
+    "mtime": 1783867744.9065568,
+    "ast_hash": "0bcff99d64bc0147afad15b9f3ca3d94",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
@@ -910,18 +910,18 @@
     "semantic_hash": ""
   },
   "src/services/onboardingService.js": {
-    "mtime": 1783778423.1277785,
-    "ast_hash": "7da5ea664f37166d24e6232bd4155ec4",
+    "mtime": 1783867675.584874,
+    "ast_hash": "744f9996310713826ddba914ff411597",
     "semantic_hash": ""
   },
   "src/services/profileService.js": {
-    "mtime": 1783778422.9290113,
-    "ast_hash": "9ba611654540c1f237551d7b4b44f6db",
+    "mtime": 1783858211.2776763,
+    "ast_hash": "ecdf31ebfc3e1d90835d6a4813ffd9bc",
     "semantic_hash": ""
   },
   "docs/00-master/ONBOARDING_REAL_INTEGRATION.md": {
-    "mtime": 1783822548.6146965,
-    "ast_hash": "d017b9f2cf8fdd9b56fe213ed836cf06",
+    "mtime": 1783867744.6988597,
+    "ast_hash": "569ec5324f926b515c10e3e52bc33eef",
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_002_financial_core.sql": {
@@ -1255,13 +1255,43 @@
     "semantic_hash": ""
   },
   "scripts/supabase/test-memory-rls.js": {
-    "mtime": 1783855867.6155035,
-    "ast_hash": "eab8447e72c03392b889bc2b2dfb16a2",
+    "mtime": 1783870904.1822264,
+    "ast_hash": "03707696c8af85ada04e09611d29c3a9",
     "semantic_hash": ""
   },
   "docs/00-master/UNI_FINANCIAL_MEMORY_RLS_TESTING.md": {
-    "mtime": 1783855867.8577752,
-    "ast_hash": "634a3bb94e5c027b7097beaa2fec2bde",
+    "mtime": 1783870904.613057,
+    "ast_hash": "3c1137c6be154cd10ddb022109df42cd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260712_006_ensure_authenticated_profile.sql": {
+    "mtime": 1783858211.1133454,
+    "ast_hash": "5b341ae1bf716951f1a59e0000b99f00",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260712_007_workspace_owner_select_policy.sql": {
+    "mtime": 1783867675.3868406,
+    "ast_hash": "3819b50d5d0a0be66bc33cf15a303987",
+    "semantic_hash": ""
+  },
+  "supabase/tests/workspace_onboarding_rls_failed_apply_audit.sql": {
+    "mtime": 1783867773.1390028,
+    "ast_hash": "ef91d1e1a0d6a91627a81015524198e2",
+    "semantic_hash": ""
+  },
+  "supabase/tests/workspace_onboarding_rls_validation.sql": {
+    "mtime": 1783867773.0487018,
+    "ast_hash": "5c79e995ba617aaca9ce9d0281a967cf",
+    "semantic_hash": ""
+  },
+  "docs/00-master/WORKSPACE_ONBOARDING_RLS_FIX.md": {
+    "mtime": 1783867744.6085665,
+    "ast_hash": "9e357c3c14fc7ded1746e73d3e414b9a",
+    "semantic_hash": ""
+  },
+  "scripts/supabase/test-memory-rls-errors.test.js": {
+    "mtime": 1783870904.3010025,
+    "ast_hash": "eaa26b0da38dff4622852e0e1d1796e7",
     "semantic_hash": ""
   }
 }

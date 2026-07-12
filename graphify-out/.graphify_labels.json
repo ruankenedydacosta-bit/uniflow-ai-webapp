@@ -104,7 +104,9 @@
   "102": "Uni Conversation Financial Actions V1",
   "103": "UniFinancialActionCard.jsx",
   "104": "Uni Financial Memory V1",
-  "105": "UniChatPanel.jsx",
+  "105": "AccessModeSwitcher.jsx",
   "106": "Teste autenticado da Memória Financeira V1",
-  "107": "DashboardPage.jsx"
+  "107": "Workspace Onboarding RLS Fix",
+  "108": "DashboardPage.jsx",
+  "109": "SettingsPage.jsx"
 }
