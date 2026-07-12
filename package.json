@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "node --test src/hooks/financialHooks.test.js",
+    "test": "node --test src/hooks/financialHooks.test.js src/features/uni-personality/personality.test.js src/features/uni-intents/intents.test.js",
     "obsidian:note": "node scripts/obsidian/create-note.js",
     "supabase:test-rls": "node scripts/supabase/test-rls.js",
     "preview": "vite preview"
