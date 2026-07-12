@@ -31,7 +31,7 @@ const ISSUE_MESSAGES = Object.freeze({
   account_required: 'Em qual conta você fez esse pagamento?',
   account_not_found: 'Não encontrei essa conta entre as contas deste espaço. Qual conta você quer usar?',
   account_ambiguous: 'Encontrei mais de uma conta parecida. Qual delas você quer usar?',
-  account_archived: 'Essa conta está arquivada e não pode receber novos lançamentos. Qual conta ativa você quer usar?',
+  account_archived: 'Encontrei essa conta arquivada. Você quer reativá-la ou criar uma nova conta?',
   destination_account_required: 'Para qual conta o valor foi transferido?',
   category_required: 'Em qual categoria essa movimentação se encaixa?',
   category_not_found: 'Não encontrei uma categoria compatível. Qual categoria existente você quer usar?',

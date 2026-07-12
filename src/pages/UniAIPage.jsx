@@ -5,7 +5,7 @@ import { UNI_CONVERSATION_STATES, useUniConversation } from '../features/uni-con
 import { useConversationMemory } from '../features/uni-memory-integration';
 import { useUniVoiceInput } from '../features/uni-voice';
 import { useAccounts, useCategories, useTransactions } from '../hooks';
-import { financialCrudMock } from './financeiro/financialCrud.mock.js';
+import { fallbackAccountTypes, financialCrudMock } from './financeiro/financialCrud.mock.js';
 import {
   EXPERIENCE_STATES,
   EXPERIENCE_TIMING,
@@ -40,6 +40,7 @@ function UniAIPage() {
   const accountState = useAccounts({
     workspaceId: workspace?.id,
     fallbackAccounts: financialFallback.accounts,
+    fallbackAccountTypes,
   });
   const categoryState = useCategories({
     workspaceId: workspace?.id,
@@ -55,7 +56,9 @@ function UniAIPage() {
     ?? 'balanced';
   const financialConversation = useUniConversation({
     accounts: accountState.accounts,
+    accountTypes: accountState.accountTypes,
     categories: categoryState.categories,
+    saveAccount: accountState.saveAccount,
     saveTransaction: transactionState.saveTransaction,
     profileId: personalityProfileId,
     workspaceType: access.currentWorkspace,

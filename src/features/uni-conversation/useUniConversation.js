@@ -7,6 +7,7 @@ import {
   buildFinancialIntentAction,
   executeFinancialIntentAction,
 } from './financialIntentAction.js';
+import { createAccountProvisioningCoordinator } from './accountProvisioning.js';
 import {
   initialUniConversationState,
   uniConversationReducer,
@@ -21,7 +22,9 @@ import {
 
 export function useUniConversation({
   accounts = [],
+  accountTypes = [],
   categories = [],
+  saveAccount,
   saveTransaction,
   profileId = 'balanced',
   workspaceType = 'personal',
@@ -35,6 +38,11 @@ export function useUniConversation({
   );
   const contextRef = useRef(createConversationContext());
   const overridesRef = useRef({});
+  const confirmationPromiseRef = useRef(null);
+  const provisioningCoordinator = useMemo(
+    () => createAccountProvisioningCoordinator(executeFinancialIntentAction),
+    [],
+  );
   const responseOptions = useMemo(
     () => ({ profileId, workspaceType, cognitiveMap }),
     [cognitiveMap, profileId, workspaceType],
@@ -44,11 +52,12 @@ export function useUniConversation({
     (parsed, overrides = {}) => buildFinancialIntentAction({
       parsed,
       accounts,
+      accountTypes,
       categories,
       referenceDate,
       overrides,
     }),
-    [accounts, categories, referenceDate],
+    [accountTypes, accounts, categories, referenceDate],
   );
 
   const interpret = useCallback((content) => {
@@ -138,20 +147,49 @@ export function useUniConversation({
 
   const confirm = useCallback(async () => {
     if (state.action?.status !== 'ready') return null;
-    dispatch({ type: 'EXECUTE' });
-    const result = await executeFinancialIntentAction(state.action, saveTransaction);
+    if (confirmationPromiseRef.current) return confirmationPromiseRef.current;
 
-    if (result?.error || !result?.data) {
-      const error = result?.error ?? { message: 'O lançamento não retornou confirmação.' };
-      const response = buildExecutionErrorResponse(error, responseOptions);
-      dispatch({ type: 'FAIL', error, response: response.text });
+    const confirmationPromise = (async () => {
+      dispatch({ type: 'EXECUTE' });
+      const result = await provisioningCoordinator.execute(state.action, {
+        saveAccount,
+        saveTransaction,
+      });
+
+      if (result?.error || !result?.data) {
+        const error = result?.error ?? { message: 'O lançamento não retornou confirmação.' };
+        const response = buildExecutionErrorResponse(error, responseOptions);
+        dispatch({ type: 'FAIL', error, response: response.text });
+        return { result, response };
+      }
+
+      const completedAction = result.account
+        ? {
+            ...state.action,
+            account: result.account,
+            proposedAccount: null,
+            accountResolution: {
+              status: 'resolved',
+              account: result.account,
+              candidates: [result.account],
+            },
+            payload: { ...state.action.payload, account_id: result.account.id },
+          }
+        : state.action;
+      const response = buildCompletionResponse(completedAction, responseOptions);
+      dispatch({ type: 'COMPLETE', action: completedAction, result: result.data, response: response.text });
       return { result, response };
-    }
+    })();
 
-    const response = buildCompletionResponse(state.action, responseOptions);
-    dispatch({ type: 'COMPLETE', result: result.data, response: response.text });
-    return { result, response };
-  }, [responseOptions, saveTransaction, state.action]);
+    confirmationPromiseRef.current = confirmationPromise;
+    try {
+      return await confirmationPromise;
+    } finally {
+      if (confirmationPromiseRef.current === confirmationPromise) {
+        confirmationPromiseRef.current = null;
+      }
+    }
+  }, [provisioningCoordinator, responseOptions, saveAccount, saveTransaction, state.action]);
 
   const cancel = useCallback(() => {
     const response = buildCanceledResponse(responseOptions);

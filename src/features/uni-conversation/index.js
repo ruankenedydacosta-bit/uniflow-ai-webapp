@@ -1,5 +1,14 @@
 export { useUniConversation } from './useUniConversation.js';
 export {
+  ACCOUNT_RESOLUTION_STATUS,
+  normalizeAccountIdentity,
+  resolveFinancialAccount,
+} from './accountResolution.js';
+export {
+  createAccountProvisioningCoordinator,
+  provisionAccountAndTransaction,
+} from './accountProvisioning.js';
+export {
   buildFinancialIntentAction,
   executeFinancialIntentAction,
   isFinancialTransactionIntent,

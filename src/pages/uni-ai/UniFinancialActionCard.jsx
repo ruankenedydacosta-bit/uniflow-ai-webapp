@@ -3,7 +3,10 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
-import { UNI_CONVERSATION_STATES } from '../../features/uni-conversation';
+import {
+  ACCOUNT_RESOLUTION_STATUS,
+  UNI_CONVERSATION_STATES,
+} from '../../features/uni-conversation';
 import styles from '../UniAIPage.module.css';
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', {
@@ -25,6 +28,7 @@ function UniFinancialActionCard({ conversation, onConfirm, onCorrect, onCancel }
   const isAwaiting = status === UNI_CONVERSATION_STATES.AWAITING_CONFIRMATION;
   const isExecuting = status === UNI_CONVERSATION_STATES.EXECUTING;
   const showEditor = isClarifying || isCorrecting;
+  const accountResolutionStatus = action?.accountResolution?.status;
 
   if (!action || status === UNI_CONVERSATION_STATES.IDLE) return null;
 
@@ -43,6 +47,9 @@ function UniFinancialActionCard({ conversation, onConfirm, onCorrect, onCancel }
     const currentAccountId = field === 'destinationAccountId'
       ? action.payload?.destination_account_id
       : action.account?.id;
+    const candidates = isClarifying && activeIssue?.code === 'account_ambiguous'
+      ? activeIssue.candidates
+      : action.options.accounts;
     return (
       <label className={styles.financialCorrectionField}>
         <span>{label}</span>
@@ -52,7 +59,7 @@ function UniFinancialActionCard({ conversation, onConfirm, onCorrect, onCancel }
           required
         >
           <option value="">Selecione uma conta ativa</option>
-          {action.options.accounts.map((account) => (
+          {candidates.map((account) => (
             <option key={account.id} value={account.id}>{account.name}</option>
           ))}
         </select>
@@ -60,8 +67,88 @@ function UniFinancialActionCard({ conversation, onConfirm, onCorrect, onCancel }
     );
   }
 
+  function renderProposedAccountFields() {
+    return (
+      <>
+        <Input
+          label="Conta"
+          value={corrections.accountName ?? action.proposedAccount?.name ?? ''}
+          onChange={(event) => updateCorrection('accountName', event.target.value)}
+          required
+          fullWidth
+        />
+        <label className={styles.financialCorrectionField}>
+          <span>Tipo da conta</span>
+          <select
+            value={corrections.accountType ?? action.proposedAccount?.account_type ?? ''}
+            onChange={(event) => updateCorrection('accountType', event.target.value)}
+            required
+          >
+            {action.options.accountTypes.map((type) => (
+              <option key={type.code} value={type.code}>{type.name}</option>
+            ))}
+          </select>
+        </label>
+      </>
+    );
+  }
+
+  function renderArchivedDecision() {
+    const archivedCandidates = activeIssue?.candidates ?? [];
+    const selectedAccountId = corrections.accountId ?? (
+      archivedCandidates.length === 1 ? archivedCandidates[0].id : ''
+    );
+
+    return (
+      <div className={styles.financialCorrectionField}>
+        {archivedCandidates.length > 1 ? (
+          <label className={styles.financialCorrectionField}>
+            <span>Conta arquivada</span>
+            <select
+              value={selectedAccountId}
+              onChange={(event) => updateCorrection('accountId', event.target.value)}
+            >
+              <option value="">Selecione a conta</option>
+              {archivedCandidates.map((account) => (
+                <option key={account.id} value={account.id}>{account.name}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <div className={styles.financialActionButtons}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!selectedAccountId}
+            onClick={() => onCorrect({
+              accountId: selectedAccountId,
+              accountDecision: 'reactivate',
+            })}
+          >
+            Reativar e usar
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onCorrect({
+              accountName: action.requestedAccountName ?? archivedCandidates[0]?.name,
+              accountDecision: 'create_new',
+            })}
+          >
+            Criar nova
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancelar</Button>
+        </div>
+      </div>
+    );
+  }
+
   function renderFocusedCorrection() {
     if (!isClarifying || !activeIssue) return null;
+    if (activeIssue.field === 'account' && activeIssue.code === 'account_archived') {
+      return renderArchivedDecision();
+    }
     if (activeIssue.field === 'account') return renderAccountField();
     if (activeIssue.field === 'destinationAccount') {
       return renderAccountField('destinationAccountId', 'Conta de destino');
@@ -142,22 +229,29 @@ function UniFinancialActionCard({ conversation, onConfirm, onCorrect, onCancel }
         {response}
       </p>
 
-      {!isClarifying ? (
-        <dl className={styles.financialActionDetails}>
-          <div><dt>Tipo</dt><dd>{action.typeLabel}</dd></div>
-          <div><dt>Valor</dt><dd>{action.amount ? CURRENCY_FORMATTER.format(action.amount) : 'A confirmar'}</dd></div>
-          <div><dt>Categoria</dt><dd>{action.category?.name ?? 'A confirmar'}</dd></div>
-          <div><dt>Descrição</dt><dd>{action.description ?? 'A confirmar'}</dd></div>
-          <div><dt>Conta</dt><dd>{action.account?.name ?? 'A confirmar'}</dd></div>
-          <div><dt>Data</dt><dd>{formatDate(action.date)}</dd></div>
-        </dl>
-      ) : null}
+      <dl className={styles.financialActionDetails}>
+        <div><dt>Tipo</dt><dd>{action.typeLabel}</dd></div>
+        <div><dt>Valor</dt><dd>{action.amount ? CURRENCY_FORMATTER.format(action.amount) : 'A confirmar'}</dd></div>
+        <div><dt>Categoria</dt><dd>{action.category?.name ?? 'A confirmar'}</dd></div>
+        <div><dt>Descrição</dt><dd>{action.description ?? 'A confirmar'}</dd></div>
+        <div>
+          <dt>Conta</dt>
+          <dd>
+            {action.account?.name ?? action.proposedAccount?.name ?? action.requestedAccountName ?? 'A confirmar'}
+            {accountResolutionStatus === ACCOUNT_RESOLUTION_STATUS.WILL_CREATE ? ' — será criada' : ''}
+            {action.accountResolution?.provisioning === 'reactivate' ? ' — será reativada' : ''}
+          </dd>
+        </div>
+        <div><dt>Data</dt><dd>{formatDate(action.date)}</dd></div>
+      </dl>
 
       {showEditor ? (
         <form className={styles.financialCorrectionForm} onSubmit={submitCorrections}>
           {isClarifying ? renderFocusedCorrection() : (
             <>
-              {renderAccountField()}
+              {accountResolutionStatus === ACCOUNT_RESOLUTION_STATUS.WILL_CREATE
+                ? renderProposedAccountFields()
+                : renderAccountField()}
               <label className={styles.financialCorrectionField}>
                 <span>Categoria</span>
                 <select
@@ -196,18 +290,20 @@ function UniFinancialActionCard({ conversation, onConfirm, onCorrect, onCancel }
               />
             </>
           )}
-          <div className={styles.financialActionButtons}>
-            <Button type="submit" size="sm">
-              {isClarifying ? 'Continuar' : 'Aplicar correção'}
-            </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancelar</Button>
-          </div>
+          {!(isClarifying && activeIssue?.code === 'account_archived') ? (
+            <div className={styles.financialActionButtons}>
+              <Button type="submit" size="sm">
+                {isClarifying ? 'Continuar' : 'Aplicar correção'}
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancelar</Button>
+            </div>
+          ) : null}
         </form>
       ) : null}
 
       {isAwaiting && !isCorrecting ? (
         <footer className={styles.financialActionButtons}>
-          <Button size="sm" onClick={onConfirm}>Confirmar</Button>
+          <Button size="sm" onClick={onConfirm} disabled={isExecuting}>Confirmar e registrar</Button>
           <Button variant="outline" size="sm" onClick={() => setIsCorrecting(true)}>Corrigir</Button>
           <Button variant="ghost" size="sm" onClick={onCancel}>Cancelar</Button>
         </footer>

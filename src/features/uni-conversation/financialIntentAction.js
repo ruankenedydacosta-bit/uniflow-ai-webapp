@@ -1,3 +1,8 @@
+import {
+  ACCOUNT_RESOLUTION_STATUS,
+  resolveFinancialAccount,
+} from './accountResolution.js';
+import { provisionAccountAndTransaction } from './accountProvisioning.js';
 import { normalizeFinancialText } from '../uni-intents/index.js';
 
 const ACTION_INTENTS = Object.freeze({
@@ -22,10 +27,6 @@ const ISSUE_PRIORITY = Object.freeze({
   type: 7,
 });
 
-function normalize(value) {
-  return normalizeFinancialText(typeof value === 'string' ? value : '');
-}
-
 function isValidDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -47,70 +48,9 @@ function sanitizeDescription(value) {
   return sanitized.length >= 2 ? sanitized : null;
 }
 
-function accountSearchTerms(parsed, overrideName) {
-  return [overrideName, parsed.entities.account]
-    .filter(Boolean)
-    .map(normalize)
-    .filter(Boolean);
-}
-
-function accountMatchesInput(account, normalizedInput) {
-  const accountName = normalize(account.name);
-  const institutionName = normalize(account.institution_name);
-  return [accountName, institutionName]
-    .filter((value) => value.length >= 3)
-    .some((value) => normalizedInput.includes(value));
-}
-
-function resolveAccount({ accounts, parsed, accountId, accountName }) {
-  const allAccounts = Array.isArray(accounts) ? accounts : [];
-  const normalizedInput = normalize(parsed.input);
-
-  if (accountId) {
-    const account = allAccounts.find((item) => item.id === accountId);
-    if (!account) return { code: 'account_not_found', candidates: [] };
-    if (account.is_active === false) {
-      return { code: 'account_archived', candidates: [account] };
-    }
-    return { account, candidates: [account] };
-  }
-
-  const explicitTerms = accountSearchTerms(parsed, accountName);
-  const explicitMatches = allAccounts.filter((account) => {
-    const values = [normalize(account.name), normalize(account.institution_name)];
-    return explicitTerms.some((term) =>
-      values.some((value) => value === term || value.includes(term) || term.includes(value)),
-    );
-  });
-  const inferredMatches = explicitTerms.length
-    ? explicitMatches
-    : allAccounts.filter((account) => accountMatchesInput(account, normalizedInput));
-  const matches = inferredMatches.filter(
-    (account, index, current) => current.findIndex((item) => item.id === account.id) === index,
-  );
-
-  if (matches.length === 1 && matches[0].is_active !== false) {
-    return { account: matches[0], candidates: matches };
-  }
-  if (matches.some((account) => account.is_active === false) &&
-      matches.every((account) => account.is_active === false)) {
-    return { code: 'account_archived', candidates: matches };
-  }
-  if (matches.filter((account) => account.is_active !== false).length > 1) {
-    return {
-      code: 'account_ambiguous',
-      candidates: matches.filter((account) => account.is_active !== false),
-    };
-  }
-  return {
-    code: explicitTerms.length || inferredMatches.length ? 'account_not_found' : 'account_required',
-    candidates: allAccounts.filter((account) => account.is_active !== false),
-  };
-}
-
 function categorySimilarity(category, requestedCategory, normalizedInput) {
-  const name = normalize(category.name);
-  const requested = normalize(requestedCategory);
+  const name = normalizeFinancialText(category.name);
+  const requested = normalizeFinancialText(requestedCategory ?? '');
   if (requested && name === requested) return 4;
   if (requested && (name.includes(requested) || requested.includes(name))) return 3;
 
@@ -160,6 +100,7 @@ export function isFinancialTransactionIntent(intent) {
 export function buildFinancialIntentAction({
   parsed,
   accounts = [],
+  accountTypes = [],
   categories = [],
   referenceDate,
   overrides = {},
@@ -179,11 +120,14 @@ export function buildFinancialIntentAction({
   const description = sanitizeDescription(
     overrides.description ?? parsed.entities.description ?? fallbackDescription,
   );
-  const accountResult = resolveAccount({
+  const accountResult = resolveFinancialAccount({
     accounts,
-    parsed,
+    accountTypes,
     accountId: overrides.accountId,
-    accountName: overrides.accountName,
+    requestedName: overrides.accountName ?? parsed.entities.account,
+    requestedType: overrides.accountType,
+    decision: overrides.accountDecision,
+    input: parsed.input,
   });
   const categoryResult = resolveCategory({
     categories,
@@ -196,8 +140,19 @@ export function buildFinancialIntentAction({
   if (!Number.isFinite(amount) || amount <= 0) {
     issues.push(createIssue('amount', 'amount_required'));
   }
-  if (!accountResult.account) {
-    issues.push(createIssue('account', accountResult.code, accountResult.candidates));
+  const accountIsReady = [
+    ACCOUNT_RESOLUTION_STATUS.RESOLVED,
+    ACCOUNT_RESOLUTION_STATUS.WILL_CREATE,
+  ].includes(accountResult.status);
+  if (!accountIsReady) {
+    const issueCode = accountResult.status === ACCOUNT_RESOLUTION_STATUS.ARCHIVED_CONFLICT
+      ? 'account_archived'
+      : accountResult.status === ACCOUNT_RESOLUTION_STATUS.AMBIGUOUS
+        ? 'account_ambiguous'
+        : parsed.entities.account
+          ? 'account_not_found'
+          : 'account_required';
+    issues.push(createIssue('account', issueCode, accountResult.candidates));
   }
   if (transactionType === 'transfer' && !overrides.destinationAccountId) {
     issues.push(createIssue('destinationAccount', 'destination_account_required', accountResult.candidates));
@@ -217,7 +172,7 @@ export function buildFinancialIntentAction({
   const payload = issues.length
     ? null
     : {
-        account_id: accountResult.account.id,
+        account_id: accountResult.account?.id ?? null,
         destination_account_id:
           transactionType === 'transfer' ? overrides.destinationAccountId : null,
         category_id: categoryResult.category.id,
@@ -237,29 +192,27 @@ export function buildFinancialIntentAction({
     date: isValidDate(date) ? date : null,
     description,
     account: accountResult.account ?? null,
+    accountResolution: accountResult,
+    proposedAccount: accountResult.proposedAccount ?? null,
+    requestedAccountName: overrides.accountName ?? parsed.entities.account ?? null,
     category: categoryResult.category ?? null,
     categoryWasApproximate: Boolean(categoryResult.approximate),
     issues,
     options: {
       accounts: (Array.isArray(accounts) ? accounts : []).filter((account) => account.is_active !== false),
+      accountTypes: (Array.isArray(accountTypes) ? accountTypes : []).filter((type) => type.is_active !== false),
       categories: categoryResult.candidates ?? [],
     },
     payload,
   };
 }
 
-export async function executeFinancialIntentAction(action, saveTransaction) {
+export async function executeFinancialIntentAction(action, handlers) {
   if (action?.status !== 'ready' || !action.payload) {
     return {
       data: null,
       error: { code: 'ACTION_NOT_READY', message: 'Revise os dados antes de confirmar.' },
     };
   }
-  if (typeof saveTransaction !== 'function') {
-    return {
-      data: null,
-      error: { code: 'TRANSACTION_HANDLER_MISSING', message: 'Não foi possível acessar o financeiro agora.' },
-    };
-  }
-  return saveTransaction(action.payload);
+  return provisionAccountAndTransaction(action, handlers);
 }

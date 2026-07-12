@@ -56,6 +56,7 @@ export function uniConversationReducer(state, event) {
       return {
         ...state,
         status: UNI_CONVERSATION_STATES.COMPLETED,
+        action: event.action ?? state.action,
         response: event.response,
         result: event.result,
         error: null,
