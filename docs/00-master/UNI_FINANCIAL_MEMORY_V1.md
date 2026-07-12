@@ -108,7 +108,7 @@ A migration local `20260711_005_uni_financial_memory.sql` prepara:
 - `uni_financial_memories`: memória resumida, confiança, status, origem e retenção;
 - `uni_memory_evidence`: referências mínimas a transações/contas, sem payload bancário bruto;
 - constraints de tipos, estados, confiança, temporalidade e JSON seguro;
-- unicidade por workspace, usuário, tipo e chave;
+- unicidade ativa por workspace, usuário, tipo e chave;
 - índices workspace-first e de expiração;
 - triggers de proteção do frontend e `updated_at`;
 - RLS por workspace.
@@ -117,16 +117,18 @@ A migration está apenas preparada localmente. Ela não foi aplicada no UniFlow 
 
 ## Policies e fronteira de escrita
 
-- membro ativo pode ler memórias e evidências do workspace;
-- owner, admin ou member podem inserir somente candidatos próprios com origem explícita/correção;
+- somente o titular com membership ativa pode ler suas memórias e evidências;
+- owner, admin ou member podem inserir somente fatos próprios com origem explícita/correção;
 - frontend não pode inserir memória confirmada nem candidato inferido automaticamente;
-- usuário pode confirmar ou rejeitar apenas a própria memória;
+- frontend não recebe grant direto de update;
+- usuário pode confirmar ou rejeitar apenas a própria memória por RPC controlada;
+- usuário pode corrigir apenas uma memória explícita própria por RPC controlada;
 - usuário pode remover a própria memória;
 - evidências são somente leitura no frontend;
 - candidatos automáticos e evidências futuras exigem backend seguro/service role;
 - não existe policy privada com `USING (true)` nem escrita pública.
 
-`uniMemoryService.js` mantém essa fronteira: não persiste inferências automáticas e exige ação explícita para candidatos criados pelo usuário.
+`uniMemoryService.js` mantém essa fronteira: deriva `user_id` da sessão Supabase, não envia confiança ou timestamps privilegiados, não persiste inferências automáticas e exige ação explícita para candidatos criados pelo usuário.
 
 ## Privacidade
 
@@ -140,7 +142,7 @@ Não entram na memória:
 - diagnóstico emocional;
 - conteúdo sem relação necessária com o domínio financeiro.
 
-O JSON é sanitizado no service e revalidado por constraint recursiva no banco. Evidências guardam referências e resumos mínimos, não cópias bancárias.
+O JSON é sanitizado no service e revalidado por constraint recursiva no banco. A profundidade, quantidade de itens e tamanho total são limitados. Evidências guardam referências opcionais e resumos mínimos, não cópias bancárias.
 
 ## Retenção
 
