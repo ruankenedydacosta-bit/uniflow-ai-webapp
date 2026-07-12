@@ -109,8 +109,9 @@ sanitização ou regras financeiras.
 - o reconhecimento nativo pode depender do serviço oferecido pelo próprio
   navegador, conforme sua implementação e política.
 
-## Próxima fase
+## Saída de voz separada
 
-A próxima fase de voz poderá avaliar uma saída feminina mais consistente para
-a Uni. ElevenLabs permanece fora desta V1 e deverá ser analisada separadamente,
-com consentimento, privacidade, custo, fallback e backend seguro.
+A entrada continua independente da saída. A arquitetura de saída premium para
+demonstrações internas está documentada em
+`UNI_VOICE_OUTPUT_PREMIUM_DEMO_V1.md`. Ela não recebe a transcrição do usuário,
+não altera este fluxo e reproduz somente uma resposta final já existente.

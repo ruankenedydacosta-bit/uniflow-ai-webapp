@@ -64,6 +64,13 @@ Regras absolutas:
 
 Nenhuma preferencia, contexto ou mapa cognitivo pode remover essas regras.
 
+### Relação com saída de voz
+
+Na demonstração de voz premium, o perfil seleciona somente um preset interno e
+determinístico de estabilidade, similaridade, estilo e velocidade. A identidade
+central permanece obrigatória. O cliente não envia parâmetros arbitrários ao
+provedor, e a voz nunca altera fatos ou executa decisões financeiras.
+
 ## 4. Arquetipos variaveis
 
 ### `elegant`
