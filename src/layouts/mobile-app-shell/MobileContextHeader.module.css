@@ -1,0 +1,390 @@
+.contextHeader {
+  position: sticky;
+  top: 0;
+  z-index: var(--uf-z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-8);
+  height: calc(var(--uf-space-64) + env(safe-area-inset-top, 0));
+  min-height: calc(var(--uf-space-64) + env(safe-area-inset-top, 0));
+  padding: env(safe-area-inset-top, 0) var(--uf-space-16) 0;
+  border-bottom: 1px solid var(--uf-color-border-subtle);
+  background: var(--uf-glass-bg-strong);
+  backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
+}
+
+.identityZone,
+.actionZone {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.identityZone {
+  flex: 1 1 auto;
+  gap: var(--uf-space-8);
+}
+
+.actionZone {
+  flex: 0 0 auto;
+  gap: var(--uf-space-8);
+}
+
+.avatarButton,
+.bellButton,
+.segment {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.avatarButton {
+  display: inline-flex;
+  width: var(--uf-tap-target-min);
+  height: var(--uf-tap-target-min);
+  flex: 0 0 var(--uf-tap-target-min);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--uf-radius-full);
+  background: transparent;
+  transition: transform var(--uf-duration-instant) var(--uf-ease-decelerate);
+}
+
+.avatarButton:active {
+  transform: scale(0.96);
+}
+
+.avatarButton:focus-visible,
+.bellButton:focus-visible,
+.segment:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.avatar {
+  position: relative;
+  display: inline-flex;
+  width: var(--uf-space-40);
+  height: var(--uf-space-40);
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-gradient-ai);
+  color: var(--uf-color-on-ai);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-bold);
+}
+
+.avatarPersonal .avatar {
+  box-shadow: 0 0 0 1px var(--uf-color-border-strong);
+}
+
+.avatarBusiness .avatar {
+  box-shadow: 0 0 0 1px var(--uf-color-ai);
+}
+
+.avatarImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.avatarInitials {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+}
+
+.avatarOnline {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--uf-space-8);
+  height: var(--uf-space-8);
+  border: 2px solid var(--uf-color-bg-surface);
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-color-success);
+}
+
+.identityBlock {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+}
+
+.greeting,
+.displayName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.greeting {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-regular);
+  line-height: 1;
+}
+
+.displayName {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: 1.2;
+}
+
+.segmentedControl {
+  display: flex;
+  height: var(--uf-space-32);
+  align-items: center;
+  gap: var(--uf-space-4);
+  padding: var(--uf-space-4);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-color-bg-sunken);
+  transition:
+    border-color var(--uf-duration-fast) var(--uf-ease-decelerate),
+    opacity var(--uf-duration-fast) var(--uf-ease-decelerate);
+}
+
+.segmentedError {
+  border-color: var(--uf-color-danger);
+}
+
+.segmentedLoading {
+  opacity: 0.6;
+}
+
+.segment {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  min-width: var(--uf-tap-target-min);
+  min-height: var(--uf-tap-target-min);
+  align-items: center;
+  justify-content: center;
+  gap: var(--uf-space-4);
+  padding: 0 var(--uf-space-8);
+  margin: -6px 0;
+  border-radius: var(--uf-radius-full);
+  background: transparent;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-semibold);
+  transition:
+    background var(--uf-duration-fast) var(--uf-ease-decelerate),
+    color var(--uf-duration-fast) var(--uf-ease-decelerate),
+    opacity var(--uf-duration-fast) var(--uf-ease-decelerate),
+    transform var(--uf-duration-fast) var(--uf-ease-decelerate);
+}
+
+.segment::before {
+  position: absolute;
+  z-index: -1;
+  inset: 10px 0;
+  border-radius: var(--uf-radius-full);
+  content: '';
+  transition: background var(--uf-duration-fast) var(--uf-ease-decelerate);
+}
+
+.segmentActive {
+  color: var(--uf-color-on-ai);
+}
+
+.segmentActive::before {
+  background: var(--uf-gradient-ai);
+}
+
+.segmentLocked {
+  opacity: 0.4;
+}
+
+.segmentSpinner {
+  width: var(--uf-space-8);
+  height: var(--uf-space-8);
+  border: 1px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--uf-radius-full);
+  animation: uf-voice-pulse var(--uf-duration-slower) var(--uf-ease-standard) infinite;
+}
+
+.bellButton {
+  position: relative;
+  display: inline-flex;
+  width: var(--uf-tap-target-min);
+  height: var(--uf-tap-target-min);
+  flex: 0 0 var(--uf-tap-target-min);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--uf-radius-full);
+  background: transparent;
+  color: var(--uf-color-text-secondary);
+}
+
+.bellIcon {
+  position: relative;
+  display: block;
+  width: var(--uf-space-16);
+  height: var(--uf-space-16);
+  border: 2px solid currentColor;
+  border-top-left-radius: var(--uf-radius-full);
+  border-top-right-radius: var(--uf-radius-full);
+  border-bottom: 0;
+}
+
+.bellIcon::before,
+.bellIcon::after {
+  position: absolute;
+  content: '';
+  background: currentColor;
+}
+
+.bellIcon::before {
+  right: -3px;
+  bottom: -2px;
+  left: -3px;
+  height: 2px;
+  border-radius: var(--uf-radius-full);
+}
+
+.bellIcon::after {
+  bottom: -6px;
+  left: 50%;
+  width: var(--uf-space-4);
+  height: var(--uf-space-4);
+  border-radius: var(--uf-radius-full);
+  transform: translateX(-50%);
+}
+
+.notificationDot,
+.notificationCount {
+  position: absolute;
+  top: var(--uf-space-4);
+  right: var(--uf-space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--uf-color-bg-surface);
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-color-success);
+  color: var(--uf-color-on-success);
+  animation: uf-fade-in var(--uf-duration-instant) var(--uf-ease-decelerate) both;
+}
+
+.notificationDot {
+  width: var(--uf-space-12);
+  height: var(--uf-space-12);
+}
+
+.notificationCount {
+  min-width: var(--uf-space-20);
+  height: var(--uf-space-20);
+  padding: 0 var(--uf-space-4);
+  font-size: 10px;
+  font-weight: var(--uf-font-weight-bold);
+}
+
+.bellimportant .notificationDot,
+.bellimportant .notificationCount {
+  background: var(--uf-color-warning);
+  color: var(--uf-color-on-warning);
+}
+
+.belldisabled {
+  opacity: 0.5;
+}
+
+.belldisabled::after {
+  position: absolute;
+  width: var(--uf-space-24);
+  height: 1px;
+  background: currentColor;
+  content: '';
+  transform: rotate(-45deg);
+}
+
+.bellloading .bellIcon {
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--uf-radius-full);
+  animation: uf-voice-pulse var(--uf-duration-slower) var(--uf-ease-standard) infinite;
+}
+
+.headerSkeleton {
+  opacity: 0.75;
+}
+
+.skeletonShape,
+.skeletonText span,
+.skeletonActions,
+.avatarSkeleton {
+  background: var(--uf-color-bg-elevated);
+  animation: uf-loading-wave 1.6s linear infinite;
+}
+
+.skeletonText {
+  display: flex;
+  width: var(--uf-space-96);
+  flex-direction: column;
+  gap: var(--uf-space-8);
+}
+
+.skeletonText span {
+  height: var(--uf-space-8);
+  border-radius: var(--uf-radius-full);
+}
+
+.skeletonText span:last-child {
+  width: 75%;
+}
+
+.skeletonActions {
+  width: var(--uf-space-120);
+  height: var(--uf-space-32);
+  border-radius: var(--uf-radius-full);
+}
+
+@media (max-width: 375px) {
+  .contextHeader {
+    gap: var(--uf-space-4);
+    padding-right: var(--uf-space-8);
+    padding-left: var(--uf-space-8);
+  }
+
+  .identityZone,
+  .actionZone {
+    gap: var(--uf-space-8);
+  }
+
+  .avatar {
+    width: calc(var(--uf-space-40) - var(--uf-space-4));
+    height: calc(var(--uf-space-40) - var(--uf-space-4));
+  }
+
+  .segment {
+    padding: 0 var(--uf-space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatarButton,
+  .segment,
+  .segmentedControl,
+  .notificationDot,
+  .notificationCount {
+    transition: none;
+    animation: none;
+  }
+}

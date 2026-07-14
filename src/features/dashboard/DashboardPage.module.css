@@ -222,9 +222,9 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 767px) {
   .dashboard {
-    padding-bottom: var(--uf-space-48);
+    display: none;
   }
 
   .hero {

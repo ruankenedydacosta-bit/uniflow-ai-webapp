@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import AppShell from '../components/layout/AppShell';
 import Loader from '../components/ui/Loader';
+import { AuthenticatedLayout } from '../layouts/mobile-app-shell';
 import { AccessProvider, useAccess } from './AccessContext';
 import { SessionProvider, useSession } from './SessionContext';
 import { canAccessRoute, getFallbackRoute } from './accessRules';
@@ -74,7 +74,10 @@ function AppContent() {
   }
 
   return (
-    <AppShell title={activeRoute?.title ?? 'Dashboard'}>
+    <AuthenticatedLayout
+      title={activeRoute?.title ?? 'Dashboard'}
+      mobileTitle={location.pathname === '/dashboard' ? 'Home' : activeRoute?.title}
+    >
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         {appRoutes.map((route) => (
@@ -82,7 +85,7 @@ function AppContent() {
         ))}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </AppShell>
+    </AuthenticatedLayout>
   );
 }
 
