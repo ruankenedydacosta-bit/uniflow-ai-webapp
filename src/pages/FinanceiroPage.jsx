@@ -12,6 +12,7 @@ import FinanceAccountModal from './financeiro/FinanceAccountModal';
 import FinanceCategoryModal from './financeiro/FinanceCategoryModal';
 import FinanceProjectionChart from './financeiro/FinanceProjectionChart';
 import FinanceTransactionModal from './financeiro/FinanceTransactionModal';
+import { MobileFinanceiroView } from './financeiro/mobile';
 import {
   fallbackAccountTypes,
   financialCrudMock,
@@ -80,7 +81,14 @@ function FinanceiroPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <>
+      <MobileFinanceiroView
+        onManageAccounts={() => openDialog('accounts')}
+        onManageCategories={() => openDialog('categories')}
+        onNewTransaction={() => openDialog('transactions')}
+        viewState="ready"
+      />
+      <div className={styles.page}>
       <section className={styles.hero} aria-labelledby="financeiro-title">
         <div className={styles.heroCopy}>
           <Badge variant="secondary" dot>
@@ -213,6 +221,7 @@ function FinanceiroPage() {
         </Card>
       </section>
 
+      </div>
       <FinanceAccountModal
         open={activeDialog === 'accounts'}
         onClose={() => setActiveDialog(null)}
@@ -230,7 +239,7 @@ function FinanceiroPage() {
         categoryState={categoryState}
         transactionState={transactionState}
       />
-    </div>
+    </>
   );
 }
 
