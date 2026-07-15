@@ -1,4 +1,6 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import {
+  useState, useMemo, useRef, useEffect, useCallback, useId,
+} from 'react';
 import styles from './CognitiveLiveChart.module.css';
 import CognitiveChartTooltip from './CognitiveChartTooltip';
 import UniChartInsight from './UniChartInsight';
@@ -82,6 +84,8 @@ export default function CognitiveLiveChart({
   const containerRef = useRef(null);
   const activePointerRef = useRef(null);
   const reduceMotion = useMemo(() => prefersReducedMotion(), []);
+  const reactId = useId();
+  const uid = `ucl-${reactId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   useEffect(() => {
     if (!containerRef.current || typeof ResizeObserver === 'undefined') return undefined;
@@ -211,6 +215,22 @@ export default function CognitiveLiveChart({
     () => buildAreaPath(receitaLinePath, receitaPoints, height - MARGIN.bottom),
     [receitaLinePath, receitaPoints, height],
   );
+
+  // Zona translúcida de incerteza sob a projeção — reforça que é uma
+  // estimativa, não um valor garantido (reaproveita buildAreaPath já usado
+  // para a área de receitas, sem novas dependências).
+  const forecastUncertaintyPath = useMemo(
+    () => (showForecastLine
+      ? buildAreaPath(forecastReceitaPath, forecastReceitaPoints, height - MARGIN.bottom)
+      : ''),
+    [showForecastLine, forecastReceitaPath, forecastReceitaPoints, height],
+  );
+
+  const todayPoint = receitaPoints[receitaPoints.length - 1];
+  const highlightCoreIndex = showUniHighlight
+    ? despesaPoints.findIndex((p) => p.day === insightHighlight.startDay)
+    : -1;
+  const highlightCorePoint = highlightCoreIndex >= 0 ? despesaPoints[highlightCoreIndex] : null;
 
   const todayX = xScale(todayDay);
   const highlightXStart = showUniHighlight ? xScale(insightHighlight.startDay) : null;
@@ -376,40 +396,108 @@ export default function CognitiveLiveChart({
           <title>Receitas e despesas — julho de 2026</title>
           <desc>{chartDescription}</desc>
 
+          <defs>
+            <linearGradient id={`${uid}-receita-area-grad`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--uni-green)" stopOpacity="0.32" />
+              <stop offset="55%" stopColor="var(--uni-green)" stopOpacity="0.10" />
+              <stop offset="100%" stopColor="var(--uni-green)" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id={`${uid}-comparison-gap-grad`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--uni-red)" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="var(--uni-red)" stopOpacity="0.02" />
+            </linearGradient>
+            <linearGradient id={`${uid}-forecast-uncertainty-grad`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--uni-text-secondary)" stopOpacity="0.16" />
+              <stop offset="100%" stopColor="var(--uni-text-secondary)" stopOpacity="0" />
+            </linearGradient>
+            <radialGradient id={`${uid}-today-glow`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="var(--uni-blue)" stopOpacity="0.55" />
+              <stop offset="100%" stopColor="var(--uni-blue)" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id={`${uid}-highlight-glow`} cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="var(--uni-purple)" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="var(--uni-purple)" stopOpacity="0" />
+            </radialGradient>
+            <filter id={`${uid}-glow-receita`} x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="1.6" result="blur1" />
+              <feGaussianBlur in="SourceGraphic" stdDeviation="0.4" result="blur2" />
+              <feMerge>
+                <feMergeNode in="blur1" />
+                <feMergeNode in="blur2" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <filter id={`${uid}-glow-despesa`} x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur1" />
+              <feMerge>
+                <feMergeNode in="blur1" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
           {showUniHighlight ? (
-            <rect
-              x={highlightXStart}
-              y={MARGIN.top - 4}
-              width={highlightXEnd - highlightXStart}
-              height={height - MARGIN.bottom - MARGIN.top + 4}
-              rx={8}
-              className={styles.highlightBand}
+            <g className={styles.modeFadeIn}>
+              <ellipse
+                cx={(highlightXStart + highlightXEnd) / 2}
+                cy={(height - MARGIN.bottom + MARGIN.top) / 2}
+                rx={(highlightXEnd - highlightXStart) / 1.4}
+                ry={(height - MARGIN.bottom - MARGIN.top) / 1.6}
+                fill={`url(#${uid}-highlight-glow)`}
+                className={!reduceMotion ? styles.highlightGlowPulse : ''}
+              />
+              <rect
+                x={highlightXStart}
+                y={MARGIN.top - 4}
+                width={highlightXEnd - highlightXStart}
+                height={height - MARGIN.bottom - MARGIN.top + 4}
+                rx={8}
+                className={styles.highlightBand}
+              />
+            </g>
+          ) : null}
+
+          <path
+            d={receitaAreaPath}
+            className={`${styles.receitaArea} ${!reduceMotion ? styles.areaAnimated : ''}`}
+            style={{ fill: `url(#${uid}-receita-area-grad)` }}
+          />
+
+          {showComparisonLine ? (
+            <path
+              d={comparisonGapPath}
+              className={`${styles.comparisonGap} ${styles.modeFadeIn}`}
+              style={{ fill: `url(#${uid}-comparison-gap-grad)` }}
             />
           ) : null}
-
-          <path d={receitaAreaPath} className={styles.receitaArea} />
-
           {showComparisonLine ? (
-            <path d={comparisonGapPath} className={styles.comparisonGap} />
+            <path d={comparisonDespesaPath} className={`${styles.comparisonLine} ${styles.modeFadeIn}`} />
           ) : null}
-          {showComparisonLine ? (
-            <path d={comparisonDespesaPath} className={styles.comparisonLine} />
+
+          {showForecastLine ? (
+            <path
+              d={forecastUncertaintyPath}
+              className={styles.modeFadeIn}
+              style={{ fill: `url(#${uid}-forecast-uncertainty-grad)` }}
+            />
           ) : null}
 
           <path
             d={despesaLinePath}
             className={`${styles.despesaLine} ${!reduceMotion ? styles.lineAnimated : ''}`}
+            style={{ filter: `url(#${uid}-glow-despesa)` }}
           />
           <path
             d={receitaLinePath}
             className={`${styles.receitaLine} ${!reduceMotion ? styles.lineAnimated : ''}`}
+            style={{ filter: `url(#${uid}-glow-receita)` }}
           />
 
           {showForecastLine ? (
-            <>
+            <g className={styles.modeFadeIn}>
               <path d={forecastReceitaPath} className={styles.forecastReceitaLine} />
               <path d={forecastDespesaPath} className={styles.forecastDespesaLine} />
-            </>
+            </g>
           ) : null}
 
           <line
@@ -423,13 +511,33 @@ export default function CognitiveLiveChart({
             {showForecastLine ? 'Hoje' : `Dia ${todayDay}`}
           </text>
 
+          {/* Ponto "Hoje" vivo: núcleo sólido + halo translúcido com pulso lento. */}
+          <circle
+            cx={todayPoint.x}
+            cy={todayPoint.y}
+            r="11"
+            fill={`url(#${uid}-today-glow)`}
+            className={!reduceMotion ? styles.todayHaloPulse : ''}
+          />
+          <circle cx={todayPoint.x} cy={todayPoint.y} r="3.5" className={styles.todayCore} />
+
+          {highlightCorePoint ? (
+            <circle
+              cx={highlightCorePoint.x}
+              cy={highlightCorePoint.y}
+              r="4"
+              className={`${styles.highlightCorePoint} ${!reduceMotion ? styles.highlightCorePulse : ''}`}
+            />
+          ) : null}
+
           {receitaPoints.map((point, index) => (
             <circle
               key={`receita-${point.day}`}
               cx={point.x}
               cy={point.y}
               r={focusedIndex === index ? 5 : 3}
-              className={styles.pointReceita}
+              className={`${styles.pointReceita} ${!reduceMotion ? styles.pointEnter : ''}`}
+              style={!reduceMotion ? { animationDelay: `${300 + index * 45}ms` } : undefined}
             />
           ))}
           {despesaPoints.map((point, index) => (
@@ -439,7 +547,8 @@ export default function CognitiveLiveChart({
               y={point.y - (focusedIndex === index ? 4 : 2.5)}
               width={focusedIndex === index ? 8 : 5}
               height={focusedIndex === index ? 8 : 5}
-              className={styles.pointDespesa}
+              className={`${styles.pointDespesa} ${!reduceMotion ? styles.pointEnter : ''}`}
+              style={!reduceMotion ? { animationDelay: `${300 + index * 45}ms` } : undefined}
             />
           ))}
 
@@ -496,17 +605,19 @@ export default function CognitiveLiveChart({
       </div>
 
       {uniMessage ? (
-        <UniChartInsight
-          message={uniMessage}
-          detail={uniDetail}
-          variant={variant}
-          onListenAnalysis={onListenAnalysis}
-          onViewDetails={onViewDetails}
-        />
+        <div className={styles.uniInsightEnter} key={mode}>
+          <UniChartInsight
+            message={uniMessage}
+            detail={uniDetail}
+            variant={variant}
+            onListenAnalysis={onListenAnalysis}
+            onViewDetails={onViewDetails}
+          />
+        </div>
       ) : null}
 
       {mode === 'comparison' ? (
-        <div className={styles.deltaBadge} aria-hidden="true">
+        <div className={`${styles.deltaBadge} ${styles.modeFadeIn}`} aria-hidden="true">
           {formatPercent(comparisonMeta.deltaPercent)}
         </div>
       ) : null}
