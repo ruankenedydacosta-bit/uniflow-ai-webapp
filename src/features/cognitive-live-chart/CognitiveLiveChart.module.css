@@ -1,0 +1,444 @@
+/*
+  UNIFLOW COGNITIVE LIVE CHART V1 — estilos isolados do protótipo.
+  Cores oficiais: azul elétrico #2563EB, roxo inteligência #7C3AED,
+  verde sucesso #10B981. Fundo escuro premium, glow discreto, sem
+  perspectiva 3D pesada.
+*/
+
+.root {
+  --uni-bg-0: #0b0f1a;
+  --uni-bg-1: #11162280;
+  --uni-border: #ffffff14;
+  --uni-text-primary: #f5f6fa;
+  --uni-text-secondary: #9aa1b2;
+  --uni-blue: #2563eb;
+  --uni-purple: #7c3aed;
+  --uni-green: #10b981;
+  --uni-red: #f97066;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  background: radial-gradient(120% 140% at 15% 0%, #161c2c 0%, var(--uni-bg-0) 70%);
+  border: 1px solid var(--uni-border);
+  color: var(--uni-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+}
+
+.rootCompact {
+  max-width: 430px;
+}
+
+.rootDetailed {
+  max-width: 430px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.periodToggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: #ffffff0d;
+  gap: 2px;
+}
+
+.periodTab,
+.periodTabActive {
+  border: none;
+  background: transparent;
+  color: var(--uni-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  min-height: 28px;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.periodTabActive {
+  background: linear-gradient(135deg, var(--uni-blue), var(--uni-purple));
+  color: #ffffff;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--uni-text-secondary);
+}
+
+.legendSwatchReceita,
+.legendSwatchDespesa {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legendSwatchReceita {
+  background: var(--uni-green);
+}
+
+.legendSwatchDespesa {
+  background: repeating-linear-gradient(
+    to right, var(--uni-red) 0 4px, transparent 4px 7px
+  );
+}
+
+.modeTabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.modeTab,
+.modeTabActive {
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  background: #ffffff0a;
+  color: var(--uni-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  min-height: 32px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.modeTabActive {
+  background: #ffffff14;
+  border-color: #ffffff2a;
+  color: #ffffff;
+}
+
+.chartWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.svgDimmed .receitaLine,
+.svgDimmed .despesaLine,
+.svgDimmed .receitaArea,
+.svgDimmed .pointReceita,
+.svgDimmed .pointDespesa {
+  opacity: 0.35;
+  transition: opacity 200ms ease;
+}
+
+.highlightBand {
+  fill: #7c3aed22;
+  stroke: #7c3aed55;
+  stroke-width: 0.5;
+}
+
+.receitaArea {
+  fill: #10b98122;
+}
+
+.receitaLine {
+  fill: none;
+  stroke: var(--uni-green);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px #10b98155);
+}
+
+.despesaLine {
+  fill: none;
+  stroke: var(--uni-red);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 7 5;
+  filter: drop-shadow(0 0 4px #f9706655);
+}
+
+.lineAnimated {
+  animation: uni-line-reveal 900ms ease forwards;
+}
+
+@keyframes uni-line-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.forecastReceitaLine {
+  fill: none;
+  stroke: var(--uni-green);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 2 5;
+  opacity: 0.75;
+}
+
+.forecastDespesaLine {
+  fill: none;
+  stroke: var(--uni-red);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 2 5;
+  opacity: 0.75;
+}
+
+.comparisonLine {
+  fill: none;
+  stroke: #ffffff70;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+
+.comparisonGap {
+  fill: #f9706618;
+}
+
+.todayMarker {
+  stroke: #ffffff55;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.todayLabel {
+  fill: var(--uni-text-secondary);
+  font-size: 10px;
+}
+
+.focusMarker {
+  stroke: var(--uni-blue);
+  stroke-width: 1.5;
+}
+
+.pointReceita {
+  fill: var(--uni-green);
+  stroke: var(--uni-bg-0);
+  stroke-width: 1.5;
+  transition: r 120ms ease;
+}
+
+.pointDespesa {
+  fill: var(--uni-red);
+  stroke: var(--uni-bg-0);
+  stroke-width: 1.5;
+  transition: width 120ms ease, height 120ms ease;
+}
+
+.axisLabel {
+  fill: var(--uni-text-secondary);
+  font-size: 10px;
+}
+
+.interactionOverlay {
+  fill: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  background: #171c2ce6;
+  border: 1px solid #ffffff1f;
+  border-radius: 12px;
+  padding: 10px 12px;
+  pointer-events: none;
+  box-shadow: 0 8px 24px #00000055;
+  backdrop-filter: blur(6px);
+}
+
+.tooltipDate {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--uni-text-secondary);
+  font-weight: 600;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tooltipLabel {
+  color: var(--uni-text-secondary);
+  flex: 1;
+}
+
+.tooltipValueReceita {
+  color: var(--uni-green);
+  font-weight: 600;
+}
+
+.tooltipValueDespesa {
+  color: var(--uni-red);
+  font-weight: 600;
+}
+
+.tooltipValueSaldo {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.tooltipDotReceita,
+.tooltipDotDespesa {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.tooltipDotReceita {
+  background: var(--uni-green);
+}
+
+.tooltipDotDespesa {
+  background: var(--uni-red);
+}
+
+.tooltipDivider {
+  height: 1px;
+  background: #ffffff1a;
+  margin: 6px 0;
+}
+
+.uniInsightCard {
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #2563eb14, #7c3aed14);
+  border: 1px solid #7c3aed33;
+}
+
+.uniInsightHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.uniSparkle {
+  color: var(--uni-purple);
+  font-size: 13px;
+}
+
+.uniInsightEyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--uni-purple);
+  text-transform: uppercase;
+}
+
+.uniInsightMessage {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--uni-text-primary);
+}
+
+.uniInsightDetail {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--uni-text-secondary);
+}
+
+.uniInsightActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.uniInsightButtonPrimary,
+.uniInsightButtonSecondary {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.uniInsightButtonPrimary {
+  background: linear-gradient(135deg, var(--uni-blue), var(--uni-purple));
+  color: #ffffff;
+}
+
+.uniInsightButtonSecondary {
+  background: transparent;
+  border-color: #ffffff2a;
+  color: var(--uni-text-primary);
+}
+
+.deltaBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #10b98122;
+  color: var(--uni-green);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #10b98155;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lineAnimated {
+    animation: none;
+  }
+  .svgDimmed .receitaLine,
+  .svgDimmed .despesaLine,
+  .svgDimmed .receitaArea,
+  .svgDimmed .pointReceita,
+  .svgDimmed .pointDespesa,
+  .periodTab,
+  .periodTabActive,
+  .modeTab,
+  .modeTabActive,
+  .pointReceita,
+  .pointDespesa {
+    transition: none;
+  }
+}
+
+@media (max-width: 340px) {
+  .root {
+    padding: 12px;
+  }
+  .uniInsightMessage {
+    font-size: 13px;
+  }
+  .modeTab,
+  .modeTabActive,
+  .periodTab,
+  .periodTabActive {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}

@@ -1,4 +1,5 @@
 import styles from './HomeMobile.module.css';
+import { CognitiveLiveChart } from '../../cognitive-live-chart';
 import { homeMobileMock } from './homeMobile.mock.js';
 import FinancialSummaryStrip from './components/FinancialSummaryStrip.jsx';
 import GoalsProgressList from './components/GoalsProgressList.jsx';
@@ -11,6 +12,7 @@ import UniBriefingCard from './components/UniBriefingCard.jsx';
 const SKELETON_SECTIONS = Object.freeze([
   ['briefing', 'Carregando briefing da Uni'],
   ['next-step', 'Carregando próximo passo'],
+  ['chart', 'Carregando receitas e despesas'],
   ['summary', 'Carregando resumo financeiro'],
   ['goals', 'Carregando objetivos'],
   ['insights', 'Carregando insights'],
@@ -37,6 +39,13 @@ function MobileHomeView({ data = homeMobileMock, loading = false, onNavigate }) 
     <div className={styles.home} data-mobile-home>
       <UniBriefingCard briefing={viewData.briefing} onAction={() => handleNavigate('/uni-ai')} />
       <NextStepCard step={viewData.nextStep} onAction={() => handleNavigate('/financeiro')} />
+      <section className={styles.cognitiveChartSection} aria-labelledby="home-cognitive-chart-title">
+        <header className={styles.cognitiveChartHeader}>
+          <h2 id="home-cognitive-chart-title">Receitas e Despesas</h2>
+          <p>Acompanhe como seu dinheiro está evoluindo.</p>
+        </header>
+        <CognitiveLiveChart variant="compact" defaultMode="uni-insight" />
+      </section>
       <FinancialSummaryStrip
         metrics={viewData.summary ?? []}
         onViewAll={() => handleNavigate('/financeiro')}

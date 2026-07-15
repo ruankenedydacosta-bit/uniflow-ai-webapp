@@ -38,7 +38,7 @@ function MobileFinanceiroView({ onManageAccounts, onManageCategories, onNewTrans
       <PeriodSelectorBar period={period.label} mode={mode} onModeChange={setMode} onPrevious={() => setPeriodIndex((value) => Math.max(0, value - 1))} onNext={() => setPeriodIndex((value) => Math.min(financeiroMobileMock.periods.length - 1, value + 1))} canGoPrevious={periodIndex > 0} canGoNext={periodIndex < financeiroMobileMock.periods.length - 1} />
       <PeriodInsightText>{period.insight}</PeriodInsightText>
       <AvailableBalanceCard balance={period.balance} comparison={period.comparison} income={period.income} expense={period.expense} />
-      <IncomeExpenseChart chart={period.chart} />
+      <IncomeExpenseChart />
       <AccountsCarousel accounts={period.accounts} onManage={onManageAccounts} />
       <CardsWalletCarousel cards={period.cards} />
       <RecentTransactionsList transactions={period.transactions} onNew={onNewTransaction} />

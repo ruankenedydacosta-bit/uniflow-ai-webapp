@@ -13,11 +13,12 @@ test('mock mobile é profundamente imutável', () => {
   assert.equal(Object.isFrozen(homeMobileMock.quickActions), true);
 });
 
-test('Home mantém as seis seções na ordem oficial', async () => {
+test('Home mantém as sete seções na ordem oficial', async () => {
   const contents = await source('MobileHomeView.jsx');
   const sections = [
     'UniBriefingCard',
     'NextStepCard',
+    'CognitiveLiveChart',
     'FinancialSummaryStrip',
     'GoalsProgressList',
     'InsightCarousel',
@@ -29,11 +30,11 @@ test('Home mantém as seis seções na ordem oficial', async () => {
   assert.deepEqual([...positions].sort((a, b) => a - b), positions);
 });
 
-test('loading preserva seis espaços sem salto de ordem', async () => {
+test('loading preserva sete espaços sem salto de ordem', async () => {
   const contents = await source('MobileHomeView.jsx');
   assert.match(contents, /SKELETON_SECTIONS/);
   assert.match(contents, /HomeSectionSkeleton/);
-  assert.equal(contents.match(/\['(?:briefing|next-step|summary|goals|insights|actions)'/g)?.length, 6);
+  assert.equal(contents.match(/\['(?:briefing|next-step|chart|summary|goals|insights|actions)'/g)?.length, 7);
 });
 
 test('briefing e próximo passo possuem fallback útil', async () => {

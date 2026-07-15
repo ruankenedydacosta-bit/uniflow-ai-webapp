@@ -27,12 +27,11 @@ test('período controla um snapshot único para todas as seções', async () => 
   assert.match(contents, /period\.transactions/);
 });
 
-test('gráfico SVG usa o snapshot do período sem dependência externa', async () => {
+test('gráfico detailed reutiliza a feature cognitiva sem SVG duplicado', async () => {
   const contents = await source('components/IncomeExpenseChart.jsx');
-  assert.match(contents, /<svg/);
-  assert.match(contents, /<polyline/);
-  assert.match(contents, /chart\.income/);
-  assert.match(contents, /chart\.expense/);
+  assert.match(contents, /CognitiveLiveChart/);
+  assert.match(contents, /variant="detailed"/);
+  assert.doesNotMatch(contents, /<svg|<polyline/);
   assert.doesNotMatch(contents, /chart\.js|recharts|fetch\(/i);
 });
 

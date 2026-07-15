@@ -54,6 +54,7 @@
   .financeiro :global(.financeMobileExpense), .financeiro :global(.financeMobile-expense) { color: var(--uf-color-danger); }
 
   .financeiro :global(.financeMobileSectionHeader), .financeiro :global(.financeMobileChart header) { display: flex; min-height: var(--uf-tap-target-min); align-items: center; justify-content: space-between; gap: var(--uf-space-12); }
+  .financeiro :global(.financeMobileCognitiveSection) { display: flex; flex-direction: column; gap: var(--uf-space-8); }
   .financeiro :global(.financeMobileSectionHeader h2), .financeiro :global(.financeMobileChart h2) { margin: 0; font-size: var(--uf-text-body-size); line-height: var(--uf-text-body-lh); }
   .financeiro :global(.financeMobileSectionHeader button) { border: 0; background: transparent; color: var(--uf-color-text-ai); font-size: var(--uf-text-caption-size); font-weight: var(--uf-font-weight-semibold); }
   .financeiro :global(.financeMobileSectionHeader > span), .financeiro :global(.financeMobileChart header span), .financeiro :global(.financeMobileChart header small) { color: var(--uf-color-text-tertiary); font-size: var(--uf-text-micro-size); }
