@@ -1,0 +1,88 @@
+.uniSlot {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: var(--uf-tap-target-min);
+  align-items: center;
+  justify-content: flex-end;
+  flex-direction: column;
+  color: var(--uf-color-text-tertiary);
+}
+
+.uniSlot[data-active='true'] { color: var(--uf-color-text-primary); }
+
+.uniButton {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: var(--uf-space-56);
+  height: var(--uf-space-56);
+  margin-top: calc(var(--uf-space-20) * -1);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--uf-color-border-strong);
+  border-radius: 50%;
+  background: var(--uf-color-ai);
+  color: var(--uf-color-on-ai);
+  box-shadow: var(--uf-shadow-glow-ai);
+  font: inherit;
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-bold);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.uniButton[data-gesture='pressing'] { transform: scale(0.97); }
+.uniButton[data-gesture='holding'] {
+  box-shadow: 0 0 0 6px rgb(124 58 237 / 18%), var(--uf-shadow-glow-ai);
+  transform: scale(1.05);
+}
+
+.uniButton:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.uniLabel {
+  z-index: 2;
+  max-width: 100%;
+  margin-top: var(--uf-space-4);
+  overflow: hidden;
+  color: currentColor;
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.holdHint {
+  position: absolute;
+  bottom: calc(100% + var(--uf-space-8));
+  left: 50%;
+  z-index: 3;
+  padding: var(--uf-space-4) var(--uf-space-8);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-color-bg-elevated);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-semibold);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  white-space: nowrap;
+}
+
+.holdHint[data-visible='true'] {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uniButton,
+  .holdHint { transition: none; }
+  .uniButton[data-gesture='holding'] { transform: none; }
+}

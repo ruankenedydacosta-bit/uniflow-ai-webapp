@@ -1,0 +1,81 @@
+.freqField {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  width: 168px;
+  height: 68px;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px rgb(124 58 237 / 28%));
+  transform: translateX(-50%);
+}
+
+.freqGroup {
+  transform-origin: 50% 50%;
+  transition: transform 700ms ease, opacity 500ms ease;
+}
+
+.freqLine {
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transition: opacity 420ms ease, stroke-width 420ms ease;
+}
+
+.line1 { stroke-width: 2; animation: uni-freq-wave 2.4s ease-in-out infinite; }
+.line2 { stroke-width: 1.6; animation: uni-freq-wave 2.9s ease-in-out -0.6s infinite; }
+.line3 { stroke-width: 1.4; animation: uni-freq-wave 3.4s ease-in-out -1.4s infinite; }
+.line4 { stroke-width: 1.2; animation: uni-freq-wave 2.1s ease-in-out -0.3s infinite; }
+
+@keyframes uni-freq-wave {
+  0%, 100% { transform: scaleY(0.55); }
+  50% { transform: scaleY(1.15); }
+}
+
+.freqField[data-phase='idle'] .freqLine {
+  opacity: 0;
+  animation-play-state: paused;
+}
+
+.freqField[data-phase='pressing'] .freqGroup { opacity: 0.5; transform: scaleY(0.35); }
+.freqField[data-phase='pressing'] .freqLine { opacity: 0.55; }
+.freqField[data-phase='listening'] .freqGroup { opacity: 1; transform: scaleY(1); }
+.freqField[data-phase='listening'] .freqLine { opacity: 0.9; }
+.freqField[data-phase='transcribing'] .freqGroup { opacity: 0.95; transform: scaleY(0.85); }
+.freqField[data-phase='transcribing'] .freqLine { opacity: 0.8; animation-duration: 2.2s; }
+.freqField[data-phase='processing'] .freqGroup { opacity: 0.85; transform: scaleX(0.55) scaleY(0.6); }
+.freqField[data-phase='processing'] .freqLine { opacity: 0.65; animation-duration: 3.6s; }
+.freqField[data-phase='responding'] .freqGroup { opacity: 1; transform: scaleX(1.12) scaleY(1.05); }
+.freqField[data-phase='responding'] .freqLine { opacity: 0.85; }
+.freqField[data-phase='completed'] .freqGroup,
+.freqField[data-phase='canceled'] .freqGroup { opacity: 0; transform: scaleY(0.3); }
+.freqField[data-phase='error'] .freqGroup { opacity: 0.7; transform: scaleY(0.7); }
+.freqField[data-phase='error'] .freqLine { opacity: 0.45; animation-duration: 4.2s; }
+
+.staticGlow {
+  position: absolute;
+  bottom: 34px;
+  left: 50%;
+  width: 60px;
+  height: 20px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb, #8b5cf6, #22d3ee);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.staticGlow[data-active='true'] { opacity: 0.5; }
+.staticGlow[data-phase='idle'],
+.staticGlow[data-phase='completed'],
+.staticGlow[data-phase='canceled'] { opacity: 0; }
+
+@media (max-width: 340px) {
+  .freqField { bottom: 26px; width: 128px; height: 54px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .freqField { display: none; }
+}
