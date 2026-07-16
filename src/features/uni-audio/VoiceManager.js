@@ -51,7 +51,14 @@ export class VoiceManager {
 
     this.#setState({ status: 'playing', clipId, error: null });
     try {
-      await this.#player.play(clip.src, options);
+      await this.#player.play(clip.src, {
+        ...options,
+        onEnded: () => {
+          if (this.#state.clipId !== clipId) return;
+          this.#setState(INITIAL_STATE);
+          options?.onEnded?.();
+        },
+      });
       return this.#state;
     } catch (error) {
       this.#setState(error?.code === 'PLAYBACK_CANCELED'

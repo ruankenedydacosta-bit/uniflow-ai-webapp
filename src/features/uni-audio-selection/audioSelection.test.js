@@ -155,6 +155,24 @@ test('audio desativado nunca e elegivel', () => {
   });
 });
 
+test('audio com substituicao futura permanece elegivel no MVP', () => {
+  const replacements = voiceManifest.clips.filter((audio) => audio.replacementPending);
+  assert.equal(replacements.length, 6);
+  replacements.forEach((audio) => {
+    assert.equal(audio.approvedForMvp, true);
+    assert.equal(audio.replacementPriority, 'future');
+    assert.equal(selectAudio({
+      context: audio.context,
+      manifest: manifest(audio),
+      userGesture: true,
+      mockData: true,
+      holdDurationMs: 400,
+      silenceDurationMs: 3_500,
+      operationElapsedMs: 3_000,
+    }).status, 'selected');
+  });
+});
+
 test('erro nunca seleciona frase com risada', () => {
   const laughter = clip('laugh', { category: 'error', context: 'error_understanding', tags: ['laughter'] });
   const neutral = clip('neutral', { category: 'error', context: 'error_understanding' });
@@ -230,8 +248,8 @@ test('manifesto nao possui ids duplicados', () => {
   assert.equal(new Set(ids).size, ids.length);
 });
 
-test('todos os arquivos ativos do manifesto existem', async () => {
-  await Promise.all(voiceManifest.clips.filter((audio) => audio.enabled).map((audio) => access(fileURLToPath(audio.src))));
+test('todos os arquivos associados do manifesto existem', async () => {
+  await Promise.all(voiceManifest.clips.filter((audio) => audio.src).map((audio) => access(fileURLToPath(audio.src))));
 });
 
 test('todos os MP3 importados possuem texto e emocao', () => {

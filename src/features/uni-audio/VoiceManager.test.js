@@ -97,12 +97,42 @@ test('novo play interrompe e libera o áudio anterior', async () => {
   assert.deepEqual(audios[0].calls, ['pause', 'remove', 'load']);
 });
 
+test('player persistente anuncia o fim sem criar reprodução paralela', async () => {
+  const listeners = {};
+  const audio = {
+    pause() {},
+    play: async () => queueMicrotask(() => listeners.playing?.()),
+    addEventListener: (event, listener) => { listeners[event] = listener; },
+    removeEventListener: (event) => { delete listeners[event]; },
+    removeAttribute() {},
+    load() {},
+  };
+  const player = createAudioPlayer({ createAudio: () => audio });
+  let ended = 0;
+  await player.play('/assets/voice.mp3', { onEnded: () => { ended += 1; } });
+  listeners.ended();
+  assert.equal(ended, 1);
+  assert.equal(listeners.ended, undefined);
+});
+
 test('manager reproduz clip cadastrado sem integração externa', async () => {
   const player = createFakePlayer();
   const manager = createVoiceManager({ manifest, player });
   await manager.play('greeting.welcome');
   assert.equal(manager.getState().status, 'playing');
-  assert.deepEqual(player.calls[0], ['play', '/assets/welcome.mp3', undefined]);
+  assert.equal(player.calls[0][0], 'play');
+  assert.equal(player.calls[0][1], '/assets/welcome.mp3');
+  assert.equal(typeof player.calls[0][2].onEnded, 'function');
+});
+
+test('manager retorna a idle e repassa callback quando o áudio termina', async () => {
+  const player = createFakePlayer();
+  const manager = createVoiceManager({ manifest, player });
+  let ended = 0;
+  await manager.play('greeting.welcome', { onEnded: () => { ended += 1; } });
+  player.calls[0][2].onEnded();
+  assert.equal(manager.getState().status, 'idle');
+  assert.equal(ended, 1);
 });
 
 test('manager rejeita clip ausente sem iniciar player', async () => {

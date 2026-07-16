@@ -23,10 +23,13 @@ export function createAudioPlayer({ createAudio } = {}) {
   const audioFactory = createAudio ?? ((source) => new Audio(source));
   let audio = null;
   let cancelPending = null;
+  let cleanupEnded = null;
 
   const release = () => {
     cancelPending?.();
     cancelPending = null;
+    cleanupEnded?.();
+    cleanupEnded = null;
     if (!audio) return;
     audio.pause();
     audio.removeAttribute?.('src');
@@ -35,7 +38,7 @@ export function createAudioPlayer({ createAudio } = {}) {
   };
 
   return Object.freeze({
-    async play(source, { volume = 1, playbackRate = 1 } = {}) {
+    async play(source, { volume = 1, playbackRate = 1, onEnded } = {}) {
       if (!isLocalAudioSource(source)) {
         throw createPlaybackError('INVALID_LOCAL_SOURCE', 'O áudio precisa ser um asset local válido.');
       }
@@ -46,6 +49,15 @@ export function createAudioPlayer({ createAudio } = {}) {
       audio.currentTime = 0;
       audio.playbackRate = Math.min(2, Math.max(0.5, Number(playbackRate) || 1));
       const currentAudio = audio;
+      if (typeof onEnded === 'function') {
+        const handleEnded = () => {
+          cleanupEnded?.();
+          cleanupEnded = null;
+          onEnded();
+        };
+        currentAudio.addEventListener?.('ended', handleEnded, { once: true });
+        cleanupEnded = () => currentAudio.removeEventListener?.('ended', handleEnded);
+      }
       await new Promise((resolve, reject) => {
         const cleanup = () => {
           currentAudio.removeEventListener?.('playing', handlePlaying);

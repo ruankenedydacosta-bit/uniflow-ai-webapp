@@ -1,5 +1,8 @@
+import { applyVoiceReview } from './voiceReview.js';
+import { VOICE_REVIEW_ENTRIES } from './voiceReviewCatalog.js';
+
 // Generated from the approved local voice library. Do not infer runtime data from filenames.
-export const VOICE_CATALOG_ENTRIES = [
+const BASE_VOICE_CATALOG_ENTRIES = [
   {
     "id": "error_temporary_001",
     "category": "error",
@@ -3397,3 +3400,8 @@ export const VOICE_CATALOG_ENTRIES = [
     }
   }
 ];
+
+export const VOICE_CATALOG_ENTRIES = applyVoiceReview(
+  BASE_VOICE_CATALOG_ENTRIES,
+  VOICE_REVIEW_ENTRIES,
+);

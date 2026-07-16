@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import DashboardPage from '../features/dashboard';
 import AgendaPage from '../pages/AgendaPage';
 import ClientesPage from '../pages/ClientesPage';
@@ -10,6 +11,10 @@ import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
 import UniAIPage from '../pages/UniAIPage';
+
+const UniAudioLibraryPage = import.meta.env.DEV
+  ? lazy(() => import('../pages/dev/uni-audio-library'))
+  : null;
 
 export const publicRoutes = [
   {
@@ -24,6 +29,20 @@ export const publicRoutes = [
     title: 'Onboarding',
     element: <OnboardingPage />,
   },
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev/uni-audio-library',
+          label: 'Biblioteca de Voz da Uni',
+          title: 'Biblioteca de Voz da Uni',
+          element: (
+            <Suspense fallback={null}>
+              <UniAudioLibraryPage />
+            </Suspense>
+          ),
+        },
+      ]
+    : []),
 ];
 
 export const appRoutes = [
