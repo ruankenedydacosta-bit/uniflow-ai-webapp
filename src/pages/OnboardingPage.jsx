@@ -7,6 +7,7 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { completeOnboarding } from '../services/onboardingService';
+import { useVoiceManager } from '../features/uni-audio';
 import styles from './OnboardingPage.module.css';
 
 const onboardingOptions = [
@@ -58,6 +59,7 @@ function logOnboardingPageFailure(operation, error) {
 
 function OnboardingPage() {
   const navigate = useNavigate();
+  const voiceManager = useVoiceManager();
   const { setAccess } = useAccess();
   const {
     isDemoMode,
@@ -75,6 +77,10 @@ function OnboardingPage() {
 
     if (isDemoMode) {
       setAccess(option.access);
+      await voiceManager.playContext('first_app_access', {
+        userId: user?.id,
+        userGesture: true,
+      });
       navigate('/dashboard');
       return;
     }
@@ -104,6 +110,10 @@ function OnboardingPage() {
         return;
       }
 
+      await voiceManager.playContext('first_app_access', {
+        userId: user?.id,
+        userGesture: true,
+      });
       navigate('/dashboard', { replace: true });
     } catch (error) {
       logOnboardingPageFailure('unexpected_page_error', error);

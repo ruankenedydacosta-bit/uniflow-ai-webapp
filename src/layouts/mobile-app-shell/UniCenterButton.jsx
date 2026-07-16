@@ -5,6 +5,8 @@ import {
   UniInstantButton,
   UniInstantResultCard,
 } from '../../features/uni-instant/index.js';
+import { useVoiceManager } from '../../features/uni-audio/index.js';
+import { useSession } from '../../app/SessionContext.jsx';
 
 const CAPTURE_SAFETY_TIMEOUT_MS = 3500;
 
@@ -20,9 +22,12 @@ function UniCenterButtonSession({
   onSpeakResponse,
 }) {
   const navigate = useNavigate();
+  const { user } = useSession();
+  const voiceManager = useVoiceManager();
   const buttonRef = useRef(null);
   const timersRef = useRef([]);
   const captureActiveRef = useRef(false);
+  const operationRef = useRef(0);
   const [waveState, setWaveState] = useState('idle');
   const [cardOpen, setCardOpen] = useState(false);
   const [cardState, setCardState] = useState('transcribing');
@@ -41,35 +46,70 @@ function UniCenterButtonSession({
 
   useEffect(() => clearTimers, [clearTimers]);
 
-  const handleTap = useCallback(() => {
+  const handleTap = useCallback(async () => {
+    const playback = voiceManager.playContext('returning_user', {
+      maxStartWaitMs: 700,
+      userId: user?.id,
+      userGesture: true,
+    }).catch(() => false);
+    await Promise.race([
+      playback,
+      new Promise((resolve) => setTimeout(resolve, 700)),
+    ]);
     onNavigate?.({ label, path });
     navigate(path);
-  }, [label, navigate, onNavigate, path]);
+  }, [label, navigate, onNavigate, path, user?.id, voiceManager]);
 
   const handleCaptureEnd = useCallback(() => {
     if (!captureActiveRef.current) return;
     captureActiveRef.current = false;
     clearTimers();
     onVoiceCaptureEnd?.();
-    onTranscriptReady?.(context.transcript);
+    try {
+      onTranscriptReady?.(context.transcript);
+    } catch {
+      const operationId = `uni-instant-${operationRef.current}`;
+      setWaveState('error');
+      setCardMessage('Não consegui entender muito bem. Você pode tentar novamente.');
+      setCardState('response');
+      setCardOpen(true);
+      voiceManager.playContext('error_understanding', { operationId }).catch(() => false);
+      after(260, () => setWaveState('idle'));
+      return;
+    }
     setWaveState('completed');
     setCardState('transcribing');
     setCardOpen(true);
+    const operationId = `uni-instant-${operationRef.current}`;
     after(260, () => setWaveState('idle'));
     after(700, () => {
       setCardState('processing');
+      voiceManager.playContext('processing', {
+        operationId,
+        mockData: true,
+      }).catch(() => false);
       after(900, () => {
         const finalState = context.type === 'financial_action' ? 'confirmation' : 'response';
         setCardMessage(context.response);
         setCardState(finalState);
+        if (finalState === 'confirmation') {
+          voiceManager.playContext('confirmation_sensitive', {
+            operationId,
+            sensitive: true,
+            mockData: true,
+          }).catch(() => false);
+        } else if (context.type === 'error_understanding') {
+          voiceManager.playContext('error_understanding', { operationId }).catch(() => false);
+        }
         onResponseReady?.({ type: finalState, message: context.response });
         if (finalState === 'response') onSpeakResponse?.(context.response);
       });
     });
-  }, [after, clearTimers, context, onResponseReady, onSpeakResponse, onTranscriptReady, onVoiceCaptureEnd]);
+  }, [after, clearTimers, context, onResponseReady, onSpeakResponse, onTranscriptReady, onVoiceCaptureEnd, voiceManager]);
 
   const handleHoldStart = useCallback(() => {
     clearTimers();
+    operationRef.current += 1;
     captureActiveRef.current = true;
     setCardOpen(false);
     setWaveState('listening');
@@ -107,6 +147,7 @@ function UniCenterButtonSession({
   return (
     <>
       <UniInstantButton
+        aria-label="Conversar com a Uni"
         label={label}
         active={pathname === path}
         voiceState={waveState}

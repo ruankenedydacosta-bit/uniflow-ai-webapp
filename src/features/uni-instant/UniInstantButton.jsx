@@ -21,6 +21,7 @@ function useReducedMotion() {
 
 export default function UniInstantButton({
   label = 'Uni',
+  'aria-label': ariaLabel = 'Uni. Toque para abrir. Toque e segure para falar.',
   active = false,
   voiceState = 'idle',
   buttonRef,
@@ -58,7 +59,7 @@ export default function UniInstantButton({
         type="button"
         className={styles.uniButton}
         data-gesture={gestureState}
-        aria-label="Uni. Toque para abrir. Toque e segure para falar."
+        aria-label={ariaLabel}
       >
         Uni
       </button>

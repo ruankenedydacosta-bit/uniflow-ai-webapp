@@ -70,6 +70,14 @@ test('acao financeira gera confirmacao', () => {
   assert.match(context.response, /Registrar despesa de R\$ 25,00/);
 });
 
+test('pipeline mockado usa audios contextuais sem executar acao', async () => {
+  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
+  assert.match(integration, /playContext\('processing'/);
+  assert.match(integration, /playContext\('error_understanding'/);
+  assert.match(integration, /playContext\('confirmation_sensitive'/);
+  assert.match(integration, /sensitive: true/);
+});
+
 test('nenhuma acao e executada sem confirmacao', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
   assert.match(integration, /Nenhuma ação foi executada nesta simulação/);
