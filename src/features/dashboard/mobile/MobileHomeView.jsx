@@ -19,7 +19,7 @@ const SKELETON_SECTIONS = Object.freeze([
   ['actions', 'Carregando atalhos rápidos'],
 ]);
 
-function MobileHomeView({ data = homeMobileMock, loading = false, onNavigate }) {
+function MobileHomeView({ data = homeMobileMock, loading = false, error = null, onNavigate }) {
   const viewData = { ...homeMobileMock, ...data };
   const handleNavigate = (destination) => {
     if (typeof destination === 'string') onNavigate?.(destination);
@@ -31,6 +31,38 @@ function MobileHomeView({ data = homeMobileMock, loading = false, onNavigate }) 
         {SKELETON_SECTIONS.map(([variant, label]) => (
           <HomeSectionSkeleton key={variant} variant={variant} label={label} />
         ))}
+      </div>
+    );
+  }
+
+  if (error && !loading) {
+    return (
+      <div className={styles.home} data-mobile-home data-error="true">
+        <UniBriefingCard briefing={viewData.briefing} onAction={() => handleNavigate('/uni-ai')} />
+        <NextStepCard step={viewData.nextStep} onAction={() => handleNavigate('/financeiro')} />
+        <section className={styles.cognitiveChartSection} aria-labelledby="home-cognitive-chart-title">
+          <header className={styles.cognitiveChartHeader}>
+            <h2 id="home-cognitive-chart-title">Receitas e Despesas</h2>
+            <p>Acompanhe como seu dinheiro está evoluindo.</p>
+          </header>
+          <CognitiveLiveChart variant="compact" defaultMode="uni-insight" />
+        </section>
+        <section className="homeMobileCard" aria-labelledby="home-mobile-error-title">
+          <div className="homeMobileSectionHeader">
+            <h2 id="home-mobile-error-title">Resumo financeiro</h2>
+          </div>
+          <p>Não foi possível carregar os dados financeiros. Tente novamente mais tarde.</p>
+        </section>
+        <GoalsProgressList
+          goals={viewData.goals ?? []}
+          onViewAll={() => handleNavigate('/objetivos')}
+          onCreate={() => handleNavigate('/objetivos')}
+        />
+        <InsightCarousel insights={viewData.insights ?? []} />
+        <QuickActionsGrid
+          actions={viewData.quickActions ?? homeMobileMock.quickActions}
+          onSelect={(action) => handleNavigate(action.path)}
+        />
       </div>
     );
   }

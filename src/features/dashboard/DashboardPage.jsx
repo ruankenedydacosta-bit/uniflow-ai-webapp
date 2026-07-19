@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import { dashboardMock } from './dashboard.mock';
 import { MobileHomeView } from './mobile/index.js';
+import { useHomeFinancialData } from './mobile/useHomeFinancialData.js';
 import styles from './DashboardPage.module.css';
 
 function getDashboardContext(currentWorkspace) {
@@ -16,10 +17,16 @@ function DashboardPage() {
   const navigate = useNavigate();
   const { access } = useAccess();
   const dashboard = getDashboardContext(access.currentWorkspace);
+  const { summary, isLoading, error } = useHomeFinancialData();
 
   return (
     <>
-      <MobileHomeView onNavigate={navigate} />
+      <MobileHomeView
+        data={{ summary }}
+        loading={isLoading}
+        error={error}
+        onNavigate={navigate}
+      />
       <div className={styles.dashboard}>
       <section className={styles.hero} aria-labelledby="dashboard-title">
         <div className={styles.heroCopy}>
