@@ -1,18 +1,42 @@
 import { supabase, isSupabaseConfigured } from '../../services/supabaseClient';
-import * as local from './chatHistory';
+import { loadHistory as loadLocalHistory } from './chatHistory';
 
 const CONVERSATIONS_TABLE = 'uni_conversations';
 const MESSAGES_TABLE = 'uni_messages';
 const MIGRATION_MARKER_KEY = 'uniflow.uni-chat.migration.v1';
 
-let _isOnline = isSupabaseConfigured;
+let _connectionStatus = isSupabaseConfigured ? 'online' : 'offline';
+let _statusListeners = [];
 
-export function isOnline() {
-  return _isOnline;
+export function getConnectionStatus() {
+  return _connectionStatus;
 }
 
-function setOnlineStatus(online) {
-  _isOnline = online;
+export function subscribeConnectionStatus(fn) {
+  _statusListeners.push(fn);
+  return () => {
+    _statusListeners = _statusListeners.filter((f) => f !== fn);
+  };
+}
+
+function setConnectionStatus(status) {
+  if (status === _connectionStatus) return;
+  _connectionStatus = status;
+  for (const fn of _statusListeners) {
+    try { fn(status); } catch { /* noop */ }
+  }
+}
+
+function markOnline() {
+  setConnectionStatus('online');
+}
+
+function markOffline() {
+  setConnectionStatus('offline');
+}
+
+export function isOnline() {
+  return _connectionStatus === 'online';
 }
 
 async function getUserId() {
@@ -94,11 +118,11 @@ export async function listConversations(workspaceId, mode) {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    setOnlineStatus(false);
+    markOffline();
     return null;
   }
 
-  setOnlineStatus(true);
+  markOnline();
   return data.map(dbToConversation);
 }
 
@@ -116,11 +140,11 @@ export async function listAllConversations(workspaceIds) {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    setOnlineStatus(false);
+    markOffline();
     return null;
   }
 
-  setOnlineStatus(true);
+  markOnline();
   return data.map(dbToConversation);
 }
 
@@ -142,11 +166,11 @@ export async function createConversation(mode, workspaceId) {
     .single();
 
   if (error) {
-    setOnlineStatus(false);
+    markOffline();
     return null;
   }
 
-  setOnlineStatus(true);
+  markOnline();
   return dbToConversation(data);
 }
 
@@ -162,11 +186,11 @@ export async function updateConversationTitle(convId, title) {
     .eq('user_id', userId);
 
   if (error) {
-    setOnlineStatus(false);
+    markOffline();
     return false;
   }
 
-  setOnlineStatus(true);
+  markOnline();
   return true;
 }
 
@@ -182,11 +206,11 @@ export async function archiveConversation(convId) {
     .eq('user_id', userId);
 
   if (error) {
-    setOnlineStatus(false);
+    markOffline();
     return false;
   }
 
-  setOnlineStatus(true);
+  markOnline();
   return true;
 }
 
@@ -202,11 +226,11 @@ export async function deleteConversation(convId) {
     .eq('user_id', userId);
 
   if (error) {
-    setOnlineStatus(false);
+    markOffline();
     return false;
   }
 
-  setOnlineStatus(true);
+  markOnline();
   return true;
 }
 
@@ -214,22 +238,19 @@ export async function deleteConversation(convId) {
 
 export async function loadMessages(convId) {
   if (!supabase) return null;
-  const userId = await getUserId();
-  if (!userId) return null;
 
   const { data, error } = await supabase
     .from(MESSAGES_TABLE)
     .select('id, role, message_type, content, metadata, client_message_id, created_at')
     .eq('conversation_id', convId)
-    .eq('user_id', userId)
     .order('created_at', { ascending: true });
 
   if (error) {
-    setOnlineStatus(false);
+    markOffline();
     return null;
   }
 
-  setOnlineStatus(true);
+  markOnline();
   return data.map(dbToMessage);
 }
 
@@ -254,17 +275,19 @@ export async function saveMessage(convId, msg, userIdOverride) {
           .select('id, role, message_type, content, metadata, client_message_id, created_at')
           .eq('conversation_id', convId)
           .eq('client_message_id', dbMsg.client_message_id)
-          .single();
+          .maybeSingle();
         if (existing) return dbToMessage(existing);
+        markOnline();
+        return null;
       }
-      setOnlineStatus(false);
+      markOffline();
       return null;
     }
 
-    setOnlineStatus(true);
+    markOnline();
     return dbToMessage(data);
   } catch {
-    setOnlineStatus(false);
+    markOffline();
     return null;
   }
 }
@@ -281,11 +304,15 @@ export async function saveMessages(convId, msgs) {
     .insert(dbMsgs);
 
   if (error) {
-    setOnlineStatus(false);
+    if (error.code === '23505') {
+      markOnline();
+      return true;
+    }
+    markOffline();
     return false;
   }
 
-  setOnlineStatus(true);
+  markOnline();
   return true;
 }
 
@@ -314,7 +341,7 @@ export async function migrateLocalHistory(workspaceMap) {
   const userId = await getUserId();
   if (!userId) return { migrated: 0, errors: 0, skipped: 0 };
 
-  const localConvs = local.loadHistory();
+  const localConvs = loadLocalHistory();
   if (localConvs.length === 0) {
     markMigrationComplete();
     return { migrated: 0, errors: 0, skipped: 0 };

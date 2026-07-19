@@ -74,6 +74,22 @@
   line-height: 1.4;
 }
 
+.reconnectBanner {
+  text-align: center;
+  font-size: 11px;
+  padding: 4px 12px;
+  color: var(--uni-blue);
+  background: var(--uni-gradient-soft);
+  border-bottom: 1px solid var(--uni-border-soft);
+  line-height: 1.4;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 @media (max-width: 400px) {
   .messages {
     padding: 12px;

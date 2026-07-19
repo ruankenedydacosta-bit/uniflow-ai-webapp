@@ -27,7 +27,6 @@ import {
   createConversation as createLocalConversation,
   persistConversation,
   saveActiveSource,
-  loadActiveSource,
 } from './chatHistory';
 import {
   buildUserMessage,
@@ -98,8 +97,10 @@ export default function UniChatPage() {
     referenceDate: getLocalIsoDate(),
   });
 
-  const [isOnline, setIsOnline] = useState(dataService.isOnline);
+  const [connectionStatus, setConnectionStatus] = useState(dataService.getConnectionStatus);
   const initialLoadDone = useRef(false);
+  const promotionInProgressRef = useRef(false);
+  const loadRequestIdRef = useRef(0);
 
   const [mode, setMode] = useState(() => {
     const stored = loadHistory();
@@ -174,7 +175,7 @@ export default function UniChatPage() {
     const wsId = workspace.id;
     const supabaseConvs = await dataService.listConversations(wsId, mode);
     if (!supabaseConvs) return;
-    setIsOnline(true);
+    setConnectionStatus(dataService.getConnectionStatus());
 
     setConversations((prev) => {
       const localIds = new Set(prev.map((c) => c.id));
@@ -245,6 +246,7 @@ export default function UniChatPage() {
     const hasAnyWorkspace = Object.values(workspaceMap).some(Boolean);
 
     if (!hasAnyWorkspace) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       reconcileConversations();
       return;
     }
@@ -319,20 +321,18 @@ export default function UniChatPage() {
     const current = conversations.find((c) => c.id === activeId);
     if (!current) return;
     if (current.source !== 'supabase') return;
-    if (current._messagesLoaded) return;
+
+    const requestId = ++loadRequestIdRef.current;
 
     dataService.loadMessages(activeId).then((loadedMessages) => {
+      if (requestId !== loadRequestIdRef.current) return;
       if (!loadedMessages || loadedMessages.length === 0) return;
       if (activeIdRef.current !== activeId) return;
 
       setMessages((prev) => {
-        if (prev.length > 0 && prev[0]?.from === 'uni') {
-          return loadedMessages;
-        }
-        if (prev.length >= loadedMessages.length) {
-          return prev;
-        }
-        return loadedMessages;
+        if (prev.length === 0) return loadedMessages;
+        if (prev.length < loadedMessages.length) return loadedMessages;
+        return prev;
       });
 
       setConversations((prev) =>
@@ -344,46 +344,40 @@ export default function UniChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
 
+  const pendingSyncRef = useRef([]);
+
   async function syncMessageToSupabase(msg) {
     const current = conversations.find((c) => c.id === activeId);
     if (!current) return;
 
     if (current.source === 'supabase') {
       await dataService.saveMessage(activeId, msg);
+      const queued = pendingSyncRef.current.splice(0);
+      for (const qMsg of queued) {
+        await dataService.saveMessage(activeId, qMsg);
+      }
       return;
     }
 
-    if (workspace?.id && dataService.isOnline()) {
+    if (!workspace?.id || !dataService.isOnline()) return;
+
+    if (promotionInProgressRef.current) {
+      pendingSyncRef.current.push(msg);
+      return;
+    }
+
+    promotionInProgressRef.current = true;
+    try {
       const dbConv = await dataService.createConversation(mode, workspace.id);
-      if (dbConv) {
-        const dbConvId = dbConv.id;
-        const localConvId = activeId;
+      if (!dbConv) return;
 
-        const syncMsgs = [...messages, msg];
-        await dataService.saveMessages(dbConvId, syncMsgs);
+      const dbConvId = dbConv.id;
+      const localConvId = activeId;
+      const syncMsgs = [...messages, msg];
+      await dataService.saveMessages(dbConvId, syncMsgs);
 
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id !== localConvId) return c;
-            return {
-              ...c,
-              id: dbConvId,
-              source: 'supabase',
-              messages: syncMsgs,
-              createdAt: dbConv.createdAt,
-              updatedAt: dbConv.updatedAt,
-            };
-          }),
-        );
-        setActiveId(dbConvId);
-        saveActiveId(dbConvId);
-        saveActiveSource('supabase');
-        convDbIdsRef.current[localConvId] = dbConvId;
-
-        setConversations((prev) => prev.filter((c) => c.id !== localConvId));
-
-        const stored = loadHistory();
-        const updated = stored.map((c) => {
+      setConversations((prev) =>
+        prev.map((c) => {
           if (c.id !== localConvId) return c;
           return {
             ...c,
@@ -393,14 +387,43 @@ export default function UniChatPage() {
             createdAt: dbConv.createdAt,
             updatedAt: dbConv.updatedAt,
           };
-        });
-        saveHistory(updated);
+        }),
+      );
+      setActiveId(dbConvId);
+      saveActiveId(dbConvId);
+      saveActiveSource('supabase');
+      convDbIdsRef.current[localConvId] = dbConvId;
+
+      setConversations((prev) => prev.filter((c) => c.id !== localConvId));
+
+      const stored = loadHistory();
+      const updated = stored.map((c) => {
+        if (c.id !== localConvId) return c;
+        return {
+          ...c,
+          id: dbConvId,
+          source: 'supabase',
+          messages: syncMsgs,
+          createdAt: dbConv.createdAt,
+          updatedAt: dbConv.updatedAt,
+        };
+      });
+      saveHistory(updated);
+
+      const queued = pendingSyncRef.current.splice(0);
+      for (const qMsg of queued) {
+        await dataService.saveMessage(dbConvId, qMsg);
       }
+    } finally {
+      promotionInProgressRef.current = false;
     }
   }
 
   useEffect(() => {
-    setIsOnline(dataService.isOnline());
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setConnectionStatus(dataService.getConnectionStatus());
+    const unsub = dataService.subscribeConnectionStatus(setConnectionStatus);
+    return unsub;
   }, []);
 
   function handleScroll() {
@@ -424,6 +447,9 @@ export default function UniChatPage() {
   function switchConversation(id) {
     const conv = conversations.find((c) => c.id === id);
     if (!conv) return;
+
+    const requestId = ++loadRequestIdRef.current;
+
     setActiveId(id);
     setMessages(conv.messages || []);
     const convMode = conv.mode || mode;
@@ -443,6 +469,7 @@ export default function UniChatPage() {
 
     if (conv.source === 'supabase' && conv.messages && conv.messages.length > 0) {
       dataService.loadMessages(id).then((loadedMessages) => {
+        if (requestId !== loadRequestIdRef.current) return;
         if (!loadedMessages || loadedMessages.length === 0) return;
         if (activeIdRef.current !== id) return;
         if (loadedMessages.length > conv.messages.length) {
@@ -616,8 +643,6 @@ export default function UniChatPage() {
       const current = conversations.find((c) => c.id === id);
       if (current?.source === 'supabase') {
         await dataService.deleteConversation(id);
-      } else {
-        await dataService.deleteConversation(id).catch(() => {});
       }
     }
 
@@ -734,9 +759,14 @@ export default function UniChatPage() {
         isThinking={isTyping}
       />
 
-      {!isOnline && (
+      {connectionStatus === 'offline' && (
         <div className={styles.offlineBanner} role="status">
           Modo offline — as mensagens serão salvas localmente
+        </div>
+      )}
+      {connectionStatus === 'reconnecting' && (
+        <div className={styles.reconnectBanner} role="status">
+          Reconectando…
         </div>
       )}
 
