@@ -6,10 +6,11 @@ function PeriodSelectorBar({ canGoNext, canGoPrevious, mode, onModeChange, onNex
         <strong>{period}</strong>
         <label>
           <span className="sr-only">Tipo de período</span>
-          <select value={mode} onChange={(event) => onModeChange(event.target.value)}>
-            <option>Mês</option>
-            <option>Ano</option>
-          </select>
+            <select value={mode} onChange={(event) => onModeChange(event.target.value)}>
+              <option>Semana</option>
+              <option>Mês</option>
+              <option>Trimestre</option>
+            </select>
         </label>
       </div>
       <button type="button" onClick={onNext} disabled={!canGoNext} aria-label="Próximo período">›</button>

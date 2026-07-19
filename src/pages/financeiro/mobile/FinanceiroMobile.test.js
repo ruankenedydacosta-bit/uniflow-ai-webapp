@@ -8,7 +8,7 @@ import {
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-const NOW = new Date(2026, 6, 19, 12);
+const NOW = new Date(2026, 6, 19, 12); // Sunday, July 19 2026
 const accounts = [
   {
     id: 'account-origin',
@@ -53,10 +53,12 @@ function buildData(overrides = {}) {
   });
 }
 
-test('período mensal e anual são calculados deterministicamente', () => {
+test('períodos Semana, Mês e Trimestre são calculados deterministicamente', () => {
   assert.equal(getFinancialPeriod({ now: NOW }).label, 'Julho de 2026');
-  assert.equal(getFinancialPeriod({ mode: 'Ano', now: NOW }).label, '2026');
-  assert.equal(getFinancialPeriod({ offset: -1, now: NOW }).startKey, '2026-06-01');
+  assert.equal(getFinancialPeriod({ mode: 'Semana', now: NOW }).label, '13/07 a 19/07');
+  assert.equal(getFinancialPeriod({ mode: 'Trimestre', now: NOW }).label, '3º trimestre de 2026');
+  assert.equal(getFinancialPeriod({ mode: 'Semana', offset: -1, now: NOW }).startKey, '2026-07-06');
+  assert.equal(getFinancialPeriod({ mode: 'Trimestre', offset: -1, now: NOW }).startKey, '2026-04-01');
 });
 
 test('mobile consolida somente lançamentos concluídos do período', () => {
@@ -68,6 +70,23 @@ test('mobile consolida somente lançamentos concluídos do período', () => {
   assert.equal(data.categories[0].label, 'Moradia');
   assert.equal(data.comparison, '+20% em despesas vs. período anterior');
   assert.doesNotMatch(JSON.stringify(data), /Pendente|999,00/);
+});
+
+test('período Semana filtra transações da semana corrente', () => {
+  const dataSemanaAnterior = buildData({ mode: 'Semana', periodOffset: -1 });
+  const dataSemanaAtual = buildData({ mode: 'Semana', periodOffset: 0 });
+
+  assert.equal(dataSemanaAtual.transactions.length, 0);
+  assert.equal(dataSemanaAnterior.transactions.length, 1);
+  assert.equal(dataSemanaAnterior.transactions[0].id, 'transfer');
+});
+
+test('período Trimestre filtra transações do trimestre', () => {
+  const data = buildData({ mode: 'Trimestre' });
+
+  assert.equal(data.income, 'R$ 500,00');
+  assert.equal(data.expense, 'R$ 120,00');
+  assert.equal(data.transactions.length, 3);
 });
 
 test('saldo exibido usa RPC derivada e nunca current_balance', () => {
@@ -96,6 +115,13 @@ test('objetos vazios produzem uma visualização segura', () => {
   assert.deepEqual(data.transactions, []);
   assert.deepEqual(data.categories, []);
   assert.equal(data.chart.data.length, 2);
+  assert.equal(data.comparison, 'Sem base anterior para comparação');
+});
+
+test('período sem dados exibe gráfico vazio com mensagem', async () => {
+  const contents = await source('components/IncomeExpenseChart.jsx');
+  assert.match(contents, /Nenhum lançamento confirmado/);
+  assert.match(contents, /financeMobileEmptyMessage/);
 });
 
 test('fluxo mobile não importa nem exporta mock financeiro', async () => {

@@ -49,6 +49,40 @@ function differenceInDays(start, end) {
 }
 
 export function getFinancialPeriod({ mode = 'Mês', offset = 0, now = new Date() } = {}) {
+  if (mode === 'Semana') {
+    const dayOfWeek = now.getDay();
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + (offset * 7), 12);
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6, 12);
+    const effectiveEnd = offset === 0 && now < end ? now : end;
+
+    return {
+      start,
+      end,
+      effectiveEnd,
+      startKey: toDateKey(start),
+      endKey: toDateKey(end),
+      label: `${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')} a ${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`,
+    };
+  }
+
+  if (mode === 'Trimestre') {
+    const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+    const start = new Date(now.getFullYear(), quarterMonth + (offset * 3), 1, 12);
+    const end = new Date(start.getFullYear(), start.getMonth() + 3, 0, 12);
+    const effectiveEnd = offset === 0 && now < end ? now : end;
+    const quarterNumber = Math.floor(start.getMonth() / 3) + 1;
+
+    return {
+      start,
+      end,
+      effectiveEnd,
+      startKey: toDateKey(start),
+      endKey: toDateKey(end),
+      label: `${quarterNumber}º trimestre de ${start.getFullYear()}`,
+    };
+  }
+
   const isYear = mode === 'Ano';
   const start = isYear
     ? new Date(now.getFullYear() + offset, 0, 1, 12)
