@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useAccess } from '../../app/AccessContext.jsx';
 import { useSession } from '../../app/SessionContext.jsx';
 import { getWorkspaceTypeFromContext } from '../../app/workspaceSelection.js';
@@ -14,9 +15,11 @@ const WORKSPACE_LABELS = Object.freeze({
 
 function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, children }) {
   const isMobile = useMobileViewport();
+  const navigate = useNavigate();
   const { access } = useAccess();
   const {
     availableWorkspaceTypes,
+    createWorkspaceProfile,
     isSwitchingWorkspace,
     profile,
     selectedWorkspaceType,
@@ -44,6 +47,11 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, children }) {
     void switchWorkspace(getWorkspaceTypeFromContext(context));
   };
 
+  const handleCreateProfile = async () => {
+    const result = await createWorkspaceProfile(effectiveWorkspaceType);
+    if (!result.error) navigate('/financeiro', { replace: true });
+  };
+
   return (
     <MobileAppShell
       title={mobileTitle ?? title}
@@ -63,6 +71,16 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, children }) {
         <section className={styles.workspaceContextState} role="status" aria-live="polite">
           <h2>{missingProfileMessage}</h2>
           <p>O contexto selecionado foi mantido. Seus dados do outro perfil não serão exibidos aqui.</p>
+          {!selectedWorkspaceExists ? (
+            <button
+              type="button"
+              className={styles.workspaceContextAction}
+              disabled={isSwitchingWorkspace}
+              onClick={() => void handleCreateProfile()}
+            >
+              {isSwitchingWorkspace ? 'Criando perfil...' : `Criar perfil ${activeContext}`}
+            </button>
+          ) : null}
         </section>
       ) : children}
     </MobileAppShell>

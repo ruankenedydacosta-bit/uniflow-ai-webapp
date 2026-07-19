@@ -92,6 +92,31 @@
   font-size: var(--uf-text-body-size);
 }
 
+.workspaceContextAction {
+  min-width: 180px;
+  min-height: var(--uf-tap-target-min);
+  justify-self: center;
+  margin-top: var(--uf-space-8);
+  padding: 0 var(--uf-space-16);
+  border: 0;
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-primary);
+  color: var(--uf-color-on-primary);
+  font: inherit;
+  font-weight: var(--uf-font-weight-semibold);
+  cursor: pointer;
+}
+
+.workspaceContextAction:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.workspaceContextAction:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
 .bottomNavigation {
   position: fixed;
   right: 0;

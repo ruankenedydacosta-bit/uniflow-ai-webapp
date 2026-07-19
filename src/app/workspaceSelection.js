@@ -37,3 +37,7 @@ export function getAvailableWorkspaceTypes(workspaces) {
   if (!Array.isArray(workspaces)) return [];
   return [...new Set(workspaces.map((workspace) => workspace.workspace_type))];
 }
+
+export function getWorkspaceProfileName(workspaceType) {
+  return workspaceType === WORKSPACE_TYPES.BUSINESS ? 'Perfil PJ' : 'Perfil PF';
+}

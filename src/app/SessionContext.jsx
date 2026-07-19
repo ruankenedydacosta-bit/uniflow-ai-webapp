@@ -18,6 +18,8 @@ import {
 import { getProfile, updateProfile } from '../services/profileService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import {
+  createWorkspace,
+  deleteOwnedWorkspace,
   getCurrentWorkspace,
   getWorkspaceSubscription,
   listWorkspaces,
@@ -27,6 +29,7 @@ import { PLANS, USER_MODES, WORKSPACE_TYPES } from './access';
 import {
   findWorkspaceByType,
   getAvailableWorkspaceTypes,
+  getWorkspaceProfileName,
   readWorkspaceSelection,
   writeWorkspaceSelection,
 } from './workspaceSelection.js';
@@ -363,6 +366,75 @@ function SessionProvider({ children }) {
       : { data: targetWorkspace, error: null };
   }, [availableWorkspaces, state.session, state.user, state.workspace, synchronizeSession]);
 
+  const createWorkspaceProfile = useCallback(async (workspaceType) => {
+    if (!VALID_WORKSPACE_TYPES.includes(workspaceType)) {
+      const error = { code: 'WORKSPACE_TYPE_INVALID', message: 'Contexto financeiro inválido.' };
+      setWorkspaceSwitchState({ error, isLoading: false });
+      return { data: null, error };
+    }
+
+    setSelectedWorkspaceType(workspaceType);
+    writeWorkspaceSelection(workspaceType);
+
+    if (!state.user?.id || !state.session) {
+      const error = { code: 'SESSION_REQUIRED', message: 'Entre novamente para criar o perfil.' };
+      setWorkspaceSwitchState({ error, isLoading: false });
+      return { data: null, error };
+    }
+
+    setWorkspaceSwitchState({ error: null, isLoading: true });
+    const workspacesResult = await listWorkspaces();
+
+    if (workspacesResult.error) {
+      setWorkspaceSwitchState({ error: workspacesResult.error, isLoading: false });
+      return { data: null, error: workspacesResult.error };
+    }
+
+    let targetWorkspace = findWorkspaceByType(workspacesResult.data, workspaceType);
+    let createdWorkspace = false;
+
+    if (!targetWorkspace) {
+      const creationResult = await createWorkspace({
+        name: getWorkspaceProfileName(workspaceType),
+        workspaceType,
+      });
+
+      if (creationResult.error || !creationResult.data) {
+        const error = creationResult.error ?? {
+          code: 'WORKSPACE_NOT_CREATED',
+          message: 'Não foi possível criar este perfil agora.',
+        };
+        setWorkspaceSwitchState({ error, isLoading: false });
+        return { data: null, error };
+      }
+
+      targetWorkspace = creationResult.data;
+      createdWorkspace = true;
+    }
+
+    const updateResult = await updateProfile(state.user.id, {
+      current_workspace_id: targetWorkspace.id,
+    });
+
+    if (updateResult.error) {
+      if (createdWorkspace) {
+        await deleteOwnedWorkspace(targetWorkspace.id);
+      }
+      setWorkspaceSwitchState({ error: updateResult.error, isLoading: false });
+      return updateResult;
+    }
+
+    const synchronizationResult = await synchronizeSession(state.session);
+    setWorkspaceSwitchState({
+      error: synchronizationResult.error,
+      isLoading: false,
+    });
+
+    return synchronizationResult.error
+      ? synchronizationResult
+      : { data: targetWorkspace, error: null };
+  }, [state.session, state.user, synchronizeSession]);
+
   const signInWithPassword = useCallback(
     async ({ email, password }) => {
       authActionRef.current = true;
@@ -537,11 +609,12 @@ function SessionProvider({ children }) {
       availableWorkspaces,
       availableWorkspaceTypes: getAvailableWorkspaceTypes(availableWorkspaces),
       selectedWorkspaceType,
+      createWorkspaceProfile,
       isSwitchingWorkspace: workspaceSwitchState.isLoading,
       switchWorkspace,
       workspaceSwitchError: workspaceSwitchState.error,
     }),
-    [availableWorkspaces, selectedWorkspaceType, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, workspaceSwitchState],
+    [availableWorkspaces, createWorkspaceProfile, selectedWorkspaceType, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, workspaceSwitchState],
   );
 
   return (

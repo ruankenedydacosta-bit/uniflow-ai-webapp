@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   findWorkspaceByType,
   getAvailableWorkspaceTypes,
+  getWorkspaceProfileName,
   getWorkspaceTypeFromContext,
   readWorkspaceSelection,
   WORKSPACE_SELECTION_STORAGE_KEY,
@@ -25,6 +26,11 @@ test('PF e PJ resolvem workspaces distintos deterministicamente', () => {
 test('workspace ausente retorna estado seguro sem misturar perfis', () => {
   assert.equal(findWorkspaceByType([workspaces[0]], 'business'), null);
   assert.deepEqual(getAvailableWorkspaceTypes([workspaces[0]]), ['personal']);
+});
+
+test('perfil ausente recebe nome determinístico conforme PF ou PJ', () => {
+  assert.equal(getWorkspaceProfileName('personal'), 'Perfil PF');
+  assert.equal(getWorkspaceProfileName('business'), 'Perfil PJ');
 });
 
 test('seleção PF e PJ persiste e valores inválidos são ignorados', () => {
@@ -64,6 +70,21 @@ test('troca persiste current_workspace_id e ressincroniza a sessão', async () =
   assert.match(source, /updateProfile\(state\.user\.id/);
   assert.match(source, /current_workspace_id: targetWorkspace\.id/);
   assert.match(source, /synchronizeSession\(state\.session\)/);
+});
+
+test('criação reutiliza workspace existente e prepara rollback seguro', async () => {
+  const sessionSource = await readFile(new URL('./SessionContext.jsx', import.meta.url), 'utf8');
+  const layoutSource = await readFile(
+    new URL('../layouts/mobile-app-shell/AuthenticatedLayout.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(sessionSource, /findWorkspaceByType\(workspacesResult\.data, workspaceType\)/);
+  assert.match(sessionSource, /createWorkspace\(\{/);
+  assert.match(sessionSource, /deleteOwnedWorkspace\(targetWorkspace\.id\)/);
+  assert.match(sessionSource, /current_workspace_id: targetWorkspace\.id/);
+  assert.match(layoutSource, /Criar perfil \$\{activeContext\}/);
+  assert.match(layoutSource, /navigate\('\/financeiro'/);
 });
 
 test('Financeiro recarrega todos os hooks pelo workspace selecionado', async () => {
