@@ -69,18 +69,16 @@ export default function HistoryPanel({ open, onClose, onNewChat, onSelect, onDel
               return (
                 <li key={conv.id} className={`${styles.item} ${isActive ? styles.itemActive : ''}`}>
                   <button type="button" className={styles.itemBtn} onClick={() => handleSelect(conv.id)}>
-                    <div className={styles.itemRow}>
-                      <span className={styles.itemTitle}>{conv.title || 'Nova conversa'}</span>
-                      <button
-                        type="button"
-                        className={`${styles.itemDelete} ${isDeleting ? styles.itemDeleteConfirm : ''}`}
-                        onClick={(e) => handleDelete(e, conv.id)}
-                        aria-label={isDeleting ? 'Confirmar exclusão' : 'Excluir conversa'}
-                      >
-                        {isDeleting ? 'Excluir?' : '✕'}
-                      </button>
-                    </div>
+                    <span className={styles.itemTitle}>{conv.title || 'Nova conversa'}</span>
                     <span className={styles.itemDate}>{formatDate(conv.updatedAt)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.itemDelete} ${isDeleting ? styles.itemDeleteConfirm : ''}`}
+                    onClick={(e) => handleDelete(e, conv.id)}
+                    aria-label={isDeleting ? 'Confirmar exclusão' : 'Excluir conversa'}
+                  >
+                    {isDeleting ? 'Excluir?' : '✕'}
                   </button>
                 </li>
               );
