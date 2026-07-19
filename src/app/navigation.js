@@ -42,6 +42,14 @@ export const navigationItems = [
     description: 'Destinos financeiros conectados ao GPS da UniFlow AI.',
   },
   {
+    label: 'Visão de Futuro',
+    path: '/futuro',
+    modes: ALL_MODES,
+    plans: ALL_PLANS,
+    workspaces: ALL_WORKSPACES,
+    description: 'Projeções financeiras com cenários para planejamento.',
+  },
+  {
     label: 'CRM',
     path: '/crm',
     modes: BUSINESS_MODES,

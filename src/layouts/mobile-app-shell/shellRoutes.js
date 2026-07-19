@@ -21,6 +21,7 @@ export const MORE_MENU_ROUTES = deepFreeze([
   { id: 'settings', label: 'Configurações', icon: '⚙', group: 'account', path: '/configuracoes' },
   { id: 'security', label: 'Segurança', icon: '◇', group: 'account', path: '/configuracoes', section: 'security' },
   { id: 'goals', label: 'Objetivos', icon: '○', group: 'product', path: '/objetivos' },
+  { id: 'future', label: 'Visão de Futuro', icon: '◎', group: 'product', path: '/futuro' },
   { id: 'categories', label: 'Categorias', icon: '▦', group: 'product', path: '/financeiro', section: 'categories' },
   { id: 'notifications', label: 'Notificações', icon: '!', group: 'product', action: 'notifications' },
   { id: 'support', label: 'Suporte', icon: '?', group: 'product', action: 'support' },

@@ -11,6 +11,7 @@ import OnboardingPage from '../pages/OnboardingPage';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
+import { FuturePage } from '../features/future';
 const UniChatPage = lazy(() => import('../features/uni-chat/UniChatPage'));
 import { MobileWelcomePage } from '../features/auth-mobile';
 
@@ -99,6 +100,12 @@ export const appRoutes = [
     label: 'Objetivos',
     title: 'Objetivos',
     element: <ObjetivosPage />,
+  },
+  {
+    path: '/futuro',
+    label: 'Visão de Futuro',
+    title: 'Visão de Futuro',
+    element: <FuturePage />,
   },
   {
     path: '/crm',
