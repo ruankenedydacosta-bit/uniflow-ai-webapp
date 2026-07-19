@@ -216,6 +216,23 @@ export async function deleteCategory(workspaceId, categoryId) {
     return createValidationResult('Workspace ou categoria invalida.');
   }
 
+  const { count: dependencyCount, error: dependencyError } = await supabase
+    .from('transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('workspace_id', workspaceId)
+    .eq('category_id', categoryId);
+
+  if (dependencyError) {
+    return createResult(null, dependencyError);
+  }
+
+  if (dependencyCount > 0) {
+    return createResult(null, {
+      code: 'CATEGORY_HAS_DEPENDENCIES',
+      message: 'Esta categoria possui lançamentos vinculados e não pode ser excluída.',
+    });
+  }
+
   const { data, error } = await supabase
     .from('categories')
     .delete()
