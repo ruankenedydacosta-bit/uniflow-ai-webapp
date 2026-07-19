@@ -44,6 +44,7 @@ test('useAccounts inicia com contas e tipos do fallback demo', () => {
   assert.equal(state.accountTypes[0].code, 'checking');
   assert.equal(typeof state.saveAccount, 'function');
   assert.equal(typeof state.archiveAccount, 'function');
+  assert.equal(typeof state.removeAccount, 'function');
 });
 
 test('useCategories inicia com catalogo global do fallback', () => {
@@ -196,4 +197,40 @@ test('edicao preserva conta arquivada vinculada e monta payload seguro', () => {
   assert.equal('source_type' in servicePayload, false);
   assert.equal('external_provider' in servicePayload, false);
   assert.equal('created_by' in servicePayload, false);
+});
+
+test('exclusao de conta verifica dependencias no mesmo workspace', async () => {
+  const accountService = await readFile(
+    new URL('../services/accountService.js', import.meta.url),
+    'utf8',
+  );
+  const accountModal = await readFile(
+    new URL('../pages/financeiro/FinanceAccountModal.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(accountService, /\.eq\('workspace_id', workspaceId\)/);
+  assert.match(accountService, /account_id\.eq\.\$\{accountId\}/);
+  assert.match(accountService, /destination_account_id\.eq\.\$\{accountId\}/);
+  assert.match(accountService, /ACCOUNT_HAS_DEPENDENCIES/);
+  assert.match(accountModal, /accountState\.removeAccount\(accountId\)/);
+  assert.match(accountModal, /Confirmar exclusão/);
+});
+
+test('edição e exclusão de transação atualizam dados financeiros derivados', async () => {
+  const transactionModal = await readFile(
+    new URL('../pages/financeiro/FinanceTransactionModal.jsx', import.meta.url),
+    'utf8',
+  );
+  const financePage = await readFile(
+    new URL('../pages/FinanceiroPage.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(transactionModal, /transactionState\.saveTransaction/);
+  assert.match(transactionModal, /transactionState\.removeTransaction/);
+  assert.match(transactionModal, /await onChanged\?\.\(\)/);
+  assert.match(financePage, /transactionState\.refresh\(\)/);
+  assert.match(financePage, /balanceState\.refresh\(\)/);
+  assert.match(financePage, /const mobileError = activeDialog\s*\? null/);
 });

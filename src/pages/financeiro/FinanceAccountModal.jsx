@@ -65,7 +65,7 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
   }
 
   async function handleDelete(accountId) {
-    const result = await accountState.archiveAccount(accountId);
+    const result = await accountState.removeAccount(accountId);
     if (!result.error) {
       await onChanged?.();
       resetForm();
@@ -157,8 +157,8 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
                 Editar
               </Button>
               <DeleteActions
-                actionLabel="Arquivar"
-                confirmLabel="Confirmar arquivo"
+                actionLabel="Excluir"
+                confirmLabel="Confirmar exclusão"
                 isConfirming={pendingDeleteId === account.id}
                 isLoading={accountState.isMutating}
                 onRequest={() => setPendingDeleteId(account.id)}

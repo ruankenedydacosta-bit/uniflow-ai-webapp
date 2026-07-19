@@ -80,10 +80,12 @@ function FinanceiroPage() {
     transactionState.refresh(),
     balanceState.refresh(),
   ]), [accountState, balanceState, categoryState, transactionState]);
-  const mobileError = accountState.error
-    ?? categoryState.error
-    ?? transactionState.error
-    ?? balanceState.error;
+  const mobileError = activeDialog
+    ? null
+    : accountState.error
+      ?? categoryState.error
+      ?? transactionState.error
+      ?? balanceState.error;
   const mobileLoading = accountState.isLoading
     || categoryState.isLoading
     || transactionState.isLoading

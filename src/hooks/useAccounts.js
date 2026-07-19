@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   archiveAccount,
   createAccount,
+  deleteAccount,
   listAccounts,
   listAccountTypes,
   updateAccount,
@@ -11,6 +12,7 @@ import {
   cloneRecords,
   createDemoRecord,
   createDemoResult,
+  removeRecord,
   upsertRecord,
 } from './financialHookUtils.js';
 
@@ -128,6 +130,26 @@ export function useAccounts({
     [accounts, workspaceId],
   );
 
+  const removeAccount = useCallback(
+    async (accountId) => {
+      setIsMutating(true);
+      setError(null);
+      const result = !isSupabaseConfigured
+        ? createDemoResult({ id: accountId })
+        : await deleteAccount(workspaceId, accountId);
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setAccounts((current) => removeRecord(current, accountId));
+      }
+
+      setIsMutating(false);
+      return result;
+    },
+    [workspaceId],
+  );
+
   return {
     accounts,
     activeAccounts: accounts.filter((account) => account.is_active !== false),
@@ -138,6 +160,7 @@ export function useAccounts({
     isMutating,
     refresh,
     archiveAccount: archiveAccountRecord,
+    removeAccount,
     saveAccount,
     clearError: () => setError(null),
   };

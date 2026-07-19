@@ -210,6 +210,23 @@ export async function deleteAccount(workspaceId, accountId) {
     return createValidationResult('Workspace ou conta invalida para exclusao.');
   }
 
+  const { count: dependencyCount, error: dependencyError } = await supabase
+    .from('transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('workspace_id', workspaceId)
+    .or(`account_id.eq.${accountId},destination_account_id.eq.${accountId}`);
+
+  if (dependencyError) {
+    return createResult(null, dependencyError);
+  }
+
+  if (dependencyCount > 0) {
+    return createResult(null, {
+      code: 'ACCOUNT_HAS_DEPENDENCIES',
+      message: 'Esta conta possui lançamentos vinculados e não pode ser excluída.',
+    });
+  }
+
   const { data, error } = await supabase
     .from('accounts')
     .delete()
