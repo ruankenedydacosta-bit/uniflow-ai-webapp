@@ -7,8 +7,9 @@ Supabase. Se a segunda escrita falhasse, a conta permanecia ativa. A migration
 `20260712_008_atomic_financial_action.sql` prepara uma única RPC PostgreSQL para
 executar as duas mudanças na mesma transação implícita.
 
-Esta etapa apenas cria e integra os arquivos localmente. A migration ainda não
-foi aplicada no UniFlow DEV ou em produção.
+As migrations 008 e 009 formam um conjunto: a 008 cria a operação atômica e a
+009 corrige os grants do índice, fixa owners e adiciona o saldo derivado. A 008
+não deve ser aplicada isoladamente. Produção permanece fora deste procedimento.
 
 ## Operação transacional
 
@@ -102,6 +103,39 @@ frontend escrita direta em `client_operation_id`. As proteções obrigatórias s
 Erros internos usam tokens controlados e o service os converte em mensagens
 humanas. Nenhum SQL, ID interno sensível ou detalhe de policy aparece na UI.
 
+## Saldo oficial derivado
+
+`accounts.current_balance` permanece como campo legado/cache e não é fonte de
+verdade contábil. A migration 009 cria duas RPCs somente leitura:
+
+- `get_derived_account_balances()`;
+- `get_derived_workspace_balance()`.
+
+Nenhuma recebe `workspace_id`. Ambas derivam o workspace de
+`profiles.current_workspace_id`, validam `auth.uid()` e membership ativa e
+consideram somente transações com status `completed`.
+
+O cálculo por conta é:
+
+```text
+initial_balance + income - expense + transfer_in - transfer_out
+```
+
+Uma transferência continua sendo uma única transação: debita `account_id` e
+credita `destination_account_id`. Transações `pending`, `failed` e `canceled`
+não afetam o saldo. Cancelar uma transação completed remove automaticamente seu
+efeito do cálculo; restaurá-la para completed recompõe o saldo. Uma reversão
+contábil formal com vínculo próprio continua fora da V1 e deve usar uma ação
+compensatória explicitamente confirmada até existir modelo dedicado.
+
+## Correção do índice de contas
+
+O índice `accounts_workspace_active_identity_uidx` executa
+`normalize_financial_account_identity(text)` durante INSERT/UPDATE. A migration
+009 concede `EXECUTE` somente a `authenticated`, mantendo `PUBLIC` e `anon`
+bloqueados. A função é `IMMUTABLE`, `SECURITY INVOKER`, não consulta tabelas e
+não expõe dados; o grant serve exclusivamente à normalização determinística.
+
 ## Frontend
 
 `confirmedFinancialActionService.js` monta os parâmetros explícitos da RPC sem
@@ -119,18 +153,23 @@ Falhas exibem a mensagem genérica de rollback:
 
 ## Auditoria e aplicação no DEV
 
-1. Executar no SQL Editor do UniFlow DEV:
+1. Executar no SQL Editor do UniFlow DEV, antes da 008:
    `supabase/tests/atomic_financial_action_failed_apply_audit.sql`.
 2. Exigir o resultado:
    `atomic_financial_action_ready_for_migration`.
 3. Resolver previamente qualquer grupo de contas ativas equivalentes.
 4. Aplicar manualmente somente no DEV:
    `supabase/migrations/20260712_008_atomic_financial_action.sql`.
-5. Executar:
+5. Executar imediatamente:
+   `supabase/tests/fix_atomic_financial_action_and_balances_failed_apply_audit.sql`.
+6. Exigir `atomic_financial_action_fix_ready_for_migration`.
+7. Aplicar manualmente somente no DEV:
+   `supabase/migrations/20260716_009_fix_atomic_financial_action_and_balances.sql`.
+8. Executar:
    `supabase/tests/atomic_financial_action_validation.sql`.
-6. Exigir `18/18` checks verdadeiros.
-7. Preparar dois usuários de teste com workspaces distintos.
-8. Executar localmente:
+9. Exigir `49/49` checks verdadeiros.
+10. Preparar dois usuários de teste com workspaces distintos.
+11. Executar localmente:
 
 ```bash
 node --env-file=.env.local scripts/supabase/test-atomic-financial-action.js
@@ -156,9 +195,10 @@ Nenhum `DROP` automático foi criado nesta etapa.
 
 ## Limites da V1
 
-- migration ainda não aplicada;
+- aplicação permitida somente no DEV e sempre na ordem 008, 009 e validações;
 - sem integração Open Finance;
-- sem recálculo atômico de saldo da conta;
+- sem escrita automática em `current_balance`;
+- sem modelo formal de vínculo entre transação original e reversão;
 - sem confirmação por voz;
 - somente ações manuais confirmadas de income, expense e transfer;
 - teste autenticado precisa ser executado manualmente no DEV;

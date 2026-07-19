@@ -193,6 +193,27 @@ autenticado está preparado em
 
 A migration 008 não foi aplicada remotamente. Produção permanece intacta.
 
+### Correção atômica e saldo derivado
+
+A migration `20260716_009_fix_atomic_financial_action_and_balances.sql` depende
+da 008. Ela restaura o grant mínimo exigido pela função pura usada no índice de
+contas, fixa owners e metadados de segurança e cria saldos derivados por conta
+e workspace. `accounts.current_balance` permanece legado/cache e não é fonte
+de verdade.
+
+A ordem obrigatória no UniFlow DEV é:
+
+1. auditar e aplicar a 008;
+2. executar `tests/fix_atomic_financial_action_and_balances_failed_apply_audit.sql`;
+3. exigir `atomic_financial_action_fix_ready_for_migration`;
+4. aplicar a 009;
+5. executar `tests/atomic_financial_action_validation.sql` e exigir 49/49;
+6. executar `scripts/supabase/test-atomic-financial-action.js` com dois usuários
+   de teste e somente anon/publishable key.
+
+A 008 não deve ser aplicada isoladamente. Nenhuma dessas migrations deve ser
+aplicada em produção durante esta etapa.
+
 Formato recomendado:
 
 ```text

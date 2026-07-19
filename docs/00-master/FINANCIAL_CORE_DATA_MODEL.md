@@ -122,7 +122,11 @@ Os services formam a fronteira para a migracao gradual dos mocks. Na Fase 2, a p
 
 Todos retornam respostas controladas sem Supabase configurado. IDs de workspace e entidades sao validados antes de compor consultas. RLS permanece como autoridade final.
 
-Criar uma transacao nao recalcula `current_balance` no cliente. Essa regra dependera de uma funcao transacional/RPC futura para evitar divergencia de saldo.
+Criar uma transacao nao recalcula `current_balance` no cliente. A migration 009
+define o saldo oficial como derivado de `initial_balance` e transacoes
+`completed`, por meio de RPCs isoladas pelo workspace autenticado.
+`current_balance` permanece apenas como campo legado/cache e nao deve orientar
+decisoes financeiras nem ser exibido como fonte de verdade.
 
 Hooks correspondentes:
 
@@ -155,6 +159,10 @@ Uma transferencia usa uma unica transacao com:
 - valor positivo.
 
 Origem e destino devem ser diferentes e pertencer ao mesmo workspace. Outros tipos nao podem informar conta de destino.
+
+No saldo derivado, a mesma linha e contabilizada uma unica vez por conta:
+debito na origem e credito no destino. Transferencias `pending`, `failed` ou
+`canceled` nao participam do calculo.
 
 A representacao contabil definitiva, incluindo eventual modelo de duas pernas imutaveis, deve ser reavaliada antes de conciliacao bancaria completa.
 

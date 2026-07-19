@@ -169,3 +169,79 @@ test('service não aceita nem envia user_id', () => {
   const source = readFileSync(new URL('./confirmedFinancialActionService.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /p_user_id|workspace_id:/);
 });
+
+test('migration 009 restaura o índice e define saldo derivado isolado', () => {
+  const migration = readFileSync(
+    new URL(
+      '../../supabase/migrations/20260716_009_fix_atomic_financial_action_and_balances.sql',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(
+    migration,
+    /grant execute on function public\.normalize_financial_account_identity\(text\)[\s\S]*to authenticated/,
+  );
+  assert.match(migration, /create or replace function public\.get_derived_account_balances\(\)/);
+  assert.match(migration, /create or replace function public\.get_derived_workspace_balance\(\)/);
+  assert.match(migration, /transaction\.status = 'completed'/);
+  assert.match(migration, /transaction\.created_by = v_user_id/);
+  assert.match(migration, /financial_action_idempotency_conflict/);
+  assert.match(migration, /transaction\.destination_account_id = account\.id/);
+  assert.match(migration, /profile\.current_workspace_id/);
+  assert.match(migration, /member\.user_id = v_user_id/);
+  assert.doesNotMatch(migration, /p_workspace_id/);
+  assert.doesNotMatch(migration, /set\s+current_balance/i);
+  assert.match(migration, /current_balance[\s\S]*legado\/cache sem autoridade contabil/);
+});
+
+test('migration 009 fixa owners, grants mínimos e search_path seguro', () => {
+  const migration = readFileSync(
+    new URL(
+      '../../supabase/migrations/20260716_009_fix_atomic_financial_action_and_balances.sql',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(migration, /normalize_financial_account_identity\(text\)[\s\S]*owner to postgres/);
+  assert.match(migration, /execute_confirmed_financial_action\([\s\S]*\) owner to postgres/);
+  assert.match(migration, /get_derived_account_balances\(\) owner to postgres/);
+  assert.match(migration, /get_derived_workspace_balance\(\) owner to postgres/);
+  assert.match(migration, /security definer/);
+  assert.match(migration, /set search_path = ''/);
+  assert.match(migration, /from public, anon, authenticated/);
+});
+
+test('auditoria da migration 009 distingue ausência, prontidão e aplicação parcial', () => {
+  const audit = readFileSync(
+    new URL(
+      '../../supabase/tests/fix_atomic_financial_action_and_balances_failed_apply_audit.sql',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(audit, /atomic_financial_action_fix_dependencies_missing/);
+  assert.match(audit, /atomic_financial_action_fix_ready_for_migration/);
+  assert.match(audit, /atomic_financial_action_fix_partial_apply_detected/);
+  assert.match(audit, /atomic_financial_action_fix_already_present_run_validation/);
+  assert.match(audit, /to_regprocedure\('public\.normalize_financial_account_identity\(text\)'\)/);
+});
+
+test('roteiro atômico prepara workspaces distintos sem credencial administrativa', () => {
+  const script = readFileSync(
+    new URL('../../scripts/supabase/test-atomic-financial-action.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(script, /async function ensureTestWorkspace/);
+  assert.match(script, /owner_user_id: user\.id/);
+  assert.match(script, /workspace_type: 'personal'/);
+  assert.match(script, /role', 'owner'/);
+  assert.match(script, /status', 'active'/);
+  assert.match(script, /update\(\{ current_workspace_id: workspaceId \}\)/);
+  assert.match(script, /workspaceA === workspaceB/);
+  assert.doesNotMatch(script, /SUPABASE_SERVICE_ROLE_KEY/);
+});
