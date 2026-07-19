@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAccess } from '../../app/AccessContext';
+import { useSession } from '../../app/SessionContext';
+import { useUniConversation } from '../uni-conversation';
+import { useAccounts, useCategories, useTransactions } from '../../hooks';
 import ChatHeader from './components/ChatHeader';
 import EmptyState from './components/EmptyState';
 import MessageBubble from './components/MessageBubble';
@@ -12,8 +16,6 @@ import {
   USER_NAME,
   SUGGESTIONS_PESSOAL,
   SUGGESTIONS_EMPRESA,
-  generateUniResponse,
-  nextId,
 } from './mockData';
 import {
   loadHistory,
@@ -23,67 +25,148 @@ import {
   createConversation,
   persistConversation,
 } from './chatHistory';
+import {
+  buildUserMessage,
+  buildUniMessage,
+  buildConfirmationFromAction,
+  workspaceTypeToMode,
+  modeToWorkspaceType,
+} from './uniChatAdapter';
+import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/financialCrud.mock';
 import styles from './UniChatPage.module.css';
 
-const UNI_THINK_DELAY = 900;
+const UNI_THINK_MIN_MS = 600;
 
-const SAVE = {
-  conversations(prev, id, msgs, m) {
-    const updated = persistConversation(prev, id, msgs, m);
-    saveHistory(updated);
-    return updated;
-  },
-};
-
-function boot() {
-  const stored = loadHistory();
-  const storedId = loadActiveId();
-
-  let convs = stored;
-  let id = storedId;
-  let msgs = [];
-  let md = 'pessoal';
-
-  if (storedId) {
-    const active = stored.find((c) => c.id === storedId);
-    if (active) {
-      msgs = active.messages || [];
-      md = active.mode || 'pessoal';
-    } else {
-      id = null;
-    }
-  }
-
-  if (!id) {
-    const conv = createConversation('pessoal');
-    convs = [...stored, conv];
-    id = conv.id;
-    saveHistory(convs);
-    saveActiveId(conv.id);
-  }
-
-  return { conversations: convs, activeId: id, messages: msgs, mode: md };
+function getLocalIsoDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-const INIT = boot();
-
 export default function UniChatPage() {
-  const [mode, setMode] = useState(INIT.mode);
-  const [messages, setMessages] = useState(INIT.messages);
+  const { access } = useAccess();
+  const { profile, workspace, switchWorkspace } = useSession();
+
+  const personalityProfileId = profile?.uni_personality_profile ?? 'balanced';
+
+  const financialFallback = access.currentWorkspace === 'personal'
+    ? financialCrudMock.personal
+    : financialCrudMock.business;
+
+  const accountState = useAccounts({
+    workspaceId: workspace?.id,
+    fallbackAccounts: financialFallback.accounts,
+    fallbackAccountTypes,
+  });
+
+  const categoryState = useCategories({
+    workspaceId: workspace?.id,
+    fallbackCategories: financialFallback.categories,
+  });
+
+  useTransactions({
+    workspaceId: workspace?.id,
+    fallbackTransactions: financialFallback.transactions,
+  });
+
+  const financialConversation = useUniConversation({
+    accounts: accountState.accounts,
+    accountTypes: accountState.accountTypes,
+    categories: categoryState.categories,
+    executeAtomicAction: null,
+    saveAccount: null,
+    saveTransaction: null,
+    profileId: personalityProfileId,
+    workspaceType: access.currentWorkspace,
+    referenceDate: getLocalIsoDate(),
+  });
+
+  const [mode, setMode] = useState(() => {
+    const stored = loadHistory();
+    const storedId = loadActiveId();
+    const wsMode = workspaceTypeToMode(access.currentWorkspace);
+    if (storedId) {
+      const active = stored.find((c) => c.id === storedId);
+      if (active?.mode) return active.mode;
+    }
+    return wsMode;
+  });
+  const [messages, setMessages] = useState(() => {
+    const storedId = loadActiveId();
+    const stored = loadHistory();
+    const active = stored.find((c) => c.id === storedId);
+    return active?.messages || [];
+  });
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [lastFailedText, setLastFailedText] = useState(null);
-  const [conversations, setConversations] = useState(INIT.conversations);
-  const [activeId, setActiveId] = useState(INIT.activeId);
+  const [conversations, setConversations] = useState(() => {
+    const stored = loadHistory();
+    const storedId = loadActiveId();
+    if (storedId && stored.some((c) => c.id === storedId)) return stored;
+    const initMode = workspaceTypeToMode(access.currentWorkspace);
+    const conv = createConversation(initMode);
+    const updated = [...stored, conv];
+    saveHistory(updated);
+    saveActiveId(conv.id);
+    return updated;
+  });
+  const [activeId, setActiveId] = useState(() => {
+    const storedId = loadActiveId();
+    const stored = loadHistory();
+    if (storedId && stored.some((c) => c.id === storedId)) return storedId;
+    const initMode = workspaceTypeToMode(access.currentWorkspace);
+    const conv = createConversation(initMode);
+    const updated = [...stored, conv];
+    saveHistory(updated);
+    saveActiveId(conv.id);
+    return conv.id;
+  });
+  const [pendingAction, setPendingAction] = useState(null);
 
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
   const stickToBottom = useRef(true);
+  const prevWorkspaceRef = useRef(access.currentWorkspace);
 
   const suggestions = mode === 'pessoal' ? SUGGESTIONS_PESSOAL : SUGGESTIONS_EMPRESA;
+  const isConfirming = pendingAction != null;
+
+  useEffect(() => {
+    if (access.currentWorkspace === prevWorkspaceRef.current) return;
+    prevWorkspaceRef.current = access.currentWorkspace;
+    const correctMode = workspaceTypeToMode(access.currentWorkspace);
+    if (correctMode === mode) return;
+    const updated = persistConversation(conversations, activeId, messages, mode);
+    saveHistory(updated);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setConversations(updated);
+    setMode(correctMode);
+    setPendingAction(null);
+    financialConversation.reset();
+    const candidates = updated
+      .filter((c) => c.mode === correctMode)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    if (candidates.length > 0) {
+      const c = candidates[0];
+      setActiveId(c.id);
+      setMessages(c.messages || []);
+      saveActiveId(c.id);
+    } else {
+      setMessages([
+        buildUniMessage(
+          correctMode === 'empresa'
+            ? 'Perfil alterado para Empresa. Vamos falar sobre o financeiro do seu negócio.'
+            : 'Perfil alterado para Pessoal. Vamos falar sobre suas finanças pessoais.',
+        ),
+      ]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [access.currentWorkspace]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -94,8 +177,10 @@ export default function UniChatPage() {
       ? (firstUser.text.length > 55 ? firstUser.text.slice(0, 55) + '\u2026' : firstUser.text)
       : '';
     if (current.messages === messages && current.title === (newTitle || '')) return;
+    const updated = persistConversation(conversations, activeId, messages, mode);
+    saveHistory(updated);
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConversations((prev) => SAVE.conversations(prev, activeId, messages, mode));
+    setConversations(updated);
   }, [messages, activeId, mode, conversations]);
 
   function handleScroll() {
@@ -121,45 +206,55 @@ export default function UniChatPage() {
     if (!conv) return;
     setActiveId(id);
     setMessages(conv.messages || []);
-    setMode(conv.mode || mode);
+    const convMode = conv.mode || mode;
+    if (convMode !== mode) {
+      switchWorkspace(modeToWorkspaceType(convMode));
+    }
+    setMode(convMode);
     setHasError(false);
     setIsTyping(false);
-    stickToBottom.current = true;
+    setPendingAction(null);
+    financialConversation.reset();
     saveActiveId(id);
   }
 
   function sendText(text) {
-    if (!text.trim()) return;
+    if (!text.trim() || isTyping || isConfirming) return;
     setHasError(false);
     stickToBottom.current = true;
 
-    const userMsg = {
-      id: nextId(),
-      from: 'user',
-      type: 'text',
-      text,
-      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    };
-
+    const userMsg = buildUserMessage(text);
     pushMessage(userMsg);
     setInputValue('');
     setIsTyping(true);
 
     setTimeout(() => {
       setIsTyping(false);
-      if (text.toLowerCase().includes('erro')) {
-        setHasError(true);
-        setLastFailedText(text);
+
+      const result = financialConversation.interpret(text);
+
+      if (!result.handled) {
+        pushMessage(buildUniMessage(
+          'Entendi. Por enquanto, posso ajudar a registrar movimentações financeiras. Tente algo como "registrar uma despesa de R$ 50" ou "qual meu saldo?".',
+        ));
         return;
       }
-      const uniMessages = generateUniResponse(text, mode);
-      uniMessages.forEach((m) => pushMessage(m));
-    }, UNI_THINK_DELAY);
+
+      if (result.action?.status === 'ready') {
+        setPendingAction(result.action);
+        const confirmation = buildConfirmationFromAction(result.action);
+        pushMessage(buildUniMessage(result.response.text, {
+          type: 'confirmation',
+          confirmation,
+        }));
+      } else {
+        pushMessage(buildUniMessage(result.response.text));
+      }
+    }, UNI_THINK_MIN_MS);
   }
 
   function handleRetry() {
     setHasError(false);
-    if (lastFailedText) sendText(lastFailedText.replace(/erro/gi, '').trim() || 'tentar novamente');
   }
 
   function handleSuggestionSelect(item) {
@@ -168,66 +263,75 @@ export default function UniChatPage() {
 
   function handleModeChange(next) {
     if (next === mode) return;
-
-    setConversations((prev) => SAVE.conversations(prev, activeId, messages, mode));
-    setMode(next);
-
+    const updated = persistConversation(conversations, activeId, messages, mode);
+    saveHistory(updated);
+    setConversations(updated);
+    setPendingAction(null);
+    financialConversation.reset();
     const candidates = conversations
       .filter((c) => c.mode === next)
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
     if (candidates.length > 0) {
       switchConversation(candidates[0].id);
     } else {
-      setHasError(false);
+      setMode(next);
+      setMessages([]);
+      setActiveId(null);
       setIsTyping(false);
-      pushMessage({
-        id: nextId(),
-        from: 'uni',
-        type: 'text',
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        text:
-          next === 'empresa'
-            ? 'Perfil alterado para Empresa. Vamos falar sobre o financeiro do seu negócio.'
-            : 'Perfil alterado para Pessoal. Vamos falar sobre suas finanças pessoais.',
+      setHasError(false);
+      const conv = createConversation(next);
+      setConversations((prev) => {
+        const nextList = [...prev, conv];
+        saveHistory(nextList);
+        return nextList;
       });
+      setActiveId(conv.id);
+      saveActiveId(conv.id);
+      pushMessage(buildUniMessage(
+        next === 'empresa'
+          ? 'Perfil alterado para Empresa. Vamos falar sobre o financeiro do seu negócio.'
+          : 'Perfil alterado para Pessoal. Vamos falar sobre suas finanças pessoais.',
+      ));
     }
+    switchWorkspace(modeToWorkspaceType(next));
   }
 
   function handleNewChat() {
-    setConversations((prev) => SAVE.conversations(prev, activeId, messages, mode));
-
+    const updated = persistConversation(conversations, activeId, messages, mode);
     const conv = createConversation(mode);
-    setConversations((prev) => {
-      const updated = [...prev, conv];
-      saveHistory(updated);
-      saveActiveId(conv.id);
-      return updated;
-    });
+    const nextList = [...updated, conv];
+    saveHistory(nextList);
+    saveActiveId(conv.id);
+    setConversations(nextList);
     setActiveId(conv.id);
     setMessages([]);
     setHasError(false);
     setIsTyping(false);
+    setPendingAction(null);
+    financialConversation.reset();
     stickToBottom.current = true;
   }
 
   function handleSelectConversation(id) {
-    setConversations((prev) => SAVE.conversations(prev, activeId, messages, mode));
+    const updated = persistConversation(conversations, activeId, messages, mode);
+    saveHistory(updated);
+    setConversations(updated);
     switchConversation(id);
   }
 
   function handleDeleteConversation(id) {
     const deletingActive = id === activeId;
     const withRemoval = conversations.filter((c) => c.id !== id);
-
     if (deletingActive) {
       const conv = createConversation(mode);
-      const updated = [...withRemoval, conv];
-      setConversations(updated);
+      const nextList = [...withRemoval, conv];
+      setConversations(nextList);
       setActiveId(conv.id);
       setMessages([]);
       setHasError(false);
-      saveHistory(updated);
+      setPendingAction(null);
+      financialConversation.reset();
+      saveHistory(nextList);
       saveActiveId(conv.id);
     } else {
       setConversations(withRemoval);
@@ -235,25 +339,18 @@ export default function UniChatPage() {
     }
   }
 
-  function updateConfirmation(id, status, followUpText) {
+  function handleConfirmAction(id) {
+    if (!pendingAction) return;
+    setPendingAction(null);
     setMessages((prev) =>
       prev.map((m) =>
-        m.id === id ? { ...m, confirmation: { ...m.confirmation, status } } : m
-      )
+        m.id === id
+          ? { ...m, confirmation: { ...m.confirmation, status: 'confirmed' } }
+          : m,
+      ),
     );
-    if (followUpText) {
-      pushMessage({
-        id: nextId(),
-        from: 'uni',
-        type: 'text',
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        text: followUpText,
-      });
-    }
-  }
-
-  function handleConfirmAction(id) {
-    updateConfirmation(id, 'confirmed', 'Prontinho! Registrei essa movimentação para você.');
+    pushMessage(buildUniMessage('Prontinho! Registrei essa movimentação para você.'));
+    financialConversation.reset();
   }
 
   function handleEditAction() {
@@ -261,7 +358,16 @@ export default function UniChatPage() {
   }
 
   function handleCancelAction(id) {
-    updateConfirmation(id, 'canceled', 'Sem problemas, cancelei esse registro.');
+    setPendingAction(null);
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? { ...m, confirmation: { ...m.confirmation, status: 'canceled' } }
+          : m,
+      ),
+    );
+    pushMessage(buildUniMessage('Sem problemas, cancelei esse registro.'));
+    financialConversation.cancel();
   }
 
   const isEmpty = messages.length === 0;
@@ -314,7 +420,7 @@ export default function UniChatPage() {
         {!isEmpty && (
           <QuickSuggestions items={suggestions} onSelect={handleSuggestionSelect} variant="rail" />
         )}
-        <ChatInput value={inputValue} onChange={setInputValue} onSend={sendText} disabled={isTyping} />
+        <ChatInput value={inputValue} onChange={setInputValue} onSend={sendText} disabled={isTyping || isConfirming} />
       </div>
     </div>
   );
