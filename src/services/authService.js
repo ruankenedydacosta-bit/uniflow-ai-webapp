@@ -82,15 +82,18 @@ export async function signInWithPassword({ email, password } = {}) {
 
 export const signInWithEmail = signInWithPassword;
 
-export async function signUpWithEmail({ email, password } = {}) {
+export async function signUpWithEmail({ email, password, fullName } = {}) {
   if (!supabase) {
     return createServiceUnavailableResult();
   }
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  const credentials = { email, password };
+  const normalizedName = typeof fullName === 'string' ? fullName.trim() : '';
+  if (normalizedName) {
+    credentials.options = { data: { full_name: normalizedName } };
+  }
+
+  const { data, error } = await supabase.auth.signUp(credentials);
 
   return {
     data,

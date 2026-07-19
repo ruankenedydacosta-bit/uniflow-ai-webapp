@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { Navigate } from 'react-router-dom';
 import DashboardPage from '../features/dashboard';
 import AgendaPage from '../pages/AgendaPage';
 import ClientesPage from '../pages/ClientesPage';
@@ -11,12 +12,25 @@ import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
 import UniAIPage from '../pages/UniAIPage';
+import { MobileWelcomePage } from '../features/auth-mobile';
 
 const UniAudioLibraryPage = import.meta.env.DEV
   ? lazy(() => import('../pages/dev/uni-audio-library'))
   : null;
 
 export const publicRoutes = [
+  {
+    path: '/',
+    label: 'Início',
+    title: 'Início',
+    element: <Navigate to="/welcome" replace />,
+  },
+  {
+    path: '/welcome',
+    label: 'Boas-vindas',
+    title: 'Boas-vindas',
+    element: <MobileWelcomePage />,
+  },
   {
     path: '/login',
     label: 'Login',

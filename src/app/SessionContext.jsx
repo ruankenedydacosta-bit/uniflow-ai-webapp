@@ -12,6 +12,7 @@ import {
   getSession,
   onAuthStateChange,
   signInWithPassword as signInWithPasswordService,
+  signUpWithEmail as signUpWithEmailService,
   signOut as signOutService,
 } from '../services/authService';
 import { getProfile } from '../services/profileService';
@@ -294,6 +295,30 @@ function SessionProvider({ children }) {
     [synchronizeSession],
   );
 
+  const signUpWithEmail = useCallback(
+    async ({ email, password, fullName }) => {
+      authActionRef.current = true;
+
+      try {
+        const signUpResult = await signUpWithEmailService({
+          email,
+          password,
+          fullName,
+        });
+
+        if (signUpResult.error || !signUpResult.data?.session) {
+          return signUpResult;
+        }
+
+        logAuthDevelopment('Cadastro Supabase concluido.');
+        return synchronizeSession(signUpResult.data.session);
+      } finally {
+        authActionRef.current = false;
+      }
+    },
+    [synchronizeSession],
+  );
+
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured) {
       return {
@@ -415,10 +440,11 @@ function SessionProvider({ children }) {
         state.profileMissing ||
         Boolean(state.profile && !state.profile.onboarding_completed),
       signInWithPassword,
+      signUpWithEmail,
       signOut,
       refreshSession: () => synchronizeSession(state.session),
     }),
-    [state, signInWithPassword, signOut, synchronizeSession],
+    [state, signInWithPassword, signOut, signUpWithEmail, synchronizeSession],
   );
 
   return (

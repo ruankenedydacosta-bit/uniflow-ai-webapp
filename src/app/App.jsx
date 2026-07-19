@@ -29,7 +29,11 @@ function AppContent() {
 
   if (isPublicRoute) {
     if (isSupabaseConfigured) {
-      if (location.pathname === '/login' && session && !sessionError) {
+      if (
+        ['/', '/welcome', '/login'].includes(location.pathname)
+        && session
+        && !sessionError
+      ) {
         return (
           <Navigate
             to={needsOnboarding ? '/onboarding' : '/dashboard'}
