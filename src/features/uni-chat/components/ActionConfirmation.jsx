@@ -1,7 +1,14 @@
 import UniSignatureWave from './UniSignatureWave';
 import styles from './ActionConfirmation.module.css';
 
-export default function ActionConfirmation({ data, onConfirm, onEdit, onCancel }) {
+export default function ActionConfirmation({
+  data,
+  onConfirm,
+  onEdit,
+  onCancel,
+  isExecuting = false,
+  executionError = null,
+}) {
   if (!data) return null;
   const { title, rows = [], status = 'pending' } = data;
 
@@ -15,6 +22,9 @@ export default function ActionConfirmation({ data, onConfirm, onEdit, onCancel }
           </span>
         )}
         {status === 'canceled' && <span className={styles.statusCancel}>Cancelado</span>}
+        {status === 'pending' && isExecuting && (
+          <span className={styles.statusProcessing}>Registrando…</span>
+        )}
       </div>
 
       <dl className={styles.rows}>
@@ -26,15 +36,37 @@ export default function ActionConfirmation({ data, onConfirm, onEdit, onCancel }
         ))}
       </dl>
 
+      {executionError && (
+        <div className={styles.errorBox}>
+          <span className={styles.errorIcon}>!</span>
+          <span className={styles.errorText}>{executionError}</span>
+        </div>
+      )}
+
       {status === 'pending' && (
         <div className={styles.actions}>
-          <button type="button" className={styles.confirm} onClick={onConfirm}>
-            Confirmar
+          <button
+            type="button"
+            className={styles.confirm}
+            onClick={onConfirm}
+            disabled={isExecuting}
+          >
+            {isExecuting ? 'Registrando…' : 'Confirmar'}
           </button>
-          <button type="button" className={styles.edit} onClick={onEdit}>
+          <button
+            type="button"
+            className={styles.edit}
+            onClick={onEdit}
+            disabled={isExecuting}
+          >
             Editar
           </button>
-          <button type="button" className={styles.cancel} onClick={onCancel}>
+          <button
+            type="button"
+            className={styles.cancel}
+            onClick={onCancel}
+            disabled={isExecuting}
+          >
             Cancelar
           </button>
         </div>

@@ -116,6 +116,56 @@
 }
 .cancel:hover { color: var(--uni-error); }
 
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  filter: none !important;
+}
+
+.statusProcessing {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--uni-text-muted);
+  animation: uniPulse 1.2s ease-in-out infinite;
+}
+
+.errorBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: var(--uni-radius-md, 10px);
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--uni-error, #ef4444);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.errorText {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--uni-text-primary);
+}
+
+@keyframes uniPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 @keyframes uniCardIn {
   from { opacity: 0; transform: translateY(10px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }

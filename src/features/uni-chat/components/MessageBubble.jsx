@@ -2,7 +2,14 @@ import UniAvatar from './UniAvatar';
 import ActionConfirmation from './ActionConfirmation';
 import styles from './MessageBubble.module.css';
 
-export default function MessageBubble({ message, onConfirmAction, onEditAction, onCancelAction }) {
+export default function MessageBubble({
+  message,
+  onConfirmAction,
+  onEditAction,
+  onCancelAction,
+  isExecuting = false,
+  executionError = null,
+}) {
   const isUser = message.from === 'user';
 
   if (message.type === 'confirmation') {
@@ -20,6 +27,8 @@ export default function MessageBubble({ message, onConfirmAction, onEditAction, 
             onConfirm={() => onConfirmAction?.(message.id)}
             onEdit={() => onEditAction?.(message.id)}
             onCancel={() => onCancelAction?.(message.id)}
+            isExecuting={isExecuting}
+            executionError={executionError}
           />
         </div>
       </div>

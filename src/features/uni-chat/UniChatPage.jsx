@@ -35,6 +35,7 @@ import {
   modeToWorkspaceType,
 } from './uniChatAdapter';
 import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/financialCrud.mock';
+import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import styles from './UniChatPage.module.css';
 
 const UNI_THINK_MIN_MS = 600;
@@ -87,8 +88,8 @@ export default function UniChatPage() {
     accountTypes: accountState.accountTypes,
     categories: categoryState.categories,
     executeAtomicAction: null,
-    saveAccount: null,
-    saveTransaction: null,
+    saveAccount: accountState.saveAccount,
+    saveTransaction: transactionsState.saveTransaction,
     profileId: personalityProfileId,
     workspaceType: access.currentWorkspace,
     referenceDate: getLocalIsoDate(),
@@ -138,6 +139,10 @@ export default function UniChatPage() {
     return conv.id;
   });
   const [pendingAction, setPendingAction] = useState(null);
+  const [executionError, setExecutionError] = useState(null);
+  const [isExecutingAction, setIsExecutingAction] = useState(false);
+  const confirmingRef = useRef(false);
+  const pendingActionRef = useRef(null);
 
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
@@ -145,6 +150,10 @@ export default function UniChatPage() {
   const prevWorkspaceRef = useRef(access.currentWorkspace);
 
   const suggestions = mode === 'pessoal' ? SUGGESTIONS_PESSOAL : SUGGESTIONS_EMPRESA;
+  useEffect(() => {
+    pendingActionRef.current = pendingAction;
+  }, [pendingAction]);
+
   const isConfirming = pendingAction != null;
 
   useEffect(() => {
@@ -158,6 +167,9 @@ export default function UniChatPage() {
     setConversations(updated);
     setMode(correctMode);
     setPendingAction(null);
+    setExecutionError(null);
+    setIsExecutingAction(false);
+    confirmingRef.current = false;
     financialConversation.reset();
     const candidates = updated
       .filter((c) => c.mode === correctMode)
@@ -225,6 +237,9 @@ export default function UniChatPage() {
     setHasError(false);
     setIsTyping(false);
     setPendingAction(null);
+    setExecutionError(null);
+    setIsExecutingAction(false);
+    confirmingRef.current = false;
     financialConversation.reset();
     saveActiveId(id);
   }
@@ -232,6 +247,7 @@ export default function UniChatPage() {
   function sendText(text) {
     if (!text.trim() || isTyping || isConfirming) return;
     setHasError(false);
+    setExecutionError(null);
     stickToBottom.current = true;
 
     const userMsg = buildUserMessage(text);
@@ -312,6 +328,9 @@ export default function UniChatPage() {
     saveHistory(updated);
     setConversations(updated);
     setPendingAction(null);
+    setExecutionError(null);
+    setIsExecutingAction(false);
+    confirmingRef.current = false;
     financialConversation.reset();
     const candidates = conversations
       .filter((c) => c.mode === next)
@@ -353,6 +372,9 @@ export default function UniChatPage() {
     setHasError(false);
     setIsTyping(false);
     setPendingAction(null);
+    setExecutionError(null);
+    setIsExecutingAction(false);
+    confirmingRef.current = false;
     financialConversation.reset();
     stickToBottom.current = true;
   }
@@ -375,6 +397,9 @@ export default function UniChatPage() {
       setMessages([]);
       setHasError(false);
       setPendingAction(null);
+      setExecutionError(null);
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
       financialConversation.reset();
       saveHistory(nextList);
       saveActiveId(conv.id);
@@ -384,18 +409,63 @@ export default function UniChatPage() {
     }
   }
 
-  function handleConfirmAction(id) {
+  async function handleConfirmAction(id) {
+    if (confirmingRef.current) return;
     if (!pendingAction) return;
-    setPendingAction(null);
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === id
-          ? { ...m, confirmation: { ...m.confirmation, status: 'confirmed' } }
-          : m,
-      ),
-    );
-    pushMessage(buildUniMessage('Prontinho! Registrei essa movimentação para você.'));
-    financialConversation.reset();
+
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    setExecutionError(null);
+
+    try {
+      const outcome = await financialConversation.confirm();
+
+      if (!confirmingRef.current) return;
+      if (!outcome || outcome.result?.error || !outcome.result?.data) {
+        const errorText = outcome?.response?.text
+          || 'Não consegui registrar essa movimentação. Tente novamente.';
+        setExecutionError(errorText);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === id
+              ? { ...m, confirmation: { ...m.confirmation, confirmationError: errorText } }
+              : m,
+          ),
+        );
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+        return;
+      }
+
+      const successText = outcome.response?.text
+        || 'Prontinho! Registrei essa movimentação para você.';
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === id
+            ? { ...m, confirmation: { ...m.confirmation, status: 'confirmed' } }
+            : m,
+        ),
+      );
+      pushMessage(buildUniMessage(successText));
+      financialConversation.reset();
+      setPendingAction(null);
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+      notifyFinancialDataChanged('uni-chat');
+    } catch {
+      if (!confirmingRef.current) return;
+      const errorText = 'Ocorreu um erro inesperado. Tente novamente.';
+      setExecutionError(errorText);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === id
+            ? { ...m, confirmation: { ...m.confirmation, confirmationError: errorText } }
+            : m,
+        ),
+      );
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
   }
 
   function handleEditAction() {
@@ -403,7 +473,10 @@ export default function UniChatPage() {
   }
 
   function handleCancelAction(id) {
+    confirmingRef.current = false;
+    setIsExecutingAction(false);
     setPendingAction(null);
+    setExecutionError(null);
     setMessages((prev) =>
       prev.map((m) =>
         m.id === id
@@ -450,6 +523,8 @@ export default function UniChatPage() {
                 onConfirmAction={handleConfirmAction}
                 onEditAction={handleEditAction}
                 onCancelAction={handleCancelAction}
+                isExecuting={isExecutingAction}
+                executionError={message.confirmation?.status === 'pending' ? executionError : null}
               />
             ))}
             {isTyping && <TypingIndicator />}
@@ -465,7 +540,7 @@ export default function UniChatPage() {
         {!isEmpty && (
           <QuickSuggestions items={suggestions} onSelect={handleSuggestionSelect} variant="rail" />
         )}
-        <ChatInput value={inputValue} onChange={setInputValue} onSend={sendText} disabled={isTyping || isConfirming} />
+        <ChatInput value={inputValue} onChange={setInputValue} onSend={sendText} disabled={isTyping || isConfirming || isExecutingAction} />
       </div>
     </div>
   );
