@@ -4,6 +4,7 @@ import { homeMobileMock } from './homeMobile.mock.js';
 import FinancialSummaryStrip from './components/FinancialSummaryStrip.jsx';
 import GoalsProgressList from './components/GoalsProgressList.jsx';
 import HomeSectionSkeleton from './components/HomeSectionSkeleton.jsx';
+import HomeEmptyState from './components/HomeEmptyState.jsx';
 import InsightCarousel from './components/InsightCarousel.jsx';
 import NextStepCard from './components/NextStepCard.jsx';
 import QuickActionsGrid from './components/QuickActionsGrid.jsx';
@@ -14,6 +15,7 @@ const SKELETON_SECTIONS = Object.freeze([
   ['next-step', 'Carregando próximo passo'],
   ['chart', 'Carregando receitas e despesas'],
   ['summary', 'Carregando resumo financeiro'],
+  ['recent-transactions', 'Carregando transações recentes'],
   ['goals', 'Carregando objetivos'],
   ['insights', 'Carregando insights'],
   ['actions', 'Carregando atalhos rápidos'],
@@ -53,6 +55,36 @@ function MobileHomeView({ data = homeMobileMock, loading = false, error = null, 
           </div>
           <p>Não foi possível carregar os dados financeiros. Tente novamente mais tarde.</p>
         </section>
+        <section className="homeMobileCard" aria-labelledby="home-recent-transactions-title">
+          <header className="homeMobileSectionHeader">
+            <h2 id="home-recent-transactions-title">Transações Recentes</h2>
+          </header>
+          {viewData.recentTransactions?.length > 0 ? (
+            <ul className="homeMobileTransactionList">
+              {viewData.recentTransactions.map((tx) => (
+                <li
+                  key={tx.id}
+                  className="homeMobileTransactionItem"
+                  onClick={() => handleNavigate('/financeiro')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavigate('/financeiro'); }}
+                >
+                  <div className="homeMobileTransactionInfo">
+                    <strong>{tx.description}</strong>
+                    <span>{tx.category} · {tx.date}</span>
+                  </div>
+                  <strong
+                    className="homeMobileTransactionValue"
+                    data-tone={tx.tone}
+                  >
+                    {tx.amount}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
         <GoalsProgressList
           goals={viewData.goals ?? []}
           onViewAll={() => handleNavigate('/objetivos')}
@@ -82,6 +114,44 @@ function MobileHomeView({ data = homeMobileMock, loading = false, error = null, 
         metrics={viewData.summary ?? []}
         onViewAll={() => handleNavigate('/financeiro')}
       />
+      <section className="homeMobileCard" aria-labelledby="home-recent-transactions-title">
+        <header className="homeMobileSectionHeader">
+          <h2 id="home-recent-transactions-title">Transações Recentes</h2>
+        </header>
+        {viewData.recentTransactions?.length > 0 ? (
+          <ul className="homeMobileTransactionList">
+            {viewData.recentTransactions.map((tx) => (
+              <li
+                key={tx.id}
+                className="homeMobileTransactionItem"
+                onClick={() => handleNavigate('/financeiro')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNavigate('/financeiro'); }}
+              >
+                <div className="homeMobileTransactionInfo">
+                  <strong>{tx.description}</strong>
+                  <span>{tx.category} · {tx.date}</span>
+                </div>
+                <strong
+                  className="homeMobileTransactionValue"
+                  data-tone={tx.tone}
+                >
+                  {tx.amount}
+                </strong>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <HomeEmptyState
+            title="Nenhuma transação recente"
+            description="Registre sua primeira receita ou despesa para acompanhar seus movimentos."
+            actionLabel="Ir para Financeiro"
+            onAction={() => handleNavigate('/financeiro')}
+            icon="D"
+          />
+        )}
+      </section>
       <GoalsProgressList
         goals={viewData.goals ?? []}
         onViewAll={() => handleNavigate('/objetivos')}

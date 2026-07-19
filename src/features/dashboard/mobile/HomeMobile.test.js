@@ -13,28 +13,33 @@ test('mock mobile é profundamente imutável', () => {
   assert.equal(Object.isFrozen(homeMobileMock.quickActions), true);
 });
 
-test('Home mantém as sete seções na ordem oficial', async () => {
+test('Home mantém as oito seções na ordem oficial', async () => {
   const contents = await source('MobileHomeView.jsx');
   const sections = [
     'UniBriefingCard',
     'NextStepCard',
     'CognitiveLiveChart',
     'FinancialSummaryStrip',
+    'Transações Recentes',
     'GoalsProgressList',
     'InsightCarousel',
     'QuickActionsGrid',
   ];
-  const positions = sections.map((name) => contents.lastIndexOf(`<${name}`));
+  const textSections = sections.map((name) =>
+    name === 'Transações Recentes'
+      ? contents.lastIndexOf('Transações Recentes')
+      : contents.lastIndexOf(`<${name}`),
+  );
 
-  assert.ok(positions.every((position) => position >= 0));
-  assert.deepEqual([...positions].sort((a, b) => a - b), positions);
+  assert.ok(textSections.every((position) => position >= 0));
+  assert.deepEqual([...textSections].sort((a, b) => a - b), textSections);
 });
 
-test('loading preserva sete espaços sem salto de ordem', async () => {
+test('loading preserva oito espaços sem salto de ordem', async () => {
   const contents = await source('MobileHomeView.jsx');
   assert.match(contents, /SKELETON_SECTIONS/);
   assert.match(contents, /HomeSectionSkeleton/);
-  assert.equal(contents.match(/\['(?:briefing|next-step|chart|summary|goals|insights|actions)'/g)?.length, 7);
+  assert.equal(contents.match(/\['(?:briefing|next-step|chart|summary|recent-transactions|goals|insights|actions)'/g)?.length, 8);
 });
 
 test('briefing e próximo passo possuem fallback útil', async () => {
@@ -66,6 +71,18 @@ test('insights vazios ocultam a seção inteira', async () => {
   assert.match(contents, /if \(!insights\.length\) return null/);
 });
 
+test('transações recentes exibe até 5 itens com tom de receita/despesa e navega', async () => {
+  const contents = await source('MobileHomeView.jsx');
+  assert.match(contents, /Transações Recentes/);
+  assert.match(contents, /recentTransactions/);
+  assert.match(contents, /homeMobileTransactionList/);
+  assert.match(contents, /data-tone/);
+  assert.match(contents, /homeMobileTransactionValue/);
+  assert.match(contents, /HomeEmptyState/);
+  assert.match(contents, /role="button"/);
+  assert.match(contents, /handleNavigate\('\/financeiro'\)/);
+});
+
 test('CSS cobre 320 a 430, toque, ordem e redução de movimento', async () => {
   const contents = await source('HomeMobile.module.css');
   assert.match(contents, /max-width: 767px/);
@@ -74,6 +91,18 @@ test('CSS cobre 320 a 430, toque, ordem e redução de movimento', async () => {
   assert.match(contents, /min-width: 430px/);
   assert.match(contents, /var\(--uf-tap-target-min\)/);
   assert.match(contents, /prefers-reduced-motion: reduce/);
+});
+
+test('recentTransactions é limitado a 5, ordenado por data decrescente e mapeia categoria/tom', async () => {
+  const contents = await source('useHomeFinancialData.js');
+  assert.match(contents, /useCategories/);
+  assert.match(contents, /categories/);
+  assert.match(contents, /sort\(/);
+  assert.match(contents, /transaction_date/);
+  assert.match(contents, /slice\(0,\s*5\)/);
+  assert.match(contents, /categoriesById\.get\(tx\.category_id\)/);
+  assert.match(contents, /isIncome.*income/);
+  assert.match(contents, /tone/);
 });
 
 test('Home mobile permanece local, mockada e sem integrações externas', async () => {

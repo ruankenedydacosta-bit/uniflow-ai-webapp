@@ -17,12 +17,12 @@ function DashboardPage() {
   const navigate = useNavigate();
   const { access } = useAccess();
   const dashboard = getDashboardContext(access.currentWorkspace);
-  const { summary, isLoading, error } = useHomeFinancialData();
+  const { summary, recentTransactions, isLoading, error } = useHomeFinancialData();
 
   return (
     <>
       <MobileHomeView
-        data={{ summary }}
+        data={{ summary, recentTransactions }}
         loading={isLoading}
         error={error}
         onNavigate={navigate}

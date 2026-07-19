@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useSession } from '../../../app/SessionContext';
-import { useFinancialBalances, useTransactions } from '../../../hooks';
+import { useCategories, useFinancialBalances, useTransactions } from '../../../hooks';
 import { buildFinanceiroMobileData } from '../../../pages/financeiro/mobile/financeiroMobileData';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../../services/financialDataEvents';
+
+const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'short',
+});
+
+const CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
 
 export function useHomeFinancialData() {
   const { workspace } = useSession();
@@ -22,6 +32,8 @@ export function useHomeFinancialData() {
     refresh: refreshTransactions,
   } = useTransactions({ workspaceId });
 
+  const { categories } = useCategories({ workspaceId });
+
   const isLoading = balanceLoading || transactionsLoading;
   const error = balanceError ?? transactionsError;
 
@@ -37,8 +49,8 @@ export function useHomeFinancialData() {
   }, [refresh]);
 
   const financeiroData = useMemo(
-    () => buildFinanceiroMobileData({ transactions, workspaceBalance }),
-    [transactions, workspaceBalance],
+    () => buildFinanceiroMobileData({ transactions, workspaceBalance, categories }),
+    [transactions, workspaceBalance, categories],
   );
 
   const hasBalance = workspaceBalance != null && Number(workspaceBalance) !== 0;
@@ -73,8 +85,35 @@ export function useHomeFinancialData() {
   ], [financeiroData, hasBalance, hasIncome, hasExpense]);
 
   const recentTransactions = useMemo(
-    () => transactions.slice(0, 5),
-    [transactions],
+    () => {
+      const categoriesById = new Map(categories.map((c) => [c.id, c.name]));
+      return [...transactions]
+        .sort((a, b) => b.transaction_date.localeCompare(a.transaction_date))
+        .slice(0, 5)
+        .map((tx) => {
+          const isIncome = tx.transaction_type === 'income';
+          const isExpense = tx.transaction_type === 'expense';
+          const sign = isIncome ? '+' : isExpense ? '-' : '↔';
+          const category = categoriesById.get(tx.category_id)
+            ?? (tx.transaction_type === 'transfer' ? 'Transferência' : 'Sem categoria');
+          const date = DATE_FORMATTER.format(new Date(
+            Number(tx.transaction_date.split('-')[0]),
+            Number(tx.transaction_date.split('-')[1]) - 1,
+            Number(tx.transaction_date.split('-')[2]),
+            12,
+          ));
+          return {
+            id: tx.id,
+            description: tx.description,
+            category,
+            date,
+            amount: `${sign} ${CURRENCY_FORMATTER.format(Number(tx.amount || 0))}`,
+            tone: isIncome ? 'income' : isExpense ? 'expense' : 'neutral',
+            transaction_type: tx.transaction_type,
+          };
+        });
+    },
+    [transactions, categories],
   );
 
   const hasData = transactions.length > 0 || hasBalance;

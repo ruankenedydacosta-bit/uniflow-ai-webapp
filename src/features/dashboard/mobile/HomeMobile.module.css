@@ -253,6 +253,54 @@
     white-space: normal;
   }
 
+  .home :global(.homeMobileTransactionList) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--uf-space-12);
+  }
+
+  .home :global(.homeMobileTransactionItem) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--uf-space-12);
+    cursor: pointer;
+  }
+
+  .home :global(.homeMobileTransactionInfo) {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--uf-space-2);
+  }
+
+  .home :global(.homeMobileTransactionInfo strong) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--uf-text-body-size);
+    font-weight: var(--uf-font-weight-semibold);
+  }
+
+  .home :global(.homeMobileTransactionInfo span) {
+    color: var(--uf-color-text-secondary);
+    font-size: var(--uf-text-micro-size);
+  }
+
+  .home :global(.homeMobileTransactionValue) {
+    flex-shrink: 0;
+    font-size: var(--uf-text-caption-size);
+    font-weight: var(--uf-font-weight-semibold);
+  }
+
+  .home :global(.homeMobileTransactionValue[data-tone='income']) {
+    color: var(--uf-color-success);
+  }
+
+  .home :global(.homeMobileTransactionValue[data-tone='expense']) {
+    color: var(--uf-color-danger);
+  }
+
   .home :global(.homeMobileGoalsList),
   .home :global(.homeMobileGoal) {
     display: flex;
