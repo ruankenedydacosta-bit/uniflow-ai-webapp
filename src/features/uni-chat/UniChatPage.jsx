@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import { useUniConversation } from '../uni-conversation';
@@ -24,8 +24,10 @@ import {
   saveHistory,
   loadActiveId,
   saveActiveId,
-  createConversation,
+  createConversation as createLocalConversation,
   persistConversation,
+  saveActiveSource,
+  loadActiveSource,
 } from './chatHistory';
 import {
   buildUserMessage,
@@ -36,6 +38,7 @@ import {
 } from './uniChatAdapter';
 import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/financialCrud.mock';
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
+import * as dataService from './uniChatDataService';
 import styles from './UniChatPage.module.css';
 
 const UNI_THINK_MIN_MS = 600;
@@ -50,7 +53,7 @@ function getLocalIsoDate() {
 
 export default function UniChatPage() {
   const { access } = useAccess();
-  const { profile, workspace, switchWorkspace } = useSession();
+  const { profile, workspace, switchWorkspace, availableWorkspaces } = useSession();
 
   const personalityProfileId = profile?.uni_personality_profile ?? 'balanced';
 
@@ -95,6 +98,9 @@ export default function UniChatPage() {
     referenceDate: getLocalIsoDate(),
   });
 
+  const [isOnline, setIsOnline] = useState(dataService.isOnline);
+  const initialLoadDone = useRef(false);
+
   const [mode, setMode] = useState(() => {
     const stored = loadHistory();
     const storedId = loadActiveId();
@@ -121,7 +127,7 @@ export default function UniChatPage() {
     const storedId = loadActiveId();
     if (storedId && stored.some((c) => c.id === storedId)) return stored;
     const initMode = workspaceTypeToMode(access.currentWorkspace);
-    const conv = createConversation(initMode);
+    const conv = createLocalConversation(initMode);
     const updated = [...stored, conv];
     saveHistory(updated);
     saveActiveId(conv.id);
@@ -132,7 +138,7 @@ export default function UniChatPage() {
     const stored = loadHistory();
     if (storedId && stored.some((c) => c.id === storedId)) return storedId;
     const initMode = workspaceTypeToMode(access.currentWorkspace);
-    const conv = createConversation(initMode);
+    const conv = createLocalConversation(initMode);
     const updated = [...stored, conv];
     saveHistory(updated);
     saveActiveId(conv.id);
@@ -143,6 +149,12 @@ export default function UniChatPage() {
   const [isExecutingAction, setIsExecutingAction] = useState(false);
   const confirmingRef = useRef(false);
   const pendingActionRef = useRef(null);
+  const activeIdRef = useRef(activeId);
+  const convDbIdsRef = useRef({});
+
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
@@ -150,11 +162,107 @@ export default function UniChatPage() {
   const prevWorkspaceRef = useRef(access.currentWorkspace);
 
   const suggestions = mode === 'pessoal' ? SUGGESTIONS_PESSOAL : SUGGESTIONS_EMPRESA;
+
   useEffect(() => {
     pendingActionRef.current = pendingAction;
   }, [pendingAction]);
 
   const isConfirming = pendingAction != null;
+
+  const reconcileConversations = useCallback(async () => {
+    if (!workspace?.id) return;
+    const wsId = workspace.id;
+    const supabaseConvs = await dataService.listConversations(wsId, mode);
+    if (!supabaseConvs) return;
+    setIsOnline(true);
+
+    setConversations((prev) => {
+      const localIds = new Set(prev.map((c) => c.id));
+      const dbIdSet = new Set(supabaseConvs.map((c) => c.id));
+      const existingLocalIdsInDb = new Set(
+        prev.filter((c) => c.source === 'supabase' && dbIdSet.has(c.id)).map((c) => c.id),
+      );
+
+      const merged = prev
+        .filter((c) => c.source !== 'supabase' || dbIdSet.has(c.id))
+        .map((c) => {
+          if (c.source === 'supabase' && dbIdSet.has(c.id)) {
+            const dbConv = supabaseConvs.find((db) => db.id === c.id);
+            return { ...dbConv, messages: c.messages || [], source: 'supabase' };
+          }
+          return c;
+        });
+
+      const newDbIds = new Map(
+        supabaseConvs.filter((c) => !localIds.has(c.id)).map((c) => [c.id, c]),
+      );
+      for (const [id, conv] of newDbIds) {
+        if (!existingLocalIdsInDb.has(id)) {
+          merged.push({ ...conv, messages: [], source: 'supabase' });
+        }
+      }
+
+      const currentActive = activeIdRef.current;
+      const activeExists = merged.some((c) => c.id === currentActive);
+      if (!activeExists && merged.length > 0) {
+        const targetMode = mode;
+        const modeConvs = merged.filter((c) => c.mode === targetMode);
+        const sorted = modeConvs.sort(
+          (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt),
+        );
+        if (sorted.length > 0) {
+          const target = sorted[0];
+          setTimeout(() => {
+            switchConversation(target.id);
+          }, 0);
+        }
+      }
+
+      saveHistory(merged);
+      return merged;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspace?.id, mode]);
+
+  const buildWorkspaceMap = useCallback(() => {
+    const map = {};
+    if (availableWorkspaces && availableWorkspaces.length > 0) {
+      for (const ws of availableWorkspaces) {
+        if (ws.workspace_type === 'personal') map.personal = ws.id;
+        if (ws.workspace_type === 'business') map.business = ws.id;
+      }
+    }
+    return map;
+  }, [availableWorkspaces]);
+
+  useEffect(() => {
+    if (initialLoadDone.current) return;
+    if (!workspace?.id && !availableWorkspaces?.length) return;
+    if (!availableWorkspaces?.length) return;
+    initialLoadDone.current = true;
+
+    const workspaceMap = buildWorkspaceMap();
+    const hasAnyWorkspace = Object.values(workspaceMap).some(Boolean);
+
+    if (!hasAnyWorkspace) {
+      reconcileConversations();
+      return;
+    }
+
+    dataService.migrateLocalHistory(workspaceMap).then((result) => {
+      if (result.migrated > 0) {
+        const stored = loadHistory();
+        const synced = stored.filter(
+          (c) => c.source !== 'local' || !c.messages || c.messages.length === 0,
+        );
+        if (synced.length !== stored.length) {
+          saveHistory(synced);
+        }
+      }
+      return reconcileConversations();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspace?.id, availableWorkspaces?.length]);
 
   useEffect(() => {
     if (access.currentWorkspace === prevWorkspaceRef.current) return;
@@ -206,6 +314,95 @@ export default function UniChatPage() {
     setConversations(updated);
   }, [messages, activeId, mode, conversations]);
 
+  useEffect(() => {
+    if (!activeId) return;
+    const current = conversations.find((c) => c.id === activeId);
+    if (!current) return;
+    if (current.source !== 'supabase') return;
+    if (current._messagesLoaded) return;
+
+    dataService.loadMessages(activeId).then((loadedMessages) => {
+      if (!loadedMessages || loadedMessages.length === 0) return;
+      if (activeIdRef.current !== activeId) return;
+
+      setMessages((prev) => {
+        if (prev.length > 0 && prev[0]?.from === 'uni') {
+          return loadedMessages;
+        }
+        if (prev.length >= loadedMessages.length) {
+          return prev;
+        }
+        return loadedMessages;
+      });
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeId ? { ...c, messages: loadedMessages, _messagesLoaded: true } : c,
+        ),
+      );
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
+
+  async function syncMessageToSupabase(msg) {
+    const current = conversations.find((c) => c.id === activeId);
+    if (!current) return;
+
+    if (current.source === 'supabase') {
+      await dataService.saveMessage(activeId, msg);
+      return;
+    }
+
+    if (workspace?.id && dataService.isOnline()) {
+      const dbConv = await dataService.createConversation(mode, workspace.id);
+      if (dbConv) {
+        const dbConvId = dbConv.id;
+        const localConvId = activeId;
+
+        const syncMsgs = [...messages, msg];
+        await dataService.saveMessages(dbConvId, syncMsgs);
+
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== localConvId) return c;
+            return {
+              ...c,
+              id: dbConvId,
+              source: 'supabase',
+              messages: syncMsgs,
+              createdAt: dbConv.createdAt,
+              updatedAt: dbConv.updatedAt,
+            };
+          }),
+        );
+        setActiveId(dbConvId);
+        saveActiveId(dbConvId);
+        saveActiveSource('supabase');
+        convDbIdsRef.current[localConvId] = dbConvId;
+
+        setConversations((prev) => prev.filter((c) => c.id !== localConvId));
+
+        const stored = loadHistory();
+        const updated = stored.map((c) => {
+          if (c.id !== localConvId) return c;
+          return {
+            ...c,
+            id: dbConvId,
+            source: 'supabase',
+            messages: syncMsgs,
+            createdAt: dbConv.createdAt,
+            updatedAt: dbConv.updatedAt,
+          };
+        });
+        saveHistory(updated);
+      }
+    }
+  }
+
+  useEffect(() => {
+    setIsOnline(dataService.isOnline());
+  }, []);
+
   function handleScroll() {
     const el = scrollRef.current;
     if (!el) return;
@@ -242,6 +439,22 @@ export default function UniChatPage() {
     confirmingRef.current = false;
     financialConversation.reset();
     saveActiveId(id);
+    saveActiveSource(conv.source || 'local');
+
+    if (conv.source === 'supabase' && conv.messages && conv.messages.length > 0) {
+      dataService.loadMessages(id).then((loadedMessages) => {
+        if (!loadedMessages || loadedMessages.length === 0) return;
+        if (activeIdRef.current !== id) return;
+        if (loadedMessages.length > conv.messages.length) {
+          setMessages(loadedMessages);
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === id ? { ...c, messages: loadedMessages } : c,
+            ),
+          );
+        }
+      });
+    }
   }
 
   function sendText(text) {
@@ -254,6 +467,8 @@ export default function UniChatPage() {
     pushMessage(userMsg);
     setInputValue('');
     setIsTyping(true);
+
+    syncMessageToSupabase(userMsg);
 
     setTimeout(() => {
       setIsTyping(false);
@@ -287,7 +502,9 @@ export default function UniChatPage() {
 
         const response = buildQueryResponse(queryType, financialContext, mode);
         if (response) {
-          pushMessage(buildUniMessage(response.text, { highlight: response.highlight }));
+          const assistantMsg = buildUniMessage(response.text, { highlight: response.highlight });
+          pushMessage(assistantMsg);
+          syncMessageToSupabase(assistantMsg);
           return;
         }
       }
@@ -295,21 +512,27 @@ export default function UniChatPage() {
       const result = financialConversation.interpret(text);
 
       if (!result.handled) {
-        pushMessage(buildUniMessage(
+        const assistantMsg = buildUniMessage(
           'Entendi. Por enquanto, posso ajudar a registrar movimentações financeiras. Tente algo como "registrar uma despesa de R$ 50" ou "qual meu saldo?".',
-        ));
+        );
+        pushMessage(assistantMsg);
+        syncMessageToSupabase(assistantMsg);
         return;
       }
 
       if (result.action?.status === 'ready') {
         setPendingAction(result.action);
         const confirmation = buildConfirmationFromAction(result.action);
-        pushMessage(buildUniMessage(result.response.text, {
+        const assistantMsg = buildUniMessage(result.response.text, {
           type: 'confirmation',
           confirmation,
-        }));
+        });
+        pushMessage(assistantMsg);
+        syncMessageToSupabase(assistantMsg);
       } else {
-        pushMessage(buildUniMessage(result.response.text));
+        const assistantMsg = buildUniMessage(result.response.text);
+        pushMessage(assistantMsg);
+        syncMessageToSupabase(assistantMsg);
       }
     }, UNI_THINK_MIN_MS);
   }
@@ -343,7 +566,7 @@ export default function UniChatPage() {
       setActiveId(null);
       setIsTyping(false);
       setHasError(false);
-      const conv = createConversation(next);
+      const conv = createLocalConversation(next);
       setConversations((prev) => {
         const nextList = [...prev, conv];
         saveHistory(nextList);
@@ -362,7 +585,7 @@ export default function UniChatPage() {
 
   function handleNewChat() {
     const updated = persistConversation(conversations, activeId, messages, mode);
-    const conv = createConversation(mode);
+    const conv = createLocalConversation(mode);
     const nextList = [...updated, conv];
     saveHistory(nextList);
     saveActiveId(conv.id);
@@ -386,11 +609,21 @@ export default function UniChatPage() {
     switchConversation(id);
   }
 
-  function handleDeleteConversation(id) {
+  async function handleDeleteConversation(id) {
     const deletingActive = id === activeId;
+
+    if (dataService.isOnline()) {
+      const current = conversations.find((c) => c.id === id);
+      if (current?.source === 'supabase') {
+        await dataService.deleteConversation(id);
+      } else {
+        await dataService.deleteConversation(id).catch(() => {});
+      }
+    }
+
     const withRemoval = conversations.filter((c) => c.id !== id);
     if (deletingActive) {
-      const conv = createConversation(mode);
+      const conv = createLocalConversation(mode);
       const nextList = [...withRemoval, conv];
       setConversations(nextList);
       setActiveId(conv.id);
@@ -500,6 +733,12 @@ export default function UniChatPage() {
         onNewChat={handleNewChat}
         isThinking={isTyping}
       />
+
+      {!isOnline && (
+        <div className={styles.offlineBanner} role="status">
+          Modo offline — as mensagens serão salvas localmente
+        </div>
+      )}
 
       <HistoryPanel
         open={showHistory}

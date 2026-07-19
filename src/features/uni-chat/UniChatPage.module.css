@@ -64,6 +64,16 @@
   border-top: 1px solid var(--uni-border-soft);
 }
 
+.offlineBanner {
+  text-align: center;
+  font-size: 11px;
+  padding: 4px 12px;
+  color: var(--uni-text-muted);
+  background: var(--uni-warning-bg);
+  border-bottom: 1px solid var(--uni-border-soft);
+  line-height: 1.4;
+}
+
 @media (max-width: 400px) {
   .messages {
     padding: 12px;

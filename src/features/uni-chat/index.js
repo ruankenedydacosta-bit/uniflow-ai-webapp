@@ -20,3 +20,6 @@ export {
   generateUniResponse,
   nextId,
 } from './mockData';
+
+export * as uniChatDataService from './uniChatDataService';
+export * as chatHistory from './chatHistory';
