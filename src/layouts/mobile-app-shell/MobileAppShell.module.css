@@ -69,6 +69,29 @@
   padding-bottom: calc(var(--uf-space-96) + env(safe-area-inset-bottom, 0));
 }
 
+.workspaceContextState {
+  display: grid;
+  min-height: 240px;
+  align-content: center;
+  gap: var(--uf-space-8);
+  text-align: center;
+}
+
+.workspaceContextState h2,
+.workspaceContextState p {
+  margin: 0;
+}
+
+.workspaceContextState h2 {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-title-size);
+}
+
+.workspaceContextState p {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-body-size);
+}
+
 .bottomNavigation {
   position: fixed;
   right: 0;

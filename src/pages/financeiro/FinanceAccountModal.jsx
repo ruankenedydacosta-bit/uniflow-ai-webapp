@@ -7,9 +7,9 @@ import {
   CrudRow,
   DeleteActions,
   FormMessage,
-  SelectField,
 } from './FinanceCrudPrimitives';
 import { getFinanceErrorMessage } from './financeUiUtils';
+import styles from './FinanceAccountModal.module.css';
 
 const EMPTY_FORM = {
   name: '',
@@ -21,6 +21,7 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const isFirstAccount = accountState.activeAccounts.length === 0;
 
   function resetForm() {
     setForm(EMPTY_FORM);
@@ -75,17 +76,15 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
     <Modal
       open={open}
       onClose={handleClose}
-      title="Contas"
-      description="Organize as fontes usadas nos lançamentos deste espaço."
-      size="lg"
-      footer={
-        <Button variant="ghost" onClick={handleClose}>
-          Fechar
-        </Button>
-      }
+      title={isFirstAccount ? 'Crie sua primeira conta' : 'Contas'}
+      description={isFirstAccount
+        ? 'Comece por aqui para organizar os dados deste perfil.'
+        : 'Organize as fontes usadas nos lançamentos deste perfil.'}
+      size="md"
+      className={styles.accountDialog}
     >
-      <div className="uf-flex uf-flex-column uf-gap-lg">
-        <form className="uf-flex uf-flex-column uf-gap-md" onSubmit={handleSubmit}>
+      <div className={styles.accountContent}>
+        <form className={styles.accountForm} onSubmit={handleSubmit}>
           <Input
             id="finance-account-name"
             label="Nome da conta"
@@ -94,23 +93,28 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
             required
             fullWidth
           />
-          <SelectField
-            id="finance-account-type"
-            label="Tipo de conta"
-            value={form.account_type}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, account_type: event.target.value }))
-            }
-          >
-            {accountState.accountTypes.map((type) => (
-              <option key={type.code} value={type.code}>
-                {type.name}
-              </option>
-            ))}
-          </SelectField>
+          <label className={styles.typeField} htmlFor="finance-account-type">
+            <span>Tipo de conta</span>
+            <select
+              id="finance-account-type"
+              className={styles.typeSelect}
+              value={form.account_type}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, account_type: event.target.value }))
+              }
+            >
+              {accountState.accountTypes.map((type) => (
+                <option key={type.code} value={type.code}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+            <small>Escolha a opção que melhor representa esta conta.</small>
+          </label>
           <Input
             id="finance-account-balance"
             label="Saldo inicial"
+            helperText="Informe quanto havia na conta antes do primeiro lançamento."
             type="number"
             step="0.01"
             value={form.balance}
@@ -125,19 +129,19 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
               'Não foi possível concluir a ação com esta conta. Tente novamente.',
             )}
           </FormMessage>
-          <div className="uf-flex uf-items-center uf-justify-end uf-gap-sm uf-flex-wrap">
+          <div className={styles.accountActions}>
             {editingId ? (
               <Button variant="ghost" onClick={resetForm}>
                 Cancelar edição
               </Button>
             ) : null}
             <Button type="submit" loading={accountState.isMutating} disabled={!form.name.trim()}>
-              {editingId ? 'Salvar conta' : 'Criar conta'}
+              {editingId ? 'Salvar conta' : isFirstAccount ? 'Criar primeira conta' : 'Criar conta'}
             </Button>
           </div>
         </form>
 
-        <div className="uf-flex uf-flex-column uf-gap-sm">
+        <div className={styles.accountList}>
           {accountState.activeAccounts.map((account) => (
             <CrudRow
               key={account.id}
@@ -164,7 +168,9 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
             </CrudRow>
           ))}
           {!accountState.activeAccounts.length ? (
-            <FormMessage tone="info">Nenhuma conta cadastrada neste espaço.</FormMessage>
+            <p className={styles.emptyGuidance} role="status">
+              Cadastre uma conta para começar a acompanhar seu dinheiro neste perfil.
+            </p>
           ) : null}
         </div>
       </div>

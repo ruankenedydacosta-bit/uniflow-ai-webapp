@@ -128,6 +128,14 @@ test('ações rápidas preservam entrada, saída e transferência', async () => 
   assert.match(view, /onNewTransaction\(transactionType\)/);
 });
 
+test('sheet de ações fica acima da navegação mobile', async () => {
+  const css = await source('FinanceiroMobile.module.css');
+  assert.match(
+    css,
+    /financeMobileSheetBackdrop\)[^{]*\{[^}]*z-index: var\(--uf-z-modal\)/,
+  );
+});
+
 test('loading, vazio, erro e sucesso possuem caminhos explícitos', async () => {
   const contents = await source('MobileFinanceiroView.jsx');
   assert.match(contents, /if \(isLoading\)/);
@@ -137,6 +145,21 @@ test('loading, vazio, erro e sucesso possuem caminhos explícitos', async () => 
   assert.match(contents, /if \(!accounts\.length\)/);
   assert.match(contents, /FinanceiroEmptyState/);
   assert.match(contents, /AvailableBalanceCard/);
+});
+
+test('primeiro uso orienta a criação da conta sem CTA genérico', async () => {
+  const emptyState = await source('components/FinanceiroEmptyState.jsx');
+  const accountModal = await readFile(
+    new URL('../FinanceAccountModal.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(emptyState, /Criar primeira conta/);
+  assert.match(emptyState, /primeiro passo/);
+  assert.match(accountModal, /Informe quanto havia na conta/);
+  assert.match(accountModal, /melhor representa esta conta/);
+  assert.match(accountModal, /Cadastre uma conta para começar/);
+  assert.doesNotMatch(accountModal, /footer=|Nenhuma conta cadastrada neste espaço/);
 });
 
 test('CSS mantém responsividade, safe area e movimento reduzido', async () => {

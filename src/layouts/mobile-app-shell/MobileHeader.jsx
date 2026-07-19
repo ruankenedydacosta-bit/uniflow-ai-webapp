@@ -1,7 +1,5 @@
 import MobileContextHeader from './MobileContextHeader.jsx';
 
-const NOOP = () => {};
-
 function getInitials(value) {
   return String(value || 'UniFlow')
     .trim()
@@ -11,7 +9,16 @@ function getInitials(value) {
     .join('');
 }
 
-function MobileHeader({ title, subtitle }) {
+function MobileHeader({
+  activeContext,
+  contextError = false,
+  contextLocked = false,
+  contextMessage,
+  isContextLoading = false,
+  onContextChange,
+  title,
+  subtitle,
+}) {
   const rawDisplayName = subtitle || title || 'UniFlow';
   const isBusiness = /empresa|empresarial|business/i.test(rawDisplayName);
   const isGenericPersonal = /espaço pessoal|personal/i.test(rawDisplayName);
@@ -20,12 +27,14 @@ function MobileHeader({ title, subtitle }) {
   return (
     <MobileContextHeader
       user={{ displayName, initials: getInitials(displayName) }}
-      activeContext={isBusiness ? 'PJ' : 'PF'}
+      activeContext={activeContext ?? (isBusiness ? 'PJ' : 'PF')}
       availableContexts={['PF', 'PJ']}
+      contextError={contextError}
+      contextLocked={contextLocked}
+      contextMessage={contextMessage}
+      isContextLoading={isContextLoading}
       notificationState="permission-pending"
-      onContextChange={NOOP}
-      onAvatarPress={NOOP}
-      onBellPress={NOOP}
+      onContextChange={onContextChange}
     />
   );
 }

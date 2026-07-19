@@ -1,0 +1,100 @@
+.accountDialog {
+  max-width: 480px;
+}
+
+.accountContent,
+.accountForm,
+.accountList {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.accountContent {
+  gap: var(--uf-space-20);
+}
+
+.accountForm {
+  gap: var(--uf-space-16);
+}
+
+.accountList {
+  gap: var(--uf-space-8);
+}
+
+.typeField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.typeSelect {
+  width: 100%;
+  min-height: var(--uf-tap-target-min);
+  padding: 0 var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-sunken);
+  color: var(--uf-color-text-primary);
+  font: inherit;
+}
+
+.typeSelect:focus-visible {
+  border-color: var(--uf-color-primary);
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.typeField small {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-text-micro-weight);
+  line-height: var(--uf-text-micro-lh);
+}
+
+.accountActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
+}
+
+.emptyGuidance {
+  margin: 0;
+  padding: var(--uf-space-12);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-info-subtle);
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+  line-height: var(--uf-text-micro-lh);
+}
+
+@media (max-width: 767px) {
+  .accountDialog {
+    max-height: calc(100dvh - var(--uf-space-24));
+  }
+
+  .accountDialog > div {
+    padding: var(--uf-space-12) var(--uf-space-16);
+  }
+
+  .accountContent {
+    gap: var(--uf-space-12);
+  }
+
+  .accountForm {
+    gap: var(--uf-space-12);
+  }
+
+  .typeField {
+    gap: var(--uf-space-4);
+  }
+
+  .accountActions > button:last-child {
+    width: 100%;
+  }
+}

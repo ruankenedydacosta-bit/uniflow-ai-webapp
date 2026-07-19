@@ -15,14 +15,21 @@ import {
   signUpWithEmail as signUpWithEmailService,
   signOut as signOutService,
 } from '../services/authService';
-import { getProfile } from '../services/profileService';
+import { getProfile, updateProfile } from '../services/profileService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import {
   getCurrentWorkspace,
   getWorkspaceSubscription,
+  listWorkspaces,
 } from '../services/workspaceService';
 import { useAccess } from './AccessContext';
 import { PLANS, USER_MODES, WORKSPACE_TYPES } from './access';
+import {
+  findWorkspaceByType,
+  getAvailableWorkspaceTypes,
+  readWorkspaceSelection,
+  writeWorkspaceSelection,
+} from './workspaceSelection.js';
 
 const SessionContext = createContext(null);
 
@@ -76,6 +83,12 @@ function getAccessFromSession(profile, workspace, subscription) {
 function SessionProvider({ children }) {
   const { setAccess } = useAccess();
   const [state, setState] = useState(INITIAL_SESSION_STATE);
+  const [availableWorkspaces, setAvailableWorkspaces] = useState([]);
+  const [selectedWorkspaceType, setSelectedWorkspaceType] = useState(readWorkspaceSelection);
+  const [workspaceSwitchState, setWorkspaceSwitchState] = useState({
+    error: null,
+    isLoading: false,
+  });
   const isMountedRef = useRef(false);
   const synchronizationIdRef = useRef(0);
   const authActionRef = useRef(false);
@@ -85,6 +98,8 @@ function SessionProvider({ children }) {
       const synchronizationId = ++synchronizationIdRef.current;
 
       if (!nextSession?.user) {
+        setAvailableWorkspaces([]);
+        setWorkspaceSwitchState({ error: null, isLoading: false });
         if (isMountedRef.current) {
           setState({
             ...INITIAL_SESSION_STATE,
@@ -146,6 +161,7 @@ function SessionProvider({ children }) {
       }
 
       if (!profileResult.data) {
+        setAvailableWorkspaces([]);
         setState({
           session: nextSession,
           user: nextSession.user,
@@ -186,6 +202,7 @@ function SessionProvider({ children }) {
       }
 
       if (workspaceResult.error) {
+        setAvailableWorkspaces([]);
         setState((currentState) => ({
           ...currentState,
           profile: profileResult.data,
@@ -204,9 +221,10 @@ function SessionProvider({ children }) {
         };
       }
 
-      const subscriptionResult = await getWorkspaceSubscription(
-        workspaceResult.data?.id,
-      );
+      const [subscriptionResult, workspacesResult] = await Promise.all([
+        getWorkspaceSubscription(workspaceResult.data?.id),
+        listWorkspaces(),
+      ]);
 
       if (
         synchronizationId !== synchronizationIdRef.current ||
@@ -246,6 +264,16 @@ function SessionProvider({ children }) {
           subscriptionResult.data,
         ),
       );
+      setAvailableWorkspaces(
+        workspacesResult.error
+          ? [workspaceResult.data].filter(Boolean)
+          : workspacesResult.data ?? [],
+      );
+      setSelectedWorkspaceType((currentType) => (
+        VALID_WORKSPACE_TYPES.includes(currentType)
+          ? currentType
+          : workspaceResult.data?.workspace_type ?? WORKSPACE_TYPES.PERSONAL
+      ));
       setState({
         session: nextSession,
         user: nextSession.user,
@@ -271,6 +299,69 @@ function SessionProvider({ children }) {
     },
     [setAccess],
   );
+
+  const switchWorkspace = useCallback(async (workspaceType) => {
+    if (!VALID_WORKSPACE_TYPES.includes(workspaceType)) {
+      const error = { code: 'WORKSPACE_TYPE_INVALID', message: 'Contexto financeiro inválido.' };
+      setWorkspaceSwitchState({ error, isLoading: false });
+      return { data: null, error };
+    }
+
+    setSelectedWorkspaceType(workspaceType);
+    writeWorkspaceSelection(workspaceType);
+
+    if (!state.user?.id || !state.session) {
+      const error = { code: 'SESSION_REQUIRED', message: 'Entre novamente para trocar de perfil.' };
+      setWorkspaceSwitchState({ error, isLoading: false });
+      return { data: null, error };
+    }
+
+    setWorkspaceSwitchState({ error: null, isLoading: true });
+    const workspacesResult = availableWorkspaces.length
+      ? { data: availableWorkspaces, error: null }
+      : await listWorkspaces();
+
+    if (workspacesResult.error) {
+      setWorkspaceSwitchState({ error: workspacesResult.error, isLoading: false });
+      return { data: null, error: workspacesResult.error };
+    }
+
+    const targetWorkspace = findWorkspaceByType(workspacesResult.data, workspaceType);
+
+    if (!targetWorkspace) {
+      const error = {
+        code: 'WORKSPACE_NOT_FOUND',
+        message: workspaceType === WORKSPACE_TYPES.BUSINESS
+          ? 'Perfil PJ ainda não criado. Crie seu espaço empresarial em Configurações.'
+          : 'Perfil PF ainda não criado.',
+      };
+      setWorkspaceSwitchState({ error, isLoading: false });
+      return { data: null, error };
+    }
+
+    if (targetWorkspace.id === state.workspace?.id) {
+      setWorkspaceSwitchState({ error: null, isLoading: false });
+      return { data: targetWorkspace, error: null };
+    }
+
+    const updateResult = await updateProfile(state.user.id, {
+      current_workspace_id: targetWorkspace.id,
+    });
+
+    if (updateResult.error) {
+      setWorkspaceSwitchState({ error: updateResult.error, isLoading: false });
+      return updateResult;
+    }
+
+    const synchronizationResult = await synchronizeSession(state.session);
+    setWorkspaceSwitchState({
+      error: synchronizationResult.error,
+      isLoading: false,
+    });
+    return synchronizationResult.error
+      ? synchronizationResult
+      : { data: targetWorkspace, error: null };
+  }, [availableWorkspaces, state.session, state.user, state.workspace, synchronizeSession]);
 
   const signInWithPassword = useCallback(
     async ({ email, password }) => {
@@ -443,8 +534,14 @@ function SessionProvider({ children }) {
       signUpWithEmail,
       signOut,
       refreshSession: () => synchronizeSession(state.session),
+      availableWorkspaces,
+      availableWorkspaceTypes: getAvailableWorkspaceTypes(availableWorkspaces),
+      selectedWorkspaceType,
+      isSwitchingWorkspace: workspaceSwitchState.isLoading,
+      switchWorkspace,
+      workspaceSwitchError: workspaceSwitchState.error,
     }),
-    [state, signInWithPassword, signOut, signUpWithEmail, synchronizeSession],
+    [availableWorkspaces, selectedWorkspaceType, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, workspaceSwitchState],
   );
 
   return (

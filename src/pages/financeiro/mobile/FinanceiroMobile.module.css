@@ -107,7 +107,7 @@
   .financeiro :global(.financeMobileForecast p) { margin: 0 0 var(--uf-space-12); color: var(--uf-color-text-secondary); font-size: var(--uf-text-caption-size); line-height: var(--uf-text-caption-lh); }
 
   .financeiro :global(.financeMobileFab) { position: fixed; z-index: 20; right: var(--uf-space-16); bottom: calc(82px + env(safe-area-inset-bottom, 0px)); width: 52px; min-height: 52px; border: 0; border-radius: 50%; background: var(--uf-color-primary); box-shadow: var(--uf-shadow-lg); color: var(--uf-color-on-primary); font-size: 1.65rem; }
-  .financeiro :global(.financeMobileSheetBackdrop) { position: fixed; z-index: 40; inset: 0; display: flex; align-items: flex-end; background: rgb(0 0 0 / 45%); }
+  .financeiro :global(.financeMobileSheetBackdrop) { position: fixed; z-index: var(--uf-z-modal); inset: 0; display: flex; align-items: flex-end; background: rgb(0 0 0 / 45%); }
   .financeiro :global(.financeMobileSheet) { display: flex; width: 100%; flex-direction: column; gap: var(--uf-space-8); padding: var(--uf-space-8) var(--uf-space-16) calc(var(--uf-space-20) + env(safe-area-inset-bottom, 0px)); border-radius: var(--uf-radius-24) var(--uf-radius-24) 0 0; background: var(--uf-color-bg-surface); }
   .financeiro :global(.financeMobileSheetHandle) { width: 40px; height: 4px; align-self: center; border-radius: var(--uf-radius-full); background: var(--uf-color-border-default); }
   .financeiro :global(.financeMobileSheet header) { display: flex; align-items: center; justify-content: space-between; }
@@ -118,8 +118,12 @@
   .financeiro :global(.financeMobileSkeleton), .financeiro :global(.financeMobileEmpty) { position: relative; overflow: hidden; padding: var(--uf-space-20); border-radius: var(--uf-radius-16); background: var(--uf-color-bg-surface); }
   .financeiro :global(.financeMobileSkeleton span) { display: block; width: 100%; height: 16px; margin: var(--uf-space-8) 0; border-radius: var(--uf-radius-8); background: var(--uf-color-bg-sunken); }
   .financeiro :global(.financeMobileSkeleton::after) { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--uf-color-bg-surface), transparent); content: ''; animation: financeMobileShimmer 1.4s infinite; }
-  .financeiro :global(.financeMobileEmpty) { text-align: center; }
-  .financeiro :global(.financeMobileEmpty button) { border: 0; border-radius: var(--uf-radius-12); background: var(--uf-color-primary); color: var(--uf-color-on-primary); }
+  .financeiro :global(.financeMobileEmpty) { display: grid; justify-items: center; gap: var(--uf-space-12); text-align: center; }
+  .financeiro :global(.financeMobileEmpty > span) { display: grid; width: var(--uf-space-40); height: var(--uf-space-40); place-items: center; border-radius: var(--uf-radius-full); background: var(--uf-color-primary-subtle); color: var(--uf-color-text-brand); font-weight: var(--uf-font-weight-bold); }
+  .financeiro :global(.financeMobileEmpty h2), .financeiro :global(.financeMobileEmpty p) { margin: 0; }
+  .financeiro :global(.financeMobileEmpty h2) { font-size: var(--uf-text-title-size); }
+  .financeiro :global(.financeMobileEmpty p) { max-width: 32ch; color: var(--uf-color-text-secondary); font-size: var(--uf-text-caption-size); line-height: var(--uf-text-caption-lh); }
+  .financeiro :global(.financeMobileEmpty button) { width: 100%; border: 0; border-radius: var(--uf-radius-12); background: var(--uf-color-primary); color: var(--uf-color-on-primary); font-weight: var(--uf-font-weight-semibold); }
 }
 
 @media (max-width: 359px) {

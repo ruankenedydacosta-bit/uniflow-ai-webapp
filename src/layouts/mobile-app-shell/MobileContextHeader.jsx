@@ -15,6 +15,7 @@ function MobileContextHeader({
   isLoading = false,
   contextLocked = false,
   contextError = false,
+  contextMessage,
   onContextChange,
   onAvatarPress,
   onBellPress,
@@ -55,6 +56,11 @@ function MobileContextHeader({
           onPress={onBellPress}
         />
       </div>
+      {contextMessage ? (
+        <p className={styles.contextMessage} role="status" aria-live="polite">
+          {contextMessage}
+        </p>
+      ) : null}
     </header>
   );
 }
