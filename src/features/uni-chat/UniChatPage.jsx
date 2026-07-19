@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import { useUniConversation } from '../uni-conversation';
-import { useAccounts, useCategories, useTransactions } from '../../hooks';
+import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
+import { useUniChatFinancialData } from './useUniChatFinancialData';
+import { classifyFinancialQuery, buildQueryResponse } from './financialQueryInterpreter';
 import ChatHeader from './components/ChatHeader';
 import EmptyState from './components/EmptyState';
 import MessageBubble from './components/MessageBubble';
@@ -66,9 +68,18 @@ export default function UniChatPage() {
     fallbackCategories: financialFallback.categories,
   });
 
-  useTransactions({
+  const transactionsState = useTransactions({
     workspaceId: workspace?.id,
     fallbackTransactions: financialFallback.transactions,
+  });
+
+  const balanceState = useFinancialBalances({ workspaceId: workspace?.id });
+
+  const financialContext = useUniChatFinancialData({
+    accounts: accountState.accounts,
+    transactions: transactionsState.transactions,
+    categories: categoryState.categories,
+    workspaceBalance: balanceState.workspaceBalance,
   });
 
   const financialConversation = useUniConversation({
@@ -230,6 +241,40 @@ export default function UniChatPage() {
 
     setTimeout(() => {
       setIsTyping(false);
+
+      const queryType = classifyFinancialQuery(text);
+
+      if (queryType) {
+        const isLoading = balanceState.isLoading || transactionsState.isLoading;
+        const hasError = balanceState.error || transactionsState.error;
+
+        if (isLoading) {
+          pushMessage(buildUniMessage(
+            'Ainda estou carregando os dados financeiros do seu workspace. Aguarde um momento e tente novamente.',
+          ));
+          return;
+        }
+
+        if (hasError) {
+          pushMessage(buildUniMessage(
+            'Não foi possível consultar os dados financeiros agora. Tente novamente mais tarde.',
+          ));
+          return;
+        }
+
+        if (!financialContext.hasData) {
+          pushMessage(buildUniMessage(
+            'Seu workspace ainda não possui dados financeiros. Cadastre uma conta ou transação para começar.',
+          ));
+          return;
+        }
+
+        const response = buildQueryResponse(queryType, financialContext, mode);
+        if (response) {
+          pushMessage(buildUniMessage(response.text, { highlight: response.highlight }));
+          return;
+        }
+      }
 
       const result = financialConversation.interpret(text);
 
