@@ -18,6 +18,8 @@ const UniAudioLibraryPage = import.meta.env.DEV
   ? lazy(() => import('../pages/dev/uni-audio-library'))
   : null;
 
+const UniChatProtoPage = lazy(() => import('../features/uni-chat/UniChatPage'));
+
 export const publicRoutes = [
   {
     path: '/',
@@ -42,6 +44,16 @@ export const publicRoutes = [
     label: 'Onboarding',
     title: 'Onboarding',
     element: <OnboardingPage />,
+  },
+  {
+    path: '/uni-chat-proto',
+    label: 'Uni Chat (Protótipo)',
+    title: 'Uni Chat — Protótipo',
+    element: (
+      <Suspense fallback={null}>
+        <UniChatProtoPage />
+      </Suspense>
+    ),
   },
   ...(import.meta.env.DEV
     ? [

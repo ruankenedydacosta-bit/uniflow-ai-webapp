@@ -1,0 +1,28 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 10vh 20px 24px;
+  animation: uniEmptyIn 0.5s var(--uni-ease, ease-out);
+}
+
+.greeting {
+  margin: 14px 0 0;
+  font-family: var(--uni-font-display);
+  font-size: 23px;
+  font-weight: 700;
+  color: var(--uni-text-primary);
+}
+
+.question {
+  margin: 0 0 22px;
+  font-size: 15px;
+  color: var(--uni-text-secondary);
+}
+
+@keyframes uniEmptyIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}

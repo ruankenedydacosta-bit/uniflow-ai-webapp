@@ -1,0 +1,85 @@
+.wave {
+  display: block;
+  overflow: visible;
+}
+
+.ring {
+  transform-origin: 32px 32px;
+  opacity: 0.9;
+}
+
+.path {
+  stroke-dasharray: 6 10;
+  stroke-dashoffset: 0;
+}
+
+.dot {
+  transform-origin: center;
+}
+
+.idle .ring {
+  animation: uniBreathe 3.6s var(--uni-ease, ease-in-out) infinite;
+}
+.idle .path {
+  animation: uniFlowSlow 5.2s linear infinite;
+  opacity: 0.85;
+}
+.idle .dot1 { animation: uniPulse 3.6s ease-in-out infinite; }
+.idle .dot2 { animation: uniPulse 3.6s ease-in-out infinite 0.4s; }
+.idle .dot3 { animation: uniPulse 3.6s ease-in-out infinite 0.8s; }
+
+.thinking .ring {
+  animation: uniBreathe 1.8s var(--uni-ease, ease-in-out) infinite;
+  opacity: 0.55;
+}
+.thinking .path {
+  animation: uniFlowFast 1.6s linear infinite;
+}
+.thinking .dot1 { animation: uniPulse 1.4s ease-in-out infinite; }
+.thinking .dot2 { animation: uniPulse 1.4s ease-in-out infinite 0.22s; }
+.thinking .dot3 { animation: uniPulse 1.4s ease-in-out infinite 0.44s; }
+
+.sending .path {
+  animation: uniFlowFast 0.9s linear 2;
+}
+.sending .ring {
+  animation: uniBreathe 0.9s var(--uni-ease, ease-in-out) 1;
+}
+.sending .dot1, .sending .dot2, .sending .dot3 {
+  animation: uniPulse 0.9s ease-in-out 1;
+}
+
+.success .ring {
+  animation: uniBreathe 1.4s var(--uni-ease, ease-in-out) 1;
+}
+.success .path {
+  stroke-dasharray: none;
+}
+.success .dot1, .success .dot2, .success .dot3 {
+  animation: uniPulse 1.4s ease-in-out 1;
+}
+
+@keyframes uniBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50% { transform: scale(1.045); opacity: 1; }
+}
+
+@keyframes uniFlowSlow {
+  to { stroke-dashoffset: -32; }
+}
+
+@keyframes uniFlowFast {
+  to { stroke-dashoffset: -48; }
+}
+
+@keyframes uniPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring, .path, .dot {
+    animation: none !important;
+    opacity: 0.9;
+  }
+}

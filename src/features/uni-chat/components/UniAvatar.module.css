@@ -1,0 +1,34 @@
+.avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #4A6BFF 0%, #6D4FE0 55%, #7A3FE0 100%);
+  box-shadow: var(--uni-shadow-glow, 0 10px 30px rgba(107,84,245,0.2));
+  flex-shrink: 0;
+}
+
+.sm { width: 32px; height: 32px; }
+.md { width: 44px; height: 44px; }
+.lg { width: 64px; height: 64px; }
+
+.glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: var(--uni-gradient);
+  opacity: 0.25;
+  filter: blur(8px);
+  z-index: -1;
+  animation: uniGlowBreathe 3.6s ease-in-out infinite;
+}
+
+@keyframes uniGlowBreathe {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 0.34; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow { animation: none; opacity: 0.22; }
+}

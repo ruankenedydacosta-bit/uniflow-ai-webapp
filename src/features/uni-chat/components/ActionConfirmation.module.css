@@ -1,0 +1,122 @@
+.card {
+  background: var(--uni-surface);
+  border: 1px solid var(--uni-border);
+  border-radius: var(--uni-radius-md);
+  padding: 16px;
+  box-shadow: var(--uni-shadow-md);
+  animation: uniCardIn 0.36s var(--uni-ease, ease-out);
+  max-width: 340px;
+}
+
+.resolved {
+  opacity: 0.92;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.title {
+  font-family: var(--uni-font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--uni-text-primary);
+}
+
+.statusOk {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--uni-success);
+}
+
+.statusCancel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--uni-text-muted);
+}
+
+.rows {
+  margin: 0 0 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rowItem {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14.5px;
+}
+
+.rowItem dt {
+  color: var(--uni-text-secondary);
+}
+
+.rowItem dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--uni-text-primary);
+  text-align: right;
+}
+
+.emphasisValue {
+  font-family: var(--uni-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--uni-blue-deep);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  flex: 1 1 auto;
+  min-height: 46px;
+  border-radius: var(--uni-radius-pill);
+  font-family: var(--uni-font-display);
+  font-weight: 700;
+  font-size: 14.5px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s var(--uni-ease, ease-out), filter 0.15s ease;
+}
+
+.actions button:active {
+  transform: scale(0.97);
+}
+
+.confirm {
+  background: var(--uni-gradient);
+  color: #fff;
+  min-width: 120px;
+  box-shadow: var(--uni-shadow-glow);
+}
+.confirm:hover { filter: brightness(1.05); }
+
+.edit {
+  background: var(--uni-surface);
+  color: var(--uni-text-primary);
+  border: 1.5px solid var(--uni-border) !important;
+}
+
+.cancel {
+  background: transparent;
+  color: var(--uni-text-secondary);
+}
+.cancel:hover { color: var(--uni-error); }
+
+@keyframes uniCardIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

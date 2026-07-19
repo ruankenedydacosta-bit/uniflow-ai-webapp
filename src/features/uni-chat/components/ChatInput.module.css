@@ -1,0 +1,82 @@
+.form {
+  padding: 10px 12px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  background: var(--uni-surface);
+  border-top: 1px solid var(--uni-border-soft);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--uni-bg);
+  border: 1.5px solid var(--uni-border);
+  border-radius: var(--uni-radius-pill);
+  padding: 6px 6px 6px 8px;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.fieldFocused {
+  border-color: var(--uni-purple);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
+}
+
+.voiceBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--uni-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.voiceBtn:hover {
+  color: var(--uni-purple);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 16px;
+  font-family: var(--uni-font-body);
+  color: var(--uni-text-primary);
+  padding: 8px 2px;
+}
+
+.input::placeholder {
+  color: var(--uni-text-muted);
+}
+
+.sendBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--uni-gradient);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: var(--uni-shadow-glow);
+  transition: transform 0.15s var(--uni-ease, ease-out), opacity 0.2s ease;
+}
+
+.sendBtn:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  cursor: default;
+}
+
+.sendBtn:not(:disabled):active {
+  transform: scale(0.92);
+}
