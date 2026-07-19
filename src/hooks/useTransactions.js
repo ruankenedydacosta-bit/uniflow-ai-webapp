@@ -14,9 +14,11 @@ import {
   upsertRecord,
 } from './financialHookUtils.js';
 
+const EMPTY_ARRAY = [];
+
 export function useTransactions({
   workspaceId,
-  fallbackTransactions = [],
+  fallbackTransactions = EMPTY_ARRAY,
   limit = 50,
 } = {}) {
   const [transactions, setTransactions] = useState(() =>

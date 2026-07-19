@@ -14,7 +14,9 @@ import {
   upsertRecord,
 } from './financialHookUtils.js';
 
-export function useCategories({ workspaceId, fallbackCategories = [] } = {}) {
+const EMPTY_ARRAY = [];
+
+export function useCategories({ workspaceId, fallbackCategories = EMPTY_ARRAY } = {}) {
   const [categories, setCategories] = useState(() =>
     cloneRecords(fallbackCategories),
   );

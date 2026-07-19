@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from '../../../app/SessionContext';
 import { useCategories, useFinancialBalances, useTransactions } from '../../../hooks';
 import { buildFinanceiroMobileData } from '../../../pages/financeiro/mobile/financeiroMobileData';
@@ -18,6 +18,9 @@ export function useHomeFinancialData() {
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
 
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const prevWorkspaceRef = useRef(workspaceId);
+
   const {
     workspaceBalance,
     isLoading: balanceLoading,
@@ -36,6 +39,19 @@ export function useHomeFinancialData() {
 
   const isLoading = balanceLoading || transactionsLoading;
   const error = balanceError ?? transactionsError;
+
+  useEffect(() => {
+    if (showSkeleton && !isLoading) {
+      Promise.resolve().then(() => setShowSkeleton(false));
+    }
+  }, [showSkeleton, isLoading]);
+
+  useEffect(() => {
+    if (prevWorkspaceRef.current !== workspaceId) {
+      prevWorkspaceRef.current = workspaceId;
+      Promise.resolve().then(() => setShowSkeleton(true));
+    }
+  }, [workspaceId]);
 
   const refresh = useCallback(() => {
     refreshBalance();
@@ -121,7 +137,7 @@ export function useHomeFinancialData() {
   return {
     summary,
     recentTransactions,
-    isLoading,
+    isLoading: showSkeleton,
     error,
     hasData,
     refresh,
