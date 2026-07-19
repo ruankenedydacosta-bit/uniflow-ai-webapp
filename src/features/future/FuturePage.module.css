@@ -92,4 +92,15 @@
     padding: var(--uf-space-16);
     gap: var(--uf-space-24);
   }
+
+  .navLinks {
+    flex-direction: column;
+  }
+}
+
+.navLinks {
+  display: flex;
+  gap: var(--uf-space-12);
+  justify-content: center;
+  padding: var(--uf-space-8) 0;
 }

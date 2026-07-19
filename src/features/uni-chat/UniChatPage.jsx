@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import { useUniConversation } from '../uni-conversation';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
+import { useGoals } from '../goals/useGoals';
+import { buildFutureProjections } from '../future/futureService';
 import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { classifyFinancialQuery, buildQueryResponse } from './financialQueryInterpreter';
 import ChatHeader from './components/ChatHeader';
@@ -77,6 +79,18 @@ export default function UniChatPage() {
   });
 
   const balanceState = useFinancialBalances({ workspaceId: workspace?.id });
+
+  const goalsState = useGoals({ workspaceId: workspace?.id });
+
+  const futureProjections = useMemo(
+    () => buildFutureProjections({
+      workspaceBalance: balanceState.workspaceBalance,
+      transactions: transactionsState.transactions,
+      goals: goalsState.goals,
+      selectedHorizon: 6,
+    }),
+    [balanceState.workspaceBalance, transactionsState.transactions, goalsState.goals],
+  );
 
   const financialContext = useUniChatFinancialData({
     accounts: accountState.accounts,
@@ -527,7 +541,10 @@ export default function UniChatPage() {
           return;
         }
 
-        const response = buildQueryResponse(queryType, financialContext, mode);
+        const response = buildQueryResponse(queryType, financialContext, mode, {
+          projections: futureProjections,
+          goalProjections: futureProjections.goalProjections,
+        });
         if (response) {
           const assistantMsg = buildUniMessage(response.text, { highlight: response.highlight });
           pushMessage(assistantMsg);

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAccess } from '../app/AccessContext';
 import { useSession } from '../app/SessionContext';
 import { WORKSPACE_TYPES } from '../app/access.js';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { useGoals } from '../features/goals/useGoals';
+import { useFutureData } from '../features/future/useFutureData';
 import GoalCard from '../features/goals/components/GoalCard';
 import GoalSummary from '../features/goals/components/GoalSummary';
 import GoalForm from '../features/goals/components/GoalForm';
@@ -22,6 +23,18 @@ export default function ObjetivosPage() {
   const { access } = useAccess();
   const { workspace } = useSession();
   const { goals, isLoading, addGoal, editGoal, removeGoal, addGoalContribution, removeGoalContribution } = useGoals({ workspaceId: workspace?.id });
+
+  const { projections: futureProjections } = useFutureData({ selectedHorizon: 6 });
+
+  const goalProjectionMap = useMemo(() => {
+    const map = {};
+    if (futureProjections.goalProjections) {
+      for (const p of futureProjections.goalProjections) {
+        map[p.goalId] = p;
+      }
+    }
+    return map;
+  }, [futureProjections.goalProjections]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
@@ -126,6 +139,7 @@ export default function ObjetivosPage() {
               <GoalCard
                 key={goal.id}
                 goal={goal}
+                projection={goalProjectionMap[goal.id]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onContribute={handleContribute}

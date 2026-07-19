@@ -4,6 +4,7 @@ import { WORKSPACE_TYPES } from '../../app/access.js';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import FutureHomePreview from '../../features/future/components/FutureHomePreview/FutureHomePreview';
 import { dashboardMock } from './dashboard.mock';
 import { MobileHomeView } from './mobile/index.js';
 import { useHomeFinancialData } from './mobile/useHomeFinancialData.js';
@@ -147,6 +148,8 @@ function DashboardPage() {
           <p>{dashboard.uniReading}</p>
         </Card>
       </section>
+
+      <FutureHomePreview />
 
       <section className={styles.shortcutsSection} aria-labelledby="shortcuts-title">
         <div className={styles.sectionHeader}>

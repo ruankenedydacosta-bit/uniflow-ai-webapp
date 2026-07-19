@@ -1,0 +1,101 @@
+.card {
+  gap: var(--uf-space-16);
+  background: var(--uf-glass-bg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-12);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--uf-text-title-size);
+  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-color-text-primary);
+  line-height: var(--uf-text-title-lh);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--uf-space-12);
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-2);
+  padding: var(--uf-space-8) var(--uf-space-12);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-sunken);
+}
+
+.metricLabel {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.metricValue {
+  font-size: var(--uf-text-body-size);
+  font-weight: var(--uf-font-weight-bold);
+  color: var(--uf-color-text-primary);
+}
+
+.metricValue[data-positive="false"] {
+  color: var(--uf-color-danger);
+}
+
+.metricValue[data-risk="true"] {
+  color: var(--uf-color-warning);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-12);
+  padding-top: var(--uf-space-4);
+  border-top: 1px solid var(--uf-color-border-subtle);
+}
+
+.emptyText {
+  margin: 0;
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.skeletonLine {
+  height: 18px;
+  background: var(--uf-color-bg-surface);
+  border-radius: var(--uf-radius-8);
+  animation: uf-loading-wave 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--uf-color-bg-surface) 25%, var(--uf-color-bg-surface-hover) 50%, var(--uf-color-bg-surface) 75%);
+  background-size: 200% 100%;
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--uf-space-8);
+}
+
+.skeletonBlock {
+  height: 48px;
+  background: var(--uf-color-bg-surface);
+  border-radius: var(--uf-radius-12);
+  animation: uf-loading-wave 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--uf-color-bg-surface) 25%, var(--uf-color-bg-surface-hover) 50%, var(--uf-color-bg-surface) 75%);
+  background-size: 200% 100%;
+}
+
+@media (max-width: 480px) {
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+}

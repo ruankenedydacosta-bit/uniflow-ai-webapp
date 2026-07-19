@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAccess } from '../../app/AccessContext';
 import { SCENARIOS } from './futureConstants';
 import { useFutureData } from './useFutureData';
+import Button from '../../components/ui/Button';
 import FutureHeader from './components/FutureHeader/FutureHeader';
 import FutureSummary from './components/FutureSummary/FutureSummary';
 import FutureChart from './components/FutureChart/FutureChart';
@@ -11,6 +13,7 @@ import FutureExplanation from './components/FutureExplanation/FutureExplanation'
 import styles from './FuturePage.module.css';
 
 export default function FuturePage() {
+  const navigate = useNavigate();
   const { access } = useAccess();
 
   const [selectedHorizon, setSelectedHorizon] = useState(6);
@@ -119,6 +122,15 @@ export default function FuturePage() {
             avgIncome={avgIncome}
             avgExpense={avgExpense}
           />
+
+          <div className={styles.navLinks}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/objetivos')}>
+              Ajustar metas
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/financeiro')}>
+              Revisar movimentações
+            </Button>
+          </div>
         </>
       )}
     </div>

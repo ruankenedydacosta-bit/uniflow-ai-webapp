@@ -14,11 +14,43 @@ function normalize(text) {
 export function classifyFinancialQuery(text) {
   const n = normalize(text);
 
+  // More specific patterns first
+
+  if (/\b(?:quando\s+(?:vou|vai)|quando\s+concluir|quando\s+atingir)\b/.test(n) && /\b(?:meta|objetivo)\b/.test(n)) {
+    return { type: 'goal_completion' };
+  }
+
+  if (/\b(?:saldo\s+vai|vai\s+melhorar|vai\s+piorar|vai\s+sobrar|vai\s+faltar)\b/.test(n)) {
+    return { type: 'balance_trend' };
+  }
+
+  if (/\b(?:projecao|projeca|projetada|futur[ao]|cena[ri]{2}o)\b/.test(n) && /[0-9]+\s*meses/.test(n)) {
+    return { type: 'future_projection' };
+  }
+
+  if (/\b(?:como\s+estarao|como\s+estara)\b/.test(n) && /[0-9]+\s*meses/.test(n)) {
+    return { type: 'future_projection' };
+  }
+
+  if (/\b(?:vou\s+conseguir|vai\s+conseguir|consigo|alcancar|atingir|chegar)\b/.test(n) && /\b(?:meta|objetivo)\b/.test(n)) {
+    return { type: 'goal_feasibility' };
+  }
+
+  if (/\b(?:meta|metas)\b/.test(n) && /\b(?:risco|riscos|atencao|inviavel|atrasada)\b/.test(n)) {
+    return { type: 'goal_risk' };
+  }
+
+  if (/\b(?:quanto\s+preciso|quanto\s+devo|quanto\s+guardar|preciso\s+guardar|preciso\s+poupar)\b/.test(n)) {
+    return { type: 'required_monthly' };
+  }
+
+  // General patterns after specific ones
+
   if (/categoria/.test(n) && /gast/.test(n)) {
     return { type: 'top_category' };
   }
 
-  if (/\bsaldo\b/.test(n) && !/gast/.test(n) && !/entrou/.test(n) && !/receb/.test(n)) {
+  if (/\bsaldo\b/.test(n) && !/gast/.test(n) && !/entrou/.test(n) && !/receb/.test(n) && !/vai\s/.test(n)) {
     return { type: 'balance' };
   }
 
@@ -62,13 +94,14 @@ function capitalize(word) {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
-export function buildQueryResponse(queryType, ctx, mode) {
+export function buildQueryResponse(queryType, ctx, mode, options = {}) {
   const now = new Date();
   const monthName = MONTH_NAMES[now.getMonth()];
   const prefix = mode === 'empresa' ? 'da sua empresa' : '';
   const subject = mode === 'empresa' ? 'sua empresa' : 'você';
+  const type = queryType?.type || queryType;
 
-  switch (queryType) {
+  switch (type) {
     case 'balance': {
       const value = fmtCurrency(ctx.balance);
       const msg = `O saldo atual ${prefix} é ${value}, considerando todas as contas conectadas.`;
@@ -134,6 +167,106 @@ export function buildQueryResponse(queryType, ctx, mode) {
         : 0;
       const msg = `Em ${monthName}, a categoria com maior gasto${prefix} foi "${ctx.topCategory.name}", com ${value} — ${percent}% do total de ${total}.`;
       return { text: msg, highlight: value };
+    }
+
+    case 'future_projection': {
+      const { projections } = options;
+      if (!projections || !projections.hasHistory) {
+        const msg = `${capitalize(subject)} ainda não tem dados financeiros suficientes para gerar projeções. Cadastre receitas e despesas para que eu possa estimar o futuro.`;
+        return { text: msg, highlight: null };
+      }
+      const likely = projections.scenarioProjections?.likely || {};
+      const balance = fmtCurrency(likely.projectedBalance ?? projections.currentBalance);
+      const monthly = fmtCurrency(likely.monthlyResult ?? projections.netResult);
+      const horizon = projections.selectedHorizon || 6;
+      const signal = (likely.monthlyResult ?? projections.netResult) >= 0 ? 'positivo' : 'negativo';
+      const monthText = horizon === 1 ? 'mês' : 'meses';
+      const msg = `💰 Projeção para ${horizon} ${monthText} (cenário provável):\n• Saldo projetado: ${balance}\n• Resultado médio mensal: ${monthly}\n• Tendência: ${signal}\n\n⚠️ Esta é uma estimativa baseada no seu histórico de ${projections.monthsWithData || 0} ${projections.monthsWithData === 1 ? 'mês' : 'meses'}. Resultados reais podem variar.`;
+      return { text: msg, highlight: balance };
+    }
+
+    case 'goal_feasibility': {
+      const { goalProjections } = options;
+      if (!goalProjections || goalProjections.length === 0) {
+        const msg = `${capitalize(subject)} não tem metas ativas para avaliar. Crie uma meta em Objetivos para que eu possa analisar a viabilidade.`;
+        return { text: msg, highlight: null };
+      }
+      const lines = goalProjections.map((g) => {
+        const label = g.feasibility === 'viable' ? '✅ Viável' : g.feasibility === 'attention' ? '⚠️ Atenção' : '❌ Inviável';
+        const extra = g.estimatedMonths ? `(~${g.estimatedMonths} ${g.estimatedMonths === 1 ? 'mês' : 'meses'})` : '';
+        return `• "${g.name}": ${label} ${extra}`;
+      });
+      const msg = `Análise das suas metas:\n${lines.join('\n')}\n\n⚠️ Esta é uma estimativa baseada no seu fluxo financeiro atual.`;
+      return { text: msg, highlight: null };
+    }
+
+    case 'goal_risk': {
+      const { goalProjections } = options;
+      if (!goalProjections || goalProjections.length === 0) {
+        const msg = `${capitalize(subject)} não tem metas ativas. Crie uma meta para acompanhar.`;
+        return { text: msg, highlight: null };
+      }
+      const atRisk = goalProjections.filter((g) => g.feasibility !== 'viable');
+      if (atRisk.length === 0) {
+        const msg = `✅ Boas notícias! Todas as suas metas estão viáveis com o fluxo financeiro atual.`;
+        return { text: msg, highlight: null };
+      }
+      const lines = atRisk.map((g) => {
+        const label = g.feasibility === 'attention' ? '⚠️ Atenção' : '❌ Inviável';
+        return `• "${g.name}": ${label} — ${g.suggestedAction || 'Revise o valor ou prazo'}`;
+      });
+      const msg = `${atRisk.length === 1 ? 'Meta' : 'Metas'} em risco:\n${lines.join('\n')}\n\n⚠️ Recomendo revisar essas metas em Objetivos ou ver a projeção completa em Visão de Futuro.`;
+      return { text: msg, highlight: null };
+    }
+
+    case 'required_monthly': {
+      const { goalProjections } = options;
+      if (!goalProjections || goalProjections.length === 0) {
+        const msg = `${capitalize(subject)} não tem metas ativas. Crie uma meta em Objetivos para calcular quanto guardar por mês.`;
+        return { text: msg, highlight: null };
+      }
+      const lines = goalProjections.map((g) => {
+        const needed = g.requiredContribution > 0
+          ? fmtCurrency(Math.ceil(g.requiredContribution))
+          : g.currentContribution > 0
+            ? fmtCurrency(g.currentContribution)
+            : 'Não definido';
+        return `• "${g.name}": ${needed}/mês`;
+      });
+      const msg = `Contribuição mensal necessária por meta:\n${lines.join('\n')}\n\n⚠️ Valores estimados com base no seu fluxo financeiro e prazos atuais.`;
+      return { text: msg, highlight: null };
+    }
+
+    case 'balance_trend': {
+      const { projections } = options;
+      if (!projections || !projections.hasHistory) {
+        const msg = `${capitalize(subject)} ainda não tem dados suficientes para avaliar a tendência. Cadastre transações para que eu possa projetar.`;
+        return { text: msg, highlight: null };
+      }
+      const likely = projections.scenarioProjections?.likely || {};
+      const currentBalance = fmtCurrency(projections.currentBalance);
+      const futureBalance = fmtCurrency(likely.projectedBalance ?? projections.currentBalance);
+      const monthlyNet = projections.netResult || 0;
+      const signal = monthlyNet >= 0 ? 'positivo' : 'negativo';
+      const direction = monthlyNet >= 0 ? 'melhorar' : 'piorar';
+      const msg = `📈 Tendência para o saldo:\n• Saldo atual: ${currentBalance}\n• Resultado médio mensal: ${fmtCurrency(monthlyNet)} (${signal})\n• Projeção em ${projections.selectedHorizon || 6} meses: ${futureBalance}\n\nSeu saldo tende a ${direction} com base no histórico atual. ⚠️ Esta é uma estimativa.`;
+      return { text: msg, highlight: futureBalance };
+    }
+
+    case 'goal_completion': {
+      const { goalProjections } = options;
+      if (!goalProjections || goalProjections.length === 0) {
+        const msg = `${capitalize(subject)} não tem metas ativas. Crie uma meta para acompanhar o progresso.`;
+        return { text: msg, highlight: null };
+      }
+      const lines = goalProjections.map((g) => {
+        if (g.status === 'completed') return `• "${g.name}": ✅ Já concluída`;
+        if (!g.estimatedMonths) return `• "${g.name}": ❌ Inviável com o fluxo atual`;
+        const dateStr = g.estimatedDate ? new Date(g.estimatedDate).toLocaleDateString('pt-BR') : '—';
+        return `• "${g.name}": ~${g.estimatedMonths} ${g.estimatedMonths === 1 ? 'mês' : 'meses'} (previsão: ${dateStr})`;
+      });
+      const msg = `Previsão de conclusão das metas:\n${lines.join('\n')}\n\n⚠️ Estimativa baseada no fluxo atual. Resultados reais podem variar.`;
+      return { text: msg, highlight: null };
     }
 
     default:

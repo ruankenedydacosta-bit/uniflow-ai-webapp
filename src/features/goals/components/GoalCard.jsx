@@ -1,6 +1,7 @@
 import Badge from '../../../components/ui/Badge';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
+import GoalProjectionBadge from '../../future/components/GoalProjectionBadge/GoalProjectionBadge';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { calcProgress, calcRemaining, calcRhythmStatus, getRhythmLabel, getRhythmVariant, calcRequiredMonthlyAmount, calcMonthsUntilTarget } from '../goalCalc';
 import styles from './GoalCard.module.css';
@@ -31,7 +32,7 @@ const STATUS_VARIANTS = {
   canceled: 'default',
 };
 
-export default function GoalCard({ goal, onEdit, onDelete, onContribute, onPauseResume, onComplete }) {
+export default function GoalCard({ goal, onEdit, onDelete, onContribute, onPauseResume, onComplete, projection }) {
   const progress = calcProgress(goal.current_amount, goal.target_amount);
   const remaining = calcRemaining(goal.current_amount, goal.target_amount);
   const rhythm = calcRhythmStatus(goal);
@@ -94,6 +95,10 @@ export default function GoalCard({ goal, onEdit, onDelete, onContribute, onPause
         <Badge variant={getRhythmVariant(rhythm)} size="sm" dot>
           {getRhythmLabel(rhythm)}
         </Badge>
+      )}
+
+      {goal.status !== 'canceled' && (
+        <GoalProjectionBadge projection={projection} />
       )}
 
       {goal.status === 'active' && (
