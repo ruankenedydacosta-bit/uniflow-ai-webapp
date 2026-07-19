@@ -11,14 +11,14 @@ import OnboardingPage from '../pages/OnboardingPage';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
-import UniAIPage from '../pages/UniAIPage';
+const UniChatPage = lazy(() => import('../features/uni-chat/UniChatPage'));
 import { MobileWelcomePage } from '../features/auth-mobile';
 
 const UniAudioLibraryPage = import.meta.env.DEV
   ? lazy(() => import('../pages/dev/uni-audio-library'))
   : null;
 
-const UniChatProtoPage = lazy(() => import('../features/uni-chat/UniChatPage'));
+const UniChatProtoPage = UniChatPage;
 
 export const publicRoutes = [
   {
@@ -82,7 +82,11 @@ export const appRoutes = [
     path: '/uni-ai',
     label: 'Uni AI',
     title: 'Uni AI',
-    element: <UniAIPage />,
+    element: (
+      <Suspense fallback={null}>
+        <UniChatPage />
+      </Suspense>
+    ),
   },
   {
     path: '/financeiro',
