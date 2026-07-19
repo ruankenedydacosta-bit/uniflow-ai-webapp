@@ -1,0 +1,60 @@
+.summary {
+  border-color: var(--uf-color-border-default);
+  background:
+    var(--uf-color-primary-subtle),
+    var(--uf-glass-bg);
+  box-shadow: var(--uf-shadow-sm);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--uf-space-20);
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+}
+
+.label {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.value {
+  font-size: var(--uf-text-title-size);
+  font-weight: var(--uf-font-weight-bold);
+  color: var(--uf-color-text-primary);
+  line-height: var(--uf-text-title-lh);
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-8);
+}
+
+.progressTrack {
+  flex: 1;
+  overflow: hidden;
+  height: var(--uf-space-8);
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-color-bg-sunken);
+  max-width: 120px;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--uf-gradient-ai);
+  transition: width var(--uf-motion-base) var(--uf-ease-standard);
+}
+
+.percent {
+  font-size: var(--uf-text-body-size);
+  font-weight: var(--uf-font-weight-bold);
+  color: var(--uf-color-text-primary);
+}

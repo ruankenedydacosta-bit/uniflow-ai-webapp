@@ -1,0 +1,34 @@
+@keyframes shimmer {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--uf-space-16);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-24);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-20);
+  background: var(--uf-glass-bg);
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.line {
+  height: var(--uf-space-16);
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-color-bg-sunken);
+}
+
+.bar {
+  height: var(--uf-space-8);
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-color-bg-sunken);
+}

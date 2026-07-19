@@ -1,0 +1,170 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { isSupabaseConfigured } from '../../services/supabaseClient.js';
+import { FINANCIAL_DATA_CHANGED_EVENT } from '../../services/financialDataEvents.js';
+import {
+  listGoals, createGoal, updateGoal, deleteGoal,
+  addContribution, removeContribution,
+} from './goalService.js';
+import { upsertRecord, removeRecord, createDemoRecord, createDemoResult } from '../../hooks/financialHookUtils.js';
+
+const EMPTY_ARRAY = [];
+
+export function useGoals({ workspaceId } = {}) {
+  const [goals, setGoals] = useState(EMPTY_ARRAY);
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [isMutating, setIsMutating] = useState(false);
+  const [error, setError] = useState(null);
+  const requestIdRef = useRef(0);
+
+  const refresh = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+
+    if (!isSupabaseConfigured) {
+      setGoals(EMPTY_ARRAY);
+      setError(null);
+      setIsLoading(false);
+      return createDemoResult(EMPTY_ARRAY);
+    }
+
+    if (!workspaceId) {
+      setGoals(EMPTY_ARRAY);
+      setError({ code: 'WORKSPACE_REQUIRED', message: 'Workspace ausente.' });
+      setIsLoading(false);
+      return null;
+    }
+
+    setIsLoading(true);
+    const result = await listGoals(workspaceId);
+
+    if (requestId !== requestIdRef.current) return null;
+
+    setGoals(result.data ?? EMPTY_ARRAY);
+    setError(result.error);
+    setIsLoading(false);
+    return result;
+  }, [workspaceId]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => refresh(), 0);
+    return () => {
+      requestIdRef.current += 1;
+      window.clearTimeout(timeoutId);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
+    function handleDataChanged() { refresh(); }
+    window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
+    return () => window.removeEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
+  }, [refresh]);
+
+  const addGoal = useCallback(async (values) => {
+    setIsMutating(true);
+    setError(null);
+
+    const result = !isSupabaseConfigured
+      ? createDemoResult(createDemoRecord('demo-goal', values))
+      : await createGoal(workspaceId, values);
+
+    if (result.error) {
+      setError(result.error);
+    } else if (result.data) {
+      setGoals((current) => upsertRecord(current, result.data));
+    }
+
+    setIsMutating(false);
+    return result;
+  }, [workspaceId]);
+
+  const editGoal = useCallback(async (goalId, changes) => {
+    setIsMutating(true);
+    setError(null);
+
+    const result = !isSupabaseConfigured
+      ? createDemoResult({ ...changes, id: goalId, updated_at: new Date().toISOString() })
+      : await updateGoal(workspaceId, goalId, changes);
+
+    if (result.error) {
+      setError(result.error);
+    } else if (result.data) {
+      setGoals((current) => upsertRecord(current, result.data));
+    }
+
+    setIsMutating(false);
+    return result;
+  }, [workspaceId]);
+
+  const removeGoal = useCallback(async (goalId) => {
+    setIsMutating(true);
+    setError(null);
+
+    const result = !isSupabaseConfigured
+      ? createDemoResult({ id: goalId })
+      : await deleteGoal(workspaceId, goalId);
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setGoals((current) => removeRecord(current, goalId));
+    }
+
+    setIsMutating(false);
+    return result;
+  }, [workspaceId]);
+
+  const addGoalContribution = useCallback(async (goalId, values) => {
+    setIsMutating(true);
+    setError(null);
+
+    const result = !isSupabaseConfigured
+      ? createDemoResult(createDemoRecord('demo-contribution', { ...values, goal_id: goalId }))
+      : await addContribution(workspaceId, goalId, values);
+
+    if (result.error) {
+      setError(result.error);
+    } else if (result.data) {
+      setGoals((current) => current.map((g) => {
+        if (g.id !== goalId) return g;
+        return { ...g, current_amount: Number(g.current_amount) + Number(values.amount) };
+      }));
+    }
+
+    setIsMutating(false);
+    return result;
+  }, [workspaceId]);
+
+  const removeGoalContribution = useCallback(async (goalId, contributionId, amount) => {
+    setIsMutating(true);
+    setError(null);
+
+    const result = !isSupabaseConfigured
+      ? createDemoResult({ id: contributionId })
+      : await removeContribution(workspaceId, contributionId);
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setGoals((current) => current.map((g) => {
+        if (g.id !== goalId) return g;
+        return { ...g, current_amount: Math.max(0, Number(g.current_amount) - Number(amount)) };
+      }));
+    }
+
+    setIsMutating(false);
+    return result;
+  }, [workspaceId]);
+
+  return {
+    goals,
+    error,
+    isLoading,
+    isMutating,
+    refresh,
+    addGoal,
+    editGoal,
+    removeGoal,
+    addGoalContribution,
+    removeGoalContribution,
+    clearError: () => setError(null),
+  };
+}

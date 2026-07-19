@@ -1,0 +1,94 @@
+.addForm {
+  margin-bottom: var(--uf-space-20);
+}
+
+.addRow {
+  display: flex;
+  gap: var(--uf-space-12);
+  align-items: flex-end;
+}
+
+.addRow > *:first-child {
+  max-width: 160px;
+}
+
+.addRow > *:nth-child(2) {
+  flex: 1;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.empty {
+  text-align: center;
+  color: var(--uf-color-text-muted);
+  font-size: var(--uf-text-caption-size);
+  padding: var(--uf-space-32) 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-12) var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-surface);
+}
+
+.itemInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-12);
+  flex-wrap: wrap;
+}
+
+.itemAmount {
+  font-size: var(--uf-text-body-size);
+  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-color-text-primary);
+}
+
+.itemDate {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.itemNote {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-muted);
+  font-style: italic;
+}
+
+.confirmRow {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-8);
+}
+
+.confirmText {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-danger-text);
+}
+
+@media (max-width: 480px) {
+  .addRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .addRow > *:first-child {
+    max-width: none;
+  }
+
+  .item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
