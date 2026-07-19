@@ -1,9 +1,9 @@
-export function createEmptyTransactionForm() {
+export function createEmptyTransactionForm(transactionType = 'expense') {
   return {
     account_id: '',
     destination_account_id: '',
     category_id: '',
-    transaction_type: 'expense',
+    transaction_type: transactionType,
     description: '',
     amount: '',
     transaction_date: new Date().toISOString().slice(0, 10),

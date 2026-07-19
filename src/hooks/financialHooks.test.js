@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { useAccounts } from './useAccounts.js';
 import { useCategories } from './useCategories.js';
 import { useTransactions } from './useTransactions.js';
+import { useFinancialBalances } from './useFinancialBalances.js';
 import { buildTransactionUpdatePayload } from '../services/transactionService.js';
 import {
   cloneRecords,
@@ -105,7 +106,15 @@ test('mensagens tecnicas recebem fallback humano', () => {
   );
 });
 
-test('Financeiro usa workspace da sessao nos tres hooks', async () => {
+test('useFinancialBalances expõe o contrato de atualização derivada', () => {
+  const state = renderHook(useFinancialBalances, { workspaceId: null });
+
+  assert.deepEqual(state.accountBalances, []);
+  assert.equal(state.workspaceBalance, null);
+  assert.equal(typeof state.refresh, 'function');
+});
+
+test('Financeiro usa workspace da sessao nos quatro hooks', async () => {
   const source = await readFile(
     new URL('../pages/FinanceiroPage.jsx', import.meta.url),
     'utf8',
@@ -113,7 +122,29 @@ test('Financeiro usa workspace da sessao nos tres hooks', async () => {
   const workspaceBindings = source.match(/workspaceId: workspace\?\.id/g) ?? [];
 
   assert.match(source, /useSession\(\)/);
-  assert.equal(workspaceBindings.length, 3);
+  assert.equal(workspaceBindings.length, 4);
+});
+
+test('saldo derivado usa RPCs sem receber workspace arbitrário', async () => {
+  const source = await readFile(
+    new URL('../services/financialBalanceService.js', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /get_derived_account_balances/);
+  assert.match(source, /get_derived_workspace_balance/);
+  assert.doesNotMatch(source, /workspaceId|p_workspace_id/);
+});
+
+test('modal de conta não trata current_balance como fonte de verdade', async () => {
+  const source = await readFile(
+    new URL('../pages/financeiro/FinanceAccountModal.jsx', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /Saldo inicial/);
+  assert.match(source, /derived_balance/);
+  assert.doesNotMatch(source, /current_balance/);
 });
 
 test('edicao preserva conta arquivada vinculada e monta payload seguro', () => {

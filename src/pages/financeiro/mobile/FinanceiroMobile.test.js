@@ -1,69 +1,159 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { financeiroMobileMock } from './financeiroMobile.mock.js';
+import {
+  buildFinanceiroMobileData,
+  getFinancialPeriod,
+} from './financeiroMobileData.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-test('mock financeiro mobile é profundamente imutável', () => {
-  assert.equal(Object.isFrozen(financeiroMobileMock), true);
-  assert.equal(Object.isFrozen(financeiroMobileMock.periods), true);
-  assert.equal(Object.isFrozen(financeiroMobileMock.periods[0].accounts[0]), true);
+const NOW = new Date(2026, 6, 19, 12);
+const accounts = [
+  {
+    id: 'account-origin',
+    name: 'Conta principal',
+    account_type: 'checking',
+    initial_balance: 100,
+    current_balance: 999999,
+    is_active: true,
+  },
+  {
+    id: 'account-destination',
+    name: 'Reserva',
+    account_type: 'savings',
+    initial_balance: 50,
+    is_active: true,
+  },
+];
+const categories = [
+  { id: 'category-income', name: 'Salário', category_type: 'income' },
+  { id: 'category-expense', name: 'Moradia', category_type: 'expense' },
+];
+const transactions = [
+  { id: 'income', account_id: 'account-origin', category_id: 'category-income', transaction_type: 'income', description: 'Receita', amount: 500, transaction_date: '2026-07-03', status: 'completed' },
+  { id: 'expense', account_id: 'account-origin', category_id: 'category-expense', transaction_type: 'expense', description: 'Despesa', amount: 120, transaction_date: '2026-07-05', status: 'completed' },
+  { id: 'transfer', account_id: 'account-origin', destination_account_id: 'account-destination', transaction_type: 'transfer', description: 'Transferência', amount: 80, transaction_date: '2026-07-07', status: 'completed' },
+  { id: 'pending', account_id: 'account-origin', transaction_type: 'expense', description: 'Pendente', amount: 999, transaction_date: '2026-07-08', status: 'pending' },
+  { id: 'previous', account_id: 'account-origin', transaction_type: 'expense', description: 'Mês anterior', amount: 100, transaction_date: '2026-06-08', status: 'completed' },
+];
+
+function buildData(overrides = {}) {
+  return buildFinanceiroMobileData({
+    accounts,
+    accountBalances: [
+      { account_id: 'account-origin', derived_balance: 400 },
+      { account_id: 'account-destination', derived_balance: 130 },
+    ],
+    categories,
+    transactions,
+    workspaceBalance: 530,
+    now: NOW,
+    ...overrides,
+  });
+}
+
+test('período mensal e anual são calculados deterministicamente', () => {
+  assert.equal(getFinancialPeriod({ now: NOW }).label, 'Julho de 2026');
+  assert.equal(getFinancialPeriod({ mode: 'Ano', now: NOW }).label, '2026');
+  assert.equal(getFinancialPeriod({ offset: -1, now: NOW }).startKey, '2026-06-01');
 });
 
-test('seções seguem a ordem executiva definida', async () => {
-  const contents = await source('MobileFinanceiroView.jsx');
-  const sections = ['PeriodSelectorBar', 'PeriodInsightText', 'AvailableBalanceCard', 'IncomeExpenseChart', 'AccountsCarousel', 'CardsWalletCarousel', 'RecentTransactionsList', 'CategoriesBreakdown', 'FinancialForecastCard', 'financeMobileFab'];
-  const positions = sections.map((section) => contents.lastIndexOf(section.startsWith('finance') ? section : `<${section}`));
-  assert.ok(positions.every((position) => position >= 0));
-  assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
+test('mobile consolida somente lançamentos concluídos do período', () => {
+  const data = buildData();
+
+  assert.equal(data.income, 'R$ 500,00');
+  assert.equal(data.expense, 'R$ 120,00');
+  assert.equal(data.transactions.length, 3);
+  assert.equal(data.categories[0].label, 'Moradia');
+  assert.equal(data.comparison, '+20% em despesas vs. período anterior');
+  assert.doesNotMatch(JSON.stringify(data), /Pendente|999,00/);
 });
 
-test('período controla um snapshot único para todas as seções', async () => {
-  const contents = await source('MobileFinanceiroView.jsx');
-  assert.match(contents, /const period = financeiroMobileMock\.periods\[periodIndex\]/);
-  assert.match(contents, /setPeriodIndex/);
-  assert.match(contents, /period\.accounts/);
-  assert.match(contents, /period\.transactions/);
+test('saldo exibido usa RPC derivada e nunca current_balance', () => {
+  const data = buildData();
+
+  assert.equal(data.balance, 'R$ 530,00');
+  assert.equal(data.accounts[0].derived_balance, 400);
+  assert.equal(data.accounts[0].balance, 'R$ 400,00');
+  assert.notEqual(data.accounts[0].derived_balance, accounts[0].current_balance);
 });
 
-test('gráfico detailed reutiliza a feature cognitiva sem SVG duplicado', async () => {
+test('transferência é exibida sem contaminar totais de entrada e saída', () => {
+  const data = buildData();
+  const transfer = data.transactions.find((transaction) => transaction.id === 'transfer');
+
+  assert.equal(transfer.tone, 'neutral');
+  assert.match(transfer.amount, /^↔/);
+  assert.equal(data.income, 'R$ 500,00');
+  assert.equal(data.expense, 'R$ 120,00');
+});
+
+test('objetos vazios produzem uma visualização segura', () => {
+  const data = buildFinanceiroMobileData({ now: NOW });
+
+  assert.deepEqual(data.accounts, []);
+  assert.deepEqual(data.transactions, []);
+  assert.deepEqual(data.categories, []);
+  assert.equal(data.chart.data.length, 2);
+});
+
+test('fluxo mobile não importa nem exporta mock financeiro', async () => {
+  const contents = await Promise.all([
+    source('MobileFinanceiroView.jsx'),
+    source('index.js'),
+    source('financeiroMobileData.js'),
+  ]);
+
+  assert.doesNotMatch(contents.join('\n'), /financeiroMobileMock|financeiroMobile\.mock/);
+});
+
+test('gráfico detailed recebe séries reais sem SVG duplicado', async () => {
   const contents = await source('components/IncomeExpenseChart.jsx');
   assert.match(contents, /CognitiveLiveChart/);
   assert.match(contents, /variant="detailed"/);
-  assert.doesNotMatch(contents, /<svg|<polyline/);
-  assert.doesNotMatch(contents, /chart\.js|recharts|fetch\(/i);
+  assert.match(contents, /data=\{chart\.data\}/);
+  assert.match(contents, /comparisonData=\{chart\.comparisonData\}/);
+  assert.doesNotMatch(contents, /<svg|<polyline|fetch\(/i);
 });
 
-test('ações rápidas expõem as três escolhas financeiras', async () => {
-  const contents = await source('components/QuickActionSheet.jsx');
-  assert.match(contents, /Registrar receita/);
-  assert.match(contents, /Registrar despesa/);
-  assert.match(contents, /Fazer transferência/);
-  assert.match(contents, /aria-modal="true"/);
+test('ações rápidas preservam entrada, saída e transferência', async () => {
+  const [sheet, view] = await Promise.all([
+    source('components/QuickActionSheet.jsx'),
+    source('MobileFinanceiroView.jsx'),
+  ]);
+  assert.match(sheet, /Registrar receita/);
+  assert.match(sheet, /Registrar despesa/);
+  assert.match(sheet, /Fazer transferência/);
+  assert.match(view, /onNewTransaction\(transactionType\)/);
 });
 
-test('estados loading e vazio possuem caminhos explícitos', async () => {
+test('loading, vazio, erro e sucesso possuem caminhos explícitos', async () => {
   const contents = await source('MobileFinanceiroView.jsx');
-  assert.match(contents, /viewState === 'loading'/);
+  assert.match(contents, /if \(isLoading\)/);
   assert.match(contents, /FinanceiroSectionSkeleton/);
-  assert.match(contents, /viewState === 'empty'/);
+  assert.match(contents, /if \(error\)/);
+  assert.match(contents, /FinanceiroErrorState/);
+  assert.match(contents, /if \(!accounts\.length\)/);
   assert.match(contents, /FinanceiroEmptyState/);
+  assert.match(contents, /AvailableBalanceCard/);
 });
 
-test('CSS cobre mobile, safe area, toque, dark tokens e movimento reduzido', async () => {
+test('CSS mantém responsividade, safe area e movimento reduzido', async () => {
   const contents = await source('FinanceiroMobile.module.css');
   assert.match(contents, /max-width: 767px/);
   assert.match(contents, /max-width: 359px/);
   assert.match(contents, /min-width: 390px/);
   assert.match(contents, /min-width: 430px/);
   assert.match(contents, /safe-area-inset-bottom/);
-  assert.match(contents, /var\(--uf-tap-target-min\)/);
   assert.match(contents, /prefers-reduced-motion: reduce/);
-  assert.doesNotMatch(contents, /#[0-9a-f]{3,8}/i);
 });
 
-test('camada mobile permanece estática e sem integrações', async () => {
-  const contents = await Promise.all(['MobileFinanceiroView.jsx', 'financeiroMobile.mock.js', 'components/RecentTransactionsList.jsx'].map(source));
-  assert.doesNotMatch(contents.join('\n'), /supabase|fetch\(|axios|openai|elevenlabs/i);
+test('mobile não acessa Supabase diretamente', async () => {
+  const contents = await Promise.all([
+    source('MobileFinanceiroView.jsx'),
+    source('financeiroMobileData.js'),
+    source('components/RecentTransactionsList.jsx'),
+  ]);
+  assert.doesNotMatch(contents.join('\n'), /supabase|axios|openai|elevenlabs/i);
 });

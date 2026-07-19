@@ -17,7 +17,7 @@ const EMPTY_FORM = {
   balance: '0',
 };
 
-function FinanceAccountModal({ accountState, onClose, open }) {
+function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
@@ -41,7 +41,7 @@ function FinanceAccountModal({ accountState, onClose, open }) {
     setForm({
       name: account.name,
       account_type: account.account_type,
-      balance: String(account.current_balance ?? 0),
+      balance: String(account.initial_balance ?? 0),
     });
   }
 
@@ -52,19 +52,23 @@ function FinanceAccountModal({ accountState, onClose, open }) {
       {
         name: form.name,
         account_type: form.account_type,
-        ...(editingId
-          ? { current_balance: balance }
-          : { initial_balance: balance, current_balance: balance }),
+        initial_balance: balance,
       },
       editingId,
     );
 
-    if (!result.error) resetForm();
+    if (!result.error) {
+      await onChanged?.();
+      resetForm();
+    }
   }
 
   async function handleDelete(accountId) {
     const result = await accountState.archiveAccount(accountId);
-    if (!result.error) resetForm();
+    if (!result.error) {
+      await onChanged?.();
+      resetForm();
+    }
   }
 
   return (
@@ -106,7 +110,7 @@ function FinanceAccountModal({ accountState, onClose, open }) {
           </SelectField>
           <Input
             id="finance-account-balance"
-            label="Saldo atual"
+            label="Saldo inicial"
             type="number"
             step="0.01"
             value={form.balance}
@@ -138,7 +142,7 @@ function FinanceAccountModal({ accountState, onClose, open }) {
             <CrudRow
               key={account.id}
               title={account.name}
-              detail={`${account.account_type} · ${formatCurrency(account.current_balance)}`}
+              detail={`${account.account_type} · ${formatCurrency(account.derived_balance ?? account.initial_balance ?? 0)}`}
             >
               <Button
                 variant="outline"

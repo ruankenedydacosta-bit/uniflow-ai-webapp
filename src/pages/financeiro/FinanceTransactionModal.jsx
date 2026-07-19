@@ -17,8 +17,8 @@ import {
   getSelectableTransactionAccounts,
 } from './transactionFormUtils';
 
-function FinanceTransactionModal({ accountState, categoryState, onClose, open, transactionState }) {
-  const [form, setForm] = useState(createEmptyTransactionForm);
+function FinanceTransactionModal({ accountState, categoryState, initialType = 'expense', onChanged, onClose, open, transactionState }) {
+  const [form, setForm] = useState(() => createEmptyTransactionForm(initialType));
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const filteredCategories = useMemo(
@@ -36,7 +36,7 @@ function FinanceTransactionModal({ accountState, categoryState, onClose, open, t
   );
 
   function resetForm() {
-    setForm(createEmptyTransactionForm());
+    setForm(createEmptyTransactionForm(initialType));
     setEditingId(null);
     setPendingDeleteId(null);
   }
@@ -61,12 +61,18 @@ function FinanceTransactionModal({ accountState, categoryState, onClose, open, t
       editingId,
     );
 
-    if (!result.error) resetForm();
+    if (!result.error) {
+      await onChanged?.();
+      resetForm();
+    }
   }
 
   async function handleDelete(transactionId) {
     const result = await transactionState.removeTransaction(transactionId);
-    if (!result.error) resetForm();
+    if (!result.error) {
+      await onChanged?.();
+      resetForm();
+    }
   }
 
   const canSubmit =

@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAccess } from '../app/AccessContext';
 import { useSession } from '../app/SessionContext';
 import { WORKSPACE_TYPES } from '../app/access.js';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { useAccounts, useCategories, useTransactions } from '../hooks';
+import { useAccounts, useCategories, useFinancialBalances, useTransactions } from '../hooks';
+import { FINANCIAL_DATA_CHANGED_EVENT } from '../services/financialDataEvents.js';
 import { cx } from '../utils/cx';
 import { formatCurrency } from '../utils/formatters';
 import FinanceAccountModal from './financeiro/FinanceAccountModal';
@@ -39,6 +40,7 @@ function FinanceiroPage() {
   const { access } = useAccess();
   const { workspace } = useSession();
   const [activeDialog, setActiveDialog] = useState(null);
+  const [transactionType, setTransactionType] = useState('expense');
   const financial = getFinancialContext(access.currentWorkspace);
   const crudFallback = getCrudContext(access.currentWorkspace);
   const accountState = useAccounts({
@@ -54,6 +56,38 @@ function FinanceiroPage() {
     workspaceId: workspace?.id,
     fallbackTransactions: crudFallback.transactions,
   });
+  const balanceState = useFinancialBalances({ workspaceId: workspace?.id });
+  const accountsWithDerivedBalance = useMemo(() => {
+    const balanceByAccount = new Map(
+      balanceState.accountBalances.map((balance) => [balance.account_id, balance]),
+    );
+
+    return accountState.accounts.map((account) => ({
+      ...account,
+      derived_balance: Number(
+        balanceByAccount.get(account.id)?.derived_balance ?? account.initial_balance ?? 0,
+      ),
+    }));
+  }, [accountState.accounts, balanceState.accountBalances]);
+  const displayAccountState = useMemo(() => ({
+    ...accountState,
+    accounts: accountsWithDerivedBalance,
+    activeAccounts: accountsWithDerivedBalance.filter((account) => account.is_active !== false),
+  }), [accountState, accountsWithDerivedBalance]);
+  const refreshFinancialData = useCallback(() => Promise.all([
+    accountState.refresh(),
+    categoryState.refresh(),
+    transactionState.refresh(),
+    balanceState.refresh(),
+  ]), [accountState, balanceState, categoryState, transactionState]);
+  const mobileError = accountState.error
+    ?? categoryState.error
+    ?? transactionState.error
+    ?? balanceState.error;
+  const mobileLoading = accountState.isLoading
+    || categoryState.isLoading
+    || transactionState.isLoading
+    || balanceState.isLoading;
   const recentMovements = useMemo(
     () =>
       transactionState.transactions.slice(0, 3).map((transaction) => ({
@@ -73,20 +107,37 @@ function FinanceiroPage() {
     [categoryState.categories, transactionState.transactions],
   );
 
-  function openDialog(dialog) {
+  useEffect(() => {
+    const refresh = () => {
+      void refreshFinancialData();
+    };
+    window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, refresh);
+    return () => window.removeEventListener(FINANCIAL_DATA_CHANGED_EVENT, refresh);
+  }, [refreshFinancialData]);
+
+  function openDialog(dialog, requestedTransactionType = 'expense') {
     accountState.clearError();
     categoryState.clearError();
     transactionState.clearError();
+    balanceState.clearError();
+    if (dialog === 'transactions') setTransactionType(requestedTransactionType);
     setActiveDialog(dialog);
   }
 
   return (
     <>
       <MobileFinanceiroView
+        accountBalances={balanceState.accountBalances}
+        accounts={accountState.accounts}
+        categories={categoryState.categories}
+        error={mobileError}
+        isLoading={mobileLoading}
         onManageAccounts={() => openDialog('accounts')}
         onManageCategories={() => openDialog('categories')}
-        onNewTransaction={() => openDialog('transactions')}
-        viewState="ready"
+        onNewTransaction={(type) => openDialog('transactions', type)}
+        onRetry={refreshFinancialData}
+        transactions={transactionState.transactions}
+        workspaceBalance={balanceState.workspaceBalance}
       />
       <div className={styles.page}>
       <section className={styles.hero} aria-labelledby="financeiro-title">
@@ -225,17 +276,22 @@ function FinanceiroPage() {
       <FinanceAccountModal
         open={activeDialog === 'accounts'}
         onClose={() => setActiveDialog(null)}
-        accountState={accountState}
+        onChanged={refreshFinancialData}
+        accountState={displayAccountState}
       />
       <FinanceCategoryModal
         open={activeDialog === 'categories'}
         onClose={() => setActiveDialog(null)}
+        onChanged={refreshFinancialData}
         categoryState={categoryState}
       />
       <FinanceTransactionModal
+        key={`transaction-${transactionType}`}
         open={activeDialog === 'transactions'}
         onClose={() => setActiveDialog(null)}
-        accountState={accountState}
+        onChanged={refreshFinancialData}
+        initialType={transactionType}
+        accountState={displayAccountState}
         categoryState={categoryState}
         transactionState={transactionState}
       />

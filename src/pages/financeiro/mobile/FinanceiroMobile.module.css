@@ -52,6 +52,7 @@
   .financeiro :global(.financeMobileBalance p span) { color: var(--uf-color-text-tertiary); font-size: var(--uf-text-micro-size); }
   .financeiro :global(.financeMobileIncome), .financeiro :global(.financeMobile-income) { color: var(--uf-color-success); }
   .financeiro :global(.financeMobileExpense), .financeiro :global(.financeMobile-expense) { color: var(--uf-color-danger); }
+  .financeiro :global(.financeMobile-neutral) { color: var(--uf-color-text-secondary); }
 
   .financeiro :global(.financeMobileSectionHeader), .financeiro :global(.financeMobileChart header) { display: flex; min-height: var(--uf-tap-target-min); align-items: center; justify-content: space-between; gap: var(--uf-space-12); }
   .financeiro :global(.financeMobileCognitiveSection) { display: flex; flex-direction: column; gap: var(--uf-space-8); }
@@ -86,6 +87,7 @@
   .financeiro :global(.financeMobileTone-green) { border-color: color-mix(in srgb, var(--uf-color-success) 45%, var(--uf-color-border-subtle)); }
 
   .financeiro :global(.financeMobileTransactions), .financeiro :global(.financeMobileCategories) { display: flex; flex-direction: column; gap: var(--uf-space-4); margin: 0; padding: 0; list-style: none; }
+  .financeiro :global(.financeMobileEmptyMessage) { margin: var(--uf-space-8) 0 0; color: var(--uf-color-text-secondary); font-size: var(--uf-text-caption-size); line-height: var(--uf-text-caption-lh); }
   .financeiro :global(.financeMobileTransaction) { display: grid; grid-template-columns: var(--uf-space-40) minmax(0, 1fr) auto; align-items: center; gap: var(--uf-space-12); min-height: 62px; border-bottom: 1px solid var(--uf-color-border-subtle); }
   .financeiro :global(.financeMobileTransaction:last-child) { border-bottom: 0; }
   .financeiro :global(.financeMobileTransaction > span) { display: grid; width: var(--uf-space-40); height: var(--uf-space-40); place-items: center; border-radius: 50%; background: var(--uf-color-bg-sunken); color: var(--uf-color-text-secondary); }

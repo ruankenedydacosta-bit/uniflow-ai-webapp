@@ -17,7 +17,7 @@ const CATEGORY_LABELS = {
   transfer: 'Transferência',
 };
 
-function FinanceCategoryModal({ categoryState, onClose, open }) {
+function FinanceCategoryModal({ categoryState, onChanged, onClose, open }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
@@ -44,12 +44,18 @@ function FinanceCategoryModal({ categoryState, onClose, open }) {
   async function handleSubmit(event) {
     event.preventDefault();
     const result = await categoryState.saveCategory(form, editingId);
-    if (!result.error) resetForm();
+    if (!result.error) {
+      await onChanged?.();
+      resetForm();
+    }
   }
 
   async function handleDelete(categoryId) {
     const result = await categoryState.removeCategory(categoryId);
-    if (!result.error) resetForm();
+    if (!result.error) {
+      await onChanged?.();
+      resetForm();
+    }
   }
 
   return (
