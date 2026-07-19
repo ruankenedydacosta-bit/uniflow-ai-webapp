@@ -1,0 +1,127 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.sectionTitle {
+  font-size: var(--uf-text-subtitle-size);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-16);
+  flex-wrap: wrap;
+}
+
+.legend {
+  display: flex;
+  gap: var(--uf-space-16);
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-6);
+}
+
+.legendSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--uf-radius-full);
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.legendLabelActive {
+  color: var(--uf-color-text-primary);
+}
+
+.chartWrapper {
+  background: var(--uf-color-bg-surface);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  padding: var(--uf-space-16);
+  overflow: hidden;
+}
+
+.svg {
+  display: block;
+  overflow: visible;
+}
+
+.line {
+  fill: none;
+  stroke-width: 1.5;
+  opacity: 0.4;
+  transition: opacity var(--uf-duration-fast) var(--uf-ease-smooth);
+}
+
+.lineHighlight {
+  stroke-width: 2.5;
+  opacity: 1;
+}
+
+.dot {
+  opacity: 0;
+  transition: opacity var(--uf-duration-fast) var(--uf-ease-smooth);
+}
+
+.lineHighlight + .dot {
+  opacity: 0.8;
+}
+
+.zeroLine {
+  stroke: var(--uf-color-border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.gridLine {
+  stroke: var(--uf-color-border-subtle);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 4;
+}
+
+.tickLabel {
+  font-size: 10px;
+  fill: var(--uf-color-text-tertiary);
+  font-family: var(--uf-font-family-base);
+}
+
+.xLabel {
+  font-size: 10px;
+  fill: var(--uf-color-text-tertiary);
+  font-family: var(--uf-font-family-base);
+}
+
+.chartDisclaimer {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+  text-align: center;
+}
+
+.emptyChart {
+  background: var(--uf-color-bg-surface);
+  border: 1px dashed var(--uf-color-border-default);
+  border-radius: var(--uf-radius-16);
+  padding: var(--uf-space-40);
+  text-align: center;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+}
+
+.emptyHint {
+  margin-top: var(--uf-space-8);
+  color: var(--uf-color-text-tertiary);
+  font-size: var(--uf-text-micro-size);
+}

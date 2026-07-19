@@ -1,0 +1,109 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.sectionTitle {
+  font-size: var(--uf-text-subtitle-size);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.sectionDesc {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--uf-space-16);
+}
+
+.scenarioBtn {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-20);
+  background: var(--uf-color-bg-surface);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  cursor: pointer;
+  transition: all var(--uf-duration-fast) var(--uf-ease-smooth);
+  text-align: left;
+  min-height: var(--uf-tap-target-min);
+}
+
+.scenarioBtn:hover {
+  border-color: var(--uf-color-border-strong);
+  background: var(--uf-color-bg-surface-hover);
+}
+
+.scenarioBtnActive {
+  border-color: var(--uf-color-primary);
+  background: var(--uf-color-primary-subtle);
+}
+
+.scenarioDefault {
+  border-color: var(--uf-color-border-default);
+}
+
+.scenarioHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-8);
+}
+
+.scenarioName {
+  font-size: var(--uf-text-body-size);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.scenarioDesc {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-secondary);
+  line-height: 1.4;
+}
+
+.scenarioAdjustments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+  padding: var(--uf-space-8) 0;
+  border-top: 1px solid var(--uf-color-divider);
+  border-bottom: 1px solid var(--uf-color-divider);
+}
+
+.adjustmentRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+}
+
+.adjustmentValue {
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.positive {
+  color: var(--uf-color-success);
+}
+
+.negative {
+  color: var(--uf-color-danger);
+}
+
+.scenarioResult {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

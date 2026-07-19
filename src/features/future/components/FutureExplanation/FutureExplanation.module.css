@@ -1,0 +1,67 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.sectionTitle {
+  font-size: var(--uf-text-subtitle-size);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--uf-space-16);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+}
+
+.cardTitle {
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-color-text-primary);
+}
+
+.cardText {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-secondary);
+  line-height: 1.5;
+}
+
+.assumptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-6);
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-secondary);
+  line-height: 1.5;
+  padding-left: var(--uf-space-16);
+  list-style: disc;
+}
+
+.assumptions li {
+  list-style: disc;
+}
+
+.disclaimerCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+}
+
+.disclaimerTitle {
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-color-warning);
+}
+
+.disclaimerText {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-secondary);
+  line-height: 1.5;
+}

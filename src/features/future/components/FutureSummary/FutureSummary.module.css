@@ -1,0 +1,47 @@
+.sectionTitle {
+  font-size: var(--uf-text-subtitle-size);
+  font-weight: var(--uf-font-weight-semibold);
+  margin-bottom: var(--uf-space-16);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--uf-space-16);
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+}
+
+.summaryLabel {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.summaryValue {
+  font-size: var(--uf-text-title-size);
+  font-weight: var(--uf-font-weight-bold);
+  color: var(--uf-color-text-primary);
+  line-height: 1.2;
+}
+
+.disclaimer {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+}
+
+.goalCounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
+  margin: var(--uf-space-4) 0;
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
