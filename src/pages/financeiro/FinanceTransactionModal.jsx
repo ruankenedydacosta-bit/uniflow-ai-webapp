@@ -17,9 +17,15 @@ import {
   getSelectableTransactionAccounts,
 } from './transactionFormUtils';
 
-function FinanceTransactionModal({ accountState, categoryState, initialType = 'expense', onChanged, onClose, open, transactionState }) {
-  const [form, setForm] = useState(() => createEmptyTransactionForm(initialType));
-  const [editingId, setEditingId] = useState(null);
+function FinanceTransactionModal({ accountState, categoryState, editingTransactionId, initialType = 'expense', onChanged, onClose, open, transactionState }) {
+  const [form, setForm] = useState(() => {
+    if (editingTransactionId) {
+      const transaction = transactionState.transactions.find((t) => t.id === editingTransactionId);
+      if (transaction) return createTransactionEditForm(transaction);
+    }
+    return createEmptyTransactionForm(initialType);
+  });
+  const [editingId, setEditingId] = useState(() => editingTransactionId ?? null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const filteredCategories = useMemo(
     () =>

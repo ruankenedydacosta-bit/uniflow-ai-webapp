@@ -40,6 +40,7 @@ function FinanceiroPage() {
   const { access } = useAccess();
   const { workspace } = useSession();
   const [activeDialog, setActiveDialog] = useState(null);
+  const [editingTransactionId, setEditingTransactionId] = useState(null);
   const [transactionType, setTransactionType] = useState('expense');
   const financial = getFinancialContext(access.currentWorkspace);
   const crudFallback = getCrudContext(access.currentWorkspace);
@@ -134,6 +135,16 @@ function FinanceiroPage() {
         categories={categoryState.categories}
         error={mobileError}
         isLoading={mobileLoading}
+        onDeleteTransaction={(transactionId) => {
+          transactionState.removeTransaction(transactionId).then((result) => {
+            if (!result.error) void refreshFinancialData();
+          });
+        }}
+        onEditTransaction={(transaction) => {
+          setTransactionType(transaction.transaction_type);
+          setEditingTransactionId(transaction.id);
+          setActiveDialog('transactions');
+        }}
         onManageAccounts={() => openDialog('accounts')}
         onManageCategories={() => openDialog('categories')}
         onNewTransaction={(type) => openDialog('transactions', type)}
@@ -288,9 +299,13 @@ function FinanceiroPage() {
         categoryState={categoryState}
       />
       <FinanceTransactionModal
-        key={`transaction-${transactionType}`}
+        editingTransactionId={editingTransactionId}
+        key={`transaction-${transactionType}-${editingTransactionId ?? 'new'}`}
         open={activeDialog === 'transactions'}
-        onClose={() => setActiveDialog(null)}
+        onClose={() => {
+          setEditingTransactionId(null);
+          setActiveDialog(null);
+        }}
         onChanged={refreshFinancialData}
         initialType={transactionType}
         accountState={displayAccountState}

@@ -127,7 +127,6 @@ function buildTransactions(transactions, categories) {
   const categoriesById = new Map(categories.map((category) => [category.id, category.name]));
   return [...transactions]
     .sort((left, right) => `${right.transaction_date}${right.created_at ?? ''}`.localeCompare(`${left.transaction_date}${left.created_at ?? ''}`))
-    .slice(0, 8)
     .map((transaction) => {
       const isIncome = transaction.transaction_type === 'income';
       const isExpense = transaction.transaction_type === 'expense';

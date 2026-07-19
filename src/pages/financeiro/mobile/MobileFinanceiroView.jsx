@@ -19,6 +19,8 @@ function MobileFinanceiroView({
   categories = [],
   error = null,
   isLoading = false,
+  onDeleteTransaction,
+  onEditTransaction,
   onManageAccounts,
   onManageCategories,
   onNewTransaction,
@@ -63,7 +65,7 @@ function MobileFinanceiroView({
       <AvailableBalanceCard balance={period.balance} comparison={period.comparison} income={period.income} expense={period.expense} />
       <IncomeExpenseChart chart={period.chart} />
       <AccountsCarousel accounts={period.accounts} onManage={onManageAccounts} />
-      <RecentTransactionsList transactions={period.transactions} onNew={onNewTransaction} />
+      <RecentTransactionsList transactions={period.transactions} onDelete={onDeleteTransaction} onEdit={onEditTransaction} onNew={onNewTransaction} />
       <CategoriesBreakdown categories={period.categories} onManage={onManageCategories} />
       <button className="financeMobileFab" type="button" onClick={() => setQuickActionsOpen(true)} aria-label="Abrir ações financeiras rápidas">+</button>
       <QuickActionSheet open={quickActionsOpen} onClose={() => setQuickActionsOpen(false)} onAction={chooseQuickAction} />

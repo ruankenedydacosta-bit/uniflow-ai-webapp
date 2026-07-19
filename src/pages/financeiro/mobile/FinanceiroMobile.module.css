@@ -88,12 +88,20 @@
 
   .financeiro :global(.financeMobileTransactions), .financeiro :global(.financeMobileCategories) { display: flex; flex-direction: column; gap: var(--uf-space-4); margin: 0; padding: 0; list-style: none; }
   .financeiro :global(.financeMobileEmptyMessage) { margin: var(--uf-space-8) 0 0; color: var(--uf-color-text-secondary); font-size: var(--uf-text-caption-size); line-height: var(--uf-text-caption-lh); }
-  .financeiro :global(.financeMobileTransaction) { display: grid; grid-template-columns: var(--uf-space-40) minmax(0, 1fr) auto; align-items: center; gap: var(--uf-space-12); min-height: 62px; border-bottom: 1px solid var(--uf-color-border-subtle); }
+  .financeiro :global(.financeMobileTransaction) { display: flex; align-items: center; gap: var(--uf-space-4); min-height: 62px; padding: var(--uf-space-4) 0; border-bottom: 1px solid var(--uf-color-border-subtle); }
   .financeiro :global(.financeMobileTransaction:last-child) { border-bottom: 0; }
-  .financeiro :global(.financeMobileTransaction > span) { display: grid; width: var(--uf-space-40); height: var(--uf-space-40); place-items: center; border-radius: 50%; background: var(--uf-color-bg-sunken); color: var(--uf-color-text-secondary); }
-  .financeiro :global(.financeMobileTransaction > div) { display: flex; min-width: 0; flex-direction: column; }
-  .financeiro :global(.financeMobileTransaction strong), .financeiro :global(.financeMobileTransaction b) { overflow: hidden; font-size: var(--uf-text-caption-size); text-overflow: ellipsis; white-space: nowrap; }
+  .financeiro :global(.financeMobileTransaction strong) { overflow: hidden; font-size: var(--uf-text-caption-size); text-overflow: ellipsis; white-space: nowrap; }
   .financeiro :global(.financeMobileTransaction small) { color: var(--uf-color-text-tertiary); font-size: var(--uf-text-micro-size); }
+  .financeiro :global(.financeMobileTransaction b) { overflow: hidden; font-size: var(--uf-text-caption-size); text-overflow: ellipsis; white-space: nowrap; }
+  .financeiro :global(.financeMobileTransactionInfo) { display: flex; min-width: 0; flex: 1; align-items: center; gap: var(--uf-space-12); border: 0; padding: 0; background: transparent; color: inherit; cursor: pointer; text-align: left; font: inherit; }
+  .financeiro :global(.financeMobileTransactionInfo > div) { display: flex; min-width: 0; flex-direction: column; }
+  .financeiro :global(.financeMobileTransactionIcon) { display: grid; width: var(--uf-space-40); height: var(--uf-space-40); flex-shrink: 0; place-items: center; border-radius: 50%; background: var(--uf-color-bg-sunken); color: var(--uf-color-text-secondary); font-weight: var(--uf-font-weight-semibold); font-size: var(--uf-text-caption-size); }
+  .financeiro :global(.financeMobileTransactionIcon.income) { color: var(--uf-color-success); }
+  .financeiro :global(.financeMobileTransactionIcon.expense) { color: var(--uf-color-danger); }
+  .financeiro :global(.financeMobileTransactionIcon.neutral) { color: var(--uf-color-text-secondary); }
+  .financeiro :global(.financeMobileTransactionRight) { display: flex; flex-shrink: 0; align-items: center; gap: var(--uf-space-4); }
+  .financeiro :global(.financeMobileDeleteBtn) { display: grid; width: 28px; height: 28px; flex-shrink: 0; place-items: center; border: 0; border-radius: var(--uf-radius-8); background: transparent; color: var(--uf-color-text-tertiary); cursor: pointer; font-size: 1rem; line-height: 1; }
+  .financeiro :global(.financeMobileDeleteBtn:active) { background: var(--uf-color-bg-sunken); color: var(--uf-color-danger); }
   .financeiro :global(.financeMobileCategory) { display: flex; flex-direction: column; gap: var(--uf-space-8); padding: var(--uf-space-8) 0; }
   .financeiro :global(.financeMobileCategory > div:first-child) { display: flex; justify-content: space-between; font-size: var(--uf-text-caption-size); }
   .financeiro :global(.financeMobileCategoryTrack) { height: 8px; overflow: hidden; border-radius: var(--uf-radius-full); background: var(--uf-color-bg-sunken); }
@@ -124,6 +132,21 @@
   .financeiro :global(.financeMobileEmpty h2) { font-size: var(--uf-text-title-size); }
   .financeiro :global(.financeMobileEmpty p) { max-width: 32ch; color: var(--uf-color-text-secondary); font-size: var(--uf-text-caption-size); line-height: var(--uf-text-caption-lh); }
   .financeiro :global(.financeMobileEmpty button) { width: 100%; border: 0; border-radius: var(--uf-radius-12); background: var(--uf-color-primary); color: var(--uf-color-on-primary); font-weight: var(--uf-font-weight-semibold); }
+
+  .financeiro :global(.financeMobileFilterChips) { display: flex; gap: var(--uf-space-8); margin: var(--uf-space-12) 0 0; overflow-x: auto; padding-bottom: var(--uf-space-4); scrollbar-width: none; }
+  .financeiro :global(.financeMobileFilterChips::-webkit-scrollbar) { display: none; }
+  .financeiro :global(.financeMobileChip) { flex-shrink: 0; border: 1px solid var(--uf-color-border-subtle); border-radius: var(--uf-radius-full); padding: var(--uf-space-4) var(--uf-space-12); background: transparent; color: var(--uf-color-text-secondary); cursor: pointer; font-size: var(--uf-text-micro-size); font-weight: var(--uf-font-weight-semibold); white-space: nowrap; }
+  .financeiro :global(.financeMobileChip.active) { border-color: var(--uf-color-primary); background: var(--uf-color-primary-subtle); color: var(--uf-color-text-brand); }
+  .financeiro :global(.financeMobileTransactionToolbar) { display: flex; align-items: center; gap: var(--uf-space-8); margin: var(--uf-space-8) 0 0; }
+  .financeiro :global(.financeMobileSearch) { display: flex; flex: 1; min-width: 0; align-items: center; gap: var(--uf-space-4); padding: var(--uf-space-4) var(--uf-space-8); border: 1px solid var(--uf-color-border-subtle); border-radius: var(--uf-radius-12); background: var(--uf-color-bg-sunken); }
+  .financeiro :global(.financeMobileSearch:focus-within) { border-color: var(--uf-color-primary); }
+  .financeiro :global(.financeMobileSearchIcon) { flex-shrink: 0; color: var(--uf-color-text-tertiary); font-size: var(--uf-text-caption-size); }
+  .financeiro :global(.financeMobileSearch input) { width: 100%; min-height: 28px; border: 0; padding: 0; background: transparent; color: var(--uf-color-text-primary); font: inherit; font-size: var(--uf-text-caption-size); outline: none; }
+  .financeiro :global(.financeMobileSearch input::placeholder) { color: var(--uf-color-text-tertiary); }
+  .financeiro :global(.financeMobileSortBtn) { flex-shrink: 0; border: 1px solid var(--uf-color-border-subtle); border-radius: var(--uf-radius-12); padding: var(--uf-space-4) var(--uf-space-8); background: transparent; color: var(--uf-color-text-secondary); cursor: pointer; font-size: var(--uf-text-micro-size); white-space: nowrap; }
+  .financeiro :global(.financeMobileSortBtn:active) { background: var(--uf-color-bg-sunken); }
+  .financeiro :global(.financeMobileFilterEmpty) { margin: var(--uf-space-8) 0 var(--uf-space-4); color: var(--uf-color-text-secondary); font-size: var(--uf-text-caption-size); line-height: var(--uf-text-caption-lh); text-align: center; }
+  .financeiro :global(.financeMobileFilterEmpty.active) { color: var(--uf-color-text-tertiary); }
 }
 
 @media (max-width: 359px) {
