@@ -13,7 +13,7 @@ import MessageBubble from './components/MessageBubble';
 import TypingIndicator from './components/TypingIndicator';
 import QuickSuggestions from './components/QuickSuggestions';
 import ChatInput from './components/ChatInput';
-import ErrorState from './components/ErrorState';
+
 import ScrollToLatest from './components/ScrollToLatest';
 import HistoryPanel from './components/HistoryPanel';
 import {
@@ -134,7 +134,6 @@ export default function UniChatPage() {
   });
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [hasError, setHasError] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [conversations, setConversations] = useState(() => {
@@ -471,7 +470,6 @@ export default function UniChatPage() {
       switchWorkspace(modeToWorkspaceType(convMode));
     }
     setMode(convMode);
-    setHasError(false);
     setIsTyping(false);
     setPendingAction(null);
     setExecutionError(null);
@@ -500,7 +498,6 @@ export default function UniChatPage() {
 
   function sendText(text) {
     if (!text.trim() || isTyping || isConfirming) return;
-    setHasError(false);
     setExecutionError(null);
     stickToBottom.current = true;
 
@@ -581,10 +578,6 @@ export default function UniChatPage() {
     }, UNI_THINK_MIN_MS);
   }
 
-  function handleRetry() {
-    setHasError(false);
-  }
-
   function handleSuggestionSelect(item) {
     sendText(item.label);
   }
@@ -609,7 +602,6 @@ export default function UniChatPage() {
       setMessages([]);
       setActiveId(null);
       setIsTyping(false);
-      setHasError(false);
       const conv = createLocalConversation(next);
       setConversations((prev) => {
         const nextList = [...prev, conv];
@@ -636,7 +628,6 @@ export default function UniChatPage() {
     setConversations(nextList);
     setActiveId(conv.id);
     setMessages([]);
-    setHasError(false);
     setIsTyping(false);
     setPendingAction(null);
     setExecutionError(null);
@@ -670,7 +661,6 @@ export default function UniChatPage() {
       setConversations(nextList);
       setActiveId(conv.id);
       setMessages([]);
-      setHasError(false);
       setPendingAction(null);
       setExecutionError(null);
       setIsExecutingAction(false);
@@ -814,7 +804,6 @@ export default function UniChatPage() {
               />
             ))}
             {isTyping && <TypingIndicator />}
-            {hasError && <ErrorState onRetry={handleRetry} />}
             <div ref={bottomRef} />
           </div>
         )}

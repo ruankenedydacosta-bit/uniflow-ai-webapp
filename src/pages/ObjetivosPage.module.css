@@ -67,6 +67,15 @@
   margin-top: var(--uf-space-16);
 }
 
+.errorBanner {
+  padding: var(--uf-space-16) var(--uf-space-20);
+  background: var(--uf-color-surface-danger, #fef2f2);
+  border: 1px solid var(--uf-color-border-danger, #fecaca);
+  border-radius: var(--uf-radius-md, 8px);
+  color: var(--uf-color-text-danger, #991b1b);
+  font-size: var(--uf-text-caption-size);
+}
+
 .emptyState {
   display: flex;
   flex-direction: column;

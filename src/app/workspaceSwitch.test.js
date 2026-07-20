@@ -101,3 +101,75 @@ test('header não usa callback vazio para alternância', async () => {
   assert.match(source, /onContextChange=\{onContextChange\}/);
   assert.doesNotMatch(source, /const NOOP/);
 });
+
+// ── Fase 11 — Auditoria de Produto ──────────────────────────────────────────
+
+test('useFutureData escuta FINANCIAL_DATA_CHANGED_EVENT para manter projeções atuais', async () => {
+  const source = await readFile(new URL('../features/future/useFutureData.js', import.meta.url), 'utf8');
+  assert.match(source, /FINANCIAL_DATA_CHANGED_EVENT/);
+  assert.match(source, /addEventListener/);
+  assert.match(source, /refreshAll/);
+});
+
+test('useFutureData inclui refresh dos tres hooks de dados financeiros', async () => {
+  const source = await readFile(new URL('../features/future/useFutureData.js', import.meta.url), 'utf8');
+  assert.match(source, /refreshBalance/);
+  assert.match(source, /refreshTransactions/);
+  assert.match(source, /refreshGoals/);
+});
+
+test('useHomeFinancialData integra useGoals e retorna dados reais', async () => {
+  const source = await readFile(new URL('../features/dashboard/mobile/useHomeFinancialData.js', import.meta.url), 'utf8');
+  assert.match(source, /useGoals/);
+  assert.match(source, /homeGoals/);
+  assert.match(source, /goals\.length > 0/);
+});
+
+test('ObjetivosPage destrutor error e renderiza estado de erro', async () => {
+  const source = await readFile(new URL('../pages/ObjetivosPage.jsx', import.meta.url), 'utf8');
+  assert.match(source, /error,.*addGoal/);
+  assert.match(source, /errorBanner/);
+  assert.match(source, /error\.message/);
+});
+
+test('FinanceiroPage limpa erros antes de refresh para evitar estado inconsistente', async () => {
+  const source = await readFile(new URL('../pages/FinanceiroPage.jsx', import.meta.url), 'utf8');
+  assert.match(source, /clearAllErrors/);
+  assert.match(source, /clearError\(\)/);
+  assert.match(source, /refreshFinancialData/);
+});
+
+test('FinanceiroPage notifica evento global apos mutacao para sincronizar modulos', async () => {
+  const source = await readFile(new URL('../pages/FinanceiroPage.jsx', import.meta.url), 'utf8');
+  assert.match(source, /notifyFinancialDataChanged\('financeiro'\)/);
+  assert.match(source, /FINANCIAL_DATA_CHANGED_EVENT/);
+});
+
+test('FinanceiroPage usa funcoes individuais como dependencias para evitar re-registro de listener', async () => {
+  const source = await readFile(new URL('../pages/FinanceiroPage.jsx', import.meta.url), 'utf8');
+  assert.match(source, /accountState\.refresh/);
+  assert.match(source, /balanceState\.refresh/);
+  assert.match(source, /exhaustive-deps/);
+  assert.match(source, /clearAllErrors/);
+});
+
+test('DashboardPage renderiza condicionalmente mobile ou desktop sem duplicar DOM', async () => {
+  const source = await readFile(new URL('../features/dashboard/DashboardPage.jsx', import.meta.url), 'utf8');
+  assert.match(source, /useMobileViewport/);
+  assert.match(source, /if \(isMobile\)/);
+  assert.match(source, /MobileHomeView/);
+  assert.match(source, /dashboard/);
+});
+
+test('UniChatPage nao possui estado hasError morto ou ErrorState nao utilizado', async () => {
+  const source = await readFile(new URL('../features/uni-chat/UniChatPage.jsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /setHasError\(/);
+  assert.doesNotMatch(source, /useState\(false\).*hasError/);
+  assert.doesNotMatch(source, /<ErrorState/);
+});
+
+test('routes.jsx nao possui alias Unused UniChatProtoPage', async () => {
+  const source = await readFile(new URL('../app/routes.jsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /UniChatProtoPage/);
+  assert.match(source, /UniChatPage/);
+});

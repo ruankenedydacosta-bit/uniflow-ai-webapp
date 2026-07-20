@@ -8,6 +8,7 @@ import FutureHomePreview from '../../features/future/components/FutureHomePrevie
 import { dashboardMock } from './dashboard.mock';
 import { MobileHomeView } from './mobile/index.js';
 import { useHomeFinancialData } from './mobile/useHomeFinancialData.js';
+import { useMobileViewport } from '../../layouts/mobile-app-shell/useMobileViewport.js';
 import styles from './DashboardPage.module.css';
 
 function getDashboardContext(currentWorkspace) {
@@ -17,17 +18,23 @@ function getDashboardContext(currentWorkspace) {
 function DashboardPage() {
   const navigate = useNavigate();
   const { access } = useAccess();
+  const isMobile = useMobileViewport();
   const dashboard = getDashboardContext(access.currentWorkspace);
-  const { summary, recentTransactions, isLoading, error } = useHomeFinancialData();
+  const { summary, recentTransactions, goals, isLoading, error } = useHomeFinancialData();
 
-  return (
-    <>
+  if (isMobile) {
+    return (
       <MobileHomeView
-        data={{ summary, recentTransactions }}
+        data={{ summary, recentTransactions, goals }}
         loading={isLoading}
         error={error}
         onNavigate={navigate}
       />
+    );
+  }
+
+  return (
+    <>
       <div className={styles.dashboard}>
       <section className={styles.hero} aria-labelledby="dashboard-title">
         <div className={styles.heroCopy}>

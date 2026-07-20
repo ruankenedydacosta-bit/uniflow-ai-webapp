@@ -22,7 +22,7 @@ function getWorkspaceLabel(currentWorkspace) {
 export default function ObjetivosPage() {
   const { access } = useAccess();
   const { workspace } = useSession();
-  const { goals, isLoading, addGoal, editGoal, removeGoal, addGoalContribution, removeGoalContribution } = useGoals({ workspaceId: workspace?.id });
+  const { goals, isLoading, error, addGoal, editGoal, removeGoal, addGoalContribution, removeGoalContribution } = useGoals({ workspaceId: workspace?.id });
 
   const { projections: futureProjections } = useFutureData({ selectedHorizon: 6 });
 
@@ -113,7 +113,13 @@ export default function ObjetivosPage() {
         </div>
       </section>
 
-      {!isLoading && goals.length > 0 && (
+      {error && !isLoading && (
+        <div className={styles.errorBanner} role="alert">
+          <p>{error.message || 'Erro ao carregar metas'}</p>
+        </div>
+      )}
+
+      {!isLoading && goals.length > 0 && !error && (
         <GoalSummary goals={goals} />
       )}
 
@@ -126,7 +132,7 @@ export default function ObjetivosPage() {
 
         {isLoading ? (
           <GoalSkeleton />
-        ) : goals.length === 0 ? (
+        ) : error ? null : goals.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🎯</div>
             <p className={styles.emptyTitle}>Nenhuma meta ainda</p>

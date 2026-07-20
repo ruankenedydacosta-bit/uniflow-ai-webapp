@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from '../../../app/SessionContext';
 import { useCategories, useFinancialBalances, useTransactions } from '../../../hooks';
+import { useGoals } from '../../goals/useGoals';
 import { buildFinanceiroMobileData } from '../../../pages/financeiro/mobile/financeiroMobileData';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../../services/financialDataEvents';
 
@@ -37,8 +38,15 @@ export function useHomeFinancialData() {
 
   const { categories } = useCategories({ workspaceId });
 
-  const isLoading = balanceLoading || transactionsLoading;
-  const error = balanceError ?? transactionsError;
+  const {
+    goals,
+    isLoading: goalsLoading,
+    error: goalsError,
+    refresh: refreshGoals,
+  } = useGoals({ workspaceId });
+
+  const isLoading = balanceLoading || transactionsLoading || goalsLoading;
+  const error = balanceError ?? transactionsError ?? goalsError;
 
   useEffect(() => {
     if (showSkeleton && !isLoading) {
@@ -56,7 +64,8 @@ export function useHomeFinancialData() {
   const refresh = useCallback(() => {
     refreshBalance();
     refreshTransactions();
-  }, [refreshBalance, refreshTransactions]);
+    refreshGoals();
+  }, [refreshBalance, refreshTransactions, refreshGoals]);
 
   useEffect(() => {
     const handler = () => refresh();
@@ -132,11 +141,23 @@ export function useHomeFinancialData() {
     [transactions, categories],
   );
 
-  const hasData = transactions.length > 0 || hasBalance;
+  const homeGoals = useMemo(
+    () => goals.map((g) => ({
+      id: g.id,
+      title: g.name,
+      progress: g.target_amount > 0
+        ? Math.round((Number(g.current_amount || 0) / Number(g.target_amount)) * 100)
+        : 0,
+    })),
+    [goals],
+  );
+
+  const hasData = transactions.length > 0 || hasBalance || goals.length > 0;
 
   return {
     summary,
     recentTransactions,
+    goals: homeGoals,
     isLoading: showSkeleton,
     error,
     hasData,

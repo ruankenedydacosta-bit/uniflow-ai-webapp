@@ -6,7 +6,7 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useAccounts, useCategories, useFinancialBalances, useTransactions } from '../hooks';
-import { FINANCIAL_DATA_CHANGED_EVENT } from '../services/financialDataEvents.js';
+import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../services/financialDataEvents.js';
 import { cx } from '../utils/cx';
 import { formatCurrency } from '../utils/formatters';
 import FinanceAccountModal from './financeiro/FinanceAccountModal';
@@ -75,12 +75,25 @@ function FinanceiroPage() {
     accounts: accountsWithDerivedBalance,
     activeAccounts: accountsWithDerivedBalance.filter((account) => account.is_active !== false),
   }), [accountState, accountsWithDerivedBalance]);
-  const refreshFinancialData = useCallback(() => Promise.all([
-    accountState.refresh(),
-    categoryState.refresh(),
-    transactionState.refresh(),
-    balanceState.refresh(),
-  ]), [accountState, balanceState, categoryState, transactionState]);
+  const clearAllErrors = useCallback(() => {
+    accountState.clearError();
+    categoryState.clearError();
+    transactionState.clearError();
+    balanceState.clearError();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountState.clearError, balanceState.clearError, categoryState.clearError, transactionState.clearError]);
+
+  const refreshFinancialData = useCallback(() => {
+    clearAllErrors();
+    notifyFinancialDataChanged('financeiro');
+    return Promise.all([
+      accountState.refresh(),
+      categoryState.refresh(),
+      transactionState.refresh(),
+      balanceState.refresh(),
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountState.refresh, balanceState.refresh, categoryState.refresh, transactionState.refresh, clearAllErrors]);
   const mobileError = activeDialog
     ? null
     : accountState.error
@@ -137,7 +150,7 @@ function FinanceiroPage() {
         isLoading={mobileLoading}
         onDeleteTransaction={(transactionId) => {
           transactionState.removeTransaction(transactionId).then((result) => {
-            if (!result.error) void refreshFinancialData();
+            if (!result.error) void balanceState.refresh();
           });
         }}
         onEditTransaction={(transaction) => {

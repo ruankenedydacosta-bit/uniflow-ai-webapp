@@ -19,8 +19,6 @@ const UniAudioLibraryPage = import.meta.env.DEV
   ? lazy(() => import('../pages/dev/uni-audio-library'))
   : null;
 
-const UniChatProtoPage = UniChatPage;
-
 export const publicRoutes = [
   {
     path: '/',
@@ -52,7 +50,7 @@ export const publicRoutes = [
     title: 'Uni Chat — Protótipo',
     element: (
       <Suspense fallback={null}>
-        <UniChatProtoPage />
+        <UniChatPage />
       </Suspense>
     ),
   },
