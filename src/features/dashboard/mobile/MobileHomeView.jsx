@@ -9,6 +9,9 @@ import InsightCarousel from './components/InsightCarousel.jsx';
 import NextStepCard from './components/NextStepCard.jsx';
 import QuickActionsGrid from './components/QuickActionsGrid.jsx';
 import UniBriefingCard from './components/UniBriefingCard.jsx';
+import PersonalizedWelcome from '../personalization/components/PersonalizedWelcome';
+import NextBestAction from '../personalization/components/NextBestAction';
+import ActivationSteps from '../personalization/components/ActivationSteps';
 
 const SKELETON_SECTIONS = Object.freeze([
   ['briefing', 'Carregando briefing da Uni'],
@@ -21,7 +24,7 @@ const SKELETON_SECTIONS = Object.freeze([
   ['actions', 'Carregando atalhos rápidos'],
 ]);
 
-function MobileHomeView({ data = homeMobileMock, loading = false, error = null, onNavigate }) {
+function MobileHomeView({ data = homeMobileMock, personalization = null, loading = false, error = null, onNavigate }) {
   const viewData = { ...homeMobileMock, ...data };
   const handleNavigate = (destination) => {
     if (typeof destination === 'string') onNavigate?.(destination);
@@ -101,8 +104,34 @@ function MobileHomeView({ data = homeMobileMock, loading = false, error = null, 
 
   return (
     <div className={styles.home} data-mobile-home>
+      {personalization && (
+        <section className="homeMobileCard" aria-label="Saudação">
+          <PersonalizedWelcome
+            greeting={personalization.greeting}
+            workspaceLabel={personalization.workspaceLabel}
+            variant="mobile"
+          />
+        </section>
+      )}
       <UniBriefingCard briefing={viewData.briefing} onAction={() => handleNavigate('/uni-ai')} />
-      <NextStepCard step={viewData.nextStep} onAction={() => handleNavigate('/financeiro')} />
+      {personalization ? (
+        <section className="homeMobileCard homeMobileNextStep" aria-label="Próximo passo">
+          <span className="homeMobileSectionLabel">Próximo passo</span>
+          <NextBestAction action={personalization.nextAction} onNavigate={handleNavigate} variant="mobile" />
+        </section>
+      ) : (
+        <NextStepCard step={viewData.nextStep} onAction={() => handleNavigate('/financeiro')} />
+      )}
+      {personalization?.showActivation && (
+        <ActivationSteps
+          steps={personalization.activation.steps}
+          completed={personalization.activation.completed}
+          total={personalization.activation.total}
+          percent={personalization.activation.percent}
+          onNavigate={handleNavigate}
+          variant="mobile"
+        />
+      )}
       <section className={styles.cognitiveChartSection} aria-labelledby="home-cognitive-chart-title">
         <header className={styles.cognitiveChartHeader}>
           <h2 id="home-cognitive-chart-title">Receitas e Despesas</h2>

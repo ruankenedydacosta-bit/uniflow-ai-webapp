@@ -1,0 +1,18 @@
+.desktopContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+  align-items: flex-start;
+  width: 100%;
+}
+
+.desktopTitle {
+  margin: 0;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
+}
+
+.desktopCta {
+  align-self: flex-start;
+}

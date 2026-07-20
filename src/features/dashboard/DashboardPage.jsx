@@ -9,6 +9,10 @@ import { dashboardMock } from './dashboard.mock';
 import { MobileHomeView } from './mobile/index.js';
 import { useHomeFinancialData } from './mobile/useHomeFinancialData.js';
 import { useMobileViewport } from '../../layouts/mobile-app-shell/useMobileViewport.js';
+import { useDashboardPersonalization } from './personalization/useDashboardPersonalization';
+import PersonalizedWelcome from './personalization/components/PersonalizedWelcome';
+import NextBestAction from './personalization/components/NextBestAction';
+import ActivationSteps from './personalization/components/ActivationSteps';
 import styles from './DashboardPage.module.css';
 
 function getDashboardContext(currentWorkspace) {
@@ -20,12 +24,14 @@ function DashboardPage() {
   const { access } = useAccess();
   const isMobile = useMobileViewport();
   const dashboard = getDashboardContext(access.currentWorkspace);
-  const { summary, recentTransactions, goals, isLoading, error } = useHomeFinancialData();
+  const { summary, recentTransactions, goals, isLoading, error, hasData } = useHomeFinancialData();
+  const personalization = useDashboardPersonalization({ summary, recentTransactions, goals, hasData });
 
   if (isMobile) {
     return (
       <MobileHomeView
         data={{ summary, recentTransactions, goals }}
+        personalization={personalization}
         loading={isLoading}
         error={error}
         onNavigate={navigate}
@@ -39,10 +45,12 @@ function DashboardPage() {
       <section className={styles.hero} aria-labelledby="dashboard-title">
         <div className={styles.heroCopy}>
           <Badge variant="secondary" dot>
-            {dashboard.workspaceLabel}
+            {personalization.workspaceLabel}
           </Badge>
-          <h2 id="dashboard-title">Painel de Clareza</h2>
-          <p>{dashboard.subtitle}</p>
+          <PersonalizedWelcome
+            greeting={personalization.greeting}
+            workspaceLabel={personalization.workspaceLabel}
+          />
         </div>
 
         <div className={styles.heroActions}>
@@ -86,16 +94,26 @@ function DashboardPage() {
         <Card variant="outline" padding="lg" className={styles.nextStepCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h3>Seu próximo passo</h3>
-              <p>Uma ação suficiente para avançar sem aumentar a carga mental.</p>
+              <h3>Seu pr\u00F3ximo passo</h3>
+              <p>Uma a\u00E7\u00E3o suficiente para avan\u00E7ar sem aumentar a carga mental.</p>
             </div>
             <Badge variant="glass" size="sm" dot>
               Uni
             </Badge>
           </div>
-          <strong>{dashboard.nextStep}</strong>
+          <NextBestAction action={personalization.nextAction} onNavigate={navigate} />
         </Card>
       </section>
+
+      {personalization.showActivation && (
+        <ActivationSteps
+          steps={personalization.activation.steps}
+          completed={personalization.activation.completed}
+          total={personalization.activation.total}
+          percent={personalization.activation.percent}
+          onNavigate={navigate}
+        />
+      )}
 
       <section className={styles.attentionSection} aria-labelledby="attention-title">
         <div className={styles.sectionHeader}>

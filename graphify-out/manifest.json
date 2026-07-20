@@ -230,8 +230,8 @@
     "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
   },
   "package.json": {
-    "mtime": 1783896703.0290654,
-    "ast_hash": "789376c47d509bfab98876b9748e74e9",
+    "mtime": 1784519320.7710087,
+    "ast_hash": "8bdecc1fb072fafadbfe49376ec26d4f",
     "semantic_hash": ""
   },
   "src/App.jsx": {
@@ -240,8 +240,8 @@
     "semantic_hash": "61dd6deddc4bf2c04bf02d7904e94221"
   },
   "src/app/App.jsx": {
-    "mtime": 1783739942.3123546,
-    "ast_hash": "43bfb1a50ef1c1a7cbf18e5c4a61f4c5",
+    "mtime": 1784452143.8719575,
+    "ast_hash": "025bcc683a2377829e0ad654ae3ef510",
     "semantic_hash": ""
   },
   "src/app/main.jsx": {
@@ -250,8 +250,8 @@
     "semantic_hash": "093d1255ac32efccd41332e8f21c2361"
   },
   "src/app/routes.jsx": {
-    "mtime": 1783709374.0863466,
-    "ast_hash": "5446eccf783f63252efd4f41fe355be0",
+    "mtime": 1784510919.9933262,
+    "ast_hash": "0fb1137490f65a32b76a6e03835c7d42",
     "semantic_hash": ""
   },
   "src/components/index.js": {
@@ -370,8 +370,8 @@
     "semantic_hash": "870aebf66ef235cdeaef9522f07786c3"
   },
   "src/features/dashboard/DashboardPage.jsx": {
-    "mtime": 1783711069.3189404,
-    "ast_hash": "120090d4c0c8be5d59dea893b0eb02b0",
+    "mtime": 1784519219.894524,
+    "ast_hash": "f2a4cdf9a8dc1b4d649494382b0defd3",
     "semantic_hash": ""
   },
   "src/features/dashboard/components/DashboardGreeting.jsx": {
@@ -400,8 +400,8 @@
     "semantic_hash": ""
   },
   "src/features/dashboard/dashboard.mock.js": {
-    "mtime": 1783711099.287374,
-    "ast_hash": "344af03201fcee0f38335f4133c3a5d0",
+    "mtime": 1784501104.7191477,
+    "ast_hash": "1acb031276809f0664940773e775a8f2",
     "semantic_hash": ""
   },
   "src/features/dashboard/index.js": {
@@ -410,14 +410,14 @@
     "semantic_hash": "481676a1cf9a8627c4c8e18f65ed4c88"
   },
   "src/hooks/index.js": {
-    "mtime": 1783805436.8360062,
-    "ast_hash": "82a038a468b60e63e38251cee0ea9033",
+    "mtime": 1784453389.9466217,
+    "ast_hash": "cb45eb56b72834523b674dd61b220af7",
     "semantic_hash": ""
   },
   "src/main.jsx": {
-    "mtime": 1783598544.7196205,
-    "ast_hash": "093d1255ac32efccd41332e8f21c2361",
-    "semantic_hash": "093d1255ac32efccd41332e8f21c2361"
+    "mtime": 1784454575.0739694,
+    "ast_hash": "1cf5935531cf77c37c150a63d08e5a07",
+    "semantic_hash": ""
   },
   "src/services/auth.service.js": {
     "mtime": 1783595819.6830924,
@@ -505,8 +505,8 @@
     "semantic_hash": ""
   },
   "docs/01-arquitetura/PHASE_1_README.md": {
-    "mtime": 1783284662.9889627,
-    "ast_hash": "df7284b7f9e9ecb793ebd7a349321003",
+    "mtime": 1784511970.5691335,
+    "ast_hash": "5c21968825f04288973de03b959d0fd3",
     "semantic_hash": ""
   },
   "docs/06-modules/README.md": {
@@ -580,12 +580,12 @@
     "semantic_hash": ""
   },
   "src/pages/SettingsPage.jsx": {
-    "mtime": 1783701063.101433,
+    "mtime": 1784286766.7956278,
     "ast_hash": "1de943f084d8ce0f20f85958d11d965a",
     "semantic_hash": ""
   },
   "src/pages/UniAIPage.jsx": {
-    "mtime": 1783896624.7568336,
+    "mtime": 1784286766.7961996,
     "ast_hash": "bb08e3b1ae0c528cff131bc854759b25",
     "semantic_hash": ""
   },
@@ -730,8 +730,8 @@
     "semantic_hash": ""
   },
   "src/app/navigation.js": {
-    "mtime": 1783710670.3845155,
-    "ast_hash": "6b9e548c22d2ac4fa316fa154a737ade",
+    "mtime": 1784498249.2508209,
+    "ast_hash": "061cb789d7dd89cc31c24fe2cdaa9ff9",
     "semantic_hash": ""
   },
   "docs/00-master/USER_MODES_AND_PLANS.md": {
@@ -755,8 +755,8 @@
     "semantic_hash": ""
   },
   "src/pages/FinanceiroPage.jsx": {
-    "mtime": 1783785769.3178024,
-    "ast_hash": "35990559caf3842ebd162ef1feef812c",
+    "mtime": 1784508536.4340186,
+    "ast_hash": "965b731a50cc4e74ddd9e00389810c2c",
     "semantic_hash": ""
   },
   "src/pages/financeiro/financial.mock.js": {
@@ -785,8 +785,8 @@
     "semantic_hash": ""
   },
   "src/pages/ObjetivosPage.jsx": {
-    "mtime": 1783700024.349442,
-    "ast_hash": "7d18fe84c582bdf76852a97378858b82",
+    "mtime": 1784505673.9768968,
+    "ast_hash": "84fac5af298ef5258690bf8d77619cce",
     "semantic_hash": ""
   },
   "src/pages/objetivos/objectives.mock.js": {
@@ -830,13 +830,8 @@
     "semantic_hash": ""
   },
   "src/pages/LoginPage.jsx": {
-    "mtime": 1783739942.4053047,
-    "ast_hash": "cc446a444ad71234b6ea978ceae6f93c",
-    "semantic_hash": ""
-  },
-  "src/pages/OnboardingPage.jsx": {
-    "mtime": 1783859501.8156815,
-    "ast_hash": "39a0786872a48f9ff05c400835817b3c",
+    "mtime": 1784452143.7769156,
+    "ast_hash": "b1f2cc9a6ea3e8eb93681a317cee22db",
     "semantic_hash": ""
   },
   "src/app/accessRules.js": {
@@ -850,8 +845,8 @@
     "semantic_hash": ""
   },
   "src/services/authService.js": {
-    "mtime": 1783739942.0374367,
-    "ast_hash": "a1024ae471b11210a300584713b07d25",
+    "mtime": 1784452144.2654417,
+    "ast_hash": "d47656e1aded24c2c7de3478bb1ccbd2",
     "semantic_hash": ""
   },
   "src/services/supabaseClient.js": {
@@ -875,8 +870,8 @@
     "semantic_hash": ""
   },
   "supabase/README.md": {
-    "mtime": 1783891186.8336327,
-    "ast_hash": "a2abf950840de95e3952160d548d8890",
+    "mtime": 1784446488.5730615,
+    "ast_hash": "2574a2145e756c8db7328c3a526b2398",
     "semantic_hash": ""
   },
   "docs/00-master/SUPABASE_EXISTING_PROJECT_AUDIT.md": {
@@ -900,8 +895,8 @@
     "semantic_hash": ""
   },
   "src/app/SessionContext.jsx": {
-    "mtime": 1783739942.2202938,
-    "ast_hash": "789496edfba01eb8952ecff9d6828f55",
+    "mtime": 1784461600.9013884,
+    "ast_hash": "c160d42955da85c8330d92cb16ea7112",
     "semantic_hash": ""
   },
   "docs/00-master/LOGIN_AUTH_INTEGRATION.md": {
@@ -909,14 +904,9 @@
     "ast_hash": "3ec8333822565a4e26e6789dd016ed53",
     "semantic_hash": ""
   },
-  "src/services/onboardingService.js": {
-    "mtime": 1783867675.584874,
-    "ast_hash": "744f9996310713826ddba914ff411597",
-    "semantic_hash": ""
-  },
   "src/services/profileService.js": {
-    "mtime": 1783872253.1724007,
-    "ast_hash": "b015adb166f47e9bf14ffb4b2c7237e5",
+    "mtime": 1784510919.456542,
+    "ast_hash": "728e8893eb296859ff35faef58e26b3e",
     "semantic_hash": ""
   },
   "docs/00-master/ONBOARDING_REAL_INTEGRATION.md": {
@@ -935,18 +925,18 @@
     "semantic_hash": ""
   },
   "docs/00-master/FINANCIAL_CORE_DATA_MODEL.md": {
-    "mtime": 1783800485.274502,
-    "ast_hash": "bb9a72017cc11a962357c1d0688d5f1e",
+    "mtime": 1784446342.4497826,
+    "ast_hash": "890aee3b3d497891f51251cac69c7526",
     "semantic_hash": ""
   },
   "src/services/accountService.js": {
-    "mtime": 1783785841.9383333,
-    "ast_hash": "72ee8bd18f8f33b3f3e23cc1552e34ee",
+    "mtime": 1784462455.313805,
+    "ast_hash": "787748827e4c944873feca909393ac2d",
     "semantic_hash": ""
   },
   "src/services/categoryService.js": {
-    "mtime": 1783785842.031616,
-    "ast_hash": "159e5a2cd068682bfe6323348a48948d",
+    "mtime": 1784465797.7243638,
+    "ast_hash": "77e33dba03ec34d13e42faa2bd6caacb",
     "semantic_hash": ""
   },
   "src/services/transactionService.js": {
@@ -955,7 +945,7 @@
     "semantic_hash": ""
   },
   "supabase/migrations/20260711_003_financial_catalog_seeds.sql": {
-    "mtime": 1783783517.7533975,
+    "mtime": 1784448749.722823,
     "ast_hash": "a20c5817bad892b9474567951649b6c9",
     "semantic_hash": ""
   },
@@ -965,33 +955,33 @@
     "semantic_hash": ""
   },
   "src/hooks/financialHooks.test.js": {
-    "mtime": 1783800417.9235082,
-    "ast_hash": "1ab110842eec15bb3a1e9cd25e2e17a8",
+    "mtime": 1784462576.814377,
+    "ast_hash": "b18dc9ef5fca876b7eeb050d7fbca32f",
     "semantic_hash": ""
   },
   "src/hooks/useAccounts.js": {
-    "mtime": 1783800374.2148535,
-    "ast_hash": "0b223737e373d7e712660e90a585c804",
+    "mtime": 1784462455.407577,
+    "ast_hash": "b5554f0cbc13c199db28ed85828052ff",
     "semantic_hash": ""
   },
   "src/hooks/useCategories.js": {
-    "mtime": 1783785842.3030224,
-    "ast_hash": "a9bf4027659c209100b03bc1190dc16e",
+    "mtime": 1784470040.1159701,
+    "ast_hash": "557e36386ee2e0b51e7219d31cbcb2bf",
     "semantic_hash": ""
   },
   "src/hooks/useTransactions.js": {
-    "mtime": 1783785842.3928876,
-    "ast_hash": "118b0998b528918a0b9f2b7dd22c8d34",
+    "mtime": 1784470039.1488214,
+    "ast_hash": "aa53ecb7aa6f95b8f62a5cd09ee359e0",
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceAccountModal.jsx": {
-    "mtime": 1783800374.3199062,
-    "ast_hash": "8595d40897e131f2eabafeec98fb38bd",
+    "mtime": 1784462455.5012248,
+    "ast_hash": "93c33a3380284c8a09f2cf0efde84f0f",
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceCategoryModal.jsx": {
-    "mtime": 1783785972.7603226,
-    "ast_hash": "07d3a777496e8a3ab5d1ef635cb98d9f",
+    "mtime": 1784453526.0894337,
+    "ast_hash": "fa719f6c29ffb2ca50b28ce9fe2c6c90",
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceCrudPrimitives.jsx": {
@@ -1000,13 +990,13 @@
     "semantic_hash": ""
   },
   "src/pages/financeiro/FinanceTransactionModal.jsx": {
-    "mtime": 1783800436.8391364,
-    "ast_hash": "2ab5a51fc3f8cc2373de2ef32a3f9298",
+    "mtime": 1784464488.5478475,
+    "ast_hash": "8ddf074e0ce2beb31c3f449bdbb83261",
     "semantic_hash": ""
   },
   "src/pages/financeiro/financeUiUtils.js": {
-    "mtime": 1783785972.4905343,
-    "ast_hash": "6c6c8eeaedf42a96780793c69bf26ed3",
+    "mtime": 1784465798.775122,
+    "ast_hash": "99a1ce08d0ce2ca614323bfb452ead9f",
     "semantic_hash": ""
   },
   "src/pages/financeiro/financialCrud.mock.js": {
@@ -1020,8 +1010,8 @@
     "semantic_hash": ""
   },
   "src/pages/financeiro/transactionFormUtils.js": {
-    "mtime": 1783800417.6027012,
-    "ast_hash": "e2acce26342ad6904a270c3989346c0a",
+    "mtime": 1784453525.8952026,
+    "ast_hash": "4bb92ffe57c8ca1eb9988adf8ffe44cc",
     "semantic_hash": ""
   },
   "src/hooks/useOpenFinance.js": {
@@ -1160,7 +1150,7 @@
     "semantic_hash": ""
   },
   "src/features/uni-conversation/useUniConversation.js": {
-    "mtime": 1783890843.6486204,
+    "mtime": 1784286766.7924879,
     "ast_hash": "62aa944cf7bd09950bfd103adf0a862a",
     "semantic_hash": ""
   },
@@ -1280,7 +1270,7 @@
     "semantic_hash": ""
   },
   "supabase/tests/workspace_onboarding_rls_validation.sql": {
-    "mtime": 1783867773.0487018,
+    "mtime": 1784286766.7996726,
     "ast_hash": "5c79e995ba617aaca9ce9d0281a967cf",
     "semantic_hash": ""
   },
@@ -1415,18 +1405,18 @@
     "semantic_hash": ""
   },
   "scripts/supabase/test-atomic-financial-action.js": {
-    "mtime": 1783891078.0120442,
-    "ast_hash": "7c6328dc6b95b77bfbaa9cc569492184",
+    "mtime": 1784449996.9157462,
+    "ast_hash": "377d565b92a9000ecc63c5838a5c9e73",
     "semantic_hash": ""
   },
   "src/services/confirmedFinancialActionService.js": {
-    "mtime": 1783891128.5195231,
-    "ast_hash": "e77f310ed49606a57062790b926b4b04",
+    "mtime": 1784453543.8361337,
+    "ast_hash": "fb40294e6e774f6a70a1826e2db2a183",
     "semantic_hash": ""
   },
   "src/services/confirmedFinancialActionService.test.js": {
-    "mtime": 1783891128.6379619,
-    "ast_hash": "6bf0d3712d0f2a1d2c5a775ca5da0909",
+    "mtime": 1784450005.7788038,
+    "ast_hash": "1134f4695a7ee977675c59e105d448cc",
     "semantic_hash": ""
   },
   "supabase/migrations/20260712_008_atomic_financial_action.sql": {
@@ -1440,13 +1430,13 @@
     "semantic_hash": ""
   },
   "supabase/tests/atomic_financial_action_validation.sql": {
-    "mtime": 1783890991.3892162,
-    "ast_hash": "ca45f6f08b93be20b93999632f3ef6a5",
+    "mtime": 1784446488.33476,
+    "ast_hash": "ecab8857366e1a66fcd60fbb6b3a3a5a",
     "semantic_hash": ""
   },
   "docs/00-master/UNI_ATOMIC_FINANCIAL_ACTION_V1.md": {
-    "mtime": 1783891186.0925786,
-    "ast_hash": "7504d9a7b080ff3861f481a4dc97fe02",
+    "mtime": 1784446488.4529498,
+    "ast_hash": "ec4fcbffb6e54cfe671ac472356cddfc",
     "semantic_hash": ""
   },
   "src/features/uni-voice-output/browserVoiceProvider.js": {
@@ -1507,6 +1497,1546 @@
   "supabase/functions/generate-uni-premium-voice/README.md": {
     "mtime": 1783896548.472345,
     "ast_hash": "65d0221e11fc8aa99a7242de769a65e9",
+    "semantic_hash": ""
+  },
+  "src/app/workspaceSelection.js": {
+    "mtime": 1784461600.808369,
+    "ast_hash": "0dabe7227053a9665f9c064eb061d235",
+    "semantic_hash": ""
+  },
+  "src/app/workspaceSwitch.test.js": {
+    "mtime": 1784508507.7556062,
+    "ast_hash": "2331e9c0d01341394010bd79df465ac3",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/authMobile.test.js": {
+    "mtime": 1784452125.515245,
+    "ast_hash": "ac4b7ef5bfb2737d4f20bd8c254ecd61",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/authMobileSchema.js": {
+    "mtime": 1784452125.6935139,
+    "ast_hash": "f9b43f64dc4869a3c1bf2b025e4b3f2e",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/authMobileValidator.js": {
+    "mtime": 1784452125.8717823,
+    "ast_hash": "a97397aa66fdbb24b28e87dfe67b67e0",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/components/AuthLegalNotice.jsx": {
+    "mtime": 1784452126.1592846,
+    "ast_hash": "074861f1b676d727b67d6efd6215768f",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/components/AuthModeSwitch.jsx": {
+    "mtime": 1784452126.3564484,
+    "ast_hash": "990b83afc2787ee7752508e0e8fc2888",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/components/EmailAuthForm.jsx": {
+    "mtime": 1784452126.5460796,
+    "ast_hash": "a89189807638486fcf8d29846aa8795a",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/components/SocialAuthButtons.jsx": {
+    "mtime": 1784452126.7324674,
+    "ast_hash": "b555fa40a848350b111860ce8c2161dd",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/components/WelcomeCarousel.jsx": {
+    "mtime": 1784452126.9585767,
+    "ast_hash": "2232f28ba7d79dc3f7cd50fab89bc229",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/components/WelcomeSlide.jsx": {
+    "mtime": 1784452127.1308117,
+    "ast_hash": "9c055515084a5401901fc012988aa650",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/index.js": {
+    "mtime": 1784452127.299566,
+    "ast_hash": "f6c1b8ea9b20f5f77fc96c0d8d6d55f1",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/pages/MobileAuthPage.jsx": {
+    "mtime": 1784452127.5348399,
+    "ast_hash": "4f7bc5b4b8de23db91a9c4ed7d9c1781",
+    "semantic_hash": ""
+  },
+  "src/features/auth-mobile/pages/MobileWelcomePage.jsx": {
+    "mtime": 1784452127.7216804,
+    "ast_hash": "30d8567e3c910ca8e7214f3a1abc7a45",
+    "semantic_hash": ""
+  },
+  "src/features/cognitive-live-chart/CognitiveChartTooltip.jsx": {
+    "mtime": 1784079150.78235,
+    "ast_hash": "fbdd48c319f4c7ac54b5ff49fc919a72",
+    "semantic_hash": ""
+  },
+  "src/features/cognitive-live-chart/CognitiveLiveChart.jsx": {
+    "mtime": 1784085658.581049,
+    "ast_hash": "694e16483beb9e144fea0200e998adfd",
+    "semantic_hash": ""
+  },
+  "src/features/cognitive-live-chart/CognitiveLiveChart.test.js": {
+    "mtime": 1784079151.275099,
+    "ast_hash": "2b8ace3e8157eadd1682456c9bc7315b",
+    "semantic_hash": ""
+  },
+  "src/features/cognitive-live-chart/UniChartInsight.jsx": {
+    "mtime": 1784079150.904247,
+    "ast_hash": "dc4c2eb8f7abd7e65be666b5834db039",
+    "semantic_hash": ""
+  },
+  "src/features/cognitive-live-chart/cognitiveLiveChart.mock.js": {
+    "mtime": 1784079070.5167842,
+    "ast_hash": "03d2208c54e7a74c2ce230be4d9c90fa",
+    "semantic_hash": ""
+  },
+  "src/features/cognitive-live-chart/cognitiveLiveChart.utils.js": {
+    "mtime": 1784079070.5171642,
+    "ast_hash": "fa82eaa2c0ebf991c0f698086583c1e3",
+    "semantic_hash": ""
+  },
+  "src/features/cognitive-live-chart/index.js": {
+    "mtime": 1784079151.026537,
+    "ast_hash": "54bafbb7be814ffae3a99852f87cafbe",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/HomeMobile.test.js": {
+    "mtime": 1784469126.7958937,
+    "ast_hash": "476754f0e4b28f7222937fb4ce795e31",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/MobileHomeView.jsx": {
+    "mtime": 1784519211.4799068,
+    "ast_hash": "ec4653c460967d64789f8445a4a4b5a9",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/FinancialSummaryStrip.jsx": {
+    "mtime": 1784069217.544849,
+    "ast_hash": "4ad846d6173f4fde885f8942c886bd16",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/GoalsProgressList.jsx": {
+    "mtime": 1784071330.6733496,
+    "ast_hash": "ef5d065684f0f37c788fdc9afd7209f0",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/HomeEmptyState.jsx": {
+    "mtime": 1784071330.9112446,
+    "ast_hash": "738178289313fc0db3548a5daeecce02",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/HomeSectionSkeleton.jsx": {
+    "mtime": 1784071331.0423985,
+    "ast_hash": "e71e4370a9bf1cb6e62cf5977de43c38",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/InsightCarousel.jsx": {
+    "mtime": 1784071331.166456,
+    "ast_hash": "bf7ea5ac4347b8e2700e7e6762ccde48",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/InsightChip.jsx": {
+    "mtime": 1784071331.2917137,
+    "ast_hash": "76d7a3e65feb728312d9ac3198525ab9",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/NextStepCard.jsx": {
+    "mtime": 1784071331.4140418,
+    "ast_hash": "1fa601b249dc6c4142226c6f55004c9d",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/QuickActionTile.jsx": {
+    "mtime": 1784071331.5338185,
+    "ast_hash": "f75ef66afa7b191ce7517362b33fede4",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/QuickActionsGrid.jsx": {
+    "mtime": 1784071331.659005,
+    "ast_hash": "03e443a2dfc3d08a902b8707b750fee2",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/components/UniBriefingCard.jsx": {
+    "mtime": 1784069217.4139388,
+    "ast_hash": "0602e6e986db4016d92fd875db8632ef",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/homeMobile.mock.js": {
+    "mtime": 1784286766.7923207,
+    "ast_hash": "8a9971acc7da26be359feaa1260e26f2",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/index.js": {
+    "mtime": 1784071331.9043531,
+    "ast_hash": "c170208e61195dff46aaa83dec103263",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/useHomeFinancialData.js": {
+    "mtime": 1784505662.3428614,
+    "ast_hash": "25ad7e0d900a9fa67194d18a8169888b",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/components/ActivationSteps/ActivationSteps.jsx": {
+    "mtime": 1784519429.1285439,
+    "ast_hash": "0194b4460210a06425dd72f2a22c6486",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/components/ActivationSteps/index.js": {
+    "mtime": 1784513624.9249947,
+    "ast_hash": "40c4482802e168cac6ec2f4896583150",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/components/NextBestAction/NextBestAction.jsx": {
+    "mtime": 1784519436.0251925,
+    "ast_hash": "abf435ff4c25298dbc268f916febd603",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/components/NextBestAction/index.js": {
+    "mtime": 1784513623.0291035,
+    "ast_hash": "c61e1d7d1775af2c11eb3f2bcce9a04f",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/components/PersonalizedWelcome/PersonalizedWelcome.jsx": {
+    "mtime": 1784519446.940433,
+    "ast_hash": "3f601df4ac1c582e5306d9cdea95406c",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/components/PersonalizedWelcome/index.js": {
+    "mtime": 1784513621.793606,
+    "ast_hash": "958232c51d8e84b84be4c8b81b6c229a",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/onboardingHomeRules.js": {
+    "mtime": 1784519142.699293,
+    "ast_hash": "e41ad48aa0c92bb672496a55923266db",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/personalization.test.js": {
+    "mtime": 1784519227.8546326,
+    "ast_hash": "ced37991074b88b057aae38d9e117bd6",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/personalization/useDashboardPersonalization.js": {
+    "mtime": 1784519149.6302211,
+    "ast_hash": "d4b6c77abc8bc9ccf8022570a5a7e009",
+    "semantic_hash": ""
+  },
+  "src/features/future/FuturePage.jsx": {
+    "mtime": 1784501167.206173,
+    "ast_hash": "7f7455d62db156b0099e28265f2ce679",
+    "semantic_hash": ""
+  },
+  "src/features/future/components/FutureChart/FutureChart.jsx": {
+    "mtime": 1784498353.64669,
+    "ast_hash": "91e00653b01ed03ea278cc44720254b4",
+    "semantic_hash": ""
+  },
+  "src/features/future/components/FutureExplanation/FutureExplanation.jsx": {
+    "mtime": 1784498223.085685,
+    "ast_hash": "3768fff825b1b689ee28f6f5506a470c",
+    "semantic_hash": ""
+  },
+  "src/features/future/components/FutureGoals/FutureGoals.jsx": {
+    "mtime": 1784498323.2683992,
+    "ast_hash": "d8c1d0af5b7f538aca9dcda800f7e73a",
+    "semantic_hash": ""
+  },
+  "src/features/future/components/FutureHeader/FutureHeader.jsx": {
+    "mtime": 1784498171.7561274,
+    "ast_hash": "db87cb24719119b28f715d3787439b88",
+    "semantic_hash": ""
+  },
+  "src/features/future/components/FutureHomePreview/FutureHomePreview.jsx": {
+    "mtime": 1784501356.5032935,
+    "ast_hash": "a1edcc3782a7cf18863b58e77dd11b5c",
+    "semantic_hash": ""
+  },
+  "src/features/future/components/FutureScenarios/FutureScenarios.jsx": {
+    "mtime": 1784498323.7960134,
+    "ast_hash": "14ef1da505d24a8070d8e9c9a8c74aa6",
+    "semantic_hash": ""
+  },
+  "src/features/future/components/FutureSummary/FutureSummary.jsx": {
+    "mtime": 1784498331.9900625,
+    "ast_hash": "aea0f201e329a88f99bbb3c252257936",
+    "semantic_hash": ""
+  },
+  "src/features/future/components/GoalProjectionBadge/GoalProjectionBadge.jsx": {
+    "mtime": 1784501059.0440695,
+    "ast_hash": "931711a22e959a8373ee9681378126ca",
+    "semantic_hash": ""
+  },
+  "src/features/future/futureCalculations.js": {
+    "mtime": 1784498335.2360942,
+    "ast_hash": "c0f32cb98b74c24405c9cfa28505357d",
+    "semantic_hash": ""
+  },
+  "src/features/future/futureCalculations.test.js": {
+    "mtime": 1784498335.7977133,
+    "ast_hash": "12e8c65bfce0cdc41137186ae159d0c1",
+    "semantic_hash": ""
+  },
+  "src/features/future/futureConstants.js": {
+    "mtime": 1784498141.4035606,
+    "ast_hash": "374f82fba51efbe6824af5dca3f90125",
+    "semantic_hash": ""
+  },
+  "src/features/future/futureService.js": {
+    "mtime": 1784498336.4425566,
+    "ast_hash": "3a973260137ddd8aa8c723442f6e68a8",
+    "semantic_hash": ""
+  },
+  "src/features/future/index.js": {
+    "mtime": 1784498237.5730093,
+    "ast_hash": "d2c47b790a26573e50818fb727f21b73",
+    "semantic_hash": ""
+  },
+  "src/features/future/useFutureData.js": {
+    "mtime": 1784505626.8629355,
+    "ast_hash": "829ec967e335131a1d1b10883df471e2",
+    "semantic_hash": ""
+  },
+  "src/features/goals/components/GoalCard.jsx": {
+    "mtime": 1784501071.8384845,
+    "ast_hash": "42be15d7d002fd85255b1a05496adbbd",
+    "semantic_hash": ""
+  },
+  "src/features/goals/components/GoalContributions.jsx": {
+    "mtime": 1784494882.4586608,
+    "ast_hash": "22721cb0eee63b50e64d4ba5cbd433db",
+    "semantic_hash": ""
+  },
+  "src/features/goals/components/GoalForm.jsx": {
+    "mtime": 1784494866.760589,
+    "ast_hash": "c5d36a60f08b200a026b99ff9b513adb",
+    "semantic_hash": ""
+  },
+  "src/features/goals/components/GoalSkeleton.jsx": {
+    "mtime": 1784494877.1399088,
+    "ast_hash": "fd52cc8204b07d01f9e404c09dcd0d1e",
+    "semantic_hash": ""
+  },
+  "src/features/goals/components/GoalSummary.jsx": {
+    "mtime": 1784494874.2633035,
+    "ast_hash": "89c796c037c2a74678d36594bc02920d",
+    "semantic_hash": ""
+  },
+  "src/features/goals/goalCalc.js": {
+    "mtime": 1784494807.2543638,
+    "ast_hash": "431ab1b252cb5a685a7c3762bda83083",
+    "semantic_hash": ""
+  },
+  "src/features/goals/goalCalc.test.js": {
+    "mtime": 1784494940.626884,
+    "ast_hash": "396dd8b0a9a9800b4a63df1953bb2f97",
+    "semantic_hash": ""
+  },
+  "src/features/goals/goalService.js": {
+    "mtime": 1784494833.09202,
+    "ast_hash": "73a922cdef91a0c9bb625490abf36f10",
+    "semantic_hash": ""
+  },
+  "src/features/goals/useGoals.js": {
+    "mtime": 1784494954.7168527,
+    "ast_hash": "1c051d944f4517a6c06a5cf63d84208b",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/OnboardingPage.jsx": {
+    "mtime": 1784510983.5645652,
+    "ast_hash": "f8ae18cbd4c425633d9a174a36452f19",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/components/StepFinancial.jsx": {
+    "mtime": 1784510875.317654,
+    "ast_hash": "7b67482cdf8ca8910e22240bc665ec84",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/components/StepGoal.jsx": {
+    "mtime": 1784510866.1474109,
+    "ast_hash": "d3e974054eff79f4ad8f6614efd729bb",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/components/StepMode.jsx": {
+    "mtime": 1784510862.817606,
+    "ast_hash": "8d60b9d869c813c6e20cfeecd40743b8",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/components/StepProgress.jsx": {
+    "mtime": 1784510854.84401,
+    "ast_hash": "4addc122a1257efc8a539d04e54b9c00",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/components/StepSummary.jsx": {
+    "mtime": 1784510882.9984558,
+    "ast_hash": "fdf6d6fabd4d908357d256012fdbb5e1",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/components/StepTone.jsx": {
+    "mtime": 1784510877.915815,
+    "ast_hash": "cb7d5c7b4e744e400da4c9999c5604b3",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/components/StepWelcome.jsx": {
+    "mtime": 1784510859.6891837,
+    "ast_hash": "c218362d3abcaba2a6852487f18956c6",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/index.js": {
+    "mtime": 1784510909.5495298,
+    "ast_hash": "72c8f3e37bd44f0aa30d488de9a88bfa",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/onboarding.test.js": {
+    "mtime": 1784511952.0599232,
+    "ast_hash": "f5b41525180b40b336543d7590afb506",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/onboardingConstants.js": {
+    "mtime": 1784510840.4275818,
+    "ast_hash": "1c48d64a7212821a4fcc5741c3456998",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/onboardingService.js": {
+    "mtime": 1784510973.5752542,
+    "ast_hash": "96ab379ceb3be8230d2cc0a21efbda7d",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/onboardingValidation.js": {
+    "mtime": 1784510842.0539768,
+    "ast_hash": "4ed6bbd714ca80034ade2ead720dca61",
+    "semantic_hash": ""
+  },
+  "src/features/onboarding/useOnboarding.js": {
+    "mtime": 1784511004.9017568,
+    "ast_hash": "95b16bc7668bd8eb3bb0b67f4feb5216",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/audioContextCatalog.js": {
+    "mtime": 1784213442.862441,
+    "ast_hash": "3a45f91fbd0903f8ee480da19244fc74",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/audioCooldown.js": {
+    "mtime": 1784213443.0032651,
+    "ast_hash": "64e144311a9842ab80efbccb4942c748",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/audioEligibility.js": {
+    "mtime": 1784220176.6275973,
+    "ast_hash": "9a86f7087543bd6ef56077d52a06af92",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/audioHistory.js": {
+    "mtime": 1784210959.8791928,
+    "ast_hash": "35f3855e6ccfaeb02a7afcb41ccfbf67",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/audioSelection.test.js": {
+    "mtime": 1784220205.4162128,
+    "ast_hash": "c3911a66e1115b9800f9c8e088f9586b",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/audioSelectionStorage.js": {
+    "mtime": 1784210815.2257535,
+    "ast_hash": "bcd2227d533cdecf662b8ba285acd944",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/audioSelector.js": {
+    "mtime": 1784213443.1350017,
+    "ast_hash": "3cab3345ab48d0551e6f35a603d9f976",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/index.js": {
+    "mtime": 1784213443.573985,
+    "ast_hash": "86228c35b23736685bcb2240412f78c2",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/VoiceContext.js": {
+    "mtime": 1784213443.8887913,
+    "ast_hash": "381376583c38ab9f28464e715f88d847",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/VoiceManager.js": {
+    "mtime": 1784214478.675691,
+    "ast_hash": "03794f9f18f0e6dcac870c82e290a08f",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/VoiceManager.test.js": {
+    "mtime": 1784220177.3372438,
+    "ast_hash": "f8233153cc01db88a7c5872bab83fca2",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/VoiceProvider.jsx": {
+    "mtime": 1784145957.240768,
+    "ast_hash": "0df264067656b972953f65b22397c917",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/audioPlayer.js": {
+    "mtime": 1784214478.536362,
+    "ast_hash": "cebcc268c156a3989f026b5ad2d82475",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/index.js": {
+    "mtime": 1784219175.9136455,
+    "ast_hash": "6eeb60542770295592314a134006ef06",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/useVoiceManager.js": {
+    "mtime": 1784213444.0903978,
+    "ast_hash": "03a22e93e4dc0342db68063afed40737",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/voiceCatalog.js": {
+    "mtime": 1784219174.1678083,
+    "ast_hash": "f1376ba0aa7bc2549da5672970fb56df",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/voiceManifest.js": {
+    "mtime": 1784220176.5194468,
+    "ast_hash": "b7804d0254e7708c59abbac9fd6720f5",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/voiceReview.js": {
+    "mtime": 1784220176.407855,
+    "ast_hash": "966330a40271c005b35c5766301c9e7e",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/voiceReview.test.js": {
+    "mtime": 1784220205.3113387,
+    "ast_hash": "3888bd8eddfb3c36695b749aa814ba22",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/voiceReviewCatalog.js": {
+    "mtime": 1784219139.2247171,
+    "ast_hash": "6b559c7105349647bc9c48ddd4128fc6",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/UniChatPage.jsx": {
+    "mtime": 1784508427.9415004,
+    "ast_hash": "6ab1323dc82c0c72a90e54b2b6e69285",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/chatHistory.js": {
+    "mtime": 1784490163.721262,
+    "ast_hash": "4ba4953fc47173a870c108d1262d4358",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/ActionConfirmation.jsx": {
+    "mtime": 1784488707.0543222,
+    "ast_hash": "c36fcf1e3ffa7109ec123058c4facb55",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/ChatHeader.jsx": {
+    "mtime": 1784474636.424446,
+    "ast_hash": "3b5af28097775da5cdb98c5e8cf212b8",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/ChatInput.jsx": {
+    "mtime": 1784474639.6268737,
+    "ast_hash": "dff14c8031d3e0a9a587f44983920668",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/EmptyState.jsx": {
+    "mtime": 1784474645.824166,
+    "ast_hash": "badf1a913721a7d6bae866f2514332ba",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/ErrorState.jsx": {
+    "mtime": 1784474649.7679343,
+    "ast_hash": "40de285039563a19ead7aa81d93f1603",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/HistoryPanel.jsx": {
+    "mtime": 1784479347.0440738,
+    "ast_hash": "ad2696c399fcf4a2b14a7fbb21b98cbb",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/MessageBubble.jsx": {
+    "mtime": 1784488723.7017834,
+    "ast_hash": "3df02489e0fe441a179215640b118dfd",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/QuickSuggestions.jsx": {
+    "mtime": 1784474646.9733064,
+    "ast_hash": "e6a199a6cc4fad35f8299921e9e01b6a",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/ScrollToLatest.jsx": {
+    "mtime": 1784474650.9277353,
+    "ast_hash": "024ee79082b73de7a9b543a34998dfda",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/TypingIndicator.jsx": {
+    "mtime": 1784474647.8769567,
+    "ast_hash": "05151d03a7eca670ee18c2ee04b1d5a0",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/UniAvatar.jsx": {
+    "mtime": 1784474632.8537173,
+    "ast_hash": "42ad0079c72de0ee18fdedd4b302916f",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/components/UniSignatureWave.jsx": {
+    "mtime": 1784474631.5797875,
+    "ast_hash": "22e239ee1d909e422841e29e77cdccf7",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/financialQueryInterpreter.js": {
+    "mtime": 1784501360.126613,
+    "ast_hash": "3402b37f54f05ed9a8cf5cd173699648",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/financialQueryInterpreter.test.js": {
+    "mtime": 1784501327.4150383,
+    "ast_hash": "6309ebeb88b89d5e5dc9d44c24a8b76a",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/index.js": {
+    "mtime": 1784490217.4659162,
+    "ast_hash": "87a8405aebe39a088f4c58337672f57d",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/mockData.js": {
+    "mtime": 1784474621.52831,
+    "ast_hash": "f526ba5c3c263cd4cf328707111114ec",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/uniChatAdapter.js": {
+    "mtime": 1784478295.0470834,
+    "ast_hash": "776e0447c43cdf911e929a0e77a80c37",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/uniChatDataService.js": {
+    "mtime": 1784493262.9522157,
+    "ast_hash": "374018bd2e827e16796007fd0ff7fa63",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/uniChatFinancial.test.js": {
+    "mtime": 1784484497.5621552,
+    "ast_hash": "b8f4a57cec3cb371edf29a9ddff4057c",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/uniChatMigration.test.js": {
+    "mtime": 1784491176.030195,
+    "ast_hash": "c3259332a773f1ec63cb50b0f69cd4eb",
+    "semantic_hash": ""
+  },
+  "src/features/uni-chat/useUniChatFinancialData.js": {
+    "mtime": 1784484441.8805258,
+    "ast_hash": "c3e4c84eaf97b68f45114d2449bc2346",
+    "semantic_hash": ""
+  },
+  "src/features/uni-instant/UniInstant.test.js": {
+    "mtime": 1784210862.944888,
+    "ast_hash": "e0b10c736c4941540dfae693347454f0",
+    "semantic_hash": ""
+  },
+  "src/features/uni-instant/UniInstantButton.jsx": {
+    "mtime": 1784211025.5777433,
+    "ast_hash": "52d104eb6a9f0ece4ccf84e5b3aa8e6d",
+    "semantic_hash": ""
+  },
+  "src/features/uni-instant/UniInstantResultCard.jsx": {
+    "mtime": 1784131910.8259351,
+    "ast_hash": "dadbd6fdf3d872e3546d91519cd10b58",
+    "semantic_hash": ""
+  },
+  "src/features/uni-instant/UniVoiceWaves.jsx": {
+    "mtime": 1784122894.0902617,
+    "ast_hash": "b562e6fbbe1dc237c9d3cddb4aadc005",
+    "semantic_hash": ""
+  },
+  "src/features/uni-instant/index.js": {
+    "mtime": 1784131866.6706607,
+    "ast_hash": "a1a8068c66f7f53ef6136ce47dc36430",
+    "semantic_hash": ""
+  },
+  "src/features/uni-instant/uniInstantContext.js": {
+    "mtime": 1784131866.4626582,
+    "ast_hash": "1c23fdefd57cfb3ae84914582459b889",
+    "semantic_hash": ""
+  },
+  "src/features/uni-instant/usePressAndHold.js": {
+    "mtime": 1784206225.504005,
+    "ast_hash": "54b3176a4b487b9be329d0611ef50ce8",
+    "semantic_hash": ""
+  },
+  "src/hooks/useFinancialBalances.js": {
+    "mtime": 1784453389.6787844,
+    "ast_hash": "a1950af02d9321f719e0b5bf86707c37",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/AuthenticatedLayout.jsx": {
+    "mtime": 1784461600.9950035,
+    "ast_hash": "2c64cd5f7877136074795ed25440b867",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/BottomNavigation.jsx": {
+    "mtime": 1784062208.7705789,
+    "ast_hash": "1f8852f3679a8e7ced5aa23e8692500e",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/BottomNavigation.test.jsx": {
+    "mtime": 1784063327.4397178,
+    "ast_hash": "dbde54d54acbf757fd20a8c4eb2b33d8",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/ContextSegmentedControl.jsx": {
+    "mtime": 1784066701.9464252,
+    "ast_hash": "bec14bb7c24650ad60ad4152830dab8b",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/HeaderAvatar.jsx": {
+    "mtime": 1784066701.8174908,
+    "ast_hash": "64558ef58a11d4b8e85fb878997a3ad0",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/HeaderIdentityBlock.jsx": {
+    "mtime": 1784066572.0248942,
+    "ast_hash": "6f89f66e41074edde3b5f70bcb6d647b",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/HeaderSkeleton.jsx": {
+    "mtime": 1784066572.3146837,
+    "ast_hash": "68527e79613a64254bcabb1c2dcf300b",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/MobileAppShell.jsx": {
+    "mtime": 1784062208.9875484,
+    "ast_hash": "4514da561126a6a78941302a24e661d8",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/MobileAppShell.test.jsx": {
+    "mtime": 1784286766.794254,
+    "ast_hash": "b9d956b46ae1868b9b201fbb1e82eae6",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/MobileContextHeader.jsx": {
+    "mtime": 1784457272.1622262,
+    "ast_hash": "d54a6008145349b06ad3e7f26b501137",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/MobileContextHeader.test.jsx": {
+    "mtime": 1784066702.324182,
+    "ast_hash": "b0f13846d6b577e08774dfcf0d0ddd84",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/MobileHeader.jsx": {
+    "mtime": 1784457272.0668259,
+    "ast_hash": "58af6647f20da8493c378ece7a395379",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/MoreMenu.jsx": {
+    "mtime": 1784066572.7797136,
+    "ast_hash": "17d0cd035abf5346855d2c682fa26d3d",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/MoreMenu.test.jsx": {
+    "mtime": 1784066640.601071,
+    "ast_hash": "c98193496bc6f0845fb92d82f502ef7e",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/NotificationBell.jsx": {
+    "mtime": 1784066702.0436084,
+    "ast_hash": "b19e6604dbb5199885e1f91bcf74a9e5",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/ShellContext.jsx": {
+    "mtime": 1784062230.3274379,
+    "ast_hash": "962bef0ba49b1aebeac0c2a22166922d",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/UniCenterButton.jsx": {
+    "mtime": 1784211091.286899,
+    "ast_hash": "309bed909f8a48fc82363b6d4c77a84b",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/index.js": {
+    "mtime": 1784066702.4259107,
+    "ast_hash": "e8b2146884457a245025d2f65d448892",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/mobileContextHeaderSchema.js": {
+    "mtime": 1784066701.570619,
+    "ast_hash": "aef79dc39588f61f0ee601e79765de6d",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/shellConfig.js": {
+    "mtime": 1784062208.2289524,
+    "ast_hash": "6050932d49c05b1ed87d03e6679b5e17",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/shellRoutes.js": {
+    "mtime": 1784498252.469713,
+    "ast_hash": "2c0fe8250d5384a731b7ff5908992ae4",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/useMobileViewport.js": {
+    "mtime": 1784063343.1056,
+    "ast_hash": "1ecd862a7af138b0ed4fb99abf9e15d7",
+    "semantic_hash": ""
+  },
+  "src/pages/dev/uni-audio-library/AudioLibraryPage.jsx": {
+    "mtime": 1784220178.1999671,
+    "ast_hash": "dd247cdc61215c105ff130fe2a29a2b7",
+    "semantic_hash": ""
+  },
+  "src/pages/dev/uni-audio-library/AudioLibraryPage.test.js": {
+    "mtime": 1784220178.7670763,
+    "ast_hash": "c9a29ed64470a078d09aed5d10c02017",
+    "semantic_hash": ""
+  },
+  "src/pages/dev/uni-audio-library/audioLibraryModel.js": {
+    "mtime": 1784220177.4793744,
+    "ast_hash": "17a4d67f4333ef14082face9ce48a15f",
+    "semantic_hash": ""
+  },
+  "src/pages/dev/uni-audio-library/audioReviewStorage.js": {
+    "mtime": 1784214721.26159,
+    "ast_hash": "484757f6026b60521da63e7e5f3e6079",
+    "semantic_hash": ""
+  },
+  "src/pages/dev/uni-audio-library/index.js": {
+    "mtime": 1784214480.1218858,
+    "ast_hash": "529d2a0e8e9fd5af2b3443b0a1ad3c32",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/FinanceiroMobile.test.js": {
+    "mtime": 1784466543.8281314,
+    "ast_hash": "92f0a7c23a8bd169533e783d41c8db90",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/MobileFinanceiroView.jsx": {
+    "mtime": 1784464413.651249,
+    "ast_hash": "905bba6692c48358ca8d94acd752c8ef",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/AccountCardTile.jsx": {
+    "mtime": 1784073819.6944408,
+    "ast_hash": "5efaa0d5643dd2c454a43d05c502d7af",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/AccountsCarousel.jsx": {
+    "mtime": 1784073819.821617,
+    "ast_hash": "d2edea645130b0c4615ba6086038275c",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/AvailableBalanceCard.jsx": {
+    "mtime": 1784073819.4160595,
+    "ast_hash": "ac5b94d2e9dfaf4d8a0786cb30f02ad3",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/CardsWalletCarousel.jsx": {
+    "mtime": 1784073820.1393836,
+    "ast_hash": "789fb15e54832327a0e4e609c40971b1",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/CategoriesBreakdown.jsx": {
+    "mtime": 1784453525.6922395,
+    "ast_hash": "29d0e267d6dc51c8190ea4ebb318245f",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/CategoryBar.jsx": {
+    "mtime": 1784073820.521015,
+    "ast_hash": "ad6f6168899fad05df5f0887b1d79cda",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/CreditCardTile.jsx": {
+    "mtime": 1784073820.016301,
+    "ast_hash": "a16d13051eeefc547a5229389b1df6e8",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/FinanceiroEmptyState.jsx": {
+    "mtime": 1784459151.8984158,
+    "ast_hash": "520e303c3325d88034464c80be092b94",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/FinanceiroErrorState.jsx": {
+    "mtime": 1784453389.8575313,
+    "ast_hash": "f2393db401ffe678a3d99bf21eacdccb",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/FinanceiroSectionSkeleton.jsx": {
+    "mtime": 1784073821.0755079,
+    "ast_hash": "7a45f8d3c143bada4fabe6d0cccf47a8",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/FinancialForecastCard.jsx": {
+    "mtime": 1784073820.8213656,
+    "ast_hash": "616adf5dd21780d327eebb19b622b3df",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/IncomeExpenseChart.jsx": {
+    "mtime": 1784466506.9316847,
+    "ast_hash": "85e7359b9d946ad6c30ce3d5fa2571d6",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/PeriodInsightText.jsx": {
+    "mtime": 1784073819.2826352,
+    "ast_hash": "75b80715b5db513e3ceae373bfe7caa2",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/PeriodSelectorBar.jsx": {
+    "mtime": 1784466489.6841838,
+    "ast_hash": "4df77b18cf490d566b0ffbeba8a23ba8",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/QuickActionSheet.jsx": {
+    "mtime": 1784073820.9502156,
+    "ast_hash": "c0a9d7020aefb4febaafe8214a8ee725",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/RecentTransactionsList.jsx": {
+    "mtime": 1784464457.6383097,
+    "ast_hash": "9cff0d519d6f6d41610acea943e43d1e",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/components/TransactionRow.jsx": {
+    "mtime": 1784464461.6684153,
+    "ast_hash": "896d15dc1aae494df701fb2ca929784a",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/financeiroMobileData.js": {
+    "mtime": 1784466483.4264445,
+    "ast_hash": "534b228adef9a46e32d65966574c4579",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/index.js": {
+    "mtime": 1784453621.1806366,
+    "ast_hash": "e58945c20dec24082f6937f7b64057c3",
+    "semantic_hash": ""
+  },
+  "src/services/financialBalanceService.js": {
+    "mtime": 1784453389.5037003,
+    "ast_hash": "636abed38205c334475fcb7f8fd2d7fe",
+    "semantic_hash": ""
+  },
+  "src/services/financialDataEvents.js": {
+    "mtime": 1784453389.5904846,
+    "ast_hash": "d735a5d77e9660961d8260955631f507",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260716_009_fix_atomic_financial_action_and_balances.sql": {
+    "mtime": 1784446474.8693693,
+    "ast_hash": "19756faeca586e71a5dd40c9373a5b17",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260719_010_uni_conversations_messages.sql": {
+    "mtime": 1784490130.0779698,
+    "ast_hash": "d8ba0d703c7d80a4c581e21d776e4f30",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260720_011_financial_goals.sql": {
+    "mtime": 1784494792.115505,
+    "ast_hash": "db2bdd1842cc68f41d9c94b513a5d019",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260720_012_onboarding_data.sql": {
+    "mtime": 1784510834.371819,
+    "ast_hash": "2022c22daaa5266a234ea14201cb3376",
+    "semantic_hash": ""
+  },
+  "supabase/tests/fix_atomic_financial_action_and_balances_failed_apply_audit.sql": {
+    "mtime": 1784446568.301179,
+    "ast_hash": "a0f32aa67f7f2673c53593f97acf0f10",
+    "semantic_hash": ""
+  },
+  "docs/02-design-system/UNIFLOW_UNI_AUDIO_EXPERIENCE_V1.md": {
+    "mtime": 1784210880.2546651,
+    "ast_hash": "40f7fb6ee4ceb173d1fc0ec987b4e994",
+    "semantic_hash": ""
+  },
+  "docs/04-layout/auth/MOBILE_AUTH_FOUNDATION_V1.md": {
+    "mtime": 1784452127.9732106,
+    "ast_hash": "c44d3fed0660b6d1e2f8a55d520e3d67",
+    "semantic_hash": ""
+  },
+  "docs/04-layout/mobile/MOBILE_APP_SHELL_INTEGRATION_V1.md": {
+    "mtime": 1784063327.8813612,
+    "ast_hash": "aac727a5ec601b98ad6110ec9a8af443",
+    "semantic_hash": ""
+  },
+  "docs/04-layout/mobile/UNIFLOW_COGNITIVE_LIVE_CHART_V1.md": {
+    "mtime": 1784079152.312169,
+    "ast_hash": "999509702c877f3e71a662db14168000",
+    "semantic_hash": ""
+  },
+  "docs/04-layout/mobile/UNIFLOW_FINANCEIRO_MOBILE_V1.md": {
+    "mtime": 1784073937.9286275,
+    "ast_hash": "c9811ddac3bd11f13b894cec49a14f33",
+    "semantic_hash": ""
+  },
+  "docs/04-layout/mobile/UNIFLOW_HOME_MOBILE_V1.md": {
+    "mtime": 1784071330.215397,
+    "ast_hash": "444706a5c587d11cc01b2118a499113c",
+    "semantic_hash": ""
+  },
+  "docs/04-layout/mobile/UNIFLOW_MOBILE_CONTEXT_HEADER_V1.md": {
+    "mtime": 1784066640.8631854,
+    "ast_hash": "87e8050084d2ea1477f494f3c5f8908c",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/README.md": {
+    "mtime": 1784210863.184584,
+    "ast_hash": "afa724d4f2ea60c003e572a32caafb98",
+    "semantic_hash": ""
+  },
+  "src/features/cognitive-live-chart/README.md": {
+    "mtime": 1784079151.1511843,
+    "ast_hash": "96a1a6ae56cd7e3b26a30285a1793523",
+    "semantic_hash": ""
+  },
+  "src/features/dashboard/mobile/README.md": {
+    "mtime": 1784071330.4706614,
+    "ast_hash": "d138a96b821747d3ed62d401dcecda41",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio-selection/README.md": {
+    "mtime": 1784210657.023371,
+    "ast_hash": "1bba5641dd7e4501a2910b080b422ab1",
+    "semantic_hash": ""
+  },
+  "src/features/uni-audio/README.md": {
+    "mtime": 1784210676.085904,
+    "ast_hash": "12ea4d6e0ebe1b9d3d3d692188ebe2c9",
+    "semantic_hash": ""
+  },
+  "src/layouts/mobile-app-shell/README.md": {
+    "mtime": 1784063327.2222807,
+    "ast_hash": "941e6fe32ad5ef725308bf2ddb5ba42c",
+    "semantic_hash": ""
+  },
+  "src/pages/dev/uni-audio-library/README.md": {
+    "mtime": 1784214480.2876356,
+    "ast_hash": "6083c9d1ed98d12db8f0f6bbb9caa1f5",
+    "semantic_hash": ""
+  },
+  "src/pages/financeiro/mobile/README.md": {
+    "mtime": 1784073937.8086886,
+    "ast_hash": "958a9753796676dbe81ca66fefbd18f2",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/closing/closing_general_001.mp3": {
+    "mtime": 1784210566.2531,
+    "ast_hash": "3f439f59250a3de6a638218088ae376e",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_general_001.mp3": {
+    "mtime": 1784210566.2558317,
+    "ast_hash": "4f3b929303d3344d8e955c29a2ccc3ab",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_general_002.mp3": {
+    "mtime": 1784210566.2567322,
+    "ast_hash": "a08999b11897f09d2614eb8be0829414",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_general_003.mp3": {
+    "mtime": 1784210566.2593277,
+    "ast_hash": "2b7d9eff01af4fe98ed06cdbec5b25f7",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_general_004.mp3": {
+    "mtime": 1784210566.261068,
+    "ast_hash": "d311aa88b3775774d05d3925e6b68afd",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_general_005.mp3": {
+    "mtime": 1784210566.2618377,
+    "ast_hash": "b1377573029bbbcf26658911c0c08459",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_general_006.mp3": {
+    "mtime": 1784210566.2626023,
+    "ast_hash": "0224a769c4682bd32e86604674ab8bee",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_general_007.mp3": {
+    "mtime": 1784210566.2649052,
+    "ast_hash": "182b8aad38bcc290d5e76e30e593e9c0",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_save_001.mp3": {
+    "mtime": 1784210566.257634,
+    "ast_hash": "41d41f682835570e69cc9521226b530f",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_save_002.mp3": {
+    "mtime": 1784210566.2584882,
+    "ast_hash": "b0dd309ad881210954f2ac745e510df1",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_save_003.mp3": {
+    "mtime": 1784210566.264017,
+    "ast_hash": "e18f190d904780400e44acbd05c1b71f",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_sensitive_001.mp3": {
+    "mtime": 1784210566.2602875,
+    "ast_hash": "bdf60d7380e047ba14fb2c9fb9c7e82c",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/confirmation/confirmation_sensitive_002.mp3": {
+    "mtime": 1784210566.2633228,
+    "ast_hash": "1469325eb7802aae830f65310b7b623e",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_temporary_001.mp3": {
+    "mtime": 1784210566.2504275,
+    "ast_hash": "dfa1f43a7754c2975f5e614bf1cc6e06",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_001.mp3": {
+    "mtime": 1784210566.2515104,
+    "ast_hash": "50795a35a43679b00773464e9cb6bd47",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_002.mp3": {
+    "mtime": 1784210566.2656138,
+    "ast_hash": "9e5f0c2f3cca720396a5d6a90302665c",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_003.mp3": {
+    "mtime": 1784210566.2669375,
+    "ast_hash": "c108c1315900d4a93b9a518419c4ebe5",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_004.mp3": {
+    "mtime": 1784210566.2682014,
+    "ast_hash": "8dfc349afa3e17ac58213eca86b360a4",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_005.mp3": {
+    "mtime": 1784210566.2691023,
+    "ast_hash": "96de1dbbdd5f2ec1719cba515d05fcdb",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_006.mp3": {
+    "mtime": 1784210566.2698405,
+    "ast_hash": "eaa5a25a5f2c64c6bb3d6448805f4732",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_007.mp3": {
+    "mtime": 1784210566.2705274,
+    "ast_hash": "8432b577786e17d5e581140c04049a55",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_008.mp3": {
+    "mtime": 1784210566.2712374,
+    "ast_hash": "a30b33a8d7128fdfd62c164e056a4df4",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_009.mp3": {
+    "mtime": 1784210566.272244,
+    "ast_hash": "cdf9aa83c63c7bf840224f3787807fd4",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/error/error_understanding_011.mp3": {
+    "mtime": 1784210566.2732937,
+    "ast_hash": "827b95fc933af6b622732d7419083fe5",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/finance/finance_attention_001.mp3": {
+    "mtime": 1784210566.2740774,
+    "ast_hash": "57bc1b2fb308d5a14b4d5fb23b539ccf",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/finance/finance_insight_001.mp3": {
+    "mtime": 1784210566.2747674,
+    "ast_hash": "7bd0041dda38477794654c9d99eab7a0",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/finance/finance_progress_001.mp3": {
+    "mtime": 1784210566.276656,
+    "ast_hash": "c531b7614670ee888c54f1bab9bc2514",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/finance/finance_suggestion_001.mp3": {
+    "mtime": 1784210566.275799,
+    "ast_hash": "8beb11a4bc83d92fd348f29625f60919",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/greeting/greeting_afternoon_001.mp3": {
+    "mtime": 1784210566.3514402,
+    "ast_hash": "d40f736b329d894fbbce97bb9d880317",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/greeting/greeting_evening_001.mp3": {
+    "mtime": 1784210566.3501651,
+    "ast_hash": "5fe3b7fe6f93198711c33fc907ba6dcb",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/greeting/greeting_general_001.mp3": {
+    "mtime": 1784210566.3524172,
+    "ast_hash": "039843e83366a92dc8025482507d75e8",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/greeting/greeting_morning_001.mp3": {
+    "mtime": 1784210566.3492782,
+    "ast_hash": "1277b8f169120d1b5cffe6e311ee4236",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_001.mp3": {
+    "mtime": 1784210566.2776613,
+    "ast_hash": "99d81424ae97c736b55c26d69f4ab070",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_002.mp3": {
+    "mtime": 1784210566.2793312,
+    "ast_hash": "c774d1a0e7310d192da06929c9cc077d",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_003.mp3": {
+    "mtime": 1784210566.2802114,
+    "ast_hash": "68997efef26577b83764dec3cdbd4e91",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_004.mp3": {
+    "mtime": 1784210566.280973,
+    "ast_hash": "9037e6f1cdc94bb71045b5f28bcee8f6",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_006.mp3": {
+    "mtime": 1784210566.2820408,
+    "ast_hash": "aa4e4756e79f0eab3f4ca9409e684a8c",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_007.mp3": {
+    "mtime": 1784210566.2828796,
+    "ast_hash": "9bcc6b9d3a76712d4226ba21452fbce2",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_008.mp3": {
+    "mtime": 1784210566.2835426,
+    "ast_hash": "3cb15315dc2ffce9e77f22472b11d7fc",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_009.mp3": {
+    "mtime": 1784210566.2842767,
+    "ast_hash": "331728c9cf7ed239cd48cbe2d97da0c1",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/listening/listening_010.mp3": {
+    "mtime": 1784210566.28685,
+    "ast_hash": "ca71c88faca3de02bfa2a9f85b4109df",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_basic_001.mp3": {
+    "mtime": 1784210566.298585,
+    "ast_hash": "1d0ffb89990327cdece0389b04e9d8a6",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_basic_002.mp3": {
+    "mtime": 1784210566.2993302,
+    "ast_hash": "1e459c46fe77b73b2087e9e0673cbfd5",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_basic_003.mp3": {
+    "mtime": 1784210566.300491,
+    "ast_hash": "99c441882c112bae4be5273781e8cb63",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_closing_001.mp3": {
+    "mtime": 1784210566.2877035,
+    "ast_hash": "23cacd20228df2d655d4f97a3fdcca1f",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_closing_002.mp3": {
+    "mtime": 1784210566.2884786,
+    "ast_hash": "578ef2c63390a86d8f0b87f37f177133",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_closing_003.mp3": {
+    "mtime": 1784210566.2892392,
+    "ast_hash": "b8ce90eadcb7aee67b8635f5a04da77f",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_goals_001.mp3": {
+    "mtime": 1784210566.2922912,
+    "ast_hash": "e48486d3444d5057236aa54429000458",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_goals_002.mp3": {
+    "mtime": 1784210566.2931483,
+    "ast_hash": "d9bebc4ef6d2892801e06d59e504cb33",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_goals_003.mp3": {
+    "mtime": 1784210566.2939425,
+    "ast_hash": "5a3165f68c4a0f91ba4f065aaa6c2c8b",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_introduction_001.mp3": {
+    "mtime": 1784210566.2899578,
+    "ast_hash": "fb07dcb762eaa5d38d21dbba957a0bfc",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_introduction_002.mp3": {
+    "mtime": 1784210566.2907226,
+    "ast_hash": "b1b62706e233c54fb55db933ef0b0afe",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/onboarding_introduction_003.mp3": {
+    "mtime": 1784210566.2915375,
+    "ast_hash": "f6022c99784e1dc9319a4a01995d4f05",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/waiting_for_user_001.mp3": {
+    "mtime": 1784210566.2946117,
+    "ast_hash": "4044af24b4582fc50a3fedb98d3ddf34",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/waiting_for_user_002.mp3": {
+    "mtime": 1784210566.295466,
+    "ast_hash": "55708380b87ae3adbd53c4809eed27eb",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/waiting_for_user_003.mp3": {
+    "mtime": 1784210566.2961545,
+    "ast_hash": "9be19dc8750bac81014ca929eb36e8a9",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/waiting_for_user_004.mp3": {
+    "mtime": 1784210566.296978,
+    "ast_hash": "467ed4a2dfb1f26622ae268c6e0ef88e",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/onboarding/waiting_for_user_005.mp3": {
+    "mtime": 1784210566.297844,
+    "ast_hash": "084008eee8265ba53029228ae1a11064",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/positive/positive_achievement_001.mp3": {
+    "mtime": 1784210566.3022664,
+    "ast_hash": "dcc4341f71f963db448f16c914a23bda",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/positive/positive_achievement_002.mp3": {
+    "mtime": 1784210566.3039236,
+    "ast_hash": "26cd066ee56105f3f1b27d852eb2c913",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/positive/positive_achievement_003.mp3": {
+    "mtime": 1784210566.3046868,
+    "ast_hash": "eee2d1f3c6f28671ec629114af6f24cf",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/positive/positive_achievement_004.mp3": {
+    "mtime": 1784210566.3055341,
+    "ast_hash": "9870d9b7b0434d3c819d70deeb968c54",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/positive/positive_progress_001.mp3": {
+    "mtime": 1784210566.3014877,
+    "ast_hash": "97765a3cf433f38ed0ded60cb584a2a3",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/positive/positive_progress_002.mp3": {
+    "mtime": 1784210566.3031964,
+    "ast_hash": "493e62f24abac48aed3cbbdc4d86b016",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/positive/positive_progress_003.mp3": {
+    "mtime": 1784210566.306226,
+    "ast_hash": "c76c7a75f11d2f8011a43c3011fa374b",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/positive/positive_progress_004.mp3": {
+    "mtime": 1784210566.3072996,
+    "ast_hash": "35b8e0b5332a1a137a61c5d6b24e2bba",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/proactive/proactive_attention_002.mp3": {
+    "mtime": 1784210566.3186932,
+    "ast_hash": "6320d6ffc8e9241bda56abb5247626ec",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/proactive/proactive_opportunity_001.mp3": {
+    "mtime": 1784210566.314275,
+    "ast_hash": "0a66363b29850b04b5c64ec815ccaa96",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/proactive/proactive_pattern_001.mp3": {
+    "mtime": 1784210566.3155546,
+    "ast_hash": "7f73a3144aeb12bd040c26ea4cd500c5",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/proactive/proactive_suggestion_001.mp3": {
+    "mtime": 1784210566.308989,
+    "ast_hash": "1619c60b324dbdf284ea43aff10e41bc",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/proactive/proactive_suggestion_002.mp3": {
+    "mtime": 1784210566.311291,
+    "ast_hash": "f1436166e3e50680895601bf2afedcb1",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/proactive/proactive_suggestion_003.mp3": {
+    "mtime": 1784210566.3199105,
+    "ast_hash": "7fc9ce3f901973f0f1d5e8bf683fe9f0",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/proactive/proactive_suggestion_004.mp3": {
+    "mtime": 1784210566.321775,
+    "ast_hash": "130f474924519c410cca5a58da907c12",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/listening_to_processing_001.mp3": {
+    "mtime": 1784210566.2857764,
+    "ast_hash": "8cf90e2db7c1ec322356de9843729844",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_001.mp3": {
+    "mtime": 1784210566.2786496,
+    "ast_hash": "a67d8832de576d9918a84064bd5ea1f5",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_002.mp3": {
+    "mtime": 1784210566.3256514,
+    "ast_hash": "7c3b4cfb415c9cb67c97e6c17121e195",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_003.mp3": {
+    "mtime": 1784210566.3273373,
+    "ast_hash": "f53a2cc946914efdb47ff2164159a3d4",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_004.mp3": {
+    "mtime": 1784210566.3284256,
+    "ast_hash": "e1d897315047f5b82e388005f8454024",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_005.mp3": {
+    "mtime": 1784210566.3294013,
+    "ast_hash": "bdf0f3f55b8e3ed774f79d8dde933462",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_006.mp3": {
+    "mtime": 1784210566.3303933,
+    "ast_hash": "368a9500be2a01d810097d9b08c34769",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_007.mp3": {
+    "mtime": 1784210566.3315125,
+    "ast_hash": "0c544c0ca58b39244d33b6b5c1eb51e7",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_008.mp3": {
+    "mtime": 1784210566.3326054,
+    "ast_hash": "ecaeee8d6034b4bcc1a9653a7fcca9d5",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_009.mp3": {
+    "mtime": 1784210566.3335247,
+    "ast_hash": "ac0d6019cb5fa1e7ab9b2bf626552b53",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_010.mp3": {
+    "mtime": 1784210566.3349538,
+    "ast_hash": "22acdd152696fceff8f69919b0badcb3",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_011.mp3": {
+    "mtime": 1784210566.3359032,
+    "ast_hash": "ba7daecdac8a8c1e33c1403db7216a2f",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/processing/processing_012.mp3": {
+    "mtime": 1784210566.3380344,
+    "ast_hash": "5345775bef57b64e55e3eeae1500f4d1",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_001.mp3": {
+    "mtime": 1784210566.338951,
+    "ast_hash": "2ac48b870155bebc76894727b580a31d",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_002.mp3": {
+    "mtime": 1784210566.3397639,
+    "ast_hash": "079a3b9ce5162ab4bf5ddcb1ea157a3b",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_003.mp3": {
+    "mtime": 1784210566.3405612,
+    "ast_hash": "83b3fdcec743d93ab93f4563ad38a25b",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_004.mp3": {
+    "mtime": 1784210566.343657,
+    "ast_hash": "d4a5f13a8ee8126910fc682aed3ff121",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_005.mp3": {
+    "mtime": 1784210566.344859,
+    "ast_hash": "b327433b93fe8a43fce3fedb91e24b2c",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_006.mp3": {
+    "mtime": 1784210566.3458092,
+    "ast_hash": "fbce55686219e80a99e030cc442a70f7",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_007.mp3": {
+    "mtime": 1784210566.3468702,
+    "ast_hash": "091a07858d839c755e4c2f9bd09ffc81",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_008.mp3": {
+    "mtime": 1784210566.3480263,
+    "ast_hash": "aa5cacee7fb7ae0c6b4afe746f851661",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/support/support_emotional_009.mp3": {
+    "mtime": 1784210566.3563063,
+    "ast_hash": "e7049cfd573c228d5e4eb3753dd9b5b4",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/greeting_general_002.mp3": {
+    "mtime": 1784210566.3634539,
+    "ast_hash": "9049b0c6d66fd06173b742858bfd2a8f",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/returning_user_001.mp3": {
+    "mtime": 1784210566.353642,
+    "ast_hash": "9bef0da2c16adf352b6a1660649fa700",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/returning_user_002.mp3": {
+    "mtime": 1784210566.3551424,
+    "ast_hash": "b4f298f98ee10c766148a66c0a6830b6",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/returning_user_004.mp3": {
+    "mtime": 1784210566.3577914,
+    "ast_hash": "bb9f951f84041f8b092f47e82ff9127a",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/returning_user_005.mp3": {
+    "mtime": 1784210566.3590322,
+    "ast_hash": "14e1073988778c16f29f7a841dd9a4af",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/returning_user_006.mp3": {
+    "mtime": 1784210566.3603477,
+    "ast_hash": "9c3ff8ec8543b94b66a096d36225b972",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/returning_user_007.mp3": {
+    "mtime": 1784210566.3614416,
+    "ast_hash": "91facb3678afc94effb88c7e44921684",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/returning_user_008.mp3": {
+    "mtime": 1784210566.3624418,
+    "ast_hash": "e30dfbac0721612bc8abc7102935665c",
+    "semantic_hash": ""
+  },
+  "src/assets/audio/uni/welcome/returning_user_009.mp3": {
+    "mtime": 1784210566.3644252,
+    "ast_hash": "156f28a9bf9b34ba57a9bc034117abd0",
     "semantic_hash": ""
   }
 }
