@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 const PROFILE_FIELDS =
-  'id, full_name, avatar_url, phone, user_mode, current_workspace_id, onboarding_completed, created_at, updated_at';
+  'id, full_name, avatar_url, phone, user_mode, current_workspace_id, onboarding_completed, onboarding_data, onboarding_completed_at, created_at, updated_at';
 
 function createUnavailableResult() {
   return {
@@ -90,6 +90,8 @@ export async function updateProfile(userId, changes = {}) {
     user_mode: changes.user_mode,
     current_workspace_id: changes.current_workspace_id,
     onboarding_completed: changes.onboarding_completed,
+    onboarding_data: changes.onboarding_data,
+    onboarding_completed_at: changes.onboarding_completed_at,
   };
   const updatePayload = Object.fromEntries(
     Object.entries(allowedChanges).filter(([, value]) => value !== undefined),

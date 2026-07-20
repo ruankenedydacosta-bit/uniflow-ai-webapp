@@ -7,7 +7,7 @@ import CRMPage from '../pages/CRMPage';
 import FinancePage from '../pages/FinancePage';
 import LoginPage from '../pages/LoginPage';
 import ObjetivosPage from '../pages/ObjetivosPage';
-import OnboardingPage from '../pages/OnboardingPage';
+import { OnboardingPage } from '../features/onboarding';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
