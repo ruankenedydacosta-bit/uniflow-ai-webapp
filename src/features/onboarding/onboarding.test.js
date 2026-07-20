@@ -331,3 +331,169 @@ test('onboardingConstants exporta INCOME_RANGES, EXPENSE_RANGES, BUSINESS_TYPES,
   assert.ok(BUSINESS_TYPES.length >= 3);
   assert.ok(REVENUE_RANGES.length >= 3);
 });
+
+test('profileService permite leitura de onboarding_data e onboarding_completed_at', async () => {
+  const source = await readFile(new URL('../../services/profileService.js', import.meta.url), 'utf8');
+  assert.match(source, /onboarding_data/);
+  assert.match(source, /onboarding_completed_at/);
+  assert.match(source, /PROFILE_FIELDS/);
+  assert.match(source, /updateProfile/);
+});
+
+test('profileService.updateProfile filtra onboarding_data corretamente', async () => {
+  const source = await readFile(new URL('../../services/profileService.js', import.meta.url), 'utf8');
+  assert.match(source, /onboarding_data: changes\.onboarding_data/);
+  assert.match(source, /onboarding_completed_at: changes\.onboarding_completed_at/);
+  assert.match(source, /allowedChanges/);
+  assert.match(source, /updatePayload/);
+});
+
+test('onboardingService.saveOnboardingProgress persiste step e data como JSONB', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /onboarding_data:\s*\{ step, data \}/);
+  assert.match(source, /updateProfile/);
+});
+
+test('onboardingService.completeOnboarding persiste onboarding_data com completedAt', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /onboarding_completed: true/);
+  assert.match(source, /onboarding_completed_at/);
+  assert.match(source, /completedAt/);
+});
+
+test('onboardingService.completeOnboarding cria workspaces para both mode', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /'both'/);
+  assert.match(source, /\['personal', 'business'\]/);
+});
+
+test('onboardingService.completeOnboarding reusa workspaces existentes', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /existing/);
+  assert.match(source, /continue/);
+});
+
+test('onboardingService.completeOnboarding faz rollback de workspaces em caso de erro', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /deleteOwnedWorkspace/);
+  assert.match(source, /createdWorkspaces/);
+  assert.match(source, /catch/);
+});
+
+test('useOnboarding restaura progresso salvo ao carregar', async () => {
+  const source = await readFile(new URL('./useOnboarding.js', import.meta.url), 'utf8');
+  assert.match(source, /loadOnboardingData/);
+  assert.match(source, /savedStep/);
+  assert.match(source, /savedData/);
+  assert.match(source, /INITIAL_ONBOARDING_DATA/);
+});
+
+test('useOnboarding salva progresso ao avancar e retroceder', async () => {
+  const source = await readFile(new URL('./useOnboarding.js', import.meta.url), 'utf8');
+  assert.match(source, /saveOnboardingProgress/);
+  assert.match(source, /goNext/);
+  assert.match(source, /goPrev/);
+});
+
+test('useOnboarding protege contra duplo clique no finish com completingRef', async () => {
+  const source = await readFile(new URL('./useOnboarding.js', import.meta.url), 'utf8');
+  assert.match(source, /completingRef/);
+  assert.match(source, /return false/);
+});
+
+test('completeOnboarding eh idempotente — reusa workspaces existentes', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /existing/);
+  assert.match(source, /continue/);
+});
+
+test('completeOnboarding persiste onboarding_data com completedAt', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /onboarding_data:\s*\{ \.\.\.data, completedAt/);
+  assert.match(source, /onboarding_completed_at/);
+});
+
+test('completeOnboarding faz rollback completo em caso de erro no profile', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /deleteOwnedWorkspace/);
+  assert.match(source, /createdWorkspaces/);
+  assert.match(source, /catch/);
+});
+
+test('App.jsx redireciona para onboarding quando needsOnboarding', async () => {
+  const source = await readFile(new URL('../../app/App.jsx', import.meta.url), 'utf8');
+  assert.match(source, /needsOnboarding/);
+  assert.match(source, /onboarding_completed/);
+  assert.match(source, /\/onboarding/);
+});
+
+test('App.jsx redireciona para dashboard quando onboarding ja concluido', async () => {
+  const source = await readFile(new URL('../../app/App.jsx', import.meta.url), 'utf8');
+  assert.match(source, /onboarding_completed/);
+  assert.match(source, /\/dashboard/);
+});
+
+test('SessionContext expoe needsOnboarding baseado em profileMissing e onboarding_completed', async () => {
+  const source = await readFile(new URL('../../app/SessionContext.jsx', import.meta.url), 'utf8');
+  assert.match(source, /needsOnboarding/);
+  assert.match(source, /profileMissing/);
+  assert.match(source, /onboarding_completed/);
+});
+
+test('MobileAuthPage redireciona para onboarding quando onboarding nao concluido', async () => {
+  const source = await readFile(new URL('../../features/auth-mobile/pages/MobileAuthPage.jsx', import.meta.url), 'utf8');
+  assert.match(source, /onboarding_completed/);
+  assert.match(source, /\/onboarding/);
+});
+
+test('legado pages/OnboardingPage nao existe mais', async () => {
+  const legacyPath = new URL('../../pages/OnboardingPage.jsx', import.meta.url);
+  await assert.rejects(
+    () => readFile(legacyPath, 'utf8'),
+    { code: 'ENOENT' },
+  );
+});
+
+test('legado services/onboardingService nao existe mais', async () => {
+  const legacyPath = new URL('../../services/onboardingService.js', import.meta.url);
+  await assert.rejects(
+    () => readFile(legacyPath, 'utf8'),
+    { code: 'ENOENT' },
+  );
+});
+
+test('onboarding nao possui loop de redirecionamento — App.jsx verifica onboarding_completed antes de redirecionar', async () => {
+  const source = await readFile(new URL('../../app/App.jsx', import.meta.url), 'utf8');
+  assert.match(source, /onboarding_completed/);
+  assert.match(source, /needsOnboarding/);
+  const onboardingRedirects = source.match(/\/onboarding/g);
+  const dashboardRedirects = source.match(/\/dashboard/g);
+  assert.ok(onboardingRedirects.length >= 1);
+  assert.ok(dashboardRedirects.length >= 1);
+});
+
+test('completeOnboarding eh idempotente — reusa workspaces sem criar duplicatas', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /existing/);
+  assert.match(source, /continue/);
+});
+
+test('onboarding_data merge nao perde campos anteriores', async () => {
+  const source = await readFile(new URL('./useOnboarding.js', import.meta.url), 'utf8');
+  assert.match(source, /INITIAL_ONBOARDING_DATA/);
+  assert.match(source, /\.\.\.INITIAL_ONBOARDING_DATA, \.\.\.savedData/);
+});
+
+test('onboarding_data contem completedAt ao concluir', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /completedAt/);
+  assert.match(source, /new Date\(\)/);
+});
+
+test('onboarding nao possui loop de redirecionamento — App.jsx verifica session antes de redirecionar', async () => {
+  const source = await readFile(new URL('../../app/App.jsx', import.meta.url), 'utf8');
+  assert.match(source, /needsOnboarding/);
+  assert.match(source, /\/onboarding/);
+  assert.match(source, /\/dashboard/);
+  assert.match(source, /session/);
+});

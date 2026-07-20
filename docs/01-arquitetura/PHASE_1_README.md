@@ -42,7 +42,7 @@ src/
 |---|---|
 | Módulo 01 — Login | `pages/LoginPage`, `features/auth/Login` |
 | Módulo 01 — Cadastro | `pages/SignupPage`, `features/auth/Signup` |
-| Módulo 02 — Onboarding Inteligente | `pages/OnboardingPage`, `features/onboarding` |
+| Módulo 02 — Onboarding Inteligente | `features/onboarding` |
 | 4.3 Usuários (PostgreSQL) | `services/supabase/profile.service.js` |
 | 4.13 Banco Cognitivo da Uni | `services/supabase/onboarding.service.js` |
 | UNI OS — "nunca pergunta o que já sabe" | onboarding não repete e-mail (já veio do cadastro) |
