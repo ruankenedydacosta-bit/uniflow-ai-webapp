@@ -1,0 +1,203 @@
+// Lógica pura da área de Categorias — sem dependências de React/DOM,
+// para permitir testes via `node --test` (o setup do projeto não renderiza JSX).
+
+export const CATEGORY_TYPES = Object.freeze({
+  EXPENSE: 'expense',
+  INCOME: 'income',
+  TRANSFER: 'transfer',
+});
+
+// A partir deste número de itens no tipo ativo, a busca passa a valer a pena.
+export const SEARCH_MIN_ITEMS = 8;
+
+/**
+ * Normaliza texto para comparação: minúsculo, sem acentos e sem espaços nas
+ * pontas. Usado tanto na busca quanto na checagem de nome duplicado.
+ */
+export function normalizeText(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Filtra categorias pelo termo digitado (case e acento-insensível).
+ * Termo vazio retorna a lista original (sem cópia desnecessária).
+ */
+export function filterCategoriesBySearch(categories, query) {
+  const list = Array.isArray(categories) ? categories : [];
+  const term = normalizeText(query);
+  if (!term) return list;
+  return list.filter((category) => normalizeText(category?.name).includes(term));
+}
+
+/**
+ * Separa a lista de categorias por tipo, ignorando as inativas.
+ * Retorna { expense: [], income: [], transfer: [] }.
+ */
+export function splitCategoriesByType(categories) {
+  const buckets = { expense: [], income: [], transfer: [] };
+  const list = Array.isArray(categories) ? categories : [];
+  for (const category of list) {
+    if (category?.is_active === false) continue;
+    const type = category?.category_type;
+    if (type && buckets[type]) {
+      buckets[type].push(category);
+    }
+  }
+  return buckets;
+}
+
+/**
+ * Verifica se já existe categoria com o mesmo nome dentro do MESMO tipo.
+ * Ignora o próprio registro em edição (excludeId).
+ */
+export function isDuplicateCategoryName(categories, name, categoryType, { excludeId = null } = {}) {
+  const target = normalizeText(name);
+  if (!target) return false;
+  const list = Array.isArray(categories) ? categories : [];
+  return list.some((category) => {
+    if (excludeId && category?.id === excludeId) return false;
+    if (category?.category_type !== categoryType) return false;
+    return normalizeText(category?.name) === target;
+  });
+}
+
+/** Decide se a busca deve ser exibida para uma dada quantidade de itens. */
+export function shouldShowSearch(itemCount) {
+  return Number(itemCount) >= SEARCH_MIN_ITEMS;
+}
+
+/** Rótulo do botão principal da Uni conforme o tipo ativo. */
+export function getUniButtonLabel(categoryType) {
+  return categoryType === CATEGORY_TYPES.INCOME
+    ? 'Registrar entrada com a Uni'
+    : 'Registrar gasto com a Uni';
+}
+
+/**
+ * Monta o objeto de estado de navegação enviado ao Chat da Uni.
+ * Nunca inclui dados sensíveis — apenas contexto de intenção.
+ */
+export function buildUniNavigationState(categoryType, categoryName = null) {
+  const tipoInicial = categoryType === CATEGORY_TYPES.INCOME ? 'receita' : 'despesa';
+  const state = {
+    origin: 'categorias',
+    intent: 'registrar_transacao',
+    tipoInicial,
+  };
+  if (typeof categoryName === 'string' && categoryName.trim()) {
+    state.categoriaSugerida = categoryName.trim();
+  }
+  return state;
+}
+
+/**
+ * A partir do state de navegação, monta o texto inicial (não enviado
+ * automaticamente) que aparece no campo do chat. Retorna string vazia
+ * quando o state não é da área de Categorias.
+ */
+export function buildUniPrefillFromState(state) {
+  if (!state || state.origin !== 'categorias' || state.intent !== 'registrar_transacao') {
+    return '';
+  }
+  const base = state.tipoInicial === 'receita'
+    ? 'Registrar uma entrada'
+    : 'Registrar um gasto';
+  if (typeof state.categoriaSugerida === 'string' && state.categoriaSugerida.trim()) {
+    return `${base} em ${state.categoriaSugerida.trim()}: `;
+  }
+  return `${base}: `;
+}
+
+// --- Fase 3: especializacao PF/PJ das categorias globais -------------------
+
+export const APPLIES_TO = Object.freeze({
+  PERSONAL: 'personal',
+  BUSINESS: 'business',
+  BOTH: 'both',
+});
+
+/**
+ * Mapa declarativo (espelha o backfill/seed da migration
+ * 20260721_014_categories_applies_to.sql) de categoria global -> applies_to.
+ * Mantido aqui como dado testavel: garante que o front e a migration
+ * concordem sobre a natureza de cada categoria padrao. Chave = lower(name).
+ */
+export const DEFAULT_GLOBAL_CATEGORY_APPLIES_TO = Object.freeze({
+  // Receitas PF
+  'salário': 'personal',
+  'rendimentos': 'personal',
+  'freelance': 'personal',
+  'reembolso': 'personal',
+  'presente': 'personal',
+  'aluguel recebido': 'personal',
+  // Despesas PF
+  'moradia': 'personal',
+  'alimentação': 'personal',
+  'transporte': 'personal',
+  'saúde': 'personal',
+  'educação': 'personal',
+  'lazer': 'personal',
+  'dívidas': 'personal',
+  // Receitas PJ
+  'receita de vendas': 'business',
+  'prestação de serviços': 'business',
+  'comissão': 'business',
+  'recebimentos': 'business',
+  'contratos': 'business',
+  // Despesas PJ
+  'impostos': 'business',
+  'fornecedores': 'business',
+  'operacional': 'business',
+  'folha': 'business',
+  'marketing': 'business',
+  'aluguel': 'business',
+  'equipamentos': 'business',
+  // Genericas / ambos
+  'outras entradas': 'both',
+  'outras despesas': 'both',
+  'assinaturas': 'both',
+  'transferência': 'both',
+});
+
+/** Normaliza o contexto ativo para 'personal' | 'business'. */
+export function normalizeWorkspaceContext(currentWorkspace) {
+  return currentWorkspace === APPLIES_TO.BUSINESS
+    ? APPLIES_TO.BUSINESS
+    : APPLIES_TO.PERSONAL;
+}
+
+/**
+ * Decide se uma categoria deve aparecer no contexto ativo (PF/PJ).
+ * - Categorias customizadas de workspace (is_system=false ou com workspace_id)
+ *   pertencem apenas ao seu workspace: sempre visiveis no proprio contexto,
+ *   independentemente de applies_to.
+ * - Categorias globais do sistema (is_system=true e workspace_id nulo) sao
+ *   filtradas por applies_to: visiveis quando 'both' ou igual ao contexto.
+ *   applies_to ausente e tratado como 'both' (retrocompatibilidade).
+ */
+export function categoryAppliesToContext(category, currentWorkspace) {
+  if (!category) return false;
+  const context = normalizeWorkspaceContext(currentWorkspace);
+  const isGlobalSystem =
+    category.is_system === true &&
+    (category.workspace_id === null || category.workspace_id === undefined);
+  if (!isGlobalSystem) return true;
+  const appliesTo = category.applies_to || APPLIES_TO.BOTH;
+  return appliesTo === APPLIES_TO.BOTH || appliesTo === context;
+}
+
+/**
+ * Filtra uma lista de categorias para o contexto ativo (PF/PJ), respeitando
+ * applies_to das globais e preservando as customizadas do workspace.
+ */
+export function filterCategoriesForContext(categories, currentWorkspace) {
+  const list = Array.isArray(categories) ? categories : [];
+  return list.filter((category) =>
+    categoryAppliesToContext(category, currentWorkspace),
+  );
+}

@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const CATEGORY_FIELDS =
-  'id, workspace_id, name, category_type, parent_category_id, icon, color, is_system, is_active, created_by, created_at, updated_at';
+  'id, workspace_id, name, category_type, parent_category_id, icon, color, is_system, is_active, applies_to, created_by, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

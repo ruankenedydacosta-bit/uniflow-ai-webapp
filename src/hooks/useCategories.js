@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createCategory,
   deleteCategory,
@@ -6,6 +6,7 @@ import {
   updateCategory,
 } from '../services/categoryService.js';
 import { isSupabaseConfigured } from '../services/supabaseClient.js';
+import { filterCategoriesForContext } from '../features/categories/categoryUtils.js';
 import {
   cloneRecords,
   createDemoRecord,
@@ -16,7 +17,11 @@ import {
 
 const EMPTY_ARRAY = [];
 
-export function useCategories({ workspaceId, fallbackCategories = EMPTY_ARRAY } = {}) {
+export function useCategories({
+  workspaceId,
+  fallbackCategories = EMPTY_ARRAY,
+  context = null,
+} = {}) {
   const [categories, setCategories] = useState(() =>
     cloneRecords(fallbackCategories),
   );
@@ -122,8 +127,13 @@ export function useCategories({ workspaceId, fallbackCategories = EMPTY_ARRAY } 
     [workspaceId],
   );
 
+  const visibleCategories = useMemo(
+    () => (context ? filterCategoriesForContext(categories, context) : categories),
+    [categories, context],
+  );
+
   return {
-    categories,
+    categories: visibleCategories,
     error,
     isDemoMode: !isSupabaseConfigured,
     isLoading,
