@@ -89,7 +89,9 @@ test('criação reutiliza workspace existente e prepara rollback seguro', async 
 
 test('Financeiro recarrega todos os hooks pelo workspace selecionado', async () => {
   const source = await readFile(new URL('../pages/FinanceiroPage.jsx', import.meta.url), 'utf8');
-  assert.equal((source.match(/workspaceId: workspace\?\.id/g) ?? []).length, 4);
+  // 4 hooks de dados (accounts/categories/transactions/balances) + 1
+  // useWorkspaceRole (gate de permissao, Subfase 10.2) = 5 bindings.
+  assert.equal((source.match(/workspaceId: workspace\?\.id/g) ?? []).length, 5);
   assert.match(source, /useFinancialBalances/);
 });
 

@@ -1,4 +1,4 @@
-function TransactionRow({ onDelete, onEdit, transaction }) {
+function TransactionRow({ onDelete, onDuplicate, onEdit, transaction }) {
   return (
     <li className="financeMobileTransaction">
       <button
@@ -16,7 +16,16 @@ function TransactionRow({ onDelete, onEdit, transaction }) {
         </div>
       </button>
       <div className="financeMobileTransactionRight">
-        <b className={`financeMobile-${transaction.tone}`}>{transaction.amount}</b>
+        <b className={`financeMobile-${transaction.tone}`}>{transaction.amountLabel}</b>
+        <button
+          type="button"
+          className="financeMobileDuplicateBtn"
+          onClick={() => onDuplicate?.(transaction)}
+          aria-label={`Duplicar ${transaction.description}`}
+          title="Duplicar lançamento"
+        >
+          ⧉
+        </button>
         <button
           type="button"
           className="financeMobileDeleteBtn"

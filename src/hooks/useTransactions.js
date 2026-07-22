@@ -28,6 +28,20 @@ export function useTransactions({
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
   const requestIdRef = useRef(0);
+  // Trava sincrona: isMutating (estado do React) so reflete no proximo
+  // render, entao duas chamadas no mesmo ciclo veriam isMutating === false
+  // e disparariam duas mutacoes. mutationRef fecha essa janela -- mesmo
+  // padrao ja usado em useClients.js/useCrmPipeline.js/useAgenda.js.
+  //
+  // Chamadas sequenciais aguardadas (ex.: o loop de criacao de parcelas em
+  // FinanceTransactionModal.jsx, que faz `await saveTransaction(...)` uma
+  // vez por parcela dentro de um for) continuam funcionando sem alteracao:
+  // a trava e liberada no `finally` de cada chamada ANTES da proxima
+  // iteracao do loop comecar, porque o loop so avanca depois que a Promise
+  // anterior resolve. A trava so bloqueia uma SEGUNDA chamada disparada
+  // enquanto a primeira ainda esta em andamento (ex.: duplo clique do
+  // usuario), nunca uma sequencia de chamadas ja serializadas por await.
+  const mutationRef = useRef(false);
 
   const refresh = useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -70,56 +84,79 @@ export function useTransactions({
     };
   }, [refresh]);
 
-  const saveTransaction = useCallback(
-    async (values, transactionId = null) => {
-      setIsMutating(true);
-      setError(null);
+  /**
+   * Centraliza saveTransaction/removeTransaction: trava sincrona via
+   * mutationRef, isMutating/error de estado, upsert/remocao local via
+   * applyLocalUpdate, liberacao da trava em finally. mutationFn decide
+   * sozinha entre o branch demo (Supabase nao configurado) e o service
+   * real -- preserva exatamente o comportamento anterior de cada mutacao,
+   * so remove a duplicacao do envelope em volta delas.
+   */
+  const performMutation = useCallback(async (mutationFn, applyLocalUpdate) => {
+    if (mutationRef.current) {
+      return {
+        data: null,
+        error: {
+          code: 'TRANSACTION_MUTATION_IN_PROGRESS',
+          message: 'Aguarde a operação atual terminar.',
+        },
+        isConfigured: isSupabaseConfigured,
+      };
+    }
 
-      const result = !isSupabaseConfigured
-        ? createDemoResult(
-            transactionId
-              ? {
-                  ...transactions.find((item) => item.id === transactionId),
-                  ...values,
-                  id: transactionId,
-                  updated_at: new Date().toISOString(),
-                }
-              : createDemoRecord('demo-transaction', values),
-          )
-        : transactionId
-          ? await updateTransaction(workspaceId, transactionId, values)
-          : await createTransaction(workspaceId, values);
+    mutationRef.current = true;
+    setIsMutating(true);
+    setError(null);
+
+    try {
+      const result = await mutationFn();
 
       if (result.error) {
         setError(result.error);
       } else if (result.data) {
-        setTransactions((current) => upsertRecord(current, result.data));
+        applyLocalUpdate(result.data);
       }
 
-      setIsMutating(false);
       return result;
-    },
-    [transactions, workspaceId],
+    } finally {
+      mutationRef.current = false;
+      setIsMutating(false);
+    }
+  }, []);
+
+  const saveTransaction = useCallback(
+    (values, transactionId = null) =>
+      performMutation(
+        () =>
+          !isSupabaseConfigured
+            ? createDemoResult(
+                transactionId
+                  ? {
+                      ...transactions.find((item) => item.id === transactionId),
+                      ...values,
+                      id: transactionId,
+                      updated_at: new Date().toISOString(),
+                    }
+                  : createDemoRecord('demo-transaction', values),
+              )
+            : transactionId
+              ? updateTransaction(workspaceId, transactionId, values)
+              : createTransaction(workspaceId, values),
+        (data) => setTransactions((current) => upsertRecord(current, data)),
+      ),
+    [performMutation, transactions, workspaceId],
   );
 
   const removeTransaction = useCallback(
-    async (transactionId) => {
-      setIsMutating(true);
-      setError(null);
-      const result = !isSupabaseConfigured
-        ? createDemoResult({ id: transactionId })
-        : await deleteTransaction(workspaceId, transactionId);
-
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setTransactions((current) => removeRecord(current, transactionId));
-      }
-
-      setIsMutating(false);
-      return result;
-    },
-    [workspaceId],
+    (transactionId) =>
+      performMutation(
+        () =>
+          !isSupabaseConfigured
+            ? createDemoResult({ id: transactionId })
+            : deleteTransaction(workspaceId, transactionId),
+        (data) => setTransactions((current) => removeRecord(current, data.id)),
+      ),
+    [performMutation, workspaceId],
   );
 
   return {

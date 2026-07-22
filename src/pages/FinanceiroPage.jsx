@@ -5,7 +5,7 @@ import { WORKSPACE_TYPES } from '../app/access.js';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { useAccounts, useCategories, useFinancialBalances, useTransactions } from '../hooks';
+import { useAccounts, useCategories, useFinancialBalances, useTransactions, useWorkspaceRole } from '../hooks';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../services/financialDataEvents.js';
 import { cx } from '../utils/cx';
 import { formatCurrency } from '../utils/formatters';
@@ -38,9 +38,10 @@ function formatMovementDate(value) {
 
 function FinanceiroPage() {
   const { access } = useAccess();
-  const { workspace } = useSession();
+  const { user, workspace } = useSession();
   const [activeDialog, setActiveDialog] = useState(null);
   const [editingTransactionId, setEditingTransactionId] = useState(null);
+  const [duplicateFromTransactionId, setDuplicateFromTransactionId] = useState(null);
   const [transactionType, setTransactionType] = useState('expense');
   const financial = getFinancialContext(access.currentWorkspace);
   const crudFallback = getCrudContext(access.currentWorkspace);
@@ -52,12 +53,53 @@ function FinanceiroPage() {
   const categoryState = useCategories({
     workspaceId: workspace?.id,
     fallbackCategories: crudFallback.categories,
+    context: access.currentWorkspace,
   });
   const transactionState = useTransactions({
     workspaceId: workspace?.id,
     fallbackTransactions: crudFallback.transactions,
   });
   const balanceState = useFinancialBalances({ workspaceId: workspace?.id });
+  const workspaceRole = useWorkspaceRole({
+    workspaceId: workspace?.id,
+    ownerUserId: workspace?.owner_user_id,
+    userId: user?.id,
+  });
+  const isAnyFinanceMutating =
+    accountState.isMutating || categoryState.isMutating || transactionState.isMutating;
+  // Regra unica de criacao/edicao para contas/categorias/lancamentos --
+  // owner/admin/member, mesmo conjunto de papeis das 3 policies RLS de
+  // update (accounts_update_active_contributor/categories_update_owner_admin_or_creator*
+  // /transactions_update_active_contributor -- *categories tambem libera o
+  // proprio criador, ja coberto porque um criador sempre e ao menos
+  // member). Nao depende so da RLS: bloqueia a UX antes do clique chegar
+  // ao banco, mesmo padrao ja usado em Agenda/CRM/Clientes.
+  const canManageFinance =
+    workspaceRole.canUpdate === true && !workspaceRole.isLoading && !isAnyFinanceMutating;
+
+  function getManageFinanceTitle() {
+    if (!workspace?.id) return 'Selecione um espaço de trabalho.';
+    if (workspaceRole.isLoading) return 'Carregando permissões...';
+    if (workspaceRole.canUpdate !== true) return 'Você não possui permissão para gerenciar o financeiro deste espaço.';
+    if (isAnyFinanceMutating) return 'Aguarde a operação atual terminar.';
+    return 'Gerenciar o financeiro deste espaço.';
+  }
+
+  // Exclusao de transacao/categoria: RLS libera owner/admin OU o proprio
+  // criador da linha (transactions_delete_owner_admin_or_creator/
+  // categories_delete_owner_admin_or_creator) -- mais permissivo que
+  // canDelete puro (owner/admin), entao a checagem soma as duas condicoes
+  // em vez de usar canDelete isoladamente, que ficaria mais restritivo que
+  // a policy real.
+  function canDeleteTransaction(transaction) {
+    return workspaceRole.canDelete === true || transaction?.created_by === user?.id;
+  }
+  function canDeleteCategory(category) {
+    return workspaceRole.canDelete === true || category?.created_by === user?.id;
+  }
+  // Contas: a policy real (accounts_delete_owner_or_admin) nao libera o
+  // criador -- somente owner/admin, igual a canDelete puro.
+  const canDeleteAccount = workspaceRole.canDelete === true;
   const accountsWithDerivedBalance = useMemo(() => {
     const balanceByAccount = new Map(
       balanceState.accountBalances.map((balance) => [balance.account_id, balance]),
@@ -132,12 +174,28 @@ function FinanceiroPage() {
   }, [refreshFinancialData]);
 
   function openDialog(dialog, requestedTransactionType = 'expense') {
+    if (!canManageFinance) return;
     accountState.clearError();
     categoryState.clearError();
     transactionState.clearError();
     balanceState.clearError();
-    if (dialog === 'transactions') setTransactionType(requestedTransactionType);
+    if (dialog === 'transactions') {
+      setTransactionType(requestedTransactionType);
+      setDuplicateFromTransactionId(null);
+    }
     setActiveDialog(dialog);
+  }
+
+  function duplicateTransaction(transaction) {
+    if (!canManageFinance) return;
+    accountState.clearError();
+    categoryState.clearError();
+    transactionState.clearError();
+    balanceState.clearError();
+    setTransactionType(transaction.transaction_type);
+    setEditingTransactionId(null);
+    setDuplicateFromTransactionId(transaction.id);
+    setActiveDialog('transactions');
   }
 
   return (
@@ -146,16 +204,22 @@ function FinanceiroPage() {
         accountBalances={balanceState.accountBalances}
         accounts={accountState.accounts}
         categories={categoryState.categories}
+        currentWorkspace={access.currentWorkspace}
         error={mobileError}
         isLoading={mobileLoading}
         onDeleteTransaction={(transactionId) => {
+          const transaction = transactionState.transactions.find((item) => item.id === transactionId);
+          if (!transaction || !canDeleteTransaction(transaction)) return;
           transactionState.removeTransaction(transactionId).then((result) => {
             if (!result.error) void balanceState.refresh();
           });
         }}
+        onDuplicateTransaction={duplicateTransaction}
         onEditTransaction={(transaction) => {
+          if (!canManageFinance) return;
           setTransactionType(transaction.transaction_type);
           setEditingTransactionId(transaction.id);
+          setDuplicateFromTransactionId(null);
           setActiveDialog('transactions');
         }}
         onManageAccounts={() => openDialog('accounts')}
@@ -176,7 +240,7 @@ function FinanceiroPage() {
         </div>
 
         <div className={styles.actions}>
-          <Button>Registrar por voz</Button>
+          <Button disabled title="Disponível em breve.">Registrar por voz</Button>
           <Button variant="secondary">Perguntar à Uni</Button>
         </div>
       </section>
@@ -250,13 +314,30 @@ function FinanceiroPage() {
               <p>Últimos eventos usados para alimentar a leitura da Uni.</p>
             </div>
             <div className={styles.actions}>
-              <Button variant="ghost" size="sm" onClick={() => openDialog('accounts')}>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!canManageFinance}
+                title={getManageFinanceTitle()}
+                onClick={() => openDialog('accounts')}
+              >
                 Contas
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => openDialog('categories')}>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!canManageFinance}
+                title={getManageFinanceTitle()}
+                onClick={() => openDialog('categories')}
+              >
                 Categorias
               </Button>
-              <Button size="sm" onClick={() => openDialog('transactions')}>
+              <Button
+                size="sm"
+                disabled={!canManageFinance}
+                title={getManageFinanceTitle()}
+                onClick={() => openDialog('transactions')}
+              >
                 Novo lançamento
               </Button>
             </div>
@@ -304,23 +385,31 @@ function FinanceiroPage() {
         onClose={() => setActiveDialog(null)}
         onChanged={refreshFinancialData}
         accountState={displayAccountState}
+        canManage={canManageFinance}
+        canDelete={canDeleteAccount}
       />
       <FinanceCategoryModal
         open={activeDialog === 'categories'}
         onClose={() => setActiveDialog(null)}
         onChanged={refreshFinancialData}
         categoryState={categoryState}
+        canManage={canManageFinance}
+        canDeleteCategory={canDeleteCategory}
       />
       <FinanceTransactionModal
+        duplicateFromTransactionId={duplicateFromTransactionId}
         editingTransactionId={editingTransactionId}
-        key={`transaction-${transactionType}-${editingTransactionId ?? 'new'}`}
+        key={`transaction-${transactionType}-${editingTransactionId ?? duplicateFromTransactionId ?? 'new'}`}
         open={activeDialog === 'transactions'}
         onClose={() => {
           setEditingTransactionId(null);
+          setDuplicateFromTransactionId(null);
           setActiveDialog(null);
         }}
         onChanged={refreshFinancialData}
         initialType={transactionType}
+        canManage={canManageFinance}
+        canDeleteTransaction={canDeleteTransaction}
         accountState={displayAccountState}
         categoryState={categoryState}
         transactionState={transactionState}

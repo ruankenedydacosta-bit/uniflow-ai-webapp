@@ -338,6 +338,63 @@
   touch-action: pan-y;
 }
 
+/* Estado vazio: gráfico permanece montado (estrutura, legenda, eixos,
+   linha-base) mas sem nenhuma linha/área/ponto com valor. A mensagem e o
+   CTA ficam num overlay textual, sempre real (nunca dado fictício). */
+.emptyBaseline {
+  stroke: var(--uni-border);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+.emptyOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 20px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.emptyOverlayMessage {
+  margin: 0;
+  max-width: 280px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--uni-text-primary);
+}
+
+.emptyOverlaySupport {
+  margin: 0;
+  max-width: 260px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--uni-text-secondary);
+}
+
+.emptyOverlayCta {
+  pointer-events: auto;
+  margin-top: 6px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--uni-blue), var(--uni-purple));
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.emptyOverlayCta:focus-visible {
+  outline: 2px solid var(--uni-blue);
+  outline-offset: 2px;
+}
+
 .tooltip {
   position: absolute;
   z-index: 2;

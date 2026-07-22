@@ -110,3 +110,15 @@ export function prefersReducedMotion() {
   if (typeof window === 'undefined' || !window.matchMedia) return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
+
+/**
+ * Verdadeiro quando ao menos um ponto da série possui receita ou despesa
+ * diferente de zero. Usado para decidir o estado vazio do gráfico sem
+ * inventar dados: quando falso, o componente não deve desenhar nenhuma
+ * linha/área/ponto com valores (mesmo que sejam zero).
+ */
+export function hasRealData(data) {
+  return Array.isArray(data) && data.some(
+    (point) => Number(point?.receita || 0) !== 0 || Number(point?.despesa || 0) !== 0,
+  );
+}

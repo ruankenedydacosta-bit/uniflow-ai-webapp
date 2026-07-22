@@ -6,7 +6,9 @@ import { formatBRL } from './cognitiveLiveChart.utils';
  * Sempre reposicionado nos eixos horizontal e vertical para permanecer
  * dentro da área visível do gráfico.
  */
-export default function CognitiveChartTooltip({ x, y, point, containerWidth, containerHeight }) {
+export default function CognitiveChartTooltip({
+  x, y, point, seriesLabels = { receita: 'Receitas', despesa: 'Despesas' }, containerWidth, containerHeight,
+}) {
   if (!point) return null;
 
   const saldo = point.receita - point.despesa;
@@ -35,12 +37,12 @@ export default function CognitiveChartTooltip({ x, y, point, containerWidth, con
       <p className={styles.tooltipDate}>{point.label}</p>
       <div className={styles.tooltipRow}>
         <span className={styles.tooltipDotReceita} aria-hidden="true" />
-        <span className={styles.tooltipLabel}>Receitas</span>
+        <span className={styles.tooltipLabel}>{seriesLabels.receita}</span>
         <span className={styles.tooltipValueReceita}>{formatBRL(point.receita)}</span>
       </div>
       <div className={styles.tooltipRow}>
         <span className={styles.tooltipDotDespesa} aria-hidden="true" />
-        <span className={styles.tooltipLabel}>Despesas</span>
+        <span className={styles.tooltipLabel}>{seriesLabels.despesa}</span>
         <span className={styles.tooltipValueDespesa}>{formatBRL(point.despesa)}</span>
       </div>
       <div className={styles.tooltipDivider} />

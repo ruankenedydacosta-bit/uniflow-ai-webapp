@@ -170,7 +170,8 @@ function buildTransactions(transactions, categories) {
         ...transaction,
         category: categoriesById.get(transaction.category_id) ?? (transaction.transaction_type === 'transfer' ? 'Transferência' : 'Sem categoria'),
         date: DATE_FORMATTER.format(parseDateKey(transaction.transaction_date)),
-        amount: `${sign} ${CURRENCY_FORMATTER.format(Number(transaction.amount || 0))}`,
+        amount: Number(transaction.amount || 0),
+        amountLabel: `${sign} ${CURRENCY_FORMATTER.format(Number(transaction.amount || 0))}`,
         tone,
         icon: isIncome ? 'R' : isExpense ? 'D' : 'T',
       };

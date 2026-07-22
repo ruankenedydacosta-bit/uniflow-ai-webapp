@@ -15,6 +15,7 @@ import {
   formatPercent,
   prefersReducedMotion,
   clamp,
+  hasRealData,
 } from './cognitiveLiveChart.utils';
 import {
   currentMonthData,
@@ -65,10 +66,17 @@ export default function CognitiveLiveChart({
   onPeriodChange,
   onListenAnalysis = () => {},
   onViewDetails = () => {},
+  seriesLabels = { receita: 'Receitas', despesa: 'Despesas' },
+  emptyState = null,
   className = '',
 }) {
   const isDetailed = variant === 'detailed';
   const height = VARIANT_HEIGHT[variant] || VARIANT_HEIGHT.compact;
+  // Estado vazio: nenhum lançamento real no período. O gráfico permanece
+  // montado (título, legenda, eixos, linha-base) mas nenhuma linha/área/
+  // ponto com valor é desenhada — apenas a mensagem e o CTA recebidos via
+  // `emptyState`. Nunca inferido internamente a partir de dados fictícios.
+  const isEmptyView = Boolean(emptyState) && !hasRealData(data);
 
   const [internalMode, setInternalMode] = useState(defaultMode);
   const mode = controlledMode || internalMode;
@@ -312,17 +320,20 @@ export default function CognitiveLiveChart({
         ? forecastMeta.detail
         : null;
 
-  const chartDescription = `Gráfico de receitas e despesas acumuladas de julho de 2026. `
-    + `Receitas somam ${formatBRL(data[data.length - 1].receita)} e despesas somam `
-    + `${formatBRL(data[data.length - 1].despesa)} até o dia ${todayDay}. `
-    + (uniMessage ? `Interpretação da Uni: ${uniMessage}` : 'Sem destaque ativo no momento.');
+  const chartDescription = isEmptyView
+    ? `Gráfico de ${seriesLabels.receita.toLowerCase()} e ${seriesLabels.despesa.toLowerCase()} sem lançamentos no período. `
+      + `${emptyState.message} ${emptyState.support ?? ''}`.trim()
+    : `Gráfico de ${seriesLabels.receita.toLowerCase()} e ${seriesLabels.despesa.toLowerCase()} acumuladas de julho de 2026. `
+      + `${seriesLabels.receita} somam ${formatBRL(data[data.length - 1].receita)} e ${seriesLabels.despesa.toLowerCase()} somam `
+      + `${formatBRL(data[data.length - 1].despesa)} até o dia ${todayDay}. `
+      + (uniMessage ? `Interpretação da Uni: ${uniMessage}` : 'Sem destaque ativo no momento.');
 
   return (
     <div
       ref={containerRef}
       className={`${styles.root} ${isDetailed ? styles.rootDetailed : styles.rootCompact} ${className}`}
     >
-      {isDetailed ? (
+      {isDetailed && !isEmptyView ? (
         <div className={styles.toolbar}>
           <div className={styles.periodToggle} role="tablist" aria-label="Selecionar período">
             {periodOptions.map((option) => (
@@ -351,15 +362,15 @@ export default function CognitiveLiveChart({
       <div className={styles.legend}>
         <span className={styles.legendItem}>
           <span className={styles.legendSwatchReceita} aria-hidden="true" />
-          Receitas — linha cheia
+          {seriesLabels.receita} — linha cheia
         </span>
         <span className={styles.legendItem}>
           <span className={styles.legendSwatchDespesa} aria-hidden="true" />
-          Despesas — linha tracejada
+          {seriesLabels.despesa} — linha tracejada
         </span>
       </div>
 
-      {isDetailed ? (
+      {isDetailed && !isEmptyView ? (
         <div className={styles.modeTabs} role="tablist" aria-label="Selecionar modo de análise">
           {modeOptions.map((option) => (
             <button
@@ -436,7 +447,7 @@ export default function CognitiveLiveChart({
             </filter>
           </defs>
 
-          {showUniHighlight ? (
+          {showUniHighlight && !isEmptyView ? (
             <g className={styles.modeFadeIn}>
               <ellipse
                 cx={(highlightXStart + highlightXEnd) / 2}
@@ -457,24 +468,26 @@ export default function CognitiveLiveChart({
             </g>
           ) : null}
 
-          <path
-            d={receitaAreaPath}
-            className={`${styles.receitaArea} ${!reduceMotion ? styles.areaAnimated : ''}`}
-            style={{ fill: `url(#${uid}-receita-area-grad)` }}
-          />
+          {!isEmptyView ? (
+            <path
+              d={receitaAreaPath}
+              className={`${styles.receitaArea} ${!reduceMotion ? styles.areaAnimated : ''}`}
+              style={{ fill: `url(#${uid}-receita-area-grad)` }}
+            />
+          ) : null}
 
-          {showComparisonLine ? (
+          {showComparisonLine && !isEmptyView ? (
             <path
               d={comparisonGapPath}
               className={`${styles.comparisonGap} ${styles.modeFadeIn}`}
               style={{ fill: `url(#${uid}-comparison-gap-grad)` }}
             />
           ) : null}
-          {showComparisonLine ? (
+          {showComparisonLine && !isEmptyView ? (
             <path d={comparisonDespesaPath} className={`${styles.comparisonLine} ${styles.modeFadeIn}`} />
           ) : null}
 
-          {showForecastLine ? (
+          {showForecastLine && !isEmptyView ? (
             <path
               d={forecastUncertaintyPath}
               className={styles.modeFadeIn}
@@ -482,46 +495,54 @@ export default function CognitiveLiveChart({
             />
           ) : null}
 
-          <path
-            d={despesaLinePath}
-            className={`${styles.despesaLine} ${!reduceMotion ? styles.lineAnimated : ''}`}
-            style={{ filter: `url(#${uid}-glow-despesa)` }}
-          />
-          <path
-            d={receitaLinePath}
-            className={`${styles.receitaLine} ${!reduceMotion ? styles.lineAnimated : ''}`}
-            style={{ filter: `url(#${uid}-glow-receita)` }}
-          />
+          {!isEmptyView ? (
+            <path
+              d={despesaLinePath}
+              className={`${styles.despesaLine} ${!reduceMotion ? styles.lineAnimated : ''}`}
+              style={{ filter: `url(#${uid}-glow-despesa)` }}
+            />
+          ) : null}
+          {!isEmptyView ? (
+            <path
+              d={receitaLinePath}
+              className={`${styles.receitaLine} ${!reduceMotion ? styles.lineAnimated : ''}`}
+              style={{ filter: `url(#${uid}-glow-receita)` }}
+            />
+          ) : null}
 
-          {showForecastLine ? (
+          {showForecastLine && !isEmptyView ? (
             <g className={styles.modeFadeIn}>
               <path d={forecastReceitaPath} className={styles.forecastReceitaLine} />
               <path d={forecastDespesaPath} className={styles.forecastDespesaLine} />
             </g>
           ) : null}
 
-          <line
-            x1={todayX}
-            x2={todayX}
-            y1={MARGIN.top}
-            y2={height - MARGIN.bottom}
-            className={styles.todayMarker}
-          />
-          <text x={todayX} y={MARGIN.top - 6} className={styles.todayLabel} textAnchor="middle">
-            {showForecastLine ? 'Hoje' : `Dia ${todayDay}`}
-          </text>
+          {!isEmptyView ? (
+            <>
+              <line
+                x1={todayX}
+                x2={todayX}
+                y1={MARGIN.top}
+                y2={height - MARGIN.bottom}
+                className={styles.todayMarker}
+              />
+              <text x={todayX} y={MARGIN.top - 6} className={styles.todayLabel} textAnchor="middle">
+                {showForecastLine ? 'Hoje' : `Dia ${todayDay}`}
+              </text>
 
-          {/* Ponto "Hoje" vivo: núcleo sólido + halo translúcido com pulso lento. */}
-          <circle
-            cx={todayPoint.x}
-            cy={todayPoint.y}
-            r="11"
-            fill={`url(#${uid}-today-glow)`}
-            className={!reduceMotion ? styles.todayHaloPulse : ''}
-          />
-          <circle cx={todayPoint.x} cy={todayPoint.y} r="3.5" className={styles.todayCore} />
+              {/* Ponto "Hoje" vivo: núcleo sólido + halo translúcido com pulso lento. */}
+              <circle
+                cx={todayPoint.x}
+                cy={todayPoint.y}
+                r="11"
+                fill={`url(#${uid}-today-glow)`}
+                className={!reduceMotion ? styles.todayHaloPulse : ''}
+              />
+              <circle cx={todayPoint.x} cy={todayPoint.y} r="3.5" className={styles.todayCore} />
+            </>
+          ) : null}
 
-          {highlightCorePoint ? (
+          {highlightCorePoint && !isEmptyView ? (
             <circle
               cx={highlightCorePoint.x}
               cy={highlightCorePoint.y}
@@ -530,7 +551,7 @@ export default function CognitiveLiveChart({
             />
           ) : null}
 
-          {receitaPoints.map((point, index) => (
+          {!isEmptyView ? receitaPoints.map((point, index) => (
             <circle
               key={`receita-${point.day}`}
               cx={point.x}
@@ -539,8 +560,8 @@ export default function CognitiveLiveChart({
               className={`${styles.pointReceita} ${!reduceMotion ? styles.pointEnter : ''}`}
               style={!reduceMotion ? { animationDelay: `${300 + index * 45}ms` } : undefined}
             />
-          ))}
-          {despesaPoints.map((point, index) => (
+          )) : null}
+          {!isEmptyView ? despesaPoints.map((point, index) => (
             <rect
               key={`despesa-${point.day}`}
               x={point.x - (focusedIndex === index ? 4 : 2.5)}
@@ -550,9 +571,9 @@ export default function CognitiveLiveChart({
               className={`${styles.pointDespesa} ${!reduceMotion ? styles.pointEnter : ''}`}
               style={!reduceMotion ? { animationDelay: `${300 + index * 45}ms` } : undefined}
             />
-          ))}
+          )) : null}
 
-          {focusedIndex !== null ? (
+          {focusedIndex !== null && !isEmptyView ? (
             <line
               x1={receitaPoints[focusedIndex].x}
               x2={receitaPoints[focusedIndex].x}
@@ -562,10 +583,20 @@ export default function CognitiveLiveChart({
             />
           ) : null}
 
+          {isEmptyView ? (
+            <line
+              x1={MARGIN.left}
+              x2={VIEWBOX_WIDTH - MARGIN.right}
+              y1={height - MARGIN.bottom}
+              y2={height - MARGIN.bottom}
+              className={styles.emptyBaseline}
+            />
+          ) : null}
+
           <text x={xScale(data[0].day)} y={height - 8} className={styles.axisLabel} textAnchor="start">
             {data[0].label}
           </text>
-          {todayDay !== lastDay ? (
+          {todayDay !== lastDay && !isEmptyView ? (
             <text x={todayX} y={height - 8} className={styles.axisLabel} textAnchor="middle">
               {`Dia ${todayDay}`}
             </text>
@@ -576,35 +607,73 @@ export default function CognitiveLiveChart({
             className={styles.axisLabel}
             textAnchor="end"
           >
-            {showForecastLine ? forecastData[forecastData.length - 1].label : data[data.length - 1].label}
+            {showForecastLine && !isEmptyView ? forecastData[forecastData.length - 1].label : data[data.length - 1].label}
           </text>
 
-          <rect
+          <text
             x={MARGIN.left}
-            y={MARGIN.top}
-            width={VIEWBOX_WIDTH - MARGIN.left - MARGIN.right}
-            height={height - MARGIN.top - MARGIN.bottom}
-            className={styles.interactionOverlay}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={finishPointerInteraction}
-            onPointerCancel={finishPointerInteraction}
-            onLostPointerCapture={() => { activePointerRef.current = null; }}
-          />
+            y={MARGIN.top + 2}
+            className={styles.axisLabel}
+            textAnchor="start"
+          >
+            {isEmptyView ? formatBRL(0) : formatBRL(yMax)}
+          </text>
+          <text
+            x={MARGIN.left}
+            y={height - MARGIN.bottom - 4}
+            className={styles.axisLabel}
+            textAnchor="start"
+          >
+            {formatBRL(0)}
+          </text>
+
+          {!isEmptyView ? (
+            <rect
+              x={MARGIN.left}
+              y={MARGIN.top}
+              width={VIEWBOX_WIDTH - MARGIN.left - MARGIN.right}
+              height={height - MARGIN.top - MARGIN.bottom}
+              className={styles.interactionOverlay}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={finishPointerInteraction}
+              onPointerCancel={finishPointerInteraction}
+              onLostPointerCapture={() => { activePointerRef.current = null; }}
+            />
+          ) : null}
         </svg>
 
-        {tooltipScreen && focusedDataPoint ? (
+        {tooltipScreen && focusedDataPoint && !isEmptyView ? (
           <CognitiveChartTooltip
             x={tooltipScreen.x}
             y={tooltipScreen.y}
             point={focusedDataPoint}
+            seriesLabels={seriesLabels}
             containerWidth={containerWidth}
             containerHeight={tooltipScreen.containerHeight}
           />
         ) : null}
+
+        {isEmptyView ? (
+          <div className={styles.emptyOverlay} data-testid="cognitive-chart-empty">
+            <p className={styles.emptyOverlayMessage}>{emptyState.message}</p>
+            {emptyState.support ? (
+              <p className={styles.emptyOverlaySupport}>{emptyState.support}</p>
+            ) : null}
+            {emptyState.ctaLabel && emptyState.onCtaAction ? (
+              <button
+                type="button"
+                className={styles.emptyOverlayCta}
+                onClick={emptyState.onCtaAction}
+              >
+                {emptyState.ctaLabel}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
-      {uniMessage ? (
+      {uniMessage && !isEmptyView ? (
         <div className={styles.uniInsightEnter} key={mode}>
           <UniChartInsight
             message={uniMessage}
@@ -616,7 +685,7 @@ export default function CognitiveLiveChart({
         </div>
       ) : null}
 
-      {mode === 'comparison' ? (
+      {mode === 'comparison' && !isEmptyView ? (
         <div className={`${styles.deltaBadge} ${styles.modeFadeIn}`} aria-hidden="true">
           {formatPercent(comparisonMeta.deltaPercent)}
         </div>

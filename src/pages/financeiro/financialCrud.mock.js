@@ -11,14 +11,16 @@ export const fallbackAccountTypes = [
 ];
 
 const baseCategories = [
-  { id: 'demo-income', name: 'Outras entradas', category_type: 'income' },
-  { id: 'demo-food', name: 'Alimentação', category_type: 'expense' },
-  { id: 'demo-transport', name: 'Transporte', category_type: 'expense' },
-  { id: 'demo-subscriptions', name: 'Assinaturas', category_type: 'expense' },
-  { id: 'demo-operational', name: 'Operacional', category_type: 'expense' },
-  { id: 'demo-suppliers', name: 'Fornecedores', category_type: 'expense' },
-  { id: 'demo-taxes', name: 'Impostos', category_type: 'expense' },
-  { id: 'demo-transfer', name: 'Transferência', category_type: 'transfer' },
+  { id: 'demo-income', name: 'Outras entradas', category_type: 'income', applies_to: 'both' },
+  { id: 'demo-salary', name: 'Salário', category_type: 'income', applies_to: 'personal' },
+  { id: 'demo-sales', name: 'Receita de vendas', category_type: 'income', applies_to: 'business' },
+  { id: 'demo-food', name: 'Alimentação', category_type: 'expense', applies_to: 'personal' },
+  { id: 'demo-transport', name: 'Transporte', category_type: 'expense', applies_to: 'personal' },
+  { id: 'demo-subscriptions', name: 'Assinaturas', category_type: 'expense', applies_to: 'both' },
+  { id: 'demo-operational', name: 'Operacional', category_type: 'expense', applies_to: 'business' },
+  { id: 'demo-suppliers', name: 'Fornecedores', category_type: 'expense', applies_to: 'business' },
+  { id: 'demo-taxes', name: 'Impostos', category_type: 'expense', applies_to: 'business' },
+  { id: 'demo-transfer', name: 'Transferência', category_type: 'transfer', applies_to: 'both' },
 ].map((category) => ({
   ...category,
   workspace_id: null,

@@ -3,30 +3,150 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import { formatCurrency } from '../../utils/formatters';
+import styles from './FinanceTransactionModal.module.css';
 import {
   CrudRow,
   DeleteActions,
   FormMessage,
   SelectField,
 } from './FinanceCrudPrimitives';
+import { downloadTransactionsCsv } from './transactionExportUtils.js';
 import { getFinanceErrorMessage } from './financeUiUtils';
+import { resolveInstallmentScope } from './installmentUtils';
+import { getFinancialPeriod } from './mobile/financeiroMobileData.js';
 import {
+  DEFAULT_TRANSACTION_FILTERS,
+  applyTransactionFilters,
+  derivePaymentMethodOptions,
+  filterTransactionsByDateRange,
+  hasActiveTransactionFilters,
+} from './transactionFilterUtils.js';
+import {
+  buildInstallmentMutationPayloads,
   buildTransactionMutationPayload,
   createEmptyTransactionForm,
+  createTransactionDuplicateForm,
   createTransactionEditForm,
   getSelectableTransactionAccounts,
+  isInstallmentPurchase,
 } from './transactionFormUtils';
 
-function FinanceTransactionModal({ accountState, categoryState, editingTransactionId, initialType = 'expense', onChanged, onClose, open, transactionState }) {
+const SORT_OPTIONS = [
+  { value: 'recent', label: 'Mais recentes' },
+  { value: 'oldest', label: 'Mais antigas' },
+  { value: 'highest', label: 'Maior valor' },
+  { value: 'lowest', label: 'Menor valor' },
+];
+
+const INSTALLMENT_OPTIONS = [
+  { value: 'all', label: 'Todos' },
+  { value: 'installment', label: 'Parcelados' },
+  { value: 'single', label: 'Não parcelados' },
+];
+
+const RECURRING_OPTIONS = [
+  { value: 'all', label: 'Todos' },
+  { value: 'recurring', label: 'Recorrentes' },
+  { value: 'single', label: 'Não recorrentes' },
+];
+
+// Reaproveita getFinancialPeriod (mesma função usada pelo seletor de período
+// mobile) só para calcular o intervalo do período atual em cada modo — o
+// desktop não tem hoje um seletor de período com navegação (anterior/próximo)
+// como o mobile, então aqui só é oferecido o período "atual" de cada modo.
+const PERIOD_OPTIONS = [
+  { value: 'all', label: 'Todos os períodos' },
+  { value: 'Semana', label: 'Semana atual' },
+  { value: 'Mês', label: 'Mês atual' },
+  { value: 'Trimestre', label: 'Trimestre atual' },
+  { value: 'Ano', label: 'Ano atual' },
+];
+
+function generateGroupId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback simples (ambiente sem crypto.randomUUID) — suficiente como
+  // identificador de agrupamento no cliente, não é usado como segredo.
+  return `grp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar lançamentos deste espaço.';
+const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir este lançamento.';
+
+function FinanceTransactionModal({
+  accountState,
+  canDeleteTransaction = () => true,
+  canManage = true,
+  categoryState,
+  duplicateFromTransactionId,
+  editingTransactionId,
+  initialType = 'expense',
+  onChanged,
+  onClose,
+  open,
+  transactionState,
+}) {
   const [form, setForm] = useState(() => {
     if (editingTransactionId) {
       const transaction = transactionState.transactions.find((t) => t.id === editingTransactionId);
       if (transaction) return createTransactionEditForm(transaction);
     }
+    if (duplicateFromTransactionId) {
+      const transaction = transactionState.transactions.find((t) => t.id === duplicateFromTransactionId);
+      if (transaction) return createTransactionDuplicateForm(transaction);
+    }
     return createEmptyTransactionForm(initialType);
   });
   const [editingId, setEditingId] = useState(() => editingTransactionId ?? null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [deleteScope, setDeleteScope] = useState('only');
+  const [editScope, setEditScope] = useState('only');
+  const [duplicateNotice, setDuplicateNotice] = useState(() => Boolean(duplicateFromTransactionId));
+  const [batchError, setBatchError] = useState(null);
+  const [listFilters, setListFilters] = useState(DEFAULT_TRANSACTION_FILTERS);
+  const [listFiltersOpen, setListFiltersOpen] = useState(false);
+  const [periodMode, setPeriodMode] = useState('all');
+  const categoriesById = useMemo(
+    () => new Map(categoryState.categories.map((category) => [category.id, category])),
+    [categoryState.categories],
+  );
+  const accountsById = useMemo(
+    () => new Map(accountState.accounts.map((account) => [account.id, account])),
+    [accountState.accounts],
+  );
+  const paymentMethodOptions = useMemo(
+    () => derivePaymentMethodOptions(transactionState.transactions),
+    [transactionState.transactions],
+  );
+  const periodFilteredTransactions = useMemo(() => {
+    if (periodMode === 'all') return transactionState.transactions;
+    const period = getFinancialPeriod({ mode: periodMode, offset: 0 });
+    return filterTransactionsByDateRange(transactionState.transactions, period);
+  }, [periodMode, transactionState.transactions]);
+  const listedTransactions = useMemo(
+    () => applyTransactionFilters(periodFilteredTransactions, listFilters, { categoriesById, accountsById }),
+    [periodFilteredTransactions, listFilters, categoriesById, accountsById],
+  );
+  const listHasActiveFilters = hasActiveTransactionFilters(listFilters) || periodMode !== 'all';
+
+  function updateListFilter(patch) {
+    setListFilters((current) => ({ ...current, ...patch }));
+  }
+
+  function clearListFilters() {
+    setListFilters(DEFAULT_TRANSACTION_FILTERS);
+    setPeriodMode('all');
+  }
+
+  function handleExportCsv() {
+    downloadTransactionsCsv(listedTransactions, { categoriesById, accountsById });
+  }
+
   const filteredCategories = useMemo(
     () =>
       categoryState.categories.filter((category) =>
@@ -41,27 +161,109 @@ function FinanceTransactionModal({ accountState, categoryState, editingTransacti
     [accountState.accounts, editingId, form],
   );
 
+  const editingTransaction = editingId
+    ? transactionState.transactions.find((t) => t.id === editingId)
+    : null;
+  const editingGroupId = editingTransaction?.metadata?.installment_group_id ?? null;
+
   function resetForm() {
     setForm(createEmptyTransactionForm(initialType));
     setEditingId(null);
     setPendingDeleteId(null);
+    setDeleteScope('only');
+    setEditScope('only');
+    setDuplicateNotice(false);
+    setBatchError(null);
   }
 
   function handleClose() {
+    if (transactionState.isMutating) return;
     transactionState.clearError();
+    setBatchError(null);
     resetForm();
     onClose();
   }
 
   function handleEdit(transaction) {
+    if (transactionState.isMutating || !canManage) return;
     transactionState.clearError();
+    setBatchError(null);
     setEditingId(transaction.id);
     setPendingDeleteId(null);
+    setEditScope('only');
+    setDuplicateNotice(false);
     setForm(createTransactionEditForm(transaction));
+  }
+
+  function handleDuplicate(transaction) {
+    if (transactionState.isMutating || !canManage) return;
+    transactionState.clearError();
+    setBatchError(null);
+    setEditingId(null);
+    setPendingDeleteId(null);
+    setDuplicateNotice(true);
+    setForm(createTransactionDuplicateForm(transaction));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (transactionState.isMutating || !canManage) return;
+    setBatchError(null);
+
+    // Edição de uma transação que pertence a um grupo de parcelas: aplica as
+    // mudanças (exceto data/número de parcela, que pertencem a cada linha)
+    // ao escopo escolhido pelo usuário.
+    if (editingId && editingGroupId) {
+      const targetIds = resolveInstallmentScope(
+        transactionState.transactions,
+        editingTransaction,
+        editScope,
+      );
+      const payload = buildTransactionMutationPayload(form);
+      // Campos que são intrínsecos a cada parcela individual não devem ser
+      // propagados ao editar "esta e as próximas"/"todas".
+      delete payload.transaction_date;
+
+      for (const id of targetIds) {
+        const result = await transactionState.saveTransaction(payload, id);
+        if (result.error) {
+          setBatchError(result.error);
+          return;
+        }
+      }
+      await onChanged?.();
+      resetForm();
+      return;
+    }
+
+    // Criação de compra parcelada: gera N transações reais em sequência.
+    if (!editingId && isInstallmentPurchase(form)) {
+      let payloads;
+      try {
+        payloads = buildInstallmentMutationPayloads(form, {
+          groupId: generateGroupId(),
+          today: todayIso(),
+        });
+      } catch (buildError) {
+        setBatchError({ code: 'INVALID_INSTALLMENTS', message: buildError.message });
+        return;
+      }
+
+      for (const payload of payloads) {
+        const result = await transactionState.saveTransaction(payload, null);
+        if (result.error) {
+          setBatchError(result.error);
+          return;
+        }
+      }
+      await onChanged?.();
+      resetForm();
+      return;
+    }
+
+    // Fluxo padrão: uma única transação (criação simples, edição simples ou
+    // lançamento recorrente — a intenção de recorrência fica só na própria
+    // transação, sem gerar ocorrências futuras automaticamente).
     const result = await transactionState.saveTransaction(
       buildTransactionMutationPayload(form),
       editingId,
@@ -74,35 +276,57 @@ function FinanceTransactionModal({ accountState, categoryState, editingTransacti
   }
 
   async function handleDelete(transactionId) {
-    const result = await transactionState.removeTransaction(transactionId);
-    if (!result.error) {
-      await onChanged?.();
-      resetForm();
+    if (transactionState.isMutating) return;
+    const transaction = transactionState.transactions.find((t) => t.id === transactionId);
+    if (!transaction || !canDeleteTransaction(transaction)) return;
+    const groupId = transaction?.metadata?.installment_group_id ?? null;
+    const targetIds = groupId
+      ? resolveInstallmentScope(transactionState.transactions, transaction, deleteScope)
+      : [transactionId];
+
+    for (const id of targetIds) {
+      const result = await transactionState.removeTransaction(id);
+      if (result.error) {
+        setBatchError(result.error);
+        return;
+      }
     }
+    await onChanged?.();
+    resetForm();
   }
 
-  const canSubmit =
+  const canSubmit = Boolean(
+    canManage &&
+    !transactionState.isMutating &&
     form.account_id &&
     form.description.trim() &&
     Number(form.amount) > 0 &&
     form.transaction_date &&
-    (form.transaction_type !== 'transfer' || form.destination_account_id);
+    (form.transaction_type !== 'transfer' || form.destination_account_id),
+  );
 
   return (
     <Modal
       open={open}
       onClose={handleClose}
+      closeOnOverlayClick={!transactionState.isMutating}
+      closeOnEsc={!transactionState.isMutating}
       title="Lançamentos"
       description="Registre entradas, despesas, transferências e ajustes deste espaço."
       size="xl"
       footer={
-        <Button variant="ghost" onClick={handleClose}>
+        <Button variant="ghost" onClick={handleClose} disabled={transactionState.isMutating}>
           Fechar
         </Button>
       }
     >
       <div className="uf-flex uf-flex-column uf-gap-lg">
         <form className="uf-flex uf-flex-column uf-gap-md" onSubmit={handleSubmit}>
+          {duplicateNotice && !editingId ? (
+            <FormMessage tone="info">
+              Dados copiados de outro lançamento. Revise antes de salvar — a data foi ajustada para hoje.
+            </FormMessage>
+          ) : null}
           <SelectField
             id="finance-transaction-type"
             label="Tipo"
@@ -210,51 +434,357 @@ function FinanceTransactionModal({ accountState, categoryState, editingTransacti
             required
             fullWidth
           />
+          <Input
+            id="finance-transaction-payment-method"
+            label="Forma de pagamento (opcional)"
+            placeholder="Ex.: Pix, cartão, boleto..."
+            value={form.payment_method}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, payment_method: event.target.value }))
+            }
+            fullWidth
+          />
+          <Input
+            id="finance-transaction-notes"
+            label="Observação (opcional)"
+            placeholder="Detalhes extras sobre este lançamento"
+            value={form.notes}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, notes: event.target.value }))
+            }
+            fullWidth
+          />
+
+          {!editingId && form.transaction_type !== 'transfer' ? (
+            <Input
+              id="finance-transaction-installments"
+              label="Número de parcelas"
+              type="number"
+              min="1"
+              max="360"
+              step="1"
+              value={form.installment_count}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  installment_count: event.target.value,
+                  is_recurring: Number(event.target.value) > 1 ? false : current.is_recurring,
+                }))
+              }
+              fullWidth
+            />
+          ) : null}
+          {!editingId && Number(form.installment_count) > 1 ? (
+            <FormMessage tone="info">
+              Serão criados {Number(form.installment_count)} lançamentos, um por mês a partir da
+              data informada, com o valor total dividido entre as parcelas (a última parcela
+              absorve o arredondamento em centavos).
+            </FormMessage>
+          ) : null}
+
+          {!editingId && form.transaction_type !== 'transfer' && Number(form.installment_count) <= 1 ? (
+            <label className="uf-flex uf-items-center uf-gap-sm uf-text-caption">
+              <input
+                type="checkbox"
+                checked={form.is_recurring}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, is_recurring: event.target.checked }))
+                }
+              />
+              <span className="uf-text-primary">Lançamento recorrente</span>
+            </label>
+          ) : null}
+          {form.is_recurring ? (
+            <div className="uf-flex uf-flex-column uf-gap-sm">
+              <SelectField
+                id="finance-transaction-recurrence-frequency"
+                label="Frequência"
+                value={form.recurrence_frequency}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, recurrence_frequency: event.target.value }))
+                }
+              >
+                <option value="daily">Diária</option>
+                <option value="weekly">Semanal</option>
+                <option value="monthly">Mensal</option>
+                <option value="yearly">Anual</option>
+              </SelectField>
+              <Input
+                id="finance-transaction-recurrence-interval"
+                label="Repetir a cada"
+                type="number"
+                min="1"
+                step="1"
+                value={form.recurrence_interval}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, recurrence_interval: event.target.value }))
+                }
+                fullWidth
+              />
+              <Input
+                id="finance-transaction-recurrence-end-date"
+                label="Repetir até (opcional)"
+                type="date"
+                value={form.recurrence_end_date}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, recurrence_end_date: event.target.value }))
+                }
+                fullWidth
+              />
+              <FormMessage tone="info">
+                Este lançamento fica marcado como recorrente, mas nenhuma ocorrência futura é
+                criada automaticamente nesta versão — a geração automática depende de um
+                agendador (Edge Function) que ainda não existe.
+              </FormMessage>
+            </div>
+          ) : null}
+
+          {editingId && editingGroupId ? (
+            <SelectField
+              id="finance-transaction-edit-scope"
+              label="Aplicar alteração a"
+              value={editScope}
+              onChange={(event) => setEditScope(event.target.value)}
+            >
+              <option value="only">Somente esta parcela</option>
+              <option value="forward">Esta e as próximas parcelas</option>
+              <option value="all">Todas as parcelas deste grupo</option>
+            </SelectField>
+          ) : null}
+
           {!accountState.activeAccounts.length && !editingId ? (
             <FormMessage tone="info">Crie uma conta antes do primeiro lançamento.</FormMessage>
           ) : null}
           <FormMessage>
             {getFinanceErrorMessage(
-              transactionState.error,
+              batchError ?? transactionState.error,
               'Não foi possível concluir o lançamento. Revise os dados e tente novamente.',
             )}
           </FormMessage>
           <div className="uf-flex uf-items-center uf-justify-end uf-gap-sm uf-flex-wrap">
             {editingId ? (
-              <Button variant="ghost" onClick={resetForm}>
+              <Button variant="ghost" onClick={resetForm} disabled={transactionState.isMutating}>
                 Cancelar edição
               </Button>
             ) : null}
-            <Button type="submit" loading={transactionState.isMutating} disabled={!canSubmit}>
+            <Button
+              type="submit"
+              loading={transactionState.isMutating}
+              disabled={!canSubmit}
+              title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+            >
               {editingId ? 'Salvar lançamento' : 'Criar lançamento'}
             </Button>
           </div>
         </form>
 
-        <div className="uf-flex uf-flex-column uf-gap-sm">
-          {transactionState.transactions.map((transaction) => (
-            <CrudRow
-              key={transaction.id}
-              title={transaction.description}
-              detail={`${transaction.transaction_date} · ${formatCurrency(transaction.amount)}`}
+        <div className="uf-flex uf-flex-column uf-gap-md">
+          <div className="uf-flex uf-items-center uf-gap-sm uf-flex-wrap">
+            <Input
+              id="finance-transaction-list-search"
+              label="Buscar lançamentos"
+              type="search"
+              placeholder="Descrição, observação, categoria ou conta..."
+              value={listFilters.search}
+              onChange={(event) => updateListFilter({ search: event.target.value })}
+              fullWidth
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setListFiltersOpen((value) => !value)}
+              aria-expanded={listFiltersOpen}
+              aria-controls="finance-transaction-list-filters-panel"
             >
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={transactionState.isMutating}
-                onClick={() => handleEdit(transaction)}
+              {listFiltersOpen ? 'Ocultar filtros' : 'Filtros'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={!listedTransactions.length}
+            >
+              Exportar CSV
+            </Button>
+          </div>
+
+          {listFiltersOpen ? (
+            <div
+              id="finance-transaction-list-filters-panel"
+              className={styles.filtersPanel}
+            >
+              <SelectField
+                id="finance-transaction-list-sort"
+                label="Ordenar por"
+                value={listFilters.sortOrder}
+                onChange={(event) => updateListFilter({ sortOrder: event.target.value })}
               >
-                Editar
+                {SORT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </SelectField>
+              <SelectField
+                id="finance-transaction-list-period"
+                label="Período"
+                value={periodMode}
+                onChange={(event) => setPeriodMode(event.target.value)}
+              >
+                {PERIOD_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </SelectField>
+              <SelectField
+                id="finance-transaction-list-type"
+                label="Tipo"
+                value={listFilters.type}
+                onChange={(event) => updateListFilter({ type: event.target.value })}
+              >
+                <option value="all">Todos</option>
+                <option value="income">Entradas</option>
+                <option value="expense">Despesas</option>
+                <option value="transfer">Transferências</option>
+                <option value="adjustment">Ajustes</option>
+              </SelectField>
+              <SelectField
+                id="finance-transaction-list-account"
+                label="Conta"
+                value={listFilters.accountId}
+                onChange={(event) => updateListFilter({ accountId: event.target.value })}
+              >
+                <option value="all">Todas as contas</option>
+                {accountState.accounts.map((account) => (
+                  <option key={account.id} value={account.id}>{account.name}</option>
+                ))}
+              </SelectField>
+              <SelectField
+                id="finance-transaction-list-category"
+                label="Categoria"
+                value={listFilters.categoryId}
+                onChange={(event) => updateListFilter({ categoryId: event.target.value })}
+              >
+                <option value="all">Todas as categorias</option>
+                {categoryState.categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </SelectField>
+              <SelectField
+                id="finance-transaction-list-payment-method"
+                label="Forma de pagamento"
+                value={listFilters.paymentMethod}
+                onChange={(event) => updateListFilter({ paymentMethod: event.target.value })}
+              >
+                <option value="all">Todas</option>
+                {paymentMethodOptions.map((method) => (
+                  <option key={method} value={method}>{method}</option>
+                ))}
+              </SelectField>
+              <SelectField
+                id="finance-transaction-list-installment"
+                label="Parcelados"
+                value={listFilters.installment}
+                onChange={(event) => updateListFilter({ installment: event.target.value })}
+              >
+                {INSTALLMENT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </SelectField>
+              <SelectField
+                id="finance-transaction-list-recurring"
+                label="Recorrentes"
+                value={listFilters.recurring}
+                onChange={(event) => updateListFilter({ recurring: event.target.value })}
+              >
+                {RECURRING_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </SelectField>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={clearListFilters}
+                disabled={!listHasActiveFilters}
+              >
+                Limpar filtros
               </Button>
-              <DeleteActions
-                isConfirming={pendingDeleteId === transaction.id}
-                isLoading={transactionState.isMutating}
-                onRequest={() => setPendingDeleteId(transaction.id)}
-                onCancel={() => setPendingDeleteId(null)}
-                onConfirm={() => handleDelete(transaction.id)}
-              />
-            </CrudRow>
-          ))}
+            </div>
+          ) : null}
+
+          {!listedTransactions.length ? (
+            <FormMessage tone="info">
+              {listHasActiveFilters ? (
+                <>
+                  Nenhuma movimentação encontrada.{' '}
+                  <button
+                    type="button"
+                    className={`uf-text-brand ${styles.inlineLinkButton}`}
+                    onClick={clearListFilters}
+                  >
+                    Limpar filtros
+                  </button>
+                </>
+              ) : (
+                'Nenhum lançamento registrado.'
+              )}
+            </FormMessage>
+          ) : null}
+
+          {listedTransactions.map((transaction) => {
+            const hasGroup = Boolean(transaction.metadata?.installment_group_id);
+            const canDeleteThisTransaction = canDeleteTransaction(transaction);
+            return (
+              <CrudRow
+                key={transaction.id}
+                title={
+                  transaction.installment_total > 1
+                    ? `${transaction.description} (${transaction.installment_number}/${transaction.installment_total})`
+                    : transaction.description
+                }
+                detail={`${transaction.transaction_date} · ${formatCurrency(transaction.amount)}`}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={transactionState.isMutating || !canManage}
+                  title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+                  onClick={() => handleEdit(transaction)}
+                >
+                  Editar
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={transactionState.isMutating || !canManage}
+                  title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+                  onClick={() => handleDuplicate(transaction)}
+                >
+                  Duplicar
+                </Button>
+                {pendingDeleteId === transaction.id && hasGroup ? (
+                  <SelectField
+                    id={`finance-transaction-delete-scope-${transaction.id}`}
+                    label="Excluir"
+                    value={deleteScope}
+                    onChange={(event) => setDeleteScope(event.target.value)}
+                  >
+                    <option value="only">Somente esta parcela</option>
+                    <option value="forward">Esta e as próximas</option>
+                    <option value="all">Todas do grupo</option>
+                  </SelectField>
+                ) : null}
+                {canDeleteThisTransaction ? (
+                  <DeleteActions
+                    isConfirming={pendingDeleteId === transaction.id}
+                    isLoading={transactionState.isMutating}
+                    onRequest={() => {
+                      setDeleteScope('only');
+                      setPendingDeleteId(transaction.id);
+                    }}
+                    onCancel={() => setPendingDeleteId(null)}
+                    onConfirm={() => handleDelete(transaction.id)}
+                  />
+                ) : (
+                  <Button variant="ghost" size="sm" disabled title={DELETE_BLOCKED_TITLE}>
+                    Excluir
+                  </Button>
+                )}
+              </CrudRow>
+            );
+          })}
         </div>
       </div>
     </Modal>

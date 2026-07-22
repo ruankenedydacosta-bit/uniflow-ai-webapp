@@ -17,7 +17,17 @@ const CATEGORY_LABELS = {
   transfer: 'Transferência',
 };
 
-function FinanceCategoryModal({ categoryState, onChanged, onClose, open }) {
+const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar categorias deste espaço.';
+const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir esta categoria.';
+
+function FinanceCategoryModal({
+  canDeleteCategory = () => true,
+  canManage = true,
+  categoryState,
+  onChanged,
+  onClose,
+  open,
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
@@ -29,12 +39,14 @@ function FinanceCategoryModal({ categoryState, onChanged, onClose, open }) {
   }
 
   function handleClose() {
+    if (categoryState.isMutating) return;
     categoryState.clearError();
     resetForm();
     onClose();
   }
 
   function handleEdit(category) {
+    if (categoryState.isMutating || !canManage) return;
     categoryState.clearError();
     setEditingId(category.id);
     setPendingDeleteId(null);
@@ -43,6 +55,7 @@ function FinanceCategoryModal({ categoryState, onChanged, onClose, open }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (categoryState.isMutating || !canManage) return;
     const result = await categoryState.saveCategory(form, editingId);
     if (!result.error) {
       await onChanged?.();
@@ -51,6 +64,9 @@ function FinanceCategoryModal({ categoryState, onChanged, onClose, open }) {
   }
 
   async function handleDelete(categoryId) {
+    if (categoryState.isMutating) return;
+    const category = categoryState.categories.find((item) => item.id === categoryId);
+    if (!category || !canDeleteCategory(category)) return;
     const result = await categoryState.removeCategory(categoryId);
     if (!result.error) {
       await onChanged?.();
@@ -62,11 +78,13 @@ function FinanceCategoryModal({ categoryState, onChanged, onClose, open }) {
     <Modal
       open={open}
       onClose={handleClose}
+      closeOnOverlayClick={!categoryState.isMutating}
+      closeOnEsc={!categoryState.isMutating}
       title="Categorias"
       description="Use o catálogo global ou crie categorias próprias para este espaço."
       size="lg"
       footer={
-        <Button variant="ghost" onClick={handleClose}>
+        <Button variant="ghost" onClick={handleClose} disabled={categoryState.isMutating}>
           Fechar
         </Button>
       }
@@ -101,46 +119,61 @@ function FinanceCategoryModal({ categoryState, onChanged, onClose, open }) {
           </FormMessage>
           <div className="uf-flex uf-items-center uf-justify-end uf-gap-sm uf-flex-wrap">
             {editingId ? (
-              <Button variant="ghost" onClick={resetForm}>
+              <Button variant="ghost" onClick={resetForm} disabled={categoryState.isMutating}>
                 Cancelar edição
               </Button>
             ) : null}
-            <Button type="submit" loading={categoryState.isMutating} disabled={!form.name.trim()}>
+            <Button
+              type="submit"
+              loading={categoryState.isMutating}
+              disabled={!canManage || categoryState.isMutating || !form.name.trim()}
+              title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+            >
               {editingId ? 'Salvar categoria' : 'Criar categoria'}
             </Button>
           </div>
         </form>
 
         <div className="uf-flex uf-flex-column uf-gap-sm">
-          {categoryState.categories.map((category) => (
-            <CrudRow
-              key={category.id}
-              title={category.name}
-              detail={`${CATEGORY_LABELS[category.category_type] ?? category.category_type}${
-                category.is_system ? ' · Catálogo UniFlow' : ' · Personalizada'
-              }`}
-            >
-              {!category.is_system ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={categoryState.isMutating}
-                    onClick={() => handleEdit(category)}
-                  >
-                    Editar
-                  </Button>
-                  <DeleteActions
-                    isConfirming={pendingDeleteId === category.id}
-                    isLoading={categoryState.isMutating}
-                    onRequest={() => setPendingDeleteId(category.id)}
-                    onCancel={() => setPendingDeleteId(null)}
-                    onConfirm={() => handleDelete(category.id)}
-                  />
-                </>
-              ) : null}
-            </CrudRow>
-          ))}
+          {categoryState.categories.map((category) => {
+            const canDeleteThisCategory = canDeleteCategory(category);
+            return (
+              <CrudRow
+                key={category.id}
+                title={category.name}
+                detail={`${CATEGORY_LABELS[category.category_type] ?? category.category_type}${
+                  category.is_system ? ' · Catálogo UniFlow' : ' · Personalizada'
+                }`}
+              >
+                {!category.is_system ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={categoryState.isMutating || !canManage}
+                      title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+                      onClick={() => handleEdit(category)}
+                    >
+                      Editar
+                    </Button>
+                    {canDeleteThisCategory ? (
+                      <DeleteActions
+                        isConfirming={pendingDeleteId === category.id}
+                        isLoading={categoryState.isMutating}
+                        onRequest={() => setPendingDeleteId(category.id)}
+                        onCancel={() => setPendingDeleteId(null)}
+                        onConfirm={() => handleDelete(category.id)}
+                      />
+                    ) : (
+                      <Button variant="ghost" size="sm" disabled title={DELETE_BLOCKED_TITLE}>
+                        Excluir
+                      </Button>
+                    )}
+                  </>
+                ) : null}
+              </CrudRow>
+            );
+          })}
         </div>
       </div>
     </Modal>

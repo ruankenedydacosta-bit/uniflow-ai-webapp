@@ -103,7 +103,7 @@ test('transferência é exibida sem contaminar totais de entrada e saída', () =
   const transfer = data.transactions.find((transaction) => transaction.id === 'transfer');
 
   assert.equal(transfer.tone, 'neutral');
-  assert.match(transfer.amount, /^↔/);
+  assert.match(transfer.amountLabel, /^↔/);
   assert.equal(data.income, 'R$ 500,00');
   assert.equal(data.expense, 'R$ 120,00');
 });
@@ -118,10 +118,37 @@ test('objetos vazios produzem uma visualização segura', () => {
   assert.equal(data.comparison, 'Sem base anterior para comparação');
 });
 
-test('período sem dados exibe gráfico vazio com mensagem', async () => {
+test('período sem dados mantém o gráfico montado e delega o estado vazio ao CognitiveLiveChart', async () => {
   const contents = await source('components/IncomeExpenseChart.jsx');
-  assert.match(contents, /Nenhum lançamento confirmado/);
-  assert.match(contents, /financeMobileEmptyMessage/);
+  assert.match(contents, /emptyState=\{\{/);
+  assert.match(contents, /Ainda não há movimentações neste período\./);
+  assert.match(contents, /Registrar movimentação/);
+  assert.doesNotMatch(contents, /financeMobileEmptyMessage/);
+});
+
+test('IncomeExpenseChart adapta linguagem por workspace (PF/PJ) sem duplicar o gráfico', async () => {
+  const contents = await source('components/IncomeExpenseChart.jsx');
+  assert.equal((contents.match(/<CognitiveLiveChart/g) ?? []).length, 1);
+  assert.match(contents, /Entradas e saídas/);
+  assert.match(contents, /Entradas e gastos/);
+  assert.match(contents, /Saídas/);
+  assert.match(contents, /Gastos/);
+});
+
+test('CTA do estado vazio reaproveita o fluxo existente de nova transação', async () => {
+  const [chart, view] = await Promise.all([
+    source('components/IncomeExpenseChart.jsx'),
+    source('MobileFinanceiroView.jsx'),
+  ]);
+  assert.match(chart, /onCtaAction: onRegisterMovement/);
+  assert.match(view, /onRegisterMovement=\{\(\) => onNewTransaction\(\)\}/);
+  assert.doesNotMatch(chart, /FinanceTransactionModal/);
+});
+
+test('MobileFinanceiroView recebe o workspace ativo e repassa ao gráfico', async () => {
+  const view = await source('MobileFinanceiroView.jsx');
+  assert.match(view, /currentWorkspace = 'personal'/);
+  assert.match(view, /workspace=\{currentWorkspace\}/);
 });
 
 test('fluxo mobile não importa nem exporta mock financeiro', async () => {

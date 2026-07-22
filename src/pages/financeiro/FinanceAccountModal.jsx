@@ -17,7 +17,10 @@ const EMPTY_FORM = {
   balance: '0',
 };
 
-function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
+const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar contas deste espaço.';
+const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir contas deste espaço.';
+
+function FinanceAccountModal({ accountState, canDelete = true, canManage = true, onChanged, onClose, open }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
@@ -30,12 +33,14 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
   }
 
   function handleClose() {
+    if (accountState.isMutating) return;
     accountState.clearError();
     resetForm();
     onClose();
   }
 
   function handleEdit(account) {
+    if (accountState.isMutating || !canManage) return;
     accountState.clearError();
     setEditingId(account.id);
     setPendingDeleteId(null);
@@ -48,6 +53,7 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (accountState.isMutating || !canManage) return;
     const balance = form.balance || '0';
     const result = await accountState.saveAccount(
       {
@@ -65,6 +71,7 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
   }
 
   async function handleDelete(accountId) {
+    if (accountState.isMutating || !canDelete) return;
     const result = await accountState.removeAccount(accountId);
     if (!result.error) {
       await onChanged?.();
@@ -76,6 +83,8 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
     <Modal
       open={open}
       onClose={handleClose}
+      closeOnOverlayClick={!accountState.isMutating}
+      closeOnEsc={!accountState.isMutating}
       title={isFirstAccount ? 'Crie sua primeira conta' : 'Contas'}
       description={isFirstAccount
         ? 'Comece por aqui para organizar os dados deste perfil.'
@@ -131,11 +140,16 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
           </FormMessage>
           <div className={styles.accountActions}>
             {editingId ? (
-              <Button variant="ghost" onClick={resetForm}>
+              <Button variant="ghost" onClick={resetForm} disabled={accountState.isMutating}>
                 Cancelar edição
               </Button>
             ) : null}
-            <Button type="submit" loading={accountState.isMutating} disabled={!form.name.trim()}>
+            <Button
+              type="submit"
+              loading={accountState.isMutating}
+              disabled={!canManage || accountState.isMutating || !form.name.trim()}
+              title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+            >
               {editingId ? 'Salvar conta' : isFirstAccount ? 'Criar primeira conta' : 'Criar conta'}
             </Button>
           </div>
@@ -151,20 +165,27 @@ function FinanceAccountModal({ accountState, onChanged, onClose, open }) {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={accountState.isMutating}
+                disabled={accountState.isMutating || !canManage}
+                title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
                 onClick={() => handleEdit(account)}
               >
                 Editar
               </Button>
-              <DeleteActions
-                actionLabel="Excluir"
-                confirmLabel="Confirmar exclusão"
-                isConfirming={pendingDeleteId === account.id}
-                isLoading={accountState.isMutating}
-                onRequest={() => setPendingDeleteId(account.id)}
-                onCancel={() => setPendingDeleteId(null)}
-                onConfirm={() => handleDelete(account.id)}
-              />
+              {canDelete ? (
+                <DeleteActions
+                  actionLabel="Excluir"
+                  confirmLabel="Confirmar exclusão"
+                  isConfirming={pendingDeleteId === account.id}
+                  isLoading={accountState.isMutating}
+                  onRequest={() => setPendingDeleteId(account.id)}
+                  onCancel={() => setPendingDeleteId(null)}
+                  onConfirm={() => handleDelete(account.id)}
+                />
+              ) : (
+                <Button variant="ghost" size="sm" disabled title={DELETE_BLOCKED_TITLE}>
+                  Excluir
+                </Button>
+              )}
             </CrudRow>
           ))}
           {!accountState.activeAccounts.length ? (
