@@ -125,6 +125,36 @@
   gap: var(--uf-space-16);
 }
 
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--uf-space-12);
+  flex-wrap: wrap;
+}
+
+.toolbar > *:first-child {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.sortSelect {
+  min-height: 40px;
+  padding: 0 var(--uf-space-12);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-sunken);
+  color: var(--uf-color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.resultCount {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+  white-space: nowrap;
+}
+
 .clientGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
