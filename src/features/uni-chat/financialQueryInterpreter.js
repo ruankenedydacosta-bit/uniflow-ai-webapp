@@ -77,6 +77,68 @@ export function classifyFinancialQuery(text) {
   return null;
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Blindagem para perguntas sobre futuro financeiro que NÃO batem com nenhum
+// tipo suportado acima. Função pura: não calcula projeção, não duplica
+// buildFutureProjections, não acessa React/Supabase/LLM — apenas detecta
+// intenção semântica de futuro/tendência/continuidade financeira para que o
+// chamador NUNCA envie essas perguntas ao LLM (que inventaria números).
+//
+// Cada padrão exige um sinal financeiro explícito (palavra da lista de
+// "dicas") para evitar falso positivo em frases temporais genéricas sem
+// relação com dinheiro (ex.: "marcar reunião para o fim do ano"). As duas
+// exceções ("continuando assim" + "acontece", e a expressão idiomática
+// "ficar no vermelho") já são inerentemente financeiras neste chat e não
+// exigem a dica adicional.
+const FUTURE_FINANCIAL_HINT =
+  /\b(?:dinheiro|financeir\w*|financas?|saldo|renda|receitas?|despesas?|gastos?|poupar|poupanca|economizar|vermelho|ritmo|fluxo)\b/;
+
+const FUTURE_INTENT_PATTERNS = [
+  /\bdinheiro\s+vai\s+durar\b/,
+  /\bcontinuando\s+assim\b[\s\S]*\bacontece\b/,
+  /\bacontece\b[\s\S]*\bcontinuando\s+assim\b/,
+  /\bfica(?:r)?\s+no\s+vermelho\b/,
+  /\britmo\b[\s\S]*\bsustentavel\b/,
+  /\bsustentavel\b[\s\S]*\britmo\b/,
+  /\bmelhorando\b[\s\S]*\bpiorando\b/,
+  /\bpiorando\b[\s\S]*\bmelhorando\b/,
+  /\btendencia\s+financeira\b/,
+  /\bcomo\s+estare(?:i|mos)\b/,
+];
+
+const SELF_SUFFICIENT_PATTERN_HINTS = ['continuando', 'acontece', 'vermelho'];
+
+export function detectFutureFinancialIntent(text) {
+  if (typeof text !== 'string') return false;
+  const n = normalize(text);
+
+  for (const pattern of FUTURE_INTENT_PATTERNS) {
+    if (!pattern.test(n)) continue;
+
+    const isSelfSufficient = SELF_SUFFICIENT_PATTERN_HINTS.some((hint) => pattern.source.includes(hint));
+    if (isSelfSufficient || FUTURE_FINANCIAL_HINT.test(n)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Resposta segura para perguntas com intenção futura detectada, mas sem tipo
+// suportado por classifyFinancialQuery. Nunca contém valor, prazo, percentual
+// ou probabilidade fabricados; apenas orienta para as capacidades reais já
+// existentes (tendência e cenários de 3/6/12 meses).
+export function buildFutureSafetyResponse(hasHistory) {
+  if (!hasHistory) {
+    return 'Eu ainda não tenho histórico suficiente para projetar seu futuro financeiro com segurança. '
+      + 'Registre algumas receitas e despesas para que eu consiga calcular uma tendência real.';
+  }
+
+  return 'Consigo analisar sua tendência e os cenários calculados com base no seu histórico, mas ainda não '
+    + 'tenho um cálculo confiável para essa pergunta específica. Posso mostrar a projeção de 3, 6 ou 12 meses '
+    + 'sem inventar valores — é só perguntar, por exemplo, "qual minha projeção para 6 meses?".';
+}
+
 function fmtCurrency(value) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',

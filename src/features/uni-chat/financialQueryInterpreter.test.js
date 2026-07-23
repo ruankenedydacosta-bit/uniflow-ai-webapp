@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { classifyFinancialQuery, buildQueryResponse } from './financialQueryInterpreter.js';
+import {
+  classifyFinancialQuery,
+  buildQueryResponse,
+  detectFutureFinancialIntent,
+  buildFutureSafetyResponse,
+} from './financialQueryInterpreter.js';
 
 function mockCtx(overrides = {}) {
   return {
@@ -394,4 +399,79 @@ test('respostas com ctx sem dados informam cadastro', () => {
     { projections: mockProjections({ hasHistory: false }) },
   );
   assert.ok(response.text.includes('dados'));
+});
+
+// ── detectFutureFinancialIntent: perguntas futuras suportadas continuam
+//    resolvidas pelo classificador especifico, nunca pela blindagem ────────
+
+test('classifyFinancialQuery: projecao explicita continua sendo future_projection', () => {
+  assert.deepEqual(classifyFinancialQuery('qual minha projeção para 6 meses?'), { type: 'future_projection' });
+});
+
+test('classifyFinancialQuery: "como estara" com horizonte continua sendo future_projection', () => {
+  assert.deepEqual(classifyFinancialQuery('como estará meu saldo daqui a 12 meses?'), { type: 'future_projection' });
+});
+
+// ── detectFutureFinancialIntent: perguntas futuras amplas interceptadas ────
+
+const WIDE_FUTURE_QUESTIONS = [
+  'meu dinheiro vai durar?',
+  'continuando assim, o que acontece?',
+  'vou ficar no vermelho?',
+  'esse ritmo é sustentável?',
+  'como estarei financeiramente no fim do ano?',
+  'minhas finanças estão melhorando ou piorando?',
+];
+
+for (const question of WIDE_FUTURE_QUESTIONS) {
+  test(`detectFutureFinancialIntent detecta: "${question}"`, () => {
+    assert.equal(detectFutureFinancialIntent(question), true);
+  });
+
+  test(`classifyFinancialQuery nao reconhece tipo especifico para: "${question}"`, () => {
+    assert.equal(classifyFinancialQuery(question), null);
+  });
+}
+
+// ── detectFutureFinancialIntent: falsos positivos evitados ─────────────────
+
+const NON_FUTURE_QUESTIONS = [
+  'qual foi meu saldo no mês passado?',
+  'quanto gastei com mercado?',
+  'como alterar meu perfil?',
+  'o que significa futuro?',
+  'marcar reunião para o fim do ano',
+];
+
+for (const question of NON_FUTURE_QUESTIONS) {
+  test(`detectFutureFinancialIntent NAO detecta falso positivo: "${question}"`, () => {
+    assert.equal(detectFutureFinancialIntent(question), false);
+  });
+}
+
+test('detectFutureFinancialIntent trata entrada nao-string com seguranca', () => {
+  assert.equal(detectFutureFinancialIntent(null), false);
+  assert.equal(detectFutureFinancialIntent(undefined), false);
+  assert.equal(detectFutureFinancialIntent(42), false);
+});
+
+// ── buildFutureSafetyResponse: nunca fabrica numero ─────────────────────────
+
+test('buildFutureSafetyResponse sem historico orienta a registrar movimentacoes, sem numero', () => {
+  const msg = buildFutureSafetyResponse(false);
+  assert.match(msg, /histórico suficiente/);
+  assert.match(msg, /Registre algumas receitas e despesas/);
+  assert.doesNotMatch(msg, /R\$\s*[\d.,]+/);
+});
+
+test('buildFutureSafetyResponse com historico menciona capacidades disponiveis, sem numero', () => {
+  const msg = buildFutureSafetyResponse(true);
+  assert.match(msg, /tendência/);
+  assert.match(msg, /3, 6 ou 12 meses/);
+  assert.doesNotMatch(msg, /R\$\s*[\d.,]+/);
+});
+
+test('buildFutureSafetyResponse nunca contem NaN ou Infinity', () => {
+  assert.doesNotMatch(buildFutureSafetyResponse(true), /NaN|Infinity/);
+  assert.doesNotMatch(buildFutureSafetyResponse(false), /NaN|Infinity/);
 });

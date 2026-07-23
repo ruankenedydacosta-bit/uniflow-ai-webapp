@@ -10,7 +10,12 @@ import { useAccounts, useCategories, useTransactions, useFinancialBalances } fro
 import { useGoals } from '../goals/useGoals';
 import { buildFutureProjections } from '../future/futureService';
 import { useUniChatFinancialData } from './useUniChatFinancialData';
-import { classifyFinancialQuery, buildQueryResponse } from './financialQueryInterpreter';
+import {
+  classifyFinancialQuery,
+  buildQueryResponse,
+  detectFutureFinancialIntent,
+  buildFutureSafetyResponse,
+} from './financialQueryInterpreter';
 import ChatHeader from './components/ChatHeader';
 import EmptyState from './components/EmptyState';
 import MessageBubble from './components/MessageBubble';
@@ -626,6 +631,16 @@ export default function UniChatPage() {
       const result = financialConversation.interpret(text);
 
       if (!result.handled) {
+        // Perguntas sobre futuro/tendência/continuidade financeira que não
+        // batem com nenhum tipo suportado por classifyFinancialQuery NUNCA
+        // vão ao LLM: ele inventaria números. Resposta determinística e
+        // transparente, sem valor/prazo/percentual fabricado.
+        if (detectFutureFinancialIntent(text)) {
+          const safeMsg = buildUniMessage(buildFutureSafetyResponse(futureProjections.hasHistory));
+          pushMessage(safeMsg);
+          syncMessageToSupabase(safeMsg);
+          return;
+        }
         void handleUnresolvedMessage(text, historySnapshot);
         return;
       }

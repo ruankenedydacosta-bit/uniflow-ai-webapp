@@ -72,6 +72,28 @@ test('mensagem não resolvida só tenta o LLM quando habilitado, e sempre cai no
   assert.match(fnBody, /buildUniMessage\(llmText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\)/);
 });
 
+test('pergunta futura ampla é interceptada ANTES do LLM, nunca chega a handleUnresolvedMessage', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(
+    page,
+    /import \{\s*\n\s*classifyFinancialQuery,\s*\n\s*buildQueryResponse,\s*\n\s*detectFutureFinancialIntent,\s*\n\s*buildFutureSafetyResponse,\s*\n\s*\} from '\.\/financialQueryInterpreter';/,
+  );
+
+  const resultBlock = page.slice(
+    page.indexOf('const result = financialConversation.interpret(text);'),
+    page.indexOf('if (result.action?.status'),
+  );
+  assert.match(resultBlock, /if \(!result\.handled\) \{/);
+
+  const guardIdx = resultBlock.indexOf('detectFutureFinancialIntent(text)');
+  const llmCallIdx = resultBlock.indexOf('void handleUnresolvedMessage(text, historySnapshot);');
+  assert.ok(guardIdx !== -1, 'detectFutureFinancialIntent deve ser chamado dentro do bloco !result.handled');
+  assert.ok(llmCallIdx !== -1, 'handleUnresolvedMessage (LLM) deve continuar existindo como fallback final');
+  assert.ok(guardIdx < llmCallIdx, 'a blindagem de futuro deve ser verificada ANTES da chamada ao LLM');
+
+  assert.match(resultBlock, /buildFutureSafetyResponse\(futureProjections\.hasHistory\)/);
+});
+
 // ============================================================================
 // Voz: entrada não sobrescreve texto existente; saída não bloqueia renderização
 // ============================================================================
