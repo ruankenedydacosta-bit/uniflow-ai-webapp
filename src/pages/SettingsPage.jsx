@@ -8,6 +8,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { cx } from '../utils/cx';
 import { ThemeSelector } from '../features/theme';
+import ComingSoonSection from './configuracoes/ComingSoonSection.jsx';
 import ProfileEditModal from './configuracoes/ProfileEditModal.jsx';
 import { getProfileDisplayName } from './configuracoes/profileFormUtils.js';
 import { settingsMock } from './configuracoes/settings.mock.js';
@@ -90,7 +91,9 @@ function SettingsPage() {
           <Button disabled={!canEditProfile} title={getEditProfileTitle()} onClick={handleOpenEditProfile}>
             Editar perfil
           </Button>
-          <Button variant="secondary">Perguntar à Uni</Button>
+          <Button variant="secondary" disabled title="Disponível em breve.">
+            Perguntar à Uni
+          </Button>
         </div>
       </section>
 
@@ -160,64 +163,29 @@ function SettingsPage() {
       </section>
 
       <section className={styles.preferencesGrid} aria-label="Preferências da UniFlow">
-        <Card variant="default" padding="lg" className={styles.settingsCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Preferências da Uni</h3>
-              <p>Como a Uni deve orientar sem aumentar esforço mental.</p>
-            </div>
-          </div>
-          <div className={styles.settingList}>
-            {settingsMock.uniPreferences.map((preference) => (
-              <div key={preference.label} className={styles.settingRow}>
-                <span>{preference.label}</span>
-                <strong>{preference.value}</strong>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <ComingSoonSection
+          title="Preferências da Uni"
+          description="Como a Uni deve orientar sem aumentar esforço mental."
+          message="Personalização de tom, explicações e alertas estará disponível em uma próxima etapa."
+        />
 
-        <Card variant="default" padding="lg" className={styles.settingsCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Voz e interação</h3>
-              <p>Recursos locais e futuros para conversar com a Uni.</p>
-            </div>
-          </div>
-          <div className={styles.badgeList}>
-            {settingsMock.voiceInteraction.map((item) => (
-              <div key={item.label} className={styles.badgeRow}>
-                <span>{item.label}</span>
-                <Badge variant={item.variant} size="sm">
-                  {item.value}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <ComingSoonSection
+          title="Voz e interação"
+          description="Recursos para conversar com a Uni por voz."
+          message="Configurações de voz e interação ainda não estão disponíveis nesta tela."
+        />
 
-        <Card variant="default" padding="lg" className={styles.settingsCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Notificações</h3>
-              <p>A Uni só deve interromper quando houver valor real.</p>
-            </div>
-          </div>
-          <div className={styles.dotList}>
-            {settingsMock.notifications.map((notification) => (
-              <div key={notification} className={styles.dotItem}>
-                <span aria-hidden="true" />
-                <p>{notification}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <ComingSoonSection
+          title="Notificações"
+          description="A Uni só deve interromper quando houver valor real."
+          message="Preferências de notificações ainda não estão disponíveis."
+        />
 
         <Card variant="default" padding="lg" className={styles.settingsCard}>
           <div className={styles.sectionHeader}>
             <div>
               <h3>Privacidade e segurança</h3>
-              <p>Base para controle real com autenticação futura.</p>
+              <p>Como seus dados são protegidos hoje.</p>
             </div>
           </div>
           <div className={styles.dotList}>
@@ -241,14 +209,12 @@ function SettingsPage() {
               </div>
             </div>
             <div className={styles.spaceList}>
-              {settingsMock.spaces.map((space) => (
-                <div key={space.label} className={styles.spaceItem}>
-                  <Badge variant={space.variant} size="sm">
-                    {space.label}
-                  </Badge>
-                  <p>{space.description}</p>
-                </div>
-              ))}
+              <div className={styles.spaceItem}>
+                <Badge variant={access.currentWorkspace === WORKSPACE_TYPES.BUSINESS ? 'primary' : 'secondary'} size="sm">
+                  {settings.workspaceLabel}
+                </Badge>
+                <p>Você está usando este espaço agora.</p>
+              </div>
             </div>
           </Card>
         ) : null}
@@ -259,11 +225,11 @@ function SettingsPage() {
               <h3>Leitura da Uni</h3>
               <p>Configurações devem aumentar clareza, segurança e confiança.</p>
             </div>
-            <Badge variant="glass" size="sm" dot>
-              Uni
+            <Badge variant="secondary" size="sm">
+              Em breve
             </Badge>
           </div>
-          <p>{settings.uniReading}</p>
+          <p>Leitura personalizada com base nos seus dados reais estará disponível em uma próxima etapa.</p>
         </Card>
       </section>
 

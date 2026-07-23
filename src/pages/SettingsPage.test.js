@@ -95,6 +95,81 @@ test('abrir a edicao novamente limpa a mensagem de sucesso anterior', async () =
 });
 
 // ============================================================================
+// CFG4 -- saneamento dos blocos mock (nenhum dado fictício apresentado como real)
+// ============================================================================
+
+test('nunca renderiza o workspace fictício "Empresa demo"', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.doesNotMatch(page, /Empresa demo/);
+});
+
+test('nunca renderiza o texto desatualizado "Futuro Supabase Auth com RLS"', async () => {
+  const page = await source('SettingsPage.jsx');
+  const mock = await source('configuracoes/settings.mock.js');
+  assert.doesNotMatch(page, /Futuro Supabase Auth com RLS/);
+  assert.doesNotMatch(mock, /Futuro Supabase Auth com RLS/);
+});
+
+test('Preferências da Uni, Voz e interação e Notificações usam ComingSoonSection ("Em breve"), nunca uma lista como se estivesse configurada', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /import ComingSoonSection from '\.\/configuracoes\/ComingSoonSection\.jsx';/);
+  assert.match(page, /<ComingSoonSection\s*\n\s*title="Preferências da Uni"/);
+  assert.match(page, /<ComingSoonSection\s*\n\s*title="Voz e interação"/);
+  assert.match(page, /<ComingSoonSection\s*\n\s*title="Notificações"/);
+  assert.doesNotMatch(page, /settingsMock\.uniPreferences|settingsMock\.voiceInteraction|settingsMock\.notifications/);
+});
+
+test('nenhum badge "Ativo" fictício para voz ou preferências inexistentes (o unico "Ativo" real e o de Modo de uso, vindo de access.userMode)', async () => {
+  const page = await source('SettingsPage.jsx');
+  const ativoOccurrences = page.match(/>\s*Ativo\s*</g) ?? [];
+  assert.equal(ativoOccurrences.length, 1);
+  assert.match(page, /\{isActive \? \(\s*\n\s*<Badge variant="success" size="sm" dot>\s*\n\s*Ativo/);
+});
+
+test('Leitura da Uni nao apresenta mais analise fictícia -- mostra "Em breve"', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.doesNotMatch(page, /settings\.uniReading/);
+  const uniCardBlock = page.slice(page.indexOf('<h3>Leitura da Uni</h3>'), page.indexOf('</Card>', page.indexOf('<h3>Leitura da Uni</h3>')));
+  assert.match(uniCardBlock, /Em breve/);
+});
+
+test('Espaços mostra somente o espaço atual (derivado de access real), nunca uma lista de workspaces inventados', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.doesNotMatch(page, /settingsMock\.spaces/);
+  assert.match(
+    page,
+    /<Badge variant=\{access\.currentWorkspace === WORKSPACE_TYPES\.BUSINESS \? 'primary' : 'secondary'\} size="sm">\s*\n\s*\{settings\.workspaceLabel\}/,
+  );
+});
+
+test('botão "Perguntar à Uni" fica desabilitado com title explicativo, mesmo padrão de outros módulos (Clientes/Agenda/Projetos/Relatórios)', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /<Button variant="secondary" disabled title="Disponível em breve\.">\s*\n\s*Perguntar à Uni/);
+});
+
+test('settings.mock.js nao exporta mais profile, uniPreferences, voiceInteraction, notifications ou spaces (orfaos removidos)', async () => {
+  const mock = await source('configuracoes/settings.mock.js');
+  for (const removedKey of ['profile:', 'uniPreferences:', 'voiceInteraction:', 'notifications:', 'spaces:']) {
+    assert.doesNotMatch(mock, new RegExp(removedKey.replace(':', '\\s*:')));
+  }
+});
+
+test('settings.mock.js continua exportando somente o que ainda e usado (usageModes, privacy, personal/business.workspaceLabel)', async () => {
+  const mock = await source('configuracoes/settings.mock.js');
+  assert.match(mock, /usageModes:/);
+  assert.match(mock, /privacy:/);
+  assert.match(mock, /personal:\s*\{\s*\n\s*workspaceLabel: 'Pessoal',/);
+  assert.match(mock, /business:\s*\{\s*\n\s*workspaceLabel: 'Empresarial',/);
+});
+
+test('nenhum <a href="#"> nem div clicavel foi introduzido para os blocos futuros', async () => {
+  const page = await source('SettingsPage.jsx');
+  const comingSoon = await source('configuracoes/ComingSoonSection.jsx');
+  assert.doesNotMatch(page, /href="#"/);
+  assert.doesNotMatch(comingSoon, /href="#"|onClick/);
+});
+
+// ============================================================================
 // Regressão -- demais seções e comportamento preexistente preservados
 // ============================================================================
 
@@ -110,15 +185,10 @@ test('tema (ThemeSelector) continua renderizado sem alteracao', async () => {
   assert.match(page, /<ThemeSelector \/>/);
 });
 
-test('demais secoes mock (preferencias da Uni, voz, notificacoes, privacidade, espacos, leitura da Uni) permanecem intactas', async () => {
+test('secoes reais preservadas (modo de uso, privacidade real) continuam usando settingsMock', async () => {
   const page = await source('SettingsPage.jsx');
   assert.match(page, /settingsMock\.usageModes/);
-  assert.match(page, /settingsMock\.uniPreferences/);
-  assert.match(page, /settingsMock\.voiceInteraction/);
-  assert.match(page, /settingsMock\.notifications/);
   assert.match(page, /settingsMock\.privacy/);
-  assert.match(page, /settingsMock\.spaces/);
-  assert.match(page, /settings\.uniReading/);
 });
 
 test('logout (CFG2) nao e mencionado nem alterado nesta pagina -- fora do escopo da CFG3', async () => {
