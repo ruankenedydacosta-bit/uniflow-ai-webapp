@@ -6,6 +6,23 @@ function safeNumber(value) {
   return Number.isFinite(num) ? num : 0;
 }
 
+// Extrai o mês civil (YYYY-MM) diretamente da string da data, sem construir um
+// `Date` a partir dela. `transaction_date` chega como `YYYY-MM-DD` (coluna
+// `date` do Postgres) ou, eventualmente, como ISO completo iniciado por
+// `YYYY-MM-DD` — em ambos os casos, `new Date(string)` interpretaria o valor
+// como UTC-meia-noite e deslocaria a data em fusos de offset negativo (ex.:
+// Brasil), agrupando a transação no mês anterior. Retorna `null` (nunca o mês
+// atual) para entradas ausentes, não-string, malformadas ou com mês fora de
+// 01–12, para que o chamador ignore a transação sem fabricar um agrupamento.
+function extractYearMonth(dateValue) {
+  if (typeof dateValue !== 'string') return null;
+  const match = /^(\d{4})-(\d{2})-\d{2}/.exec(dateValue);
+  if (!match) return null;
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  return `${match[1]}-${match[2]}`;
+}
+
 export function calcMonthlyAverages(transactions = []) {
   if (!transactions.length) {
     return { avgIncome: 0, avgExpense: 0, monthsWithData: 0, netResult: 0 };
@@ -14,11 +31,9 @@ export function calcMonthlyAverages(transactions = []) {
   const monthlyMap = {};
 
   for (const t of transactions) {
-    if (!t.transaction_date) continue;
-    const date = new Date(t.transaction_date);
-    if (isNaN(date.getTime())) continue;
+    const key = extractYearMonth(t.transaction_date);
+    if (!key) continue;
 
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     if (!monthlyMap[key]) {
       monthlyMap[key] = { income: 0, expense: 0 };
     }

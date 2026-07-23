@@ -77,6 +77,87 @@ test('calcMonthlyAverages protege amount nao numerico', () => {
   assert.equal(result.avgExpense, 2000);
 });
 
+// ── calcMonthlyAverages: agrupamento mensal a prova de timezone ────────────
+
+test('calcMonthlyAverages: 2026-01-31 permanece em janeiro', () => {
+  const result = calcMonthlyAverages([
+    { transaction_type: 'income', amount: 100, transaction_date: '2026-01-31' },
+  ]);
+  assert.equal(result.monthsWithData, 1);
+  assert.equal(result.avgIncome, 100);
+});
+
+test('calcMonthlyAverages: 2026-02-01 permanece em fevereiro (nao regride para janeiro)', () => {
+  const result = calcMonthlyAverages([
+    { transaction_type: 'income', amount: 100, transaction_date: '2026-01-31' },
+    { transaction_type: 'income', amount: 200, transaction_date: '2026-02-01' },
+  ]);
+  assert.equal(result.monthsWithData, 2);
+  assert.equal(result.avgIncome, 150);
+});
+
+test('calcMonthlyAverages: ISO completo com offset negativo agrupa pelo YYYY-MM literal da string', () => {
+  const result = calcMonthlyAverages([
+    { transaction_type: 'income', amount: 100, transaction_date: '2026-02-01T00:30:00-03:00' },
+  ]);
+  // O YYYY-MM da própria string é 2026-02; nunca deve "voltar" para 2026-01
+  // por conversão de timezone (o que aconteceria com `new Date(string)`).
+  assert.equal(result.monthsWithData, 1);
+  assert.equal(result.avgIncome, 100);
+});
+
+test('calcMonthlyAverages: ISO completo com Z agrupa pelo YYYY-MM literal da string', () => {
+  const result = calcMonthlyAverages([
+    { transaction_type: 'expense', amount: 300, transaction_date: '2026-03-01T02:00:00Z' },
+  ]);
+  assert.equal(result.monthsWithData, 1);
+  assert.equal(result.avgExpense, 300);
+});
+
+test('calcMonthlyAverages: mes 00 e ignorado sem lancar erro', () => {
+  const result = calcMonthlyAverages([
+    { transaction_type: 'income', amount: 100, transaction_date: '2026-00-15' },
+    { transaction_type: 'income', amount: 200, transaction_date: '2026-01-15' },
+  ]);
+  assert.equal(result.monthsWithData, 1);
+  assert.equal(result.avgIncome, 200);
+});
+
+test('calcMonthlyAverages: mes 13 e ignorado sem lancar erro', () => {
+  const result = calcMonthlyAverages([
+    { transaction_type: 'expense', amount: 100, transaction_date: '2026-13-15' },
+    { transaction_type: 'expense', amount: 200, transaction_date: '2026-01-15' },
+  ]);
+  assert.equal(result.monthsWithData, 1);
+  assert.equal(result.avgExpense, 200);
+});
+
+test('calcMonthlyAverages: transacao sem transaction_date e ignorada sem lancar erro', () => {
+  const result = calcMonthlyAverages([
+    { transaction_type: 'income', amount: 100 },
+    { transaction_type: 'income', amount: 200, transaction_date: '2026-01-15' },
+  ]);
+  assert.equal(result.monthsWithData, 1);
+  assert.equal(result.avgIncome, 200);
+});
+
+test('calcMonthlyAverages: medias e monthsWithData permanecem corretos com dados reais de multiplos meses', () => {
+  const transactions = [
+    { transaction_type: 'income', amount: 5000, transaction_date: '2026-01-15' },
+    { transaction_type: 'expense', amount: 2000, transaction_date: '2026-01-31' },
+    { transaction_type: 'income', amount: 5500, transaction_date: '2026-02-01' },
+    { transaction_type: 'expense', amount: 2500, transaction_date: '2026-02-28T23:59:00-03:00' },
+  ];
+  const result = calcMonthlyAverages(transactions);
+  assert.equal(result.monthsWithData, 2);
+  assert.equal(result.avgIncome, 5250);
+  assert.equal(result.avgExpense, 2250);
+  assert.equal(result.netResult, 3000);
+  assert.equal(Number.isFinite(result.avgIncome), true);
+  assert.equal(Number.isFinite(result.avgExpense), true);
+  assert.equal(Number.isNaN(result.netResult), false);
+});
+
 // ── calcProjectedBalance ────────────────────────────────────────────────────
 
 test('calcProjectedBalance projeta saldo corretamente', () => {
