@@ -2,12 +2,21 @@ import { useMemo, useRef } from 'react';
 import { cx } from '../../../../utils/cx';
 import { formatCurrency } from '../../../../utils/formatters';
 import { SCENARIOS, SCENARIO_CONFIG } from '../../futureConstants';
+import { buildComparisonTooltipText } from './futureChartTooltip.js';
 import styles from './FutureChart.module.css';
 
 const CHART_COLORS = {
   [SCENARIOS.CONSERVATIVE]: 'var(--uf-red-500)',
   [SCENARIOS.LIKELY]: 'var(--uf-blue-500)',
   [SCENARIOS.ACCELERATED]: 'var(--uf-green-500)',
+};
+
+// Cores da comparação Real × Simulado (F5.5) — tokens já existentes, nunca
+// vermelho (não é um alerta). A diferenciação nunca depende só da cor: a
+// série simulada também usa traço tracejado e rótulo textual próprios.
+const COMPARISON_COLORS = {
+  real: 'var(--uf-blue-500)',
+  simulated: 'var(--uf-purple-500)',
 };
 
 const CHART_WIDTH = 600;
@@ -34,21 +43,50 @@ function getDomain(data, scenarioIds) {
   return [Math.min(0, min - padding), max + padding];
 }
 
+function getComparisonDomain(points) {
+  if (!points || !points.length) return [0, 0];
+  let min = Infinity;
+  let max = -Infinity;
+  for (const point of points) {
+    for (const val of [point.realValue, point.simulatedValue]) {
+      if (typeof val === 'number' && Number.isFinite(val)) {
+        if (val < min) min = val;
+        if (val > max) max = val;
+      }
+    }
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return [0, 0];
+  const padding = Math.max(Math.abs(max - min) * 0.1, 100);
+  return [Math.min(0, min - padding), max + padding];
+}
+
 export default function FutureChart({
   chartData = [],
   scenarioIds = [],
   selectedScenario,
   hasData,
+  comparisonSeries = null,
   className,
 }) {
   const containerRef = useRef(null);
 
-  const domain = useMemo(() => getDomain(chartData, scenarioIds), [chartData, scenarioIds]);
+  // Comparação Real × Simulado (F5.5): só ativa com simulação ligada E dados
+  // efetivamente comparáveis. Fora disso, o gráfico original (N cenários)
+  // permanece exatamente como antes — nenhuma mudança visual regressiva.
+  const isComparing = Boolean(comparisonSeries?.isComparable && comparisonSeries.points?.length);
+  const comparisonPoints = isComparing ? comparisonSeries.points : [];
+  const pointCount = isComparing ? comparisonPoints.length : chartData.length;
+
+  const domain = useMemo(
+    () => (isComparing ? getComparisonDomain(comparisonPoints) : getDomain(chartData, scenarioIds)),
+    [isComparing, comparisonPoints, chartData, scenarioIds],
+  );
   const [yMin, yMax] = domain;
 
   function scaleX(idx) {
-    if (!chartData.length) return 0;
-    const maxIdx = chartData.length - 1;
+    if (!pointCount) return 0;
+    const maxIdx = pointCount - 1;
+    if (maxIdx === 0) return MARGIN.left;
     return MARGIN.left + (idx / maxIdx) * PLOT_WIDTH;
   }
 
@@ -91,23 +129,40 @@ export default function FutureChart({
       <div className={styles.chartHeader}>
         <h3 id="future-chart-title" className={styles.sectionTitle}>Evolução projetada</h3>
         <div className={styles.legend}>
-          {scenarioIds.map((sid) => {
-            const config = SCENARIO_CONFIG[sid];
-            return (
-              <div key={sid} className={styles.legendItem}>
-                <span
-                  className={styles.legendSwatch}
-                  style={{ background: CHART_COLORS[sid] }}
-                />
-                <span className={cx(
-                  styles.legendLabel,
-                  selectedScenario === sid && styles.legendLabelActive,
-                )}>
-                  {config?.label || sid}
+          {isComparing ? (
+            <>
+              <div className={styles.legendItem}>
+                <span className={cx(styles.legendSwatch, styles.legendSwatchSolid)} style={{ background: COMPARISON_COLORS.real }} />
+                <span className={styles.legendLabel}>
+                  Real{SCENARIO_CONFIG[comparisonSeries.scenarioId]?.label ? ` — ${SCENARIO_CONFIG[comparisonSeries.scenarioId].label}` : ''}
                 </span>
               </div>
-            );
-          })}
+              <div className={styles.legendItem}>
+                <span className={cx(styles.legendSwatch, styles.legendSwatchDashed)} style={{ background: COMPARISON_COLORS.simulated }} />
+                <span className={styles.legendLabel}>
+                  Simulado{SCENARIO_CONFIG[comparisonSeries.scenarioId]?.label ? ` — ${SCENARIO_CONFIG[comparisonSeries.scenarioId].label}` : ''}
+                </span>
+              </div>
+            </>
+          ) : (
+            scenarioIds.map((sid) => {
+              const config = SCENARIO_CONFIG[sid];
+              return (
+                <div key={sid} className={styles.legendItem}>
+                  <span
+                    className={styles.legendSwatch}
+                    style={{ background: CHART_COLORS[sid] }}
+                  />
+                  <span className={cx(
+                    styles.legendLabel,
+                    selectedScenario === sid && styles.legendLabelActive,
+                  )}>
+                    {config?.label || sid}
+                  </span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -149,48 +204,94 @@ export default function FutureChart({
             </g>
           ))}
 
-          {scenarioIds.map((sid) => {
-            const path = chartData
-              .map((d, i) => {
-                const x = scaleX(i);
-                const y = scaleY(d[sid]);
-                return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-              })
-              .join(' ');
+          {isComparing ? (
+            <>
+              {[
+                { series: 'realValue', color: COMPARISON_COLORS.real, dashed: false },
+                { series: 'simulatedValue', color: COMPARISON_COLORS.simulated, dashed: true },
+              ].map(({ series, color, dashed }) => {
+                let path = '';
+                let started = false;
+                comparisonPoints.forEach((point, i) => {
+                  const val = point[series];
+                  if (typeof val !== 'number' || !Number.isFinite(val)) return;
+                  const x = scaleX(i);
+                  const y = scaleY(val);
+                  path += `${!started ? 'M' : 'L'} ${x} ${y} `;
+                  started = true;
+                });
 
-            return (
-              <g key={sid}>
-                <path
-                  d={path}
-                  className={cx(
-                    styles.line,
-                    selectedScenario === sid && styles.lineHighlight,
-                  )}
-                  style={{ stroke: CHART_COLORS[sid] }}
-                />
-                {chartData.map((d, i) => (
-                  <circle
-                    key={i}
-                    cx={scaleX(i)}
-                    cy={scaleY(d[sid])}
-                    r={selectedScenario === sid ? 3.5 : 2}
-                    className={styles.dot}
-                    style={{ fill: CHART_COLORS[sid] }}
+                return (
+                  <g key={series}>
+                    <path
+                      d={path}
+                      className={cx(styles.comparisonLine, dashed && styles.lineDashed)}
+                      style={{ stroke: color }}
+                    />
+                    {comparisonPoints.map((point, i) => {
+                      const val = point[series];
+                      if (typeof val !== 'number' || !Number.isFinite(val)) return null;
+                      return (
+                        <circle
+                          key={point.key}
+                          cx={scaleX(i)}
+                          cy={scaleY(val)}
+                          r={2.5}
+                          className={styles.comparisonDot}
+                          style={{ fill: color }}
+                        >
+                          <title>{buildComparisonTooltipText(point)}</title>
+                        </circle>
+                      );
+                    })}
+                  </g>
+                );
+              })}
+            </>
+          ) : (
+            scenarioIds.map((sid) => {
+              const path = chartData
+                .map((d, i) => {
+                  const x = scaleX(i);
+                  const y = scaleY(d[sid]);
+                  return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                })
+                .join(' ');
+
+              return (
+                <g key={sid}>
+                  <path
+                    d={path}
+                    className={cx(
+                      styles.line,
+                      selectedScenario === sid && styles.lineHighlight,
+                    )}
+                    style={{ stroke: CHART_COLORS[sid] }}
                   />
-                ))}
-              </g>
-            );
-          })}
+                  {chartData.map((d, i) => (
+                    <circle
+                      key={i}
+                      cx={scaleX(i)}
+                      cy={scaleY(d[sid])}
+                      r={selectedScenario === sid ? 3.5 : 2}
+                      className={styles.dot}
+                      style={{ fill: CHART_COLORS[sid] }}
+                    />
+                  ))}
+                </g>
+              );
+            })
+          )}
 
-          {chartData.map((d, i) => (
+          {(isComparing ? comparisonPoints : chartData).map((d, i) => (
             <text
-              key={i}
+              key={isComparing ? d.key : i}
               x={scaleX(i)}
               y={CHART_HEIGHT - 6}
               className={styles.xLabel}
               textAnchor="middle"
             >
-              {i === 0 ? 'Hoje' : `${i}`}
+              {isComparing ? d.label : (i === 0 ? 'Hoje' : `${i}`)}
             </text>
           ))}
         </svg>

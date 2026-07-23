@@ -5,6 +5,7 @@ import { SCENARIOS } from './futureConstants';
 import { useFutureData } from './useFutureData';
 import { useFutureSimulation } from './useFutureSimulation';
 import { buildFutureComparison } from './futureComparison';
+import { buildFutureChartComparison } from './futureChartComparison';
 import Button from '../../components/ui/Button';
 import FutureHeader from './components/FutureHeader/FutureHeader';
 import FutureSummary from './components/FutureSummary/FutureSummary';
@@ -54,6 +55,20 @@ export default function FuturePage() {
     ? buildFutureComparison({
         realProjections: projections,
         simulatedProjections: simulation.simulatedProjections,
+        selectedHorizon,
+      })
+    : null;
+
+  // Comparação gráfica (F5.5): mesmo par real/simulado da comparação textual
+  // acima, restrita ao cenário selecionado (evita sobrepor 3 cenários × 2 =
+  // 6 linhas). Nunca deriva a série real de displayedProjections — sempre
+  // de projections diretamente, para não perder a referência real durante
+  // a simulação.
+  const chartComparison = simulation.isActive
+    ? buildFutureChartComparison({
+        realProjections: projections,
+        simulatedProjections: simulation.simulatedProjections,
+        scenarioId: selectedScenario,
         selectedHorizon,
       })
     : null;
@@ -160,6 +175,7 @@ export default function FuturePage() {
             scenarioIds={availableScenarios}
             selectedScenario={selectedScenario}
             hasData={hasData}
+            comparisonSeries={chartComparison}
           />
 
           <FutureScenarios

@@ -66,6 +66,52 @@ test('comparacao nunca chama buildFutureProjections diretamente em FuturePage', 
 });
 
 // ============================================================================
+// F5.5 — Comparação gráfica Real × Simulado
+// ============================================================================
+
+test('chartComparison so e construido quando a simulacao esta ativa (senao e null)', async () => {
+  const page = await source('FuturePage.jsx');
+  const chartComparisonBlock = page.slice(
+    page.indexOf('const chartComparison = simulation.isActive'),
+    page.indexOf(': null;', page.indexOf('const chartComparison = simulation.isActive')) + ': null;'.length,
+  );
+  assert.match(chartComparisonBlock, /simulation\.isActive\s*\n\s*\? buildFutureChartComparison\(\{/);
+  assert.match(chartComparisonBlock, /: null;/);
+});
+
+test('chartComparison usa projections (real) e simulation.simulatedProjections (simulado), nunca displayedProjections', async () => {
+  const page = await source('FuturePage.jsx');
+  const chartComparisonBlock = page.slice(
+    page.indexOf('const chartComparison = simulation.isActive'),
+    page.indexOf(': null;', page.indexOf('const chartComparison = simulation.isActive')) + ': null;'.length,
+  );
+  assert.match(chartComparisonBlock, /realProjections: projections,/);
+  assert.match(chartComparisonBlock, /simulatedProjections: simulation\.simulatedProjections,/);
+  assert.doesNotMatch(chartComparisonBlock, /realProjections: displayedProjections/);
+});
+
+test('chartComparison usa o cenario selecionado e o mesmo horizonte da pagina', async () => {
+  const page = await source('FuturePage.jsx');
+  const chartComparisonBlock = page.slice(
+    page.indexOf('const chartComparison = simulation.isActive'),
+    page.indexOf(': null;', page.indexOf('const chartComparison = simulation.isActive')) + ': null;'.length,
+  );
+  assert.match(chartComparisonBlock, /scenarioId: selectedScenario,/);
+  assert.match(chartComparisonBlock, /selectedHorizon,/);
+});
+
+test('FutureChart recebe comparisonSeries={chartComparison}', async () => {
+  const page = await source('FuturePage.jsx');
+  assert.match(page, /import \{ buildFutureChartComparison \} from '\.\/futureChartComparison';/);
+  assert.match(page, /<FutureChart[\s\S]*?comparisonSeries=\{chartComparison\}[\s\S]*?\/>/);
+});
+
+test('o card textual de comparacao (F5.4) continua intacto apos a integracao grafica', async () => {
+  const page = await source('FuturePage.jsx');
+  assert.match(page, /<FutureComparisonCard comparison=\{comparison\} \/>/);
+});
+
+// ============================================================================
 // Integração com useFutureSimulation (F5.2) — sem duplicar o motor
 // ============================================================================
 

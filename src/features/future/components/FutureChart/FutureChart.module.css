@@ -46,6 +46,16 @@
   color: var(--uf-color-text-primary);
 }
 
+.legendSwatchSolid {
+  border-radius: var(--uf-radius-full);
+}
+
+.legendSwatchDashed {
+  border-radius: 2px;
+  width: 14px;
+  height: 4px;
+}
+
 .chartWrapper {
   background: var(--uf-color-bg-surface);
   border: 1px solid var(--uf-color-border-subtle);
@@ -78,6 +88,21 @@
 
 .lineHighlight + .dot {
   opacity: 0.8;
+}
+
+.comparisonLine {
+  fill: none;
+  stroke-width: 2.5;
+  opacity: 1;
+  transition: opacity var(--uf-duration-fast) var(--uf-ease-smooth);
+}
+
+.lineDashed {
+  stroke-dasharray: 6 4;
+}
+
+.comparisonDot {
+  opacity: 0.85;
 }
 
 .zeroLine {
