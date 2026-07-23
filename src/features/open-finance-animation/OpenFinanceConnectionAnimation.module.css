@@ -1,0 +1,590 @@
+/* Open Finance illustration mapped exclusively to the UniFlow semantic tokens. */
+
+.root {
+  --uf-blue: var(--uf-color-primary);
+  --uf-violet: var(--uf-color-ai);
+  --uf-green: var(--uf-color-success);
+  --uf-bg: var(--uf-color-bg-surface);
+  --uf-surface: var(--uf-color-primary-subtle);
+  --uf-surface-strong: var(--uf-color-ai-subtle);
+  --uf-border: var(--uf-color-border-default);
+  --uf-text: var(--uf-color-text-primary);
+  --uf-text-muted: var(--uf-color-text-secondary);
+  --uf-shadow: var(--uf-shadow-lg);
+
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 140% at 15% 0%, color-mix(in srgb, var(--uf-blue) 28%, transparent), transparent 55%),
+    radial-gradient(120% 140% at 85% 100%, color-mix(in srgb, var(--uf-violet) 24%, transparent), transparent 55%),
+    var(--uf-bg);
+  color: var(--uf-text);
+  font-family: var(--uf-font-family-base);
+  isolation: isolate;
+}
+
+/* ---------- Layout shell ---------- */
+
+.stage {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(14px, 3vw, 22px);
+  gap: clamp(10px, 2vw, 16px);
+}
+
+.stage[data-variant='compact'] {
+  height: clamp(236px, 60vw, 248px);
+  grid-template-rows: 42px minmax(0, 1fr) 44px;
+  display: grid;
+}
+
+.stage[data-variant='expanded'] {
+  height: clamp(320px, 46vw, 420px);
+}
+
+.canvas {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.stepLayer {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateX(24px) scale(0.98);
+  transition: opacity 480ms ease, transform 480ms ease;
+  pointer-events: none;
+}
+
+.stepLayer[data-active='true'] {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+.stage[data-variant='compact'] .stepLayer {
+  visibility: hidden;
+  transform: none;
+  transition: opacity 220ms ease;
+}
+
+.stage[data-variant='compact'] .stepLayer[data-active='true'] {
+  visibility: visible;
+}
+
+.stepLayer[data-leaving='true'] {
+  opacity: 0;
+  transform: translateX(-24px) scale(0.98);
+}
+
+/* ---------- Caption / narration text ---------- */
+
+.captionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 22px;
+  min-width: 0;
+}
+
+.stage[data-variant='compact'] .captionRow {
+  min-height: 42px;
+  align-items: start;
+}
+
+.caption {
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(12px, 2.6vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--uf-text);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--uf-violet);
+  background: var(--uf-color-ai-subtle);
+  border: 1px solid color-mix(in srgb, var(--uf-violet) 32%, transparent);
+}
+
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--uf-violet);
+}
+
+/* ---------- Institution nodes (step 1) ---------- */
+
+.institutionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 3vw, 22px);
+}
+
+.institutionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  min-width: 74px;
+  border-radius: 14px;
+  background: var(--uf-surface);
+  border: 1px solid var(--uf-border);
+  backdrop-filter: blur(8px);
+}
+
+.institutionIcon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--uf-blue), var(--uf-violet));
+  color: var(--uf-color-on-primary);
+}
+
+.institutionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--uf-text-muted);
+  white-space: nowrap;
+}
+
+/* ---------- Secure connection core (step 2 & hub) ---------- */
+
+.coreWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coreOrb {
+  position: relative;
+  width: clamp(56px, 10vw, 84px);
+  height: clamp(56px, 10vw, 84px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--uf-color-on-primary) 22%, transparent), transparent 60%),
+    linear-gradient(135deg, var(--uf-blue), var(--uf-violet));
+  box-shadow: 0 0 0 1px var(--uf-border), var(--uf-shadow-glow-ai);
+  color: var(--uf-color-on-primary);
+}
+
+.coreRing {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--uf-blue) 35%, transparent);
+}
+
+.coreRing[data-pulse='true'] {
+  animation: ufRingPulse 2.4s ease-out infinite;
+}
+
+.consentPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--uf-green);
+  background: var(--uf-color-success-subtle);
+  border: 1px solid color-mix(in srgb, var(--uf-green) 35%, transparent);
+}
+
+/* ---------- Data pulses (step 3) ---------- */
+
+.pulseField {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.pulseDot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--uf-blue);
+  box-shadow: var(--uf-shadow-glow-ai);
+}
+
+.pulseDot[data-active='true'] {
+  animation: ufTravel linear forwards;
+}
+
+/* ---------- Organized data preview (step 4) ---------- */
+
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 420px);
+}
+
+.categoryChip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--uf-text);
+  background: var(--uf-surface);
+  border: 1px solid var(--uf-border);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: ufFadeUp 420ms ease forwards;
+}
+
+/* ---------- Uni processing steps (step 5) ---------- */
+
+.uniStageList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(100%, 260px);
+  min-width: 0;
+}
+
+.stage[data-variant='compact'] .uniStageList {
+  gap: 4px;
+}
+
+.stage[data-variant='compact'] .uniStageItem {
+  min-height: 21px;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.uniStageItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--uf-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: color 200ms ease, background 200ms ease, border-color 200ms ease;
+}
+
+.uniStageItem[data-active='true'] {
+  color: var(--uf-text);
+  background: var(--uf-surface);
+  border-color: var(--uf-border);
+}
+
+.uniStageDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--uf-text-muted);
+  flex-shrink: 0;
+}
+
+.uniStageItem[data-active='true'] .uniStageDot {
+  background: var(--uf-violet);
+  box-shadow: var(--uf-shadow-glow-ai);
+}
+
+/* ---------- Benefit summary (step 6) ---------- */
+
+.summaryCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--uf-surface-strong);
+  border: 1px solid var(--uf-border);
+  box-shadow: var(--uf-shadow);
+}
+
+.summaryFigure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summaryLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--uf-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summaryValue {
+  font-size: clamp(14px, 3vw, 18px);
+  font-weight: 800;
+  color: var(--uf-text);
+}
+
+.summarySpark {
+  flex-shrink: 0;
+  width: 56px;
+  height: 28px;
+}
+
+.comingSoonPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--uf-color-on-primary);
+  background: linear-gradient(135deg, var(--uf-blue), var(--uf-violet));
+}
+
+.comingSoonPill::before {
+  content: '🔒';
+  font-size: 10px;
+}
+
+/* ---------- Controls (expanded variant) ---------- */
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stepIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--uf-border);
+  transition: background 200ms ease, width 200ms ease;
+}
+
+.stepDot[data-active='true'] {
+  width: 16px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--uf-blue), var(--uf-violet));
+}
+
+.buttonRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.controlButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--uf-border);
+  background: var(--uf-surface);
+  color: var(--uf-text);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.controlButton:hover {
+  background: var(--uf-surface-strong);
+}
+
+.controlButton:active {
+  transform: scale(0.96);
+}
+
+.controlButton:focus-visible {
+  outline: 2px solid var(--uf-blue);
+  outline-offset: 2px;
+}
+
+.ctaButton {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--uf-color-on-primary);
+  background: linear-gradient(135deg, var(--uf-blue), var(--uf-violet));
+  cursor: pointer;
+}
+
+.ctaButton:focus-visible {
+  outline: 2px solid var(--uf-green);
+  outline-offset: 2px;
+}
+
+.learnMoreLink {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--uf-blue);
+  cursor: pointer;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ---------- Screen-reader only alternative text ---------- */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Keyframes ---------- */
+
+@keyframes ufRingPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ufFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ufTravel {
+  from {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  to {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .stepLayer {
+    transition: opacity 200ms linear;
+    transform: none !important;
+  }
+
+  .coreRing[data-pulse='true'],
+  .pulseDot[data-active='true'],
+  .categoryChip {
+    animation: none !important;
+  }
+
+  .categoryChip {
+    opacity: 1;
+    transform: none;
+  }
+
+  .pulseDot {
+    display: none;
+  }
+}
+
+/* ---------- Responsive tightening ---------- */
+
+@media (max-width: 380px) {
+  .institutionsRow {
+    gap: 8px;
+  }
+
+  .institutionCard {
+    min-width: 62px;
+    padding: 8px 10px;
+  }
+
+  .categoryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 330px) {
+  .stage[data-variant='compact'] .caption {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .stage[data-variant='compact'] .badge {
+    padding-inline: 8px;
+    font-size: 10px;
+  }
+}

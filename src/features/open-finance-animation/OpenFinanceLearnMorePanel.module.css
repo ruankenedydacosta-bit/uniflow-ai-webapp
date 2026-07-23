@@ -1,0 +1,226 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--uf-z-modal);
+  display: grid;
+  place-items: end center;
+  padding: 12px;
+  background: var(--uf-color-overlay);
+  backdrop-filter: blur(8px);
+}
+
+.panel {
+  --panel-bg: var(--uf-color-bg-elevated);
+  --panel-surface: var(--uf-color-bg-surface);
+  --panel-border: var(--uf-color-border-default);
+  --panel-text: var(--uf-color-text-primary);
+  --panel-muted: var(--uf-color-text-secondary);
+  --panel-blue: var(--uf-color-primary);
+  --panel-violet: var(--uf-color-ai);
+  --panel-green: var(--uf-color-success);
+
+  width: min(100%, 460px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  background: var(--panel-bg);
+  color: var(--panel-text);
+  box-shadow: var(--uf-shadow-lg);
+  scrollbar-width: thin;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.badge {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--panel-violet) 45%, transparent);
+  border-radius: 999px;
+  color: var(--panel-violet);
+  background: color-mix(in srgb, var(--panel-violet) 12%, transparent);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 8px 0 0;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.closeButton {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  color: var(--panel-text);
+  background: var(--panel-surface);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.subtitle {
+  margin: 12px 0 16px;
+  color: var(--panel-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.flow,
+.explanations {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow {
+  display: grid;
+  gap: 0;
+  padding: 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: var(--panel-surface);
+}
+
+.flowItem {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  color: var(--panel-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.flowIcon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--uf-color-on-primary);
+  background: linear-gradient(135deg, var(--panel-blue), var(--panel-violet));
+}
+
+.flowIcon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flowArrow {
+  grid-column: 1;
+  justify-self: center;
+  height: 16px;
+  color: var(--panel-blue);
+  line-height: 16px;
+}
+
+.explanations {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.explanationItem {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.number {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--panel-blue);
+  background: color-mix(in srgb, var(--panel-blue) 12%, transparent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.explanationItem h3,
+.explanationItem p {
+  margin: 0;
+}
+
+.explanationItem h3 {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.explanationItem p {
+  margin-top: 3px;
+  color: var(--panel-muted);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.finalMessage {
+  margin: 14px 0;
+  padding: 12px;
+  border-left: 3px solid var(--panel-green);
+  border-radius: 0 10px 10px 0;
+  color: var(--panel-text);
+  background: color-mix(in srgb, var(--panel-green) 8%, transparent);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.confirmButton {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  color: var(--uf-color-on-primary);
+  background: linear-gradient(135deg, var(--panel-blue), var(--panel-violet));
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.closeButton:focus-visible,
+.confirmButton:focus-visible {
+  outline: 3px solid var(--panel-green);
+  outline-offset: 2px;
+}
+
+@media (min-width: 390px) and (min-height: 700px) {
+  .explanations {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    backdrop-filter: none;
+  }
+
+  .panel,
+  .closeButton,
+  .confirmButton {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}
