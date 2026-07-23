@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useAccess } from '../app/AccessContext';
+import { useSession } from '../app/SessionContext.jsx';
 import { PLANS, USER_MODES, WORKSPACE_TYPES } from '../app/access.js';
 import Avatar from '../components/ui/Avatar';
 import Badge from '../components/ui/Badge';
@@ -6,6 +8,8 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { cx } from '../utils/cx';
 import { ThemeSelector } from '../features/theme';
+import ProfileEditModal from './configuracoes/ProfileEditModal.jsx';
+import { getProfileDisplayName } from './configuracoes/profileFormUtils.js';
 import { settingsMock } from './configuracoes/settings.mock.js';
 import styles from './SettingsPage.module.css';
 
@@ -28,10 +32,48 @@ function getSettingsContext(currentWorkspace) {
 
 function SettingsPage() {
   const { access } = useAccess();
+  const { isLoading, isSupabaseConfigured, profile, refreshSession, user } = useSession();
   const settings = getSettingsContext(access.currentWorkspace);
   const showSpaces = access.currentWorkspace === WORKSPACE_TYPES.BUSINESS || access.userMode === USER_MODES.BOTH;
   const currentModeLabel = USER_MODE_LABELS[access.userMode];
   const currentPlanLabel = PLAN_LABELS[access.plan];
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileJustSaved, setProfileJustSaved] = useState(false);
+
+  const profileDisplayName = getProfileDisplayName(profile, user);
+  const profileEmail = user?.email ?? '';
+  const profilePhone = profile?.phone;
+
+  // Edicao real exige um usuario autenticado de verdade -- sem sessao
+  // (modo demo, sem Supabase configurado) nao ha profile persistivel.
+  const canEditProfile = Boolean(user?.id) && !isLoading;
+
+  function getEditProfileTitle() {
+    if (!isSupabaseConfigured) return 'Indisponível no modo demonstração.';
+    if (isLoading) return 'Carregando perfil...';
+    if (!user) return 'Nenhum usuário autenticado.';
+    return 'Editar seu perfil.';
+  }
+
+  function handleOpenEditProfile() {
+    if (!canEditProfile) return;
+    setProfileJustSaved(false);
+    setIsEditingProfile(true);
+  }
+
+  function handleCloseEditProfile() {
+    setIsEditingProfile(false);
+  }
+
+  // Reflete a mudanca no restante do app imediatamente (Topbar, saudacoes,
+  // etc. que ja leem profile.full_name de SessionContext) -- sem isso, a
+  // propria tela de Configuracoes ficaria correta mas o resto do app
+  // continuaria mostrando o nome antigo ate um reload manual.
+  async function handleProfileSaved() {
+    await refreshSession();
+    setProfileJustSaved(true);
+  }
 
   return (
     <div className={styles.page}>
@@ -45,7 +87,9 @@ function SettingsPage() {
         </div>
 
         <div className={styles.actions}>
-          <Button>Editar perfil</Button>
+          <Button disabled={!canEditProfile} title={getEditProfileTitle()} onClick={handleOpenEditProfile}>
+            Editar perfil
+          </Button>
           <Button variant="secondary">Perguntar à Uni</Button>
         </div>
       </section>
@@ -53,13 +97,17 @@ function SettingsPage() {
       <section className={styles.profileGrid} aria-label="Perfil e modo de uso">
         <Card variant="glass" padding="lg" className={styles.profileCard}>
           <div className={styles.profileHeader}>
-            <Avatar name={settingsMock.profile.name} size="lg" status="online" />
+            <Avatar name={profileDisplayName} src={profile?.avatar_url} size="lg" status="online" />
             <div>
               <span className={styles.eyebrow}>Perfil</span>
-              <h3>{settingsMock.profile.name}</h3>
-              <p>{settingsMock.profile.email}</p>
+              <h3>{profileDisplayName}</h3>
+              <p>{profileEmail || 'E-mail não disponível'}</p>
             </div>
           </div>
+
+          {profileJustSaved ? (
+            <p role="status" className="uf-text-caption">Perfil atualizado.</p>
+          ) : null}
 
           <div className={styles.profileDetails}>
             <div>
@@ -69,6 +117,10 @@ function SettingsPage() {
             <div>
               <span>Plano atual</span>
               <strong>{currentPlanLabel}</strong>
+            </div>
+            <div>
+              <span>Telefone</span>
+              <strong>{profilePhone || 'Não informado'}</strong>
             </div>
           </div>
         </Card>
@@ -214,6 +266,16 @@ function SettingsPage() {
           <p>{settings.uniReading}</p>
         </Card>
       </section>
+
+      {isEditingProfile ? (
+        <ProfileEditModal
+          open
+          profile={profile}
+          user={user}
+          onClose={handleCloseEditProfile}
+          onSaved={handleProfileSaved}
+        />
+      ) : null}
     </div>
   );
 }
