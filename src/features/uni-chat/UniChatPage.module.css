@@ -1,40 +1,53 @@
 .page {
-  --uni-blue: #2E5CFF;
-  --uni-blue-deep: #1B3FCC;
-  --uni-purple: #8B5CF6;
-  --uni-purple-deep: #6D3FE0;
-  --uni-gradient: linear-gradient(120deg, var(--uni-blue) 0%, var(--uni-purple) 100%);
-  --uni-gradient-soft: linear-gradient(120deg, rgba(46,92,255,0.14) 0%, rgba(139,92,246,0.14) 100%);
-  --uni-success: #17A673;
-  --uni-success-bg: #E6F7F1;
-  --uni-warning: #C97A20;
-  --uni-warning-bg: #FCF1E2;
-  --uni-error: #D9483F;
-  --uni-error-bg: #FBEAE9;
-  --uni-bg: #F5F6FC;
-  --uni-surface: #FFFFFF;
-  --uni-surface-raised: #FCFCFF;
-  --uni-border: #E4E6F2;
-  --uni-border-soft: #ECEEF8;
-  --uni-text-primary: #12142B;
-  --uni-text-secondary: #565B74;
-  --uni-text-muted: #8A8FA6;
-  --uni-text-on-gradient: #FFFFFF;
+  /* ------------------------------------------------------------------
+     Tokens --uni-* do Chat da Uni: são ALIASES para os tokens oficiais
+     --uf-* do Design System (theme.css). Não definem mais cores fixas
+     claras — assim o Chat reage aos 4 temas (Claro/Escuro/Sistema/UniFlow).
+     A fonte de verdade continua sendo --uf-*; estes nomes existem só para
+     não reescrever cada seletor consumidor do feature uni-chat.
+  ------------------------------------------------------------------ */
+  --uni-blue: var(--uf-color-primary);
+  --uni-blue-deep: var(--uf-color-primary-hover);
+  --uni-purple: var(--uf-color-ai);
+  --uni-purple-deep: var(--uf-color-ai-active);
+  --uni-gradient: var(--uf-gradient-ai);
+  --uni-gradient-soft: linear-gradient(120deg, var(--uf-color-primary-subtle) 0%, var(--uf-color-ai-subtle) 100%);
+  --uni-success: var(--uf-color-success);
+  --uni-success-bg: var(--uf-color-success-subtle);
+  --uni-warning: var(--uf-color-warning);
+  --uni-warning-bg: var(--uf-color-warning-subtle);
+  --uni-error: var(--uf-color-danger);
+  --uni-error-bg: var(--uf-color-danger-subtle);
+  --uni-bg: var(--uf-color-bg-canvas);
+  --uni-surface: var(--uf-color-bg-surface);
+  --uni-surface-raised: var(--uf-color-bg-elevated);
+  --uni-border: var(--uf-color-border-default);
+  --uni-border-soft: var(--uf-color-border-subtle);
+  --uni-text-primary: var(--uf-color-text-primary);
+  --uni-text-secondary: var(--uf-color-text-secondary);
+  --uni-text-muted: var(--uf-color-text-tertiary);
+  --uni-text-on-gradient: var(--uf-color-on-primary);
   --uni-font-display: var(--uf-font-family-base, 'Poppins', sans-serif);
   --uni-font-body: var(--uf-font-family-base, 'Poppins', sans-serif);
-  --uni-radius-sm: 12px;
+  --uni-radius-sm: var(--uf-radius-12);
   --uni-radius-md: 18px;
   --uni-radius-lg: 26px;
-  --uni-radius-pill: 999px;
-  --uni-shadow-sm: 0 2px 8px rgba(28, 32, 70, 0.06);
-  --uni-shadow-md: 0 8px 24px rgba(28, 32, 70, 0.10);
-  --uni-shadow-glow: 0 10px 30px rgba(107, 84, 245, 0.20);
-  --uni-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --uni-radius-pill: var(--uf-radius-full);
+  --uni-shadow-sm: var(--uf-shadow-sm);
+  --uni-shadow-md: var(--uf-shadow-md);
+  --uni-shadow-glow: var(--uf-shadow-glow-ai);
+  --uni-ease: var(--uf-ease-smooth);
 
   position: relative;
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  /* Quando dentro do shell imersivo, o pai tem altura definida e este
+     max-height:100% faz o .page respeitar (viewport - bottom nav). Fora do
+     shell (rota /uni-chat-proto), o pai tem altura automática e o max-height
+     não restringe nada, mantendo o 100dvh original. */
+  max-height: 100%;
+  min-height: 0;
   max-width: 480px;
   margin: 0 auto;
   background: var(--uni-bg);

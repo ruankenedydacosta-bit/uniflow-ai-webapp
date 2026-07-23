@@ -80,3 +80,33 @@
 .sendBtn:not(:disabled):active {
   transform: scale(0.92);
 }
+
+.voiceBtnActive {
+  color: #fff;
+  background: var(--uni-gradient);
+  box-shadow: var(--uni-shadow-glow);
+  animation: uniVoicePulse 1.4s ease-in-out infinite;
+}
+
+.voiceBtnActive:hover {
+  color: #fff;
+}
+
+@keyframes uniVoicePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.35); }
+  50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+}
+
+.voiceStatus {
+  margin: 0 0 8px;
+  padding: 0 8px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--uni-text-muted);
+  font-family: var(--uni-font-body);
+}
+
+.voiceStatusActive {
+  color: var(--uni-purple);
+  font-weight: 600;
+}

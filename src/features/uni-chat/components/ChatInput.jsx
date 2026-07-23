@@ -1,9 +1,36 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useUniVoiceInput, VOICE_CAPTURE_STATES } from '../../uni-voice';
 import styles from './ChatInput.module.css';
 
-export default function ChatInput({ value, onChange, onSend, disabled }) {
+export default function ChatInput({ value, onChange, onSend, disabled, personalityProfileId = 'balanced' }) {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef(null);
+  const valueRef = useRef(value);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  const voiceInput = useUniVoiceInput({
+    profileId: personalityProfileId,
+    onFinalTranscript: (transcript) => {
+      const clean = (transcript || '').trim();
+      if (!clean) return;
+      const current = (valueRef.current || '').trim();
+      const next = current ? `${current} ${clean}` : clean;
+      onChange(next);
+      inputRef.current?.focus();
+    },
+  });
+
+  const { status } = voiceInput;
+  const isCapturing =
+    status === VOICE_CAPTURE_STATES.LISTENING ||
+    status === VOICE_CAPTURE_STATES.REQUESTING_PERMISSION ||
+    status === VOICE_CAPTURE_STATES.PROCESSING;
+
+  const showStatus =
+    status !== VOICE_CAPTURE_STATES.IDLE && status !== VOICE_CAPTURE_STATES.COMPLETED;
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -11,14 +38,34 @@ export default function ChatInput({ value, onChange, onSend, disabled }) {
     onSend(value.trim());
   }
 
+  function handleVoiceClick() {
+    if (disabled && !isCapturing) return;
+    voiceInput.toggle();
+  }
+
+  const voiceLabel = isCapturing ? 'Parar escuta por voz' : 'Falar com a Uni por voz';
+
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
+      {showStatus && voiceInput.message && (
+        <p
+          className={`${styles.voiceStatus} ${
+            status === VOICE_CAPTURE_STATES.LISTENING ? styles.voiceStatusActive : ''
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {voiceInput.message}
+        </p>
+      )}
       <div className={`${styles.field} ${focused ? styles.fieldFocused : ''}`}>
         <button
           type="button"
-          className={styles.voiceBtn}
-          aria-label="Entrada por voz (em breve)"
-          title="Em breve"
+          className={`${styles.voiceBtn} ${isCapturing ? styles.voiceBtnActive : ''}`}
+          aria-label={voiceLabel}
+          aria-pressed={isCapturing}
+          title={voiceLabel}
+          onClick={handleVoiceClick}
         >
           <MicIcon />
         </button>

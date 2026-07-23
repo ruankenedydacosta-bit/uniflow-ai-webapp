@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { buildUniPrefillFromState } from '../categories/categoryUtils.js';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import { useUniConversation } from '../uni-conversation';
+import { useUniLlm } from '../uni-llm';
+import { useUniVoiceOutput } from '../uni-voice-output';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
 import { useGoals } from '../goals/useGoals';
 import { buildFutureProjections } from '../future/futureService';
@@ -17,10 +21,10 @@ import ChatInput from './components/ChatInput';
 import ScrollToLatest from './components/ScrollToLatest';
 import HistoryPanel from './components/HistoryPanel';
 import {
-  USER_NAME,
   SUGGESTIONS_PESSOAL,
   SUGGESTIONS_EMPRESA,
 } from './mockData';
+import { resolveGreetingName } from './greeting';
 import {
   loadHistory,
   saveHistory,
@@ -44,6 +48,9 @@ import styles from './UniChatPage.module.css';
 
 const UNI_THINK_MIN_MS = 600;
 
+const UNI_DETERMINISTIC_FALLBACK_TEXT =
+  'Entendi. Por enquanto, posso ajudar a registrar movimenta\u00e7\u00f5es financeiras. Tente algo como "registrar uma despesa de R$ 50" ou "qual meu saldo?".';
+
 function getLocalIsoDate() {
   const today = new Date();
   const year = today.getFullYear();
@@ -55,8 +62,31 @@ function getLocalIsoDate() {
 export default function UniChatPage() {
   const { access } = useAccess();
   const { profile, workspace, switchWorkspace, availableWorkspaces } = useSession();
+  const location = useLocation();
+  const initialContextRef = useRef(false);
 
   const personalityProfileId = profile?.uni_personality_profile ?? 'balanced';
+
+  const voiceOutput = useUniVoiceOutput({ personalityProfileId });
+  const uniLlm = useUniLlm();
+  const [speakingId, setSpeakingId] = useState(null);
+
+  const handleSpeakMessage = useCallback((message) => {
+    if (!message?.text) return;
+    if (speakingId === message.id) {
+      voiceOutput.stop();
+      setSpeakingId(null);
+      return;
+    }
+    voiceOutput.stop();
+    setSpeakingId(message.id);
+    const settle = () =>
+      setSpeakingId((current) => (current === message.id ? null : current));
+    const playback = voiceOutput.premiumSupported
+      ? voiceOutput.speakPremium(message.text, { fallbackText: message.text })
+      : voiceOutput.speakBrowser(message.text);
+    Promise.resolve(playback).finally(settle);
+  }, [speakingId, voiceOutput]);
 
   const financialFallback = access.currentWorkspace === 'personal'
     ? financialCrudMock.personal
@@ -71,6 +101,7 @@ export default function UniChatPage() {
   const categoryState = useCategories({
     workspaceId: workspace?.id,
     fallbackCategories: financialFallback.categories,
+    context: access.currentWorkspace,
   });
 
   const transactionsState = useTransactions({
@@ -176,6 +207,19 @@ export default function UniChatPage() {
   const prevWorkspaceRef = useRef(access.currentWorkspace);
 
   const suggestions = mode === 'pessoal' ? SUGGESTIONS_PESSOAL : SUGGESTIONS_EMPRESA;
+
+  // Contexto vindo da tela de Categorias: pré-preenche o campo (sem enviar),
+  // preservando o fluxo de confirmação. Executado uma única vez ao montar.
+  useEffect(() => {
+    if (initialContextRef.current) return;
+    initialContextRef.current = true;
+    const prefill = buildUniPrefillFromState(location.state);
+    if (prefill) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setInputValue(prefill);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     pendingActionRef.current = pendingAction;
@@ -461,6 +505,9 @@ export default function UniChatPage() {
     const conv = conversations.find((c) => c.id === id);
     if (!conv) return;
 
+    voiceOutput.stop();
+    setSpeakingId(null);
+
     const requestId = ++loadRequestIdRef.current;
 
     setActiveId(id);
@@ -496,10 +543,36 @@ export default function UniChatPage() {
     }
   }
 
+  async function handleUnresolvedMessage(text, history) {
+    let llmText = null;
+    if (uniLlm.enabled) {
+      setIsTyping(true);
+      try {
+        const outcome = await uniLlm.generateContextualResponse({
+          text,
+          messages: history,
+          financialContext,
+          mode,
+          personalityProfileId,
+          workspaceType: access.currentWorkspace,
+        });
+        llmText = outcome?.text ?? null;
+      } catch {
+        llmText = null;
+      } finally {
+        setIsTyping(false);
+      }
+    }
+    const assistantMsg = buildUniMessage(llmText || UNI_DETERMINISTIC_FALLBACK_TEXT);
+    pushMessage(assistantMsg);
+    syncMessageToSupabase(assistantMsg);
+  }
+
   function sendText(text) {
     if (!text.trim() || isTyping || isConfirming) return;
     setExecutionError(null);
     stickToBottom.current = true;
+    const historySnapshot = messages;
 
     const userMsg = buildUserMessage(text);
     pushMessage(userMsg);
@@ -553,11 +626,7 @@ export default function UniChatPage() {
       const result = financialConversation.interpret(text);
 
       if (!result.handled) {
-        const assistantMsg = buildUniMessage(
-          'Entendi. Por enquanto, posso ajudar a registrar movimentações financeiras. Tente algo como "registrar uma despesa de R$ 50" ou "qual meu saldo?".',
-        );
-        pushMessage(assistantMsg);
-        syncMessageToSupabase(assistantMsg);
+        void handleUnresolvedMessage(text, historySnapshot);
         return;
       }
 
@@ -620,6 +689,8 @@ export default function UniChatPage() {
   }
 
   function handleNewChat() {
+    voiceOutput.stop();
+    setSpeakingId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
     const conv = createLocalConversation(mode);
     const nextList = [...updated, conv];
@@ -789,7 +860,7 @@ export default function UniChatPage() {
 
       <div className={styles.body} ref={scrollRef} onScroll={handleScroll}>
         {isEmpty ? (
-          <EmptyState userName={USER_NAME} suggestions={suggestions} onSelect={handleSuggestionSelect} />
+          <EmptyState userName={resolveGreetingName(profile)} suggestions={suggestions} onSelect={handleSuggestionSelect} workspaceType={access.currentWorkspace} />
         ) : (
           <div className={styles.messages}>
             {messages.map((message) => (
@@ -801,6 +872,9 @@ export default function UniChatPage() {
                 onCancelAction={handleCancelAction}
                 isExecuting={isExecutingAction}
                 executionError={message.confirmation?.status === 'pending' ? executionError : null}
+                canSpeak={message.from === 'uni'}
+                onSpeak={handleSpeakMessage}
+                isSpeaking={speakingId === message.id}
               />
             ))}
             {isTyping && <TypingIndicator />}
@@ -815,7 +889,7 @@ export default function UniChatPage() {
         {!isEmpty && (
           <QuickSuggestions items={suggestions} onSelect={handleSuggestionSelect} variant="rail" />
         )}
-        <ChatInput value={inputValue} onChange={setInputValue} onSend={sendText} disabled={isTyping || isConfirming || isExecutingAction} />
+        <ChatInput value={inputValue} onChange={setInputValue} onSend={sendText} disabled={isTyping || isConfirming || isExecutingAction} personalityProfileId={personalityProfileId} />
       </div>
     </div>
   );

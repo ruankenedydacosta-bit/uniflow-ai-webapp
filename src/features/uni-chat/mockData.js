@@ -1,5 +1,3 @@
-export const USER_NAME = 'Ruan';
-
 export const SUGGESTIONS_PESSOAL = [
   { icon: '💸', label: 'Registrar uma despesa', intent: 'registrar_despesa' },
   { icon: '💰', label: 'Ver meu saldo', intent: 'ver_saldo' },
