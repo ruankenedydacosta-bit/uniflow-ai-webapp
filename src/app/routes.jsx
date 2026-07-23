@@ -11,9 +11,12 @@ import { OnboardingPage } from '../features/onboarding';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
+import OpenFinancePage from '../pages/OpenFinancePage';
+import { CategoriesPage } from '../features/categories';
 import { FuturePage } from '../features/future';
 const UniChatPage = lazy(() => import('../features/uni-chat/UniChatPage'));
 import { MobileWelcomePage } from '../features/auth-mobile';
+import { MODULE_IDS } from './moduleAccess.js';
 
 const UniAudioLibraryPage = import.meta.env.DEV
   ? lazy(() => import('../pages/dev/uni-audio-library'))
@@ -73,12 +76,14 @@ export const publicRoutes = [
 export const appRoutes = [
   {
     path: '/dashboard',
+    moduleId: MODULE_IDS.DASHBOARD,
     label: 'Dashboard',
     title: 'Dashboard',
     element: <DashboardPage />,
   },
   {
     path: '/uni-ai',
+    moduleId: MODULE_IDS.UNI_AI,
     label: 'Uni AI',
     title: 'Uni AI',
     element: (
@@ -89,54 +94,77 @@ export const appRoutes = [
   },
   {
     path: '/financeiro',
+    moduleId: MODULE_IDS.FINANCEIRO,
     label: 'Financeiro',
     title: 'Financeiro',
     element: <FinancePage />,
   },
   {
+    path: '/categorias',
+    moduleId: MODULE_IDS.CATEGORIAS,
+    label: 'Categorias',
+    title: 'Categorias',
+    element: <CategoriesPage />,
+  },
+  {
+    path: '/open-finance',
+    moduleId: MODULE_IDS.OPEN_FINANCE,
+    label: 'Open Finance',
+    title: 'Open Finance',
+    element: <OpenFinancePage />,
+  },
+  {
     path: '/objetivos',
+    moduleId: MODULE_IDS.OBJETIVOS,
     label: 'Objetivos',
     title: 'Objetivos',
     element: <ObjetivosPage />,
   },
   {
     path: '/futuro',
+    moduleId: MODULE_IDS.FUTURO,
     label: 'Visão de Futuro',
     title: 'Visão de Futuro',
     element: <FuturePage />,
   },
   {
     path: '/crm',
+    moduleId: MODULE_IDS.CRM,
     label: 'CRM',
     title: 'CRM',
     element: <CRMPage />,
   },
   {
     path: '/clientes',
+    moduleId: MODULE_IDS.CLIENTES,
     label: 'Clientes',
     title: 'Clientes',
     element: <ClientesPage />,
   },
   {
     path: '/projetos',
+    moduleId: MODULE_IDS.PROJETOS,
     label: 'Projetos',
     title: 'Projetos',
     element: <ProjectsPage />,
   },
   {
     path: '/agenda',
+    moduleId: MODULE_IDS.AGENDA,
     label: 'Agenda',
     title: 'Agenda',
     element: <AgendaPage />,
   },
   {
     path: '/relatorios',
+    moduleId: MODULE_IDS.RELATORIOS,
     label: 'Relatórios',
     title: 'Relatórios',
     element: <ReportsPage />,
   },
   {
     path: '/configuracoes',
+    moduleId: MODULE_IDS.CONFIGURACOES,
     label: 'Configurações',
     title: 'Configurações',
     element: <SettingsPage />,
