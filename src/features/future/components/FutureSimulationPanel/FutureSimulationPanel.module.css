@@ -1,0 +1,66 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.activeBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--uf-space-8);
+}
+
+.activeText {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.hintText {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--uf-space-16);
+}
+
+.signHint {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+}
+
+.historyNotice {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+}
+
+.balanceReadout {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-primary);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.actions button {
+  min-height: var(--uf-tap-target-min);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    justify-content: stretch;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}
