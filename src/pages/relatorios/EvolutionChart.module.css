@@ -1,0 +1,115 @@
+.chartBlock {
+  display: grid;
+  gap: var(--uf-space-16);
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-20);
+  background:
+    var(--uf-color-primary-subtle),
+    var(--uf-color-bg-sunken);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--uf-space-16);
+}
+
+.chartHeader span {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.chartHeader strong {
+  display: block;
+  margin-top: var(--uf-space-4);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-h3-size);
+  font-weight: var(--uf-text-h3-weight);
+  line-height: var(--uf-text-h3-lh);
+}
+
+.chart {
+  width: 100%;
+  min-height: calc(var(--uf-space-160) + var(--uf-space-64));
+  color: var(--uf-color-primary);
+}
+
+.incomeArea {
+  fill: url("#reportsIncomeArea");
+}
+
+.expenseLine,
+.incomeLine {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.expenseLine {
+  stroke: var(--uf-color-danger);
+  stroke-width: 3;
+  stroke-dasharray: 7 9;
+}
+
+.incomeLine {
+  stroke: var(--uf-color-primary);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 12px var(--uf-color-primary-subtle));
+}
+
+.expensePoint,
+.incomePoint {
+  stroke: var(--uf-color-bg-sunken);
+  stroke-width: 2;
+}
+
+.expensePoint {
+  fill: var(--uf-color-danger);
+}
+
+.incomePoint {
+  fill: var(--uf-color-success);
+}
+
+.chartLabel {
+  fill: var(--uf-color-text-tertiary);
+  font-size: var(--uf-text-micro-size);
+}
+
+.chartLegend {
+  display: flex;
+  gap: var(--uf-space-16);
+  flex-wrap: wrap;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+}
+
+.chartLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--uf-space-8);
+}
+
+.chartLegend i {
+  width: var(--uf-space-10);
+  height: var(--uf-space-10);
+  border-radius: var(--uf-radius-full);
+}
+
+.incomeLegend {
+  background: var(--uf-color-success);
+}
+
+.expenseLegend {
+  background: var(--uf-color-danger);
+}
+
+@media (max-width: 760px) {
+  .chartHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
