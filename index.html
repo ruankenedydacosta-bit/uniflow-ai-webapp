@@ -5,6 +5,32 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>uniflow-ai-app</title>
+    <script>
+      // FOUC guard: aplica data-theme antes do React montar, espelhando
+      // src/features/theme (chave 'uniflow.theme.preference', padrão 'light').
+      (function () {
+        try {
+          var KEY = 'uniflow.theme.preference';
+          var VALID = { light: 1, dark: 1, uniflow: 1, system: 1 };
+          var pref = 'light';
+          try {
+            var stored = window.localStorage.getItem(KEY);
+            if (stored && VALID[stored]) pref = stored;
+          } catch (e) {}
+          var effective = pref;
+          if (pref === 'system') {
+            var dark = false;
+            try {
+              dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } catch (e) {}
+            effective = dark ? 'dark' : 'light';
+          }
+          var root = document.documentElement;
+          root.setAttribute('data-theme', effective);
+          root.setAttribute('data-theme-preference', pref);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
