@@ -30,6 +30,42 @@ test('estado inicial: sem simulacao ativa, a pagina exibe as projecoes reais', a
 });
 
 // ============================================================================
+// F5.4 — Comparação Real × Simulado
+// ============================================================================
+
+test('comparacao so e construida quando a simulacao esta ativa (senao e null)', async () => {
+  const page = await source('FuturePage.jsx');
+  const comparisonBlock = page.slice(
+    page.indexOf('const comparison = simulation.isActive'),
+    page.indexOf(': null;') + ': null;'.length,
+  );
+  assert.match(comparisonBlock, /simulation\.isActive\s*\n\s*\? buildFutureComparison\(\{/);
+  assert.match(comparisonBlock, /: null;/);
+});
+
+test('comparacao usa exatamente projections (real) e simulation.simulatedProjections (simulado), nunca recalcula', async () => {
+  const page = await source('FuturePage.jsx');
+  const comparisonBlock = page.slice(
+    page.indexOf('const comparison = simulation.isActive'),
+    page.indexOf(': null;') + ': null;'.length,
+  );
+  assert.match(comparisonBlock, /realProjections: projections,/);
+  assert.match(comparisonBlock, /simulatedProjections: simulation\.simulatedProjections,/);
+  assert.match(comparisonBlock, /selectedHorizon,/);
+});
+
+test('FutureComparisonCard e renderizado com a comparacao (o proprio card decide se aparece)', async () => {
+  const page = await source('FuturePage.jsx');
+  assert.match(page, /import FutureComparisonCard from '\.\/components\/FutureComparisonCard\/FutureComparisonCard';/);
+  assert.match(page, /<FutureComparisonCard comparison=\{comparison\} \/>/);
+});
+
+test('comparacao nunca chama buildFutureProjections diretamente em FuturePage', async () => {
+  const page = await source('FuturePage.jsx');
+  assert.doesNotMatch(page, /buildFutureProjections\(/);
+});
+
+// ============================================================================
 // Integração com useFutureSimulation (F5.2) — sem duplicar o motor
 // ============================================================================
 

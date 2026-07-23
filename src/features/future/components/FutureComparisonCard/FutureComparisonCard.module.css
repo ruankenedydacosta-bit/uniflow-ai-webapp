@@ -1,0 +1,119 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--uf-space-8);
+}
+
+.title {
+  font-size: var(--uf-text-subtitle-size);
+  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-color-text-primary);
+}
+
+.horizon {
+  font-size: var(--uf-text-caption-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.scenarioList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.scenarioRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-surface);
+}
+
+.scenarioName {
+  font-size: var(--uf-text-body-size);
+  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-color-text-primary);
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--uf-space-12);
+}
+
+.valueItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+}
+
+.valueLabel {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+}
+
+.valueAmount {
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-color-text-primary);
+}
+
+.directionText {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.goalsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+  padding-top: var(--uf-space-8);
+  border-top: 1px solid var(--uf-color-divider);
+}
+
+.goalsTitle {
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-color-text-primary);
+}
+
+.goalsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+  list-style: none;
+}
+
+.goalItem {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--uf-space-8);
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-secondary);
+}
+
+.disclaimer {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+}
+
+@media (max-width: 768px) {
+  .valuesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .goalItem {
+    flex-direction: column;
+    gap: var(--uf-space-4);
+  }
+}

@@ -4,6 +4,7 @@ import { useAccess } from '../../app/AccessContext';
 import { SCENARIOS } from './futureConstants';
 import { useFutureData } from './useFutureData';
 import { useFutureSimulation } from './useFutureSimulation';
+import { buildFutureComparison } from './futureComparison';
 import Button from '../../components/ui/Button';
 import FutureHeader from './components/FutureHeader/FutureHeader';
 import FutureSummary from './components/FutureSummary/FutureSummary';
@@ -12,6 +13,7 @@ import FutureScenarios from './components/FutureScenarios/FutureScenarios';
 import FutureGoals from './components/FutureGoals/FutureGoals';
 import FutureExplanation from './components/FutureExplanation/FutureExplanation';
 import FutureSimulationPanel from './components/FutureSimulationPanel/FutureSimulationPanel';
+import FutureComparisonCard from './components/FutureComparisonCard/FutureComparisonCard';
 import styles from './FuturePage.module.css';
 
 export default function FuturePage() {
@@ -44,6 +46,17 @@ export default function FuturePage() {
   });
 
   const displayedProjections = simulation.isActive ? simulation.simulatedProjections : projections;
+
+  // Só existe enquanto a simulação está ativa; nunca recalcula projeção
+  // (usa exatamente os dois objetos já prontos). Sair da simulação zera
+  // simulation.isActive, e a comparação desaparece imediatamente.
+  const comparison = simulation.isActive
+    ? buildFutureComparison({
+        realProjections: projections,
+        simulatedProjections: simulation.simulatedProjections,
+        selectedHorizon,
+      })
+    : null;
 
   const {
     avgIncome,
@@ -121,6 +134,8 @@ export default function FuturePage() {
           </Button>
         </div>
       )}
+
+      <FutureComparisonCard comparison={comparison} />
 
       {!hasData ? (
         <div className={styles.emptyState}>
