@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccess } from '../../app/AccessContext.jsx';
 import { useSession } from '../../app/SessionContext.jsx';
@@ -23,13 +24,59 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
     isSwitchingWorkspace,
     profile,
     selectedWorkspaceType,
+    signOut,
     switchWorkspace,
     workspace,
     workspaceSwitchError,
   } = useSession();
 
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState(null);
+  // Trava sincrona contra chamadas concorrentes de signOut (duplo toque no
+  // mobile antes do menu fechar, ou duplo clique no botao desktop) --
+  // mesmo padrao de mutationRef ja usado em useClients.js/useAgenda.js/
+  // useTransactions.js, aqui centralizado neste unico handler compartilhado
+  // por mobile e desktop.
+  const signOutRef = useRef(false);
+
+  const handleSignOut = async () => {
+    if (signOutRef.current) return;
+
+    signOutRef.current = true;
+    setIsSigningOut(true);
+    setSignOutError(null);
+
+    try {
+      const result = await signOut();
+      if (result?.error) {
+        setSignOutError(result.error);
+      }
+    } catch {
+      setSignOutError({
+        code: 'SIGN_OUT_UNEXPECTED_ERROR',
+        message: 'Não foi possível sair da conta. Tente novamente.',
+      });
+    } finally {
+      signOutRef.current = false;
+      setIsSigningOut(false);
+    }
+    // Sem navegacao manual: signOut() bem-sucedido zera a sessao no
+    // SessionContext, e o guard de autenticacao existente em App.jsx
+    // (`if (!session || sessionError) return <Navigate to="/login" .../>`)
+    // ja redireciona automaticamente -- nenhuma race condition introduzida.
+  };
+
+  // notifications/support permanecem sem efeito nesta fase -- ignorados
+  // explicitamente, sem lancar erro (fora do escopo da CFG2, que trata
+  // somente do logout).
+  function handleShellAction(action) {
+    if (action === 'sign-out') {
+      void handleSignOut();
+    }
+  }
+
   if (!isMobile) {
-    return <AppShell title={title}>{children}</AppShell>;
+    return <AppShell title={title} onSignOut={handleSignOut} isSigningOut={isSigningOut} signOutError={signOutError}>{children}</AppShell>;
   }
 
   const effectiveWorkspaceType = selectedWorkspaceType ?? workspace?.workspace_type ?? access.currentWorkspace;
@@ -56,6 +103,7 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
     <MobileAppShell
       title={mobileTitle ?? title}
       immersive={immersive}
+      onAction={handleShellAction}
       headerProps={{
         subtitle: workspaceLabel,
         actions: <Avatar name={profileName} size="sm" />,
