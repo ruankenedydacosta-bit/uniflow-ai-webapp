@@ -71,6 +71,11 @@ export function useFutureData({ selectedScenario = SCENARIOS.LIKELY, selectedHor
     isLoading,
     error,
     projections,
+    // Mesmos valores (mesma referência, sem clone) já usados na chamada de
+    // buildFutureProjections acima — fonte única para quem precisar montar
+    // uma segunda projeção (ex.: useFutureSimulation) sem buscar os dados de
+    // novo nem arriscar divergência entre a visão real e a hipotética.
+    baseInputs: { workspaceBalance, transactions, goals },
     selectedScenario,
     selectedHorizon,
     selectedScenarioProjection,

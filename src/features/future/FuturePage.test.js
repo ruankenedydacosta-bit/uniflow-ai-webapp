@@ -51,6 +51,48 @@ test('simulacao usa o mesmo horizonte e os mesmos cenarios da visao real (sem es
 });
 
 // ============================================================================
+// F5.3.1 — dados-base compartilhados (sem leitura duplicada)
+// ============================================================================
+
+test('FuturePage nao importa mais os hooks financeiros diretamente (baseInputs vem de useFutureData)', async () => {
+  const page = await source('FuturePage.jsx');
+  assert.doesNotMatch(page, /import \{ useFinancialBalances \}/);
+  assert.doesNotMatch(page, /import \{ useTransactions \}/);
+  assert.doesNotMatch(page, /import \{ useGoals \}/);
+  assert.doesNotMatch(page, /import \{ useSession \}/);
+});
+
+test('FuturePage nao chama mais os hooks financeiros duplicados', async () => {
+  const page = await source('FuturePage.jsx');
+  assert.doesNotMatch(page, /useFinancialBalances\(/);
+  assert.doesNotMatch(page, /useTransactions\(/);
+  assert.doesNotMatch(page, /useGoals\(/);
+});
+
+test('FuturePage extrai baseInputs de useFutureData e passa exatamente ele para a simulacao', async () => {
+  const page = await source('FuturePage.jsx');
+  const useFutureDataCallBlock = page.slice(
+    page.indexOf('const {'),
+    page.indexOf('} = useFutureData({') + 1,
+  );
+  assert.match(useFutureDataCallBlock, /baseInputs,/);
+
+  const simulationCallBlock = page.slice(
+    page.indexOf('const simulation = useFutureSimulation({'),
+    page.indexOf('});', page.indexOf('const simulation = useFutureSimulation({')),
+  );
+  assert.match(simulationCallBlock, /\.\.\.baseInputs,/);
+});
+
+test('projecao real e simulada derivam do mesmo retorno de useFutureData (mesmo instante de dados)', async () => {
+  const page = await source('FuturePage.jsx');
+  const useFutureDataIdx = page.indexOf('} = useFutureData({');
+  const simulationIdx = page.indexOf('const simulation = useFutureSimulation({');
+  assert.ok(useFutureDataIdx !== -1 && simulationIdx !== -1);
+  assert.ok(useFutureDataIdx < simulationIdx, 'baseInputs deve ser extraído de useFutureData antes de alimentar a simulação');
+});
+
+// ============================================================================
 // Saída da simulação
 // ============================================================================
 

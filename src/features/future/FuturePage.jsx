@@ -1,10 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAccess } from '../../app/AccessContext';
-import { useSession } from '../../app/SessionContext';
-import { useFinancialBalances } from '../../hooks/useFinancialBalances';
-import { useTransactions } from '../../hooks/useTransactions';
-import { useGoals } from '../goals/useGoals';
 import { SCENARIOS } from './futureConstants';
 import { useFutureData } from './useFutureData';
 import { useFutureSimulation } from './useFutureSimulation';
@@ -21,8 +17,6 @@ import styles from './FuturePage.module.css';
 export default function FuturePage() {
   const navigate = useNavigate();
   const { access } = useAccess();
-  const { workspace } = useSession();
-  const workspaceId = workspace?.id;
 
   const [selectedHorizon, setSelectedHorizon] = useState(6);
   const [selectedScenario, setSelectedScenario] = useState(SCENARIOS.LIKELY);
@@ -33,25 +27,18 @@ export default function FuturePage() {
     isLoading,
     error,
     projections,
+    baseInputs,
     hasData,
   } = useFutureData({
     selectedScenario,
     selectedHorizon,
   });
 
-  // Dados-base reais para a simulação (F5.2). useFutureData() não expõe os
-  // arrays brutos (só o snapshot já calculado), e useFutureData.js está fora
-  // do escopo desta subfase — por isso os mesmos hooks que ele já usa
-  // internamente são chamados aqui também. Compromisso deliberado: uma
-  // segunda busca dos mesmos dados, nunca uma segunda lógica de cálculo.
-  const { workspaceBalance } = useFinancialBalances({ workspaceId });
-  const { transactions } = useTransactions({ workspaceId });
-  const { goals } = useGoals({ workspaceId });
-
+  // Mesmo snapshot de dados-base já usado por useFutureData() para a
+  // projeção real (F5.3.1) — sem segunda busca, sem risco de a simulação
+  // enxergar um saldo/transações/metas de um instante diferente da visão real.
   const simulation = useFutureSimulation({
-    workspaceBalance,
-    transactions,
-    goals,
+    ...baseInputs,
     scenarioIds: projections.availableScenarios,
     selectedHorizon,
   });
