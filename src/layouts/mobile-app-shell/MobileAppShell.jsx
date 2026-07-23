@@ -5,7 +5,7 @@ import MoreMenu from './MoreMenu.jsx';
 import { ShellProvider, useMobileShell } from './ShellContext.jsx';
 import styles from './MobileAppShell.module.css';
 
-function MobileAppShellContent({ children, sidebar, headerProps = {}, onAction, onNavigate }) {
+function MobileAppShellContent({ children, sidebar, headerProps = {}, immersive = false, onAction, onNavigate }) {
   const navigate = useNavigate();
   const { title, isMoreMenuOpen, openMoreMenu, closeMoreMenu } = useMobileShell();
 
@@ -18,8 +18,10 @@ function MobileAppShellContent({ children, sidebar, headerProps = {}, onAction, 
     <div className={styles.shell} data-mobile-app-shell>
       {sidebar ? <aside className={styles.desktopSidebar}>{sidebar}</aside> : null}
       <div className={styles.workspace}>
-        <MobileHeader title={title} {...headerProps} />
-        <main className={styles.content}>{children}</main>
+        {immersive ? null : <MobileHeader title={title} {...headerProps} />}
+        <main className={immersive ? `${styles.content} ${styles.contentImmersive}` : styles.content}>
+          {children}
+        </main>
         <BottomNavigation onNavigate={onNavigate} onOpenMore={openMoreMenu} />
       </div>
       <MoreMenu
@@ -32,12 +34,13 @@ function MobileAppShellContent({ children, sidebar, headerProps = {}, onAction, 
   );
 }
 
-function MobileAppShell({ children, title, sidebar, headerProps, onAction, onNavigate }) {
+function MobileAppShell({ children, title, sidebar, headerProps, immersive = false, onAction, onNavigate }) {
   return (
     <ShellProvider initialTitle={title}>
       <MobileAppShellContent
         sidebar={sidebar}
         headerProps={headerProps}
+        immersive={immersive}
         onAction={onAction}
         onNavigate={onNavigate}
       >

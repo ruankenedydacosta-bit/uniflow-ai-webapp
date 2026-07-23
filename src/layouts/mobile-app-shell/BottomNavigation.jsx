@@ -1,13 +1,19 @@
 import { NavLink } from 'react-router-dom';
-import { BOTTOM_NAVIGATION_ROUTES, SHELL_ROUTE_IDS } from './shellRoutes.js';
+import { useAccess } from '../../app/AccessContext.jsx';
+import { BOTTOM_NAVIGATION_ROUTES, SHELL_ROUTE_IDS, filterShellRoutesByContext } from './shellRoutes.js';
 import UniCenterButton from './UniCenterButton.jsx';
 import styles from './MobileAppShell.module.css';
 
 function BottomNavigation({ items = BOTTOM_NAVIGATION_ROUTES, onNavigate, onOpenMore }) {
+  const { currentWorkspace } = useAccess();
+  // Mesma fonte declarativa da Sidebar desktop (moduleAccess.js via shellRoutes.js).
+  // Reavalia na troca de contexto sem reload; itens incompatíveis saem do DOM/foco.
+  const visibleItems = filterShellRoutesByContext(items, currentWorkspace);
+
   return (
     <nav className={styles.bottomNavigation} aria-label="Navegação principal mobile">
       <div className={styles.bottomNavigationInner}>
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           if (item.center) {
             return <UniCenterButton key={item.id} label={item.label} path={item.path} onNavigate={onNavigate} />;
           }

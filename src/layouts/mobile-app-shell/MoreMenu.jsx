@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { MORE_MENU_ROUTES } from './shellRoutes.js';
+import { useAccess } from '../../app/AccessContext.jsx';
+import { MORE_MENU_ROUTES, filterShellRoutesByContext } from './shellRoutes.js';
 import styles from './MobileAppShell.module.css';
 
 function MoreMenu({ isOpen, items = MORE_MENU_ROUTES, onClose, onNavigate, onAction }) {
   const closeButtonRef = useRef(null);
+  const { currentWorkspace } = useAccess();
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -18,9 +20,12 @@ function MoreMenu({ isOpen, items = MORE_MENU_ROUTES, onClose, onNavigate, onAct
 
   if (!isOpen) return null;
 
-  const accountItems = items.filter((item) => item.group === 'account');
-  const productItems = items.filter((item) => item.group === 'product');
-  const signOutItem = items.find((item) => item.id === 'sign-out');
+  // Mesma fonte declarativa da Sidebar/BottomNavigation (moduleAccess.js).
+  // Sem links empresariais em PF nem PF-exclusivos em PJ; ações puras seguem sempre.
+  const visibleItems = filterShellRoutesByContext(items, currentWorkspace);
+  const accountItems = visibleItems.filter((item) => item.group === 'account');
+  const productItems = visibleItems.filter((item) => item.group === 'product');
+  const signOutItem = visibleItems.find((item) => item.id === 'sign-out');
 
   const handleItem = (item) => {
     if (item.path) onNavigate?.(item);
@@ -52,14 +57,18 @@ function MoreMenu({ isOpen, items = MORE_MENU_ROUTES, onClose, onNavigate, onAct
           </button>
         </div>
         <div className={styles.drawerGroups}>
-          <section className={styles.drawerGroup} aria-labelledby="more-account-title">
-            <h3 id="more-account-title" className={styles.drawerGroupTitle}>Conta</h3>
-            <div className={styles.drawerItems}>{accountItems.map(renderItem)}</div>
-          </section>
-          <section className={styles.drawerGroup} aria-labelledby="more-product-title">
-            <h3 id="more-product-title" className={styles.drawerGroupTitle}>Produto</h3>
-            <div className={styles.drawerItems}>{productItems.map(renderItem)}</div>
-          </section>
+          {accountItems.length ? (
+            <section className={styles.drawerGroup} aria-labelledby="more-account-title">
+              <h3 id="more-account-title" className={styles.drawerGroupTitle}>Conta</h3>
+              <div className={styles.drawerItems}>{accountItems.map(renderItem)}</div>
+            </section>
+          ) : null}
+          {productItems.length ? (
+            <section className={styles.drawerGroup} aria-labelledby="more-product-title">
+              <h3 id="more-product-title" className={styles.drawerGroupTitle}>Produto</h3>
+              <div className={styles.drawerItems}>{productItems.map(renderItem)}</div>
+            </section>
+          ) : null}
         </div>
         {signOutItem ? <div className={styles.drawerSignOut}>{renderItem(signOutItem)}</div> : null}
       </section>

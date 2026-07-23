@@ -24,14 +24,13 @@ import {
   getWorkspaceSubscription,
   listWorkspaces,
 } from '../services/workspaceService';
-import { useAccess } from './AccessContext';
-import { PLANS, USER_MODES, WORKSPACE_TYPES } from './access';
+import { WORKSPACE_TYPES } from './access';
 import {
   findWorkspaceByType,
   getAvailableWorkspaceTypes,
   getWorkspaceProfileName,
-  readWorkspaceSelection,
-  writeWorkspaceSelection,
+  readWorkspaceSelectionForUser,
+  writeWorkspaceSelectionForUser,
 } from './workspaceSelection.js';
 
 const SessionContext = createContext(null);
@@ -47,8 +46,6 @@ const INITIAL_SESSION_STATE = {
   error: null,
 };
 
-const VALID_USER_MODES = Object.values(USER_MODES);
-const VALID_PLANS = Object.values(PLANS);
 const VALID_WORKSPACE_TYPES = Object.values(WORKSPACE_TYPES);
 
 function logAuthDevelopment(message) {
@@ -57,37 +54,16 @@ function logAuthDevelopment(message) {
   }
 }
 
-function getAccessFromSession(profile, workspace, subscription) {
-  const currentWorkspace = VALID_WORKSPACE_TYPES.includes(
-    workspace?.workspace_type,
-  )
-    ? workspace.workspace_type
-    : WORKSPACE_TYPES.PERSONAL;
-  const userMode = VALID_USER_MODES.includes(profile?.user_mode)
-    ? profile.user_mode
-    : currentWorkspace === WORKSPACE_TYPES.BUSINESS
-      ? USER_MODES.BUSINESS
-      : USER_MODES.PERSONAL;
-  const fallbackPlan =
-    currentWorkspace === WORKSPACE_TYPES.BUSINESS
-      ? PLANS.BUSINESS
-      : PLANS.FREE;
-  const plan = VALID_PLANS.includes(subscription?.plan_id)
-    ? subscription.plan_id
-    : fallbackPlan;
-
-  return {
-    userMode,
-    plan,
-    currentWorkspace,
-  };
-}
+// NOTA DE ARQUITETURA (Fase 1): a derivação sessão → `access` vive agora em
+// `access.js` (getAccessFromSession), consumida pelo AccessContext via useMemo.
+// O SessionContext deixou de empurrar estado para o AccessContext (não há mais
+// setAccess): existe uma única fonte de verdade, sem representação paralela.
 
 function SessionProvider({ children }) {
-  const { setAccess } = useAccess();
   const [state, setState] = useState(INITIAL_SESSION_STATE);
   const [availableWorkspaces, setAvailableWorkspaces] = useState([]);
-  const [selectedWorkspaceType, setSelectedWorkspaceType] = useState(readWorkspaceSelection);
+  // Preferência local carregada por usuário (namespaced) somente após conhecer o user id.
+  const [selectedWorkspaceType, setSelectedWorkspaceType] = useState(null);
   const [workspaceSwitchState, setWorkspaceSwitchState] = useState({
     error: null,
     isLoading: false,
@@ -260,23 +236,22 @@ function SessionProvider({ children }) {
         };
       }
 
-      setAccess(
-        getAccessFromSession(
-          profileResult.data,
-          workspaceResult.data,
-          subscriptionResult.data,
-        ),
+      const resolvedWorkspaces = workspacesResult.error
+        ? [workspaceResult.data].filter(Boolean)
+        : workspacesResult.data ?? [];
+      setAvailableWorkspaces(resolvedWorkspaces);
+      // Preferência de contexto: chave namespaced do usuário (com migração da chave
+      // antiga), validada contra os workspaces reais do usuário. localStorage é só
+      // fallback de preferência — a autoridade é o workspace da sessão.
+      const allowedTypes = getAvailableWorkspaceTypes(resolvedWorkspaces);
+      const storedPreference = readWorkspaceSelectionForUser(nextSession.user.id, {
+        allowedTypes,
+      });
+      setSelectedWorkspaceType(
+        storedPreference
+          ?? workspaceResult.data?.workspace_type
+          ?? WORKSPACE_TYPES.PERSONAL,
       );
-      setAvailableWorkspaces(
-        workspacesResult.error
-          ? [workspaceResult.data].filter(Boolean)
-          : workspacesResult.data ?? [],
-      );
-      setSelectedWorkspaceType((currentType) => (
-        VALID_WORKSPACE_TYPES.includes(currentType)
-          ? currentType
-          : workspaceResult.data?.workspace_type ?? WORKSPACE_TYPES.PERSONAL
-      ));
       setState({
         session: nextSession,
         user: nextSession.user,
@@ -300,7 +275,7 @@ function SessionProvider({ children }) {
         profileMissing: false,
       };
     },
-    [setAccess],
+    [],
   );
 
   const switchWorkspace = useCallback(async (workspaceType) => {
@@ -310,14 +285,16 @@ function SessionProvider({ children }) {
       return { data: null, error };
     }
 
+    // Reflexo otimista de UI; a persistência namespaced só ocorre com user id conhecido.
     setSelectedWorkspaceType(workspaceType);
-    writeWorkspaceSelection(workspaceType);
 
     if (!state.user?.id || !state.session) {
       const error = { code: 'SESSION_REQUIRED', message: 'Entre novamente para trocar de perfil.' };
       setWorkspaceSwitchState({ error, isLoading: false });
       return { data: null, error };
     }
+
+    writeWorkspaceSelectionForUser(state.user.id, workspaceType);
 
     setWorkspaceSwitchState({ error: null, isLoading: true });
     const workspacesResult = availableWorkspaces.length
@@ -374,13 +351,14 @@ function SessionProvider({ children }) {
     }
 
     setSelectedWorkspaceType(workspaceType);
-    writeWorkspaceSelection(workspaceType);
 
     if (!state.user?.id || !state.session) {
       const error = { code: 'SESSION_REQUIRED', message: 'Entre novamente para criar o perfil.' };
       setWorkspaceSwitchState({ error, isLoading: false });
       return { data: null, error };
     }
+
+    writeWorkspaceSelectionForUser(state.user.id, workspaceType);
 
     setWorkspaceSwitchState({ error: null, isLoading: true });
     const workspacesResult = await listWorkspaces();

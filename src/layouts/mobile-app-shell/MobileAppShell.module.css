@@ -69,6 +69,18 @@
   padding-bottom: calc(var(--uf-space-96) + env(safe-area-inset-bottom, 0));
 }
 
+/* Modo imersivo (Chat da Uni): sem MobileHeader do shell, a área ocupa a
+   viewport menos a altura da BottomNavigation fixa (space-64 + safe-area).
+   Isso dá ao .page do chat um pai de ALTURA DEFINIDA, para que só a lista
+   de mensagens role e o campo de entrada fique acima da bottom nav. */
+.contentImmersive {
+  min-width: 0;
+  padding: 0;
+  min-height: 0;
+  height: calc(100dvh - var(--uf-space-64) - 1px - env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+}
+
 .workspaceContextState {
   display: grid;
   min-height: 240px;

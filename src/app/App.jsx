@@ -3,7 +3,7 @@ import Loader from '../components/ui/Loader';
 import { AuthenticatedLayout } from '../layouts/mobile-app-shell';
 import { AccessProvider, useAccess } from './AccessContext';
 import { SessionProvider, useSession } from './SessionContext';
-import { canAccessRoute, getFallbackRoute } from './accessRules';
+import { canAccessRoute, canAccessRouteInContext, getFallbackRoute } from './accessRules';
 import { navigationItems } from './navigation';
 import { appRoutes, publicRoutes } from './routes';
 
@@ -73,14 +73,23 @@ function AppContent() {
     }
   }
 
-  if (activeRoute && !canAccessRoute(activeNavigationItem, access)) {
-    return <Navigate to={getFallbackRoute()} replace />;
+  // Guard de CONTEXTO (PF/PJ), centralizado e independente de plano/modo:
+  // usa o moduleId da rota + moduleAccess.js. Cobre acesso direto por URL
+  // (ex.: PF abrindo /crm) mesmo que a rota não possua item de navegação.
+  if (activeRoute && !canAccessRouteInContext(activeRoute, access.currentWorkspace)) {
+    return <Navigate to={getFallbackRoute(access.currentWorkspace, navigationItems)} replace />;
+  }
+
+  // Gating ortogonal de plano/modo (mantém comportamento anterior p/ itens de nav).
+  if (activeRoute && activeNavigationItem && !canAccessRoute(activeNavigationItem, access)) {
+    return <Navigate to={getFallbackRoute(access.currentWorkspace, navigationItems)} replace />;
   }
 
   return (
     <AuthenticatedLayout
       title={activeRoute?.title ?? 'Dashboard'}
       mobileTitle={location.pathname === '/dashboard' ? 'Home' : activeRoute?.title}
+      immersive={location.pathname === '/uni-ai'}
     >
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -94,14 +103,17 @@ function AppContent() {
 }
 
 function App() {
+  // Ordem OBRIGATÓRIA: SessionProvider por fora, AccessProvider por dentro.
+  // O AccessContext agora DERIVA do SessionContext (useSession), então precisa estar
+  // dentro dele. Fonte de verdade única: sessão → access (sem estado paralelo).
   return (
-    <AccessProvider>
-      <BrowserRouter>
-        <SessionProvider>
+    <BrowserRouter>
+      <SessionProvider>
+        <AccessProvider>
           <AppContent />
-        </SessionProvider>
-      </BrowserRouter>
-    </AccessProvider>
+        </AccessProvider>
+      </SessionProvider>
+    </BrowserRouter>
   );
 }
 

@@ -13,7 +13,7 @@ const WORKSPACE_LABELS = Object.freeze({
   business: 'Espaço empresarial',
 });
 
-function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, children }) {
+function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = false, children }) {
   const isMobile = useMobileViewport();
   const navigate = useNavigate();
   const { access } = useAccess();
@@ -55,6 +55,7 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, children }) {
   return (
     <MobileAppShell
       title={mobileTitle ?? title}
+      immersive={immersive}
       headerProps={{
         subtitle: workspaceLabel,
         actions: <Avatar name={profileName} size="sm" />,
