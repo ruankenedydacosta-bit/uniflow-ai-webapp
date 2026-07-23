@@ -102,6 +102,46 @@ export async function signUpWithEmail({ email, password, fullName } = {}) {
   };
 }
 
+/**
+ * Solicita ao Supabase Auth o envio do e-mail de recuperacao de senha.
+ * Por padrao, resetPasswordForEmail nao revela se o e-mail existe (resolve
+ * com sucesso mesmo para conta inexistente) -- este service nao adiciona
+ * nenhuma logica que quebre essa garantia.
+ */
+export async function requestPasswordReset(email, redirectTo) {
+  if (!supabase) {
+    return createServiceUnavailableResult();
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+
+  return {
+    data: null,
+    error,
+    isConfigured: true,
+  };
+}
+
+/**
+ * Atualiza a senha do usuario autenticado na sessao atual (inclusive a
+ * sessao temporaria de recuperacao que o Supabase estabelece ao abrir o
+ * link de reset). Nao manipula tokens manualmente -- delega inteiramente
+ * ao SDK.
+ */
+export async function updatePassword(newPassword) {
+  if (!supabase) {
+    return createServiceUnavailableResult();
+  }
+
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+
+  return {
+    data,
+    error,
+    isConfigured: true,
+  };
+}
+
 export async function signOut() {
   if (!supabase) {
     return createServiceUnavailableResult();

@@ -10,6 +10,7 @@ import ObjetivosPage from '../pages/ObjetivosPage';
 import { OnboardingPage } from '../features/onboarding';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 import SettingsPage from '../pages/SettingsPage';
 import OpenFinancePage from '../pages/OpenFinancePage';
 import { CategoriesPage } from '../features/categories';
@@ -46,6 +47,12 @@ export const publicRoutes = [
     label: 'Onboarding',
     title: 'Onboarding',
     element: <OnboardingPage />,
+  },
+  {
+    path: '/redefinir-senha',
+    label: 'Redefinir senha',
+    title: 'Redefinir senha',
+    element: <ResetPasswordPage />,
   },
   {
     path: '/uni-chat-proto',

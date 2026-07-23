@@ -129,6 +129,76 @@ test('rotas existentes permanecem e Welcome é pública', async () => {
   );
 });
 
+// ============================================================================
+// AUTH1 -- recuperação de senha real
+// ============================================================================
+
+test('/redefinir-senha e uma rota publica (fora do layout autenticado), sem exigir onboarding/workspace', async () => {
+  const routes = await readFile(new URL('../../app/routes.jsx', import.meta.url), 'utf8');
+  assert.match(routes, /import ResetPasswordPage from '\.\.\/pages\/ResetPasswordPage';/);
+  const publicBlock = routes.slice(routes.indexOf('export const publicRoutes'), routes.indexOf('export const appRoutes'));
+  assert.match(publicBlock, /path: '\/redefinir-senha',/);
+  assert.match(publicBlock, /element: <ResetPasswordPage \/>,/);
+  const appBlock = routes.slice(routes.indexOf('export const appRoutes'));
+  assert.doesNotMatch(appBlock, /\/redefinir-senha/);
+});
+
+test('MobileAuthPage abre um fluxo real de recuperacao (nao mais um placeholder "estará disponível em breve")', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.doesNotMatch(contents, /A recuperação de senha estará disponível em breve\./);
+  assert.match(contents, /import ForgotPasswordForm from '\.\.\/components\/ForgotPasswordForm\.jsx';/);
+  assert.match(contents, /onForgotPassword=\{handleOpenForgotPassword\}/);
+});
+
+test('handleOpenForgotPassword reaproveita o e-mail ja digitado no login', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  const fnBody = contents.slice(contents.indexOf('function handleOpenForgotPassword'), contents.indexOf('function handleBackToLogin'));
+  assert.match(fnBody, /setForgotPasswordEmail\(email \|\| ''\);/);
+});
+
+test('EmailAuthForm repassa o e-mail digitado para onForgotPassword (nao chama sem argumento)', async () => {
+  const contents = await source('./components/EmailAuthForm.jsx');
+  assert.match(contents, /onClick=\{\(\) => onForgotPassword\(values\.email\)\}/);
+});
+
+test('solicitacao de reset usa useSession().requestPasswordReset -- nunca chama Supabase/authService diretamente no componente', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.match(contents, /requestPasswordReset,/);
+  const fnBody = contents.slice(contents.indexOf('async function handleRequestPasswordReset'), contents.indexOf('async function handleSocial'));
+  assert.match(fnBody, /const result = await requestPasswordReset\(email\);/);
+  assert.doesNotMatch(fnBody, /supabase|authService/i);
+});
+
+test('duplo clique na solicitacao de reset e bloqueado por trava sincrona (resetRequestRef)', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.match(contents, /const resetRequestRef = useRef\(false\);/);
+  const fnBody = contents.slice(contents.indexOf('async function handleRequestPasswordReset'), contents.indexOf('async function handleSocial'));
+  assert.match(fnBody, /if \(resetRequestRef\.current\) return;/);
+  assert.match(fnBody, /resetRequestRef\.current = true;/);
+  assert.match(fnBody, /resetRequestRef\.current = false;/);
+});
+
+test('mensagem de sucesso da solicitacao e sempre a mensagem neutra (getPasswordResetRequestFeedback) -- nunca revela se a conta existe', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.match(contents, /import \{ getPasswordResetRequestFeedback \} from '\.\.\/passwordRecoveryUtils\.js';/);
+  assert.match(contents, /setResetFeedback\(getPasswordResetRequestFeedback\(result\?\.error\)\);/);
+});
+
+test('"Voltar ao login" (handleBackToLogin) fecha o fluxo de recuperacao e nao dispara mutacao', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.match(contents, /function handleBackToLogin\(\) \{\s*\n\s*if \(isRequestingReset\) return;\s*\n\s*setIsForgotPasswordOpen\(false\);/);
+});
+
+test('mensagem apos redefinir senha (location.state.passwordUpdated) reaproveita o mecanismo de feedback ja existente', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.match(contents, /location\.state\?\.passwordUpdated \? 'Senha atualizada\. Entre com sua nova senha\.' : ''/);
+});
+
+test('login social continua "Em breve" -- AUTH1 nao implementou login social', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.match(contents, /getSocialUnavailableResult/);
+});
+
 test('sessao autenticada não retorna ao Welcome', async () => {
   const app = await readFile(new URL('../../app/App.jsx', import.meta.url), 'utf8');
   assert.match(app, /'\/welcome'/);

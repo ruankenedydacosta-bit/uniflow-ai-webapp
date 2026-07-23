@@ -91,7 +91,7 @@ function EmailAuthForm({ mode, loading, operationError, onSubmit, onForgotPasswo
       </div>
 
       {!isSignUp ? (
-        <button type="button" className={styles.forgotLink} onClick={onForgotPassword}>
+        <button type="button" className={styles.forgotLink} onClick={() => onForgotPassword(values.email)}>
           Esqueci minha senha
         </button>
       ) : (

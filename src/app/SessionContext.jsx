@@ -11,9 +11,11 @@ import {
 import {
   getSession,
   onAuthStateChange,
+  requestPasswordReset as requestPasswordResetService,
   signInWithPassword as signInWithPasswordService,
   signUpWithEmail as signUpWithEmailService,
   signOut as signOutService,
+  updatePassword as updatePasswordService,
 } from '../services/authService';
 import { getProfile, updateProfile } from '../services/profileService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
@@ -485,6 +487,32 @@ function SessionProvider({ children }) {
     }
   }, [synchronizeSession]);
 
+  // AUTH1: solicitacao de recuperacao de senha. Nao altera a sessao atual
+  // (so pede ao Supabase para enviar o e-mail), entao nao precisa de
+  // synchronizeSession nem de authActionRef -- mesmo raciocinio de nao
+  // envolver o guard de sessao para uma operacao que nao autentica ninguem.
+  const requestPasswordReset = useCallback(async (email) => {
+    if (!isSupabaseConfigured) {
+      return { data: null, error: null, isConfigured: false };
+    }
+
+    const redirectTo = `${window.location.origin}/redefinir-senha`;
+    return requestPasswordResetService(email, redirectTo);
+  }, []);
+
+  // AUTH1: atualizacao de senha usando a sessao atual (inclusive a sessao
+  // temporaria de recuperacao criada pelo link de e-mail). Nao chama
+  // synchronizeSession aqui -- o chamador decide o que fazer com a sessao
+  // apos o sucesso (ResetPasswordPage encerra a sessao explicitamente e
+  // navega para o login).
+  const updatePassword = useCallback(async (newPassword) => {
+    if (!isSupabaseConfigured) {
+      return { data: null, error: null, isConfigured: false };
+    }
+
+    return updatePasswordService(newPassword);
+  }, []);
+
   useEffect(() => {
     let isActive = true;
     isMountedRef.current = true;
@@ -583,6 +611,8 @@ function SessionProvider({ children }) {
       signInWithPassword,
       signUpWithEmail,
       signOut,
+      requestPasswordReset,
+      updatePassword,
       refreshSession: () => synchronizeSession(state.session),
       availableWorkspaces,
       availableWorkspaceTypes: getAvailableWorkspaceTypes(availableWorkspaces),
@@ -592,7 +622,7 @@ function SessionProvider({ children }) {
       switchWorkspace,
       workspaceSwitchError: workspaceSwitchState.error,
     }),
-    [availableWorkspaces, createWorkspaceProfile, selectedWorkspaceType, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, workspaceSwitchState],
+    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updatePassword, workspaceSwitchState],
   );
 
   return (
