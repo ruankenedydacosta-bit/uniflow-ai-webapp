@@ -6,8 +6,7 @@
 }
 
 .hero,
-.directionGrid,
-.clarityGrid {
+.directionGrid {
   display: grid;
   gap: var(--uf-grid-gutter);
 }
@@ -28,9 +27,7 @@
 .heroCopy,
 .directionCard,
 .nextStepCard,
-.signalCard,
-.summaryCard,
-.uniCard {
+.signalCard {
   display: flex;
   flex-direction: column;
   gap: var(--uf-space-16);
@@ -57,8 +54,6 @@
 .heroCopy p,
 .sectionHeader p,
 .signalCard p,
-.summaryItem span,
-.uniCard p,
 .eyebrow {
   color: var(--uf-color-text-secondary);
   font-size: var(--uf-text-caption-size);
@@ -126,12 +121,11 @@
 
 .directionDetails {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--uf-space-12);
 }
 
-.directionDetails div,
-.summaryItem {
+.directionDetails div {
   display: grid;
   gap: var(--uf-space-6);
   padding: var(--uf-space-12);
@@ -146,8 +140,7 @@
   line-height: var(--uf-text-caption-lh);
 }
 
-.directionDetails strong,
-.summaryItem strong {
+.directionDetails strong {
   color: var(--uf-color-text-primary);
   font-size: var(--uf-text-body-size);
   line-height: var(--uf-text-body-lh);
@@ -185,31 +178,209 @@
   line-height: var(--uf-text-body-lh);
 }
 
-.clarityGrid {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  align-items: stretch;
-}
-
-.summaryList {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--uf-space-12);
-}
-
-.uniCard {
-  background:
-    var(--uf-color-ai-subtle),
-    var(--uf-glass-bg);
-}
-
 .shortcuts {
   justify-content: flex-start;
 }
 
+/*
+ * Estiliza aqui, para o contexto desktop, as mesmas classes globais já
+ * emitidas por CategoriesBreakdown/CategoryBar (Financeiro mobile,
+ * src/pages/financeiro/mobile/components/). Reaproveitamos os componentes
+ * e os dados exatamente como já existem — o CSS original dessas classes
+ * vive em FinanceiroMobile.module.css só dentro de
+ * `@media (max-width: 767px)`, então fora dessa largura nenhuma regra se
+ * aplica. Este bloco cobre só as classes que esses dois componentes
+ * realmente emitem (card, cabeçalho de seção, lista e barra de categoria),
+ * com os mesmos tokens --uf-*, sem duplicar nenhuma regra não usada aqui
+ * (contas, saldo, transações, forecast etc. permanecem só no mobile).
+ */
+.categoryBreakdown :global(.financeMobileCard) {
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-surface);
+}
+
+.categoryBreakdown :global(.financeMobileSectionHeader),
+.accountsBreakdown :global(.financeMobileSectionHeader) {
+  display: flex;
+  min-height: var(--uf-tap-target-min);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-12);
+}
+
+.categoryBreakdown :global(.financeMobileSectionHeader h2),
+.accountsBreakdown :global(.financeMobileSectionHeader h2) {
+  margin: 0;
+  font-size: var(--uf-text-title-size);
+  font-weight: var(--uf-text-title-weight);
+  line-height: var(--uf-text-title-lh);
+  color: var(--uf-color-text-primary);
+}
+
+.categoryBreakdown :global(.financeMobileSectionHeader button),
+.accountsBreakdown :global(.financeMobileSectionHeader button) {
+  border: 0;
+  background: transparent;
+  color: var(--uf-color-text-ai);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  cursor: pointer;
+}
+
+.categoryBreakdown :global(.financeMobileCategories) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+  margin: var(--uf-space-16) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.categoryBreakdown :global(.financeMobileEmptyMessage) {
+  margin: var(--uf-space-8) 0 0;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.categoryBreakdown :global(.financeMobileCategory) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+  padding: var(--uf-space-8) 0;
+}
+
+.categoryBreakdown :global(.financeMobileCategory > div:first-child) {
+  display: flex;
+  justify-content: space-between;
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+}
+
+.categoryBreakdown :global(.financeMobileCategoryTrack) {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-color-bg-sunken);
+}
+
+.categoryBreakdown :global(.financeMobileCategoryTrack span) {
+  display: block;
+  width: var(--finance-category-width);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--uf-color-primary);
+}
+
+.categoryBreakdown :global(.financeMobileCategoryTrack .financeMobileTone-green) {
+  background: var(--uf-color-success);
+}
+
+.categoryBreakdown :global(.financeMobileCategoryTrack .financeMobileTone-cyan) {
+  background: var(--uf-color-info);
+}
+
+/*
+ * Mesmo padrão acima, agora para AccountsCarousel/AccountCardTile (Fase 6.3).
+ * AccountsCarousel não emite nenhuma classe de "card" no próprio <section>,
+ * então o card é a própria .accountsBreakdown (wrapper local do Dashboard).
+ * A única adaptação de layout necessária é trocar o carrossel de rolagem
+ * horizontal do mobile (financeMobileCarousel, pensado para telas estreitas)
+ * por um grid — mais coerente com o desktop; os cards em si
+ * (financeMobileAccount/financeMobileTone-*) mantêm o mesmo desenho visual
+ * já usado no Financeiro mobile.
+ */
+.accountsBreakdown {
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-surface);
+}
+
+.accountsBreakdown :global(.financeMobileCarousel) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--uf-space-12);
+  margin-top: var(--uf-space-16);
+}
+
+.accountsBreakdown :global(.financeMobileAccount) {
+  display: flex;
+  min-height: 126px;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-surface);
+  box-shadow: var(--uf-shadow-sm);
+}
+
+.accountsBreakdown :global(.financeMobileAccount span) {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+}
+
+.accountsBreakdown :global(.financeMobileAccount strong) {
+  margin-top: auto;
+}
+
+.accountsBreakdown :global(.financeMobileAccount p) {
+  margin: 0;
+  font-size: var(--uf-text-title-size);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.accountsBreakdown :global(.financeMobileTone-violet) {
+  border-color: color-mix(in srgb, var(--uf-color-primary) 40%, var(--uf-color-border-subtle));
+}
+
+.accountsBreakdown :global(.financeMobileTone-green) {
+  border-color: color-mix(in srgb, var(--uf-color-success) 45%, var(--uf-color-border-subtle));
+}
+
+/*
+ * Resumo financeiro (Fase 6.3.5) — renderiza dashboard.primarySummary.metrics
+ * (já calculado por financialClarityEngine, nenhum valor recalculado aqui).
+ * Mesmo desenho visual de tile já usado em .directionDetails (rótulo +
+ * valor em destaque, mesmos tokens --uf-*), só com 4 colunas em vez de 2.
+ */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--uf-space-12);
+}
+
+.summaryMetric {
+  display: grid;
+  gap: var(--uf-space-6);
+  padding: var(--uf-space-12);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-sunken);
+}
+
+.summaryMetric span {
+  color: var(--uf-color-text-muted);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.summaryMetric strong {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-body-size);
+  line-height: var(--uf-text-body-lh);
+}
+
 @media (max-width: 1180px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .hero,
-  .directionGrid,
-  .clarityGrid {
+  .directionGrid {
     grid-template-columns: 1fr;
   }
 
@@ -231,8 +402,7 @@
     padding: var(--uf-space-24);
   }
 
-  .directionDetails,
-  .summaryList {
+  .directionDetails {
     grid-template-columns: 1fr;
   }
 

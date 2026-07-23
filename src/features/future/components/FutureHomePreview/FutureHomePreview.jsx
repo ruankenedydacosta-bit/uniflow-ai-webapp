@@ -8,14 +8,9 @@ import { SCENARIOS } from '../../futureConstants';
 import { formatCurrency } from '../../../../utils/formatters';
 import styles from './FutureHomePreview.module.css';
 
-export default function FutureHomePreview() {
+function FutureHomePreviewContent({ error, hasData, isLoading, projections }) {
   const navigate = useNavigate();
   const { access } = useAccess();
-
-  const { isLoading, error, projections, hasData } = useFutureData({
-    selectedScenario: SCENARIOS.LIKELY,
-    selectedHorizon: 6,
-  });
 
   if (isLoading) {
     return (
@@ -96,4 +91,28 @@ export default function FutureHomePreview() {
       </div>
     </Card>
   );
+}
+
+function ConnectedFutureHomePreview() {
+  const financialData = useFutureData({
+    selectedScenario: SCENARIOS.LIKELY,
+    selectedHorizon: 6,
+  });
+
+  return <FutureHomePreviewContent {...financialData} />;
+}
+
+export default function FutureHomePreview({ financialData = null }) {
+  if (financialData) {
+    return (
+      <FutureHomePreviewContent
+        error={null}
+        isLoading={false}
+        projections={financialData.projections}
+        hasData={financialData.hasData}
+      />
+    );
+  }
+
+  return <ConnectedFutureHomePreview />;
 }

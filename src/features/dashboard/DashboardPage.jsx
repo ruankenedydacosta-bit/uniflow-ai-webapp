@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { useAccess } from '../../app/AccessContext';
-import { WORKSPACE_TYPES } from '../../app/access.js';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import { CognitiveLiveChart } from '../cognitive-live-chart';
+import AccountsCarousel from '../../pages/financeiro/mobile/components/AccountsCarousel';
+import CategoriesBreakdown from '../../pages/financeiro/mobile/components/CategoriesBreakdown';
 import FutureHomePreview from '../../features/future/components/FutureHomePreview/FutureHomePreview';
-import { dashboardMock } from './dashboard.mock';
 import { MobileHomeView } from './mobile/index.js';
 import { useHomeFinancialData } from './mobile/useHomeFinancialData.js';
 import { useMobileViewport } from '../../layouts/mobile-app-shell/useMobileViewport.js';
@@ -13,31 +13,61 @@ import { useDashboardPersonalization } from './personalization/useDashboardPerso
 import PersonalizedWelcome from './personalization/components/PersonalizedWelcome';
 import NextBestAction from './personalization/components/NextBestAction';
 import ActivationSteps from './personalization/components/ActivationSteps';
+import { useDashboardClarity } from './clarity/useDashboardClarity.js';
 import styles from './DashboardPage.module.css';
 
-function getDashboardContext(currentWorkspace) {
-  return currentWorkspace === WORKSPACE_TYPES.PERSONAL ? dashboardMock.personal : dashboardMock.business;
-}
+const DASHBOARD_SHORTCUTS = Object.freeze([
+  { label: 'Falar com a Uni', path: '/uni-ai', variant: 'primary' },
+  { label: 'Ver Financeiro', path: '/financeiro', variant: 'outline' },
+  { label: 'Ver Objetivos', path: '/objetivos', variant: 'outline' },
+  { label: 'Ver Visão de Futuro', path: '/futuro', variant: 'outline' },
+]);
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const { access } = useAccess();
   const isMobile = useMobileViewport();
-  const dashboard = getDashboardContext(access.currentWorkspace);
-  const { summary, recentTransactions, goals, isLoading, error, hasData } = useHomeFinancialData();
+  const financialData = useHomeFinancialData();
+  const { summary, recentTransactions, goals, isLoading, error, hasData, chart, financialPeriod } = financialData;
   const personalization = useDashboardPersonalization({ summary, recentTransactions, goals, hasData });
+  const clarity = useDashboardClarity(financialData);
+  const personalizedClarity = {
+    ...personalization,
+    nextAction: clarity.nextAction,
+  };
 
   if (isMobile) {
     return (
       <MobileHomeView
-        data={{ summary, recentTransactions, goals }}
-        personalization={personalization}
+        data={{
+          summary,
+          recentTransactions,
+          goals,
+          chart,
+          briefing: clarity.mobile.briefing,
+          nextStep: clarity.mobile.nextStep,
+          insights: clarity.mobile.insights,
+          futureData: {
+            projections: financialData.projections,
+            hasData: financialData.projections.hasHistory,
+          },
+        }}
+        personalization={personalizedClarity}
         loading={isLoading}
         error={error}
         onNavigate={navigate}
       />
     );
   }
+
+  if (isLoading) {
+    return <div className={styles.dashboard} aria-busy="true"><Card padding="lg">Carregando sua clareza financeira...</Card></div>;
+  }
+
+  if (error) {
+    return <div className={styles.dashboard} role="alert"><Card padding="lg">Não foi possível carregar sua clareza financeira agora.</Card></div>;
+  }
+
+  const dashboard = clarity;
 
   return (
     <>
@@ -66,27 +96,23 @@ function DashboardPage() {
           <div className={styles.cardHeader}>
             <div>
               <span className={styles.eyebrow}>Onde você está indo</span>
-              <h3>{dashboard.direction.title}</h3>
+              <h3>{dashboard.primarySummary.title}</h3>
             </div>
-            <Badge variant={dashboard.direction.variant} size="sm" dot>
-              {dashboard.direction.status}
+            <Badge variant={dashboard.primarySummary.variant} size="sm" dot>
+              {dashboard.primarySummary.status}
             </Badge>
           </div>
 
-          <strong>{dashboard.direction.message}</strong>
+          <strong>{dashboard.primarySummary.message}</strong>
 
           <div className={styles.directionDetails}>
             <div>
               <span>Previsão</span>
-              <strong>{dashboard.direction.forecast}</strong>
+              <strong>{dashboard.primarySummary.forecast}</strong>
             </div>
             <div>
               <span>Principal sinal</span>
-              <strong>{dashboard.direction.signal}</strong>
-            </div>
-            <div>
-              <span>Próximo passo</span>
-              <strong>{dashboard.direction.nextStep}</strong>
+              <strong>{dashboard.primarySummary.signal}</strong>
             </div>
           </div>
         </Card>
@@ -101,21 +127,11 @@ function DashboardPage() {
               Uni
             </Badge>
           </div>
-          <NextBestAction action={personalization.nextAction} onNavigate={navigate} />
+          <NextBestAction action={clarity.nextAction} onNavigate={navigate} />
         </Card>
       </section>
 
-      {personalization.showActivation && (
-        <ActivationSteps
-          steps={personalization.activation.steps}
-          completed={personalization.activation.completed}
-          total={personalization.activation.total}
-          percent={personalization.activation.percent}
-          onNavigate={navigate}
-        />
-      )}
-
-      <section className={styles.attentionSection} aria-labelledby="attention-title">
+      {dashboard.signals.length ? <section className={styles.attentionSection} aria-labelledby="attention-title">
         <div className={styles.sectionHeader}>
           <div>
             <h3 id="attention-title">O que merece atenção</h3>
@@ -124,7 +140,7 @@ function DashboardPage() {
         </div>
 
         <div className={styles.signalGrid}>
-          {dashboard.attentionSignals.map((signal) => (
+          {dashboard.signals.map((signal) => (
             <Card key={signal.title} variant="default" padding="md" className={styles.signalCard}>
               <div className={styles.signalTop}>
                 <span className={styles.signalDot} aria-hidden="true" />
@@ -139,42 +155,76 @@ function DashboardPage() {
             </Card>
           ))}
         </div>
+      </section> : null}
+
+      <section className={styles.attentionSection} aria-labelledby="dashboard-summary-title">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 id="dashboard-summary-title">Resumo financeiro</h3>
+            <p>Os números que já sustentam a leitura de clareza acima, sem recalcular nada.</p>
+          </div>
+        </div>
+
+        <div className={styles.summaryGrid}>
+          {dashboard.primarySummary.metrics.map((metric) => (
+            <div key={metric.id} className={styles.summaryMetric}>
+              <span>{metric.label}</span>
+              <strong>{metric.hasData ? metric.value : 'sem dados ainda'}</strong>
+            </div>
+          ))}
+        </div>
       </section>
 
-      <section className={styles.clarityGrid} aria-label="Resumo inteligente e leitura da Uni">
-        <Card variant="glass" padding="lg" className={styles.summaryCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Resumo inteligente</h3>
-              <p>Poucos indicadores para entender a rota sem comparar dezenas de números.</p>
-            </div>
-          </div>
+      {personalization.showActivation && (
+        <ActivationSteps
+          steps={personalization.activation.steps}
+          completed={personalization.activation.completed}
+          total={personalization.activation.total}
+          percent={personalization.activation.percent}
+          onNavigate={navigate}
+        />
+      )}
 
-          <div className={styles.summaryList}>
-            {dashboard.smartSummary.map((item) => (
-              <div key={item.label} className={styles.summaryItem}>
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-              </div>
-            ))}
+      <section className={styles.attentionSection} aria-labelledby="dashboard-chart-title">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 id="dashboard-chart-title">Receitas e Despesas</h3>
+            <p>Acompanhe como seu dinheiro está evoluindo.</p>
           </div>
-        </Card>
-
-        <Card variant="outline" padding="lg" className={styles.uniCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Leitura da Uni</h3>
-              <p>O que os sinais indicam agora.</p>
-            </div>
-            <Badge variant="glass" size="sm" dot>
-              Uni
-            </Badge>
-          </div>
-          <p>{dashboard.uniReading}</p>
-        </Card>
+        </div>
+        <CognitiveLiveChart
+          variant="detailed"
+          defaultMode="uni-insight"
+          data={chart?.data}
+          comparisonData={chart?.comparisonData}
+          forecastData={chart?.forecastData}
+          todayDay={chart?.todayDay}
+          insightHighlight={chart?.insightHighlight}
+          comparisonMeta={chart?.comparisonMeta}
+          forecastMeta={chart?.forecastMeta}
+        />
       </section>
 
-      <FutureHomePreview />
+      <div className={styles.accountsBreakdown}>
+        <AccountsCarousel
+          accounts={financialPeriod.accounts}
+          onManage={() => navigate('/financeiro')}
+        />
+      </div>
+
+      <div className={styles.categoryBreakdown}>
+        <CategoriesBreakdown
+          categories={financialPeriod.categories}
+          onManage={() => navigate('/categorias')}
+        />
+      </div>
+
+      <FutureHomePreview
+        financialData={{
+          projections: financialData.projections,
+          hasData: financialData.projections.hasHistory,
+        }}
+      />
 
       <section className={styles.shortcutsSection} aria-labelledby="shortcuts-title">
         <div className={styles.sectionHeader}>
@@ -185,7 +235,7 @@ function DashboardPage() {
         </div>
 
         <div className={styles.shortcuts}>
-          {dashboard.shortcuts.map((shortcut) => (
+          {DASHBOARD_SHORTCUTS.map((shortcut) => (
             <Button
               key={shortcut.path}
               variant={shortcut.variant}

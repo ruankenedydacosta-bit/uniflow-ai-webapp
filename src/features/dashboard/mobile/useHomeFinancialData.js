@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from '../../../app/SessionContext';
-import { useCategories, useFinancialBalances, useTransactions } from '../../../hooks';
+import { useAccounts, useCategories, useFinancialBalances, useTransactions } from '../../../hooks';
 import { useGoals } from '../../goals/useGoals';
 import { buildFinanceiroMobileData } from '../../../pages/financeiro/mobile/financeiroMobileData';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../../services/financialDataEvents';
+import { buildFutureProjections } from '../../future/futureService.js';
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
@@ -23,11 +24,19 @@ export function useHomeFinancialData() {
   const prevWorkspaceRef = useRef(workspaceId);
 
   const {
+    accountBalances,
     workspaceBalance,
     isLoading: balanceLoading,
     error: balanceError,
     refresh: refreshBalance,
   } = useFinancialBalances({ workspaceId });
+
+  const {
+    accounts,
+    isLoading: accountsLoading,
+    error: accountsError,
+    refresh: refreshAccounts,
+  } = useAccounts({ workspaceId });
 
   const {
     transactions,
@@ -36,7 +45,12 @@ export function useHomeFinancialData() {
     refresh: refreshTransactions,
   } = useTransactions({ workspaceId });
 
-  const { categories } = useCategories({ workspaceId });
+  const {
+    categories,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+    refresh: refreshCategories,
+  } = useCategories({ workspaceId });
 
   const {
     goals,
@@ -45,8 +59,8 @@ export function useHomeFinancialData() {
     refresh: refreshGoals,
   } = useGoals({ workspaceId });
 
-  const isLoading = balanceLoading || transactionsLoading || goalsLoading;
-  const error = balanceError ?? transactionsError ?? goalsError;
+  const isLoading = balanceLoading || transactionsLoading || categoriesLoading || goalsLoading || accountsLoading;
+  const error = balanceError ?? transactionsError ?? categoriesError ?? goalsError ?? accountsError;
 
   useEffect(() => {
     if (showSkeleton && !isLoading) {
@@ -64,8 +78,10 @@ export function useHomeFinancialData() {
   const refresh = useCallback(() => {
     refreshBalance();
     refreshTransactions();
+    refreshCategories();
     refreshGoals();
-  }, [refreshBalance, refreshTransactions, refreshGoals]);
+    refreshAccounts();
+  }, [refreshBalance, refreshTransactions, refreshCategories, refreshGoals, refreshAccounts]);
 
   useEffect(() => {
     const handler = () => refresh();
@@ -74,11 +90,16 @@ export function useHomeFinancialData() {
   }, [refresh]);
 
   const financeiroData = useMemo(
-    () => buildFinanceiroMobileData({ transactions, workspaceBalance, categories }),
-    [transactions, workspaceBalance, categories],
+    () => buildFinanceiroMobileData({ transactions, workspaceBalance, categories, accounts, accountBalances }),
+    [transactions, workspaceBalance, categories, accounts, accountBalances],
   );
 
-  const hasBalance = workspaceBalance != null && Number(workspaceBalance) !== 0;
+  const projections = useMemo(
+    () => buildFutureProjections({ workspaceBalance, transactions, goals }),
+    [workspaceBalance, transactions, goals],
+  );
+
+  const hasBalance = workspaceBalance != null;
   const hasIncome = transactions.some((t) => t.transaction_type === 'income');
   const hasExpense = transactions.some((t) => t.transaction_type === 'expense');
 
@@ -113,6 +134,7 @@ export function useHomeFinancialData() {
     () => {
       const categoriesById = new Map(categories.map((c) => [c.id, c.name]));
       return [...transactions]
+        .filter((transaction) => transaction.status === 'completed')
         .sort((a, b) => b.transaction_date.localeCompare(a.transaction_date))
         .slice(0, 5)
         .map((tx) => {
@@ -158,6 +180,13 @@ export function useHomeFinancialData() {
     summary,
     recentTransactions,
     goals: homeGoals,
+    rawGoals: goals,
+    transactions,
+    categories,
+    workspaceBalance,
+    financialPeriod: financeiroData,
+    projections,
+    chart: financeiroData.chart,
     isLoading: showSkeleton,
     error,
     hasData,

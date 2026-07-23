@@ -1,6 +1,11 @@
 import styles from './HomeMobile.module.css';
 import { CognitiveLiveChart } from '../../cognitive-live-chart';
+// Fallback exclusivo de dev/teste (Storybook, testes de unidade) quando nenhum `data`
+// real é injetado. Em produção, DashboardPage sempre injeta `data` completo a partir
+// de dados reais (useHomeFinancialData/useDashboardClarity) — o mock nunca é mesclado
+// com dados financeiros reais.
 import { homeMobileMock } from './homeMobile.mock.js';
+import FutureHomePreview from '../../future/components/FutureHomePreview/FutureHomePreview';
 import FinancialSummaryStrip from './components/FinancialSummaryStrip.jsx';
 import GoalsProgressList from './components/GoalsProgressList.jsx';
 import HomeSectionSkeleton from './components/HomeSectionSkeleton.jsx';
@@ -12,6 +17,9 @@ import UniBriefingCard from './components/UniBriefingCard.jsx';
 import PersonalizedWelcome from '../personalization/components/PersonalizedWelcome';
 import NextBestAction from '../personalization/components/NextBestAction';
 import ActivationSteps from '../personalization/components/ActivationSteps';
+import Badge from '../../../components/ui/Badge';
+import { OpenFinanceConnectionAnimation } from '../../open-finance-animation';
+import { useTheme } from '../../theme';
 
 const SKELETON_SECTIONS = Object.freeze([
   ['briefing', 'Carregando briefing da Uni'],
@@ -24,8 +32,9 @@ const SKELETON_SECTIONS = Object.freeze([
   ['actions', 'Carregando atalhos rápidos'],
 ]);
 
-function MobileHomeView({ data = homeMobileMock, personalization = null, loading = false, error = null, onNavigate }) {
-  const viewData = { ...homeMobileMock, ...data };
+function MobileHomeView({ data, personalization = null, loading = false, error = null, onNavigate }) {
+  const { effectiveTheme } = useTheme();
+  const viewData = data ?? homeMobileMock;
   const handleNavigate = (destination) => {
     if (typeof destination === 'string') onNavigate?.(destination);
   };
@@ -43,14 +52,24 @@ function MobileHomeView({ data = homeMobileMock, personalization = null, loading
   if (error && !loading) {
     return (
       <div className={styles.home} data-mobile-home data-error="true">
-        <UniBriefingCard briefing={viewData.briefing} onAction={() => handleNavigate('/uni-ai')} />
-        <NextStepCard step={viewData.nextStep} onAction={() => handleNavigate('/financeiro')} />
+        <UniBriefingCard briefing={viewData.briefing} onAction={() => handleNavigate(viewData.briefing?.href ?? '/financeiro')} />
+        <NextStepCard step={viewData.nextStep} onAction={() => handleNavigate(viewData.nextStep?.href ?? '/financeiro')} />
         <section className={styles.cognitiveChartSection} aria-labelledby="home-cognitive-chart-title">
           <header className={styles.cognitiveChartHeader}>
             <h2 id="home-cognitive-chart-title">Receitas e Despesas</h2>
             <p>Acompanhe como seu dinheiro está evoluindo.</p>
           </header>
-          <CognitiveLiveChart variant="compact" defaultMode="uni-insight" />
+          <CognitiveLiveChart
+            variant="compact"
+            defaultMode="uni-insight"
+            data={viewData.chart?.data}
+            comparisonData={viewData.chart?.comparisonData}
+            forecastData={viewData.chart?.forecastData}
+            todayDay={viewData.chart?.todayDay}
+            insightHighlight={viewData.chart?.insightHighlight}
+            comparisonMeta={viewData.chart?.comparisonMeta}
+            forecastMeta={viewData.chart?.forecastMeta}
+          />
         </section>
         <section className="homeMobileCard" aria-labelledby="home-mobile-error-title">
           <div className="homeMobileSectionHeader">
@@ -93,7 +112,7 @@ function MobileHomeView({ data = homeMobileMock, personalization = null, loading
           onViewAll={() => handleNavigate('/objetivos')}
           onCreate={() => handleNavigate('/objetivos')}
         />
-        <InsightCarousel insights={viewData.insights ?? []} />
+        <InsightCarousel insights={viewData.insights ?? []} onSelect={(insight) => handleNavigate(insight.href)} />
         <QuickActionsGrid
           actions={viewData.quickActions ?? homeMobileMock.quickActions}
           onSelect={(action) => handleNavigate(action.path)}
@@ -113,7 +132,7 @@ function MobileHomeView({ data = homeMobileMock, personalization = null, loading
           />
         </section>
       )}
-      <UniBriefingCard briefing={viewData.briefing} onAction={() => handleNavigate('/uni-ai')} />
+      <UniBriefingCard briefing={viewData.briefing} onAction={() => handleNavigate(viewData.briefing?.href ?? '/financeiro')} />
       {personalization ? (
         <section className="homeMobileCard homeMobileNextStep" aria-label="Próximo passo">
           <span className="homeMobileSectionLabel">Próximo passo</span>
@@ -137,7 +156,17 @@ function MobileHomeView({ data = homeMobileMock, personalization = null, loading
           <h2 id="home-cognitive-chart-title">Receitas e Despesas</h2>
           <p>Acompanhe como seu dinheiro está evoluindo.</p>
         </header>
-        <CognitiveLiveChart variant="compact" defaultMode="uni-insight" />
+        <CognitiveLiveChart
+          variant="compact"
+          defaultMode="uni-insight"
+          data={viewData.chart?.data}
+          comparisonData={viewData.chart?.comparisonData}
+          forecastData={viewData.chart?.forecastData}
+          todayDay={viewData.chart?.todayDay}
+          insightHighlight={viewData.chart?.insightHighlight}
+          comparisonMeta={viewData.chart?.comparisonMeta}
+          forecastMeta={viewData.chart?.forecastMeta}
+        />
       </section>
       <FinancialSummaryStrip
         metrics={viewData.summary ?? []}
@@ -181,12 +210,31 @@ function MobileHomeView({ data = homeMobileMock, personalization = null, loading
           />
         )}
       </section>
+      <section className="homeMobileCard" aria-labelledby="home-open-finance-title" data-open-finance-demo="true">
+        <header className="homeMobileSectionHeader">
+          <h2 id="home-open-finance-title">Open Finance</h2>
+          <Badge variant="secondary" dot>
+            Em breve
+          </Badge>
+        </header>
+        <OpenFinanceConnectionAnimation
+          variant="compact"
+          theme={effectiveTheme}
+          autoPlay
+          onLearnMore={() => handleNavigate('/open-finance')}
+        />
+        <p>
+          Demonstração ilustrativa da futura integração Open Finance. Ainda não há
+          conexão bancária real, coleta de credenciais ou dados da sua conta.
+        </p>
+      </section>
       <GoalsProgressList
         goals={viewData.goals ?? []}
         onViewAll={() => handleNavigate('/objetivos')}
         onCreate={() => handleNavigate('/objetivos')}
       />
-      <InsightCarousel insights={viewData.insights ?? []} />
+      <FutureHomePreview financialData={viewData.futureData ?? null} />
+      <InsightCarousel insights={viewData.insights ?? []} onSelect={(insight) => handleNavigate(insight.href)} />
       <QuickActionsGrid
         actions={viewData.quickActions ?? homeMobileMock.quickActions}
         onSelect={(action) => handleNavigate(action.path)}
