@@ -65,6 +65,96 @@ function hasRequiredTransactionFields(transaction) {
   );
 }
 
+const PERIOD_PAGE_SIZE = 500;
+// Teto de seguranca contra loop infinito (ex.: resposta inesperada do
+// backend) -- nao e um limite funcional: 100 paginas x 500 linhas cobrem
+// 50.000 transacoes num unico periodo, muito acima do volume real de
+// qualquer janela de relatorio.
+const PERIOD_MAX_PAGES = 100;
+
+/**
+ * Orquestra paginas sucessivas de `fetchPage(offset, pageSize)` ate uma
+ * pagina retornar menos linhas que `pageSize` (fim dos dados) ou o teto de
+ * seguranca ser atingido. Funcao pura de orquestracao -- nao conhece
+ * Supabase, apenas acumula o que `fetchPage` devolve; por isso e testavel
+ * isoladamente com uma funcao falsa, sem depender de um Supabase real
+ * configurado (diferente do resto deste arquivo, que so roda com
+ * `supabase` presente).
+ */
+export async function fetchAllPages(
+  fetchPage,
+  { pageSize = PERIOD_PAGE_SIZE, maxPages = PERIOD_MAX_PAGES } = {},
+) {
+  const allData = [];
+  let page = 0;
+
+  while (page < maxPages) {
+    const offset = page * pageSize;
+    const { data, error } = await fetchPage(offset, pageSize);
+
+    if (error) {
+      return { data: allData, error };
+    }
+
+    allData.push(...(data ?? []));
+
+    if (!data || data.length < pageSize) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return { data: allData, error: null };
+}
+
+/**
+ * Busca TODAS as transacoes de um periodo (paginacao interna via
+ * fetchAllPages/.range()), ao contrario de listTransactions (que sempre
+ * limita a `limit` linhas mais recentes, no maximo 100). Existe para
+ * consumidores que precisam agregar um intervalo de datas completo -- hoje
+ * apenas Relatorios (useReports.js) -- nunca para a lista recente exibida
+ * em Financeiro/Uni/Dashboard, que continuam usando listTransactions
+ * inalterado. dateFrom/dateTo comparam a coluna `date` transaction_date
+ * diretamente (sem hora, sem timezone). status filtra exatamente como em
+ * listTransactions.
+ */
+export async function listTransactionsForPeriod(
+  workspaceId,
+  { dateFrom, dateTo, status } = {},
+) {
+  if (!supabase) {
+    return createUnavailableResult([]);
+  }
+  if (!isValidUuid(workspaceId)) {
+    return createValidationResult('Workspace invalido para listar transacoes do periodo.');
+  }
+
+  const { data, error } = await fetchAllPages((offset, pageSize) => {
+    let query = supabase
+      .from('transactions')
+      .select(TRANSACTION_FIELDS)
+      .eq('workspace_id', workspaceId)
+      .order('transaction_date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+    if (dateFrom) {
+      query = query.gte('transaction_date', dateFrom);
+    }
+    if (dateTo) {
+      query = query.lte('transaction_date', dateTo);
+    }
+
+    return query;
+  });
+
+  return createResult(data ?? [], error);
+}
+
 export async function listTransactions(
   workspaceId,
   {

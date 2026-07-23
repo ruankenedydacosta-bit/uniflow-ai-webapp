@@ -4,6 +4,7 @@ import {
   createTransaction,
   deleteTransaction,
   listTransactions,
+  listTransactionsForPeriod,
   updateTransaction,
 } from '../services/transactionService.js';
 import {
@@ -20,6 +21,9 @@ export function useTransactions({
   workspaceId,
   fallbackTransactions = EMPTY_ARRAY,
   limit = 50,
+  status,
+  dateFrom,
+  dateTo,
 } = {}) {
   const [transactions, setTransactions] = useState(() =>
     cloneRecords(fallbackTransactions),
@@ -61,7 +65,15 @@ export function useTransactions({
     }
 
     setIsLoading(true);
-    const result = await listTransactions(workspaceId, { limit });
+    // dateFrom/dateTo pedem o periodo COMPLETO (paginado por
+    // listTransactionsForPeriod), nao "as N mais recentes" -- usado por
+    // Relatorios, que precisa agregar um intervalo de datas inteiro sem
+    // truncar por volume. Sem essas datas, mantem o comportamento
+    // historico (lista recente limitada por `limit`, usada por
+    // Financeiro/Uni/Dashboard).
+    const result = dateFrom || dateTo
+      ? await listTransactionsForPeriod(workspaceId, { dateFrom, dateTo, status })
+      : await listTransactions(workspaceId, { limit, status });
 
     if (requestId !== requestIdRef.current) {
       return null;
@@ -71,7 +83,7 @@ export function useTransactions({
     setError(result.error);
     setIsLoading(false);
     return result;
-  }, [fallbackTransactions, limit, workspaceId]);
+  }, [fallbackTransactions, limit, status, dateFrom, dateTo, workspaceId]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {

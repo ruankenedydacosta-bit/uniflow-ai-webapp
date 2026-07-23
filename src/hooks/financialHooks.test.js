@@ -426,6 +426,30 @@ test('API publica de useTransactions preservada apos o refactor (mesmos nomes, s
   assert.doesNotMatch(source, /applyLocalUpdate[\s\S]{0,80}refresh\(\)/);
 });
 
+// --- R2: janela de periodo/status opcionais em useTransactions ------------
+
+test('useTransactions aceita status/dateFrom/dateTo opcionais, sem quebrar o contrato existente (workspaceId/fallbackTransactions/limit preservados)', async () => {
+  const source = await readFile(new URL('./useTransactions.js', import.meta.url), 'utf8');
+  assert.match(
+    source,
+    /export function useTransactions\(\{\s*\n\s*workspaceId,\s*\n\s*fallbackTransactions = EMPTY_ARRAY,\s*\n\s*limit = 50,\s*\n\s*status,\s*\n\s*dateFrom,\s*\n\s*dateTo,\s*\n\s*\} = \{\}\) \{/,
+  );
+});
+
+test('useTransactions usa listTransactionsForPeriod (paginado) quando dateFrom ou dateTo sao informados -- nunca depende do limit padrao nesse caso', async () => {
+  const source = await readFile(new URL('./useTransactions.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{[\s\S]*?listTransactionsForPeriod,[\s\S]*?\} from '\.\.\/services\/transactionService\.js';/);
+  assert.match(
+    source,
+    /const result = dateFrom \|\| dateTo\s*\n\s*\? await listTransactionsForPeriod\(workspaceId, \{ dateFrom, dateTo, status \}\)\s*\n\s*: await listTransactions\(workspaceId, \{ limit, status \}\);/,
+  );
+});
+
+test('useTransactions sem dateFrom/dateTo mantem o comportamento historico (listTransactions com limit) -- Financeiro/Uni/Dashboard nao mudam', async () => {
+  const source = await readFile(new URL('./useTransactions.js', import.meta.url), 'utf8');
+  assert.match(source, /: await listTransactions\(workspaceId, \{ limit, status \}\);/);
+});
+
 test('service transactionService.js permanece intocado pelo refactor do hook', async () => {
   const source = await readFile(new URL('../services/transactionService.js', import.meta.url), 'utf8');
   assert.match(source, /export async function createTransaction/);

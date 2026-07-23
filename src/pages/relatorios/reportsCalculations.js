@@ -27,6 +27,20 @@ function monthKey(dateValue) {
   return `${match[1]}-${match[2]}`;
 }
 
+/**
+ * Camada de defesa em profundidade (R2): a busca ja pede `status=completed`
+ * ao service (useReports.js/useTransactions.js), mas esta funcao pura
+ * tambem ignora qualquer transacao cujo status esteja presente e seja
+ * diferente de 'completed' -- protege contra chamada direta a
+ * calcMonthlySeries por outro consumidor futuro, ou contra regressao caso
+ * o filtro da query seja removido. status ausente (fixtures antigas sem o
+ * campo) continua contando, para nao quebrar dados/testes que nunca
+ * definiram status.
+ */
+function isCompletedTransaction(transaction) {
+  return transaction?.status == null || transaction.status === 'completed';
+}
+
 function monthLabel(key) {
   const [year, month] = key.split('-').map(Number);
   const date = new Date(year, month - 1, 1);
@@ -44,6 +58,8 @@ export function calcMonthlySeries(transactions = [], monthsBack = 6) {
   const monthlyMap = {};
 
   for (const t of transactions) {
+    if (!isCompletedTransaction(t)) continue;
+
     const key = monthKey(t?.transaction_date);
     if (!key) continue;
 
@@ -223,6 +239,30 @@ export function calcAttentionSignals(monthlySeries = [], goals = []) {
     count: negativeMonthsCount + overdueGoalsCount,
     reasons,
   };
+}
+
+/**
+ * Primeiro dia (YYYY-MM-DD) do mes que inicia a janela de `monthsBack`
+ * meses terminando no mes de `referenceDate` (inclusive). Ex.: referencia
+ * julho/2026, monthsBack=6 -> '2026-02-01' (fev..jul = 6 meses). Usado por
+ * useReports.js para pedir ao banco só o periodo necessario (dateFrom),
+ * em vez de depender de um limite fixo de linhas -- correcao do R2 para a
+ * janela de 6 meses poder ser truncada por volume, nao por data.
+ *
+ * Constroi o Date a partir de componentes locais (nunca parse de string
+ * "YYYY-MM-DD"), mesma tecnica ja usada em monthKey/AgendaPage.toLocalDateKey/
+ * projectFormUtils.formatProjectDate -- sem risco de deslocamento de dia em
+ * fusos negativos. A normalizacao de mes negativo (virada de ano) e feita
+ * pelo proprio construtor `Date` do JavaScript, que aceita mes fora de
+ * 0-11 e ajusta o ano automaticamente.
+ */
+export function calcReportsWindowStart(referenceDate = new Date(), monthsBack = 6) {
+  const year = referenceDate.getFullYear();
+  const month = referenceDate.getMonth();
+  const startDate = new Date(year, month - (monthsBack - 1), 1);
+
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${startDate.getFullYear()}-${pad(startDate.getMonth() + 1)}-01`;
 }
 
 /** Agregacao final consumida pelo hook -- orquestra as funcoes acima. */

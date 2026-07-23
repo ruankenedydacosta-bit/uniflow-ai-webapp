@@ -4,7 +4,7 @@ import { useTransactions } from './useTransactions.js';
 import { useFinancialBalances } from './useFinancialBalances.js';
 import { useGoals } from '../features/goals/useGoals.js';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../services/financialDataEvents.js';
-import { buildReportsSnapshot } from '../pages/relatorios/reportsCalculations.js';
+import { buildReportsSnapshot, calcReportsWindowStart } from '../pages/relatorios/reportsCalculations.js';
 
 /**
  * Orquestra apenas dados ja existentes (useTransactions/useFinancialBalances/
@@ -17,12 +17,24 @@ export function useReports({ monthsBack = 6 } = {}) {
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
 
+  // R2: pede ao banco somente transacoes completed (mesmo criterio ja
+  // usado pelo Dashboard em useHomeFinancialData.js) e o periodo completo
+  // de `monthsBack` meses via dateFrom -- nunca depende do `limit` padrao
+  // de useTransactions (50, no maximo 100), que podia truncar a janela em
+  // workspaces com maior volume. dateFrom fixo por render (so recalcula se
+  // monthsBack mudar) -- mesma tecnica de "referencia congelada" ja usada
+  // em AgendaPage.jsx/FuturePage.jsx.
+  const dateFrom = useMemo(
+    () => calcReportsWindowStart(new Date(), monthsBack),
+    [monthsBack],
+  );
+
   const {
     transactions,
     isLoading: transactionsLoading,
     error: transactionsError,
     refresh: refreshTransactions,
-  } = useTransactions({ workspaceId });
+  } = useTransactions({ workspaceId, status: 'completed', dateFrom });
 
   const {
     workspaceBalance,

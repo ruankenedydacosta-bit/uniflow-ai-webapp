@@ -9,6 +9,7 @@ import {
   calcMonthlyAverages,
   calcMonthlySeries,
   calcPercentChange,
+  calcReportsWindowStart,
 } from './reportsCalculations.js';
 
 // --- calcMonthlySeries ---------------------------------------------------
@@ -86,6 +87,120 @@ test('calcMonthlySeries protege contra amount invalido (NaN vira 0)', () => {
     { transaction_type: 'income', amount: 'abc', transaction_date: '2026-01-01' },
   ]);
   assert.equal(series[0].income, 0);
+});
+
+// --- calcMonthlySeries: filtro de status (R2) -----------------------------
+
+test('calcMonthlySeries: transacao completed de income entra no total', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'income', amount: 1000, transaction_date: '2026-01-01', status: 'completed' },
+  ]);
+  assert.equal(series[0].income, 1000);
+});
+
+test('calcMonthlySeries: transacao completed de expense entra no total', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'expense', amount: 400, transaction_date: '2026-01-01', status: 'completed' },
+  ]);
+  assert.equal(series[0].expense, 400);
+});
+
+test('calcMonthlySeries: transacao pending de income NAO entra no total', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'income', amount: 1000, transaction_date: '2026-01-01', status: 'pending' },
+  ]);
+  assert.deepEqual(series, []);
+});
+
+test('calcMonthlySeries: transacao pending de expense NAO entra no total', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'expense', amount: 400, transaction_date: '2026-01-01', status: 'pending' },
+  ]);
+  assert.deepEqual(series, []);
+});
+
+test('calcMonthlySeries: transacao canceled NAO entra no total', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'income', amount: 1000, transaction_date: '2026-01-01', status: 'canceled' },
+  ]);
+  assert.deepEqual(series, []);
+});
+
+test('calcMonthlySeries: transacao failed NAO entra no total', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'expense', amount: 400, transaction_date: '2026-01-01', status: 'failed' },
+  ]);
+  assert.deepEqual(series, []);
+});
+
+test('calcMonthlySeries: transfer completed continua nao entrando em income nem expense', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'transfer', amount: 500, transaction_date: '2026-01-01', status: 'completed' },
+  ]);
+  assert.equal(series[0].income, 0);
+  assert.equal(series[0].expense, 0);
+});
+
+test('calcMonthlySeries: adjustment completed continua nao entrando em income nem expense', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'adjustment', amount: 500, transaction_date: '2026-01-01', status: 'completed' },
+  ]);
+  assert.equal(series[0].income, 0);
+  assert.equal(series[0].expense, 0);
+});
+
+test('calcMonthlySeries: status ausente (fixture antiga) continua contando, para nao quebrar dados sem o campo', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'income', amount: 1000, transaction_date: '2026-01-01' },
+  ]);
+  assert.equal(series[0].income, 1000);
+});
+
+test('calcMonthlySeries: mistura de status no mesmo mes -- soma so completed/sem status', () => {
+  const series = calcMonthlySeries([
+    { transaction_type: 'income', amount: 1000, transaction_date: '2026-01-05', status: 'completed' },
+    { transaction_type: 'income', amount: 5000, transaction_date: '2026-01-10', status: 'pending' },
+    { transaction_type: 'expense', amount: 200, transaction_date: '2026-01-15', status: 'canceled' },
+    { transaction_type: 'expense', amount: 300, transaction_date: '2026-01-20', status: 'failed' },
+  ]);
+  assert.equal(series[0].income, 1000);
+  assert.equal(series[0].expense, 0);
+});
+
+// --- calcReportsWindowStart (R2) -------------------------------------------
+
+test('calcReportsWindowStart: julho/2026 com monthsBack=6 comeca em fevereiro/2026', () => {
+  const reference = new Date(2026, 6, 15); // 15 de julho de 2026
+  assert.equal(calcReportsWindowStart(reference, 6), '2026-02-01');
+});
+
+test('calcReportsWindowStart: mes atual (julho) esta incluido na janela (fev..jul = 6 meses)', () => {
+  const reference = new Date(2026, 6, 1);
+  const start = calcReportsWindowStart(reference, 6);
+  const [year, month] = start.split('-').map(Number);
+  const monthsInWindow = (reference.getFullYear() - year) * 12 + (reference.getMonth() - (month - 1)) + 1;
+  assert.equal(monthsInWindow, 6);
+});
+
+test('calcReportsWindowStart: virada de ano -- janeiro/2026 com monthsBack=6 comeca em agosto/2025', () => {
+  const reference = new Date(2026, 0, 10); // 10 de janeiro de 2026
+  assert.equal(calcReportsWindowStart(reference, 6), '2025-08-01');
+});
+
+test('calcReportsWindowStart: janeiro nao quebra com monthsBack=1 (janela de 1 mes = o proprio mes)', () => {
+  const reference = new Date(2026, 0, 31);
+  assert.equal(calcReportsWindowStart(reference, 1), '2026-01-01');
+});
+
+test('calcReportsWindowStart: sempre retorna o dia 01 do mes inicial', () => {
+  const reference = new Date(2026, 3, 27);
+  const start = calcReportsWindowStart(reference, 3);
+  assert.match(start, /-01$/);
+});
+
+test('calcReportsWindowStart: deterministico para a mesma entrada', () => {
+  const reference = new Date(2026, 4, 20);
+  assert.equal(calcReportsWindowStart(reference, 6), calcReportsWindowStart(reference, 6));
 });
 
 // --- calcMonthlyAverages ---------------------------------------------------

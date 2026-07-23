@@ -175,7 +175,7 @@ test('useReports nao importa nenhum service novo', async () => {
 
 test('useReports nao contem logica matematica propria -- delega a buildReportsSnapshot', async () => {
   const hook = await source('../hooks/useReports.js');
-  assert.match(hook, /import \{ buildReportsSnapshot \} from '\.\.\/pages\/relatorios\/reportsCalculations\.js';/);
+  assert.match(hook, /import \{ buildReportsSnapshot, calcReportsWindowStart \} from '\.\.\/pages\/relatorios\/reportsCalculations\.js';/);
   assert.doesNotMatch(hook, /function calc[A-Z]/);
   assert.doesNotMatch(hook, /\.reduce\(/);
 });
