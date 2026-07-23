@@ -13,3 +13,5 @@ export {
   buildChartData,
 } from './futureCalculations';
 export { SCENARIOS, SCENARIO_CONFIG, HORIZONS, GOAL_FEASIBILITY } from './futureConstants';
+export { buildFutureSimulation, normalizeFutureSimulationOverrides } from './futureSimulation';
+export { useFutureSimulation } from './useFutureSimulation';
