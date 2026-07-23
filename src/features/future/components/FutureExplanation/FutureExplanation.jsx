@@ -45,6 +45,7 @@ export default function FutureExplanation({
           <strong className={styles.cardTitle}>Premissas</strong>
           <ul className={styles.assumptions}>
             <li>Receitas e despesas futuras seguem a média do período analisado</li>
+            <li>Lançamentos marcados como recorrentes ainda não são adicionados automaticamente aos meses futuros</li>
             <li>Não consideramos inflação, juros ou variações sazonais</li>
             <li>A contribuição das metas é descontada do fluxo mensal disponível</li>
             <li>Os percentuais de ajuste dos cenários são fixos e configuráveis</li>
