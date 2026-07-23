@@ -39,3 +39,11 @@ test('nunca produz NaN ou Infinity no texto', () => {
   const text = buildComparisonTooltipText({ label: 'Mês 2', realValue: NaN, simulatedValue: Infinity });
   assert.doesNotMatch(text, /NaN|Infinity/);
 });
+
+// F5.6: ruido de ponto flutuante (< 1 centavo) nao pode aparecer como
+// "Diferença: -R$ 0,00" — a propria UI mostraria R$ 0,00 de qualquer forma.
+test('diferenca de ruido de ponto flutuante nao aparece como "-R$ 0,00"', () => {
+  const text = buildComparisonTooltipText({ label: 'Mês 2', realValue: 1000, simulatedValue: 1000.0000000001 });
+  assert.match(text, /Diferença: R\$\s*0,00/);
+  assert.doesNotMatch(text, /Diferença: -/);
+});

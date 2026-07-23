@@ -23,8 +23,12 @@ export function buildComparisonTooltipText(point) {
 
   if (hasBothValues) {
     const diff = point.simulatedValue - point.realValue;
-    const sign = diff > 0 ? '+' : '';
-    lines.push(`Diferença: ${sign}${formatCurrency(diff)}`);
+    // F5.6: sinal decidido pelo valor arredondado a centavos — evita
+    // "Diferença: -R$ 0,00" quando o resíduo é apenas ruído de ponto
+    // flutuante (a UI já mostraria R$ 0,00 de qualquer forma).
+    const roundedToCents = Math.round(diff * 100) / 100;
+    const diffText = roundedToCents === 0 ? formatCurrency(0) : `${roundedToCents > 0 ? '+' : ''}${formatCurrency(diff)}`;
+    lines.push(`Diferença: ${diffText}`);
   }
 
   return lines.join('\n');

@@ -43,6 +43,18 @@ test('valores iguais -> delta 0 e direction unchanged', () => {
   assert.equal(result.scenarios[0].finalBalance.direction, 'unchanged');
 });
 
+// F5.6: robustez — ruído de ponto flutuante abaixo de 1 centavo não pode
+// virar "higher"/"lower" (o texto contradiria o valor exibido, que arredonda
+// para R$ 0,00). O campo `delta` bruto continua preservado, só `direction`
+// usa a versão arredondada.
+test('diferenca de ruido de ponto flutuante (< 1 centavo) nao vira "higher"/"lower"', () => {
+  const real = baseProjections({ scenarioProjections: { likely: { projectedBalance: 1000, monthlyResult: 100, hasData: true } }, availableScenarios: ['likely'] });
+  const simulated = baseProjections({ scenarioProjections: { likely: { projectedBalance: 1000 + 0.0000000001, monthlyResult: 100, hasData: true } }, availableScenarios: ['likely'] });
+  const result = buildFutureComparison({ realProjections: real, simulatedProjections: simulated, selectedHorizon: 6 });
+  assert.equal(result.scenarios[0].finalBalance.direction, 'unchanged');
+  assert.ok(result.scenarios[0].finalBalance.delta !== 0);
+});
+
 test('real negativo e simulado menos negativo (melhora, sinais preservados)', () => {
   const real = baseProjections({ scenarioProjections: { likely: { projectedBalance: -2000, monthlyResult: -100, hasData: true } }, availableScenarios: ['likely'] });
   const simulated = baseProjections({ scenarioProjections: { likely: { projectedBalance: -500, monthlyResult: -100, hasData: true } }, availableScenarios: ['likely'] });

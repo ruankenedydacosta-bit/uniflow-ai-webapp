@@ -47,6 +47,28 @@ test('formatSignedPercent: NaN/Infinity nunca aparecem no texto', () => {
   assert.equal(formatSignedPercent(Infinity), 'Não disponível');
 });
 
+// F5.6: robustez visual — ruído de ponto flutuante nunca vira "-R$ 0,00" ou
+// "-0.0%" (sinal negativo para algo que a própria UI mostra como zero).
+test('formatSignedCurrency: ruido negativo minusculo nao vira "-R$ 0,00"', () => {
+  assert.equal(formatSignedCurrency(-0.001), 'R$ 0,00');
+});
+
+test('formatSignedCurrency: -0 exato nao vira "-R$ 0,00"', () => {
+  assert.equal(formatSignedCurrency(-0), 'R$ 0,00');
+});
+
+test('formatSignedPercent: ruido negativo minusculo nao vira "-0.0%"', () => {
+  assert.equal(formatSignedPercent(-0.001), '0.0%');
+});
+
+test('formatSignedPercent: -0 exato nao vira "-0.0%"', () => {
+  assert.equal(formatSignedPercent(-0), '0.0%');
+});
+
+test('formatSignedPercent: zero positivo continua sem sinal', () => {
+  assert.equal(formatSignedPercent(0), '0.0%');
+});
+
 test('directionLabel: higher/lower/unchanged mapeiam para texto neutro', () => {
   assert.equal(directionLabel('higher'), 'Resultado simulado maior');
   assert.equal(directionLabel('lower'), 'Resultado simulado menor');

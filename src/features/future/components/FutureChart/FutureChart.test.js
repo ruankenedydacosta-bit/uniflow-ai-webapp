@@ -83,3 +83,13 @@ test('scaleX trata o caso de um unico ponto sem dividir por zero', async () => {
   const content = await source('FutureChart.jsx');
   assert.match(content, /if \(maxIdx === 0\) return MARGIN\.left;/);
 });
+
+// ============================================================================
+// F5.6 — aria-label/title nao pode dizer "tres cenarios" em modo comparacao
+// ============================================================================
+
+test('aria-label e title do svg mudam em modo comparacao (nao mencionam "tres cenarios")', async () => {
+  const content = await source('FutureChart.jsx');
+  assert.match(content, /isComparing\s*\n\s*\? 'Gráfico comparando a evolução do saldo projetado real e simulado'/);
+  assert.match(content, /<title>\{isComparing \? '[^']+' : '[^']+'\}<\/title>/);
+});

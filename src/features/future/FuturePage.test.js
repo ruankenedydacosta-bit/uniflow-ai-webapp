@@ -112,6 +112,32 @@ test('o card textual de comparacao (F5.4) continua intacto apos a integracao gra
 });
 
 // ============================================================================
+// F5.6 — polimento: ordem visual e aviso de dados simulados
+// ============================================================================
+
+test('FutureComparisonCard aparece depois do FutureChart (perto do que ela resume), nao antes do resumo/grafico', async () => {
+  const page = await source('FuturePage.jsx');
+  const chartIndex = page.indexOf('<FutureChart');
+  const cardIndex = page.indexOf('<FutureComparisonCard');
+  assert.ok(chartIndex >= 0 && cardIndex >= 0);
+  assert.ok(cardIndex > chartIndex, 'FutureComparisonCard deve vir depois de FutureChart');
+});
+
+test('aviso de dados simulados so aparece quando simulation.isActive, cobrindo resumo/grafico/cenarios/metas', async () => {
+  const page = await source('FuturePage.jsx');
+  assert.match(page, /\{simulation\.isActive && \(\s*\n\s*<p className=\{styles\.simulationDataNotice\} role="status">/);
+  assert.match(page, /refletem a simulação ativa, não seus dados reais\./);
+});
+
+test('aviso de dados simulados vem antes do FutureSummary (primeiro elemento do bloco com dados)', async () => {
+  const page = await source('FuturePage.jsx');
+  const noticeIndex = page.indexOf('simulationDataNotice');
+  const summaryIndex = page.indexOf('<FutureSummary');
+  assert.ok(noticeIndex >= 0 && summaryIndex >= 0);
+  assert.ok(noticeIndex < summaryIndex);
+});
+
+// ============================================================================
 // Integração com useFutureSimulation (F5.2) — sem duplicar o motor
 // ============================================================================
 

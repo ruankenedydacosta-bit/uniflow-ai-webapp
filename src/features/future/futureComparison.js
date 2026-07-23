@@ -20,12 +20,18 @@ function buildMetricComparison(real, simulated) {
   const rawPercentDelta = real !== 0 ? (delta / Math.abs(real)) * 100 : null;
   const percentDelta = isSafeFiniteNumber(rawPercentDelta) ? rawPercentDelta : null;
 
+  // F5.6: direction usa o delta arredondado a centavos, não o delta bruto.
+  // Sem isso, ruído de ponto flutuante (ex.: 999.9999999999999 vs 1000)
+  // podia rotular como "maior"/"menor" uma diferença que a própria UI
+  // exibe como R$ 0,00 — mensagem contraditória entre o texto e o número.
+  const roundedDelta = Math.round(delta * 100) / 100;
+
   return {
     real,
     simulated,
     delta,
     percentDelta,
-    direction: delta > 0 ? 'higher' : delta < 0 ? 'lower' : 'unchanged',
+    direction: roundedDelta > 0 ? 'higher' : roundedDelta < 0 ? 'lower' : 'unchanged',
   };
 }
 

@@ -171,10 +171,14 @@ export default function FutureChart({
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           className={styles.svg}
           role="img"
-          aria-label="Gráfico de evolução do saldo projetado em três cenários"
+          aria-label={
+            isComparing
+              ? 'Gráfico comparando a evolução do saldo projetado real e simulado'
+              : 'Gráfico de evolução do saldo projetado em três cenários'
+          }
           style={{ width: '100%', height: 'auto' }}
         >
-          <title>Evolução do saldo projetado</title>
+          <title>{isComparing ? 'Evolução do saldo: real × simulado' : 'Evolução do saldo projetado'}</title>
 
           <line
             x1={MARGIN.left}

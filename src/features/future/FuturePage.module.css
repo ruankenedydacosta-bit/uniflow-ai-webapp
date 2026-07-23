@@ -109,3 +109,9 @@
   display: flex;
   justify-content: flex-end;
 }
+
+.simulationDataNotice {
+  font-size: var(--uf-text-micro-size);
+  color: var(--uf-color-text-tertiary);
+  text-align: center;
+}

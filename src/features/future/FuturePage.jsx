@@ -150,8 +150,6 @@ export default function FuturePage() {
         </div>
       )}
 
-      <FutureComparisonCard comparison={comparison} />
-
       {!hasData ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>📊</div>
@@ -163,6 +161,12 @@ export default function FuturePage() {
         </div>
       ) : (
         <>
+          {simulation.isActive && (
+            <p className={styles.simulationDataNotice} role="status">
+              Os valores abaixo (resumo, gráfico, cenários e metas) refletem a simulação ativa, não seus dados reais.
+            </p>
+          )}
+
           <FutureSummary
             scenarioProjection={scenarioProjections[selectedScenario]}
             goalSummary={goalSummary}
@@ -177,6 +181,8 @@ export default function FuturePage() {
             hasData={hasData}
             comparisonSeries={chartComparison}
           />
+
+          <FutureComparisonCard comparison={comparison} />
 
           <FutureScenarios
             scenarioProjections={scenarioProjections}
