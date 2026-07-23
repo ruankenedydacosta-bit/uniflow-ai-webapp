@@ -69,10 +69,16 @@ test('MobileAppShell recebe onAction=handleShellAction (mobile)', async () => {
 
 test('AppShell (desktop) recebe onSignOut/isSigningOut/signOutError -- signOut centralizado em AuthenticatedLayout, nunca em AppShell/Topbar/Sidebar', async () => {
   const content = await source('AuthenticatedLayout.jsx');
-  assert.match(
-    content,
-    /return <AppShell title=\{title\} onSignOut=\{handleSignOut\} isSigningOut=\{isSigningOut\} signOutError=\{signOutError\}>\{children\}<\/AppShell>;/,
-  );
+  const fnBody = content.slice(content.indexOf('if (!isMobile) {'), content.indexOf('const effectiveWorkspaceType'));
+  assert.match(fnBody, /<AppShell\s*\n\s*title=\{title\}\s*\n\s*profileName=\{profileName\}\s*\n\s*onSignOut=\{handleSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*signOutError=\{signOutError\}\s*\n\s*>/);
+});
+
+test('AppShell (desktop) recebe o mesmo profileName (profile.full_name, com fallback "UniFlow") ja usado pelo Avatar mobile -- fonte unica, sem busca duplicada', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /const profileName = profile\?\.full_name \?\? 'UniFlow';/);
+  // Uma unica ocorrencia da expressao: mobile e desktop reaproveitam a mesma variavel.
+  const occurrences = content.match(/profile\?\.full_name \?\? 'UniFlow'/g) ?? [];
+  assert.equal(occurrences.length, 1);
 });
 
 test('nenhum componente visual (AppShell/Topbar/Sidebar/MobileAppShell/MoreMenu) importa SessionContext diretamente', async () => {
@@ -96,7 +102,7 @@ test('nenhum componente visual (AppShell/Topbar/Sidebar/MobileAppShell/MoreMenu)
 test('renderiza somente um shell por viewport (AppShell OU MobileAppShell, nunca os dois)', async () => {
   const content = await source('AuthenticatedLayout.jsx');
   assert.match(content, /if \(!isMobile\)/);
-  assert.equal((content.match(/<AppShell /g) ?? []).length, 1);
+  assert.equal((content.match(/<AppShell\b/g) ?? []).length, 1);
   assert.equal((content.match(/<MobileAppShell/g) ?? []).length, 1);
 });
 

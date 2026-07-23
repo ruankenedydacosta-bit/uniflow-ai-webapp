@@ -4,7 +4,13 @@ import Button from '../../ui/Button';
 import AccessModeSwitcher from '../../dev/AccessModeSwitcher';
 import styles from './Topbar.module.css';
 
-function Topbar({ title, onSignOut = () => {}, isSigningOut = false, signOutError = null }) {
+function Topbar({
+  title,
+  profileName = 'UniFlow',
+  onSignOut = () => {},
+  isSigningOut = false,
+  signOutError = null,
+}) {
   return (
     <header className={styles.topbar}>
       <div className={styles.heading}>
@@ -21,7 +27,7 @@ function Topbar({ title, onSignOut = () => {}, isSigningOut = false, signOutErro
           </span>
         ) : null}
         <AccessModeSwitcher />
-        <Avatar name="UniFlow Demo" size="sm" status="online" />
+        <Avatar name={profileName} size="sm" status="online" />
         <Button
           variant="ghost"
           size="sm"

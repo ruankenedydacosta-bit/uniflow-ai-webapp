@@ -134,3 +134,15 @@ test('MobileHomeView só recorre ao mock para quickActions estáticos (navegaç�
     assert.equal(field, 'quickActions', `uso não documentado do mock: homeMobileMock.${field}`);
   }
 });
+
+// ============================================================================
+// FIX1 -- card "Seu próximo passo" usa texto UTF-8 real, nunca escapes \u crus
+// ============================================================================
+
+test('card "Seu próximo passo" (desktop) exibe acentuação real em UTF-8, nunca escapes \\uXXXX crus em JSX', async () => {
+  const content = await source('DashboardPage.jsx');
+  assert.match(content, /<h3>Seu próximo passo<\/h3>/);
+  assert.match(content, /<p>Uma ação suficiente para avançar sem aumentar a carga mental\.<\/p>/);
+  // JSX nao interpreta escapes \uXXXX em texto: precisa ser char UTF-8 real.
+  assert.doesNotMatch(content, /\\u00[0-9A-Fa-f]{2}/);
+});

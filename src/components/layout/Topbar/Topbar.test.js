@@ -16,7 +16,10 @@ test('Topbar renderiza um botao real de logout (componente Button, semanticament
 
 test('botao de logout chama onSignOut recebido por prop -- Topbar nunca chama signOut/Supabase diretamente', async () => {
   const content = await source('Topbar.jsx');
-  assert.match(content, /function Topbar\(\{ title, onSignOut = \(\) => \{\}, isSigningOut = false, signOutError = null \}\)/);
+  assert.match(
+    content,
+    /function Topbar\(\{\s*\n\s*title,\s*\n\s*profileName = 'UniFlow',\s*\n\s*onSignOut = \(\) => \{\},\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*\}\)/,
+  );
   assert.doesNotMatch(content, /signOut\s*\(|supabase|SessionContext/i);
 });
 
@@ -46,8 +49,22 @@ test('titulo e badge "Uni ativa" continuam intactos', async () => {
   assert.match(content, /<h1 className=\{styles\.title\}>\{title\}<\/h1>/);
 });
 
-test('AccessModeSwitcher e Avatar continuam renderizados sem alteracao', async () => {
+test('AccessModeSwitcher continua renderizado sem alteracao', async () => {
   const content = await source('Topbar.jsx');
   assert.match(content, /<AccessModeSwitcher \/>/);
-  assert.match(content, /<Avatar name="UniFlow Demo" size="sm" status="online" \/>/);
+});
+
+// ============================================================================
+// FIX1 -- Avatar exibe o nome real do perfil autenticado, nunca "UniFlow Demo"
+// ============================================================================
+
+test('Avatar usa profileName recebido por prop (perfil real), com fallback seguro "UniFlow" -- nunca hardcoded "UniFlow Demo"', async () => {
+  const content = await source('Topbar.jsx');
+  assert.match(content, /<Avatar name=\{profileName\} size="sm" status="online" \/>/);
+  assert.doesNotMatch(content, /UniFlow Demo/);
+});
+
+test('profileName tem um default seguro (Topbar nao quebra se usado sem a prop)', async () => {
+  const content = await source('Topbar.jsx');
+  assert.match(content, /profileName = 'UniFlow',/);
 });

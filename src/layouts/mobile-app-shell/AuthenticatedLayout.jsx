@@ -75,13 +75,24 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
     }
   }
 
+  const profileName = profile?.full_name ?? 'UniFlow';
+
   if (!isMobile) {
-    return <AppShell title={title} onSignOut={handleSignOut} isSigningOut={isSigningOut} signOutError={signOutError}>{children}</AppShell>;
+    return (
+      <AppShell
+        title={title}
+        profileName={profileName}
+        onSignOut={handleSignOut}
+        isSigningOut={isSigningOut}
+        signOutError={signOutError}
+      >
+        {children}
+      </AppShell>
+    );
   }
 
   const effectiveWorkspaceType = selectedWorkspaceType ?? workspace?.workspace_type ?? access.currentWorkspace;
   const workspaceLabel = WORKSPACE_LABELS[effectiveWorkspaceType] ?? 'Espaço atual';
-  const profileName = profile?.full_name ?? 'UniFlow';
   const activeContext = effectiveWorkspaceType === 'business' ? 'PJ' : 'PF';
   const selectedWorkspaceExists = availableWorkspaceTypes.includes(effectiveWorkspaceType);
   const workspaceMatchesSelection = workspace?.workspace_type === effectiveWorkspaceType;

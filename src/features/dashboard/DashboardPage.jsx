@@ -120,8 +120,8 @@ function DashboardPage() {
         <Card variant="outline" padding="lg" className={styles.nextStepCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h3>Seu pr\u00F3ximo passo</h3>
-              <p>Uma a\u00E7\u00E3o suficiente para avan\u00E7ar sem aumentar a carga mental.</p>
+              <h3>Seu próximo passo</h3>
+              <p>Uma ação suficiente para avançar sem aumentar a carga mental.</p>
             </div>
             <Badge variant="glass" size="sm" dot>
               Uni
