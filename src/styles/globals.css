@@ -23,7 +23,11 @@
 ---------------------------------------------------------------------------- */
 html{
   font-size: 16px; /* base de acessibilidade — nunca reduzir (docx) */
-  color-scheme: dark; /* fundo escuro é o padrão do produto, não alternativo */
+  /* color-scheme segue o tema ativo: --uf-color-scheme é redefinido por
+     data-theme em theme.css (light no Claro; dark no Escuro e no UniFlow).
+     Fallback "light" cobre o tema padrão Claro antes de qualquer data-theme
+     ser aplicado, evitando controles nativos escuros num app claro. */
+  color-scheme: var(--uf-color-scheme, light);
   scroll-behavior: smooth;
 }
 

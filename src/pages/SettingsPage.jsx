@@ -5,6 +5,7 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { cx } from '../utils/cx';
+import { ThemeSelector } from '../features/theme';
 import { settingsMock } from './configuracoes/settings.mock.js';
 import styles from './SettingsPage.module.css';
 
@@ -100,6 +101,10 @@ function SettingsPage() {
             })}
           </div>
         </Card>
+      </section>
+
+      <section aria-label="Aparência">
+        <ThemeSelector />
       </section>
 
       <section className={styles.preferencesGrid} aria-label="Preferências da UniFlow">

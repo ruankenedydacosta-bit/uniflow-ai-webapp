@@ -10,9 +10,8 @@
      1) PRIMITIVOS   --uf-{escala}-{step}   → paleta crua, nunca usada direto
      2) SEMÂNTICOS   --uf-color-{papel}     → o que os componentes consomem
 
-   Isso existe para permitir, no futuro, um Modo Claro completo trocando
-   apenas a camada semântica (ver bloco [data-theme="light"] ao final),
-   sem tocar em nenhum componente da aplicação.
+   O Theme System V1 troca apenas a camada semântica por data-theme,
+   sem exigir mudanças nos componentes que já consomem os tokens --uf-*.
 
    PERSONALIDADE DA MARCA (ler antes de alterar qualquer valor):
    A Uni nunca deve parecer banco, ERP, planilha ou dashboard frio.
@@ -50,6 +49,7 @@
   --uf-blue-300: #7CA8F9;
   --uf-blue-400: #4B87F4;
   --uf-blue-500: #2566EA;
+  --uf-blue-electric: #2563EB;
   --uf-blue-600: #104ED8; /* BRAND — azul primário oficial (docx) */
   --uf-blue-700: #1D4EDB; /* BRAND — "Azul Profundo" (brandbook), usado como hover/active */
   --uf-blue-800: #15379E;
@@ -152,6 +152,7 @@
   --uf-color-text-primary:   var(--uf-white);   /* BRAND — texto principal */
   --uf-color-text-secondary: var(--uf-gray-400);
   --uf-color-text-tertiary:  var(--uf-gray-500);
+  --uf-color-text-muted:     var(--uf-color-text-tertiary);
   --uf-color-text-disabled:  var(--uf-gray-600);
   --uf-color-text-inverse:   var(--uf-gray-900); /* texto sobre superfícies claras/coloridas */
   --uf-color-text-brand:     var(--uf-blue-600);
@@ -162,6 +163,7 @@
   --uf-color-border-default: rgba(255,255,255,.09);
   --uf-color-border-strong:  rgba(255,255,255,.16);
   --uf-color-divider:        rgba(255,255,255,.06);
+  --uf-color-overlay:        rgba(2,4,10,.8);
 
   /* --- Primária (ações, links, elementos ativos) --- */
   --uf-color-primary:        var(--uf-blue-600);
@@ -304,6 +306,8 @@
   --uf-shadow-sm: 0 2px 8px -2px rgba(var(--uf-shadow-color), .35);
   --uf-shadow-md: 0 12px 28px -8px rgba(var(--uf-shadow-color), .45);
   --uf-shadow-lg: 0 30px 70px -20px rgba(var(--uf-shadow-color), .6);
+  --uf-shadow-card: var(--uf-shadow-md);
+  --uf-shadow-elevated: var(--uf-shadow-lg);
 
   --uf-shadow-glow-color: 124, 58, 237; /* roxo IA por padrão */
   --uf-shadow-glow-ai:
@@ -461,7 +465,7 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
 ============================================================================ */
 *{
   scrollbar-width: thin;
-  scrollbar-color: var(--uf-gray-700) transparent;
+  scrollbar-color: var(--uf-color-scrollbar-thumb, var(--uf-gray-700)) transparent;
 }
 *::-webkit-scrollbar{
   width: 10px;
@@ -471,12 +475,12 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
   background: transparent;
 }
 *::-webkit-scrollbar-thumb{
-  background-color: var(--uf-gray-700);
+  background-color: var(--uf-color-scrollbar-thumb, var(--uf-gray-700));
   border-radius: var(--uf-radius-full);
   border: 2px solid var(--uf-color-bg-canvas);
 }
 *::-webkit-scrollbar-thumb:hover{
-  background-color: var(--uf-gray-600);
+  background-color: var(--uf-color-scrollbar-thumb-hover, var(--uf-gray-600));
 }
 
 
@@ -542,32 +546,162 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
 
 
 /* ============================================================================
-   17. MODO CLARO (FUTURO) — ESQUELETO
-   Não solicitado em profundidade agora; deixado pronto para quando entrar
-   em pauta, exatamente como o docx prevê ("Modo Claro (futuro)"). Trocar
-   apenas os tokens semânticos abaixo já é suficiente para os componentes
-   se adaptarem, desde que nenhum componente use um --uf-{escala}-{step}
-   primitivo diretamente.
+   17. THEME SYSTEM V1 — SOMENTE TOKENS SEMÂNTICOS
+   :root é Claro para novos usuários. "Sistema" nunca vira uma paleta:
+   o provider resolve essa preferência para light ou dark antes de aplicar.
 ============================================================================ */
-/*
+:root,
 [data-theme="light"]{
-  --uf-color-bg-canvas:        var(--uf-gray-50);
+  /* controles nativos claros (inputs date/select, autofill, scrollbar do SO) */
+  --uf-color-scheme: light;
+  /* scrollbar coerente com fundo claro (thumb neutro sobre canvas claro) */
+  --uf-color-scrollbar-thumb:       var(--uf-gray-300);
+  --uf-color-scrollbar-thumb-hover: var(--uf-gray-400);
+  --uf-color-bg-canvas:        #F5F7FB;
   --uf-color-bg-surface:       var(--uf-white);
-  --uf-color-bg-surface-hover: var(--uf-gray-100);
+  --uf-color-bg-surface-hover: #F0F3F8;
   --uf-color-bg-elevated:      var(--uf-white);
-  --uf-color-bg-sunken:        var(--uf-gray-100);
+  --uf-color-bg-sunken:        #E9EDF5;
 
-  --uf-color-text-primary:   var(--uf-gray-900);
-  --uf-color-text-secondary: var(--uf-gray-600);
-  --uf-color-text-tertiary:  var(--uf-gray-500);
+  --uf-color-text-primary:   #111827;
+  --uf-color-text-secondary: #4B5563;
+  --uf-color-text-tertiary:  #6B7280;
+  --uf-color-text-disabled:  #9CA3AF;
   --uf-color-text-inverse:   var(--uf-white);
+  --uf-color-text-brand:     #1D4ED8;
+  --uf-color-text-ai:        #6D28D9;
 
-  --uf-color-border-subtle:  rgba(15,23,42,.06);
-  --uf-color-border-default: rgba(15,23,42,.1);
-  --uf-color-border-strong:  rgba(15,23,42,.18);
-  --uf-color-divider:        rgba(15,23,42,.06);
+  --uf-color-border-subtle:  rgba(15,23,42,.07);
+  --uf-color-border-default: rgba(15,23,42,.11);
+  --uf-color-border-strong:  rgba(15,23,42,.2);
+  --uf-color-divider:        rgba(15,23,42,.08);
+  --uf-color-overlay:        rgba(15,23,42,.5);
 
-  --uf-glass-bg:        rgba(255,255,255,.65);
-  --uf-glass-bg-strong: rgba(255,255,255,.85);
+  --uf-color-primary:        var(--uf-blue-electric);
+  --uf-color-primary-hover:  #1D4ED8;
+  --uf-color-primary-active: #1E40AF;
+  --uf-color-primary-subtle: rgba(37,99,235,.1);
+
+  --uf-color-ai:        var(--uf-purple-600);
+  --uf-color-ai-hover:  var(--uf-purple-700);
+  --uf-color-ai-active: var(--uf-purple-800);
+  --uf-color-ai-subtle: rgba(124,58,237,.09);
+
+  --uf-focus-ring-color: rgba(37,99,235,.55);
+  --uf-shadow-color: 15, 23, 42;
+  --uf-shadow-sm: 0 2px 8px -3px rgba(var(--uf-shadow-color), .12);
+  --uf-shadow-md: 0 14px 32px -16px rgba(var(--uf-shadow-color), .2);
+  --uf-shadow-lg: 0 28px 60px -24px rgba(var(--uf-shadow-color), .3);
+  --uf-shadow-glow-ai: 0 8px 26px -12px rgba(109,40,217,.28);
+
+  --uf-glass-bg:          rgba(255,255,255,.72);
+  --uf-glass-bg-strong:   rgba(255,255,255,.9);
+  --uf-glass-border:      var(--uf-color-border-default);
+  --uf-gradient-brand: linear-gradient(100deg, #2563EB 0%, #7C3AED 58%, #10B981 100%);
+  --uf-gradient-ai: linear-gradient(135deg, #2563EB, #7C3AED);
+  --uf-gradient-mesh-1: none;
+  --uf-gradient-mesh-2: none;
+  --uf-gradient-mesh-3: none;
 }
-*/
+
+[data-theme="dark"]{
+  --uf-color-scheme: dark;
+  --uf-color-scrollbar-thumb:       var(--uf-gray-700);
+  --uf-color-scrollbar-thumb-hover: var(--uf-gray-600);
+  --uf-color-bg-canvas:        #111318;
+  --uf-color-bg-surface:       #191C22;
+  --uf-color-bg-surface-hover: #20242C;
+  --uf-color-bg-elevated:      #242831;
+  --uf-color-bg-sunken:        #0D0F13;
+
+  --uf-color-text-primary:   #F4F5F7;
+  --uf-color-text-secondary: #B0B5BF;
+  --uf-color-text-tertiary:  #858C98;
+  --uf-color-text-disabled:  #626A76;
+  --uf-color-text-inverse:   #111318;
+  --uf-color-text-brand:     #8BADEF;
+  --uf-color-text-ai:        #B39AE0;
+
+  --uf-color-border-subtle:  rgba(255,255,255,.06);
+  --uf-color-border-default: rgba(255,255,255,.1);
+  --uf-color-border-strong:  rgba(255,255,255,.17);
+  --uf-color-divider:        rgba(255,255,255,.07);
+  --uf-color-overlay:        rgba(5,7,12,.74);
+
+  --uf-color-primary:        #5B8DEF;
+  --uf-color-primary-hover:  #76A0F1;
+  --uf-color-primary-active: #4676D4;
+  --uf-color-primary-subtle: rgba(91,141,239,.12);
+
+  --uf-color-ai:        #846EB0;
+  --uf-color-ai-hover:  #967FC2;
+  --uf-color-ai-active: #705A99;
+  --uf-color-ai-subtle: rgba(132,110,176,.12);
+
+  --uf-focus-ring-color: rgba(91,141,239,.62);
+  --uf-shadow-color: 0, 0, 0;
+  --uf-shadow-glow-ai: 0 8px 26px -12px rgba(132,110,176,.3);
+
+  --uf-glass-bg:          rgba(25,28,34,.76);
+  --uf-glass-bg-strong:   rgba(25,28,34,.92);
+  --uf-glass-border:      var(--uf-color-border-default);
+  --uf-gradient-brand: linear-gradient(100deg, #5B8DEF, #846EB0);
+  --uf-gradient-ai: linear-gradient(135deg, #5B8DEF, #846EB0);
+  --uf-gradient-mesh-1: none;
+  --uf-gradient-mesh-2: none;
+  --uf-gradient-mesh-3: none;
+}
+
+[data-theme="uniflow"]{
+  --uf-color-scheme: dark;
+  --uf-color-scrollbar-thumb:       var(--uf-gray-700);
+  --uf-color-scrollbar-thumb-hover: var(--uf-gray-600);
+  --uf-color-bg-canvas:        var(--uf-gray-950);
+  --uf-color-bg-surface:       var(--uf-gray-900);
+  --uf-color-bg-surface-hover: var(--uf-gray-850);
+  --uf-color-bg-elevated:      var(--uf-gray-800);
+  --uf-color-bg-sunken:        #02040A;
+
+  --uf-color-text-primary:   var(--uf-white);
+  --uf-color-text-secondary: var(--uf-gray-400);
+  --uf-color-text-tertiary:  var(--uf-gray-500);
+  --uf-color-text-disabled:  var(--uf-gray-600);
+  --uf-color-text-inverse:   var(--uf-gray-900);
+  --uf-color-text-brand:     var(--uf-blue-electric);
+  --uf-color-text-ai:        var(--uf-purple-600);
+
+  --uf-color-border-subtle:  rgba(255,255,255,.06);
+  --uf-color-border-default: rgba(255,255,255,.09);
+  --uf-color-border-strong:  rgba(255,255,255,.16);
+  --uf-color-divider:        rgba(255,255,255,.06);
+  --uf-color-overlay:        rgba(2,4,10,.8);
+
+  --uf-color-primary:        var(--uf-blue-electric);
+  --uf-color-primary-hover:  var(--uf-blue-700);
+  --uf-color-primary-active: var(--uf-blue-800);
+  --uf-color-primary-subtle: rgba(37,99,235,.12);
+
+  --uf-color-ai:        var(--uf-purple-600);
+  --uf-color-ai-hover:  var(--uf-purple-700);
+  --uf-color-ai-active: var(--uf-purple-800);
+  --uf-color-ai-subtle: rgba(124,58,237,.12);
+
+  --uf-focus-ring-color: rgba(37,99,235,.58);
+  --uf-shadow-color: 2, 6, 20;
+  --uf-shadow-sm: 0 2px 8px -2px rgba(var(--uf-shadow-color), .35);
+  --uf-shadow-md: 0 12px 28px -8px rgba(var(--uf-shadow-color), .45);
+  --uf-shadow-lg: 0 30px 70px -20px rgba(var(--uf-shadow-color), .6);
+  --uf-shadow-glow-ai:
+    0 0 0 1px rgba(255,255,255,.03) inset,
+    0 8px 30px -6px rgba(37,99,235,.35),
+    0 4px 20px -4px rgba(124,58,237,.45);
+
+  --uf-glass-bg:          rgba(15,23,42,.6);
+  --uf-glass-bg-strong:   rgba(15,23,42,.8);
+  --uf-glass-border:      var(--uf-color-border-default);
+  --uf-gradient-brand: linear-gradient(100deg, #2563EB 0%, #7C3AED 55%, #10B981 100%);
+  --uf-gradient-ai: linear-gradient(135deg, #2563EB, #7C3AED);
+  --uf-gradient-mesh-1: radial-gradient(circle at 20% 15%, rgba(37,99,235,.28), transparent 55%);
+  --uf-gradient-mesh-2: radial-gradient(circle at 85% 85%, rgba(124,58,237,.22), transparent 55%);
+  --uf-gradient-mesh-3: radial-gradient(circle at 45% 45%, rgba(16,185,129,.12), transparent 55%);
+}
