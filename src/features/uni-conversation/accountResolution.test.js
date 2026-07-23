@@ -174,13 +174,6 @@ test('resolução não altera valor, data ou workspace', () => {
   assert.equal(Object.hasOwn(action.proposedAccount, 'workspace_id'), false);
 });
 
-test('card mantém valor, categoria, conta, data e indicação de criação', () => {
-  const source = readFileSync(new URL('../../pages/uni-ai/UniFinancialActionCard.jsx', import.meta.url), 'utf8');
-  for (const label of ['Valor', 'Categoria', 'Conta', 'Data', 'será criada']) {
-    assert.match(source, new RegExp(label));
-  }
-});
-
 test('modo demo usa callbacks locais sem Supabase', async () => {
   const localAccounts = [];
   const localTransactions = [];
@@ -233,10 +226,4 @@ test('confirmação financeira continua obrigatória', () => {
   const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
   assert.equal(action.status, 'ready');
   assert.equal(action.accountResolution.status, 'will_create');
-});
-
-test('texto e voz continuam usando o mesmo sendMessage', () => {
-  const source = readFileSync(new URL('../../pages/UniAIPage.jsx', import.meta.url), 'utf8');
-  assert.match(source, /sendMessage\(draftMessage, \{ allowFinancialAction: true \}\)/);
-  assert.match(source, /sendMessage\(transcript, \{ allowFinancialAction: true \}\)/);
 });

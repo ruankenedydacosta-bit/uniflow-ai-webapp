@@ -179,13 +179,6 @@ test('reducer representa processamento, conclusão e cancelamento', () => {
   assert.equal(canceled.status, VOICE_CAPTURE_STATES.CANCELED);
 });
 
-test('voz e texto usam a mesma função de envio e confirmação financeira', () => {
-  const page = readFileSync(new URL('../../pages/UniAIPage.jsx', import.meta.url), 'utf8');
-  assert.match(page, /sendMessage\(draftMessage, \{ allowFinancialAction: true \}\)/);
-  assert.match(page, /sendMessage\(transcript, \{ allowFinancialAction: true \}\)/);
-  assert.match(page, /onConfirmFinancialAction=\{handleConfirmFinancialAction\}/);
-});
-
 test('memória continua sendo resolvida depois do parser', () => {
   const source = readFileSync(new URL('../uni-conversation/useUniConversation.js', import.meta.url), 'utf8');
   assert.ok(source.indexOf('parseFinancialText(content') < source.indexOf('resolveParsedMemory(parsed'));

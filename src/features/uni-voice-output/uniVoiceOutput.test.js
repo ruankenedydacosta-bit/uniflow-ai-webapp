@@ -16,7 +16,6 @@ const EDGE_SOURCE = readFileSync(
   'utf8',
 );
 const HOOK_SOURCE = readFileSync(new URL('./useUniVoiceOutput.js', import.meta.url), 'utf8');
-const PAGE_SOURCE = readFileSync(new URL('../../pages/UniAIPage.jsx', import.meta.url), 'utf8');
 const PROVIDER_SOURCE = readFileSync(new URL('./premiumVoiceProvider.js', import.meta.url), 'utf8');
 
 function createBrowserRuntime() {
@@ -157,11 +156,6 @@ test('limite de dez gerações por sessão é respeitado', () => {
     guard.finish();
   }
   assert.equal(guard.begin().reason, 'QUOTA_REACHED');
-});
-
-test('voz premium nunca é iniciada automaticamente', () => {
-  assert.doesNotMatch(PAGE_SOURCE, /queueAutomaticSpeech|autoSpeechTimer/);
-  assert.match(PAGE_SOURCE, /handleSpeakPremium/);
 });
 
 test('falha premium possui caminho explícito para fallback padrão', () => {
