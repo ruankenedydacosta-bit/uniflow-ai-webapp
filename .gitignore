@@ -29,3 +29,6 @@ dist-ssr
 *.sw?
 
 claude-prototype/
+
+# Graphify generated artifacts (cache, snapshots, regenerable reports)
+graphify-out/
