@@ -81,6 +81,13 @@
   margin-top: var(--uf-space-20);
 }
 
+.demoNote {
+  margin-top: var(--uf-space-12);
+  color: var(--uf-color-text-tertiary);
+  font-size: var(--uf-text-micro-size);
+  line-height: var(--uf-text-micro-lh);
+}
+
 .primaryAction,
 .secondaryAction {
   min-height: var(--uf-tap-target-min);

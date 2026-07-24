@@ -66,7 +66,11 @@ test('cada opcao fecha o menu antes/ao executar a acao (closeAnd), nunca deixa o
 test('cabecalho do painel mostra nome/e-mail/contexto reais recebidos por prop, nunca dado fictício', async () => {
   const content = await source('AccountMenu.jsx');
   assert.match(content, /\{profileEmail \? <span className=\{styles\.profileEmail\}>\{profileEmail\}<\/span> : null\}/);
-  assert.doesNotMatch(content, /UniFlow Demo/);
+  // Recorte a partir da funcao (fora do comentario JSDoc do topo, que cita
+  // "UniFlow Demo" só como contexto histórico da UX3) -- garante que o texto
+  // fictício nunca aparece no JSX renderizado, não em prosa de comentário.
+  const componentBody = content.slice(content.indexOf('function AccountMenu'));
+  assert.doesNotMatch(componentBody, /UniFlow Demo/);
 });
 
 test('props tem defaults seguros (AccountMenu nao quebra se usado sem elas)', async () => {

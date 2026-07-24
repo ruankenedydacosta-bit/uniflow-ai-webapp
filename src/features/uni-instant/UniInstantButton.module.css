@@ -62,11 +62,13 @@
   bottom: calc(100% + var(--uf-space-8));
   left: 50%;
   z-index: 3;
+  margin: 0;
   padding: var(--uf-space-4) var(--uf-space-8);
   border: 1px solid var(--uf-color-border-default);
   border-radius: var(--uf-radius-8);
   background: var(--uf-color-bg-elevated);
   color: var(--uf-color-text-primary);
+  font: inherit;
   font-size: var(--uf-text-micro-size);
   font-weight: var(--uf-font-weight-semibold);
   opacity: 0;
@@ -74,15 +76,40 @@
   transform: translateX(-50%) translateY(4px);
   transition: opacity 160ms ease, transform 160ms ease;
   white-space: nowrap;
+  cursor: default;
 }
 
 .holdHint[data-visible='true'] {
   opacity: 1;
+  pointer-events: auto;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Dica de primeiro uso (ainda nao descoberta): mesmo elemento, agora um
+   <button> dispensavel, com um leve pulso de destaque para chamar atenção
+   sem depender só de animação (o texto já comunica sozinho). */
+button.holdHint[data-first-use='true'] {
+  cursor: pointer;
+  border-color: var(--uf-color-ai);
+}
+
+button.holdHint[data-first-use='true']:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+button.holdHint[data-first-use='true'][data-visible='true'] {
+  animation: uni-hint-pulse 1800ms ease-in-out infinite;
+}
+
+@keyframes uni-hint-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(124 58 237 / 35%); }
+  50% { box-shadow: 0 0 0 4px rgb(124 58 237 / 0%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .uniButton,
   .holdHint { transition: none; }
   .uniButton[data-gesture='holding'] { transform: none; }
+  button.holdHint[data-first-use='true'][data-visible='true'] { animation: none; }
 }

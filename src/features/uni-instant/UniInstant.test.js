@@ -3,6 +3,11 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { CANCEL_DRAG_PX, HOLD_THRESHOLD_MS } from './usePressAndHold.js';
 import { resolveUniInstantContext } from './uniInstantContext.js';
+import {
+  UNI_VOICE_HINT_STORAGE_KEY,
+  readUniVoiceHintSeen,
+  writeUniVoiceHintSeen,
+} from './uniVoiceHintStorage.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -142,4 +147,119 @@ test('reduced motion e ausencia de voz IA backend e HTTP sao preservados', async
   const contents = files.join('\n');
   assert.match(contents, /prefers-reduced-motion: reduce/);
   assert.doesNotMatch(contents, /fetch\s*\(|https?:\/\/|getUserMedia|SpeechRecognition|speechSynthesis|OpenAI|ElevenLabs|Supabase/i);
+});
+
+// ============================================================================
+// UX4 -- descoberta e feedback do gesto de segurar o botao Uni para falar.
+// Problema confirmado na UX1: o gesto existia mas nao tinha indicacao visual
+// clara em repouso, entao dificilmente seria descoberto pelo usuario.
+// ============================================================================
+
+test('indicação "Segure para falar" fica visivel em repouso (idle) e enquanto pressiona, nao so durante o hold', async () => {
+  const button = await source('./UniInstantButton.jsx');
+  assert.match(button, /const HINT_VISIBLE_PHASES = new Set\(\['idle', 'pressing', 'listening'\]\);/);
+  assert.match(button, /const hintVisible = HINT_VISIBLE_PHASES\.has\(phase\);/);
+  assert.match(button, /Segure para falar/);
+});
+
+test('estado de captura mostra "Ouvindo…" enquanto o gesto de hold esta ativo', async () => {
+  const button = await source('./UniInstantButton.jsx');
+  assert.match(button, /const isListening = phase === 'listening';/);
+  assert.match(button, /const hintText = isListening \? 'Ouvindo…' : 'Segure para falar';/);
+});
+
+test('"Ouvindo…" e anunciavel para leitor de tela (role="status"/aria-live), a dica em repouso e apenas decorativa (aria-hidden)', async () => {
+  const button = await source('./UniInstantButton.jsx');
+  assert.match(button, /role=\{isListening \? 'status' : undefined\}/);
+  assert.match(button, /aria-live=\{isListening \? 'polite' : undefined\}/);
+  assert.match(button, /aria-hidden=\{isListening \? undefined : 'true'\}/);
+});
+
+test('affordance permanente nunca depende so de animacao -- e texto real, nao so a onda/glow', async () => {
+  const button = await source('./UniInstantButton.jsx');
+  assert.doesNotMatch(button, /holdHint[\s\S]{0,40}aria-hidden="true"[\s\S]{0,10}\/>/);
+  assert.match(button, />\s*\{hintText\}\s*</);
+});
+
+test('dica de primeiro uso e o mesmo elemento da indicacao permanente (sem duplicar texto em dois lugares)', async () => {
+  const button = await source('./UniInstantButton.jsx');
+  assert.match(button, /const showFirstUseHint = !hintSeen && !isListening;/);
+  assert.match(button, /className=\{styles\.holdHint\}\s*\n\s*data-visible=\{hintVisible\}\s*\n\s*data-first-use="true"/);
+});
+
+test('dica de primeiro uso e persistida via localStorage com chave versionada, nunca no Supabase', async () => {
+  assert.equal(UNI_VOICE_HINT_STORAGE_KEY, 'uniflow.uni-voice-hint.v1.seen');
+  const storage = await source('./uniVoiceHintStorage.js');
+  assert.doesNotMatch(storage, /supabase|fetch\s*\(|https?:\/\//i);
+});
+
+test('leitura/escrita da dica de primeiro uso nunca lanca excecao se o storage falhar (modo privado, quota, etc.)', () => {
+  const throwingStorage = {
+    getItem() { throw new Error('storage indisponível'); },
+    setItem() { throw new Error('storage indisponível'); },
+  };
+  assert.doesNotThrow(() => readUniVoiceHintSeen(throwingStorage));
+  assert.equal(readUniVoiceHintSeen(throwingStorage), false);
+  assert.doesNotThrow(() => writeUniVoiceHintSeen(throwingStorage));
+});
+
+test('leitura da dica de primeiro uso sem storage disponivel (null) retorna false com seguranca', () => {
+  assert.equal(readUniVoiceHintSeen(null), false);
+});
+
+test('escrita marca a chave como vista, e a leitura seguinte reflete isso (mesmo storage em memoria)', () => {
+  const memory = new Map();
+  const fakeStorage = {
+    getItem: (key) => (memory.has(key) ? memory.get(key) : null),
+    setItem: (key, value) => memory.set(key, value),
+  };
+  assert.equal(readUniVoiceHintSeen(fakeStorage), false);
+  writeUniVoiceHintSeen(fakeStorage);
+  assert.equal(readUniVoiceHintSeen(fakeStorage), true);
+});
+
+test('long press marca a dica como vista (handleHoldStart marca antes de delegar ao onHoldStart original)', async () => {
+  const button = await source('./UniInstantButton.jsx');
+  const fnBody = button.slice(button.indexOf('const handleHoldStart'), button.indexOf('const handleHoldStart') + 200);
+  assert.match(fnBody, /markHintSeen\(\);/);
+  assert.match(fnBody, /onHoldStart\?\.\(\);/);
+});
+
+test('dica de primeiro uso e dispensavel (botao real com onClick), nunca depende so de hover/tooltip', async () => {
+  const button = await source('./UniInstantButton.jsx');
+  assert.match(button, /<button\s*\n\s*type="button"\s*\n\s*className=\{styles\.holdHint\}/);
+  assert.match(button, /onClick=\{markHintSeen\}/);
+  assert.doesNotMatch(button, /:hover/);
+});
+
+test('teclado nunca simula long press -- Enter/Espaço sempre resolve como toque (abre a Uni), mesmo segurado', async () => {
+  const gesture = await source('./usePressAndHold.js');
+  const fnBody = gesture.slice(gesture.indexOf('const begin = useCallback'), gesture.indexOf('const finish = useCallback'));
+  assert.match(fnBody, /if \(source !== 'pointer'\) return;/);
+});
+
+test('affordance permanente nao fica na barra inferior nem sobrepoe o toque no botao Uni (posicionada acima, absoluta)', async () => {
+  const css = await source('./UniInstantButton.module.css');
+  assert.match(css, /\.holdHint \{[\s\S]*?position: absolute;[\s\S]*?bottom: calc\(100% \+ var\(--uf-space-8\)\);/);
+});
+
+test('pulso de destaque do primeiro uso e desabilitado com prefers-reduced-motion', async () => {
+  const css = await source('./UniInstantButton.module.css');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?button\.holdHint\[data-first-use='true'\]\[data-visible='true'\] \{ animation: none; \}/);
+});
+
+test('resultado deixa explícito que é demonstração -- nunca afirma que uma acao real foi salva/paga/executada', async () => {
+  const card = await source('./UniInstantResultCard.jsx');
+  assert.match(card, /Demonstração — a Uni ainda não ouve sua voz de verdade nem executa ações reais\./);
+  assert.match(card, /const showDemoNote = state !== 'processing'/);
+});
+
+test('nota de demonstracao nao duplica quando a mensagem ja diz "simulação" (pos-confirmacao)', async () => {
+  const card = await source('./UniInstantResultCard.jsx');
+  assert.match(card, /!\(message \?\? ''\)\.toLowerCase\(\)\.includes\('simulação'\)/);
+});
+
+test('nenhum texto tecnico como mockData exposto ao usuario (aparece so como parametro interno, nunca em string visivel)', async () => {
+  const card = await source('./UniInstantResultCard.jsx');
+  assert.doesNotMatch(card, /mockData/);
 });

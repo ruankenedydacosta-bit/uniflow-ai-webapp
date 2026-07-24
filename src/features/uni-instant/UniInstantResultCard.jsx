@@ -15,6 +15,11 @@ export default function UniInstantResultCard({
 }) {
   const cardRef = useRef(null);
   const critical = state === 'confirmation' && confirmationRequired;
+  // UX4: transparencia do mock -- transcricao/resposta simuladas nunca podem
+  // parecer uma captura de voz real concluida nem uma acao ja executada.
+  // Omitida quando a mensagem ja deixa isso explicito (pos-confirmacao),
+  // para nao repetir a mesma informacao duas vezes.
+  const showDemoNote = state !== 'processing' && !(message ?? '').toLowerCase().includes('simulação');
 
   useEffect(() => {
     const card = cardRef.current;
@@ -103,6 +108,12 @@ export default function UniInstantResultCard({
               <button type="button" className={styles.secondaryAction} onClick={onClose}>Fechar</button>
             </div>
           </>
+        ) : null}
+
+        {showDemoNote ? (
+          <p className={styles.demoNote}>
+            Demonstração — a Uni ainda não ouve sua voz de verdade nem executa ações reais.
+          </p>
         ) : null}
       </section>
     </div>,

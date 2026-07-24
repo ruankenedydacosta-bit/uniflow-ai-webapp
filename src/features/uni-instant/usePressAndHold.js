@@ -30,6 +30,12 @@ export default function usePressAndHold({
     sourceRef.current = source;
     pressingRef.current = true;
     setGestureState('pressing');
+    // Teclado nunca simula long press (UX4): segurar Enter/Espaço sempre
+    // resolve como toque ao soltar a tecla, por mais tempo que fique
+    // pressionada -- a acao principal por teclado continua sendo abrir a
+    // Uni, sem um comportamento de captura de voz confuso e sem paralelo
+    // visual (o gesto de segurar so faz sentido como toque prolongado real).
+    if (source !== 'pointer') return;
     timerRef.current = setTimeout(() => {
       pressingRef.current = false;
       holdingRef.current = true;
