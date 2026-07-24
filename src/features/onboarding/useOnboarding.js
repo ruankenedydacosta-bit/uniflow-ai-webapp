@@ -16,6 +16,7 @@ export function useOnboarding() {
   const completingRef = useRef(false);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
 
