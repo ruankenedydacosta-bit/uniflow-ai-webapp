@@ -1,0 +1,95 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSession } from '../../app/SessionContext.jsx';
+import { isSupabaseConfigured } from '../../services/supabaseClient.js';
+import {
+  listNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from './notificationsService.js';
+import { countUnread } from './notificationFormatting.js';
+
+const EMPTY_LIST = [];
+
+/**
+ * Fonte única de contagem e lista de notificações -- usada tanto pelo sino
+ * desktop (Topbar) quanto pelo painel mobile, sem estado duplicado. Chave
+ * exclusivamente pelo `user.id` da sessão (nunca por workspaceId sozinho):
+ * ao trocar/perder o usuário (logout, novo login), a lista é sempre
+ * recarregada do zero -- nunca preserva notificações do usuário anterior.
+ */
+export function useNotifications() {
+  const { user, workspace } = useSession();
+  const userId = user?.id ?? null;
+  const workspaceId = workspace?.id ?? null;
+
+  const [notifications, setNotifications] = useState(EMPTY_LIST);
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [error, setError] = useState(null);
+  const requestIdRef = useRef(0);
+
+  const refresh = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+
+    if (!isSupabaseConfigured || !userId) {
+      setNotifications(EMPTY_LIST);
+      setError(null);
+      setIsLoading(false);
+      return null;
+    }
+
+    setIsLoading(true);
+    const result = await listNotifications(userId, { workspaceId });
+
+    if (requestId !== requestIdRef.current) return null;
+
+    setNotifications(result.data ?? EMPTY_LIST);
+    setError(result.error);
+    setIsLoading(false);
+    return result;
+  }, [userId, workspaceId]);
+
+  useEffect(() => {
+    // Troca/perda de usuário invalida qualquer requisição em andamento do
+    // usuário anterior -- a resposta tardia dela nunca sobrescreve o estado
+    // do usuário novo. setTimeout(0) evita setState sincrono dentro do
+    // efeito (mesmo padrao de useGoals.js).
+    requestIdRef.current += 1;
+    const timeoutId = window.setTimeout(() => refresh(), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [refresh]);
+
+  const markAsRead = useCallback(async (notificationId) => {
+    if (!isSupabaseConfigured || !userId) return null;
+
+    const result = await markNotificationAsRead(userId, notificationId);
+    if (!result.error) {
+      setNotifications((current) => current.map((n) => (
+        n.id === notificationId ? { ...n, read_at: result.data?.read_at ?? new Date().toISOString() } : n
+      )));
+    }
+    return result;
+  }, [userId]);
+
+  const markAllAsRead = useCallback(async () => {
+    if (!isSupabaseConfigured || !userId) return null;
+
+    const result = await markAllNotificationsAsRead(userId, { workspaceId });
+    if (!result.error) {
+      const readAt = new Date().toISOString();
+      setNotifications((current) => current.map((n) => (
+        n.read_at ? n : { ...n, read_at: readAt }
+      )));
+    }
+    return result;
+  }, [userId, workspaceId]);
+
+  return {
+    notifications,
+    unreadCount: countUnread(notifications),
+    isLoading,
+    error,
+    refresh,
+    markAsRead,
+    markAllAsRead,
+  };
+}

@@ -1,5 +1,6 @@
 import Badge from '../../ui/Badge';
 import AccessModeSwitcher from '../../dev/AccessModeSwitcher';
+import NotificationBell from '../../../features/notifications/NotificationBell.jsx';
 import AccountMenu from './AccountMenu.jsx';
 import styles from './Topbar.module.css';
 
@@ -30,6 +31,7 @@ function Topbar({
           </span>
         ) : null}
         <AccessModeSwitcher />
+        <NotificationBell />
         <AccountMenu
           profileName={profileName}
           profileEmail={profileEmail}

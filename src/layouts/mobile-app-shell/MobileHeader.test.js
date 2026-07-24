@@ -35,3 +35,22 @@ test('displayName usa o subtitle recebido integralmente, sem truncar "Espaço Pe
   assert.match(content, /const displayName = subtitle \|\| title \|\| 'UniFlow';/);
   assert.doesNotMatch(content, /'Empresa'|'Pessoal'/);
 });
+
+// ============================================================================
+// NOTIF1 -- sino mobile passa a refletir dados reais (notificationCount) e a
+// abrir o painel de fato (onBellPress), em vez do estado estatico
+// "permission-pending" sem nenhum handler.
+// ============================================================================
+
+test('MobileHeader aceita notificationCount/onBellPress e deriva o estado do sino a partir da contagem real', async () => {
+  const content = await source('MobileHeader.jsx');
+  assert.match(content, /function MobileHeader\(\{[\s\S]*?notificationCount = 0,[\s\S]*?onBellPress,[\s\S]*?\}\)/);
+  assert.match(content, /notificationState=\{notificationCount > 0 \? 'unread' : 'none'\}/);
+  assert.match(content, /notificationCount=\{notificationCount\}/);
+  assert.match(content, /onBellPress=\{onBellPress\}/);
+});
+
+test('nao usa mais o estado estatico "permission-pending" sem handler', async () => {
+  const content = await source('MobileHeader.jsx');
+  assert.doesNotMatch(content, /permission-pending/);
+});

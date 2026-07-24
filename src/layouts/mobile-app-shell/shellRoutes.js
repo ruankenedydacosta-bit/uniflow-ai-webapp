@@ -41,10 +41,11 @@ export const MORE_MENU_ROUTES = deepFreeze([
   { id: 'categories', label: 'Categorias', icon: '▦', group: 'product', path: '/categorias', moduleId: MODULE_IDS.CATEGORIAS },
   { id: 'open-finance', label: 'Open Finance', icon: '⇄', group: 'product', path: '/open-finance', moduleId: MODULE_IDS.OPEN_FINANCE },
   { id: 'reports', label: 'Relatórios', icon: '▥', group: 'product', path: '/relatorios', moduleId: MODULE_IDS.RELATORIOS },
-  // comingSoon: true -- ainda sem funcionalidade real (achado P0 da UX1:
-  // eram clicaveis sem nenhuma acao). Sem `path` nem `action`: MoreMenu
-  // renderiza como item desabilitado, nunca chama onNavigate/onAction.
-  { id: 'notifications', label: 'Notificações', icon: '!', group: 'product', comingSoon: true },
+  // NOTIF1: primeira versao funcional -- abre o mesmo painel de
+  // notificacoes do sino no header (handleShellAction em
+  // AuthenticatedLayout.jsx), reaproveitando useNotifications/Modal, sem
+  // logica paralela. Suporte permanece comingSoon (fora de escopo).
+  { id: 'notifications', label: 'Notificações', icon: '!', group: 'product', action: 'open-notifications' },
   { id: 'support', label: 'Suporte', icon: '?', group: 'product', comingSoon: true },
   { id: 'sign-out', label: 'Sair', icon: '↪', group: 'session', action: 'sign-out', destructive: true },
 ]);

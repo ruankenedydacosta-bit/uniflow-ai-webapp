@@ -11,7 +11,10 @@ import {
 } from '../../app/workspaceContextHintStorage.js';
 import AppShell from '../../components/layout/AppShell/index.js';
 import Avatar from '../../components/ui/Avatar/index.js';
+import Modal from '../../components/ui/Modal/Modal.jsx';
 import WorkspaceContextNotice from '../../components/workspace/WorkspaceContextNotice.jsx';
+import NotificationsPanel from '../../features/notifications/NotificationsPanel.jsx';
+import { useNotifications } from '../../features/notifications/useNotifications.js';
 import MobileAppShell from './MobileAppShell.jsx';
 import styles from './MobileAppShell.module.css';
 import { useMobileViewport } from './useMobileViewport.js';
@@ -62,6 +65,19 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
 
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState(null);
+  // NOTIF1: painel de notificacoes mobile (Modal reaproveitado, mesmo
+  // componente do sino desktop) -- aberto pelo sino do header ou pelo item
+  // "Notificacoes" do menu Mais, ambos chamando o mesmo handler.
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const {
+    notifications,
+    unreadCount,
+    isLoading: isNotificationsLoading,
+    error: notificationsError,
+    refresh: refreshNotifications,
+    markAsRead: markNotificationAsRead,
+    markAllAsRead: markAllNotificationsAsRead,
+  } = useNotifications();
   // Trava sincrona contra chamadas concorrentes de signOut (duplo toque no
   // mobile antes do menu fechar, ou duplo clique no botao desktop) --
   // mesmo padrao de mutationRef ja usado em useClients.js/useAgenda.js/
@@ -96,12 +112,15 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
     // ja redireciona automaticamente -- nenhuma race condition introduzida.
   };
 
-  // notifications/support permanecem sem efeito nesta fase -- ignorados
-  // explicitamente, sem lancar erro (fora do escopo da CFG2, que trata
-  // somente do logout).
+  // support permanece sem efeito nesta fase -- ignorado explicitamente, sem
+  // lancar erro (fora do escopo da NOTIF1).
   function handleShellAction(action) {
     if (action === 'sign-out') {
       void handleSignOut();
+      return;
+    }
+    if (action === 'open-notifications') {
+      setIsNotificationsOpen(true);
     }
   }
 
@@ -293,12 +312,34 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
         contextMessage: workspaceSwitchError?.message
           ?? (missingWorkspaceType ? missingProfileMessage : null),
         isContextLoading: isSwitchingWorkspace,
+        notificationCount: unreadCount,
         // Corrige o clique morto do avatar mobile (achado P0 da UX1): nesta
         // fase apenas navega para Configuracoes, sem bottom sheet/pagina nova.
         onAvatarPress: () => navigate('/configuracoes'),
+        onBellPress: () => setIsNotificationsOpen(true),
         onContextChange: handleContextChange,
       }}
     >
+      <Modal
+        open={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        title="Notificações"
+        size="sm"
+      >
+        <NotificationsPanel
+          notifications={notifications}
+          isLoading={isNotificationsLoading}
+          error={notificationsError}
+          unreadCount={unreadCount}
+          onMarkAsRead={markNotificationAsRead}
+          onMarkAllAsRead={markAllNotificationsAsRead}
+          onRetry={refreshNotifications}
+          onNavigate={(url) => {
+            setIsNotificationsOpen(false);
+            navigate(url);
+          }}
+        />
+      </Modal>
       {contextNotice}
       {shouldHidePreviousWorkspace ? (
         <section className={styles.workspaceContextState} role="status" aria-live="polite">

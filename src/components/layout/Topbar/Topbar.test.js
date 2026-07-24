@@ -61,3 +61,13 @@ test('nunca renderiza o nome fictício "UniFlow Demo" (identidade agora e respon
   const content = await source('Topbar.jsx');
   assert.doesNotMatch(content, /UniFlow Demo/);
 });
+
+// ============================================================================
+// NOTIF1 -- sino de notificações desktop, autocontido (sem props threading).
+// ============================================================================
+
+test('Topbar renderiza o NotificationBell entre AccessModeSwitcher e AccountMenu, sem repassar props (autocontido)', async () => {
+  const content = await source('Topbar.jsx');
+  assert.match(content, /import NotificationBell from '\.\.\/\.\.\/\.\.\/features\/notifications\/NotificationBell\.jsx';/);
+  assert.match(content, /<AccessModeSwitcher \/>\s*\n\s*<NotificationBell \/>\s*\n\s*<AccountMenu/);
+});

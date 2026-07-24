@@ -15,7 +15,9 @@ function MobileHeader({
   contextLocked = false,
   contextMessage,
   isContextLoading = false,
+  notificationCount = 0,
   onAvatarPress,
+  onBellPress,
   onContextChange,
   title,
   subtitle,
@@ -37,8 +39,10 @@ function MobileHeader({
       contextLocked={contextLocked}
       contextMessage={contextMessage}
       isContextLoading={isContextLoading}
-      notificationState="permission-pending"
+      notificationState={notificationCount > 0 ? 'unread' : 'none'}
+      notificationCount={notificationCount}
       onAvatarPress={onAvatarPress}
+      onBellPress={onBellPress}
       onContextChange={onContextChange}
     />
   );

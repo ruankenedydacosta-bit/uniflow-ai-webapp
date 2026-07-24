@@ -50,15 +50,21 @@ test('Clientes/CRM/Projetos nao estao duplicados em nenhum outro grupo do menu m
 });
 
 // ============================================================================
-// UX2 -- Notificações/Suporte: itens comingSoon, nunca navegam nem executam
-// handler vazio (achado P0 da UX1: eram cliques mortos sem feedback).
+// UX2/NOTIF1 -- Suporte permanece comingSoon (nunca navega nem executa
+// handler vazio, achado P0 da UX1: eram cliques mortos sem feedback).
+// Notificações passou a ser uma acao real (NOTIF1): abre o painel
+// compartilhado com o sino desktop via handleShellAction, nunca comingSoon.
 // ============================================================================
 
-test('Notificações e Suporte sao itens comingSoon, sem path nem action (nunca navegam nem disparam handler)', () => {
+test('Notificações e uma acao real (open-notifications), nunca comingSoon nem clique morto', () => {
   const byId = Object.fromEntries(MORE_MENU_ROUTES.map((item) => [item.id, item]));
-  assert.equal(byId.notifications.comingSoon, true);
+  assert.equal(byId.notifications.comingSoon, undefined);
   assert.equal(byId.notifications.path, undefined);
-  assert.equal(byId.notifications.action, undefined);
+  assert.equal(byId.notifications.action, 'open-notifications');
+});
+
+test('Suporte continua comingSoon, sem path nem action (nunca navega nem dispara handler)', () => {
+  const byId = Object.fromEntries(MORE_MENU_ROUTES.map((item) => [item.id, item]));
   assert.equal(byId.support.comingSoon, true);
   assert.equal(byId.support.path, undefined);
   assert.equal(byId.support.action, undefined);

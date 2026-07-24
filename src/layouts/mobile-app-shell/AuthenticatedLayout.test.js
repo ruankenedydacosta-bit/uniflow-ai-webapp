@@ -32,7 +32,7 @@ test('handleSignOut usa uma trava sincrona (signOutRef) contra chamadas concorre
 
 test('handleSignOut trata erro do resultado sem lancar excecao e mantem o usuario autenticado (sem logout otimista)', async () => {
   const content = await source('AuthenticatedLayout.jsx');
-  const fnBody = content.slice(content.indexOf('const handleSignOut = async'), content.indexOf('// notifications/support'));
+  const fnBody = content.slice(content.indexOf('const handleSignOut = async'), content.indexOf('// support permanece'));
   assert.match(fnBody, /const result = await signOut\(\);/);
   assert.match(fnBody, /if \(result\?\.error\) \{\s*\n\s*setSignOutError\(result\.error\);/);
   assert.match(fnBody, /\} catch \{/);
@@ -45,20 +45,18 @@ test('handleSignOut nao navega manualmente -- depende do guard de autenticacao e
   assert.match(content, /o guard de autenticacao existente em App\.jsx/);
 });
 
-test('handleShellAction roteia exatamente a acao sign-out para handleSignOut, sem implementar autenticacao em MoreMenu', async () => {
+test('handleShellAction roteia exatamente sign-out para handleSignOut e open-notifications para o painel, sem implementar autenticacao em MoreMenu', async () => {
   const content = await source('AuthenticatedLayout.jsx');
-  assert.match(
-    content,
-    /function handleShellAction\(action\) \{\s*\n\s*if \(action === 'sign-out'\) \{\s*\n\s*void handleSignOut\(\);\s*\n\s*\}\s*\n\s*\}/,
-  );
+  const fnBody = content.slice(content.indexOf('function handleShellAction'), content.indexOf('const profileName'));
+  assert.match(fnBody, /if \(action === 'sign-out'\) \{\s*\n\s*void handleSignOut\(\);\s*\n\s*return;\s*\n\s*\}/);
+  assert.match(fnBody, /if \(action === 'open-notifications'\) \{\s*\n\s*setIsNotificationsOpen\(true\);\s*\n\s*\}/);
 });
 
-test('outras acoes do shell (notifications/support) permanecem sem efeito, sem lancar erro', async () => {
+test('acao do shell "support" permanece sem efeito, sem lancar erro', async () => {
   const content = await source('AuthenticatedLayout.jsx');
-  const fnBody = content.slice(content.indexOf('function handleShellAction'), content.indexOf('if (!isMobile)'));
-  // Somente 'sign-out' e tratado explicitamente; qualquer outra acao cai no
-  // no-op implicito do if sem branch alternativo -- nunca lanca excecao.
-  assert.match(fnBody, /if \(action === 'sign-out'\) \{/);
+  const fnBody = content.slice(content.indexOf('function handleShellAction'), content.indexOf('const profileName'));
+  // 'sign-out' e 'open-notifications' sao tratados explicitamente; qualquer
+  // outra acao (ex.: 'support') cai no no-op implicito -- nunca lanca excecao.
   assert.doesNotMatch(fnBody, /throw /);
 });
 

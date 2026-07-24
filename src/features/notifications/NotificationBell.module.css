@@ -1,0 +1,48 @@
+.trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--uf-space-40);
+  height: var(--uf-space-40);
+  padding: 0;
+  border: none;
+  border-radius: var(--uf-radius-full, 999px);
+  background: transparent;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: var(--uf-color-primary-subtle);
+}
+
+.trigger:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.bellIcon {
+  width: var(--uf-space-20);
+  height: var(--uf-space-20);
+  border: 2px solid var(--uf-color-text-secondary);
+  border-bottom: none;
+  border-radius: var(--uf-space-10) var(--uf-space-10) 0 0;
+}
+
+.badge {
+  position: absolute;
+  top: var(--uf-space-4);
+  right: var(--uf-space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--uf-space-16);
+  height: var(--uf-space-16);
+  padding: 0 var(--uf-space-4);
+  border-radius: var(--uf-radius-full, 999px);
+  background: var(--uf-color-danger);
+  color: var(--uf-color-text-inverse, #fff);
+  font-size: 10px;
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: 1;
+}

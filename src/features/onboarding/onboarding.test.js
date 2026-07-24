@@ -380,6 +380,24 @@ test('onboardingService.completeOnboarding faz rollback de workspaces em caso de
   assert.match(source, /catch/);
 });
 
+// ============================================================================
+// NOTIF1 -- conclusao do onboarding e um evento real e seguro; gera uma
+// notificacao de boas-vindas genuina (nao um dado fabricado como se fosse
+// atividade real), best-effort (nunca reverte um onboarding ja concluido).
+// ============================================================================
+
+test('onboardingService.completeOnboarding cria notificacao de boas-vindas real, best-effort (catch proprio, nunca lanca)', async () => {
+  const source = await readFile(new URL('./onboardingService.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ createNotification \} from '\.\.\/notifications\/notificationsService\.js';/);
+  const fnBody = source.slice(
+    source.indexOf('await createNotification(user.id'),
+    source.indexOf("return {\n      data: { profile: profileResult.data }"),
+  );
+  assert.match(fnBody, /type: 'sistema'/);
+  assert.match(fnBody, /title: 'Bem-vindo à UniFlow AI'/);
+  assert.match(fnBody, /\.catch\(\(\) => \{\}\);/);
+});
+
 test('useOnboarding restaura progresso salvo ao carregar', async () => {
   const source = await readFile(new URL('./useOnboarding.js', import.meta.url), 'utf8');
   assert.match(source, /loadOnboardingData/);

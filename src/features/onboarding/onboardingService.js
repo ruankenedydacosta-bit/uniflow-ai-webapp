@@ -5,6 +5,7 @@ import {
   deleteOwnedWorkspace,
   listWorkspaces,
 } from '../../services/workspaceService';
+import { createNotification } from '../notifications/notificationsService.js';
 
 function createError(code, message) {
   return { code, message };
@@ -118,6 +119,17 @@ export async function completeOnboarding({ user, userMode, data } = {}) {
       }
       return profileResult;
     }
+
+    // NOTIF1: seed local controlado, a partir de um evento real e seguro (a
+    // conclusao do proprio onboarding) -- nunca um dado fabricado como se
+    // fosse atividade real. Best-effort: falha aqui nunca reverte o
+    // onboarding, que ja esta concluido nesse ponto.
+    await createNotification(user.id, {
+      type: 'sistema',
+      title: 'Bem-vindo à UniFlow AI',
+      message: 'Sua conta está pronta. Comece registrando sua primeira movimentação.',
+      actionUrl: '/financeiro',
+    }).catch(() => {});
 
     return {
       data: { profile: profileResult.data },
