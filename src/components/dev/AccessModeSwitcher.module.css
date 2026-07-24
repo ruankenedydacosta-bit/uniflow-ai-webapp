@@ -33,21 +33,6 @@
   outline-offset: var(--uf-focus-ring-offset);
 }
 
-.profileText {
-  display: grid;
-  gap: var(--uf-space-4);
-  min-width: 0;
-  text-align: right;
-}
-
-.profileName {
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-caption-size);
-  font-weight: var(--uf-font-weight-semibold);
-  line-height: var(--uf-text-caption-lh);
-  white-space: nowrap;
-}
-
 .profileSummary {
   color: var(--uf-color-text-tertiary);
   font-size: var(--uf-text-micro-size);

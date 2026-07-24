@@ -21,9 +21,13 @@ export const BOTTOM_NAVIGATION_ROUTES = deepFreeze([
 ]);
 
 export const MORE_MENU_ROUTES = deepFreeze([
-  { id: 'profile', label: 'Perfil', icon: '◎', group: 'account', path: '/configuracoes', section: 'profile', moduleId: MODULE_IDS.CONFIGURACOES },
-  { id: 'settings', label: 'Configurações', icon: '⚙', group: 'account', path: '/configuracoes', moduleId: MODULE_IDS.CONFIGURACOES },
-  { id: 'security', label: 'Segurança', icon: '◇', group: 'account', path: '/configuracoes', section: 'security', moduleId: MODULE_IDS.CONFIGURACOES },
+  // UX3: profile/settings/security apontavam todos para '/configuracoes' sem
+  // diferenciacao real (duplicacao confusa apontada na auditoria UX1) -- cada
+  // um agora leva a uma secao propria e enderecavel via ?section=, mesmos
+  // valores canonicos usados pelo AccountMenu desktop (Topbar/AccountMenu.jsx).
+  { id: 'profile', label: 'Perfil', icon: '◎', group: 'account', path: '/configuracoes', section: 'perfil', moduleId: MODULE_IDS.CONFIGURACOES },
+  { id: 'settings', label: 'Configurações', icon: '⚙', group: 'account', path: '/configuracoes', section: 'preferencias', moduleId: MODULE_IDS.CONFIGURACOES },
+  { id: 'security', label: 'Segurança', icon: '◇', group: 'account', path: '/configuracoes', section: 'seguranca', moduleId: MODULE_IDS.CONFIGURACOES },
   // Grupo 'management': mesmos módulos BUSINESS_ONLY já usados pela Sidebar
   // desktop (moduleAccess.js) -- ate UX2 essas 3 rotas nao existiam em lugar
   // nenhum da navegacao mobile (achado P0 da auditoria UX1), so acessiveis

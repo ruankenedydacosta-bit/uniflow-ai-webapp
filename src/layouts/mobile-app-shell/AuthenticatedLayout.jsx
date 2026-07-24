@@ -26,6 +26,7 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
     selectedWorkspaceType,
     signOut,
     switchWorkspace,
+    user,
     workspace,
     workspaceSwitchError,
   } = useSession();
@@ -76,12 +77,31 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
   }
 
   const profileName = profile?.full_name ?? 'UniFlow';
+  const profileEmail = user?.email ?? '';
+
+  // Hoisted (fora do bloco mobile) para que o desktop tambem tenha acesso ao
+  // contexto ativo e ao MESMO fluxo real de troca de workspace (switchWorkspace
+  // via useSession()) usado pelo seletor PF/PJ mobile -- o menu de conta do
+  // Topbar ("Trocar espaço", UX3) reaproveita esta funcao, sem duplicar logica.
+  const effectiveWorkspaceType = selectedWorkspaceType ?? workspace?.workspace_type ?? access.currentWorkspace;
+  const activeContext = effectiveWorkspaceType === 'business' ? 'PJ' : 'PF';
+
+  const handleContextChange = (context) => {
+    void switchWorkspace(getWorkspaceTypeFromContext(context));
+  };
+
+  const handleToggleWorkspace = () => {
+    handleContextChange(activeContext === 'PJ' ? 'PF' : 'PJ');
+  };
 
   if (!isMobile) {
     return (
       <AppShell
         title={title}
         profileName={profileName}
+        profileEmail={profileEmail}
+        activeContext={activeContext}
+        onToggleWorkspace={handleToggleWorkspace}
         onSignOut={handleSignOut}
         isSigningOut={isSigningOut}
         signOutError={signOutError}
@@ -91,19 +111,13 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
     );
   }
 
-  const effectiveWorkspaceType = selectedWorkspaceType ?? workspace?.workspace_type ?? access.currentWorkspace;
   const workspaceLabel = WORKSPACE_LABELS[effectiveWorkspaceType] ?? 'Espaço atual';
-  const activeContext = effectiveWorkspaceType === 'business' ? 'PJ' : 'PF';
   const selectedWorkspaceExists = availableWorkspaceTypes.includes(effectiveWorkspaceType);
   const workspaceMatchesSelection = workspace?.workspace_type === effectiveWorkspaceType;
   const shouldHidePreviousWorkspace = !selectedWorkspaceExists || !workspaceMatchesSelection;
   const missingProfileMessage = activeContext === 'PJ'
     ? 'Perfil PJ ainda não está criado'
     : 'Perfil PF ainda não está criado';
-
-  const handleContextChange = (context) => {
-    void switchWorkspace(getWorkspaceTypeFromContext(context));
-  };
 
   const handleCreateProfile = async () => {
     const result = await createWorkspaceProfile(effectiveWorkspaceType);

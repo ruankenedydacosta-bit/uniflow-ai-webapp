@@ -68,6 +68,20 @@ test('mobile recebe header e bottom navigation sem sidebar desktop', async () =>
   assert.match(shell, /<BottomNavigation/);
 });
 
+// ============================================================================
+// UX3 -- itens com `section` navegam para path + `?section=`, preservando o
+// comportamento antigo (so path) para itens sem section (achado UX1: Perfil/
+// Configuracoes/Seguranca apontavam todos para o mesmo lugar sem diferenca).
+// ============================================================================
+
+test('handleNavigate acrescenta ?section=<valor> quando o item tem `section`, e usa so o path quando nao tem', async () => {
+  const shell = await source('./MobileAppShell.jsx');
+  assert.match(
+    shell,
+    /navigate\(item\.section \? `\$\{item\.path\}\?section=\$\{item\.section\}` : item\.path\);/,
+  );
+});
+
 test('safe areas e viewport PWA estao preparados', async () => {
   const css = await source('./MobileAppShell.module.css');
   assert.match(css, /env\(safe-area-inset-top/);

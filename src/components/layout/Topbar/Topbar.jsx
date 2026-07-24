@@ -1,12 +1,14 @@
-import Avatar from '../../ui/Avatar';
 import Badge from '../../ui/Badge';
-import Button from '../../ui/Button';
 import AccessModeSwitcher from '../../dev/AccessModeSwitcher';
+import AccountMenu from './AccountMenu.jsx';
 import styles from './Topbar.module.css';
 
 function Topbar({
   title,
   profileName = 'UniFlow',
+  profileEmail = '',
+  activeContext,
+  onToggleWorkspace = () => {},
   onSignOut = () => {},
   isSigningOut = false,
   signOutError = null,
@@ -27,16 +29,14 @@ function Topbar({
           </span>
         ) : null}
         <AccessModeSwitcher />
-        <Avatar name={profileName} size="sm" status="online" />
-        <Button
-          variant="ghost"
-          size="sm"
-          loading={isSigningOut}
-          onClick={onSignOut}
-          aria-label="Sair da conta"
-        >
-          Sair
-        </Button>
+        <AccountMenu
+          profileName={profileName}
+          profileEmail={profileEmail}
+          activeContext={activeContext}
+          onToggleWorkspace={onToggleWorkspace}
+          onSignOut={onSignOut}
+          isSigningOut={isSigningOut}
+        />
       </div>
     </header>
   );

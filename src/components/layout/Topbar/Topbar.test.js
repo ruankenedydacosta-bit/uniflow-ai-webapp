@@ -5,27 +5,30 @@ import test from 'node:test';
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 // ============================================================================
-// CFG2 -- botao de logout no Topbar desktop
+// UX3 -- avatar desktop vira um AccountMenu real (logout passa a viver la)
 // ============================================================================
 
-test('Topbar renderiza um botao real de logout (componente Button, semanticamente <button>)', async () => {
+test('Topbar delega identidade/conta ao AccountMenu real, nao mais Avatar+Button soltos', async () => {
   const content = await source('Topbar.jsx');
-  assert.match(content, /import Button from '\.\.\/\.\.\/ui\/Button';/);
-  assert.match(content, /<Button\s*\n\s*variant="ghost"\s*\n\s*size="sm"\s*\n\s*loading=\{isSigningOut\}\s*\n\s*onClick=\{onSignOut\}\s*\n\s*aria-label="Sair da conta"/);
+  assert.match(content, /import AccountMenu from '\.\/AccountMenu\.jsx';/);
+  assert.doesNotMatch(content, /import Avatar from/);
+  assert.doesNotMatch(content, /import Button from/);
 });
 
-test('botao de logout chama onSignOut recebido por prop -- Topbar nunca chama signOut/Supabase diretamente', async () => {
+test('Topbar repassa profileName/profileEmail/activeContext/onToggleWorkspace/onSignOut/isSigningOut integralmente ao AccountMenu', async () => {
   const content = await source('Topbar.jsx');
   assert.match(
     content,
-    /function Topbar\(\{\s*\n\s*title,\s*\n\s*profileName = 'UniFlow',\s*\n\s*onSignOut = \(\) => \{\},\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*\}\)/,
+    /<AccountMenu\s*\n\s*profileName=\{profileName\}\s*\n\s*profileEmail=\{profileEmail\}\s*\n\s*activeContext=\{activeContext\}\s*\n\s*onToggleWorkspace=\{onToggleWorkspace\}\s*\n\s*onSignOut=\{onSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*\/>/,
   );
-  assert.doesNotMatch(content, /signOut\s*\(|supabase|SessionContext/i);
 });
 
-test('botao fica em estado loading (desabilitado) durante isSigningOut -- evita duplo clique', async () => {
+test('assinatura de props tem defaults seguros (Topbar nao quebra se usado sem elas)', async () => {
   const content = await source('Topbar.jsx');
-  assert.match(content, /loading=\{isSigningOut\}/);
+  assert.match(
+    content,
+    /function Topbar\(\{\s*\n\s*title,\s*\n\s*profileName = 'UniFlow',\s*\n\s*profileEmail = '',\s*\n\s*activeContext,\s*\n\s*onToggleWorkspace = \(\) => \{\},\s*\n\s*onSignOut = \(\) => \{\},\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*\}\)/,
+  );
 });
 
 test('erro de logout e exibido de forma minima (role="alert"), usando a mensagem real quando disponivel', async () => {
@@ -34,9 +37,9 @@ test('erro de logout e exibido de forma minima (role="alert"), usando a mensagem
   assert.match(content, /\{signOutError\.message \?\? 'Não foi possível sair da conta\. Tente novamente\.'\}/);
 });
 
-test('onSignOut tem um default no-op seguro (Topbar nao quebra se usado sem a prop)', async () => {
+test('Topbar nunca chama signOut/Supabase diretamente -- so repassa props ao AccountMenu', async () => {
   const content = await source('Topbar.jsx');
-  assert.match(content, /onSignOut = \(\) => \{\}/);
+  assert.doesNotMatch(content, /signOut\s*\(|supabase|SessionContext/i);
 });
 
 // ============================================================================
@@ -54,17 +57,7 @@ test('AccessModeSwitcher continua renderizado sem alteracao', async () => {
   assert.match(content, /<AccessModeSwitcher \/>/);
 });
 
-// ============================================================================
-// FIX1 -- Avatar exibe o nome real do perfil autenticado, nunca "UniFlow Demo"
-// ============================================================================
-
-test('Avatar usa profileName recebido por prop (perfil real), com fallback seguro "UniFlow" -- nunca hardcoded "UniFlow Demo"', async () => {
+test('nunca renderiza o nome fictício "UniFlow Demo" (identidade agora e responsabilidade do AccountMenu)', async () => {
   const content = await source('Topbar.jsx');
-  assert.match(content, /<Avatar name=\{profileName\} size="sm" status="online" \/>/);
   assert.doesNotMatch(content, /UniFlow Demo/);
-});
-
-test('profileName tem um default seguro (Topbar nao quebra se usado sem a prop)', async () => {
-  const content = await source('Topbar.jsx');
-  assert.match(content, /profileName = 'UniFlow',/);
 });

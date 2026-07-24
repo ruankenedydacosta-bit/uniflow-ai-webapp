@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAccess } from '../app/AccessContext';
 import { useSession } from '../app/SessionContext.jsx';
 import { PLANS, USER_MODES, WORKSPACE_TYPES } from '../app/access.js';
@@ -8,11 +9,21 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { cx } from '../utils/cx';
 import { ThemeSelector } from '../features/theme';
+import { getPasswordResetRequestFeedback } from '../features/auth-mobile/passwordRecoveryUtils.js';
 import ComingSoonSection from './configuracoes/ComingSoonSection.jsx';
 import ProfileEditModal from './configuracoes/ProfileEditModal.jsx';
 import { getProfileDisplayName } from './configuracoes/profileFormUtils.js';
 import { settingsMock } from './configuracoes/settings.mock.js';
 import styles from './SettingsPage.module.css';
+
+// UX3: valores canonicos de `?section=`, os mesmos usados pelo AccountMenu
+// desktop (Topbar/AccountMenu.jsx) e pelo MORE_MENU_ROUTES mobile
+// (shellRoutes.js) -- um unico vocabulario de secoes em todo o app.
+const SECTION_IDS = Object.freeze({
+  perfil: 'section-perfil',
+  preferencias: 'section-preferencias',
+  seguranca: 'section-seguranca',
+});
 
 const USER_MODE_LABELS = {
   [USER_MODES.PERSONAL]: 'Pessoal',
@@ -33,7 +44,7 @@ function getSettingsContext(currentWorkspace) {
 
 function SettingsPage() {
   const { access } = useAccess();
-  const { isLoading, isSupabaseConfigured, profile, refreshSession, user } = useSession();
+  const { isLoading, isSupabaseConfigured, profile, refreshSession, requestPasswordReset, user } = useSession();
   const settings = getSettingsContext(access.currentWorkspace);
   const showSpaces = access.currentWorkspace === WORKSPACE_TYPES.BUSINESS || access.userMode === USER_MODES.BOTH;
   const currentModeLabel = USER_MODE_LABELS[access.userMode];
@@ -41,10 +52,41 @@ function SettingsPage() {
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileJustSaved, setProfileJustSaved] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [isRequestingReset, setIsRequestingReset] = useState(false);
+  const [resetFeedback, setResetFeedback] = useState(null);
 
   const profileDisplayName = getProfileDisplayName(profile, user);
   const profileEmail = user?.email ?? '';
   const profilePhone = profile?.phone;
+
+  // Rola ate a secao pedida por `?section=` e da foco+destaque temporario a
+  // ela (destino coerente para o menu de conta desktop + itens Perfil/
+  // Configuracoes/Seguranca do mobile). Chave no valor do parametro (nao no
+  // objeto searchParams) para tambem re-rolar quando o usuario clica em
+  // outra opcao do AccountMenu enquanto ja esta em /configuracoes, sem
+  // reescrever a URL (sem risco de loop de navegacao). Parametro ausente ou
+  // invalido: nenhum efeito, pagina renderiza normalmente do topo.
+  // Destaque aplicado imperativamente via classList (nunca setState dentro
+  // do efeito) e removido sozinho no fim da animacao CSS (animationend),
+  // sem setTimeout arbitrario.
+  const requestedSection = searchParams.get('section');
+
+  useEffect(() => {
+    const targetId = SECTION_IDS[requestedSection];
+    if (!targetId) return;
+
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    target.focus({ preventScroll: true });
+
+    target.classList.add(styles.sectionHighlighted);
+    const clearHighlight = () => target.classList.remove(styles.sectionHighlighted);
+    target.addEventListener('animationend', clearHighlight, { once: true });
+    return () => target.removeEventListener('animationend', clearHighlight);
+  }, [requestedSection]);
 
   // Edicao real exige um usuario autenticado de verdade -- sem sessao
   // (modo demo, sem Supabase configurado) nao ha profile persistivel.
@@ -76,6 +118,25 @@ function SettingsPage() {
     setProfileJustSaved(true);
   }
 
+  // Reaproveita o mesmo fluxo real de recuperacao de senha ja usado pela
+  // tela de login (AUTH1: requestPasswordReset via useSession() +
+  // getPasswordResetRequestFeedback) -- nenhuma logica nova de envio de
+  // e-mail, so uma segunda entrada para a mesma acao real, agora a partir de
+  // uma conta ja autenticada. Mensagem sempre neutra, nunca revela se
+  // houve falha tecnica especifica.
+  async function handleRequestPasswordReset() {
+    if (!canEditProfile || isRequestingReset) return;
+
+    setIsRequestingReset(true);
+    setResetFeedback(null);
+    try {
+      const { error } = await requestPasswordReset(profileEmail);
+      setResetFeedback(getPasswordResetRequestFeedback(error));
+    } finally {
+      setIsRequestingReset(false);
+    }
+  }
+
   return (
     <div className={styles.page}>
       <section className={styles.hero} aria-labelledby="settings-title">
@@ -97,7 +158,12 @@ function SettingsPage() {
         </div>
       </section>
 
-      <section className={styles.profileGrid} aria-label="Perfil e modo de uso">
+      <section
+        id={SECTION_IDS.perfil}
+        tabIndex={-1}
+        className={styles.profileGrid}
+        aria-label="Perfil"
+      >
         <Card variant="glass" padding="lg" className={styles.profileCard}>
           <div className={styles.profileHeader}>
             <Avatar name={profileDisplayName} src={profile?.avatar_url} size="lg" status="online" />
@@ -127,6 +193,15 @@ function SettingsPage() {
             </div>
           </div>
         </Card>
+      </section>
+
+      <section
+        id={SECTION_IDS.preferencias}
+        tabIndex={-1}
+        className={styles.preferencesGrid}
+        aria-label="Preferências"
+      >
+        <ThemeSelector />
 
         <Card variant="outline" padding="lg" className={styles.modeCard}>
           <div className={styles.sectionHeader}>
@@ -156,50 +231,7 @@ function SettingsPage() {
             })}
           </div>
         </Card>
-      </section>
 
-      <section aria-label="Aparência">
-        <ThemeSelector />
-      </section>
-
-      <section className={styles.preferencesGrid} aria-label="Preferências da UniFlow">
-        <ComingSoonSection
-          title="Preferências da Uni"
-          description="Como a Uni deve orientar sem aumentar esforço mental."
-          message="Personalização de tom, explicações e alertas estará disponível em uma próxima etapa."
-        />
-
-        <ComingSoonSection
-          title="Voz e interação"
-          description="Recursos para conversar com a Uni por voz."
-          message="Configurações de voz e interação ainda não estão disponíveis nesta tela."
-        />
-
-        <ComingSoonSection
-          title="Notificações"
-          description="A Uni só deve interromper quando houver valor real."
-          message="Preferências de notificações ainda não estão disponíveis."
-        />
-
-        <Card variant="default" padding="lg" className={styles.settingsCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Privacidade e segurança</h3>
-              <p>Como seus dados são protegidos hoje.</p>
-            </div>
-          </div>
-          <div className={styles.dotList}>
-            {settingsMock.privacy.map((item) => (
-              <div key={item} className={styles.dotItem}>
-                <span aria-hidden="true" />
-                <p>{item}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </section>
-
-      <section className={styles.guidanceGrid} aria-label="Espaços e leitura da Uni">
         {showSpaces ? (
           <Card variant="outline" padding="lg" className={styles.spacesCard}>
             <div className={styles.sectionHeader}>
@@ -219,6 +251,76 @@ function SettingsPage() {
           </Card>
         ) : null}
 
+        <ComingSoonSection
+          title="Preferências da Uni"
+          description="Como a Uni deve orientar sem aumentar esforço mental."
+          message="Personalização de tom, explicações e alertas estará disponível em uma próxima etapa."
+        />
+
+        <ComingSoonSection
+          title="Voz e interação"
+          description="Recursos para conversar com a Uni por voz."
+          message="Configurações de voz e interação ainda não estão disponíveis nesta tela."
+        />
+
+        <ComingSoonSection
+          title="Notificações"
+          description="A Uni só deve interromper quando houver valor real."
+          message="Preferências de notificações ainda não estão disponíveis."
+        />
+      </section>
+
+      <section
+        id={SECTION_IDS.seguranca}
+        tabIndex={-1}
+        className={styles.securityGrid}
+        aria-label="Segurança"
+      >
+        <Card variant="default" padding="lg" className={styles.settingsCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h3>Segurança</h3>
+              <p>Como seus dados são protegidos hoje.</p>
+            </div>
+          </div>
+
+          <div className={styles.dotList}>
+            {settingsMock.privacy.map((item) => (
+              <div key={item} className={styles.dotItem}>
+                <span aria-hidden="true" />
+                <p>{item}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Ainda sem modulo completo de seguranca (2FA, sessoes ativas) --
+              em vez de um controle falso, reaproveita o fluxo real de
+              redefinicao de senha ja usado no login (AUTH1), a unica acao de
+              seguranca que hoje existe de verdade para uma conta logada. */}
+          <div className={styles.settingRow}>
+            <span>
+              Enviamos um link de redefinição de senha para o seu e-mail cadastrado.
+              Autenticação em duas etapas e sessões ativas ainda não estão disponíveis.
+            </span>
+            <Button
+              variant="secondary"
+              disabled={!canEditProfile || isRequestingReset}
+              title={!canEditProfile ? getEditProfileTitle() : undefined}
+              onClick={() => void handleRequestPasswordReset()}
+            >
+              {isRequestingReset ? 'Enviando...' : 'Redefinir senha'}
+            </Button>
+          </div>
+
+          {resetFeedback ? (
+            <p role={resetFeedback.tone === 'alert' ? 'alert' : 'status'} className="uf-text-caption">
+              {resetFeedback.message}
+            </p>
+          ) : null}
+        </Card>
+      </section>
+
+      <section className={styles.guidanceGrid} aria-label="Leitura da Uni">
         <Card variant="glass" padding="lg" className={styles.uniCard}>
           <div className={styles.sectionHeader}>
             <div>

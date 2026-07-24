@@ -78,3 +78,21 @@ test('nenhum item comingSoon possui moduleId de modulo real (sao acoes puras, se
   assert.equal(byId.notifications.moduleId, undefined);
   assert.equal(byId.support.moduleId, undefined);
 });
+
+// ============================================================================
+// UX3 -- Perfil/Configurações/Segurança levam a secoes distintas e
+// enderecaveis (?section=), em vez de apontarem todos para a mesma pagina
+// sem diferenciacao (duplicacao confusa apontada na auditoria UX1).
+// ============================================================================
+
+test('Perfil/Configurações/Segurança compartilham o mesmo path (/configuracoes) mas cada um tem uma section canonica distinta', () => {
+  const byId = Object.fromEntries(MORE_MENU_ROUTES.map((item) => [item.id, item]));
+  assert.equal(byId.profile.path, '/configuracoes');
+  assert.equal(byId.settings.path, '/configuracoes');
+  assert.equal(byId.security.path, '/configuracoes');
+  assert.equal(byId.profile.section, 'perfil');
+  assert.equal(byId.settings.section, 'preferencias');
+  assert.equal(byId.security.section, 'seguranca');
+  const sections = new Set([byId.profile.section, byId.settings.section, byId.security.section]);
+  assert.equal(sections.size, 3, 'as 3 secoes devem ser distintas entre si');
+});

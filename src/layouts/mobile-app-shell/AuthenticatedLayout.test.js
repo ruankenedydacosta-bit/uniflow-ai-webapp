@@ -67,10 +67,13 @@ test('MobileAppShell recebe onAction=handleShellAction (mobile)', async () => {
   assert.match(content, /<MobileAppShell\s*\n\s*title=\{mobileTitle \?\? title\}\s*\n\s*immersive=\{immersive\}\s*\n\s*onAction=\{handleShellAction\}/);
 });
 
-test('AppShell (desktop) recebe onSignOut/isSigningOut/signOutError -- signOut centralizado em AuthenticatedLayout, nunca em AppShell/Topbar/Sidebar', async () => {
+test('AppShell (desktop) recebe onSignOut/isSigningOut/signOutError/profileEmail/activeContext/onToggleWorkspace -- signOut e troca de workspace centralizados em AuthenticatedLayout, nunca em AppShell/Topbar/Sidebar', async () => {
   const content = await source('AuthenticatedLayout.jsx');
-  const fnBody = content.slice(content.indexOf('if (!isMobile) {'), content.indexOf('const effectiveWorkspaceType'));
-  assert.match(fnBody, /<AppShell\s*\n\s*title=\{title\}\s*\n\s*profileName=\{profileName\}\s*\n\s*onSignOut=\{handleSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*signOutError=\{signOutError\}\s*\n\s*>/);
+  const fnBody = content.slice(content.indexOf('if (!isMobile) {'), content.indexOf('const workspaceLabel'));
+  assert.match(
+    fnBody,
+    /<AppShell\s*\n\s*title=\{title\}\s*\n\s*profileName=\{profileName\}\s*\n\s*profileEmail=\{profileEmail\}\s*\n\s*activeContext=\{activeContext\}\s*\n\s*onToggleWorkspace=\{handleToggleWorkspace\}\s*\n\s*onSignOut=\{handleSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*signOutError=\{signOutError\}\s*\n\s*>/,
+  );
 });
 
 test('AppShell (desktop) recebe o mesmo profileName (profile.full_name, com fallback "UniFlow") ja usado pelo Avatar mobile -- fonte unica, sem busca duplicada', async () => {
@@ -79,6 +82,15 @@ test('AppShell (desktop) recebe o mesmo profileName (profile.full_name, com fall
   // Uma unica ocorrencia da expressao: mobile e desktop reaproveitam a mesma variavel.
   const occurrences = content.match(/profile\?\.full_name \?\? 'UniFlow'/g) ?? [];
   assert.equal(occurrences.length, 1);
+});
+
+test('activeContext/handleContextChange sao hoisted (fora do bloco mobile-only) para que o AppShell desktop use o MESMO fluxo real de troca de workspace do mobile, sem duplicar logica', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  const beforeIsMobile = content.slice(0, content.indexOf('if (!isMobile)'));
+  assert.match(beforeIsMobile, /const activeContext = effectiveWorkspaceType === 'business' \? 'PJ' : 'PF';/);
+  assert.match(beforeIsMobile, /const handleContextChange = \(context\) => \{/);
+  assert.match(beforeIsMobile, /void switchWorkspace\(getWorkspaceTypeFromContext\(context\)\);/);
+  assert.match(beforeIsMobile, /const handleToggleWorkspace = \(\) => \{/);
 });
 
 test('nenhum componente visual (AppShell/Topbar/Sidebar/MobileAppShell/MoreMenu) importa SessionContext diretamente', async () => {

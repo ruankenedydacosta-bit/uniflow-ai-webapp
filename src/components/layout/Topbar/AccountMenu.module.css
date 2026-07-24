@@ -1,0 +1,114 @@
+.menu {
+  position: relative;
+  z-index: var(--uf-z-tooltip);
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--uf-radius-full, 999px);
+}
+
+.trigger:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + var(--uf-space-8));
+  right: 0;
+  z-index: var(--uf-z-tooltip);
+  display: grid;
+  width: min(calc(var(--uf-space-160) * 2), calc(100vw - var(--uf-space-32)));
+  max-height: calc(100vh - var(--uf-space-120));
+  overflow-y: auto;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-16);
+  background:
+    var(--uf-color-ai-subtle),
+    var(--uf-glass-bg-strong);
+  box-shadow: var(--uf-shadow-lg);
+  color: var(--uf-color-text-primary);
+  backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
+}
+
+.header {
+  display: grid;
+  gap: var(--uf-space-4);
+  padding-bottom: var(--uf-space-12);
+  border-bottom: 1px solid var(--uf-color-border-subtle);
+}
+
+.profileName {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.profileEmail {
+  color: var(--uf-color-text-tertiary);
+  font-size: var(--uf-text-micro-size);
+  line-height: var(--uf-text-micro-lh);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contextLabel {
+  color: var(--uf-color-text-tertiary);
+  font-size: var(--uf-text-micro-size);
+  line-height: var(--uf-text-micro-lh);
+}
+
+.items {
+  display: grid;
+  gap: var(--uf-space-4);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  min-height: var(--uf-space-40);
+  padding: 0 var(--uf-space-12);
+  border: none;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-color-text-primary);
+  font: inherit;
+  font-size: var(--uf-text-caption-size);
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--uf-color-primary-subtle);
+}
+
+.item:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: -2px;
+}
+
+.item:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.signOutGroup {
+  padding-top: var(--uf-space-8);
+  border-top: 1px solid var(--uf-color-divider);
+}
+
+.itemDanger {
+  color: var(--uf-color-danger);
+}

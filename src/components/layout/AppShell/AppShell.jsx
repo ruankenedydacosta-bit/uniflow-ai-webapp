@@ -5,6 +5,9 @@ import styles from './AppShell.module.css';
 function AppShell({
   title = 'Dashboard',
   profileName = 'UniFlow',
+  profileEmail = '',
+  activeContext,
+  onToggleWorkspace = () => {},
   onSignOut,
   isSigningOut = false,
   signOutError = null,
@@ -18,6 +21,9 @@ function AppShell({
         <Topbar
           title={title}
           profileName={profileName}
+          profileEmail={profileEmail}
+          activeContext={activeContext}
+          onToggleWorkspace={onToggleWorkspace}
           onSignOut={onSignOut}
           isSigningOut={isSigningOut}
           signOutError={signOutError}

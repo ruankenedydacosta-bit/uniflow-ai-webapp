@@ -58,7 +58,10 @@ function normalizeAccessForPlan(plan) {
   };
 }
 
-// Temporario para desenvolvimento; futuramente sera substituido pelo menu real de perfil/onboarding/login.
+// Temporario para desenvolvimento; futuramente sera substituido por um
+// seletor de plano real. UX3: nao exibe mais nome/e-mail do usuario --
+// identidade agora e responsabilidade exclusiva do AccountMenu (Topbar),
+// evitando duas fontes concorrentes de "quem sou eu" na mesma barra.
 function AccessModeSwitcher() {
   const { access, setAccess } = useAccess();
   const [isOpen, setIsOpen] = useState(false);
@@ -130,12 +133,10 @@ function AccessModeSwitcher() {
         className={styles.profileButton}
         aria-expanded={isOpen}
         aria-controls="access-demo-panel"
+        aria-label={`Contexto de acesso: ${accessSummary}`}
         onClick={() => setIsOpen((currentIsOpen) => !currentIsOpen)}
       >
-        <span className={styles.profileText}>
-          <span className={styles.profileName}>UniFlow Demo</span>
-          <span className={styles.profileSummary}>{accessSummary}</span>
-        </span>
+        <span className={styles.profileSummary}>{accessSummary}</span>
       </button>
 
       {isOpen ? (

@@ -11,7 +11,8 @@ function MobileAppShellContent({ children, sidebar, headerProps = {}, immersive 
 
   const handleNavigate = (item) => {
     onNavigate?.(item);
-    if (item.path) navigate(item.path);
+    if (!item.path) return;
+    navigate(item.section ? `${item.path}?section=${item.section}` : item.path);
   };
 
   return (

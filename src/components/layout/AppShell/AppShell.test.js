@@ -8,15 +8,15 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // CFG2 -- AppShell repassa onSignOut/isSigningOut/signOutError ao Topbar
 // ============================================================================
 
-test('AppShell aceita onSignOut/isSigningOut/signOutError/profileName e repassa integralmente ao Topbar', async () => {
+test('AppShell aceita onSignOut/isSigningOut/signOutError/profileName/profileEmail/activeContext/onToggleWorkspace e repassa integralmente ao Topbar', async () => {
   const content = await source('AppShell.jsx');
   assert.match(
     content,
-    /function AppShell\(\{\s*\n\s*title = 'Dashboard',\s*\n\s*profileName = 'UniFlow',\s*\n\s*onSignOut,\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*children,\s*\n\s*\}\)/,
+    /function AppShell\(\{\s*\n\s*title = 'Dashboard',\s*\n\s*profileName = 'UniFlow',\s*\n\s*profileEmail = '',\s*\n\s*activeContext,\s*\n\s*onToggleWorkspace = \(\) => \{\},\s*\n\s*onSignOut,\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*children,\s*\n\s*\}\)/,
   );
   assert.match(
     content,
-    /<Topbar\s*\n\s*title=\{title\}\s*\n\s*profileName=\{profileName\}\s*\n\s*onSignOut=\{onSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*signOutError=\{signOutError\}\s*\n\s*\/>/,
+    /<Topbar\s*\n\s*title=\{title\}\s*\n\s*profileName=\{profileName\}\s*\n\s*profileEmail=\{profileEmail\}\s*\n\s*activeContext=\{activeContext\}\s*\n\s*onToggleWorkspace=\{onToggleWorkspace\}\s*\n\s*onSignOut=\{onSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*signOutError=\{signOutError\}\s*\n\s*\/>/,
   );
 });
 

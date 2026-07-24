@@ -12,12 +12,12 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // CFG3 -- perfil real, sem dado de identidade fictício
 // ============================================================================
 
-test('SettingsPage obtem profile/user/isLoading/isSupabaseConfigured/refreshSession de useSession()', async () => {
+test('SettingsPage obtem profile/user/isLoading/isSupabaseConfigured/refreshSession/requestPasswordReset de useSession()', async () => {
   const page = await source('SettingsPage.jsx');
   assert.match(page, /import \{ useSession \} from '\.\.\/app\/SessionContext\.jsx';/);
   assert.match(
     page,
-    /const \{ isLoading, isSupabaseConfigured, profile, refreshSession, user \} = useSession\(\);/,
+    /const \{ isLoading, isSupabaseConfigured, profile, refreshSession, requestPasswordReset, user \} = useSession\(\);/,
   );
 });
 
@@ -199,4 +199,85 @@ test('logout (CFG2) nao e mencionado nem alterado nesta pagina -- fora do escopo
 test('nenhuma migration/service novo de empresa, equipe, convites, permissoes ou billing foi introduzido', async () => {
   const page = await source('SettingsPage.jsx');
   assert.doesNotMatch(page, /workspace_members|invit|billing|subscription\./i);
+});
+
+// ============================================================================
+// UX3 -- `?section=` real (Perfil/Preferências/Segurança enderecaveis), com
+// destino coerente para Segurança (redefinicao de senha real, nunca clique
+// morto).
+// ============================================================================
+
+test('le a section pedida via useSearchParams, nao via window.location cru', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /import \{ useSearchParams \} from 'react-router-dom';/);
+  assert.match(page, /const \[searchParams\] = useSearchParams\(\);/);
+  assert.match(page, /const requestedSection = searchParams\.get\('section'\);/);
+  assert.doesNotMatch(page, /window\.location/);
+});
+
+test('as 3 secoes enderecaveis tem ids canonicos correspondentes a perfil/preferencias/seguranca', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /perfil: 'section-perfil',/);
+  assert.match(page, /preferencias: 'section-preferencias',/);
+  assert.match(page, /seguranca: 'section-seguranca',/);
+  assert.match(page, /id=\{SECTION_IDS\.perfil\}/);
+  assert.match(page, /id=\{SECTION_IDS\.preferencias\}/);
+  assert.match(page, /id=\{SECTION_IDS\.seguranca\}/);
+});
+
+test('parametro invalido/ausente e ignorado com seguranca -- sem scroll, sem excecao (SECTION_IDS[valorInvalido] e undefined)', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /const targetId = SECTION_IDS\[requestedSection\];/);
+  assert.match(page, /if \(!targetId\) return;/);
+});
+
+test('scroll + foco temporario via getElementById/scrollIntoView/focus -- nunca setTimeout arbitrario', async () => {
+  const page = await source('SettingsPage.jsx');
+  const fnBody = page.slice(page.indexOf('useEffect(() => {\n    const targetId'), page.indexOf('[requestedSection]);') + 20);
+  assert.match(fnBody, /document\.getElementById\(targetId\)/);
+  assert.match(fnBody, /target\.scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\);/);
+  assert.match(fnBody, /target\.focus\(\{ preventScroll: true \}\);/);
+  assert.doesNotMatch(fnBody, /setTimeout/);
+});
+
+test('efeito de scroll/foco depende do valor da section (requestedSection), nao do objeto searchParams inteiro -- re-executa ao trocar de secao sem sair da pagina', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /\}, \[requestedSection\]\);/);
+});
+
+test('destaque temporario da secao e aplicado/removido de forma imperativa (classList + animationend), nunca via setState dentro do efeito nem timeout arbitrario', async () => {
+  const page = await source('SettingsPage.jsx');
+  const fnBody = page.slice(page.indexOf('useEffect(() => {\n    const targetId'), page.indexOf('[requestedSection]);') + 20);
+  assert.match(fnBody, /target\.classList\.add\(styles\.sectionHighlighted\);/);
+  assert.match(fnBody, /target\.addEventListener\('animationend', clearHighlight, \{ once: true \}\);/);
+  assert.doesNotMatch(fnBody, /setHighlightedSection|useState\(null\)/);
+  assert.doesNotMatch(fnBody, /setTimeout/);
+});
+
+test('Segurança tem destino real (redefinir senha), nunca um clique morto ou controle simulado', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /import \{ getPasswordResetRequestFeedback \} from '\.\.\/features\/auth-mobile\/passwordRecoveryUtils\.js';/);
+  assert.match(page, /const \{ error \} = await requestPasswordReset\(profileEmail\);/);
+  assert.match(page, /setResetFeedback\(getPasswordResetRequestFeedback\(error\)\);/);
+  assert.match(page, /onClick=\{\(\) => void handleRequestPasswordReset\(\)\}/);
+});
+
+test('botao "Redefinir senha" fica desabilitado sem usuario editavel/durante o envio, com title explicativo -- nunca fica clicavel sem efeito', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /disabled=\{!canEditProfile \|\| isRequestingReset\}/);
+  assert.match(page, /title=\{!canEditProfile \? getEditProfileTitle\(\) : undefined\}/);
+});
+
+test('feedback de redefinicao de senha usa role="alert" ou role="status" conforme o tone retornado -- nunca expõe erro tecnico cru', async () => {
+  const page = await source('SettingsPage.jsx');
+  assert.match(page, /role=\{resetFeedback\.tone === 'alert' \? 'alert' : 'status'\}/);
+  assert.doesNotMatch(page, /resetFeedback\.error|error\.message/);
+});
+
+test('Modo de uso e Espaços migraram para a secao Preferências (nao ficam mais soltos em outras secoes)', async () => {
+  const page = await source('SettingsPage.jsx');
+  const preferenciasBlock = page.slice(page.indexOf('id={SECTION_IDS.preferencias}'), page.indexOf('id={SECTION_IDS.seguranca}'));
+  assert.match(preferenciasBlock, /<h3>Modo de uso<\/h3>/);
+  assert.match(preferenciasBlock, /<h3>Espaços<\/h3>/);
+  assert.match(preferenciasBlock, /<ThemeSelector \/>/);
 });

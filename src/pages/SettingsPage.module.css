@@ -8,9 +8,34 @@
 .hero,
 .profileGrid,
 .preferencesGrid,
+.securityGrid,
 .guidanceGrid {
   display: grid;
   gap: var(--uf-grid-gutter);
+}
+
+/* Secoes enderecaveis por `?section=` (UX3) recebem foco programatico via
+   scrollIntoView + focus() -- outline visivel mesmo sem :focus-visible,
+   ja que o foco aqui e sempre disparado por navegacao, nunca por clique. */
+.profileGrid:focus,
+.preferencesGrid:focus,
+.securityGrid:focus {
+  outline: none;
+}
+
+.sectionHighlighted {
+  animation: uf-settings-section-highlight 1600ms var(--uf-ease-smooth);
+}
+
+@keyframes uf-settings-section-highlight {
+  0% {
+    box-shadow: 0 0 0 var(--uf-focus-ring-width) var(--uf-focus-ring-color);
+    border-radius: var(--uf-radius-16);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    border-radius: var(--uf-radius-16);
+  }
 }
 
 .hero {
@@ -77,7 +102,7 @@
 }
 
 .profileGrid {
-  grid-template-columns: minmax(0, 0.85fr) minmax(360px, 1.15fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
 
@@ -86,8 +111,13 @@
   align-items: stretch;
 }
 
+.securityGrid {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+
 .guidanceGrid {
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
 
