@@ -27,6 +27,7 @@ import {
   listWorkspaces,
 } from '../services/workspaceService';
 import { WORKSPACE_TYPES } from './access';
+import { isSilentAuthEvent } from './sessionSyncUtils.js';
 import {
   findWorkspaceByType,
   getAvailableWorkspaceTypes,
@@ -73,12 +74,49 @@ function SessionProvider({ children }) {
   const isMountedRef = useRef(false);
   const synchronizationIdRef = useRef(0);
   const authActionRef = useRef(false);
+  // Guarda o user id da sessao atualmente resolvida para distinguir um
+  // evento de auth genuinamente novo (login real, troca de usuario) de um
+  // evento redundante que o Supabase pode reemitir para a MESMA sessao
+  // (ex.: SIGNED_IN ao revalidar o token em foco de aba). So esses eventos
+  // redundantes usam o caminho silencioso de synchronizeSession -- nunca
+  // um login real. Resetado para null no logout (ver bloco !nextSession?.user).
+  const latestUserIdRef = useRef(null);
 
   const synchronizeSession = useCallback(
-    async (nextSession) => {
+    async (nextSession, { silent = false } = {}) => {
+      // Atualizacao silenciosa: o Supabase reemitiu um evento (SIGNED_IN
+      // redundante, TOKEN_REFRESHED, USER_UPDATED) para a sessao do MESMO
+      // usuario ja autenticado. Profile/workspace/subscription nao mudam
+      // nesses casos -- so o token/sessao. Nunca ativa isLoading (que
+      // desmontaria toda a arvore autenticada em App.jsx), preservando
+      // qualquer estado local (modais abertos, formularios) intacto.
+      // Deliberadamente NAO consome um novo synchronizationId: fazer isso
+      // invalidaria, via o guard de synchronizationId abaixo, um bootstrap
+      // completo que esteja em andamento neste exato momento (a causa raiz
+      // do bug AUTH2 -- um evento redundante chegando no meio do bootstrap
+      // inicial cancelava-o antes de isLoading virar false).
+      if (silent && nextSession?.user) {
+        latestUserIdRef.current = nextSession.user.id;
+        if (isMountedRef.current) {
+          setState((currentState) => ({
+            ...currentState,
+            session: nextSession,
+            user: nextSession.user,
+          }));
+        }
+        logAuthDevelopment('Sessao atualizada silenciosamente (evento de auth redundante).');
+
+        return {
+          data: { session: nextSession },
+          error: null,
+          profileMissing: false,
+        };
+      }
+
       const synchronizationId = ++synchronizationIdRef.current;
 
       if (!nextSession?.user) {
+        latestUserIdRef.current = null;
         setAvailableWorkspaces([]);
         setWorkspaceSwitchState({ error: null, isLoading: false });
         if (isMountedRef.current) {
@@ -95,6 +133,8 @@ function SessionProvider({ children }) {
           profileMissing: false,
         };
       }
+
+      latestUserIdRef.current = nextSession.user.id;
 
       if (isMountedRef.current) {
         setState((currentState) => ({
@@ -532,11 +572,23 @@ function SessionProvider({ children }) {
         return;
       }
 
+      // Ver isSilentAuthEvent (sessionSyncUtils.js) para a decisao completa:
+      // TOKEN_REFRESHED/USER_UPDATED nunca representam uma nova sessao, e
+      // SIGNED_IN pode ser reemitido pelo Supabase para a sessao ja ativa
+      // (ex.: ao revalidar o token quando a aba volta a ficar visivel), sem
+      // significar um novo login. Esses casos usam o caminho silencioso de
+      // synchronizeSession, que nunca ativa o loading global (isso
+      // desmontaria toda a arvore autenticada em App.jsx a cada poucos
+      // segundos, interrompendo qualquer modal/formulario aberto). Um
+      // SIGNED_IN para um usuario diferente (ou sem sessao previa conhecida)
+      // continua disparando o bootstrap completo normalmente.
+      const isSilentEvent = isSilentAuthEvent(_event, nextSession, latestUserIdRef.current);
+
       const timeoutId = window.setTimeout(() => {
         pendingSynchronizations.delete(timeoutId);
 
         if (isActive) {
-          synchronizeSession(nextSession).catch((error) => {
+          synchronizeSession(nextSession, { silent: isSilentEvent }).catch((error) => {
             if (isActive && isMountedRef.current) {
               setState((currentState) => ({
                 ...currentState,
