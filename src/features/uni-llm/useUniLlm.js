@@ -28,6 +28,11 @@ export function useUniLlm() {
         if (!config.enabled) return null;
         return orchestrator.generateContextualResponse(input);
       },
+      // OPENAI1: checagem de disponibilidade (sem custo de chamada real) e
+      // cancelamento explicito da requisicao em andamento -- ambos
+      // repassados do provider, sem duplicar logica aqui.
+      healthCheck: provider.healthCheck,
+      cancel: provider.cancel,
     };
   }, []);
 }

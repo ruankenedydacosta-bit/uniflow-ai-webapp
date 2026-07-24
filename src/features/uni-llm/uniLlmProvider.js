@@ -12,6 +12,14 @@
 export const UNI_LLM_FUNCTION_NAME = 'uni-chat-llm';
 export const DEFAULT_LLM_TIMEOUT_MS = 20000;
 
+// OPENAI1: numero maximo de tentativas para uma falha puramente de rede (o
+// fetch nem chegou a obter uma resposta HTTP -- ex.: DNS, conexao recusada,
+// offline momentaneo). NUNCA reaplicado a TIMEOUT (dobraria a espera do
+// usuario) nem a qualquer erro HTTP (401/403/429/5xx): esses ja tem
+// significado proprio e re-tentar nao muda o resultado (ou piora, no caso
+// de 429). "Retry apenas quando apropriado" == apenas aqui.
+const MAX_NETWORK_RETRIES = 1;
+
 export function createUniLlmProvider({
   supabase,
   supabaseUrl,
@@ -21,8 +29,63 @@ export function createUniLlmProvider({
   runtime = globalThis,
   timeoutMs = DEFAULT_LLM_TIMEOUT_MS,
 } = {}) {
+  // OPENAI1: referencia ao AbortController da requisicao EM ANDAMENTO, para
+  // que cancel() (chamado de fora, ex.: usuario envia outra mensagem ou sai
+  // do chat) consiga abortar sem precisar de um segundo mecanismo paralelo
+  // de cancelamento -- reaproveita o MESMO controller que ja existe para o
+  // timeout interno.
+  let currentController = null;
+
   function isSupported() {
     return Boolean(enabled && supabase && supabaseUrl && supabaseAnonKey && fetchImpl);
+  }
+
+  // OPENAI1: checagem de disponibilidade sem disparar uma chamada real ao
+  // provedor (que exigiria consumir cota/tempo por nada). E uma checagem de
+  // CAPACIDADE (flag + backend configurados no frontend) -- a existencia
+  // real da credencial do provedor so e confirmada pela Edge Function no
+  // momento de uma chamada de fato (resposta 503 == NOT_CONFIGURED).
+  async function healthCheck() {
+    if (!enabled) {
+      return { available: false, reason: 'DISABLED' };
+    }
+    if (!supabase || !supabaseUrl || !supabaseAnonKey || !fetchImpl) {
+      return { available: false, reason: 'BACKEND_NOT_CONFIGURED' };
+    }
+    return { available: true, reason: null };
+  }
+
+  // OPENAI1: cancela a requisicao em andamento, se houver. Idempotente e
+  // seguro chamar sem uma requisicao ativa (currentController nulo).
+  function cancel() {
+    currentController?.abort('cancelled');
+  }
+
+  async function performRequest({ system, messages, accessToken }) {
+    const controller = new AbortController();
+    currentController = controller;
+    const timeout = runtime.setTimeout?.(() => controller.abort('timeout'), timeoutMs);
+
+    try {
+      const response = await fetchImpl(`${supabaseUrl}/functions/v1/${UNI_LLM_FUNCTION_NAME}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseAnonKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ system, messages }),
+        signal: controller.signal,
+      });
+      return { ok: true, response };
+    } catch {
+      const reason = controller.signal.reason;
+      const code = reason === 'timeout' ? 'TIMEOUT' : reason === 'cancelled' ? 'CANCELLED' : 'NETWORK';
+      return { ok: false, code };
+    } finally {
+      runtime.clearTimeout?.(timeout);
+      if (currentController === controller) currentController = null;
+    }
   }
 
   async function generateResponse({ system, messages } = {}) {
@@ -41,32 +104,18 @@ export function createUniLlmProvider({
       return { text: null, usage: null, error: { code: 'UNAUTHORIZED', message: 'llm_auth_required' } };
     }
 
-    const controller = new AbortController();
-    const timeout = runtime.setTimeout?.(() => controller.abort('timeout'), timeoutMs);
-
-    let response;
-    try {
-      response = await fetchImpl(`${supabaseUrl}/functions/v1/${UNI_LLM_FUNCTION_NAME}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          apikey: supabaseAnonKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ system, messages }),
-        signal: controller.signal,
-      });
-    } catch (error) {
-      const timedOut = controller.signal.reason === 'timeout' || error?.name === 'AbortError';
-      return {
-        text: null,
-        usage: null,
-        error: { code: timedOut ? 'TIMEOUT' : 'NETWORK', message: 'llm_request_failed' },
-      };
-    } finally {
-      runtime.clearTimeout?.(timeout);
+    let attempt = await performRequest({ system, messages, accessToken });
+    let retries = 0;
+    while (!attempt.ok && attempt.code === 'NETWORK' && retries < MAX_NETWORK_RETRIES) {
+      retries += 1;
+      attempt = await performRequest({ system, messages, accessToken });
     }
 
+    if (!attempt.ok) {
+      return { text: null, usage: null, error: { code: attempt.code, message: 'llm_request_failed' } };
+    }
+
+    const { response } = attempt;
     if (!response.ok) {
       const code = response.status === 401 ? 'UNAUTHORIZED'
         : response.status === 403 ? 'FORBIDDEN'
@@ -91,5 +140,7 @@ export function createUniLlmProvider({
     return { text, usage: data?.usage ?? null, error: null };
   }
 
-  return { providerName: 'uni-chat-llm', isSupported, generateResponse };
+  return {
+    providerName: 'uni-chat-llm', isSupported, generateResponse, healthCheck, cancel,
+  };
 }

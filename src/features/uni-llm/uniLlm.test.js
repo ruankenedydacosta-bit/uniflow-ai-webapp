@@ -213,6 +213,159 @@ test('buildSystemPrompt adapta vocabulario explicitamente por workspaceType (PF)
   assert.doesNotMatch(prompt, /fluxo de caixa/);
 });
 
+// ============================================================================
+// OPENAI1 -- consolidacao da infraestrutura existente (uniLlmProvider.js):
+// healthCheck(), retry seletivo (so em falha de rede) e cancel() explicito
+// via o MESMO AbortController ja usado para o timeout interno. Nenhum
+// cliente/provider/hook novo -- apenas correcoes minimas no que ja existia.
+// ============================================================================
+
+test('healthCheck: provider desabilitado -> indisponivel por flag (DISABLED), sem chamar fetch', async () => {
+  let called = 0;
+  const provider = makeProvider({ enabled: false, fetchImpl: () => { called += 1; return jsonResponse(200, {}); } });
+  const health = await provider.healthCheck();
+  assert.deepEqual(health, { available: false, reason: 'DISABLED' });
+  assert.equal(called, 0);
+});
+
+test('healthCheck: habilitado mas backend Supabase ausente -> BACKEND_NOT_CONFIGURED', async () => {
+  const provider = createUniLlmProvider({
+    supabase: null,
+    supabaseUrl: '',
+    supabaseAnonKey: '',
+    enabled: true,
+    fetchImpl: async () => jsonResponse(200, {}),
+  });
+  const health = await provider.healthCheck();
+  assert.deepEqual(health, { available: false, reason: 'BACKEND_NOT_CONFIGURED' });
+});
+
+test('healthCheck: habilitado e configurado -> disponivel, sem chamar fetch (checagem de capacidade, nao uma chamada real)', async () => {
+  let called = 0;
+  const provider = makeProvider({ fetchImpl: () => { called += 1; return jsonResponse(200, {}); } });
+  const health = await provider.healthCheck();
+  assert.deepEqual(health, { available: true, reason: null });
+  assert.equal(called, 0);
+});
+
+test('retry: falha de rede na 1a tentativa, sucesso na 2a -- resultado final tem texto, fetch chamado 2 vezes', async () => {
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    if (calls === 1) throw new Error('network down');
+    return jsonResponse(200, { text: 'resposta apos retry' });
+  };
+  const provider = makeProvider({ fetchImpl });
+  const result = await provider.generateResponse({ system: 's', messages: [{ role: 'user', content: 'oi' }] });
+  assert.equal(calls, 2);
+  assert.equal(result.text, 'resposta apos retry');
+  assert.equal(result.error, null);
+});
+
+test('retry: falha de rede persistente -- apenas 1 nova tentativa (2 chamadas no total), erro final continua NETWORK', async () => {
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    throw new Error('network down');
+  };
+  const provider = makeProvider({ fetchImpl });
+  const result = await provider.generateResponse({ system: 's', messages: [{ role: 'user', content: 'oi' }] });
+  assert.equal(calls, 2);
+  assert.equal(result.error.code, 'NETWORK');
+});
+
+test('retry NUNCA se aplica a TIMEOUT -- so uma tentativa, mesmo com o prazo esgotado', async () => {
+  let calls = 0;
+  const fetchImpl = (url, opts) => {
+    calls += 1;
+    return new Promise((_, reject) => {
+      opts.signal.addEventListener('abort', () => {
+        const e = new Error('aborted');
+        e.name = 'AbortError';
+        reject(e);
+      });
+    });
+  };
+  const provider = makeProvider({ fetchImpl, timeoutMs: 20 });
+  const result = await provider.generateResponse({ system: 's', messages: [{ role: 'user', content: 'oi' }] });
+  assert.equal(calls, 1);
+  assert.equal(result.error.code, 'TIMEOUT');
+});
+
+test('retry NUNCA se aplica a erros HTTP (401/429/500) -- cada um e um resultado definitivo, nao uma falha de rede', async () => {
+  for (const status of [401, 429, 500]) {
+    let calls = 0;
+    const fetchImpl = async () => { calls += 1; return jsonResponse(status, { error: 'x' }); };
+    const provider = makeProvider({ fetchImpl });
+    await provider.generateResponse({ system: 's', messages: [{ role: 'user', content: 'oi' }] });
+    assert.equal(calls, 1, `status ${status} nao deveria re-tentar`);
+  }
+});
+
+test('cancel(): aborta a requisicao em andamento via o mesmo AbortController do timeout -- erro CANCELLED, distinto de TIMEOUT', async () => {
+  const fetchImpl = (url, opts) => {
+    assert.ok(opts.signal instanceof AbortSignal, 'fetch deve receber um AbortSignal real');
+    return new Promise((_, reject) => {
+      opts.signal.addEventListener('abort', () => {
+        const e = new Error('aborted');
+        e.name = 'AbortError';
+        reject(e);
+      });
+    });
+  };
+  const provider = makeProvider({ fetchImpl, timeoutMs: 20000 });
+  const resultPromise = provider.generateResponse({ system: 's', messages: [{ role: 'user', content: 'oi' }] });
+
+  // Aguarda a requisicao realmente comecar (accessToken resolvido, fetch em
+  // voo) antes de cancelar -- evita corrida com currentController ainda nulo.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  provider.cancel();
+
+  const result = await resultPromise;
+  assert.equal(result.error.code, 'CANCELLED');
+});
+
+test('cancel() sem requisicao em andamento e um no-op seguro, nunca lanca', () => {
+  const provider = makeProvider({ fetchImpl: async () => jsonResponse(200, { text: 'x' }) });
+  assert.doesNotThrow(() => provider.cancel());
+});
+
+test('useUniLlm expoe healthCheck e cancel do provider, sem duplicar logica (repasse direto)', async () => {
+  const source = readFileSync(new URL('./useUniLlm.js', import.meta.url), 'utf8');
+  assert.match(source, /healthCheck: provider\.healthCheck,/);
+  assert.match(source, /cancel: provider\.cancel,/);
+});
+
+// ============================================================================
+// OPENAI1 -- vocabulario formal de estados de interface (aiStatus.js).
+// Fundacao para integracao futura (OPENAI2); nao usado ainda por
+// UniChatPage.jsx nesta fase.
+// ============================================================================
+
+test('deriveAiStatus: IA desabilitada -> UNAVAILABLE, mesmo com loading/erro/resultado presentes', async () => {
+  const { AI_STATUS, deriveAiStatus } = await import('./aiStatus.js');
+  assert.equal(deriveAiStatus({ enabled: false, isLoading: true, hasResult: true }), AI_STATUS.UNAVAILABLE);
+  assert.equal(deriveAiStatus(), AI_STATUS.UNAVAILABLE);
+});
+
+test('deriveAiStatus: prioriza responding > loading > error > success, nesta ordem', async () => {
+  const { AI_STATUS, deriveAiStatus } = await import('./aiStatus.js');
+  assert.equal(deriveAiStatus({ enabled: true, isResponding: true, isLoading: true, error: {} }), AI_STATUS.RESPONDING);
+  assert.equal(deriveAiStatus({ enabled: true, isLoading: true, error: {} }), AI_STATUS.LOADING);
+  assert.equal(deriveAiStatus({ enabled: true, error: { code: 'TIMEOUT' } }), AI_STATUS.ERROR);
+  assert.equal(deriveAiStatus({ enabled: true, hasResult: true }), AI_STATUS.SUCCESS);
+});
+
+test('deriveAiStatus: habilitado, sem loading/erro/resultado -> UNAVAILABLE (estado inicial neutro)', async () => {
+  const { AI_STATUS, deriveAiStatus } = await import('./aiStatus.js');
+  assert.equal(deriveAiStatus({ enabled: true }), AI_STATUS.UNAVAILABLE);
+});
+
+test('aiStatus.js exportado pelo barrel do modulo (features/uni-llm)', async () => {
+  const source = readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  assert.match(source, /export \{ AI_STATUS, deriveAiStatus \} from '\.\/aiStatus\.js';/);
+});
+
 test('buildLlmPayload nao vaza vocabulario de um contexto para o outro ao trocar workspaceType entre chamadas', () => {
   const base = { text: 'como estou indo?', messages: [], financialContext: { hasData: false } };
   const businessPayload = buildLlmPayload({ ...base, mode: 'empresa', workspaceType: 'business' });

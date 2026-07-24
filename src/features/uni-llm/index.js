@@ -1,4 +1,5 @@
 export { resolveLlmConfig, isLlmFlagEnabled, isLlmBackendConfigured, UNI_LLM_FLAG } from './llmConfig.js';
+export { AI_STATUS, deriveAiStatus } from './aiStatus.js';
 export {
   buildLlmPayload,
   buildSystemPrompt,
