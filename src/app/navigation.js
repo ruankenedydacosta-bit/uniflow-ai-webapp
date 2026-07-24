@@ -7,6 +7,24 @@ const ALL_PLANS = [PLANS.FREE, PLANS.PRO, PLANS.BUSINESS, PLANS.ENTERPRISE];
 const BUSINESS_MODES = [USER_MODES.BUSINESS, USER_MODES.BOTH];
 const BUSINESS_PLANS = [PLANS.BUSINESS, PLANS.ENTERPRISE];
 
+// UX6: fonte única de agrupamento da sidebar desktop -- ordem de exibição e
+// rótulo de cada grupo. Cada item de `navigationItems` abaixo referencia um
+// destes ids via `group`; a Sidebar apenas itera esta lista e filtra, nunca
+// decide sozinha quais módulos existem ou a quem pertencem (isso continua
+// vindo de moduleAccess.js/canAccessNavigationItem). "Gestão" reutiliza o
+// mesmo nome já usado pelo grupo equivalente no menu mobile (shellRoutes.js/
+// MoreMenu.jsx) para os mesmos 3 módulos BUSINESS_ONLY -- classificação
+// consistente entre desktop e mobile, ainda que os arquivos-fonte
+// permaneçam separados (ver relatório da fase sobre por que não foram
+// unificados).
+export const SIDEBAR_GROUPS = Object.freeze([
+  { id: 'visao-geral', label: 'Visão geral' },
+  { id: 'financeiro', label: 'Financeiro' },
+  { id: 'gestao', label: 'Gestão' },
+  { id: 'uni', label: 'Uni' },
+  { id: 'conta', label: 'Conta' },
+]);
+
 // `workspaces` (contexto PF/PJ) deriva SEMPRE do mapa declarativo único
 // (moduleAccess.js). `modes`/`plans` permanecem gating ortogonal (modo de uso e plano).
 export const navigationItems = [
@@ -18,6 +36,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.DASHBOARD),
     description: 'Visão inicial do espaço financeiro ativo.',
+    group: 'visao-geral',
   },
   {
     label: 'Uni AI',
@@ -27,6 +46,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.UNI_AI),
     description: 'Consultora financeira inteligente da UniFlow AI.',
+    group: 'uni',
   },
   {
     label: 'Financeiro',
@@ -36,6 +56,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.FINANCEIRO),
     description: 'Receitas, despesas, saldo e fluxo financeiro.',
+    group: 'financeiro',
   },
   {
     label: 'Categorias',
@@ -45,6 +66,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.CATEGORIAS),
     description: 'Onde cada valor deve ficar: despesas e receitas.',
+    group: 'financeiro',
   },
   {
     label: 'Open Finance',
@@ -54,6 +76,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.OPEN_FINANCE),
     description: 'Prévia de como a UniFlow vai centralizar suas contas (em breve).',
+    group: 'financeiro',
   },
   {
     label: 'Objetivos',
@@ -63,6 +86,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.OBJETIVOS),
     description: 'Destinos financeiros conectados ao GPS da UniFlow AI.',
+    group: 'financeiro',
   },
   {
     label: 'Visão de Futuro',
@@ -72,6 +96,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.FUTURO),
     description: 'Projeções financeiras com cenários para planejamento.',
+    group: 'visao-geral',
   },
   {
     label: 'CRM',
@@ -81,6 +106,7 @@ export const navigationItems = [
     plans: BUSINESS_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.CRM),
     description: 'Relacionamento comercial e oportunidades de negócio.',
+    group: 'gestao',
   },
   {
     label: 'Clientes',
@@ -90,6 +116,7 @@ export const navigationItems = [
     plans: BUSINESS_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.CLIENTES),
     description: 'Relacionamentos, cobranças e próximos passos empresariais.',
+    group: 'gestao',
   },
   {
     label: 'Projetos',
@@ -99,6 +126,7 @@ export const navigationItems = [
     plans: BUSINESS_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.PROJETOS),
     description: 'Projetos e entregas ligados ao espaço empresarial.',
+    group: 'gestao',
   },
   {
     label: 'Agenda',
@@ -108,6 +136,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.AGENDA),
     description: 'Compromissos, decisões e eventos financeiros.',
+    group: 'financeiro',
   },
   {
     label: 'Relatórios',
@@ -117,6 +146,7 @@ export const navigationItems = [
     plans: [PLANS.PRO, PLANS.BUSINESS, PLANS.ENTERPRISE],
     workspaces: getModuleContexts(MODULE_IDS.RELATORIOS),
     description: 'Leituras e análises do contexto financeiro.',
+    group: 'visao-geral',
   },
   {
     label: 'Configurações',
@@ -126,6 +156,7 @@ export const navigationItems = [
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.CONFIGURACOES),
     description: 'Preferências do usuário, espaço e produto.',
+    group: 'conta',
   },
 ];
 

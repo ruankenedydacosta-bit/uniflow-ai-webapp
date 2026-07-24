@@ -54,16 +54,6 @@ export const publicRoutes = [
     title: 'Redefinir senha',
     element: <ResetPasswordPage />,
   },
-  {
-    path: '/uni-chat-proto',
-    label: 'Uni Chat (Protótipo)',
-    title: 'Uni Chat — Protótipo',
-    element: (
-      <Suspense fallback={null}>
-        <UniChatPage />
-      </Suspense>
-    ),
-  },
   ...(import.meta.env.DEV
     ? [
         {

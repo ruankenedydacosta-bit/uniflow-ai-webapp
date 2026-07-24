@@ -38,3 +38,29 @@ test('nenhuma troca de workspace automática acontece dentro do guard -- App.jsx
   const content = await source('App.jsx');
   assert.doesNotMatch(content, /switchWorkspace/);
 });
+
+// ============================================================================
+// UX6 -- fallback de rota removida/inexistente (ex.: /uni-chat-proto após a
+// remoção). Autenticado cai no dashboard; não-autenticado continua protegido
+// pelo guard de login, que roda ANTES de qualquer wildcard -- sem tela
+// branca, sem loop.
+// ============================================================================
+
+test('appRoutes tem um catch-all que redireciona para /dashboard -- rota inexistente/removida nunca resulta em tela branca', async () => {
+  const content = await source('App.jsx');
+  const authenticatedBlock = content.slice(content.indexOf('<AuthenticatedLayout'));
+  assert.match(authenticatedBlock, /<Route path="\*" element=\{<Navigate to="\/dashboard" replace \/>\} \/>/);
+});
+
+test('guard de login roda ANTES do catch-all de appRoutes -- usuário não autenticado em rota inexistente nunca alcança o wildcard de /dashboard', async () => {
+  const content = await source('App.jsx');
+  const loginGuardIndex = content.indexOf("if (!session || sessionError)");
+  const catchAllIndex = content.lastIndexOf('<Route path="*" element={<Navigate to="/dashboard" replace />} />');
+  assert.ok(loginGuardIndex >= 0 && catchAllIndex >= 0);
+  assert.ok(loginGuardIndex < catchAllIndex, 'guard de login deve vir antes do catch-all autenticado');
+});
+
+test('fallback nunca redireciona para a própria rota inexistente -- sem possibilidade de loop (/dashboard é sempre um destino diferente e válido)', async () => {
+  const content = await source('App.jsx');
+  assert.doesNotMatch(content, /Navigate to=\{location\.pathname\}/);
+});

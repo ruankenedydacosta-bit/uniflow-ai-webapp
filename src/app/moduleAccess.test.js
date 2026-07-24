@@ -150,3 +150,53 @@ test('shellRoutes.js não depende de nenhum arquivo do Dashboard (apenas moduleA
   const source = await readFile(new URL('../layouts/mobile-app-shell/shellRoutes.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /features\/dashboard/);
 });
+
+// ============================================================================
+// UX6 -- saneamento de rotas de protótipo. /uni-chat-proto era uma rota
+// PÚBLICA (fora de qualquer guard de autenticação) que renderizava o MESMO
+// UniChatPage de /uni-ai, sem nenhum link apontando para ela -- duplicata
+// insegura de um protótipo obsoleto, removida nesta fase (Opção A).
+// ============================================================================
+
+test('/uni-chat-proto foi removida de routes.jsx (publicRoutes e appRoutes)', () => {
+  assert.doesNotMatch(routesSource, /uni-chat-proto/);
+});
+
+test('nenhuma referência residual a uni-chat-proto no restante do código-fonte', async () => {
+  const filesToCheck = [
+    './App.jsx',
+    '../features/uni-chat/UniChatPage.jsx',
+    '../features/uni-chat/UniChatPage.module.css',
+  ];
+  for (const file of filesToCheck) {
+    const content = await readFile(new URL(file, import.meta.url), 'utf8');
+    assert.doesNotMatch(content, /uni-chat-proto/i, `${file} ainda referencia a rota removida`);
+  }
+});
+
+test('/uni-ai continua sendo a única rota oficial da Uni em appRoutes, usando UniChatPage', () => {
+  assert.match(appRoutesBlock, /path: '\/uni-ai'/);
+  const uniAiCount = (appRoutesBlock.match(/path: '\/uni-ai'/g) ?? []).length;
+  assert.equal(uniAiCount, 1);
+});
+
+test('rota experimental /dev/uni-audio-library continua isolada por import.meta.env.DEV -- inacessível em produção', () => {
+  assert.match(routesSource, /const UniAudioLibraryPage = import\.meta\.env\.DEV/);
+  assert.match(routesSource, /\.\.\.\(import\.meta\.env\.DEV\s*\n\s*\? \[/);
+});
+
+test('PageScaffold (protótipo órfão "Módulo em construção", sem nenhum uso real) foi removido', async () => {
+  await assert.rejects(() => readFile(new URL('../pages/PageScaffold.jsx', import.meta.url), 'utf8'));
+  await assert.rejects(() => readFile(new URL('../pages/PageScaffold.module.css', import.meta.url), 'utf8'));
+});
+
+test('nenhum arquivo restante importa PageScaffold', async () => {
+  const files = [
+    './routes.jsx',
+    '../features/dashboard/DashboardPage.jsx',
+  ];
+  for (const file of files) {
+    const content = await readFile(new URL(file, import.meta.url), 'utf8');
+    assert.doesNotMatch(content, /PageScaffold/);
+  }
+});
