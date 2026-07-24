@@ -1,0 +1,110 @@
+.playground {
+  max-width: 1500px;
+  margin: 0 auto 24px;
+  padding: 20px;
+  border: 1px solid var(--uf-color-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  background: var(--uf-color-bg-elevated, #141b2c);
+}
+
+.header h2 {
+  margin: 4px 0 6px;
+  font-size: 1.3rem;
+}
+
+.eyebrow {
+  color: var(--uf-color-text-ai, #7c3aed);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: var(--uf-color-text-secondary, #8a96ac);
+}
+
+.notConfigured {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--uf-color-warning-subtle, rgba(234, 179, 8, 0.12));
+  color: var(--uf-color-warning, #eab308);
+  font-weight: 600;
+}
+
+.field {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.field span {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--uf-color-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  background: var(--uf-color-bg-canvas, #05070c);
+  color: var(--uf-color-text-primary, #f8fafc);
+  font: inherit;
+  resize: vertical;
+}
+
+.charCount {
+  margin: 4px 0 16px;
+  font-size: 0.8rem;
+  color: var(--uf-color-text-secondary, #8a96ac);
+}
+
+.charCountOver {
+  color: var(--uf-color-danger, #ef4444);
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.actions button {
+  min-height: 44px;
+  border: 1px solid var(--uf-color-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  padding: 0 16px;
+  color: var(--uf-color-text-primary, #fff);
+  background: var(--uf-color-bg-elevated, #202a3f);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.actions button:hover:not(:disabled) {
+  border-color: var(--uf-color-primary, #2563eb);
+}
+
+.actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.primaryButton {
+  background: var(--uf-color-primary, #2563eb) !important;
+  border-color: var(--uf-color-primary, #2563eb) !important;
+}
+
+.status {
+  margin: 0 0 4px;
+}
+
+.error {
+  margin: 0;
+  color: var(--uf-color-danger, #ef4444);
+  font-weight: 600;
+}

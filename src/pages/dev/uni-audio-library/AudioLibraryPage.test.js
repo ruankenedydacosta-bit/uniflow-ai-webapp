@@ -146,9 +146,20 @@ test('rota e importação existem somente em DEV e sem link público', async () 
   assert.doesNotMatch(routes, /appRoutes[\s\S]*?\/dev\/uni-audio-library/);
 });
 
-test('tester não contém HTTP, backend, microfone, TTS ou ElevenLabs', async () => {
+test('tester (revisão de clipes) não contém HTTP, backend, microfone ou ElevenLabs diretamente -- TTS vive isolado em TtsPlayground', async () => {
   const source = await readFile(pageUrl, 'utf8');
   assert.doesNotMatch(source, /fetch\(|axios|XMLHttpRequest|WebSocket|ElevenLabs|speechSynthesis|getUserMedia|supabase/i);
+});
+
+// ============================================================================
+// ELEVEN1 -- area de teste de TTS (TtsPlayground) montada na mesma pagina
+// DEV, sem afetar o revisor de clipes estaticos preexistente.
+// ============================================================================
+
+test('AudioLibraryPage monta o TtsPlayground (fundação de TTS) na página DEV', async () => {
+  const source = await readFile(pageUrl, 'utf8');
+  assert.match(source, /import TtsPlayground from '\.\/components\/TtsPlayground\.jsx';/);
+  assert.match(source, /<TtsPlayground \/>/);
 });
 
 test('layout cobre mobile, tablet, desktop, foco e reduced motion', async () => {
