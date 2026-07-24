@@ -82,6 +82,32 @@ export async function signInWithPassword({ email, password } = {}) {
 
 export const signInWithEmail = signInWithPassword;
 
+/**
+ * AUTH4: login/cadastro com Google via OAuth oficial do Supabase. Usa
+ * inteiramente o cliente Supabase já existente (PKCE é o flowType padrão do
+ * SDK) -- nunca manipula token manualmente, nunca chama a API do Google
+ * diretamente. Por padrão o SDK redireciona o navegador para o provedor
+ * (skipBrowserRedirect nunca é usado aqui); a sessão só existe de fato
+ * depois que o usuário retorna para `redirectTo` e o Supabase processa o
+ * código da URL automaticamente (detectSessionInUrl, também padrão do SDK).
+ */
+export async function signInWithGoogle(redirectTo) {
+  if (!supabase) {
+    return createServiceUnavailableResult();
+  }
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+  });
+
+  return {
+    data,
+    error,
+    isConfigured: true,
+  };
+}
+
 export async function signUpWithEmail({ email, password, fullName } = {}) {
   if (!supabase) {
     return createServiceUnavailableResult();

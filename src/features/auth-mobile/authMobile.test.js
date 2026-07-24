@@ -5,6 +5,7 @@ import {
   AUTH_MODES,
   SOCIAL_PROVIDERS,
   WELCOME_SLIDES,
+  getGoogleAuthFeedback,
   getNextSlideIndex,
   getSocialUnavailableResult,
   normalizeAuthMode,
@@ -191,12 +192,102 @@ test('"Voltar ao login" (handleBackToLogin) fecha o fluxo de recuperacao e nao d
 
 test('mensagem apos redefinir senha (location.state.passwordUpdated) reaproveita o mecanismo de feedback ja existente', async () => {
   const contents = await source('./pages/MobileAuthPage.jsx');
-  assert.match(contents, /location\.state\?\.passwordUpdated \? 'Senha atualizada\. Entre com sua nova senha\.' : ''/);
+  assert.match(contents, /location\.state\?\.passwordUpdated\s*\n\s*\? 'Senha atualizada\. Entre com sua nova senha\.'\s*\n\s*: initialFeedback/);
 });
 
-test('login social continua "Em breve" -- AUTH1 nao implementou login social', async () => {
+test('Apple continua "Em breve" -- AUTH4 nao implementa Apple Login (fora de escopo)', async () => {
   const contents = await source('./pages/MobileAuthPage.jsx');
   assert.match(contents, /getSocialUnavailableResult/);
+});
+
+// ============================================================================
+// AUTH4 -- Google Login. handleSocial deve funcionar tanto para o Google real
+// (onGoogleAuth injetado por LoginPage.jsx) quanto para Apple/ambiente sem
+// handler (fallback "Em breve" existente, preservado).
+// ============================================================================
+
+test('handleSocial usa loading dedicado (isGoogleLoading) apenas para o Google, nao para Apple', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  const fnBody = contents.slice(
+    contents.indexOf('async function handleSocial'),
+    contents.indexOf('async function handleEmailSubmit'),
+  );
+  assert.match(fnBody, /const isGoogle = provider !== SOCIAL_PROVIDERS\.APPLE;/);
+  assert.match(fnBody, /if \(isGoogle\) setIsGoogleLoading\(true\);/);
+  assert.match(fnBody, /if \(isGoogle\) setIsGoogleLoading\(false\);/);
+});
+
+test('handleSocial sem handler (ex.: Apple) cai no fallback "Em breve" sem chamar nada', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  const fnBody = contents.slice(
+    contents.indexOf('async function handleSocial'),
+    contents.indexOf('async function handleEmailSubmit'),
+  );
+  assert.match(
+    fnBody,
+    /if \(typeof callback !== 'function'\) \{\s*\n\s*setFeedback\(getSocialUnavailableResult\(provider\)\.message\);\s*\n\s*return;/,
+  );
+});
+
+test('handleSocial respeita mensagem vazia de sucesso do Google (nullish coalescing, nunca cai no fallback "Em breve" por engano)', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  const fnBody = contents.slice(
+    contents.indexOf('async function handleSocial'),
+    contents.indexOf('async function handleEmailSubmit'),
+  );
+  assert.match(fnBody, /setFeedback\(result\?\.message \?\? ''\);/);
+  assert.doesNotMatch(fnBody, /result\?\.message \|\| /);
+});
+
+test('handleSocial trata excecao lancada pelo callback (ex.: rede indisponivel antes do redirect) com o mesmo fallback seguro', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  const fnBody = contents.slice(
+    contents.indexOf('async function handleSocial'),
+    contents.indexOf('async function handleEmailSubmit'),
+  );
+  assert.match(
+    fnBody,
+    /catch \{\s*\n\s*setFeedback\(getSocialUnavailableResult\(provider\)\.message\);\s*\n\s*\}/,
+  );
+});
+
+test('SocialAuthButtons recebe googleLoading e mostra o loading dedicado apenas no botao do Google', async () => {
+  const contents = await source('./components/SocialAuthButtons.jsx');
+  assert.match(
+    contents,
+    /function SocialAuthButtons\(\{ onGoogleAuth, onAppleAuth, disabled = false, googleLoading = false \}\)/,
+  );
+  const googleButtonBlock = contents.slice(
+    contents.indexOf('<Button', contents.indexOf('socialMark}>G</span>') - 200),
+    contents.indexOf('Continuar com Google'),
+  );
+  assert.match(googleButtonBlock, /loading=\{googleLoading\}/);
+  const appleButtonBlock = contents.slice(
+    contents.indexOf('<Button', contents.indexOf('socialMark}>A</span>') - 200),
+    contents.indexOf('Continuar com Apple'),
+  );
+  assert.doesNotMatch(appleButtonBlock, /loading=/);
+});
+
+test('botao do Google e type="button" -- nunca envia um form por engano', async () => {
+  const contents = await source('./components/SocialAuthButtons.jsx');
+  const googleButtonBlock = contents.slice(
+    contents.indexOf('<Button', contents.indexOf('socialMark}>G</span>') - 200),
+    contents.indexOf('Continuar com Google'),
+  );
+  assert.match(googleButtonBlock, /type="button"/);
+});
+
+test('getGoogleAuthFeedback nunca expõe o erro técnico cru do Supabase -- mensagem neutra fixa', () => {
+  assert.equal(getGoogleAuthFeedback(null), null);
+  assert.equal(
+    getGoogleAuthFeedback({ message: 'provider is not enabled', code: 'validation_failed' }),
+    'O acesso com Google ainda não está disponível neste ambiente.',
+  );
+  assert.equal(
+    getGoogleAuthFeedback(new Error('some raw supabase internal error')),
+    'O acesso com Google ainda não está disponível neste ambiente.',
+  );
 });
 
 test('sessao autenticada não retorna ao Welcome', async () => {

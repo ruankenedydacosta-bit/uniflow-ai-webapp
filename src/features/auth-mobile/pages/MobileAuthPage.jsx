@@ -15,7 +15,7 @@ import {
 import { getPasswordResetRequestFeedback } from '../passwordRecoveryUtils.js';
 import styles from '../authMobile.module.css';
 
-function MobileAuthPage({ onGoogleAuth, onAppleAuth }) {
+function MobileAuthPage({ onGoogleAuth, onAppleAuth, initialFeedback = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,9 +28,15 @@ function MobileAuthPage({ onGoogleAuth, onAppleAuth }) {
   } = useSession();
   const [mode, setMode] = useState(() => normalizeAuthMode(searchParams.get('mode')));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // AUTH4: loading dedicado do clique em "Continuar com Google" -- distinto
+  // de isSubmitting (formulário por e-mail), para não desabilitar um pelo
+  // outro sem necessidade.
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [operationError, setOperationError] = useState('');
   const [feedback, setFeedback] = useState(() => (
-    location.state?.passwordUpdated ? 'Senha atualizada. Entre com sua nova senha.' : ''
+    location.state?.passwordUpdated
+      ? 'Senha atualizada. Entre com sua nova senha.'
+      : initialFeedback
   ));
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -89,13 +95,28 @@ function MobileAuthPage({ onGoogleAuth, onAppleAuth }) {
   }
 
   async function handleSocial(provider) {
-    const callback = provider === SOCIAL_PROVIDERS.APPLE ? onAppleAuth : onGoogleAuth;
-    const fallback = getSocialUnavailableResult(provider);
+    const isGoogle = provider !== SOCIAL_PROVIDERS.APPLE;
+    const callback = isGoogle ? onGoogleAuth : onAppleAuth;
+
+    // Apple (e Google sem handler injetado, ex.: ambiente de teste) --
+    // fallback "estará disponível em breve", sem chamar nada.
+    if (typeof callback !== 'function') {
+      setFeedback(getSocialUnavailableResult(provider).message);
+      return;
+    }
+
+    if (isGoogle) setIsGoogleLoading(true);
     try {
-      const result = typeof callback === 'function' ? await callback({ mode }) : fallback;
-      setFeedback(result?.message || fallback.message);
+      const result = await callback({ mode });
+      // Sucesso real (Google): mensagem vazia é esperada -- o navegador já
+      // foi redirecionado para o provedor, então `result?.message` vazio
+      // não deve cair no fallback "estará disponível em breve" (o OU lógico
+      // trataria '' como falso e mostraria a mensagem errada).
+      setFeedback(result?.message ?? '');
     } catch {
-      setFeedback(fallback.message);
+      setFeedback(getSocialUnavailableResult(provider).message);
+    } finally {
+      if (isGoogle) setIsGoogleLoading(false);
     }
   }
 
@@ -204,6 +225,7 @@ function MobileAuthPage({ onGoogleAuth, onAppleAuth }) {
               <AuthModeSwitch mode={mode} onChange={changeMode} />
               <SocialAuthButtons
                 disabled={isSubmitting}
+                googleLoading={isGoogleLoading}
                 onGoogleAuth={handleSocial}
                 onAppleAuth={handleSocial}
               />

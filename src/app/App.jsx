@@ -24,7 +24,15 @@ function AppContent() {
   const isPublicRoute = publicRoutes.some((route) => route.path === location.pathname);
 
   if (isSupabaseConfigured && isSessionLoading) {
-    return <Loader fullScreen label="Carregando sua sessão" />;
+    // AUTH4: label especifico enquanto o retorno do OAuth (Google) esta
+    // sendo processado -- mesmo guard de loading da AUTH2, sem duplicar
+    // logica, so uma mensagem mais precisa nesta rota especifica.
+    return (
+      <Loader
+        fullScreen
+        label={location.pathname === '/auth/callback' ? 'Concluindo acesso…' : 'Carregando sua sessão'}
+      />
+    );
   }
 
   if (isPublicRoute) {

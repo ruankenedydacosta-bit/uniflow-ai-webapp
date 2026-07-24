@@ -64,3 +64,28 @@ test('fallback nunca redireciona para a própria rota inexistente -- sem possibi
   const content = await source('App.jsx');
   assert.doesNotMatch(content, /Navigate to=\{location\.pathname\}/);
 });
+
+// ============================================================================
+// AUTH4 -- rota pública /auth/callback (retorno do login com Google) e label
+// de loading mais preciso enquanto o OAuth está sendo processado. O guard de
+// isSessionLoading em si (que já bloqueia toda a árvore de rotas durante o
+// bootstrap) não foi restruturado -- só o label do Loader passou a variar
+// por pathname.
+// ============================================================================
+
+test('/auth/callback está registrada em publicRoutes (routes.jsx), pública -- não exige sessão antes de processar o retorno do OAuth', async () => {
+  const content = await source('routes.jsx');
+  assert.match(
+    content,
+    /path: '\/auth\/callback',\s*\n\s*label: 'Concluindo acesso',\s*\n\s*title: 'Concluindo acesso',\s*\n\s*element: <AuthCallbackPage \/>,/,
+  );
+});
+
+test('Loader mostra "Concluindo acesso…" especificamente em /auth/callback, sem alterar o guard de isSessionLoading', async () => {
+  const content = await source('App.jsx');
+  assert.match(content, /if \(isSupabaseConfigured && isSessionLoading\) \{/);
+  assert.match(
+    content,
+    /label=\{location\.pathname === '\/auth\/callback' \? 'Concluindo acesso…' : 'Carregando sua sessão'\}/,
+  );
+});

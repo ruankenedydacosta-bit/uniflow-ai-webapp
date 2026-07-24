@@ -71,3 +71,43 @@ test('signInWithPassword/signUpWithEmail/signOut existentes permanecem intocados
   assert.match(content, /export async function signUpWithEmail/);
   assert.match(content, /export async function signOut\(\) \{/);
 });
+
+// ============================================================================
+// AUTH4 -- signInWithGoogle usa o fluxo OAuth oficial do Supabase
+// (signInWithOAuth), nunca manipula token manualmente nem chama a API do
+// Google diretamente.
+// ============================================================================
+
+test('signInWithGoogle usa supabase.auth.signInWithOAuth com provider "google" e redirectTo recebido por parâmetro', async () => {
+  const content = await source('authService.js');
+  const fnBody = content.slice(content.indexOf('export async function signInWithGoogle'));
+  assert.match(fnBody, /export async function signInWithGoogle\(redirectTo\)/);
+  assert.match(
+    fnBody,
+    /supabase\.auth\.signInWithOAuth\(\{\s*\n\s*provider: 'google',\s*\n\s*options: \{ redirectTo \},\s*\n\s*\}\)/,
+  );
+});
+
+test('signInWithGoogle retorna cedo quando Supabase nao esta configurado, sem lancar excecao', async () => {
+  const content = await source('authService.js');
+  const fnBody = content.slice(content.indexOf('export async function signInWithGoogle'));
+  assert.match(fnBody, /if \(!supabase\) \{\s*\n\s*return createServiceUnavailableResult\(\);/);
+});
+
+test('signInWithGoogle retorna { data, error, isConfigured } -- mesmo contrato dos demais metodos do service', async () => {
+  const content = await source('authService.js');
+  const fnBody = content.slice(content.indexOf('export async function signInWithGoogle'));
+  assert.match(fnBody, /return \{\s*\n\s*data,\s*\n\s*error,\s*\n\s*isConfigured: true,\s*\n\s*\};/);
+});
+
+test('signInWithGoogle nunca manipula token manualmente nem usa localStorage/API direta do Google', async () => {
+  const content = await source('authService.js');
+  const fnBody = content.slice(content.indexOf('export async function signInWithGoogle'));
+  assert.doesNotMatch(fnBody, /access_token|refresh_token|localStorage|accounts\.google\.com|googleapis\.com/);
+});
+
+test('signInWithGoogle nunca usa skipBrowserRedirect (o SDK redireciona o navegador por padrão)', async () => {
+  const content = await source('authService.js');
+  const fnBody = content.slice(content.indexOf('export async function signInWithGoogle'));
+  assert.doesNotMatch(fnBody, /skipBrowserRedirect/);
+});

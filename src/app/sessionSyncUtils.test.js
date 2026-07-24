@@ -104,5 +104,59 @@ test('bootstrap completo (nao silencioso) continua ativando isLoading=true -- lo
 
 test('App.jsx continua desmontando a arvore autenticada apenas durante isSessionLoading (bootstrap real), comportamento nao alterado por AUTH2', async () => {
   const content = await source('./App.jsx');
-  assert.match(content, /if \(isSupabaseConfigured && isSessionLoading\) \{\s*\n\s*return <Loader fullScreen label="Carregando sua sessão" \/>;/);
+  assert.match(content, /if \(isSupabaseConfigured && isSessionLoading\) \{/);
+  assert.match(content, /<Loader\s*\n\s*fullScreen\s*\n\s*label=\{location\.pathname === '\/auth\/callback' \? 'Concluindo acesso…' : 'Carregando sua sessão'\}\s*\n\s*\/>/);
+});
+
+// ============================================================================
+// AUTH4 -- signInWithGoogle em SessionContext.jsx. Diferente de
+// signInWithPassword/signUpWithEmail, esta função NUNCA chama
+// synchronizeSession nem toca authActionRef diretamente: o SDK redireciona o
+// navegador inteiro por padrão, então não há sessão local para sincronizar
+// aqui -- ela só existe depois do retorno em /auth/callback, através do MESMO
+// listener onAuthStateChange (AUTH2) já usado por login por senha e refresh.
+// ============================================================================
+
+test('signInWithGoogle monta o redirectTo com as funções puras de oauthRedirect.js, nunca com window.location.origin inline', async () => {
+  const content = await source('SessionContext.jsx');
+  assert.match(content, /import \{ buildOAuthCallbackUrl, resolveAppUrl \} from '\.\/oauthRedirect\.js';/);
+  const fnBody = content.slice(
+    content.indexOf('const signInWithGoogle = useCallback'),
+    content.indexOf('const signOut = useCallback'),
+  );
+  assert.match(fnBody, /const redirectTo = buildOAuthCallbackUrl\(resolveAppUrl\(\)\);/);
+  assert.match(fnBody, /return signInWithGoogleService\(redirectTo\);/);
+});
+
+test('signInWithGoogle retorna cedo, sem chamar o service, quando Supabase não está configurado', async () => {
+  const content = await source('SessionContext.jsx');
+  const fnBody = content.slice(
+    content.indexOf('const signInWithGoogle = useCallback'),
+    content.indexOf('const signOut = useCallback'),
+  );
+  assert.match(fnBody, /if \(!isSupabaseConfigured\) \{\s*\n\s*return \{ data: null, error: null, isConfigured: false \};/);
+});
+
+test('signInWithGoogle nunca chama synchronizeSession nem manipula localStorage/token diretamente (a sessão real só chega via onAuthStateChange, no retorno)', async () => {
+  const content = await source('SessionContext.jsx');
+  const fnBody = content.slice(
+    content.indexOf('const signInWithGoogle = useCallback'),
+    content.indexOf('const signOut = useCallback'),
+  );
+  assert.doesNotMatch(fnBody, /synchronizeSession|localStorage|access_token|refresh_token/);
+});
+
+test('signInWithGoogle é exposto no contextValue e na dependência do useMemo, mesmo padrão dos demais métodos', async () => {
+  const content = await source('SessionContext.jsx');
+  assert.match(content, /\n\s*signInWithGoogle,\n/);
+  const depsIndex = content.indexOf('[availableWorkspaces, createWorkspaceProfile');
+  const depsBlock = content.slice(depsIndex, content.indexOf(']', depsIndex));
+  assert.match(depsBlock, /\bsignInWithGoogle\b/);
+});
+
+test('AUTH2 (signInWithPassword/signUpWithEmail) e AUTH3 (switchWorkspace) continuam usando synchronizeSession -- preservados, não substituídos pelo Google', async () => {
+  const content = await source('SessionContext.jsx');
+  assert.match(content, /const signInWithPassword = useCallback/);
+  assert.match(content, /const signUpWithEmail = useCallback/);
+  assert.match(content, /const switchWorkspace = useCallback/);
 });

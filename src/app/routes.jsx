@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
 import DashboardPage from '../features/dashboard';
 import AgendaPage from '../pages/AgendaPage';
+import AuthCallbackPage from '../pages/AuthCallbackPage';
 import ClientesPage from '../pages/ClientesPage';
 import CRMPage from '../pages/CRMPage';
 import FinancePage from '../pages/FinancePage';
@@ -53,6 +54,16 @@ export const publicRoutes = [
     label: 'Redefinir senha',
     title: 'Redefinir senha',
     element: <ResetPasswordPage />,
+  },
+  {
+    // AUTH4: rota de retorno do login com Google -- pública (não exige
+    // sessão antes de processar o retorno), decide para onde navegar
+    // reaproveitando o mesmo fluxo de sessão da AUTH2, sem redirecionamento
+    // silencioso.
+    path: '/auth/callback',
+    label: 'Concluindo acesso',
+    title: 'Concluindo acesso',
+    element: <AuthCallbackPage />,
   },
   ...(import.meta.env.DEV
     ? [

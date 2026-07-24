@@ -12,6 +12,7 @@ import {
   getSession,
   onAuthStateChange,
   requestPasswordReset as requestPasswordResetService,
+  signInWithGoogle as signInWithGoogleService,
   signInWithPassword as signInWithPasswordService,
   signUpWithEmail as signUpWithEmailService,
   signOut as signOutService,
@@ -27,6 +28,7 @@ import {
   listWorkspaces,
 } from '../services/workspaceService';
 import { WORKSPACE_TYPES } from './access';
+import { buildOAuthCallbackUrl, resolveAppUrl } from './oauthRedirect.js';
 import { isSilentAuthEvent } from './sessionSyncUtils.js';
 import {
   findWorkspaceByType,
@@ -553,6 +555,26 @@ function SessionProvider({ children }) {
     [synchronizeSession],
   );
 
+  // AUTH4: login/cadastro com Google. Diferente de signIn/signUp por senha,
+  // esta função NUNCA chama synchronizeSession nem toca authActionRef --
+  // por padrão o SDK redireciona o navegador inteiro para o Google
+  // (signInWithOAuth sem skipBrowserRedirect), então não há sessão para
+  // sincronizar AQUI; ela só existe depois que o usuário retorna para
+  // `redirectTo` (rota /auth/callback), momento em que uma sessão nova
+  // (evento SIGNED_IN real) passa pelo MESMO fluxo de bootstrap já usado
+  // por login/cadastro por senha e por refresh de página -- nenhuma lógica
+  // de sessão paralela. Não marca o usuário como autenticado antes do
+  // redirect: nenhum setState aqui além do já feito dentro do próprio
+  // service em caso de erro síncrono.
+  const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      return { data: null, error: null, isConfigured: false };
+    }
+
+    const redirectTo = buildOAuthCallbackUrl(resolveAppUrl());
+    return signInWithGoogleService(redirectTo);
+  }, []);
+
   const signOut = useCallback(async () => {
     if (!isSupabaseConfigured) {
       return {
@@ -713,6 +735,7 @@ function SessionProvider({ children }) {
         Boolean(state.profile && !state.profile.onboarding_completed),
       signInWithPassword,
       signUpWithEmail,
+      signInWithGoogle,
       signOut,
       requestPasswordReset,
       updatePassword,
@@ -725,7 +748,7 @@ function SessionProvider({ children }) {
       switchWorkspace,
       workspaceSwitchError: workspaceSwitchState.error,
     }),
-    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updatePassword, workspaceSwitchState],
+    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithGoogle, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updatePassword, workspaceSwitchState],
   );
 
   return (

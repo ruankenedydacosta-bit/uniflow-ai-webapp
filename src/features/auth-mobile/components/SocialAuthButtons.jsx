@@ -2,14 +2,16 @@ import Button from '../../../components/ui/Button';
 import { SOCIAL_PROVIDERS } from '../authMobileSchema.js';
 import styles from '../authMobile.module.css';
 
-function SocialAuthButtons({ onGoogleAuth, onAppleAuth, disabled = false }) {
+function SocialAuthButtons({ onGoogleAuth, onAppleAuth, disabled = false, googleLoading = false }) {
   return (
     <div className={styles.socialActions} aria-label="Outras formas de acesso">
       <Button
+        type="button"
         variant="outline"
         size="lg"
         fullWidth
         disabled={disabled}
+        loading={googleLoading}
         leftIcon={<span className={styles.socialMark}>G</span>}
         onClick={() => onGoogleAuth(SOCIAL_PROVIDERS.GOOGLE)}
       >
