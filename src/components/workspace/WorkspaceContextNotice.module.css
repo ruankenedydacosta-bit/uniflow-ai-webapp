@@ -1,0 +1,76 @@
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-12);
+  margin-bottom: var(--uf-space-16);
+  padding: var(--uf-space-12) var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-primary-subtle);
+}
+
+.message {
+  margin: 0;
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--uf-space-8);
+}
+
+.actionButton {
+  min-height: var(--uf-tap-target-min);
+  padding: 0 var(--uf-space-12);
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-color-primary);
+  color: var(--uf-color-on-primary);
+  font: inherit;
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.actionButton:focus-visible,
+.dismissButton:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.dismissButton {
+  display: flex;
+  width: var(--uf-tap-target-min);
+  height: var(--uf-tap-target-min);
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-color-text-tertiary);
+  font-size: var(--uf-text-title-size);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dismissButton:hover {
+  background: var(--uf-color-bg-elevated);
+  color: var(--uf-color-text-primary);
+}
+
+@media (max-width: 480px) {
+  .notice {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions {
+    justify-content: flex-end;
+  }
+}

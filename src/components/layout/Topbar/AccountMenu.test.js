@@ -73,6 +73,27 @@ test('cabecalho do painel mostra nome/e-mail/contexto reais recebidos por prop, 
   assert.doesNotMatch(componentBody, /UniFlow Demo/);
 });
 
+// ============================================================================
+// UX5 -- "Trocar espaço" mostra o destino real (nunca um rótulo genérico
+// ambíguo), reaproveitando o mesmo rótulo único de workspaceSelection.js.
+// ============================================================================
+
+test('item de troca de espaço mostra o DESTINO real ("Ir para Espaço X"), nunca o texto genérico "Trocar espaço"', async () => {
+  const content = await source('AccountMenu.jsx');
+  assert.match(content, /import \{ getWorkspaceContextLabel, getWorkspaceTypeFromContext \} from '\.\.\/\.\.\/\.\.\/app\/workspaceSelection\.js';/);
+  assert.match(content, /const toggleWorkspaceLabel = `Ir para \$\{getWorkspaceContextLabel\(destinationWorkspaceType\)\}`;/);
+  assert.match(content, /\{toggleWorkspaceLabel\}/);
+  assert.doesNotMatch(content, />\s*Trocar espaço\s*</);
+});
+
+test('destino é o OPOSTO do contexto ativo -- PJ ativo mostra ida para Pessoal e vice-versa', async () => {
+  const content = await source('AccountMenu.jsx');
+  assert.match(
+    content,
+    /const destinationWorkspaceType = activeWorkspaceType === WORKSPACE_TYPES\.BUSINESS\s*\n\s*\? WORKSPACE_TYPES\.PERSONAL\s*\n\s*: WORKSPACE_TYPES\.BUSINESS;/,
+  );
+});
+
 test('props tem defaults seguros (AccountMenu nao quebra se usado sem elas)', async () => {
   const content = await source('AccountMenu.jsx');
   assert.match(

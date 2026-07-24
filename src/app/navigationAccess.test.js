@@ -208,3 +208,26 @@ test('usuário PF+PJ (both) mantém acesso empresarial no contexto PJ', () => {
   const visible = paths(filterNavigationItems(navigationItems, accessBoth));
   assert.ok(visible.includes('/crm'));
 });
+
+// ============================================================================
+// UX5 -- clareza PF/PJ: a autorização em si (canAccessRouteInContext,
+// getFallbackRoute, moduleAccess.js) permanece EXATAMENTE a mesma; só a
+// comunicação ao redor dela muda (App.jsx/AuthenticatedLayout.jsx). Estes
+// testes travam que nenhuma regra nova de bloqueio foi introduzida aqui.
+// ============================================================================
+
+test('CRM/Clientes/Projetos continuam bloqueados em PF -- autorização não foi enfraquecida por UX5', () => {
+  const clientesRoute = navigationItems.find((item) => item.path === '/clientes');
+  const projetosRoute = navigationItems.find((item) => item.path === '/projetos');
+  assert.equal(canAccessRouteInContext(crmRoute, PF), false);
+  assert.equal(canAccessRouteInContext(clientesRoute, PF), false);
+  assert.equal(canAccessRouteInContext(projetosRoute, PF), false);
+  assert.equal(canAccessRouteInContext(crmRoute, PJ), true);
+  assert.equal(canAccessRouteInContext(clientesRoute, PJ), true);
+  assert.equal(canAccessRouteInContext(projetosRoute, PJ), true);
+});
+
+test('getFallbackRoute nunca aponta de volta para a própria rota bloqueada (sem risco de loop)', () => {
+  assert.equal(getFallbackRoute(PF, navigationItems), '/dashboard');
+  assert.notEqual(getFallbackRoute(PF, navigationItems), '/crm');
+});

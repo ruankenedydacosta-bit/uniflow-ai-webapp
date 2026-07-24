@@ -76,8 +76,18 @@ function AppContent() {
   // Guard de CONTEXTO (PF/PJ), centralizado e independente de plano/modo:
   // usa o moduleId da rota + moduleAccess.js. Cobre acesso direto por URL
   // (ex.: PF abrindo /crm) mesmo que a rota não possua item de navegação.
+  // UX5: o redirecionamento deixou de ser silencioso -- leva o moduleId
+  // bloqueado via state de navegação (nunca na URL) para que
+  // AuthenticatedLayout explique o que aconteceu, sem trocar de workspace
+  // sozinho e sem enfraquecer a autorização (o guard em si é idêntico).
   if (activeRoute && !canAccessRouteInContext(activeRoute, access.currentWorkspace)) {
-    return <Navigate to={getFallbackRoute(access.currentWorkspace, navigationItems)} replace />;
+    return (
+      <Navigate
+        to={getFallbackRoute(access.currentWorkspace, navigationItems)}
+        replace
+        state={{ blockedModuleId: activeRoute.moduleId }}
+      />
+    );
   }
 
   // Gating ortogonal de plano/modo (mantém comportamento anterior p/ itens de nav).

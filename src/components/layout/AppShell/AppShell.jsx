@@ -11,6 +11,7 @@ function AppShell({
   onSignOut,
   isSigningOut = false,
   signOutError = null,
+  contextNotice = null,
   children,
 }) {
   return (
@@ -28,7 +29,10 @@ function AppShell({
           isSigningOut={isSigningOut}
           signOutError={signOutError}
         />
-        <main className={styles.main}>{children}</main>
+        <main className={styles.main}>
+          {contextNotice}
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ test('AppShell aceita onSignOut/isSigningOut/signOutError/profileName/profileEma
   const content = await source('AppShell.jsx');
   assert.match(
     content,
-    /function AppShell\(\{\s*\n\s*title = 'Dashboard',\s*\n\s*profileName = 'UniFlow',\s*\n\s*profileEmail = '',\s*\n\s*activeContext,\s*\n\s*onToggleWorkspace = \(\) => \{\},\s*\n\s*onSignOut,\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*children,\s*\n\s*\}\)/,
+    /function AppShell\(\{\s*\n\s*title = 'Dashboard',\s*\n\s*profileName = 'UniFlow',\s*\n\s*profileEmail = '',\s*\n\s*activeContext,\s*\n\s*onToggleWorkspace = \(\) => \{\},\s*\n\s*onSignOut,\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*contextNotice = null,\s*\n\s*children,\s*\n\s*\}\)/,
   );
   assert.match(
     content,
@@ -34,7 +34,7 @@ test('Sidebar continua renderizada sem alteracao, fora do fluxo de logout', asyn
   assert.match(content, /<Sidebar \/>/);
 });
 
-test('children continuam renderizados dentro de <main>', async () => {
+test('children continuam renderizados dentro de <main>, agora com um contextNotice opcional acima (UX5)', async () => {
   const content = await source('AppShell.jsx');
-  assert.match(content, /<main className=\{styles\.main\}>\{children\}<\/main>/);
+  assert.match(content, /<main className=\{styles\.main\}>\s*\n\s*\{contextNotice\}\s*\n\s*\{children\}\s*\n\s*<\/main>/);
 });

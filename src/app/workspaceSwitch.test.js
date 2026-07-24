@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   findWorkspaceByType,
   getAvailableWorkspaceTypes,
+  getWorkspaceContextLabel,
   getWorkspaceProfileName,
   getWorkspaceTypeFromContext,
   readWorkspaceSelection,
@@ -31,6 +32,25 @@ test('workspace ausente retorna estado seguro sem misturar perfis', () => {
 test('perfil ausente recebe nome determinístico conforme PF ou PJ', () => {
   assert.equal(getWorkspaceProfileName('personal'), 'Perfil PF');
   assert.equal(getWorkspaceProfileName('business'), 'Perfil PJ');
+});
+
+// ============================================================================
+// UX5 -- rótulo único e claro do espaço ativo (nunca só "PF"/"PJ" sozinho),
+// mesma função usada por AuthenticatedLayout/MobileHeader/AccountMenu --
+// fonte única, sem cada tela inventar seu próprio texto.
+// ============================================================================
+
+test('contexto pessoal mostra "Espaço Pessoal" -- nunca só "PF" sozinho', () => {
+  assert.equal(getWorkspaceContextLabel('personal'), 'Espaço Pessoal');
+});
+
+test('contexto empresarial mostra "Espaço Empresa" -- nunca só "PJ" sozinho', () => {
+  assert.equal(getWorkspaceContextLabel('business'), 'Espaço Empresa');
+});
+
+test('tipo de workspace desconhecido cai com segurança no rótulo pessoal (nunca undefined/branco na tela)', () => {
+  assert.equal(getWorkspaceContextLabel('nao-existe'), 'Espaço Pessoal');
+  assert.equal(getWorkspaceContextLabel(undefined), 'Espaço Pessoal');
 });
 
 test('seleção PF e PJ persiste e valores inválidos são ignorados', () => {

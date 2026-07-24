@@ -67,12 +67,12 @@ test('MobileAppShell recebe onAction=handleShellAction (mobile)', async () => {
   assert.match(content, /<MobileAppShell\s*\n\s*title=\{mobileTitle \?\? title\}\s*\n\s*immersive=\{immersive\}\s*\n\s*onAction=\{handleShellAction\}/);
 });
 
-test('AppShell (desktop) recebe onSignOut/isSigningOut/signOutError/profileEmail/activeContext/onToggleWorkspace -- signOut e troca de workspace centralizados em AuthenticatedLayout, nunca em AppShell/Topbar/Sidebar', async () => {
+test('AppShell (desktop) recebe onSignOut/isSigningOut/signOutError/profileEmail/activeContext/onToggleWorkspace/contextNotice -- signOut e troca de workspace centralizados em AuthenticatedLayout, nunca em AppShell/Topbar/Sidebar', async () => {
   const content = await source('AuthenticatedLayout.jsx');
-  const fnBody = content.slice(content.indexOf('if (!isMobile) {'), content.indexOf('const workspaceLabel'));
+  const fnBody = content.slice(content.indexOf('if (!isMobile) {'), content.indexOf('const selectedWorkspaceExists'));
   assert.match(
     fnBody,
-    /<AppShell\s*\n\s*title=\{title\}\s*\n\s*profileName=\{profileName\}\s*\n\s*profileEmail=\{profileEmail\}\s*\n\s*activeContext=\{activeContext\}\s*\n\s*onToggleWorkspace=\{handleToggleWorkspace\}\s*\n\s*onSignOut=\{handleSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*signOutError=\{signOutError\}\s*\n\s*>/,
+    /<AppShell\s*\n\s*title=\{title\}\s*\n\s*profileName=\{profileName\}\s*\n\s*profileEmail=\{profileEmail\}\s*\n\s*activeContext=\{activeContext\}\s*\n\s*onToggleWorkspace=\{handleToggleWorkspace\}\s*\n\s*onSignOut=\{handleSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*signOutError=\{signOutError\}\s*\n\s*contextNotice=\{contextNotice\}\s*\n\s*>/,
   );
 });
 
@@ -88,8 +88,8 @@ test('activeContext/handleContextChange sao hoisted (fora do bloco mobile-only) 
   const content = await source('AuthenticatedLayout.jsx');
   const beforeIsMobile = content.slice(0, content.indexOf('if (!isMobile)'));
   assert.match(beforeIsMobile, /const activeContext = effectiveWorkspaceType === 'business' \? 'PJ' : 'PF';/);
-  assert.match(beforeIsMobile, /const handleContextChange = \(context\) => \{/);
-  assert.match(beforeIsMobile, /void switchWorkspace\(getWorkspaceTypeFromContext\(context\)\);/);
+  assert.match(beforeIsMobile, /const handleContextChange = async \(context\) => \{/);
+  assert.match(beforeIsMobile, /await switchWorkspace\(nextWorkspaceType\);/);
   assert.match(beforeIsMobile, /const handleToggleWorkspace = \(\) => \{/);
 });
 
@@ -149,4 +149,94 @@ test('headerProps.onAvatarPress navega para /configuracoes -- corrige o clique m
     content.indexOf('}}\n    >'),
   );
   assert.match(headerPropsBlock, /onAvatarPress: \(\) => navigate\('\/configuracoes'\),/);
+});
+
+// ============================================================================
+// UX5 -- clareza de contexto PF/PJ: identidade do espaço, explicação na
+// troca e aviso de módulo bloqueado (redirecionamento deixou de ser
+// silencioso).
+// ============================================================================
+
+test('subtitle do header mobile usa o rótulo único getWorkspaceContextLabel -- nunca um texto local duplicado', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /import \{ getWorkspaceContextLabel, getWorkspaceTypeFromContext \} from '\.\.\/\.\.\/app\/workspaceSelection\.js';/);
+  assert.match(content, /const workspaceLabel = getWorkspaceContextLabel\(effectiveWorkspaceType\);/);
+  assert.match(content, /subtitle: workspaceLabel,/);
+});
+
+test('handleContextChange aguarda switchWorkspace e só mostra a explicação em caso de sucesso (nunca em erro)', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  const fnBody = content.slice(content.indexOf('const handleContextChange'), content.indexOf('const handleToggleWorkspace'));
+  assert.match(fnBody, /const result = await switchWorkspace\(nextWorkspaceType\);/);
+  assert.match(fnBody, /if \(result\?\.error\) return;/);
+});
+
+test('explicação de troca usa readWorkspaceContextHintSeen/writeWorkspaceContextHintSeen -- aparece uma vez por espaço, nunca repetida à exaustão', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /if \(readWorkspaceContextHintSeen\(nextWorkspaceType\)\) \{/);
+  assert.match(content, /writeWorkspaceContextHintSeen\(nextWorkspaceType\);/);
+});
+
+test('switchWorkspace re-sincroniza a sessão e pode desmontar/remontar o componente -- a intenção de mostrar a explicação sobrevive via variável de módulo, não só via setState (que viraria no-op na instância antiga)', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /let pendingWorkspaceSwitchNotice = null;/);
+  assert.match(content, /const \[switchNotice, setSwitchNotice\] = useState\(\(\) => pendingWorkspaceSwitchNotice\);/);
+  assert.match(content, /pendingWorkspaceSwitchNotice = notice;\s*\n\s*setSwitchNotice\(notice\);/);
+});
+
+test('variável de módulo é limpa uma única vez via useEffect (não é setState, então não viola react-hooks/set-state-in-effect)', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /useEffect\(\(\) => \{\s*\n\s*pendingWorkspaceSwitchNotice = null;\s*\n\s*\}, \[\]\);/);
+});
+
+test('textos de explicação nunca afirmam que dados foram apagados ou misturados -- sempre "continuam separados"', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  const explanationsBlock = content.slice(
+    content.indexOf('const WORKSPACE_SWITCH_EXPLANATIONS'),
+    content.indexOf('function getModuleLabel'),
+  );
+  assert.match(explanationsBlock, /continuam separados, nenhum foi apagado/);
+  assert.doesNotMatch(explanationsBlock, /foram apagados|dados.*misturad[oa]/i);
+});
+
+test('aviso de módulo bloqueado usa o moduleId vindo de location.state (App.jsx), nunca da URL', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /const location = useLocation\(\);/);
+  assert.match(content, /const blockedModuleId = location\.state\?\.blockedModuleId \?\? null;/);
+});
+
+test('aviso de bloqueio só é mostrado enquanto o usuário permanece no Espaço Pessoal -- some sozinho ao trocar para Empresa', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /const showBlockedNotice = Boolean\(blockedModuleId\) && effectiveWorkspaceType === WORKSPACE_TYPES\.PERSONAL;/);
+});
+
+test('ação "Ir para Espaço Empresa" só aparece se o usuário realmente tem um workspace empresarial, e usa o MESMO handleContextChange (switchWorkspace) do seletor -- nunca troca sozinha sem clique', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /const canGoToBusinessSpace = availableWorkspaceTypes\.includes\(WORKSPACE_TYPES\.BUSINESS\);/);
+  const fnBody = content.slice(content.indexOf('const handleGoToBusinessSpace'), content.indexOf('const handleGoToBusinessSpace') + 200);
+  assert.match(fnBody, /void handleContextChange\('PJ'\);/);
+});
+
+test('aviso é removido ao ser dispensado via navegação real (limpa location.state) -- nunca via estado local, que seria perdido no remonte causado pelo próprio switchWorkspace', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  const fnBody = content.slice(content.indexOf('const clearBlockedNotice'), content.indexOf('const clearBlockedNotice') + 150);
+  assert.match(fnBody, /navigate\(location\.pathname, \{ replace: true, state: \{\} \}\);/);
+  assert.match(content, /onDismiss=\{clearBlockedNotice\}/);
+});
+
+test('"Ir para Espaço Empresa" também limpa o aviso de bloqueio antes de trocar -- não fica preso ao location.state antigo depois de resolvido', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  const fnBody = content.slice(content.indexOf('const handleGoToBusinessSpace'), content.indexOf('const handleGoToBusinessSpace') + 200);
+  assert.match(fnBody, /clearBlockedNotice\(\);/);
+});
+
+test('prioridade: aviso de bloqueio (acionável) nunca aparece ao mesmo tempo que a explicação de troca (informativa)', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /const contextNotice = showBlockedNotice \? \(/);
+});
+
+test('desktop e mobile recebem o MESMO contextNotice -- sem lógica duplicada de aviso por plataforma', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.match(content, /contextNotice=\{contextNotice\}/);
+  assert.match(content, /\{contextNotice\}\s*\n\s*\{shouldHidePreviousWorkspace/);
 });

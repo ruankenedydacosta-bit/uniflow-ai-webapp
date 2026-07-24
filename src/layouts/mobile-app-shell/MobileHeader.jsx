@@ -20,10 +20,13 @@ function MobileHeader({
   title,
   subtitle,
 }) {
-  const rawDisplayName = subtitle || title || 'UniFlow';
-  const isBusiness = /empresa|empresarial|business/i.test(rawDisplayName);
-  const isGenericPersonal = /espaço pessoal|personal/i.test(rawDisplayName);
-  const displayName = isBusiness ? 'Empresa' : isGenericPersonal ? 'Pessoal' : rawDisplayName;
+  // UX5: mostra o rotulo completo do espaço ("Espaço Pessoal"/"Espaço
+  // Empresa", vindo de workspaceSelection.js) em vez de truncar para
+  // "Pessoal"/"Empresa" sozinho -- PF/PJ já aparece como rótulo secundário
+  // no ContextSegmentedControl ao lado, então aqui o texto precisa deixar
+  // claro por si só que é um ESPAÇO, não apenas um nome solto.
+  const isBusiness = /empresa|business/i.test(subtitle ?? '');
+  const displayName = subtitle || title || 'UniFlow';
 
   return (
     <MobileContextHeader

@@ -141,3 +141,20 @@ export function getAvailableWorkspaceTypes(workspaces) {
 export function getWorkspaceProfileName(workspaceType) {
   return workspaceType === WORKSPACE_TYPES.BUSINESS ? 'Perfil PJ' : 'Perfil PF';
 }
+
+// UX5: rótulo único e claro do espaço ativo, usado em todo lugar que hoje
+// mostra o contexto PF/PJ (Topbar/AccountMenu, cabeçalho mobile, avisos de
+// troca de contexto) -- antes cada tela tinha seu próprio texto local
+// ("Espaço pessoal"/"Espaço empresarial" na AuthenticatedLayout,
+// "Espaço pessoal"/"Espaço empresarial" no AccountMenu, "Empresa"/"Pessoal"
+// truncado no MobileHeader), sem uma fonte única. PF/PJ continuam existindo
+// como rótulo secundário nos componentes que já os mostram (segmented
+// control mobile, badges), nunca removidos, só nunca sozinhos.
+export const WORKSPACE_CONTEXT_LABELS = Object.freeze({
+  [WORKSPACE_TYPES.PERSONAL]: 'Espaço Pessoal',
+  [WORKSPACE_TYPES.BUSINESS]: 'Espaço Empresa',
+});
+
+export function getWorkspaceContextLabel(workspaceType) {
+  return WORKSPACE_CONTEXT_LABELS[workspaceType] ?? WORKSPACE_CONTEXT_LABELS[WORKSPACE_TYPES.PERSONAL];
+}

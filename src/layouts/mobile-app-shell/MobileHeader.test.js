@@ -22,3 +22,16 @@ test('MobileContextHeader (consumida por MobileHeader) ja suporta onAvatarPress 
   assert.match(content, /onAvatarPress,/);
   assert.match(content, /<HeaderAvatar[\s\S]*?onPress=\{onAvatarPress\}/);
 });
+
+// ============================================================================
+// UX5 -- identidade clara do espaço ativo: o header mobile mostra o rótulo
+// completo do subtitle recebido ("Espaço Pessoal"/"Espaço Empresa"), sem
+// truncar para "Pessoal"/"Empresa" sozinho (PF/PJ já aparece como rótulo
+// secundário no ContextSegmentedControl ao lado).
+// ============================================================================
+
+test('displayName usa o subtitle recebido integralmente, sem truncar "Espaço Pessoal"/"Espaço Empresa" para uma palavra só', async () => {
+  const content = await source('MobileHeader.jsx');
+  assert.match(content, /const displayName = subtitle \|\| title \|\| 'UniFlow';/);
+  assert.doesNotMatch(content, /'Empresa'|'Pessoal'/);
+});

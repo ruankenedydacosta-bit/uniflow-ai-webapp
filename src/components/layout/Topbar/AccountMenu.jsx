@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getWorkspaceContextLabel, getWorkspaceTypeFromContext } from '../../../app/workspaceSelection.js';
+import { WORKSPACE_TYPES } from '../../../app/access.js';
 import Avatar from '../../ui/Avatar';
 import styles from './AccountMenu.module.css';
-
-const WORKSPACE_CONTEXT_LABELS = Object.freeze({
-  PF: 'Espaço pessoal',
-  PJ: 'Espaço empresarial',
-});
 
 /**
  * Menu real de conta no Topbar desktop (UX3). Ate aqui o avatar era so
@@ -81,7 +78,15 @@ function AccountMenu({
     action();
   }
 
-  const contextLabel = WORKSPACE_CONTEXT_LABELS[activeContext] ?? null;
+  const activeWorkspaceType = getWorkspaceTypeFromContext(activeContext);
+  const contextLabel = activeContext ? getWorkspaceContextLabel(activeWorkspaceType) : null;
+  // UX5: rotulo mostra o DESTINO real da troca (nao um "Trocar espaço"
+  // generico e ambiguo) -- o usuario ve exatamente para onde vai antes de
+  // clicar.
+  const destinationWorkspaceType = activeWorkspaceType === WORKSPACE_TYPES.BUSINESS
+    ? WORKSPACE_TYPES.PERSONAL
+    : WORKSPACE_TYPES.BUSINESS;
+  const toggleWorkspaceLabel = `Ir para ${getWorkspaceContextLabel(destinationWorkspaceType)}`;
 
   return (
     <div className={styles.menu} ref={menuRef}>
@@ -136,7 +141,7 @@ function AccountMenu({
               className={styles.item}
               onClick={() => closeAnd(onToggleWorkspace)}
             >
-              Trocar espaço
+              {toggleWorkspaceLabel}
             </button>
           </div>
 
