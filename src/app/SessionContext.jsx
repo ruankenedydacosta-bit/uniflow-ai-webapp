@@ -31,6 +31,7 @@ import { isSilentAuthEvent } from './sessionSyncUtils.js';
 import {
   findWorkspaceByType,
   getAvailableWorkspaceTypes,
+  getWorkspaceContextLabel,
   getWorkspaceProfileName,
   readWorkspaceSelectionForUser,
   writeWorkspaceSelectionForUser,
@@ -74,6 +75,11 @@ function SessionProvider({ children }) {
   const isMountedRef = useRef(false);
   const synchronizationIdRef = useRef(0);
   const authActionRef = useRef(false);
+  // AUTH3: trava sincrona contra chamadas concorrentes de switchWorkspace
+  // (duplo clique no seletor antes da primeira troca terminar) -- mesmo
+  // padrao de mutationRef ja usado em useClients.js/useAgenda.js/
+  // useTransactions.js e no handleSignOut de AuthenticatedLayout.jsx.
+  const switchWorkspaceRef = useRef(false);
   // Guarda o user id da sessao atualmente resolvida para distinguir um
   // evento de auth genuinamente novo (login real, troca de usuario) de um
   // evento redundante que o Supabase pode reemitir para a MESMA sessao
@@ -320,6 +326,21 @@ function SessionProvider({ children }) {
     [],
   );
 
+  // AUTH3 -- fonte de verdade do contexto ATIVO exibido em toda a UI
+  // (Sidebar, AccountMenu, MobileHeader, menu Mais, autorização) é SEMPRE o
+  // workspace CONFIRMADO pelo backend (`state.workspace.workspace_type`,
+  // exposto via AccessContext), nunca `selectedWorkspaceType`. Esta função
+  // ainda atualiza `selectedWorkspaceType` otimisticamente, mas isso serve
+  // apenas para: (a) o texto do indicador transitório "Alterando para
+  // Espaço X…" enquanto a troca está em andamento, e (b) o fluxo de "perfil
+  // ainda não criado" (que precisa saber o que o usuário pediu mesmo quando
+  // esse workspace não existe). Qualquer falha real de rede/persistência
+  // reverte `selectedWorkspaceType` para o valor confirmado anterior --
+  // nunca deixa a seleção presa num destino que não foi de fato confirmado
+  // (causa raiz da divergência observada na revalidação UX6.1: uma troca
+  // que falhava no meio deixava o menu mostrando o destino pretendido
+  // enquanto a Sidebar, que já derivava do confirmado, continuava no
+  // contexto real).
   const switchWorkspace = useCallback(async (workspaceType) => {
     if (!VALID_WORKSPACE_TYPES.includes(workspaceType)) {
       const error = { code: 'WORKSPACE_TYPE_INVALID', message: 'Contexto financeiro inválido.' };
@@ -327,8 +348,10 @@ function SessionProvider({ children }) {
       return { data: null, error };
     }
 
-    // Reflexo otimista de UI; a persistência namespaced só ocorre com user id conhecido.
-    setSelectedWorkspaceType(workspaceType);
+    if (switchWorkspaceRef.current) {
+      const error = { code: 'SWITCH_IN_PROGRESS', message: 'Já existe uma troca de espaço em andamento.' };
+      return { data: null, error };
+    }
 
     if (!state.user?.id || !state.session) {
       const error = { code: 'SESSION_REQUIRED', message: 'Entre novamente para trocar de perfil.' };
@@ -336,16 +359,28 @@ function SessionProvider({ children }) {
       return { data: null, error };
     }
 
-    writeWorkspaceSelectionForUser(state.user.id, workspaceType);
+    switchWorkspaceRef.current = true;
+    const previousWorkspaceType = state.workspace?.workspace_type ?? null;
+    const previousWorkspaceLabel = getWorkspaceContextLabel(previousWorkspaceType);
+    const networkErrorMessage = `Não foi possível alterar o espaço. Você continua no ${previousWorkspaceLabel}.`;
 
+    // Reflexo otimista de UI (ver nota acima) -- a persistência namespaced só
+    // acontece depois da confirmação real (mais abaixo), nunca aqui, para
+    // que um refresh após uma falha de rede nunca tente restaurar um
+    // destino que nunca chegou a ser confirmado pelo backend.
+    setSelectedWorkspaceType(workspaceType);
     setWorkspaceSwitchState({ error: null, isLoading: true });
+
     const workspacesResult = availableWorkspaces.length
       ? { data: availableWorkspaces, error: null }
       : await listWorkspaces();
 
     if (workspacesResult.error) {
-      setWorkspaceSwitchState({ error: workspacesResult.error, isLoading: false });
-      return { data: null, error: workspacesResult.error };
+      const error = { ...workspacesResult.error, message: networkErrorMessage };
+      setSelectedWorkspaceType(previousWorkspaceType);
+      setWorkspaceSwitchState({ error, isLoading: false });
+      switchWorkspaceRef.current = false;
+      return { data: null, error };
     }
 
     const targetWorkspace = findWorkspaceByType(workspacesResult.data, workspaceType);
@@ -357,12 +392,17 @@ function SessionProvider({ children }) {
           ? 'Perfil PJ ainda não criado. Crie seu espaço empresarial em Configurações.'
           : 'Perfil PF ainda não criado.',
       };
+      // Sem rollback aqui: fluxo legítimo de "perfil ainda não criado" --
+      // AuthenticatedLayout precisa saber qual workspace foi pedido para
+      // oferecer a ação de criá-lo.
       setWorkspaceSwitchState({ error, isLoading: false });
+      switchWorkspaceRef.current = false;
       return { data: null, error };
     }
 
     if (targetWorkspace.id === state.workspace?.id) {
       setWorkspaceSwitchState({ error: null, isLoading: false });
+      switchWorkspaceRef.current = false;
       return { data: targetWorkspace, error: null };
     }
 
@@ -371,18 +411,29 @@ function SessionProvider({ children }) {
     });
 
     if (updateResult.error) {
-      setWorkspaceSwitchState({ error: updateResult.error, isLoading: false });
-      return updateResult;
+      const error = { ...updateResult.error, message: networkErrorMessage };
+      setSelectedWorkspaceType(previousWorkspaceType);
+      setWorkspaceSwitchState({ error, isLoading: false });
+      switchWorkspaceRef.current = false;
+      return { data: null, error };
     }
 
     const synchronizationResult = await synchronizeSession(state.session);
-    setWorkspaceSwitchState({
-      error: synchronizationResult.error,
-      isLoading: false,
-    });
-    return synchronizationResult.error
-      ? synchronizationResult
-      : { data: targetWorkspace, error: null };
+
+    if (synchronizationResult.error) {
+      const error = { ...synchronizationResult.error, message: networkErrorMessage };
+      setSelectedWorkspaceType(previousWorkspaceType);
+      setWorkspaceSwitchState({ error, isLoading: false });
+      switchWorkspaceRef.current = false;
+      return { data: null, error };
+    }
+
+    // Só persiste a preferência local quando a troca é confirmada de
+    // verdade pelo backend.
+    writeWorkspaceSelectionForUser(state.user.id, workspaceType);
+    setWorkspaceSwitchState({ error: null, isLoading: false });
+    switchWorkspaceRef.current = false;
+    return { data: targetWorkspace, error: null };
   }, [availableWorkspaces, state.session, state.user, state.workspace, synchronizeSession]);
 
   const createWorkspaceProfile = useCallback(async (workspaceType) => {

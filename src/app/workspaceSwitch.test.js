@@ -80,7 +80,7 @@ test('seleção inexistente permanece visualmente ativa sem renderizar outro wor
 
   assert.match(sessionSource, /setSelectedWorkspaceType\(workspaceType\)/);
   assert.match(sessionSource, /writeWorkspaceSelectionForUser\(state\.user\.id, workspaceType\)/);
-  assert.match(layoutSource, /activeContext = effectiveWorkspaceType === 'business'/);
+  assert.match(layoutSource, /activeContext = confirmedWorkspaceType === 'business'/);
   assert.match(layoutSource, /shouldHidePreviousWorkspace/);
   assert.match(layoutSource, /O contexto selecionado foi mantido/);
 });
@@ -103,7 +103,7 @@ test('criação reutiliza workspace existente e prepara rollback seguro', async 
   assert.match(sessionSource, /createWorkspace\(\{/);
   assert.match(sessionSource, /deleteOwnedWorkspace\(targetWorkspace\.id\)/);
   assert.match(sessionSource, /current_workspace_id: targetWorkspace\.id/);
-  assert.match(layoutSource, /Criar perfil \$\{activeContext\}/);
+  assert.match(layoutSource, /Criar perfil \$\{missingWorkspaceType === WORKSPACE_TYPES\.BUSINESS \? 'PJ' : 'PF'\}/);
   assert.match(layoutSource, /navigate\('\/financeiro'/);
 });
 

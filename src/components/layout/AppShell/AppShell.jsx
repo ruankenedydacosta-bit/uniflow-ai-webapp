@@ -8,6 +8,7 @@ function AppShell({
   profileEmail = '',
   activeContext,
   onToggleWorkspace = () => {},
+  isSwitchingWorkspace = false,
   onSignOut,
   isSigningOut = false,
   signOutError = null,
@@ -25,6 +26,7 @@ function AppShell({
           profileEmail={profileEmail}
           activeContext={activeContext}
           onToggleWorkspace={onToggleWorkspace}
+          isSwitchingWorkspace={isSwitchingWorkspace}
           onSignOut={onSignOut}
           isSigningOut={isSigningOut}
           signOutError={signOutError}

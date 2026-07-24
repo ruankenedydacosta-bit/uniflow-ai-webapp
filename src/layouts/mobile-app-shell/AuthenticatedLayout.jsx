@@ -112,9 +112,34 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
   // contexto ativo e ao MESMO fluxo real de troca de workspace (switchWorkspace
   // via useSession()) usado pelo seletor PF/PJ mobile -- o menu de conta do
   // Topbar ("Trocar espaço", UX3) reaproveita esta funcao, sem duplicar logica.
-  const effectiveWorkspaceType = selectedWorkspaceType ?? workspace?.workspace_type ?? access.currentWorkspace;
-  const activeContext = effectiveWorkspaceType === 'business' ? 'PJ' : 'PF';
-  const workspaceLabel = getWorkspaceContextLabel(effectiveWorkspaceType);
+  //
+  // AUTH3: fonte ÚNICA do contexto ATIVO exibido em toda a UI -- SEMPRE o
+  // workspace CONFIRMADO pelo backend (igual ao que a Sidebar já usa via
+  // access.currentWorkspace), NUNCA `selectedWorkspaceType` (seleção
+  // otimista). Antes desta fase, `effectiveWorkspaceType` priorizava a
+  // seleção otimista, então uma troca que falhasse no meio (ex.: queda de
+  // conexão) deixava o menu de conta mostrando o destino pretendido como se
+  // já fosse o contexto ativo, enquanto a Sidebar continuava no workspace
+  // real -- dois contextos diferentes visíveis ao mesmo tempo.
+  // `selectedWorkspaceType` continua existindo (ver pendingWorkspaceType
+  // abaixo e shouldHidePreviousWorkspace mais adiante), mas nunca mais
+  // decide o que é exibido como contexto ativo.
+  const confirmedWorkspaceType = workspace?.workspace_type ?? access.currentWorkspace;
+  const activeContext = confirmedWorkspaceType === 'business' ? 'PJ' : 'PF';
+  const workspaceLabel = getWorkspaceContextLabel(confirmedWorkspaceType);
+
+  // Indicador transitório explícito (nunca substitui o contexto confirmado
+  // acima): só existe enquanto uma troca real está em andamento E o destino
+  // pretendido difere do confirmado. Vira texto informativo simples, nunca
+  // fonte de autorização/exibição de módulos.
+  const pendingWorkspaceType = isSwitchingWorkspace
+    && selectedWorkspaceType
+    && selectedWorkspaceType !== confirmedWorkspaceType
+    ? selectedWorkspaceType
+    : null;
+  const switchingNotice = pendingWorkspaceType
+    ? `Alterando para ${getWorkspaceContextLabel(pendingWorkspaceType)}…`
+    : null;
 
   // UX5 -- aviso 1: explicacao curta na troca de espaço (uma vez por espaço,
   // nunca repetida a exaustao). Disparada dentro do proprio handler de troca
@@ -134,6 +159,11 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
   }, []);
 
   const handleContextChange = async (context) => {
+    // AUTH3: defesa extra na UI (além do mutex em switchWorkspace) -- evita
+    // até mesmo iniciar uma segunda chamada enquanto uma troca já está em
+    // andamento (duplo clique/toque antes do primeiro terminar).
+    if (isSwitchingWorkspace) return;
+
     const nextWorkspaceType = getWorkspaceTypeFromContext(context);
     const result = await switchWorkspace(nextWorkspaceType);
     if (result?.error) return;
@@ -165,7 +195,7 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
   const location = useLocation();
   const blockedModuleId = location.state?.blockedModuleId ?? null;
   const canGoToBusinessSpace = availableWorkspaceTypes.includes(WORKSPACE_TYPES.BUSINESS);
-  const showBlockedNotice = Boolean(blockedModuleId) && effectiveWorkspaceType === WORKSPACE_TYPES.PERSONAL;
+  const showBlockedNotice = Boolean(blockedModuleId) && confirmedWorkspaceType === WORKSPACE_TYPES.PERSONAL;
 
   const clearBlockedNotice = () => {
     navigate(location.pathname, { replace: true, state: {} });
@@ -176,9 +206,31 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
     void handleContextChange('PJ');
   };
 
-  // Prioridade: aviso de bloqueio (acionavel) > explicacao de troca
-  // (informativa) -- nunca os dois ao mesmo tempo, para nao poluir a tela.
-  const contextNotice = showBlockedNotice ? (
+  // AUTH3 -- aviso de FALHA na troca (desktop): o mobile já mostra
+  // workspaceSwitchError via headerProps.contextMessage; o desktop não tinha
+  // nenhum lugar equivalente (lacuna encontrada na validação manual desta
+  // fase, corrigida aqui). WORKSPACE_NOT_FOUND fica de fora -- esse caso tem
+  // tratamento próprio (tela "perfil ausente", mobile) e não é uma falha de
+  // rede. Dispensado por identidade do objeto de erro (não por string): uma
+  // NOVA tentativa sempre gera um objeto novo, reabrindo o aviso se falhar
+  // de novo, mas mantendo fechado se for a mesma falha já vista.
+  const [dismissedSwitchError, setDismissedSwitchError] = useState(null);
+  const showSwitchErrorNotice = Boolean(workspaceSwitchError)
+    && workspaceSwitchError.code !== 'WORKSPACE_NOT_FOUND'
+    && workspaceSwitchError !== dismissedSwitchError;
+
+  // Prioridade: indicador transitório "Alterando…" (reflete uma operação em
+  // andamento agora mesmo) > aviso de FALHA na troca (AUTH3) > aviso de
+  // bloqueio (acionável, UX5) > explicação de troca (informativa, UX5) --
+  // nunca mais de um ao mesmo tempo, para não poluir a tela.
+  const contextNotice = switchingNotice ? (
+    <WorkspaceContextNotice message={switchingNotice} />
+  ) : showSwitchErrorNotice ? (
+    <WorkspaceContextNotice
+      message={workspaceSwitchError.message}
+      onDismiss={() => setDismissedSwitchError(workspaceSwitchError)}
+    />
+  ) : showBlockedNotice ? (
     <WorkspaceContextNotice
       message={`${getModuleLabel(blockedModuleId)} está disponível no Espaço Empresa. Você continua no Espaço Pessoal.`}
       actionLabel={canGoToBusinessSpace ? 'Ir para Espaço Empresa' : undefined}
@@ -197,6 +249,7 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
         profileEmail={profileEmail}
         activeContext={activeContext}
         onToggleWorkspace={handleToggleWorkspace}
+        isSwitchingWorkspace={isSwitchingWorkspace}
         onSignOut={handleSignOut}
         isSigningOut={isSigningOut}
         signOutError={signOutError}
@@ -207,15 +260,22 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
     );
   }
 
-  const selectedWorkspaceExists = availableWorkspaceTypes.includes(effectiveWorkspaceType);
-  const workspaceMatchesSelection = workspace?.workspace_type === effectiveWorkspaceType;
-  const shouldHidePreviousWorkspace = !selectedWorkspaceExists || !workspaceMatchesSelection;
-  const missingProfileMessage = activeContext === 'PJ'
+  // AUTH3: gatilho preciso via o código de erro real de switchWorkspace, em
+  // vez de comparar `selectedWorkspaceType` (intenção) com o workspace
+  // confirmado -- essa comparação sozinha ficaria momentaneamente "true"
+  // (falso positivo) durante QUALQUER troca válida em andamento (entre o
+  // reflexo otimista e a confirmação), mostrando por engano a tela de
+  // "perfil ausente" no meio de uma troca normal.
+  const missingWorkspaceType = workspaceSwitchError?.code === 'WORKSPACE_NOT_FOUND'
+    ? selectedWorkspaceType
+    : null;
+  const shouldHidePreviousWorkspace = Boolean(missingWorkspaceType);
+  const missingProfileMessage = missingWorkspaceType === WORKSPACE_TYPES.BUSINESS
     ? 'Perfil PJ ainda não está criado'
     : 'Perfil PF ainda não está criado';
 
   const handleCreateProfile = async () => {
-    const result = await createWorkspaceProfile(effectiveWorkspaceType);
+    const result = await createWorkspaceProfile(missingWorkspaceType ?? confirmedWorkspaceType);
     if (!result.error) navigate('/financeiro', { replace: true });
   };
 
@@ -231,7 +291,7 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
         contextError: Boolean(workspaceSwitchError),
         contextLocked: false,
         contextMessage: workspaceSwitchError?.message
-          ?? (!selectedWorkspaceExists ? missingProfileMessage : null),
+          ?? (missingWorkspaceType ? missingProfileMessage : null),
         isContextLoading: isSwitchingWorkspace,
         // Corrige o clique morto do avatar mobile (achado P0 da UX1): nesta
         // fase apenas navega para Configuracoes, sem bottom sheet/pagina nova.
@@ -244,16 +304,14 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
         <section className={styles.workspaceContextState} role="status" aria-live="polite">
           <h2>{missingProfileMessage}</h2>
           <p>O contexto selecionado foi mantido. Seus dados do outro perfil não serão exibidos aqui.</p>
-          {!selectedWorkspaceExists ? (
-            <button
-              type="button"
-              className={styles.workspaceContextAction}
-              disabled={isSwitchingWorkspace}
-              onClick={() => void handleCreateProfile()}
-            >
-              {isSwitchingWorkspace ? 'Criando perfil...' : `Criar perfil ${activeContext}`}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            className={styles.workspaceContextAction}
+            disabled={isSwitchingWorkspace}
+            onClick={() => void handleCreateProfile()}
+          >
+            {isSwitchingWorkspace ? 'Criando perfil...' : `Criar perfil ${missingWorkspaceType === WORKSPACE_TYPES.BUSINESS ? 'PJ' : 'PF'}`}
+          </button>
         </section>
       ) : children}
     </MobileAppShell>

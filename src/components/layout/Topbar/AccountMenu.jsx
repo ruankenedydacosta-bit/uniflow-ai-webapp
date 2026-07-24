@@ -21,6 +21,7 @@ function AccountMenu({
   profileEmail = '',
   activeContext,
   onToggleWorkspace = () => {},
+  isSwitchingWorkspace = false,
   onSignOut = () => {},
   isSigningOut = false,
 }) {
@@ -86,7 +87,12 @@ function AccountMenu({
   const destinationWorkspaceType = activeWorkspaceType === WORKSPACE_TYPES.BUSINESS
     ? WORKSPACE_TYPES.PERSONAL
     : WORKSPACE_TYPES.BUSINESS;
-  const toggleWorkspaceLabel = `Ir para ${getWorkspaceContextLabel(destinationWorkspaceType)}`;
+  // AUTH3: rótulo indica claramente que uma troca já está em andamento --
+  // nunca antecipa o destino como se já fosse o contexto ativo (esse
+  // continua vindo de activeContext/contextLabel, sempre confirmado).
+  const toggleWorkspaceLabel = isSwitchingWorkspace
+    ? 'Alterando espaço…'
+    : `Ir para ${getWorkspaceContextLabel(destinationWorkspaceType)}`;
 
   return (
     <div className={styles.menu} ref={menuRef}>
@@ -139,6 +145,7 @@ function AccountMenu({
               type="button"
               role="menuitem"
               className={styles.item}
+              disabled={isSwitchingWorkspace}
               onClick={() => closeAnd(onToggleWorkspace)}
             >
               {toggleWorkspaceLabel}

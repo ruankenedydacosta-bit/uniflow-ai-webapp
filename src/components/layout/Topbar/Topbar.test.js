@@ -15,11 +15,11 @@ test('Topbar delega identidade/conta ao AccountMenu real, nao mais Avatar+Button
   assert.doesNotMatch(content, /import Button from/);
 });
 
-test('Topbar repassa profileName/profileEmail/activeContext/onToggleWorkspace/onSignOut/isSigningOut integralmente ao AccountMenu', async () => {
+test('Topbar repassa profileName/profileEmail/activeContext/onToggleWorkspace/isSwitchingWorkspace/onSignOut/isSigningOut integralmente ao AccountMenu', async () => {
   const content = await source('Topbar.jsx');
   assert.match(
     content,
-    /<AccountMenu\s*\n\s*profileName=\{profileName\}\s*\n\s*profileEmail=\{profileEmail\}\s*\n\s*activeContext=\{activeContext\}\s*\n\s*onToggleWorkspace=\{onToggleWorkspace\}\s*\n\s*onSignOut=\{onSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*\/>/,
+    /<AccountMenu\s*\n\s*profileName=\{profileName\}\s*\n\s*profileEmail=\{profileEmail\}\s*\n\s*activeContext=\{activeContext\}\s*\n\s*onToggleWorkspace=\{onToggleWorkspace\}\s*\n\s*isSwitchingWorkspace=\{isSwitchingWorkspace\}\s*\n\s*onSignOut=\{onSignOut\}\s*\n\s*isSigningOut=\{isSigningOut\}\s*\n\s*\/>/,
   );
 });
 
@@ -27,7 +27,7 @@ test('assinatura de props tem defaults seguros (Topbar nao quebra se usado sem e
   const content = await source('Topbar.jsx');
   assert.match(
     content,
-    /function Topbar\(\{\s*\n\s*title,\s*\n\s*profileName = 'UniFlow',\s*\n\s*profileEmail = '',\s*\n\s*activeContext,\s*\n\s*onToggleWorkspace = \(\) => \{\},\s*\n\s*onSignOut = \(\) => \{\},\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*\}\)/,
+    /function Topbar\(\{\s*\n\s*title,\s*\n\s*profileName = 'UniFlow',\s*\n\s*profileEmail = '',\s*\n\s*activeContext,\s*\n\s*onToggleWorkspace = \(\) => \{\},\s*\n\s*isSwitchingWorkspace = false,\s*\n\s*onSignOut = \(\) => \{\},\s*\n\s*isSigningOut = false,\s*\n\s*signOutError = null,\s*\n\s*\}\)/,
   );
 });
 

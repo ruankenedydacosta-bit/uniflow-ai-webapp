@@ -81,9 +81,22 @@ test('cabecalho do painel mostra nome/e-mail/contexto reais recebidos por prop, 
 test('item de troca de espaço mostra o DESTINO real ("Ir para Espaço X"), nunca o texto genérico "Trocar espaço"', async () => {
   const content = await source('AccountMenu.jsx');
   assert.match(content, /import \{ getWorkspaceContextLabel, getWorkspaceTypeFromContext \} from '\.\.\/\.\.\/\.\.\/app\/workspaceSelection\.js';/);
-  assert.match(content, /const toggleWorkspaceLabel = `Ir para \$\{getWorkspaceContextLabel\(destinationWorkspaceType\)\}`;/);
+  assert.match(content, /: `Ir para \$\{getWorkspaceContextLabel\(destinationWorkspaceType\)\}`;/);
   assert.match(content, /\{toggleWorkspaceLabel\}/);
   assert.doesNotMatch(content, />\s*Trocar espaço\s*</);
+});
+
+test('AUTH3: durante a troca, o rótulo indica "Alterando espaço…" -- nunca antecipa o destino como já ativo', async () => {
+  const content = await source('AccountMenu.jsx');
+  assert.match(
+    content,
+    /const toggleWorkspaceLabel = isSwitchingWorkspace\s*\n\s*\? 'Alterando espaço…'\s*\n\s*: `Ir para \$\{getWorkspaceContextLabel\(destinationWorkspaceType\)\}`;/,
+  );
+});
+
+test('AUTH3: item de troca fica desabilitado enquanto isSwitchingWorkspace -- impede nova troca antes da anterior terminar', async () => {
+  const content = await source('AccountMenu.jsx');
+  assert.match(content, /disabled=\{isSwitchingWorkspace\}\s*\n\s*onClick=\{\(\) => closeAnd\(onToggleWorkspace\)\}/);
 });
 
 test('destino é o OPOSTO do contexto ativo -- PJ ativo mostra ida para Pessoal e vice-versa', async () => {
@@ -98,6 +111,6 @@ test('props tem defaults seguros (AccountMenu nao quebra se usado sem elas)', as
   const content = await source('AccountMenu.jsx');
   assert.match(
     content,
-    /function AccountMenu\(\{\s*\n\s*profileName = 'UniFlow',\s*\n\s*profileEmail = '',\s*\n\s*activeContext,\s*\n\s*onToggleWorkspace = \(\) => \{\},\s*\n\s*onSignOut = \(\) => \{\},\s*\n\s*isSigningOut = false,\s*\n\s*\}\)/,
+    /function AccountMenu\(\{\s*\n\s*profileName = 'UniFlow',\s*\n\s*profileEmail = '',\s*\n\s*activeContext,\s*\n\s*onToggleWorkspace = \(\) => \{\},\s*\n\s*isSwitchingWorkspace = false,\s*\n\s*onSignOut = \(\) => \{\},\s*\n\s*isSigningOut = false,\s*\n\s*\}\)/,
   );
 });
