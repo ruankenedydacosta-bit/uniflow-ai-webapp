@@ -4,7 +4,7 @@ import { buildUniPrefillFromState } from '../categories/categoryUtils.js';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import { useUniConversation } from '../uni-conversation';
-import { useUniLlm } from '../uni-llm';
+import { useUniLlm, AI_STATUS } from '../uni-llm';
 import { useUniVoiceOutput } from '../uni-voice-output';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
 import { useGoals } from '../goals/useGoals';
@@ -25,6 +25,7 @@ import ChatInput from './components/ChatInput';
 
 import ScrollToLatest from './components/ScrollToLatest';
 import HistoryPanel from './components/HistoryPanel';
+import ErrorState from './components/ErrorState';
 import {
   SUGGESTIONS_PESSOAL,
   SUGGESTIONS_EMPRESA,
@@ -202,6 +203,22 @@ export default function UniChatPage() {
   const activeIdRef = useRef(activeId);
   const convDbIdsRef = useRef({});
 
+  // Integracao com a IA: estado da chamada real ao LLM, separado de `isTyping` (que
+  // tambem cobre o atraso simulado do caminho deterministico). Usa o
+  // vocabulario AI_STATUS ja consolidado na infraestrutura de IA -- SUCCESS/ERROR aqui nunca decidem o
+  // que e exibido no chat (isso continua sendo sempre a mensagem final via
+  // buildUniMessage), servem apenas para o botao cancelar e o aviso de erro
+  // com nova tentativa.
+  const [aiStatus, setAiStatus] = useState(AI_STATUS.UNAVAILABLE);
+  // Guarda a ultima pergunta que foi (ou deveria ter sido) respondida pelo
+  // LLM, para "tentar novamente" sem o usuario redigitar.
+  const lastUnresolvedRef = useRef(null);
+  // Marcado pelo proprio botao cancelar ANTES de chamar uniLlm.cancel() --
+  // e a unica forma de diferenciar "cancelado pelo usuario" de "falhou"
+  // depois que a chamada resolve (o orquestrador nunca lanca e nunca expoe
+  // o codigo do erro ao chamador).
+  const aiCancelledRef = useRef(false);
+
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
@@ -341,6 +358,8 @@ export default function UniChatPage() {
     setPendingAction(null);
     setExecutionError(null);
     setIsExecutingAction(false);
+    setAiStatus(AI_STATUS.UNAVAILABLE);
+    lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
     const candidates = updated
@@ -526,6 +545,8 @@ export default function UniChatPage() {
     setPendingAction(null);
     setExecutionError(null);
     setIsExecutingAction(false);
+    setAiStatus(AI_STATUS.UNAVAILABLE);
+    lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
     saveActiveId(id);
@@ -549,9 +570,11 @@ export default function UniChatPage() {
   }
 
   async function handleUnresolvedMessage(text, history) {
+    lastUnresolvedRef.current = { text, history };
     let llmText = null;
     if (uniLlm.enabled) {
       setIsTyping(true);
+      setAiStatus(AI_STATUS.LOADING);
       try {
         const outcome = await uniLlm.generateContextualResponse({
           text,
@@ -567,15 +590,43 @@ export default function UniChatPage() {
       } finally {
         setIsTyping(false);
       }
+
+      // Nunca mostra o aviso de erro/nova tentativa quando o proprio usuario
+      // cancelou -- isso e uma acao deliberada, nao uma falha. O estado volta
+      // a UNAVAILABLE (neutro), mas lastUnresolvedRef continua disponivel
+      // para "tentar novamente" reaproveitar o mesmo texto.
+      if (llmText) {
+        setAiStatus(AI_STATUS.SUCCESS);
+      } else if (aiCancelledRef.current) {
+        setAiStatus(AI_STATUS.UNAVAILABLE);
+      } else {
+        setAiStatus(AI_STATUS.ERROR);
+      }
+      aiCancelledRef.current = false;
     }
     const assistantMsg = buildUniMessage(llmText || UNI_DETERMINISTIC_FALLBACK_TEXT);
     pushMessage(assistantMsg);
     syncMessageToSupabase(assistantMsg);
   }
 
+  function handleCancelAi() {
+    if (aiStatus !== AI_STATUS.LOADING) return;
+    aiCancelledRef.current = true;
+    uniLlm.cancel();
+  }
+
+  function handleRetryAi() {
+    const pending = lastUnresolvedRef.current;
+    if (!pending || isTyping) return;
+    setAiStatus(AI_STATUS.UNAVAILABLE);
+    void handleUnresolvedMessage(pending.text, pending.history);
+  }
+
   function sendText(text) {
     if (!text.trim() || isTyping || isConfirming) return;
     setExecutionError(null);
+    setAiStatus(AI_STATUS.UNAVAILABLE);
+    lastUnresolvedRef.current = null;
     stickToBottom.current = true;
     const historySnapshot = messages;
 
@@ -674,6 +725,8 @@ export default function UniChatPage() {
     setPendingAction(null);
     setExecutionError(null);
     setIsExecutingAction(false);
+    setAiStatus(AI_STATUS.UNAVAILABLE);
+    lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
     const candidates = conversations
@@ -718,6 +771,8 @@ export default function UniChatPage() {
     setPendingAction(null);
     setExecutionError(null);
     setIsExecutingAction(false);
+    setAiStatus(AI_STATUS.UNAVAILABLE);
+    lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
     stickToBottom.current = true;
@@ -750,6 +805,8 @@ export default function UniChatPage() {
       setPendingAction(null);
       setExecutionError(null);
       setIsExecutingAction(false);
+      setAiStatus(AI_STATUS.UNAVAILABLE);
+      lastUnresolvedRef.current = null;
       confirmingRef.current = false;
       financialConversation.reset();
       saveHistory(nextList);
@@ -892,7 +949,23 @@ export default function UniChatPage() {
                 isSpeaking={speakingId === message.id}
               />
             ))}
-            {isTyping && <TypingIndicator />}
+            {isTyping && (
+              <>
+                <TypingIndicator />
+                {aiStatus === AI_STATUS.LOADING && (
+                  <button
+                    type="button"
+                    className={styles.cancelAiButton}
+                    onClick={handleCancelAi}
+                  >
+                    Cancelar resposta
+                  </button>
+                )}
+              </>
+            )}
+            {!isTyping && aiStatus === AI_STATUS.ERROR && (
+              <ErrorState onRetry={handleRetryAi} />
+            )}
             <div ref={bottomRef} />
           </div>
         )}

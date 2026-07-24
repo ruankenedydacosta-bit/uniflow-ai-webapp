@@ -87,6 +87,23 @@
   line-height: 1.4;
 }
 
+.cancelAiButton {
+  align-self: center;
+  margin-top: 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--uni-border);
+  border-radius: var(--uni-radius-pill, 999px);
+  background: var(--uni-surface);
+  color: var(--uni-text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelAiButton:hover {
+  background: var(--uni-surface-raised);
+}
+
 .reconnectBanner {
   text-align: center;
   font-size: 11px;

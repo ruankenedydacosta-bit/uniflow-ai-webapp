@@ -183,11 +183,21 @@ test('DashboardPage renderiza condicionalmente mobile ou desktop sem duplicar DO
   assert.match(source, /dashboard/);
 });
 
-test('UniChatPage nao possui estado hasError morto ou ErrorState nao utilizado', async () => {
+test('UniChatPage nao possui estado hasError morto (nunca existiu um setHasError solto)', async () => {
   const source = await readFile(new URL('../features/uni-chat/UniChatPage.jsx', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /setHasError\(/);
   assert.doesNotMatch(source, /useState\(false\).*hasError/);
-  assert.doesNotMatch(source, /<ErrorState/);
+});
+
+// Integracao com a IA: ErrorState (antes um componente morto, sem nenhum
+// consumidor) agora e usado de proposito para o erro amigavel + "tentar
+// novamente" de uma resposta de IA que falhou -- nunca para o fluxo
+// deterministico nem para erros de execucao de acao financeira (que ja tem
+// tratamento proprio via executionError/MessageBubble).
+test('UniChatPage usa ErrorState de proposito para falha da IA, com retry real (nao um import morto)', async () => {
+  const source = await readFile(new URL('../features/uni-chat/UniChatPage.jsx', import.meta.url), 'utf8');
+  assert.match(source, /import ErrorState from '\.\/components\/ErrorState';/);
+  assert.match(source, /aiStatus === AI_STATUS\.ERROR && \(\s*\n\s*<ErrorState onRetry=\{handleRetryAi\} \/>\s*\n\s*\)/);
 });
 
 test('routes.jsx nao possui alias Unused UniChatProtoPage', async () => {
