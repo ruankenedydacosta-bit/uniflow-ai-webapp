@@ -24,13 +24,24 @@ export const MORE_MENU_ROUTES = deepFreeze([
   { id: 'profile', label: 'Perfil', icon: '◎', group: 'account', path: '/configuracoes', section: 'profile', moduleId: MODULE_IDS.CONFIGURACOES },
   { id: 'settings', label: 'Configurações', icon: '⚙', group: 'account', path: '/configuracoes', moduleId: MODULE_IDS.CONFIGURACOES },
   { id: 'security', label: 'Segurança', icon: '◇', group: 'account', path: '/configuracoes', section: 'security', moduleId: MODULE_IDS.CONFIGURACOES },
+  // Grupo 'management': mesmos módulos BUSINESS_ONLY já usados pela Sidebar
+  // desktop (moduleAccess.js) -- ate UX2 essas 3 rotas nao existiam em lugar
+  // nenhum da navegacao mobile (achado P0 da auditoria UX1), so acessiveis
+  // digitando a URL direto. Visibilidade derivada exclusivamente de
+  // filterShellRoutesByContext/canAccessModule, sem nova regra hardcoded.
+  { id: 'clients', label: 'Clientes', icon: '◈', group: 'management', path: '/clientes', moduleId: MODULE_IDS.CLIENTES },
+  { id: 'crm', label: 'CRM', icon: '◆', group: 'management', path: '/crm', moduleId: MODULE_IDS.CRM },
+  { id: 'projects', label: 'Projetos', icon: '▤', group: 'management', path: '/projetos', moduleId: MODULE_IDS.PROJETOS },
   { id: 'goals', label: 'Objetivos', icon: '○', group: 'product', path: '/objetivos', moduleId: MODULE_IDS.OBJETIVOS },
   { id: 'future', label: 'Visão de Futuro', icon: '◎', group: 'product', path: '/futuro', moduleId: MODULE_IDS.FUTURO },
   { id: 'categories', label: 'Categorias', icon: '▦', group: 'product', path: '/categorias', moduleId: MODULE_IDS.CATEGORIAS },
   { id: 'open-finance', label: 'Open Finance', icon: '⇄', group: 'product', path: '/open-finance', moduleId: MODULE_IDS.OPEN_FINANCE },
   { id: 'reports', label: 'Relatórios', icon: '▥', group: 'product', path: '/relatorios', moduleId: MODULE_IDS.RELATORIOS },
-  { id: 'notifications', label: 'Notificações', icon: '!', group: 'product', action: 'notifications' },
-  { id: 'support', label: 'Suporte', icon: '?', group: 'product', action: 'support' },
+  // comingSoon: true -- ainda sem funcionalidade real (achado P0 da UX1:
+  // eram clicaveis sem nenhuma acao). Sem `path` nem `action`: MoreMenu
+  // renderiza como item desabilitado, nunca chama onNavigate/onAction.
+  { id: 'notifications', label: 'Notificações', icon: '!', group: 'product', comingSoon: true },
+  { id: 'support', label: 'Suporte', icon: '?', group: 'product', comingSoon: true },
   { id: 'sign-out', label: 'Sair', icon: '↪', group: 'session', action: 'sign-out', destructive: true },
 ]);
 

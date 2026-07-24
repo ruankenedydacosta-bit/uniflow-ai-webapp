@@ -125,3 +125,16 @@ test('estado de workspace ausente (shouldHidePreviousWorkspace) continua renderi
   assert.match(content, /shouldHidePreviousWorkspace \? \(/);
   assert.match(content, /role="status" aria-live="polite"/);
 });
+
+// ============================================================================
+// UX2 -- avatar mobile executa navegacao real para /configuracoes
+// ============================================================================
+
+test('headerProps.onAvatarPress navega para /configuracoes -- corrige o clique morto do avatar mobile (achado P0 da UX1)', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  const headerPropsBlock = content.slice(
+    content.indexOf('headerProps={{'),
+    content.indexOf('}}\n    >'),
+  );
+  assert.match(headerPropsBlock, /onAvatarPress: \(\) => navigate\('\/configuracoes'\),/);
+});

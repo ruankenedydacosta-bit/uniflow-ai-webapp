@@ -124,6 +124,9 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
         contextMessage: workspaceSwitchError?.message
           ?? (!selectedWorkspaceExists ? missingProfileMessage : null),
         isContextLoading: isSwitchingWorkspace,
+        // Corrige o clique morto do avatar mobile (achado P0 da UX1): nesta
+        // fase apenas navega para Configuracoes, sem bottom sheet/pagina nova.
+        onAvatarPress: () => navigate('/configuracoes'),
         onContextChange: handleContextChange,
       }}
     >

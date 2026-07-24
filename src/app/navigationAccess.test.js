@@ -86,8 +86,17 @@ test('BottomNavigation nunca expõe rota proibida no contexto', () => {
 test('Menu Mais PF/PJ: só módulos permitidos + ações puras', () => {
   const pf = filterShellRoutesByContext(MORE_MENU_ROUTES, PF);
   const pj = filterShellRoutesByContext(MORE_MENU_ROUTES, PJ);
-  // Nenhum item de módulo restrito hoje → composição idêntica.
-  assert.deepEqual(labels(pf), labels(pj));
+  // UX2: grupo "Gestão" (Clientes/CRM/Projetos) é BUSINESS_ONLY -- só aparece
+  // em PJ, mesmo padrão já usado pela Sidebar desktop (ver teste da linha 59).
+  assert.ok(!labels(pf).includes('Clientes'));
+  assert.ok(!labels(pf).includes('CRM'));
+  assert.ok(!labels(pf).includes('Projetos'));
+  assert.ok(labels(pj).includes('Clientes'));
+  assert.ok(labels(pj).includes('CRM'));
+  assert.ok(labels(pj).includes('Projetos'));
+  // Fora do grupo Gestão, a composição continua idêntica nos dois contextos.
+  const withoutManagement = (items) => items.filter((i) => i.group !== 'management');
+  assert.deepEqual(labels(withoutManagement(pf)), labels(withoutManagement(pj)));
   // Ações puras (sem moduleId) sempre presentes.
   assert.ok(pf.some((i) => i.id === 'sign-out'));
   assert.ok(pf.some((i) => i.id === 'notifications'));

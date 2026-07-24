@@ -361,6 +361,33 @@
   color: var(--uf-color-danger);
 }
 
+.drawerItemActive {
+  border-color: var(--uf-color-primary);
+  background: var(--uf-color-primary-subtle);
+}
+
+.drawerItemDisabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.drawerItemDisabled .drawerItemIcon {
+  background: var(--uf-color-bg-sunken);
+  color: var(--uf-color-text-tertiary);
+}
+
+.drawerItemLabelGroup {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawerItemComingSoon {
+  color: var(--uf-color-text-tertiary);
+  font-size: var(--uf-text-micro-size);
+}
+
 .desktopSidebar {
   display: none;
 }

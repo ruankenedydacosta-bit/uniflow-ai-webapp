@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAccess } from '../../app/AccessContext.jsx';
 import { MORE_MENU_ROUTES, filterShellRoutesByContext } from './shellRoutes.js';
 import styles from './MobileAppShell.module.css';
@@ -6,6 +7,7 @@ import styles from './MobileAppShell.module.css';
 function MoreMenu({ isOpen, items = MORE_MENU_ROUTES, onClose, onNavigate, onAction }) {
   const closeButtonRef = useRef(null);
   const { currentWorkspace } = useAccess();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -24,6 +26,9 @@ function MoreMenu({ isOpen, items = MORE_MENU_ROUTES, onClose, onNavigate, onAct
   // Sem links empresariais em PF nem PF-exclusivos em PJ; ações puras seguem sempre.
   const visibleItems = filterShellRoutesByContext(items, currentWorkspace);
   const accountItems = visibleItems.filter((item) => item.group === 'account');
+  // Grupo 'management': CRM/Clientes/Projetos, BUSINESS_ONLY em moduleAccess.js
+  // -- some sozinho em PF via filterShellRoutesByContext acima, sem regra propria.
+  const managementItems = visibleItems.filter((item) => item.group === 'management');
   const productItems = visibleItems.filter((item) => item.group === 'product');
   const signOutItem = visibleItems.find((item) => item.id === 'sign-out');
 
@@ -33,17 +38,44 @@ function MoreMenu({ isOpen, items = MORE_MENU_ROUTES, onClose, onNavigate, onAct
     onClose?.();
   };
 
-  const renderItem = (item) => (
-    <button
-      key={item.id}
-      type="button"
-      className={`${styles.drawerItem} ${item.destructive ? styles.drawerItemDanger : ''}`}
-      onClick={() => handleItem(item)}
-    >
-      <span className={styles.drawerItemIcon} aria-hidden="true">{item.icon}</span>
-      <span>{item.label}</span>
-    </button>
-  );
+  // Itens comingSoon (Notificações/Suporte) nunca navegam nem disparam acao --
+  // renderizados como <button disabled>, nao clicaveis por mouse/teclado/AT,
+  // com rotulo "Em breve" visivel (achado P0 da UX1: eram cliques mortos sem
+  // nenhum feedback).
+  const renderItem = (item) => {
+    if (item.comingSoon) {
+      return (
+        <button
+          key={item.id}
+          type="button"
+          className={`${styles.drawerItem} ${styles.drawerItemDisabled}`}
+          disabled
+          aria-disabled="true"
+        >
+          <span className={styles.drawerItemIcon} aria-hidden="true">{item.icon}</span>
+          <span className={styles.drawerItemLabelGroup}>
+            <span>{item.label}</span>
+            <span className={styles.drawerItemComingSoon}>Em breve</span>
+          </span>
+        </button>
+      );
+    }
+
+    const isActive = Boolean(item.path) && location.pathname === item.path;
+
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={`${styles.drawerItem} ${item.destructive ? styles.drawerItemDanger : ''} ${isActive ? styles.drawerItemActive : ''}`}
+        aria-current={isActive ? 'page' : undefined}
+        onClick={() => handleItem(item)}
+      >
+        <span className={styles.drawerItemIcon} aria-hidden="true">{item.icon}</span>
+        <span>{item.label}</span>
+      </button>
+    );
+  };
 
   return (
     <div className={styles.drawerLayer} data-more-menu>
@@ -61,6 +93,12 @@ function MoreMenu({ isOpen, items = MORE_MENU_ROUTES, onClose, onNavigate, onAct
             <section className={styles.drawerGroup} aria-labelledby="more-account-title">
               <h3 id="more-account-title" className={styles.drawerGroupTitle}>Conta</h3>
               <div className={styles.drawerItems}>{accountItems.map(renderItem)}</div>
+            </section>
+          ) : null}
+          {managementItems.length ? (
+            <section className={styles.drawerGroup} aria-labelledby="more-management-title">
+              <h3 id="more-management-title" className={styles.drawerGroupTitle}>Gestão</h3>
+              <div className={styles.drawerItems}>{managementItems.map(renderItem)}</div>
             </section>
           ) : null}
           {productItems.length ? (
