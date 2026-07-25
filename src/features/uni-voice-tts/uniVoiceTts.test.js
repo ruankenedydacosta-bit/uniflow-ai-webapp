@@ -352,3 +352,21 @@ test('Edge Function usa o mesmo criterio de timeout/AbortController ja validado 
 test('Edge Function usa TTS_FUNCTION_NAME identico ao configurado no frontend', () => {
   assert.equal(TTS_FUNCTION_NAME, 'uni-voice-tts');
 });
+
+// ----------------------------------------------------------------------------
+// ELEVEN2 -- useVoicePreference: fonte unica lida por SettingsPage e
+// UniChatPage, backed por voicePreferenceStorage.js (ja testado a parte).
+// ----------------------------------------------------------------------------
+
+test('useVoicePreference le o valor inicial de readVoicePreferenceEnabled e escreve via writeVoicePreferenceEnabled ao mudar', () => {
+  const source = readFileSync(new URL('./useVoicePreference.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ readVoicePreferenceEnabled, writeVoicePreferenceEnabled \} from '\.\/voicePreferenceStorage\.js';/);
+  assert.match(source, /useState\(\(\) => readVoicePreferenceEnabled\(\)\)/);
+  assert.match(source, /writeVoicePreferenceEnabled\(next\);/);
+});
+
+test('index.js do modulo exporta useVoicePreference e o storage puro', () => {
+  const source = readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  assert.match(source, /export \{ useVoicePreference \} from '\.\/useVoicePreference\.js';/);
+  assert.match(source, /readVoicePreferenceEnabled,\s*\n\s*writeVoicePreferenceEnabled,/);
+});

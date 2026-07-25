@@ -166,6 +166,35 @@
   background: var(--uf-glass-bg);
 }
 
+.voiceToggleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-12);
+  cursor: pointer;
+}
+
+.voiceToggleRow input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--uf-color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.voiceToggleRow span {
+  display: grid;
+  gap: var(--uf-space-4);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.voiceToggleRow small {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-regular, 400);
+}
+
 .profileDetails div {
   display: grid;
   gap: var(--uf-space-4);

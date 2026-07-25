@@ -1,6 +1,13 @@
 import UniAvatar from './UniAvatar';
 import ActionConfirmation from './ActionConfirmation';
+import { VOICE_TTS_STATUS } from '../../uni-voice-tts';
 import styles from './MessageBubble.module.css';
+
+const VOICE_STATUS_LABELS = Object.freeze({
+  [VOICE_TTS_STATUS.LOADING]: 'Gerando voz…',
+  [VOICE_TTS_STATUS.PLAYING]: 'Reproduzindo',
+  [VOICE_TTS_STATUS.PAUSED]: 'Pausado',
+});
 
 export default function MessageBubble({
   message,
@@ -9,9 +16,13 @@ export default function MessageBubble({
   onCancelAction,
   isExecuting = false,
   executionError = null,
-  onSpeak,
-  isSpeaking = false,
-  canSpeak = false,
+  voiceEnabled = false,
+  voiceStatus = VOICE_TTS_STATUS.IDLE,
+  voiceError = null,
+  isActiveVoiceMessage = false,
+  onSpeakMessage,
+  onPauseResumeVoice,
+  onStopVoice,
 }) {
   const isUser = message.from === 'user';
 
@@ -45,7 +56,32 @@ export default function MessageBubble({
     message.type === 'suggestion' ? styles.suggestion : '',
   ].join(' ');
 
-  const showSpeak = !isUser && canSpeak && typeof onSpeak === 'function' && message.text;
+  const showSpeak = !isUser && voiceEnabled && typeof onSpeakMessage === 'function' && message.text;
+  const activeStatus = isActiveVoiceMessage ? voiceStatus : VOICE_TTS_STATUS.IDLE;
+  const isLoadingVoice = activeStatus === VOICE_TTS_STATUS.LOADING;
+  const isPlayingVoice = activeStatus === VOICE_TTS_STATUS.PLAYING;
+  const isPausedVoice = activeStatus === VOICE_TTS_STATUS.PAUSED;
+  const isErrorVoice = activeStatus === VOICE_TTS_STATUS.ERROR;
+  const showStopVoice = isPlayingVoice || isPausedVoice;
+
+  function handlePrimaryVoiceClick() {
+    if (isLoadingVoice) return;
+    if (isPlayingVoice || isPausedVoice) {
+      onPauseResumeVoice?.();
+      return;
+    }
+    onSpeakMessage?.(message);
+  }
+
+  const primaryVoiceLabel = isLoadingVoice
+    ? 'Gerando voz…'
+    : isPlayingVoice
+      ? 'Pausar leitura da resposta'
+      : isPausedVoice
+        ? 'Retomar leitura da resposta'
+        : isErrorVoice
+          ? 'Tentar novamente'
+          : 'Ouvir resposta da Uni';
 
   return (
     <div className={`${styles.row} ${isUser ? styles.rowUser : ''}`}>
@@ -61,17 +97,41 @@ export default function MessageBubble({
         <div className={styles.metaRow}>
           {message.time && <span className={styles.time}>{message.time}</span>}
           {showSpeak && (
-            <button
-              type="button"
-              className={`${styles.speakBtn} ${isSpeaking ? styles.speakBtnActive : ''}`}
-              onClick={() => onSpeak(message)}
-              aria-pressed={isSpeaking}
-              aria-label={isSpeaking ? 'Parar leitura da resposta' : 'Ouvir resposta da Uni'}
-              title={isSpeaking ? 'Parar' : 'Ouvir resposta'}
-            >
-              {isSpeaking ? <StopIcon /> : <SpeakerIcon />}
-              <span>{isSpeaking ? 'Parar' : 'Ouvir'}</span>
-            </button>
+            <div className={styles.voiceControls}>
+              <button
+                type="button"
+                className={`${styles.speakBtn} ${isPlayingVoice || isPausedVoice ? styles.speakBtnActive : ''}`}
+                onClick={handlePrimaryVoiceClick}
+                disabled={isLoadingVoice}
+                aria-pressed={isPlayingVoice}
+                aria-busy={isLoadingVoice}
+                aria-label={primaryVoiceLabel}
+                title={primaryVoiceLabel}
+              >
+                {isPlayingVoice ? <PauseIcon /> : isPausedVoice ? <SpeakerIcon /> : <SpeakerIcon />}
+                <span>
+                  {isLoadingVoice ? 'Gerando…' : isPlayingVoice ? 'Pausar' : isPausedVoice ? 'Retomar' : isErrorVoice ? 'Tentar novamente' : 'Ouvir'}
+                </span>
+              </button>
+              {showStopVoice && (
+                <button
+                  type="button"
+                  className={styles.stopVoiceBtn}
+                  onClick={() => onStopVoice?.()}
+                  aria-label="Parar leitura da resposta"
+                  title="Parar"
+                >
+                  <StopIcon />
+                </button>
+              )}
+              {(isLoadingVoice || isPlayingVoice || isPausedVoice || isErrorVoice) && (
+                <span className={styles.voiceStatus} role="status" aria-live="polite">
+                  {isErrorVoice
+                    ? (voiceError?.message ?? 'Não foi possível reproduzir esta resposta.')
+                    : VOICE_STATUS_LABELS[activeStatus]}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -93,6 +153,15 @@ function StopIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="6" y="6" width="12" height="12" rx="2" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="6" y="5" width="4" height="14" rx="1" />
+      <rect x="14" y="5" width="4" height="14" rx="1" />
     </svg>
   );
 }

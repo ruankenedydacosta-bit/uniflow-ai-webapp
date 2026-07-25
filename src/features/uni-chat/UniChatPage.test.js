@@ -109,12 +109,12 @@ test('falha/ausência de suporte a voz mantém a digitação funcional (input se
   assert.match(chatInput, /onChange=\{\(e\) => onChange\(e\.target\.value\)\}/);
 });
 
-test('saída por voz é opcional: MessageBubble renderiza o texto independentemente de canSpeak/onSpeak', async () => {
+test('saída por voz é opcional: MessageBubble renderiza o texto independentemente de voiceEnabled/onSpeakMessage', async () => {
   const bubble = await source('components/MessageBubble.jsx');
-  assert.match(bubble, /canSpeak = false/);
+  assert.match(bubble, /voiceEnabled = false/);
   assert.match(bubble, /<p className=\{styles\.text\}>/);
   const showSpeakLine = bubble.match(/const showSpeak = .*/)?.[0] ?? '';
-  assert.match(showSpeakLine, /canSpeak/);
+  assert.match(showSpeakLine, /voiceEnabled/);
 });
 
 // ============================================================================
@@ -234,6 +234,96 @@ test('componente único para desktop e mobile (responsivo via CSS) -- sem fork c
 test('nenhum log de texto de mensagem/prompt no console -- só o(s) código(s) de erro, nunca dado sensível', async () => {
   const page = await source('UniChatPage.jsx');
   assert.doesNotMatch(page, /console\.(log|info|warn|error)\(/);
+});
+
+// ============================================================================
+// ELEVEN2 -- integração da voz nas respostas do chat: fundação geral
+// (uni-voice-tts) substitui o uso da infra de demo (uni-voice-output) NESTE
+// ponto, sem duplicar player/estado; interrupção em todos os pontos de
+// troca de contexto; texto e voz permanecem camadas independentes.
+// ============================================================================
+
+test('UniChatPage usa exclusivamente useUniVoiceTts/useVoicePreference/VOICE_TTS_STATUS -- não importa mais useUniVoiceOutput', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{ useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS \} from '\.\.\/uni-voice-tts';/);
+  // O comentario de cabecalho pode CITAR o hook antigo por contexto
+  // arquitetural; o que nao pode existir e um import real dele.
+  assert.doesNotMatch(page, /from '\.\.\/uni-voice-output'/);
+  assert.doesNotMatch(page, /\buseUniVoiceOutput\(/);
+});
+
+test('handleSpeakMessage marca a mensagem ativa ANTES de chamar speak() -- MessageBubble já reflete loading no primeiro render', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('const handleSpeakMessage = useCallback'),
+    page.indexOf('const handlePauseResumeVoice'),
+  );
+  assert.match(fnBody, /if \(!message\?\.text\) return;/);
+  assert.match(fnBody, /setVoiceMessageId\(message\.id\);/);
+  assert.match(fnBody, /void uniVoice\.speak\(message\.text\);/);
+  const setIdx = fnBody.indexOf('setVoiceMessageId(message.id);');
+  const speakIdx = fnBody.indexOf('void uniVoice.speak(message.text);');
+  assert.ok(setIdx >= 0 && speakIdx > setIdx, 'a mensagem ativa deve ser marcada antes de iniciar a geração');
+});
+
+test('handlePauseResumeVoice alterna pause/resume conforme o status atual do hook compartilhado', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('const handlePauseResumeVoice = useCallback'),
+    page.indexOf('const handleStopVoice'),
+  );
+  assert.match(fnBody, /if \(uniVoice\.status === VOICE_TTS_STATUS\.PLAYING\) \{\s*\n\s*uniVoice\.pause\(\);/);
+  assert.match(fnBody, /\} else if \(uniVoice\.status === VOICE_TTS_STATUS\.PAUSED\) \{\s*\n\s*uniVoice\.resume\(\);/);
+});
+
+test('apenas uma instância de useUniVoiceTts para todo o chat -- "apenas um áudio ativo" vem do próprio provider (ELEVEN1), sem duplicar estado por mensagem', async () => {
+  const page = await source('UniChatPage.jsx');
+  const occurrences = page.match(/useUniVoiceTts\(\)/g) ?? [];
+  assert.equal(occurrences.length, 1);
+});
+
+test('trocar de conversa, novo chat, trocar modo/workspace e excluir a conversa ativa sempre interrompem o áudio (uniVoice.stop + reset da mensagem ativa)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const occurrences = page.match(/uniVoice\.stop\(\);\s*\n\s*(?:\/\/[^\n]*\n\s*)?setVoiceMessageId\(null\);/g) ?? [];
+  // switchConversation + handleNewChat + efeito de troca de workspace +
+  // handleModeChange + handleDeleteConversation (ativa) == 5 pontos.
+  assert.equal(occurrences.length, 5);
+});
+
+test('MessageBubble recebe o estado compartilhado de voz e sabe se É a mensagem ativa (isActiveVoiceMessage)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /voiceEnabled=\{voicePreference\.enabled\}/);
+  assert.match(page, /voiceStatus=\{uniVoice\.status\}/);
+  assert.match(page, /voiceError=\{uniVoice\.error\}/);
+  assert.match(page, /isActiveVoiceMessage=\{voiceMessageId === message\.id\}/);
+  assert.match(page, /onSpeakMessage=\{handleSpeakMessage\}/);
+  assert.match(page, /onPauseResumeVoice=\{handlePauseResumeVoice\}/);
+  assert.match(page, /onStopVoice=\{handleStopVoice\}/);
+});
+
+test('preferência desabilitada oculta o controle (voiceEnabled=false vira showSpeak=false em MessageBubble) -- sem prop adicional de "forçar parar"', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const voicePreference = useVoicePreference\(\);/);
+});
+
+test('falha de voz (ERROR) nunca mexe em messages/persistência -- texto e voz são camadas independentes', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('const handleSpeakMessage = useCallback'),
+    page.indexOf('const handlePauseResumeVoice'),
+  );
+  assert.doesNotMatch(fnBody, /setMessages|pushMessage|syncMessageToSupabase/);
+});
+
+test('autoplay inexistente: uniVoice.speak só é chamado dentro de handleSpeakMessage (acionado por clique explícito), em nenhum useEffect', async () => {
+  const page = await source('UniChatPage.jsx');
+  const occurrences = page.match(/uniVoice\.speak\(/g) ?? [];
+  assert.equal(occurrences.length, 1, 'uniVoice.speak deve ter exatamente um ponto de chamada: dentro de handleSpeakMessage');
+});
+
+test('nenhum fetch/chamada direta à ElevenLabs em UniChatPage -- tudo passa por uniVoice (hook)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.doesNotMatch(page, /ELEVENLABS|elevenlabs\.io|xi-api-key/i);
 });
 
 test('nenhum arquivo do escopo do Uni Chat importa OpenAI ou faz fetch/axios direto', async () => {

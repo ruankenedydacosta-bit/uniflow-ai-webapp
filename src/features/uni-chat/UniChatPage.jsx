@@ -5,7 +5,7 @@ import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import { useUniConversation } from '../uni-conversation';
 import { useUniLlm, AI_STATUS } from '../uni-llm';
-import { useUniVoiceOutput } from '../uni-voice-output';
+import { useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS } from '../uni-voice-tts';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
 import { useGoals } from '../goals/useGoals';
 import { buildFutureProjections } from '../future/futureService';
@@ -73,26 +73,36 @@ export default function UniChatPage() {
 
   const personalityProfileId = profile?.uni_personality_profile ?? 'balanced';
 
-  const voiceOutput = useUniVoiceOutput({ personalityProfileId });
+  // ELEVEN2: fundacao geral de TTS (ELEVEN1) conectada ao chat -- substitui
+  // o uso anterior de useUniVoiceOutput (infra de demo com allowlist) NESTE
+  // ponto de integracao. uni-voice-output continua existindo/testado, so
+  // deixou de ser consumido pelo chat principal (evita dois players/estados
+  // de voz ativos ao mesmo tempo).
+  const uniVoice = useUniVoiceTts();
+  const voicePreference = useVoicePreference();
   const uniLlm = useUniLlm();
-  const [speakingId, setSpeakingId] = useState(null);
+  // Qual mensagem o estado COMPARTILHADO de uniVoice.status representa
+  // agora -- so essa mensagem mostra Gerando/Reproduzindo/Pausado/Erro;
+  // as demais sempre veem IDLE (botao "Ouvir" neutro).
+  const [voiceMessageId, setVoiceMessageId] = useState(null);
 
   const handleSpeakMessage = useCallback((message) => {
     if (!message?.text) return;
-    if (speakingId === message.id) {
-      voiceOutput.stop();
-      setSpeakingId(null);
-      return;
+    setVoiceMessageId(message.id);
+    void uniVoice.speak(message.text);
+  }, [uniVoice]);
+
+  const handlePauseResumeVoice = useCallback(() => {
+    if (uniVoice.status === VOICE_TTS_STATUS.PLAYING) {
+      uniVoice.pause();
+    } else if (uniVoice.status === VOICE_TTS_STATUS.PAUSED) {
+      uniVoice.resume();
     }
-    voiceOutput.stop();
-    setSpeakingId(message.id);
-    const settle = () =>
-      setSpeakingId((current) => (current === message.id ? null : current));
-    const playback = voiceOutput.premiumSupported
-      ? voiceOutput.speakPremium(message.text, { fallbackText: message.text })
-      : voiceOutput.speakBrowser(message.text);
-    Promise.resolve(playback).finally(settle);
-  }, [speakingId, voiceOutput]);
+  }, [uniVoice]);
+
+  const handleStopVoice = useCallback(() => {
+    uniVoice.stop();
+  }, [uniVoice]);
 
   const financialFallback = access.currentWorkspace === 'personal'
     ? financialCrudMock.personal
@@ -350,9 +360,11 @@ export default function UniChatPage() {
     prevWorkspaceRef.current = access.currentWorkspace;
     const correctMode = workspaceTypeToMode(access.currentWorkspace);
     if (correctMode === mode) return;
+    uniVoice.stop();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
     saveHistory(updated);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConversations(updated);
     setMode(correctMode);
     setPendingAction(null);
@@ -529,8 +541,8 @@ export default function UniChatPage() {
     const conv = conversations.find((c) => c.id === id);
     if (!conv) return;
 
-    voiceOutput.stop();
-    setSpeakingId(null);
+    uniVoice.stop();
+    setVoiceMessageId(null);
 
     const requestId = ++loadRequestIdRef.current;
 
@@ -719,6 +731,8 @@ export default function UniChatPage() {
 
   function handleModeChange(next) {
     if (next === mode) return;
+    uniVoice.stop();
+    setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
     saveHistory(updated);
     setConversations(updated);
@@ -757,8 +771,8 @@ export default function UniChatPage() {
   }
 
   function handleNewChat() {
-    voiceOutput.stop();
-    setSpeakingId(null);
+    uniVoice.stop();
+    setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
     const conv = createLocalConversation(mode);
     const nextList = [...updated, conv];
@@ -797,6 +811,8 @@ export default function UniChatPage() {
 
     const withRemoval = conversations.filter((c) => c.id !== id);
     if (deletingActive) {
+      uniVoice.stop();
+      setVoiceMessageId(null);
       const conv = createLocalConversation(mode);
       const nextList = [...withRemoval, conv];
       setConversations(nextList);
@@ -944,9 +960,13 @@ export default function UniChatPage() {
                 onCancelAction={handleCancelAction}
                 isExecuting={isExecutingAction}
                 executionError={message.confirmation?.status === 'pending' ? executionError : null}
-                canSpeak={message.from === 'uni'}
-                onSpeak={handleSpeakMessage}
-                isSpeaking={speakingId === message.id}
+                voiceEnabled={voicePreference.enabled}
+                voiceStatus={uniVoice.status}
+                voiceError={uniVoice.error}
+                isActiveVoiceMessage={voiceMessageId === message.id}
+                onSpeakMessage={handleSpeakMessage}
+                onPauseResumeVoice={handlePauseResumeVoice}
+                onStopVoice={handleStopVoice}
               />
             ))}
             {isTyping && (
