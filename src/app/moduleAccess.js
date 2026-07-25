@@ -32,6 +32,7 @@ export const MODULE_IDS = Object.freeze({
   CONFIGURACOES: 'configuracoes',
   CATEGORIAS: 'categorias',
   OPEN_FINANCE: 'open-finance',
+  SUPORTE: 'suporte',
 });
 
 /**
@@ -52,6 +53,7 @@ export const MODULE_ACCESS = Object.freeze({
   [MODULE_IDS.CONFIGURACOES]: BOTH,
   [MODULE_IDS.CATEGORIAS]: BOTH,
   [MODULE_IDS.OPEN_FINANCE]: BOTH,
+  [MODULE_IDS.SUPORTE]: BOTH,
 });
 
 // Reservado para uso futuro / clareza de intenção (mecanismo suporta PF-only).

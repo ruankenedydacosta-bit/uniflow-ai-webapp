@@ -50,10 +50,11 @@ test('Clientes/CRM/Projetos nao estao duplicados em nenhum outro grupo do menu m
 });
 
 // ============================================================================
-// UX2/NOTIF1 -- Suporte permanece comingSoon (nunca navega nem executa
-// handler vazio, achado P0 da UX1: eram cliques mortos sem feedback).
-// Notificações passou a ser uma acao real (NOTIF1): abre o painel
-// compartilhado com o sino desktop via handleShellAction, nunca comingSoon.
+// UX2/NOTIF1 -- Notificações e uma acao real (NOTIF1): abre o painel
+// compartilhado com o sino desktop via handleShellAction.
+// SUPORTE1 -- Suporte deixou de ser comingSoon: agora e uma rota real
+// (/suporte, MODULE_IDS.SUPORTE), disponivel em ambos os workspaces (BOTH
+// em moduleAccess.js), igual a qualquer outro modulo real da shell.
 // ============================================================================
 
 test('Notificações e uma acao real (open-notifications), nunca comingSoon nem clique morto', () => {
@@ -63,14 +64,14 @@ test('Notificações e uma acao real (open-notifications), nunca comingSoon nem 
   assert.equal(byId.notifications.action, 'open-notifications');
 });
 
-test('Suporte continua comingSoon, sem path nem action (nunca navega nem dispara handler)', () => {
+test('Suporte e uma rota real (/suporte), nunca mais comingSoon', () => {
   const byId = Object.fromEntries(MORE_MENU_ROUTES.map((item) => [item.id, item]));
-  assert.equal(byId.support.comingSoon, true);
-  assert.equal(byId.support.path, undefined);
+  assert.equal(byId.support.comingSoon, undefined);
+  assert.equal(byId.support.path, '/suporte');
   assert.equal(byId.support.action, undefined);
 });
 
-test('Notificações e Suporte continuam sempre visiveis (sem moduleId, nao dependem de PF/PJ)', () => {
+test('Notificações continua sempre visivel (sem moduleId); Suporte visivel em PF e PJ (moduleId BOTH)', () => {
   const visibleBusiness = filterShellRoutesByContext(MORE_MENU_ROUTES, 'business').map((item) => item.id);
   const visiblePersonal = filterShellRoutesByContext(MORE_MENU_ROUTES, 'personal').map((item) => item.id);
   assert.ok(visibleBusiness.includes('notifications'));
@@ -79,10 +80,10 @@ test('Notificações e Suporte continuam sempre visiveis (sem moduleId, nao depe
   assert.ok(visiblePersonal.includes('support'));
 });
 
-test('nenhum item comingSoon possui moduleId de modulo real (sao acoes puras, sempre visiveis)', () => {
+test('Notificações continua sem moduleId (acao pura); Suporte agora tem MODULE_IDS.SUPORTE (rota real)', () => {
   const byId = Object.fromEntries(MORE_MENU_ROUTES.map((item) => [item.id, item]));
   assert.equal(byId.notifications.moduleId, undefined);
-  assert.equal(byId.support.moduleId, undefined);
+  assert.equal(byId.support.moduleId, 'suporte');
 });
 
 // ============================================================================

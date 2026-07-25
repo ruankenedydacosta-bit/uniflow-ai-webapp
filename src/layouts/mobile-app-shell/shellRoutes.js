@@ -44,9 +44,10 @@ export const MORE_MENU_ROUTES = deepFreeze([
   // NOTIF1: primeira versao funcional -- abre o mesmo painel de
   // notificacoes do sino no header (handleShellAction em
   // AuthenticatedLayout.jsx), reaproveitando useNotifications/Modal, sem
-  // logica paralela. Suporte permanece comingSoon (fora de escopo).
+  // logica paralela.
   { id: 'notifications', label: 'Notificações', icon: '!', group: 'product', action: 'open-notifications' },
-  { id: 'support', label: 'Suporte', icon: '?', group: 'product', comingSoon: true },
+  // SUPORTE1: Central de Suporte real -- substitui o item comingSoon.
+  { id: 'support', label: 'Suporte', icon: '?', group: 'product', path: '/suporte', moduleId: MODULE_IDS.SUPORTE },
   { id: 'sign-out', label: 'Sair', icon: '↪', group: 'session', action: 'sign-out', destructive: true },
 ]);
 

@@ -54,6 +54,11 @@ function dbToConversation(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     archivedAt: row.archived_at,
+    // SUPORTE1: 'financial' (default, chat da Uni) ou 'support' (Central de
+    // Suporte) -- linhas anteriores a esta fase nao tem a coluna preenchida
+    // explicitamente no SELECT abaixo, entao caem no default 'financial' do
+    // proprio banco; aqui so refletimos o que veio.
+    conversationType: row.conversation_type || 'financial',
   };
 }
 
@@ -110,10 +115,11 @@ export async function listConversations(workspaceId, mode) {
   const wsType = workspaceModeToType(mode);
   const { data, error } = await supabase
     .from(CONVERSATIONS_TABLE)
-    .select('id, title, workspace_type, created_at, updated_at, archived_at')
+    .select('id, title, workspace_type, conversation_type, created_at, updated_at, archived_at')
     .eq('user_id', userId)
     .eq('workspace_id', workspaceId)
     .eq('workspace_type', wsType)
+    .eq('conversation_type', 'financial')
     .is('archived_at', null)
     .order('updated_at', { ascending: false });
 
@@ -163,6 +169,71 @@ export async function createConversation(mode, workspaceId) {
       title: '',
     })
     .select('id, title, workspace_type, created_at, updated_at, archived_at')
+    .single();
+
+  if (error) {
+    markOffline();
+    return null;
+  }
+
+  markOnline();
+  return dbToConversation(data);
+}
+
+// —————— SUPORTE1: conversas de suporte (mesma tabela, conversation_type='support') ——————
+//
+// Deliberadamente funções separadas de listConversations/createConversation
+// (financeiro) em vez de um parâmetro extra ali: a Central de Suporte NUNCA
+// filtra por workspace/modo PF-PJ (o histórico de suporte é do usuário, não
+// do espaço financeiro ativo), então o filtro é genuinamente diferente, não
+// apenas um valor a mais no mesmo shape de query.
+
+export async function listSupportConversations() {
+  if (!supabase) return null;
+  const userId = await getUserId();
+  if (!userId) return null;
+
+  const { data, error } = await supabase
+    .from(CONVERSATIONS_TABLE)
+    .select('id, title, workspace_type, conversation_type, created_at, updated_at, archived_at')
+    .eq('user_id', userId)
+    .eq('conversation_type', 'support')
+    .is('archived_at', null)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    markOffline();
+    return null;
+  }
+
+  markOnline();
+  return data.map(dbToConversation);
+}
+
+export async function createSupportConversation(workspaceId, workspaceType) {
+  if (!supabase) return null;
+  const userId = await getUserId();
+  if (!userId) return null;
+
+  // workspace_id/workspace_type sao NOT NULL na tabela (mesmo schema do
+  // chat financeiro) -- guardamos o espaco ativo no momento da criacao so
+  // por completude/auditoria futura; a listagem de suporte (acima) nunca
+  // filtra por eles, entao um valor "errado" aqui nunca esconde ou mistura
+  // conversas de suporte entre si. `workspaceType` aqui ja e o valor final
+  // do banco ('personal'/'business', ex.: access.currentWorkspace) -- NAO
+  // o `mode` ('pessoal'/'empresa') do chat financeiro, entao nao passa por
+  // workspaceModeToType.
+  const dbWorkspaceType = workspaceType === 'business' ? 'business' : 'personal';
+  const { data, error } = await supabase
+    .from(CONVERSATIONS_TABLE)
+    .insert({
+      user_id: userId,
+      workspace_id: workspaceId,
+      workspace_type: dbWorkspaceType,
+      conversation_type: 'support',
+      title: '',
+    })
+    .select('id, title, workspace_type, conversation_type, created_at, updated_at, archived_at')
     .single();
 
   if (error) {

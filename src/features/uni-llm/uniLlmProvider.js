@@ -141,7 +141,11 @@ export function createUniLlmProvider({
       return { text: null, usage: null, error: { code: 'EMPTY', message: 'llm_empty_response' } };
     }
 
-    return { text, usage: data?.usage ?? null, error: null };
+    // SUPORTE1: repassa `knowledge` (metadados de auditoria do modo suporte
+    // -- documentos usados, matched, escalate) quando presente na resposta.
+    // Ausente/undefined em chamadas financeiras (mode omitido) -- nunca
+    // quebra o contrato existente, so acrescenta um campo novo.
+    return { text, usage: data?.usage ?? null, knowledge: data?.knowledge ?? null, error: null };
   }
 
   return {

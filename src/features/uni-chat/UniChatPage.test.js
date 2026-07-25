@@ -145,7 +145,7 @@ test('handleUnresolvedMessage marca AI_STATUS.LOADING so quando uniLlm.enabled, 
   assert.match(fnBody, /if \(uniLlm\.enabled\) \{\s*\n\s*setIsTyping\(true\);\s*\n\s*setAiStatus\(AI_STATUS\.LOADING\);/);
 });
 
-test('sucesso marca AI_STATUS.SUCCESS; falha real marca ERROR; cancelamento do usuario NUNCA marca ERROR (volta a UNAVAILABLE)', async () => {
+test('sucesso marca AI_STATUS.SUCCESS; falha real marca ERROR; cancelamento do usuario NUNCA marca ERROR (marca CANCELLED, estado neutro proprio)', async () => {
   const page = await source('UniChatPage.jsx');
   const fnBody = page.slice(
     page.indexOf('async function handleUnresolvedMessage'),
@@ -153,9 +153,15 @@ test('sucesso marca AI_STATUS.SUCCESS; falha real marca ERROR; cancelamento do u
   );
   assert.match(
     fnBody,
-    /if \(llmText\) \{\s*\n\s*setAiStatus\(AI_STATUS\.SUCCESS\);\s*\n\s*\} else if \(aiCancelledRef\.current\) \{\s*\n\s*setAiStatus\(AI_STATUS\.UNAVAILABLE\);\s*\n\s*\} else \{\s*\n\s*setAiStatus\(AI_STATUS\.ERROR\);\s*\n\s*\}/,
+    /if \(llmText\) \{\s*\n\s*setAiStatus\(AI_STATUS\.SUCCESS\);\s*\n\s*\} else if \(aiCancelledRef\.current\) \{[\s\S]*?setAiStatus\(AI_STATUS\.CANCELLED\);\s*\n\s*\} else \{\s*\n\s*setAiStatus\(AI_STATUS\.ERROR\);\s*\n\s*\}/,
   );
   assert.match(fnBody, /aiCancelledRef\.current = false;/);
+});
+
+test('CANCELLED nunca renderiza o mesmo banner vermelho de ERROR -- usa ErrorState variant="cancelled" (estado neutro)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /aiStatus === AI_STATUS\.CANCELLED[\s\S]{0,80}<ErrorState variant="cancelled" \/>/);
+  assert.match(page, /aiStatus === AI_STATUS\.ERROR[\s\S]{0,80}<ErrorState onRetry=\{handleRetryAi\} \/>/);
 });
 
 test('a mensagem final (sucesso ou fallback determinístico) sempre é enviada e persistida, mesmo apos cancelamento -- interface nunca trava sem resposta', async () => {

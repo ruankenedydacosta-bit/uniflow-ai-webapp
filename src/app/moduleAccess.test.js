@@ -60,6 +60,7 @@ const REQUIRED_MODULE_PATHS = {
   [MODULE_IDS.FUTURO]: '/futuro',
   [MODULE_IDS.OBJETIVOS]: '/objetivos',
   [MODULE_IDS.UNI_AI]: '/uni-ai',
+  [MODULE_IDS.SUPORTE]: '/suporte',
 };
 
 test('routes.jsx: módulos obrigatórios possuem rota válida com o path esperado', () => {
@@ -199,4 +200,28 @@ test('nenhum arquivo restante importa PageScaffold', async () => {
     const content = await readFile(new URL(file, import.meta.url), 'utf8');
     assert.doesNotMatch(content, /PageScaffold/);
   }
+});
+
+// ============================================================================
+// SUPORTE1 -- Central de Suporte: rota real, disponível em PF e PJ (BOTH),
+// substituindo o item comingSoon do menu mobile.
+// ============================================================================
+
+test('SUPORTE1: modulo "suporte" e BOTH (disponivel em PF e PJ)', () => {
+  assert.ok(canAccessModule(MODULE_IDS.SUPORTE, PF));
+  assert.ok(canAccessModule(MODULE_IDS.SUPORTE, PJ));
+});
+
+test('SUPORTE1: /suporte existe em appRoutes com o moduleId correto', () => {
+  assert.ok(appRoutePaths.includes('/suporte'));
+  assert.match(appRoutesBlock, /path: '\/suporte'[\s\S]{0,80}moduleId: MODULE_IDS\.SUPORTE/);
+});
+
+test('SUPORTE1: /suporte aparece na navegação desktop e no menu mobile (Mais)', () => {
+  const navPaths = navigationItems.map((item) => item.path);
+  assert.ok(navPaths.includes('/suporte'));
+  assert.ok(shellPaths.includes('/suporte'));
+  const moreMenuSupport = MORE_MENU_ROUTES.find((item) => item.id === 'support');
+  assert.equal(moreMenuSupport.path, '/suporte');
+  assert.equal(moreMenuSupport.comingSoon, undefined);
 });

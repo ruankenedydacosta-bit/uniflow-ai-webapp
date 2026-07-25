@@ -610,7 +610,10 @@ export default function UniChatPage() {
       if (llmText) {
         setAiStatus(AI_STATUS.SUCCESS);
       } else if (aiCancelledRef.current) {
-        setAiStatus(AI_STATUS.UNAVAILABLE);
+        // SUPORTE1: estado proprio (nunca ERROR) -- cancelamento deliberado
+        // do usuario deve mostrar uma nota neutra, nunca o banner vermelho
+        // de falha real (ErrorState variant="cancelled").
+        setAiStatus(AI_STATUS.CANCELLED);
       } else {
         setAiStatus(AI_STATUS.ERROR);
       }
@@ -985,6 +988,9 @@ export default function UniChatPage() {
             )}
             {!isTyping && aiStatus === AI_STATUS.ERROR && (
               <ErrorState onRetry={handleRetryAi} />
+            )}
+            {!isTyping && aiStatus === AI_STATUS.CANCELLED && (
+              <ErrorState variant="cancelled" />
             )}
             <div ref={bottomRef} />
           </div>

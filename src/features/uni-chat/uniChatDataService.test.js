@@ -102,3 +102,49 @@ test('conexao offline/online e rastreada e notificada aos assinantes (banner de 
   assert.match(content, /export function getConnectionStatus\(\)/);
   assert.match(content, /export function subscribeConnectionStatus\(fn\)/);
 });
+
+// ============================================================================
+// SUPORTE1 -- conversas de suporte reaproveitam uni_conversations/uni_messages
+// (conversation_type='support'), mas com funções PRÓPRIAS de listagem/criação
+// -- nunca filtradas por workspace/PF-PJ como o chat financeiro.
+// ============================================================================
+
+test('listConversations (financeiro) agora também filtra por conversation_type=financial -- nunca mistura com conversas de suporte', async () => {
+  const content = await source('uniChatDataService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function listConversations'),
+    content.indexOf('export async function listAllConversations'),
+  );
+  assert.match(fnBody, /\.eq\('conversation_type', 'financial'\)/);
+});
+
+test('listSupportConversations filtra por user_id + conversation_type=support, sem nenhum filtro de workspace/PF-PJ', async () => {
+  const content = await source('uniChatDataService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function listSupportConversations'),
+    content.indexOf('export async function createSupportConversation'),
+  );
+  assert.match(fnBody, /\.eq\('user_id', userId\)/);
+  assert.match(fnBody, /\.eq\('conversation_type', 'support'\)/);
+  assert.doesNotMatch(fnBody, /\.eq\('workspace_type'/);
+  assert.doesNotMatch(fnBody, /\.eq\('workspace_id'/);
+});
+
+test('createSupportConversation grava conversation_type=support e o user_id do usuário autenticado', async () => {
+  const content = await source('uniChatDataService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function createSupportConversation'),
+    content.indexOf('export async function updateConversationTitle'),
+  );
+  assert.match(fnBody, /conversation_type: 'support',/);
+  assert.match(fnBody, /user_id: userId,/);
+});
+
+test('dbToConversation expõe conversationType (default financial quando a coluna não vem no SELECT)', async () => {
+  const content = await source('uniChatDataService.js');
+  const fnBody = content.slice(
+    content.indexOf('function dbToConversation'),
+    content.indexOf('function dbToMessage'),
+  );
+  assert.match(fnBody, /conversationType: row\.conversation_type \|\| 'financial',/);
+});

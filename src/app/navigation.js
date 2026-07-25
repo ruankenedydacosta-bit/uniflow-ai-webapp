@@ -158,6 +158,16 @@ export const navigationItems = [
     description: 'Preferências do usuário, espaço e produto.',
     group: 'conta',
   },
+  {
+    label: 'Suporte',
+    path: '/suporte',
+    moduleId: MODULE_IDS.SUPORTE,
+    modes: ALL_MODES,
+    plans: ALL_PLANS,
+    workspaces: getModuleContexts(MODULE_IDS.SUPORTE),
+    description: 'Central de Suporte -- perguntas frequentes e atendimento com a Uni.',
+    group: 'conta',
+  },
 ];
 
 // O filtro usa o acesso demo hoje; depois será alimentado pelo onboarding/login reais.

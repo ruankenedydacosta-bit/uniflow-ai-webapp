@@ -17,6 +17,8 @@ import OpenFinancePage from '../pages/OpenFinancePage';
 import { CategoriesPage } from '../features/categories';
 import { FuturePage } from '../features/future';
 const UniChatPage = lazy(() => import('../features/uni-chat/UniChatPage'));
+// eslint-disable-next-line react-refresh/only-export-components -- mesmo padrao pre-existente da linha acima (UniChatPage)
+const SupportCenterPage = lazy(() => import('../features/uni-support/SupportCenterPage'));
 import { MobileWelcomePage } from '../features/auth-mobile';
 import { MODULE_IDS } from './moduleAccess.js';
 
@@ -176,5 +178,16 @@ export const appRoutes = [
     label: 'Configurações',
     title: 'Configurações',
     element: <SettingsPage />,
+  },
+  {
+    path: '/suporte',
+    moduleId: MODULE_IDS.SUPORTE,
+    label: 'Suporte',
+    title: 'Central de Suporte',
+    element: (
+      <Suspense fallback={null}>
+        <SupportCenterPage />
+      </Suspense>
+    ),
   },
 ];

@@ -417,3 +417,51 @@ test('chamada em modo suporte inclui mode e productContext no corpo enviado', as
   assert.equal(parsed.mode, 'support');
   assert.deepEqual(parsed.productContext, productContext);
 });
+
+// ============================================================================
+// SUPORTE1 -- useUniLlm passa a expor generateSupportResponse, com a MESMA
+// instância de provider (transporte compartilhado com o financeiro).
+// AI_STATUS ganha CANCELLED (cancelamento nunca deve parecer um erro real).
+// ============================================================================
+
+test('useUniLlm expoe generateSupportResponse, compartilhando a MESMA instancia de provider do financeiro', async () => {
+  const source = readFileSync(new URL('./useUniLlm.js', import.meta.url), 'utf8');
+  assert.match(source, /const supportOrchestrator = createUniSupportOrchestrator\(\{ provider \}\);/);
+  assert.match(source, /const financialOrchestrator = createUniLlmOrchestrator\(\{ provider \}\);/);
+  assert.match(source, /async generateSupportResponse\(input\) \{/);
+  assert.match(source, /return supportOrchestrator\.generateSupportResponse\(input\);/);
+});
+
+test('generateSupportResponse tambem respeita a flag/config desabilitada (nunca chama o orquestrador se config.enabled for falso)', async () => {
+  const source = readFileSync(new URL('./useUniLlm.js', import.meta.url), 'utf8');
+  const fnBody = source.slice(
+    source.indexOf('async generateSupportResponse(input) {'),
+    source.indexOf('// OPENAI1: checagem de disponibilidade'),
+  );
+  assert.match(fnBody, /if \(!config\.enabled\) return null;/);
+});
+
+test('AI_STATUS.CANCELLED existe e e distinto de ERROR (cancelamento deliberado nunca deve parecer falha real)', async () => {
+  const { AI_STATUS } = await import('./aiStatus.js');
+  assert.equal(AI_STATUS.CANCELLED, 'cancelled');
+  assert.notEqual(AI_STATUS.CANCELLED, AI_STATUS.ERROR);
+});
+
+test('provider repassa knowledge da resposta da Edge Function quando presente (modo suporte); ausente/null em chamadas financeiras', async () => {
+  const providerWithKnowledge = makeProvider({
+    fetchImpl: async () => jsonResponse(200, {
+      text: 'resposta de suporte',
+      usage: { promptTokens: 1 },
+      mode: 'support',
+      knowledge: { matched: true, usedDocumentIds: ['uni-voice'], escalate: false },
+    }),
+  });
+  const withKnowledge = await providerWithKnowledge.generateResponse({ messages: [{ role: 'user', content: 'oi' }], mode: 'support', productContext: [] });
+  assert.deepEqual(withKnowledge.knowledge, { matched: true, usedDocumentIds: ['uni-voice'], escalate: false });
+
+  const providerFinancial = makeProvider({
+    fetchImpl: async () => jsonResponse(200, { text: 'resposta financeira', usage: { promptTokens: 1 } }),
+  });
+  const financialResult = await providerFinancial.generateResponse({ system: 'sys', messages: [{ role: 'user', content: 'oi' }] });
+  assert.equal(financialResult.knowledge, null);
+});

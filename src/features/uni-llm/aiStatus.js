@@ -14,6 +14,12 @@ export const AI_STATUS = Object.freeze({
   RESPONDING: 'responding',
   ERROR: 'error',
   SUCCESS: 'success',
+  // SUPORTE1: cancelamento deliberado do usuario -- distinto de ERROR para
+  // que a interface mostre um estado neutro ("Resposta cancelada."), nunca
+  // o banner vermelho de falha real. Nao afeta deriveAiStatus (funcao pura
+  // ja existente, sem sinal de "cancelado" -- quem cancela e sempre o
+  // proprio consumidor, via acao explicita do usuario).
+  CANCELLED: 'cancelled',
 });
 
 /**

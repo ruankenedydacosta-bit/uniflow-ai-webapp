@@ -1,6 +1,18 @@
 import styles from './ErrorState.module.css';
 
-export default function ErrorState({ onRetry }) {
+// SUPORTE1: variant 'cancelled' cobre o cancelamento deliberado do usuario --
+// nunca deve parecer uma falha real (sem vermelho, sem icone de alerta, sem
+// "tentar novamente", já que o usuário decidiu parar, não algo que precise
+// ser corrigido). variant 'error' é o comportamento original, inalterado.
+export default function ErrorState({ onRetry, variant = 'error' }) {
+  if (variant === 'cancelled') {
+    return (
+      <p className={styles.cancelledNote} role="status">
+        Resposta cancelada.
+      </p>
+    );
+  }
+
   return (
     <div className={styles.wrap} role="alert">
       <div className={styles.iconWrap}>

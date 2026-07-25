@@ -64,3 +64,11 @@
   .wrap { flex-wrap: wrap; }
   .retry { width: 100%; }
 }
+
+.cancelledNote {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--uf-color-text-tertiary);
+  animation: uniErrorIn 0.32s var(--uni-ease, ease-out);
+}
