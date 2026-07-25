@@ -72,8 +72,9 @@ for (const entry of PRODUCT_KNOWLEDGE_MANIFEST) {
 
 // 3) documento em disco sem entrada correspondente no manifesto (orfao)
 const registeredFiles = new Set(PRODUCT_KNOWLEDGE_MANIFEST.map((e) => e.file.split('/').pop()));
+const NON_KNOWLEDGE_DOCS = new Set(['SUPPORT_HANDOFF.md', 'OPENAI_RUNTIME.md']);
 const filesOnDisk = existsSync(DOCS_DIR)
-  ? readdirSync(DOCS_DIR).filter((name) => name.endsWith('.md') && name !== 'SUPPORT_HANDOFF.md')
+  ? readdirSync(DOCS_DIR).filter((name) => name.endsWith('.md') && !NON_KNOWLEDGE_DOCS.has(name))
   : [];
 for (const file of filesOnDisk) {
   if (!registeredFiles.has(file)) fail(`arquivo em docs/product-knowledge/ sem entrada no manifesto: ${file}`);

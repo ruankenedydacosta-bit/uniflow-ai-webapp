@@ -120,7 +120,8 @@ test('listAvailableStatuses retorna todos os status do vocabulário', () => {
 test('docs/product-knowledge não tem arquivo .md órfão (sem entrada correspondente no manifesto)', () => {
   const docsDir = join(REPO_ROOT, 'docs', 'product-knowledge');
   const registeredFiles = new Set(PRODUCT_KNOWLEDGE_MANIFEST.map((entry) => entry.file.split('/').pop()));
-  const filesOnDisk = readdirSync(docsDir).filter((name) => name.endsWith('.md') && name !== 'SUPPORT_HANDOFF.md');
+  const nonKnowledgeDocs = new Set(['SUPPORT_HANDOFF.md', 'OPENAI_RUNTIME.md']);
+  const filesOnDisk = readdirSync(docsDir).filter((name) => name.endsWith('.md') && !nonKnowledgeDocs.has(name));
   for (const file of filesOnDisk) {
     assert.ok(registeredFiles.has(file), `arquivo órfão, sem entrada no manifesto: ${file}`);
   }

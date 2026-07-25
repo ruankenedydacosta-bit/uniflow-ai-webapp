@@ -13,6 +13,19 @@
 // - Rate limit (429) e erros repassados como status tratados pelo frontend.
 // - Adapter de provedor isolado (callOpenAiAdapter) = ponto unico de troca.
 //
+// OPENAI4: auditoria confirmou que a Chat Completions API
+// (POST /v1/chat/completions) continua oficialmente suportada e e a forma
+// mais simples/seguindo o que ja estava validado -- nao migramos para a
+// Responses API sem necessidade (ela e recomendada para fluxos agenticos
+// com tools/estado gerenciado pela OpenAI, que a Uni nao usa nesta fase).
+// Duas mudancas server-side, ambas confirmadas contra a lista real de
+// modelos da conta (nunca por suposicao) e testadas com chamadas reais:
+// (1) role 'developer' no lugar de 'system' -- 'system' esta sendo
+// substituido por 'developer' nos modelos mais recentes da OpenAI (a API
+// aceita ambos para a familia GPT atual, mas 'developer' e o caminho
+// oficial daqui pra frente); (2) modelo padrao atualizado de gpt-4o-mini
+// para um modelo "mini" da geracao atual, ainda de baixo custo.
+//
 // OPENAI3: dois modos explicitos (UNI_MODE.FINANCIAL / UNI_MODE.SUPPORT).
 // FINANCIAL preserva o comportamento exato de OPENAI1/OPENAI2 -- o `system`
 // enviado pelo frontend (personalidade + resumo financeiro) e usado como
@@ -134,12 +147,25 @@ function normalizeMessages(raw: unknown) {
     .slice(-MAX_MESSAGES);
 }
 
+// Motivo normalizado do resultado -- usado so para observabilidade segura
+// (logSafeMetric) e para o mapeamento de status HTTP. Nunca carrega texto.
+type AdapterOutcome =
+  | { status: 200; text: string | null; usage: { promptTokens: number; completionTokens: number } | null; reason: 'ok' | 'empty' | 'refusal' }
+  | { status: 401; text: null; usage: null; reason: 'invalid_key' }
+  | { status: 429; text: null; usage: null; reason: 'rate_limit' | 'insufficient_quota' }
+  | { status: 502; text: null; usage: null; reason: 'provider_error' | 'server_error' };
+
 // Adapter OpenAI: unico ponto que conhece o provedor concreto. Para trocar de
 // provedor no futuro, basta implementar outro adapter com a mesma assinatura.
+// OPENAI4: distingue chave invalida (401), rate limit (429 generico) de
+// saldo insuficiente (429 com error.code=insufficient_quota -- ambos
+// chegam como HTTP 429 na Chat Completions API, o campo error.code e a
+// unica forma oficial de diferenciar os dois), e erro do lado do provedor
+// (>=500) de erro de payload nosso (4xx que nao seja auth/quota).
 async function callOpenAiAdapter(
   { apiKey, model, system, messages, signal }:
   { apiKey: string; model: string; system: string; messages: Array<{ role: string; content: string }>; signal: AbortSignal },
-) {
+): Promise<AdapterOutcome> {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -148,26 +174,77 @@ async function callOpenAiAdapter(
     },
     body: JSON.stringify({
       model,
-      max_tokens: MAX_OUTPUT_TOKENS,
+      // OPENAI4: 'max_tokens' foi rejeitado pela API real com
+      // unsupported_parameter para o modelo atual -- confirmado por uma
+      // chamada real (nao suposicao): "'max_tokens' is not supported with
+      // this model. Use 'max_completion_tokens' instead." Esse e o nome
+      // atual do parametro na Chat Completions API para a familia de
+      // modelos em uso.
+      max_completion_tokens: MAX_OUTPUT_TOKENS,
       temperature: 0.5,
-      messages: [{ role: 'system', content: system }, ...messages],
+      // 'developer' e o role oficial atual para instrucoes de sistema na
+      // familia de modelos GPT em uso (substitui 'system'; ver comentario
+      // no topo do arquivo).
+      messages: [{ role: 'developer', content: system }, ...messages],
     }),
     signal,
   });
 
+  if (response.status === 401) {
+    return { status: 401, text: null, usage: null, reason: 'invalid_key' };
+  }
   if (response.status === 429) {
-    return { status: 429 as const, text: null, usage: null };
+    let code = '';
+    try {
+      const errBody = await response.json();
+      code = typeof errBody?.error?.code === 'string' ? errBody.error.code : '';
+    } catch { /* corpo de erro nao veio como JSON -- trata como rate limit generico */ }
+    return {
+      status: 429,
+      text: null,
+      usage: null,
+      reason: code === 'insufficient_quota' ? 'insufficient_quota' : 'rate_limit',
+    };
   }
   if (!response.ok) {
-    return { status: 502 as const, text: null, usage: null };
+    return { status: 502, text: null, usage: null, reason: response.status >= 500 ? 'server_error' : 'provider_error' };
   }
 
   const data = await response.json();
-  const text = data?.choices?.[0]?.message?.content;
+  const choice = data?.choices?.[0];
+  const refusal = choice?.message?.refusal;
+  if (typeof refusal === 'string' && refusal) {
+    return { status: 200, text: null, usage: null, reason: 'refusal' };
+  }
+  const text = choice?.message?.content;
   const usage = data?.usage
     ? { promptTokens: data.usage.prompt_tokens, completionTokens: data.usage.completion_tokens }
     : null;
-  return { status: 200 as const, text: typeof text === 'string' ? text : null, usage };
+  if (typeof text !== 'string' || !text) {
+    return { status: 200, text: null, usage, reason: 'empty' };
+  }
+  return { status: 200, text, usage, reason: 'ok' };
+}
+
+// OPENAI4: observabilidade segura -- so metadados operacionais, nunca texto
+// de pergunta/resposta, contexto financeiro ou conhecimento de produto.
+// Vai para os logs da propria Edge Function (painel do Supabase); nenhuma
+// tabela nova nesta fase (os logs seguros ja bastam no volume atual).
+function logSafeMetric(entry: {
+  mode: string; model: string; durationMs: number; status: number; reason: string;
+  promptTokens: number | null; completionTokens: number | null;
+}) {
+  console.log(JSON.stringify({
+    at: 'uni-chat-llm',
+    ts: new Date().toISOString(),
+    mode: entry.mode,
+    model: entry.model,
+    durationMs: entry.durationMs,
+    status: entry.status,
+    reason: entry.reason,
+    promptTokens: entry.promptTokens,
+    completionTokens: entry.completionTokens,
+  }));
 }
 
 Deno.serve(async (request) => {
@@ -182,7 +259,12 @@ Deno.serve(async (request) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
   const providerKey = Deno.env.get('OPENAI_API_KEY') ?? '';
-  const model = Deno.env.get('UNI_LLM_MODEL') ?? 'gpt-4o-mini';
+  // OPENAI4: default atualizado apos confirmar (chamada real server-side
+  // a /v1/models, nunca por suposicao) quais modelos existem nesta conta.
+  // gpt-5.4-mini e a geracao "mini" (custo controlado) mais recente
+  // disponivel -- ver docs/product-knowledge/OPENAI_RUNTIME.md para o
+  // raciocinio completo e as alternativas descartadas.
+  const model = Deno.env.get('UNI_LLM_MODEL') ?? 'gpt-5.4-mini';
 
   // Sem credencial do provedor -> feature indisponivel. Frontend faz fallback.
   if (!supabaseUrl || !anonKey || !providerKey) {
@@ -227,6 +309,17 @@ Deno.serve(async (request) => {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort('timeout'), PROVIDER_TIMEOUT_MS);
+  const startedAt = Date.now();
+
+  function finish(status: number, reason: string, body: Record<string, unknown>, usage?: { promptTokens: number; completionTokens: number } | null) {
+    logSafeMetric({
+      mode, model, status, reason,
+      durationMs: Date.now() - startedAt,
+      promptTokens: usage?.promptTokens ?? null,
+      completionTokens: usage?.completionTokens ?? null,
+    });
+    return jsonResponse(status, body);
+  }
 
   try {
     const result = await callOpenAiAdapter({
@@ -237,22 +330,34 @@ Deno.serve(async (request) => {
       signal: controller.signal,
     });
 
-    if (result.status === 429) return jsonResponse(429, { error: 'Muitas solicitacoes. Tente em instantes.' });
+    if (result.status === 401) {
+      // Chave invalida/revogada -- nunca reflete detalhe do provedor ao cliente.
+      return finish(503, result.reason, { error: 'A resposta por IA nao esta configurada neste ambiente.' });
+    }
+    if (result.status === 429 && result.reason === 'insufficient_quota') {
+      return finish(503, result.reason, { error: 'A resposta por IA nao esta disponivel no momento.' });
+    }
+    if (result.status === 429) {
+      return finish(429, result.reason, { error: 'Muitas solicitacoes. Tente em instantes.' });
+    }
     if (result.status !== 200 || !result.text) {
-      return jsonResponse(502, { error: 'Nao consegui gerar uma resposta agora.' });
+      // Cobre: erro do provedor (502), resposta vazia e recusa do modelo --
+      // todas tratadas de forma identica ao usuario (fallback deterministico
+      // no frontend), mas distinguidas no log seguro via `reason`.
+      return finish(502, result.reason, { error: 'Nao consegui gerar uma resposta agora.' });
     }
 
     const text = clampText(result.text, 2000);
     if (!text || looksLikeStructuredFinancialAction(text)) {
       // Nunca repassar acao financeira estruturada. Forca fallback deterministico.
-      return jsonResponse(422, { error: 'Resposta invalida.' });
+      return finish(422, 'structured_action_blocked', { error: 'Resposta invalida.' });
     }
 
     if (mode === UNI_MODE.SUPPORT) {
       // Metadados internos de auditoria (OPENAI3, secao 10) -- nao expostos
       // de forma confusa na interface atual, mas disponiveis para uma
       // futura Central de Suporte decidir se deve escalonar para humano.
-      return jsonResponse(200, {
+      return finish(200, 'ok', {
         text,
         usage: result.usage,
         mode,
@@ -261,14 +366,14 @@ Deno.serve(async (request) => {
           matched: productContext.length > 0,
           escalate: productContext.length === 0,
         },
-      });
+      }, result.usage);
     }
 
-    return jsonResponse(200, { text, usage: result.usage });
+    return finish(200, 'ok', { text, usage: result.usage }, result.usage);
   } catch (error) {
     const timedOut = controller.signal.reason === 'timeout'
       || (error instanceof DOMException && error.name === 'AbortError');
-    return jsonResponse(timedOut ? 504 : 502, { error: 'Nao consegui gerar uma resposta agora.' });
+    return finish(timedOut ? 504 : 502, timedOut ? 'timeout' : 'network_error', { error: 'Nao consegui gerar uma resposta agora.' });
   } finally {
     clearTimeout(timeout);
   }
