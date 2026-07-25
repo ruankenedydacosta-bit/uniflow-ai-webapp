@@ -379,3 +379,41 @@ test('buildLlmPayload nao vaza vocabulario de um contexto para o outro ao trocar
   // nao ha estado compartilhado entre as duas chamadas (troca de contexto == sem residuo).
   assert.notEqual(businessPayload.system, personalPayload.system);
 });
+
+// ============================================================================
+// OPENAI3 -- extensao do provider para o payload de UNI_MODE.SUPPORT. O
+// chat financeiro (chamada sem mode/productContext) continua enviando
+// exatamente { system, messages }, byte-identico a OPENAI1/OPENAI2.
+// ============================================================================
+
+test('chamada financeira (sem mode/productContext) envia corpo byte-identico a OPENAI1/OPENAI2', async () => {
+  let capturedBody = null;
+  const provider = makeProvider({
+    fetchImpl: async (_url, init) => {
+      capturedBody = init.body;
+      return jsonResponse(200, { text: 'ok' });
+    },
+  });
+  await provider.generateResponse({ system: 'sys', messages: [{ role: 'user', content: 'oi' }] });
+  assert.deepEqual(JSON.parse(capturedBody), { system: 'sys', messages: [{ role: 'user', content: 'oi' }] });
+});
+
+test('chamada em modo suporte inclui mode e productContext no corpo enviado', async () => {
+  let capturedBody = null;
+  const provider = makeProvider({
+    fetchImpl: async (_url, init) => {
+      capturedBody = init.body;
+      return jsonResponse(200, { text: 'ok', mode: 'support', knowledge: { matched: true, usedDocumentIds: ['uni-voice'], escalate: false } });
+    },
+  });
+  const productContext = [{ id: 'uni-voice', title: 'Voz da Uni', content: 'resumo...' }];
+  await provider.generateResponse({
+    system: 'ignorado-no-servidor',
+    messages: [{ role: 'user', content: 'como ouço a Uni?' }],
+    mode: 'support',
+    productContext,
+  });
+  const parsed = JSON.parse(capturedBody);
+  assert.equal(parsed.mode, 'support');
+  assert.deepEqual(parsed.productContext, productContext);
+});
