@@ -152,6 +152,12 @@ test('renderiza somente um shell por viewport (AppShell OU MobileAppShell, nunca
   assert.equal((content.match(/<MobileAppShell/g) ?? []).length, 1);
 });
 
+test('controlador de voz compartilhado envolve todo o ramo autenticado em desktop e mobile', async () => {
+  const content = await source('AuthenticatedLayout.jsx');
+  assert.equal((content.match(/<UniVoiceInputProvider>/g) ?? []).length, 2);
+  assert.equal((content.match(/<\/UniVoiceInputProvider>/g) ?? []).length, 2);
+});
+
 test('modo imersivo, titulo e headerProps de workspace continuam intactos', async () => {
   const content = await source('AuthenticatedLayout.jsx');
   assert.match(content, /immersive=\{immersive\}/);

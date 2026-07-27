@@ -203,17 +203,92 @@ test('resposta curta resolve conta, categoria, descrição e valor sem inventar 
 
 test('conta inexistente ou ambígua nunca é escolhida automaticamente', () => {
   const action = createAction('Gastei 50 reais.');
-  assert.equal(
-    resolvePendingActionInput({
-      value: 'Conta',
-      action,
-      accounts: [
-        { id: '1', name: 'Conta pessoal' },
-        { id: '2', name: 'Conta empresa' },
-      ],
-    }).kind,
-    'invalid',
-  );
+  const result = resolvePendingActionInput({
+    value: 'Conta',
+    action,
+    accounts: [
+      { id: '1', name: 'Conta pessoal' },
+      { id: '2', name: 'Conta empresa' },
+    ],
+  });
+  assert.equal(result.kind, 'ambiguous_account');
+  assert.deepEqual(result.accounts.map((account) => account.id), ['1', '2']);
+});
+
+test('resposta de conta pendente aceita nome, instituição e apelido normalizados', () => {
+  const action = createAction('Gastei 50 reais.');
+  const workspaceId = 'workspace-empresa';
+  const workspaceAccounts = [
+    {
+      id: 'nubank',
+      workspace_id: workspaceId,
+      name: 'Conta principal',
+      institution_name: 'Núbank',
+      metadata: { nickname: 'Roxinha' },
+      is_active: true,
+    },
+  ];
+
+  for (const value of ['Conta Principal', 'nubank', 'roxinha']) {
+    assert.deepEqual(
+      resolvePendingActionInput({
+        value,
+        action,
+        accounts: workspaceAccounts,
+        categories,
+        workspaceId,
+      }).overrides,
+      { accountId: 'nubank' },
+    );
+  }
+});
+
+test('conta inexistente retorna contas disponíveis sem repetir resposta genérica', () => {
+  const action = createAction('Gastei 50 reais.');
+  const result = resolvePendingActionInput({
+    value: 'Banco Fantasma',
+    action,
+    accounts: [
+      { id: 'nubank', workspace_id: 'empresa', name: 'Nubank', is_active: true },
+      { id: 'bb', workspace_id: 'empresa', name: 'Banco do Brasil', is_active: true },
+    ],
+    workspaceId: 'empresa',
+  });
+
+  assert.equal(result.kind, 'account_not_found');
+  assert.deepEqual(result.accounts.map((account) => account.name), ['Nubank', 'Banco do Brasil']);
+});
+
+test('duas contas semelhantes exigem escolha explícita', () => {
+  const action = createAction('Gastei 50 reais.');
+  const result = resolvePendingActionInput({
+    value: 'Nubank',
+    action,
+    accounts: [
+      { id: 'one', workspace_id: 'empresa', name: 'Nubank Empresa', is_active: true },
+      { id: 'two', workspace_id: 'empresa', name: 'Nubank Reserva', is_active: true },
+    ],
+    workspaceId: 'empresa',
+  });
+
+  assert.equal(result.kind, 'ambiguous_account');
+  assert.deepEqual(result.accounts.map((account) => account.id), ['one', 'two']);
+});
+
+test('resolução de conta nunca atravessa o workspace Empresa para o Pessoal', () => {
+  const action = createAction('Gastei 50 reais.');
+  const result = resolvePendingActionInput({
+    value: 'Nubank',
+    action,
+    accounts: [
+      { id: 'personal', workspace_id: 'pessoal', name: 'Nubank', is_active: true },
+      { id: 'business', workspace_id: 'empresa', name: 'Banco do Brasil', is_active: true },
+    ],
+    workspaceId: 'empresa',
+  });
+
+  assert.equal(result.kind, 'account_not_found');
+  assert.deepEqual(result.accounts.map((account) => account.id), ['business']);
 });
 
 test('ação pendente restaura na mesma identidade e expira', () => {

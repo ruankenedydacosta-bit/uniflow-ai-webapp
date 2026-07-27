@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { UniInstantButton } from '../../features/uni-instant/index.js';
 import { useVoiceManager } from '../../features/uni-audio/index.js';
+import { useSharedUniVoiceInput, VOICE_CAPTURE_STATES } from '../../features/uni-voice/index.js';
 import { useSession } from '../../app/SessionContext.jsx';
 
 function UniCenterButtonSession({
@@ -14,6 +15,7 @@ function UniCenterButtonSession({
   const navigate = useNavigate();
   const { user } = useSession();
   const voiceManager = useVoiceManager();
+  const voiceInput = useSharedUniVoiceInput();
   const buttonRef = useRef(null);
 
   const handleTap = useCallback(async () => {
@@ -33,23 +35,33 @@ function UniCenterButtonSession({
   const handleHoldStart = useCallback(() => {
     onVoiceCaptureStart?.();
     onNavigate?.({ label, path });
-    navigate(path, {
-      state: {
-        startVoiceCapture: true,
-        voiceCaptureSource: 'uni_center_hold',
-      },
-    });
-  }, [label, navigate, onNavigate, onVoiceCaptureStart, path]);
+    void voiceInput.start();
+    navigate(path);
+  }, [label, navigate, onNavigate, onVoiceCaptureStart, path, voiceInput]);
+
+  const handleHoldEnd = useCallback(() => {
+    if (voiceInput.status === VOICE_CAPTURE_STATES.LISTENING) {
+      voiceInput.stop();
+      return;
+    }
+    voiceInput.cancel();
+  }, [voiceInput]);
+
+  const handleHoldCancel = useCallback(() => {
+    voiceInput.cancel();
+  }, [voiceInput]);
 
   return (
     <UniInstantButton
       aria-label="Conversar com a Uni"
       label={label}
       active={pathname === path}
-      voiceState="idle"
+      voiceState={voiceInput.status}
       buttonRef={buttonRef}
       onTap={handleTap}
       onHoldStart={handleHoldStart}
+      onHoldEnd={handleHoldEnd}
+      onHoldCancel={handleHoldCancel}
     />
   );
 }
@@ -64,7 +76,6 @@ function UniCenterButton({
 
   return (
     <UniCenterButtonSession
-      key={pathname}
       pathname={pathname}
       label={label}
       path={path}

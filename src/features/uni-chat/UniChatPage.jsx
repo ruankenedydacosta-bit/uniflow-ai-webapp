@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { buildUniPrefillFromState } from '../categories/categoryUtils.js';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
@@ -78,21 +78,9 @@ export default function UniChatPage() {
   const { access } = useAccess();
   const { profile, user, workspace, switchWorkspace, availableWorkspaces } = useSession();
   const location = useLocation();
-  const navigate = useNavigate();
   const initialContextRef = useRef(false);
 
   const personalityProfileId = profile?.uni_personality_profile ?? 'balanced';
-  const autoStartVoice = location.state?.startVoiceCapture === true;
-
-  const handleAutoVoiceStartHandled = useCallback(() => {
-    const nextState = { ...(location.state ?? {}) };
-    delete nextState.startVoiceCapture;
-    delete nextState.voiceCaptureSource;
-    navigate(location.pathname, {
-      replace: true,
-      state: Object.keys(nextState).length ? nextState : null,
-    });
-  }, [location.pathname, location.state, navigate]);
 
   // ELEVEN2: fundacao geral de TTS (ELEVEN1) conectada ao chat -- substitui
   // o uso anterior de useUniVoiceOutput (infra de demo com allowlist) NESTE
@@ -778,12 +766,20 @@ export default function UniChatPage() {
       action,
       accounts: accountState.accounts,
       categories: categoryState.categories,
+      workspaceId: workspace?.id,
       referenceDate: getLocalIsoDate(),
     });
     if (resolvedInput.kind !== 'correction') {
-      const message = pendingAction
-        ? 'Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.'
-        : financialConversation.state.response || 'Não consegui identificar esse dado. Tente informar de outra forma.';
+      const accountNames = resolvedInput.accounts?.map((account) => account.name).filter(Boolean) ?? [];
+      const message = resolvedInput.kind === 'ambiguous_account'
+        ? `Encontrei mais de uma conta correspondente: ${accountNames.join(', ')}. Qual delas você quer usar?`
+        : resolvedInput.kind === 'account_not_found'
+          ? accountNames.length
+            ? `Não encontrei essa conta no Espaço ${access.currentWorkspace === 'business' ? 'Empresa' : 'Pessoal'}. Contas disponíveis: ${accountNames.join(', ')}.`
+            : `Não encontrei essa conta e não há contas disponíveis no Espaço ${access.currentWorkspace === 'business' ? 'Empresa' : 'Pessoal'}.`
+          : pendingAction
+            ? 'Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.'
+            : financialConversation.state.response || 'Não consegui identificar esse dado. Tente informar de outra forma.';
       const assistantMsg = buildUniMessage(message);
       pushMessage(assistantMsg);
       syncMessageToSupabase(assistantMsg);
@@ -1196,11 +1192,7 @@ export default function UniChatPage() {
           onChange={setInputValue}
           onSend={sendText}
           onBeforeVoiceStart={handleBeforeVoiceStart}
-          autoStartVoice={autoStartVoice}
-          onAutoVoiceStartHandled={handleAutoVoiceStartHandled}
-          workspaceId={workspace?.id}
           disabled={isTyping || isExecutingAction}
-          personalityProfileId={personalityProfileId}
         />
       </div>
     </div>

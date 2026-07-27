@@ -29,6 +29,25 @@ test('interpreta pagamento de gasolina como despesa', () => {
   assertEntityShape(result);
 });
 
+test('interpreta valores monetários em português por extenso', () => {
+  assert.equal(parseFinancialText('Gastei cinquenta reais no almoço').entities.amount, 50);
+  assert.equal(parseFinancialText('Gastei cento e vinte reais no almoço').entities.amount, 120);
+  assert.equal(parseFinancialText('Gastei mil reais no almoço').entities.amount, 1000);
+  assert.equal(
+    parseFinancialText('Gastei cinquenta reais e noventa centavos no almoço').entities.amount,
+    50.9,
+  );
+});
+
+test('mantém formatos monetários numéricos e rejeita valores negativos ou ambíguos', () => {
+  assert.equal(parseFinancialText('Gastei R$ 50 no almoço').entities.amount, 50);
+  assert.equal(parseFinancialText('Gastei 50 reais no almoço').entities.amount, 50);
+  assert.equal(parseFinancialText('Gastei 50,90 no almoço').entities.amount, 50.9);
+  assert.equal(parseFinancialText('Gastei -50 reais no almoço').entities.amount, null);
+  assert.equal(parseFinancialText('Gastei menos cinquenta reais no almoço').entities.amount, null);
+  assert.equal(parseFinancialText('Gastei cinquenta ou sessenta reais no almoço').entities.amount, null);
+});
+
 test('interpreta recebimento de salario como entrada', () => {
   const result = parseFinancialText('recebi 3000 de salário');
 

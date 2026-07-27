@@ -7,19 +7,39 @@ const CANCELLATION_PATTERNS = [
   /^(?:nao|cancelar|cancela|deixa|deixa pra la|esquece)[.!]?$/,
 ];
 
-function findUniqueByName(items, input) {
+const ACCOUNT_IDENTITY_FIELDS = Object.freeze([
+  'name',
+  'institution_name',
+  'institution',
+  'nickname',
+  'alias',
+  'metadata.nickname',
+  'metadata.alias',
+]);
+
+function readIdentityField(item, field) {
+  return field.split('.').reduce((current, key) => current?.[key], item);
+}
+
+function belongsToWorkspace(item, workspaceId) {
+  return !workspaceId || !item?.workspace_id || item.workspace_id === workspaceId;
+}
+
+function findMatches(items, input, fields = ['name'], workspaceId = null) {
   const normalizedInput = normalizeFinancialText(input);
-  const matches = (Array.isArray(items) ? items : [])
+  return (Array.isArray(items) ? items : [])
     .filter((item) => item?.is_active !== false)
+    .filter((item) => belongsToWorkspace(item, workspaceId))
     .filter((item) => {
-      const name = normalizeFinancialText(item?.name);
-      return name && (
-        name === normalizedInput
-        || normalizedInput.includes(name)
-        || name.includes(normalizedInput)
-      );
+      const identities = fields
+        .map((field) => normalizeFinancialText(readIdentityField(item, field)))
+        .filter(Boolean);
+      return identities.some((identity) => (
+        identity === normalizedInput
+        || normalizedInput.includes(identity)
+        || identity.includes(normalizedInput)
+      ));
     });
-  return matches.length === 1 ? matches[0] : null;
 }
 
 export function classifyPendingActionReply(value) {
@@ -34,6 +54,7 @@ export function resolvePendingActionInput({
   action,
   accounts = [],
   categories = [],
+  workspaceId = null,
   referenceDate,
 } = {}) {
   const text = typeof value === 'string' ? value.trim() : '';
@@ -59,8 +80,17 @@ export function resolvePendingActionInput({
   }
 
   if (field === 'account' || field === 'destinationAccount') {
-    const account = findUniqueByName(accounts, text);
-    if (!account) return { kind: 'invalid', overrides: null };
+    const availableAccounts = (Array.isArray(accounts) ? accounts : [])
+      .filter((account) => account?.is_active !== false)
+      .filter((account) => belongsToWorkspace(account, workspaceId));
+    const matches = findMatches(accounts, text, ACCOUNT_IDENTITY_FIELDS, workspaceId);
+    if (matches.length > 1) {
+      return { kind: 'ambiguous_account', accounts: matches, overrides: null };
+    }
+    if (!matches.length) {
+      return { kind: 'account_not_found', accounts: availableAccounts, overrides: null };
+    }
+    const [account] = matches;
     return {
       kind: 'correction',
       overrides: field === 'destinationAccount'
@@ -70,7 +100,7 @@ export function resolvePendingActionInput({
   }
 
   if (field === 'category') {
-    const category = findUniqueByName(categories, text);
+    const [category] = findMatches(categories, text);
     return category
       ? { kind: 'correction', overrides: { categoryId: category.id } }
       : { kind: 'invalid', overrides: null };

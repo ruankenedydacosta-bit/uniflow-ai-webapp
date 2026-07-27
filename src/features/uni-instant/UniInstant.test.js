@@ -17,12 +17,11 @@ test('toque simples abre /uni-ai', async () => {
   assert.match(integration, /navigate\(path\)/);
 });
 
-test('hold de 400ms abre a conversa com captura real solicitada', async () => {
+test('hold de 400ms abre a conversa e inicia a captura compartilhada', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
   assert.equal(HOLD_THRESHOLD_MS, 400);
   assert.match(integration, /onHoldStart=\{handleHoldStart\}/);
-  assert.match(integration, /startVoiceCapture: true/);
-  assert.match(integration, /voiceCaptureSource: 'uni_center_hold'/);
+  assert.match(integration, /void voiceInput\.start\(\);/);
   assert.match(integration.match(/const handleHoldStart[\s\S]*?\n {2}},/)?.[0] ?? '', /navigate\(path/);
 });
 
@@ -70,12 +69,23 @@ test('acao financeira gera confirmacao', () => {
   assert.match(context.response, /Registrar despesa de R\$ 25,00/);
 });
 
-test('captura real e iniciada pelo ChatInput apos a navegacao do hold', async () => {
+test('esfera central e microfone usam o mesmo controlador persistente', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
   const chat = await source('../uni-chat/components/ChatInput.jsx');
-  assert.match(integration, /startVoiceCapture: true/);
-  assert.match(chat, /autoStartVoice/);
-  assert.match(chat, /startVoice\(\)\.finally/);
+  const provider = await source('../uni-voice/UniVoiceInputProvider.jsx');
+  assert.match(integration, /useSharedUniVoiceInput/);
+  assert.match(chat, /useSharedUniVoiceInput/);
+  assert.match(provider, /useUniVoiceInput\(/);
+  assert.doesNotMatch(chat, /useUniVoiceInput\(/);
+  assert.doesNotMatch(integration, /useUniVoiceInput\(/);
+});
+
+test('soltar a esfera encerra e envia a mesma captura; cancelar por arraste descarta', async () => {
+  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
+  assert.match(integration, /onHoldEnd=\{handleHoldEnd\}/);
+  assert.match(integration, /voiceInput\.stop\(\);/);
+  assert.match(integration, /onHoldCancel=\{handleHoldCancel\}/);
+  assert.match(integration, /voiceInput\.cancel\(\);/);
 });
 
 test('botao central nao executa acao financeira', async () => {
@@ -114,9 +124,9 @@ test('rolagem permanece livre sem lock de body html ou shell', async () => {
   assert.doesNotMatch(files.join('\n'), /style\.overflow|documentElement\.style|body\.style|scrollLock/i);
 });
 
-test('troca de rota remonta o botao sem manter estado de captura local', async () => {
+test('troca de rota preserva o botão e o controlador durante a captura', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(integration, /key=\{pathname\}/);
+  assert.doesNotMatch(integration, /key=\{pathname\}/);
   assert.doesNotMatch(integration, /captureActiveRef|cardOpen/);
 });
 

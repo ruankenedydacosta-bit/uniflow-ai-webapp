@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useUniVoiceInput, VOICE_CAPTURE_STATES } from '../../uni-voice';
+import { useSharedUniVoiceInput, VOICE_CAPTURE_STATES } from '../../uni-voice';
 import styles from './ChatInput.module.css';
 
 export default function ChatInput({
@@ -7,24 +7,19 @@ export default function ChatInput({
   onChange,
   onSend,
   onBeforeVoiceStart,
-  onAutoVoiceStartHandled,
-  autoStartVoice = false,
-  workspaceId,
   disabled,
-  personalityProfileId = 'balanced',
 }) {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef(null);
   const valueRef = useRef(value);
-  const autoStartAttemptedRef = useRef(false);
 
   useEffect(() => {
     valueRef.current = value;
   }, [value]);
 
-  const voiceInput = useUniVoiceInput({
-    profileId: personalityProfileId,
-    workspaceId,
+  const voiceInput = useSharedUniVoiceInput();
+
+  useEffect(() => voiceInput.registerHandlers({
     onBeforeStart: onBeforeVoiceStart,
     onFinalTranscript: (transcript) => {
       const clean = (transcript || '').trim();
@@ -34,31 +29,14 @@ export default function ChatInput({
       onChange(next);
       onSend(next);
     },
-  });
-
-  const { status, start: startVoice } = voiceInput;
-
-  useEffect(() => {
-    if (
-      !autoStartVoice
-      || autoStartAttemptedRef.current
-      || !workspaceId
-      || disabled
-    ) {
-      return;
-    }
-
-    autoStartAttemptedRef.current = true;
-    void startVoice().finally(() => {
-      onAutoVoiceStartHandled?.();
-    });
-  }, [
-    autoStartVoice,
-    disabled,
-    onAutoVoiceStartHandled,
-    startVoice,
-    workspaceId,
+  }), [
+    onBeforeVoiceStart,
+    onChange,
+    onSend,
+    voiceInput,
   ]);
+
+  const { status } = voiceInput;
 
   const isCapturing =
     status === VOICE_CAPTURE_STATES.LISTENING ||

@@ -100,21 +100,21 @@ test('pergunta futura ampla é interceptada ANTES do LLM, nunca chega a handleUn
 
 test('entrada por voz concatena, envia a transcrição e usa o workspace ativo', async () => {
   const chatInput = await source('components/ChatInput.jsx');
+  const provider = await source('../uni-voice/UniVoiceInputProvider.jsx');
   assert.match(chatInput, /const next = current \? `\$\{current\} \$\{clean\}` : clean;/);
   assert.match(chatInput, /onSend\(next\);/);
-  assert.match(chatInput, /workspaceId,/);
   assert.match(chatInput, /onBeforeStart: onBeforeVoiceStart/);
+  assert.match(provider, /workspaceId: workspace\?\.id/);
 });
 
-test('long press central solicita captura real uma vez e limpa o estado de navegação', async () => {
-  const page = await source('UniChatPage.jsx');
+test('long press central inicia e encerra a captura no controlador compartilhado', async () => {
   const chatInput = await source('components/ChatInput.jsx');
   const centerButton = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(centerButton, /startVoiceCapture: true/);
-  assert.match(page, /autoStartVoice=\{autoStartVoice\}/);
-  assert.match(page, /delete nextState\.startVoiceCapture/);
-  assert.match(chatInput, /autoStartAttemptedRef\.current = true/);
-  assert.match(chatInput, /startVoice\(\)\.finally/);
+  assert.match(centerButton, /void voiceInput\.start\(\);/);
+  assert.match(centerButton, /voiceInput\.stop\(\);/);
+  assert.match(centerButton, /voiceInput\.cancel\(\);/);
+  assert.match(chatInput, /useSharedUniVoiceInput\(\)/);
+  assert.doesNotMatch(centerButton, /startVoiceCapture: true/);
 });
 
 test('falha/ausência de suporte a voz mantém a digitação funcional (input sempre habilitado)', async () => {
@@ -328,6 +328,19 @@ test('ação pendente é isolada por usuário, workspace e conversa, com restaur
   assert.match(page, /loadPendingAction\(pendingActionIdentity\)/);
   assert.match(page, /savePendingAction\(pendingActionIdentity/);
   assert.match(page, /clearCurrentPendingAction\(\)/);
+});
+
+test('resposta de conta pendente usa o workspace atual e não repete indefinidamente a mesma pergunta', async () => {
+  const page = await source('UniChatPage.jsx');
+  const block = page.slice(
+    page.indexOf('const resolvedInput = resolvePendingActionInput'),
+    page.indexOf('if (pendingAction) {', page.indexOf('const resolvedInput = resolvePendingActionInput')),
+  );
+  assert.match(block, /workspaceId: workspace\?\.id/);
+  assert.match(block, /resolvedInput\.kind === 'ambiguous_account'/);
+  assert.match(block, /resolvedInput\.kind === 'account_not_found'/);
+  assert.match(block, /Não encontrei essa conta no Espaço/);
+  assert.doesNotMatch(block, /Em qual conta você fez esse pagamento/);
 });
 
 test('resumo de confirmação mostra o espaço PF/PJ e nunca aceita texto livre como execução', async () => {

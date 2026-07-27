@@ -5,6 +5,8 @@ export {
   sanitizeVoiceTranscript,
 } from './speechRecognitionAdapter.js';
 export { useUniVoiceInput } from './useUniVoiceInput.js';
+export { UniVoiceInputProvider } from './UniVoiceInputProvider.jsx';
+export { useSharedUniVoiceInput } from './useSharedUniVoiceInput.js';
 export {
   createMediaRecorderAdapter,
   getSupportedVoiceMimeType,
