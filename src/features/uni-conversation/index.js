@@ -4,11 +4,28 @@ export {
   resolvePendingActionInput,
 } from './pendingActionInput.js';
 export {
+  clearPendingActionStack,
   clearPendingAction,
+  loadPendingActionStack,
   loadPendingAction,
   PENDING_ACTION_TTL_MS,
+  savePendingActionStack,
   savePendingAction,
 } from './pendingActionStorage.js';
+export {
+  cancelPendingAction,
+  completePendingAction,
+  confirmPendingAction,
+  createPendingActionStack,
+  failPendingAction,
+  getActivePendingAction,
+  PENDING_ACTION_STACK_VERSION,
+  PENDING_ACTION_STATUS,
+  pushPendingAction,
+  updatePendingAction,
+  validatePendingActionStack,
+} from './pendingActionStack.js';
+export { createPendingActionCoordinator } from './pendingActionCoordinator.js';
 export {
   ACCOUNT_RESOLUTION_STATUS,
   normalizeAccountIdentity,
