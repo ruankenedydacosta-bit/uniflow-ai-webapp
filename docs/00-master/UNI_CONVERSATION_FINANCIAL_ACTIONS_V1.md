@@ -14,7 +14,7 @@ mesmo `sendMessage`. LLM e serviços externos não fazem parte desta etapa.
 3. **Validar:** a camada `uni-conversation` revalida valor, tipo, conta, categoria, descrição e data contra os dados atuais do workspace. Uma conta mencionada e inexistente pode ser preparada, sem escrita, para criação após a confirmação.
 4. **Esclarecer:** quando faltar informação ou houver conflito de memória, a Uni pergunta pelo dado necessário.
 5. **Confirmar:** quando os dados estiverem completos, a Uni apresenta um resumo antes de qualquer escrita.
-6. **Executar:** somente o botão `Confirmar` chama `saveTransaction` do hook financeiro.
+6. **Executar:** somente confirmação explícita chama a RPC atômica pelo serviço interno.
 7. **Responder:** o resultado é comunicado com o perfil de personalidade resolvido localmente.
 
 Nenhuma entidade extraída pelo parser é considerada confiável sem validação de domínio.
@@ -32,8 +32,8 @@ Nenhuma entidade extraída pelo parser é considerada confiável sem validação
 
 ## Segurança e workspace
 
-- `UniAIPage` obtém o workspace exclusivamente do `SessionContext`.
-- `useTransactions` continua responsável por vincular a operação ao `workspace.id`.
+- `UniChatPage` obtém o workspace exclusivamente do `SessionContext`.
+- `executeConfirmedFinancialAction` chama somente a RPC financeira atômica.
 - A ação conversacional não recebe nem envia `workspace_id` arbitrário no payload.
 - Contas arquivadas são bloqueadas para novos lançamentos.
 - Categorias precisam existir, estar ativas e ser compatíveis com o tipo da movimentação.
@@ -67,11 +67,11 @@ Não há chamada de IA externa, ElevenLabs, OpenAI ou outro LLM nesta V1.
 
 ## Supabase e modo demo
 
-Com Supabase configurado, a confirmação está preparada para usar somente a RPC
+Com Supabase configurado, a confirmação usa somente a RPC
 `execute_confirmed_financial_action`. Ela deriva o workspace do profile,
 executa conta e transação atomicamente e protege retries com
 `client_operation_id`. Após sucesso, os hooks de contas e transações são
-recarregados. A migration 008 ainda precisa ser aplicada e validada no DEV.
+recarregados.
 
 Sem Supabase, os mesmos hooks mantêm fallback local editável. A confirmação
 adiciona conta e lançamento à sessão atual, sem persistência após recarregar.
@@ -90,7 +90,8 @@ Memória não altera amount, date, workspace ou a confirmação obrigatória.
 - Ações operacionais limitadas a lançamentos financeiros suportados pelo domínio atual.
 - Transferências podem exigir esclarecimento de conta de origem e destino.
 - Sem categorização automática nova.
-- Sem execução por voz nesta integração inicial.
+- Voz e texto compartilham o mesmo contrato; a voz depende da Edge de
+  transcrição configurada.
 - Sem LLM, Open Finance ou APIs externas.
 
 ## Evolução futura

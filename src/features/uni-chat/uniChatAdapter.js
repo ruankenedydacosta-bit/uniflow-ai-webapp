@@ -40,7 +40,7 @@ export function buildUniMessage(text, options = {}) {
   };
 }
 
-export function buildConfirmationFromAction(action) {
+export function buildConfirmationFromAction(action, workspaceType = 'personal') {
   if (!action) return null;
 
   const rows = [];
@@ -63,6 +63,10 @@ export function buildConfirmationFromAction(action) {
   if (action.account?.name) {
     rows.push({ label: 'Conta', value: action.account.name });
   }
+  rows.push({
+    label: 'Espaço',
+    value: workspaceType === 'business' ? 'Empresa' : 'Pessoal',
+  });
 
   return {
     title: `Nova ${(action.typeLabel || 'movimentação').toLowerCase()}`,

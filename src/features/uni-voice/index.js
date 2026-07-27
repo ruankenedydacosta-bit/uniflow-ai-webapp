@@ -6,6 +6,20 @@ export {
 } from './speechRecognitionAdapter.js';
 export { useUniVoiceInput } from './useUniVoiceInput.js';
 export {
+  createMediaRecorderAdapter,
+  getSupportedVoiceMimeType,
+  isMediaRecorderSupported,
+  VOICE_AUDIO_MAX_BYTES,
+  VOICE_AUDIO_MAX_DURATION_MS,
+  VOICE_AUDIO_MIME_TYPES,
+} from './mediaRecorderAdapter.js';
+export {
+  createUniVoiceTranscriptionProvider,
+  isAllowedVoiceMimeType,
+  uniVoiceTranscriptionProvider,
+  validateVoiceTranscriptionRequest,
+} from './uniVoiceTranscriptionProvider.js';
+export {
   initialVoiceCaptureState,
   isVoiceCaptureActive,
   voiceCaptureReducer,

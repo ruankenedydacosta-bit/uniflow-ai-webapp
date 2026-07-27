@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { buildUniPrefillFromState } from '../categories/categoryUtils.js';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
-import { useUniConversation } from '../uni-conversation';
+import {
+  classifyPendingActionReply,
+  clearPendingAction,
+  loadPendingAction,
+  resolvePendingActionInput,
+  savePendingAction,
+  useUniConversation,
+} from '../uni-conversation';
 import { useUniLlm, AI_STATUS } from '../uni-llm';
 import { useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS } from '../uni-voice-tts';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
@@ -49,10 +56,12 @@ import {
 } from './uniChatAdapter';
 import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/financialCrud.mock';
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
+import { executeConfirmedFinancialAction } from '../../services/confirmedFinancialActionService.js';
 import * as dataService from './uniChatDataService';
 import styles from './UniChatPage.module.css';
 
 const UNI_THINK_MIN_MS = 600;
+const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze(['register_income', 'register_expense']);
 
 const UNI_DETERMINISTIC_FALLBACK_TEXT =
   'Entendi. Por enquanto, posso ajudar a registrar movimenta\u00e7\u00f5es financeiras. Tente algo como "registrar uma despesa de R$ 50" ou "qual meu saldo?".';
@@ -67,11 +76,23 @@ function getLocalIsoDate() {
 
 export default function UniChatPage() {
   const { access } = useAccess();
-  const { profile, workspace, switchWorkspace, availableWorkspaces } = useSession();
+  const { profile, user, workspace, switchWorkspace, availableWorkspaces } = useSession();
   const location = useLocation();
+  const navigate = useNavigate();
   const initialContextRef = useRef(false);
 
   const personalityProfileId = profile?.uni_personality_profile ?? 'balanced';
+  const autoStartVoice = location.state?.startVoiceCapture === true;
+
+  const handleAutoVoiceStartHandled = useCallback(() => {
+    const nextState = { ...(location.state ?? {}) };
+    delete nextState.startVoiceCapture;
+    delete nextState.voiceCaptureSource;
+    navigate(location.pathname, {
+      replace: true,
+      state: Object.keys(nextState).length ? nextState : null,
+    });
+  }, [location.pathname, location.state, navigate]);
 
   // ELEVEN2: fundacao geral de TTS (ELEVEN1) conectada ao chat -- substitui
   // o uso anterior de useUniVoiceOutput (infra de demo com allowlist) NESTE
@@ -150,12 +171,13 @@ export default function UniChatPage() {
     accounts: accountState.accounts,
     accountTypes: accountState.accountTypes,
     categories: categoryState.categories,
-    executeAtomicAction: null,
+    executeAtomicAction: executeConfirmedFinancialAction,
     saveAccount: accountState.saveAccount,
     saveTransaction: transactionsState.saveTransaction,
     profileId: personalityProfileId,
     workspaceType: access.currentWorkspace,
     referenceDate: getLocalIsoDate(),
+    allowedWriteIntents: ALLOWED_CHAT_WRITE_INTENTS,
   });
 
   const [connectionStatus, setConnectionStatus] = useState(dataService.getConnectionStatus);
@@ -212,6 +234,7 @@ export default function UniChatPage() {
   const pendingActionRef = useRef(null);
   const activeIdRef = useRef(activeId);
   const convDbIdsRef = useRef({});
+  const restoredPendingIdentityRef = useRef(null);
 
   // Integracao com a IA: estado da chamada real ao LLM, separado de `isTyping` (que
   // tambem cobre o atraso simulado do caminho deterministico). Usa o
@@ -257,7 +280,74 @@ export default function UniChatPage() {
     pendingActionRef.current = pendingAction;
   }, [pendingAction]);
 
-  const isConfirming = pendingAction != null;
+  const pendingActionIdentity = useMemo(() => ({
+    userId: user?.id,
+    workspaceId: workspace?.id,
+    conversationId: activeId,
+  }), [activeId, user?.id, workspace?.id]);
+
+  const clearCurrentPendingAction = useCallback(() => {
+    clearPendingAction(pendingActionIdentity);
+  }, [pendingActionIdentity]);
+
+  useEffect(() => {
+    const conversationState = financialConversation.state;
+    if (
+      !pendingActionIdentity.userId
+      || !pendingActionIdentity.workspaceId
+      || !pendingActionIdentity.conversationId
+      || !['needs_clarification', 'awaiting_confirmation'].includes(conversationState.status)
+      || !conversationState.action
+    ) {
+      return;
+    }
+    savePendingAction(pendingActionIdentity, {
+      parsed: conversationState.parsed,
+      action: conversationState.action,
+      response: conversationState.response,
+      memory: conversationState.memory,
+    });
+  }, [financialConversation.state, pendingActionIdentity]);
+
+  useEffect(() => {
+    const identityKey = [
+      pendingActionIdentity.userId,
+      pendingActionIdentity.workspaceId,
+      pendingActionIdentity.conversationId,
+    ].join(':');
+    if (
+      identityKey.includes('undefined')
+      || restoredPendingIdentityRef.current === identityKey
+      || accountState.isLoading
+      || categoryState.isLoading
+    ) {
+      return;
+    }
+    restoredPendingIdentityRef.current = identityKey;
+    const snapshot = loadPendingAction(pendingActionIdentity);
+    if (!snapshot?.action) return;
+
+    const accountId = snapshot.action.account?.id ?? snapshot.action.payload?.account_id;
+    const categoryId = snapshot.action.category?.id ?? snapshot.action.payload?.category_id;
+    const accountValid = !accountId || accountState.accounts.some((account) => account.id === accountId);
+    const categoryValid = !categoryId || categoryState.categories.some((category) => category.id === categoryId);
+    if (!accountValid || !categoryValid) {
+      clearPendingAction(pendingActionIdentity);
+      return;
+    }
+
+    if (financialConversation.restore(snapshot) && snapshot.action.status === 'ready') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingAction(snapshot.action);
+    }
+  }, [
+    accountState.accounts,
+    accountState.isLoading,
+    categoryState.categories,
+    categoryState.isLoading,
+    financialConversation,
+    pendingActionIdentity,
+  ]);
 
   const reconcileConversations = useCallback(async () => {
     if (!workspace?.id) return;
@@ -637,8 +727,84 @@ export default function UniChatPage() {
     void handleUnresolvedMessage(pending.text, pending.history);
   }
 
+  function findPendingConfirmationMessageId() {
+    return [...messages]
+      .reverse()
+      .find((message) => message.confirmation?.status === 'pending')?.id ?? null;
+  }
+
+  function publishConversationResult(result) {
+    if (result?.action?.status === 'ready') {
+      setPendingAction(result.action);
+      const confirmation = buildConfirmationFromAction(
+        result.action,
+        access.currentWorkspace,
+      );
+      const assistantMsg = buildUniMessage(result.response.text, {
+        type: 'confirmation',
+        confirmation,
+      });
+      pushMessage(assistantMsg);
+      syncMessageToSupabase(assistantMsg);
+      return;
+    }
+
+    const assistantMsg = buildUniMessage(
+      result?.response?.text
+        || 'Preciso de mais detalhes antes de preparar essa ação.',
+    );
+    pushMessage(assistantMsg);
+    syncMessageToSupabase(assistantMsg);
+  }
+
+  function handlePendingConversationInput(text, userMsg) {
+    const action = pendingAction ?? financialConversation.state.action;
+    const replyType = pendingAction ? classifyPendingActionReply(text) : 'input';
+    syncMessageToSupabase(userMsg);
+
+    if (pendingAction && replyType === 'confirm') {
+      const confirmationId = findPendingConfirmationMessageId();
+      if (confirmationId) void handleConfirmAction(confirmationId);
+      return true;
+    }
+    if (pendingAction && replyType === 'cancel') {
+      const confirmationId = findPendingConfirmationMessageId();
+      if (confirmationId) handleCancelAction(confirmationId);
+      return true;
+    }
+
+    const resolvedInput = resolvePendingActionInput({
+      value: text,
+      action,
+      accounts: accountState.accounts,
+      categories: categoryState.categories,
+      referenceDate: getLocalIsoDate(),
+    });
+    if (resolvedInput.kind !== 'correction') {
+      const message = pendingAction
+        ? 'Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.'
+        : financialConversation.state.response || 'Não consegui identificar esse dado. Tente informar de outra forma.';
+      const assistantMsg = buildUniMessage(message);
+      pushMessage(assistantMsg);
+      syncMessageToSupabase(assistantMsg);
+      return true;
+    }
+
+    if (pendingAction) {
+      setMessages((current) => current.map((message) => (
+        message.confirmation?.status === 'pending'
+          ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
+          : message
+      )));
+      setPendingAction(null);
+    }
+    const result = financialConversation.provideInput(resolvedInput.overrides);
+    publishConversationResult(result);
+    return true;
+  }
+
   function sendText(text) {
-    if (!text.trim() || isTyping || isConfirming) return;
+    if (!text.trim() || isTyping || isExecutingAction) return;
     setExecutionError(null);
     setAiStatus(AI_STATUS.UNAVAILABLE);
     lastUnresolvedRef.current = null;
@@ -648,8 +814,17 @@ export default function UniChatPage() {
     const userMsg = buildUserMessage(text);
     pushMessage(userMsg);
     setInputValue('');
-    setIsTyping(true);
 
+    const hasPendingConversation = Boolean(
+      pendingAction
+      || financialConversation.state.status === 'needs_clarification',
+    );
+    if (hasPendingConversation) {
+      handlePendingConversationInput(text, userMsg);
+      return;
+    }
+
+    setIsTyping(true);
     syncMessageToSupabase(userMsg);
 
     setTimeout(() => {
@@ -658,8 +833,14 @@ export default function UniChatPage() {
       const queryType = classifyFinancialQuery(text);
 
       if (queryType) {
-        const isLoading = balanceState.isLoading || transactionsState.isLoading;
-        const hasError = balanceState.error || transactionsState.error;
+        const isGoalQuery = String(queryType.type).startsWith('goal_')
+          || queryType.type === 'required_monthly';
+        const isLoading = isGoalQuery
+          ? goalsState.isLoading
+          : balanceState.isLoading || transactionsState.isLoading;
+        const hasError = isGoalQuery
+          ? goalsState.error
+          : balanceState.error || transactionsState.error;
 
         if (isLoading) {
           pushMessage(buildUniMessage(
@@ -675,7 +856,7 @@ export default function UniChatPage() {
           return;
         }
 
-        if (!financialContext.hasData) {
+        if (!isGoalQuery && !financialContext.hasData) {
           pushMessage(buildUniMessage(
             'Seu workspace ainda não possui dados financeiros. Cadastre uma conta ou transação para começar.',
           ));
@@ -685,6 +866,7 @@ export default function UniChatPage() {
         const response = buildQueryResponse(queryType, financialContext, mode, {
           projections: futureProjections,
           goalProjections: futureProjections.goalProjections,
+          goals: goalsState.goals,
         });
         if (response) {
           const assistantMsg = buildUniMessage(response.text, { highlight: response.highlight });
@@ -697,6 +879,16 @@ export default function UniChatPage() {
       const result = financialConversation.interpret(text);
 
       if (!result.handled) {
+        if (['register_transfer', 'create_goal'].includes(result.parsed?.intent)) {
+          const unsupportedMsg = buildUniMessage(
+            result.parsed.intent === 'create_goal'
+              ? 'Ainda não posso criar objetivos pela conversa com segurança. Posso consultar seus objetivos ou orientar você a criá-los na área de Objetivos.'
+              : 'Transferências ainda não podem ser registradas pela Uni. Use o Financeiro para manter origem e destino sob sua revisão.',
+          );
+          pushMessage(unsupportedMsg);
+          syncMessageToSupabase(unsupportedMsg);
+          return;
+        }
         // Perguntas sobre futuro/tendência/continuidade financeira que não
         // batem com nenhum tipo suportado por classifyFinancialQuery NUNCA
         // vão ao LLM: ele inventaria números. Resposta determinística e
@@ -711,20 +903,7 @@ export default function UniChatPage() {
         return;
       }
 
-      if (result.action?.status === 'ready') {
-        setPendingAction(result.action);
-        const confirmation = buildConfirmationFromAction(result.action);
-        const assistantMsg = buildUniMessage(result.response.text, {
-          type: 'confirmation',
-          confirmation,
-        });
-        pushMessage(assistantMsg);
-        syncMessageToSupabase(assistantMsg);
-      } else {
-        const assistantMsg = buildUniMessage(result.response.text);
-        pushMessage(assistantMsg);
-        syncMessageToSupabase(assistantMsg);
-      }
+      publishConversationResult(result);
     }, UNI_THINK_MIN_MS);
   }
 
@@ -873,8 +1052,11 @@ export default function UniChatPage() {
             : m,
         ),
       );
-      pushMessage(buildUniMessage(successText));
+      const successMessage = buildUniMessage(successText);
+      pushMessage(successMessage);
+      syncMessageToSupabase(successMessage);
       financialConversation.reset();
+      clearCurrentPendingAction();
       setPendingAction(null);
       setIsExecutingAction(false);
       confirmingRef.current = false;
@@ -913,6 +1095,12 @@ export default function UniChatPage() {
     );
     pushMessage(buildUniMessage('Sem problemas, cancelei esse registro.'));
     financialConversation.cancel();
+    clearCurrentPendingAction();
+  }
+
+  function handleBeforeVoiceStart() {
+    uniVoice.stop();
+    setVoiceMessageId(null);
   }
 
   const isEmpty = messages.length === 0;
@@ -1003,7 +1191,17 @@ export default function UniChatPage() {
         {!isEmpty && (
           <QuickSuggestions items={suggestions} onSelect={handleSuggestionSelect} variant="rail" />
         )}
-        <ChatInput value={inputValue} onChange={setInputValue} onSend={sendText} disabled={isTyping || isConfirming || isExecutingAction} personalityProfileId={personalityProfileId} />
+        <ChatInput
+          value={inputValue}
+          onChange={setInputValue}
+          onSend={sendText}
+          onBeforeVoiceStart={handleBeforeVoiceStart}
+          autoStartVoice={autoStartVoice}
+          onAutoVoiceStartHandled={handleAutoVoiceStartHandled}
+          workspaceId={workspace?.id}
+          disabled={isTyping || isExecutingAction}
+          personalityProfileId={personalityProfileId}
+        />
       </div>
     </div>
   );

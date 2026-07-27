@@ -17,11 +17,13 @@ test('toque simples abre /uni-ai', async () => {
   assert.match(integration, /navigate\(path\)/);
 });
 
-test('hold de 400ms usa fluxo separado e nao navega', async () => {
+test('hold de 400ms abre a conversa com captura real solicitada', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
   assert.equal(HOLD_THRESHOLD_MS, 400);
   assert.match(integration, /onHoldStart=\{handleHoldStart\}/);
-  assert.doesNotMatch(integration.match(/const handleHoldStart[\s\S]*?\n {2}},/)?.[0] ?? '', /navigate/);
+  assert.match(integration, /startVoiceCapture: true/);
+  assert.match(integration, /voiceCaptureSource: 'uni_center_hold'/);
+  assert.match(integration.match(/const handleHoldStart[\s\S]*?\n {2}},/)?.[0] ?? '', /navigate\(path/);
 });
 
 test('durante hold nao existe bottom sheet', async () => {
@@ -46,16 +48,9 @@ test('ondas organicas aparecem durante hold', async () => {
   assert.match(waves, /<path/);
 });
 
-test('soltar encerra captura imediatamente', async () => {
+test('botao central nao renderiza mais o card de demonstracao', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(integration, /captureActiveRef\.current = false/);
-  assert.match(integration, /onHoldEnd=\{handleCaptureEnd\}/);
-});
-
-test('card central aparece somente apos soltar', async () => {
-  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(integration, /setCardOpen\(true\)/);
-  assert.match(integration, /\{cardOpen \? \(/);
+  assert.doesNotMatch(integration, /UniInstantResultCard|setCardOpen|mockData/);
 });
 
 test('pergunta contextual gera resposta curta', () => {
@@ -75,31 +70,21 @@ test('acao financeira gera confirmacao', () => {
   assert.match(context.response, /Registrar despesa de R\$ 25,00/);
 });
 
-test('pipeline mockado usa audios contextuais sem executar acao', async () => {
+test('captura real e iniciada pelo ChatInput apos a navegacao do hold', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(integration, /playContext\('processing'/);
-  assert.match(integration, /playContext\('error_understanding'/);
-  assert.match(integration, /playContext\('confirmation_sensitive'/);
-  assert.match(integration, /sensitive: true/);
+  const chat = await source('../uni-chat/components/ChatInput.jsx');
+  assert.match(integration, /startVoiceCapture: true/);
+  assert.match(chat, /autoStartVoice/);
+  assert.match(chat, /startVoice\(\)\.finally/);
 });
 
-test('nenhuma acao e executada sem confirmacao', async () => {
+test('botao central nao executa acao financeira', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(integration, /Nenhuma ação foi executada nesta simulação/);
   assert.doesNotMatch(integration, /transactionService|insert\s*\(|supabase/i);
 });
 
-test('timeout de seguranca encerra captura em 3 a 4 segundos', async () => {
-  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(integration, /CAPTURE_SAFETY_TIMEOUT_MS = 3500/);
-  assert.match(integration, /after\(CAPTURE_SAFETY_TIMEOUT_MS, handleCaptureEnd\)/);
-});
-
-test('cancelamento por arraste nao mostra card', async () => {
-  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
+test('cancelamento por arraste continua definido no gesto antes do hold', () => {
   assert.equal(CANCEL_DRAG_PX, 56);
-  const cancelHandler = integration.match(/const handleHoldCancel[\s\S]*?\n {2}},/)?.[0] ?? '';
-  assert.match(cancelHandler, /setCardOpen\(false\)/);
 });
 
 test('Escape fecha card nao critico', async () => {
@@ -114,11 +99,9 @@ test('confirmacao financeira nao fecha por Escape ou backdrop', async () => {
   assert.match(card, /state === 'confirmation' && confirmationRequired/);
 });
 
-test('desmontagem limpa timers listeners e pointer capture', async () => {
-  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
+test('desmontagem limpa listeners e pointer capture', async () => {
   const card = await source('./UniInstantResultCard.jsx');
   const gesture = await source('./usePressAndHold.js');
-  assert.match(integration, /useEffect\(\(\) => clearTimers/);
   assert.match(card, /removeEventListener\('keydown'/);
   assert.match(gesture, /releasePointerCapture/);
 });
@@ -131,10 +114,10 @@ test('rolagem permanece livre sem lock de body html ou shell', async () => {
   assert.doesNotMatch(files.join('\n'), /style\.overflow|documentElement\.style|body\.style|scrollLock/i);
 });
 
-test('troca de rota desmonta card e abrir tres vezes nao acumula estado', async () => {
+test('troca de rota remonta o botao sem manter estado de captura local', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
   assert.match(integration, /key=\{pathname\}/);
-  assert.match(integration, /setCardOpen\(false\)/);
+  assert.doesNotMatch(integration, /captureActiveRef|cardOpen/);
 });
 
 test('reduced motion e ausencia de voz IA backend e HTTP sao preservados', async () => {
@@ -248,15 +231,10 @@ test('pulso de destaque do primeiro uso e desabilitado com prefers-reduced-motio
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?button\.holdHint\[data-first-use='true'\]\[data-visible='true'\] \{ animation: none; \}/);
 });
 
-test('resultado deixa explícito que é demonstração -- nunca afirma que uma acao real foi salva/paga/executada', async () => {
+test('texto obsoleto de demonstracao foi removido', async () => {
   const card = await source('./UniInstantResultCard.jsx');
-  assert.match(card, /Demonstração — a Uni ainda não ouve sua voz de verdade nem executa ações reais\./);
-  assert.match(card, /const showDemoNote = state !== 'processing'/);
-});
-
-test('nota de demonstracao nao duplica quando a mensagem ja diz "simulação" (pos-confirmacao)', async () => {
-  const card = await source('./UniInstantResultCard.jsx');
-  assert.match(card, /!\(message \?\? ''\)\.toLowerCase\(\)\.includes\('simulação'\)/);
+  assert.doesNotMatch(card, /a Uni ainda não ouve sua voz de verdade/);
+  assert.doesNotMatch(card, /showDemoNote/);
 });
 
 test('nenhum texto tecnico como mockData exposto ao usuario (aparece so como parametro interno, nunca em string visivel)', async () => {

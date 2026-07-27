@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { createSpeechRecognitionAdapter } from './speechRecognitionAdapter.js';
+import { createMediaRecorderAdapter } from './mediaRecorderAdapter.js';
+import { uniVoiceTranscriptionProvider } from './uniVoiceTranscriptionProvider.js';
 import {
   initialVoiceCaptureState,
   isVoiceCaptureActive,
@@ -8,6 +9,13 @@ import {
 } from './voiceCaptureReducer.js';
 import { getVoiceInputMessage } from './voiceInputMessages.js';
 
+const CAPTURE_ERROR_STATES = Object.freeze({
+  permission_denied: VOICE_CAPTURE_STATES.PERMISSION_DENIED,
+  duration_limit: VOICE_CAPTURE_STATES.LIMIT_EXCEEDED,
+  size_limit: VOICE_CAPTURE_STATES.LIMIT_EXCEEDED,
+  empty_audio: VOICE_CAPTURE_STATES.NO_SPEECH,
+});
+
 export function useUniVoiceInput({
   onFinalTranscript,
   onBeforeStart,
@@ -15,14 +23,29 @@ export function useUniVoiceInput({
   onCaptureEnd,
   onUnsupported,
   profileId = 'balanced',
+  workspaceId,
   runtime,
+  transcriptionProvider = uniVoiceTranscriptionProvider,
 } = {}) {
   const [state, dispatch] = useReducer(voiceCaptureReducer, initialVoiceCaptureState);
   const adapterRef = useRef(null);
-  const callbacksRef = useRef({ onFinalTranscript, onBeforeStart, onCaptureStart, onCaptureEnd, onUnsupported });
+  const requestIdRef = useRef(0);
+  const callbacksRef = useRef({
+    onFinalTranscript,
+    onBeforeStart,
+    onCaptureStart,
+    onCaptureEnd,
+    onUnsupported,
+  });
 
   useEffect(() => {
-    callbacksRef.current = { onFinalTranscript, onBeforeStart, onCaptureStart, onCaptureEnd, onUnsupported };
+    callbacksRef.current = {
+      onFinalTranscript,
+      onBeforeStart,
+      onCaptureStart,
+      onCaptureEnd,
+      onUnsupported,
+    };
   }, [onBeforeStart, onCaptureEnd, onCaptureStart, onFinalTranscript, onUnsupported]);
 
   const releaseAdapter = useCallback(() => {
@@ -31,31 +54,66 @@ export function useUniVoiceInput({
     callbacksRef.current.onCaptureEnd?.();
   }, []);
 
-  const start = useCallback(() => {
-    if (adapterRef.current || isVoiceCaptureActive(state.status)) return false;
+  const transcribe = useCallback(async ({ audio, durationMs }) => {
+    const requestId = ++requestIdRef.current;
+    dispatch({ type: 'PROCESS' });
+    releaseAdapter();
+
+    const result = await transcriptionProvider.transcribe({
+      audio,
+      durationMs,
+      workspaceId,
+    });
+    if (requestId !== requestIdRef.current) return;
+
+    if (result?.text) {
+      dispatch({ type: 'COMPLETE' });
+      callbacksRef.current.onFinalTranscript?.(result.text);
+      return;
+    }
+
+    const code = result?.error?.code ?? 'transcription_failed';
+    dispatch({
+      type: 'FAIL',
+      status: code === 'EMPTY_TRANSCRIPT'
+        ? VOICE_CAPTURE_STATES.NO_SPEECH
+        : VOICE_CAPTURE_STATES.ERROR,
+      errorCode: code,
+    });
+  }, [releaseAdapter, transcriptionProvider, workspaceId]);
+
+  const start = useCallback(async () => {
+    if (adapterRef.current || isVoiceCaptureActive(state.status) || !workspaceId) return false;
 
     const browserRuntime = runtime ?? (typeof window !== 'undefined' ? window : undefined);
-    const adapter = createSpeechRecognitionAdapter({
+    const adapter = createMediaRecorderAdapter({
       runtime: browserRuntime,
       onStart: () => {
         dispatch({ type: 'START_LISTENING' });
         callbacksRef.current.onCaptureStart?.();
       },
-      onInterim: (transcript) => dispatch({ type: 'UPDATE_INTERIM', transcript }),
-      onProcessing: () => dispatch({ type: 'PROCESS' }),
-      onFinal: (transcript) => {
-        dispatch({ type: 'COMPLETE' });
-        releaseAdapter();
-        callbacksRef.current.onFinalTranscript?.(transcript);
+      onAudio: (capture) => {
+        void transcribe(capture);
       },
-      onError: ({ status, code }) => {
-        dispatch({ type: 'FAIL', status, errorCode: code });
+      onCancel: () => {
+        dispatch({ type: 'CANCEL' });
+      },
+      onError: ({ code }) => {
+        dispatch({
+          type: 'FAIL',
+          status: CAPTURE_ERROR_STATES[code] ?? VOICE_CAPTURE_STATES.ERROR,
+          errorCode: code,
+        });
         releaseAdapter();
       },
     });
 
     if (!adapter.supported) {
-      dispatch({ type: 'FAIL', status: VOICE_CAPTURE_STATES.UNSUPPORTED, errorCode: 'unsupported' });
+      dispatch({
+        type: 'FAIL',
+        status: VOICE_CAPTURE_STATES.UNSUPPORTED,
+        errorCode: 'unsupported',
+      });
       callbacksRef.current.onUnsupported?.();
       return false;
     }
@@ -63,42 +121,45 @@ export function useUniVoiceInput({
     callbacksRef.current.onBeforeStart?.();
     dispatch({ type: 'REQUEST_PERMISSION' });
     adapterRef.current = adapter;
-
-    try {
-      return adapter.start();
-    } catch {
-      dispatch({ type: 'FAIL', status: VOICE_CAPTURE_STATES.ERROR, errorCode: 'start-failed' });
-      releaseAdapter();
-      return false;
-    }
-  }, [releaseAdapter, runtime, state.status]);
+    const started = await adapter.start();
+    if (!started && adapterRef.current === adapter) releaseAdapter();
+    return started;
+  }, [releaseAdapter, runtime, state.status, transcribe, workspaceId]);
 
   const stop = useCallback(() => {
-    if (!adapterRef.current) return false;
-    dispatch({ type: 'PROCESS' });
+    if (!adapterRef.current || state.status !== VOICE_CAPTURE_STATES.LISTENING) return false;
     return adapterRef.current.stop();
-  }, []);
+  }, [state.status]);
 
   const cancel = useCallback(() => {
-    if (!adapterRef.current) return false;
+    requestIdRef.current += 1;
+    if (!adapterRef.current) {
+      if (state.status === VOICE_CAPTURE_STATES.PROCESSING) {
+        dispatch({ type: 'CANCEL' });
+        return true;
+      }
+      return false;
+    }
     adapterRef.current.cancel();
     dispatch({ type: 'CANCEL' });
     releaseAdapter();
     return true;
-  }, [releaseAdapter]);
+  }, [releaseAdapter, state.status]);
 
   const toggle = useCallback(() => {
-    if (adapterRef.current) return stop();
-    return start();
-  }, [start, stop]);
+    if (state.status === VOICE_CAPTURE_STATES.LISTENING) return stop();
+    if (isVoiceCaptureActive(state.status)) return false;
+    void start();
+    return true;
+  }, [start, state.status, stop]);
 
   const reset = useCallback(() => {
-    if (adapterRef.current) cancel();
+    cancel();
     dispatch({ type: 'RESET' });
   }, [cancel]);
 
   useEffect(() => () => {
-    adapterRef.current?.cancel();
+    requestIdRef.current += 1;
     adapterRef.current?.dispose();
     adapterRef.current = null;
     callbacksRef.current.onCaptureEnd?.();
@@ -106,7 +167,8 @@ export function useUniVoiceInput({
 
   return {
     ...state,
-    isListening: isVoiceCaptureActive(state.status),
+    isListening: state.status === VOICE_CAPTURE_STATES.LISTENING,
+    isActive: isVoiceCaptureActive(state.status),
     message: getVoiceInputMessage({ ...state, profileId }),
     start,
     stop,

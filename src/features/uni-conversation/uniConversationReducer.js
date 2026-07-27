@@ -76,6 +76,17 @@ export function uniConversationReducer(state, event) {
         result: null,
         error: null,
       };
+    case 'RESTORE':
+      return {
+        ...initialUniConversationState,
+        status: event.action?.status === 'ready'
+          ? UNI_CONVERSATION_STATES.AWAITING_CONFIRMATION
+          : UNI_CONVERSATION_STATES.NEEDS_CLARIFICATION,
+        parsed: event.parsed ?? null,
+        action: event.action,
+        response: event.response ?? '',
+        memory: event.memory ?? null,
+      };
     case 'RESET':
       return initialUniConversationState;
     default:

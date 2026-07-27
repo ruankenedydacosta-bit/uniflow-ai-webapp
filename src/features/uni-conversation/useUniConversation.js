@@ -35,6 +35,7 @@ export function useUniConversation({
   cognitiveMap,
   referenceDate,
   resolveParsedMemory,
+  allowedWriteIntents,
 } = {}) {
   const [state, dispatch] = useReducer(
     uniConversationReducer,
@@ -53,15 +54,23 @@ export function useUniConversation({
   );
 
   const buildAction = useCallback(
-    (parsed, overrides = {}) => buildFinancialIntentAction({
-      parsed,
-      accounts,
-      accountTypes,
-      categories,
-      referenceDate,
-      overrides,
-    }),
-    [accountTypes, accounts, categories, referenceDate],
+    (parsed, overrides = {}) => {
+      if (
+        Array.isArray(allowedWriteIntents)
+        && !allowedWriteIntents.includes(parsed?.intent)
+      ) {
+        return { status: 'unsupported', intent: parsed?.intent ?? 'question', issues: [] };
+      }
+      return buildFinancialIntentAction({
+        parsed,
+        accounts,
+        accountTypes,
+        categories,
+        referenceDate,
+        overrides,
+      });
+    },
+    [accountTypes, accounts, allowedWriteIntents, categories, referenceDate],
   );
 
   const interpret = useCallback((content) => {
@@ -207,10 +216,35 @@ export function useUniConversation({
     return response;
   }, [responseOptions]);
 
+  const provideInput = useCallback((overrides) => correct(overrides), [correct]);
+
+  const restore = useCallback((snapshot) => {
+    if (!snapshot?.action || !['ready', 'needs_clarification'].includes(snapshot.action.status)) {
+      return false;
+    }
+    overridesRef.current = {
+      clientOperationId: snapshot.action.clientOperationId,
+      amount: snapshot.action.amount,
+      accountId: snapshot.action.account?.id ?? snapshot.action.payload?.account_id,
+      destinationAccountId: snapshot.action.payload?.destination_account_id,
+      categoryId: snapshot.action.category?.id ?? snapshot.action.payload?.category_id,
+      description: snapshot.action.description,
+      date: snapshot.action.date,
+    };
+    dispatch({
+      type: 'RESTORE',
+      parsed: snapshot.parsed,
+      action: snapshot.action,
+      response: snapshot.response,
+      memory: snapshot.memory,
+    });
+    return true;
+  }, []);
+
   const reset = useCallback(() => {
     overridesRef.current = {};
     dispatch({ type: 'RESET' });
   }, []);
 
-  return { state, interpret, correct, confirm, cancel, reset };
+  return { state, interpret, correct, provideInput, confirm, cancel, restore, reset };
 }

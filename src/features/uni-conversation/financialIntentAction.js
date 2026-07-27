@@ -112,13 +112,8 @@ export function buildFinancialIntentAction({
   const transactionType = ACTION_INTENTS[parsed.intent];
   const amount = Number(overrides.amount ?? parsed.entities.amount);
   const date = overrides.date ?? parsed.entities.date ?? referenceDate;
-  const fallbackDescription = transactionType === 'income'
-    ? 'Entrada'
-    : transactionType === 'transfer'
-      ? 'Transferência'
-      : 'Despesa';
   const description = sanitizeDescription(
-    overrides.description ?? parsed.entities.description ?? fallbackDescription,
+    overrides.description ?? parsed.entities.description,
   );
   const accountResult = resolveFinancialAccount({
     accounts,

@@ -129,6 +129,12 @@ test('classifyFinancialQuery: goal_completion variante', () => {
   assert.equal(result.type, 'goal_completion');
 });
 
+test('classifyFinancialQuery: consulta geral de objetivo', () => {
+  assert.deepEqual(classifyFinancialQuery('Quais são meus objetivos financeiros?'), {
+    type: 'goal_overview',
+  });
+});
+
 test('classifyFinancialQuery: null para texto sem match', () => {
   const result = classifyFinancialQuery('qual a previsão do tempo?');
   assert.equal(result, null);
@@ -369,6 +375,26 @@ test('respostas goal_feasibility incluem aviso de estimativa', () => {
     { goalProjections },
   );
   assert.ok(response.text.toLowerCase().includes('estim'));
+});
+
+test('buildQueryResponse goal_overview usa somente metas reais recebidas', () => {
+  const response = buildQueryResponse(
+    { type: 'goal_overview' },
+    mockCtx(),
+    'pessoal',
+    {
+      goals: [{
+        id: 'goal-1',
+        name: 'Reserva',
+        current_amount: 1200,
+        target_amount: 5000,
+        status: 'active',
+      }],
+    },
+  );
+  assert.match(response.text, /Reserva/);
+  assert.match(response.text, /R\$\s*1\.200,00/);
+  assert.match(response.text, /R\$\s*5\.000,00/);
 });
 
 // ── Isolamento PF/PJ ───────────────────────────────────────────────────────

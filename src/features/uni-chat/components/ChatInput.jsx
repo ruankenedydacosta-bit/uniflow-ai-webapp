@@ -2,10 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { useUniVoiceInput, VOICE_CAPTURE_STATES } from '../../uni-voice';
 import styles from './ChatInput.module.css';
 
-export default function ChatInput({ value, onChange, onSend, disabled, personalityProfileId = 'balanced' }) {
+export default function ChatInput({
+  value,
+  onChange,
+  onSend,
+  onBeforeVoiceStart,
+  onAutoVoiceStartHandled,
+  autoStartVoice = false,
+  workspaceId,
+  disabled,
+  personalityProfileId = 'balanced',
+}) {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef(null);
   const valueRef = useRef(value);
+  const autoStartAttemptedRef = useRef(false);
 
   useEffect(() => {
     valueRef.current = value;
@@ -13,17 +24,42 @@ export default function ChatInput({ value, onChange, onSend, disabled, personali
 
   const voiceInput = useUniVoiceInput({
     profileId: personalityProfileId,
+    workspaceId,
+    onBeforeStart: onBeforeVoiceStart,
     onFinalTranscript: (transcript) => {
       const clean = (transcript || '').trim();
       if (!clean) return;
       const current = (valueRef.current || '').trim();
       const next = current ? `${current} ${clean}` : clean;
       onChange(next);
-      inputRef.current?.focus();
+      onSend(next);
     },
   });
 
-  const { status } = voiceInput;
+  const { status, start: startVoice } = voiceInput;
+
+  useEffect(() => {
+    if (
+      !autoStartVoice
+      || autoStartAttemptedRef.current
+      || !workspaceId
+      || disabled
+    ) {
+      return;
+    }
+
+    autoStartAttemptedRef.current = true;
+    void startVoice().finally(() => {
+      onAutoVoiceStartHandled?.();
+    });
+  }, [
+    autoStartVoice,
+    disabled,
+    onAutoVoiceStartHandled,
+    startVoice,
+    workspaceId,
+  ]);
+
   const isCapturing =
     status === VOICE_CAPTURE_STATES.LISTENING ||
     status === VOICE_CAPTURE_STATES.REQUESTING_PERMISSION ||
@@ -40,10 +76,19 @@ export default function ChatInput({ value, onChange, onSend, disabled, personali
 
   function handleVoiceClick() {
     if (disabled && !isCapturing) return;
+    if (
+      status === VOICE_CAPTURE_STATES.REQUESTING_PERMISSION
+      || status === VOICE_CAPTURE_STATES.PROCESSING
+    ) {
+      voiceInput.cancel();
+      return;
+    }
     voiceInput.toggle();
   }
 
-  const voiceLabel = isCapturing ? 'Parar escuta por voz' : 'Falar com a Uni por voz';
+  const voiceLabel = status === VOICE_CAPTURE_STATES.LISTENING
+    ? 'Parar e enviar áudio'
+    : isCapturing ? 'Cancelar áudio' : 'Falar com a Uni por voz';
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>

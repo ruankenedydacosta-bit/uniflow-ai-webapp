@@ -98,9 +98,23 @@ test('pergunta futura ampla é interceptada ANTES do LLM, nunca chega a handleUn
 // Voz: entrada não sobrescreve texto existente; saída não bloqueia renderização
 // ============================================================================
 
-test('entrada por voz concatena ao texto já digitado, nunca sobrescreve', async () => {
+test('entrada por voz concatena, envia a transcrição e usa o workspace ativo', async () => {
   const chatInput = await source('components/ChatInput.jsx');
   assert.match(chatInput, /const next = current \? `\$\{current\} \$\{clean\}` : clean;/);
+  assert.match(chatInput, /onSend\(next\);/);
+  assert.match(chatInput, /workspaceId,/);
+  assert.match(chatInput, /onBeforeStart: onBeforeVoiceStart/);
+});
+
+test('long press central solicita captura real uma vez e limpa o estado de navegação', async () => {
+  const page = await source('UniChatPage.jsx');
+  const chatInput = await source('components/ChatInput.jsx');
+  const centerButton = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
+  assert.match(centerButton, /startVoiceCapture: true/);
+  assert.match(page, /autoStartVoice=\{autoStartVoice\}/);
+  assert.match(page, /delete nextState\.startVoiceCapture/);
+  assert.match(chatInput, /autoStartAttemptedRef\.current = true/);
+  assert.match(chatInput, /startVoice\(\)\.finally/);
 });
 
 test('falha/ausência de suporte a voz mantém a digitação funcional (input sempre habilitado)', async () => {
@@ -206,9 +220,10 @@ test('sendText reseta AI_STATUS e a pergunta pendente a cada novo envio -- nunca
   assert.match(fnBody, /lastUnresolvedRef\.current = null;/);
 });
 
-test('envio vazio e envio duplicado (durante loading/confirmação) continuam bloqueados pelo mesmo guard existente', async () => {
+test('envio vazio, loading e execução continuam bloqueados; confirmação textual permanece disponível', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /if \(!text\.trim\(\) \|\| isTyping \|\| isConfirming\) return;/);
+  assert.match(page, /if \(!text\.trim\(\) \|\| isTyping \|\| isExecutingAction\) return;/);
+  assert.match(page, /classifyPendingActionReply\(text\)/);
 });
 
 test('troca de conversa, novo chat, exclusão da conversa ativa e troca de workspace resetam AI_STATUS -- nenhum aviso de erro sobrevive à troca de contexto', async () => {
@@ -292,8 +307,36 @@ test('trocar de conversa, novo chat, trocar modo/workspace e excluir a conversa 
   const page = await source('UniChatPage.jsx');
   const occurrences = page.match(/uniVoice\.stop\(\);\s*\n\s*(?:\/\/[^\n]*\n\s*)?setVoiceMessageId\(null\);/g) ?? [];
   // switchConversation + handleNewChat + efeito de troca de workspace +
-  // handleModeChange + handleDeleteConversation (ativa) == 5 pontos.
-  assert.equal(occurrences.length, 5);
+  // Os cinco resets de contexto anteriores permanecem, e iniciar captura
+  // também interrompe o TTS antes de abrir o microfone.
+  assert.equal(occurrences.length, 6);
+});
+
+test('escritas do chat usam a RPC atômica e allowlist restrita a receita/despesa', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{ executeConfirmedFinancialAction \}/);
+  assert.match(page, /executeAtomicAction: executeConfirmedFinancialAction/);
+  assert.match(page, /ALLOWED_CHAT_WRITE_INTENTS = Object\.freeze\(\['register_income', 'register_expense'\]\)/);
+  assert.match(page, /\['register_transfer', 'create_goal'\]\.includes/);
+});
+
+test('ação pendente é isolada por usuário, workspace e conversa, com restauração e limpeza', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /userId: user\?\.id/);
+  assert.match(page, /workspaceId: workspace\?\.id/);
+  assert.match(page, /conversationId: activeId/);
+  assert.match(page, /loadPendingAction\(pendingActionIdentity\)/);
+  assert.match(page, /savePendingAction\(pendingActionIdentity/);
+  assert.match(page, /clearCurrentPendingAction\(\)/);
+});
+
+test('resumo de confirmação mostra o espaço PF/PJ e nunca aceita texto livre como execução', async () => {
+  const adapter = await source('uniChatAdapter.js');
+  const page = await source('UniChatPage.jsx');
+  assert.match(adapter, /label: 'Espaço'/);
+  assert.match(adapter, /workspaceType === 'business' \? 'Empresa' : 'Pessoal'/);
+  assert.match(page, /replyType === 'confirm'/);
+  assert.match(page, /resolvedInput\.kind !== 'correction'/);
 });
 
 test('MessageBubble recebe o estado compartilhado de voz e sabe se É a mensagem ativa (isActiveVoiceMessage)', async () => {

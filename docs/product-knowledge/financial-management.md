@@ -47,7 +47,8 @@ Ao menos uma conta cadastrada para registrar uma movimentação.
 - Recorrência é apenas um rótulo — não gera lançamentos futuros automaticamente.
 - Open Finance é 100% demonstrativo.
 - Relatórios têm ao menos um recurso ainda desabilitado ("Disponível em breve" em um dos botões da tela).
-- Registro por voz (ditar uma movimentação) está desabilitado ("Disponível em breve").
+- Registro por voz está limitado a receita e despesa, exige a Edge de
+  transcrição configurada e sempre solicita confirmação explícita.
 
 ## Mensagens de erro conhecidas
 
@@ -58,4 +59,4 @@ Validação de formulário: campos obrigatórios não preenchidos impedem o envi
 - Conexão bancária real (Open Finance).
 - Geração automática de lançamentos recorrentes.
 - Exportação em PDF.
-- Registro de movimentação por voz.
+- Transferência, edição e exclusão por voz.

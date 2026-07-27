@@ -7,6 +7,7 @@ export const VOICE_CAPTURE_STATES = Object.freeze({
   PERMISSION_DENIED: 'permission_denied',
   UNSUPPORTED: 'unsupported',
   NO_SPEECH: 'no_speech',
+  LIMIT_EXCEEDED: 'limit_exceeded',
   ERROR: 'error',
   CANCELED: 'canceled',
 });

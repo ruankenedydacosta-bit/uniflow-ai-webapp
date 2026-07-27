@@ -70,6 +70,13 @@ export function classifyFinancialQuery(text) {
     return { type: 'recent_transactions' };
   }
 
+  if (
+    /\b(?:meta|metas|objetivo|objetivos)\b/.test(n)
+    && /\b(?:como|qual|quais|ver|mostrar|consultar|listar|tenho|minhas|meus|status|andamento|progresso)\b/.test(n)
+  ) {
+    return { type: 'goal_overview' };
+  }
+
   if (/\bsaldo\b/.test(n)) {
     return { type: 'balance' };
   }
@@ -329,6 +336,27 @@ export function buildQueryResponse(queryType, ctx, mode, options = {}) {
       });
       const msg = `Previsão de conclusão das metas:\n${lines.join('\n')}\n\n⚠️ Estimativa baseada no fluxo atual. Resultados reais podem variar.`;
       return { text: msg, highlight: null };
+    }
+
+    case 'goal_overview': {
+      const goals = (options.goals ?? []).filter(
+        (goal) => goal.archived_at == null && goal.status !== 'canceled',
+      );
+      if (!goals.length) {
+        return {
+          text: `${capitalize(subject)} ainda não tem objetivos financeiros ativos.`,
+          highlight: null,
+        };
+      }
+      const lines = goals.slice(0, 3).map((goal) => {
+        const current = fmtCurrency(Number(goal.current_amount) || 0);
+        const target = fmtCurrency(Number(goal.target_amount) || 0);
+        return `• "${goal.name}": ${current} de ${target}`;
+      });
+      return {
+        text: `Seus objetivos financeiros ativos:\n${lines.join('\n')}`,
+        highlight: null,
+      };
     }
 
     default:
