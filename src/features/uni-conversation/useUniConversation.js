@@ -63,7 +63,12 @@ export function useUniConversation({
       }
       return buildFinancialIntentAction({
         parsed,
-        accounts,
+        accounts: overrides.accountRecord
+          ? [
+              overrides.accountRecord,
+              ...accounts.filter((account) => account.id !== overrides.accountRecord.id),
+            ]
+          : accounts,
         accountTypes,
         categories,
         referenceDate,
@@ -226,6 +231,7 @@ export function useUniConversation({
       clientOperationId: snapshot.action.clientOperationId,
       amount: snapshot.action.amount,
       accountId: snapshot.action.account?.id ?? snapshot.action.payload?.account_id,
+      accountRecord: snapshot.action.account ?? null,
       destinationAccountId: snapshot.action.payload?.destination_account_id,
       categoryId: snapshot.action.category?.id ?? snapshot.action.payload?.category_id,
       description: snapshot.action.description,

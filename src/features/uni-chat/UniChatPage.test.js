@@ -51,6 +51,25 @@ test('respostas financeiras reais do chat vêm de financialQueryInterpreter/fina
   assert.match(page, /financialConversation\.interpret/);
 });
 
+test('dependência de conta usa Pending Action Stack e o saveAccount real do workspace', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /startAccountCreationDependency\(/);
+  assert.match(page, /create_financial_account: async \(\{ fields \}\) => saveAccountForDependency\(fields\.account\)/);
+  assert.match(page, /findAccountCreationConflicts\(\{/);
+  assert.match(page, /workspaceId: workspace\?\.id/);
+  assert.match(page, /financialConversation\.provideInput\(\{\s*accountId: account\.id,\s*accountRecord: account,/);
+  assert.match(page, /publishConversationResult\(resumedResult\)/);
+});
+
+test('criação de conta e movimentação têm confirmações separadas e cancelamento com escopo', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /Posso criá-la para continuar a movimentação\?/);
+  assert.match(page, /isCancelEntirePendingFlow\(text\)/);
+  assert.match(page, /cancelAccountCreationDependency\(stack, \{ cascade \}\)/);
+  assert.match(page, /Não criei a conta\. A movimentação continua preservada/);
+  assert.match(page, /financialConversation\.confirm\(\)/);
+});
+
 // ============================================================================
 // Integração com useUniLlm (D7) e fallback determinístico
 // ============================================================================

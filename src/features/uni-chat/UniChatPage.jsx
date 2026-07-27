@@ -4,11 +4,24 @@ import { buildUniPrefillFromState } from '../categories/categoryUtils.js';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import {
+  buildAccountCreationConfirmation,
+  cancelAccountCreationDependency,
   classifyPendingActionReply,
+  clearPendingActionStack,
   clearPendingAction,
+  completeAccountCreationDependency,
+  createPendingActionCoordinator,
+  findAccountCreationConflicts,
+  getActivePendingAction,
+  isAccountCreationDependency,
+  isCancelEntirePendingFlow,
+  loadPendingActionStack,
   loadPendingAction,
   resolvePendingActionInput,
+  savePendingActionStack,
   savePendingAction,
+  startAccountCreationDependency,
+  updateResumedFinancialSnapshot,
   useUniConversation,
 } from '../uni-conversation';
 import { useUniLlm, AI_STATUS } from '../uni-llm';
@@ -167,6 +180,13 @@ export default function UniChatPage() {
     referenceDate: getLocalIsoDate(),
     allowedWriteIntents: ALLOWED_CHAT_WRITE_INTENTS,
   });
+  const saveAccountForDependency = accountState.saveAccount;
+  const accountDependencyCoordinator = useMemo(
+    () => createPendingActionCoordinator({
+      create_financial_account: async ({ fields }) => saveAccountForDependency(fields.account),
+    }),
+    [saveAccountForDependency],
+  );
 
   const [connectionStatus, setConnectionStatus] = useState(dataService.getConnectionStatus);
   const initialLoadDone = useRef(false);
@@ -216,10 +236,12 @@ export default function UniChatPage() {
     return conv.id;
   });
   const [pendingAction, setPendingAction] = useState(null);
+  const [pendingActionStack, setPendingActionStack] = useState(null);
   const [executionError, setExecutionError] = useState(null);
   const [isExecutingAction, setIsExecutingAction] = useState(false);
   const confirmingRef = useRef(false);
   const pendingActionRef = useRef(null);
+  const pendingActionStackRef = useRef(null);
   const activeIdRef = useRef(activeId);
   const convDbIdsRef = useRef({});
   const restoredPendingIdentityRef = useRef(null);
@@ -268,6 +290,10 @@ export default function UniChatPage() {
     pendingActionRef.current = pendingAction;
   }, [pendingAction]);
 
+  useEffect(() => {
+    pendingActionStackRef.current = pendingActionStack;
+  }, [pendingActionStack]);
+
   const pendingActionIdentity = useMemo(() => ({
     userId: user?.id,
     workspaceId: workspace?.id,
@@ -276,11 +302,14 @@ export default function UniChatPage() {
 
   const clearCurrentPendingAction = useCallback(() => {
     clearPendingAction(pendingActionIdentity);
+    clearPendingActionStack(pendingActionIdentity);
   }, [pendingActionIdentity]);
 
   useEffect(() => {
     const conversationState = financialConversation.state;
     if (
+      pendingActionStack?.actions?.length
+      ||
       !pendingActionIdentity.userId
       || !pendingActionIdentity.workspaceId
       || !pendingActionIdentity.conversationId
@@ -295,7 +324,12 @@ export default function UniChatPage() {
       response: conversationState.response,
       memory: conversationState.memory,
     });
-  }, [financialConversation.state, pendingActionIdentity]);
+  }, [financialConversation.state, pendingActionIdentity, pendingActionStack]);
+
+  useEffect(() => {
+    if (!pendingActionStack?.actions?.length) return;
+    savePendingActionStack(pendingActionIdentity, pendingActionStack);
+  }, [pendingActionIdentity, pendingActionStack]);
 
   useEffect(() => {
     const identityKey = [
@@ -312,6 +346,20 @@ export default function UniChatPage() {
       return;
     }
     restoredPendingIdentityRef.current = identityKey;
+    const storedStack = loadPendingActionStack(pendingActionIdentity);
+    const storedDependency = storedStack ? getActivePendingAction(storedStack) : null;
+    if (isAccountCreationDependency(storedDependency)) {
+      const parent = storedStack.actions.at(-2);
+      const parentSnapshot = parent?.fields?.snapshot;
+      if (parentSnapshot?.action && financialConversation.restore(parentSnapshot)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPendingActionStack(storedStack);
+      } else {
+        clearPendingActionStack(pendingActionIdentity);
+      }
+      return;
+    }
+
     const snapshot = loadPendingAction(pendingActionIdentity);
     if (!snapshot?.action) return;
 
@@ -325,7 +373,9 @@ export default function UniChatPage() {
     }
 
     if (financialConversation.restore(snapshot) && snapshot.action.status === 'ready') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (storedStack?.actions?.length) {
+        setPendingActionStack(storedStack);
+      }
       setPendingAction(snapshot.action);
     }
   }, [
@@ -446,6 +496,8 @@ export default function UniChatPage() {
     setConversations(updated);
     setMode(correctMode);
     setPendingAction(null);
+    pendingActionStackRef.current = null;
+    setPendingActionStack(null);
     setExecutionError(null);
     setIsExecutingAction(false);
     setAiStatus(AI_STATUS.UNAVAILABLE);
@@ -633,6 +685,8 @@ export default function UniChatPage() {
     setMode(convMode);
     setIsTyping(false);
     setPendingAction(null);
+    pendingActionStackRef.current = null;
+    setPendingActionStack(null);
     setExecutionError(null);
     setIsExecutingAction(false);
     setAiStatus(AI_STATUS.UNAVAILABLE);
@@ -721,7 +775,26 @@ export default function UniChatPage() {
       .find((message) => message.confirmation?.status === 'pending')?.id ?? null;
   }
 
+  function syncFinancialParentSnapshot(result, stack = pendingActionStackRef.current) {
+    if (!stack?.actions?.length || !result?.action) return stack;
+    const parent = stack.actions.find((action) => action.type === 'financial_transaction');
+    if (!parent) return stack;
+    const previousSnapshot = parent.fields?.snapshot ?? {};
+    const transition = updateResumedFinancialSnapshot(stack, {
+      ...previousSnapshot,
+      action: result.action,
+      response: result.response?.text ?? previousSnapshot.response ?? '',
+    });
+    if (transition.changed) {
+      pendingActionStackRef.current = transition.stack;
+      setPendingActionStack(transition.stack);
+      return transition.stack;
+    }
+    return stack;
+  }
+
   function publishConversationResult(result) {
+    syncFinancialParentSnapshot(result);
     if (result?.action?.status === 'ready') {
       setPendingAction(result.action);
       const confirmation = buildConfirmationFromAction(
@@ -745,10 +818,89 @@ export default function UniChatPage() {
     syncMessageToSupabase(assistantMsg);
   }
 
+  function publishAccountCreationConfirmation(stack) {
+    const dependency = getActivePendingAction(stack);
+    const confirmation = buildAccountCreationConfirmation(dependency, {
+      accountTypes: accountState.accountTypes,
+      workspaceType: access.currentWorkspace,
+    });
+    const assistantMsg = buildUniMessage(
+      `Não encontrei a conta ${dependency.fields.account.name} neste espaço. Posso criá-la para continuar a movimentação?`,
+      {
+        type: 'confirmation',
+        confirmation,
+      },
+    );
+    pushMessage(assistantMsg);
+    syncMessageToSupabase(assistantMsg);
+  }
+
+  function openAccountCreationDependency(proposal) {
+    if (!proposal?.action?.proposedAccount) return false;
+    const financialSnapshot = {
+      parsed: proposal.parsed ?? financialConversation.state.parsed,
+      action: proposal.action,
+      response: proposal.response?.text ?? '',
+      memory: proposal.memory ?? financialConversation.state.memory,
+    };
+    const transition = startAccountCreationDependency({
+      stack: pendingActionStackRef.current,
+      identity: pendingActionIdentity,
+      financialSnapshot,
+      proposedAccount: proposal.action.proposedAccount,
+    });
+    if (!transition.changed && transition.reason === 'duplicate') {
+      return true;
+    }
+
+    pendingActionStackRef.current = transition.stack;
+    setPendingActionStack(transition.stack);
+    setPendingAction(null);
+    publishAccountCreationConfirmation(transition.stack);
+    return true;
+  }
+
+  function startAccountDependency(text) {
+    const proposal = financialConversation.provideInput({
+      accountName: text,
+      accountDecision: 'create_new',
+    });
+    return openAccountCreationDependency(proposal);
+  }
+
   function handlePendingConversationInput(text, userMsg) {
     const action = pendingAction ?? financialConversation.state.action;
-    const replyType = pendingAction ? classifyPendingActionReply(text) : 'input';
+    const activeStackAction = pendingActionStackRef.current
+      ? getActivePendingAction(pendingActionStackRef.current)
+      : null;
+    const accountDependencyActive = isAccountCreationDependency(activeStackAction);
+    const replyType = pendingAction || accountDependencyActive
+      ? classifyPendingActionReply(text)
+      : 'input';
     syncMessageToSupabase(userMsg);
+
+    if (accountDependencyActive && replyType === 'confirm') {
+      const confirmationId = findPendingConfirmationMessageId();
+      if (confirmationId) void handleConfirmAction(confirmationId);
+      return true;
+    }
+    if (accountDependencyActive && (replyType === 'cancel' || isCancelEntirePendingFlow(text))) {
+      const confirmationId = findPendingConfirmationMessageId();
+      if (confirmationId) {
+        handleCancelAction(confirmationId, {
+          cascade: isCancelEntirePendingFlow(text),
+        });
+      }
+      return true;
+    }
+    if (accountDependencyActive) {
+      const assistantMsg = buildUniMessage(
+        'Para continuar, confirme a criação da conta, cancele apenas a criação ou diga “cancelar tudo”.',
+      );
+      pushMessage(assistantMsg);
+      syncMessageToSupabase(assistantMsg);
+      return true;
+    }
 
     if (pendingAction && replyType === 'confirm') {
       const confirmationId = findPendingConfirmationMessageId();
@@ -771,6 +923,12 @@ export default function UniChatPage() {
     });
     if (resolvedInput.kind !== 'correction') {
       const accountNames = resolvedInput.accounts?.map((account) => account.name).filter(Boolean) ?? [];
+      if (
+        resolvedInput.kind === 'account_not_found'
+        && startAccountDependency(text)
+      ) {
+        return true;
+      }
       const message = resolvedInput.kind === 'ambiguous_account'
         ? `Encontrei mais de uma conta correspondente: ${accountNames.join(', ')}. Qual delas você quer usar?`
         : resolvedInput.kind === 'account_not_found'
@@ -813,6 +971,11 @@ export default function UniChatPage() {
 
     const hasPendingConversation = Boolean(
       pendingAction
+      || isAccountCreationDependency(
+        pendingActionStackRef.current
+          ? getActivePendingAction(pendingActionStackRef.current)
+          : null,
+      )
       || financialConversation.state.status === 'needs_clarification',
     );
     if (hasPendingConversation) {
@@ -899,6 +1062,9 @@ export default function UniChatPage() {
         return;
       }
 
+      if (result.action?.proposedAccount && openAccountCreationDependency(result)) {
+        return;
+      }
       publishConversationResult(result);
     }, UNI_THINK_MIN_MS);
   }
@@ -915,6 +1081,8 @@ export default function UniChatPage() {
     saveHistory(updated);
     setConversations(updated);
     setPendingAction(null);
+    pendingActionStackRef.current = null;
+    setPendingActionStack(null);
     setExecutionError(null);
     setIsExecutingAction(false);
     setAiStatus(AI_STATUS.UNAVAILABLE);
@@ -961,6 +1129,8 @@ export default function UniChatPage() {
     setMessages([]);
     setIsTyping(false);
     setPendingAction(null);
+    pendingActionStackRef.current = null;
+    setPendingActionStack(null);
     setExecutionError(null);
     setIsExecutingAction(false);
     setAiStatus(AI_STATUS.UNAVAILABLE);
@@ -997,6 +1167,8 @@ export default function UniChatPage() {
       setActiveId(conv.id);
       setMessages([]);
       setPendingAction(null);
+      pendingActionStackRef.current = null;
+      setPendingActionStack(null);
       setExecutionError(null);
       setIsExecutingAction(false);
       setAiStatus(AI_STATUS.UNAVAILABLE);
@@ -1013,13 +1185,108 @@ export default function UniChatPage() {
 
   async function handleConfirmAction(id) {
     if (confirmingRef.current) return;
-    if (!pendingAction) return;
+    const stack = pendingActionStackRef.current;
+    const activeStackAction = stack ? getActivePendingAction(stack) : null;
+    const accountDependencyActive = isAccountCreationDependency(activeStackAction);
+    if (!pendingAction && !accountDependencyActive) return;
 
     confirmingRef.current = true;
     setIsExecutingAction(true);
     setExecutionError(null);
 
     try {
+      if (accountDependencyActive) {
+        const requestedAccount = activeStackAction.fields.account;
+        const conflicts = findAccountCreationConflicts({
+          accounts: accountState.accounts,
+          requestedName: requestedAccount.name,
+          workspaceId: workspace?.id,
+        });
+
+        if (conflicts.exact.length > 1 || conflicts.similar.length) {
+          const candidates = [...conflicts.exact, ...conflicts.similar];
+          const names = candidates.map((account) => account.name).join(', ');
+          const errorText = `Encontrei conta semelhante neste espaço: ${names}. Cancele a criação e escolha uma dessas contas.`;
+          setExecutionError(errorText);
+          setMessages((prev) => prev.map((message) => (
+            message.id === id
+              ? {
+                  ...message,
+                  confirmation: { ...message.confirmation, confirmationError: errorText },
+                }
+              : message
+          )));
+          setIsExecutingAction(false);
+          confirmingRef.current = false;
+          return;
+        }
+
+        let dependencyOutcome;
+        if (conflicts.exact.length === 1) {
+          dependencyOutcome = completeAccountCreationDependency(
+            stack,
+            conflicts.exact[0],
+          );
+        } else {
+          dependencyOutcome = await accountDependencyCoordinator.execute(stack);
+        }
+
+        if (
+          dependencyOutcome?.error
+          || !dependencyOutcome?.completedAction?.result?.id
+          || !dependencyOutcome?.resumedAction
+        ) {
+          const errorText = 'Não consegui criar essa conta. A movimentação foi preservada.';
+          setExecutionError(errorText);
+          setMessages((prev) => prev.map((message) => (
+            message.id === id
+              ? {
+                  ...message,
+                  confirmation: { ...message.confirmation, confirmationError: errorText },
+                }
+              : message
+          )));
+          setIsExecutingAction(false);
+          confirmingRef.current = false;
+          return;
+        }
+
+        const account = dependencyOutcome.completedAction.result;
+        const parentSnapshot = dependencyOutcome.resumedAction.fields.snapshot;
+        financialConversation.restore(parentSnapshot);
+        const resumedResult = financialConversation.provideInput({
+          accountId: account.id,
+          accountRecord: account,
+        });
+        const resumedSnapshot = {
+          ...parentSnapshot,
+          action: resumedResult.action,
+          response: resumedResult.response?.text ?? parentSnapshot.response,
+        };
+        const updatedStack = updateResumedFinancialSnapshot(
+          dependencyOutcome.stack,
+          resumedSnapshot,
+        ).stack;
+        pendingActionStackRef.current = updatedStack;
+        setPendingActionStack(updatedStack);
+        setMessages((prev) => prev.map((message) => (
+          message.id === id
+            ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
+            : message
+        )));
+        const accountMessage = buildUniMessage(
+          conflicts.exact.length
+            ? `A conta ${account.name} já existia neste espaço. Retomei a movimentação sem duplicá-la.`
+            : `Conta ${account.name} criada. Retomei a movimentação do ponto em que paramos.`,
+        );
+        pushMessage(accountMessage);
+        syncMessageToSupabase(accountMessage);
+        publishConversationResult(resumedResult);
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+        return;
+      }
+
       const outcome = await financialConversation.confirm();
 
       if (!confirmingRef.current) return;
@@ -1053,6 +1320,8 @@ export default function UniChatPage() {
       syncMessageToSupabase(successMessage);
       financialConversation.reset();
       clearCurrentPendingAction();
+      pendingActionStackRef.current = null;
+      setPendingActionStack(null);
       setPendingAction(null);
       setIsExecutingAction(false);
       confirmingRef.current = false;
@@ -1077,7 +1346,42 @@ export default function UniChatPage() {
     setInputValue('Quero alterar o valor para ');
   }
 
-  function handleCancelAction(id) {
+  function handleCancelAction(id, { cascade = false } = {}) {
+    const stack = pendingActionStackRef.current;
+    const activeStackAction = stack ? getActivePendingAction(stack) : null;
+    if (isAccountCreationDependency(activeStackAction)) {
+      const transition = cancelAccountCreationDependency(stack, { cascade });
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === id
+            ? { ...message, confirmation: { ...message.confirmation, status: 'canceled' } }
+            : message,
+        ),
+      );
+      setExecutionError(null);
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+
+      if (cascade || !transition.resumedAction) {
+        pendingActionStackRef.current = null;
+        setPendingActionStack(null);
+        setPendingAction(null);
+        financialConversation.cancel();
+        clearCurrentPendingAction();
+        pushMessage(buildUniMessage('Tudo bem. Cancelei a criação da conta e a movimentação.'));
+        return;
+      }
+
+      pendingActionStackRef.current = transition.stack;
+      setPendingActionStack(transition.stack);
+      setPendingAction(null);
+      financialConversation.restore(transition.resumedAction.fields.snapshot);
+      pushMessage(buildUniMessage(
+        'Tudo bem. Não criei a conta. A movimentação continua preservada; informe outra conta para continuar.',
+      ));
+      return;
+    }
+
     confirmingRef.current = false;
     setIsExecutingAction(false);
     setPendingAction(null);
@@ -1092,6 +1396,8 @@ export default function UniChatPage() {
     pushMessage(buildUniMessage('Sem problemas, cancelei esse registro.'));
     financialConversation.cancel();
     clearCurrentPendingAction();
+    pendingActionStackRef.current = null;
+    setPendingActionStack(null);
   }
 
   function handleBeforeVoiceStart() {

@@ -10,7 +10,7 @@ export default function ActionConfirmation({
   executionError = null,
 }) {
   if (!data) return null;
-  const { title, rows = [], status = 'pending' } = data;
+  const { title, rows = [], status = 'pending', editable = true } = data;
 
   return (
     <div className={`${styles.card} ${status !== 'pending' ? styles.resolved : ''}`}>
@@ -53,14 +53,16 @@ export default function ActionConfirmation({
           >
             {isExecuting ? 'Registrando…' : 'Confirmar'}
           </button>
-          <button
-            type="button"
-            className={styles.edit}
-            onClick={onEdit}
-            disabled={isExecuting}
-          >
-            Editar
-          </button>
+          {editable && (
+            <button
+              type="button"
+              className={styles.edit}
+              onClick={onEdit}
+              disabled={isExecuting}
+            >
+              Editar
+            </button>
+          )}
           <button
             type="button"
             className={styles.cancel}

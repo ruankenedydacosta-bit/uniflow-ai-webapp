@@ -27,6 +27,17 @@ export {
 } from './pendingActionStack.js';
 export { createPendingActionCoordinator } from './pendingActionCoordinator.js';
 export {
+  buildAccountCreationConfirmation,
+  cancelAccountCreationDependency,
+  completeAccountCreationDependency,
+  findAccountCreationConflicts,
+  FINANCIAL_PENDING_ACTION_TYPES,
+  isAccountCreationDependency,
+  isCancelEntirePendingFlow,
+  startAccountCreationDependency,
+  updateResumedFinancialSnapshot,
+} from './financialPendingActionFlow.js';
+export {
   ACCOUNT_RESOLUTION_STATUS,
   normalizeAccountIdentity,
   resolveFinancialAccount,
