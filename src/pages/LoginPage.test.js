@@ -8,7 +8,7 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // AUTH4 -- LoginPage.jsx passou de re-export puro para um wrapper real, que
 // injeta o login com Google em MobileAuthPage via a MESMA prop onGoogleAuth
 // que já existia desde a UX1 (sem criar uma segunda função de social auth).
-// Apple continua sem handler -- fallback "Em breve" preexistente, intocado.
+// Apple não é renderizado enquanto o provedor não está disponível.
 // ============================================================================
 
 test('usa signInWithGoogle de useSession() -- nunca chama supabase.auth diretamente nesta camada', async () => {
@@ -25,10 +25,18 @@ test('handleGoogleAuth converte o erro do service em mensagem segura via getGoog
   assert.match(fnBody, /return \{ message: feedback \?\? '' \};/);
 });
 
-test('injeta onGoogleAuth em MobileAuthPage -- Apple continua sem handler (fora de escopo da AUTH4)', async () => {
+test('injeta onGoogleAuth e destino seguro em MobileAuthPage, sem Apple', async () => {
   const page = await source('LoginPage.jsx');
   assert.match(page, /<MobileAuthPage\s*\n\s*onGoogleAuth=\{handleGoogleAuth\}/);
+  assert.match(page, /returnTo=\{returnTo\}/);
   assert.doesNotMatch(page, /onAppleAuth=/);
+});
+
+test('Google salva o destino seguro antes do redirect externo', async () => {
+  const page = await source('LoginPage.jsx');
+  const fnBody = page.slice(page.indexOf('async function handleGoogleAuth'), page.indexOf('return (\n    <MobileAuthPage'));
+  assert.match(fnBody, /saveAuthReturnPath\(returnTo\);/);
+  assert.ok(fnBody.indexOf('saveAuthReturnPath(returnTo)') < fnBody.indexOf('signInWithGoogle()'));
 });
 
 test('login com email, cadastro e recuperação de senha continuam intocados -- MobileAuthPage é reaproveitada, não substituída', async () => {

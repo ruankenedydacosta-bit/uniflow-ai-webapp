@@ -4,6 +4,16 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
+test('Vercel possui fallback SPA para deep links do React Router', async () => {
+  const config = JSON.parse(await source('../../vercel.json'));
+  assert.deepEqual(config.rewrites, [{ source: '/(.*)', destination: '/index.html' }]);
+
+  const routes = await source('routes.jsx');
+  for (const path of ['/login', '/uni-ai', '/suporte', '/financeiro']) {
+    assert.ok(routes.includes(`path: '${path}'`));
+  }
+});
+
 // ============================================================================
 // UX5 -- o redirecionamento de contexto (PF tentando abrir um módulo
 // empresarial) deixa de ser silencioso: o moduleId bloqueado vai junto via
@@ -88,4 +98,23 @@ test('Loader mostra "Concluindo acesso…" especificamente em /auth/callback, se
     content,
     /label=\{location\.pathname === '\/auth\/callback' \? 'Concluindo acesso…' : 'Carregando sua sessão'\}/,
   );
+});
+
+test('guard preserva rota protegida e query string para retorno após login', async () => {
+  const content = await source('App.jsx');
+  assert.match(content, /const from = activeRoute/);
+  assert.match(content, /`\$\{location\.pathname\}\$\{location\.search\}`/);
+  assert.match(content, /<Navigate to="\/login" replace state=\{\{ from \}\} \/>/);
+});
+
+test('rota inválida nunca vira destino pós-login', async () => {
+  const content = await source('App.jsx');
+  assert.match(content, /const from = activeRoute[\s\S]*?: '\/dashboard';/);
+  assert.match(content, /getSafeAuthReturnPath\(location\.state\?\.from\)/);
+});
+
+test('usuário autenticado no login retorna ao destino seguro ou passa pelo onboarding', async () => {
+  const content = await source('App.jsx');
+  assert.match(content, /to=\{needsOnboarding \? '\/onboarding' : requestedReturnPath\}/);
+  assert.match(content, /state=\{needsOnboarding \? \{ returnTo: requestedReturnPath \} : undefined\}/);
 });

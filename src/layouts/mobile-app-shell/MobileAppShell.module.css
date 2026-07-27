@@ -6,12 +6,14 @@
   min-height: 100svh;
   background: var(--uf-color-bg-canvas);
   color: var(--uf-color-text-primary);
+  overflow-x: hidden;
 }
 
 .workspace {
   min-width: 0;
   min-height: 100vh;
   min-height: 100svh;
+  overflow-x: hidden;
 }
 
 .header {
@@ -65,6 +67,8 @@
 
 .content {
   min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   padding: var(--uf-space-16);
   padding-bottom: calc(var(--uf-space-96) + env(safe-area-inset-bottom, 0));
 }

@@ -4,7 +4,8 @@
   gap: 28px;
   max-width: 720px;
   margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding: 20px 16px calc(40px + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
 }
 
 .header {
@@ -180,5 +181,8 @@
 }
 
 @media (max-width: 480px) {
-  .page { padding: 16px 12px 32px; gap: 22px; }
+  .page {
+    padding: 16px 12px calc(32px + env(safe-area-inset-bottom, 0px));
+    gap: 22px;
+  }
 }

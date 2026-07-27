@@ -21,7 +21,7 @@ test('erro do provedor (?error / ?error_description) ou erro de sessão volta pa
   assert.match(page, /const oauthError = searchParams\.get\('error'\) \|\| searchParams\.get\('error_description'\);/);
   assert.match(
     page,
-    /if \(oauthError \|\| sessionError\) \{\s*\n\s*return <Navigate to="\/login" replace state=\{\{ oauthFailed: true \}\} \/>;/,
+    /if \(oauthError \|\| sessionError\) \{\s*\n\s*return <Navigate to="\/login" replace state=\{\{ oauthFailed: true, from: returnTo \}\} \/>;/,
   );
 });
 
@@ -30,9 +30,11 @@ test('sem sessão (modo demo, sem Supabase configurado) volta para /login sem st
   assert.match(page, /if \(!session\) \{\s*\n[\s\S]*?return <Navigate to="\/login" replace \/>;/);
 });
 
-test('sessão presente decide entre /onboarding e /dashboard reaproveitando needsOnboarding (AUTH2), sem lógica paralela', async () => {
+test('sessão presente retorna ao destino salvo ou passa pelo onboarding', async () => {
   const page = await source('AuthCallbackPage.jsx');
-  assert.match(page, /return <Navigate to=\{needsOnboarding \? '\/onboarding' : '\/dashboard'\} replace \/>;/);
+  assert.match(page, /const destination = consumeAuthReturnPath\(\);/);
+  assert.match(page, /to=\{needsOnboarding \? '\/onboarding' : destination\}/);
+  assert.match(page, /state=\{needsOnboarding \? \{ returnTo: destination \} : undefined\}/);
 });
 
 test('usa <Navigate> declarativo, nunca useEffect + navigate imperativo -- evita redirecionamento repetido/loop', async () => {

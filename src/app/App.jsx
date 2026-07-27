@@ -6,6 +6,7 @@ import { SessionProvider, useSession } from './SessionContext';
 import { canAccessRoute, canAccessRouteInContext, getFallbackRoute } from './accessRules';
 import { navigationItems } from './navigation';
 import { appRoutes, publicRoutes } from './routes';
+import { getSafeAuthReturnPath } from './authReturnPath.js';
 
 function AppContent() {
   const { access } = useAccess();
@@ -22,6 +23,7 @@ function AppContent() {
   const activeRoute = appRoutes.find((route) => route.path === location.pathname);
   const activeNavigationItem = navigationItems.find((item) => item.path === location.pathname);
   const isPublicRoute = publicRoutes.some((route) => route.path === location.pathname);
+  const requestedReturnPath = getSafeAuthReturnPath(location.state?.from);
 
   if (isSupabaseConfigured && isSessionLoading) {
     // AUTH4: label especifico enquanto o retorno do OAuth (Google) esta
@@ -44,19 +46,20 @@ function AppContent() {
       ) {
         return (
           <Navigate
-            to={needsOnboarding ? '/onboarding' : '/dashboard'}
+            to={needsOnboarding ? '/onboarding' : requestedReturnPath}
             replace
+            state={needsOnboarding ? { returnTo: requestedReturnPath } : undefined}
           />
         );
       }
 
       if (location.pathname === '/onboarding') {
         if (!session) {
-          return <Navigate to="/login" replace />;
+          return <Navigate to="/login" replace state={{ from: location.state?.returnTo }} />;
         }
 
         if (profile?.onboarding_completed && !sessionError) {
-          return <Navigate to="/dashboard" replace />;
+          return <Navigate to={getSafeAuthReturnPath(location.state?.returnTo)} replace />;
         }
       }
     }
@@ -73,11 +76,20 @@ function AppContent() {
 
   if (isSupabaseConfigured) {
     if (!session || sessionError) {
-      return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+      const from = activeRoute
+        ? `${location.pathname}${location.search}`
+        : '/dashboard';
+      return <Navigate to="/login" replace state={{ from }} />;
     }
 
     if (profileMissing || needsOnboarding) {
-      return <Navigate to="/onboarding" replace />;
+      return (
+        <Navigate
+          to="/onboarding"
+          replace
+          state={{ returnTo: `${location.pathname}${location.search}` }}
+        />
+      );
     }
   }
 

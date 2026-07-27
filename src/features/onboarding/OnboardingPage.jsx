@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { getSafeAuthReturnPath } from '../../app/authReturnPath.js';
 import Loader from '../../components/ui/Loader';
 import { useOnboarding } from './useOnboarding';
 import StepProgress from './components/StepProgress';
@@ -13,6 +14,8 @@ import styles from './OnboardingPage.module.css';
 
 function OnboardingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = getSafeAuthReturnPath(location.state?.returnTo);
   const {
     step,
     data,
@@ -30,11 +33,11 @@ function OnboardingPage() {
   useEffect(() => {
     if (completed) {
       const timer = setTimeout(() => {
-        navigate('/dashboard', { replace: true });
+        navigate(returnTo, { replace: true });
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [completed, navigate]);
+  }, [completed, navigate, returnTo]);
 
   if (loading) {
     return (

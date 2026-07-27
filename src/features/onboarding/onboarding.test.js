@@ -143,7 +143,8 @@ test('OnboardingPage renderiza StepProgress nos 6 estados', async () => {
 test('OnboardingPage redireciona ao completar', async () => {
   const source = await readFile(new URL('./OnboardingPage.jsx', import.meta.url), 'utf8');
   assert.match(source, /completed/);
-  assert.match(source, /navigate\('\/dashboard'/);
+  assert.match(source, /getSafeAuthReturnPath\(location\.state\?\.returnTo\)/);
+  assert.match(source, /navigate\(returnTo/);
 });
 
 test('StepWelcome possui titulo e botao Comecar', async () => {

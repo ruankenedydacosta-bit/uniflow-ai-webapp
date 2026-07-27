@@ -1,5 +1,6 @@
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../app/SessionContext.jsx';
+import { consumeAuthReturnPath, readAuthReturnPath } from '../app/authReturnPath.js';
 
 /**
  * AUTH4 -- rota de retorno do login com Google. O cliente Supabase já
@@ -29,9 +30,10 @@ function AuthCallbackPage() {
   // cancela o consentimento -- nesses casos nunca existe sessão para
   // processar, então não há por que esperar isSessionLoading resolver.
   const oauthError = searchParams.get('error') || searchParams.get('error_description');
+  const returnTo = readAuthReturnPath();
 
   if (oauthError || sessionError) {
-    return <Navigate to="/login" replace state={{ oauthFailed: true }} />;
+    return <Navigate to="/login" replace state={{ oauthFailed: true, from: returnTo }} />;
   }
 
   if (!session) {
@@ -40,7 +42,14 @@ function AuthCallbackPage() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={needsOnboarding ? '/onboarding' : '/dashboard'} replace />;
+  const destination = consumeAuthReturnPath();
+  return (
+    <Navigate
+      to={needsOnboarding ? '/onboarding' : destination}
+      replace
+      state={needsOnboarding ? { returnTo: destination } : undefined}
+    />
+  );
 }
 
 export default AuthCallbackPage;

@@ -6,16 +6,11 @@ import AuthModeSwitch from '../components/AuthModeSwitch.jsx';
 import EmailAuthForm from '../components/EmailAuthForm.jsx';
 import ForgotPasswordForm from '../components/ForgotPasswordForm.jsx';
 import SocialAuthButtons from '../components/SocialAuthButtons.jsx';
-import {
-  AUTH_MODES,
-  SOCIAL_PROVIDERS,
-  getSocialUnavailableResult,
-  normalizeAuthMode,
-} from '../authMobileSchema.js';
+import { AUTH_MODES, getGoogleAuthFeedback, normalizeAuthMode } from '../authMobileSchema.js';
 import { getPasswordResetRequestFeedback } from '../passwordRecoveryUtils.js';
 import styles from '../authMobile.module.css';
 
-function MobileAuthPage({ onGoogleAuth, onAppleAuth, initialFeedback = '' }) {
+function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -94,29 +89,23 @@ function MobileAuthPage({ onGoogleAuth, onAppleAuth, initialFeedback = '' }) {
     }
   }
 
-  async function handleSocial(provider) {
-    const isGoogle = provider !== SOCIAL_PROVIDERS.APPLE;
-    const callback = isGoogle ? onGoogleAuth : onAppleAuth;
-
-    // Apple (e Google sem handler injetado, ex.: ambiente de teste) --
-    // fallback "estará disponível em breve", sem chamar nada.
-    if (typeof callback !== 'function') {
-      setFeedback(getSocialUnavailableResult(provider).message);
+  async function handleGoogleAuth() {
+    if (typeof onGoogleAuth !== 'function') {
+      setFeedback(getGoogleAuthFeedback({ code: 'UNAVAILABLE' }));
       return;
     }
 
-    if (isGoogle) setIsGoogleLoading(true);
+    setIsGoogleLoading(true);
     try {
-      const result = await callback({ mode });
+      const result = await onGoogleAuth({ mode });
       // Sucesso real (Google): mensagem vazia é esperada -- o navegador já
       // foi redirecionado para o provedor, então `result?.message` vazio
-      // não deve cair no fallback "estará disponível em breve" (o OU lógico
-      // trataria '' como falso e mostraria a mensagem errada).
+      // não deve ser substituído por uma mensagem de indisponibilidade.
       setFeedback(result?.message ?? '');
     } catch {
-      setFeedback(getSocialUnavailableResult(provider).message);
+      setFeedback(getGoogleAuthFeedback({ code: 'UNEXPECTED' }));
     } finally {
-      if (isGoogle) setIsGoogleLoading(false);
+      setIsGoogleLoading(false);
     }
   }
 
@@ -124,7 +113,9 @@ function MobileAuthPage({ onGoogleAuth, onAppleAuth, initialFeedback = '' }) {
     setOperationError('');
     setFeedback('');
     if (isDemoMode) {
-      navigate(mode === AUTH_MODES.SIGN_UP ? '/onboarding' : '/dashboard');
+      navigate(mode === AUTH_MODES.SIGN_UP ? '/onboarding' : returnTo, {
+        state: mode === AUTH_MODES.SIGN_UP ? { returnTo } : undefined,
+      });
       return;
     }
 
@@ -157,7 +148,10 @@ function MobileAuthPage({ onGoogleAuth, onAppleAuth, initialFeedback = '' }) {
 
       const requiresOnboarding = result.profileMissing
         || !result.data?.profile?.onboarding_completed;
-      navigate(requiresOnboarding ? '/onboarding' : '/dashboard', { replace: true });
+      navigate(requiresOnboarding ? '/onboarding' : returnTo, {
+        replace: true,
+        state: requiresOnboarding ? { returnTo } : undefined,
+      });
     } catch {
       setOperationError('Não foi possível concluir agora. Tente novamente.');
     } finally {
@@ -226,8 +220,7 @@ function MobileAuthPage({ onGoogleAuth, onAppleAuth, initialFeedback = '' }) {
               <SocialAuthButtons
                 disabled={isSubmitting}
                 googleLoading={isGoogleLoading}
-                onGoogleAuth={handleSocial}
-                onAppleAuth={handleSocial}
+                onGoogleAuth={handleGoogleAuth}
               />
               <div className={styles.authDivider}><span>ou</span></div>
               <EmailAuthForm
@@ -259,7 +252,9 @@ function MobileAuthPage({ onGoogleAuth, onAppleAuth, initialFeedback = '' }) {
                   <Button
                     variant="ghost"
                     fullWidth
-                    onClick={() => navigate(mode === AUTH_MODES.SIGN_UP ? '/onboarding' : '/dashboard')}
+                    onClick={() => navigate(mode === AUTH_MODES.SIGN_UP ? '/onboarding' : returnTo, {
+                      state: mode === AUTH_MODES.SIGN_UP ? { returnTo } : undefined,
+                    })}
                   >
                     {mode === AUTH_MODES.SIGN_UP ? 'Configurar demo' : 'Explorar demo'}
                   </Button>

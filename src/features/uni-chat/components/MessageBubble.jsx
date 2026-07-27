@@ -1,6 +1,7 @@
 import UniAvatar from './UniAvatar';
 import ActionConfirmation from './ActionConfirmation';
 import { VOICE_TTS_STATUS } from '../../uni-voice-tts';
+import SafeMarkdown from '../../../components/content/SafeMarkdown.jsx';
 import styles from './MessageBubble.module.css';
 
 const VOICE_STATUS_LABELS = Object.freeze({
@@ -33,7 +34,7 @@ export default function MessageBubble({
         <div className={styles.stack}>
           {message.text && (
             <div className={`${styles.bubble} ${styles.uni}`}>
-              <p className={styles.text}>{message.text}</p>
+              <SafeMarkdown className={styles.text}>{message.text}</SafeMarkdown>
             </div>
           )}
           <ActionConfirmation
@@ -90,9 +91,13 @@ export default function MessageBubble({
         <div className={bubbleClass}>
           {message.type === 'alert' && <span className={styles.badge}>Atenção</span>}
           {message.type === 'suggestion' && <span className={styles.badgeSoft}>Sugestão</span>}
-          <p className={styles.text}>
-            {renderWithHighlight(message.text, message.highlight)}
-          </p>
+          {isUser ? (
+            <p className={styles.text}>
+              {renderWithHighlight(message.text, message.highlight)}
+            </p>
+          ) : (
+            <SafeMarkdown className={styles.text}>{message.text}</SafeMarkdown>
+          )}
         </div>
         <div className={styles.metaRow}>
           {message.time && <span className={styles.time}>{message.time}</span>}

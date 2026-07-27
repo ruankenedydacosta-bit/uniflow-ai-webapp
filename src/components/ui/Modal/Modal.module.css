@@ -5,14 +5,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--uf-space-24);
+  padding:
+    max(var(--uf-space-12), env(safe-area-inset-top, 0px))
+    max(var(--uf-space-12), env(safe-area-inset-right, 0px))
+    max(var(--uf-space-12), env(safe-area-inset-bottom, 0px))
+    max(var(--uf-space-12), env(safe-area-inset-left, 0px));
   background: var(--uf-glass-bg-strong);
   backdrop-filter: blur(var(--uf-glass-blur)) saturate(var(--uf-glass-saturate));
 }
 
 .dialog {
   width: 100%;
-  max-height: calc(100vh - var(--uf-space-48));
+  max-height: calc(100dvh - var(--uf-space-24));
   overflow: auto;
   border: 1px solid var(--uf-color-border-default);
   border-radius: var(--uf-radius-20);

@@ -12,6 +12,20 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
+test('shell mobile preserva conteúdo acima da navegação e bloqueia overflow horizontal', async () => {
+  const css = await source('MobileAppShell.module.css');
+  assert.match(css, /padding-bottom: calc\(var\(--uf-space-96\) \+ env\(safe-area-inset-bottom/);
+  assert.match(css, /\.content \{[\s\S]*?overflow-x: hidden;/);
+  assert.match(css, /\.bottomNavigation \{[\s\S]*?position: fixed;/);
+});
+
+test('modal usa viewport dinâmica e safe areas em telas móveis', async () => {
+  const css = await source('../../components/ui/Modal/Modal.module.css');
+  assert.match(css, /max-height: calc\(100dvh - var\(--uf-space-24\)\)/);
+  assert.match(css, /env\(safe-area-inset-bottom/);
+  assert.match(css, /overflow: auto/);
+});
+
 // ============================================================================
 // CFG2 -- logout funcional (mobile + desktop)
 // ============================================================================
