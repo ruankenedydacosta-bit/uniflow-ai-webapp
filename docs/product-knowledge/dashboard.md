@@ -26,7 +26,7 @@ Visível a qualquer papel (owner/admin/member/viewer) do espaço ativo.
 
 ## Pré-requisitos
 
-Onboarding concluído. Sem transações registradas, os cartões mostram estados vazios (ex.: "ainda não há histórico suficiente").
+Apresentação e Plano Pessoal concluídos. Sem transações registradas, os cartões mostram estados vazios (ex.: "ainda não há histórico suficiente").
 
 ## Limitações atuais
 

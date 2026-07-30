@@ -58,6 +58,63 @@ test('interpreta recebimento de salario como entrada', () => {
   assert.equal(result.ready, true);
 });
 
+// BUG REAL EM PRODUÇÃO: "Coloquei duzentos reais de gasolina." caía em
+// intent 'question' (nenhum verbo reconhecido), o que fazia a frase inteira
+// cair no chat geral em vez do fluxo transacional. "coloquei/botei" foram
+// adicionados às regras de register_expense.
+test('BUG REAL: "Coloquei duzentos reais de gasolina." é reconhecida como despesa (tipo, valor, descrição e categoria corretos)', () => {
+  const result = parseFinancialText('Coloquei duzentos reais de gasolina.');
+
+  assert.equal(result.intent, 'register_expense');
+  assert.equal(result.entities.amount, 200);
+  assert.equal(result.entities.description, 'Gasolina');
+  assert.equal(result.entities.category, 'Transporte');
+  assert.equal(result.entities.account, null);
+  assert.equal(result.ready, true);
+  assert.equal(result.requiresConfirmation, true);
+});
+
+// ============================================================================
+// BUG REAL (fluxo de confirmação financeira simples): "Cinquenta reais de
+// gasolina." não tem NENHUM verbo -- nem os catalogados em classifyIntent --
+// e caía em 'question'/unsupported. O parser de uma única operação nunca
+// chegava a criar a ação pendente (nem sequer o estado needs_clarification),
+// e a frase inteira escapava para o chat geral (LLM em modo consultivo, sem
+// nenhuma máquina de estados), que respondia em prosa livre pedindo/
+// confirmando a conta repetidamente, sem nunca montar o card.
+// ============================================================================
+
+test('BUG REAL: "Cinquenta reais de gasolina." (sem nenhum verbo) é reconhecida como despesa -- pergunta somente a conta', () => {
+  const result = parseFinancialText('Cinquenta reais de gasolina.');
+
+  assert.equal(result.intent, 'register_expense');
+  assert.equal(result.entities.amount, 50);
+  assert.equal(result.entities.description, 'Gasolina');
+  assert.equal(result.entities.category, 'Transporte');
+  assert.equal(result.entities.account, null);
+  assert.equal(result.missingEntities.length, 0, 'amount é o único campo exigido pelo parser -- account é resolvido depois, na ação');
+});
+
+test('BUG REAL: uma pergunta genuína que também contém "reais de" ("Quanto reais de desconto tem?") continua como question, nunca vira despesa', () => {
+  const result = parseFinancialText('Quanto reais de desconto tem?');
+  assert.equal(result.intent, 'question');
+});
+
+test('outras frases de lançamento com verbos ampliados também entram no fluxo financeiro (Foi/Lance/Registra)', () => {
+  const foiPosto = parseFinancialText('Foi R$ 200 no posto.');
+  assert.equal(foiPosto.intent, 'register_expense');
+  assert.equal(foiPosto.entities.amount, 200);
+
+  const lanceDespesa = parseFinancialText('Lance uma despesa de R$ 70.');
+  assert.equal(lanceDespesa.intent, 'register_expense');
+  assert.equal(lanceDespesa.entities.amount, 70);
+
+  const registraAlimentacao = parseFinancialText('Registra R$ 120 de alimentação.');
+  assert.equal(registraAlimentacao.intent, 'register_expense');
+  assert.equal(registraAlimentacao.entities.amount, 120);
+  assert.equal(registraAlimentacao.entities.description, 'Alimentação');
+});
+
 test('interpreta transferencia e extrai conta de destino', () => {
   const result = parseFinancialText('transferi 500 para o Nubank');
 

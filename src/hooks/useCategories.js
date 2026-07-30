@@ -48,7 +48,7 @@ export function useCategories({
     }
 
     setIsLoading(true);
-    const result = await listCategories(workspaceId);
+    const result = await listCategories(workspaceId, { context });
 
     if (requestId !== requestIdRef.current) {
       return null;
@@ -58,7 +58,7 @@ export function useCategories({
     setError(result.error);
     setIsLoading(false);
     return result;
-  }, [fallbackCategories, workspaceId]);
+  }, [context, fallbackCategories, workspaceId]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -76,24 +76,27 @@ export function useCategories({
       setIsMutating(true);
       setError(null);
 
+      const scopedValues = !categoryId && context
+        ? { ...values, applies_to: context }
+        : values;
       const result = !isSupabaseConfigured
         ? createDemoResult(
             categoryId
               ? {
                   ...categories.find((category) => category.id === categoryId),
-                  ...values,
+                  ...scopedValues,
                   id: categoryId,
                 }
               : createDemoRecord('demo-category', {
-                  ...values,
+                  ...scopedValues,
                   workspace_id: 'demo-workspace',
                   is_system: false,
                   is_active: true,
                 }),
           )
         : categoryId
-          ? await updateCategory(workspaceId, categoryId, values)
-          : await createCategory(workspaceId, values);
+          ? await updateCategory(workspaceId, categoryId, scopedValues)
+          : await createCategory(workspaceId, scopedValues);
 
       if (result.error) {
         setError(result.error);
@@ -104,7 +107,7 @@ export function useCategories({
       setIsMutating(false);
       return result;
     },
-    [categories, workspaceId],
+    [categories, context, workspaceId],
   );
 
   const removeCategory = useCallback(

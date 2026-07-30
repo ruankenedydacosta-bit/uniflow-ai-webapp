@@ -58,7 +58,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'UniFlow AI é um aplicativo financeiro web (mobile-first, também usável no desktop) para organizar finanças pessoais (Espaço Pessoal/PF) e, opcionalmente, de um negócio (Espaço Empresa/PJ), com apoio da assistente Uni. Não existe app nativo iOS/Android nesta fase. Após login e onboarding, o usuário acessa o Dashboard e navega entre módulos pela barra lateral (desktop) ou barra inferior/menu Mais (mobile). Um usuário pode ter os dois espaços (Pessoal e Empresa) e alternar entre eles a qualquer momento.',
+      'UniFlow AI é um aplicativo financeiro web (mobile-first, também usável no desktop) para organizar finanças pessoais (Espaço Pessoal/PF) e, opcionalmente, de um negócio (Espaço Empresa/PJ), com apoio da assistente Uni. Não existe app nativo iOS/Android nesta fase. Após login, apresentação e Plano Pessoal, o usuário acessa o Dashboard e navega entre módulos pela barra lateral (desktop) ou barra inferior/menu Mais (mobile). Um usuário pode ter os dois espaços (Pessoal e Empresa) e alternar entre eles a qualquer momento.',
   },
   {
     id: 'navigation-desktop',
@@ -94,13 +94,13 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     category: KNOWLEDGE_CATEGORIES.AUTH,
     version: MANIFEST_VERSION,
     file: 'docs/product-knowledge/authentication-and-onboarding.md',
-    routes: ['/welcome', '/login', '/redefinir-senha', '/auth/callback', '/onboarding'],
+    routes: ['/welcome', '/login', '/redefinir-senha', '/auth/callback', '/apresentacao', '/plano-pessoal'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['login', 'entrar', 'criar conta', 'cadastro', 'senha', 'esqueci minha senha', 'recuperar senha', 'google', 'onboarding', 'primeiro acesso'],
+    keywords: ['login', 'entrar', 'criar conta', 'cadastro', 'senha', 'esqueci minha senha', 'recuperar senha', 'google', 'apresentação', 'plano pessoal', 'primeiro acesso'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Login por e-mail/senha ou "Entrar com Google" (não há login com Apple funcional, nem link mágico — Apple mostra "estará disponível em breve"). Recuperar senha: tocar "Esqueci minha senha" no login, informar o e-mail (resposta sempre neutra por segurança), abrir o link recebido, definir nova senha (mínimo 8 caracteres) em /redefinir-senha; o usuário é desconectado e precisa entrar de novo com a senha nova. Também é possível trocar a senha logado, em Configurações → Segurança. Onboarding: 6 passos (boas-vindas, modo de uso PF/PJ/ambos, objetivo, situação financeira, tom da Uni, resumo), progresso salvo automaticamente. Sem 2FA e sem gerenciamento de sessões ativas.',
+      'Sem sessão, / e a URL legada /welcome redirecionam para /login. Login por e-mail/senha ou "Entrar com Google" (não há login com Apple funcional, nem link mágico — Apple mostra "estará disponível em breve"). Recuperar senha: tocar "Esqueci minha senha" no login, informar o e-mail (resposta sempre neutra por segurança), abrir o link recebido, definir nova senha (mínimo 8 caracteres) em /redefinir-senha; o usuário é desconectado e precisa entrar de novo com a senha nova. Após autenticar, o gate vigente preserva /apresentacao e /plano-pessoal, quando aplicável, antes de /app/home. Sem 2FA e sem gerenciamento de sessões ativas.',
   },
   {
     id: 'workspaces-pf-pj',
@@ -198,7 +198,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.LIMITED,
     updatedAt: UPDATED_AT,
     content:
-      'Notificações são somente dentro do aplicativo — não há envio por e-mail nem push. Acessadas pelo sino (barra superior no desktop, cabeçalho/menu Mais no mobile); é possível marcar como lida ou marcar todas, mas NÃO é possível excluir uma notificação. Hoje, a única ação que realmente gera uma notificação automática é a conclusão do onboarding; outros eventos (financeiro, metas, agenda, CRM) ainda não disparam notificações automaticamente.',
+      'Notificações são somente dentro do aplicativo — não há envio por e-mail nem push. Acessadas pelo sino (barra superior no desktop, cabeçalho/menu Mais no mobile); é possível marcar como lida ou marcar todas, mas NÃO é possível excluir uma notificação. Hoje nenhum evento (financeiro, metas, agenda, CRM) dispara notificações automaticamente ainda.',
   },
   {
     id: 'settings-and-security',

@@ -1,10 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Loader from '../components/ui/Loader';
-import { AuthenticatedLayout } from '../layouts/mobile-app-shell';
-import { AccessProvider, useAccess } from './AccessContext';
+import { AccessProvider } from './AccessContext';
 import { SessionProvider, useSession } from './SessionContext';
-import { canAccessRoute, canAccessRouteInContext, getFallbackRoute } from './accessRules';
-import { navigationItems } from './navigation';
 import { appRoutes, publicRoutes } from './routes';
 import { getSafeAuthReturnPath } from './authReturnPath.js';
 import {
@@ -26,18 +23,15 @@ import {
 } from '../features/simplified-app';
 
 function AppContent() {
-  const { access } = useAccess();
   const {
     error: sessionError,
     isLoading: isSessionLoading,
     isSupabaseConfigured,
-    profile,
     session,
     workspace,
   } = useSession();
   const location = useLocation();
   const activeRoute = appRoutes.find((route) => route.path === location.pathname);
-  const activeNavigationItem = navigationItems.find((item) => item.path === location.pathname);
   const isPublicRoute = publicRoutes.some((route) => route.path === location.pathname);
   const requestedReturnPath = getSafeAuthReturnPath(location.state?.from);
   const presentationUserId = resolvePresentationUserId(session, isSupabaseConfigured);
@@ -125,10 +119,6 @@ function AppContent() {
           />
         );
       }
-
-            if (location.pathname === '/onboarding') {
-        return <Navigate to={session ? PRESENTATION_ROUTE : '/login'} replace />;
-      }
     }
 
     return (
@@ -136,7 +126,7 @@ function AppContent() {
         {publicRoutes.map((route) => (
           <Route key={route.path} path={route.path} element={route.element} />
         ))}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
   }
@@ -213,43 +203,18 @@ function AppContent() {
     );
   }
 
-  // Guard de CONTEXTO (PF/PJ), centralizado e independente de plano/modo:
-  // usa o moduleId da rota + moduleAccess.js. Cobre acesso direto por URL
-  // (ex.: PF abrindo /crm) mesmo que a rota não possua item de navegação.
-  // UX5: o redirecionamento deixou de ser silencioso -- leva o moduleId
-  // bloqueado via state de navegação (nunca na URL) para que
-  // AuthenticatedLayout explique o que aconteceu, sem trocar de workspace
-  // sozinho e sem enfraquecer a autorização (o guard em si é idêntico).
-  if (activeRoute && !canAccessRouteInContext(activeRoute, access.currentWorkspace)) {
-    return (
-      <Navigate
-        to={getFallbackRoute(access.currentWorkspace, navigationItems)}
-        replace
-        state={{ blockedModuleId: activeRoute.moduleId }}
-      />
-    );
-  }
-
-  // Gating ortogonal de plano/modo (mantém comportamento anterior p/ itens de nav).
-  if (activeRoute && activeNavigationItem && !canAccessRoute(activeNavigationItem, access)) {
-    return <Navigate to={getFallbackRoute(access.currentWorkspace, navigationItems)} replace />;
-  }
-
-  return (
-    <AuthenticatedLayout
-      title={activeRoute?.title ?? 'Dashboard'}
-      mobileTitle={location.pathname === '/dashboard' ? 'Home' : activeRoute?.title}
-      immersive={location.pathname === '/uni-ai'}
-    >
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        {appRoutes.map((route) => (
-          <Route key={route.path} path={route.path} element={route.element} />
-        ))}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </AuthenticatedLayout>
-  );
+  // MVP FECHAMENTO: nenhuma rota legada (dashboard, financeiro, CRM,
+  // clientes, projetos, agenda, relatórios, configurações, seletor PF/PJ,
+  // navegação Home/Financeiro/Uni/Agenda/Mais antiga) pode renderizar --
+  // nem mesmo para quem já pagou. Elas continuam registradas em
+  // appRoutes/routes.jsx e o AuthenticatedLayout legado continua existindo
+  // no código só para preservação futura (nunca deletados), mas a única
+  // experiência autorizada depois de presentationCompleted +
+  // personalPlanUnlocked é a simplificada (activeRoute?.simplified, guard
+  // acima) ou standalone (apresentação/Plano Pessoal, guard acima). Toda
+  // rota legada e toda rota desconhecida caem aqui e voltam para a Home
+  // simplificada -- nunca para /dashboard.
+  return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;
 }
 
 function App() {

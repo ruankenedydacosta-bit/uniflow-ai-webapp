@@ -163,7 +163,42 @@ function capitalize(word) {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
+// BLOCO A1: condensa uma resposta multi-linha (cabecalho + lista de
+// bullets, opcionalmente seguida de um paragrafo de aviso "⚠️ ...") numa
+// unica linha para o estilo 'simple'. Nunca mexe no highlight nem nos
+// numeros -- so a apresentacao textual. Respostas ja curtas (sem quebra de
+// linha) saem inalteradas.
+function condenseForSimpleStyle(text) {
+  if (typeof text !== 'string' || !text.includes('\n')) return text;
+
+  const blocks = text.split('\n\n').filter((block) => !block.trim().startsWith('⚠️'));
+
+  const collapsed = blocks.map((block) => {
+    const lines = block.split('\n');
+    if (lines.length < 2) return block;
+    const [head, ...rest] = lines;
+    const bulletItems = rest.filter((line) => line.trim().startsWith('•'));
+    if (bulletItems.length !== rest.length || bulletItems.length === 0) return block;
+    const joined = bulletItems.map((line) => line.trim().replace(/^•\s*/, '')).join('; ');
+    return `${head} ${joined}`;
+  });
+
+  return collapsed.join(' ').trim();
+}
+
+function applyConversationStyle(response, conversationStyle) {
+  if (!response || conversationStyle !== 'simple') return response;
+  return { ...response, text: condenseForSimpleStyle(response.text) };
+}
+
 export function buildQueryResponse(queryType, ctx, mode, options = {}) {
+  return applyConversationStyle(
+    buildQueryResponseRaw(queryType, ctx, mode, options),
+    options.conversationStyle,
+  );
+}
+
+function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
   const now = new Date();
   const monthName = MONTH_NAMES[now.getMonth()];
   const prefix = mode === 'empresa' ? 'da sua empresa' : '';

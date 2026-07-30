@@ -113,6 +113,45 @@ export async function getWorkspaceSubscription(workspaceId) {
   };
 }
 
+/**
+ * ETAPA 4 -- Seu plano: getWorkspaceSubscription() acima só busca status
+ * 'trialing'/'active'/'past_due' (usado por SessionContext para o resto do
+ * app). Isso significa que uma assinatura 'canceled'/'expired' nunca é
+ * retornada por ali -- fica indistinguível de "nunca assinou". A tela de
+ * plano precisa mostrar o estado real mesmo quando cancelado/expirado, por
+ * isso busca a assinatura mais recente sem filtrar por status. Mesma
+ * tabela, mesmas colunas reais, nenhuma escrita.
+ */
+export async function getWorkspaceSubscriptionAny(workspaceId) {
+  if (!supabase) {
+    return createWorkspaceSchemaPendingResult(null);
+  }
+
+  if (!workspaceId) {
+    return {
+      data: null,
+      error: null,
+      isConfigured: true,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select(
+      'id, workspace_id, plan_id, status, trial_ends_at, current_period_ends_at, created_at, updated_at',
+    )
+    .eq('workspace_id', workspaceId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    data,
+    error,
+    isConfigured: true,
+  };
+}
+
 export async function createWorkspace({
   name,
   workspaceType,

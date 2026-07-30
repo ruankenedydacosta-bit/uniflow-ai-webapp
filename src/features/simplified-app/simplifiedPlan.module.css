@@ -1,0 +1,455 @@
+.page {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    34px
+    max(18px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: #f8fafc;
+}
+
+/* ---------- Cabeçalho ---------- */
+
+.header {
+  min-height: 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.titleGroup {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 50%;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.titleGroup h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(22px, 6vw, 30px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.talkButton {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(#030b1d, #030b1d) padding-box,
+    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.talkIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.talkIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.loadingState {
+  margin: 0;
+  padding: 16px;
+  color: #a8b2c5;
+  font-size: 14.5px;
+}
+
+.errorBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, .12);
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+/* ---------- Card do plano ---------- */
+
+.planCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgba(45, 212, 191, .4);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, .12), rgba(37, 99, 235, .08));
+}
+
+.tone_neutral {
+  border-color: rgba(148, 163, 184, .35);
+  background: linear-gradient(135deg, rgba(71, 85, 105, .18), rgba(15, 23, 42, .3));
+}
+
+.tone_warn {
+  border-color: rgba(245, 158, 11, .45);
+  background: linear-gradient(135deg, rgba(245, 158, 11, .16), rgba(15, 23, 42, .3));
+}
+
+.tone_danger {
+  border-color: rgba(239, 68, 68, .45);
+  background: linear-gradient(135deg, rgba(239, 68, 68, .14), rgba(15, 23, 42, .3));
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.statusIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: #2dd4bf;
+}
+
+.tone_neutral .statusIcon { color: #94a3b8; }
+.tone_warn .statusIcon { color: #f59e0b; }
+.tone_danger .statusIcon { color: #ef4444; }
+
+.statusIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.planTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(86, 109, 151, .3);
+}
+
+.planIcon {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(124, 58, 237, .35), rgba(37, 99, 235, .35));
+  color: #2dd4bf;
+  box-shadow: 0 0 16px rgba(45, 212, 191, .28);
+  margin-top: 12px;
+}
+
+.planIcon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.planInfo {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.planInfo strong {
+  font-size: 19px;
+}
+
+.planPrice {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  margin-top: 12px;
+}
+
+.planPrice strong {
+  font-size: 22px;
+}
+
+.planPrice small {
+  color: #a8b2c5;
+  font-size: 12.5px;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(86, 109, 151, .3);
+}
+
+.infoTile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoIcon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  color: #7c8aa8;
+  margin-bottom: 2px;
+}
+
+.infoIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.infoTile small {
+  color: #a8b2c5;
+  font-size: 12.5px;
+}
+
+.infoTile strong {
+  font-size: 15px;
+}
+
+.hint {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---------- Cards genéricos (economia, utilização, recomendação) ---------- */
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.cardIcon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.cardIcon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.toneBlue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
+.toneGreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+
+.cardText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardText strong {
+  font-size: 15.5px;
+}
+
+.cardText p {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.recommendationCard {
+  border-color: rgba(124, 58, 237, .35);
+  background: linear-gradient(145deg, rgba(124, 58, 237, .12), rgba(4, 13, 33, .94));
+}
+
+.helpMascot {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, .18);
+  font-size: 22px;
+}
+
+/* ---------- Acessos rápidos ---------- */
+
+.quickLinks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quickLink {
+  min-height: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  color: #f8fafc;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  text-align: center;
+  cursor: pointer;
+}
+
+.quickLinkIcon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  color: #5e93ff;
+}
+
+.quickLinkIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Foco visível (acessibilidade) ---------- */
+
+.backButton:focus-visible,
+.talkButton:focus-visible,
+.quickLink:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 520px) {
+  .planTop {
+    flex-wrap: wrap;
+  }
+
+  .planPrice {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .quickLinks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 359px) {
+  .talkButton {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  .talkIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .quickLinks {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding-inline: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .planCard,
+  .quickLink {
+    transition: none;
+  }
+}

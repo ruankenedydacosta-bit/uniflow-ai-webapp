@@ -15,33 +15,20 @@ test('Vercel possui fallback SPA para deep links do React Router', async () => {
 });
 
 // ============================================================================
-// UX5 -- o redirecionamento de contexto (PF tentando abrir um módulo
-// empresarial) deixa de ser silencioso: o moduleId bloqueado vai junto via
-// state de navegação (nunca na URL), para que AuthenticatedLayout explique o
-// que aconteceu. O guard de autorização em si (canAccessRouteInContext)
-// continua idêntico -- só ganhou um `state` anexado ao <Navigate>.
+// MVP FECHAMENTO -- nenhuma rota legada (dashboard, financeiro, CRM,
+// clientes, projetos, agenda, relatórios, configurações, seletor PF/PJ)
+// pode renderizar, nem mesmo para quem já pagou. O antigo guard de
+// contexto (canAccessRouteInContext/getFallbackRoute) e o render do
+// <AuthenticatedLayout> legado foram REMOVIDOS de App.jsx -- toda rota que
+// não é standalone (apresentação/Plano Pessoal) nem simplificada cai direto
+// na Home simplificada. O código legado (routes.jsx, AuthenticatedLayout,
+// accessRules.js, navigation.js) continua existindo no repo só para
+// preservação futura, mas App.jsx nunca mais o renderiza.
 // ============================================================================
 
-test('guard de contexto (PF/PJ) redireciona anexando o moduleId bloqueado via state, nunca na URL', async () => {
+test('guard de contexto (PF/PJ) legado foi removido de App.jsx -- nenhuma rota cai mais no AuthenticatedLayout/canAccessRouteInContext', async () => {
   const content = await source('App.jsx');
-  assert.match(
-    content,
-    /if \(activeRoute && !canAccessRouteInContext\(activeRoute, access\.currentWorkspace\)\) \{\s*\n\s*return \(\s*\n\s*<Navigate\s*\n\s*to=\{getFallbackRoute\(access\.currentWorkspace, navigationItems\)\}\s*\n\s*replace\s*\n\s*state=\{\{ blockedModuleId: activeRoute\.moduleId \}\}\s*\n\s*\/>/,
-  );
-});
-
-test('state de bloqueio nunca vaza para a URL (sem query string nem hash construídos a partir dele)', async () => {
-  const content = await source('App.jsx');
-  assert.doesNotMatch(content, /blockedModuleId.*[?&]|window\.location.*blockedModuleId/);
-});
-
-test('guard de plano/modo (ortogonal, preexistente) continua sem state -- só o guard de CONTEXTO ganhou explicação', async () => {
-  const content = await source('App.jsx');
-  const planGuard = content.slice(
-    content.indexOf('if (activeRoute && activeNavigationItem'),
-    content.indexOf('if (activeRoute && activeNavigationItem') + 200,
-  );
-  assert.doesNotMatch(planGuard, /state=/);
+  assert.doesNotMatch(content, /canAccessRouteInContext\(|canAccessRoute\(|getFallbackRoute\(|<AuthenticatedLayout|navigationItems|activeNavigationItem/);
 });
 
 test('nenhuma troca de workspace automática acontece dentro do guard -- App.jsx só redireciona, nunca chama switchWorkspace', async () => {
@@ -50,27 +37,29 @@ test('nenhuma troca de workspace automática acontece dentro do guard -- App.jsx
 });
 
 // ============================================================================
-// UX6 -- fallback de rota removida/inexistente (ex.: /uni-chat-proto após a
-// remoção). Autenticado cai no dashboard; não-autenticado continua protegido
-// pelo guard de login, que roda ANTES de qualquer wildcard -- sem tela
-// branca, sem loop.
+// UX6 -- fallback de rota legada/desconhecida (ex.: /dashboard, /crm, ou
+// qualquer path removido). Autenticado com apresentação e assinatura em dia
+// cai sempre na Home simplificada, NUNCA no dashboard legado; não-autenticado
+// continua protegido pelo guard de login, que roda ANTES de qualquer
+// wildcard -- sem tela branca, sem loop.
 // ============================================================================
 
-test('appRoutes tem um catch-all que redireciona para /dashboard -- rota inexistente/removida nunca resulta em tela branca', async () => {
+test('fallback final de App.jsx nunca é /dashboard -- qualquer rota legada ou desconhecida (com guards já resolvidos) volta para a Home simplificada', async () => {
   const content = await source('App.jsx');
-  const authenticatedBlock = content.slice(content.indexOf('<AuthenticatedLayout'));
-  assert.match(authenticatedBlock, /<Route path="\*" element=\{<Navigate to="\/dashboard" replace \/>\} \/>/);
+  const finalReturnIdx = content.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
+  assert.ok(finalReturnIdx > content.indexOf('if (activeRoute?.simplified)'));
+  assert.doesNotMatch(content, /Navigate to="\/dashboard"|Navigate to=\{['"`]\/dashboard/);
 });
 
-test('guard de login roda ANTES do catch-all de appRoutes -- usuário não autenticado em rota inexistente nunca alcança o wildcard de /dashboard', async () => {
+test('guard de login roda ANTES do fallback final -- usuário não autenticado em rota inexistente nunca alcança a Home simplificada sem logar', async () => {
   const content = await source('App.jsx');
   const loginGuardIndex = content.indexOf("if (!session || sessionError)");
-  const catchAllIndex = content.lastIndexOf('<Route path="*" element={<Navigate to="/dashboard" replace />} />');
-  assert.ok(loginGuardIndex >= 0 && catchAllIndex >= 0);
-  assert.ok(loginGuardIndex < catchAllIndex, 'guard de login deve vir antes do catch-all autenticado');
+  const finalReturnIndex = content.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
+  assert.ok(loginGuardIndex >= 0 && finalReturnIndex >= 0);
+  assert.ok(loginGuardIndex < finalReturnIndex, 'guard de login deve vir antes do fallback final');
 });
 
-test('fallback nunca redireciona para a própria rota inexistente -- sem possibilidade de loop (/dashboard é sempre um destino diferente e válido)', async () => {
+test('fallback nunca redireciona para a própria rota inexistente -- sem possibilidade de loop (Home simplificada é sempre um destino diferente e válido)', async () => {
   const content = await source('App.jsx');
   assert.doesNotMatch(content, /Navigate to=\{location\.pathname\}/);
 });
@@ -246,8 +235,9 @@ test('guard do Plano Pessoal independe do workspace Business/PF-PJ -- workspace 
   assert.doesNotMatch(guardBlock, /currentWorkspace/);
 });
 
-test('guard do Plano Pessoal roda antes dos guards de standalone/simplificado/contexto de workspace', async () => {
+test('guard do Plano Pessoal roda antes dos guards de standalone/simplificado/fallback final', async () => {
   const content = await source('App.jsx');
+  const finalReturnIdx = content.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
   assert.ok(
     content.indexOf('!personalPlanUnlocked') < content.indexOf('activeRoute?.standalone'),
   );
@@ -255,18 +245,19 @@ test('guard do Plano Pessoal roda antes dos guards de standalone/simplificado/co
     content.indexOf('!personalPlanUnlocked') < content.indexOf('activeRoute?.simplified'),
   );
   assert.ok(
-    content.indexOf('!personalPlanUnlocked') < content.indexOf('// Guard de CONTEXTO'),
+    content.indexOf('!personalPlanUnlocked') < finalReturnIdx,
   );
 });
 
 test('rota catch-all autenticada da experiência simplificada nunca abre o shell legado', async () => {
   const content = await source('App.jsx');
+  const finalReturnIdx = content.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
   const simplifiedBlock = content.slice(
     content.indexOf('if (activeRoute?.simplified)'),
-    content.indexOf('// Guard de CONTEXTO'),
+    finalReturnIdx,
   );
   assert.match(simplifiedBlock, /<Route path="\*" element=\{<Navigate to=\{SIMPLIFIED_ROUTES\.HOME\} replace \/>\} \/>/);
-  assert.doesNotMatch(simplifiedBlock, /\/dashboard/);
+  assert.doesNotMatch(simplifiedBlock, /Navigate to="\/dashboard"|Navigate to=\{['"`]\/dashboard/);
 });
 
 test('usuário sem sessão entra por Login em / e /welcome, sem renderizar a apresentação pública antiga', async () => {
@@ -302,11 +293,148 @@ test('SessionContext persiste conversationStyle e reflete a resposta imediatamen
   assert.match(session, /updateConversationStyle,/);
 });
 
-test('apresentação é protegida, standalone e anterior aos guards de workspace', async () => {
+test('apresentação é protegida, standalone e anterior ao fallback final', async () => {
   const app = await source('App.jsx');
   const routes = await source('routes.jsx');
   assert.match(routes, /path: '\/apresentacao'/);
   assert.match(routes, /standalone: true/);
-  assert.ok(app.indexOf('!presentationCompleted') < app.indexOf('// Guard de CONTEXTO'));
+  const finalReturnIdx = app.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
+  assert.ok(app.indexOf('!presentationCompleted') < finalReturnIdx);
   assert.match(app, /if \(activeRoute\?\.standalone\)/);
+});
+
+// ============================================================================
+// REMOÇÃO DO ONBOARDING LEGADO -- fluxo oficial e único: Login/Cadastro ->
+// /apresentacao -> /plano-pessoal -> pagamento -> /app/home só com
+// assinatura ativa. Nenhuma rota, guard, componente ou referência ao
+// onboarding antigo (Boas-vindas, Modo de uso, Objetivo, Situação
+// financeira, Tom da Uni, Resumo) pode sobreviver.
+// ============================================================================
+
+test('acesso manual a /onboarding nunca renderiza onboarding -- rota não existe mais e cai no catch-all público', async () => {
+  const routes = await source('routes.jsx');
+  const app = await source('App.jsx');
+  assert.doesNotMatch(routes, /path: '\/onboarding'/);
+  assert.doesNotMatch(routes, /OnboardingPage/);
+  assert.doesNotMatch(app, /'\/onboarding'/);
+  // /onboarding não está em publicRoutes nem em appRoutes, então cai no
+  // catch-all "*" de publicRoutes (usuário sem sessão) ou no de appRoutes
+  // (usuário autenticado) -- nunca em uma tela de onboarding.
+  const publicBlock = routes.slice(routes.indexOf('export const publicRoutes'), routes.indexOf('export const appRoutes'));
+  assert.doesNotMatch(publicBlock, /onboarding/i);
+});
+
+test('login/cadastro por e-mail ou Google decide o destino inicial apenas pelos guards atuais (apresentação -> Plano Pessoal -> Home só com assinatura ativa)', async () => {
+  const app = await source('App.jsx');
+  // O guard pós-login em App.jsx roda para QUALQUER sessão válida chegando
+  // em /, /welcome ou /login -- independe do provedor (e-mail/senha ou
+  // Google via /auth/callback), então cadastro por Google também cai aqui.
+  assert.match(
+    app,
+    /\['\/', '\/welcome', '\/login'\]\.includes\(location\.pathname\)\s*\n\s*&& session\s*\n\s*&& !sessionError/,
+  );
+  assert.match(
+    app,
+    /!presentationCompleted[\s\S]{0,20}\? PRESENTATION_ROUTE[\s\S]{0,20}: !personalPlanUnlocked[\s\S]{0,20}\? PERSONAL_PLAN_ROUTE[\s\S]{0,20}: requestedReturnPath/,
+  );
+  assert.doesNotMatch(app, /needsOnboarding|onboardingCompleted|onboardingService|onboardingConstants/);
+});
+
+test('SessionContext não expõe mais needsOnboarding -- workspace pessoal continua sendo criado automaticamente, sem perguntar nada ao usuário', async () => {
+  const session = await source('SessionContext.jsx');
+  assert.doesNotMatch(session, /needsOnboarding/);
+  assert.doesNotMatch(session, /onboarding_completed/);
+});
+
+test('src/features/onboarding foi removido -- nenhum arquivo do onboarding legado (StepWelcome/StepMode/StepGoal/StepFinancial/StepTone/StepSummary) permanece no bundle', async () => {
+  const { existsSync } = await import('node:fs');
+  const featureDir = new URL('../features/onboarding', import.meta.url);
+  assert.equal(existsSync(featureDir), false);
+});
+
+test('usuário 100% novo (Google ou e-mail) nunca alcança Dashboard/Home direto -- qualquer appRoute cai no guard de apresentação antes de renderizar', async () => {
+  const app = await source('App.jsx');
+  // Guard incondicional: roda para QUALQUER pathname protegido (não só
+  // /dashboard ou /app/home) sempre que a apresentação não foi concluída
+  // para o usuário autenticado -- não existe caminho de appRoutes que o
+  // contorne, porque ele vem ANTES do bloco final que renderiza rotas.
+  const presentationGuardIdx = app.indexOf(
+    "presentationUserId\n    && !presentationCompleted\n    && !isPresentationRoute",
+  );
+  const finalReturnIdx = app.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
+  const simplifiedRenderIdx = app.indexOf('<SimplifiedAuthenticatedLayout>');
+  const standaloneRenderIdx = app.indexOf('activeRoute?.standalone');
+  assert.ok(presentationGuardIdx !== -1, 'guard de apresentação não encontrado em App.jsx');
+  assert.ok(presentationGuardIdx < finalReturnIdx);
+  assert.ok(presentationGuardIdx < simplifiedRenderIdx);
+  assert.ok(presentationGuardIdx < standaloneRenderIdx);
+  assert.match(app, /if \(\s*presentationUserId\s*&& !presentationCompleted\s*&& !isPresentationRoute\s*\) \{\s*return <Navigate to=\{PRESENTATION_ROUTE\} replace \/>;/);
+});
+
+test('usuário novo com apresentação concluída mas sem assinatura ativa nunca alcança Home direto -- guard de Plano Pessoal vem antes do fallback final', async () => {
+  const app = await source('App.jsx');
+  const personalPlanGuardIdx = app.indexOf(
+    'presentationUserId\n    && presentationCompleted\n    && !personalPlanUnlocked\n    && !isPersonalPlanRoute',
+  );
+  const finalReturnIdx = app.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
+  const simplifiedRenderIdx = app.indexOf('<SimplifiedAuthenticatedLayout>');
+  assert.ok(personalPlanGuardIdx !== -1, 'guard de Plano Pessoal não encontrado em App.jsx');
+  assert.ok(personalPlanGuardIdx < finalReturnIdx);
+  assert.ok(personalPlanGuardIdx < simplifiedRenderIdx);
+  assert.match(app, /if \(\s*presentationUserId\s*&& presentationCompleted\s*&& !personalPlanUnlocked\s*&& !isPersonalPlanRoute\s*\) \{\s*return <Navigate to=\{PERSONAL_PLAN_ROUTE\} replace \/>;/);
+});
+
+test('nenhum usuário autenticado, apresentado e assinante ativo alcança rota legada (dashboard/financeiro/crm/etc.) -- toda rota que não é standalone nem simplificada cai na Home simplificada', async () => {
+  const app = await source('App.jsx');
+  const simplifiedGuardIdx = app.indexOf('if (activeRoute?.simplified)');
+  const finalReturnIdx = app.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
+  assert.ok(simplifiedGuardIdx !== -1 && finalReturnIdx !== -1);
+  assert.ok(simplifiedGuardIdx < finalReturnIdx, 'o fallback final deve vir depois do guard simplificado, cobrindo tudo que sobra');
+  // O bloco entre o guard simplificado e o fallback final só pode conter o
+  // guard standalone (apresentação/Plano Pessoal) -- nenhum outro render
+  // (shell legado, guard de contexto PF/PJ) pode existir nesse meio.
+  assert.doesNotMatch(app, /<AuthenticatedLayout|canAccessRouteInContext\(|canAccessRoute\(/);
+});
+
+test('acesso manual a /dashboard sem assinatura ativa redireciona corretamente (apresentação pendente -> /apresentacao; apresentação ok -> /plano-pessoal)', async () => {
+  const app = await source('App.jsx');
+  // activeRoute = appRoutes.find(route => route.path === location.pathname)
+  // não depende do pathname especifico -- /dashboard é só mais um path que
+  // cai em activeRoute?.standalone === undefined e activeRoute?.simplified
+  // === undefined, então os guards de presentation/personal-plan (que
+  // rodam ANTES de qualquer checagem de activeRoute) já decidem o destino
+  // antes mesmo do pathname importar.
+  const presentationGuardIdx = app.indexOf('if (\n    presentationUserId\n    && !presentationCompleted');
+  const personalPlanGuardIdx = app.indexOf('if (\n    presentationUserId\n    && presentationCompleted\n    && !personalPlanUnlocked');
+  const activeRouteCheckIdx = app.indexOf('if (activeRoute?.standalone)');
+  assert.ok(presentationGuardIdx !== -1 && presentationGuardIdx < activeRouteCheckIdx);
+  assert.ok(personalPlanGuardIdx !== -1 && personalPlanGuardIdx < activeRouteCheckIdx);
+});
+
+test('acesso manual a /app/home sem assinatura ativa redireciona para /plano-pessoal -- isPersonalPlanRoute nunca inclui a Home simplificada', async () => {
+  const app = await source('App.jsx');
+  assert.doesNotMatch(app, /isPersonalPlanRoute = location\.pathname === PERSONAL_PLAN_ROUTE\s*\n\s*\|\| location\.pathname === PERSONAL_PLAN_RETURN_ROUTE\s*\n\s*\|\| location\.pathname === SIMPLIFIED_ROUTES\.HOME/);
+  assert.match(app, /const isPersonalPlanRoute = location\.pathname === PERSONAL_PLAN_ROUTE\s*\n\s*\|\| location\.pathname === PERSONAL_PLAN_RETURN_ROUTE;/);
+});
+
+test('componentes/rotas legados não aparecem na experiência simplificada -- SimplifiedAuthenticatedLayout não importa Sidebar/Topbar/AuthenticatedLayout/moduleAccess/accessRules legados', async () => {
+  const { readdirSync } = await import('node:fs');
+  const dir = new URL('../features/simplified-app/', import.meta.url);
+  const files = readdirSync(dir).filter((f) => f.endsWith('.jsx') || f.endsWith('.js'));
+  for (const file of files) {
+    const content = await source(`../features/simplified-app/${file}`);
+    assert.doesNotMatch(
+      content,
+      /from ['"].*layouts\/mobile-app-shell|from ['"].*components\/layout\/Sidebar|from ['"].*components\/layout\/Topbar|from ['"].*app\/accessRules|from ['"].*app\/navigation\.js|from ['"].*app\/moduleAccess/,
+      `${file} não pode importar layout/nav/access legados`,
+    );
+  }
+});
+
+test('resolvePresentationUserId retorna o id real da sessão (Google e e-mail seguem o mesmo caminho) -- nunca null para uma sessão autenticada real', async () => {
+  const config = await source('../features/presentation/presentationConfig.js');
+  assert.match(
+    config,
+    /if \(!isSupabaseConfigured\) return PRESENTATION_DEMO_USER_ID;\s*\n\s*return typeof session\?\.user\?\.id === 'string' && session\.user\.id\s*\n\s*\? session\.user\.id\s*\n\s*: null;/,
+  );
 });

@@ -1,7 +1,26 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 
-const PROFILE_FIELDS =
+const BASE_PROFILE_FIELDS =
   'id, full_name, avatar_url, phone, user_mode, current_workspace_id, onboarding_completed, onboarding_data, onboarding_completed_at, created_at, updated_at';
+const PROFILE_FIELDS = `${BASE_PROFILE_FIELDS}, conversation_style`;
+
+export function isConversationStyleColumnMissing(error) {
+  const code = String(error?.code ?? '');
+  const message = String(error?.message ?? '').toLowerCase();
+
+  return (
+    code === '42703'
+    || code === 'PGRST204'
+    || (
+      message.includes('conversation_style')
+      && (
+        message.includes('does not exist')
+        || message.includes('schema cache')
+        || message.includes('could not find')
+      )
+    )
+  );
+}
 
 function createUnavailableResult() {
   return {
@@ -35,15 +54,29 @@ export async function getProfile(userId) {
     return createMissingUserResult();
   }
 
-  const { data, error } = await supabase
+  const profileResult = await supabase
     .from('profiles')
     .select(PROFILE_FIELDS)
     .eq('id', userId)
     .maybeSingle();
 
+  if (isConversationStyleColumnMissing(profileResult.error)) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(BASE_PROFILE_FIELDS)
+      .eq('id', userId)
+      .maybeSingle();
+
+    return {
+      data,
+      error,
+      isConfigured: true,
+    };
+  }
+
   return {
-    data,
-    error,
+    data: profileResult.data,
+    error: profileResult.error,
     isConfigured: true,
   };
 }
@@ -92,6 +125,7 @@ export async function updateProfile(userId, changes = {}) {
     onboarding_completed: changes.onboarding_completed,
     onboarding_data: changes.onboarding_data,
     onboarding_completed_at: changes.onboarding_completed_at,
+    conversation_style: changes.conversation_style,
   };
   const updatePayload = Object.fromEntries(
     Object.entries(allowedChanges).filter(([, value]) => value !== undefined),
@@ -101,12 +135,24 @@ export async function updateProfile(userId, changes = {}) {
     return getProfile(userId);
   }
 
+  const updatesConversationStyle = updatePayload.conversation_style !== undefined;
   const { data, error } = await supabase
     .from('profiles')
     .update(updatePayload)
     .eq('id', userId)
-    .select(PROFILE_FIELDS)
+    .select(updatesConversationStyle ? PROFILE_FIELDS : BASE_PROFILE_FIELDS)
     .maybeSingle();
+
+  if (updatesConversationStyle && isConversationStyleColumnMissing(error)) {
+    return {
+      data: null,
+      error: {
+        code: 'CONVERSATION_STYLE_UNAVAILABLE',
+        message: 'A preferência de conversa ainda não está disponível neste ambiente.',
+      },
+      isConfigured: true,
+    };
+  }
 
   if (!error && !data) {
     return {

@@ -12,7 +12,7 @@ Alternador Pessoal/Empresa na barra superior (desktop) ou no cabeçalho do app (
 
 **Alternar de espaço**: tocar no alternador "Pessoal/Empresa" no topo da tela. A troca é local e imediata (não recarrega a página); um indicador breve "Alterando para Espaço X…" aparece durante a transição. Na primeira vez que o usuário entra em cada tipo de espaço, um aviso explicativo é mostrado uma única vez.
 
-**Múltiplos espaços de empresa**: nada no aplicativo impede criar mais de um espaço de Empresa, mas o onboarding cria apenas um automaticamente; espaços adicionais exigiriam um fluxo de criação que não está exposto nesta fase.
+**Múltiplos espaços de empresa**: nada no aplicativo impede criar mais de um espaço de Empresa, mas o espaço Pessoal é criado apenas um automaticamente; espaços adicionais exigiriam um fluxo de criação que não está exposto nesta fase.
 
 **Papéis dentro de um espaço** (`owner`, `admin`, `member`, `viewer`):
 - `owner`: acesso completo, incluindo excluir o espaço.
@@ -36,7 +36,7 @@ Papéis são por espaço — um usuário pode ser `owner` no espaço Pessoal e `
 
 ## Pré-requisitos
 
-Ao menos um espaço criado (acontece automaticamente no onboarding).
+Ao menos um espaço criado (o espaço Pessoal é criado automaticamente).
 
 ## Limitações atuais
 

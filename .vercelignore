@@ -1,0 +1,20 @@
+.env
+.env.*
+*.local
+
+node_modules
+dist
+dist-ssr
+
+.git
+.claude
+.codex
+supabase/.temp
+graphify-out
+claude-prototype
+VOZES DA UNI
+tmp
+
+*.log
+build_*.log
+.DS_Store

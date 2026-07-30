@@ -61,7 +61,7 @@ export function createUniLlmProvider({
     currentController?.abort('cancelled');
   }
 
-  async function performRequest({ system, messages, accessToken, mode, productContext }) {
+  async function performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens }) {
     const controller = new AbortController();
     currentController = controller;
     const timeout = runtime.setTimeout?.(() => controller.abort('timeout'), timeoutMs);
@@ -71,6 +71,8 @@ export function createUniLlmProvider({
       // (modo suporte). JSON.stringify omite chaves undefined -- para o
       // chat financeiro (chamada sem esses parametros) o corpo continua
       // byte-identico ao de OPENAI1/OPENAI2: { system, messages }.
+      // BLOCO A1: `maxOutputTokens` segue a mesma regra -- omitido quando
+      // ausente, nunca quebra o formato ja validado.
       const response = await fetchImpl(`${supabaseUrl}/functions/v1/${UNI_LLM_FUNCTION_NAME}`, {
         method: 'POST',
         headers: {
@@ -78,7 +80,7 @@ export function createUniLlmProvider({
           apikey: supabaseAnonKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ system, messages, mode, productContext }),
+        body: JSON.stringify({ system, messages, mode, productContext, maxOutputTokens }),
         signal: controller.signal,
       });
       return { ok: true, response };
@@ -92,7 +94,7 @@ export function createUniLlmProvider({
     }
   }
 
-  async function generateResponse({ system, messages, mode, productContext } = {}) {
+  async function generateResponse({ system, messages, mode, productContext, maxOutputTokens } = {}) {
     if (!isSupported()) {
       return { text: null, usage: null, error: { code: 'UNSUPPORTED', message: 'llm_unavailable' } };
     }
@@ -108,11 +110,11 @@ export function createUniLlmProvider({
       return { text: null, usage: null, error: { code: 'UNAUTHORIZED', message: 'llm_auth_required' } };
     }
 
-    let attempt = await performRequest({ system, messages, accessToken, mode, productContext });
+    let attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens });
     let retries = 0;
     while (!attempt.ok && attempt.code === 'NETWORK' && retries < MAX_NETWORK_RETRIES) {
       retries += 1;
-      attempt = await performRequest({ system, messages, accessToken, mode, productContext });
+      attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens });
     }
 
     if (!attempt.ok) {

@@ -1,6 +1,14 @@
 import Button from '../../../components/ui/Button';
 import styles from '../authMobile.module.css';
 
+function GoogleMark() {
+  return (
+    <span className={styles.googleMark} aria-hidden="true">
+      <span>G</span>
+    </span>
+  );
+}
+
 function SocialAuthButtons({ onGoogleAuth, disabled = false, googleLoading = false }) {
   return (
     <div className={styles.socialActions} aria-label="Outras formas de acesso">
@@ -11,7 +19,7 @@ function SocialAuthButtons({ onGoogleAuth, disabled = false, googleLoading = fal
         fullWidth
         disabled={disabled}
         loading={googleLoading}
-        leftIcon={<span className={styles.socialMark}>G</span>}
+        leftIcon={<GoogleMark />}
         onClick={onGoogleAuth}
       >
         Continuar com Google

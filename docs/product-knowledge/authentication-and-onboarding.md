@@ -6,7 +6,10 @@ Como criar conta, entrar, recuperar senha, e o que acontece no primeiro acesso.
 
 ## Onde encontrar
 
-`/welcome` (boas-vindas), `/login` (entrar/criar conta), `/redefinir-senha` (nova senha), `/auth/callback` (retorno do Google), `/onboarding` (primeiro acesso).
+`/login` (entrar/criar conta), `/redefinir-senha` (nova senha), `/auth/callback`
+(retorno do Google), `/apresentacao` (apresentação pós-login) e
+`/plano-pessoal` (etapa de plano, quando aplicável). `/` e a URL legada
+`/welcome` redirecionam para `/login` quando não há sessão.
 
 ## Passo a passo
 
@@ -23,11 +26,15 @@ Como criar conta, entrar, recuperar senha, e o que acontece no primeiro acesso.
 
 A troca de senha também pode ser iniciada logado, em Configurações → Segurança.
 
-**Onboarding** (6 passos, após o primeiro login): Boas-vindas → Modo de uso (Pessoal, Empresa ou os dois) → Objetivo → Situação financeira → Tom da Uni → Resumo/confirmação. O progresso é salvo automaticamente a cada passo e retomado se o usuário sair no meio.
+**Primeiro acesso**: depois de autenticar, o usuário passa pela apresentação
+pós-login e pelo Plano Pessoal, quando aplicável, antes de chegar à Home
+simplificada. A antiga apresentação pública em `/welcome` não faz mais parte
+do fluxo.
 
 ## Diferenças PF/PJ
 
-No passo "Modo de uso" do onboarding, o usuário escolhe Pessoal, Empresa ou ambos — isso determina quais espaços (workspaces) são criados. Escolher "ambos" cria os dois espaços de uma vez.
+Os workspaces Pessoal e Empresa permanecem isolados e são resolvidos pelo
+contexto autenticado existente.
 
 ## Desktop / mobile
 

@@ -178,7 +178,9 @@ export function normalizeWorkspaceContext(currentWorkspace) {
  *   independentemente de applies_to.
  * - Categorias globais do sistema (is_system=true e workspace_id nulo) sao
  *   filtradas por applies_to: visiveis quando 'both' ou igual ao contexto.
- *   applies_to ausente e tratado como 'both' (retrocompatibilidade).
+ *   applies_to ausente e tratado de forma fail-closed. A migration 014
+ *   tornou o campo NOT NULL e fez backfill; um global sem o campo indica
+ *   dado legado/incompleto e nao pode aparecer por suposicao no Pessoal.
  */
 export function categoryAppliesToContext(category, currentWorkspace) {
   if (!category) return false;
@@ -187,7 +189,8 @@ export function categoryAppliesToContext(category, currentWorkspace) {
     category.is_system === true &&
     (category.workspace_id === null || category.workspace_id === undefined);
   if (!isGlobalSystem) return true;
-  const appliesTo = category.applies_to || APPLIES_TO.BOTH;
+  const appliesTo = category.applies_to;
+  if (!appliesTo) return false;
   return appliesTo === APPLIES_TO.BOTH || appliesTo === context;
 }
 

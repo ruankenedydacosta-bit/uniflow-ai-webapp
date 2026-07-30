@@ -70,12 +70,18 @@ export function useUniConversation({
             ]
           : accounts,
         accountTypes,
-        categories,
+        categories: overrides.categoryRecord
+          ? [
+              overrides.categoryRecord,
+              ...categories.filter((category) => category.id !== overrides.categoryRecord.id),
+            ]
+          : categories,
         referenceDate,
         overrides,
+        workspaceType,
       });
     },
-    [accountTypes, accounts, allowedWriteIntents, categories, referenceDate],
+    [accountTypes, accounts, allowedWriteIntents, categories, referenceDate, workspaceType],
   );
 
   const interpret = useCallback((content) => {
@@ -218,6 +224,13 @@ export function useUniConversation({
   const cancel = useCallback(() => {
     const response = buildCanceledResponse(responseOptions);
     dispatch({ type: 'CANCEL', response: response.text });
+    // BUG REAL: sem isso, o contexto de inferência entre turnos
+    // (contextRef, usado por parseFinancialText para herdar categoria/
+    // descrição/conta/data de UM turno para o próximo -- ver
+    // uni-intents/conversationContext.js) sobrevivia ao cancelamento e
+    // podia vazar para uma frase financeira completamente nova e
+    // independente digitada/falada depois.
+    contextRef.current = createConversationContext();
     return response;
   }, [responseOptions]);
 
@@ -249,6 +262,12 @@ export function useUniConversation({
 
   const reset = useCallback(() => {
     overridesRef.current = {};
+    // Mesmo motivo do cancel(): um reset (ex.: após confirmar com sucesso,
+    // ou ao abandonar uma pendência antiga por uma frase nova) precisa
+    // apagar o contexto de inferência entre turnos -- nunca deixar
+    // categoria/descrição/conta/data de uma conversa já encerrada
+    // influenciar a próxima interpretação.
+    contextRef.current = createConversationContext();
     dispatch({ type: 'RESET' });
   }, []);
 

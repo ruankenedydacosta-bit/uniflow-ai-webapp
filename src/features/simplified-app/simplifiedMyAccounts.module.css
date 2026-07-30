@@ -1,0 +1,544 @@
+.page {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    34px
+    max(18px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: #f8fafc;
+}
+
+/* ---------- Cabeçalho ---------- */
+
+.header {
+  min-height: 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.titleGroup {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 50%;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.titleGroup h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(22px, 6vw, 30px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.talkButton {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(#030b1d, #030b1d) padding-box,
+    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.talkIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.talkIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.loadingState {
+  margin: 0;
+  padding: 16px;
+  color: #a8b2c5;
+  font-size: 14.5px;
+}
+
+.errorBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, .12);
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+/* ---------- Card da Uni ---------- */
+
+.heroCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.heroTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.heroMascot {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37, 99, 235, .35), rgba(124, 58, 237, .2));
+  box-shadow: 0 0 18px rgba(37, 99, 235, .35);
+  font-size: 28px;
+}
+
+.heroText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heroText strong {
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.heroText p {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 13.5px;
+}
+
+.heroCheck {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, .18);
+  color: #2dd4bf;
+}
+
+.heroCheck svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.heroTiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(86, 109, 151, .3);
+}
+
+.heroTile {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.heroTile div strong {
+  display: block;
+  font-size: 13.5px;
+}
+
+.heroTile div small {
+  display: block;
+  color: #a8b2c5;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.heroTileIcon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, .18);
+  color: #2dd4bf;
+}
+
+.heroTileIcon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Lista de contas ---------- */
+
+.sectionTitle {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.accountList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accountRow {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  color: #f8fafc;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.accountAvatar {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(124, 58, 237, .45), rgba(37, 99, 235, .45));
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.accountInfo {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.accountInfo strong {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.accountMetaRow small {
+  color: #a8b2c5;
+  font-size: 12.5px;
+}
+
+.accountBalance {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.accountBalance strong {
+  font-size: 17px;
+}
+
+.accountBalance small {
+  color: #a8b2c5;
+  font-size: 11.5px;
+}
+
+.positive { color: #2dd4bf; }
+.negative { color: #f87171; }
+
+/* ---------- Gráfico de distribuição ---------- */
+
+.chartCard {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.chartCircle {
+  width: 108px;
+  height: 108px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.chartLegend {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chartTitle {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 13.5px;
+}
+
+.chartItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+}
+
+.chartItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chartItem strong {
+  font-size: 20px;
+}
+
+.chartItem span {
+  font-size: 13px;
+  color: #f8fafc;
+}
+
+.chartItem small {
+  color: #a8b2c5;
+  font-size: 12px;
+}
+
+/* ---------- Estado vazio ---------- */
+
+.emptyCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 34px 20px;
+  border: 1px dashed rgba(86, 109, 151, .45);
+  border-radius: 22px;
+  text-align: center;
+}
+
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, .18);
+  color: #5e93ff;
+}
+
+.emptyIcon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.emptyCard strong {
+  font-size: 16px;
+}
+
+.emptyCard p {
+  max-width: 360px;
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---------- Ações ---------- */
+
+.actionsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.actionTile {
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 10px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  color: #f8fafc;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.actionTile strong {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.actionTile small {
+  color: #a8b2c5;
+  font-size: 11.5px;
+}
+
+.actionIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.actionIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.tonePurple { background: rgba(124, 58, 237, .18); color: #a78bfa; }
+.toneBlue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
+.toneGreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+
+/* ---------- Foco visível (acessibilidade) ---------- */
+
+.backButton:focus-visible,
+.talkButton:focus-visible,
+.accountRow:focus-visible,
+.actionTile:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 520px) {
+  .heroTiles {
+    grid-template-columns: 1fr;
+  }
+
+  .chartCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actionsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 359px) {
+  .talkButton {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  .talkIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .actionsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding-inline: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accountRow,
+  .actionTile {
+    transition: none;
+  }
+}

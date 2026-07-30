@@ -23,7 +23,8 @@ const VALID_CATEGORIES = new Set(Object.values(KNOWLEDGE_CATEGORIES));
 // para o teste de "rota citada que não existe" não depender de importar
 // routes.jsx (que arrasta JSX/React para o node --test).
 const KNOWN_APP_ROUTES = new Set([
-  '/', '/welcome', '/login', '/onboarding', '/redefinir-senha', '/auth/callback',
+  '/', '/welcome', '/login', '/redefinir-senha', '/auth/callback',
+  '/apresentacao', '/plano-pessoal', '/app/home', '/app/uni', '/app/registros', '/app/conta',
   '/dashboard', '/uni-ai', '/financeiro', '/categorias', '/open-finance', '/objetivos',
   '/futuro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/configuracoes',
 ]);

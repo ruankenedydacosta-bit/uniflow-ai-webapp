@@ -33,7 +33,7 @@ Nenhum.
 
 - **Somente notificações dentro do aplicativo — não há envio por e-mail nem por push.**
 - **Não é possível excluir uma notificação.** Só é possível marcá-la como lida.
-- Hoje, a única ação que realmente gera uma notificação automática é a conclusão do onboarding (mensagem de boas-vindas). Outros eventos (financeiro, metas, agenda, CRM) ainda não disparam notificações automaticamente, mesmo que o tipo já exista na estrutura de dados.
+- Hoje nenhum evento (financeiro, metas, agenda, CRM) dispara notificações automaticamente ainda, mesmo que o tipo já exista na estrutura de dados.
 
 ## Mensagens de erro conhecidas
 

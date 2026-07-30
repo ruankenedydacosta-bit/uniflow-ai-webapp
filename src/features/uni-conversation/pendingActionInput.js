@@ -1,10 +1,25 @@
 import { normalizeFinancialText, parseFinancialText } from '../uni-intents/index.js';
+import { normalizeFinancialInstitutionName } from '../financial-institutions/index.js';
 
+// BLOCO F: fala real do usuário raramente é um token isolado ("confirma")
+// -- variações comuns como "sim, pode confirmar" ou "confirma isso aí"
+// não batiam antes, caindo num fallback genérico (ou, no pior caso, no
+// chat de texto livre, que corretamente se descreve como incapaz de
+// executar ações -- nunca deveria ser alcançado com uma confirmação real
+// pendente). Continua exigindo a frase INTEIRA bater com um destes
+// padrões -- nunca um "includes" cego que arriscaria confirmar/cancelar a
+// partir de texto ambíguo.
 const CONFIRMATION_PATTERNS = [
-  /^(?:sim|confirmar|confirmo|certo|ok|pode registrar|pode salvar)[.!]?$/,
+  /^(?:sim|confirmar|confirmo|confirma|confirmado|certo|ok|isso|pode|pode usar|cria)[.!]?$/,
+  /^(?:pode registrar|pode salvar|pode confirmar|pode continuar)[.!]?$/,
+  /^sim,?\s*(?:pode\s+)?confirma(?:r)?[.!]?$/,
+  /^confirma(?:r)?\s+isso(?:\s+a[íi])?[.!]?$/,
+  /^t[áa]\s+certo,?\s*(?:pode\s+)?confirma(?:r)?[.!]?$/,
 ];
 const CANCELLATION_PATTERNS = [
   /^(?:nao|cancelar|cancela|deixa|deixa pra la|esquece)[.!]?$/,
+  /^(?:sim,?\s*)?cancela(?:r)?\s+tudo[.!]?$/,
+  /^n[ãa]o,?\s*cancela(?:r)?[.!]?$/,
 ];
 
 const ACCOUNT_IDENTITY_FIELDS = Object.freeze([
@@ -83,7 +98,18 @@ export function resolvePendingActionInput({
     const availableAccounts = (Array.isArray(accounts) ? accounts : [])
       .filter((account) => account?.is_active !== false)
       .filter((account) => belongsToWorkspace(account, workspaceId));
-    const matches = findMatches(accounts, text, ACCOUNT_IDENTITY_FIELDS, workspaceId);
+    let matches = findMatches(accounts, text, ACCOUNT_IDENTITY_FIELDS, workspaceId);
+    if (!matches.length) {
+      // Camada de normalizacao de instituicoes financeiras (offline,
+      // determinística): uma transcricao garbled como "foi no No Bank"
+      // nao bate literalmente com a conta real "Nubank" -- tenta de novo
+      // usando o nome canonico da instituicao antes de concluir que a
+      // conta nao existe (nunca antes de tentar o texto original).
+      const institutionMatch = normalizeFinancialInstitutionName(text, { hasAccountContext: true });
+      if (institutionMatch.canonicalName) {
+        matches = findMatches(accounts, institutionMatch.canonicalName, ACCOUNT_IDENTITY_FIELDS, workspaceId);
+      }
+    }
     if (matches.length > 1) {
       return { kind: 'ambiguous_account', accounts: matches, overrides: null };
     }
@@ -100,10 +126,13 @@ export function resolvePendingActionInput({
   }
 
   if (field === 'category') {
+    const availableCategories = (Array.isArray(categories) ? categories : [])
+      .filter((category) => category?.is_active !== false);
     const [category] = findMatches(categories, text);
-    return category
-      ? { kind: 'correction', overrides: { categoryId: category.id } }
-      : { kind: 'invalid', overrides: null };
+    if (category) {
+      return { kind: 'correction', overrides: { categoryId: category.id } };
+    }
+    return { kind: 'category_not_found', categories: availableCategories, overrides: null };
   }
 
   if (field === 'date') {

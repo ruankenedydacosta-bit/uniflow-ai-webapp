@@ -87,10 +87,9 @@ export async function markAllNotificationsAsRead(userId, { workspaceId } = {}) {
 /**
  * Cria uma notificação para o PRÓPRIO usuário (RLS garante user_id =
  * auth.uid(), nunca para outra pessoa). Usada tanto por eventos reais e
- * seguros já existentes (ex.: conclusão do onboarding) quanto para
- * validar a interface quando ainda não há uma origem real adequada -- ver
- * onboardingService.js. Nunca lança: falha aqui não deve derrubar o fluxo
- * que a chamou.
+ * seguros já existentes quanto para validar a interface quando ainda não
+ * há uma origem real adequada. Nunca lança: falha aqui não deve derrubar
+ * o fluxo que a chamou.
  */
 export async function createNotification(userId, {
   workspaceId = null,

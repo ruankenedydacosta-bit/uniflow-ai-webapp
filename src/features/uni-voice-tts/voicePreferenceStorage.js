@@ -4,9 +4,12 @@
 // features/uni-instant/uniVoiceHintStorage.js: nunca lanca excecao, nunca
 // bloqueia a UI se o storage estiver indisponivel (modo privado, quota).
 //
-// Padrao: HABILITADA por padrao (ausencia de valor salvo == true), mas
-// autoplay continua desligado -- esta preferencia so controla se os
-// controles de voz aparecem/funcionam, nunca dispara reproducao sozinha.
+// Padrao: HABILITADA por padrao (ausencia de valor salvo == true). BLOCO
+// UNI 2: esta e a MESMA preferencia que agora tambem controla o autoplay
+// da resposta atual da Uni em Home/`/app/uni` (ver o efeito em
+// UniChatPage.jsx) -- nao existe uma segunda preferencia separada para
+// autoplay; desabilitar aqui desliga tanto os controles manuais quanto a
+// reproducao automatica.
 
 export const VOICE_PREFERENCE_STORAGE_KEY = 'uniflow.uni-voice-tts.v1.enabled';
 

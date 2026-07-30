@@ -4,6 +4,100 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
+// Extrai o corpo de UMA função a partir do índice do seu marcador (ex.:
+// 'function handlePlanConversationInput(text) {'), por contagem de chaves
+// consciente de strings/template literals/comentários -- nunca um recorte
+// de tamanho fixo, que quebra sempre que a função ganha ou perde linhas.
+// Usado pelos testes de handlePlanConversationInput (a função mais
+// propensa a crescer neste arquivo, dado o número de regras do Bloco F).
+function extractFunctionBody(text, marker) {
+  const start = text.indexOf(marker);
+  if (start === -1) return { start: -1, end: -1, body: '' };
+
+  let index = start;
+  let depth = 0;
+  let sawOpenBrace = false;
+  let inString = null; // "'" | '"' | '`' | null
+  let inLineComment = false;
+  let inBlockComment = false;
+
+  while (index < text.length) {
+    const char = text[index];
+    const next = text[index + 1];
+
+    if (inLineComment) {
+      if (char === '\n') inLineComment = false;
+      index += 1;
+      continue;
+    }
+    if (inBlockComment) {
+      if (char === '*' && next === '/') {
+        inBlockComment = false;
+        index += 2;
+        continue;
+      }
+      index += 1;
+      continue;
+    }
+    if (inString) {
+      if (char === '\\') {
+        index += 2;
+        continue;
+      }
+      if (char === inString) inString = null;
+      index += 1;
+      continue;
+    }
+
+    if (char === '/' && next === '/') {
+      inLineComment = true;
+      index += 2;
+      continue;
+    }
+    if (char === '/' && next === '*') {
+      inBlockComment = true;
+      index += 2;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      inString = char;
+      index += 1;
+      continue;
+    }
+    if (char === '{') {
+      depth += 1;
+      sawOpenBrace = true;
+    } else if (char === '}') {
+      depth -= 1;
+      if (sawOpenBrace && depth === 0) {
+        return { start, end: index + 1, body: text.slice(start, index + 1) };
+      }
+    }
+    index += 1;
+  }
+
+  return { start, end: -1, body: text.slice(start) };
+}
+
+test('extractFunctionBody: acha o corpo inteiro por chaves, ignorando strings/comentários, imune ao tamanho da função', () => {
+  const fixture = `function noise() { return '{'; }
+function target(a) {
+  // comentário com chave solta: {
+  const s = "outra chave solta: }";
+  const t = \`template com \${1 + 1} e chave solta: {\`;
+  if (a) {
+    return { ok: true };
+  }
+  return null;
+}
+function after() { return 1; }`;
+  const { body, end } = extractFunctionBody(fixture, 'function target(a) {');
+  assert.ok(end > -1);
+  assert.match(body, /return \{ ok: true \};/);
+  assert.doesNotMatch(body, /function after/);
+  assert.equal(extractFunctionBody(fixture, 'function inexistente() {').end, -1);
+});
+
 // ============================================================================
 // Ausência de nome hardcoded / dado pessoal fabricado
 // ============================================================================
@@ -56,7 +150,7 @@ test('dependência de conta usa Pending Action Stack e o saveAccount real do wor
   assert.match(page, /startAccountCreationDependency\(/);
   assert.match(page, /create_financial_account: async \(\{ fields \}\) => saveAccountForDependency\(fields\.account\)/);
   assert.match(page, /findAccountCreationConflicts\(\{/);
-  assert.match(page, /workspaceId: workspace\?\.id/);
+  assert.match(page, /workspaceId: effectiveWorkspace\?\.id/);
   assert.match(page, /financialConversation\.provideInput\(\{\s*accountId: account\.id,\s*accountRecord: account,/);
   assert.match(page, /publishConversationResult\(resumedResult\)/);
 });
@@ -70,14 +164,91 @@ test('criação de conta e movimentação têm confirmações separadas e cancel
   assert.match(page, /financialConversation\.confirm\(\)/);
 });
 
+test('categoria inexistente abre CREATE_CATEGORY e usa o contexto financeiro efetivo', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /startCategoryCreationDependency\(\{/);
+  assert.match(page, /create_financial_category: async \(\{ fields \}\) => saveCategoryForDependency\(\{/);
+  assert.match(page, /\.\.\.fields\.category,\s*applies_to: financialWorkspaceType,/);
+  assert.match(page, /resolvedInput\.kind === 'category_not_found'/);
+  assert.match(page, /publishCategoryCreationConfirmation\(transition\.stack\)/);
+  assert.match(
+    page,
+    /result\?\.action\?\.issues\?\.\[0\]\?\.code === 'category_not_found'[\s\S]{0,500}openCategoryCreationDependency\(\{/,
+  );
+});
+
+test('categoria criada retoma a movimentação com ID real e preserva a pilha original', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /completeCategoryCreationDependency\(/);
+  assert.match(page, /financialConversation\.restore\(parentSnapshot\)/);
+  assert.match(
+    page,
+    /financialConversation\.provideInput\(\{\s*categoryId: category\.id,\s*categoryRecord: category,/,
+  );
+  assert.match(page, /updateResumedFinancialSnapshot\(\s*dependencyOutcome\.stack,\s*resumedSnapshot,/);
+  assert.match(page, /publishConversationResult\(resumedResult\)/);
+});
+
+test('categoria aproximada exige resposta explícita e rejeição volta ao esclarecimento', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /categoryIssueCode === 'category_approximate'/);
+  assert.match(page, /categoryApproved: true/);
+  assert.match(page, /rejectedCategoryId: action\.proposedCategory\?\.id/);
+  assert.match(page, /rejectedCategoryName: action\.proposedCategory\?\.name/);
+  assert.match(page, /outra categoria/);
+});
+
+test('dependência de categoria pode ser cancelada sem perder a movimentação suspensa', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /cancelCategoryCreationDependency\(stack, \{ cascade \}\)/);
+  assert.match(page, /Não criei a categoria\. A movimentação continua preservada/);
+  assert.match(page, /Cancelei a criação da categoria e a movimentação/);
+});
+
+test('experiência simplificada força contexto financeiro pessoal sem alterar o legado completo', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const isSimplifiedExperience = variant === 'simplified-home' \|\| variant === 'simplified'/);
+  assert.match(page, /const effectiveWorkspace = isSimplifiedExperience/);
+  assert.match(page, /simplifiedProduct\?\.workspace \?\? null/);
+  assert.match(page, /workspaceContextType = isSimplifiedExperience\s*\? SIMPLIFIED_PRODUCT_MODE\s*: access\.currentWorkspace/);
+  assert.match(page, /lockedMode: isSimplifiedExperience \? SIMPLIFIED_CHAT_MODE : null/);
+  assert.match(page, /context: financialWorkspaceType/);
+  assert.match(page, /workspaceType: financialWorkspaceType/);
+});
+
+test('useUniConversation injeta a categoria recém-criada antes do próximo render do hook', async () => {
+  const conversation = await source('../uni-conversation/useUniConversation.js');
+  assert.match(
+    conversation,
+    /categories: overrides\.categoryRecord\s*\?\s*\[\s*overrides\.categoryRecord,/,
+  );
+  assert.match(
+    conversation,
+    /categories\.filter\(\(category\) => category\.id !== overrides\.categoryRecord\.id\)/,
+  );
+});
+
 // ============================================================================
 // Integração com useUniLlm (D7) e fallback determinístico
 // ============================================================================
 
 test('UniChatPage consome useUniLlm e AI_STATUS do bloco consolidado', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{ useUniLlm, AI_STATUS \} from '\.\.\/uni-llm';/);
+  assert.match(page, /import \{ useUniLlm, AI_STATUS, resolveConversationStyle \} from '\.\.\/uni-llm';/);
   assert.match(page, /const uniLlm = useUniLlm\(\);/);
+});
+
+test('conversationStyle vem do profile com fallback simple e chega ao LLM e ao fluxo determinístico', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const conversationStyle = resolveConversationStyle\(profile\?\.conversation_style\);/);
+  assert.match(page, /generateContextualResponse\(\{[\s\S]{0,300}conversationStyle,/);
+  assert.match(page, /buildQueryResponse\(queryType, financialContext, mode, \{[\s\S]{0,150}conversationStyle,/);
+});
+
+test('conversationStyle não altera a resolução independente do workspace pessoal ou empresarial', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const financialWorkspaceType = workspaceContextType;/);
+  assert.doesNotMatch(page, /conversationStyle.*workspaceType|workspaceType.*conversationStyle/);
 });
 
 test('mensagem não resolvida só tenta o LLM quando habilitado, e sempre cai no fallback determinístico se falhar', async () => {
@@ -111,6 +282,60 @@ test('pergunta futura ampla é interceptada ANTES do LLM, nunca chega a handleUn
   assert.ok(guardIdx < llmCallIdx, 'a blindagem de futuro deve ser verificada ANTES da chamada ao LLM');
 
   assert.match(resultBlock, /buildFutureSafetyResponse\(futureProjections\.hasHistory\)/);
+});
+
+// ============================================================================
+// BUG REAL EM PRODUÇÃO: "Coloquei duzentos reais de gasolina." caía no chat
+// geral (handleUnresolvedMessage / modo SUPPORT) porque o verbo "coloquei"
+// não era reconhecido por classifyIntent -- a resposta indevida "não consigo
+// registrar daqui, mas posso te orientar..." vinha do prompt de SUPPORT_MODE,
+// nunca deveria ser alcançada por uma frase de lançamento financeiro.
+// looksLikeUnclassifiedFinancialStatement é a barreira determinística de
+// última instância: intercepta ANTES de handleUnresolvedMessage.
+// ============================================================================
+
+test('BUG REAL: barreira determinística intercepta frase financeira não classificada ANTES de handleUnresolvedMessage', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(
+    page,
+    /import \{\s*\n(?:[^\n]*\n)*?\s*looksLikeUnclassifiedFinancialStatement,?\s*\n(?:[^\n]*\n)*?\} from '\.\.\/uni-conversation';/,
+  );
+
+  const resultBlock = page.slice(
+    page.indexOf('const result = financialConversation.interpret(text);'),
+    page.indexOf('if (result.action?.status'),
+  );
+  assert.match(resultBlock, /if \(!result\.handled\) \{/);
+
+  const barrierIdx = resultBlock.indexOf('looksLikeUnclassifiedFinancialStatement(text)');
+  const llmCallIdx = resultBlock.indexOf('void handleUnresolvedMessage(text, historySnapshot);');
+  assert.ok(barrierIdx !== -1, 'looksLikeUnclassifiedFinancialStatement deve ser chamada dentro do bloco !result.handled');
+  assert.ok(llmCallIdx !== -1, 'handleUnresolvedMessage deve continuar existindo como fallback final (nunca removido)');
+  assert.ok(barrierIdx < llmCallIdx, 'a barreira financeira deve ser verificada ANTES da chamada ao chat geral');
+});
+
+test('BUG REAL: barreira financeira tenta attemptFinancialPlan (nunca uma resposta de incapacidade) e só então pede reformulação', async () => {
+  const page = await source('UniChatPage.jsx');
+  const resultBlock = page.slice(
+    page.indexOf('const result = financialConversation.interpret(text);'),
+    page.indexOf('if (result.action?.status'),
+  );
+  const barrierBlock = resultBlock.slice(
+    resultBlock.indexOf('if (looksLikeUnclassifiedFinancialStatement(text)) {'),
+    resultBlock.indexOf('void handleUnresolvedMessage(text, historySnapshot);'),
+  );
+  assert.match(barrierBlock, /const handled = await attemptFinancialPlan\(text\);/);
+  assert.match(barrierBlock, /if \(handled\) return;/);
+  assert.doesNotMatch(barrierBlock, /não consigo registrar/i);
+  assert.doesNotMatch(barrierBlock, /não posso criar ou alterar/i);
+  assert.doesNotMatch(barrierBlock, /posso te orientar/i);
+});
+
+test('nenhuma frase de incapacidade operacional ("não consigo registrar daqui" etc.) existe no fluxo determinístico de UniChatPage', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.doesNotMatch(page, /não consigo registrar/i);
+  assert.doesNotMatch(page, /não posso criar ou alterar transaç/i);
+  assert.doesNotMatch(page, /posso te orientar a lançar/i);
 });
 
 // ============================================================================
@@ -283,9 +508,9 @@ test('nenhum log de texto de mensagem/prompt no console -- só o(s) código(s) d
 // troca de contexto; texto e voz permanecem camadas independentes.
 // ============================================================================
 
-test('UniChatPage usa exclusivamente useUniVoiceTts/useVoicePreference/VOICE_TTS_STATUS -- não importa mais useUniVoiceOutput', async () => {
+test('UniChatPage usa exclusivamente useUniVoiceTts/useVoicePreference/VOICE_TTS_STATUS (+ AUTO_SPEAK_MAX_LENGTH do Bloco Uni 2) -- não importa mais useUniVoiceOutput', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{ useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS \} from '\.\.\/uni-voice-tts';/);
+  assert.match(page, /import \{ useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS, AUTO_SPEAK_MAX_LENGTH \} from '\.\.\/uni-voice-tts';/);
   // O comentario de cabecalho pode CITAR o hook antigo por contexto
   // arquitetural; o que nao pode existir e um import real dele.
   assert.doesNotMatch(page, /from '\.\.\/uni-voice-output'/);
@@ -336,13 +561,18 @@ test('escritas do chat usam a RPC atômica e allowlist restrita a receita/despes
   assert.match(page, /import \{ executeConfirmedFinancialAction \}/);
   assert.match(page, /executeAtomicAction: executeConfirmedFinancialAction/);
   assert.match(page, /ALLOWED_CHAT_WRITE_INTENTS = Object\.freeze\(\['register_income', 'register_expense'\]\)/);
-  assert.match(page, /\['register_transfer', 'create_goal'\]\.includes/);
+  // BLOCO E: transferência não é mais um bloqueio estático -- primeiro
+  // tenta a camada neural (financial_plan); só cai no aviso de "ainda não
+  // suportado" se ela não devolver um plano válido. create_goal continua
+  // bloqueado estaticamente (fora do escopo do Bloco E).
+  assert.match(page, /isUnsupportedIntentEligibleForPlan\(result\.parsed\?\.intent\)/);
+  assert.match(page, /result\.parsed\?\.intent === 'create_goal'/);
 });
 
 test('ação pendente é isolada por usuário, workspace e conversa, com restauração e limpeza', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /userId: user\?\.id/);
-  assert.match(page, /workspaceId: workspace\?\.id/);
+  assert.match(page, /workspaceId: effectiveWorkspace\?\.id/);
   assert.match(page, /conversationId: activeId/);
   assert.match(page, /loadPendingAction\(pendingActionIdentity\)/);
   assert.match(page, /savePendingAction\(pendingActionIdentity/);
@@ -355,7 +585,7 @@ test('resposta de conta pendente usa o workspace atual e não repete indefinidam
     page.indexOf('const resolvedInput = resolvePendingActionInput'),
     page.indexOf('if (pendingAction) {', page.indexOf('const resolvedInput = resolvePendingActionInput')),
   );
-  assert.match(block, /workspaceId: workspace\?\.id/);
+  assert.match(block, /workspaceId: effectiveWorkspace\?\.id/);
   assert.match(block, /resolvedInput\.kind === 'ambiguous_account'/);
   assert.match(block, /resolvedInput\.kind === 'account_not_found'/);
   assert.match(block, /Não encontrei essa conta no Espaço/);
@@ -396,10 +626,47 @@ test('falha de voz (ERROR) nunca mexe em messages/persistência -- texto e voz s
   assert.doesNotMatch(fnBody, /setMessages|pushMessage|syncMessageToSupabase/);
 });
 
-test('autoplay inexistente: uniVoice.speak só é chamado dentro de handleSpeakMessage (acionado por clique explícito), em nenhum useEffect', async () => {
+// BLOCO UNI 2: a AUSÊNCIA de autoplay era exatamente a causa raiz da
+// regressão relatada -- a boas-vindas falava (efeito próprio e dedicado em
+// SimplifiedHomeView.jsx), mas nenhuma resposta normal da Uni tinha
+// qualquer caminho de reprodução automática, manual ou não, na Home. Este
+// teste passa a EXIGIR autoplay controlado (Home/`/app/uni`, respeitando
+// voicePreference e um limite de tamanho), nunca a sua ausência.
+test('autoplay controlado: existe exatamente UM efeito que fala a última mensagem da Uni, além da chamada manual em handleSpeakMessage -- nunca um terceiro ponto de chamada', async () => {
   const page = await source('UniChatPage.jsx');
   const occurrences = page.match(/uniVoice\.speak\(/g) ?? [];
-  assert.equal(occurrences.length, 1, 'uniVoice.speak deve ter exatamente um ponto de chamada: dentro de handleSpeakMessage');
+  assert.equal(occurrences.length, 1, 'uniVoice.speak deve ter exatamente um ponto de chamada direto: dentro de handleSpeakMessage. O autoplay chama handleSpeakMessage(), nunca uniVoice.speak() diretamente');
+  // A ÚNICA chamada direta de handleSpeakMessage(...) deve ser a do efeito
+  // de autoplay -- os outros pontos de disparo (MessageBubble, o fallback
+  // manual em SimplifiedHomeView) só RECEBEM a referência via prop
+  // onSpeakMessage={handleSpeakMessage}, nunca chamam a função eles mesmos.
+  const directCalls = page.match(/handleSpeakMessage\(lastMessage\);/g) ?? [];
+  assert.equal(directCalls.length, 1, 'esperava exatamente uma chamada direta -- handleSpeakMessage(lastMessage) no efeito de autoplay');
+  assert.match(page, /onSpeakMessage=\{handleSpeakMessage\}/, 'MessageBubble deveria continuar recebendo handleSpeakMessage por prop (disparo manual)');
+});
+
+test('BLOCO UNI 2: efeito de autoplay existe, é gated por isSimplifiedExperience + voicePreference.enabled, nunca fala a mesma mensagem duas vezes, e respeita AUTO_SPEAK_MAX_LENGTH', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da Uni');
+  assert.ok(idx > -1, 'esperava o efeito de autoplay documentado no arquivo');
+  const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
+  assert.match(block, /if \(!isSimplifiedExperience \|\| !voicePreference\.enabled\) return;/);
+  assert.match(block, /const lastMessage = messages\.at\(-1\);/);
+  assert.match(block, /if \(!lastMessage \|\| lastMessage\.from !== 'uni' \|\| !lastMessage\.text\) return;/);
+  assert.match(block, /if \(autoSpokenMessageIdRef\.current === lastMessage\.id\) return;/);
+  assert.match(block, /autoSpokenMessageIdRef\.current = lastMessage\.id;/);
+  assert.match(block, /if \(lastMessage\.text\.length > AUTO_SPEAK_MAX_LENGTH\) return;/);
+  assert.match(block, /handleSpeakMessage\(lastMessage\);/);
+});
+
+test('BLOCO UNI 2: o efeito de autoplay NUNCA retorna uma função de limpeza (cleanup) -- evita que o cleanup de uma mensagem antiga interrompa a fala de uma mensagem nova que já começou', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da Uni');
+  const startEffect = page.indexOf('useEffect(() => {', idx);
+  const endEffect = page.indexOf('}, [messages, isSimplifiedExperience, voicePreference.enabled, handleSpeakMessage]);', startEffect);
+  assert.ok(startEffect > -1 && endEffect > startEffect);
+  const effectBody = page.slice(startEffect, endEffect);
+  assert.doesNotMatch(effectBody, /return \(\) =>/, 'o efeito de autoplay não deveria ter cleanup');
 });
 
 test('nenhum fetch/chamada direta à ElevenLabs em UniChatPage -- tudo passa por uniVoice (hook)', async () => {
@@ -427,4 +694,339 @@ test('greeting.js e uniContextCopy.js são funções puras, sem React nem Supaba
   const contextCopy = await source('uniContextCopy.js');
   assert.doesNotMatch(greeting, /from 'react'|supabase/i);
   assert.doesNotMatch(contextCopy, /from 'react'|supabase/i);
+});
+
+// ============================================================================
+// BLOCO E -- wiring híbrido do Plano Financeiro (financial_plan) em
+// UniChatPage: parser determinístico tenta primeiro; frases complexas/
+// multioperação/transferência tentam a camada neural; corrigir/confirmar/
+// cancelar reaproveitam o mesmo texto livre já usado pela pendência de
+// uma única operação; persistência continua uma operação por vez pelo
+// RPC atômico já existente.
+// ============================================================================
+
+test('BLOCO E: financialPlanService usa a MESMA Edge Function/flag do chat, sem novo secret', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{ createFinancialPlanService \} from '\.\.\/uni-financial-plan\/index\.js';/);
+  assert.match(
+    page,
+    /createFinancialPlanService\(\{\s*supabase,\s*supabaseUrl,\s*supabaseAnonKey,\s*enabled: uniLlm\.enabled,\s*\}\)/,
+  );
+});
+
+test('BLOCO E: heurística determinística tenta o plano neural ANTES do parser de uma única operação para texto complexo', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{[\s\S]*?looksLikeComplexFinancialText[\s\S]*?\} from '\.\.\/uni-conversation';/);
+  const sendTextIdx = page.indexOf('function sendText(text) {');
+  const runDeterministicIdx = page.indexOf('runDeterministicFinancialFlow(text, historySnapshot);', sendTextIdx);
+  assert.ok(sendTextIdx > -1 && runDeterministicIdx > -1);
+  const slice = page.slice(sendTextIdx, runDeterministicIdx);
+  assert.match(slice, /if \(looksLikeComplexFinancialText\(text\)\) \{/);
+  assert.match(slice, /const handled = await attemptFinancialPlan\(text\);/);
+});
+
+test('BLOCO E: transferência tenta o plano neural antes do aviso estático de "não suportado"', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('if (isUnsupportedIntentEligibleForPlan(result.parsed?.intent)) {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 500);
+  assert.match(slice, /const handled = await attemptFinancialPlan\(text\);/);
+  assert.match(slice, /if \(handled\) return;/);
+  assert.match(slice, /Transferências ainda não podem ser registradas pela Uni\./);
+});
+
+test('BLOCO E: sem plano válido (não suportado/erro/timeout/fora do contrato), o fluxo determinístico atual é preservado', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /if \(!plan\) return false;/);
+});
+
+test('BLOCO E: pendência de plano ativo entra no MESMO gate de hasPendingConversation e é roteada antes do fluxo padrão', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /\|\| isFinancialPlanActive\(\),\s*\);/);
+  const idx = page.indexOf('function handlePendingConversationInput(text, userMsg) {');
+  const slice = page.slice(idx, idx + 300);
+  assert.match(slice, /if \(isFinancialPlanActive\(\)\) \{/);
+  assert.match(slice, /return handlePlanConversationInput\(text\);/);
+});
+
+// ============================================================================
+// BUG REAL (achado em validação manual do fechamento do MVP de voz): dizer
+// "cancelar" enquanto a Uni ainda espera um campo obrigatório (ex.: "Em qual
+// conta você fez esse pagamento?") era interpretado como o VALOR do campo --
+// literalmente propondo criar uma conta chamada "cancelar". Isso acontecia
+// porque pendingAction só é setado quando a ação já está 'ready' (ver
+// publishConversationResult), então classifyPendingActionReply nunca era
+// chamado nesse meio-tempo. Corrigido classificando sempre e adicionando um
+// cancelamento explícito para esse caso (fora de conta/categoria, que já tem
+// seu próprio fluxo de dependência/rejeição).
+// ============================================================================
+
+test('BUG REAL: "cancelar" durante o esclarecimento de um campo (sem card de confirmação ainda) encerra o lançamento, nunca é tratado como valor do campo', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: fnBody, end } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
+  assert.ok(end > -1, 'não foi possível localizar o corpo completo de handlePendingConversationInput');
+
+  assert.match(fnBody, /const replyType = classifyPendingActionReply\(text\);/);
+
+  const guardIdx = fnBody.indexOf('!pendingAction\n      && !accountDependencyActive\n      && !categoryDependencyActive\n      && !categoryConfirmationPending');
+  assert.ok(guardIdx > -1, 'a barreira de cancelamento durante esclarecimento deve existir');
+
+  const replyTypeIdx = fnBody.indexOf('const replyType = classifyPendingActionReply(text);');
+  const accountDependencyIdx = fnBody.indexOf('if (accountDependencyActive && replyType');
+  assert.ok(
+    replyTypeIdx < guardIdx && guardIdx < accountDependencyIdx,
+    'o cancelamento durante esclarecimento deve ser verificado logo após classificar a resposta, ANTES das dependências de conta/categoria',
+  );
+
+  const guardBlock = fnBody.slice(guardIdx, accountDependencyIdx);
+  assert.match(guardBlock, /financialConversation\.cancel\(\);/);
+  assert.match(guardBlock, /clearCurrentPendingAction\(\);/);
+  assert.match(guardBlock, /'Tudo bem\. Não registrei nada\.'/);
+});
+
+test('BUG REAL: o cancelamento durante esclarecimento fica de fora quando há dependência de conta/categoria ativa ou categoria aproximada pendente (fluxos próprios preservados)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: fnBody } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
+  const guardIdx = fnBody.indexOf('!pendingAction\n      && !accountDependencyActive');
+  const guardBlock = fnBody.slice(guardIdx, guardIdx + 400);
+  assert.match(guardBlock, /!accountDependencyActive/);
+  assert.match(guardBlock, /!categoryDependencyActive/);
+  assert.match(guardBlock, /!categoryConfirmationPending/);
+});
+
+test('BLOCO E: confirmação do plano persiste uma operação por vez pelo mesmo RPC atômico, nunca em lote', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('async function confirmFinancialPlan() {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 1900);
+  assert.match(slice, /getPersistablePlanOperations\(workingPlan\)\s*\.filter\(\(op\) => op\.status === PLAN_OPERATION_STATUS\.READY\)/);
+  assert.match(slice, /for \(const op of persistable\) \{/);
+  assert.match(
+    slice,
+    /executeFinancialIntentAction\(op\.action, \{\s*executeAtomicAction: executeConfirmedFinancialAction,\s*\}\)/,
+  );
+  assert.match(slice, /markPlanOperationFailed\(workingPlan, op\.temporaryId\)/);
+  assert.match(slice, /markPlanOperationConfirmed\(workingPlan, op\.temporaryId\)/);
+});
+
+test('BLOCO E: capacidades pendentes (parcelamento/recorrência) nunca são persistidas na confirmação do plano', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /getPersistablePlanOperations,\n/);
+  const idx = page.indexOf('async function confirmFinancialPlan() {');
+  const slice = page.slice(idx, idx + 1900);
+  // getPersistablePlanOperations já exclui capabilityPending (ver pendingFinancialPlan.js);
+  // a chamada real nunca itera plan.operations diretamente.
+  assert.doesNotMatch(slice, /for \(const op of workingPlan\.operations\)/);
+});
+
+test('BLOCO E: notifica mudança de dados financeiros só quando algo foi de fato persistido (completed/partial)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('async function confirmFinancialPlan() {');
+  const slice = page.slice(idx, idx + 2300);
+  assert.match(slice, /\[PLAN_STATUS\.COMPLETED, PLAN_STATUS\.PARTIAL\]\.includes\(workingPlan\.status\)/);
+  assert.match(slice, /notifyFinancialDataChanged\('uni-chat'\)/);
+});
+
+test('BLOCO E: correções em linguagem natural do plano usam parsePlanCorrectionOverrides sobre a operação atual, nunca sobre o plano inteiro', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice, end } = extractFunctionBody(page, 'function handlePlanConversationInput(text) {');
+  assert.ok(end > -1, 'não foi possível localizar o corpo completo de handlePlanConversationInput');
+  assert.match(slice, /parsePlanCorrectionOverrides\(\{/);
+  assert.match(slice, /operation: current,/);
+  assert.match(slice, /applyPlanOperationCorrection\(plan, current\.temporaryId, overrides\)/);
+});
+
+test('BLOCO E: confirmar/cancelar o plano reaproveita classifyPendingActionReply e isCancelEntirePendingFlow já existentes', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice, end } = extractFunctionBody(page, 'function handlePlanConversationInput(text) {');
+  assert.ok(end > -1, 'não foi possível localizar o corpo completo de handlePlanConversationInput');
+  assert.match(slice, /const replyType = classifyPendingActionReply\(text\);/);
+  assert.match(slice, /replyType === 'confirm' && isPlanReadyForFinalConfirmation\(plan\)/);
+  assert.match(slice, /replyType === 'cancel' \|\| isCancelEntirePendingFlow\(text\)/);
+});
+
+test('BLOCO E: cancelamento do plano nunca deixa o estado pendente em memória (limpa financialPlan)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('function cancelFinancialPlanEntirely() {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 500);
+  assert.match(slice, /setFinancialPlan\(null\)/);
+  assert.match(slice, /buildPlanCancelledText\(\)/);
+});
+
+// ============================================================================
+// BUG REAL: "Gastei 50 reais no mercado e a gasolina eu paguei pelo Banco
+// do Brasil." -- mistura de cláusulas + vazamento de Pending
+// Action/financial_plan não encerrado corretamente. Uma frase financeira
+// NOVA e autossuficiente (verbo + valor próprios) nunca pode ser tratada
+// como resposta/correção a uma pendência antiga -- e um plano ainda sem
+// nenhuma operação formada (só a pergunta de esclarecimento) precisa
+// voltar para a camada neural na próxima resposta, nunca cair num
+// fallback genérico que ignora a pergunta pendente.
+// ============================================================================
+
+test('BUG REAL: uma frase financeira nova e autossuficiente abandona qualquer pendência antiga antes de ser processada', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{[\s\S]*?looksLikeFreshFinancialStatement[\s\S]*?\} from '\.\.\/uni-conversation';/);
+  const idx = page.indexOf('if (hasPendingConversation) {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 300);
+  assert.match(slice, /if \(looksLikeFreshFinancialStatement\(text\)\) \{/);
+  assert.match(slice, /abandonStalePendingState\(\);/);
+  assert.match(slice, /\} else \{\s*handlePendingConversationInput\(text, userMsg\);\s*return;\s*\}/);
+});
+
+test('abandonStalePendingState limpa TODO estado conversacional -- financialConversation, pendingAction, pendingActionStack e financialPlan', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('function abandonStalePendingState() {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 400);
+  assert.match(slice, /financialConversation\.reset\(\);/);
+  assert.match(slice, /setPendingAction\(null\);/);
+  assert.match(slice, /pendingActionStackRef\.current = null;/);
+  assert.match(slice, /setPendingActionStack\(null\);/);
+  assert.match(slice, /setFinancialPlan\(null\);/);
+  assert.match(slice, /clearCurrentPendingAction\(\);/);
+});
+
+test('reset()/cancel() do useUniConversation também apagam o contexto de inferência entre turnos (contextRef), não só o reducer', async () => {
+  const hook = await source('../uni-conversation/useUniConversation.js');
+  const resetIdx = hook.indexOf('const reset = useCallback(() => {');
+  const cancelIdx = hook.indexOf('const cancel = useCallback(() => {');
+  assert.ok(resetIdx > -1 && cancelIdx > -1);
+  assert.match(hook.slice(resetIdx, resetIdx + 600), /contextRef\.current = createConversationContext\(\);/);
+  assert.match(hook.slice(cancelIdx, cancelIdx + 600), /contextRef\.current = createConversationContext\(\);/);
+});
+
+test('BUG REAL: plano de esclarecimento sem operações reenvia a resposta do usuário à camada neural, nunca cai num fallback genérico', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice, end } = extractFunctionBody(page, 'function handlePlanConversationInput(text) {');
+  assert.ok(end > -1, 'não foi possível localizar o corpo completo de handlePlanConversationInput');
+  assert.match(slice, /if \(!active\.length\) \{/);
+  assert.match(slice, /const handled = await attemptFinancialPlan\(text\);/);
+});
+
+test('heurística de roteamento detecta cláusulas encadeadas por conjunção com sinal financeiro próprio, mesmo com um único valor', async () => {
+  const trigger = await source('../uni-conversation/financialPlanTrigger.js');
+  assert.match(trigger, /export function splitFinancialClauses\(/);
+  assert.match(trigger, /export function looksLikeFreshFinancialStatement\(/);
+  assert.match(trigger, /clausesWithSignal\.length >= 2/);
+});
+
+// ============================================================================
+// BUG 2 REAL: "estado fantasma de confirmação" -- a Home podia continuar
+// mostrando um cartão Confirmar/Editar/Cancelar (ou o texto "CONFIRME A
+// AÇÃO") sem nenhuma ação real por trás, porque `messages` (persistido via
+// chatHistory, sem TTL) e `pendingAction`/`pendingActionStack` (com TTL
+// próprio, pendingActionStorage.js) podem dessincronizar -- ex.: um reload
+// depois que a pendência expirou, mas a mensagem antiga com
+// confirmation:'pending' ainda está no histórico salvo.
+// ============================================================================
+
+test('BUG 2 REAL: pendingHydrated marca quando a tentativa de restauração de pendências realmente rodou', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const \[pendingHydrated, setPendingHydrated\] = useState\(false\);/);
+  assert.match(page, /restoredPendingIdentityRef\.current = identityKey;\s*\n\s*setPendingHydrated\(true\);/);
+});
+
+test('BUG 2 REAL: confirmações órfãs (sem pendingAction/pendingActionStack/financialPlan reais) são saneadas para "expired" após a hidratação, nunca antes', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('BUG REAL (estado fantasma');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 1800);
+  assert.match(slice, /if \(!pendingHydrated\) return;/);
+  assert.match(slice, /const hasRealPendingEntity = Boolean\(\s*pendingAction\s*\|\|\s*pendingActionStack\?\.actions\?\.length\s*\|\|\s*isFinancialPlanActive\(\),\s*\);/);
+  assert.match(slice, /if \(hasRealPendingEntity\) return;/);
+  assert.match(slice, /status: 'expired'/);
+});
+
+test('BUG 2 REAL: o saneamento de confirmação órfã nunca mexe em mensagens quando existe uma entidade real (guard hasRealPendingEntity)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('BUG REAL (estado fantasma');
+  const slice = page.slice(idx, idx + 1800);
+  // A ordem das guardas garante: sem hidratação -> nada; com entidade real -> nada;
+  // só sanitiza no caminho restante (sem pendingAction/stack/plan ativos).
+  const hydratedGuardIdx = slice.indexOf('if (!pendingHydrated) return;');
+  const realEntityGuardIdx = slice.indexOf('if (hasRealPendingEntity) return;');
+  const setMessagesIdx = slice.indexOf('setMessages((current) => {');
+  assert.ok(hydratedGuardIdx > -1 && realEntityGuardIdx > hydratedGuardIdx && setMessagesIdx > realEntityGuardIdx);
+});
+
+test('ActionConfirmation só renderiza os botões Confirmar/Editar/Cancelar quando status === "pending" -- nunca para expired/confirmed/canceled', async () => {
+  const card = await source('components/ActionConfirmation.jsx');
+  const buttonsIdx = card.indexOf("{status === 'pending' && (");
+  assert.ok(buttonsIdx > -1);
+  const slice = card.slice(buttonsIdx, buttonsIdx + 800);
+  assert.match(slice, /Confirmar/);
+  assert.match(slice, /Cancelar/);
+  // Nenhum outro bloco de botões existe fora dessa guarda de status.
+  const allButtonBlocks = [...card.matchAll(/className=\{styles\.actions\}/g)];
+  assert.equal(allButtonBlocks.length, 1);
+});
+
+test('ActionConfirmation exibe "Expirado" para uma confirmação órfã saneada, sem inventar um "confirmado" falso', async () => {
+  const card = await source('components/ActionConfirmation.jsx');
+  assert.match(card, /status === 'expired' && <span className=\{styles\.statusCancel\}>Expirado<\/span>/);
+});
+
+test('handleConfirmAction/handleCancelAction já se recusam a agir sem uma pendência real (guarda pré-existente, preservada)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /if \(!pendingAction && !accountDependencyActive && !categoryDependencyActive\) return;/);
+});
+
+// ============================================================================
+// BLOCO F: expiração de plano financeiro (mesmo TTL de 15 minutos já usado
+// pelo Pending Action Stack) e proteção contra confirmação concorrente/
+// duplicada (confirmingPlanRef). Usa extractFunctionBody -- nunca um
+// recorte de tamanho fixo -- para as funções que crescem com as regras do
+// Bloco F.
+// ============================================================================
+
+test('BLOCO F: FINANCIAL_PLAN_TTL_MS reaproveita o mesmo período de 15 minutos do Pending Action Stack', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const FINANCIAL_PLAN_TTL_MS = 15 \* 60 \* 1000;/);
+});
+
+test('BLOCO F: isFinancialPlanExpired compara createdAt contra o TTL; isFinancialPlanActive nunca considera um plano expirado "ativo"', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: expiredBody, end: expiredEnd } = extractFunctionBody(page, 'function isFinancialPlanExpired(plan) {');
+  assert.ok(expiredEnd > -1, 'não foi possível localizar isFinancialPlanExpired');
+  assert.match(expiredBody, /if \(!plan\?\.createdAt\) return false;/);
+  assert.match(expiredBody, /Date\.now\(\) - createdAtMs > FINANCIAL_PLAN_TTL_MS/);
+
+  const { body: activeBody, end: activeEnd } = extractFunctionBody(page, 'function isFinancialPlanActive(plan = financialPlanRef.current) {');
+  assert.ok(activeEnd > -1, 'não foi possível localizar isFinancialPlanActive');
+  assert.match(activeBody, /!isFinancialPlanExpired\(plan\)/);
+});
+
+test('BLOCO F: confirmFinancialPlan recusa um plano expirado, mesmo que estivesse pronto para confirmação', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice, end } = extractFunctionBody(page, 'async function confirmFinancialPlan() {');
+  assert.ok(end > -1, 'não foi possível localizar confirmFinancialPlan');
+  assert.match(slice, /if \(!plan \|\| !isPlanReadyForFinalConfirmation\(plan\) \|\| isFinancialPlanExpired\(plan\)\) return;/);
+});
+
+test('BLOCO F: handlePlanConversationInput bloqueia um plano expirado ANTES de qualquer confirmação/correção/cancelamento', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice, end } = extractFunctionBody(page, 'function handlePlanConversationInput(text) {');
+  assert.ok(end > -1, 'não foi possível localizar handlePlanConversationInput');
+  const expiredIdx = slice.indexOf('if (isFinancialPlanExpired(plan)) {');
+  const confirmIdx = slice.indexOf("if (replyType === 'confirm'");
+  assert.ok(expiredIdx > -1 && confirmIdx > -1 && expiredIdx < confirmIdx);
+  assert.match(slice, /if \(isFinancialPlanExpired\(plan\)\) \{\s*setFinancialPlan\(null\);/);
+});
+
+test('BLOCO F: confirmingPlanRef impede execução concorrente/duplicada e é sempre liberado ao final (sucesso, erro ou não-ação)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const confirmingPlanRef = useRef\(false\);/);
+  const { body: slice, end } = extractFunctionBody(page, 'async function confirmFinancialPlan() {');
+  assert.ok(end > -1);
+  assert.match(slice, /if \(confirmingPlanRef\.current\) return;/);
+  assert.match(slice, /confirmingPlanRef\.current = true;/);
+  assert.match(slice, /confirmingPlanRef\.current = false;/);
+  // O guard precisa ser liberado incondicionalmente ao final da execução
+  // (sucesso, falha parcial ou interrupção), não só num caminho feliz.
+  const releaseIdx = slice.lastIndexOf('confirmingPlanRef.current = false;');
+  const setExecutingFalseIdx = slice.indexOf('setIsExecutingAction(false);', slice.indexOf('for (const op of persistable)'));
+  assert.ok(releaseIdx > setExecutingFalseIdx);
 });

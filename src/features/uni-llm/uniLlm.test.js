@@ -12,7 +12,7 @@ import {
   buildSystemPrompt,
   sanitizeText,
 } from './llmContext.js';
-import { validateLlmResponse, looksLikeStructuredFinancialAction } from './llmResponseGuard.js';
+import { validateLlmResponse, looksLikeStructuredFinancialAction, MAX_RESPONSE_CHARS } from './llmResponseGuard.js';
 
 const silentLogger = { info() {}, warn() {}, error() {} };
 
@@ -166,13 +166,35 @@ test('guarda: resposta que parece acao financeira estruturada e descartada', asy
   assert.equal(looksLikeStructuredFinancialAction('{"action":"create","amount":50}'), true);
   assert.equal(validateLlmResponse('{"action":"create","amount":50}').valid, false);
   assert.equal(validateLlmResponse('').valid, false);
-  assert.equal(validateLlmResponse('a'.repeat(5000)).valid, false);
+  // BLOCO A1: texto (sem fronteira de frase nenhuma) que excede o limite
+  // agora e RESUMIDO (corte duro no limite), nao mais descartado por
+  // inteiro -- so fica invalido se o resumo ficar vazio.
+  const longResult = validateLlmResponse('a'.repeat(5000));
+  assert.equal(longResult.valid, true);
+  assert.ok(longResult.text.length <= MAX_RESPONSE_CHARS);
+  assert.equal(longResult.summarized, true);
   assert.equal(validateLlmResponse('Voce pode registrar essa despesa pelo botao +.').valid, true);
 
   const provider = makeProvider({ fetchImpl: async () => jsonResponse(200, { text: '{"action":"create","transaction":{"amount":50}}' }) });
   const orchestrator = createUniLlmOrchestrator({ provider, logger: silentLogger });
   const res = await orchestrator.generateContextualResponse({ text: 'crie uma despesa', messages: [] });
   assert.equal(res, null, 'acao financeira do LLM nunca deve ser exibida/disparada');
+});
+
+test('guarda: resposta longa com frases e resumida na ultima fronteira de frase, nao truncada no meio de uma palavra', () => {
+  const sentence = 'Isso é uma frase completa sobre suas finanças pessoais. ';
+  const long = sentence.repeat(40);
+  const result = validateLlmResponse(long, { maxChars: 200 });
+  assert.equal(result.valid, true);
+  assert.equal(result.summarized, true);
+  assert.ok(result.text.length <= 200);
+  assert.ok(/[.!?]$/.test(result.text), 'deve terminar em fronteira de frase, nunca cortado no meio');
+});
+
+test('guarda: maxChars customizado (orcamento por estilo) e respeitado', () => {
+  const shortEnough = validateLlmResponse('Resposta curta.', { maxChars: 50 });
+  assert.equal(shortEnough.valid, true);
+  assert.equal(shortEnough.summarized, false);
 });
 
 test('nenhuma chave hardcoded no frontend e credencial so na Edge Function', () => {

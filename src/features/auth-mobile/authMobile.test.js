@@ -144,7 +144,7 @@ test('rotas existentes permanecem e /welcome redireciona para o Login', async ()
   const routes = await readFile(
     new URL('../../app/routes.jsx', import.meta.url), 'utf8',
   );
-  ['/welcome', '/login', '/onboarding', '/dashboard', '/uni-ai', '/financeiro'].forEach(
+  ['/welcome', '/login', '/dashboard', '/uni-ai', '/financeiro'].forEach(
     (path) => assert.match(routes, new RegExp(path.replace('/', '\\/'))),
   );
   const welcomeRoute = routes.slice(
@@ -152,7 +152,7 @@ test('rotas existentes permanecem e /welcome redireciona para o Login', async ()
     routes.indexOf("path: '/login'"),
   );
   assert.match(welcomeRoute, /<Navigate to="\/login" replace \/>/);
-  assert.doesNotMatch(routes, /MobileWelcomePage|WelcomeCarousel/);
+  assert.doesNotMatch(routes, /MobileWelcomePage|WelcomeCarousel|OnboardingPage/);
 });
 
 // ============================================================================

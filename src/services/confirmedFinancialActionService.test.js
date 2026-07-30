@@ -152,7 +152,7 @@ test('service mantém fallback controlado sem Supabase', async () => {
 
 test('migration valida isolamento, rollback implícito e concorrência', () => {
   const migration = readFileSync(
-    new URL('../../supabase/migrations/20260712_008_atomic_financial_action.sql', import.meta.url),
+    new URL('../../supabase/migrations/20260712000800_008_atomic_financial_action.sql', import.meta.url),
     'utf8',
   );
   assert.match(migration, /profile\.current_workspace_id/);

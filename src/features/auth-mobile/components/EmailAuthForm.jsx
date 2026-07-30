@@ -13,6 +13,23 @@ const INITIAL_VALUES = Object.freeze({
   acceptedTerms: false,
 });
 
+function MailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 5h18v14H3zM3 7l9 7 9-7" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="5" y="10" width="14" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2" />
+    </svg>
+  );
+}
+
 function EmailAuthForm({ mode, loading, operationError, onSubmit, onForgotPassword, onLegalClick }) {
   const [values, setValues] = useState(INITIAL_VALUES);
   const [errors, setErrors] = useState({});
@@ -55,6 +72,7 @@ function EmailAuthForm({ mode, loading, operationError, onSubmit, onForgotPasswo
         autoComplete="email"
         inputMode="email"
         placeholder="voce@exemplo.com"
+        leftIcon={<MailIcon />}
         error={errors.email}
         disabled={loading}
         onChange={(event) => updateValue('email', event.target.value)}
@@ -64,6 +82,7 @@ function EmailAuthForm({ mode, loading, operationError, onSubmit, onForgotPasswo
       <div className={styles.passwordField}>
         <label htmlFor="auth-password">Senha</label>
         <div className={errors.password ? styles.passwordControlError : styles.passwordControl}>
+          <span className={styles.passwordIcon} aria-hidden="true"><LockIcon /></span>
           <input
             id="auth-password"
             type={showPassword ? 'text' : 'password'}

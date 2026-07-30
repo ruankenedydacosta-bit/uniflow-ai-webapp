@@ -31,6 +31,10 @@ import { WORKSPACE_TYPES } from './access';
 import { buildOAuthCallbackUrl, resolveAppUrl } from './oauthRedirect.js';
 import { isSilentAuthEvent } from './sessionSyncUtils.js';
 import {
+  isValidConversationStyle,
+  resolveConversationStyle,
+} from '../features/uni-llm/conversationStyle.js';
+import {
   findWorkspaceByType,
   getAvailableWorkspaceTypes,
   getWorkspaceContextLabel,
@@ -201,7 +205,7 @@ function SessionProvider({ children }) {
           isLoading: false,
           error: null,
         });
-        logAuthDevelopment('Profile ausente; onboarding necessario.');
+        logAuthDevelopment('Profile ausente; criacao de workspace pendente.');
 
         return {
           data: {
@@ -508,6 +512,57 @@ function SessionProvider({ children }) {
       : { data: targetWorkspace, error: null };
   }, [state.session, state.user, synchronizeSession]);
 
+  const updateConversationStyle = useCallback(async (nextStyle) => {
+    if (!isValidConversationStyle(nextStyle)) {
+      return {
+        data: null,
+        error: {
+          code: 'CONVERSATION_STYLE_INVALID',
+          message: 'Estilo de conversa inválido.',
+        },
+      };
+    }
+
+    if (!state.user?.id || !state.profile) {
+      return {
+        data: null,
+        error: {
+          code: 'PROFILE_REQUIRED',
+          message: 'Perfil autenticado indisponível.',
+        },
+      };
+    }
+
+    const result = await updateProfile(state.user.id, {
+      conversation_style: nextStyle,
+    });
+
+    if (result.error || !result.data) {
+      return result;
+    }
+
+    const conversationStyle = resolveConversationStyle(
+      result.data.conversation_style,
+    );
+
+    setState((currentState) => ({
+      ...currentState,
+      profile: {
+        ...currentState.profile,
+        ...result.data,
+        conversation_style: conversationStyle,
+      },
+    }));
+
+    return {
+      ...result,
+      data: {
+        ...result.data,
+        conversation_style: conversationStyle,
+      },
+    };
+  }, [state.profile, state.user]);
+
   const signInWithPassword = useCallback(
     async ({ email, password }) => {
       authActionRef.current = true;
@@ -730,9 +785,6 @@ function SessionProvider({ children }) {
       isSupabaseConfigured,
       isDemoMode: !isSupabaseConfigured,
       isAuthenticated: Boolean(state.session?.user),
-      needsOnboarding:
-        state.profileMissing ||
-        Boolean(state.profile && !state.profile.onboarding_completed),
       signInWithPassword,
       signUpWithEmail,
       signInWithGoogle,
@@ -744,11 +796,12 @@ function SessionProvider({ children }) {
       availableWorkspaceTypes: getAvailableWorkspaceTypes(availableWorkspaces),
       selectedWorkspaceType,
       createWorkspaceProfile,
+      updateConversationStyle,
       isSwitchingWorkspace: workspaceSwitchState.isLoading,
       switchWorkspace,
       workspaceSwitchError: workspaceSwitchState.error,
     }),
-    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithGoogle, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updatePassword, workspaceSwitchState],
+    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithGoogle, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updateConversationStyle, updatePassword, workspaceSwitchState],
   );
 
   return (

@@ -22,6 +22,7 @@ export default function ActionConfirmation({
           </span>
         )}
         {status === 'canceled' && <span className={styles.statusCancel}>Cancelado</span>}
+        {status === 'expired' && <span className={styles.statusCancel}>Expirado</span>}
         {status === 'pending' && isExecuting && (
           <span className={styles.statusProcessing}>Registrando…</span>
         )}

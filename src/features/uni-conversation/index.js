@@ -28,13 +28,18 @@ export {
 export { createPendingActionCoordinator } from './pendingActionCoordinator.js';
 export {
   buildAccountCreationConfirmation,
+  buildCategoryCreationConfirmation,
   cancelAccountCreationDependency,
+  cancelCategoryCreationDependency,
   completeAccountCreationDependency,
+  completeCategoryCreationDependency,
   findAccountCreationConflicts,
   FINANCIAL_PENDING_ACTION_TYPES,
   isAccountCreationDependency,
   isCancelEntirePendingFlow,
+  isCategoryCreationDependency,
   startAccountCreationDependency,
+  startCategoryCreationDependency,
   updateResumedFinancialSnapshot,
 } from './financialPendingActionFlow.js';
 export {
@@ -42,6 +47,10 @@ export {
   normalizeAccountIdentity,
   resolveFinancialAccount,
 } from './accountResolution.js';
+export {
+  CATEGORY_RESOLUTION_STATUS,
+  resolveFinancialCategory,
+} from './categoryResolution.js';
 export {
   createAccountProvisioningCoordinator,
   createClientOperationId,
@@ -64,3 +73,36 @@ export {
   buildConfirmationResponse,
   buildExecutionErrorResponse,
 } from './uniResponseBuilder.js';
+export {
+  applyPlanOperationCorrection,
+  cancelEntirePlan,
+  cancelPlanOperation,
+  createPendingFinancialPlan,
+  getActivePlanOperations,
+  getPersistablePlanOperations,
+  isPlanReadyForFinalConfirmation,
+  markPlanOperationConfirmed,
+  markPlanOperationFailed,
+  PLAN_OPERATION_STATUS,
+  PLAN_STATUS,
+  summarizePlanForNeuralContext,
+} from './pendingFinancialPlan.js';
+export {
+  buildOperationClarificationQuestion,
+  buildPlanCancelledText,
+  buildPlanOperationCancelledText,
+  buildPlanResultText,
+  buildPlanSummaryText,
+  describePlanOperation,
+  findPlanOperationCancelTarget,
+  parsePlanCorrectionOverrides,
+} from './financialPlanPresenter.js';
+export {
+  countMoneyMentions,
+  hasAnyAmountMention,
+  isUnsupportedIntentEligibleForPlan,
+  looksLikeComplexFinancialText,
+  looksLikeFreshFinancialStatement,
+  looksLikeUnclassifiedFinancialStatement,
+  splitFinancialClauses,
+} from './financialPlanTrigger.js';

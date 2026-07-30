@@ -20,3 +20,7 @@ export {
   parseFinancialConversation,
   parseFinancialText,
 } from './financialParser.js';
+export {
+  isValidIsoDate,
+  resolveRelativeDateExpression,
+} from './relativeDateResolver.js';

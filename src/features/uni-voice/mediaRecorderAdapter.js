@@ -42,6 +42,7 @@ export function createMediaRecorderAdapter({
   onAudio,
   onError,
   onCancel,
+  onStreamReady,
 } = {}) {
   if (!isMediaRecorderSupported(runtime)) {
     return {
@@ -98,6 +99,11 @@ export function createMediaRecorderAdapter({
       }
 
       stream = nextStream;
+      // BUG 3: expoe o MESMO MediaStream ja capturado aqui (nunca um
+      // segundo getUserMedia) para quem quiser visualizar a intensidade da
+      // voz (ex.: AnalyserNode no botao da Uni) -- puramente informativo,
+      // nunca afeta a gravacao/transcricao.
+      onStreamReady?.(stream);
       const mimeType = getSupportedVoiceMimeType(runtime.MediaRecorder);
       recorder = mimeType
         ? new runtime.MediaRecorder(stream, { mimeType })

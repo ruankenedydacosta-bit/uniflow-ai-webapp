@@ -12,26 +12,20 @@ function Button({
   leftIcon,
   rightIcon,
   className,
+  href,
   ...props
 }) {
   const isDisabled = disabled || loading;
-
-  return (
-    <button
-      type={type}
-      className={cx(
-        styles.button,
-        styles[variant],
-        styles[size],
-        fullWidth && styles.fullWidth,
-        loading && styles.loading,
-        className
-      )}
-      disabled={isDisabled}
-      aria-disabled={isDisabled}
-      aria-busy={loading}
-      {...props}
-    >
+  const classNames = cx(
+    styles.button,
+    styles[variant],
+    styles[size],
+    fullWidth && styles.fullWidth,
+    loading && styles.loading,
+    className
+  );
+  const content = (
+    <>
       {loading && <span className={styles.spinner} aria-hidden="true" />}
 
       {!loading && leftIcon && (
@@ -47,6 +41,31 @@ function Button({
           {rightIcon}
         </span>
       )}
+    </>
+  );
+
+  // Quando `href` é passado, renderiza um link real (semântica de
+  // navegação/abrir em nova aba) em vez de um <button> -- mesmas classes
+  // visuais, sem duplicar estilos. Sem `href`, comportamento idêntico ao
+  // de sempre.
+  if (href) {
+    return (
+      <a href={href} className={classNames} aria-disabled={isDisabled} {...props}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type={type}
+      className={classNames}
+      disabled={isDisabled}
+      aria-disabled={isDisabled}
+      aria-busy={loading}
+      {...props}
+    >
+      {content}
     </button>
   );
 }

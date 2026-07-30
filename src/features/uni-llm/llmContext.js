@@ -1,6 +1,11 @@
 // Montagem do contexto minimo, sanitizado e truncado enviado ao LLM.
 import { buildPersonalityInstructions } from '../uni-personality/index.js';
 import { buildContextGuidanceLines } from '../uni-chat/uniContextCopy.js';
+import {
+  buildConversationStyleInstructions,
+  resolveConversationStyle,
+  resolveConversationStyleTokenBudget,
+} from './conversationStyle.js';
 
 export const MAX_HISTORY_MESSAGES = 8;
 export const MAX_MESSAGE_CHARS = 500;
@@ -65,13 +70,20 @@ export function buildSanitizedHistory(messages = [], limit = MAX_HISTORY_MESSAGE
     .filter((m) => m.content);
 }
 
-export function buildSystemPrompt({ personalityProfileId, workspaceType, financialSummary } = {}) {
+export function buildSystemPrompt({ personalityProfileId, workspaceType, financialSummary, conversationStyle } = {}) {
   const personality = buildPersonalityInstructions({
     preferredProfile: personalityProfileId,
     context: { workspaceType },
   });
+  // BLOCO A1: eixo de extensao (simples/normal/detalhado), ortogonal ao tom
+  // de personalidade acima -- ver conversationStyle.js. Sempre resolve para
+  // um valor valido (default 'simple') mesmo se conversationStyle vier
+  // ausente/invalido.
+  const styleInstructions = buildConversationStyleInstructions(conversationStyle);
 
   const guardrails = [
+    '',
+    styleInstructions,
     '',
     'REGRAS DE ATUACAO NO CHAT FINANCEIRO DA UNI:',
     '- Responda sempre em portugues do Brasil (PT-BR).',
@@ -114,15 +126,31 @@ export function buildLlmPayload({
   mode,
   personalityProfileId,
   workspaceType,
+  conversationStyle,
 } = {}) {
   const financialSummary = buildSanitizedFinancialSummary(financialContext, mode);
-  const system = buildSystemPrompt({ personalityProfileId, workspaceType, financialSummary });
+  const safeStyle = resolveConversationStyle(conversationStyle);
+  const system = buildSystemPrompt({
+    personalityProfileId,
+    workspaceType,
+    financialSummary,
+    conversationStyle: safeStyle,
+  });
   const history = buildSanitizedHistory(messages);
   const userText = sanitizeText(text);
 
   return {
     system,
     messages: [...history, { role: 'user', content: userText }].filter((m) => m.content),
-    meta: { mode, workspaceType, personalityProfileId },
+    // BLOCO A1: conversationStyle e o orcamento de tokens correspondente vao
+    // no meta -- o orquestrador repassa maxOutputTokens ao provider/Edge
+    // Function; nunca confiavel cegamente no servidor (que sempre clampa).
+    meta: {
+      mode,
+      workspaceType,
+      personalityProfileId,
+      conversationStyle: safeStyle,
+      maxOutputTokens: resolveConversationStyleTokenBudget(safeStyle),
+    },
   };
 }

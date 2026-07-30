@@ -2,13 +2,18 @@ import { useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../../app/SessionContext';
 import Button from '../../../components/ui/Button';
+import { PRESENTATION_ROUTE } from '../../presentation';
+import AuthBrandExperience from '../components/AuthBrandExperience.jsx';
 import AuthModeSwitch from '../components/AuthModeSwitch.jsx';
 import EmailAuthForm from '../components/EmailAuthForm.jsx';
 import ForgotPasswordForm from '../components/ForgotPasswordForm.jsx';
+import PartnershipFooter from '../components/PartnershipFooter.jsx';
 import SocialAuthButtons from '../components/SocialAuthButtons.jsx';
 import { AUTH_MODES, getGoogleAuthFeedback, normalizeAuthMode } from '../authMobileSchema.js';
 import { getPasswordResetRequestFeedback } from '../passwordRecoveryUtils.js';
 import styles from '../authMobile.module.css';
+
+const POST_SIGN_UP_DESTINATION = PRESENTATION_ROUTE;
 
 function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback = '' }) {
   const navigate = useNavigate();
@@ -113,9 +118,7 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
     setOperationError('');
     setFeedback('');
     if (isDemoMode) {
-      navigate(mode === AUTH_MODES.SIGN_UP ? '/onboarding' : returnTo, {
-        state: mode === AUTH_MODES.SIGN_UP ? { returnTo } : undefined,
-      });
+      navigate(mode === AUTH_MODES.SIGN_UP ? POST_SIGN_UP_DESTINATION : returnTo);
       return;
     }
 
@@ -146,11 +149,8 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
         return;
       }
 
-      const requiresOnboarding = result.profileMissing
-        || !result.data?.profile?.onboarding_completed;
-      navigate(requiresOnboarding ? '/onboarding' : returnTo, {
+      navigate(mode === AUTH_MODES.SIGN_UP ? POST_SIGN_UP_DESTINATION : returnTo, {
         replace: true,
-        state: requiresOnboarding ? { returnTo } : undefined,
       });
     } catch {
       setOperationError('Não foi possível concluir agora. Tente novamente.');
@@ -162,49 +162,24 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
   return (
     <main className={styles.authPage}>
       <section className={styles.authShell} aria-labelledby="auth-title">
-        <aside className={styles.authIntroduction}>
-          <div className={styles.mobileBrand}>
-            <span className={styles.brandMark} aria-hidden="true">U</span>
-            <span>UniFlow AI</span>
-          </div>
-          <div>
-            <span className={styles.authEyebrow}>Clareza para decidir melhor</span>
-            <h1>A sua vida financeira, mais simples de entender.</h1>
-            <p>Entre no seu espaço e continue de onde parou.</p>
-          </div>
-          <button type="button" className={styles.backWelcome} onClick={() => navigate('/welcome')}>
-            Voltar à apresentação
-          </button>
-        </aside>
+        <AuthBrandExperience />
+
+        <div className={styles.authHeading}>
+          <h1 id="auth-title">
+            {isForgotPasswordOpen
+              ? 'Recuperar senha'
+              : mode === AUTH_MODES.SIGN_UP ? 'Crie sua conta' : 'Boas-vindas de volta'}
+          </h1>
+          <p>
+            {isForgotPasswordOpen
+              ? 'Receba as instruções para recuperar seu acesso.'
+              : mode === AUTH_MODES.SIGN_UP
+                ? 'Comece sua jornada financeira com a Uni.'
+                : 'Acesse sua experiência financeira.'}
+          </p>
+        </div>
 
         <div className={styles.authPanel}>
-          <div className={styles.authPanelHeader}>
-            <div className={styles.mobileIdentity} aria-label="UniFlow AI">
-              <div className={styles.mobileIdentityBrand}>
-                <span className={styles.mobileIdentityMark} aria-hidden="true">U</span>
-                <span className={styles.authMobileLogo}>UniFlow AI</span>
-              </div>
-              <p className={styles.mobileIdentitySlogan}>
-                Conectando você às melhores decisões financeiras.
-              </p>
-              <ul className={styles.mobileBenefits} aria-label="Benefícios da UniFlow AI">
-                <li><span aria-hidden="true">✓</span>Organize suas finanças</li>
-                <li><span aria-hidden="true">✓</span>Receba insights inteligentes</li>
-                <li><span aria-hidden="true">✓</span>Tome melhores decisões</li>
-              </ul>
-            </div>
-            <h2 id="auth-title">
-              {isForgotPasswordOpen
-                ? 'Recuperar senha'
-                : mode === AUTH_MODES.SIGN_UP ? 'Crie seu espaço' : 'Boas-vindas de volta'}
-            </h2>
-            <p>
-              {isForgotPasswordOpen
-                ? 'Informe seu e-mail para receber as instruções de recuperação.'
-                : mode === AUTH_MODES.SIGN_UP ? 'Comece com o essencial.' : 'Acesse sua experiência financeira.'}
-            </p>
-          </div>
-
           {isForgotPasswordOpen ? (
             <ForgotPasswordForm
               initialEmail={forgotPasswordEmail}
@@ -216,6 +191,9 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
             />
           ) : (
             <>
+              <h2 className={styles.authCardTitle}>
+                {mode === AUTH_MODES.SIGN_UP ? 'Comece agora' : 'Entrar na sua conta'}
+              </h2>
               <AuthModeSwitch mode={mode} onChange={changeMode} />
               <SocialAuthButtons
                 disabled={isSubmitting}
@@ -233,6 +211,10 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
                 onForgotPassword={handleOpenForgotPassword}
                 onLegalClick={() => setFeedback('Os documentos legais serão disponibilizados em breve.')}
               />
+              <p className={styles.securityMessage}>
+                <span aria-hidden="true">✓</span>
+                Seus dados protegidos com segurança avançada
+              </p>
 
               {feedback ? <p className={styles.feedback} role="status">{feedback}</p> : null}
 
@@ -252,9 +234,9 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
                   <Button
                     variant="ghost"
                     fullWidth
-                    onClick={() => navigate(mode === AUTH_MODES.SIGN_UP ? '/onboarding' : returnTo, {
-                      state: mode === AUTH_MODES.SIGN_UP ? { returnTo } : undefined,
-                    })}
+                    onClick={() => navigate(
+                      mode === AUTH_MODES.SIGN_UP ? POST_SIGN_UP_DESTINATION : returnTo,
+                    )}
                   >
                     {mode === AUTH_MODES.SIGN_UP ? 'Configurar demo' : 'Explorar demo'}
                   </Button>
@@ -263,6 +245,8 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
             </>
           )}
         </div>
+
+        <PartnershipFooter />
       </section>
     </main>
   );

@@ -7,7 +7,7 @@ const EDGE_SOURCE = readFileSync(
   'utf8',
 );
 const MIGRATION_SOURCE = readFileSync(
-  new URL('../../../supabase/migrations/20260725_021_uni_voice_cache.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260725002100_021_uni_voice_cache.sql', import.meta.url),
   'utf8',
 );
 

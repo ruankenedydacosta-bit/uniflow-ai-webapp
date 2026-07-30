@@ -1,4 +1,5 @@
 import { normalizeFinancialText } from './intentClassifier.js';
+import { resolveRelativeDateExpression } from './relativeDateResolver.js';
 
 const MONEY_PATTERN = /(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(milhares?|milhar|mil|k|reais?|contos?)?/iu;
 const NUMBER_WORD_VALUES = Object.freeze({
@@ -229,38 +230,13 @@ export function extractAccount(input, intent = 'register_transfer') {
   return match ? titleCase(match[1]) : null;
 }
 
-function toIsoDate(date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function shiftIsoDate(referenceDate, days) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(referenceDate ?? '')) return null;
-
-  const date = new Date(`${referenceDate}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return null;
-
-  date.setUTCDate(date.getUTCDate() + days);
-  return toIsoDate(date);
-}
-
+// BLOCO E: delega para relativeDateResolver.js -- mesma resolucao
+// determinística usada para validar datas vindas da camada neural
+// (financial_plan), agora tambem cobrindo anteontem, dia da semana, "dia N",
+// fim/comeco do mes (antes so hoje/ontem/amanha/data explicita).
 export function extractDate(input, referenceDate = null) {
-  const normalizedText = normalizeFinancialText(input);
-  const explicitDate = normalizedText.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
-
-  if (explicitDate) {
-    const [, day, month, year] = explicitDate;
-    const candidate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    const parsed = new Date(`${candidate}T00:00:00.000Z`);
-
-    return !Number.isNaN(parsed.getTime()) && toIsoDate(parsed) === candidate
-      ? candidate
-      : null;
-  }
-
-  if (/\bhoje\b/.test(normalizedText)) return shiftIsoDate(referenceDate, 0);
-  if (/\bontem\b/.test(normalizedText)) return shiftIsoDate(referenceDate, -1);
-  if (/\bamanha\b/.test(normalizedText)) return shiftIsoDate(referenceDate, 1);
-  return null;
+  if (typeof input !== 'string') return null;
+  return resolveRelativeDateExpression(input, referenceDate).resolvedDate;
 }
 
 function extractDescription(input, intent, account) {
@@ -286,8 +262,15 @@ function extractDescription(input, intent, account) {
     );
   }
   description = description
-    .replace(/^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|recebi|ganhei|faturei|entrou|caiu|custou|saiu)\b/iu, '')
+    // BUG REAL: "coloquei/botei/foi/lancei/lança/registra/anota" nao eram
+    // reconhecidos aqui -- a descricao ficava com o verbo grudado
+    // ("Coloquei De Gasolina" em vez de "Gasolina").
+    .replace(/^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|recebi|ganhei|faturei|entrou|caiu|custou|saiu|coloquei|botei|foi|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/iu, '')
     .replace(/^(?:quero\s+)?(?:juntar|guardar|economizar)\b/iu, '')
+    // Substantivo genérico de lançamento ("uma despesa de", "um gasto de")
+    // que sobra apos remover o verbo imperativo -- nao descreve a compra em
+    // si, entao e removido antes da preposicao final.
+    .replace(/^\s*(?:uma?\s+)?(?:despesa|gasto|receita|entrada|pagamento)\s+(?:de\s+)?/iu, '')
     .replace(
       /^\s*(?:de|do|da|no|na|em|para|pra|pro)\s+(?:(?:uma|um|o|a)\b)?\s*/iu,
       '',

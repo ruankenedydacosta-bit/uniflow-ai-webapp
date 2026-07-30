@@ -501,3 +501,63 @@ test('buildFutureSafetyResponse nunca contem NaN ou Infinity', () => {
   assert.doesNotMatch(buildFutureSafetyResponse(true), /NaN|Infinity/);
   assert.doesNotMatch(buildFutureSafetyResponse(false), /NaN|Infinity/);
 });
+
+// ============================================================================
+// BLOCO A1 -- conversationStyle: 'simple' condensa respostas multi-linha
+// numa unica linha (sem quebrar numeros/highlight); sem o parametro (ou
+// 'normal'/'detailed'), o comportamento anterior fica inalterado.
+// ============================================================================
+
+test('buildQueryResponse sem conversationStyle mantem o formato multi-linha de sempre (comportamento inalterado)', () => {
+  const response = buildQueryResponse({ type: 'monthly_summary' }, mockCtx(), 'personal', {});
+  assert.ok(response.text.includes('\n'));
+});
+
+test('conversationStyle "simple" condensa monthly_summary numa unica linha, preservando os valores', () => {
+  const response = buildQueryResponse(
+    { type: 'monthly_summary' },
+    mockCtx(),
+    'personal',
+    { conversationStyle: 'simple' },
+  );
+  assert.ok(response);
+  assert.doesNotMatch(response.text, /\n/);
+  assert.match(response.text, /15\.000/);
+  assert.match(response.text, /8\.000/);
+  assert.match(response.text, /5\.000/);
+});
+
+test('conversationStyle "simple" condensa goal_feasibility e remove o paragrafo de aviso final, preservando os nomes das metas', () => {
+  const goalProjections = [
+    { goalId: 'g1', name: 'Reserva', feasibility: 'viable', estimatedMonths: 4 },
+    { goalId: 'g2', name: 'Carro', feasibility: 'attention', estimatedMonths: 10 },
+  ];
+  const response = buildQueryResponse(
+    { type: 'goal_feasibility' },
+    mockCtx(),
+    'personal',
+    { goalProjections, conversationStyle: 'simple' },
+  );
+  assert.doesNotMatch(response.text, /\n/);
+  assert.match(response.text, /Reserva/);
+  assert.match(response.text, /Carro/);
+  assert.doesNotMatch(response.text, /⚠️ Esta é uma estimativa/);
+});
+
+test('conversationStyle "simple" nao afasta o highlight nem quebra respostas ja curtas (balance)', () => {
+  const response = buildQueryResponse(
+    { type: 'balance' },
+    mockCtx(),
+    'personal',
+    { conversationStyle: 'simple' },
+  );
+  assert.ok(response.highlight);
+  assert.doesNotMatch(response.text, /\n/);
+});
+
+test('conversationStyle "normal"/"detailed" nao condensam -- so "simple" muda a apresentacao', () => {
+  const normal = buildQueryResponse({ type: 'monthly_summary' }, mockCtx(), 'personal', { conversationStyle: 'normal' });
+  const detailed = buildQueryResponse({ type: 'monthly_summary' }, mockCtx(), 'personal', { conversationStyle: 'detailed' });
+  assert.ok(normal.text.includes('\n'));
+  assert.ok(detailed.text.includes('\n'));
+});

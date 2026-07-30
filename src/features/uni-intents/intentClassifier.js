@@ -55,15 +55,43 @@ const INTENT_RULES = [
       /^(?:eu\s+)?(?:recebi|ganhei|faturei)\b/,
       /^(?:entrou|caiu)\s+[\d.,]+/,
       /\brecebi\s+(?:r\$\s*)?[\d.,]+/,
+      // BUG REAL: comandos imperativos ("lance uma receita de...",
+      // "registra uma entrada de...") nao tinham nenhum verbo reconhecido --
+      // caiam em 'question' e a frase acabava indo para o chat geral. Precisam
+      // vir ANTES do bloco de register_expense (mesmo verbo imperativo serve
+      // para os dois) para que "receita/entrada" explicita desambigue certo.
+      /^(?:lance|lanca|registra|registre|anota|anote)\s+(?:uma\s+)?(?:receita|entrada)\b/,
     ],
   },
   {
     intent: 'register_expense',
     confidence: 0.96,
     patterns: [
-      /^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci)\b/,
-      /^(?:custou|saiu)\s+(?:r\$\s*)?[\d.,]+/,
-      /\b(?:paguei|gastei)\s+(?:r\$\s*)?[\d.,]+/,
+      // BUG REAL EM PRODUCAO: "Coloquei duzentos reais de gasolina." caia
+      // aqui como 'question' (nenhum verbo batia), o parser devolvia
+      // handled:false e a frase acabava no chat geral, que respondia "nao
+      // consigo registrar daqui". "coloquei/botei" sao verbos comuns de
+      // lancamento coloquial que faltavam nesta lista.
+      /^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|coloquei|botei)\b/,
+      /^(?:custou|saiu|foi)\s+(?:r\$\s*)?[\d.,]+/,
+      /\b(?:paguei|gastei|coloquei|botei)\s+(?:r\$\s*)?[\d.,]+/,
+      // Comandos imperativos genéricos ("lance uma despesa de...", "registra
+      // R$ 120 de..."), sem "receita/entrada" explicita -- default despesa.
+      /^(?:lance|lanca|registra|registre|anota|anote)\b/,
+      // BUG REAL (fluxo de confirmação financeira simples): "Cinquenta reais
+      // de gasolina." não tem NENHUM verbo -- nem os anteriores, nem
+      // "gastei/paguei/etc" -- e caía em 'question'/unsupported. O parser de
+      // uma única operação nunca chegava a criar a ação pendente, e a frase
+      // inteira (incluindo as rodadas seguintes de "no Nubank"/"correto")
+      // era respondida pelo chat geral (LLM em modo consultivo, sem nenhuma
+      // máquina de estados) -- daí o texto solto pedindo confirmação de novo
+      // em vez de montar o card. "<valor> reais de <algo>" é uma declaração
+      // de despesa inequívoca mesmo sem verbo, contanto que a frase não
+      // COMECE com uma pergunta ("quanto/quantos/qual/quando/como/onde/por
+      // que" -- essas já são interceptadas antes por classifyFinancialQuery,
+      // mas a guarda aqui evita reclassificar uma pergunta como lançamento
+      // se ela escapar daquele classificador).
+      /^(?!\s*(?:quanto|quantos|quantas|qual|quais|quando|como|onde|por\s*que|porque)\b)(?:[\p{L}\p{N}.,$]+\s+){0,3}reais?\s+de\s+\p{L}/u,
     ],
   },
 ];

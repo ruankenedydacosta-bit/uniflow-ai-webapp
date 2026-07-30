@@ -1,7 +1,14 @@
 import UniAvatar from './UniAvatar';
 import styles from './ChatHeader.module.css';
 
-export default function ChatHeader({ mode, onModeChange, onHistory, onNewChat, isThinking }) {
+export default function ChatHeader({
+  mode,
+  onModeChange,
+  onHistory,
+  onNewChat,
+  isThinking,
+  showModeSelector = true,
+}) {
   return (
     <header className={styles.header}>
       <div className={styles.identity}>
@@ -15,7 +22,8 @@ export default function ChatHeader({ mode, onModeChange, onHistory, onNewChat, i
       </div>
 
       <div className={styles.actions}>
-        <div className={styles.toggle} role="tablist" aria-label="Selecionar perfil">
+        {showModeSelector ? (
+          <div className={styles.toggle} role="tablist" aria-label="Selecionar perfil">
           <button
             type="button"
             role="tab"
@@ -39,7 +47,8 @@ export default function ChatHeader({ mode, onModeChange, onHistory, onNewChat, i
             style={{ transform: mode === 'empresa' ? 'translateX(100%)' : 'translateX(0)' }}
             aria-hidden="true"
           />
-        </div>
+          </div>
+        ) : null}
 
         <button type="button" className={styles.iconBtn} onClick={onHistory} aria-label="Ver histórico de conversas">
           <HistoryIcon />

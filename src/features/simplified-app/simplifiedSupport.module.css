@@ -1,0 +1,624 @@
+.page {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    34px
+    max(18px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: #f8fafc;
+}
+
+/* ---------- Cabeçalho ---------- */
+
+.header {
+  min-height: 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.titleGroup {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 50%;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.titleGroup h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(22px, 6vw, 30px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  color: #a8b2c5;
+  font-size: 13.5px;
+}
+
+.talkButton {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(#030b1d, #030b1d) padding-box,
+    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.talkIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.talkIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Canais (Uni / Atendente) ---------- */
+
+.channelsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.channelCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(124, 58, 237, .4);
+  background: linear-gradient(150deg, rgba(124, 58, 237, .16), rgba(4, 13, 33, .94));
+}
+
+.humanChannel {
+  border-color: rgba(16, 185, 129, .4);
+  background: linear-gradient(150deg, rgba(16, 185, 129, .16), rgba(4, 13, 33, .94));
+}
+
+.channelTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.channelMascot {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, .25);
+  font-size: 26px;
+}
+
+.channelMascotAlt {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, .25);
+  color: #2dd4bf;
+}
+
+.channelMascotAlt svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.channelBubble,
+.channelBubbleAlt {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, .3);
+  color: #a78bfa;
+}
+
+.channelBubbleAlt {
+  background: rgba(16, 185, 129, .3);
+  color: #2dd4bf;
+}
+
+.channelBubble svg,
+.channelBubbleAlt svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.channelCard strong {
+  font-size: 15.5px;
+}
+
+.channelCard p {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 12.5px;
+  line-height: 1.5;
+  flex: 1 1 auto;
+}
+
+.buttonIcon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+}
+
+.buttonIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.whatsAppButton {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.whatsAppButton:hover:not(:disabled) {
+  background: #15803d !important;
+}
+
+/* ---------- Cards genéricos ---------- */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.card h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.cardHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.linkButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #5e85ff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.emptyState {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed rgba(86, 109, 151, .4);
+  border-radius: 14px;
+  color: #a8b2c5;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.errorBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, .12);
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+/* ---------- Meus atendimentos ---------- */
+
+.requestList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.requestRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(86, 109, 151, .28);
+  border-radius: 14px;
+  background: rgba(4, 13, 33, .35);
+}
+
+.requestIcon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, .18);
+  color: #5e93ff;
+}
+
+.tone_resolved { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+.tone_in_review { background: rgba(245, 158, 11, .18); color: #f59e0b; }
+.tone_open { background: rgba(37, 99, 235, .18); color: #5e93ff; }
+.tone_closed { background: rgba(148, 163, 184, .18); color: #94a3b8; }
+
+.requestIcon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.requestInfo {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.requestInfo strong {
+  overflow: hidden;
+  font-size: 14.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.requestInfo small {
+  color: #a8b2c5;
+  font-size: 12px;
+}
+
+/* ---------- WhatsApp ---------- */
+
+.whatsAppCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.whatsAppIcon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, .18);
+  color: #22c55e;
+}
+
+.whatsAppIcon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.whatsAppInfo strong {
+  display: block;
+  font-size: 15.5px;
+}
+
+.whatsAppInfo p {
+  margin: 2px 0 0;
+  color: #a8b2c5;
+  font-size: 13px;
+}
+
+/* ---------- Horário ---------- */
+
+.scheduleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.scheduleRow strong {
+  display: block;
+  font-size: 14.5px;
+}
+
+.scheduleRow p {
+  margin: 2px 0 0;
+  color: #a8b2c5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.scheduleNote {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cardHeaderIcon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.cardHeaderIcon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.toneBlue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
+.tonePurple { background: rgba(124, 58, 237, .18); color: #a78bfa; }
+.toneGreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+
+/* ---------- Como funciona ---------- */
+
+.stepsRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step {
+  min-width: 0;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.stepNumber {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.stepIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, .18);
+  color: #2dd4bf;
+  font-size: 20px;
+}
+
+.stepIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.step strong {
+  font-size: 13px;
+}
+
+.step small {
+  color: #a8b2c5;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.stepArrow {
+  flex: 0 0 auto;
+  color: #5b6780;
+  font-size: 18px;
+}
+
+/* ---------- Card final ---------- */
+
+.finalCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid rgba(124, 58, 237, .4);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, .16), rgba(37, 99, 235, .1));
+}
+
+.finalMascot {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, .25);
+  font-size: 22px;
+}
+
+.finalText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.finalText strong {
+  color: #c4b5fd;
+  font-size: 15px;
+}
+
+.finalText p {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 13px;
+}
+
+.finalShield {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: #a78bfa;
+}
+
+.finalShield svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Foco visível (acessibilidade) ---------- */
+
+.backButton:focus-visible,
+.talkButton:focus-visible,
+.linkButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 520px) {
+  .channelsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .stepsRow {
+    flex-direction: column;
+  }
+
+  .stepArrow {
+    transform: rotate(90deg);
+  }
+
+  .finalCard {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 359px) {
+  .talkButton {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  .talkIcon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding-inline: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .channelCard {
+    transition: none;
+  }
+}

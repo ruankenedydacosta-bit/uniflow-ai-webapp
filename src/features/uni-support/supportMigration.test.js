@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATION = readFileSync(
-  join(__dirname, '..', '..', '..', 'supabase', 'migrations', '20260725_022_support.sql'),
+  join(__dirname, '..', '..', '..', 'supabase', 'migrations', '20260725002200_022_support.sql'),
   'utf8',
 );
 

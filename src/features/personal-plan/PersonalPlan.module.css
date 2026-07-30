@@ -1,0 +1,781 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  padding:
+    max(22px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(28px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 50% 18%, rgba(37, 99, 235, .13), transparent 32%),
+    linear-gradient(180deg, #020816 0%, #010611 48%, #020916 100%);
+  color: #f8fafc;
+  isolation: isolate;
+}
+
+.page::before {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(90deg, transparent 96%, rgba(34, 211, 238, .05) 100%),
+    linear-gradient(0deg, transparent 96%, rgba(37, 99, 235, .04) 100%);
+  background-size: 78px 78px;
+  content: "";
+  mask-image: linear-gradient(to bottom, #000, transparent 34%);
+}
+
+.pageGlow {
+  position: absolute;
+  top: 32%;
+  left: 50%;
+  z-index: -1;
+  width: min(1100px, 100%);
+  height: 680px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(12, 74, 110, .13), transparent 68%);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.brandSection,
+.hero,
+.premiumCard,
+.footer {
+  width: min(100%, 1080px);
+  margin-inline: auto;
+}
+
+.partnershipEyebrow {
+  display: grid;
+  grid-template-columns: minmax(18px, 1fr) auto minmax(18px, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 10px;
+  color: #9e8cff;
+  font-size: clamp(8px, 2.4vw, 12px);
+  letter-spacing: .36em;
+  line-height: 1.4;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.partnershipEyebrow span {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #2563eb, #2dd4bf);
+}
+
+.partnershipEyebrow span:last-child {
+  transform: scaleX(-1);
+}
+
+.brandRow {
+  min-height: clamp(78px, 21vw, 150px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px clamp(42px, 10vw, 76px) 1px minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(5px, 2vw, 20px);
+  animation: planReveal 260ms ease-out both;
+}
+
+.brandFrame {
+  height: clamp(72px, 18vw, 140px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.brandFrame img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 14px rgba(37, 99, 235, .25));
+}
+
+.uniflowLogo,
+.smartechLogo {
+  transform: scale(1.13);
+}
+
+.brandDivider {
+  width: 1px;
+  height: 52%;
+  background: linear-gradient(transparent, rgba(71, 85, 105, .62), transparent);
+}
+
+.partnershipIcon {
+  color: #22d3ee;
+}
+
+.partnershipIcon svg {
+  width: 100%;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 8px rgba(124, 58, 237, .65));
+}
+
+.brandWave {
+  width: calc(100% + 32px);
+  height: clamp(74px, 16vw, 150px);
+  margin: -16px -16px 0;
+  pointer-events: none;
+}
+
+.brandWave svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.waveLine,
+.waveGhost {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.waveLine {
+  stroke-width: 2.2;
+}
+
+.waveGhost {
+  stroke: rgba(37, 99, 235, .24);
+  stroke-width: 17;
+}
+
+.hero {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: -10px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.hero h1 {
+  margin: 0;
+  background: linear-gradient(90deg, #7c3aed, #2563eb 48%, #2dd4bf);
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(35px, 10vw, 66px);
+  font-weight: 820;
+  letter-spacing: .03em;
+  line-height: 1;
+}
+
+.hero p {
+  margin: 0;
+  color: #d5d9e4;
+  font-size: clamp(16px, 4.5vw, 22px);
+  line-height: 1.45;
+}
+
+.hero strong {
+  color: #8b5cf6;
+}
+
+.premiumCard {
+  position: relative;
+  padding: clamp(20px, 4vw, 38px);
+  border: 1px solid rgba(43, 91, 158, .66);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(37, 99, 235, .08), transparent 36%),
+    rgba(2, 10, 26, .82);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, .26),
+    inset 0 1px 0 rgba(255, 255, 255, .025);
+  backdrop-filter: blur(8px);
+}
+
+.accessBadge {
+  width: fit-content;
+  min-height: 36px;
+  display: grid;
+  place-items: center;
+  margin: -2px auto 12px;
+  padding: 6px 28px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(#061027, #061027) padding-box,
+    linear-gradient(90deg, #7c3aed, #2563eb, #2dd4bf) border-box;
+  color: #8be8f0;
+  font-size: clamp(10px, 3vw, 15px);
+  font-weight: 650;
+  letter-spacing: .24em;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  white-space: nowrap;
+}
+
+.price strong {
+  background: linear-gradient(90deg, #7c3aed, #2563eb 50%, #2dd4bf);
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(68px, 19vw, 122px);
+  font-weight: 820;
+  letter-spacing: 0;
+  line-height: .98;
+}
+
+.currency {
+  color: #fff;
+  font-size: clamp(25px, 7vw, 44px);
+}
+
+.period {
+  color: #fff;
+  font-size: clamp(18px, 5vw, 30px);
+}
+
+.planTerms {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0;
+  color: #d6d9e1;
+  font-size: clamp(14px, 3.8vw, 18px);
+  line-height: 1.4;
+  text-align: center;
+}
+
+.planTerms svg,
+.paymentSecurity svg {
+  width: 30px;
+  display: block;
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px rgba(124, 58, 237, .55));
+}
+
+.benefitsHeading {
+  display: grid;
+  grid-template-columns: minmax(18px, 1fr) auto minmax(18px, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 26px 0 18px;
+  color: #45d4e7;
+  font-size: clamp(12px, 3.6vw, 18px);
+  font-weight: 600;
+  letter-spacing: .23em;
+  text-align: center;
+}
+
+.benefitsHeading span {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #2dd4bf);
+}
+
+.benefitsHeading span:last-child {
+  transform: scaleX(-1);
+}
+
+.benefitsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.benefitCard {
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 22px 16px;
+  border: 1px solid rgba(41, 89, 149, .68);
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(8, 20, 45, .94), rgba(3, 13, 31, .9));
+  text-align: center;
+  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+
+.benefitCard:hover {
+  border-color: rgba(45, 212, 191, .68);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, .2);
+  transform: translateY(-2px);
+}
+
+.benefitIcon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+}
+
+.benefitIcon svg {
+  width: 46px;
+  height: 46px;
+  display: block;
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 7px rgba(37, 99, 235, .6));
+}
+
+.benefitCard:nth-child(1) .benefitIcon svg,
+.benefitCard:nth-child(2) .benefitIcon svg,
+.benefitCard:nth-child(6) .benefitIcon svg {
+  stroke: #7c3aed;
+}
+
+.benefitCard:nth-child(3) .benefitIcon svg,
+.benefitCard:nth-child(5) .benefitIcon svg {
+  stroke: #22a7f0;
+}
+
+.benefitCard h3 {
+  margin: 0 0 8px;
+  color: #f8fafc;
+  font-size: clamp(16px, 3.2vw, 20px);
+  line-height: 1.25;
+}
+
+.benefitCard p,
+.benefitCard ul {
+  margin: 0;
+  padding: 0;
+  color: #c9cfdb;
+  font-size: clamp(14px, 2.6vw, 17px);
+  line-height: 1.42;
+  list-style: none;
+}
+
+.subscribeButton {
+  width: 100%;
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 14px 24px;
+  border: 1px solid rgba(103, 232, 249, .36);
+  border-radius: 15px;
+  background: linear-gradient(105deg, #7027ef 0%, #2563eb 45%, #13bfa8 100%);
+  color: #fff;
+  box-shadow:
+    0 15px 34px rgba(37, 99, 235, .22),
+    inset 0 1px 0 rgba(255, 255, 255, .25);
+  font: inherit;
+  font-size: clamp(18px, 4.7vw, 34px);
+  font-weight: 780;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: filter 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.subscribeButton:hover {
+  filter: brightness(1.08);
+  box-shadow:
+    0 18px 42px rgba(37, 99, 235, .3),
+    inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+
+.subscribeButton:active {
+  transform: scale(.987);
+}
+
+.subscribeButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 4px;
+}
+
+.subscribeButton svg {
+  width: 44px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.6;
+}
+
+.buttonArrow {
+  justify-self: end;
+  font-size: 46px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.paymentSecurity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0 0;
+  color: #9cb4d3;
+  font-size: clamp(13px, 3.5vw, 18px);
+  text-align: center;
+}
+
+.paymentSecurity svg {
+  width: 27px;
+}
+
+.paymentSecurity strong {
+  color: #fff;
+  font-size: 1.12em;
+}
+
+.subscriptionStatus {
+  min-height: 20px;
+  margin: 6px 0 -8px;
+  color: #67e8f9;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* BLOCO FINAL DO MVP: modal de escolha de método + campo de CPF/CNPJ.
+   O Modal compartilhado (Modal.jsx) renderiza sobre um fundo CLARO
+   (--uf-color-bg-elevated), diferente do fundo escuro desta página --
+   por isso todo texto/borda aqui usa cores explícitas próprias, nunca
+   branco/transparente herdado do resto do módulo. */
+.methodChoiceGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.methodOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #111827;
+  font-size: 14px;
+}
+
+.methodOption[data-selected='true'] {
+  border-color: #2563eb;
+  background: #e0f2fe;
+  color: #111827;
+}
+
+.methodOption[data-disabled='true'] {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.methodOption small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.cpfField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cpfField input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.cpfField input::placeholder {
+  color: #94a3b8;
+}
+
+.cpfField input:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  border-color: #2563eb;
+}
+
+.cpfField input[aria-invalid='true'] {
+  border-color: #dc2626;
+}
+
+.hint {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pixQrImage {
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
+  margin: 4px auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+}
+
+.methodError {
+  margin-top: 10px;
+  color: #dc2626;
+  font-size: 13px;
+  text-align: center;
+}
+
+.footer {
+  padding-top: 16px;
+  text-align: center;
+}
+
+.trustGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid rgba(41, 89, 149, .5);
+  border-radius: 15px;
+  background: rgba(5, 15, 34, .76);
+}
+
+.trustSeal {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 10px;
+  color: #d1d7e2;
+  font-size: clamp(11px, 2vw, 15px);
+  line-height: 1.3;
+}
+
+.trustSeal + .trustSeal {
+  border-left: 1px solid rgba(41, 89, 149, .45);
+}
+
+.trustSeal > span:first-child {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid #2563eb;
+  border-radius: 11px;
+  color: #8b5cf6;
+  font-size: 21px;
+}
+
+.partnershipFooter {
+  margin: 20px 0 6px;
+  background: linear-gradient(90deg, #7c3aed, #2563eb, #2dd4bf);
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(16px, 4vw, 24px);
+  font-weight: 700;
+  letter-spacing: .24em;
+}
+
+.partnershipFooter span {
+  color: #67e8f9;
+}
+
+.footerValues {
+  margin: 0;
+  color: #f1f5f9;
+  font-size: clamp(9px, 2.7vw, 15px);
+  letter-spacing: .32em;
+}
+
+@keyframes planReveal {
+  from { opacity: 0; transform: translateY(-8px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 767px) {
+  .benefitsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .benefitCard {
+    min-height: 185px;
+    padding: 18px 10px;
+  }
+
+  .trustGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trustSeal:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid rgba(41, 89, 149, .45);
+  }
+
+  .trustSeal:nth-child(4) {
+    border-top: 1px solid rgba(41, 89, 149, .45);
+  }
+}
+
+@media (max-width: 430px) {
+  .page {
+    padding-inline: max(12px, env(safe-area-inset-left));
+  }
+
+  .partnershipEyebrow {
+    gap: 7px;
+    letter-spacing: .2em;
+  }
+
+  .brandRow {
+    grid-template-columns: minmax(0, 1fr) 1px 38px 1px minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .brandWave {
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+  }
+
+  .premiumCard {
+    padding: 18px 12px;
+    border-radius: 17px;
+  }
+
+  .accessBadge {
+    min-height: 32px;
+    padding-inline: 19px;
+  }
+
+  .price {
+    gap: 5px;
+  }
+
+  .price strong {
+    font-size: clamp(60px, 18.5vw, 80px);
+  }
+
+  .benefitsHeading {
+    gap: 7px;
+    letter-spacing: .13em;
+  }
+
+  .benefitCard h3 {
+    font-size: 15px;
+  }
+
+  .benefitCard p,
+  .benefitCard ul {
+    font-size: 13px;
+  }
+
+  .subscribeButton {
+    grid-template-columns: 34px minmax(0, 1fr) 24px;
+    min-height: 68px;
+    gap: 6px;
+    padding-inline: 12px;
+    font-size: clamp(16px, 4.7vw, 20px);
+  }
+
+  .subscribeButton svg {
+    width: 32px;
+  }
+
+  .buttonArrow {
+    font-size: 35px;
+  }
+
+  .trustSeal {
+    min-height: 70px;
+    gap: 8px;
+    padding: 10px 7px;
+  }
+
+  .trustSeal > span:first-child {
+    width: 29px;
+    height: 29px;
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 359px) {
+  .hero h1 {
+    font-size: 33px;
+  }
+
+  .hero p {
+    font-size: 15px;
+  }
+
+  .premiumCard {
+    padding-inline: 9px;
+  }
+
+  .benefitCard {
+    min-height: 174px;
+    padding-inline: 7px;
+  }
+
+  .benefitIcon,
+  .benefitIcon svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .subscribeButton {
+    font-size: 15px;
+  }
+
+  .partnershipFooter {
+    letter-spacing: .15em;
+  }
+
+  .footerValues {
+    letter-spacing: .18em;
+  }
+}
+
+@media (min-width: 1200px) {
+  .page {
+    padding-top: 34px;
+  }
+
+  .brandWave {
+    width: calc(100% + 64px);
+    margin-inline: -32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brandRow {
+    animation: none;
+  }
+
+  .benefitCard,
+  .subscribeButton {
+    transition: none;
+  }
+}
+

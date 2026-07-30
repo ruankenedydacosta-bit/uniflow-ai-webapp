@@ -2,12 +2,17 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildAccountCreationConfirmation,
+  buildCategoryCreationConfirmation,
   cancelAccountCreationDependency,
+  cancelCategoryCreationDependency,
   completeAccountCreationDependency,
+  completeCategoryCreationDependency,
   findAccountCreationConflicts,
   FINANCIAL_PENDING_ACTION_TYPES,
   isCancelEntirePendingFlow,
+  isCategoryCreationDependency,
   startAccountCreationDependency,
+  startCategoryCreationDependency,
   updateResumedFinancialSnapshot,
 } from './financialPendingActionFlow.js';
 import {
@@ -265,6 +270,192 @@ for (const [intent, transactionType] of [
     assert.equal(transactionResult.data.id, `transaction-${transactionType}`);
   });
 }
+
+const proposedCategory = Object.freeze({
+  name: 'Pet',
+  category_type: 'expense',
+  applies_to: 'personal',
+});
+
+test('empilha criação da categoria sobre a movimentação preservando todos os campos', () => {
+  const transition = startCategoryCreationDependency({
+    identity,
+    financialSnapshot,
+    proposedCategory,
+    now: '2026-07-27T12:00:00.000Z',
+  });
+
+  assert.equal(transition.stack.actions.length, 2);
+  assert.equal(transition.stack.actions[0].status, 'suspended');
+  assert.equal(transition.activeAction.type, FINANCIAL_PENDING_ACTION_TYPES.CREATE_CATEGORY);
+  assert.equal(isCategoryCreationDependency(transition.activeAction), true);
+  assert.equal(transition.stack.actions[0].fields.snapshot.action.amount, 50);
+  assert.equal(transition.stack.actions[0].fields.snapshot.action.description, 'Almoço');
+  assert.equal(
+    transition.stack.actions[0].fields.snapshot.action.status,
+    'needs_clarification',
+  );
+  assert.equal(
+    transition.stack.actions[0].fields.snapshot.action.issues[0].field,
+    'category',
+  );
+});
+
+test('não duplica a mesma dependência de categoria no replay', () => {
+  const first = startCategoryCreationDependency({
+    identity,
+    financialSnapshot,
+    proposedCategory,
+  });
+  const replay = startCategoryCreationDependency({
+    stack: first.stack,
+    identity,
+    financialSnapshot,
+    proposedCategory,
+  });
+
+  assert.equal(replay.changed, false);
+  assert.equal(replay.reason, 'duplicate');
+  assert.equal(replay.stack.actions.length, 2);
+});
+
+test('conclusão da categoria retoma a movimentação original e permite atualizar o snapshot', () => {
+  const started = startCategoryCreationDependency({
+    identity,
+    financialSnapshot,
+    proposedCategory,
+  });
+  const completed = completeCategoryCreationDependency(
+    started.stack,
+    { id: 'category-created', ...proposedCategory },
+  );
+  const readySnapshot = {
+    ...financialSnapshot,
+    action: {
+      ...financialSnapshot.action,
+      status: 'ready',
+      category: { id: 'category-created', name: 'Pet' },
+    },
+  };
+  const updated = updateResumedFinancialSnapshot(completed.stack, readySnapshot);
+
+  assert.equal(completed.resumedAction.id, 'operation-1');
+  assert.equal(getActivePendingAction(updated.stack).fields.snapshot.action.status, 'ready');
+  assert.equal(
+    getActivePendingAction(updated.stack).fields.snapshot.action.category.id,
+    'category-created',
+  );
+});
+
+test('cancelar criação de categoria retoma a movimentação; cancelar tudo encerra o ramo', () => {
+  const started = startCategoryCreationDependency({
+    identity,
+    financialSnapshot,
+    proposedCategory,
+  });
+  const dependencyOnly = cancelCategoryCreationDependency(started.stack);
+  const entireFlow = cancelCategoryCreationDependency(started.stack, { cascade: true });
+
+  assert.equal(dependencyOnly.resumedAction.id, 'operation-1');
+  assert.equal(dependencyOnly.stack.actions.length, 1);
+  assert.equal(
+    dependencyOnly.resumedAction.fields.snapshot.action.status,
+    'needs_clarification',
+  );
+  assert.equal(entireFlow.stack.actions.length, 0);
+});
+
+test('confirmação da criação de categoria exibe campos obrigatórios e workspace Pessoal', () => {
+  const started = startCategoryCreationDependency({
+    identity,
+    financialSnapshot,
+    proposedCategory,
+  });
+  const confirmation = buildCategoryCreationConfirmation(started.activeAction, {
+    workspaceType: 'personal',
+  });
+
+  assert.equal(confirmation.title, 'Criar categoria para continuar');
+  assert.deepEqual(confirmation.rows.map((row) => row.value), [
+    'Pet',
+    'Despesa',
+    'Pessoal',
+  ]);
+  assert.equal(confirmation.editable, false);
+});
+
+test('categoria: cria categoria confirmada, retoma e registra a movimentação', async () => {
+  const parsed = {
+    intent: 'register_expense',
+    input: 'Gastei 90 com pet pelo Nubank',
+    normalizedInput: 'gastei 90 com pet pelo nubank',
+    entities: {
+      amount: 90,
+      account: 'Nubank',
+      category: 'Pet',
+      description: 'Com pet',
+      date: '2026-07-27',
+    },
+  };
+  const accounts = [{ id: 'account-nubank', name: 'Nubank', is_active: true }];
+  const initialAction = buildFinancialIntentAction({
+    parsed,
+    accounts,
+    accountTypes: [{ code: 'checking', is_active: true }],
+    categories: [],
+    referenceDate: '2026-07-27',
+    overrides: { clientOperationId: 'operation-pet', categoryDecision: 'create_new' },
+  });
+  const started = startCategoryCreationDependency({
+    identity,
+    financialSnapshot: {
+      parsed,
+      action: initialAction,
+      response: '',
+      memory: null,
+    },
+    proposedCategory: initialAction.proposedCategory,
+  });
+  let categoryCreates = 0;
+  const categoryCoordinator = createPendingActionCoordinator({
+    create_financial_category: async ({ fields }) => {
+      categoryCreates += 1;
+      return {
+        data: {
+          id: 'category-pet',
+          is_active: true,
+          ...fields.category,
+        },
+      };
+    },
+  });
+  const dependencyOutcome = await categoryCoordinator.execute(started.stack);
+  const category = dependencyOutcome.completedAction.result;
+  const resumedAction = buildFinancialIntentAction({
+    parsed,
+    accounts,
+    accountTypes: [{ code: 'checking', is_active: true }],
+    categories: [category],
+    referenceDate: '2026-07-27',
+    overrides: {
+      clientOperationId: initialAction.clientOperationId,
+      categoryId: category.id,
+    },
+  });
+  let transactionCreates = 0;
+  const transactionResult = await executeFinancialIntentAction(resumedAction, {
+    executeAtomicAction: async (action) => {
+      transactionCreates += 1;
+      return { data: { id: 'transaction-pet', ...action.payload }, error: null };
+    },
+  });
+
+  assert.equal(categoryCreates, 1);
+  assert.equal(transactionCreates, 1);
+  assert.equal(resumedAction.status, 'ready');
+  assert.equal(resumedAction.payload.category_id, category.id);
+  assert.equal(transactionResult.data.id, 'transaction-pet');
+});
 
 test('duplo toque compartilha a criação e não cria conta duas vezes', async () => {
   const started = startAccountCreationDependency({

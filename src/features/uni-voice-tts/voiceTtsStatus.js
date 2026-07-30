@@ -20,6 +20,7 @@ export const VOICE_TTS_ERROR_CODES = Object.freeze({
   FORBIDDEN: 'FORBIDDEN',
   RATE_LIMIT: 'RATE_LIMIT',
   INVALID_TEXT: 'INVALID_TEXT',
+  TEXT_TOO_LONG: 'TEXT_TOO_LONG',
   TIMEOUT: 'TIMEOUT',
   NETWORK: 'NETWORK',
   PROVIDER_ERROR: 'PROVIDER_ERROR',
@@ -35,6 +36,10 @@ const ERROR_MESSAGES = Object.freeze({
   [VOICE_TTS_ERROR_CODES.FORBIDDEN]: 'Você não tem acesso a este recurso de voz.',
   [VOICE_TTS_ERROR_CODES.RATE_LIMIT]: 'Muitas solicitações de voz. Tente novamente em instantes.',
   [VOICE_TTS_ERROR_CODES.INVALID_TEXT]: 'Não foi possível usar este texto para gerar voz.',
+  // BLOCO A1: distinto de INVALID_TEXT -- aqui o texto e valido, so longo
+  // demais para narrar. Mensagem convida a ler na tela em vez de soar como
+  // uma falha tecnica generica.
+  [VOICE_TTS_ERROR_CODES.TEXT_TOO_LONG]: 'Essa resposta é longa -- prefiro te mostrar na tela.',
   [VOICE_TTS_ERROR_CODES.TIMEOUT]: 'A geração de voz demorou demais. Tente novamente.',
   [VOICE_TTS_ERROR_CODES.NETWORK]: 'Não foi possível conectar ao serviço de voz agora.',
   [VOICE_TTS_ERROR_CODES.PROVIDER_ERROR]: 'Não consegui gerar a voz agora.',

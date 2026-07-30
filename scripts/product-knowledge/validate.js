@@ -24,7 +24,8 @@ const REPO_ROOT = join(__dirname, '..', '..');
 const DOCS_DIR = join(REPO_ROOT, 'docs', 'product-knowledge');
 
 const KNOWN_APP_ROUTES = new Set([
-  '/', '/welcome', '/login', '/onboarding', '/redefinir-senha', '/auth/callback',
+  '/', '/welcome', '/login', '/redefinir-senha', '/auth/callback',
+  '/apresentacao', '/plano-pessoal', '/app/home', '/app/uni', '/app/registros', '/app/conta',
   '/dashboard', '/uni-ai', '/financeiro', '/categorias', '/open-finance', '/objetivos',
   '/futuro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/configuracoes',
 ]);

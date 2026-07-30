@@ -287,6 +287,17 @@ test('hook limita o texto pelo mesmo MAX_TTS_TEXT_LENGTH usado na config', () =>
   assert.equal(MAX_TTS_TEXT_LENGTH, 600);
 });
 
+// BLOCO A1: texto longo demais para narrar e um caso distinto de texto
+// invalido -- o texto em si e valido (nao vazio, sem dado sensivel), so
+// excede o limite de narracao. Codigo/mensagem proprios convidam a ler na
+// tela em vez de soar como falha tecnica generica.
+test('texto valido mas longo demais para TTS usa TEXT_TOO_LONG (nao INVALID_TEXT), com mensagem convidando a ler na tela', () => {
+  assert.match(HOOK_SOURCE, /VOICE_TTS_ERROR_CODES\.TEXT_TOO_LONG/);
+  assert.equal(VOICE_TTS_ERROR_CODES.TEXT_TOO_LONG, 'TEXT_TOO_LONG');
+  const message = getVoiceTtsErrorMessage(VOICE_TTS_ERROR_CODES.TEXT_TOO_LONG);
+  assert.match(message, /mostrar na tela/);
+});
+
 test('cleanup: hook para o audio no unmount (useEffect com cleanup chamando provider.stop)', () => {
   assert.match(HOOK_SOURCE, /useEffect\(\(\) => \(\) => provider\.stop\(\), \[provider\]\);/);
 });

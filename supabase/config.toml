@@ -1,0 +1,39 @@
+project_id = "ikulazofzufeblzrhtif"
+
+# BILLING2.6 (Bloco Asaas 2.6): política de JWT explícita e versionada por
+# Edge Function, em vez de depender apenas de uma flag de linha de comando
+# no momento do deploy. As 6 funções chamadas pelo próprio app do UniFlow
+# exigem sessão de usuário autenticado (verify_jwt = true, o padrão da
+# plataforma) e validam workspace internamente. `billing-webhook` é a única
+# exceção: é chamada pela própria Asaas (servidor a servidor, sem sessão de
+# usuário do UniFlow), então a plataforma não pode exigir um JWT do
+# Supabase Auth aqui -- a autenticidade é garantida em código, comparando o
+# header `asaas-access-token` com o secret `ASAAS_WEBHOOK_TOKEN` (ver
+# supabase/functions/billing-webhook/index.ts). Nenhuma outra função deste
+# projeto (uni-chat-llm, uni-voice-tts, uni-voice-transcribe) é afetada por
+# este arquivo -- o padrão do Supabase para uma função sem entrada aqui
+# continua sendo verify_jwt = true.
+
+[functions.billing-health]
+verify_jwt = true
+
+[functions.billing-create-customer]
+verify_jwt = true
+
+[functions.billing-create-subscription]
+verify_jwt = true
+
+[functions.billing-create-checkout]
+verify_jwt = true
+
+[functions.billing-get-subscription]
+verify_jwt = true
+
+[functions.billing-cancel-subscription]
+verify_jwt = true
+
+[functions.billing-sync]
+verify_jwt = true
+
+[functions.billing-webhook]
+verify_jwt = false

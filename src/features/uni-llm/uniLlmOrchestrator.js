@@ -9,6 +9,7 @@
 
 import { buildLlmPayload } from './llmContext.js';
 import { validateLlmResponse } from './llmResponseGuard.js';
+import { resolveConversationStyleCharBudget } from './conversationStyle.js';
 
 export function createUniLlmOrchestrator({ provider, logger = console } = {}) {
   async function generateContextualResponse(input = {}) {
@@ -30,6 +31,10 @@ export function createUniLlmOrchestrator({ provider, logger = console } = {}) {
       result = await provider.generateResponse({
         system: payload.system,
         messages: payload.messages,
+        // BLOCO A1: repassa o orcamento de tokens resolvido a partir do
+        // conversationStyle (ver conversationStyle.js) -- a Edge Function
+        // sempre clampa este valor, nunca confia cegamente no cliente.
+        maxOutputTokens: payload.meta?.maxOutputTokens,
       });
     } catch {
       // provider e desenhado para nao lancar, mas garantimos o fallback
@@ -43,10 +48,18 @@ export function createUniLlmOrchestrator({ provider, logger = console } = {}) {
       return null;
     }
 
-    const validation = validateLlmResponse(result.text);
+    // BLOCO A1: resumo (nao mais descarte binario) usa o orcamento de
+    // caracteres do estilo resolvido -- respostas "simples" sao cortadas
+    // bem mais cedo que "detalhadas". validateLlmResponse so descarta de
+    // verdade se o resumo ficar vazio ou parecer uma acao financeira.
+    const charBudget = resolveConversationStyleCharBudget(payload.meta?.conversationStyle);
+    const validation = validateLlmResponse(result.text, { maxChars: charBudget });
     if (!validation.valid) {
       logger?.warn?.(`[uni-llm] resposta descartada (motivo: ${validation.reason})`);
       return null;
+    }
+    if (validation.summarized) {
+      logger?.info?.('[uni-llm] resposta resumida por exceder o orcamento do estilo de conversa');
     }
 
     return { text: validation.text, usage: result.usage ?? null };

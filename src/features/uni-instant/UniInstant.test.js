@@ -116,6 +116,60 @@ test('desmontagem limpa listeners e pointer capture', async () => {
   assert.match(gesture, /releasePointerCapture/);
 });
 
+// ============================================================================
+// FASE 5 (paridade com o botão grande da Home): o botão compacto
+// (UniInstantButton, usado pelo UniCenterButton na barra inferior) usa
+// usePressAndHold.js -- um hook DIFERENTE do handler manual da Home, mas
+// sujeito à mesma classe de bug real em dispositivo físico. Já tinha
+// pointercancel/pointermove com distância corretos; faltava a rede de
+// segurança onLostPointerCapture, agora adicionada, e touch-action/
+// user-select no CSS (já existiam, reforçados aqui).
+// ============================================================================
+
+test('FASE 5: setPointerCapture é chamado no pointerdown com o pointerId do evento', async () => {
+  const gesture = await source('./usePressAndHold.js');
+  const idx = gesture.indexOf('onPointerDown: (event) => {');
+  const slice = gesture.slice(idx, idx + 300);
+  assert.match(slice, /event\.currentTarget\.setPointerCapture\?\.\(event\.pointerId\);/);
+});
+
+test('FASE 5: onLostPointerCapture cancela o gesto (rede de segurança), validando sourceRef e pointerId -- não duplica finish() já disparado por pointerup/pointercancel', async () => {
+  const gesture = await source('./usePressAndHold.js');
+  const idx = gesture.indexOf('onLostPointerCapture: (event) => {');
+  assert.ok(idx > -1, 'onLostPointerCapture deve existir em usePressAndHold.js');
+  const slice = gesture.slice(idx, idx + 200);
+  assert.match(slice, /if \(sourceRef\.current !== 'pointer' \|\| event\.pointerId !== pointerIdRef\.current\) return;/);
+  assert.match(slice, /finish\(true\);/);
+});
+
+test('FASE 5: onLostPointerCapture está de fato conectado ao objeto bind retornado pelo hook (chega até o botão via spread)', async () => {
+  const gesture = await source('./usePressAndHold.js');
+  const bindIdx = gesture.indexOf('bind: {');
+  const returnBlock = gesture.slice(bindIdx, gesture.lastIndexOf('},\n  };'));
+  assert.match(returnBlock, /onLostPointerCapture:/);
+  const button = await source('./UniInstantButton.jsx');
+  assert.match(button, /\{\.\.\.bind\}/);
+});
+
+test('FASE 5: pointerup/pointercancel de um pointerId diferente do que iniciou o gesto são ignorados', async () => {
+  const gesture = await source('./usePressAndHold.js');
+  const upIdx = gesture.indexOf('onPointerUp: (event) => {');
+  const moveIdx = gesture.indexOf('onPointerMove: (event) => {');
+  assert.match(gesture.slice(upIdx, upIdx + 150), /event\.pointerId !== pointerIdRef\.current/);
+  assert.match(gesture.slice(moveIdx, moveIdx + 150), /event\.pointerId !== pointerIdRef\.current/);
+});
+
+test('FASE 5: CSS do botão compacto mantém touch-action: none e bloqueia seleção/callout/drag nativos', async () => {
+  const css = await source('./UniInstantButton.module.css');
+  const idx = css.indexOf('.uniButton {');
+  const slice = css.slice(idx, css.indexOf('transition:', idx));
+  assert.match(slice, /touch-action:\s*none;/);
+  assert.match(slice, /(?<!-webkit-)user-select:\s*none;/);
+  assert.match(slice, /-webkit-user-select:\s*none;/);
+  assert.match(slice, /-webkit-touch-callout:\s*none;/);
+  assert.match(slice, /-webkit-user-drag:\s*none;/);
+});
+
 test('rolagem permanece livre sem lock de body html ou shell', async () => {
   const files = await Promise.all([
     source('./UniInstantResultCard.jsx'),

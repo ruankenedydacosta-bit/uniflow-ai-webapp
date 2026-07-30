@@ -143,10 +143,10 @@ test('categoria customizada do workspace é sempre visível (ignora applies_to)'
   assert.equal(categoryAppliesToContext(GLOBALS[5], 'business'), true);
 });
 
-test('applies_to ausente em global é tratado como both (retrocompat)', () => {
+test('applies_to ausente em global é excluído por segurança', () => {
   const legacy = { name: 'X', is_system: true, workspace_id: null };
-  assert.equal(categoryAppliesToContext(legacy, 'personal'), true);
-  assert.equal(categoryAppliesToContext(legacy, 'business'), true);
+  assert.equal(categoryAppliesToContext(legacy, 'personal'), false);
+  assert.equal(categoryAppliesToContext(legacy, 'business'), false);
 });
 
 test('filterCategoriesForContext PF remove globais empresariais e mantém custom', () => {

@@ -28,3 +28,4 @@ export {
   VOICE_CAPTURE_STATES,
 } from './voiceCaptureReducer.js';
 export { getVoiceInputMessage } from './voiceInputMessages.js';
+export { useVoiceIntensity } from './useVoiceIntensity.js';

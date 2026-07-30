@@ -30,6 +30,10 @@ export function useUniVoiceInput({
   const [state, dispatch] = useReducer(voiceCaptureReducer, initialVoiceCaptureState);
   const adapterRef = useRef(null);
   const requestIdRef = useRef(0);
+  // BUG 3: referencia ao MESMO MediaStream do adapter (nunca um segundo
+  // getUserMedia) -- exposta via getActiveStream() para quem quiser
+  // visualizar a intensidade da voz (AnalyserNode), puramente informativo.
+  const activeStreamRef = useRef(null);
   const callbacksRef = useRef({
     onFinalTranscript,
     onBeforeStart,
@@ -51,6 +55,7 @@ export function useUniVoiceInput({
   const releaseAdapter = useCallback(() => {
     adapterRef.current?.dispose();
     adapterRef.current = null;
+    activeStreamRef.current = null;
     callbacksRef.current.onCaptureEnd?.();
   }, []);
 
@@ -91,6 +96,9 @@ export function useUniVoiceInput({
       onStart: () => {
         dispatch({ type: 'START_LISTENING' });
         callbacksRef.current.onCaptureStart?.();
+      },
+      onStreamReady: (stream) => {
+        activeStreamRef.current = stream;
       },
       onAudio: (capture) => {
         void transcribe(capture);
@@ -165,6 +173,8 @@ export function useUniVoiceInput({
     callbacksRef.current.onCaptureEnd?.();
   }, []);
 
+  const getActiveStream = useCallback(() => activeStreamRef.current, []);
+
   return {
     ...state,
     isListening: state.status === VOICE_CAPTURE_STATES.LISTENING,
@@ -175,5 +185,6 @@ export function useUniVoiceInput({
     cancel,
     toggle,
     reset,
+    getActiveStream,
   };
 }

@@ -11,7 +11,7 @@ Aplicativo web em `/dashboard` após login. Não existe app nativo iOS/Android n
 ## Passo a passo (visão geral do fluxo)
 
 1. Usuário cria conta ou entra (e-mail/senha ou Google).
-2. Completa um onboarding de 6 passos, que define se o espaço é Pessoal, Empresa, ou os dois.
+2. Passa pela apresentação pós-login (`/apresentacao`) e pelo Plano Pessoal (`/plano-pessoal`), quando aplicável; o espaço Pessoal é criado automaticamente, sem perguntas.
 3. Cai no Dashboard, com um resumo financeiro, próximos passos e atalhos.
 4. Navega entre módulos (Financeiro, Categorias, Objetivos, Agenda, CRM, Clientes, Projetos, Relatórios, Configurações) pela barra lateral (desktop) ou pela barra inferior/menu "Mais" (mobile).
 5. Pode conversar com a Uni a qualquer momento para tirar dúvidas ou registrar movimentações por linguagem natural.
@@ -32,7 +32,7 @@ Definidas por papel dentro do workspace: `owner`, `admin`, `member`, `viewer`. V
 
 ## Pré-requisitos
 
-Conta criada e onboarding concluído. Sem onboarding completo, o usuário é redirecionado para `/onboarding`.
+Conta criada, apresentação concluída e, quando aplicável, Plano Pessoal com assinatura ativa. Sem isso, o usuário é redirecionado para `/apresentacao` ou `/plano-pessoal`.
 
 ## Limitações atuais
 

@@ -100,6 +100,39 @@ export function createConversation(mode) {
   };
 }
 
+export function resolveInitialConversationState({
+  conversations = [],
+  activeId = null,
+  defaultMode = 'pessoal',
+  lockedMode = null,
+} = {}) {
+  const list = Array.isArray(conversations) ? conversations : [];
+  const active = list.find((conversation) => conversation.id === activeId) ?? null;
+  const mode = lockedMode ?? active?.mode ?? defaultMode;
+  const selected = active?.mode === mode
+    ? active
+    : list.find((conversation) => conversation.mode === mode) ?? null;
+
+  if (selected) {
+    return {
+      activeId: selected.id,
+      conversations: list,
+      created: false,
+      messages: selected.messages ?? [],
+      mode,
+    };
+  }
+
+  const conversation = createConversation(mode);
+  return {
+    activeId: conversation.id,
+    conversations: [...list, conversation],
+    created: true,
+    messages: [],
+    mode,
+  };
+}
+
 export function deriveTitle(messages) {
   const first = messages.find((m) => m.from === 'user');
   if (!first) return '';

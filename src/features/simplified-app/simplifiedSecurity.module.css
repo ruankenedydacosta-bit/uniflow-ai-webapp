@@ -1,0 +1,462 @@
+.page {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    34px
+    max(18px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: #f8fafc;
+}
+
+/* ---------- Cabeçalho ---------- */
+
+.header {
+  min-height: 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.titleGroup {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 50%;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.titleGroup h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(22px, 6vw, 30px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  color: #a8b2c5;
+  font-size: 13.5px;
+}
+
+.talkButton {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(#030b1d, #030b1d) padding-box,
+    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.talkIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.talkIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+/* ---------- Visão geral ---------- */
+
+.overviewTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.overviewIcon {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.overviewIcon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.overviewIconOk {
+  background: rgba(16, 185, 129, .18);
+  color: #2dd4bf;
+}
+
+.overviewIconWarn {
+  background: rgba(245, 158, 11, .18);
+  color: #f59e0b;
+}
+
+.overviewSummary {
+  margin: 0;
+  font-size: 16.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(86, 109, 151, .3);
+  list-style: none;
+  font-size: 14.5px;
+}
+
+.checklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkOk,
+.checkNeutral {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+
+.checkOk svg,
+.checkNeutral svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.checkOk {
+  color: #2dd4bf;
+}
+
+.checkNeutral {
+  color: #7c8aa8;
+}
+
+/* ---------- Linhas de item (senha, 2FA, aparelhos, atividade, recuperação) ---------- */
+
+.rowHeader,
+.sectionTitle {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.rowIcon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.rowIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.toneBlue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
+.toneGreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+.tonePurple { background: rgba(124, 58, 237, .18); color: #a78bfa; }
+
+.rowText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rowText strong {
+  font-size: 15.5px;
+}
+
+.rowText small {
+  color: #a8b2c5;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.emptyState {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed rgba(86, 109, 151, .4);
+  border-radius: 14px;
+  color: #a8b2c5;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.activityLine {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14.5px;
+}
+
+.errorBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, .12);
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+.successBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, .14);
+  color: #6ee7b7;
+  font-size: 14px;
+}
+
+/* ---------- Recuperação da conta ---------- */
+
+.recoveryGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recoveryItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(86, 109, 151, .28);
+  border-radius: 14px;
+  background: rgba(4, 13, 33, .35);
+}
+
+.fieldIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: #7c8aa8;
+}
+
+.fieldIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.recoveryItem strong {
+  font-size: 15px;
+}
+
+.recoveryItem small {
+  color: #a8b2c5;
+  font-size: 12.5px;
+}
+
+.linkButton {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #5e85ff;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+/* ---------- Zona crítica (encerrar sessões) ---------- */
+
+.criticalCard {
+  border-color: rgba(239, 68, 68, .35);
+  background: rgba(239, 68, 68, .06);
+}
+
+.criticalIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, .16);
+  color: #ef4444;
+}
+
+.criticalIcon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.criticalCard .rowText strong {
+  color: #fca5a5;
+}
+
+/* ---------- Ajuda ---------- */
+
+.helpCard {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.helpMascot {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, .18);
+  font-size: 24px;
+}
+
+.helpText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.helpText p {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 14px;
+}
+
+/* ---------- Foco visível (acessibilidade) ---------- */
+
+.backButton:focus-visible,
+.talkButton:focus-visible,
+.linkButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 520px) {
+  .overviewTop {
+    align-items: flex-start;
+  }
+
+  .helpCard {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (max-width: 359px) {
+  .talkButton {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  .talkIcon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding-inline: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

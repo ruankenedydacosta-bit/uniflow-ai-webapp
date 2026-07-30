@@ -5,27 +5,58 @@ import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import {
   buildAccountCreationConfirmation,
+  buildCategoryCreationConfirmation,
   cancelAccountCreationDependency,
+  cancelCategoryCreationDependency,
   classifyPendingActionReply,
   clearPendingActionStack,
   clearPendingAction,
   completeAccountCreationDependency,
+  completeCategoryCreationDependency,
   createPendingActionCoordinator,
+  CATEGORY_RESOLUTION_STATUS,
   findAccountCreationConflicts,
   getActivePendingAction,
   isAccountCreationDependency,
+  isCategoryCreationDependency,
   isCancelEntirePendingFlow,
   loadPendingActionStack,
   loadPendingAction,
   resolvePendingActionInput,
+  resolveFinancialCategory,
   savePendingActionStack,
   savePendingAction,
   startAccountCreationDependency,
+  startCategoryCreationDependency,
   updateResumedFinancialSnapshot,
   useUniConversation,
+  applyPlanOperationCorrection,
+  cancelPlanOperation,
+  createPendingFinancialPlan,
+  getPersistablePlanOperations,
+  isPlanReadyForFinalConfirmation,
+  markPlanOperationConfirmed,
+  markPlanOperationFailed,
+  PLAN_OPERATION_STATUS,
+  PLAN_STATUS,
+  summarizePlanForNeuralContext,
+  buildPlanCancelledText,
+  buildPlanOperationCancelledText,
+  buildPlanResultText,
+  buildPlanSummaryText,
+  findPlanOperationCancelTarget,
+  parsePlanCorrectionOverrides,
+  isUnsupportedIntentEligibleForPlan,
+  looksLikeComplexFinancialText,
+  looksLikeFreshFinancialStatement,
+  looksLikeUnclassifiedFinancialStatement,
 } from '../uni-conversation';
-import { useUniLlm, AI_STATUS } from '../uni-llm';
-import { useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS } from '../uni-voice-tts';
+import { useUniLlm, AI_STATUS, resolveConversationStyle } from '../uni-llm';
+import { createCategoryInferenceService } from '../uni-category-inference/index.js';
+import { createFinancialPlanService } from '../uni-financial-plan/index.js';
+import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
+import { supabase, supabaseUrl, supabaseAnonKey } from '../../services/supabaseClient';
+import { useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS, AUTO_SPEAK_MAX_LENGTH } from '../uni-voice-tts';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
 import { useGoals } from '../goals/useGoals';
 import { buildFutureProjections } from '../future/futureService';
@@ -50,6 +81,12 @@ import {
   SUGGESTIONS_PESSOAL,
   SUGGESTIONS_EMPRESA,
 } from './mockData';
+import { SimplifiedHomeView } from '../simplified-app/index.js';
+import { useOptionalSimplifiedProduct } from '../simplified-app/useSimplifiedProduct.js';
+import {
+  SIMPLIFIED_CHAT_MODE,
+  SIMPLIFIED_PRODUCT_MODE,
+} from '../simplified-app/simplifiedProductConfig.js';
 import { resolveGreetingName } from './greeting';
 import {
   loadHistory,
@@ -58,6 +95,7 @@ import {
   saveActiveId,
   createConversation as createLocalConversation,
   persistConversation,
+  resolveInitialConversationState,
   saveActiveSource,
 } from './chatHistory';
 import {
@@ -74,7 +112,15 @@ import * as dataService from './uniChatDataService';
 import styles from './UniChatPage.module.css';
 
 const UNI_THINK_MIN_MS = 600;
+// BLOCO F: mesmo TTL já usado pelo Pending Action Stack (pendingActionStorage.js)
+// -- um plano financeiro pendente não pode ficar executável indefinidamente.
+const FINANCIAL_PLAN_TTL_MS = 15 * 60 * 1000;
 const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze(['register_income', 'register_expense']);
+const EMPTY_FINANCIAL_FALLBACK = Object.freeze({
+  accounts: Object.freeze([]),
+  categories: Object.freeze([]),
+  transactions: Object.freeze([]),
+});
 
 const UNI_DETERMINISTIC_FALLBACK_TEXT =
   'Entendi. Por enquanto, posso ajudar a registrar movimenta\u00e7\u00f5es financeiras. Tente algo como "registrar uma despesa de R$ 50" ou "qual meu saldo?".';
@@ -87,13 +133,30 @@ function getLocalIsoDate() {
   return `${year}-${month}-${day}`;
 }
 
-export default function UniChatPage() {
+export default function UniChatPage({ variant = 'full' }) {
   const { access } = useAccess();
-  const { profile, user, workspace, switchWorkspace, availableWorkspaces } = useSession();
+  const simplifiedProduct = useOptionalSimplifiedProduct();
+  const {
+    profile,
+    session,
+    user,
+    workspace,
+    switchWorkspace,
+    availableWorkspaces,
+  } = useSession();
   const location = useLocation();
   const initialContextRef = useRef(false);
+  const isSimplifiedExperience = variant === 'simplified-home' || variant === 'simplified';
+  const effectiveWorkspace = isSimplifiedExperience
+    ? simplifiedProduct?.workspace ?? null
+    : workspace;
+  const workspaceContextType = isSimplifiedExperience
+    ? SIMPLIFIED_PRODUCT_MODE
+    : access.currentWorkspace;
 
   const personalityProfileId = profile?.uni_personality_profile ?? 'balanced';
+  const conversationStyle = resolveConversationStyle(profile?.conversation_style);
+  const financialWorkspaceType = workspaceContextType;
 
   // ELEVEN2: fundacao geral de TTS (ELEVEN1) conectada ao chat -- substitui
   // o uso anterior de useUniVoiceOutput (infra de demo com allowlist) NESTE
@@ -126,30 +189,40 @@ export default function UniChatPage() {
     uniVoice.stop();
   }, [uniVoice]);
 
-  const financialFallback = access.currentWorkspace === 'personal'
-    ? financialCrudMock.personal
-    : financialCrudMock.business;
+  // BLOCO UNI 2: reflete SÓ a saída de voz (TTS gerando/tocando) -- nunca a
+  // captura. Usado para: (a) mostrar o estado "falando" na Home; (b) impedir
+  // que o botão de voz (Home ou /app/uni) inicie uma gravação nova enquanto
+  // a Uni ainda está respondendo (o toque interrompe a fala em vez disso).
+  const isSpeaking = uniVoice.status === VOICE_TTS_STATUS.LOADING
+    || uniVoice.status === VOICE_TTS_STATUS.PLAYING;
+
+  const financialFallback = isSimplifiedExperience
+    ? EMPTY_FINANCIAL_FALLBACK
+    : financialWorkspaceType === 'personal'
+      ? financialCrudMock.personal
+      : financialCrudMock.business;
+  const accountTypeFallback = isSimplifiedExperience ? EMPTY_FINANCIAL_FALLBACK.accounts : fallbackAccountTypes;
 
   const accountState = useAccounts({
-    workspaceId: workspace?.id,
+    workspaceId: effectiveWorkspace?.id,
     fallbackAccounts: financialFallback.accounts,
-    fallbackAccountTypes,
+    fallbackAccountTypes: accountTypeFallback,
   });
 
   const categoryState = useCategories({
-    workspaceId: workspace?.id,
+    workspaceId: effectiveWorkspace?.id,
     fallbackCategories: financialFallback.categories,
-    context: access.currentWorkspace,
+    context: financialWorkspaceType,
   });
 
   const transactionsState = useTransactions({
-    workspaceId: workspace?.id,
+    workspaceId: effectiveWorkspace?.id,
     fallbackTransactions: financialFallback.transactions,
   });
 
-  const balanceState = useFinancialBalances({ workspaceId: workspace?.id });
+  const balanceState = useFinancialBalances({ workspaceId: effectiveWorkspace?.id });
 
-  const goalsState = useGoals({ workspaceId: workspace?.id });
+  const goalsState = useGoals({ workspaceId: effectiveWorkspace?.id });
 
   const futureProjections = useMemo(
     () => buildFutureProjections({
@@ -176,7 +249,7 @@ export default function UniChatPage() {
     saveAccount: accountState.saveAccount,
     saveTransaction: transactionsState.saveTransaction,
     profileId: personalityProfileId,
-    workspaceType: access.currentWorkspace,
+    workspaceType: financialWorkspaceType,
     referenceDate: getLocalIsoDate(),
     allowedWriteIntents: ALLOWED_CHAT_WRITE_INTENTS,
   });
@@ -187,56 +260,351 @@ export default function UniChatPage() {
     }),
     [saveAccountForDependency],
   );
+  const saveCategoryForDependency = categoryState.saveCategory;
+  const categoryDependencyCoordinator = useMemo(
+    () => createPendingActionCoordinator({
+      create_financial_category: async ({ fields }) => saveCategoryForDependency({
+        ...fields.category,
+        applies_to: financialWorkspaceType,
+      }),
+      }),
+    [financialWorkspaceType, saveCategoryForDependency],
+  );
+
+  // BLOCO D: mesma Edge Function/flag do chat (uni-chat-llm + VITE_UNI_LLM_ENABLED,
+  // via uniLlm.enabled) -- nenhum novo secret, nenhuma nova variável de
+  // ambiente. Só é chamada quando a resolução determinística de categoria já
+  // esgotou (ver handlePendingConversationInput/sendText); nunca escolhe
+  // conta, nunca cria categoria, nunca persiste -- apenas sugere.
+  const categoryInferenceService = useMemo(
+    () => createCategoryInferenceService({
+      supabase,
+      supabaseUrl,
+      supabaseAnonKey,
+      enabled: uniLlm.enabled,
+    }),
+    [uniLlm.enabled],
+  );
+  // Evita chamar a IA mais de uma vez para a MESMA tentativa de registro
+  // (clientOperationId) -- se a IA já foi tentada e o resultado ainda assim
+  // ficou sem categoria (uncertain/baixa confiança/erro), as próximas
+  // correções (ex.: o usuário informa a conta) não repetem a chamada.
+  const aiCategoryAttemptRef = useRef(new Set());
+
+  async function attemptCategoryInference(result) {
+    const action = result?.action;
+    const issueCode = action?.issues?.[0]?.code;
+    const isCategoryNotFound = issueCode === 'category_not_found' || issueCode === 'category_required';
+    const operationId = action?.clientOperationId;
+
+    if (
+      !isCategoryNotFound
+      || !operationId
+      || aiCategoryAttemptRef.current.has(operationId)
+      || !categoryInferenceService.isSupported()
+    ) {
+      return result;
+    }
+
+    const compatibleCategories = categoryState.categories.filter(
+      (category) => category?.is_active !== false && category.category_type === action.transactionType,
+    );
+    if (compatibleCategories.length === 0) {
+      return result;
+    }
+
+    aiCategoryAttemptRef.current.add(operationId);
+
+    const { inference } = await categoryInferenceService.infer({
+      description: action.description,
+      transactionType: action.transactionType,
+      categories: compatibleCategories,
+    });
+    if (!inference) {
+      // Erro, timeout, resposta inválida etc. -- nunca bloqueia o fluxo:
+      // segue com o resultado determinístico original, sem a sugestão da IA.
+      return result;
+    }
+
+    return financialConversation.provideInput({ aiInference: inference });
+  }
+
+  async function publishConversationResultWithInference(result) {
+    const finalResult = await attemptCategoryInference(result);
+    publishConversationResult(finalResult);
+  }
+
+  // BLOCO E: mesma Edge Function/flag do chat (uni-chat-llm + VITE_UNI_LLM_ENABLED),
+  // agora com mode='financial_plan' -- nenhum novo secret, nenhuma nova
+  // variável de ambiente (mesmo padrão do Bloco D). Só é chamada quando o
+  // texto parece complexo/multioperação/transferência (ver
+  // financialPlanTrigger.js); nunca substitui o parser determinístico de
+  // uma única operação -- se não houver plano válido, o fluxo atual segue
+  // normalmente.
+  const financialPlanService = useMemo(
+    () => createFinancialPlanService({
+      supabase,
+      supabaseUrl,
+      supabaseAnonKey,
+      enabled: uniLlm.enabled,
+    }),
+    [uniLlm.enabled],
+  );
+  const [, setFinancialPlanState] = useState(null);
+  const financialPlanRef = useRef(null);
+  // BLOCO F: nunca executar o mesmo plano duas vezes em paralelo (ex.: o
+  // usuário toca/fala "confirmar" duas vezes rapidamente antes da primeira
+  // rodada terminar) -- o RPC já é idempotente por operação
+  // (p_client_operation_id), mas isso evita chamadas duplicadas e updates
+  // de estado concorrentes no cliente.
+  const confirmingPlanRef = useRef(false);
+
+  function setFinancialPlan(next) {
+    financialPlanRef.current = next;
+    setFinancialPlanState(next);
+  }
+
+  function isFinancialPlanExpired(plan) {
+    if (!plan?.createdAt) return false;
+    const createdAtMs = Date.parse(plan.createdAt);
+    if (!Number.isFinite(createdAtMs)) return false;
+    return Date.now() - createdAtMs > FINANCIAL_PLAN_TTL_MS;
+  }
+
+  function isFinancialPlanActive(plan = financialPlanRef.current) {
+    return Boolean(
+      plan
+      && plan.status !== PLAN_STATUS.COMPLETED
+      && plan.status !== PLAN_STATUS.CANCELLED
+      && !isFinancialPlanExpired(plan),
+    );
+  }
+
+  async function attemptFinancialPlan(text) {
+    if (!financialPlanService.isSupported()) return false;
+
+    const pendingPlanSummary = isFinancialPlanActive()
+      ? summarizePlanForNeuralContext(financialPlanRef.current)
+      : undefined;
+
+    const { plan } = await financialPlanService.interpret({
+      phrase: text,
+      pendingPlanSummary,
+      accounts: accountState.accounts,
+      categories: categoryState.categories,
+      referenceDate: getLocalIsoDate(),
+    });
+    // Sem plano válido (não suportado, erro, timeout, resposta fora do
+    // contrato) -- o chamador cai de volta no fluxo determinístico
+    // existente, sem quebrar o registro manual.
+    if (!plan) return false;
+
+    const newPlan = createPendingFinancialPlan({
+      plan,
+      phrase: text,
+      accounts: accountState.accounts,
+      accountTypes: accountState.accountTypes,
+      categories: categoryState.categories,
+      referenceDate: getLocalIsoDate(),
+      workspaceType: financialWorkspaceType,
+    });
+    setFinancialPlan(newPlan);
+    const assistantMsg = buildUniMessage(buildPlanSummaryText(newPlan));
+    pushMessage(assistantMsg);
+    syncMessageToSupabase(assistantMsg);
+    return true;
+  }
+
+  async function confirmFinancialPlan() {
+    const plan = financialPlanRef.current;
+    if (!plan || !isPlanReadyForFinalConfirmation(plan) || isFinancialPlanExpired(plan)) return;
+    if (confirmingPlanRef.current) return;
+    confirmingPlanRef.current = true;
+
+    setIsExecutingAction(true);
+    setExecutionError(null);
+
+    // Uma operação por vez, pelo MESMO RPC atômico já usado pelo registro
+    // de uma única transação -- nunca em lote, nunca uma "transação
+    // fantasma" que finge cobrir várias operações. Cada operação usa seu
+    // próprio client_operation_id como chave de idempotência (o mesmo já
+    // gerado por operação em createPendingFinancialPlan/
+    // buildOperationState) -- confirmar duas vezes nunca duplica, o RPC
+    // devolve o mesmo transaction_id (idempotent_replay). Se uma falhar,
+    // interrompe: as seguintes NÃO são tentadas, e o plano fica "partial"
+    // -- nunca promete tudo registrado quando não foi, e preserva o plano
+    // (com as operações já confirmadas marcadas) para nova tentativa sem
+    // duplicar o que já foi salvo.
+    let workingPlan = plan;
+    const persistable = getPersistablePlanOperations(workingPlan)
+      .filter((op) => op.status === PLAN_OPERATION_STATUS.READY);
+
+    for (const op of persistable) {
+      const result = await executeFinancialIntentAction(op.action, {
+        executeAtomicAction: executeConfirmedFinancialAction,
+      });
+      if (result?.error || !result?.data) {
+        workingPlan = markPlanOperationFailed(workingPlan, op.temporaryId);
+        setFinancialPlan(workingPlan);
+        break;
+      }
+      workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId);
+      setFinancialPlan(workingPlan);
+    }
+
+    const resultMessage = buildUniMessage(buildPlanResultText(workingPlan));
+    pushMessage(resultMessage);
+    syncMessageToSupabase(resultMessage);
+    setIsExecutingAction(false);
+    confirmingPlanRef.current = false;
+
+    if ([PLAN_STATUS.COMPLETED, PLAN_STATUS.PARTIAL].includes(workingPlan.status)) {
+      notifyFinancialDataChanged('uni-chat');
+    }
+    if (workingPlan.status === PLAN_STATUS.COMPLETED) {
+      setFinancialPlan(null);
+    }
+  }
+
+  function cancelFinancialPlanEntirely() {
+    const plan = financialPlanRef.current;
+    if (!plan) return;
+    // O plano cancelado não precisa ser preservado em memória -- ao contrário
+    // de uma correção pontual, aqui a conversa financeira encerra por completo.
+    setFinancialPlan(null);
+    const msg = buildUniMessage(buildPlanCancelledText());
+    pushMessage(msg);
+    syncMessageToSupabase(msg);
+  }
+
+  function handlePlanConversationInput(text) {
+    const plan = financialPlanRef.current;
+    if (!plan) return false;
+
+    // BLOCO F, REGRA 13: um plano expirado nunca pode ser confirmado nem
+    // corrigido -- some do estado operacional (pode continuar visível só
+    // como histórico, já com status "cancelado" na mensagem anterior).
+    if (isFinancialPlanExpired(plan)) {
+      setFinancialPlan(null);
+      const expiredMsg = buildUniMessage(
+        'Esse lançamento expirou. Pode registrar novamente quando quiser.',
+      );
+      pushMessage(expiredMsg);
+      syncMessageToSupabase(expiredMsg);
+      return true;
+    }
+
+    const replyType = classifyPendingActionReply(text);
+
+    if (replyType === 'confirm' && isPlanReadyForFinalConfirmation(plan)) {
+      void confirmFinancialPlan();
+      return true;
+    }
+    if (replyType === 'cancel' || isCancelEntirePendingFlow(text)) {
+      cancelFinancialPlanEntirely();
+      return true;
+    }
+
+    const active = plan.operations.filter((op) => op.status !== PLAN_OPERATION_STATUS.CANCELLED);
+
+    // BLOCO F: cancelamento de UMA operação específica por referência
+    // semântica (nunca proximidade textual cega) -- ex.: "cancela só a
+    // gasolina". Só age quando o texto referencia claramente uma das
+    // descrições reais do plano; caso contrário, cai no fluxo normal
+    // (que já trata "cancelar"/"cancelar tudo" sem referência).
+    const singleCancelTarget = findPlanOperationCancelTarget(text, active);
+    if (singleCancelTarget) {
+      const updated = cancelPlanOperation(plan, singleCancelTarget.temporaryId);
+      setFinancialPlan(updated.status === PLAN_STATUS.CANCELLED ? null : updated);
+      const msg = buildUniMessage(
+        updated.status === PLAN_STATUS.CANCELLED
+          ? buildPlanCancelledText()
+          : buildPlanOperationCancelledText(updated),
+      );
+      pushMessage(msg);
+      syncMessageToSupabase(msg);
+      return true;
+    }
+
+    const current = active[plan.currentOperationIndex]
+      ?? active.find((op) => op.status === PLAN_OPERATION_STATUS.NEEDS_CLARIFICATION);
+
+    if (current && !current.capabilityPending) {
+      const overrides = parsePlanCorrectionOverrides({
+        text,
+        referenceDate: getLocalIsoDate(),
+        accounts: accountState.accounts,
+        categories: categoryState.categories,
+        operation: current,
+      });
+      if (overrides) {
+        const updated = applyPlanOperationCorrection(plan, current.temporaryId, overrides);
+        setFinancialPlan(updated);
+        const msg = buildUniMessage(buildPlanSummaryText(updated));
+        pushMessage(msg);
+        syncMessageToSupabase(msg);
+        return true;
+      }
+    }
+
+    if (!active.length) {
+      // BUG REAL: um plano ainda sem nenhuma operação formada (só a
+      // pergunta de esclarecimento, ex.: "qual foi o valor da gasolina?")
+      // não tem uma operação local para aplicar a correção -- a resposta
+      // precisa voltar para a camada neural (com o resumo/pergunta
+      // pendente como contexto, ver summarizePlanForNeuralContext), nunca
+      // ser tratada como se não tivesse acontecido nada.
+      void (async () => {
+        const handled = await attemptFinancialPlan(text);
+        if (!handled) {
+          setFinancialPlan(null);
+          const msg = buildUniMessage(
+            'Não consegui continuar esse lançamento agora. Pode registrar novamente quando quiser.',
+          );
+          pushMessage(msg);
+          syncMessageToSupabase(msg);
+        }
+      })();
+      return true;
+    }
+
+    const fallbackMsg = buildUniMessage(
+      plan.status === PLAN_STATUS.AWAITING_CLARIFICATION
+        ? buildPlanSummaryText(plan)
+        : 'Para continuar, diga "confirmar", "cancelar" ou me diga o que corrigir.',
+    );
+    pushMessage(fallbackMsg);
+    syncMessageToSupabase(fallbackMsg);
+    return true;
+  }
 
   const [connectionStatus, setConnectionStatus] = useState(dataService.getConnectionStatus);
   const initialLoadDone = useRef(false);
   const promotionInProgressRef = useRef(false);
   const loadRequestIdRef = useRef(0);
 
-  const [mode, setMode] = useState(() => {
-    const stored = loadHistory();
-    const storedId = loadActiveId();
-    const wsMode = workspaceTypeToMode(access.currentWorkspace);
-    if (storedId) {
-      const active = stored.find((c) => c.id === storedId);
-      if (active?.mode) return active.mode;
-    }
-    return wsMode;
+  const [initialChatState] = useState(() => {
+    const resolved = resolveInitialConversationState({
+      conversations: loadHistory(),
+      activeId: loadActiveId(),
+      defaultMode: workspaceTypeToMode(workspaceContextType),
+      lockedMode: isSimplifiedExperience ? SIMPLIFIED_CHAT_MODE : null,
+    });
+    if (resolved.created) saveHistory(resolved.conversations);
+    saveActiveId(resolved.activeId);
+    return resolved;
   });
-  const [messages, setMessages] = useState(() => {
-    const storedId = loadActiveId();
-    const stored = loadHistory();
-    const active = stored.find((c) => c.id === storedId);
-    return active?.messages || [];
-  });
+  const [mode, setMode] = useState(initialChatState.mode);
+  const [messages, setMessages] = useState(initialChatState.messages);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [conversations, setConversations] = useState(() => {
-    const stored = loadHistory();
-    const storedId = loadActiveId();
-    if (storedId && stored.some((c) => c.id === storedId)) return stored;
-    const initMode = workspaceTypeToMode(access.currentWorkspace);
-    const conv = createLocalConversation(initMode);
-    const updated = [...stored, conv];
-    saveHistory(updated);
-    saveActiveId(conv.id);
-    return updated;
-  });
-  const [activeId, setActiveId] = useState(() => {
-    const storedId = loadActiveId();
-    const stored = loadHistory();
-    if (storedId && stored.some((c) => c.id === storedId)) return storedId;
-    const initMode = workspaceTypeToMode(access.currentWorkspace);
-    const conv = createLocalConversation(initMode);
-    const updated = [...stored, conv];
-    saveHistory(updated);
-    saveActiveId(conv.id);
-    return conv.id;
-  });
+  const [conversations, setConversations] = useState(initialChatState.conversations);
+  const [activeId, setActiveId] = useState(initialChatState.activeId);
   const [pendingAction, setPendingAction] = useState(null);
   const [pendingActionStack, setPendingActionStack] = useState(null);
+  const [pendingHydrated, setPendingHydrated] = useState(false);
   const [executionError, setExecutionError] = useState(null);
   const [isExecutingAction, setIsExecutingAction] = useState(false);
   const confirmingRef = useRef(false);
@@ -245,6 +613,10 @@ export default function UniChatPage() {
   const activeIdRef = useRef(activeId);
   const convDbIdsRef = useRef({});
   const restoredPendingIdentityRef = useRef(null);
+  // BLOCO UNI 2: id da última mensagem da Uni já tentada por autoplay --
+  // nunca um Set (não precisa lembrar todo o histórico, só evitar repetir
+  // a MESMA mensagem enquanto ela continua sendo a última).
+  const autoSpokenMessageIdRef = useRef(null);
 
   // Integracao com a IA: estado da chamada real ao LLM, separado de `isTyping` (que
   // tambem cobre o atraso simulado do caminho deterministico). Usa o
@@ -269,7 +641,7 @@ export default function UniChatPage() {
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
   const stickToBottom = useRef(true);
-  const prevWorkspaceRef = useRef(access.currentWorkspace);
+  const prevWorkspaceRef = useRef(workspaceContextType);
 
   const suggestions = mode === 'pessoal' ? SUGGESTIONS_PESSOAL : SUGGESTIONS_EMPRESA;
 
@@ -296,14 +668,31 @@ export default function UniChatPage() {
 
   const pendingActionIdentity = useMemo(() => ({
     userId: user?.id,
-    workspaceId: workspace?.id,
+    workspaceId: effectiveWorkspace?.id,
     conversationId: activeId,
-  }), [activeId, user?.id, workspace?.id]);
+  }), [activeId, effectiveWorkspace?.id, user?.id]);
 
   const clearCurrentPendingAction = useCallback(() => {
     clearPendingAction(pendingActionIdentity);
     clearPendingActionStack(pendingActionIdentity);
   }, [pendingActionIdentity]);
+
+  // BUG REAL: uma pendência antiga (Pending Action de uma única operação OU
+  // financial_plan) que nunca foi encerrada não pode "engolir" uma frase
+  // financeira NOVA e autossuficiente (tem verbo + valor próprios) como se
+  // fosse resposta/correção a uma pergunta antiga -- isso é exatamente como
+  // "Nubank"/"R$ 200" de uma conversa anterior vazavam para um lançamento
+  // completamente novo. Abandona silenciosamente (sem mensagem de
+  // cancelamento -- o usuário não pediu para cancelar nada, só mudou de
+  // assunto) toda a pendência antes de processar a frase nova do zero.
+  function abandonStalePendingState() {
+    financialConversation.reset();
+    setPendingAction(null);
+    pendingActionStackRef.current = null;
+    setPendingActionStack(null);
+    setFinancialPlan(null);
+    clearCurrentPendingAction();
+  }
 
   useEffect(() => {
     const conversationState = financialConversation.state;
@@ -346,9 +735,13 @@ export default function UniChatPage() {
       return;
     }
     restoredPendingIdentityRef.current = identityKey;
+    setPendingHydrated(true);
     const storedStack = loadPendingActionStack(pendingActionIdentity);
     const storedDependency = storedStack ? getActivePendingAction(storedStack) : null;
-    if (isAccountCreationDependency(storedDependency)) {
+    if (
+      isAccountCreationDependency(storedDependency)
+      || isCategoryCreationDependency(storedDependency)
+    ) {
       const parent = storedStack.actions.at(-2);
       const parentSnapshot = parent?.fields?.snapshot;
       if (parentSnapshot?.action && financialConversation.restore(parentSnapshot)) {
@@ -387,9 +780,41 @@ export default function UniChatPage() {
     pendingActionIdentity,
   ]);
 
+  // BUG REAL (estado fantasma "confirmação"): `messages` é persistido via
+  // chatHistory.js, sem TTL -- já `pendingAction`/`pendingActionStack` tem
+  // TTL próprio (pendingActionStorage.js) e podem expirar ou nunca ser
+  // restaurados. Sem isso, um reload da Home podia continuar mostrando um
+  // cartão "Confirmar/Editar/Cancelar" para uma ação que já não existe mais
+  // (tocar em Confirmar não fazia nada, pois handleConfirmAction já tem sua
+  // própria guarda contra pendingAction nulo). Só age DEPOIS que a
+  // hidratação de pendências já rodou (pendingHydrated) -- nunca antes,
+  // para não apagar uma confirmação real que ainda está sendo restaurada.
+  useEffect(() => {
+    if (!pendingHydrated) return;
+    const hasRealPendingEntity = Boolean(
+      pendingAction
+      || pendingActionStack?.actions?.length
+      || isFinancialPlanActive(),
+    );
+    if (hasRealPendingEntity) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- saneamento único pós-hidratação (guardado por pendingHydrated), nunca um loop: só age quando não há entidade real, e o resultado nunca reintroduz confirmation:'pending'.
+    setMessages((current) => {
+      let changed = false;
+      const sanitized = current.map((message) => {
+        if (message.confirmation?.status === 'pending') {
+          changed = true;
+          return { ...message, confirmation: { ...message.confirmation, status: 'expired' } };
+        }
+        return message;
+      });
+      return changed ? sanitized : current;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isFinancialPlanActive lê financialPlanRef.current (ref, não estado); incluí-la recriaria o efeito a cada render sem mudar seu comportamento.
+  }, [pendingHydrated, pendingAction, pendingActionStack]);
+
   const reconcileConversations = useCallback(async () => {
-    if (!workspace?.id) return;
-    const wsId = workspace.id;
+    if (!effectiveWorkspace?.id) return;
+    const wsId = effectiveWorkspace.id;
     const supabaseConvs = await dataService.listConversations(wsId, mode);
     if (!supabaseConvs) return;
     setConnectionStatus(dataService.getConnectionStatus());
@@ -440,22 +865,22 @@ export default function UniChatPage() {
       return merged;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspace?.id, mode]);
+  }, [effectiveWorkspace?.id, mode]);
 
   const buildWorkspaceMap = useCallback(() => {
     const map = {};
     if (availableWorkspaces && availableWorkspaces.length > 0) {
       for (const ws of availableWorkspaces) {
         if (ws.workspace_type === 'personal') map.personal = ws.id;
-        if (ws.workspace_type === 'business') map.business = ws.id;
+        if (!isSimplifiedExperience && ws.workspace_type === 'business') map.business = ws.id;
       }
     }
     return map;
-  }, [availableWorkspaces]);
+  }, [availableWorkspaces, isSimplifiedExperience]);
 
   useEffect(() => {
     if (initialLoadDone.current) return;
-    if (!workspace?.id && !availableWorkspaces?.length) return;
+    if (!effectiveWorkspace?.id && !availableWorkspaces?.length) return;
     if (!availableWorkspaces?.length) return;
     initialLoadDone.current = true;
 
@@ -481,12 +906,12 @@ export default function UniChatPage() {
       return reconcileConversations();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspace?.id, availableWorkspaces?.length]);
+  }, [effectiveWorkspace?.id, availableWorkspaces?.length]);
 
   useEffect(() => {
-    if (access.currentWorkspace === prevWorkspaceRef.current) return;
-    prevWorkspaceRef.current = access.currentWorkspace;
-    const correctMode = workspaceTypeToMode(access.currentWorkspace);
+    if (isSimplifiedExperience || workspaceContextType === prevWorkspaceRef.current) return;
+    prevWorkspaceRef.current = workspaceContextType;
+    const correctMode = workspaceTypeToMode(workspaceContextType);
     if (correctMode === mode) return;
     uniVoice.stop();
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -522,7 +947,7 @@ export default function UniChatPage() {
       ]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [access.currentWorkspace]);
+  }, [isSimplifiedExperience, workspaceContextType]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -538,6 +963,35 @@ export default function UniChatPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setConversations(updated);
   }, [messages, activeId, mode, conversations]);
+
+  // BLOCO UNI 2: reprodução automática da resposta ATUAL da Uni -- causa
+  // raiz da regressão relatada era a AUSÊNCIA total deste efeito (só a
+  // saudação tinha reprodução automática, ver SimplifiedHomeView.jsx). Só
+  // vale para Home/`/app/uni` (isSimplifiedExperience); o chat completo
+  // continua manual (botão "Ouvir" por mensagem). Guardas:
+  // - autoSpokenMessageIdRef: nunca fala a MESMA mensagem duas vezes, e
+  //   nunca refala uma mensagem antiga depois de uma nova (cada id só é
+  //   tentado uma única vez, na ordem em que chega);
+  // - só considera a ÚLTIMA mensagem (messages.at(-1)) -- se ela for do
+  //   usuário (acabou de enviar, Uni ainda não respondeu), não há nada
+  //   novo para falar ainda;
+  // - handleSpeakMessage já encerra qualquer áudio anterior antes de
+  //   iniciar o novo, internamente (ver o provider de TTS em
+  //   uni-voice-tts/), então uma resposta nova sempre interrompe a
+  //   anterior corretamente,
+  //   sem que este efeito precise de nenhuma limpeza (cleanup) própria --
+  //   um cleanup aqui que chamasse stop() poderia cancelar por engano a
+  //   fala que ACABOU de começar para a mensagem seguinte.
+  useEffect(() => {
+    if (!isSimplifiedExperience || !voicePreference.enabled) return;
+    const lastMessage = messages.at(-1);
+    if (!lastMessage || lastMessage.from !== 'uni' || !lastMessage.text) return;
+    if (autoSpokenMessageIdRef.current === lastMessage.id) return;
+    autoSpokenMessageIdRef.current = lastMessage.id;
+    if (lastMessage.text.length > AUTO_SPEAK_MAX_LENGTH) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- autoplay controlado (guardado por autoSpokenMessageIdRef): sincroniza a voz com a última mensagem real, nunca um loop (o ref já impede reexecução para o mesmo id).
+    handleSpeakMessage(lastMessage);
+  }, [messages, isSimplifiedExperience, voicePreference.enabled, handleSpeakMessage]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -582,7 +1036,7 @@ export default function UniChatPage() {
       return;
     }
 
-    if (!workspace?.id || !dataService.isOnline()) return;
+    if (!effectiveWorkspace?.id || !dataService.isOnline()) return;
 
     if (promotionInProgressRef.current) {
       pendingSyncRef.current.push(msg);
@@ -591,7 +1045,7 @@ export default function UniChatPage() {
 
     promotionInProgressRef.current = true;
     try {
-      const dbConv = await dataService.createConversation(mode, workspace.id);
+      const dbConv = await dataService.createConversation(mode, effectiveWorkspace.id);
       if (!dbConv) return;
 
       const dbConvId = dbConv.id;
@@ -669,7 +1123,7 @@ export default function UniChatPage() {
 
   function switchConversation(id) {
     const conv = conversations.find((c) => c.id === id);
-    if (!conv) return;
+    if (!conv || (isSimplifiedExperience && conv.mode !== SIMPLIFIED_CHAT_MODE)) return;
 
     uniVoice.stop();
     setVoiceMessageId(null);
@@ -679,10 +1133,10 @@ export default function UniChatPage() {
     setActiveId(id);
     setMessages(conv.messages || []);
     const convMode = conv.mode || mode;
-    if (convMode !== mode) {
+    if (!isSimplifiedExperience && convMode !== mode) {
       switchWorkspace(modeToWorkspaceType(convMode));
     }
-    setMode(convMode);
+    setMode(isSimplifiedExperience ? SIMPLIFIED_CHAT_MODE : convMode);
     setIsTyping(false);
     setPendingAction(null);
     pendingActionStackRef.current = null;
@@ -726,7 +1180,8 @@ export default function UniChatPage() {
           financialContext,
           mode,
           personalityProfileId,
-          workspaceType: access.currentWorkspace,
+          workspaceType: financialWorkspaceType,
+          conversationStyle,
         });
         llmText = outcome?.text ?? null;
       } catch {
@@ -795,11 +1250,28 @@ export default function UniChatPage() {
 
   function publishConversationResult(result) {
     syncFinancialParentSnapshot(result);
+    if (
+      result?.action?.issues?.[0]?.code === 'category_not_found'
+      && result.action.proposedCategoryName
+      && openCategoryCreationDependency({
+        ...result,
+        action: {
+          ...result.action,
+          proposedCategory: {
+            name: result.action.proposedCategoryName,
+            category_type: result.action.transactionType,
+            applies_to: financialWorkspaceType,
+          },
+        },
+      })
+    ) {
+      return;
+    }
     if (result?.action?.status === 'ready') {
       setPendingAction(result.action);
       const confirmation = buildConfirmationFromAction(
         result.action,
-        access.currentWorkspace,
+        financialWorkspaceType,
       );
       const assistantMsg = buildUniMessage(result.response.text, {
         type: 'confirmation',
@@ -822,10 +1294,26 @@ export default function UniChatPage() {
     const dependency = getActivePendingAction(stack);
     const confirmation = buildAccountCreationConfirmation(dependency, {
       accountTypes: accountState.accountTypes,
-      workspaceType: access.currentWorkspace,
+      workspaceType: financialWorkspaceType,
     });
     const assistantMsg = buildUniMessage(
       `Não encontrei a conta ${dependency.fields.account.name} neste espaço. Posso criá-la para continuar a movimentação?`,
+      {
+        type: 'confirmation',
+        confirmation,
+      },
+    );
+    pushMessage(assistantMsg);
+    syncMessageToSupabase(assistantMsg);
+  }
+
+  function publishCategoryCreationConfirmation(stack) {
+    const dependency = getActivePendingAction(stack);
+    const confirmation = buildCategoryCreationConfirmation(dependency, {
+      workspaceType: financialWorkspaceType,
+    });
+    const assistantMsg = buildUniMessage(
+      `A categoria ${dependency.fields.category.name} ainda não existe. Deseja criá-la?`,
       {
         type: 'confirmation',
         confirmation,
@@ -868,16 +1356,120 @@ export default function UniChatPage() {
     return openAccountCreationDependency(proposal);
   }
 
+  function openCategoryCreationDependency(proposal) {
+    if (!proposal?.action?.proposedCategory) return false;
+    const financialSnapshot = {
+      parsed: proposal.parsed ?? financialConversation.state.parsed,
+      action: proposal.action,
+      response: proposal.response?.text ?? '',
+      memory: proposal.memory ?? financialConversation.state.memory,
+    };
+    const transition = startCategoryCreationDependency({
+      stack: pendingActionStackRef.current,
+      identity: pendingActionIdentity,
+      financialSnapshot,
+      proposedCategory: {
+        ...proposal.action.proposedCategory,
+        applies_to: financialWorkspaceType,
+      },
+    });
+    if (!transition.changed && transition.reason === 'duplicate') {
+      return true;
+    }
+
+    pendingActionStackRef.current = transition.stack;
+    setPendingActionStack(transition.stack);
+    setPendingAction(null);
+    publishCategoryCreationConfirmation(transition.stack);
+    return true;
+  }
+
+  function startCategoryDependency(text, action) {
+    const categoryName = String(text ?? '')
+      .replace(/^categoria\s*(?:é|e|:)?\s*/i, '')
+      .trim();
+    if (!categoryName) return false;
+    const proposedCategory = {
+      name: `${categoryName.charAt(0).toUpperCase()}${categoryName.slice(1)}`,
+      category_type: action.transactionType,
+      applies_to: financialWorkspaceType,
+    };
+    return openCategoryCreationDependency({
+      parsed: financialConversation.state.parsed,
+      action: {
+        ...action,
+        proposedCategory,
+        proposedCategoryName: proposedCategory.name,
+      },
+      response: financialConversation.state.response,
+      memory: financialConversation.state.memory,
+    });
+  }
+
+  // BLOCO F, REGRA 9 (PENDÊNCIA CONHECIDA): criação de conta/categoria
+  // DENTRO de um plano multioperação (ex.: propor criar "Banco do Brasil"
+  // quando essa conta ainda não existe) ainda não está implementada nesta
+  // fase -- reutilizaria o mesmo Pending Action Stack (nunca um segundo
+  // sistema de pendências), mas exigiria também ensinar
+  // handleConfirmAction/handleCancelAction a retomar a OPERAÇÃO DO PLANO
+  // (não a conversa de uma única transação) após a criação. Por ora, uma
+  // operação de plano com proposedAccount/proposedCategory continua pedindo
+  // que o usuário informe uma conta/categoria já existente
+  // (buildOperationClarificationQuestion), nunca cria nada silenciosamente.
+  // Ver relatório final para o escopo exato desta pendência.
+
   function handlePendingConversationInput(text, userMsg) {
+    if (isFinancialPlanActive()) {
+      syncMessageToSupabase(userMsg);
+      return handlePlanConversationInput(text);
+    }
+
     const action = pendingAction ?? financialConversation.state.action;
     const activeStackAction = pendingActionStackRef.current
       ? getActivePendingAction(pendingActionStackRef.current)
       : null;
     const accountDependencyActive = isAccountCreationDependency(activeStackAction);
-    const replyType = pendingAction || accountDependencyActive
-      ? classifyPendingActionReply(text)
-      : 'input';
+    const categoryDependencyActive = isCategoryCreationDependency(activeStackAction);
+    const categoryIssueCode = action?.issues?.[0]?.code ?? null;
+    const categoryConfirmationPending = [
+      'category_approximate',
+      'category_not_found',
+    ].includes(categoryIssueCode);
+    // BUG REAL (achado em validação manual): quando a Uni está esperando um
+    // CAMPO ausente que não é conta/categoria (ex.: "Em qual conta você fez
+    // esse pagamento?" já resolvido, mas ainda faltando valor/descrição/data
+    // -- ou o próprio campo de conta antes de virar uma dependência de
+    // criação), pendingAction/accountDependencyActive/categoryDependencyActive/
+    // categoryConfirmationPending são todos falsos (a ação só vira
+    // "pendingAction" quando status === 'ready', ver publishConversationResult).
+    // Antes disso, classifyPendingActionReply NUNCA era chamado, então dizer
+    // "cancelar" era tratado como se fosse a RESPOSTA ao campo pedido --
+    // literalmente propondo criar uma conta chamada "cancelar". Classificar
+    // sempre corrige isso; a allowlist fechada de CONFIRMATION_PATTERNS/
+    // CANCELLATION_PATTERNS garante que uma resposta real (nome de conta,
+    // valor, descrição) nunca bate por acidente.
+    const replyType = classifyPendingActionReply(text);
     syncMessageToSupabase(userMsg);
+
+    // Cancelamento do lançamento simples AINDA em esclarecimento (sem card de
+    // confirmação, sem dependência de conta/categoria ativa) -- nunca deixa
+    // "cancelar" ser interpretado como o valor do campo pendente. Categoria
+    // aproximada/inexistente mantém seu próprio fluxo de rejeição (troca de
+    // categoria, não cancelamento total), por isso fica de fora daqui.
+    if (
+      !pendingAction
+      && !accountDependencyActive
+      && !categoryDependencyActive
+      && !categoryConfirmationPending
+      && (replyType === 'cancel' || isCancelEntirePendingFlow(text))
+    ) {
+      financialConversation.cancel();
+      clearCurrentPendingAction();
+      const canceledMsg = buildUniMessage('Tudo bem. Não registrei nada.');
+      pushMessage(canceledMsg);
+      syncMessageToSupabase(canceledMsg);
+      return true;
+    }
 
     if (accountDependencyActive && replyType === 'confirm') {
       const confirmationId = findPendingConfirmationMessageId();
@@ -902,6 +1494,61 @@ export default function UniChatPage() {
       return true;
     }
 
+    if (categoryDependencyActive && replyType === 'confirm') {
+      const confirmationId = findPendingConfirmationMessageId();
+      if (confirmationId) void handleConfirmAction(confirmationId);
+      return true;
+    }
+    if (categoryDependencyActive && (replyType === 'cancel' || isCancelEntirePendingFlow(text))) {
+      const confirmationId = findPendingConfirmationMessageId();
+      if (confirmationId) {
+        handleCancelAction(confirmationId, {
+          cascade: isCancelEntirePendingFlow(text),
+        });
+      }
+      return true;
+    }
+    if (categoryDependencyActive) {
+      const assistantMsg = buildUniMessage(
+        'Para continuar, confirme a criação da categoria, cancele apenas a criação ou diga “cancelar tudo”.',
+      );
+      pushMessage(assistantMsg);
+      syncMessageToSupabase(assistantMsg);
+      return true;
+    }
+
+    if (categoryIssueCode === 'category_approximate') {
+      const accepted = replyType === 'confirm';
+      const rejected = replyType === 'cancel'
+        || /^(?:outra|outra categoria)[.!]?$/i.test(text.trim());
+      if (accepted || rejected) {
+        const result = financialConversation.provideInput(accepted
+          ? { categoryApproved: true }
+          : {
+              rejectedCategoryId: action.proposedCategory?.id,
+              rejectedCategoryName: action.proposedCategory?.name,
+            });
+        publishConversationResult(result);
+        return true;
+      }
+    }
+
+    if (categoryIssueCode === 'category_not_found') {
+      if (replyType === 'confirm') {
+        const proposal = financialConversation.provideInput({
+          categoryDecision: 'create_new',
+        });
+        if (openCategoryCreationDependency(proposal)) return true;
+      }
+      if (replyType === 'cancel') {
+        const result = financialConversation.provideInput({
+          rejectedCategoryName: action.proposedCategoryName,
+        });
+        publishConversationResult(result);
+        return true;
+      }
+    }
+
     if (pendingAction && replyType === 'confirm') {
       const confirmationId = findPendingConfirmationMessageId();
       if (confirmationId) void handleConfirmAction(confirmationId);
@@ -918,7 +1565,7 @@ export default function UniChatPage() {
       action,
       accounts: accountState.accounts,
       categories: categoryState.categories,
-      workspaceId: workspace?.id,
+      workspaceId: effectiveWorkspace?.id,
       referenceDate: getLocalIsoDate(),
     });
     if (resolvedInput.kind !== 'correction') {
@@ -929,12 +1576,18 @@ export default function UniChatPage() {
       ) {
         return true;
       }
+      if (
+        resolvedInput.kind === 'category_not_found'
+        && startCategoryDependency(text, action)
+      ) {
+        return true;
+      }
       const message = resolvedInput.kind === 'ambiguous_account'
         ? `Encontrei mais de uma conta correspondente: ${accountNames.join(', ')}. Qual delas você quer usar?`
         : resolvedInput.kind === 'account_not_found'
           ? accountNames.length
-            ? `Não encontrei essa conta no Espaço ${access.currentWorkspace === 'business' ? 'Empresa' : 'Pessoal'}. Contas disponíveis: ${accountNames.join(', ')}.`
-            : `Não encontrei essa conta e não há contas disponíveis no Espaço ${access.currentWorkspace === 'business' ? 'Empresa' : 'Pessoal'}.`
+            ? `Não encontrei essa conta no Espaço ${financialWorkspaceType === 'business' ? 'Empresa' : 'Pessoal'}. Contas disponíveis: ${accountNames.join(', ')}.`
+            : `Não encontrei essa conta e não há contas disponíveis no Espaço ${financialWorkspaceType === 'business' ? 'Empresa' : 'Pessoal'}.`
           : pendingAction
             ? 'Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.'
             : financialConversation.state.response || 'Não consegui identificar esse dado. Tente informar de outra forma.';
@@ -953,42 +1606,11 @@ export default function UniChatPage() {
       setPendingAction(null);
     }
     const result = financialConversation.provideInput(resolvedInput.overrides);
-    publishConversationResult(result);
+    void publishConversationResultWithInference(result);
     return true;
   }
 
-  function sendText(text) {
-    if (!text.trim() || isTyping || isExecutingAction) return;
-    setExecutionError(null);
-    setAiStatus(AI_STATUS.UNAVAILABLE);
-    lastUnresolvedRef.current = null;
-    stickToBottom.current = true;
-    const historySnapshot = messages;
-
-    const userMsg = buildUserMessage(text);
-    pushMessage(userMsg);
-    setInputValue('');
-
-    const hasPendingConversation = Boolean(
-      pendingAction
-      || isAccountCreationDependency(
-        pendingActionStackRef.current
-          ? getActivePendingAction(pendingActionStackRef.current)
-          : null,
-      )
-      || financialConversation.state.status === 'needs_clarification',
-    );
-    if (hasPendingConversation) {
-      handlePendingConversationInput(text, userMsg);
-      return;
-    }
-
-    setIsTyping(true);
-    syncMessageToSupabase(userMsg);
-
-    setTimeout(() => {
-      setIsTyping(false);
-
+  function runDeterministicFinancialFlow(text, historySnapshot) {
       const queryType = classifyFinancialQuery(text);
 
       if (queryType) {
@@ -1026,6 +1648,7 @@ export default function UniChatPage() {
           projections: futureProjections,
           goalProjections: futureProjections.goalProjections,
           goals: goalsState.goals,
+          conversationStyle,
         });
         if (response) {
           const assistantMsg = buildUniMessage(response.text, { highlight: response.highlight });
@@ -1038,11 +1661,26 @@ export default function UniChatPage() {
       const result = financialConversation.interpret(text);
 
       if (!result.handled) {
-        if (['register_transfer', 'create_goal'].includes(result.parsed?.intent)) {
+        // BLOCO E: transferência nunca é modelada pelo parser de uma única
+        // operação (só entende income/expense) -- em vez do aviso estático
+        // anterior, tentamos a camada neural (financial_plan) primeiro; só
+        // cai no aviso "ainda não suportado" se ela não devolver um plano
+        // válido (indisponível, erro, timeout, resposta fora do contrato).
+        if (isUnsupportedIntentEligibleForPlan(result.parsed?.intent)) {
+          void (async () => {
+            const handled = await attemptFinancialPlan(text);
+            if (handled) return;
+            const unsupportedMsg = buildUniMessage(
+              'Transferências ainda não podem ser registradas pela Uni. Use o Financeiro para manter origem e destino sob sua revisão.',
+            );
+            pushMessage(unsupportedMsg);
+            syncMessageToSupabase(unsupportedMsg);
+          })();
+          return;
+        }
+        if (result.parsed?.intent === 'create_goal') {
           const unsupportedMsg = buildUniMessage(
-            result.parsed.intent === 'create_goal'
-              ? 'Ainda não posso criar objetivos pela conversa com segurança. Posso consultar seus objetivos ou orientar você a criá-los na área de Objetivos.'
-              : 'Transferências ainda não podem ser registradas pela Uni. Use o Financeiro para manter origem e destino sob sua revisão.',
+            'Ainda não posso criar objetivos pela conversa com segurança. Posso consultar seus objetivos ou orientar você a criá-los na área de Objetivos.',
           );
           pushMessage(unsupportedMsg);
           syncMessageToSupabase(unsupportedMsg);
@@ -1058,6 +1696,31 @@ export default function UniChatPage() {
           syncMessageToSupabase(safeMsg);
           return;
         }
+        // BUG REAL EM PRODUÇÃO: "Coloquei duzentos reais de gasolina." tinha
+        // um verbo (coloquei) que não constava em classifyIntent -- o parser
+        // devolvia handled:false com intent 'question', nenhum dos casos
+        // acima cobria isso, e a frase caía direto em handleUnresolvedMessage
+        // (chat geral), cujo prompt de suporte diz "você só pode orientar,
+        // nunca dizer que fez" -- daí a resposta indevida "não consigo
+        // registrar daqui". BARREIRA DETERMINÍSTICA: qualquer frase com um
+        // valor monetário real (R$/reais, inclusive por extenso) e um sinal
+        // mínimo de lançamento (verbo financeiro OU "despesa/gasto/receita/
+        // entrada/pagamento") NUNCA é tratada como chat geral, mesmo que o
+        // verbo específico não esteja catalogado em classifyIntent -- tenta
+        // a camada neural (financial_plan, mesmo caminho já usado para
+        // transferências) antes de qualquer resposta consultiva.
+        if (looksLikeUnclassifiedFinancialStatement(text)) {
+          void (async () => {
+            const handled = await attemptFinancialPlan(text);
+            if (handled) return;
+            const clarifyMsg = buildUniMessage(
+              'Entendi que pode ser um lançamento financeiro, mas não consegui identificar todos os detalhes. Pode reformular dizendo o valor e do que se trata? Por exemplo: "Gastei R$ 50 no mercado."',
+            );
+            pushMessage(clarifyMsg);
+            syncMessageToSupabase(clarifyMsg);
+          })();
+          return;
+        }
         void handleUnresolvedMessage(text, historySnapshot);
         return;
       }
@@ -1065,7 +1728,68 @@ export default function UniChatPage() {
       if (result.action?.proposedAccount && openAccountCreationDependency(result)) {
         return;
       }
-      publishConversationResult(result);
+      void publishConversationResultWithInference(result);
+  }
+
+  function sendText(text) {
+    if (!text.trim() || isTyping || isExecutingAction) return;
+    setExecutionError(null);
+    setAiStatus(AI_STATUS.UNAVAILABLE);
+    lastUnresolvedRef.current = null;
+    stickToBottom.current = true;
+    const historySnapshot = messages;
+
+    const userMsg = buildUserMessage(text);
+    pushMessage(userMsg);
+    setInputValue('');
+
+    const hasPendingConversation = Boolean(
+      pendingAction
+      || isAccountCreationDependency(
+        pendingActionStackRef.current
+          ? getActivePendingAction(pendingActionStackRef.current)
+          : null,
+      )
+      || isCategoryCreationDependency(
+        pendingActionStackRef.current
+          ? getActivePendingAction(pendingActionStackRef.current)
+          : null,
+      )
+      || financialConversation.state.status === 'needs_clarification'
+      || isFinancialPlanActive(),
+    );
+    if (hasPendingConversation) {
+      if (looksLikeFreshFinancialStatement(text)) {
+        abandonStalePendingState();
+      } else {
+        handlePendingConversationInput(text, userMsg);
+        return;
+      }
+    }
+
+    setIsTyping(true);
+    syncMessageToSupabase(userMsg);
+
+    setTimeout(() => {
+      setIsTyping(false);
+
+      // BLOCO E: heurística determinística (nunca IA) -- frases que
+      // parecem multioperação/parceladas/recorrentes/transferência tentam
+      // a camada neural (financial_plan) ANTES do parser de uma única
+      // operação. Se a IA não devolver um plano válido, cai de volta no
+      // fluxo determinístico normal (runDeterministicFinancialFlow), sem
+      // perder a mensagem do usuário.
+      if (looksLikeComplexFinancialText(text)) {
+        void (async () => {
+          const handled = await attemptFinancialPlan(text);
+          if (!handled) {
+            runDeterministicFinancialFlow(text, historySnapshot);
+          }
+        })();
+        return;
+      }
+
+      runDeterministicFinancialFlow(text, historySnapshot);
     }, UNI_THINK_MIN_MS);
   }
 
@@ -1074,7 +1798,7 @@ export default function UniChatPage() {
   }
 
   function handleModeChange(next) {
-    if (next === mode) return;
+    if (isSimplifiedExperience || next === mode) return;
     uniVoice.stop();
     setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
@@ -1113,7 +1837,7 @@ export default function UniChatPage() {
           : 'Perfil alterado para Pessoal. Vamos falar sobre suas finanças pessoais.',
       ));
     }
-    switchWorkspace(modeToWorkspaceType(next));
+    void switchWorkspace(modeToWorkspaceType(next));
   }
 
   function handleNewChat() {
@@ -1188,7 +1912,8 @@ export default function UniChatPage() {
     const stack = pendingActionStackRef.current;
     const activeStackAction = stack ? getActivePendingAction(stack) : null;
     const accountDependencyActive = isAccountCreationDependency(activeStackAction);
-    if (!pendingAction && !accountDependencyActive) return;
+    const categoryDependencyActive = isCategoryCreationDependency(activeStackAction);
+    if (!pendingAction && !accountDependencyActive && !categoryDependencyActive) return;
 
     confirmingRef.current = true;
     setIsExecutingAction(true);
@@ -1200,7 +1925,7 @@ export default function UniChatPage() {
         const conflicts = findAccountCreationConflicts({
           accounts: accountState.accounts,
           requestedName: requestedAccount.name,
-          workspaceId: workspace?.id,
+          workspaceId: effectiveWorkspace?.id,
         });
 
         if (conflicts.exact.length > 1 || conflicts.similar.length) {
@@ -1281,6 +2006,84 @@ export default function UniChatPage() {
         );
         pushMessage(accountMessage);
         syncMessageToSupabase(accountMessage);
+        publishConversationResult(resumedResult);
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+        return;
+      }
+
+      if (categoryDependencyActive) {
+        const requestedCategory = activeStackAction.fields.category;
+        const categoryResolution = resolveFinancialCategory({
+          categories: categoryState.categories,
+          transactionType: requestedCategory.category_type,
+          requestedName: requestedCategory.name,
+          normalizedInput: requestedCategory.name,
+        });
+
+        let dependencyOutcome;
+        if (
+          categoryResolution.status === CATEGORY_RESOLUTION_STATUS.RESOLVED
+          && categoryResolution.category
+        ) {
+          dependencyOutcome = completeCategoryCreationDependency(
+            stack,
+            categoryResolution.category,
+          );
+        } else {
+          dependencyOutcome = await categoryDependencyCoordinator.execute(stack);
+        }
+
+        if (
+          dependencyOutcome?.error
+          || !dependencyOutcome?.completedAction?.result?.id
+          || !dependencyOutcome?.resumedAction
+        ) {
+          const errorText = 'Não consegui criar essa categoria. A movimentação foi preservada.';
+          setExecutionError(errorText);
+          setMessages((prev) => prev.map((message) => (
+            message.id === id
+              ? {
+                  ...message,
+                  confirmation: { ...message.confirmation, confirmationError: errorText },
+                }
+              : message
+          )));
+          setIsExecutingAction(false);
+          confirmingRef.current = false;
+          return;
+        }
+
+        const category = dependencyOutcome.completedAction.result;
+        const parentSnapshot = dependencyOutcome.resumedAction.fields.snapshot;
+        financialConversation.restore(parentSnapshot);
+        const resumedResult = financialConversation.provideInput({
+          categoryId: category.id,
+          categoryRecord: category,
+        });
+        const resumedSnapshot = {
+          ...parentSnapshot,
+          action: resumedResult.action,
+          response: resumedResult.response?.text ?? parentSnapshot.response,
+        };
+        const updatedStack = updateResumedFinancialSnapshot(
+          dependencyOutcome.stack,
+          resumedSnapshot,
+        ).stack;
+        pendingActionStackRef.current = updatedStack;
+        setPendingActionStack(updatedStack);
+        setMessages((prev) => prev.map((message) => (
+          message.id === id
+            ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
+            : message
+        )));
+        const categoryMessage = buildUniMessage(
+          categoryResolution.status === CATEGORY_RESOLUTION_STATUS.RESOLVED
+            ? `A categoria ${category.name} já existia. Retomei a movimentação sem duplicá-la.`
+            : `Categoria ${category.name} criada. Retomei a movimentação do ponto em que paramos.`,
+        );
+        pushMessage(categoryMessage);
+        syncMessageToSupabase(categoryMessage);
         publishConversationResult(resumedResult);
         setIsExecutingAction(false);
         confirmingRef.current = false;
@@ -1382,6 +2185,39 @@ export default function UniChatPage() {
       return;
     }
 
+    if (isCategoryCreationDependency(activeStackAction)) {
+      const transition = cancelCategoryCreationDependency(stack, { cascade });
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === id
+            ? { ...message, confirmation: { ...message.confirmation, status: 'canceled' } }
+            : message,
+        ),
+      );
+      setExecutionError(null);
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+
+      if (cascade || !transition.resumedAction) {
+        pendingActionStackRef.current = null;
+        setPendingActionStack(null);
+        setPendingAction(null);
+        financialConversation.cancel();
+        clearCurrentPendingAction();
+        pushMessage(buildUniMessage('Tudo bem. Cancelei a criação da categoria e a movimentação.'));
+        return;
+      }
+
+      pendingActionStackRef.current = transition.stack;
+      setPendingActionStack(transition.stack);
+      setPendingAction(null);
+      financialConversation.restore(transition.resumedAction.fields.snapshot);
+      pushMessage(buildUniMessage(
+        'Tudo bem. Não criei a categoria. A movimentação continua preservada; informe outra categoria para continuar.',
+      ));
+      return;
+    }
+
     confirmingRef.current = false;
     setIsExecutingAction(false);
     setPendingAction(null);
@@ -1408,6 +2244,28 @@ export default function UniChatPage() {
   const isEmpty = messages.length === 0;
   const filteredConversations = conversations.filter((c) => c.mode === mode);
 
+  if (variant === 'simplified-home') {
+    return (
+      <SimplifiedHomeView
+        profile={profile}
+        user={user}
+        session={session}
+        messages={messages}
+        isTyping={isTyping}
+        isExecuting={isExecutingAction}
+        executionError={executionError}
+        aiStatus={aiStatus}
+        voiceEnabled={voicePreference.enabled}
+        voiceController={uniVoice}
+        onSendTranscript={sendText}
+        onBeforeVoiceStart={handleBeforeVoiceStart}
+        onConfirmAction={handleConfirmAction}
+        onCancelAction={handleCancelAction}
+        onSpeakMessage={handleSpeakMessage}
+      />
+    );
+  }
+
   return (
     <div className={styles.page}>
       <ChatHeader
@@ -1416,6 +2274,7 @@ export default function UniChatPage() {
         onHistory={() => setShowHistory(true)}
         onNewChat={handleNewChat}
         isThinking={isTyping}
+        showModeSelector={!isSimplifiedExperience}
       />
 
       {connectionStatus === 'offline' && (
@@ -1441,7 +2300,12 @@ export default function UniChatPage() {
 
       <div className={styles.body} ref={scrollRef} onScroll={handleScroll}>
         {isEmpty ? (
-          <EmptyState userName={resolveGreetingName(profile)} suggestions={suggestions} onSelect={handleSuggestionSelect} workspaceType={access.currentWorkspace} />
+          <EmptyState
+            userName={resolveGreetingName(profile)}
+            suggestions={suggestions}
+            onSelect={handleSuggestionSelect}
+            workspaceType={financialWorkspaceType}
+          />
         ) : (
           <div className={styles.messages}>
             {messages.map((message) => (
@@ -1499,6 +2363,8 @@ export default function UniChatPage() {
           onSend={sendText}
           onBeforeVoiceStart={handleBeforeVoiceStart}
           disabled={isTyping || isExecutingAction}
+          isSpeaking={isSpeaking}
+          onInterruptSpeech={handleStopVoice}
         />
       </div>
     </div>

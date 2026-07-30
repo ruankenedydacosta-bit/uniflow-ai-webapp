@@ -34,7 +34,11 @@ const ISSUE_MESSAGES = Object.freeze({
   account_archived: 'Encontrei essa conta arquivada. Você quer reativá-la ou criar uma nova conta?',
   destination_account_required: 'Para qual conta o valor foi transferido?',
   category_required: 'Em qual categoria essa movimentação se encaixa?',
-  category_not_found: 'Não encontrei uma categoria compatível. Qual categoria existente você quer usar?',
+  // BLOCO B1/B2: mensagens dinâmicas, dependem da categoria/nome proposto pela ação.
+  category_approximate: (action) => `Esse gasto parece ser de ${action?.proposedCategory?.name ?? 'uma categoria existente'}. Posso usar essa categoria?`,
+  category_not_found: (action) => (action?.proposedCategoryName
+    ? `A categoria ${action.proposedCategoryName} ainda não existe. Deseja criá-la?`
+    : 'Não encontrei uma categoria compatível. Qual categoria existente você quer usar?'),
   category_incompatible: 'Essa categoria não é compatível com o tipo de lançamento. Qual categoria você quer usar?',
   description_required: 'Como você quer identificar esse lançamento?',
   date_invalid: 'Qual é a data correta dessa movimentação?',
@@ -61,16 +65,28 @@ function resolveCopy(options = {}) {
   };
 }
 
+// BUG REAL (fluxo de confirmação financeira simples): a transição para
+// 'ready' precisa de uma frase curta e SEMPRE igual -- nunca repetir
+// valor/conta em prosa (isso já é o card estruturado logo abaixo) nem
+// formular como uma nova pergunta ("o pagamento foi no Nubank?", "ficou
+// associado ao Nubank", "você confirma que foi no Nubank?"). Qualquer
+// variação textual aqui arrisca ser lida como mais uma etapa de confirmação
+// conversacional, adiando a exibição do card. Único texto para
+// expense/income/transfer, independente de personalidade.
+const READY_FOR_CONFIRMATION_TEXT = 'Perfeito. Revise as informações abaixo antes de registrar.';
+
 export function buildConfirmationResponse(action, options = {}) {
   const resolved = resolveCopy(options);
-  return { text: resolved.copy.confirmation, ...resolved };
+  return { text: READY_FOR_CONFIRMATION_TEXT, ...resolved };
 }
 
 export function buildClarificationResponse(action, options = {}) {
   const resolved = resolveCopy(options);
   const issue = action?.issues?.[0];
+  const entry = ISSUE_MESSAGES[issue?.code];
+  const text = typeof entry === 'function' ? entry(action) : (entry ?? 'Preciso confirmar um detalhe antes de continuar.');
   return {
-    text: ISSUE_MESSAGES[issue?.code] ?? 'Preciso confirmar um detalhe antes de continuar.',
+    text,
     issue,
     ...resolved,
   };

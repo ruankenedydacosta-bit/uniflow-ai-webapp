@@ -1,0 +1,635 @@
+.page {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    34px
+    max(18px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: #f8fafc;
+}
+
+/* ---------- Cabeçalho (mesmo padrão de Registros: título + Falar com a Uni) ---------- */
+
+.header {
+  min-height: 88px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.titleGroup {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mark {
+  width: clamp(52px, 13vw, 70px);
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 12px rgba(37, 99, 235, .32));
+}
+
+.mark svg {
+  width: 100%;
+  display: block;
+}
+
+.titleGroup h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(22px, 6vw, 42px);
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.talkButton {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(#030b1d, #030b1d) padding-box,
+    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.talkIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+
+.talkIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Card de perfil ---------- */
+
+.profileCard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.profileTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profileInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nameRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.nameRow strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: clamp(18px, 4.6vw, 24px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: #a8b2c5;
+  font-size: 14.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inlineIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  color: #7c8aa8;
+}
+
+.inlineIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.addPhoneButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #5e85ff;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.profileActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(86, 109, 151, .3);
+}
+
+.profileAction {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: #f8fafc;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profileAction strong {
+  display: block;
+  font-size: 15.5px;
+}
+
+.profileAction small {
+  display: block;
+  color: #a8b2c5;
+  font-size: 13px;
+}
+
+.actionIcon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.actionIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Tons compartilhados (perfil, plano, menu) ---------- */
+
+.toneBlue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
+.toneGreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+.tonePurple { background: rgba(124, 58, 237, .18); color: #a78bfa; }
+
+/* ---------- Card do plano ---------- */
+
+.planCard {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(45, 212, 191, .4);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, .12), rgba(37, 99, 235, .08));
+  color: #f8fafc;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan_not_configured,
+.plan_inactive {
+  border-color: rgba(148, 163, 184, .35);
+  background: linear-gradient(135deg, rgba(71, 85, 105, .18), rgba(15, 23, 42, .3));
+}
+
+.plan_past_due {
+  border-color: rgba(245, 158, 11, .45);
+  background: linear-gradient(135deg, rgba(245, 158, 11, .16), rgba(15, 23, 42, .3));
+}
+
+.planIcon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(124, 58, 237, .35), rgba(37, 99, 235, .35));
+  color: #2dd4bf;
+  box-shadow: 0 0 16px rgba(45, 212, 191, .28);
+}
+
+.planIcon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.planInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planStatusLabel {
+  color: #2dd4bf;
+  font-size: 15.5px;
+  line-height: 1.25;
+}
+
+.plan_not_configured .planStatusLabel,
+.plan_inactive .planStatusLabel {
+  color: #cbd5e1;
+}
+
+.plan_past_due .planStatusLabel {
+  color: #f59e0b;
+}
+
+.planName {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planInfo small {
+  color: #a8b2c5;
+  font-size: 13px;
+}
+
+.planPrice {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.planPrice strong {
+  font-size: 20px;
+}
+
+.planPrice small {
+  color: #a8b2c5;
+  font-size: 12.5px;
+}
+
+.planChevron {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: #8b96aa;
+}
+
+.planChevron svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+/* ---------- Menu principal ---------- */
+
+.menuCard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  overflow: hidden;
+}
+
+.menuRow {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 0;
+  border-bottom: 1px solid rgba(86, 109, 151, .22);
+  background: none;
+  color: #f8fafc;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuRow:last-child {
+  border-bottom: 0;
+}
+
+.menuRow:hover,
+.profileAction:hover,
+.planCard:hover,
+.logoutCard:hover {
+  background: rgba(255, 255, 255, .03);
+}
+
+.menuIcon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.menuIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.menuText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menuText strong {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menuText small {
+  overflow: hidden;
+  color: #a8b2c5;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menuChevron {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: #8b96aa;
+}
+
+.menuChevron svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+/* ---------- Sair da conta ---------- */
+
+.logoutCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 68px;
+  padding: 16px 18px;
+  border: 1px solid rgba(239, 68, 68, .3);
+  border-radius: 20px;
+  background: rgba(239, 68, 68, .06);
+  color: #f8fafc;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.logoutIcon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, .16);
+  color: #ef4444;
+}
+
+.logoutIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.logoutCard .menuText strong {
+  color: #ef4444;
+}
+
+.logoutError {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, .12);
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+/* ---------- Foco visível (acessibilidade) ---------- */
+
+.talkButton:focus-visible,
+.profileAction:focus-visible,
+.addPhoneButton:focus-visible,
+.planCard:focus-visible,
+.menuRow:focus-visible,
+.logoutCard:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+/* ---------- Subpáginas placeholder (Fase 8) ---------- */
+
+.subpage {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    34px
+    max(18px, env(safe-area-inset-left));
+  color: #f8fafc;
+}
+
+.subpageHeader {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 50%;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.backButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.subpageHeader h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(24px, 6vw, 34px);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subpageBody {
+  display: grid;
+  place-items: center;
+  min-height: 40vh;
+  padding: 24px;
+  text-align: center;
+}
+
+.subpageBody p {
+  max-width: 420px;
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 520px) {
+  .profileTop {
+    align-items: flex-start;
+  }
+
+  .profileActions {
+    grid-template-columns: 1fr;
+  }
+
+  .planCard {
+    grid-template-columns: 44px minmax(0, 1fr) 18px;
+  }
+
+  .planPrice {
+    display: none;
+  }
+}
+
+@media (max-width: 359px) {
+  .talkButton {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  .talkIcon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page,
+  .subpage {
+    padding-inline: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menuRow,
+  .profileAction,
+  .planCard,
+  .logoutCard {
+    transition: none;
+  }
+}

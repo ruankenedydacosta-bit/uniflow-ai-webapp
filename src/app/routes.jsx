@@ -8,7 +8,6 @@ import CRMPage from '../pages/CRMPage';
 import FinancePage from '../pages/FinancePage';
 import LoginPage from '../pages/LoginPage';
 import ObjetivosPage from '../pages/ObjetivosPage';
-import { OnboardingPage } from '../features/onboarding';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
@@ -16,10 +15,27 @@ import SettingsPage from '../pages/SettingsPage';
 import OpenFinancePage from '../pages/OpenFinancePage';
 import { CategoriesPage } from '../features/categories';
 import { FuturePage } from '../features/future';
+import { PresentationPage } from '../features/presentation';
+import { PERSONAL_PLAN_RETURN_ROUTE, PersonalPlanPage, PersonalPlanReturnPage } from '../features/personal-plan';
+import {
+  ACCOUNT_SUBROUTE_IDS,
+  ACCOUNT_SUBROUTES,
+  SIMPLIFIED_ROUTES,
+  SimplifiedAccountPage,
+  SimplifiedAccountSubpagePlaceholder,
+  SimplifiedEditProfilePage,
+  SimplifiedMyAccountsPage,
+  SimplifiedPaymentsPage,
+  SimplifiedPlanPage,
+  SimplifiedRecordsPage,
+  SimplifiedSecurityPage,
+  SimplifiedSupportPage,
+  SimplifiedVoicePage,
+} from '../features/simplified-app';
+// eslint-disable-next-line react-refresh/only-export-components -- lazy route component kept beside route declarations
 const UniChatPage = lazy(() => import('../features/uni-chat/UniChatPage'));
 // eslint-disable-next-line react-refresh/only-export-components -- mesmo padrao pre-existente da linha acima (UniChatPage)
 const SupportCenterPage = lazy(() => import('../features/uni-support/SupportCenterPage'));
-import { MobileWelcomePage } from '../features/auth-mobile';
 import { MODULE_IDS } from './moduleAccess.js';
 
 const UniAudioLibraryPage = import.meta.env.DEV
@@ -31,25 +47,19 @@ export const publicRoutes = [
     path: '/',
     label: 'Início',
     title: 'Início',
-    element: <Navigate to="/welcome" replace />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: '/welcome',
     label: 'Boas-vindas',
     title: 'Boas-vindas',
-    element: <MobileWelcomePage />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: '/login',
     label: 'Login',
     title: 'Login',
     element: <LoginPage />,
-  },
-  {
-    path: '/onboarding',
-    label: 'Onboarding',
-    title: 'Onboarding',
-    element: <OnboardingPage />,
   },
   {
     path: '/redefinir-senha',
@@ -84,6 +94,142 @@ export const publicRoutes = [
 ];
 
 export const appRoutes = [
+  {
+    path: '/apresentacao',
+    label: 'Apresentação',
+    title: 'Apresentação',
+    standalone: true,
+    element: <PresentationPage />,
+  },
+  {
+    path: '/plano-pessoal',
+    label: 'Plano Pessoal',
+    title: 'Plano Pessoal',
+    standalone: true,
+    element: <PersonalPlanPage />,
+  },
+  {
+    // BLOCO ASAAS CHECKOUT: rota de retorno do Asaas Checkout hospedado
+    // (cartão) -- nunca considera o plano ativo só por chegar aqui, sempre
+    // consulta billing-get-subscription (ver PersonalPlanReturnPage.jsx).
+    path: PERSONAL_PLAN_RETURN_ROUTE,
+    label: 'Retorno do pagamento',
+    title: 'Retorno do pagamento',
+    standalone: true,
+    element: <PersonalPlanReturnPage />,
+  },
+  {
+    path: SIMPLIFIED_ROUTES.HOME,
+    label: 'Home',
+    title: 'Home',
+    simplified: true,
+    element: (
+      <Suspense fallback={null}>
+        <UniChatPage variant="simplified-home" />
+      </Suspense>
+    ),
+  },
+  {
+    path: SIMPLIFIED_ROUTES.UNI,
+    label: 'Uni',
+    title: 'Uni',
+    simplified: true,
+    element: (
+      <Suspense fallback={null}>
+        <UniChatPage variant="simplified" />
+      </Suspense>
+    ),
+  },
+  {
+    path: SIMPLIFIED_ROUTES.RECORDS,
+    label: 'Registros',
+    title: 'Registros',
+    simplified: true,
+    element: <SimplifiedRecordsPage />,
+  },
+  {
+    path: SIMPLIFIED_ROUTES.ACCOUNT,
+    label: 'Conta',
+    title: 'Conta',
+    simplified: true,
+    element: <SimplifiedAccountPage />,
+  },
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE].title,
+    simplified: true,
+    element: <SimplifiedEditProfilePage />,
+  },
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].title,
+    simplified: true,
+    element: <SimplifiedSecurityPage />,
+  },
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].title,
+    simplified: true,
+    element: <SimplifiedPlanPage />,
+  },
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].title,
+    simplified: true,
+    element: <SimplifiedPaymentsPage />,
+  },
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].title,
+    simplified: true,
+    element: <SimplifiedMyAccountsPage />,
+  },
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].title,
+    simplified: true,
+    element: <SimplifiedSupportPage />,
+  },
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].title,
+    simplified: true,
+    element: <SimplifiedVoicePage />,
+  },
+  // ETAPA 4 (Fase 8): demais rotas internas de Conta -- placeholders
+  // honestos e consistentes (título + botão voltar + mensagem curta),
+  // nunca uma tela em branco. A construção completa de cada uma acontece
+  // em tarefas futuras, usando as respectivas referências visuais
+  // aprovadas.
+  ...Object.values(ACCOUNT_SUBROUTES)
+    .filter((subroute) => (
+      subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path
+    ))
+    .map((subroute) => ({
+      path: subroute.path,
+      label: subroute.title,
+      title: subroute.title,
+      simplified: true,
+      element: (
+        <SimplifiedAccountSubpagePlaceholder
+          title={subroute.title}
+          description={subroute.description}
+        />
+      ),
+    })),
   {
     path: '/dashboard',
     moduleId: MODULE_IDS.DASHBOARD,

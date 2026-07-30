@@ -436,16 +436,16 @@ test('useProjects e exportado em hooks/index.js', async () => {
 });
 
 // ============================================================================
-// supabase/migrations/20260723_018_projects.sql
+// supabase/migrations/20260723001800_018_projects.sql
 // ============================================================================
 
 test('migration cria a tabela public.projects', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(migration, /create table public\.projects \(/);
 });
 
 test('migration contem as 16 colunas aprovadas', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   const columns = [
     'id', 'workspace_id', 'name', 'description', 'status', 'priority', 'progress',
     'starts_at', 'due_at', 'client_id', 'assigned_user_id', 'financial_impact',
@@ -461,7 +461,7 @@ test('migration contem as 16 colunas aprovadas', async () => {
 });
 
 test('migration habilita RLS e cria exatamente 4 politicas', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(migration, /alter table public\.projects enable row level security;/);
   const policies = migration.match(/create policy projects_\w+/g) ?? [];
   assert.equal(policies.length, 4);
@@ -472,7 +472,7 @@ test('migration habilita RLS e cria exatamente 4 politicas', async () => {
 });
 
 test('migration cria 4 grupos de trigger (updated_at, imutabilidade, responsavel, cliente)', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(migration, /create trigger projects_set_updated_at/);
   assert.match(migration, /create trigger projects_prevent_immutable_field_change/);
   assert.match(migration, /create trigger projects_validate_assigned_user/);
@@ -480,7 +480,7 @@ test('migration cria 4 grupos de trigger (updated_at, imutabilidade, responsavel
 });
 
 test('trigger de responsavel valida membro ativo do mesmo workspace', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(
     migration,
     /if new\.assigned_user_id is not null and not exists \(\s*\n\s*select 1\s*\n\s*from public\.workspace_members\s*\n\s*where workspace_id = new\.workspace_id\s*\n\s*and user_id = new\.assigned_user_id\s*\n\s*and status = 'active'/,
@@ -488,24 +488,24 @@ test('trigger de responsavel valida membro ativo do mesmo workspace', async () =
 });
 
 test('trigger de cliente valida que o cliente existe e pertence ao mesmo workspace', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(migration, /if v_client_workspace_id is distinct from new\.workspace_id then/);
   assert.match(migration, /if not found then/);
 });
 
 test('trigger de imutabilidade bloqueia mudanca de workspace_id e created_by', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(migration, /if new\.workspace_id is distinct from old\.workspace_id then/);
   assert.match(migration, /if new\.created_by is distinct from old\.created_by then/);
 });
 
 test('constraint garante progresso entre 0 e 100', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(migration, /constraint projects_progress_check check \(progress between 0 and 100\)/);
 });
 
 test('constraint garante prazo nao anterior a data de inicio', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(
     migration,
     /constraint projects_due_at_check check \(\s*\n\s*due_at is null or starts_at is null or due_at >= starts_at\s*\n\s*\)/,
@@ -513,7 +513,7 @@ test('constraint garante prazo nao anterior a data de inicio', async () => {
 });
 
 test('constraint garante impacto financeiro nao-negativo quando presente', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.match(
     migration,
     /constraint projects_financial_impact_check check \(\s*\n\s*financial_impact is null or financial_impact >= 0\s*\n\s*\)/,
@@ -521,7 +521,7 @@ test('constraint garante impacto financeiro nao-negativo quando presente', async
 });
 
 test('migration nao contem nenhum artefato de tarefas/Kanban/Calendario/Timeline (as menções existem apenas em texto de documentação registrando a exclusão de escopo, nunca em nomes de objetos criados)', async () => {
-  const migration = await source('../../supabase/migrations/20260723_018_projects.sql');
+  const migration = await source('../../supabase/migrations/20260723001800_018_projects.sql');
   assert.doesNotMatch(migration, /create table public\.(tasks|project_tasks|project_milestones|project_comments|project_attachments)/);
   // Confirma que a menção existe apenas como documentação da exclusão de escopo.
   assert.match(migration, /Kanban, Calendario, Timeline, comentarios, anexos e integracoes externas/);

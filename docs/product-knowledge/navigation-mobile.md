@@ -32,7 +32,7 @@ Mesma lógica de papéis do desktop (owner/admin/member/viewer) para ações den
 
 ## Pré-requisitos
 
-Sessão autenticada e onboarding concluído.
+Sessão autenticada, apresentação e Plano Pessoal concluídos.
 
 ## Limitações atuais
 

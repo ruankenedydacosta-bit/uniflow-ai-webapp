@@ -1,4 +1,5 @@
 import { normalizeFinancialText } from '../uni-intents/index.js';
+import { normalizeFinancialInstitutionName } from '../financial-institutions/index.js';
 
 export const ACCOUNT_RESOLUTION_STATUS = Object.freeze({
   RESOLVED: 'resolved',
@@ -77,7 +78,6 @@ export function resolveFinancialAccount({
   input,
 } = {}) {
   const availableAccounts = Array.isArray(accounts) ? accounts : [];
-  const requestedIdentity = normalizeAccountIdentity(requestedName);
 
   if (accountId) {
     const selected = availableAccounts.find((account) => account.id === accountId);
@@ -104,8 +104,39 @@ export function resolveFinancialAccount({
     };
   }
 
+  // Camada de normalizacao de instituicoes financeiras (100% determinística/
+  // offline, nunca a OpenAI): uma transcricao de voz garbled como "No Bank"
+  // (Nubank) normaliza para o nome canonico -- mas SO passa a valer se o
+  // texto ORIGINAL nao encontrar nenhuma conta real primeiro (uma conta
+  // literalmente chamada "Caixa" continua batendo com "Caixa" sem que a
+  // normalizacao para "Caixa Economica Federal" atrapalhe). Corrige o caso
+  // real "Gastei 50 reais no mercado e foi no Nubank" transcrito como
+  // "...e foi no No Bank", que sem isso tentaria criar uma conta "No Bank"
+  // em vez de reconhecer a conta existente "Nubank".
+  const originalIdentity = normalizeAccountIdentity(requestedName);
+  const originalMatches = originalIdentity
+    ? availableAccounts.filter((account) => accountMatches(account, originalIdentity))
+    : [];
+
+  let requestedIdentity = originalIdentity;
+  let matches = originalMatches;
+  let effectiveRequestedName = requestedName;
+
+  if (!matches.length) {
+    const institutionMatch = normalizeFinancialInstitutionName(requestedName, { hasAccountContext: true });
+    if (institutionMatch.canonicalName) {
+      effectiveRequestedName = institutionMatch.canonicalName;
+      const canonicalIdentity = normalizeAccountIdentity(institutionMatch.canonicalName);
+      const canonicalMatches = availableAccounts.filter((account) => accountMatches(account, canonicalIdentity));
+      if (canonicalMatches.length) {
+        matches = canonicalMatches;
+        requestedIdentity = canonicalIdentity;
+      }
+    }
+  }
+
   const proposedAccount = createProposedAccount({
-    requestedName,
+    requestedName: effectiveRequestedName,
     requestedType,
     accountTypes,
     input,
@@ -128,7 +159,6 @@ export function resolveFinancialAccount({
     };
   }
 
-  const matches = availableAccounts.filter((account) => accountMatches(account, requestedIdentity));
   const activeMatches = matches.filter((account) => account.is_active !== false);
   const archivedMatches = matches.filter((account) => account.is_active === false);
 
@@ -151,7 +181,7 @@ export function resolveFinancialAccount({
     return {
       status: ACCOUNT_RESOLUTION_STATUS.ARCHIVED_CONFLICT,
       candidates: archivedMatches,
-      explanation: `Encontrei uma conta ${cleanAccountName(requestedName)} arquivada. Você quer reativá-la ou criar uma nova conta?`,
+      explanation: `Encontrei uma conta ${cleanAccountName(effectiveRequestedName)} arquivada. Você quer reativá-la ou criar uma nova conta?`,
     };
   }
   if (proposedAccount) {

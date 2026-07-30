@@ -8,6 +8,8 @@ export default function ChatInput({
   onSend,
   onBeforeVoiceStart,
   disabled,
+  isSpeaking = false,
+  onInterruptSpeech,
 }) {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef(null);
@@ -54,6 +56,14 @@ export default function ChatInput({
 
   function handleVoiceClick() {
     if (disabled && !isCapturing) return;
+    // BLOCO UNI 2: enquanto a Uni está falando, o botão INTERROMPE a fala
+    // em vez de iniciar uma gravação -- nunca grava por cima da resposta
+    // falada (mesma regra da Home). O usuário toca de novo, já sem fala em
+    // andamento, para efetivamente começar a falar.
+    if (isSpeaking) {
+      onInterruptSpeech?.();
+      return;
+    }
     if (
       status === VOICE_CAPTURE_STATES.REQUESTING_PERMISSION
       || status === VOICE_CAPTURE_STATES.PROCESSING

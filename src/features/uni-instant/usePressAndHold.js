@@ -107,6 +107,14 @@ export default function usePressAndHold({
         }
         finish(true);
       },
+      // Rede de segurança: se a captura for perdida sem um pointerup/
+      // pointercancel correspondente (ex.: o navegador redireciona a
+      // captura por conta própria), este é o único evento restante que avisa
+      // -- sem ele, o gesto podia ficar "preso" em holding para sempre.
+      onLostPointerCapture: (event) => {
+        if (sourceRef.current !== 'pointer' || event.pointerId !== pointerIdRef.current) return;
+        finish(true);
+      },
       onKeyDown: (event) => {
         if (event.key === 'Escape' && sourceRef.current) {
           event.preventDefault();

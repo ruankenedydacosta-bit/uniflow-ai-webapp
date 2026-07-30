@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+
+const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
+
+// ============================================================================
+// BLOCO ASAAS CHECKOUT: rota de retorno do Checkout hospedado (cartão) --
+// cobertura estrutural (mesmo padrão do resto do projeto, sem
+// @testing-library/react).
+// ============================================================================
+
+test('rota registrada em routes.jsx, standalone, usando PERSONAL_PLAN_RETURN_ROUTE (nunca string hardcoded)', async () => {
+  const routes = await source('../../app/routes.jsx');
+  assert.match(routes, /path: PERSONAL_PLAN_RETURN_ROUTE,/);
+  assert.match(routes, /standalone: true,[\s\S]*?element: <PersonalPlanReturnPage \/>/);
+});
+
+test('PERSONAL_PLAN_RETURN_ROUTE é derivado de PERSONAL_PLAN_ROUTE -- nunca duplicado como string solta', async () => {
+  const config = await source('./personalPlanConfig.js');
+  assert.match(config, /export const PERSONAL_PLAN_RETURN_ROUTE = `\$\{PERSONAL_PLAN_ROUTE\}\/retorno`;/);
+});
+
+test('index.js exporta PersonalPlanReturnPage e PERSONAL_PLAN_RETURN_ROUTE', async () => {
+  const content = await source('./index.js');
+  assert.match(content, /export \{ default as PersonalPlanReturnPage \} from '\.\/PersonalPlanReturnPage\.jsx';/);
+  assert.match(content, /PERSONAL_PLAN_RETURN_ROUTE,/);
+});
+
+test('nunca considera o plano ativo só pelo redirecionamento -- sempre consulta via useSubscriptionStatusPolling (billing-get-subscription)', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  assert.match(page, /import \{ useSubscriptionStatusPolling \} from '\.\/useSubscriptionStatusPolling\.js';/);
+  assert.match(page, /const \{ status: polledSubscription, error: pollError, isPolling \} = useSubscriptionStatusPolling\(\{/);
+  // ?status=success da URL é só um hint de UX -- nunca a fonte de verdade.
+  assert.doesNotMatch(page, /redirectStatus === 'success'[\s\S]{0,60}setResolvedState\('active'\)/);
+});
+
+test('polling fica ativo até resolvedState ser definido (active/canceled/expired) -- nunca contínuo fora da tela', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  assert.match(page, /active: !resolvedState,/);
+});
+
+test('detecta "active" e marca personalPlanCompleted automaticamente -- mesma lógica de PersonalPlanPage.jsx', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  const idx = page.indexOf('if (polledSubscription.internal_status ===');
+  const slice = page.slice(idx, idx + 250);
+  assert.match(slice, /setResolvedState\('active'\);/);
+  assert.match(slice, /markPersonalPlanCompleted\(userId\);/);
+});
+
+test('canceled/expired são tratados como estados terminais distintos -- nunca reativados por engano', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  assert.match(page, /\['canceled', 'expired'\]\.includes\(polledSubscription\.internal_status\)/);
+  assert.match(page, /setResolvedState\(polledSubscription\.internal_status\);/);
+});
+
+test('timeout do polling (limite de tentativas) preserva o último estado conhecido -- nunca trava num spinner infinito', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  assert.match(page, /const timedOut = !resolvedState && !isPolling && polledSubscription !== null;/);
+});
+
+test('cobre os 4 estados pedidos: processando, aguardando/timeout, ativo, falhou/cancelado', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  assert.match(page, /Processando seu pagamento/);
+  assert.match(page, /Ainda aguardando a confirmação/);
+  assert.match(page, /Plano Pessoal ativado com sucesso/);
+  assert.match(page, /Pagamento não concluído/);
+});
+
+test('sempre oferece "Voltar ao Plano Pessoal" exceto quando já ativo (aí oferece ir para o início)', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  assert.match(page, /Voltar ao Plano Pessoal/);
+  assert.match(page, /onClick={handleBackToPlan}/);
+  assert.match(page, /navigate\(PERSONAL_PLAN_ROUTE\);/);
+});
+
+test('CSS tem estados de tom (ok/warn/neutral) e reduz animação do spinner em prefers-reduced-motion', async () => {
+  const css = await source('./PersonalPlanReturn.module.css');
+  assert.match(css, /\.tone_ok h1/);
+  assert.match(css, /\.tone_warn h1/);
+  assert.match(css, /\.tone_neutral h1/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{/);
+});

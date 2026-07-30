@@ -73,6 +73,18 @@ test('captura real usa getUserMedia e MediaRecorder nativos', async () => {
   adapter.dispose();
 });
 
+test('BUG 3: onStreamReady expõe o MESMO stream já capturado (sem um segundo getUserMedia)', async () => {
+  const { runtime, stream } = createRuntime();
+  let exposedStream = null;
+  const adapter = createMediaRecorderAdapter({
+    runtime,
+    onStreamReady: (value) => { exposedStream = value; },
+  });
+  await adapter.start();
+  assert.equal(exposedStream, stream);
+  adapter.dispose();
+});
+
 test('parada explícita produz áudio e libera todas as tracks', async () => {
   const { runtime, track } = createRuntime();
   let capture = null;

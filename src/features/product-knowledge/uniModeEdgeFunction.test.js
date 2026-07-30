@@ -16,12 +16,15 @@ const EDGE_SOURCE = readFileSync(
   'utf8',
 );
 
-test('UNI_MODE tem exatamente FINANCIAL e SUPPORT', () => {
-  assert.match(EDGE_SOURCE, /const UNI_MODE = \{ FINANCIAL: 'financial', SUPPORT: 'support' \}/);
+test('UNI_MODE tem exatamente FINANCIAL, SUPPORT, CATEGORY_INFERENCE (BLOCO D) e FINANCIAL_PLAN (BLOCO E)', () => {
+  assert.match(EDGE_SOURCE, /FINANCIAL: 'financial',\s*\n\s*SUPPORT: 'support',\s*\n\s*CATEGORY_INFERENCE: 'category_inference',\s*\n\s*FINANCIAL_PLAN: 'financial_plan',/);
 });
 
 test('modo desconhecido/ausente sempre cai em FINANCIAL (compatibilidade com OPENAI1/OPENAI2)', () => {
-  assert.match(EDGE_SOURCE, /payload\.mode === UNI_MODE\.SUPPORT \? UNI_MODE\.SUPPORT : UNI_MODE\.FINANCIAL/);
+  assert.match(
+    EDGE_SOURCE,
+    /const mode = payload\.mode === UNI_MODE\.SUPPORT\s*\n\s*\? UNI_MODE\.SUPPORT\s*\n\s*: payload\.mode === UNI_MODE\.CATEGORY_INFERENCE\s*\n\s*\? UNI_MODE\.CATEGORY_INFERENCE\s*\n\s*: payload\.mode === UNI_MODE\.FINANCIAL_PLAN\s*\n\s*\? UNI_MODE\.FINANCIAL_PLAN\s*\n\s*: UNI_MODE\.FINANCIAL;/,
+  );
 });
 
 test('modo financeiro usa o system do cliente sem alteracao (comportamento OPENAI1/OPENAI2 preservado)', () => {

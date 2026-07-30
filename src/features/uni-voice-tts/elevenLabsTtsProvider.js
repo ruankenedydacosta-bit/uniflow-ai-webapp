@@ -138,10 +138,14 @@ export function createElevenLabsTtsProvider({
   }
 
   /**
-   * Gera a voz (Edge Function -> ElevenLabs) e JA inicia a reproducao --
-   * "speak" e sempre uma acao explicita do usuario (botao "Gerar voz"),
-   * nunca autoplay de pagina/efeito. Encerra qualquer audio anterior antes
-   * de comecar (apenas um audio ativo por vez).
+   * Gera a voz (Edge Function -> ElevenLabs) e JA inicia a reproducao.
+   * BLOCO UNI 2: chamado tanto por um clique explicito do usuario (botao
+   * "Ouvir") quanto pelo autoplay controlado da resposta atual da Uni (ver
+   * o efeito em UniChatPage.jsx) -- em ambos os casos, sempre encerra
+   * qualquer audio anterior antes de comecar (apenas um audio ativo por
+   * vez), o que garante que uma nova resposta sempre interrompe a
+   * anterior corretamente, mesmo quando autoplay e clique manual se
+   * alternam.
    */
   async function speak(text, { onPlaying, onEnded, onError } = {}) {
     stop();

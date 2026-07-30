@@ -35,7 +35,7 @@ A visibilidade de Relatórios depende do plano (Pro, Business ou Enterprise — 
 
 ## Pré-requisitos
 
-Sessão autenticada e onboarding concluído.
+Sessão autenticada, apresentação e Plano Pessoal concluídos.
 
 ## Limitações atuais
 

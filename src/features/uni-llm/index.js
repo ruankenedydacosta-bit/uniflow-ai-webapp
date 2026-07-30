@@ -1,4 +1,15 @@
 export { resolveLlmConfig, isLlmFlagEnabled, isLlmBackendConfigured, UNI_LLM_FLAG } from './llmConfig.js';
+export {
+  CONVERSATION_STYLES,
+  DEFAULT_CONVERSATION_STYLE,
+  isValidConversationStyle,
+  resolveConversationStyle,
+  buildConversationStyleInstructions,
+  CONVERSATION_STYLE_TOKEN_BUDGET,
+  resolveConversationStyleTokenBudget,
+  CONVERSATION_STYLE_CHAR_BUDGET,
+  resolveConversationStyleCharBudget,
+} from './conversationStyle.js';
 export { AI_STATUS, deriveAiStatus } from './aiStatus.js';
 export {
   buildLlmPayload,

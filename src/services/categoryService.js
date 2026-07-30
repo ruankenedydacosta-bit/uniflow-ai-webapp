@@ -4,6 +4,7 @@ const CATEGORY_FIELDS =
   'id, workspace_id, name, category_type, parent_category_id, icon, color, is_system, is_active, applies_to, created_by, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const VALID_CATEGORY_CONTEXTS = Object.freeze(['personal', 'business']);
 
 function createResult(data, error = null) {
   return {
@@ -77,7 +78,7 @@ export async function listGlobalCategories({ categoryType, activeOnly = true } =
 
 export async function listCategories(
   workspaceId,
-  { categoryType, activeOnly = true } = {},
+  { categoryType, activeOnly = true, context = null } = {},
 ) {
   if (!supabase) {
     return createUnavailableResult([]);
@@ -85,6 +86,9 @@ export async function listCategories(
 
   if (!isValidUuid(workspaceId)) {
     return createValidationResult('Workspace invalido para listar categorias.');
+  }
+  if (context !== null && !VALID_CATEGORY_CONTEXTS.includes(context)) {
+    return createValidationResult('Contexto invalido para listar categorias.');
   }
 
   let query = supabase
@@ -100,6 +104,9 @@ export async function listCategories(
 
   if (activeOnly) {
     query = query.eq('is_active', true);
+  }
+  if (context) {
+    query = query.in('applies_to', [context, 'both']);
   }
 
   const { data, error } = await query;
@@ -123,6 +130,12 @@ export async function createCategory(workspaceId, category = {}) {
   ) {
     return createValidationResult('Nome e tipo da categoria sao obrigatorios.');
   }
+  if (
+    category.applies_to !== undefined
+    && !['personal', 'business', 'both'].includes(category.applies_to)
+  ) {
+    return createValidationResult('Contexto invalido para criar a categoria.');
+  }
 
   if (
     category.parent_category_id &&
@@ -140,6 +153,7 @@ export async function createCategory(workspaceId, category = {}) {
       'icon',
       'color',
       'is_active',
+      'applies_to',
     ]),
     name: category.name.trim(),
   };

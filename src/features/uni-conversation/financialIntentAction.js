@@ -2,8 +2,11 @@ import {
   ACCOUNT_RESOLUTION_STATUS,
   resolveFinancialAccount,
 } from './accountResolution.js';
+import {
+  CATEGORY_RESOLUTION_STATUS,
+  resolveFinancialCategory,
+} from './categoryResolution.js';
 import { provisionAccountAndTransaction } from './accountProvisioning.js';
-import { normalizeFinancialText } from '../uni-intents/index.js';
 
 const ACTION_INTENTS = Object.freeze({
   register_income: 'income',
@@ -48,45 +51,20 @@ function sanitizeDescription(value) {
   return sanitized.length >= 2 ? sanitized : null;
 }
 
-function categorySimilarity(category, requestedCategory, normalizedInput) {
-  const name = normalizeFinancialText(category.name);
-  const requested = normalizeFinancialText(requestedCategory ?? '');
-  if (requested && name === requested) return 4;
-  if (requested && (name.includes(requested) || requested.includes(name))) return 3;
-
-  const nameWords = name.split(' ').filter((word) => word.length >= 4);
-  return nameWords.some((word) => normalizedInput.includes(word)) ? 2 : 0;
-}
-
-function resolveCategory({ categories, parsed, categoryId, transactionType }) {
-  const compatible = (Array.isArray(categories) ? categories : []).filter(
-    (category) =>
-      category.is_active !== false && category.category_type === transactionType,
-  );
-
-  if (categoryId) {
-    const category = compatible.find((item) => item.id === categoryId);
-    return category
-      ? { category, candidates: compatible }
-      : { code: 'category_incompatible', candidates: compatible };
+// BLOCO B: mapeia o status de resolveFinancialCategory (categoryResolution.js)
+// para o codigo de issue exibido/interpretado pelo restante do fluxo.
+// 'category_incompatible' preserva o comportamento anterior (categoryId
+// explicito mas de tipo errado). 'category_approximate' e 'category_will_create'
+// sao novos (Bloco B1/B2/B3). 'category_required' e o fallback final quando
+// nao ha nem correspondencia nem nome algum para propor.
+function mapCategoryIssueCode(categoryResult) {
+  if (categoryResult.incompatible) return 'category_incompatible';
+  if (categoryResult.status === CATEGORY_RESOLUTION_STATUS.PENDING_APPROXIMATE) return 'category_approximate';
+  if (categoryResult.status === CATEGORY_RESOLUTION_STATUS.WILL_CREATE) return 'category_will_create';
+  if (categoryResult.status === CATEGORY_RESOLUTION_STATUS.NOT_FOUND) {
+    return categoryResult.proposedCategoryName ? 'category_not_found' : 'category_required';
   }
-
-  const ranked = compatible
-    .map((category) => ({
-      category,
-      score: categorySimilarity(category, parsed.entities.category, parsed.normalizedInput),
-    }))
-    .filter((match) => match.score > 0)
-    .sort((left, right) => right.score - left.score);
-
-  if (ranked.length && (ranked.length === 1 || ranked[0].score > ranked[1].score)) {
-    return { category: ranked[0].category, candidates: compatible, approximate: ranked[0].score < 4 };
-  }
-
-  return {
-    code: parsed.entities.category ? 'category_not_found' : 'category_required',
-    candidates: compatible,
-  };
+  return 'category_required';
 }
 
 function createIssue(field, code, candidates = []) {
@@ -104,6 +82,7 @@ export function buildFinancialIntentAction({
   categories = [],
   referenceDate,
   overrides = {},
+  workspaceType = 'personal',
 } = {}) {
   if (!parsed || !isFinancialTransactionIntent(parsed.intent)) {
     return { status: 'unsupported', intent: parsed?.intent ?? 'question', issues: [] };
@@ -124,11 +103,19 @@ export function buildFinancialIntentAction({
     decision: overrides.accountDecision,
     input: parsed.input,
   });
-  const categoryResult = resolveCategory({
+  const categoryResult = resolveFinancialCategory({
     categories,
-    parsed,
-    categoryId: overrides.categoryId,
     transactionType,
+    categoryId: overrides.categoryId,
+    requestedName: parsed.entities.category,
+    description: parsed.entities.description,
+    normalizedInput: parsed.normalizedInput,
+    approved: overrides.categoryApproved,
+    excludedCategoryId: overrides.rejectedCategoryId,
+    excludedCategoryName: overrides.rejectedCategoryName,
+    decision: overrides.categoryDecision,
+    workspaceType,
+    aiInference: overrides.aiInference ?? null,
   });
   const issues = [];
 
@@ -152,8 +139,10 @@ export function buildFinancialIntentAction({
   if (transactionType === 'transfer' && !overrides.destinationAccountId) {
     issues.push(createIssue('destinationAccount', 'destination_account_required', accountResult.candidates));
   }
-  if (!categoryResult.category) {
-    issues.push(createIssue('category', categoryResult.code, categoryResult.candidates));
+  const categoryIsReady = Boolean(categoryResult.category)
+    || categoryResult.status === CATEGORY_RESOLUTION_STATUS.WILL_CREATE;
+  if (!categoryIsReady) {
+    issues.push(createIssue('category', mapCategoryIssueCode(categoryResult), categoryResult.candidates));
   }
   if (!description) {
     issues.push(createIssue('description', 'description_required'));
@@ -170,7 +159,7 @@ export function buildFinancialIntentAction({
         account_id: accountResult.account?.id ?? null,
         destination_account_id:
           transactionType === 'transfer' ? overrides.destinationAccountId : null,
-        category_id: categoryResult.category.id,
+        category_id: categoryResult.category?.id ?? null,
         transaction_type: transactionType,
         description,
         amount,
@@ -193,6 +182,8 @@ export function buildFinancialIntentAction({
     requestedAccountName: overrides.accountName ?? parsed.entities.account ?? null,
     category: categoryResult.category ?? null,
     categoryWasApproximate: Boolean(categoryResult.approximate),
+    proposedCategory: categoryResult.proposedCategory ?? null,
+    proposedCategoryName: categoryResult.proposedCategoryName ?? null,
     issues,
     options: {
       accounts: (Array.isArray(accounts) ? accounts : []).filter((account) => account.is_active !== false),

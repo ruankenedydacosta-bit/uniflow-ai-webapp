@@ -17,6 +17,9 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Local-only secrets, never versioned (Asaas Sandbox credentials, etc.)
+.secrets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -32,3 +35,5 @@ claude-prototype/
 
 # Graphify generated artifacts (cache, snapshots, regenerable reports)
 graphify-out/
+.vercel
+.secrets_tmp_token.txt

@@ -1,0 +1,141 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  countMoneyMentions,
+  looksLikeComplexFinancialText,
+  isUnsupportedIntentEligibleForPlan,
+  looksLikeFreshFinancialStatement,
+  looksLikeUnclassifiedFinancialStatement,
+  splitFinancialClauses,
+} from './financialPlanTrigger.js';
+
+test('countMoneyMentions conta menções em R$ e "reais"', () => {
+  assert.equal(countMoneyMentions('Gastei R$ 80 no mercado e R$ 50 de gasolina'), 2);
+  assert.equal(countMoneyMentions('Recebi 100 reais e gastei 30 reais'), 2);
+  assert.equal(countMoneyMentions('Gastei 80 no mercado'), 0);
+  assert.equal(countMoneyMentions(''), 0);
+  assert.equal(countMoneyMentions(null), 0);
+});
+
+test('looksLikeComplexFinancialText detecta duas operações na mesma frase (multioperação)', () => {
+  assert.equal(looksLikeComplexFinancialText('Gastei R$ 80 no mercado e R$ 50 de gasolina'), true);
+});
+
+test('looksLikeComplexFinancialText detecta receita + despesa na mesma frase', () => {
+  assert.equal(looksLikeComplexFinancialText('Recebi R$ 200 de salário e paguei R$ 40 de internet'), true);
+});
+
+test('looksLikeComplexFinancialText detecta parcelamento', () => {
+  assert.equal(looksLikeComplexFinancialText('Comprei um celular em 10x de R$ 350'), true);
+  assert.equal(looksLikeComplexFinancialText('Comprei um celular parcelado em 10 vezes'), true);
+});
+
+test('looksLikeComplexFinancialText detecta recorrência', () => {
+  assert.equal(looksLikeComplexFinancialText('Pago R$ 30 de academia todo mês'), true);
+  assert.equal(looksLikeComplexFinancialText('Recebo esse valor mensalmente'), true);
+});
+
+test('looksLikeComplexFinancialText detecta transferência mesmo sem verbo explícito de gasto', () => {
+  assert.equal(looksLikeComplexFinancialText('Fiz uma transferência de R$ 100 do Nubank para a Caixa'), true);
+});
+
+test('looksLikeComplexFinancialText NÃO dispara para uma única operação simples', () => {
+  assert.equal(looksLikeComplexFinancialText('Gastei R$ 80 no mercado'), false);
+  assert.equal(looksLikeComplexFinancialText('Recebi R$ 3000 de salário'), false);
+});
+
+test('looksLikeComplexFinancialText NÃO dispara para perguntas genéricas sem verbo financeiro', () => {
+  assert.equal(looksLikeComplexFinancialText('Quanto eu gastei esse mês?'), false);
+  assert.equal(looksLikeComplexFinancialText('Qual é o meu saldo?'), false);
+  assert.equal(looksLikeComplexFinancialText(''), false);
+  assert.equal(looksLikeComplexFinancialText(null), false);
+});
+
+test('isUnsupportedIntentEligibleForPlan só é true para register_transfer', () => {
+  assert.equal(isUnsupportedIntentEligibleForPlan('register_transfer'), true);
+  assert.equal(isUnsupportedIntentEligibleForPlan('create_goal'), false);
+  assert.equal(isUnsupportedIntentEligibleForPlan('register_expense'), false);
+  assert.equal(isUnsupportedIntentEligibleForPlan(undefined), false);
+});
+
+// ============================================================================
+// BUG REAL: "Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do
+// Brasil." tinha só um valor explícito para duas despesas -- a heurística
+// antiga só olhava contagem de menções de dinheiro (>=2) e nunca detectava
+// esse caso. Agora reconhece cláusulas encadeadas por conjunção com sinal
+// financeiro próprio (verbo, conta ou valor), mesmo com um valor só.
+// ============================================================================
+
+test('BUG REAL: "Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do Brasil" aciona o plano neural', () => {
+  assert.equal(
+    looksLikeComplexFinancialText('Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do Brasil.'),
+    true,
+  );
+});
+
+test('splitFinancialClauses separa por "e"/"também"/"depois"/"aí"/"além disso"/"mas"/"enquanto"', () => {
+  assert.deepEqual(
+    splitFinancialClauses('Gastei 50 no mercado e a gasolina eu paguei pelo Banco do Brasil'),
+    ['Gastei 50 no mercado', 'a gasolina eu paguei pelo Banco do Brasil'],
+  );
+  assert.deepEqual(
+    splitFinancialClauses('Paguei a luz e também paguei a água'),
+    ['Paguei a luz', 'também paguei a água'],
+  );
+  assert.equal(splitFinancialClauses(null).length, 0);
+});
+
+test('looksLikeComplexFinancialText NÃO dispara para uma cláusula financeira seguida de uma cláusula sem nenhum sinal', () => {
+  assert.equal(looksLikeComplexFinancialText('Gastei 50 reais no mercado e estou feliz com isso'), false);
+});
+
+test('looksLikeFreshFinancialStatement detecta um enunciado financeiro novo e autossuficiente (verbo + valor)', () => {
+  assert.equal(
+    looksLikeFreshFinancialStatement('Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do Brasil.'),
+    true,
+  );
+  assert.equal(looksLikeFreshFinancialStatement('Recebi 200 reais de salário'), true);
+});
+
+test('looksLikeFreshFinancialStatement NÃO dispara para respostas curtas de correção (sem verbo+valor ao mesmo tempo)', () => {
+  assert.equal(looksLikeFreshFinancialStatement('foi no Nubank'), false);
+  assert.equal(looksLikeFreshFinancialStatement('Foi ontem'), false);
+  assert.equal(looksLikeFreshFinancialStatement('200 reais'), false);
+  assert.equal(looksLikeFreshFinancialStatement('confirmar'), false);
+  assert.equal(looksLikeFreshFinancialStatement(''), false);
+  assert.equal(looksLikeFreshFinancialStatement(null), false);
+});
+
+// ============================================================================
+// BUG REAL EM PRODUÇÃO: "Coloquei duzentos reais de gasolina." não batia em
+// nenhum intent de classifyIntent (nenhum verbo reconhecido) -- o parser de
+// uma única operação devolvia handled:false com intent 'question', e como
+// isso não era elegível para financial_plan (só register_transfer era) nem
+// create_goal nem intenção de futuro, a frase caía direto em
+// handleUnresolvedMessage (chat geral), cujo prompt de suporte
+// corretamente diz "você só pode orientar, nunca dizer que fez" -- daí a
+// resposta indevida "não consigo registrar daqui". looksLikeUnclassifiedFinancialStatement
+// é a barreira determinística de última instância: some sinal mínimo de
+// lançamento (verbo OU substantivo despesa/gasto/receita/entrada/pagamento)
+// + um valor monetário real nunca pode ir para o chat geral.
+// ============================================================================
+
+test('looksLikeUnclassifiedFinancialStatement detecta o caso real "Coloquei duzentos reais de gasolina."', () => {
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Coloquei duzentos reais de gasolina.'), true);
+});
+
+test('looksLikeUnclassifiedFinancialStatement detecta valor + substantivo de lançamento mesmo sem verbo catalogado', () => {
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Uma despesa de R$ 70 no cartão'), true);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Uma receita de R$ 500 hoje'), true);
+});
+
+test('looksLikeUnclassifiedFinancialStatement NÃO dispara sem nenhum valor monetário real', () => {
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Oi, tudo bem?'), false);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Coloquei uma música nova'), false);
+  assert.equal(looksLikeUnclassifiedFinancialStatement(''), false);
+  assert.equal(looksLikeUnclassifiedFinancialStatement(null), false);
+});
+
+test('looksLikeUnclassifiedFinancialStatement NÃO dispara para consulta genérica com valor (ex.: comparação), sem verbo/substantivo de lançamento', () => {
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Esse produto custa 200 reais a mais que o outro na loja'), false);
+});

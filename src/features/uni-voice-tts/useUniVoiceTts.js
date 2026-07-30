@@ -50,7 +50,11 @@ export function useUniVoiceTts() {
       return { error: err };
     }
     if (sanitized.length > MAX_TTS_TEXT_LENGTH) {
-      const err = buildError(VOICE_TTS_ERROR_CODES.INVALID_TEXT);
+      // BLOCO A1: distinto de INVALID_TEXT -- o texto e valido, so longo
+      // demais para narrar. MessageBubble exibe getVoiceTtsErrorMessage
+      // deste codigo, que convida a ler na tela em vez de parecer uma
+      // falha tecnica generica.
+      const err = buildError(VOICE_TTS_ERROR_CODES.TEXT_TOO_LONG);
       setStatus(VOICE_TTS_STATUS.ERROR);
       setError(err);
       return { error: err };

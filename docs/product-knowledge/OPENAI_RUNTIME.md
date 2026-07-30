@@ -7,7 +7,7 @@ Documento operacional (não é conhecimento de produto para a Uni consumir — �
 - Frontend nunca fala com a OpenAI diretamente. Toda chamada passa pela Edge Function `supabase/functions/uni-chat-llm/index.ts`, que é a única detentora da credencial (`OPENAI_API_KEY`, Secret do Supabase — nunca lido, copiado ou logado por este processo, apenas confirmado como existente pelo nome).
 - API usada: **Chat Completions** (`POST https://api.openai.com/v1/chat/completions`), oficialmente suportada e mantida indefinidamente pela OpenAI. Não migramos para a Responses API porque a arquitetura atual (mensagens simples, sem tools/estado gerenciado pela OpenAI) não precisa dela — migrar sem necessidade violaria a instrução da própria fase.
 - Autenticação ao provedor: `Authorization: Bearer ${OPENAI_API_KEY}`, apenas server-side.
-- Dois modos explícitos, via campo `mode` no payload: `financial` (default, compatível com OPENAI1/OPENAI2) e `support` (OPENAI3).
+- Quatro modos explícitos, via campo `mode` no payload: `financial` (default, compatível com OPENAI1/OPENAI2), `support` (OPENAI3), `category_inference` (BLOCO D) e `financial_plan` (BLOCO E).
 
 ## Modo financeiro (`UNI_MODE.FINANCIAL`)
 
@@ -21,6 +21,107 @@ Documento operacional (não é conhecimento de produto para a Uni consumir — �
 - O prompt de suporte é montado inteiramente no servidor a partir de `SUPPORT_MODE_INSTRUCTIONS` (fixo, nunca editável pelo cliente) + um "contexto de produto" pequeno, já recuperado pelo cliente via busca local determinística sobre `docs/product-knowledge/` (`retrieveProductKnowledge`, `src/features/product-knowledge/`).
 - O contexto de produto é tratado como **dado de referência**, nunca como instrução — mesmo que o texto de um documento pareça uma instrução, o modelo é orientado a ignorá-la.
 - Ainda não existe uma Central de Suporte com tela própria. Este modo é acionado hoje apenas de forma técnica/direta (`buildSupportRequestPayload`), pronto para uma futura interface consumir (ver `SUPPORT_HANDOFF.md`).
+
+## Modo de inferência de categoria (`UNI_MODE.CATEGORY_INFERENCE`, BLOCO D)
+
+**Onde entra na hierarquia de resolução de categoria** (`src/features/uni-conversation/categoryResolution.js`): a IA é a **penúltima** camada, chamada só depois de todas as camadas determinísticas falharem, e antes da criação assistida:
+
+1. Correspondência exata (nome idêntico).
+2. Alias/aproximação local por texto (`categorySimilarity` — substring/overlap de palavras).
+3. **Inferência da OpenAI** (só chamada quando 1–2 não encontraram nada, a feature flag `VITE_UNI_LLM_ENABLED` está ativa e existem categorias pessoais compatíveis para comparar).
+4. Confirmação explícita do usuário (quando a confiança exige).
+5. Criação assistida (`CREATE_CATEGORY`, fluxo já existente do Bloco B — nunca a IA cria a categoria, apenas sugere um nome).
+6. Persistência pelo RPC determinístico existente (`execute_confirmed_financial_action`).
+
+A OpenAI **nunca** é chamada quando já existe correspondência exata ou aproximada local — é estritamente um preenchimento de lacuna, não uma substituição do parser financeiro determinístico.
+
+**Contrato estruturado da resposta** (validado tanto no cliente — `src/features/uni-category-inference/categoryInferenceContract.js` — quanto no servidor, em profundidade):
+
+```json
+{
+  "decision": "existing_category" | "create_category" | "uncertain",
+  "category_id": "um dos IDs enviados no payload, ou null",
+  "confidence": 0.0,
+  "suggested_name": "string curta (só para create_category) ou null",
+  "reason": "justificativa curta, no máximo uma frase"
+}
+```
+
+Regras de validação (resposta inválida em qualquer um destes casos vira fallback seguro — `uncertain` equivalente, nunca quebra o registro da transação): `decision` fora do enum; `confidence` não numérica, `< 0` ou `> 1`; `category_id` ausente/fora da lista de IDs enviada quando `decision === 'existing_category'`; `suggested_name` ausente quando `decision === 'create_category'`; JSON malformado. Campos extras (ex.: uma tentativa de incluir uma instrução de execução) são sempre ignorados, nunca interpretados.
+
+**Faixas de confiança** (`src/features/uni-category-inference/categoryInferenceConfig.js`):
+
+| Faixa | Comportamento |
+|---|---|
+| `>= 0.88` (alta) | Resolve a categoria diretamente (`RESOLVED`) — ainda sujeita à confirmação final normal da transação, nunca persiste sozinha. |
+| `>= 0.65 e < 0.88` (intermediária) | Vira uma pergunta explícita ("Posso usar a categoria X?"), mesmo padrão já usado por uma aproximação local. |
+| `< 0.65` (baixa) | Ignorada por completo — tratada como se a IA não tivesse sugerido nada. |
+| `create_category` | Nunca cria sozinha — o nome sugerido alimenta o fluxo assistido `CREATE_CATEGORY` já existente, que pede confirmação e retoma a transação original após a criação real. |
+
+**Entrada enviada** (`categoryInferencePayload.js`): apenas descrição sanitizada (até 160 caracteres), tipo (`income`/`expense`), até 12 categorias pessoais (`{id, name}`, nomes truncados em 60 caracteres) e `locale: 'pt-BR'`. Nunca saldo, contas, CPF, e-mail, telefone, histórico completo ou contexto Business — por construção (a função só lê esses três campos da entrada, e filtra qualquer categoria com `applies_to === 'business'` mesmo que o chamador passe por engano).
+
+**Responsabilidades da OpenAI**: interpretar semanticamente a descrição e sugerir uma categoria/nome, com confiança e justificativa curta. Nunca: persistir transação, criar categoria, escolher conta, confirmar a ação do usuário, chamar RPC, alterar saldo, ou inventar um ID fora da lista enviada.
+
+**Responsabilidades da camada determinística**: todo o resto — parsing da frase, resolução de conta, aplicação da hierarquia de confiança, criação real da categoria (`useCategories().saveCategory`), persistência da transação (`execute_confirmed_financial_action`), e toda a confirmação final ao usuário.
+
+**Contexto Pessoal**: só participam categorias do workspace/produto Pessoal (mesmo filtro fail-closed do Bloco C); nenhuma categoria Business é enviada à IA nem aceita de volta — mesmo que sugerida, um ID business nunca estaria na allowlist enviada, então seria rejeitado como "ID não permitido".
+
+**Timeout dedicado**: 8 segundos (mais curto que os 20s do chat, documentado em `categoryInferenceConfig.js` — a inferência acontece no meio do fluxo de registro por voz, não pode travar a experiência). Token de saída fixo e pequeno (200, nunca controlado pelo cliente).
+
+**Fallback**: qualquer erro (timeout, 401, 429, 503, JSON inválido, ID inexistente, confiança fora do intervalo) faz a camada determinística seguir exatamente como se a IA nunca tivesse sido chamada — usuário ainda pode escolher ou criar a categoria manualmente, o fluxo nunca quebra.
+
+## Modo de plano financeiro (`UNI_MODE.FINANCIAL_PLAN`, BLOCO E)
+
+**Importante — escopo desta seção**: o Bloco E é uma evolução **funcional** do parser financeiro da Uni (entender frases financeiras mais ricas — multioperação, transferência, parcelamento, recorrência — e transformá-las num plano estruturado, sempre confirmado pelo usuário antes de qualquer persistência). Ele **não é** um sistema de raciocínio geral, não implementa AGI, e não é a mesma coisa que o futuro projeto "Uni Engine" (motor epistêmico/modelo mental/curiosidade/metacognição, cogitado para uma fase totalmente separada e ainda não iniciada). Qualquer semelhança de linguagem ("plano", "operações", "confiança") descreve apenas uma extensão do mesmo padrão híbrido determinístico+IA já usado no Bloco D — nunca uma mudança de natureza do sistema.
+
+**Arquitetura híbrida**: o parser determinístico de uma única operação (`src/features/uni-intents/`) continua sendo a primeira tentativa. Uma heurística puramente determinística (`src/features/uni-conversation/financialPlanTrigger.js`, nunca a IA) decide quando vale tentar a camada neural — frase com dois ou mais valores monetários, menção a parcelamento (`10x`, "parcelado"), recorrência ("todo mês", "mensalmente") ou transferência. Quando a heurística não dispara, ou quando a camada neural não devolve um plano válido (indisponível, erro, timeout, resposta fora do contrato), o fluxo determinístico de uma única operação segue exatamente como antes — o Bloco E nunca é uma dependência obrigatória do caminho normal.
+
+**Contrato estruturado do plano** (validado tanto no cliente — `src/features/uni-financial-plan/financialPlanContract.js` — quanto no servidor, em profundidade, na Edge Function):
+
+```json
+{
+  "version": "1",
+  "decision": "single_operation" | "multiple_operations" | "clarification_required" | "unsupported",
+  "operations": [{
+    "temporary_id": "op_1",
+    "operation_type": "expense" | "income" | "transfer" | "installment_purchase" | "recurring_expense" | "recurring_income",
+    "amount": 0.0,
+    "currency": "BRL",
+    "description": "string",
+    "date_expression": "texto original (ex.: 'ontem'), nunca uma data já calculada",
+    "source_account_reference": "nome textual, nunca um ID",
+    "destination_account_reference": "nome textual, nunca um ID (só para transfer)",
+    "category_reference": "nome textual, nunca um ID",
+    "installments": { "count": 0, "installment_amount": 0.0, "total_amount": 0.0 },
+    "recurrence": { "frequency": "monthly", "interval": 1 },
+    "confidence": 0.0,
+    "missing_fields": ["..."],
+    "reason": "justificativa curta"
+  }],
+  "clarification_question": "string ou null",
+  "global_confidence": 0.0
+}
+```
+
+Regras centrais de validação (qualquer violação invalida o plano inteiro, caindo no fluxo determinístico normal): `resolved_date` nunca é lido do plano (só `date_expression` sobrevive à validação — a data real é sempre recalculada por um resolvedor determinístico local, nunca pela matemática da IA); `account_id`/`category_id`/`user_id`/`execute`/`persist`/`rpc` e qualquer campo de execução são ignorados mesmo se presentes; `transfer` exige origem e destino distintas e não vazias; `installment_purchase` exige `count × installment_amount ≈ total_amount`; `recurring_*` exige uma frequência válida; até 6 operações por plano; categorias/contas Business nunca entram no payload nem são aceitas de volta (mesmo filtro fail-closed do Bloco D).
+
+**Resolução determinística por operação** (`src/features/uni-conversation/pendingFinancialPlan.js`): cada operação do plano passa individualmente pelos MESMOS resolutores já usados por uma única transação (`resolveFinancialAccount`, `resolveFinancialCategory`, `buildFinancialIntentAction`) — nunca uma resolução em lote, nunca pulando a hierarquia de confiança do Bloco D. Uma operação com conta/categoria ainda não cadastrada nunca cria silenciosamente — pede que o usuário informe uma conta/categoria já existente (a criação assistida de conta/categoria dentro de um plano com várias operações ainda não existe; é uma limitação documentada, não um comportamento simulado).
+
+**Datas relativas** (`src/features/uni-intents/relativeDateResolver.js`): hoje/ontem/anteontem/amanhã, fim/começo do mês, dia da semana (passado ou "que vem"), "dia N" — sempre resolvidas localmente a partir de uma data de referência fixa (nunca `new Date()` direto em teste, sempre injetada), nunca confiando em qualquer data que a IA eventualmente calcule.
+
+**Multioperação e mistura de receita/despesa**: cada operação é independente — "Gastei R$ 80 no mercado e R$ 50 de gasolina" vira duas operações de despesa separadas; receita e despesa na mesma frase nunca são somadas/subtraídas num valor líquido. Uma confirmação consolidada cobre todas as operações prontas de uma vez; uma operação cancelada não afeta as demais.
+
+**Parcelamento e recorrência (limite de escopo explícito)**: compreendidos e apresentados ao usuário na confirmação, mas **nunca persistidos** — não existe hoje RPC/tabela de parcelamento nem de recorrência automática no backend. Essas operações ficam marcadas como `capabilityPending`, com uma mensagem honesta explicando a limitação, e nunca bloqueiam as demais operações do mesmo plano de seguir para confirmação.
+
+**Transferência**: ao contrário do chat de uma única operação (que bloqueia `register_transfer` por decisão de produto, não técnica — `ALLOWED_CHAT_WRITE_INTENTS` em `UniChatPage.jsx`), o RPC atômico existente (`execute_confirmed_financial_action`) já suporta `transaction_type = 'transfer'` (confirmado em `supabase/migrations/20260712_008_atomic_financial_action.sql` e `20260716_009_...sql`). O módulo do plano chama a resolução/persistência diretamente, contornando apenas aquele allowlist específico do fluxo antigo — nunca altera a RPC nem o schema.
+
+**Correções conversacionais**: um turno de acompanhamento como "Foi ontem", "Na verdade foram R$95", "Troca para Alimentação" ou "Não foi Nubank, foi Caixa" corrige a operação atual do plano pendente (`src/features/uni-conversation/financialPlanPresenter.js#parsePlanCorrectionOverrides`) usando apenas contas/categorias reais já carregadas — nunca inventa uma conta/categoria que não exista na lista.
+
+**Confiança e esclarecimento**: `>= 0.90` (alta) segue para confirmação; `0.70–0.90` (intermediária) e `< 0.70` (baixa) pedem uma pergunta de esclarecimento específica (nunca genérica) — nunca lida em voz alta como número/percentual (a experiência de voz nunca lê ID, JSON ou confiança).
+
+**Persistência**: uma operação por vez, pelo mesmo RPC atômico já existente — nunca em lote, nunca uma "transação fantasma" cobrindo várias operações de uma vez (não existe hoje um RPC atômico de lote; se uma operação falhar no meio da confirmação, as já confirmadas permanecem confirmadas e o plano fica `partial`, nunca promete que tudo foi registrado quando não foi).
+
+**Payload enviado**: frase do usuário (até 240 caracteres), um resumo textual curto do plano pendente (para correções, nunca o plano inteiro serializado), até 12 contas e 12 categorias pessoais (`{id, name}`), data de referência e timezone. Nunca saldo, histórico de transações, CPF, e-mail, telefone ou contexto Business.
 
 ## Modelo
 
