@@ -30,11 +30,21 @@ test('sem sessão (modo demo, sem Supabase configurado) volta para /login sem st
   assert.match(page, /if \(!session\) \{\s*\n[\s\S]*?return <Navigate to="\/login" replace \/>;/);
 });
 
-test('sessão presente retorna ao destino salvo ou passa pelo onboarding', async () => {
+// GUARD FIX: onboarding legado removido -- AuthCallbackPage não precisa
+// mais decidir entre onboarding/destino aqui. Ela sempre navega direto para
+// o destino salvo; App.jsx é quem decide o resto (apresentação -> Plano
+// Pessoal -> pagamento -> Home só com assinatura ativa), reaplicado a CADA
+// navegação, inclusive na que esta página dispara -- nenhuma lógica
+// duplicada, nenhum segundo bootstrap.
+test('sessão presente sempre navega para o destino salvo -- App.jsx decide apresentação/Plano Pessoal/Home a partir daí', async () => {
   const page = await source('AuthCallbackPage.jsx');
   assert.match(page, /const destination = consumeAuthReturnPath\(\);/);
-  assert.match(page, /to=\{needsOnboarding \? '\/onboarding' : destination\}/);
-  assert.match(page, /state=\{needsOnboarding \? \{ returnTo: destination \} : undefined\}/);
+  assert.match(page, /return <Navigate to=\{destination\} replace \/>;/);
+  // Checa só o corpo da função (nunca o comentário JSDoc, que cita
+  // "onboarding" ao explicar a decisão de design) -- o código em si nunca
+  // referencia needsOnboarding nem uma rota /onboarding.
+  const codeBody = page.slice(page.indexOf('function AuthCallbackPage'));
+  assert.doesNotMatch(codeBody, /needsOnboarding|\/onboarding/);
 });
 
 test('usa <Navigate> declarativo, nunca useEffect + navigate imperativo -- evita redirecionamento repetido/loop', async () => {
@@ -47,5 +57,5 @@ test('usa <Navigate> declarativo, nunca useEffect + navigate imperativo -- evita
 
 test('deriva o estado inteiramente de useSession() (mesmo contexto usado por App.jsx/AUTH2), sem criar um segundo bootstrap', async () => {
   const page = await source('AuthCallbackPage.jsx');
-  assert.match(page, /const \{ error: sessionError, needsOnboarding, session \} = useSession\(\);/);
+  assert.match(page, /const \{ error: sessionError, session \} = useSession\(\);/);
 });

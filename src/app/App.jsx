@@ -18,6 +18,7 @@ import {
   PERSONAL_PLAN_RETURN_ROUTE,
   PERSONAL_PLAN_ROUTE,
   isPersonalPlanCompleted,
+  usePersonalPlanAccessGuard,
 } from '../features/personal-plan';
 import {
   SIMPLIFIED_ROUTES,
@@ -32,6 +33,7 @@ function AppContent() {
     isSupabaseConfigured,
     profile,
     session,
+    workspace,
   } = useSession();
   const location = useLocation();
   const activeRoute = appRoutes.find((route) => route.path === location.pathname);
@@ -42,18 +44,47 @@ function AppContent() {
   const presentationCompleted = isPresentationCompleted(presentationUserId);
   const isPresentationRoute = location.pathname === PRESENTATION_ROUTE;
   const isPresentationReplay = Boolean(location.state?.[PRESENTATION_REPLAY_STATE]);
-  // BUGFIX (redirecionamento pós-login): mesmo padrão de conclusão
-  // persistida por usuário do presentationStorage.js, aplicado ao Plano
-  // Pessoal -- garante que exista uma resolução única pós-auth (apresentação
-  // -> plano pessoal -> Home simplificada), nunca o shell legado por padrão.
+  // GUARD FIX: o marcador local (personalPlanStorage.js) NUNCA é mais usado
+  // como autorização -- ele liberava /app/home para quem nunca teve
+  // assinatura real, ou cujo status tinha mudado (cancelou, virou pending/
+  // past_due/suspended) depois de marcado como concluído. Mantido só como
+  // fallback para o modo demo (sem Supabase configurado, sem backend real
+  // para consultar) -- comportamento de demo inalterado.
   const personalPlanCompleted = isPersonalPlanCompleted(presentationUserId);
   // BLOCO ASAAS CHECKOUT: a rota de retorno do Checkout de cartão
   // (/plano-pessoal/retorno) também precisa ficar isenta deste guard --
   // sem isso, o usuário seria redirecionado de volta para /plano-pessoal
-  // ANTES de ver a confirmação, já que personalPlanCompleted só vira true
-  // depois que a tela de retorno confirma o pagamento.
+  // ANTES de ver a confirmação, já que o acesso só libera depois que a
+  // tela de retorno confirma o pagamento de verdade.
   const isPersonalPlanRoute = location.pathname === PERSONAL_PLAN_ROUTE
     || location.pathname === PERSONAL_PLAN_RETURN_ROUTE;
+
+  // GUARD FIX: única fonte de verdade sobre acesso real é
+  // billing-get-subscription (via usePersonalPlanAccessGuard) -- nunca o
+  // cache local. Só roda com backend real configurado, sessão já resolvida,
+  // apresentação concluída e usuário identificado. Revalida sempre que o
+  // usuário sai da rota do Plano Pessoal/retorno do Checkout (único
+  // momento em que o status pode ter mudado de verdade dentro da mesma
+  // sessão).
+  const personalPlanGuardEnabled = Boolean(
+    isSupabaseConfigured && !isSessionLoading && presentationUserId && presentationCompleted,
+  );
+  const { status: personalPlanAccessStatus } = usePersonalPlanAccessGuard({
+    workspaceId: workspace?.id,
+    enabled: personalPlanGuardEnabled,
+    revalidateWhenLeavingRoute: isPersonalPlanRoute,
+  });
+  // Enquanto o backend real está configurado, o cache local nunca decide --
+  // só 'active' confirmado agora libera o app. Sem Supabase (modo demo),
+  // preserva o comportamento antigo (só local, sem backend para consultar).
+  const personalPlanUnlocked = isSupabaseConfigured
+    ? personalPlanAccessStatus === 'active'
+    : personalPlanCompleted;
+  // 'idle' conta como loading: é o valor inicial no primeiro render depois
+  // do guard ser habilitado, antes do efeito disparar a consulta real --
+  // nunca decide/redireciona nesse instante (evita flicker).
+  const personalPlanAccessLoading = personalPlanGuardEnabled
+    && (personalPlanAccessStatus === 'loading' || personalPlanAccessStatus === 'idle');
 
   if (isSupabaseConfigured && isSessionLoading) {
     // AUTH4: label especifico enquanto o retorno do OAuth (Google) esta
@@ -74,12 +105,19 @@ function AppContent() {
         && session
         && !sessionError
       ) {
+        // GUARD FIX: nunca decide o destino pós-login com o cache local --
+        // espera a consulta real de assinatura resolver antes de escolher
+        // entre Plano Pessoal e o destino final (evita liberar a Home para
+        // quem nunca assinou de verdade).
+        if (presentationCompleted && personalPlanAccessLoading) {
+          return <Loader fullScreen label="Verificando sua assinatura…" />;
+        }
         return (
           <Navigate
             to={
               !presentationCompleted
                 ? PRESENTATION_ROUTE
-                : !personalPlanCompleted
+                : !personalPlanUnlocked
                   ? PERSONAL_PLAN_ROUTE
                   : requestedReturnPath
             }
@@ -127,16 +165,29 @@ function AppContent() {
     return <Navigate to={PRESENTATION_NEXT_ROUTE} replace />;
   }
 
+  // GUARD FIX: enquanto a consulta real de assinatura ainda não resolveu,
+  // nunca decide (nem redireciona para /plano-pessoal, nem deixa passar) --
+  // evita flicker e evita a janela em que um usuário sem assinatura real
+  // conseguiria alcançar /app/home antes da consulta terminar.
   if (
     presentationUserId
     && presentationCompleted
-    && !personalPlanCompleted
+    && !isPersonalPlanRoute
+    && personalPlanAccessLoading
+  ) {
+    return <Loader fullScreen label="Verificando sua assinatura…" />;
+  }
+
+  if (
+    presentationUserId
+    && presentationCompleted
+    && !personalPlanUnlocked
     && !isPersonalPlanRoute
   ) {
     return <Navigate to={PERSONAL_PLAN_ROUTE} replace />;
   }
 
-  if (isPersonalPlanRoute && personalPlanCompleted) {
+  if (isPersonalPlanRoute && personalPlanUnlocked) {
     return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;
   }
 

@@ -4,9 +4,7 @@ import test from 'node:test';
 import {
   AUTH_MODES,
   SOCIAL_PROVIDERS,
-  WELCOME_SLIDES,
   getGoogleAuthFeedback,
-  getNextSlideIndex,
   getSocialUnavailableResult,
   normalizeAuthMode,
 } from './authMobileSchema.js';
@@ -15,35 +13,6 @@ import { isValidEmail, validateAuthForm } from './authMobileValidator.js';
 async function source(path) {
   return readFile(new URL(path, import.meta.url), 'utf8');
 }
-
-test('Welcome possui as tres apresentacoes oficiais', () => {
-  assert.equal(WELCOME_SLIDES.length, 3);
-  assert.deepEqual(WELCOME_SLIDES.map((slide) => slide.title), [
-    'Entenda sua vida financeira',
-    'Converse com a Uni',
-    'Organize hoje. Visualize o futuro.',
-  ]);
-});
-
-test('troca entre slides respeita os limites', () => {
-  assert.equal(getNextSlideIndex(0, 1), 1);
-  assert.equal(getNextSlideIndex(2, 1), 2);
-  assert.equal(getNextSlideIndex(0, -1), 0);
-});
-
-test('Welcome renderiza CTAs de cadastro e login', async () => {
-  const contents = await source('./components/WelcomeCarousel.jsx');
-  assert.match(contents, /Criar minha conta/);
-  assert.match(contents, /Já tenho uma conta/);
-  assert.match(contents, /onTouchStart/);
-  assert.match(contents, /onTouchEnd/);
-});
-
-test('CTA Criar conta usa o modo signup da rota unica', async () => {
-  const contents = await source('./pages/MobileWelcomePage.jsx');
-  assert.match(contents, /\/login\?mode=signup/);
-  assert.match(contents, /navigate\('\/login'\)/);
-});
 
 test('alternancia aceita somente Entrar e Criar conta', () => {
   assert.equal(normalizeAuthMode('signup'), AUTH_MODES.SIGN_UP);
@@ -113,7 +82,7 @@ test('mensagens de erro são humanas e não exibem detalhes internos', async () 
 test('feature não contém chamadas externas ou SDK social', async () => {
   const paths = [
     './authMobileSchema.js', './authMobileValidator.js',
-    './pages/MobileAuthPage.jsx', './pages/MobileWelcomePage.jsx',
+    './pages/MobileAuthPage.jsx',
     './components/SocialAuthButtons.jsx', './components/EmailAuthForm.jsx',
   ];
   const contents = (await Promise.all(paths.map(source))).join('\n');
@@ -121,13 +90,69 @@ test('feature não contém chamadas externas ou SDK social', async () => {
   assert.doesNotMatch(contents, /googleapis|appleid|client_secret|access_token/i);
 });
 
-test('rotas existentes permanecem e Welcome é pública', async () => {
+test('experiência institucional usa somente as duas logos oficiais por import', async () => {
+  const contents = await source('./components/AuthBrandExperience.jsx');
+  assert.match(contents, /logo_uniflowai\.png/);
+  assert.match(contents, /smartech_logo_transparente\.png/);
+  assert.doesNotMatch(contents, /icones_quatros_beneficios|onda_luminosa/);
+  assert.match(contents, /alt="UniFlow AI — Conectando você às melhores decisões financeiras\."/);
+  assert.match(contents, /alt="SmartTech"/);
+});
+
+test('login e cadastro compartilham a mesma composição institucional', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.match(contents, /<AuthBrandExperience \/>/);
+  assert.match(contents, /<PartnershipFooter \/>/);
+  assert.match(contents, /mode === AUTH_MODES\.SIGN_UP \? 'Crie sua conta' : 'Boas-vindas de volta'/);
+  assert.match(contents, /mode === AUTH_MODES\.SIGN_UP \? 'Comece agora' : 'Entrar na sua conta'/);
+});
+
+test('benefícios e onda luminosa são construídos em SVG e CSS', async () => {
+  const contents = await source('./components/AuthBrandExperience.jsx');
+  [
+    'Segurança de ponta',
+    'Insights inteligentes',
+    'Organize suas finanças',
+    'IA que trabalha por você',
+  ].forEach((label) => assert.match(contents, new RegExp(label)));
+  assert.match(contents, /<svg viewBox="0 0 720 150"/);
+  assert.match(contents, /<linearGradient/);
+  assert.match(contents, /useId\(\)/);
+});
+
+test('cadastro segue para a apresentação sem redirecionar ao onboarding antigo', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.match(contents, /const POST_SIGN_UP_DESTINATION = PRESENTATION_ROUTE;/);
+  assert.doesNotMatch(contents, /navigate\([^)]*\/onboarding/);
+});
+
+test('autenticação não inclui perguntas antigas de reconhecimento ou perfil', async () => {
+  const contents = await source('./pages/MobileAuthPage.jsx');
+  assert.doesNotMatch(contents, /reconhecimento|Pessoa Física|Pessoa Jurídica|PF\/PJ|Qual é o seu objetivo/i);
+});
+
+test('estrutura visual preserva responsividade, safe area e redução de movimento', async () => {
+  const css = await source('./authMobile.module.css');
+  assert.match(css, /env\(safe-area-inset-top\)/);
+  assert.match(css, /@media \(max-width: 359px\)/);
+  assert.match(css, /@media \(min-width: 768px\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /overflow-x: hidden/);
+});
+
+test('rotas existentes permanecem e /welcome redireciona para o Login', async () => {
   const routes = await readFile(
     new URL('../../app/routes.jsx', import.meta.url), 'utf8',
   );
   ['/welcome', '/login', '/onboarding', '/dashboard', '/uni-ai', '/financeiro'].forEach(
     (path) => assert.match(routes, new RegExp(path.replace('/', '\\/'))),
   );
+  const welcomeRoute = routes.slice(
+    routes.indexOf("path: '/welcome'"),
+    routes.indexOf("path: '/login'"),
+  );
+  assert.match(welcomeRoute, /<Navigate to="\/login" replace \/>/);
+  assert.doesNotMatch(routes, /MobileWelcomePage|WelcomeCarousel/);
 });
 
 // ============================================================================
@@ -247,20 +272,14 @@ test('SocialAuthButtons recebe googleLoading e renderiza somente Google', async 
     contents,
     /function SocialAuthButtons\(\{ onGoogleAuth, disabled = false, googleLoading = false \}\)/,
   );
-  const googleButtonBlock = contents.slice(
-    contents.indexOf('<Button', contents.indexOf('socialMark}>G</span>') - 200),
-    contents.indexOf('Continuar com Google'),
-  );
+  const googleButtonBlock = contents.slice(contents.indexOf('<Button'), contents.indexOf('Continuar com Google'));
   assert.match(googleButtonBlock, /loading=\{googleLoading\}/);
   assert.doesNotMatch(contents, /Apple/);
 });
 
 test('botao do Google e type="button" -- nunca envia um form por engano', async () => {
   const contents = await source('./components/SocialAuthButtons.jsx');
-  const googleButtonBlock = contents.slice(
-    contents.indexOf('<Button', contents.indexOf('socialMark}>G</span>') - 200),
-    contents.indexOf('Continuar com Google'),
-  );
+  const googleButtonBlock = contents.slice(contents.indexOf('<Button'), contents.indexOf('Continuar com Google'));
   assert.match(googleButtonBlock, /type="button"/);
 });
 
@@ -279,11 +298,16 @@ test('getGoogleAuthFeedback nunca expõe o erro técnico cru do Supabase -- mens
 test('sessao autenticada não retorna ao Welcome', async () => {
   const app = await readFile(new URL('../../app/App.jsx', import.meta.url), 'utf8');
   assert.match(app, /'\/welcome'/);
-  assert.match(app, /needsOnboarding \? '\/onboarding' : requestedReturnPath/);
+  // GUARD FIX: personalPlanCompleted (localStorage) deixou de ser
+  // autorização -- personalPlanUnlocked deriva de billing-get-subscription
+  // de verdade (usePersonalPlanAccessGuard), nunca do cache local.
+  assert.match(
+    app,
+    /!presentationCompleted[\s\S]{0,20}\? PRESENTATION_ROUTE[\s\S]{0,20}: !personalPlanUnlocked[\s\S]{0,20}\? PERSONAL_PLAN_ROUTE[\s\S]{0,20}: requestedReturnPath/,
+  );
+  assert.doesNotMatch(app, /needsOnboarding \? '\/onboarding'/);
 });
 
 test('schemas públicos permanecem imutáveis', () => {
-  assert.equal(Object.isFrozen(WELCOME_SLIDES), true);
-  assert.equal(Object.isFrozen(WELCOME_SLIDES[0]), true);
   assert.equal(Object.isFrozen(validateAuthForm({}, AUTH_MODES.SIGN_IN)), true);
 });

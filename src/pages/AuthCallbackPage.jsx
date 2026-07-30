@@ -9,11 +9,13 @@ import { consumeAuthReturnPath, readAuthReturnPath } from '../app/authReturnPath
  * os parâmetros da URL sozinho depois de processar -- esta página não
  * manipula token nem query string manualmente.
  *
- * Reaproveita EXATAMENTE as mesmas regras de redirecionamento já usadas em
- * App.jsx (needsOnboarding), sem duplicar lógica nem criar um segundo
- * bootstrap de sessão: App.jsx já bloqueia a renderização de qualquer rota
- * (via o guard de isSessionLoading) enquanto a sessão está sendo
- * processada, então esta página só é alcançada depois que
+ * Não decide apresentação/Plano Pessoal/onboarding aqui -- navega direto
+ * para o destino salvo; os guards de App.jsx (apresentação -> Plano
+ * Pessoal -> pagamento -> Home só com assinatura ativa) são reaplicados a
+ * CADA navegação, inclusive na que esta página dispara, então nada
+ * precisa ser duplicado aqui. App.jsx já bloqueia a renderização de
+ * qualquer rota (via o guard de isSessionLoading) enquanto a sessão está
+ * sendo processada, então esta página só é alcançada depois que
  * synchronizeSession (AUTH2) já terminou -- sucesso ou falha.
  *
  * `<Navigate>` declarativo (nunca useEffect + navigate imperativo) evita
