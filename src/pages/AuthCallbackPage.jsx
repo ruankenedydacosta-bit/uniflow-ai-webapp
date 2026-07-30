@@ -23,7 +23,7 @@ import { consumeAuthReturnPath, readAuthReturnPath } from '../app/authReturnPath
  */
 function AuthCallbackPage() {
   const [searchParams] = useSearchParams();
-  const { error: sessionError, needsOnboarding, session } = useSession();
+  const { error: sessionError, session } = useSession();
 
   // O Supabase anexa estes parâmetros ao redirect quando o provedor recusa
   // o login (ex.: provider Google desabilitado no projeto) ou o usuário
@@ -43,13 +43,7 @@ function AuthCallbackPage() {
   }
 
   const destination = consumeAuthReturnPath();
-  return (
-    <Navigate
-      to={needsOnboarding ? '/onboarding' : destination}
-      replace
-      state={needsOnboarding ? { returnTo: destination } : undefined}
-    />
-  );
+  return <Navigate to={destination} replace />;
 }
 
 export default AuthCallbackPage;
