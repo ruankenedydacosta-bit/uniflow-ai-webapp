@@ -7,6 +7,22 @@ import { canAccessRoute, canAccessRouteInContext, getFallbackRoute } from './acc
 import { navigationItems } from './navigation';
 import { appRoutes, publicRoutes } from './routes';
 import { getSafeAuthReturnPath } from './authReturnPath.js';
+import {
+  PRESENTATION_NEXT_ROUTE,
+  PRESENTATION_REPLAY_STATE,
+  PRESENTATION_ROUTE,
+  isPresentationCompleted,
+  resolvePresentationUserId,
+} from '../features/presentation';
+import {
+  PERSONAL_PLAN_RETURN_ROUTE,
+  PERSONAL_PLAN_ROUTE,
+  isPersonalPlanCompleted,
+} from '../features/personal-plan';
+import {
+  SIMPLIFIED_ROUTES,
+  SimplifiedAuthenticatedLayout,
+} from '../features/simplified-app';
 
 function AppContent() {
   const { access } = useAccess();
@@ -14,9 +30,7 @@ function AppContent() {
     error: sessionError,
     isLoading: isSessionLoading,
     isSupabaseConfigured,
-    needsOnboarding,
     profile,
-    profileMissing,
     session,
   } = useSession();
   const location = useLocation();
@@ -24,6 +38,22 @@ function AppContent() {
   const activeNavigationItem = navigationItems.find((item) => item.path === location.pathname);
   const isPublicRoute = publicRoutes.some((route) => route.path === location.pathname);
   const requestedReturnPath = getSafeAuthReturnPath(location.state?.from);
+  const presentationUserId = resolvePresentationUserId(session, isSupabaseConfigured);
+  const presentationCompleted = isPresentationCompleted(presentationUserId);
+  const isPresentationRoute = location.pathname === PRESENTATION_ROUTE;
+  const isPresentationReplay = Boolean(location.state?.[PRESENTATION_REPLAY_STATE]);
+  // BUGFIX (redirecionamento pós-login): mesmo padrão de conclusão
+  // persistida por usuário do presentationStorage.js, aplicado ao Plano
+  // Pessoal -- garante que exista uma resolução única pós-auth (apresentação
+  // -> plano pessoal -> Home simplificada), nunca o shell legado por padrão.
+  const personalPlanCompleted = isPersonalPlanCompleted(presentationUserId);
+  // BLOCO ASAAS CHECKOUT: a rota de retorno do Checkout de cartão
+  // (/plano-pessoal/retorno) também precisa ficar isenta deste guard --
+  // sem isso, o usuário seria redirecionado de volta para /plano-pessoal
+  // ANTES de ver a confirmação, já que personalPlanCompleted só vira true
+  // depois que a tela de retorno confirma o pagamento.
+  const isPersonalPlanRoute = location.pathname === PERSONAL_PLAN_ROUTE
+    || location.pathname === PERSONAL_PLAN_RETURN_ROUTE;
 
   if (isSupabaseConfigured && isSessionLoading) {
     // AUTH4: label especifico enquanto o retorno do OAuth (Google) esta
@@ -46,21 +76,20 @@ function AppContent() {
       ) {
         return (
           <Navigate
-            to={needsOnboarding ? '/onboarding' : requestedReturnPath}
+            to={
+              !presentationCompleted
+                ? PRESENTATION_ROUTE
+                : !personalPlanCompleted
+                  ? PERSONAL_PLAN_ROUTE
+                  : requestedReturnPath
+            }
             replace
-            state={needsOnboarding ? { returnTo: requestedReturnPath } : undefined}
           />
         );
       }
 
-      if (location.pathname === '/onboarding') {
-        if (!session) {
-          return <Navigate to="/login" replace state={{ from: location.state?.returnTo }} />;
-        }
-
-        if (profile?.onboarding_completed && !sessionError) {
-          return <Navigate to={getSafeAuthReturnPath(location.state?.returnTo)} replace />;
-        }
+            if (location.pathname === '/onboarding') {
+        return <Navigate to={session ? PRESENTATION_ROUTE : '/login'} replace />;
       }
     }
 
@@ -76,21 +105,61 @@ function AppContent() {
 
   if (isSupabaseConfigured) {
     if (!session || sessionError) {
+      // BUGFIX (redirecionamento pós-login): rota desconhecida/inexistente
+      // acessada sem sessão não pode usar o shell legado como "from" --
+      // volta para a Home simplificada após o login, nunca para /dashboard.
       const from = activeRoute
         ? `${location.pathname}${location.search}`
-        : '/dashboard';
+        : SIMPLIFIED_ROUTES.HOME;
       return <Navigate to="/login" replace state={{ from }} />;
     }
+  }
 
-    if (profileMissing || needsOnboarding) {
-      return (
-        <Navigate
-          to="/onboarding"
-          replace
-          state={{ returnTo: `${location.pathname}${location.search}` }}
-        />
-      );
-    }
+  if (
+    presentationUserId
+    && !presentationCompleted
+    && !isPresentationRoute
+  ) {
+    return <Navigate to={PRESENTATION_ROUTE} replace />;
+  }
+
+  if (isPresentationRoute && presentationCompleted && !isPresentationReplay) {
+    return <Navigate to={PRESENTATION_NEXT_ROUTE} replace />;
+  }
+
+  if (
+    presentationUserId
+    && presentationCompleted
+    && !personalPlanCompleted
+    && !isPersonalPlanRoute
+  ) {
+    return <Navigate to={PERSONAL_PLAN_ROUTE} replace />;
+  }
+
+  if (isPersonalPlanRoute && personalPlanCompleted) {
+    return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;
+  }
+
+  if (activeRoute?.standalone) {
+    return (
+      <Routes>
+        <Route path={activeRoute.path} element={activeRoute.element} />
+        <Route path="*" element={<Navigate to={PRESENTATION_NEXT_ROUTE} replace />} />
+      </Routes>
+    );
+  }
+
+  if (activeRoute?.simplified) {
+    return (
+      <SimplifiedAuthenticatedLayout>
+        <Routes>
+          {appRoutes.filter((route) => route.simplified).map((route) => (
+            <Route key={route.path} path={route.path} element={route.element} />
+          ))}
+          <Route path="*" element={<Navigate to={SIMPLIFIED_ROUTES.HOME} replace />} />
+        </Routes>
+      </SimplifiedAuthenticatedLayout>
+    );
   }
 
   // Guard de CONTEXTO (PF/PJ), centralizado e independente de plano/modo:
