@@ -508,16 +508,16 @@ test('nenhum log de texto de mensagem/prompt no console -- só o(s) código(s) d
 // troca de contexto; texto e voz permanecem camadas independentes.
 // ============================================================================
 
-test('UniChatPage usa exclusivamente useUniVoiceTts/useVoicePreference/VOICE_TTS_STATUS (+ AUTO_SPEAK_MAX_LENGTH do Bloco Uni 2) -- não importa mais useUniVoiceOutput', async () => {
+test('UniChatPage usa exclusivamente useUniVoiceTts/useVoicePreference/VOICE_TTS_STATUS + buildSpeechText/MAX_TTS_TEXT_LENGTH (BLOCO VOZ 1) -- não importa mais useUniVoiceOutput', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{ useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS, AUTO_SPEAK_MAX_LENGTH \} from '\.\.\/uni-voice-tts';/);
+  assert.match(page, /import \{\s*\n\s*useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS, MAX_TTS_TEXT_LENGTH, buildSpeechText,\s*\n\s*\} from '\.\.\/uni-voice-tts';/);
   // O comentario de cabecalho pode CITAR o hook antigo por contexto
   // arquitetural; o que nao pode existir e um import real dele.
   assert.doesNotMatch(page, /from '\.\.\/uni-voice-output'/);
   assert.doesNotMatch(page, /\buseUniVoiceOutput\(/);
 });
 
-test('handleSpeakMessage marca a mensagem ativa ANTES de chamar speak() -- MessageBubble já reflete loading no primeiro render', async () => {
+test('handleSpeakMessage marca a mensagem ativa ANTES de chamar speak() com a versão curta (buildSpeechText + MAX_TTS_TEXT_LENGTH) -- MessageBubble já reflete loading no primeiro render', async () => {
   const page = await source('UniChatPage.jsx');
   const fnBody = page.slice(
     page.indexOf('const handleSpeakMessage = useCallback'),
@@ -525,9 +525,12 @@ test('handleSpeakMessage marca a mensagem ativa ANTES de chamar speak() -- Messa
   );
   assert.match(fnBody, /if \(!message\?\.text\) return;/);
   assert.match(fnBody, /setVoiceMessageId\(message\.id\);/);
-  assert.match(fnBody, /void uniVoice\.speak\(message\.text\);/);
+  // BLOCO VOZ 1: a voz usa SEMPRE a versão curta (buildSpeechText), mesmo
+  // para textos acima de MAX_TTS_TEXT_LENGTH -- o texto completo exibido
+  // (message.text no MessageBubble) nunca é alterado.
+  assert.match(fnBody, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\)\);/);
   const setIdx = fnBody.indexOf('setVoiceMessageId(message.id);');
-  const speakIdx = fnBody.indexOf('void uniVoice.speak(message.text);');
+  const speakIdx = fnBody.indexOf('void uniVoice.speak(');
   assert.ok(setIdx >= 0 && speakIdx > setIdx, 'a mensagem ativa deve ser marcada antes de iniciar a geração');
 });
 
@@ -621,7 +624,7 @@ test('falha de voz (ERROR) nunca mexe em messages/persistência -- texto e voz s
   const page = await source('UniChatPage.jsx');
   const fnBody = page.slice(
     page.indexOf('const handleSpeakMessage = useCallback'),
-    page.indexOf('const handlePauseResumeVoice'),
+    page.indexOf('// BLOCO VOZ 1: ponto ÚNICO para narrar'),
   );
   assert.doesNotMatch(fnBody, /setMessages|pushMessage|syncMessageToSupabase/);
 });
@@ -632,10 +635,10 @@ test('falha de voz (ERROR) nunca mexe em messages/persistência -- texto e voz s
 // qualquer caminho de reprodução automática, manual ou não, na Home. Este
 // teste passa a EXIGIR autoplay controlado (Home/`/app/uni`, respeitando
 // voicePreference e um limite de tamanho), nunca a sua ausência.
-test('autoplay controlado: existe exatamente UM efeito que fala a última mensagem da Uni, além da chamada manual em handleSpeakMessage -- nunca um terceiro ponto de chamada', async () => {
+test('BLOCO VOZ 1: existem EXATAMENTE dois pontos diretos de uniVoice.speak (handleSpeakMessage e speakSideEffectNotice) -- o autoplay e a narração de erro passam por eles, nunca falam por fora', async () => {
   const page = await source('UniChatPage.jsx');
   const occurrences = page.match(/uniVoice\.speak\(/g) ?? [];
-  assert.equal(occurrences.length, 1, 'uniVoice.speak deve ter exatamente um ponto de chamada direto: dentro de handleSpeakMessage. O autoplay chama handleSpeakMessage(), nunca uniVoice.speak() diretamente');
+  assert.equal(occurrences.length, 2, 'uniVoice.speak deve ter exatamente dois pontos de chamada diretos: handleSpeakMessage (mensagens) e speakSideEffectNotice (avisos de efeito colateral, via reportConfirmationError). O autoplay chama handleSpeakMessage(), nunca uniVoice.speak() diretamente');
   // A ÚNICA chamada direta de handleSpeakMessage(...) deve ser a do efeito
   // de autoplay -- os outros pontos de disparo (MessageBubble, o fallback
   // manual em SimplifiedHomeView) só RECEBEM a referência via prop
@@ -643,30 +646,259 @@ test('autoplay controlado: existe exatamente UM efeito que fala a última mensag
   const directCalls = page.match(/handleSpeakMessage\(lastMessage\);/g) ?? [];
   assert.equal(directCalls.length, 1, 'esperava exatamente uma chamada direta -- handleSpeakMessage(lastMessage) no efeito de autoplay');
   assert.match(page, /onSpeakMessage=\{handleSpeakMessage\}/, 'MessageBubble deveria continuar recebendo handleSpeakMessage por prop (disparo manual)');
+  // speakSideEffectNotice só pode ser chamada pelo ponto central
+  // reportConfirmationError -- nenhuma chamada solta/aleatória pelo arquivo.
+  assert.match(page, /speakSideEffectNotice\(errorText\);/);
+  const sideEffectCalls = page.match(/speakSideEffectNotice\(/g) ?? [];
+  assert.equal(sideEffectCalls.length, 1, 'speakSideEffectNotice deve ter exatamente um ponto de chamada: dentro de reportConfirmationError');
 });
 
-test('BLOCO UNI 2: efeito de autoplay existe, é gated por isSimplifiedExperience + voicePreference.enabled, nunca fala a mesma mensagem duas vezes, e respeita AUTO_SPEAK_MAX_LENGTH', async () => {
+test('BLOCO VOZ 1: efeito de autoplay existe, é gated por isSimplifiedExperience + voicePreference.enabled, nunca fala a mesma mensagem duas vezes (registro de sessão) e NÃO tem gate de tamanho (resposta longa também fala via versão curta)', async () => {
   const page = await source('UniChatPage.jsx');
-  const idx = page.indexOf('reprodução automática da resposta ATUAL da Uni');
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da');
   assert.ok(idx > -1, 'esperava o efeito de autoplay documentado no arquivo');
   const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
   assert.match(block, /if \(!isSimplifiedExperience \|\| !voicePreference\.enabled\) return;/);
   assert.match(block, /const lastMessage = messages\.at\(-1\);/);
   assert.match(block, /if \(!lastMessage \|\| lastMessage\.from !== 'uni' \|\| !lastMessage\.text\) return;/);
-  assert.match(block, /if \(autoSpokenMessageIdRef\.current === lastMessage\.id\) return;/);
-  assert.match(block, /autoSpokenMessageIdRef\.current = lastMessage\.id;/);
-  assert.match(block, /if \(lastMessage\.text\.length > AUTO_SPEAK_MAX_LENGTH\) return;/);
+  assert.match(block, /if \(hasAutoSpokenMessage\(user\?\.id, lastMessage\.id\)\) return;/);
+  assert.match(block, /markAutoSpokenMessage\(user\?\.id, lastMessage\.id\);/);
+  // BLOCO VOZ 1: o antigo gate `lastMessage.text.length > AUTO_SPEAK_MAX_LENGTH`
+  // foi REMOVIDO -- qualquer resposta final (curta ou longa) fala; o corte
+  // para voz acontece dentro de handleSpeakMessage (buildSpeechText), nunca
+  // aqui.
+  assert.doesNotMatch(block, /AUTO_SPEAK_MAX_LENGTH|lastMessage\.text\.length/);
   assert.match(block, /handleSpeakMessage\(lastMessage\);/);
 });
 
 test('BLOCO UNI 2: o efeito de autoplay NUNCA retorna uma função de limpeza (cleanup) -- evita que o cleanup de uma mensagem antiga interrompa a fala de uma mensagem nova que já começou', async () => {
   const page = await source('UniChatPage.jsx');
-  const idx = page.indexOf('reprodução automática da resposta ATUAL da Uni');
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da');
   const startEffect = page.indexOf('useEffect(() => {', idx);
-  const endEffect = page.indexOf('}, [messages, isSimplifiedExperience, voicePreference.enabled, handleSpeakMessage]);', startEffect);
+  const endEffect = page.indexOf('}, [messages, isSimplifiedExperience, voicePreference.enabled, handleSpeakMessage, user?.id, historyHydrated]);', startEffect);
   assert.ok(startEffect > -1 && endEffect > startEffect);
   const effectBody = page.slice(startEffect, endEffect);
   assert.doesNotMatch(effectBody, /return \(\) =>/, 'o efeito de autoplay não deveria ter cleanup');
+});
+
+// ============================================================================
+// BLOCO VOZ 1 -- confiabilidade e latência da voz da Uni (conclusão):
+// toda mensagem final relevante fala (curta ou longa), avisos de erro de
+// confirmação são narrados pelo ponto central reportConfirmationError,
+// estados intermediários nunca falam e falha de TTS nunca quebra a UI.
+// ============================================================================
+
+test('BLOCO VOZ 1: resposta curta E resposta longa falam -- o autoplay não filtra por tamanho (curta) nem conteúdo (longa usa versão curta no TTS)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da');
+  const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
+  // Qualquer mensagem da Uni com texto (curta, pergunta, confirmação,
+  // sucesso ou resposta longa) é candidata -- sem gate de tamanho e sem
+  // filtro por tipo/conteúdo.
+  assert.doesNotMatch(block, /lastMessage\.text\.length|lastMessage\.type|lastMessage\.confirmation|lastMessage\.highlight/);
+  assert.match(block, /handleSpeakMessage\(lastMessage\);/);
+  // A versão curta para voz (buildSpeechText) é aplicada dentro de
+  // handleSpeakMessage, nunca no efeito nem no texto visível.
+  assert.match(page, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\)\);/);
+  assert.match(page, /buildSpeechText\(text, MAX_TTS_TEXT_LENGTH\)/);
+});
+
+test('BLOCO VOZ 1: pergunta, pedido de confirmação e sucesso entram no MESMO autoplay -- nenhum caminho de push de mensagem chama speak diretamente (sem duplicação)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const occurrences = page.match(/uniVoice\.speak\(/g) ?? [];
+  assert.equal(occurrences.length, 2, 'toda fala de mensagem passa por handleSpeakMessage; nenhum fluxo de pushMessage (pergunta/confirmação/sucesso) fala por fora');
+  assert.equal((page.match(/pushMessage\(assistantMsg\);/g) ?? []).length >= 8, true, 'os fluxos que empurram mensagens da Uni continuam intactos');
+});
+
+test('BLOCO VOZ 1: estado intermediário NUNCA fala -- loading/digitação/transcrição não têm nenhuma chamada de voz no caminho de envio', async () => {
+  const page = await source('UniChatPage.jsx');
+  // Nenhuma fala dentro de sendText/handleUnresolvedMessage (loading,
+  // isTyping, transcrição) -- só o efeito de autoplay observa messages.
+  const sendTextBlock = page.slice(
+    page.indexOf('function sendText(text) {'),
+    page.indexOf('function handleSuggestionSelect'),
+  );
+  assert.doesNotMatch(sendTextBlock, /uniVoice\.speak|speakSideEffectNotice/);
+  // Mensagem do USUÁRIO nunca fala: o efeito exige from === 'uni'.
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da');
+  const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
+  assert.match(block, /lastMessage\.from !== 'uni'/);
+});
+
+test('BLOCO VOZ 1: erro relevante ao usuário fala -- os 5 pontos de erro de handleConfirmAction passam pelo ponto central reportConfirmationError, que narra uma única vez', async () => {
+  const page = await source('UniChatPage.jsx');
+  // Ponto central: registra o erro (executionError + confirmationError) e
+  // narra via speakSideEffectNotice -- um único lugar, sem chamadas soltas.
+  assert.match(page, /function reportConfirmationError\(id, errorText\) \{/);
+  assert.match(page, /setExecutionError\(errorText\);/);
+  assert.match(page, /speakSideEffectNotice\(errorText\);/);
+  // Exatamente os 5 caminhos de erro de handleConfirmAction usam o ponto
+  // central (conta semelhante, falha de criação de conta, falha de criação
+  // de categoria, falha de confirmação e catch inesperado) -- a definição
+  // da função é excluída contando só chamadas que terminam em ';'.
+  const callSites = page.match(/reportConfirmationError\(id, [^)]*\);/g) ?? [];
+  assert.equal(callSites.length, 5, 'esperava 5 pontos de erro de confirmação usando reportConfirmationError');
+  // Nenhum setExecutionError fora do ponto central (sem duplicação de
+  // registro/narração) -- só o reset neutro (null) continua nos fluxos.
+  assert.equal((page.match(/setExecutionError\(errorText\);/g) ?? []).length, 1);
+  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 11);
+});
+
+test('BLOCO VOZ 1: narração de erro é gated pela experiência simplificada + preferência de voz -- chat completo permanece manual', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('const speakSideEffectNotice = useCallback'),
+    page.indexOf('function reportConfirmationError'),
+  );
+  assert.match(fnBody, /if \(!isSimplifiedExperience \|\| !voicePreference\.enabled\) return;/);
+  assert.match(fnBody, /if \(!text\) return;/);
+});
+
+test('BLOCO VOZ 1: falha do TTS nunca quebra a interface -- speak é fire-and-forget (void) nos dois pontos e não há try/catch em torno dele', async () => {
+  const page = await source('UniChatPage.jsx');
+  const handleSpeakBlock = page.slice(
+    page.indexOf('const handleSpeakMessage = useCallback'),
+    page.indexOf('// BLOCO VOZ 1: ponto ÚNICO para narrar'),
+  );
+  assert.match(handleSpeakBlock, /void uniVoice\.speak\(buildSpeechText/);
+  assert.doesNotMatch(handleSpeakBlock, /try|catch/);
+  const sideEffectBlock = page.slice(
+    page.indexOf('const speakSideEffectNotice = useCallback'),
+    page.indexOf('function reportConfirmationError'),
+  );
+  assert.match(sideEffectBlock, /void uniVoice\.speak\(buildSpeechText/);
+  assert.doesNotMatch(sideEffectBlock, /try|catch/);
+});
+
+test('BLOCO VOZ 1: mensagens duplicadas falam uma única vez -- o registro de sessão (spokenMessageSession) é o ÚNICO guarda do autoplay e fica no efeito (nunca em handleSpeakMessage)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.equal((page.match(/if \(hasAutoSpokenMessage\(user\?\.id, lastMessage\.id\)\) return;/g) ?? []).length, 1);
+  assert.equal((page.match(/markAutoSpokenMessage\(user\?\.id, lastMessage\.id\);/g) ?? []).length, 1);
+  const handleSpeakBlock = page.slice(
+    page.indexOf('const handleSpeakMessage = useCallback'),
+    page.indexOf('const handlePauseResumeVoice'),
+  );
+  assert.doesNotMatch(handleSpeakBlock, /hasAutoSpokenMessage|markAutoSpokenMessage|spokenMessageSession/, 'o guarda de duplicação vive apenas no efeito de autoplay');
+  // O provider de TTS encerra o áudio anterior antes de cada speak() -- um
+  // novo autoplay sempre interrompe o anterior, nunca empilha voz.
+  const provider = await source('../uni-voice-tts/elevenLabsTtsProvider.js');
+  assert.match(provider, /async function speak\(text, \{ onPlaying, onEnded, onError \} = \{\}\) \{\s*\n\s*stop\(\);/);
+});
+
+test('BLOCO VOZ 1: o autoplay usa o registro persistente por sessão (spokenMessageSession.js) chaveado por user.id -- nunca um useRef local (o ref morria no unmount ao trocar de rota e refazia a narração do histórico restaurado)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(
+    page,
+    /import \{\s*\n\s*hasAutoSpokenMessage,\s*\n\s*markAutoSpokenMessage,\s*\n\s*markRestoredMessagesAsSpoken,\s*\n\s*\} from '\.\.\/uni-voice-tts\/spokenMessageSession\.js';/,
+  );
+  assert.doesNotMatch(page, /autoSpokenMessageIdRef/);
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da');
+  const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
+  // A deduplicação é chaveada pelo usuário autenticado -- o usuário A nunca
+  // compartilha narração com o usuário B, e o registro sobrevive a
+  // unmount/remount e troca de rota (Home → Registros/Conta/Uni → Home).
+  assert.match(block, /if \(hasAutoSpokenMessage\(user\?\.id, lastMessage\.id\)\) return;/);
+  assert.match(block, /markAutoSpokenMessage\(user\?\.id, lastMessage\.id\);/);
+  assert.match(block, /user\?\.id/);
+});
+
+test('BLOCO VOZ 1: Strict Mode não duplica -- a marcação no registro acontece ANTES da narração, então o segundo mount do efeito vê o ID já registrado', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da');
+  const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
+  const markIdx = block.indexOf('markAutoSpokenMessage(user?.id, lastMessage.id);');
+  const speakIdx = block.indexOf('handleSpeakMessage(lastMessage);');
+  assert.ok(markIdx > -1 && speakIdx > markIdx, 'a marcação deve acontecer ANTES da narração -- o re-mount (Strict Mode ou remount real) bloqueia a repetição');
+});
+
+test('BLOCO VOZ 1: o botão manual "Ouvir" não consulta o registro de autoplay -- continua funcionando mesmo depois do autoplay já ter narrado a mesma mensagem', async () => {
+  const page = await source('UniChatPage.jsx');
+  const handleSpeakBlock = page.slice(
+    page.indexOf('const handleSpeakMessage = useCallback'),
+    page.indexOf('// BLOCO VOZ 1: ponto ÚNICO para narrar'),
+  );
+  assert.doesNotMatch(handleSpeakBlock, /hasAutoSpokenMessage|markAutoSpokenMessage|spokenMessageSession/, 'o disparo manual passa direto pelo registro -- nunca bloqueado pelo autoplay');
+  assert.match(handleSpeakBlock, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\)\);/);
+  assert.match(page, /onSpeakMessage=\{handleSpeakMessage\}/);
+});
+
+// ============================================================================
+// BLOCO VOZ HIDRATAÇÃO (reload/login): o autoplay só pode narrar mensagens
+// criadas DEPOIS de (1) a sessão carregar, (2) o histórico inicial terminar
+// de ser restaurado e (3) a saudação terminar ou falhar. Mensagens
+// restauradas são conteúdo antigo -- nunca eventos novos. Sem timeout.
+// ============================================================================
+
+test('BLOCO VOZ HIDRATAÇÃO: o autoplay é gated pelo marco historyHydrated (autoplayArmed) e re-dispara quando o marco muda', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da');
+  const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
+  assert.match(block, /if \(!historyHydrated\) return;/);
+  assert.match(block, /\}, \[messages, isSimplifiedExperience, voicePreference\.enabled, handleSpeakMessage, user\?\.id, historyHydrated\]\);/);
+});
+
+test('BLOCO VOZ HIDRATAÇÃO: maybeArmAutoplay é o ÚNICO ponto que arma o autoplay -- snapshot marca o histórico restaurado como já narrado ANTES de habilitar, e nunca usa timeout', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('const maybeArmAutoplay = useCallback');
+  assert.ok(idx > -1, 'esperava maybeArmAutoplay definido');
+  const block = page.slice(idx, page.indexOf('const handleWelcomeVoiceSettled = useCallback', idx));
+  // Guardas determinísticas da hidratação: marco já armado, restaurações
+  // em voo, sessão ainda não carregada e saudação pendente.
+  assert.match(block, /if \(historyHydratedRef\.current\) return;/);
+  assert.match(block, /if \(pendingRestoresRef\.current > 0\) return;/);
+  assert.match(block, /if \(isSupabaseConfigured && !user\?\.id\) return;/);
+  assert.match(block, /if \(isWelcomeVoicePending\(buildWelcomeSessionKey\(user, session\)\)\) return;/);
+  // Snapshot: marcar o histórico restaurado como já narrado ANTES de armar.
+  const markIdx = block.indexOf('markRestoredMessagesAsSpoken(user?.id, messages);');
+  const armIdx = block.indexOf('setHistoryHydrated(true);');
+  assert.ok(markIdx > -1 && armIdx > markIdx, 'o snapshot (marcar restauradas) deve acontecer ANTES de armar o autoplay');
+  assert.doesNotMatch(block, /setTimeout|setInterval/, 'a correção é determinística -- nunca timeout arbitrário');
+});
+
+test('BLOCO VOZ HIDRATAÇÃO: restauração inicial do Supabase marca o histórico carregado como já narrado e controla pendingRestoresRef', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('useEffect(() => {\n    if (!activeId) return;\n    const current = conversations.find');
+  assert.ok(idx > -1, 'esperava o efeito de restauração inicial');
+  const block = page.slice(idx, page.indexOf('const pendingSyncRef = useRef([]);', idx));
+  assert.match(block, /pendingRestoresRef\.current \+= 1;/);
+  assert.match(block, /pendingRestoresRef\.current -= 1;/);
+  assert.match(block, /markRestoredMessagesAsSpoken\(user\?\.id, loadedMessages\);/);
+});
+
+test('BLOCO VOZ HIDRATAÇÃO: switchConversation marca mensagens restauradas como já narradas -- trocar de conversa (Histórico/reconcile) nunca fala', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('function switchConversation(id) {');
+  assert.ok(idx > -1);
+  const block = page.slice(idx, page.indexOf('async function handleUnresolvedMessage', idx));
+  assert.match(block, /markRestoredMessagesAsSpoken\(user\?\.id, conv\.messages \|\| \[\]\);/);
+  assert.match(block, /pendingRestoresRef\.current \+= 1;/);
+  assert.match(block, /markRestoredMessagesAsSpoken\(user\?\.id, loadedMessages\);/);
+});
+
+test('BLOCO VOZ HIDRATAÇÃO: a saudação tem prioridade exclusiva -- UniChatPage passa onWelcomeVoiceSettled e SimplifiedHomeView libera o autoplay no finally (sucesso ou falha)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const handleWelcomeVoiceSettled = useCallback/);
+  assert.match(page, /onWelcomeVoiceSettled=\{handleWelcomeVoiceSettled\}/);
+  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
+  assert.match(home, /onWelcomeVoiceSettled,/);
+  assert.match(home, /\.finally\(\(\) => \{\s*\n\s*onWelcomeVoiceSettled\?\.\(\);\s*\n\s*\}\);/);
+});
+
+test('BLOCO VOZ HIDRATAÇÃO: mensagem nova depois da hidratação continua falando -- o snapshot marca SÓ o que estava restaurado, e o registro por ID preserva a narração única', async () => {
+  const page = await source('UniChatPage.jsx');
+  // O autoplay segue observando messages.at(-1) e falando o que NÃO está
+  // marcado no registro (mensagens novas); o snapshot marca apenas o
+  // histórico presente no armamento.
+  const idx = page.indexOf('reprodução automática da resposta ATUAL da');
+  const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
+  assert.match(block, /const lastMessage = messages\.at\(-1\);/);
+  assert.match(block, /if \(hasAutoSpokenMessage\(user\?\.id, lastMessage\.id\)\) return;/);
+  assert.match(block, /markAutoSpokenMessage\(user\?\.id, lastMessage\.id\);/);
+  const snapshot = page.slice(
+    page.indexOf('const maybeArmAutoplay = useCallback'),
+    page.indexOf('const handleWelcomeVoiceSettled = useCallback'),
+  );
+  assert.match(snapshot, /markRestoredMessagesAsSpoken\(user\?\.id, messages\);/);
 });
 
 test('nenhum fetch/chamada direta à ElevenLabs em UniChatPage -- tudo passa por uniVoice (hook)', async () => {

@@ -42,6 +42,7 @@ import {
   readWorkspaceSelectionForUser,
   writeWorkspaceSelectionForUser,
 } from './workspaceSelection.js';
+import { resetAutoSpokenMessages } from '../features/uni-voice-tts/spokenMessageSession.js';
 
 const SessionContext = createContext(null);
 
@@ -129,6 +130,10 @@ function SessionProvider({ children }) {
 
       if (!nextSession?.user) {
         latestUserIdRef.current = null;
+        // Logout/sessão encerrada: limpa o registro de mensagens da Uni já
+        // narradas por voz (spokenMessageSession.js) -- a deduplicação do
+        // autoplay nunca vaza entre sessões/usuários.
+        resetAutoSpokenMessages();
         setAvailableWorkspaces([]);
         setWorkspaceSwitchState({ error: null, isLoading: false });
         if (isMountedRef.current) {

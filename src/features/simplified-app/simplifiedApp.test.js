@@ -23,6 +23,8 @@ import {
 import {
   buildWelcomeSessionKey,
   claimWelcomeVoice,
+  isWelcomeVoicePending,
+  markWelcomeVoiceSettled,
   releaseWelcomeVoice,
   resetWelcomeVoiceSessions,
 } from './welcomeVoiceSession.js';
@@ -164,6 +166,86 @@ test('boas-vindas por voz são reivindicadas uma vez por sessão autenticada', (
   assert.equal(claimWelcomeVoice(sessionKey), false);
   releaseWelcomeVoice(sessionKey);
   assert.equal(claimWelcomeVoice(sessionKey), true);
+  resetWelcomeVoiceSessions();
+});
+
+test('chave da saudação é ESTÁVEL durante o login -- preferência a last_sign_in_at sobre expires_at (TOKEN_REFRESHED silencioso não refaz a saudação ao voltar para Home)', () => {
+  resetWelcomeVoiceSessions();
+  const user = { id: 'user-a' };
+  const primeiraChave = buildWelcomeSessionKey(user, {
+    user: { last_sign_in_at: '2026-07-01T10:00:00.000Z' },
+    expires_at: 1000,
+  });
+  // Token expira e renova silenciosamente enquanto o usuário navega
+  // Home → Registros/Conta/Uni → Home: expires_at muda, last_sign_in_at não.
+  const aposRefresh = buildWelcomeSessionKey(user, {
+    user: { last_sign_in_at: '2026-07-01T10:00:00.000Z' },
+    expires_at: 2000,
+  });
+  assert.equal(aposRefresh, primeiraChave, 'a chave NÃO deve mudar quando o token renova');
+  assert.equal(claimWelcomeVoice(aposRefresh), true);
+  assert.equal(claimWelcomeVoice(primeiraChave), false, 'voltar para Home não refaz a saudação');
+  resetWelcomeVoiceSessions();
+});
+
+test('chave da saudação muda entre logins distintos do mesmo usuário -- novo login volta a dar boas-vindas', () => {
+  resetWelcomeVoiceSessions();
+  const user = { id: 'user-a' };
+  const primeiroLogin = buildWelcomeSessionKey(user, {
+    user: { last_sign_in_at: '2026-07-01T10:00:00.000Z' },
+  });
+  const segundoLogin = buildWelcomeSessionKey(user, {
+    user: { last_sign_in_at: '2026-07-02T10:00:00.000Z' },
+  });
+  assert.notEqual(segundoLogin, primeiroLogin);
+  assert.equal(claimWelcomeVoice(primeiroLogin), true);
+  assert.equal(claimWelcomeVoice(segundoLogin), true);
+  resetWelcomeVoiceSessions();
+});
+
+test('chave da saudação é nula sem usuário autenticado -- modo demo nunca bloqueia', () => {
+  resetWelcomeVoiceSessions();
+  assert.equal(buildWelcomeSessionKey(null, null), null);
+  assert.equal(buildWelcomeSessionKey({ id: '' }, { expires_at: 1 }), null);
+  resetWelcomeVoiceSessions();
+});
+
+// ============================================================================
+// BLOCO VOZ HIDRATAÇÃO (reload/login): a saudação tem prioridade exclusiva
+// sobre o autoplay de mensagens. Enquanto a voz da saudação estiver
+// preparando/carregando/tocando (claimWelcomeVoice sem markWelcomeVoiceSettled),
+// o autoplay de mensagens fica bloqueado; terminar OU falhar libera.
+// ============================================================================
+
+test('saudação pendente bloqueia o autoplay: claim marca pending e markWelcomeVoiceSettled libera (terminou ou falhou)', () => {
+  resetWelcomeVoiceSessions();
+  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
+  assert.equal(isWelcomeVoicePending(key), false, 'antes de reivindicar nunca está pendente');
+  assert.equal(claimWelcomeVoice(key), true);
+  assert.equal(isWelcomeVoicePending(key), true, 'reivindicada mas ainda preparando/carregando/tocando -> pendente (autoplay bloqueado)');
+  markWelcomeVoiceSettled(key);
+  assert.equal(isWelcomeVoicePending(key), false, 'terminou ou falhou -> autoplay liberado');
+  resetWelcomeVoiceSessions();
+});
+
+test('releaseWelcomeVoice também limpa o estado pendente -- reivindicação nova volta a tocar sem travar o autoplay', () => {
+  resetWelcomeVoiceSessions();
+  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
+  claimWelcomeVoice(key);
+  assert.equal(isWelcomeVoicePending(key), true);
+  releaseWelcomeVoice(key);
+  assert.equal(isWelcomeVoicePending(key), false);
+  assert.equal(claimWelcomeVoice(key), true);
+  assert.equal(isWelcomeVoicePending(key), true);
+  resetWelcomeVoiceSessions();
+});
+
+test('chave nula ou vazia nunca fica pendente -- modo demo não bloqueia o autoplay', () => {
+  resetWelcomeVoiceSessions();
+  assert.equal(isWelcomeVoicePending(null), false);
+  assert.equal(isWelcomeVoicePending(''), false);
+  markWelcomeVoiceSettled(null);
+  markWelcomeVoiceSettled('');
   resetWelcomeVoiceSessions();
 });
 

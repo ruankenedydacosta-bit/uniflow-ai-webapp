@@ -176,6 +176,7 @@ function SimplifiedHomeView({
   onConfirmAction,
   onCancelAction,
   onSpeakMessage,
+  onWelcomeVoiceSettled,
 }) {
   const navigate = useNavigate();
   const voiceInput = useSharedUniVoiceInput();
@@ -197,11 +198,19 @@ function SimplifiedHomeView({
     if (!voiceEnabled) return;
     if (!claimWelcomeVoice(sessionKey)) return;
 
-    void voiceController.speak(greeting.voiceText).catch(() => {
-      // A saudação visual continua disponível mesmo quando o navegador
-      // bloqueia áudio; a tentativa permanece limitada a uma vez por sessão.
-    });
-  }, [greeting.voiceText, sessionKey, voiceController, voiceEnabled]);
+    // BLOCO VOZ HIDRATAÇÃO: a saudação tem prioridade exclusiva -- o
+    // autoplay de mensagens (UniChatPage) só é armado quando a fala da
+    // saudação TERMINA ou FALHA (finally), nunca antes (preparando/
+    // carregando/tocando ficam bloqueando). Sucesso e falha liberam igual.
+    void voiceController.speak(greeting.voiceText)
+      .catch(() => {
+        // A saudação visual continua disponível mesmo quando o navegador
+        // bloqueia áudio; a tentativa permanece limitada a uma vez por sessão.
+      })
+      .finally(() => {
+        onWelcomeVoiceSettled?.();
+      });
+  }, [greeting.voiceText, sessionKey, voiceController, voiceEnabled, onWelcomeVoiceSettled]);
 
   useEffect(() => {
     if (

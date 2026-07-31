@@ -8,9 +8,10 @@ export const TTS_FUNCTION_NAME = 'uni-voice-tts';
 export const MAX_TTS_TEXT_LENGTH = 600;
 export const DEFAULT_TTS_TIMEOUT_MS = 15000;
 
-// BLOCO UNI 2: limite SÓ para reprodução automática (autoplay) de uma
-// resposta -- nunca trunca o texto visível nem o texto enviado ao TTS
-// quando o usuário pede manualmente ("Ouvir"). Acima deste tamanho, a
-// resposta continua completa na tela e só é falada se o usuário tocar o
-// botão manual.
+// BLOCO UNI 2 / BLOCO VOZ 1: o autoplay já fala QUALQUER resposta final
+// (curta ou longa; textos longos ganham versão curta via buildSpeechText
+// dentro de handleSpeakMessage, sem nunca alterar o texto visível). Este
+// limite agora só controla o botão manual "Ouvir resposta" da Home
+// (SimplifiedHomeView) para mensagens acima do tamanho -- um replay
+// opcional, nunca uma barreira para a narração automática.
 export const AUTO_SPEAK_MAX_LENGTH = 300;
