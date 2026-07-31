@@ -201,6 +201,118 @@
   backdrop-filter: blur(18px);
 }
 
+/* SIMPLIFICAÇÃO DA PRIMEIRA TELA: dois cards grandes de decisão (Já tenho
+   conta / Criar conta) -- mesma identidade visual premium do .authPanel
+   (vidro escuro, borda sutil, glow), mas cada opção é o próprio cartão
+   clicável, com ícone + título + descrição + seta, pensado para ser
+   confortável de ler e tocar mesmo para quem tem pouca familiaridade
+   digital (ex.: idosos). */
+.decisionOptions {
+  display: grid;
+  gap: var(--uf-space-16);
+  width: 100%;
+}
+
+.decisionCard {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-16);
+  width: 100%;
+  min-height: var(--uf-tap-target-min);
+  padding: clamp(18px, 5vw, 26px);
+  border: 1px solid rgba(94, 115, 158, .28);
+  border-radius: var(--uf-radius-20);
+  background: rgba(5, 13, 28, .88);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, .3),
+    inset 0 1px 0 rgba(255, 255, 255, .025);
+  backdrop-filter: blur(18px);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms var(--uf-ease-smooth), border-color 160ms var(--uf-ease-smooth);
+}
+
+.decisionCard:hover,
+.decisionCard:focus-visible {
+  border-color: rgba(124, 124, 255, .55);
+  transform: translateY(-2px);
+}
+
+.decisionCard:active {
+  transform: translateY(0);
+}
+
+.decisionCardIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgba(105, 127, 172, .3);
+  border-radius: var(--uf-radius-16);
+  background: rgba(37, 99, 235, .12);
+}
+
+.decisionCardIcon svg {
+  width: 30px;
+  height: 30px;
+  overflow: visible;
+  fill: none;
+  stroke: #4de4d3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.decisionCard[data-option='new'] .decisionCardIcon svg {
+  stroke: #7c7cff;
+}
+
+.decisionCardText {
+  display: grid;
+  gap: var(--uf-space-4);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.decisionCardText strong {
+  color: #f7f9ff;
+  font-size: var(--uf-text-md-size);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.decisionCardText span {
+  color: #a2aabc;
+  font-size: var(--uf-text-caption-size);
+  line-height: var(--uf-text-caption-lh);
+}
+
+.decisionCardArrow {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  color: #6d79ff;
+}
+
+.decisionCardArrow svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .decisionCard {
+    transition: none;
+  }
+}
+
 @keyframes authBrandReveal {
   from {
     opacity: 0;

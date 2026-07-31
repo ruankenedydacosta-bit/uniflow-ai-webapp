@@ -15,6 +15,7 @@ import {
   PERSONAL_PLAN_RETURN_ROUTE,
   PERSONAL_PLAN_ROUTE,
   isPersonalPlanCompleted,
+  resolvePersonalWorkspaceId,
   usePersonalPlanAccessGuard,
 } from '../features/personal-plan';
 import {
@@ -24,6 +25,7 @@ import {
 
 function AppContent() {
   const {
+    availableWorkspaces,
     error: sessionError,
     isLoading: isSessionLoading,
     isSupabaseConfigured,
@@ -53,18 +55,27 @@ function AppContent() {
   const isPersonalPlanRoute = location.pathname === PERSONAL_PLAN_ROUTE
     || location.pathname === PERSONAL_PLAN_RETURN_ROUTE;
 
-  // GUARD FIX: única fonte de verdade sobre acesso real é
-  // billing-get-subscription (via usePersonalPlanAccessGuard) -- nunca o
-  // cache local. Só roda com backend real configurado, sessão já resolvida,
-  // apresentação concluída e usuário identificado. Revalida sempre que o
-  // usuário sai da rota do Plano Pessoal/retorno do Checkout (único
-  // momento em que o status pode ter mudado de verdade dentro da mesma
-  // sessão).
+  // GUARD FIX (troca de dispositivo/sessão restaurada): única fonte de
+  // verdade sobre acesso real é billing-get-subscription (via
+  // usePersonalPlanAccessGuard) -- nunca o cache local, e nunca depende de
+  // presentationCompleted (flag local, por navegador) ter sido concluída
+  // antes. Um bug real em produção: um assinante com pagamento confirmado,
+  // ao restaurar a sessão num navegador/dispositivo novo (cache limpo,
+  // reinstalação), tinha presentationCompleted=false localmente -- e como
+  // este guard só rodava DEPOIS da apresentação, a assinatura nunca era
+  // consultada a tempo, e o app o mandava de volta para /plano-pessoal
+  // (chegando a tentar cobrar de novo). Agora a consulta roda assim que a
+  // sessão está resolvida, independente da apresentação.
   const personalPlanGuardEnabled = Boolean(
-    isSupabaseConfigured && !isSessionLoading && presentationUserId && presentationCompleted,
+    isSupabaseConfigured && !isSessionLoading && presentationUserId,
   );
+  // GUARD FIX: a assinatura está sempre vinculada ao workspace do tipo
+  // "personal" -- nunca ao workspace "atual/ativo" (workspace.id), que pode
+  // divergir dele. Usar workspace.id aqui podia consultar a assinatura de
+  // um workspace errado e bloquear um assinante ativo.
+  const personalWorkspaceId = resolvePersonalWorkspaceId(availableWorkspaces, workspace);
   const { status: personalPlanAccessStatus } = usePersonalPlanAccessGuard({
-    workspaceId: workspace?.id,
+    workspaceId: personalWorkspaceId,
     enabled: personalPlanGuardEnabled,
     revalidateWhenLeavingRoute: isPersonalPlanRoute,
   });
@@ -100,20 +111,22 @@ function AppContent() {
         && !sessionError
       ) {
         // GUARD FIX: nunca decide o destino pós-login com o cache local --
-        // espera a consulta real de assinatura resolver antes de escolher
-        // entre Plano Pessoal e o destino final (evita liberar a Home para
-        // quem nunca assinou de verdade).
-        if (presentationCompleted && personalPlanAccessLoading) {
+        // espera a consulta real de assinatura resolver antes de decidir
+        // qualquer coisa. Ordem: 1) assinatura ativa? vai direto (Caso 2 --
+        // nunca depende de apresentação já ter sido vista neste navegador);
+        // 2) apresentação nunca concluída aqui? apresentação (Caso 1); 3)
+        // caso contrário, Plano Pessoal (Caso 3). Backend sempre decide.
+        if (personalPlanAccessLoading) {
           return <Loader fullScreen label="Verificando sua assinatura…" />;
         }
         return (
           <Navigate
             to={
-              !presentationCompleted
-                ? PRESENTATION_ROUTE
-                : !personalPlanUnlocked
-                  ? PERSONAL_PLAN_ROUTE
-                  : requestedReturnPath
+              personalPlanUnlocked
+                ? requestedReturnPath
+                : !presentationCompleted
+                  ? PRESENTATION_ROUTE
+                  : PERSONAL_PLAN_ROUTE
             }
             replace
           />
@@ -143,36 +156,54 @@ function AppContent() {
     }
   }
 
+  // GUARD FIX (troca de dispositivo/sessão restaurada): a consulta de
+  // assinatura roda assim que a sessão é conhecida -- NUNCA espera
+  // presentationCompleted (flag local, por navegador). Enquanto ela não
+  // resolveu, nunca decide (nem manda para apresentação, nem para Plano
+  // Pessoal, nem deixa passar) -- evita a janela em que um assinante ativo
+  // seria mandado para /apresentacao ou /plano-pessoal antes da consulta
+  // real terminar.
+  if (
+    presentationUserId
+    && !isPersonalPlanRoute
+    && !isPresentationRoute
+    && personalPlanAccessLoading
+  ) {
+    return <Loader fullScreen label="Verificando sua assinatura…" />;
+  }
+
+  // Caso 2 (assinatura ativa -> nunca reapresentado nem cobrado de novo,
+  // mesmo num navegador/dispositivo onde a apresentação nunca rodou --
+  // cache limpo, troca de aparelho, nova instalação): o `&&
+  // !personalPlanUnlocked` nos Casos 1 e 3 abaixo já garante que um
+  // assinante ativo nunca é desviado para /apresentacao nem /plano-pessoal
+  // -- ele cai direto no render normal da rota que pediu (standalone/
+  // simplificada) ou no fallback final (Home), sem nenhum redirect extra
+  // aqui que sobrescreveria uma rota simplificada legítima (ex.:
+  // /app/registros, /app/conta) que ele esteja tentando abrir.
+
+  // Caso 1 (usuário novo/sem assinatura e sem apresentação vista aqui).
   if (
     presentationUserId
     && !presentationCompleted
+    && !personalPlanUnlocked
     && !isPresentationRoute
   ) {
     return <Navigate to={PRESENTATION_ROUTE} replace />;
   }
 
   if (isPresentationRoute && presentationCompleted && !isPresentationReplay) {
-    return <Navigate to={PRESENTATION_NEXT_ROUTE} replace />;
+    return <Navigate to={personalPlanUnlocked ? SIMPLIFIED_ROUTES.HOME : PERSONAL_PLAN_ROUTE} replace />;
   }
 
-  // GUARD FIX: enquanto a consulta real de assinatura ainda não resolveu,
-  // nunca decide (nem redireciona para /plano-pessoal, nem deixa passar) --
-  // evita flicker e evita a janela em que um usuário sem assinatura real
-  // conseguiria alcançar /app/home antes da consulta terminar.
+  // Caso 3 (usuário existente, apresentação já vista aqui, sem assinatura
+  // ativa) -- Plano Pessoal. Consulta de assinatura sempre no backend
+  // (personalPlanUnlocked), jamais no marcador local.
   if (
     presentationUserId
-    && presentationCompleted
-    && !isPersonalPlanRoute
-    && personalPlanAccessLoading
-  ) {
-    return <Loader fullScreen label="Verificando sua assinatura…" />;
-  }
-
-  if (
-    presentationUserId
-    && presentationCompleted
     && !personalPlanUnlocked
     && !isPersonalPlanRoute
+    && !isPresentationRoute
   ) {
     return <Navigate to={PERSONAL_PLAN_ROUTE} replace />;
   }

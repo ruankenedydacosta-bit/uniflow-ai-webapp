@@ -34,8 +34,15 @@ export function usePersonalPlanAccessGuard({ workspaceId, enabled, revalidateWhe
         return;
       }
       if (!workspaceId) {
-        // Sessão ainda sem workspace resolvido -- nunca decide sem dado real.
-        setStatus('loading');
+        // GUARD FIX: `enabled` já garante que a sessão e os workspaces
+        // terminaram de carregar (App.jsx só habilita este guard depois de
+        // !isSessionLoading) -- então workspaceId nulo aqui é uma resposta
+        // definitiva ("este usuário ainda não tem workspace pessoal", ex.:
+        // conta nova que nunca passou pelo Plano Pessoal), nunca uma corrida
+        // de carregamento. 'blocked' manda para apresentação/Plano Pessoal
+        // normalmente -- 'loading' aqui travaria o guard para sempre (nunca
+        // resolveria 'active', já que não há workspace para consultar).
+        setStatus('blocked');
         return;
       }
       setStatus('loading');

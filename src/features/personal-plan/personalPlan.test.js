@@ -92,7 +92,7 @@ test('modal de método: texto do cartão é "pagamento seguro no Asaas" -- hones
 test('confirmar com cartão chama createCheckout (nunca createCustomer/createSubscription) e redireciona na MESMA aba para checkout_url', async () => {
   const page = await source('./PersonalPlanPage.jsx');
   const idx = page.indexOf("if (paymentMethod === 'credit_card') {");
-  const endIdx = page.indexOf('const customerResult = await createCustomer', idx);
+  const endIdx = page.indexOf('let customerResult;', idx);
   const body = page.slice(idx, endIdx);
   assert.match(body, /await createCheckout\(\{ workspaceId: resolvedWorkspaceId \}\)/);
   assert.match(body, /window\.location\.href = checkoutResult\.data\.checkout_url;/);
@@ -179,8 +179,8 @@ test('confirmar assinatura chama createCustomer e depois createSubscription (nun
   const idx = page.indexOf('async function handleConfirmSubscription');
   const endIdx = page.indexOf('function handleGoHome');
   const body = page.slice(idx, endIdx);
-  const customerIdx = body.indexOf('await createCustomer(');
-  const subscriptionIdx = body.indexOf('await createSubscription(');
+  const customerIdx = body.indexOf('createCustomer(');
+  const subscriptionIdx = body.indexOf('createSubscription(');
   assert.ok(customerIdx > -1 && subscriptionIdx > customerIdx, 'createCustomer deve ser chamado ANTES de createSubscription');
   assert.match(body, /if \(customerResult\.error\) \{/);
   assert.match(body, /paymentMethod: 'pix',/);
@@ -203,9 +203,12 @@ test('confirmar assinatura Pix guarda pix (QR Code) vindo da resposta de createS
   const page = await source('./PersonalPlanPage.jsx');
   const idx = page.indexOf('const { status, pix } = subscriptionResult.data');
   assert.ok(idx > -1);
-  const slice = page.slice(idx, idx + 550);
-  assert.match(slice, /setPixData\(pix \?\? null\);/);
+  const slice = page.slice(idx, idx + 900);
+  assert.match(slice, /setPixData\(pix\);/);
   assert.match(slice, /setFlowState\('pending'\);/);
+  // GUARD FIX (modal Pix quebrado): só entra em 'pending' com payload Pix
+  // real e completo -- nunca com pix ausente/incompleto.
+  assert.match(slice, /if \(!isValidPixPayload\(pix\)\) \{/);
 });
 
 test('PixPaymentModal mostra QR Code como <img> com data URI base64 -- nunca desenha/gera a imagem', async () => {
@@ -270,9 +273,27 @@ test('consulta inicial (getSubscription) evita duplicidade: assinatura já ativa
   assert.match(page, /if \(data\.internal_status === 'active' && !data\.cancel_at_period_end\) \{\s*\n\s*setFlowState\('already_active'\);/);
 });
 
-test('assinatura pending já existente é retomada (polling liga de novo), nunca uma segunda tentativa de criação', async () => {
+test('assinatura pending Pix já existente e válida é retomada (polling liga de novo), nunca uma segunda tentativa de criação', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /\} else if \(data\.internal_status === 'pending'\) \{\s*\n\s*setPixData\(data\.pix \?\? null\);\s*\n\s*setPixModalDismissed\(false\);\s*\n\s*setFlowState\('pending'\);/);
+  assert.match(
+    page,
+    /\} else if \(data\.internal_status === 'pending' && isValidPersistedPixAttempt\(data\)\) \{[\s\S]{0,550}setPixData\(data\.pix\);\s*\n\s*setPixModalDismissed\(false\);\s*\n\s*setFlowState\('pending'\);/,
+  );
+});
+
+// ============================================================================
+// BUGFIX (modal Pix quebrado ao voltar da apresentação): uma assinatura
+// 'pending' que NÃO é uma tentativa Pix válida (ex.: checkout de cartão
+// abandonado, registro incompleto sem QR/payload) nunca pode reabrir o
+// modal "Pagamento Pix" sozinha -- cai em estado neutro (idle).
+// ============================================================================
+
+test('assinatura pending SEM ser uma tentativa Pix válida (payment_method != pix, ou sem payload/QR) nunca reabre o modal quebrado -- cai em idle', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  assert.match(
+    page,
+    /\} else if \(data\.internal_status === 'pending'\) \{\s*\n(?:\s*\/\/[^\n]*\n)*\s*setFlowState\('idle'\);/,
+  );
 });
 
 test('past_due/suspended (needs_regularization) mostra caminho de regularização, nunca tenta nova assinatura', async () => {

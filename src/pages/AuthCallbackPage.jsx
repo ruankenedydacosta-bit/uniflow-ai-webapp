@@ -22,6 +22,12 @@ import { consumeAuthReturnPath, readAuthReturnPath } from '../app/authReturnPath
  * qualquer redirecionamento repetido: a cada render, o destino é derivado
  * puramente do estado da sessão, e assim que a URL muda este componente
  * desmonta e nunca mais roda.
+ *
+ * GOOGLE DIRETO NA TELA DE BOAS-VINDAS: falha/cancelamento do OAuth (seletor
+ * do Google fechado, erro de rede, erro do Supabase, conta inválida) volta
+ * para /welcome -- não mais para /login -- porque agora é o card "Já tenho
+ * conta" quem inicia o Google diretamente, sem passar por /login antes.
+ * /welcome exibe a mensagem de erro e nunca fica presa em loading.
  */
 function AuthCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -35,13 +41,13 @@ function AuthCallbackPage() {
   const returnTo = readAuthReturnPath();
 
   if (oauthError || sessionError) {
-    return <Navigate to="/login" replace state={{ oauthFailed: true, from: returnTo }} />;
+    return <Navigate to="/welcome" replace state={{ oauthFailed: true, from: returnTo }} />;
   }
 
   if (!session) {
     // Só alcançável no modo demo (Supabase não configurado, guard de
     // isSessionLoading não bloqueia) -- sem sessão real para processar.
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/welcome" replace />;
   }
 
   const destination = consumeAuthReturnPath();

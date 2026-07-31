@@ -11,18 +11,24 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // Apple não é renderizado enquanto o provedor não está disponível.
 // ============================================================================
 
-test('usa signInWithGoogle de useSession() -- nunca chama supabase.auth diretamente nesta camada', async () => {
+// GOOGLE DIRETO NA TELA DE BOAS-VINDAS: handleGoogleAuth passou a chamar o
+// hook compartilhado useGoogleAuthRedirect (mesma implementação real usada
+// pelo card "Já tenho conta" em WelcomeDecisionPage.jsx) -- nunca duas
+// implementações divergentes do mesmo fluxo OAuth. A lógica real
+// (signInWithGoogle de useSession(), saveAuthReturnPath,
+// getGoogleAuthFeedback) agora vive só em useGoogleAuthRedirect.js.
+test('usa o hook compartilhado useGoogleAuthRedirect -- nunca chama supabase.auth nem signInWithGoogle diretamente nesta camada', async () => {
   const page = await source('LoginPage.jsx');
-  assert.match(page, /const \{ signInWithGoogle \} = useSession\(\);/);
-  assert.doesNotMatch(page, /supabase\.auth|createClient\(/);
+  assert.match(page, /import \{ useGoogleAuthRedirect \} from '\.\.\/features\/auth-mobile\/useGoogleAuthRedirect\.js';/);
+  assert.match(page, /const \{ startGoogleAuth \} = useGoogleAuthRedirect\(\);/);
+  assert.doesNotMatch(page, /supabase\.auth|createClient\(|signInWithGoogle\(\)/);
 });
 
-test('handleGoogleAuth converte o erro do service em mensagem segura via getGoogleAuthFeedback, nunca expõe o erro cru', async () => {
+test('handleGoogleAuth repassa o resultado de startGoogleAuth, nunca expõe o erro cru', async () => {
   const page = await source('LoginPage.jsx');
   const fnBody = page.slice(page.indexOf('async function handleGoogleAuth'), page.indexOf('return (\n    <MobileAuthPage'));
-  assert.match(fnBody, /const result = await signInWithGoogle\(\);/);
-  assert.match(fnBody, /const feedback = getGoogleAuthFeedback\(result\?\.error\);/);
-  assert.match(fnBody, /return \{ message: feedback \?\? '' \};/);
+  assert.match(fnBody, /const result = await startGoogleAuth\(location\.state\?\.from\);/);
+  assert.match(fnBody, /return \{ message: result\.message \};/);
 });
 
 test('injeta onGoogleAuth e destino seguro em MobileAuthPage, sem Apple', async () => {
@@ -32,11 +38,11 @@ test('injeta onGoogleAuth e destino seguro em MobileAuthPage, sem Apple', async 
   assert.doesNotMatch(page, /onAppleAuth=/);
 });
 
-test('Google salva o destino seguro antes do redirect externo', async () => {
-  const page = await source('LoginPage.jsx');
-  const fnBody = page.slice(page.indexOf('async function handleGoogleAuth'), page.indexOf('return (\n    <MobileAuthPage'));
+test('Google salva o destino seguro antes do redirect externo (dentro de useGoogleAuthRedirect, chamado por LoginPage)', async () => {
+  const hook = await source('../features/auth-mobile/useGoogleAuthRedirect.js');
+  const fnBody = hook.slice(hook.indexOf('async function startGoogleAuth'));
   assert.match(fnBody, /saveAuthReturnPath\(returnTo\);/);
-  assert.ok(fnBody.indexOf('saveAuthReturnPath(returnTo)') < fnBody.indexOf('signInWithGoogle()'));
+  assert.ok(fnBody.indexOf('saveAuthReturnPath(returnTo)') < fnBody.indexOf('await signInWithGoogle()'));
 });
 
 test('login com email, cadastro e recuperação de senha continuam intocados -- MobileAuthPage é reaproveitada, não substituída', async () => {

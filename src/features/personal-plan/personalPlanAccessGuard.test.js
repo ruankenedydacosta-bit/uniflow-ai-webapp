@@ -77,8 +77,16 @@ test('hook desabilitado (enabled=false) volta para "idle" -- nunca mantém um st
   assert.match(HOOK_SOURCE, /if \(!enabled\) \{\s*\n\s*setStatus\('idle'\);/);
 });
 
-test('hook sem workspaceId nunca decide -- fica "loading" até o workspace ser conhecido', () => {
-  assert.match(HOOK_SOURCE, /if \(!workspaceId\) \{[\s\S]{0,120}setStatus\('loading'\);/);
+// GUARD FIX (troca de dispositivo/sessão restaurada): `enabled` já garante
+// que a sessão e os workspaces terminaram de carregar -- workspaceId nulo
+// aqui é uma resposta definitiva ("sem workspace pessoal ainda"), nunca uma
+// corrida. 'blocked' é a única opção segura: 'loading' aqui travaria o
+// guard para sempre (nunca haveria workspace para consultar e resolver
+// 'active'), impedindo até usuários sem assinatura de sair do loading
+// eterno para ver a apresentação/Plano Pessoal.
+test('hook sem workspaceId (mas já habilitado) nunca fica em loading eterno -- resolve "blocked" imediatamente', () => {
+  assert.match(HOOK_SOURCE, /if \(!workspaceId\) \{[\s\S]{0,700}setStatus\('blocked'\);/);
+  assert.doesNotMatch(HOOK_SOURCE, /if \(!workspaceId\) \{[\s\S]{0,120}setStatus\('loading'\);/);
 });
 
 test('hook usa resolvePersonalPlanAccess (regra centralizada e testada isoladamente) -- nunca uma condição solta dentro do hook', () => {

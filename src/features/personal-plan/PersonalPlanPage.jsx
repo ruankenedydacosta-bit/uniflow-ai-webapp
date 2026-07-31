@@ -14,7 +14,25 @@ import {
   PERSONAL_PLAN_TRUST_SEALS,
 } from './personalPlanConfig.js';
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
+import { resolvePersonalWorkspaceId } from './resolvePersonalWorkspaceId.js';
+import { isValidPersistedPixAttempt, isValidPixPayload } from './personalPlanPixAttempt.js';
 import styles from './PersonalPlan.module.css';
+
+// BUGFIX (modal Pix quebrado ao voltar da apresentação): tempo máximo para
+// a chamada de criação do Pix (createCustomer + createSubscription) --
+// nunca deixa "Confirmar assinatura" em loading indefinido; ao estourar,
+// mostra erro recuperável (rule 8: "Gerando QR Code..." exige timeout e
+// tratamento de erro).
+const PIX_CREATION_TIMEOUT_MS = 20000;
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error('PIX_CREATION_TIMEOUT')), ms);
+    }),
+  ]);
+}
 
 // BLOCO FINAL DO MVP: internal id real usado pelo backend (plans.id = 'pro',
 // decisão comercial congelada desde o Bloco Asaas 0) -- distinto do
@@ -219,11 +237,9 @@ const {
   createWorkspaceProfile,
 } = useSession();
   const userId = resolvePresentationUserId(session, isSupabaseConfigured);
-  const personalWorkspace = availableWorkspaces?.find(
-  (item) => item?.workspace_type === 'personal',
-);
-
-const workspaceId = personalWorkspace?.id ?? workspace?.id ?? null;
+  // GUARD FIX: resolver compartilhado com App.jsx (nunca duas
+  // implementações divergentes decidindo o workspace da assinatura).
+  const workspaceId = resolvePersonalWorkspaceId(availableWorkspaces, workspace);
 
   // checking: consulta inicial (evita oferecer "assinar" para quem já tem
   // assinatura); idle: sem assinatura, pode assinar; method_modal: modal
@@ -263,10 +279,21 @@ const workspaceId = personalWorkspace?.id ?? workspace?.id ?? null;
           setFlowState('already_active');
         } else if (data.internal_status === 'active' && data.cancel_at_period_end) {
           setFlowState('cancel_scheduled');
-        } else if (data.internal_status === 'pending') {
-          setPixData(data.pix ?? null);
+        } else if (data.internal_status === 'pending' && isValidPersistedPixAttempt(data)) {
+          // GUARD FIX: só restaura o modal Pix automaticamente quando TODOS
+          // os sinais de uma tentativa Pix real e completa existem ao
+          // mesmo tempo (isValidPersistedPixAttempt) -- nunca só porque
+          // internal_status é 'pending' (isso também é verdade para um
+          // checkout de cartão abandonado, sem nenhum dado de Pix).
+          setPixData(data.pix);
           setPixModalDismissed(false);
           setFlowState('pending');
+        } else if (data.internal_status === 'pending') {
+          // BUGFIX (modal Pix quebrado): 'pending' sem uma tentativa Pix
+          // válida (ex.: checkout de cartão abandonado, registro
+          // incompleto) -- nunca reabre o modal quebrado; estado neutro,
+          // usuário escolhe de novo explicitamente.
+          setFlowState('idle');
         } else if (data.needs_regularization) {
           setFlowState('needs_regularization');
         } else {
@@ -332,22 +359,41 @@ if (!resolvedWorkspaceId) {
       return;
     }
 
-    const customerResult = await createCustomer({
-  workspaceId: resolvedWorkspaceId,
-  cpfCnpj,
-});
+    // BUGFIX (modal Pix quebrado): timeout explícito na chamada real de
+    // criação (createCustomer + createSubscription) -- nunca deixa
+    // "Confirmar assinatura" em loading indefinido; ao estourar, mostra
+    // erro recuperável em vez de travar a UI.
+    let customerResult;
+    let subscriptionResult;
+    try {
+      customerResult = await withTimeout(
+        createCustomer({ workspaceId: resolvedWorkspaceId, cpfCnpj }),
+        PIX_CREATION_TIMEOUT_MS,
+      );
 
-    if (customerResult.error) {
-      setSubmitError('Não foi possível preparar seu cadastro de pagamento. Tente novamente.');
+      if (customerResult.error) {
+        setSubmitError('Não foi possível preparar seu cadastro de pagamento. Tente novamente.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      subscriptionResult = await withTimeout(
+        createSubscription({
+          workspaceId: resolvedWorkspaceId,
+          planId: BILLING_PLAN_ID,
+          paymentMethod: 'pix',
+        }),
+        PIX_CREATION_TIMEOUT_MS,
+      );
+    } catch {
+      // Timeout (PIX_CREATION_TIMEOUT_MS) ou qualquer rejeição inesperada
+      // -- nunca expõe detalhe técnico, sempre recuperável (o usuário pode
+      // tentar de novo; nenhum estado quebrado fica para trás).
+      setSubmitError('A geração do Pix demorou demais. Tente novamente em instantes.');
       setIsSubmitting(false);
       return;
     }
 
-    const subscriptionResult = await createSubscription({
-  workspaceId: resolvedWorkspaceId,
-  planId: BILLING_PLAN_ID,
-  paymentMethod: 'pix',
-});
     setIsSubmitting(false);
     if (subscriptionResult.error) {
       setSubmitError('Não foi possível criar sua assinatura agora. Tente novamente em instantes.');
@@ -360,11 +406,16 @@ if (!resolvedWorkspaceId) {
       markPersonalPlanCompleted(userId);
       return;
     }
-    // pending (novo ou reaproveitado): liga o polling para detectar a
-    // ativação automaticamente, sem exigir refresh manual. QR Code/copia-e-
-    // cola vêm prontos da Asaas via billing-create-subscription -- nunca
-    // gerados aqui.
-    setPixData(pix ?? null);
+    // GUARD FIX: só entra em 'pending' com um payload Pix real e completo
+    // (QR Code + copia-e-cola) -- nunca abre o modal "Gerando QR Code..."
+    // para sempre quando a Asaas não devolveu os dados a tempo. O usuário
+    // já sabe que pode tentar de novo (billing-create-subscription reusa a
+    // mesma cobrança pendente, nunca cria uma duplicada).
+    if (!isValidPixPayload(pix)) {
+      setSubmitError('Não foi possível gerar o QR Code Pix agora. Tente novamente em instantes.');
+      return;
+    }
+    setPixData(pix);
     setPixModalDismissed(false);
     setFlowState('pending');
   }

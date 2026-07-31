@@ -16,18 +16,21 @@ test('nunca lê/manipula token ou código OAuth da URL manualmente -- confia int
   assert.doesNotMatch(page, /access_token|refresh_token|localStorage|exchangeCodeForSession|searchParams\.get\('code'\)/);
 });
 
-test('erro do provedor (?error / ?error_description) ou erro de sessão volta para /login com feedback seguro, via state', async () => {
+// GOOGLE DIRETO NA TELA DE BOAS-VINDAS: falha/cancelamento do OAuth volta
+// para /welcome (não mais /login), já que é o card "Já tenho conta" quem
+// inicia o Google diretamente agora, sem passar por /login antes.
+test('erro do provedor (?error / ?error_description) ou erro de sessão volta para /welcome com feedback seguro, via state', async () => {
   const page = await source('AuthCallbackPage.jsx');
   assert.match(page, /const oauthError = searchParams\.get\('error'\) \|\| searchParams\.get\('error_description'\);/);
   assert.match(
     page,
-    /if \(oauthError \|\| sessionError\) \{\s*\n\s*return <Navigate to="\/login" replace state=\{\{ oauthFailed: true, from: returnTo \}\} \/>;/,
+    /if \(oauthError \|\| sessionError\) \{\s*\n\s*return <Navigate to="\/welcome" replace state=\{\{ oauthFailed: true, from: returnTo \}\} \/>;/,
   );
 });
 
-test('sem sessão (modo demo, sem Supabase configurado) volta para /login sem state de erro', async () => {
+test('sem sessão (modo demo, sem Supabase configurado) volta para /welcome sem state de erro', async () => {
   const page = await source('AuthCallbackPage.jsx');
-  assert.match(page, /if \(!session\) \{\s*\n[\s\S]*?return <Navigate to="\/login" replace \/>;/);
+  assert.match(page, /if \(!session\) \{\s*\n[\s\S]*?return <Navigate to="\/welcome" replace \/>;/);
 });
 
 // GUARD FIX: onboarding legado removido -- AuthCallbackPage não precisa

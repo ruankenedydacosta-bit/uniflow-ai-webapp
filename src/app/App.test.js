@@ -106,7 +106,7 @@ test('usuário autenticado no login passa pela apresentação e pelo Plano Pesso
   const content = await source('App.jsx');
   assert.match(
     content,
-    /!presentationCompleted[\s\S]{0,20}\? PRESENTATION_ROUTE[\s\S]{0,20}: !personalPlanUnlocked[\s\S]{0,20}\? PERSONAL_PLAN_ROUTE[\s\S]{0,20}: requestedReturnPath/,
+    /personalPlanUnlocked[\s\S]{0,20}\? requestedReturnPath[\s\S]{0,20}: !presentationCompleted[\s\S]{0,20}\? PRESENTATION_ROUTE[\s\S]{0,20}: PERSONAL_PLAN_ROUTE/,
   );
   assert.doesNotMatch(content, /to=\{needsOnboarding \? '\/onboarding'/);
 });
@@ -121,14 +121,23 @@ test('usuário autenticado no login passa pela apresentação e pelo Plano Pesso
 // usado como fallback no modo demo, sem Supabase configurado).
 // ============================================================================
 
-test('guard real: usePersonalPlanAccessGuard só roda com backend real configurado, sessão resolvida, apresentação concluída e workspace conhecido', async () => {
+// GUARD FIX (troca de dispositivo/sessão restaurada): o guard NÃO depende
+// mais de presentationCompleted -- um assinante ativo num navegador/
+// dispositivo novo (cache limpo, reinstalação) precisa ter a assinatura
+// consultada assim que a sessão é conhecida, nunca depois de uma
+// apresentação que ele nunca viu ali. workspaceId também usa o resolver
+// compartilhado (workspace do tipo "personal"), nunca o workspace
+// "atual/ativo" (workspace.id), que pode divergir dele.
+test('guard real: usePersonalPlanAccessGuard só roda com backend real configurado e sessão resolvida -- independe de presentationCompleted, usa o workspace pessoal', async () => {
   const content = await source('App.jsx');
   assert.match(content, /usePersonalPlanAccessGuard,\s*\n\} from '\.\.\/features\/personal-plan';/);
   assert.match(
     content,
-    /const personalPlanGuardEnabled = Boolean\(\s*\n\s*isSupabaseConfigured && !isSessionLoading && presentationUserId && presentationCompleted,\s*\n\s*\);/,
+    /const personalPlanGuardEnabled = Boolean\(\s*\n\s*isSupabaseConfigured && !isSessionLoading && presentationUserId,\s*\n\s*\);/,
   );
-  assert.match(content, /workspaceId: workspace\?\.id,/);
+  assert.doesNotMatch(content, /personalPlanGuardEnabled = Boolean\([^)]*presentationCompleted/);
+  assert.match(content, /const personalWorkspaceId = resolvePersonalWorkspaceId\(availableWorkspaces, workspace\);/);
+  assert.match(content, /workspaceId: personalWorkspaceId,/);
   assert.match(content, /revalidateWhenLeavingRoute: isPersonalPlanRoute,/);
 });
 
@@ -146,9 +155,13 @@ test('guard real: "loading"/"idle" nunca decidem -- nem redirecionam para /plano
     content,
     /const personalPlanAccessLoading = personalPlanGuardEnabled\s*\n\s*&& \(personalPlanAccessStatus === 'loading' \|\| personalPlanAccessStatus === 'idle'\);/,
   );
-  assert.match(content, /if \(presentationCompleted && personalPlanAccessLoading\) \{\s*\n\s*return <Loader fullScreen label="Verificando sua assinatura…" \/>;/);
-  const idx = content.indexOf('// GUARD FIX: enquanto a consulta real de assinatura ainda não resolveu,');
-  const slice = content.slice(idx, idx + 500);
+  // Bloco pós-login (/, /welcome, /login): loading nunca decide sozinho.
+  assert.match(content, /if \(personalPlanAccessLoading\) \{\s*\n\s*return <Loader fullScreen label="Verificando sua assinatura…" \/>;/);
+  // Bloco de rotas protegidas: mesmo guard, agora incondicional a
+  // presentationCompleted (ver GUARD FIX de troca de dispositivo).
+  const idx = content.indexOf('// GUARD FIX (troca de dispositivo/sessão restaurada): a consulta de');
+  assert.ok(idx !== -1);
+  const slice = content.slice(idx, idx + 700);
   assert.match(slice, /personalPlanAccessLoading\s*\n\s*\) \{\s*\n\s*return <Loader fullScreen label="Verificando sua assinatura…" \/>;/);
 });
 
@@ -191,7 +204,7 @@ test('usuário com apresentação concluída e Plano Pessoal pendente é forçad
   const content = await source('App.jsx');
   assert.match(
     content,
-    /if \(\s*\n\s*presentationUserId\s*\n\s*&& presentationCompleted\s*\n\s*&& !personalPlanUnlocked\s*\n\s*&& !isPersonalPlanRoute\s*\n\s*\) \{\s*\n\s*return <Navigate to=\{PERSONAL_PLAN_ROUTE\} replace \/>;/,
+    /if \(\s*\n\s*presentationUserId\s*\n\s*&& !personalPlanUnlocked\s*\n\s*&& !isPersonalPlanRoute\s*\n\s*&& !isPresentationRoute\s*\n\s*\) \{\s*\n\s*return <Navigate to=\{PERSONAL_PLAN_ROUTE\} replace \/>;/,
   );
 });
 
@@ -225,11 +238,12 @@ test('Plano Pessoal concluído é persistido por usuário (mesmo padrão do pres
   assert.match(page, /29,90/);
 });
 
-test('guard do Plano Pessoal independe do workspace Business/PF-PJ -- workspace stale não altera o fluxo Pessoal', async () => {
+test('guard do Plano Pessoal independe do workspace Business/PF-PJ -- workspace stale não altera o fluxo Pessoal (usa sempre o workspace pessoal resolvido)', async () => {
   const content = await source('App.jsx');
+  const finalReturnIdx = content.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
   const guardBlock = content.slice(
-    content.indexOf('if (\n    presentationUserId\n    && presentationCompleted\n    && !isPersonalPlanRoute\n    && personalPlanAccessLoading'),
-    content.indexOf('// Guard de CONTEXTO'),
+    content.indexOf('if (\n    presentationUserId\n    && !isPersonalPlanRoute\n    && !isPresentationRoute\n    && personalPlanAccessLoading'),
+    finalReturnIdx,
   );
   assert.ok(guardBlock.length > 0);
   assert.doesNotMatch(guardBlock, /currentWorkspace/);
@@ -260,12 +274,12 @@ test('rota catch-all autenticada da experiência simplificada nunca abre o shell
   assert.doesNotMatch(simplifiedBlock, /Navigate to="\/dashboard"|Navigate to=\{['"`]\/dashboard/);
 });
 
-test('usuário sem sessão entra por Login em / e /welcome, sem renderizar a apresentação pública antiga', async () => {
+test('usuário sem sessão entra por / -> /welcome (tela de decisão) -> /login, sem renderizar a apresentação pública antiga', async () => {
   const routes = await source('routes.jsx');
   const rootRoute = routes.slice(routes.indexOf("path: '/'"), routes.indexOf("path: '/welcome'"));
   const welcomeRoute = routes.slice(routes.indexOf("path: '/welcome'"), routes.indexOf("path: '/login'"));
-  assert.match(rootRoute, /<Navigate to="\/login" replace \/>/);
-  assert.match(welcomeRoute, /<Navigate to="\/login" replace \/>/);
+  assert.match(rootRoute, /<Navigate to="\/welcome" replace \/>/);
+  assert.match(welcomeRoute, /<WelcomeDecisionPage \/>/);
   assert.doesNotMatch(routes, /MobileWelcomePage|WelcomeCarousel/);
 });
 
@@ -335,7 +349,7 @@ test('login/cadastro por e-mail ou Google decide o destino inicial apenas pelos 
   );
   assert.match(
     app,
-    /!presentationCompleted[\s\S]{0,20}\? PRESENTATION_ROUTE[\s\S]{0,20}: !personalPlanUnlocked[\s\S]{0,20}\? PERSONAL_PLAN_ROUTE[\s\S]{0,20}: requestedReturnPath/,
+    /personalPlanUnlocked[\s\S]{0,20}\? requestedReturnPath[\s\S]{0,20}: !presentationCompleted[\s\S]{0,20}\? PRESENTATION_ROUTE[\s\S]{0,20}: PERSONAL_PLAN_ROUTE/,
   );
   assert.doesNotMatch(app, /needsOnboarding|onboardingCompleted|onboardingService|onboardingConstants/);
 });
@@ -359,7 +373,7 @@ test('usuário 100% novo (Google ou e-mail) nunca alcança Dashboard/Home direto
   // para o usuário autenticado -- não existe caminho de appRoutes que o
   // contorne, porque ele vem ANTES do bloco final que renderiza rotas.
   const presentationGuardIdx = app.indexOf(
-    "presentationUserId\n    && !presentationCompleted\n    && !isPresentationRoute",
+    "presentationUserId\n    && !presentationCompleted\n    && !personalPlanUnlocked\n    && !isPresentationRoute",
   );
   const finalReturnIdx = app.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
   const simplifiedRenderIdx = app.indexOf('<SimplifiedAuthenticatedLayout>');
@@ -368,20 +382,20 @@ test('usuário 100% novo (Google ou e-mail) nunca alcança Dashboard/Home direto
   assert.ok(presentationGuardIdx < finalReturnIdx);
   assert.ok(presentationGuardIdx < simplifiedRenderIdx);
   assert.ok(presentationGuardIdx < standaloneRenderIdx);
-  assert.match(app, /if \(\s*presentationUserId\s*&& !presentationCompleted\s*&& !isPresentationRoute\s*\) \{\s*return <Navigate to=\{PRESENTATION_ROUTE\} replace \/>;/);
+  assert.match(app, /if \(\s*presentationUserId\s*&& !presentationCompleted\s*&& !personalPlanUnlocked\s*&& !isPresentationRoute\s*\) \{\s*return <Navigate to=\{PRESENTATION_ROUTE\} replace \/>;/);
 });
 
 test('usuário novo com apresentação concluída mas sem assinatura ativa nunca alcança Home direto -- guard de Plano Pessoal vem antes do fallback final', async () => {
   const app = await source('App.jsx');
   const personalPlanGuardIdx = app.indexOf(
-    'presentationUserId\n    && presentationCompleted\n    && !personalPlanUnlocked\n    && !isPersonalPlanRoute',
+    'presentationUserId\n    && !personalPlanUnlocked\n    && !isPersonalPlanRoute\n    && !isPresentationRoute',
   );
   const finalReturnIdx = app.lastIndexOf('return <Navigate to={SIMPLIFIED_ROUTES.HOME} replace />;');
   const simplifiedRenderIdx = app.indexOf('<SimplifiedAuthenticatedLayout>');
   assert.ok(personalPlanGuardIdx !== -1, 'guard de Plano Pessoal não encontrado em App.jsx');
   assert.ok(personalPlanGuardIdx < finalReturnIdx);
   assert.ok(personalPlanGuardIdx < simplifiedRenderIdx);
-  assert.match(app, /if \(\s*presentationUserId\s*&& presentationCompleted\s*&& !personalPlanUnlocked\s*&& !isPersonalPlanRoute\s*\) \{\s*return <Navigate to=\{PERSONAL_PLAN_ROUTE\} replace \/>;/);
+  assert.match(app, /if \(\s*presentationUserId\s*&& !personalPlanUnlocked\s*&& !isPersonalPlanRoute\s*&& !isPresentationRoute\s*\) \{\s*return <Navigate to=\{PERSONAL_PLAN_ROUTE\} replace \/>;/);
 });
 
 test('nenhum usuário autenticado, apresentado e assinante ativo alcança rota legada (dashboard/financeiro/crm/etc.) -- toda rota que não é standalone nem simplificada cai na Home simplificada', async () => {
@@ -405,7 +419,7 @@ test('acesso manual a /dashboard sem assinatura ativa redireciona corretamente (
   // rodam ANTES de qualquer checagem de activeRoute) já decidem o destino
   // antes mesmo do pathname importar.
   const presentationGuardIdx = app.indexOf('if (\n    presentationUserId\n    && !presentationCompleted');
-  const personalPlanGuardIdx = app.indexOf('if (\n    presentationUserId\n    && presentationCompleted\n    && !personalPlanUnlocked');
+  const personalPlanGuardIdx = app.indexOf('if (\n    presentationUserId\n    && !personalPlanUnlocked\n    && !isPersonalPlanRoute\n    && !isPresentationRoute');
   const activeRouteCheckIdx = app.indexOf('if (activeRoute?.standalone)');
   assert.ok(presentationGuardIdx !== -1 && presentationGuardIdx < activeRouteCheckIdx);
   assert.ok(personalPlanGuardIdx !== -1 && personalPlanGuardIdx < activeRouteCheckIdx);
@@ -437,4 +451,116 @@ test('resolvePresentationUserId retorna o id real da sessão (Google e e-mail se
     config,
     /if \(!isSupabaseConfigured\) return PRESENTATION_DEMO_USER_ID;\s*\n\s*return typeof session\?\.user\?\.id === 'string' && session\.user\.id\s*\n\s*\? session\.user\.id\s*\n\s*: null;/,
   );
+});
+
+// ============================================================================
+// BUG CRÍTICO CORRIGIDO: usuário compra o Plano Pessoal, usa normalmente,
+// faz logout, fecha o navegador, abre de novo -- o app ia direto para
+// /plano-pessoal e tentava cobrar de novo ao clicar em continuar. Causa
+// raiz: o guard de assinatura só rodava DEPOIS de presentationCompleted
+// (flag local, por navegador) resolver true, e usava workspace.id (o
+// workspace "atual/ativo") em vez do workspace pessoal -- num navegador/
+// dispositivo novo (cache limpo, reinstalação), presentationCompleted
+// nunca tinha sido marcado ali, então a assinatura real nunca era
+// consultada a tempo. Os testes abaixo travam a nova regra: sessão sempre
+// decide primeiro; assinatura é sempre consultada no backend, nunca no
+// local; dispositivo/navegador/cache nunca alteram o resultado.
+// ============================================================================
+
+test('logout limpa a sessão de verdade (supabase.auth.signOut) -- reabrir o domínio depois sem sessão sempre cai em /login para qualquer rota protegida', async () => {
+  const authService = await source('../services/authService.js');
+  assert.match(authService, /export async function signOut\(\) \{/);
+  const signOutBody = authService.slice(authService.indexOf('export async function signOut'));
+  assert.match(signOutBody, /await supabase\.auth\.signOut\(\);/);
+  // App.jsx: !session redireciona para /login para QUALQUER rota
+  // protegida, antes de qualquer guard de apresentação/assinatura.
+  const app = await source('App.jsx');
+  assert.match(app, /if \(!session \|\| sessionError\) \{/);
+});
+
+test('SEM SESSÃO, nenhuma URL (/, /welcome, /app/home, /plano-pessoal, /apresentacao, rota protegida qualquer) decide assinatura antes de exigir login', async () => {
+  const app = await source('App.jsx');
+  // isPublicRoute (/, /welcome, /login, /cadastro, /redefinir-senha,
+  // /auth/callback) só decide destino pós-login quando session existe; sem
+  // sessão, renderiza sempre as rotas públicas (login/cadastro/decisão).
+  const publicBlockIdx = app.indexOf('if (isPublicRoute) {');
+  const sessionCheckIdx = app.indexOf("['/', '/welcome', '/login'].includes(location.pathname)");
+  assert.ok(publicBlockIdx !== -1 && sessionCheckIdx !== -1 && publicBlockIdx < sessionCheckIdx);
+  // Qualquer rota protegida (appRoutes): !session sempre vira /login, ANTES
+  // de qualquer guard de apresentação/assinatura (linhas seguintes).
+  const loginGuardIdx = app.indexOf("if (!session || sessionError) {");
+  const presentationGuardIdx = app.indexOf('presentationUserId\n    && !presentationCompleted\n    && !personalPlanUnlocked');
+  assert.ok(loginGuardIdx !== -1 && presentationGuardIdx !== -1 && loginGuardIdx < presentationGuardIdx);
+});
+
+test('assinatura ativa: consultada assim que a sessão é conhecida, NUNCA depende de presentationCompleted -- troca de navegador/limpeza de cache/nova instalação nunca cobram de novo nem reapresentam', async () => {
+  const app = await source('App.jsx');
+  // personalPlanGuardEnabled não inclui presentationCompleted na condição.
+  assert.match(
+    app,
+    /const personalPlanGuardEnabled = Boolean\(\s*\n\s*isSupabaseConfigured && !isSessionLoading && presentationUserId,\s*\n\s*\);/,
+  );
+  // Um assinante ativo nunca cai nos guards que mandam para apresentação ou
+  // Plano Pessoal (ambos têm `&& !personalPlanUnlocked`).
+  assert.match(app, /&& !presentationCompleted\s*\n\s*&& !personalPlanUnlocked\s*\n\s*&& !isPresentationRoute\s*\n\s*\) \{\s*\n\s*return <Navigate to=\{PRESENTATION_ROUTE\} replace \/>;/);
+  assert.match(app, /&& !personalPlanUnlocked\s*\n\s*&& !isPersonalPlanRoute\s*\n\s*&& !isPresentationRoute\s*\n\s*\) \{\s*\n\s*return <Navigate to=\{PERSONAL_PLAN_ROUTE\} replace \/>;/);
+});
+
+test('assinatura sempre vinculada ao workspace pessoal real (resolvePersonalWorkspaceId), nunca ao workspace "atual/ativo" -- troca de contexto PF/PJ não afeta a checagem', async () => {
+  const app = await source('App.jsx');
+  assert.match(app, /const personalWorkspaceId = resolvePersonalWorkspaceId\(availableWorkspaces, workspace\);/);
+  assert.match(app, /workspaceId: personalWorkspaceId,/);
+  assert.doesNotMatch(app, /workspaceId: workspace\?\.id,/);
+});
+
+test('toda decisão pós-login (Caso 1/2/3) é tomada só depois do backend responder -- personalPlanAccessLoading bloqueia qualquer redirect antes disso', async () => {
+  const app = await source('App.jsx');
+  const postLoginBlockIdx = app.indexOf("['/', '/welcome', '/login'].includes(location.pathname)");
+  const postLoginLoaderIdx = app.indexOf('if (personalPlanAccessLoading) {', postLoginBlockIdx);
+  const postLoginNavigateIdx = app.indexOf('personalPlanUnlocked\n                ? requestedReturnPath', postLoginBlockIdx);
+  assert.ok(postLoginBlockIdx !== -1 && postLoginLoaderIdx !== -1 && postLoginNavigateIdx !== -1);
+  assert.ok(postLoginLoaderIdx < postLoginNavigateIdx, 'o loading guard precisa vir antes da decisão pós-login');
+});
+
+// ============================================================================
+// GOOGLE DIRETO NA TELA DE BOAS-VINDAS -- depois que o Google conclui via
+// /auth/callback (AuthCallbackPage), o destino final é decidido pelos
+// MESMOS guards de App.jsx usados por qualquer outra sessão (e-mail
+// incluído) -- nunca uma decisão especial só para OAuth. AuthCallbackPage
+// só navega para o destino salvo; os guards abaixo, reaplicados a CADA
+// navegação, decidem Home/Plano Pessoal/Apresentação de verdade.
+// ============================================================================
+
+test('Caso 1: conta Google existente + apresentação necessária -- guard de apresentação roda independente do provedor usado no login', async () => {
+  const app = await source('App.jsx');
+  // O guard usa presentationUserId (vem de resolvePresentationUserId,
+  // idêntico para Google e e-mail -- já provado no teste de
+  // resolvePresentationUserId acima) -- não há ramificação por provedor.
+  assert.match(app, /const presentationUserId = resolvePresentationUserId\(session, isSupabaseConfigured\);/);
+  assert.doesNotMatch(app, /provider === 'google'|isGoogleUser/);
+});
+
+test('Caso 2: conta Google existente + assinatura ativa -- vai para /app/home, nunca cobra de novo (mesmo guard personalPlanUnlocked)', async () => {
+  const app = await source('App.jsx');
+  const callback = await source('../pages/AuthCallbackPage.jsx');
+  assert.match(callback, /const destination = consumeAuthReturnPath\(\);/);
+  assert.match(callback, /return <Navigate to=\{destination\} replace \/>;/);
+  // App.jsx reaplica o guard a cada navegação (inclusive a que
+  // AuthCallbackPage dispara) -- personalPlanUnlocked decide Home/Plano
+  // Pessoal independente de qual destino salvo o Navigate usou.
+  assert.match(app, /if \(isPersonalPlanRoute && personalPlanUnlocked\) \{\s*\n\s*return <Navigate to=\{SIMPLIFIED_ROUTES\.HOME\} replace \/>;/);
+});
+
+test('Caso 3/4: conta Google sem assinatura ativa (existente ou recém-criada, sem perfil completo) -- nunca alcança Home, sempre cai em apresentação ou Plano Pessoal', async () => {
+  const app = await source('App.jsx');
+  assert.match(
+    app,
+    /if \(\s*\n\s*presentationUserId\s*\n\s*&& !personalPlanUnlocked\s*\n\s*&& !isPersonalPlanRoute\s*\n\s*&& !isPresentationRoute\s*\n\s*\) \{\s*\n\s*return <Navigate to=\{PERSONAL_PLAN_ROUTE\} replace \/>;/,
+  );
+  // presentationUserId não exige perfil/profile completo -- só
+  // session.user.id (existe assim que o Google conclui o OAuth), então uma
+  // conta Google "sem perfil válido" ainda cai corretamente no guard de
+  // apresentação/Plano Pessoal, nunca passa direto para Home.
+  const config = await source('../features/presentation/presentationConfig.js');
+  assert.doesNotMatch(config, /profile\.|profileMissing/);
 });

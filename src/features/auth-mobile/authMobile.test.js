@@ -140,18 +140,18 @@ test('estrutura visual preserva responsividade, safe area e redução de movimen
   assert.match(css, /overflow-x: hidden/);
 });
 
-test('rotas existentes permanecem e /welcome redireciona para o Login', async () => {
+test('rotas existentes permanecem e /welcome é a tela de decisão (Já tenho conta / Criar conta)', async () => {
   const routes = await readFile(
     new URL('../../app/routes.jsx', import.meta.url), 'utf8',
   );
-  ['/welcome', '/login', '/dashboard', '/uni-ai', '/financeiro'].forEach(
+  ['/welcome', '/login', '/cadastro', '/dashboard', '/uni-ai', '/financeiro'].forEach(
     (path) => assert.match(routes, new RegExp(path.replace('/', '\\/'))),
   );
   const welcomeRoute = routes.slice(
     routes.indexOf("path: '/welcome'"),
     routes.indexOf("path: '/login'"),
   );
-  assert.match(welcomeRoute, /<Navigate to="\/login" replace \/>/);
+  assert.match(welcomeRoute, /<WelcomeDecisionPage \/>/);
   assert.doesNotMatch(routes, /MobileWelcomePage|WelcomeCarousel|OnboardingPage/);
 });
 
@@ -303,7 +303,7 @@ test('sessao autenticada não retorna ao Welcome', async () => {
   // de verdade (usePersonalPlanAccessGuard), nunca do cache local.
   assert.match(
     app,
-    /!presentationCompleted[\s\S]{0,20}\? PRESENTATION_ROUTE[\s\S]{0,20}: !personalPlanUnlocked[\s\S]{0,20}\? PERSONAL_PLAN_ROUTE[\s\S]{0,20}: requestedReturnPath/,
+    /personalPlanUnlocked[\s\S]{0,20}\? requestedReturnPath[\s\S]{0,20}: !presentationCompleted[\s\S]{0,20}\? PRESENTATION_ROUTE[\s\S]{0,20}: PERSONAL_PLAN_ROUTE/,
   );
   assert.doesNotMatch(app, /needsOnboarding \? '\/onboarding'/);
 });

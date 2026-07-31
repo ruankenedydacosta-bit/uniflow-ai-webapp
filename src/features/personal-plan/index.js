@@ -13,5 +13,7 @@ export {
   markPersonalPlanCompleted,
 } from './personalPlanStorage.js';
 export { resolvePersonalPlanAccess } from './resolvePersonalPlanAccess.js';
+export { resolvePersonalWorkspaceId } from './resolvePersonalWorkspaceId.js';
+export { isValidPersistedPixAttempt, isValidPixPayload } from './personalPlanPixAttempt.js';
 export { usePersonalPlanAccessGuard } from './usePersonalPlanAccessGuard.js';
 

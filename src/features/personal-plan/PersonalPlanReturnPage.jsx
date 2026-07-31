@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button/Button.jsx';
 import { PERSONAL_PLAN_ROUTE } from './personalPlanConfig.js';
 import { useSubscriptionStatusPolling } from './useSubscriptionStatusPolling.js';
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
+import { resolvePersonalWorkspaceId } from './resolvePersonalWorkspaceId.js';
 import styles from './PersonalPlanReturn.module.css';
 
 // BLOCO ASAAS CHECKOUT: rota de retorno do Asaas Checkout hospedado
@@ -18,9 +19,12 @@ import styles from './PersonalPlanReturn.module.css';
 function PersonalPlanReturnPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { session, isSupabaseConfigured, workspace } = useSession();
+  const { session, isSupabaseConfigured, workspace, availableWorkspaces } = useSession();
   const userId = resolvePresentationUserId(session, isSupabaseConfigured);
-  const workspaceId = workspace?.id;
+  // GUARD FIX: resolver compartilhado com App.jsx/PersonalPlanPage.jsx --
+  // usar workspace.id (o "atual/ativo") aqui podia consultar a assinatura
+  // de um workspace diferente do que acabou de voltar do Checkout.
+  const workspaceId = resolvePersonalWorkspaceId(availableWorkspaces, workspace);
 
   // status do redirecionamento (?status=success|cancel|expired) -- só um
   // hint de UX para a mensagem inicial, nunca a fonte de verdade do estado

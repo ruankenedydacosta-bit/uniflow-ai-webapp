@@ -7,6 +7,7 @@ import ClientesPage from '../pages/ClientesPage';
 import CRMPage from '../pages/CRMPage';
 import FinancePage from '../pages/FinancePage';
 import LoginPage from '../pages/LoginPage';
+import { WelcomeDecisionPage } from '../features/auth-mobile';
 import ObjetivosPage from '../pages/ObjetivosPage';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
@@ -47,19 +48,33 @@ export const publicRoutes = [
     path: '/',
     label: 'Início',
     title: 'Início',
-    element: <Navigate to="/login" replace />,
+    element: <Navigate to="/welcome" replace />,
   },
   {
+    // SIMPLIFICAÇÃO DA PRIMEIRA TELA: /welcome deixou de redirecionar direto
+    // para /login -- agora é a própria tela de decisão (2 cards: "Já tenho
+    // conta" / "Criar conta"), pensada para reduzir a confusão de quem tem
+    // pouca familiaridade digital. A escolha de provedor (Google/e-mail) só
+    // aparece depois, já dentro de /login ou /cadastro.
     path: '/welcome',
     label: 'Boas-vindas',
     title: 'Boas-vindas',
-    element: <Navigate to="/login" replace />,
+    element: <WelcomeDecisionPage />,
   },
   {
     path: '/login',
     label: 'Login',
     title: 'Login',
     element: <LoginPage />,
+  },
+  {
+    // Card "Criar conta" -- reaproveita o MESMO MobileAuthPage/mecanismo de
+    // ?mode=signup já existente e testado (nunca duplica o formulário de
+    // cadastro num componente separado).
+    path: '/cadastro',
+    label: 'Criar conta',
+    title: 'Criar conta',
+    element: <Navigate to="/login?mode=signup" replace />,
   },
   {
     path: '/redefinir-senha',
