@@ -253,7 +253,10 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
             : '↔';
         const amount = fmtCurrency(tx.amount);
         const cat = ctx.categoriesById.get(tx.category_id) || 'Sem categoria';
-        return `• ${fmtShortDate(tx.transaction_date)} — ${tx.description || cat} — ${sign} ${amount}`;
+        const accountName = ctx.accountsById?.get(tx.account_id)
+          || (tx.account_id ? 'Conta não disponível' : null);
+        const account = accountName ? ` — ${accountName}` : '';
+        return `• ${fmtShortDate(tx.transaction_date)} — ${tx.description || cat}${account} — ${sign} ${amount}`;
       });
       const msg = `Últimas transações${prefix}:\n${lines.join('\n')}`;
       return { text: msg, highlight: null };

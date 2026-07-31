@@ -1,4 +1,4 @@
-import { nextId } from './mockData';
+import { nextMessageId } from './messageIdRegistry.js';
 
 function now() {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -20,7 +20,7 @@ function formatDate(dateStr) {
 
 export function buildUserMessage(text) {
   return {
-    id: nextId(),
+    id: nextMessageId(),
     from: 'user',
     type: 'text',
     text,
@@ -30,7 +30,7 @@ export function buildUserMessage(text) {
 
 export function buildUniMessage(text, options = {}) {
   return {
-    id: options.id || nextId(),
+    id: options.id || nextMessageId(),
     from: 'uni',
     type: options.type || 'text',
     text,

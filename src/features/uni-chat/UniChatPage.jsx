@@ -64,17 +64,24 @@ import {
   markAutoSpokenMessage,
   markRestoredMessagesAsSpoken,
 } from '../uni-voice-tts/spokenMessageSession.js';
-import { buildWelcomeSessionKey, isWelcomeVoicePending } from '../simplified-app/welcomeVoiceSession.js';
+import {
+  hasNarratedText,
+  markNarratedText,
+} from '../uni-voice-tts/narratedTextSession.js';
+import { buildWelcomeSessionKey, isWelcomeVoicePending, markWelcomeVoiceSettled } from '../simplified-app/welcomeVoiceSession.js';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
 import { useGoals } from '../goals/useGoals';
 import { buildFutureProjections } from '../future/futureService';
 import { useUniChatFinancialData } from './useUniChatFinancialData';
+import { useUniResponsePipeline } from './useUniResponsePipeline';
+import { reserveMessageIds } from './messageIdRegistry.js';
 import {
   classifyFinancialQuery,
   buildQueryResponse,
   detectFutureFinancialIntent,
   buildFutureSafetyResponse,
 } from './financialQueryInterpreter';
+import { resolveFinancialQuery } from './financialQueryEngine';
 import ChatHeader from './components/ChatHeader';
 import EmptyState from './components/EmptyState';
 import MessageBubble from './components/MessageBubble';
@@ -139,6 +146,19 @@ function getLocalIsoDate() {
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+// Guarda de criação de conta (BUG REAL): o parser determinístico propõe
+// criar uma conta para QUALQUER texto que mencione uma conta desconhecida
+// (accountResolution.js resolveFinancialAccount) -- inclusive PERGUNTAS
+// como "quando gastei no caixa?" que não foram reconhecidas pelo
+// FinancialQueryEngine. Frases com início de pergunta nunca podem virar
+// proposta de criação de conta, nem no caminho de pendência (resposta a
+// "em qual conta?") nem no fallback pós-interpret: conta só é criada com
+// intenção explícita (registro) ou Pending Action aguardando o campo.
+function isLikelyFinancialQuestion(text) {
+  return /^(?:qual|quais|quanto|quantos|quantas|quando|onde|como|que|quem|por\s+que|o\s+que|para\s+que)\b/iu
+    .test(String(text ?? '').trim());
 }
 
 export default function UniChatPage({ variant = 'full' }) {
@@ -282,6 +302,7 @@ export default function UniChatPage({ variant = 'full' }) {
     transactions: transactionsState.transactions,
     categories: categoryState.categories,
     workspaceBalance: balanceState.workspaceBalance,
+    accountBalances: balanceState.accountBalances,
   });
 
   const financialConversation = useUniConversation({
@@ -452,9 +473,7 @@ export default function UniChatPage({ variant = 'full' }) {
       workspaceType: financialWorkspaceType,
     });
     setFinancialPlan(newPlan);
-    const assistantMsg = buildUniMessage(buildPlanSummaryText(newPlan));
-    pushMessage(assistantMsg);
-    syncMessageToSupabase(assistantMsg);
+    createAssistantResponse(buildPlanSummaryText(newPlan));
     return true;
   }
 
@@ -495,9 +514,7 @@ export default function UniChatPage({ variant = 'full' }) {
       setFinancialPlan(workingPlan);
     }
 
-    const resultMessage = buildUniMessage(buildPlanResultText(workingPlan));
-    pushMessage(resultMessage);
-    syncMessageToSupabase(resultMessage);
+    createAssistantResponse(buildPlanResultText(workingPlan));
     setIsExecutingAction(false);
     confirmingPlanRef.current = false;
 
@@ -515,9 +532,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // O plano cancelado não precisa ser preservado em memória -- ao contrário
     // de uma correção pontual, aqui a conversa financeira encerra por completo.
     setFinancialPlan(null);
-    const msg = buildUniMessage(buildPlanCancelledText());
-    pushMessage(msg);
-    syncMessageToSupabase(msg);
+    createAssistantResponse(buildPlanCancelledText());
   }
 
   function handlePlanConversationInput(text) {
@@ -529,11 +544,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // como histórico, já com status "cancelado" na mensagem anterior).
     if (isFinancialPlanExpired(plan)) {
       setFinancialPlan(null);
-      const expiredMsg = buildUniMessage(
-        'Esse lançamento expirou. Pode registrar novamente quando quiser.',
-      );
-      pushMessage(expiredMsg);
-      syncMessageToSupabase(expiredMsg);
+      createAssistantResponse('Esse lançamento expirou. Pode registrar novamente quando quiser.');
       return true;
     }
 
@@ -559,13 +570,11 @@ export default function UniChatPage({ variant = 'full' }) {
     if (singleCancelTarget) {
       const updated = cancelPlanOperation(plan, singleCancelTarget.temporaryId);
       setFinancialPlan(updated.status === PLAN_STATUS.CANCELLED ? null : updated);
-      const msg = buildUniMessage(
+      createAssistantResponse(
         updated.status === PLAN_STATUS.CANCELLED
           ? buildPlanCancelledText()
           : buildPlanOperationCancelledText(updated),
       );
-      pushMessage(msg);
-      syncMessageToSupabase(msg);
       return true;
     }
 
@@ -583,9 +592,7 @@ export default function UniChatPage({ variant = 'full' }) {
       if (overrides) {
         const updated = applyPlanOperationCorrection(plan, current.temporaryId, overrides);
         setFinancialPlan(updated);
-        const msg = buildUniMessage(buildPlanSummaryText(updated));
-        pushMessage(msg);
-        syncMessageToSupabase(msg);
+        createAssistantResponse(buildPlanSummaryText(updated));
         return true;
       }
     }
@@ -601,23 +608,19 @@ export default function UniChatPage({ variant = 'full' }) {
         const handled = await attemptFinancialPlan(text);
         if (!handled) {
           setFinancialPlan(null);
-          const msg = buildUniMessage(
+          createAssistantResponse(
             'Não consegui continuar esse lançamento agora. Pode registrar novamente quando quiser.',
           );
-          pushMessage(msg);
-          syncMessageToSupabase(msg);
         }
       })();
       return true;
     }
 
-    const fallbackMsg = buildUniMessage(
+    createAssistantResponse(
       plan.status === PLAN_STATUS.AWAITING_CLARIFICATION
         ? buildPlanSummaryText(plan)
         : 'Para continuar, diga "confirmar", "cancelar" ou me diga o que corrigir.',
     );
-    pushMessage(fallbackMsg);
-    syncMessageToSupabase(fallbackMsg);
     return true;
   }
 
@@ -976,13 +979,15 @@ export default function UniChatPage({ variant = 'full' }) {
       setMessages(c.messages || []);
       saveActiveId(c.id);
     } else {
-      setMessages([
-        buildUniMessage(
-          correctMode === 'empresa'
-            ? 'Perfil alterado para Empresa. Vamos falar sobre o financeiro do seu negócio.'
-            : 'Perfil alterado para Pessoal. Vamos falar sobre suas finanças pessoais.',
-        ),
-      ]);
+      // FASE UNI PIPE: o aviso de perfil alterado é uma resposta da Uni e
+      // passa pelo pipeline oficial (render + autoplay + persistência) --
+      // nunca um setMessages/buildUniMessage solto que o autoplay precisaria
+      // "pegar de carona" para narrar.
+      createAssistantResponse(
+        correctMode === 'empresa'
+          ? 'Perfil alterado para Empresa. Vamos falar sobre o financeiro do seu negócio.'
+          : 'Perfil alterado para Pessoal. Vamos falar sobre suas finanças pessoais.',
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSimplifiedExperience, workspaceContextType]);
@@ -1045,6 +1050,9 @@ export default function UniChatPage({ variant = 'full' }) {
     // Snapshot da hidratação: o histórico restaurado presente neste
     // instante é marcado como já narrado -- nunca fala.
     markRestoredMessagesAsSpoken(user?.id, messages);
+    // BLOCO VOZ ID: reserva os IDs deste snapshot -- mensagens novas nunca
+    // colidem com o histórico restaurado.
+    reserveMessageIds(messages);
     setHistoryHydrated(true);
   }, [messages, session, user]);
 
@@ -1053,9 +1061,27 @@ export default function UniChatPage({ variant = 'full' }) {
     maybeArmAutoplay();
   }, [maybeArmAutoplay]);
 
+  // BLOCO VOZ HIDRATAÇÃO: reserva os IDs do histórico restaurado já no
+  // primeiro render (mensagens iniciais vêm de resolveInitialConversationState)
+  // -- nextMessageId nunca devolve um id reservado, então uma mensagem NOVA
+  // nunca colide com uma mensagem restaurada (nem antes do armamento).
+  // Idempotente: também roda no snapshot do armamento e nos pontos de
+  // restauração assíncrona sem efeito colateral.
+  useEffect(() => {
+    reserveMessageIds(messages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleWelcomeVoiceSettled = useCallback(() => {
+    // BLOCO VOZ HIDRATAÇÃO (deadlock corrigido): a fala da saudação
+    // terminou ou falhou (finally em SimplifiedHomeView) -- LIBERA a chave
+    // pendente ANTES de tentar armar o autoplay. Sem markWelcomeVoiceSettled
+    // aqui, pendingWelcomeKeys nunca esvazia, isWelcomeVoicePending fica
+    // true para sempre e historyHydrated nunca é armado (deadlock: o
+    // pipeline renderiza, mas speakMessage nunca é chamado).
+    markWelcomeVoiceSettled(buildWelcomeSessionKey(user, session));
     maybeArmAutoplay();
-  }, [maybeArmAutoplay]);
+  }, [maybeArmAutoplay, user, session]);
 
   // BLOCO UNI 2 / BLOCO VOZ 1: reprodução automática da resposta ATUAL da
   // Uni -- causa raiz da regressão original relatada era a AUSÊNCIA total
@@ -1097,6 +1123,38 @@ export default function UniChatPage({ variant = 'full' }) {
     handleSpeakMessage(lastMessage);
   }, [messages, isSimplifiedExperience, voicePreference.enabled, handleSpeakMessage, user?.id, historyHydrated]);
 
+  // FASE UNI PIPE: pipeline oficial de resposta da Uni (texto + voz).
+  //
+  // createAssistantResponse é o ÚNICO ponto de saída de resposta do chat:
+  // cria a mensagem → persiste (quando aplicável) → render → autoplay →
+  // buildSpeechText → uniVoice.speak, na ordem exata. Todo fluxo de
+  // resposta (FinancialQueryEngine, LLM, Pending Actions, confirmações,
+  // planos financeiros, avisos, erros e fluxos intermediários) passa por
+  // ele — nenhum pushMessage solto volta a falar por fora.
+  //
+  // Gates do autoplay imediato: idênticos aos do efeito de autoplay
+  // (experiência simplificada + voz habilitada + hidratação concluída +
+  // saudação não pendente). Se os gates fecham neste instante, a mensagem
+  // fica sem marca e o efeito de autoplay a narra assim que abrirem — a
+  // marcação só acontece no momento de falar, nunca há duplicação.
+  const { createAssistantResponse } = useUniResponsePipeline({
+    buildMessage: buildUniMessage,
+    pushMessage,
+    persistMessage: syncMessageToSupabase,
+    shouldAutoSpeak: () => (
+      isSimplifiedExperience
+      && voicePreference.enabled
+      && historyHydrated
+      && !isWelcomeVoicePending(buildWelcomeSessionKey(user, session))
+    ),
+    hasSpoken: hasAutoSpokenMessage,
+    markSpoken: markAutoSpokenMessage,
+    hasNarratedText,
+    markNarratedText,
+    speakMessage: handleSpeakMessage,
+    userId: user?.id,
+  });
+
   useEffect(() => {
     if (!activeId) return;
     const current = conversations.find((c) => c.id === activeId);
@@ -1119,6 +1177,7 @@ export default function UniChatPage({ variant = 'full' }) {
       // o autoplay, mesmo que esta restauração assente depois do
       // armamento.
       markRestoredMessagesAsSpoken(user?.id, loadedMessages);
+      reserveMessageIds(loadedMessages);
 
       setMessages((prev) => {
         if (prev.length === 0) return loadedMessages;
@@ -1251,6 +1310,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // perfil) -- nunca é autoplay; as mensagens restauradas são marcadas
     // como já narradas.
     markRestoredMessagesAsSpoken(user?.id, conv.messages || []);
+    reserveMessageIds(conv.messages || []);
     const convMode = conv.mode || mode;
     if (!isSimplifiedExperience && convMode !== mode) {
       switchWorkspace(modeToWorkspaceType(convMode));
@@ -1281,6 +1341,7 @@ export default function UniChatPage({ variant = 'full' }) {
         if (loadedMessages.length > conv.messages.length) {
           // BLOCO VOZ HIDRATAÇÃO: histórico restaurado -- nunca fala.
           markRestoredMessagesAsSpoken(user?.id, loadedMessages);
+          reserveMessageIds(loadedMessages);
           setMessages(loadedMessages);
           setConversations((prev) =>
             prev.map((c) =>
@@ -1331,9 +1392,7 @@ export default function UniChatPage({ variant = 'full' }) {
       }
       aiCancelledRef.current = false;
     }
-    const assistantMsg = buildUniMessage(llmText || UNI_DETERMINISTIC_FALLBACK_TEXT);
-    pushMessage(assistantMsg);
-    syncMessageToSupabase(assistantMsg);
+    createAssistantResponse(llmText || UNI_DETERMINISTIC_FALLBACK_TEXT);
   }
 
   function handleCancelAi() {
@@ -1398,21 +1457,17 @@ export default function UniChatPage({ variant = 'full' }) {
         result.action,
         financialWorkspaceType,
       );
-      const assistantMsg = buildUniMessage(result.response.text, {
+      createAssistantResponse(result.response.text, {
         type: 'confirmation',
         confirmation,
       });
-      pushMessage(assistantMsg);
-      syncMessageToSupabase(assistantMsg);
       return;
     }
 
-    const assistantMsg = buildUniMessage(
+    createAssistantResponse(
       result?.response?.text
         || 'Preciso de mais detalhes antes de preparar essa ação.',
     );
-    pushMessage(assistantMsg);
-    syncMessageToSupabase(assistantMsg);
   }
 
   function publishAccountCreationConfirmation(stack) {
@@ -1421,15 +1476,13 @@ export default function UniChatPage({ variant = 'full' }) {
       accountTypes: accountState.accountTypes,
       workspaceType: financialWorkspaceType,
     });
-    const assistantMsg = buildUniMessage(
+    createAssistantResponse(
       `Não encontrei a conta ${dependency.fields.account.name} neste espaço. Posso criá-la para continuar a movimentação?`,
       {
         type: 'confirmation',
         confirmation,
       },
     );
-    pushMessage(assistantMsg);
-    syncMessageToSupabase(assistantMsg);
   }
 
   function publishCategoryCreationConfirmation(stack) {
@@ -1437,15 +1490,13 @@ export default function UniChatPage({ variant = 'full' }) {
     const confirmation = buildCategoryCreationConfirmation(dependency, {
       workspaceType: financialWorkspaceType,
     });
-    const assistantMsg = buildUniMessage(
+    createAssistantResponse(
       `A categoria ${dependency.fields.category.name} ainda não existe. Deseja criá-la?`,
       {
         type: 'confirmation',
         confirmation,
       },
     );
-    pushMessage(assistantMsg);
-    syncMessageToSupabase(assistantMsg);
   }
 
   function openAccountCreationDependency(proposal) {
@@ -1549,6 +1600,40 @@ export default function UniChatPage({ variant = 'full' }) {
       return handlePlanConversationInput(text);
     }
 
+    // BUG REAL: o FinancialQueryEngine só era consultado no caminho SEM
+    // pendência (runDeterministicFinancialFlow) -- com uma Pending Action
+    // ativa (ex.: dependência de criação de conta aguardando confirmação,
+    // ou um campo em esclarecimento), qualquer mensagem ia direto para os
+    // branches de pendência e a consulta financeira era engolida ("Para
+    // continuar, confirme a criação da conta...") ou virava proposta de
+    // criação de conta. O FinancialQueryEngine tem prioridade ABSOLUTA
+    // sobre o fluxo de criação de conta/pendência: consulta financeira
+    // reconhecida responde SEMPRE, e a pendência permanece intacta para o
+    // próximo input. Exceção deliberada: transaction_reference ("caixa",
+    // "confirmar", nomes/valores isolados) NÃO toma a frente -- esses
+    // textos são respostas legítimas ao campo pendente e continuam
+    // alimentando o fluxo de pendência (nunca uma pergunta financeira de
+    // verdade: pergunta com começo claro é filtrada por
+    // isLikelyFinancialQuestion antes de qualquer criação de conta).
+    const engineOutcome = resolveFinancialQuery({
+      text,
+      snapshot: financialContext.snapshot,
+      mode,
+      conversationStyle,
+      history: messages,
+    });
+    if (
+      engineOutcome.handled
+      && engineOutcome.queryType !== 'transaction_reference'
+    ) {
+      syncMessageToSupabase(userMsg);
+      createAssistantResponse(
+        engineOutcome.response.text,
+        { highlight: engineOutcome.response.highlight },
+      );
+      return true;
+    }
+
     const action = pendingAction ?? financialConversation.state.action;
     const activeStackAction = pendingActionStackRef.current
       ? getActivePendingAction(pendingActionStackRef.current)
@@ -1590,9 +1675,7 @@ export default function UniChatPage({ variant = 'full' }) {
     ) {
       financialConversation.cancel();
       clearCurrentPendingAction();
-      const canceledMsg = buildUniMessage('Tudo bem. Não registrei nada.');
-      pushMessage(canceledMsg);
-      syncMessageToSupabase(canceledMsg);
+      createAssistantResponse('Tudo bem. Não registrei nada.');
       return true;
     }
 
@@ -1611,11 +1694,9 @@ export default function UniChatPage({ variant = 'full' }) {
       return true;
     }
     if (accountDependencyActive) {
-      const assistantMsg = buildUniMessage(
+      createAssistantResponse(
         'Para continuar, confirme a criação da conta, cancele apenas a criação ou diga “cancelar tudo”.',
       );
-      pushMessage(assistantMsg);
-      syncMessageToSupabase(assistantMsg);
       return true;
     }
 
@@ -1634,11 +1715,9 @@ export default function UniChatPage({ variant = 'full' }) {
       return true;
     }
     if (categoryDependencyActive) {
-      const assistantMsg = buildUniMessage(
+      createAssistantResponse(
         'Para continuar, confirme a criação da categoria, cancele apenas a criação ou diga “cancelar tudo”.',
       );
-      pushMessage(assistantMsg);
-      syncMessageToSupabase(assistantMsg);
       return true;
     }
 
@@ -1697,6 +1776,7 @@ export default function UniChatPage({ variant = 'full' }) {
       const accountNames = resolvedInput.accounts?.map((account) => account.name).filter(Boolean) ?? [];
       if (
         resolvedInput.kind === 'account_not_found'
+        && !isLikelyFinancialQuestion(text)
         && startAccountDependency(text)
       ) {
         return true;
@@ -1716,9 +1796,7 @@ export default function UniChatPage({ variant = 'full' }) {
           : pendingAction
             ? 'Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.'
             : financialConversation.state.response || 'Não consegui identificar esse dado. Tente informar de outra forma.';
-      const assistantMsg = buildUniMessage(message);
-      pushMessage(assistantMsg);
-      syncMessageToSupabase(assistantMsg);
+      createAssistantResponse(message);
       return true;
     }
 
@@ -1736,6 +1814,32 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function runDeterministicFinancialFlow(text, historySnapshot) {
+      // Motor de consultas financeiras inteligentes: responde com dados
+      // estruturados do FinancialSnapshot (contas, transações, saldos,
+      // accountName/categoryName) antes de qualquer outro caminho. Quando
+      // não reconhece uma consulta, devolve handled:false e o fluxo
+      // determinístico atual segue intacto (classificador legado → parser de
+      // registro → plano financeiro → LLM).
+      const engineOutcome = resolveFinancialQuery({
+        text,
+        snapshot: financialContext.snapshot,
+        mode,
+        conversationStyle,
+        history: historySnapshot,
+      });
+
+      if (engineOutcome.handled) {
+        // FASE UNI PIPE: a resposta do FinancialQueryEngine passa pelo
+        // pipeline oficial (cria → persiste → render → autoplay → fala),
+        // garantindo que TODA consulta respondida com dados estruturados
+        // também seja narrada pela voz, sem chamada direta de speak.
+        createAssistantResponse(
+          engineOutcome.response.text,
+          { highlight: engineOutcome.response.highlight },
+        );
+        return;
+      }
+
       const queryType = classifyFinancialQuery(text);
 
       if (queryType) {
@@ -1749,23 +1853,26 @@ export default function UniChatPage({ variant = 'full' }) {
           : balanceState.error || transactionsState.error;
 
         if (isLoading) {
-          pushMessage(buildUniMessage(
+          createAssistantResponse(
             'Ainda estou carregando os dados financeiros do seu workspace. Aguarde um momento e tente novamente.',
-          ));
+            { persist: false },
+          );
           return;
         }
 
         if (hasError) {
-          pushMessage(buildUniMessage(
+          createAssistantResponse(
             'Não foi possível consultar os dados financeiros agora. Tente novamente mais tarde.',
-          ));
+            { persist: false },
+          );
           return;
         }
 
         if (!isGoalQuery && !financialContext.hasData) {
-          pushMessage(buildUniMessage(
+          createAssistantResponse(
             'Seu workspace ainda não possui dados financeiros. Cadastre uma conta ou transação para começar.',
-          ));
+            { persist: false },
+          );
           return;
         }
 
@@ -1776,9 +1883,7 @@ export default function UniChatPage({ variant = 'full' }) {
           conversationStyle,
         });
         if (response) {
-          const assistantMsg = buildUniMessage(response.text, { highlight: response.highlight });
-          pushMessage(assistantMsg);
-          syncMessageToSupabase(assistantMsg);
+          createAssistantResponse(response.text, { highlight: response.highlight });
           return;
         }
       }
@@ -1795,20 +1900,16 @@ export default function UniChatPage({ variant = 'full' }) {
           void (async () => {
             const handled = await attemptFinancialPlan(text);
             if (handled) return;
-            const unsupportedMsg = buildUniMessage(
+            createAssistantResponse(
               'Transferências ainda não podem ser registradas pela Uni. Use o Financeiro para manter origem e destino sob sua revisão.',
             );
-            pushMessage(unsupportedMsg);
-            syncMessageToSupabase(unsupportedMsg);
           })();
           return;
         }
         if (result.parsed?.intent === 'create_goal') {
-          const unsupportedMsg = buildUniMessage(
+          createAssistantResponse(
             'Ainda não posso criar objetivos pela conversa com segurança. Posso consultar seus objetivos ou orientar você a criá-los na área de Objetivos.',
           );
-          pushMessage(unsupportedMsg);
-          syncMessageToSupabase(unsupportedMsg);
           return;
         }
         // Perguntas sobre futuro/tendência/continuidade financeira que não
@@ -1816,9 +1917,7 @@ export default function UniChatPage({ variant = 'full' }) {
         // vão ao LLM: ele inventaria números. Resposta determinística e
         // transparente, sem valor/prazo/percentual fabricado.
         if (detectFutureFinancialIntent(text)) {
-          const safeMsg = buildUniMessage(buildFutureSafetyResponse(futureProjections.hasHistory));
-          pushMessage(safeMsg);
-          syncMessageToSupabase(safeMsg);
+          createAssistantResponse(buildFutureSafetyResponse(futureProjections.hasHistory));
           return;
         }
         // BUG REAL EM PRODUÇÃO: "Coloquei duzentos reais de gasolina." tinha
@@ -1838,11 +1937,9 @@ export default function UniChatPage({ variant = 'full' }) {
           void (async () => {
             const handled = await attemptFinancialPlan(text);
             if (handled) return;
-            const clarifyMsg = buildUniMessage(
+            createAssistantResponse(
               'Entendi que pode ser um lançamento financeiro, mas não consegui identificar todos os detalhes. Pode reformular dizendo o valor e do que se trata? Por exemplo: "Gastei R$ 50 no mercado."',
             );
-            pushMessage(clarifyMsg);
-            syncMessageToSupabase(clarifyMsg);
           })();
           return;
         }
@@ -1850,7 +1947,19 @@ export default function UniChatPage({ variant = 'full' }) {
         return;
       }
 
-      if (result.action?.proposedAccount && openAccountCreationDependency(result)) {
+      // BUG REAL: o fallback de criação de conta pós-interpret disparava
+      // para QUALQUER ação com conta desconhecida -- inclusive frases de
+      // PERGUNTA que o FinancialQueryEngine não reconheceu mas o parser
+      // determinístico interpretou como registro (ex.: "quando gastei no
+      // caixa?" → conta "Caixa" desconhecida → "Posso criá-la?"). Criação
+      // de conta exige intenção explícita de registro: pergunta com começo
+      // claro nunca passa por aqui (cai na resposta de esclarecimento
+      // normal da pendência).
+      if (
+        result.action?.proposedAccount
+        && !isLikelyFinancialQuestion(text)
+        && openAccountCreationDependency(result)
+      ) {
         return;
       }
       void publishConversationResultWithInference(result);
@@ -1956,11 +2065,11 @@ export default function UniChatPage({ variant = 'full' }) {
       });
       setActiveId(conv.id);
       saveActiveId(conv.id);
-      pushMessage(buildUniMessage(
+      createAssistantResponse(
         next === 'empresa'
           ? 'Perfil alterado para Empresa. Vamos falar sobre o financeiro do seu negócio.'
           : 'Perfil alterado para Pessoal. Vamos falar sobre suas finanças pessoais.',
-      ));
+      );
     }
     void switchWorkspace(modeToWorkspaceType(next));
   }
@@ -2107,13 +2216,11 @@ export default function UniChatPage({ variant = 'full' }) {
             ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
             : message
         )));
-        const accountMessage = buildUniMessage(
+        createAssistantResponse(
           conflicts.exact.length
             ? `A conta ${account.name} já existia neste espaço. Retomei a movimentação sem duplicá-la.`
             : `Conta ${account.name} criada. Retomei a movimentação do ponto em que paramos.`,
         );
-        pushMessage(accountMessage);
-        syncMessageToSupabase(accountMessage);
         publishConversationResult(resumedResult);
         setIsExecutingAction(false);
         confirmingRef.current = false;
@@ -2176,13 +2283,11 @@ export default function UniChatPage({ variant = 'full' }) {
             ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
             : message
         )));
-        const categoryMessage = buildUniMessage(
+        createAssistantResponse(
           categoryResolution.status === CATEGORY_RESOLUTION_STATUS.RESOLVED
             ? `A categoria ${category.name} já existia. Retomei a movimentação sem duplicá-la.`
             : `Categoria ${category.name} criada. Retomei a movimentação do ponto em que paramos.`,
         );
-        pushMessage(categoryMessage);
-        syncMessageToSupabase(categoryMessage);
         publishConversationResult(resumedResult);
         setIsExecutingAction(false);
         confirmingRef.current = false;
@@ -2210,9 +2315,7 @@ export default function UniChatPage({ variant = 'full' }) {
             : m,
         ),
       );
-      const successMessage = buildUniMessage(successText);
-      pushMessage(successMessage);
-      syncMessageToSupabase(successMessage);
+      createAssistantResponse(successText);
       financialConversation.reset();
       clearCurrentPendingAction();
       pendingActionStackRef.current = null;
@@ -2255,7 +2358,7 @@ export default function UniChatPage({ variant = 'full' }) {
         setPendingAction(null);
         financialConversation.cancel();
         clearCurrentPendingAction();
-        pushMessage(buildUniMessage('Tudo bem. Cancelei a criação da conta e a movimentação.'));
+        createAssistantResponse('Tudo bem. Cancelei a criação da conta e a movimentação.');
         return;
       }
 
@@ -2263,9 +2366,9 @@ export default function UniChatPage({ variant = 'full' }) {
       setPendingActionStack(transition.stack);
       setPendingAction(null);
       financialConversation.restore(transition.resumedAction.fields.snapshot);
-      pushMessage(buildUniMessage(
+      createAssistantResponse(
         'Tudo bem. Não criei a conta. A movimentação continua preservada; informe outra conta para continuar.',
-      ));
+      );
       return;
     }
 
@@ -2288,7 +2391,7 @@ export default function UniChatPage({ variant = 'full' }) {
         setPendingAction(null);
         financialConversation.cancel();
         clearCurrentPendingAction();
-        pushMessage(buildUniMessage('Tudo bem. Cancelei a criação da categoria e a movimentação.'));
+        createAssistantResponse('Tudo bem. Cancelei a criação da categoria e a movimentação.');
         return;
       }
 
@@ -2296,9 +2399,9 @@ export default function UniChatPage({ variant = 'full' }) {
       setPendingActionStack(transition.stack);
       setPendingAction(null);
       financialConversation.restore(transition.resumedAction.fields.snapshot);
-      pushMessage(buildUniMessage(
+      createAssistantResponse(
         'Tudo bem. Não criei a categoria. A movimentação continua preservada; informe outra categoria para continuar.',
-      ));
+      );
       return;
     }
 
@@ -2313,7 +2416,7 @@ export default function UniChatPage({ variant = 'full' }) {
           : m,
       ),
     );
-    pushMessage(buildUniMessage('Sem problemas, cancelei esse registro.'));
+    createAssistantResponse('Sem problemas, cancelei esse registro.');
     financialConversation.cancel();
     clearCurrentPendingAction();
     pendingActionStackRef.current = null;

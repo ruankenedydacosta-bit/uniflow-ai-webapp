@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { buildFinancialSnapshot } from './financialSnapshot.js';
 
 function getCurrentMonthYear() {
   const now = new Date();
@@ -12,7 +13,13 @@ function isInCurrentMonth(tx, month, year) {
   return y === year && m === month + 1;
 }
 
-export function buildFinancialContext({ accounts, transactions, categories, workspaceBalance } = {}) {
+export function buildFinancialContext({
+  accounts,
+  transactions,
+  categories,
+  workspaceBalance,
+  accountBalances,
+} = {}) {
   const safeAccounts = accounts || [];
   const safeTransactions = transactions || [];
   const safeCategories = categories || [];
@@ -42,6 +49,7 @@ export function buildFinancialContext({ accounts, transactions, categories, work
     .slice(0, 5);
 
   const categoriesById = new Map(safeCategories.map((c) => [c.id, c.name]));
+  const accountsById = new Map(safeAccounts.map((account) => [account.id, account.name]));
 
   const expensesByCategory = {};
   monthlyTransactions
@@ -70,13 +78,35 @@ export function buildFinancialContext({ accounts, transactions, categories, work
     expensesByCategory,
     topCategory,
     categoriesById,
+    accountsById,
     hasData,
+    // Snapshot financeiro completo (Fase 2): estrutura única que representa
+    // todo o estado financeiro do usuário para as consultas inteligentes.
+    snapshot: buildFinancialSnapshot({
+      accounts: safeAccounts,
+      categories: safeCategories,
+      transactions: safeTransactions,
+      workspaceBalance,
+      accountBalances,
+    }),
   };
 }
 
-export function useUniChatFinancialData({ accounts, transactions, categories, workspaceBalance }) {
+export function useUniChatFinancialData({
+  accounts,
+  transactions,
+  categories,
+  workspaceBalance,
+  accountBalances,
+}) {
   return useMemo(
-    () => buildFinancialContext({ accounts, transactions, categories, workspaceBalance }),
-    [accounts, transactions, categories, workspaceBalance],
+    () => buildFinancialContext({
+      accounts,
+      transactions,
+      categories,
+      workspaceBalance,
+      accountBalances,
+    }),
+    [accounts, transactions, categories, workspaceBalance, accountBalances],
   );
 }

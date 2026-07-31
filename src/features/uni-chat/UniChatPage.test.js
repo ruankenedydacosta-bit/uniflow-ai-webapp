@@ -259,7 +259,7 @@ test('mensagem não resolvida só tenta o LLM quando habilitado, e sempre cai no
   );
   assert.match(fnBody, /if \(uniLlm\.enabled\) \{/);
   assert.match(fnBody, /catch \{\s*\n\s*llmText = null;/);
-  assert.match(fnBody, /buildUniMessage\(llmText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\)/);
+  assert.match(fnBody, /createAssistantResponse\(llmText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\)/);
 });
 
 test('pergunta futura ampla é interceptada ANTES do LLM, nunca chega a handleUnresolvedMessage', async () => {
@@ -422,16 +422,14 @@ test('CANCELLED nunca renderiza o mesmo banner vermelho de ERROR -- usa ErrorSta
   assert.match(page, /aiStatus === AI_STATUS\.ERROR[\s\S]{0,80}<ErrorState onRetry=\{handleRetryAi\} \/>/);
 });
 
-test('a mensagem final (sucesso ou fallback determinístico) sempre é enviada e persistida, mesmo apos cancelamento -- interface nunca trava sem resposta', async () => {
+test('a mensagem final (sucesso ou fallback determinístico) sempre passa pelo pipeline oficial e é persistida, mesmo apos cancelamento -- interface nunca trava sem resposta', async () => {
   const page = await source('UniChatPage.jsx');
   const fnBody = page.slice(
     page.indexOf('async function handleUnresolvedMessage'),
     page.indexOf('function handleCancelAi'),
   );
   const afterEnabledBlock = fnBody.slice(fnBody.lastIndexOf('aiCancelledRef.current = false;'));
-  assert.match(afterEnabledBlock, /const assistantMsg = buildUniMessage\(llmText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\);/);
-  assert.match(afterEnabledBlock, /pushMessage\(assistantMsg\);/);
-  assert.match(afterEnabledBlock, /syncMessageToSupabase\(assistantMsg\);/);
+  assert.match(afterEnabledBlock, /createAssistantResponse\(llmText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\);/);
 });
 
 test('handleCancelAi só age durante AI_STATUS.LOADING; marca aiCancelledRef ANTES de chamar uniLlm.cancel() (senao a corrida perderia o cancelamento)', async () => {
@@ -703,11 +701,18 @@ test('BLOCO VOZ 1: resposta curta E resposta longa falam -- o autoplay não filt
   assert.match(page, /buildSpeechText\(text, MAX_TTS_TEXT_LENGTH\)/);
 });
 
-test('BLOCO VOZ 1: pergunta, pedido de confirmação e sucesso entram no MESMO autoplay -- nenhum caminho de push de mensagem chama speak diretamente (sem duplicação)', async () => {
+test('BLOCO VOZ 1: pergunta, pedido de confirmação e sucesso entram no MESMO autoplay -- toda resposta da Uni passa pelo pipeline oficial (createAssistantResponse), nenhum caminho fala por fora (sem duplicação)', async () => {
   const page = await source('UniChatPage.jsx');
   const occurrences = page.match(/uniVoice\.speak\(/g) ?? [];
-  assert.equal(occurrences.length, 2, 'toda fala de mensagem passa por handleSpeakMessage; nenhum fluxo de pushMessage (pergunta/confirmação/sucesso) fala por fora');
-  assert.equal((page.match(/pushMessage\(assistantMsg\);/g) ?? []).length >= 8, true, 'os fluxos que empurram mensagens da Uni continuam intactos');
+  assert.equal(occurrences.length, 2, 'toda fala de mensagem passa por handleSpeakMessage; nenhum fluxo de resposta (pergunta/confirmação/sucesso) fala por fora');
+  // Pipeline oficial: TODAS as respostas da Uni (pergunta, confirmação,
+  // sucesso, erro, aviso, consulta financeira, plano) passam por
+  // createAssistantResponse -- nunca por pushMessage+syncMessageToSupabase
+  // soltos nem por buildUniMessage espalhado pelos fluxos.
+  assert.equal((page.match(/createAssistantResponse\(/g) ?? []).length >= 20, true, 'os fluxos de resposta da Uni continuam intactos, todos passando pelo pipeline oficial');
+  assert.doesNotMatch(page, /pushMessage\(assistantMsg\);/);
+  assert.doesNotMatch(page, /pushMessage\(buildUniMessage\(/);
+  assert.doesNotMatch(page, /pushMessage\(unsupportedMsg\)|pushMessage\(safeMsg\)|pushMessage\(clarifyMsg\)/);
 });
 
 test('BLOCO VOZ 1: estado intermediário NUNCA fala -- loading/digitação/transcrição não têm nenhuma chamada de voz no caminho de envio', async () => {
@@ -882,6 +887,53 @@ test('BLOCO VOZ HIDRATAÇÃO: a saudação tem prioridade exclusiva -- UniChatPa
   const home = await source('../simplified-app/SimplifiedHomeView.jsx');
   assert.match(home, /onWelcomeVoiceSettled,/);
   assert.match(home, /\.finally\(\(\) => \{\s*\n\s*onWelcomeVoiceSettled\?\.\(\);\s*\n\s*\}\);/);
+});
+
+test('BLOCO VOZ HIDRATAÇÃO (deadlock corrigido): handleWelcomeVoiceSettled chama markWelcomeVoiceSettled ANTES de maybeArmAutoplay -- pendingWelcome nunca fica preso e historyHydrated é armado após settled', async () => {
+  const page = await source('UniChatPage.jsx');
+  // O callback de settled precisa LIBERAR a chave pendente da saudação antes
+  // de tentar armar -- sem isso, isWelcomeVoicePending fica true para sempre,
+  // historyHydrated nunca arma e speakMessage nunca é chamado.
+  assert.match(
+    page,
+    /import \{ buildWelcomeSessionKey, isWelcomeVoicePending, markWelcomeVoiceSettled \} from '\.\.\/simplified-app\/welcomeVoiceSession\.js';/,
+  );
+  const block = page.slice(
+    page.indexOf('const handleWelcomeVoiceSettled = useCallback'),
+    page.indexOf('const handleWelcomeVoiceSettled = useCallback') + 800,
+  );
+  const markIdx = block.indexOf('markWelcomeVoiceSettled(buildWelcomeSessionKey(user, session));');
+  const armIdx = block.indexOf('maybeArmAutoplay();');
+  assert.ok(markIdx > -1, 'handleWelcomeVoiceSettled deve liberar a chave (markWelcomeVoiceSettled)');
+  assert.ok(armIdx > -1, 'handleWelcomeVoiceSettled deve tentar armar depois (maybeArmAutoplay)');
+  assert.ok(markIdx < armIdx, 'markWelcomeVoiceSettled deve rodar ANTES de maybeArmAutoplay -- settled → pending=false → armamento');
+  assert.ok(!/setTimeout|setInterval/.test(block), 'a liberação é determinística -- nunca timeout');
+});
+
+test('BLOCO VOZ ID: pontos de restauração reservam IDs restaurados (reserveMessageIds) -- mensagens novas nunca colidem com histórico', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{ reserveMessageIds \} from '\.\/messageIdRegistry\.js';/);
+  // Primeiro render: reserva o histórico restaurado inicial (antes do armamento).
+  assert.match(page, /useEffect\(\(\) => \{\s*\n\s*reserveMessageIds\(messages\);/);
+  // Snapshot do armamento do autoplay.
+  const armBlock = page.slice(
+    page.indexOf('const maybeArmAutoplay = useCallback'),
+    page.indexOf('const handleWelcomeVoiceSettled = useCallback'),
+  );
+  assert.match(armBlock, /reserveMessageIds\(messages\);/);
+  // Restauração assíncrona inicial do Supabase.
+  const initialRestore = page.slice(
+    page.indexOf('useEffect(() => {\n    if (!activeId) return;\n    const current = conversations.find'),
+    page.indexOf('const pendingSyncRef = useRef([]);'),
+  );
+  assert.match(initialRestore, /reserveMessageIds\(loadedMessages\);/);
+  // switchConversation (síncrono e assíncrono).
+  const switchBlock = page.slice(
+    page.indexOf('function switchConversation(id) {'),
+    page.indexOf('async function handleUnresolvedMessage'),
+  );
+  assert.match(switchBlock, /reserveMessageIds\(conv\.messages \|\| \[\]\);/);
+  assert.match(switchBlock, /reserveMessageIds\(loadedMessages\);/);
 });
 
 test('BLOCO VOZ HIDRATAÇÃO: mensagem nova depois da hidratação continua falando -- o snapshot marca SÓ o que estava restaurado, e o registro por ID preserva a narração única', async () => {
@@ -1261,4 +1313,82 @@ test('BLOCO F: confirmingPlanRef impede execução concorrente/duplicada e é se
   const releaseIdx = slice.lastIndexOf('confirmingPlanRef.current = false;');
   const setExecutingFalseIdx = slice.indexOf('setIsExecutingAction(false);', slice.indexOf('for (const op of persistable)'));
   assert.ok(releaseIdx > setExecutingFalseIdx);
+});
+
+// ============================================================================
+// BUG REAL (prioridade de classificação): o FinancialQueryEngine só era
+// consultado no caminho SEM pendência (runDeterministicFinancialFlow) --
+// com uma Pending Action ativa (dependência de criação de conta/categoria,
+// campo em esclarecimento), a consulta financeira era engolida pelo fluxo
+// de pendência ou virava proposta de criação de conta. Regras corrigidas:
+//   1. FinancialQueryEngine responde SEMPRE antes do fluxo de criação de
+//      conta (também dentro do fluxo de pendência);
+//   2. pergunta financeira NUNCA entra no fluxo de criação de conta;
+//   3. criação de conta só com intenção explícita ou Pending Action
+//      aguardando o campo de conta.
+// ============================================================================
+
+test('BUG 1: handlePendingConversationInput consulta o FinancialQueryEngine ANTES de qualquer branch de criação de conta/pendência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice, end } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
+  assert.ok(end > -1, 'não foi possível localizar handlePendingConversationInput');
+  const engineIdx = slice.indexOf('const engineOutcome = resolveFinancialQuery({');
+  const dependencyIdx = slice.indexOf('const accountDependencyActive = isAccountCreationDependency');
+  const creationBranchIdx = slice.indexOf("if (accountDependencyActive) {");
+  const fallbackIdx = slice.indexOf('startAccountDependency(text)');
+  assert.ok(engineIdx > -1, 'handlePendingConversationInput consulta o FinancialQueryEngine');
+  assert.ok(dependencyIdx > -1 && engineIdx < dependencyIdx, 'o engine roda antes de calcular as dependências de criação');
+  assert.ok(creationBranchIdx > -1 && engineIdx < creationBranchIdx, 'o engine roda antes do branch de confirmação de criação de conta');
+  assert.ok(fallbackIdx > -1 && engineIdx < fallbackIdx, 'o engine roda antes do fallback startAccountDependency');
+});
+
+test('BUG 1: o gate do engine responde consultas reconhecidas dentro do fluxo de pendência e preserva a pendência (retorna true sem tocar o estado da conversa)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
+  assert.match(slice, /if \(\s*engineOutcome\.handled\s*&&\s*engineOutcome\.queryType !== 'transaction_reference'\s*\)\s*\{\s*syncMessageToSupabase\(userMsg\);/);
+  assert.match(slice, /createAssistantResponse\(\s*engineOutcome\.response\.text,\s*\{ highlight: engineOutcome\.response\.highlight \},\s*\);/);
+  assert.match(slice, /return true;\s*\}/, 'o gate responde a consulta e mantém a Pending Action intacta para o próximo input');
+  // transaction_reference ("caixa", "confirmar", nomes/valores isolados) NÃO
+  // toma a frente do fluxo de pendência -- são respostas legítimas ao campo
+  // pendente, nunca perguntas financeiras.
+  assert.match(slice, /engineOutcome\.queryType !== 'transaction_reference'/);
+});
+
+test('BUG 2: criação de conta por fallback pós-interpret exige que o texto NÃO seja uma pergunta (guard isLikelyFinancialQuestion no fallback 1896)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
+  assert.match(
+    slice,
+    /if \(\s*result\.action\?\.proposedAccount\s*&&\s*!isLikelyFinancialQuestion\(text\)\s*&&\s*openAccountCreationDependency\(result\)\s*\)\s*\{\s*return;\s*\}/,
+  );
+});
+
+test('BUG 2: resposta "Caixa" a um campo pendente (Pending Action aguardando conta) continua criando -- a guarda só bloqueia perguntas', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
+  assert.match(
+    slice,
+    /if \(\s*resolvedInput\.kind === 'account_not_found'\s*&&\s*!isLikelyFinancialQuestion\(text\)\s*&&\s*startAccountDependency\(text\)\s*\)\s*\{\s*return true;\s*\}/,
+  );
+});
+
+test('BUG 2: isLikelyFinancialQuestion é uma heurística de início de pergunta -- os disparadores reais da criação (verbo de registro) não batem nela', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /function isLikelyFinancialQuestion\(text\) \{/);
+  assert.match(page, /\^\(\?:qual\|quais\|quanto\|quantos\|quantas\|quando\|onde\|como\|que\|quem\|por\\s\+que\|o\\s\+que\|para\\s\+que\)\\b\/iu/);
+  // Um registro explícito ("gastei 50 no mercado") não começa com palavra de
+  // pergunta -- a criação de conta por intenção explícita continua viva.
+  assert.doesNotMatch(page.slice(page.indexOf('function isLikelyFinancialQuestion'), page.indexOf('export default function UniChatPage')), /gastei/);
+});
+
+test('BUG 3: dedup de narração por conteúdo fica DENTRO do pipeline oficial (narratedTextSession) -- nenhum caminho de resposta narra por fora', async () => {
+  const pipeline = await source('useUniResponsePipeline.js');
+  assert.match(pipeline, /hasNarratedText\(userId, text\)/);
+  assert.match(pipeline, /markNarratedText\(userId, text\)/);
+  // A ordem de operação do pipeline não muda: markSpoken continua ANTES de
+  // qualquer decisão de fala (inclusive quando o dedup de conteúdo silencia).
+  const markIdx = pipeline.indexOf('markSpoken(userId, msg.id);');
+  const dedupIdx = pipeline.indexOf('hasNarratedText(userId, text)');
+  const speakIdx = pipeline.indexOf('speakMessage(msg);', dedupIdx);
+  assert.ok(markIdx > -1 && dedupIdx > markIdx && speakIdx > dedupIdx, 'marca por id → checa dedup de conteúdo → fala');
 });
