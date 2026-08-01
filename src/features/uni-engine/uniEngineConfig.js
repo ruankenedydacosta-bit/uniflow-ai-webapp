@@ -19,6 +19,12 @@
 //   - VITE_UNI_ENGINE_EPISTEMIC_SHADOW_MODE        → epistemicShadowMode (default: true)
 //   - VITE_UNI_ENGINE_EPISTEMIC_TELEMETRY_ENABLED  → epistemicTelemetryEnabled (default: DEV)
 //
+// Fase 5 — Camada de Decisão Cognitiva (Shadow Mode puro). TODAS as flags
+// nascem DESLIGADAS por padrão:
+//   - VITE_UNI_ENGINE_DECISION_ENABLED     → decisionEnabled (default: false)
+//   - VITE_UNI_ENGINE_DECISION_SHADOW      → decisionShadowMode (default: false)
+//   - VITE_UNI_ENGINE_DECISION_TELEMETRY   → decisionTelemetryEnabled (default: false)
+//
 // Padrões seguros: leitura desligada, escrita desligada, shadow ligado.
 // Nenhuma variável ausente ativa memória. A memória depende do motor ligado
 // (`enabled`), e leitura/escrita dependem de `memoryEnabled` — cascata
@@ -45,6 +51,9 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   epistemicEnabled: false,
   epistemicShadowMode: true,
   epistemicTelemetryEnabled: false,
+  decisionEnabled: false,
+  decisionShadowMode: false,
+  decisionTelemetryEnabled: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -117,6 +126,23 @@ export function createUniEngineConfig(overrides = {}) {
       'VITE_UNI_ENGINE_EPISTEMIC_TELEMETRY_ENABLED',
       isDev,
     ),
+    // Fase 5 — Camada de Decisão Cognitiva. TODAS as flags nascem
+    // DESLIGADAS por padrão (shadow mode de decisão incluído).
+    decisionEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_DECISION_ENABLED',
+      false,
+    ),
+    decisionShadowMode: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_DECISION_SHADOW',
+      false,
+    ),
+    decisionTelemetryEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_DECISION_TELEMETRY',
+      false,
+    ),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -144,6 +170,17 @@ export function createUniEngineConfig(overrides = {}) {
   if (!config.epistemicEnabled) {
     config.epistemicShadowMode = false;
     config.epistemicTelemetryEnabled = false;
+  }
+
+  // Fase 5 — cascata de segurança da camada de decisão: exige o motor
+  // ligado; shadow e telemetria de decisão exigem a camada ligada. Nada
+  // liga a camada acidentalmente — todas as flags nascem false.
+  if (!config.enabled) {
+    config.decisionEnabled = false;
+  }
+  if (!config.decisionEnabled) {
+    config.decisionShadowMode = false;
+    config.decisionTelemetryEnabled = false;
   }
 
   return Object.freeze(config);

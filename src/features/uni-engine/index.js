@@ -77,3 +77,6 @@ export {
 export * as uniMemory from './memory/index.js';
 // Fase 4 — Modelo Epistêmico completo (Shadow-only).
 export * as epistemic from './epistemic/index.js';
+// Fase 5 — Camada de Decisão Cognitiva (Shadow-only).
+export * as decision from './decision/index.js';
+export { runDecisionLayer } from './decision/runDecisionLayer.js';

@@ -76,6 +76,8 @@ import {
   buildEpistemicTelemetry,
   emitEpistemicTelemetry,
 } from './epistemic/telemetry/epistemicTelemetry.js';
+// Fase 5 — Camada de Decisão Cognitiva (somente Shadow; nunca executa).
+import { runDecisionLayer } from './decision/runDecisionLayer.js';
 
 function nowMillis() {
   if (typeof performance?.now === 'function') return performance.now();
@@ -116,6 +118,7 @@ function buildDisabledResult({ correlationId, latencyMs }) {
       latencyMs,
       divergenceCount: 0,
     },
+    decisionLayer: null,
   };
 }
 
@@ -234,6 +237,8 @@ function buildEpistemicModelSection({ input, normalized, cognitiveContext, plan,
     items: [],
     conflicts: [],
     staleItems: [],
+    evidenceSummary: {},
+    confidenceSummary: {},
     sufficiency: {},
     recommendations: [],
     appliedToDecision: false,
@@ -261,6 +266,8 @@ function buildEpistemicModelSection({ input, normalized, cognitiveContext, plan,
     section.items = Array.isArray(verifier.items) ? verifier.items : [];
     section.conflicts = Array.isArray(verifier.conflicts) ? verifier.conflicts : [];
     section.staleItems = Array.isArray(verifier.staleItems) ? verifier.staleItems : [];
+    section.evidenceSummary = verifier.evidenceSummary ?? {};
+    section.confidenceSummary = verifier.confidenceSummary ?? {};
     section.sufficiency = verifier.sufficiency ?? {};
     section.recommendations = Array.isArray(verifier.recommendations) ? verifier.recommendations : [];
     section.diagnostics.itemCount = Number(verifier.diagnostics?.itemCount) || 0;
@@ -492,11 +499,50 @@ export function runUniEngineShadow(input, options = {}) {
       };
     }
 
+    // Fase 5 — Camada de Decisão Cognitiva SOMENTE em Shadow: calcula a
+    // melhor decisão (responder/perguntar/confirmar/esperar/consultar/
+    // rejeitar/cancelar/adiar) e NUNCA executa. `appliedToDecision`
+    // permanece SEMPRE falso; o resultado é puramente informativo.
+    let decisionLayer = null;
+    if (config.decisionEnabled && config.decisionShadowMode) {
+      decisionLayer = runDecisionLayer({
+        correlationId,
+        engineVersion: UNI_ENGINE_VERSION,
+        intent: classification ?? null,
+        messageType: classification?.messageType ?? null,
+        safetyBlocked: Boolean(classification?.safetyBlocked),
+        conversationContext: cognitiveContext,
+        cognitivePlan: finalPlan,
+        epistemicModel: epistemicSection,
+        operationalMemory: operationalMemory ?? null,
+        persistentMemory: persistentMemory ?? null,
+        financialSnapshot: input.context?.financialSnapshot ?? null,
+        pendingAction: input.context?.pendingAction ?? null,
+        expectedExecutor: expandedPlan?.executorExpected ?? null,
+        featureFlags: {
+          decisionEnabled: config.decisionEnabled,
+          decisionShadowMode: config.decisionShadowMode,
+          decisionTelemetryEnabled: config.decisionTelemetryEnabled,
+        },
+        timestamp: new Date().toISOString(),
+        telemetryAdapter: safeOptions.telemetryAdapter ?? null,
+      });
+
+      finalPlan = {
+        ...finalPlan,
+        decisionReadiness: decisionLayer.contextEvaluation?.sufficiency ?? 'UNKNOWN',
+        decisionConfidence: decisionLayer.confidence,
+        decisionRisk: decisionLayer.risk,
+        decisionDependencies: decisionLayer.dependencies,
+        decisionSuggestions: decisionLayer.recommendations,
+      };
+    }
+
     if (config.telemetryEnabled) {
       const telemetry = buildUniEngineTelemetry({
         correlationId,
         classification,
-        plan: expandedPlan,
+        plan: finalPlan,
         validation,
         comparison,
         diagnostics: {
@@ -546,6 +592,7 @@ export function runUniEngineShadow(input, options = {}) {
         : null,
       persistentMemory,
       epistemicModel,
+      decisionLayer,
       diagnostics: {
         rulesUsed: classification.rulesUsed ?? [],
         ambiguities: classification.ambiguities ?? [],

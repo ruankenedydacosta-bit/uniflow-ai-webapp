@@ -313,6 +313,10 @@ export function createEmptyUniEngineResult({ correlationId, engineVersion = UNI_
     // afirmação autoriza execução; `appliedToDecision` permanece SEMPRE
     // falso. Ausente ou nulo quando a flag epistêmica está desligada.
     epistemicModel: null,
+    // Fase 5 — Camada de Decisão Cognitiva SOMENTE para Shadow. A decisão
+    // recomendada nunca é aplicada (`shadow.appliedToDecision` = false).
+    // Ausente ou nulo quando a flag de decisão está desligada.
+    decisionLayer: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],
