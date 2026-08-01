@@ -77,8 +77,11 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { classifyIntent } from '../uni-intents/index.js';
-import { createUniEngine, projectFinancialSnapshot } from '../uni-engine/index.js';
+import { createUniEngine, projectFinancialSnapshot, createOperationalMemory } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
+// Fase 2 — memória operacional do Uni Engine: objeto TEMPORÁRIO por conversa
+// (não persiste nada). O pipeline nunca lê esta memória; apenas o motor.
+const uniEngineMemoryByConversation = new Map();
 import {
   classifyFinancialQuery,
   buildQueryResponse,
@@ -2069,10 +2072,15 @@ export default function UniChatPage({ variant = 'full' }) {
       || financialConversation.state.status === 'needs_clarification'
       || isFinancialPlanActive(),
     );
-    // UNI ENGINE (FASE 1 — SHADOW MODE): observa a mensagem, analisa e
-    // compara com o pipeline atual. O resultado é descartável e nunca
-    // influencia a resposta entregue ao usuário.
+    // UNI ENGINE (FASE 1 + FASE 2 — SHADOW MODE): observa a mensagem,
+    // analisa, resolve referências implícitas e compara com o pipeline
+    // atual. O resultado é descartável e nunca influencia a resposta
+    // entregue ao usuário.
     try {
+      const memoryKey = activeId ?? 'default-conversation';
+      if (!uniEngineMemoryByConversation.has(memoryKey)) {
+        uniEngineMemoryByConversation.set(memoryKey, createOperationalMemory());
+      }
       uniEngine.runShadow({
         message: {
           id: userMsg.id,
@@ -2101,6 +2109,7 @@ export default function UniChatPage({ variant = 'full' }) {
           pendingActive: hasPendingConversation,
           resultType: pendingAction?.status ?? financialConversation.state.status ?? 'unknown',
         },
+        operationalMemory: uniEngineMemoryByConversation.get(memoryKey),
       });
     } catch {
       // Shadow mode jamais quebra o chat — falha silenciosa.

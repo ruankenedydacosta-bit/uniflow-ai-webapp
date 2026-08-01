@@ -31,7 +31,11 @@
 //     diagnostics
 //   }
 
-export const UNI_ENGINE_VERSION = '1.0';
+// A versão 2.0 reflete a Fase 2 (Integração Cognitiva Assistida). Todos os
+// contratos da Fase 1 continuam válidos e estáveis; a Fase 2 apenas adiciona
+// seções novas de saída (cognitiveContext, referenceResolution, suggestions,
+// agreementMetrics, divergenceDiagnostics, operationalMemory).
+export const UNI_ENGINE_VERSION = '2.0';
 
 export const UNI_ENGINE_MESSAGE_TYPES = Object.freeze([
   'action',
@@ -103,6 +107,43 @@ export const UNI_ENGINE_QUERY_INTENTS = Object.freeze([
   'check_balance',
   'forecast',
   'question',
+]);
+
+// Fase 2 — tipos de referência implícita resolvíveis pelo motor. A resolução
+// usa SOMENTE contexto atual + histórico recente + FinancialSnapshot (nunca
+// LLM, nunca banco).
+export const UNI_ENGINE_REFERENCE_TYPES = Object.freeze([
+  'account',
+  'value',
+  'transaction',
+  'entity',
+  'intent',
+  'none',
+]);
+
+// Fase 2 — proveniência de uma resolução. 'unresolved' significa que o motor
+// reconheceu a referência mas não conseguiu resolvê-la com os dados locais.
+export const UNI_ENGINE_REFERENCE_SOURCES = Object.freeze([
+  'operational_memory',
+  'conversation_history',
+  'financial_snapshot',
+  'pending_action',
+  'user_message',
+  'unresolved',
+]);
+
+// Fase 2 — tipos de divergência registrados no diagnóstico. O diagnóstico é
+// PURAMENTE informativo: o pipeline nunca é alterado pelo motor.
+export const UNI_ENGINE_DIVERGENCE_TYPES = Object.freeze([
+  'pipeline_asked_known_field',
+  'context_switch_new_pending',
+  'action_query_divergence',
+  'intent_divergence',
+  'pending_context_divergence',
+  'missing_field_divergence',
+  'confidence_gap',
+  'confirmation_without_pending',
+  'correction_without_pending',
 ]);
 
 function isPlainObject(value) {
@@ -258,11 +299,19 @@ export function createEmptyUniEngineResult({ correlationId, engineVersion = UNI_
     plan: null,
     validation: null,
     shadowComparison: null,
+    // Fase 2 — seções novas; ausentes ou nulas nos caminhos de erro/skip.
+    cognitiveContext: null,
+    referenceResolution: null,
+    suggestions: null,
+    agreementMetrics: null,
+    divergenceDiagnostics: [],
+    operationalMemory: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],
       fallbackUsed: false,
       errorCode: null,
+      divergenceCount: 0,
     },
   };
 }

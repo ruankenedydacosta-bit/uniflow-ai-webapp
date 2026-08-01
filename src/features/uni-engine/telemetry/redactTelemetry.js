@@ -24,6 +24,16 @@ export const TELEMETRY_ALLOWED_FIELDS = Object.freeze([
   'fallbackUsed',
   'latencyMs',
   'errorCode',
+  // Fase 2 — métricas de concordância e diagnóstico (apenas agregados,
+  // nenhum dado sensível).
+  'agreement',
+  'falsePositive',
+  'falseNegative',
+  'contextRecovered',
+  'ambiguityDetected',
+  'implicitReferenceResolved',
+  'contextSwitch',
+  'divergenceCount',
 ]);
 
 const REDACTED = '[redacted]';

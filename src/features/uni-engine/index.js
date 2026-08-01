@@ -1,9 +1,10 @@
-// Uni Engine (Fase 1 — Shadow Mode).
+// Uni Engine (Fase 1 — Shadow Mode + Fase 2 — Integração Cognitiva Assistida).
 //
 // Camada cognitiva analítica e descartável sobre o pipeline atual da Uni.
-// Nesta fase o motor apenas observa, analisa, classifica, planeja, valida,
-// compara e registra telemetria redigida — NUNCA executa, NUNCA altera a
-// resposta entregue ao usuário e NUNCA chama rede/executor/voz.
+// O motor apenas observa, analisa, classifica, planeja, valida, compara,
+// resolve referências implícitas, diagnostica e registra telemetria redigida
+// — NUNCA executa, NUNCA altera a resposta entregue ao usuário e NUNCA chama
+// rede/executor/voz.
 export {
   UNI_ENGINE_VERSION,
   UNI_ENGINE_MESSAGE_TYPES,
@@ -13,6 +14,9 @@ export {
   UNI_ENGINE_ACTION_INTENTS,
   UNI_ENGINE_QUERY_INTENTS,
   UNI_ENGINE_THEORETICAL_EXECUTORS,
+  UNI_ENGINE_REFERENCE_TYPES,
+  UNI_ENGINE_REFERENCE_SOURCES,
+  UNI_ENGINE_DIVERGENCE_TYPES,
   createCorrelationId,
   createEmptyUniEngineResult,
   findFunctionsInValue,
@@ -35,6 +39,24 @@ export { validateCognitivePlan } from './validateCognitivePlan.js';
 export { compareShadowDecision } from './compareShadowDecision.js';
 export { runUniEngineShadow } from './runUniEngineShadow.js';
 export { createUniEngine } from './uniEngine.js';
+// Fase 2 — Integração Cognitiva Assistida.
+export {
+  OPERATIONAL_MEMORY_FIELDS,
+  buildMemoryPatch,
+  createOperationalMemory,
+  readOperationalMemory,
+  resetOperationalMemory,
+  updateOperationalMemory,
+} from './operationalMemory.js';
+export { buildCognitiveContext } from './buildCognitiveContext.js';
+export {
+  hasImplicitReference,
+  resolveImplicitReference,
+} from './resolveImplicitReference.js';
+export { expandCognitivePlan } from './expandCognitivePlan.js';
+export { buildEngineSuggestions } from './buildEngineSuggestions.js';
+export { buildDivergenceDiagnostics } from './buildDivergenceDiagnostics.js';
+export { computeAgreementMetrics } from './computeAgreementMetrics.js';
 export {
   buildUniEngineTelemetry,
   emitUniEngineTelemetry,

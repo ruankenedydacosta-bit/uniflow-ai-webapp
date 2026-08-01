@@ -11,7 +11,9 @@ const REQUIRED_FIELDS = Object.freeze({
   create_goal: ['amount', 'description'],
 });
 
-const NEXT_QUESTION_BY_FIELD = Object.freeze({
+// Exportado para a Fase 2 (contexto cognitivo) mapear o campo que o pipeline
+// perguntou para o texto da pergunta sem duplicar as frases oficiais.
+export const NEXT_QUESTION_BY_FIELD = Object.freeze({
   amount: {
     field: 'amount',
     text: 'Qual é o valor?',

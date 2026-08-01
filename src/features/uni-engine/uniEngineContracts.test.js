@@ -94,7 +94,7 @@ test('contrato 4: enums válidos — todos os valores existem e são congelados'
   assert.ok(UNI_ENGINE_COMPARISON_STATUSES.includes('confidence_gap'));
   assert.ok(UNI_ENGINE_COMPARISON_STATUSES.includes('pipeline_unknown'));
   assert.ok(UNI_ENGINE_COMPARISON_STATUSES.includes('engine_unknown'));
-  assert.equal(UNI_ENGINE_VERSION, '1.0');
+  assert.equal(UNI_ENGINE_VERSION, '2.0');
 });
 
 test('contrato 5: nenhuma função na saída do motor', () => {

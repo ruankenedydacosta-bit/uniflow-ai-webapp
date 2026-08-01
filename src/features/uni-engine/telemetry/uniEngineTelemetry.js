@@ -15,12 +15,14 @@ export function buildUniEngineTelemetry({
   comparison = null,
   diagnostics = null,
   latencyMs = null,
+  metrics = null,
 } = {}) {
   const safeClassification = classification ?? {};
   const safePlan = plan ?? {};
   const safeComparison = comparison ?? {};
   const safeDiagnostics = diagnostics ?? {};
   const safeValidation = validation ?? {};
+  const safeMetrics = metrics ?? {};
 
   return {
     correlationId: correlationId ?? null,
@@ -38,6 +40,15 @@ export function buildUniEngineTelemetry({
     fallbackUsed: Boolean(safeDiagnostics.fallbackUsed),
     latencyMs: typeof latencyMs === 'number' ? Number(latencyMs.toFixed(2)) : null,
     errorCode: safeValidation?.errors?.[0] ?? safeDiagnostics.errorCode ?? null,
+    // Fase 2 — métricas de concordância (agregados redigidos).
+    agreement: safeMetrics.agreement ?? null,
+    falsePositive: safeMetrics.falsePositive ?? null,
+    falseNegative: safeMetrics.falseNegative ?? null,
+    contextRecovered: safeMetrics.contextRecovered ?? null,
+    ambiguityDetected: safeMetrics.ambiguityDetected ?? null,
+    implicitReferenceResolved: safeMetrics.implicitReferenceResolved ?? null,
+    contextSwitch: safeMetrics.contextSwitch ?? null,
+    divergenceCount: safeMetrics.divergenceCount ?? 0,
   };
 }
 
