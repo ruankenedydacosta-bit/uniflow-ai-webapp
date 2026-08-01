@@ -14,10 +14,17 @@
 //   - VITE_UNI_ENGINE_MEMORY_WRITE_ENABLED    → memoryWriteEnabled (default: false)
 //   - VITE_UNI_ENGINE_MEMORY_SHADOW_MODE      → memoryShadowMode (default: true)
 //
+// Fase 4 — Modelo Epistêmico (Shadow Mode puro):
+//   - VITE_UNI_ENGINE_EPISTEMIC_ENABLED           → epistemicEnabled (default: false)
+//   - VITE_UNI_ENGINE_EPISTEMIC_SHADOW_MODE        → epistemicShadowMode (default: true)
+//   - VITE_UNI_ENGINE_EPISTEMIC_TELEMETRY_ENABLED  → epistemicTelemetryEnabled (default: DEV)
+//
 // Padrões seguros: leitura desligada, escrita desligada, shadow ligado.
 // Nenhuma variável ausente ativa memória. A memória depende do motor ligado
 // (`enabled`), e leitura/escrita dependem de `memoryEnabled` — cascata
-// segura contra ativação acidental em produção.
+// segura contra ativação acidental em produção. O modelo epistêmico segue a
+// MESMA cascata: exige o motor ligado e o próprio `epistemicEnabled`;
+// telemetria epistêmica exige o modelo ligado.
 //
 // Nesta fase `learningEnabled` permanece SEMPRE falso.
 //
@@ -35,6 +42,9 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   memoryReadEnabled: false,
   memoryWriteEnabled: false,
   memoryShadowMode: true,
+  epistemicEnabled: false,
+  epistemicShadowMode: true,
+  epistemicTelemetryEnabled: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -90,6 +100,23 @@ export function createUniEngineConfig(overrides = {}) {
       'VITE_UNI_ENGINE_MEMORY_SHADOW_MODE',
       true,
     ),
+    // Fase 4 — Modelo Epistêmico em Shadow Mode. Nasce desligado; sombreia
+    // por padrão quando ligado; telemetria apenas em desenvolvimento.
+    epistemicEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_EPISTEMIC_ENABLED',
+      false,
+    ),
+    epistemicShadowMode: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_EPISTEMIC_SHADOW_MODE',
+      true,
+    ),
+    epistemicTelemetryEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_EPISTEMIC_TELEMETRY_ENABLED',
+      isDev,
+    ),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -107,6 +134,16 @@ export function createUniEngineConfig(overrides = {}) {
     config.memoryReadEnabled = false;
     config.memoryWriteEnabled = false;
     config.memoryShadowMode = false;
+  }
+
+  // Fase 4 — cascata de segurança do modelo epistêmico: exige o motor
+  // ligado; shadow e telemetria epistêmicos exigem o modelo ligado.
+  if (!config.enabled) {
+    config.epistemicEnabled = false;
+  }
+  if (!config.epistemicEnabled) {
+    config.epistemicShadowMode = false;
+    config.epistemicTelemetryEnabled = false;
   }
 
   return Object.freeze(config);

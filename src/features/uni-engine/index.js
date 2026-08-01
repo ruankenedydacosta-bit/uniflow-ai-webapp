@@ -1,12 +1,15 @@
 // Uni Engine (Fase 1 — Shadow Mode + Fase 2 — Integração Cognitiva Assistida
-// + Fase 3 — Memória Inteligente Persistente em Shadow).
+// + Fase 3 — Memória Inteligente Persistente em Shadow + Fase 4 — Modelo
+// Epistêmico completo em Shadow).
 //
 // Camada cognitiva analítica e descartável sobre o pipeline atual da Uni.
 // O motor apenas observa, analisa, classifica, planeja, valida, compara,
 // resolve referências implícitas, diagnostica e registra telemetria redigida
 // — NUNCA executa, NUNCA altera a resposta entregue ao usuário e NUNCA chama
 // executor/voz. A memória persistente (Fase 3) é recuperada e capturada
-// apenas para Shadow (appliedToDecision = false).
+// apenas para Shadow (appliedToDecision = false). O modelo epistêmico
+// (Fase 4) estrutura fontes, confiança, conflitos e staleness — também
+// apenas para Shadow (appliedToDecision = false, execução sempre bloqueada).
 export {
   UNI_ENGINE_VERSION,
   UNI_ENGINE_MESSAGE_TYPES,
@@ -72,3 +75,5 @@ export {
 } from './telemetry/redactTelemetry.js';
 // Fase 3 — Memória Inteligente Persistente (Shadow-only).
 export * as uniMemory from './memory/index.js';
+// Fase 4 — Modelo Epistêmico completo (Shadow-only).
+export * as epistemic from './epistemic/index.js';

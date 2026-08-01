@@ -66,6 +66,16 @@ import { computeAgreementMetrics } from './computeAgreementMetrics.js';
 // Fase 3 — Memória Inteligente Persistente (somente Shadow; nunca executa).
 import { resolveMemoryConflict } from './memory/resolveMemoryConflict.js';
 import { MEMORY_POLICY } from './memory/memoryPolicy.js';
+// Fase 4 — Modelo Epistêmico completo (somente Shadow; nunca executa).
+import { createEpistemicModelSection } from './epistemic/epistemicContracts.js';
+import {
+  buildPlanEpistemicSection,
+  runEpistemicVerifier,
+} from './epistemic/runEpistemicVerifier.js';
+import {
+  buildEpistemicTelemetry,
+  emitEpistemicTelemetry,
+} from './epistemic/telemetry/epistemicTelemetry.js';
 
 function nowMillis() {
   if (typeof performance?.now === 'function') return performance.now();
@@ -97,6 +107,7 @@ function buildDisabledResult({ correlationId, latencyMs }) {
     divergenceDiagnostics: [],
     operationalMemory: null,
     persistentMemory: null,
+    epistemicModel: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],
@@ -208,6 +219,57 @@ function buildPersistentMemorySection({ config, memoryAdapter, input, normalized
     section.diagnostics.errorCode = error?.code ?? 'MEMORY_SECTION_ERROR';
   }
 
+  return section;
+}
+
+// Fase 4 — Seção epistemicModel do Shadow Mode.
+//
+// Regra absoluta: `appliedToDecision` permanece SEMPRE falso. O verificador
+// é puro, síncrono e sem rede; memórias recuperadas entram apenas como
+// evidência; FinancialSnapshot é fonte oficial. Qualquer falha cai em
+// diagnostics e telemetria redigida — o pipeline permanece intocado.
+function buildEpistemicModelSection({ input, normalized, cognitiveContext, plan, persistentMemory, epistemicState, operationalMemory }) {
+  const section = {
+    enabled: true,
+    items: [],
+    conflicts: [],
+    staleItems: [],
+    sufficiency: {},
+    recommendations: [],
+    appliedToDecision: false,
+    diagnostics: {
+      errorCode: null,
+      itemCount: 0,
+      memoryCount: 0,
+      latencyMs: null,
+    },
+  };
+
+  const start = nowMillis();
+  try {
+    const verifier = runEpistemicVerifier({
+      normalizedMessage: normalized ?? null,
+      cognitiveContext,
+      financialSnapshot: input.context?.financialSnapshot ?? null,
+      operationalMemory: operationalMemory ?? null,
+      persistentMemories: persistentMemory?.retrieved ?? null,
+      plan,
+      now: new Date().toISOString(),
+      epistemicState: epistemicState ?? null,
+      session: input.session ?? null,
+    });
+    section.items = Array.isArray(verifier.items) ? verifier.items : [];
+    section.conflicts = Array.isArray(verifier.conflicts) ? verifier.conflicts : [];
+    section.staleItems = Array.isArray(verifier.staleItems) ? verifier.staleItems : [];
+    section.sufficiency = verifier.sufficiency ?? {};
+    section.recommendations = Array.isArray(verifier.recommendations) ? verifier.recommendations : [];
+    section.diagnostics.itemCount = Number(verifier.diagnostics?.itemCount) || 0;
+    section.diagnostics.memoryCount = Number(verifier.diagnostics?.memoryCount) || 0;
+    section.diagnostics.scopeFiltered = Number(verifier.diagnostics?.memoryScopeFiltered) || 0;
+  } catch (error) {
+    section.diagnostics.errorCode = error?.code ?? 'EPISTEMIC_SECTION_ERROR';
+  }
+  section.diagnostics.latencyMs = Number((nowMillis() - start).toFixed(2));
   return section;
 }
 
@@ -389,6 +451,47 @@ export function runUniEngineShadow(input, options = {}) {
       });
     }
 
+    // Fase 4 — Modelo Epistêmico SOMENTE em Shadow: analisa, estrutura e
+    // diagnostica o que a Uni sabe (fontes, confiança, conflitos, staleness,
+    // suficiência). Nada é aplicado — `appliedToDecision` permanece falso.
+    let epistemicModel = null;
+    let epistemicSection = null;
+    if (config.epistemicEnabled && config.epistemicShadowMode) {
+      const section = buildEpistemicModelSection({
+        input,
+        normalized,
+        cognitiveContext,
+        plan: expandedPlan,
+        persistentMemory,
+        epistemicState,
+        operationalMemory,
+      });
+      epistemicSection = section;
+      if (section.diagnostics.errorCode === null) {
+        epistemicModel = createEpistemicModelSection({
+          items: section.items,
+          conflicts: section.conflicts,
+          staleItems: section.staleItems,
+          sufficiency: section.sufficiency,
+          recommendations: section.recommendations,
+        });
+      }
+    }
+
+    // Fase 4 — o plano cognitivo do motor ganha a seção epistêmica (somente
+    // informativa; o plano oficial do pipeline não muda nesta fase).
+    let finalPlan = expandedPlan;
+    if (epistemicModel) {
+      finalPlan = {
+        ...expandedPlan,
+        epistemic: buildPlanEpistemicSection({
+          items: epistemicModel.items,
+          conflicts: epistemicModel.conflicts,
+          staleItems: epistemicModel.staleItems,
+        }, expandedPlan),
+      };
+    }
+
     if (config.telemetryEnabled) {
       const telemetry = buildUniEngineTelemetry({
         correlationId,
@@ -404,6 +507,22 @@ export function runUniEngineShadow(input, options = {}) {
         persistentMemory,
       });
       emitUniEngineTelemetry(telemetry, safeOptions.telemetryAdapter ?? null);
+
+      // Fase 4 — telemetria epistêmica redigida (somente agregados).
+      if (config.epistemicTelemetryEnabled && epistemicModel) {
+        const epistemicTelemetry = buildEpistemicTelemetry({
+          correlationId,
+          engineVersion: UNI_ENGINE_VERSION,
+          enabled: config.epistemicEnabled,
+          shadowMode: config.epistemicShadowMode,
+          verifier: epistemicSection,
+          model: epistemicModel,
+          planDivergence: comparison?.status ?? null,
+          fallbackUsed: classification.fallbackUsed,
+          latencyMs: epistemicSection.diagnostics.latencyMs,
+        });
+        emitEpistemicTelemetry(epistemicTelemetry, safeOptions.telemetryAdapter ?? null);
+      }
     }
 
     return {
@@ -414,7 +533,7 @@ export function runUniEngineShadow(input, options = {}) {
       normalizedMessage: normalized,
       classification,
       epistemicState,
-      plan: expandedPlan,
+      plan: finalPlan,
       validation,
       shadowComparison: comparison,
       cognitiveContext,
@@ -426,6 +545,7 @@ export function runUniEngineShadow(input, options = {}) {
         ? readOperationalMemory(operationalMemory)
         : null,
       persistentMemory,
+      epistemicModel,
       diagnostics: {
         rulesUsed: classification.rulesUsed ?? [],
         ambiguities: classification.ambiguities ?? [],

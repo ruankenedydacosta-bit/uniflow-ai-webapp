@@ -309,6 +309,10 @@ export function createEmptyUniEngineResult({ correlationId, engineVersion = UNI_
     // Fase 3 — memória persistente recuperada/capturada SOMENTE para Shadow.
     // `appliedToDecision` permanece SEMPRE falso nesta fase.
     persistentMemory: null,
+    // Fase 4 — Modelo Epistêmico completo SOMENTE para Shadow. Nenhuma
+    // afirmação autoriza execução; `appliedToDecision` permanece SEMPRE
+    // falso. Ausente ou nulo quando a flag epistêmica está desligada.
+    epistemicModel: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],
