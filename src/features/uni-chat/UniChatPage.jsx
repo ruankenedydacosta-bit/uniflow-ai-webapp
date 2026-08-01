@@ -77,6 +77,8 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { classifyIntent } from '../uni-intents/index.js';
+import { createUniEngine, projectFinancialSnapshot } from '../uni-engine/index.js';
+const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 import {
   classifyFinancialQuery,
   buildQueryResponse,
@@ -2067,6 +2069,42 @@ export default function UniChatPage({ variant = 'full' }) {
       || financialConversation.state.status === 'needs_clarification'
       || isFinancialPlanActive(),
     );
+    // UNI ENGINE (FASE 1 — SHADOW MODE): observa a mensagem, analisa e
+    // compara com o pipeline atual. O resultado é descartável e nunca
+    // influencia a resposta entregue ao usuário.
+    try {
+      uniEngine.runShadow({
+        message: {
+          id: userMsg.id,
+          text,
+          source: 'text',
+          createdAt: new Date().toISOString(),
+        },
+        session: {
+          userId: user?.id ?? null,
+          workspaceId: effectiveWorkspace?.id ?? null,
+          conversationId: activeId ?? null,
+        },
+        context: {
+          pendingAction: pendingAction ?? null,
+          conversationHistory: messages ?? [],
+          financialSnapshot: projectFinancialSnapshot(financialContext.snapshot),
+          userPreferences: {
+            conversationStyle: 'balanced',
+            workspaceType: financialWorkspaceType ?? 'personal',
+          },
+          currentRoute: 'uni-chat',
+        },
+        currentPipeline: {
+          detectedIntent: classifyIntent(text).intent,
+          pendingIntent: (pendingAction ?? financialConversation.state.action)?.intent ?? null,
+          pendingActive: hasPendingConversation,
+          resultType: pendingAction?.status ?? financialConversation.state.status ?? 'unknown',
+        },
+      });
+    } catch {
+      // Shadow mode jamais quebra o chat — falha silenciosa.
+    }
     if (hasPendingConversation) {
       // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
       // explícita NOVA. Se a frase é reconhecida como ação financeira
