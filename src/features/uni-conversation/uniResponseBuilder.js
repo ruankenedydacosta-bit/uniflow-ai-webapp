@@ -28,7 +28,9 @@ const PROFILE_COPY = Object.freeze({
 
 const ISSUE_MESSAGES = Object.freeze({
   amount_required: 'Qual foi o valor dessa movimentação?',
-  account_required: 'Em qual conta você fez esse pagamento?',
+  account_required: (action) => (action?.transactionType === 'adjustment'
+    ? 'Em qual conta você quer ajustar o saldo?'
+    : 'Em qual conta você fez esse pagamento?'),
   account_not_found: 'Não encontrei essa conta entre as contas deste espaço. Qual conta você quer usar?',
   account_ambiguous: 'Encontrei mais de uma conta parecida. Qual delas você quer usar?',
   account_archived: 'Encontrei essa conta arquivada. Você quer reativá-la ou criar uma nova conta?',
@@ -42,6 +44,13 @@ const ISSUE_MESSAGES = Object.freeze({
   category_incompatible: 'Essa categoria não é compatível com o tipo de lançamento. Qual categoria você quer usar?',
   description_required: 'Como você quer identificar esse lançamento?',
   date_invalid: 'Qual é a data correta dessa movimentação?',
+  // Ajuste de saldo: pergunta de decisão (receita vs saldo) e validações
+  // do delta -- nunca decidimos a intenção pela pessoa.
+  ambiguous_balance_or_income: (action) => (action?.amount != null
+    ? `Entendi que você está com ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(action.amount)}. Você quer registrar como receita ou ajustar o saldo para esse valor?`
+    : 'Você quer registrar esse valor como receita ou ajustar o saldo?'),
+  balance_required: 'Não consegui identificar o saldo atual dessa conta para calcular o ajuste. Tente novamente em instantes.',
+  balance_same: 'O saldo dessa conta já é esse valor. Se quiser registrar outro lançamento, é só dizer o que aconteceu.',
 });
 
 function resolveCopy(options = {}) {
@@ -94,6 +103,24 @@ export function buildClarificationResponse(action, options = {}) {
 
 export function buildCompletionResponse(action, options = {}) {
   const resolved = resolveCopy(options);
+  // BUG REAL (BUG 2): transferência executada precisa dizer exatamente o
+  // que foi feito ("Pronto. Transferi R$ 100 do Nubank para o Inter.") --
+  // nunca o texto genérico de lançamento.
+  if (action?.transactionType === 'transfer') {
+    const amount = action.amount != null
+      ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(action.amount)
+      : null;
+    const source = action.account?.name;
+    const destination = action.destinationAccount?.name;
+    if (amount && source && destination) {
+      return {
+        // Sem artigos fixos: nomes como "Conta principal" quebrariam
+        // "do Conta principal"/"para o Conta principal".
+        text: `Pronto. Transferi ${amount} de ${source} para ${destination}.`,
+        ...resolved,
+      };
+    }
+  }
   return { text: resolved.copy.completed, ...resolved };
 }
 

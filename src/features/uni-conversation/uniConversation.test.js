@@ -392,6 +392,57 @@ test('confirmação envia somente o payload financeiro validado', async () => {
   assert.equal(Object.hasOwn(receivedPayload, 'workspace_id'), false);
 });
 
+// ============================================================================
+// BUG REAL EM PRODUÇÃO (BUG 2): transferência entendida mas nunca executada.
+// register_transfer estava fora da allowlist do chat (o LLM era instruído a
+// NÃO executar transações e respondia "Não consigo criar, alterar ou
+// excluir..."). Abaixo, o caminho completo determinístico: origem+dstino →
+// action ready → payload com destination_account_id → sucesso com
+// "Pronto. Transferi..." + confirmações naturais por voz.
+// ============================================================================
+
+test('BUG REAL (BUG 2): transferência com origem e destino fica ready e monta payload com destination_account_id', async () => {
+  const action = createAction('Transferir cem do Nubank para a Conta principal.');
+  assert.equal(action.status, 'ready');
+  assert.equal(action.transactionType, 'transfer');
+  assert.equal(action.account.id, 'account-nubank');
+  assert.equal(action.destinationAccount.id, 'account-main');
+  assert.equal(action.description, 'Transferência para Conta principal');
+
+  let receivedPayload = null;
+  const result = await executeFinancialIntentAction(action, async (payload) => {
+    receivedPayload = payload;
+    return { data: { id: 'transaction-transfer', ...payload }, error: null };
+  });
+  assert.equal(receivedPayload.transaction_type, 'transfer');
+  assert.equal(receivedPayload.account_id, 'account-nubank');
+  assert.equal(receivedPayload.destination_account_id, 'account-main');
+  assert.equal(receivedPayload.description, 'Transferência para Conta principal');
+  assert.equal(result.data.id, 'transaction-transfer');
+});
+
+test('BUG REAL (BUG 2): transferência sem destino mencionado pede a conta de destino, nunca fica ready', () => {
+  const action = createAction('Transferir cem do Nubank.');
+  assert.equal(action.status, 'needs_clarification');
+  assert.equal(action.issues[0].code, 'destination_account_required');
+});
+
+test('BUG REAL (BUG 2): sucesso de transferência narra exatamente a ação ("Pronto. Transferi R$ 100,00 de Nubank para Conta principal.")', () => {
+  const action = createAction('Transferir cem do Nubank para a Conta principal.');
+  const response = buildCompletionResponse(action, { profileId: 'balanced' });
+  // Intl.NumberFormat('pt-BR') usa espaço não separável entre "R$" e o valor.
+  assert.equal(
+    response.text,
+    `Pronto. Transferi R$\u00A0100,00 de Nubank para Conta principal.`,
+  );
+});
+
+test('BUG REAL (BUG 2): confirmação natural "Pode sim, pode confirmar e registrar." confirma a ação', () => {
+  assert.equal(classifyPendingActionReply('Pode sim, pode confirmar e registrar.'), 'confirm');
+  assert.equal(classifyPendingActionReply('Pode sim.'), 'confirm');
+  assert.equal(classifyPendingActionReply('sim, pode registrar'), 'confirm');
+});
+
 test('cancelamento muda o estado sem executar criação', () => {
   let createCalls = 0;
   const state = uniConversationReducer(
@@ -866,4 +917,127 @@ test('BLOCO UNI 1A: fluxo completo "Gastei R$ 50 no mercado" -> pergunta conta -
   // passado a resolveFinancialCategory/buildFinancialIntentAction em todo o
   // fluxo -- o teste em si já é a prova (não existe nenhum mock/stub de
   // rede para IA aqui, e o resultado final não depende de nenhum).
+});
+
+// ============================================================================
+// BUG REAL (BUG 1): após "Tenho R$ 1.000?" (ambiguous_balance_or_income),
+// só "receita"/"saldo"/"ajustar saldo" resolviam a ambiguidade -- respostas
+// naturais caíam em 'invalid' e a Uni re-perguntava para sempre. Todas as
+// variações reais abaixo precisam resolver a INTENÇÃO no mesmo turno.
+// ============================================================================
+
+function ambiguousAction() {
+  return { issues: [{ field: 'intent', code: 'ambiguous_balance_or_income' }] };
+}
+
+test('BUG REAL: variações de resposta "saldo" resolvem a ambiguidade como set_balance', () => {
+  const saldoReplies = [
+    'saldo',
+    'o saldo',
+    'ajustar saldo',
+    'ajustar o saldo',
+    'quero ajustar o saldo',
+    'corrigir o saldo',
+    'Coloca no saldo.',
+    'colocar no saldo',
+    'no saldo',
+    'coloca como saldo',
+    'como saldo',
+    'saldo atual',
+    'saldo mesmo',
+    'é saldo',
+    'deixa no saldo',
+  ];
+  for (const reply of saldoReplies) {
+    const resolved = resolvePendingActionInput({ value: reply, action: ambiguousAction() });
+    assert.equal(resolved.kind, 'correction', `"${reply}" deveria resolver como correção`);
+    assert.equal(resolved.overrides.intentDecision, 'set_balance', `"${reply}" deveria decidir set_balance`);
+  }
+});
+
+test('BUG REAL: variações de resposta "receita" resolvem a ambiguidade como register_income', () => {
+  const receitaReplies = [
+    'receita',
+    'como receita',
+    'registrar receita',
+    'registrar como receita',
+    'registra como receita',
+    'entrada',
+    'coloca como receita',
+    'colocar como receita',
+    'bota como receita',
+    'foi uma receita',
+    'era receita',
+    'dinheiro recebido',
+    'é receita',
+  ];
+  for (const reply of receitaReplies) {
+    const resolved = resolvePendingActionInput({ value: reply, action: ambiguousAction() });
+    assert.equal(resolved.kind, 'correction', `"${reply}" deveria resolver como correção`);
+    assert.equal(resolved.overrides.intentDecision, 'register_income', `"${reply}" deveria decidir register_income`);
+  }
+});
+
+test('BUG REAL: resposta sem relação continua invalid (a pendência permanece, re-explicando a pergunta)', () => {
+  for (const reply of ['Nubank', 'ontem', 'mil reais', 'tanto faz', '']) {
+    const resolved = resolvePendingActionInput({ value: reply, action: ambiguousAction() });
+    assert.equal(resolved.kind, 'invalid', `"${reply}" não deveria resolver a ambiguidade`);
+  }
+});
+
+test('BUG REAL: a decisão de intenção chega à ação final (buildFinancialIntentAction respeita intentDecision)', () => {
+  const parsed = parseFinancialText('Tenho R$ 1.000.', { referenceDate: REFERENCE_DATE });
+  const base = buildFinancialIntentAction({ parsed, accounts, categories, referenceDate: REFERENCE_DATE });
+  assert.equal(base.status, 'needs_clarification');
+  assert.equal(base.issues[0].code, 'ambiguous_balance_or_income');
+
+  const asIncome = buildFinancialIntentAction({
+    parsed, accounts, categories, referenceDate: REFERENCE_DATE,
+    overrides: { intentDecision: 'register_income' },
+  });
+  assert.equal(asIncome.status, 'needs_clarification');
+  assert.equal(asIncome.issues[0].field, 'account');
+
+  const asBalance = buildFinancialIntentAction({
+    parsed, accounts, categories, referenceDate: REFERENCE_DATE,
+    overrides: { intentDecision: 'set_balance' },
+  });
+  assert.equal(asBalance.status, 'needs_clarification');
+  assert.equal(asBalance.issues[0].field, 'account');
+});
+
+// ============================================================================
+// BUG REAL (BUG 2): uma frase completa de lançamento respondida na pendência
+// de conta nunca pode virar NOME DE CONTA proposto ("Entrou mil reais." /
+// "Entrou meu salário." eram propostos como conta). Respostas reais de
+// conta continuam resolvendo normal.
+// ============================================================================
+
+function pendingAccountAction() {
+  return { issues: [{ field: 'account', code: 'account_required' }], parsed: { intent: 'register_income' } };
+}
+
+test('BUG REAL: "Entrou mil reais." na pendência de conta nunca vira nome de conta (invalid, sem proposta)', () => {
+  const resolved = resolvePendingActionInput({
+    value: 'Entrou mil reais.',
+    action: pendingAccountAction(),
+    accounts,
+  });
+  assert.equal(resolved.kind, 'invalid');
+});
+
+test('BUG REAL: "Entrou meu salário." na pendência de conta nunca vira nome de conta (invalid, sem proposta)', () => {
+  const resolved = resolvePendingActionInput({
+    value: 'Entrou meu salário.',
+    action: pendingAccountAction(),
+    accounts,
+  });
+  assert.equal(resolved.kind, 'invalid');
+});
+
+test('BUG REAL: respostas reais de conta continuam resolvendo ("No Nubank.", "Entrou no Nubank.", "Nubank")', () => {
+  for (const reply of ['No Nubank.', 'Entrou no Nubank.', 'Nubank', 'foi no Nubank']) {
+    const resolved = resolvePendingActionInput({ value: reply, action: pendingAccountAction(), accounts });
+    assert.equal(resolved.kind, 'correction', `"${reply}" deveria resolver a conta`);
+  }
 });

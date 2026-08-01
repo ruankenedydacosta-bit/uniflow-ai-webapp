@@ -314,9 +314,29 @@ function condenseForSimpleStyle(text) {
 // Classificação da consulta (Fase 3) — padrões de linguagem natural brasileira
 // ─────────────────────────────────────────────────────────────────────────────
 
+// REGRA GERAL DE PRIORIDADE: DECLARAÇÕES financeiras nunca são consultas.
+// Frases que começam com um verbo declarativo de lançamento/posse ("Recebi
+// mil reais", "Tenho mil reais", "Entrou mil reais", "Paguei mil reais" etc.)
+// ou com uma declaração de saldo ("Meu saldo no Nubank é mil reais") iniciam
+// uma AÇÃO (registro/ajuste de saldo), mesmo contendo valor e conta. Sem
+// esta guarda, o ramo "palavra solta" abaixo classificava essas declarações
+// como transaction_reference (e o interpretador legado as engolia como
+// consulta de saldo), e o fluxo de registro nunca chegava a rodar.
+const DECLARATIVE_STATEMENT_START =
+  /^(?:eu\s+)?(?:tenho|estou\s+com|to\s+com|recebi|ganhei|faturei|entrou|caiu|paguei|gastei|comprei|abasteci|coloquei|botei|custou|saiu|foi|transferi|mandei|enviei)\b/u;
+const BALANCE_STATEMENT_START =
+  /^(?:meu|o|nosso)\s+saldo\b/u;
+
 export function classifyQueryType(text) {
   const n = normalizeFinancialText(text);
   if (!n) return null;
+
+  // Declaração com valor monetário (algarismo ou por extenso) → não é
+  // consulta, nunca. A guarda é ancorada no início da frase, então
+  // perguntas reais ("a última que entrou...", "quanto recebi...") passam.
+  if (extractQueryAmount(text) != null) {
+    if (DECLARATIVE_STATEMENT_START.test(n) || BALANCE_STATEMENT_START.test(n)) return null;
+  }
 
   if (/\bultim[oa]\s+(?:receita|entrada|recebimento)\b/.test(n)) return 'last_income';
   if (/\bultim[oa]\s+valor\b/.test(n) && /\breceb\b/.test(n)) return 'last_income';

@@ -148,3 +148,31 @@ test('dbToConversation expõe conversationType (default financial quando a colun
   );
   assert.match(fnBody, /conversationType: row\.conversation_type \|\| 'financial',/);
 });
+
+// ============================================================================
+// BUG REAL (BUG 5): merge de mensagens por identidade estável. Mensagens
+// locais e do Supabase se fundem pela MESMA identidade (client_message_id)
+// -- nunca pelo índice do array nem pelo id do banco (dbId pode diferir
+// entre ambientes e duplicar a mesma mensagem). O serviço preserva a
+// identidade nos dois sentidos (dbToMessage/messageToDb); o merge em si
+// acontece na hidratação do chat (UniChatPage.test.js).
+// ============================================================================
+
+test('BUG REAL (BUG 5): dbToMessage preserva a identidade original (client_message_id) e o dbId separadamente', async () => {
+  const content = await source('uniChatDataService.js');
+  const fnBody = content.slice(
+    content.indexOf('function dbToMessage'),
+    content.indexOf('function messageToDb'),
+  );
+  assert.match(fnBody, /id: row\.client_message_id \|\| row\.id,/);
+  assert.match(fnBody, /dbId: row\.id/);
+});
+
+test('BUG REAL (BUG 5): messageToDb persiste client_message_id em todas as gravações (fila offline inclusa)', async () => {
+  const content = await source('uniChatDataService.js');
+  const fnBody = content.slice(
+    content.indexOf('function messageToDb'),
+    content.indexOf('function formatTimestamp'),
+  );
+  assert.match(fnBody, /client_message_id: msg\.clientMessageId \|\| msg\.id,/);
+});

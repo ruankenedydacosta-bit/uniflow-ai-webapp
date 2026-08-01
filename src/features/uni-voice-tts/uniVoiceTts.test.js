@@ -213,6 +213,29 @@ test('retry NUNCA se aplica a erros HTTP (401/429/500) -- uma unica chamada cada
   }
 });
 
+// BUG REAL (BUG 3): 502 da Edge Function não quebra o chat. Mapeia para
+// PROVIDER_ERROR, NUNCA re-tenta (erro HTTP não é falha de rede) e o hook
+// (useUniVoiceTts.speak) devolve { error } sem lançar -- o botão "Ouvir"
+// continua disponível para uma nova tentativa manual.
+test('BUG REAL (BUG 3): 502 da Edge Function vira PROVIDER_ERROR sem retry -- UI não quebra', async () => {
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return jsonResponse(502, {}); };
+  const provider = makeProvider({ fetchImpl });
+  await assert.rejects(provider.speak('Olá'), { code: 'PROVIDER_ERROR' });
+  assert.equal(calls, 1, '502 é erro HTTP: nunca re-tenta');
+});
+
+test('BUG REAL (BUG 3): hook de voz captura erro do provider e devolve { error } sem lançar', async () => {
+  assert.match(HOOK_SOURCE, /catch \(providerError\) \{/);
+  assert.match(HOOK_SOURCE, /return \{ error: err \};/);
+  assert.match(HOOK_SOURCE, /setStatus\(VOICE_TTS_STATUS\.ERROR\);/);
+  assert.doesNotMatch(
+    HOOK_SOURCE,
+    /catch \(providerError\) \{[\s\S]*?throw/,
+    'nunca relança o erro do provider para o caller (UI preservada)',
+  );
+});
+
 test('cancel() durante a geracao aborta a requisicao -- CANCELLED, distinto de erro', async () => {
   const fetchImpl = (url, opts) => new Promise((_, reject) => {
     opts.signal.addEventListener('abort', () => {

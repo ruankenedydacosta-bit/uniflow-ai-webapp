@@ -29,8 +29,8 @@ export default function ActionConfirmation({
       </div>
 
       <dl className={styles.rows}>
-        {rows.map((row) => (
-          <div className={styles.rowItem} key={row.label}>
+        {rows.map((row, index) => (
+          <div className={styles.rowItem} key={row.key ?? `${row.label}-${index}`}>
             <dt>{row.label}</dt>
             <dd className={row.emphasis ? styles.emphasisValue : ''}>{row.value}</dd>
           </div>

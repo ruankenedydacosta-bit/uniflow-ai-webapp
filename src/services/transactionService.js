@@ -278,6 +278,7 @@ export async function createTransaction(workspaceId, transaction = {}) {
       'recurrence_rule',
       'installment_number',
       'installment_total',
+      'adjustment_delta',
       'metadata',
     ]),
     description: transaction.description.trim(),
@@ -309,6 +310,7 @@ export function buildTransactionUpdatePayload(changes = {}) {
     'recurrence_rule',
     'installment_number',
     'installment_total',
+    'adjustment_delta',
     'metadata',
   ]);
 }

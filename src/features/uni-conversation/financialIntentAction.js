@@ -12,23 +12,41 @@ const ACTION_INTENTS = Object.freeze({
   register_income: 'income',
   register_expense: 'expense',
   register_transfer: 'transfer',
+  set_balance: 'adjustment',
 });
 
 const TYPE_LABELS = Object.freeze({
   income: 'Entrada',
   expense: 'Despesa',
   transfer: 'Transferência',
+  adjustment: 'Ajuste de saldo',
 });
 
 const ISSUE_PRIORITY = Object.freeze({
-  amount: 1,
-  account: 2,
-  destinationAccount: 3,
-  category: 4,
-  description: 5,
-  date: 6,
-  type: 7,
+  intent: 0,
+  amount: 2,
+  account: 3,
+  destinationAccount: 4,
+  category: 5,
+  description: 6,
+  date: 7,
+  type: 8,
+  balance: 9,
 });
+
+function roundMoney(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.round(numeric * 100) / 100;
+}
+
+// "Tenho R$ 1.000" é ambíguo por natureza (receita declarada ou saldo
+// declarado) -- a pergunta é feita à pessoa, nunca decidida por nós.
+const AMBIGUOUS_DECISION_INTENTS = new Set(['register_income', 'set_balance']);
+
+export function isAmbiguousBalanceOrIncomeIntent(intent) {
+  return intent === 'ambiguous_balance_or_income';
+}
 
 function isValidDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return false;
@@ -83,17 +101,55 @@ export function buildFinancialIntentAction({
   referenceDate,
   overrides = {},
   workspaceType = 'personal',
+  accountBalances = null,
 } = {}) {
-  if (!parsed || !isFinancialTransactionIntent(parsed.intent)) {
-    return { status: 'unsupported', intent: parsed?.intent ?? 'question', issues: [] };
+  if (!parsed) {
+    return { status: 'unsupported', intent: 'question', issues: [] };
+  }
+
+  // "Tenho R$ 1.000" → pergunta de decisão (receita vs saldo), nunca
+  // lançamento direto. A decisão chega via overrides.intentDecision na
+  // próxima rodada e então o fluxo continua pelo intent decidido.
+  if (isAmbiguousBalanceOrIncomeIntent(parsed.intent)) {
+    if (!AMBIGUOUS_DECISION_INTENTS.has(overrides.intentDecision)) {
+      const amount = Number(overrides.amount ?? parsed.entities.amount);
+      return {
+        status: 'needs_clarification',
+        intent: parsed.intent,
+        amount: Number.isFinite(amount) && amount > 0 ? roundMoney(amount) : null,
+        account: null,
+        issues: [{ field: 'intent', code: 'ambiguous_balance_or_income' }],
+        options: {
+          accounts: (Array.isArray(accounts) ? accounts : []).filter((account) => account.is_active !== false),
+          accountTypes: (Array.isArray(accountTypes) ? accountTypes : []).filter((type) => type.is_active !== false),
+          categories: [],
+        },
+        payload: null,
+      };
+    }
+    return buildFinancialIntentAction({
+      parsed: { ...parsed, intent: overrides.intentDecision },
+      accounts,
+      accountTypes,
+      categories,
+      referenceDate,
+      overrides,
+      workspaceType,
+      accountBalances,
+    });
+  }
+
+  if (!isFinancialTransactionIntent(parsed.intent)) {
+    return { status: 'unsupported', intent: parsed.intent, issues: [] };
   }
 
   const transactionType = ACTION_INTENTS[parsed.intent];
+  const isAdjustment = transactionType === 'adjustment';
   const amount = Number(overrides.amount ?? parsed.entities.amount);
   const date = overrides.date ?? parsed.entities.date ?? referenceDate;
-  const description = sanitizeDescription(
+  let description = sanitizeDescription(
     overrides.description ?? parsed.entities.description,
-  );
+  ) ?? (isAdjustment ? 'Ajuste de saldo' : null);
   const accountResult = resolveFinancialAccount({
     accounts,
     accountTypes,
@@ -103,20 +159,44 @@ export function buildFinancialIntentAction({
     decision: overrides.accountDecision,
     input: parsed.input,
   });
-  const categoryResult = resolveFinancialCategory({
-    categories,
-    transactionType,
-    categoryId: overrides.categoryId,
-    requestedName: parsed.entities.category,
-    description: parsed.entities.description,
-    normalizedInput: parsed.normalizedInput,
-    approved: overrides.categoryApproved,
-    excludedCategoryId: overrides.rejectedCategoryId,
-    excludedCategoryName: overrides.rejectedCategoryName,
-    decision: overrides.categoryDecision,
-    workspaceType,
-    aiInference: overrides.aiInference ?? null,
-  });
+  const categoryResult = isAdjustment
+    ? null
+    : resolveFinancialCategory({
+        categories,
+        transactionType,
+        categoryId: overrides.categoryId,
+        requestedName: parsed.entities.category,
+        description: parsed.entities.description,
+        normalizedInput: parsed.normalizedInput,
+        approved: overrides.categoryApproved,
+        excludedCategoryId: overrides.rejectedCategoryId,
+        excludedCategoryName: overrides.rejectedCategoryName,
+        decision: overrides.categoryDecision,
+        workspaceType,
+        aiInference: overrides.aiInference ?? null,
+      });
+  // BUG REAL (BUG 2): transferência precisa resolver a conta de DESTINO
+  // ("para o Inter") além da origem. Só conta existente resolve
+  // (RESOLVED) -- nunca propomos criar a conta de destino no fluxo de uma
+  // única operação (isso é responsabilidade da camada neural/plano); um
+  // nome sem conta vira destination_account_required e a pendência
+  // pergunta pelo destino.
+  const destinationResult = transactionType === 'transfer'
+    ? resolveFinancialAccount({
+        accounts,
+        accountTypes,
+        accountId: overrides.destinationAccountId,
+        requestedName: overrides.destinationAccountName ?? parsed.entities.destinationAccount,
+        requestedType: overrides.destinationAccountType,
+        input: parsed.input,
+      })
+    : null;
+  // BUG REAL (BUG 2): a descrição usa o NOME CANÔNICO da conta de destino
+  // resolvida ("Transferência para Conta principal") -- o texto bruto
+  // extraído ("Principal") nunca aparece em descrição nem no card.
+  if (transactionType === 'transfer' && destinationResult?.account?.name) {
+    description = `Transferência para ${destinationResult.account.name}`;
+  }
   const issues = [];
 
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -136,19 +216,51 @@ export function buildFinancialIntentAction({
           : 'account_required';
     issues.push(createIssue('account', issueCode, accountResult.candidates));
   }
-  if (transactionType === 'transfer' && !overrides.destinationAccountId) {
-    issues.push(createIssue('destinationAccount', 'destination_account_required', accountResult.candidates));
+  if (transactionType === 'transfer') {
+    const destinationReady = destinationResult?.status === ACCOUNT_RESOLUTION_STATUS.RESOLVED;
+    if (!destinationReady) {
+      issues.push(createIssue('destinationAccount', 'destination_account_required', destinationResult?.candidates ?? []));
+    }
   }
-  const categoryIsReady = Boolean(categoryResult.category)
-    || categoryResult.status === CATEGORY_RESOLUTION_STATUS.WILL_CREATE;
-  if (!categoryIsReady) {
-    issues.push(createIssue('category', mapCategoryIssueCode(categoryResult), categoryResult.candidates));
+  if (!isAdjustment) {
+    const categoryIsReady = Boolean(categoryResult.category)
+      || categoryResult.status === CATEGORY_RESOLUTION_STATUS.WILL_CREATE;
+    if (!categoryIsReady) {
+      issues.push(createIssue('category', mapCategoryIssueCode(categoryResult), categoryResult.candidates));
+    }
   }
   if (!description) {
     issues.push(createIssue('description', 'description_required'));
   }
   if (!isValidDate(date)) {
     issues.push(createIssue('date', 'date_invalid'));
+  }
+
+  // Ajuste de saldo: o amount é o ALVO ("meu saldo é R$ 1.000"). O delta
+  // assinado aplicado à conta é calculado contra o saldo derivado atual;
+  // nunca inventamos o delta nem o alvo. Conta recém-criada parte de zero.
+  let balanceTarget = null;
+  let balanceDelta = null;
+  let currentBalance = null;
+  if (isAdjustment && accountIsReady && Number.isFinite(amount) && amount > 0) {
+    balanceTarget = roundMoney(amount);
+    const balancesById = accountBalances instanceof Map
+      ? accountBalances
+      : new Map(Object.entries(accountBalances ?? {}));
+    const resolvedCurrent = accountResult.status === ACCOUNT_RESOLUTION_STATUS.WILL_CREATE
+      ? 0
+      : balancesById.get(accountResult.account?.id);
+    if (resolvedCurrent == null) {
+      issues.push(createIssue('balance', 'balance_required'));
+    } else {
+      currentBalance = roundMoney(resolvedCurrent);
+      const delta = roundMoney(balanceTarget - currentBalance);
+      if (Math.abs(delta) < 0.005) {
+        issues.push(createIssue('balance', 'balance_same'));
+      } else {
+        balanceDelta = delta;
+      }
+    }
   }
 
   issues.sort((left, right) => ISSUE_PRIORITY[left.field] - ISSUE_PRIORITY[right.field]);
@@ -158,37 +270,45 @@ export function buildFinancialIntentAction({
     : {
         account_id: accountResult.account?.id ?? null,
         destination_account_id:
-          transactionType === 'transfer' ? overrides.destinationAccountId : null,
-        category_id: categoryResult.category?.id ?? null,
-        transaction_type: transactionType,
+          transactionType === 'transfer' ? destinationResult?.account?.id ?? null : null,
+        category_id: isAdjustment ? null : categoryResult.category?.id ?? null,
+        transaction_type: isAdjustment ? 'adjustment' : transactionType,
         description,
-        amount,
+        amount: isAdjustment ? Math.abs(balanceDelta) : amount,
         transaction_date: date,
         status: 'completed',
+        ...(isAdjustment ? { adjustment_delta: balanceDelta } : {}),
       };
 
   return {
     status: issues.length ? 'needs_clarification' : 'ready',
     intent: parsed.intent,
-    transactionType,
-    typeLabel: TYPE_LABELS[transactionType],
-    amount: Number.isFinite(amount) && amount > 0 ? amount : null,
+    transactionType: isAdjustment ? 'adjustment' : transactionType,
+    typeLabel: TYPE_LABELS[isAdjustment ? 'adjustment' : transactionType],
+    amount: Number.isFinite(amount) && amount > 0 ? roundMoney(amount) : null,
     date: isValidDate(date) ? date : null,
     description,
     account: accountResult.account ?? null,
+    destinationAccount: transactionType === 'transfer' ? destinationResult?.account ?? null : null,
     clientOperationId: overrides.clientOperationId ?? null,
     accountResolution: accountResult,
     proposedAccount: accountResult.proposedAccount ?? null,
     requestedAccountName: overrides.accountName ?? parsed.entities.account ?? null,
-    category: categoryResult.category ?? null,
-    categoryWasApproximate: Boolean(categoryResult.approximate),
-    proposedCategory: categoryResult.proposedCategory ?? null,
-    proposedCategoryName: categoryResult.proposedCategoryName ?? null,
+    requestedDestinationAccountName: transactionType === 'transfer'
+      ? overrides.destinationAccountName ?? parsed.entities.destinationAccount ?? null
+      : null,
+    category: isAdjustment ? null : categoryResult.category ?? null,
+    categoryWasApproximate: isAdjustment ? false : Boolean(categoryResult.approximate),
+    proposedCategory: isAdjustment ? null : categoryResult.proposedCategory ?? null,
+    proposedCategoryName: isAdjustment ? null : categoryResult.proposedCategoryName ?? null,
+    balanceTarget,
+    balanceDelta,
+    currentBalance,
     issues,
     options: {
       accounts: (Array.isArray(accounts) ? accounts : []).filter((account) => account.is_active !== false),
       accountTypes: (Array.isArray(accountTypes) ? accountTypes : []).filter((type) => type.is_active !== false),
-      categories: categoryResult.candidates ?? [],
+      categories: isAdjustment ? [] : categoryResult.candidates ?? [],
     },
     payload,
   };

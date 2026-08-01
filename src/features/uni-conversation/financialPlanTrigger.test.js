@@ -97,6 +97,25 @@ test('looksLikeFreshFinancialStatement detecta um enunciado financeiro novo e au
   assert.equal(looksLikeFreshFinancialStatement('Recebi 200 reais de salário'), true);
 });
 
+// BUG REAL (BUG 2): "entrou/caiu/entraram/cairam" não estavam em
+// FINANCIAL_VERB_RE -- "Entrou mil reais." não era um fresh statement e,
+// com pendência ativa, virava resposta de campo (proposta de conta
+// "Entrou mil reais"). Com verbo + valor (por extenso incluso), estas
+// frases SÃO enunciados novos e autossuficientes.
+test('BUG REAL: "Entrou/Caiu/Entraram mil reais." são fresh statements -- nunca resposta de pendência', () => {
+  assert.equal(looksLikeFreshFinancialStatement('Entrou mil reais.'), true);
+  assert.equal(looksLikeFreshFinancialStatement('Entrou R$ 500.'), true);
+  assert.equal(looksLikeFreshFinancialStatement('Caiu mil reais.'), true);
+  assert.equal(looksLikeFreshFinancialStatement('Entraram mil reais.'), true);
+  assert.equal(looksLikeFreshFinancialStatement('Caiu quinhentos.'), true);
+  assert.equal(looksLikeFreshFinancialStatement('Caiu um Pix de mil reais.'), true);
+  assert.equal(looksLikeFreshFinancialStatement('Recebi um Pix de mil.'), true);
+});
+
+test('BUG REAL: "Entrou meu salário." (verbo sem valor) NÃO é fresh statement -- mas a guarda de conta o protege', () => {
+  assert.equal(looksLikeFreshFinancialStatement('Entrou meu salário.'), false);
+});
+
 test('looksLikeFreshFinancialStatement NÃO dispara para respostas curtas de correção (sem verbo+valor ao mesmo tempo)', () => {
   assert.equal(looksLikeFreshFinancialStatement('foi no Nubank'), false);
   assert.equal(looksLikeFreshFinancialStatement('Foi ontem'), false);

@@ -4,6 +4,7 @@ const CONTEXTUAL_INTENTS = new Set([
   'register_income',
   'register_expense',
   'register_transfer',
+  'set_balance',
 ]);
 const INHERITABLE_ENTITIES = ['category', 'description', 'account', 'date'];
 const MAX_TURNS = 10;

@@ -140,6 +140,39 @@ test('classifyFinancialQuery: null para texto sem match', () => {
   assert.equal(result, null);
 });
 
+// ── CORREÇÃO URGENTE: declarações de saldo/receita nunca viram consulta ─────
+
+test('CORREÇÃO URGENTE: declarações com valor por extenso ("mil reais") nao viram consulta de saldo', () => {
+  const declarations = [
+    'Meu saldo no Nubank é mil reais',
+    'Meu saldo é mil reais',
+    'Meu saldo é R$ 1.000',
+    'Tenho mil reais',
+    'Tenho mil reais de saldo',
+    'Estou com mil reais',
+    'Recebi mil reais',
+    'Ganhei mil reais',
+    'Entrou mil reais',
+    'Caiu mil reais',
+    'Paguei mil reais',
+  ];
+  for (const phrase of declarations) {
+    assert.equal(classifyFinancialQuery(phrase), null, `"${phrase}" não pode virar consulta`);
+  }
+});
+
+test('CORREÇÃO URGENTE: "Quanto recebi este mês?" é monthly_income (consulta real de receita)', () => {
+  assert.deepEqual(classifyFinancialQuery('Quanto recebi este mês?'), { type: 'monthly_income' });
+  assert.deepEqual(classifyFinancialQuery('quanto recebi esse mês?'), { type: 'monthly_income' });
+});
+
+test('CORREÇÃO URGENTE: consultas reais continuam classificadas (sem regressão)', () => {
+  assert.deepEqual(classifyFinancialQuery('qual meu saldo?'), { type: 'balance' });
+  assert.deepEqual(classifyFinancialQuery('quanto entrou esse mês?'), { type: 'monthly_income' });
+  assert.deepEqual(classifyFinancialQuery('quanto gastei esse mês?'), { type: 'monthly_expenses' });
+  assert.deepEqual(classifyFinancialQuery('o que entrou este mês?'), { type: 'monthly_income' });
+});
+
 // ── buildQueryResponse: future_projection ──────────────────────────────────
 
 test('buildQueryResponse future_projection retorna projeção', () => {

@@ -130,6 +130,81 @@ test('classifyQueryType não classifica o que não é consulta', () => {
   assert.equal(classifyQueryType(''), null);
 });
 
+// ── CORREÇÃO URGENTE: declarações nunca são consultas ───────────────────────
+
+test('CORREÇÃO URGENTE: nenhuma declaração de saldo/receita é classificada como consulta pelo motor', () => {
+  const declarations = [
+    'Meu saldo no Nubank é mil reais',
+    'Meu saldo é R$ 1.000',
+    'Meu saldo é mil reais',
+    'Tenho mil reais',
+    'Tenho mil reais de saldo',
+    'Tenho R$ 1.000',
+    'Estou com mil reais',
+    'To com mil reais',
+    'Recebi mil reais',
+    'Ganhei mil reais',
+    'Faturei mil reais',
+    'Entrou mil reais',
+    'Caiu mil reais',
+    'Paguei mil reais',
+    'Gastei mil reais',
+    'Comprei mil reais',
+    'Transferi mil reais',
+    'Eu recebi mil reais',
+  ];
+  for (const phrase of declarations) {
+    assert.equal(classifyQueryType(phrase), null, `"${phrase}" não pode virar consulta`);
+  }
+});
+
+test('CORREÇÃO URGENTE: "Recebi mil reais" NUNCA reutiliza uma movimentação anterior (nem do contexto da conversa)', () => {
+  const snapshot = buildSnapshot();
+  // Histórico com uma movimentação antiga de R$ 50: o motor não pode usá-la
+  // para responder uma declaração de receita nova -- a frase é um registro.
+  const history = [
+    { from: 'user', text: 'Gastei 50 no açougue' },
+  ];
+  const result = resolveFinancialQuery({
+    text: 'Recebi mil reais',
+    snapshot,
+    history,
+  });
+  assert.equal(result.handled, false);
+  assert.equal(classifyQueryType('Recebi mil reais'), null);
+});
+
+test('CORREÇÃO URGENTE: "Tenho mil reais" não entra em consulta por valor', () => {
+  assert.equal(resolveFinancialQuery({
+    text: 'Tenho mil reais',
+    snapshot: buildSnapshot(),
+  }).handled, false);
+});
+
+test('CORREÇÃO URGENTE: "Meu saldo no Nubank é mil reais" não vira consulta de saldo nem referência', () => {
+  assert.equal(resolveFinancialQuery({
+    text: 'Meu saldo no Nubank é mil reais',
+    snapshot: buildSnapshot(),
+  }).handled, false);
+});
+
+test('CORREÇÃO URGENTE: consultas financeiras reais continuam funcionando (sem regressão)', () => {
+  const snapshot = buildSnapshot();
+  assert.equal(classifyQueryType('quanto tenho na conta Nubank?'), 'account_balance');
+  assert.equal(classifyQueryType('qual foi minha última despesa?'), 'last_expense');
+  assert.equal(classifyQueryType('quanto gastei com mercado esse mês?'), 'category_expenses');
+  assert.equal(classifyQueryType('aquele gasto de 120 reais'), 'transaction_reference');
+  // "a última que entrou..." é uma pergunta REAL -- começa com "a última",
+  // não com o verbo declarativo ancorado no início, então segue como consulta.
+  assert.equal(classifyQueryType('qual foi a última que entrou?'), 'last_income');
+  const result = resolveFinancialQuery({
+    text: 'qual foi a última que entrou?',
+    snapshot,
+  });
+  assert.equal(result.handled, true);
+  assert.match(result.response.text, /Salário/);
+});
+
 // ── Resolução (Fase 4/6/8) ──────────────────────────────────────────────────
 
 test('saldo por conta responde com o valor real do snapshot e conta nomeada', () => {

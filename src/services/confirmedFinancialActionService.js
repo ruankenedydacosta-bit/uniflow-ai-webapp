@@ -19,6 +19,8 @@ const RPC_ERROR_MESSAGES = Object.freeze({
   financial_action_amount_invalid: ['AMOUNT_INVALID', 'Revise o valor antes de confirmar.'],
   financial_action_date_invalid: ['DATE_INVALID', 'Revise a data antes de confirmar.'],
   financial_action_destination_invalid: ['DESTINATION_INVALID', 'Revise a conta de destino antes de confirmar.'],
+  financial_action_type_invalid: ['TYPE_INVALID', 'O tipo de lançamento escolhido não é suportado.'],
+  financial_action_adjustment_delta_invalid: ['ADJUSTMENT_DELTA_INVALID', 'Revise o valor do ajuste antes de confirmar.'],
 });
 
 function createResult(data, error = null) {
@@ -75,6 +77,7 @@ export function buildConfirmedFinancialActionRpcPayload(action) {
       p_amount: action.payload.amount,
       p_transaction_date: action.payload.transaction_date,
       p_destination_account_id: action.payload.destination_account_id ?? null,
+      p_adjustment_delta: action.payload.adjustment_delta ?? null,
     },
     error: null,
   };

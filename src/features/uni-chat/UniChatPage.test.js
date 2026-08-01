@@ -242,7 +242,7 @@ test('conversationStyle vem do profile com fallback simple e chega ao LLM e ao f
   const page = await source('UniChatPage.jsx');
   assert.match(page, /const conversationStyle = resolveConversationStyle\(profile\?\.conversation_style\);/);
   assert.match(page, /generateContextualResponse\(\{[\s\S]{0,300}conversationStyle,/);
-  assert.match(page, /buildQueryResponse\(queryType, financialContext, mode, \{[\s\S]{0,150}conversationStyle,/);
+  assert.match(page, /buildQueryResponse\(queryType, financialContext, mode, \{[\s\S]{0,250}conversationStyle,/);
 });
 
 test('conversationStyle não altera a resolução independente do workspace pessoal ou empresarial', async () => {
@@ -557,11 +557,12 @@ test('trocar de conversa, novo chat, trocar modo/workspace e excluir a conversa 
   assert.equal(occurrences.length, 6);
 });
 
-test('escritas do chat usam a RPC atômica e allowlist restrita a receita/despesa', async () => {
+test('escritas do chat usam a RPC atômica e allowlist restrita, incluindo transferência (BUG 2)', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /import \{ executeConfirmedFinancialAction \}/);
   assert.match(page, /executeAtomicAction: executeConfirmedFinancialAction/);
-  assert.match(page, /ALLOWED_CHAT_WRITE_INTENTS = Object\.freeze\(\['register_income', 'register_expense'\]\)/);
+  assert.match(page, /ALLOWED_CHAT_WRITE_INTENTS = Object\.freeze\(\[/);
+  assert.match(page, /'register_income',\s+'register_expense',\s+'set_balance',[\s\S]*?'ambiguous_balance_or_income',[\s\S]*?'register_transfer',/);
   // BLOCO E: transferência não é mais um bloqueio estático -- primeiro
   // tenta a camada neural (financial_plan); só cai no aviso de "ainda não
   // suportado" se ela não devolver um plano válido. create_goal continua
@@ -1154,10 +1155,41 @@ test('BUG REAL: uma frase financeira nova e autossuficiente abandona qualquer pe
   assert.match(page, /import \{[\s\S]*?looksLikeFreshFinancialStatement[\s\S]*?\} from '\.\.\/uni-conversation';/);
   const idx = page.indexOf('if (hasPendingConversation) {');
   assert.ok(idx > -1);
-  const slice = page.slice(idx, idx + 300);
-  assert.match(slice, /if \(looksLikeFreshFinancialStatement\(text\)\) \{/);
+  const slice = page.slice(idx, idx + 1200);
+  assert.match(slice, /looksLikeFreshFinancialStatement\(text\)/);
+  assert.match(slice, /looksLikeFreshBalanceStatement\(text\)/);
   assert.match(slice, /abandonStalePendingState\(\);/);
   assert.match(slice, /\} else \{\s*handlePendingConversationInput\(text, userMsg\);\s*return;\s*\}/);
+});
+
+test('declarações de saldo também são frases novas autossuficientes (ajuste/pergunta de decisão, nunca resposta a pendência antiga)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{[\s\S]*?looksLikeFreshBalanceStatement[\s\S]*?\} from '\.\.\/uni-conversation';/);
+  const trigger = await source('../uni-conversation/financialPlanTrigger.js');
+  assert.match(trigger, /export function looksLikeFreshBalanceStatement\(/);
+  assert.match(trigger, /saldo/);
+  assert.match(trigger, /\|estou\\s\+com\|to\\s\+com/);
+  const idx = page.indexOf('if (hasPendingConversation) {');
+  assert.ok(idx > -1);
+  assert.match(page.slice(idx, idx + 950), /looksLikeFreshBalanceStatement\(text\)/);
+});
+
+test('CORREÇÃO URGENTE: pendência incompatível é abandonada quando a frase declara uma ação financeira NOVA (regra geral, além das looksLike*)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(
+    page,
+    /const ACTION_STATEMENT_INTENTS = new Set\(\[[\s\S]*?'set_balance',[\s\S]*?'ambiguous_balance_or_income',[\s\S]*?'register_income',[\s\S]*?'register_expense',[\s\S]*?'register_transfer',[\s\S]*?'create_goal',[\s\S]*?\]\);/,
+  );
+  const idx = page.indexOf('if (hasPendingConversation) {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 1400);
+  // A mesma intenção da pendência continua sendo resposta legítima à
+  // pendência (ex.: reiterar o próprio lançamento); intenção DIFERENTE é
+  // um novo enunciado explícito e abandona a pendência.
+  assert.match(slice, /const pendingActionIntent = \(pendingAction \?\? financialConversation\.state\.action\)\?\.intent;/);
+  assert.match(slice, /const declaredIntent = classifyIntent\(text\)\.intent;/);
+  assert.match(slice, /ACTION_STATEMENT_INTENTS\.has\(declaredIntent\) && declaredIntent !== pendingActionIntent/);
+  assert.match(slice, /abandonStalePendingState\(\);/);
 });
 
 test('abandonStalePendingState limpa TODO estado conversacional -- financialConversation, pendingAction, pendingActionStack e financialPlan', async () => {
@@ -1354,6 +1386,24 @@ test('BUG 1: o gate do engine responde consultas reconhecidas dentro do fluxo de
   assert.match(slice, /engineOutcome\.queryType !== 'transaction_reference'/);
 });
 
+test('CORREÇÃO URGENTE: runDeterministicFinancialFlow consulta os motores de consulta SOMENTE quando a frase não é uma ação financeira declarada', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: slice } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
+  assert.ok(slice.length > 0, 'não foi possível localizar runDeterministicFinancialFlow');
+  // Declarações/ações (set_balance, ambiguidade, receita, despesa,
+  // transferência, meta) pulam o FinancialQueryEngine e o interpretador
+  // legado e vão direto para o fluxo de registro (interpret).
+  assert.match(slice, /if \(!ACTION_STATEMENT_INTENTS\.has\(classifyIntent\(text\)\.intent\)\) \{/);
+  const gateIdx = slice.indexOf('ACTION_STATEMENT_INTENTS.has(classifyIntent(text).intent)');
+  const engineIdx = slice.indexOf('const engineOutcome = resolveFinancialQuery({');
+  const interpreterIdx = slice.indexOf('const queryType = classifyFinancialQuery(text);');
+  const interpretIdx = slice.indexOf('const result = financialConversation.interpret(text);');
+  assert.ok(gateIdx > -1 && engineIdx > -1 && interpreterIdx > -1 && interpretIdx > -1);
+  assert.ok(gateIdx < engineIdx, 'o gate de intenção roda antes do FinancialQueryEngine');
+  assert.ok(engineIdx < interpreterIdx, 'o engine roda antes do interpretador legado');
+  assert.ok(interpreterIdx < interpretIdx, 'os motores de consulta rodam antes do fluxo de registro');
+});
+
 test('BUG 2: criação de conta por fallback pós-interpret exige que o texto NÃO seja uma pergunta (guard isLikelyFinancialQuestion no fallback 1896)', async () => {
   const page = await source('UniChatPage.jsx');
   const { body: slice } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
@@ -1391,4 +1441,69 @@ test('BUG 3: dedup de narração por conteúdo fica DENTRO do pipeline oficial (
   const dedupIdx = pipeline.indexOf('hasNarratedText(userId, text)');
   const speakIdx = pipeline.indexOf('speakMessage(msg);', dedupIdx);
   assert.ok(markIdx > -1 && dedupIdx > markIdx && speakIdx > dedupIdx, 'marca por id → checa dedup de conteúdo → fala');
+});
+
+test('BUG 3: toda restauração de mensagens reserva IDs msg-N (troca de workspace/modo incluída) -- nenhum ponto reintroduz chave duplicada', async () => {
+  const page = await source('UniChatPage.jsx');
+  // Troca de workspace/perfil: o histórico restaurado precisa reservar os
+  // IDs msg-N antes que qualquer mensagem nova possa ser criada -- sem
+  // isso, o contador zerado do registry colidia com os IDs restaurados.
+  const modeBlock = page.slice(
+    page.indexOf('const candidates = updated'),
+    page.indexOf('createAssistantResponse(', page.indexOf('const candidates = updated')),
+  );
+  assert.match(modeBlock, /setMessages\(c\.messages \|\| \[\]\)/);
+  assert.match(modeBlock, /reserveMessageIds\(c\.messages \|\| \[\]\)/);
+  assert.ok(
+    modeBlock.indexOf('reserveMessageIds') > modeBlock.indexOf('setMessages'),
+    'a reserva acontece junto à restauração (após o setMessages)',
+  );
+  // switchConversation (caminho síncrono): a restauração também reserva.
+  const switchBlock = page.slice(
+    page.indexOf('const conv = conversations.find'),
+    page.indexOf('function handleUnresolvedMessage'),
+  );
+  assert.match(switchBlock, /setMessages\(conv\.messages \|\| \[\]\)/);
+  assert.match(switchBlock, /reserveMessageIds\(conv\.messages \|\| \[\]\)/);
+  // Restauração assíncrona do Supabase (efeito inicial + switch async):
+  // reserva antes do setMessages em ambos.
+  const loadBlock = page.slice(
+    page.indexOf('const requestId = ++loadRequestIdRef.current'),
+    page.indexOf('setConversations((prev) =>', page.indexOf('const requestId = ++loadRequestIdRef.current')),
+  );
+  assert.match(loadBlock, /markRestoredMessagesAsSpoken\(user\?\.id, loadedMessages\)/);
+  assert.match(loadBlock, /reserveMessageIds\(loadedMessages\)/);
+  assert.ok(
+    loadBlock.indexOf('reserveMessageIds') < loadBlock.indexOf('setMessages((prev)'),
+    'a restauração assíncrona reserva ANTES de substituir as mensagens',
+  );
+});
+
+test('BUG 4: scroll consome stickToBottom em layout effect -- "Ver conversa completa" não abre mais no topo', async () => {
+  const page = await source('UniChatPage.jsx');
+  const scrollBlock = page.slice(
+    page.indexOf('function scrollToLatest()'),
+    page.indexOf('function pushMessage'),
+  );
+  assert.match(scrollBlock, /useLayoutEffect\(\(\) => \{/);
+  assert.match(scrollBlock, /if \(!stickToBottom\.current\) return;/);
+  assert.match(scrollBlock, /scrollRef\.current/);
+  assert.match(scrollBlock, /el\.scrollTop = el\.scrollHeight;/);
+  assert.match(scrollBlock, /}, \[messages\]\);/);
+  // Contrato de aderência: nada de setTimeout arbitrário para rolar.
+  assert.doesNotMatch(scrollBlock, /setTimeout\(/);
+  // O usuário que rolou para cima (stickToBottom=false) mantém a leitura.
+  assert.match(scrollBlock, /rolou para cima/);
+});
+
+test('BUG 5: hidratação funde mensagens por IDENTIDADE (clientMessageId/dbId) -- nunca por comprimento ou índice', async () => {
+  const page = await source('UniChatPage.jsx');
+  const loadBlock = page.slice(
+    page.indexOf('const requestId = ++loadRequestIdRef.current'),
+    page.indexOf('const pendingSyncRef = useRef([])'),
+  );
+  assert.match(loadBlock, /clientMessageId \?\? msg\.dbId \?\? msg\.id/);
+  assert.match(loadBlock, /localIds\.has\(msg\.clientMessageId \?\? msg\.dbId \?\? msg\.id\)/);
+  assert.match(loadBlock, /return \[\.\.\.prev, \.\.\.dbOnly\]/);
+  assert.doesNotMatch(loadBlock, /prev\.length < loadedMessages\.length/);
 });

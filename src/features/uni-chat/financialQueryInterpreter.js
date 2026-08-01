@@ -1,3 +1,5 @@
+import { extractQueryAmount } from './financialQueryEngine.js';
+
 const MONTH_NAMES = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
@@ -13,6 +15,26 @@ function normalize(text) {
 
 export function classifyFinancialQuery(text) {
   const n = normalize(text);
+
+  // Guarda de DECLARAÇÃO de saldo: "Meu saldo no Nubank é R$ 1.000" ou
+  // "Tenho R$ 1.000" NÃO são perguntas -- são comandos (ajuste de saldo /
+  // pergunta de decisão) e nunca podem ser respondidos pelo interpretador
+  // de consultas (responderia o saldo atual, engolindo a declaração).
+  // BUG REAL: "mil reais" (valor por extenso) não tem dígito, então o regex
+  // antigo de hasMoney não disparava e "Meu saldo no Nubank é mil reais"
+  // caía em 'balance' (respondia o saldo atual em vez de iniciar o ajuste).
+  // extractQueryAmount reconhece número por extenso (mesmo caminho do
+  // FinancialQueryEngine); sem ele, a guarda só enxergava algarismos.
+  const hasMoney = /r\$\s*\d|\d[\d.,]*\s*reais|\b\d[\d.,]*\b/.test(n)
+    || extractQueryAmount(text) != null;
+  if (hasMoney) {
+    const isBalanceStatement = /^(?:meu|o|nosso|eu\s+tenho)\s+saldo\b/.test(n)
+      || /^(?:coloca|define|ajusta|ajuste|corrige|corrija|ponha)\b[^.!?]*\bsaldo\b/.test(n)
+      || /^(?:eu\s+)?(?:tenho|estou\s+com|to\s+com)\b/.test(n);
+    if (isBalanceStatement && !/\b(?:quanto|qual|como|vai)\b/.test(n)) {
+      return null;
+    }
+  }
 
   // More specific patterns first
 
@@ -54,7 +76,10 @@ export function classifyFinancialQuery(text) {
     return { type: 'balance' };
   }
 
-  if (/\b(?:entrou|receb|receita|faturei)\b/.test(n) && /\b(?:mes|este|esse)\b/.test(n)) {
+  // BUG REAL: o padrão antigo usava \breceb\b, que nunca batia em "recebi"
+  // (a palavra continua depois do radical) -- "Quanto recebi este mês?"
+  // caía no LLM em vez da consulta determinística de receita do mês.
+  if (/\b(?:entrou|recebi|receita|faturei)\b/.test(n) && /\b(?:mes|este|esse)\b/.test(n)) {
     return { type: 'monthly_income' };
   }
 

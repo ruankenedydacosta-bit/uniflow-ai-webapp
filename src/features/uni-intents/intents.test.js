@@ -73,6 +73,62 @@ test('BUG REAL: "Coloquei duzentos reais de gasolina." é reconhecida como despe
   assert.equal(result.ready, true);
   assert.equal(result.requiresConfirmation, true);
 });
+// ============================================================================
+// BUG REAL (BUG 2): "Entrou mil reais." e variações. O padrão antigo só
+// aceitava o verbo no singular com valor em algarismo logo após o verbo --
+// "Entraram mil reais." (plural), "Caiu quinhentos." (número por extenso
+// sem "reais") e "Entrou meu salário." (sem valor) caíam em 'question' e o
+// FinancialQueryEngine ainda as capturava como transaction_reference (e,
+// com pendência ativa, a frase inteira virava nome de conta proposto).
+// ============================================================================
+
+test('BUG REAL: "Entraram mil reais." (plural) é reconhecida como receita com valor', () => {
+  const result = parseFinancialText('Entraram mil reais.');
+
+  assert.equal(result.intent, 'register_income');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.entities.description, null);
+});
+
+test('BUG REAL: "Caiu quinhentos." (número por extenso sem moeda no fim) é reconhecida como receita com valor 500', () => {
+  const result = parseFinancialText('Caiu quinhentos.');
+
+  assert.equal(result.intent, 'register_income');
+  assert.equal(result.entities.amount, 500);
+  assert.equal(result.entities.description, null);
+});
+
+test('BUG REAL: "Entrou meu salário." (verbo + possessivo, sem valor) é reconhecida como receita', () => {
+  const result = parseFinancialText('Entrou meu salário.');
+
+  assert.equal(result.intent, 'register_income');
+  assert.equal(result.entities.amount, null);
+  assert.equal(result.entities.description, 'Meu salário');
+});
+
+test('BUG REAL: "Recebi um Pix de mil." extrai valor 1000 e descrição "Um Pix" (número por extenso sem moeda)', () => {
+  const result = parseFinancialText('Recebi um Pix de mil.');
+
+  assert.equal(result.intent, 'register_income');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.entities.description, 'Um Pix');
+});
+
+test('BUG REAL: "Caiu um Pix de mil reais." extrai valor e não deixa preposição pendurada na descrição', () => {
+  const result = parseFinancialText('Caiu um Pix de mil reais.');
+
+  assert.equal(result.intent, 'register_income');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.entities.description, 'Um Pix');
+});
+
+test('BUG REAL: pergunta não financeira com número por extenso no fim continua sem valor ("Quanto é a nota do carro?")', () => {
+  const result = parseFinancialText('Quanto é a nota do carro?');
+
+  assert.equal(result.intent, 'question');
+  assert.equal(result.entities.amount, null);
+});
+
 
 // ============================================================================
 // BUG REAL (fluxo de confirmação financeira simples): "Cinquenta reais de
@@ -121,8 +177,56 @@ test('interpreta transferencia e extrai conta de destino', () => {
   assert.equal(result.intent, 'register_transfer');
   assert.equal(result.entities.amount, 500);
   assert.equal(result.entities.category, 'Transferência');
-  assert.equal(result.entities.account, 'Nubank');
+  // BUG REAL (BUG 2): "para o Nubank" é o DESTINO -- `account` é a ORIGEM
+  // ("do/da X"). Sem origem explícita, `account` fica null e o destino
+  // sai em destinationAccount.
+  assert.equal(result.entities.account, null);
+  assert.equal(result.entities.destinationAccount, 'Nubank');
   assert.equal(result.entities.description, 'Transferência para Nubank');
+  // BUG REAL (BUG 2): sem origem explícita a ação não fica pronta no
+  // parser -- o fluxo pergunta "de qual conta?" e o contexto herda a
+  // origem (applyConversationContext), como qualquer campo de pendência.
+  assert.deepEqual(result.missingEntities, ['account']);
+  assert.equal(result.ready, false);
+});
+
+test('BUG REAL: transferencia com origem e destino extrai as duas contas', () => {
+  const result = parseFinancialText('Transferir cem do Nubank para o Inter.');
+
+  assert.equal(result.intent, 'register_transfer');
+  assert.equal(result.entities.amount, 100);
+  assert.equal(result.entities.account, 'Nubank');
+  assert.equal(result.entities.destinationAccount, 'Inter');
+  assert.equal(result.entities.description, 'Transferência para Inter');
+  assert.equal(result.ready, true);
+});
+
+test('BUG REAL: gíria de número ("cinquentão") vira valor e não contamina a descrição', () => {
+  const result = parseFinancialText('Gastei cinquentão no mercado.');
+
+  assert.equal(result.intent, 'register_expense');
+  assert.equal(result.entities.amount, 50);
+  assert.equal(result.entities.account, null);
+  assert.equal(result.entities.description, 'Mercado');
+  assert.equal(result.ready, true);
+});
+
+test('BUG REAL: declaração de saldo com número por extenso ("Meu saldo no Nubank é mil") é ajuste, não vira nome de conta', () => {
+  const result = parseFinancialText('Meu saldo no Nubank é mil.');
+
+  assert.equal(result.intent, 'set_balance');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.entities.account, 'Nubank');
+  assert.equal(result.entities.description, null);
+  assert.equal(result.ready, true);
+});
+
+test('BUG REAL: número por extenso antes de preposição ("Gastei quinhentos no mercado") vira valor', () => {
+  const result = parseFinancialText('Gastei quinhentos no mercado.');
+
+  assert.equal(result.intent, 'register_expense');
+  assert.equal(result.entities.amount, 500);
+  assert.equal(result.entities.description, 'Mercado');
   assert.equal(result.ready, true);
 });
 
@@ -204,4 +308,81 @@ test('datas relativas dependem de referencia explicita', () => {
   });
 
   assert.equal(result.entities.date, '2026-07-10');
+});
+
+// ============================================================================
+// CORREÇÃO URGENTE (prioridade das novas intenções de saldo e receita):
+// declarações explícitas são classificadas como AÇÃO (set_balance /
+// ambiguous_balance_or_income / register_income) -- nunca como consulta
+// (check_balance) nem como 'question' -- mesmo quando contêm valor por
+// extenso ("mil reais" não tem dígito) ou nome de conta.
+// ============================================================================
+
+test('CORREÇÃO URGENTE: "Meu saldo no Nubank é mil reais." é set_balance com valor e conta', () => {
+  const result = parseFinancialText('Meu saldo no Nubank é mil reais.');
+
+  assert.equal(result.intent, 'set_balance');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.entities.account, 'Nubank');
+  assert.equal(result.entities.description, null);
+  assert.equal(result.requiresConfirmation, true);
+  assertEntityShape(result);
+});
+
+test('CORREÇÃO URGENTE: "Meu saldo é R$ 1.000." é set_balance', () => {
+  const result = parseFinancialText('Meu saldo é R$ 1.000.');
+
+  assert.equal(result.intent, 'set_balance');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.ready, true);
+});
+
+test('CORREÇÃO URGENTE: "Tenho mil reais." é ambiguous_balance_or_income (pergunta de decisão, nunca consulta)', () => {
+  const result = parseFinancialText('Tenho mil reais.');
+
+  assert.equal(result.intent, 'ambiguous_balance_or_income');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.ready, true);
+});
+
+test('CORREÇÃO URGENTE: "Tenho mil reais de saldo." é set_balance (valor + "de saldo" explícito)', () => {
+  const result = parseFinancialText('Tenho mil reais de saldo.');
+
+  assert.equal(result.intent, 'set_balance');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.ready, true);
+});
+
+test('CORREÇÃO URGENTE: "Recebi mil reais." é register_income, nunca consulta por valor', () => {
+  const result = parseFinancialText('Recebi mil reais.');
+
+  assert.equal(result.intent, 'register_income');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.ready, true);
+});
+
+test('CORREÇÃO URGENTE: "Entrou mil reais." é register_income (valor por extenso após o verbo)', () => {
+  const result = parseFinancialText('Entrou mil reais.');
+
+  assert.equal(result.intent, 'register_income');
+  assert.equal(result.entities.amount, 1000);
+  assert.equal(result.ready, true);
+});
+
+test('CORREÇÃO URGENTE: "Entrou 1000." continua register_income com valor em algarismo', () => {
+  const result = parseFinancialText('Entrou 1000.');
+
+  assert.equal(result.intent, 'register_income');
+  assert.equal(result.entities.amount, 1000);
+});
+
+test('CORREÇÃO URGENTE: "Ganhei mil reais." e "Estou com mil reais." seguem como declaração (income e ambiguidade)', () => {
+  assert.equal(parseFinancialText('Ganhei mil reais.').intent, 'register_income');
+  assert.equal(parseFinancialText('Estou com mil reais.').intent, 'ambiguous_balance_or_income');
+});
+
+test('CORREÇÃO URGENTE: perguntas reais continuam check_balance, nunca viram declaração', () => {
+  assert.equal(parseFinancialText('Quanto tenho no Nubank?').intent, 'check_balance');
+  assert.equal(parseFinancialText('Qual é meu saldo?').intent, 'check_balance');
+  assert.equal(parseFinancialText('Quanto recebi este mês?').intent, 'question');
 });

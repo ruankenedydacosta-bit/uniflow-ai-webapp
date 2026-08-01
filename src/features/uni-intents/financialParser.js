@@ -12,6 +12,7 @@ const WRITE_INTENTS = new Set([
   'register_expense',
   'register_transfer',
   'create_goal',
+  'set_balance',
 ]);
 
 const REQUIRED_ENTITIES = {
@@ -19,6 +20,7 @@ const REQUIRED_ENTITIES = {
   register_expense: ['amount'],
   register_transfer: ['amount', 'account'],
   create_goal: ['amount', 'description'],
+  set_balance: ['amount'],
   check_balance: [],
   forecast: [],
   question: [],

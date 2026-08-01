@@ -13,7 +13,11 @@ import { extractAmount } from '../uni-intents/index.js';
 // nenhum verbo aqui -- a frase acabava caindo no chat geral (ver
 // looksLikeUnclassifiedFinancialStatement abaixo, a barreira determinística
 // que usa esta mesma lista como um dos dois sinais aceitos).
-const FINANCIAL_VERB_RE = /\b(gastei|gasto|paguei|pago|recebi|recebo|comprei|compro|transferi|transfiro|ganhei|ganho|investi|invisto|abasteci|coloquei|botei|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/i;
+// BUG REAL (BUG 2): "entrou/caiu/entraram/cairam" faltavam -- uma frase
+// como "Entrou mil reais." não era um fresh statement (ver
+// looksLikeFreshFinancialStatement), então com uma pendência ativa ela
+// virava resposta de campo e era proposta como NOME DE CONTA.
+const FINANCIAL_VERB_RE = /\b(gastei|gasto|paguei|pago|recebi|recebo|comprei|compro|transferi|transfiro|ganhei|ganho|investi|invisto|abasteci|coloquei|botei|entrou|caiu|entraram|cairam|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/i;
 const MONEY_MENTION_RE = /r\$\s*\d+(?:[.,]\d+)?|\b\d+(?:[.,]\d+)?\s*reais\b/gi;
 const INSTALLMENT_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]/i;
 const RECURRING_RE = /\btodo\s+m[eê]s\b|\brecorrente\b|\bmensalmente\b|\btodo\s+dia\b|\btoda\s+semana\b/i;
@@ -119,6 +123,23 @@ export function isUnsupportedIntentEligibleForPlan(intent) {
 export function looksLikeFreshFinancialStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
   return FINANCIAL_VERB_RE.test(text) && hasAnyAmountMention(text);
+}
+
+/**
+ * Variante para DECLARAÇÕES DE SALDO -- um enunciado novo e autossuficiente
+ * sobre o saldo de uma conta ("Meu saldo no Nubank é R$ 1.000") ou uma
+ * declaração genérica com valor ("Tenho R$ 1.000") também nunca pode ser
+ * engolido por uma pendência antiga: essas frases começam uma nova intenção
+ * (ajuste de saldo / pergunta de decisão), não respondem a uma pergunta
+ * anterior.
+ */
+export function looksLikeFreshBalanceStatement(text) {
+  if (typeof text !== 'string' || !text.trim()) return false;
+  if (!hasAnyAmountMention(text)) return false;
+  const normalized = text.trim().toLowerCase();
+  return /(^|[\s,:])(?:meu|o|nosso)\s+saldo/.test(normalized)
+    || /(?:coloca|define|ajusta|ajuste|corrige|corrija)\b[^.!?]*\bsaldo/.test(normalized)
+    || /^(?:eu\s+)?(?:tenho|estou\s+com|to\s+com)/.test(normalized);
 }
 
 // BUG REAL EM PRODUCAO: "Coloquei duzentos reais de gasolina." nao batia em

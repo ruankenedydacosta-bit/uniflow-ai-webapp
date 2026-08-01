@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { buildUniPrefillFromState } from '../categories/categoryUtils.js';
 import { useAccess } from '../../app/AccessContext';
@@ -49,6 +49,7 @@ import {
   isUnsupportedIntentEligibleForPlan,
   looksLikeComplexFinancialText,
   looksLikeFreshFinancialStatement,
+  looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
 } from '../uni-conversation';
 import { useUniLlm, AI_STATUS, resolveConversationStyle } from '../uni-llm';
@@ -75,6 +76,7 @@ import { buildFutureProjections } from '../future/futureService';
 import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
+import { classifyIntent } from '../uni-intents/index.js';
 import {
   classifyFinancialQuery,
   buildQueryResponse,
@@ -130,7 +132,40 @@ const UNI_THINK_MIN_MS = 600;
 // BLOCO F: mesmo TTL já usado pelo Pending Action Stack (pendingActionStorage.js)
 // -- um plano financeiro pendente não pode ficar executável indefinidamente.
 const FINANCIAL_PLAN_TTL_MS = 15 * 60 * 1000;
-const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze(['register_income', 'register_expense']);
+const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze([
+  'register_income',
+  'register_expense',
+  'set_balance',
+  // "Tenho R$ 1.000" é ambiguidade intencional (receita vs saldo): a
+  // allowlist precisa deixar a frase chegar a buildFinancialIntentAction,
+  // que decide entre pergunta de clarificação e continuação.
+  'ambiguous_balance_or_income',
+  // BUG REAL (BUG 2): transferência fora da allowlist caía no fluxo do
+  // LLM, que é instruído a NÃO executar transações (llmContext) e
+  // respondia "Não consigo criar, alterar ou excluir movimentações por
+  // aqui." -- a RPC já suporta transfer (migration 027); o bloqueio era
+  // apenas este gate. ACTION_STATEMENT_INTENTS abaixo já incluía
+  // register_transfer; o gate de escrita é que não.
+  'register_transfer',
+]);
+
+// REGRA GERAL DE PRIORIDADE (CORREÇÃO URGENTE): DECLARAÇÕES e AÇÕES
+// financeiras vencem CONSULTAS. Quando classifyIntent reconhece a frase
+// como início de um lançamento/ajuste (saldo declarado, ambiguidade
+// saldo/receita, receita, despesa, transferência, meta), a frase NUNCA
+// passa pelos motores de consulta (FinancialQueryEngine nem interpretador
+// legado) -- vai direto para o fluxo de registro. Sem este gate,
+// "Recebi mil reais" virava transaction_reference e "Meu saldo no Nubank é
+// mil reais" virava consulta de saldo (respondia o saldo atual em vez de
+// iniciar o ajuste).
+const ACTION_STATEMENT_INTENTS = new Set([
+  'set_balance',
+  'ambiguous_balance_or_income',
+  'register_income',
+  'register_expense',
+  'register_transfer',
+  'create_goal',
+]);
 const EMPTY_FINANCIAL_FALLBACK = Object.freeze({
   accounts: Object.freeze([]),
   categories: Object.freeze([]),
@@ -316,6 +351,7 @@ export default function UniChatPage({ variant = 'full' }) {
     workspaceType: financialWorkspaceType,
     referenceDate: getLocalIsoDate(),
     allowedWriteIntents: ALLOWED_CHAT_WRITE_INTENTS,
+    accountBalances: financialContext.snapshot.accountBalancesById,
   });
   const saveAccountForDependency = accountState.saveAccount;
   const accountDependencyCoordinator = useMemo(
@@ -977,6 +1013,11 @@ export default function UniChatPage({ variant = 'full' }) {
       const c = candidates[0];
       setActiveId(c.id);
       setMessages(c.messages || []);
+      // BUG REAL (chaves duplicadas msg-N): esta restauração era o ÚNICO
+      // ponto de setMessages que não passava por reserveMessageIds -- com o
+      // contador do registry zerado (reload) e o histórico restaurado aqui,
+      // mensagens NOVAS geravam msg-N idêntico aos IDs restaurados.
+      reserveMessageIds(c.messages || []);
       saveActiveId(c.id);
     } else {
       // FASE UNI PIPE: o aviso de perfil alterado é uma resposta da Uni e
@@ -1181,8 +1222,20 @@ export default function UniChatPage({ variant = 'full' }) {
 
       setMessages((prev) => {
         if (prev.length === 0) return loadedMessages;
-        if (prev.length < loadedMessages.length) return loadedMessages;
-        return prev;
+        // BUG REAL (BUG 5): merge por IDENTIDADE (clientMessageId/dbId),
+        // nunca por comprimento: mensagens locais ainda não sincronizadas
+        // (fila pendente) são preservadas; mensagens restauradas do banco
+        // que já existem localmente não duplicam.
+        const localIds = new Set(
+          prev
+            .map((msg) => msg.clientMessageId ?? msg.dbId ?? msg.id)
+            .filter(Boolean),
+        );
+        const dbOnly = loadedMessages.filter(
+          (msg) => !localIds.has(msg.clientMessageId ?? msg.dbId ?? msg.id),
+        );
+        if (dbOnly.length === 0) return prev;
+        return [...prev, ...dbOnly];
       });
 
       setConversations((prev) =>
@@ -1289,6 +1342,21 @@ export default function UniChatPage({ variant = 'full' }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     setShowScrollBtn(false);
   }
+
+  // BUG REAL (BUG 4): "Ver conversa completa" abria no TOPO do histórico --
+  // stickToBottom era escrito (sendText, switchConversation, handleScroll)
+  // mas NUNCA lido: não existia efeito que rolasse o chat. Agora toda
+  // mudança de mensagens com stickToBottom=true (nova resposta, hidratação
+  // local, restauração Supabase, troca de conversa) rola até o fim; quem
+  // rolou para cima (stickToBottom=false) mantém a leitura. Layout effect
+  // (sem setTimeout arbitrário): o DOM já contém o conteúdo novo quando
+  // roda, então scrollHeight está correto.
+  useLayoutEffect(() => {
+    if (!stickToBottom.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   function pushMessage(msg) {
     setMessages((prev) => [...prev, msg]);
@@ -1814,77 +1882,84 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function runDeterministicFinancialFlow(text, historySnapshot) {
-      // Motor de consultas financeiras inteligentes: responde com dados
-      // estruturados do FinancialSnapshot (contas, transações, saldos,
-      // accountName/categoryName) antes de qualquer outro caminho. Quando
-      // não reconhece uma consulta, devolve handled:false e o fluxo
-      // determinístico atual segue intacto (classificador legado → parser de
-      // registro → plano financeiro → LLM).
-      const engineOutcome = resolveFinancialQuery({
-        text,
-        snapshot: financialContext.snapshot,
-        mode,
-        conversationStyle,
-        history: historySnapshot,
-      });
-
-      if (engineOutcome.handled) {
-        // FASE UNI PIPE: a resposta do FinancialQueryEngine passa pelo
-        // pipeline oficial (cria → persiste → render → autoplay → fala),
-        // garantindo que TODA consulta respondida com dados estruturados
-        // também seja narrada pela voz, sem chamada direta de speak.
-        createAssistantResponse(
-          engineOutcome.response.text,
-          { highlight: engineOutcome.response.highlight },
-        );
-        return;
-      }
-
-      const queryType = classifyFinancialQuery(text);
-
-      if (queryType) {
-        const isGoalQuery = String(queryType.type).startsWith('goal_')
-          || queryType.type === 'required_monthly';
-        const isLoading = isGoalQuery
-          ? goalsState.isLoading
-          : balanceState.isLoading || transactionsState.isLoading;
-        const hasError = isGoalQuery
-          ? goalsState.error
-          : balanceState.error || transactionsState.error;
-
-        if (isLoading) {
-          createAssistantResponse(
-            'Ainda estou carregando os dados financeiros do seu workspace. Aguarde um momento e tente novamente.',
-            { persist: false },
-          );
-          return;
-        }
-
-        if (hasError) {
-          createAssistantResponse(
-            'Não foi possível consultar os dados financeiros agora. Tente novamente mais tarde.',
-            { persist: false },
-          );
-          return;
-        }
-
-        if (!isGoalQuery && !financialContext.hasData) {
-          createAssistantResponse(
-            'Seu workspace ainda não possui dados financeiros. Cadastre uma conta ou transação para começar.',
-            { persist: false },
-          );
-          return;
-        }
-
-        const response = buildQueryResponse(queryType, financialContext, mode, {
-          projections: futureProjections,
-          goalProjections: futureProjections.goalProjections,
-          goals: goalsState.goals,
+      // REGRA GERAL DE PRIORIDADE: declarações/ações financeiras vencem
+      // consultas. Frase reconhecida como ação (set_balance, ambiguidade
+      // saldo/receita, receita, despesa, transferência, meta) pula os
+      // motores de consulta e vai direto para o fluxo de registro; os
+      // motores só rodam para perguntas e referências reais.
+      if (!ACTION_STATEMENT_INTENTS.has(classifyIntent(text).intent)) {
+        // Motor de consultas financeiras inteligentes: responde com dados
+        // estruturados do FinancialSnapshot (contas, transações, saldos,
+        // accountName/categoryName) antes de qualquer outro caminho. Quando
+        // não reconhece uma consulta, devolve handled:false e o fluxo
+        // determinístico atual segue intacto (classificador legado → parser de
+        // registro → plano financeiro → LLM).
+        const engineOutcome = resolveFinancialQuery({
+          text,
+          snapshot: financialContext.snapshot,
+          mode,
           conversationStyle,
+          history: historySnapshot,
         });
-        if (response) {
-          createAssistantResponse(response.text, { highlight: response.highlight });
+
+        if (engineOutcome.handled) {
+          // FASE UNI PIPE: a resposta do FinancialQueryEngine passa pelo
+          // pipeline oficial (cria → persiste → render → autoplay → fala),
+          // garantindo que TODA consulta respondida com dados estruturados
+          // também seja narrada pela voz, sem chamada direta de speak.
+          createAssistantResponse(
+            engineOutcome.response.text,
+            { highlight: engineOutcome.response.highlight },
+          );
           return;
+        }
+
+        const queryType = classifyFinancialQuery(text);
+
+        if (queryType) {
+          const isGoalQuery = String(queryType.type).startsWith('goal_')
+            || queryType.type === 'required_monthly';
+          const isLoading = isGoalQuery
+            ? goalsState.isLoading
+            : balanceState.isLoading || transactionsState.isLoading;
+          const hasError = isGoalQuery
+            ? goalsState.error
+            : balanceState.error || transactionsState.error;
+
+          if (isLoading) {
+            createAssistantResponse(
+              'Ainda estou carregando os dados financeiros do seu workspace. Aguarde um momento e tente novamente.',
+              { persist: false },
+            );
+            return;
+          }
+
+          if (hasError) {
+            createAssistantResponse(
+              'Não foi possível consultar os dados financeiros agora. Tente novamente mais tarde.',
+              { persist: false },
+            );
+            return;
+          }
+
+          if (!isGoalQuery && !financialContext.hasData) {
+            createAssistantResponse(
+              'Seu workspace ainda não possui dados financeiros. Cadastre uma conta ou transação para começar.',
+              { persist: false },
+            );
+            return;
+          }
+
+          const response = buildQueryResponse(queryType, financialContext, mode, {
+            projections: futureProjections,
+            goalProjections: futureProjections.goalProjections,
+            goals: goalsState.goals,
+            conversationStyle,
+          });
+          if (response) {
+            createAssistantResponse(response.text, { highlight: response.highlight });
+            return;
+          }
         }
       }
 
@@ -1993,7 +2068,22 @@ export default function UniChatPage({ variant = 'full' }) {
       || isFinancialPlanActive(),
     );
     if (hasPendingConversation) {
-      if (looksLikeFreshFinancialStatement(text)) {
+      // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
+      // explícita NOVA. Se a frase é reconhecida como ação financeira
+      // (set_balance/ambiguidade/receita/despesa/transferência/meta) e o
+      // intent declarado é DIFERENTE do intent da pendência atual ("Recebi
+      // mil reais" contra uma pendência de despesa antiga, por exemplo), a
+      // pendência é abandonada e a frase nova processada do zero -- nunca
+      // vira correção de um campo da ação antiga. A mesma intenção (ex.:
+      // usuário reiterando/completando o próprio lançamento) continua
+      // alimentando a pendência como resposta legítima.
+      const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;
+      const declaredIntent = classifyIntent(text).intent;
+      if (
+        looksLikeFreshFinancialStatement(text)
+        || looksLikeFreshBalanceStatement(text)
+        || (ACTION_STATEMENT_INTENTS.has(declaredIntent) && declaredIntent !== pendingActionIntent)
+      ) {
         abandonStalePendingState();
       } else {
         handlePendingConversationInput(text, userMsg);

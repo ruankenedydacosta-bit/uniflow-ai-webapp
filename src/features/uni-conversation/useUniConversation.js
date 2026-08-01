@@ -36,6 +36,7 @@ export function useUniConversation({
   referenceDate,
   resolveParsedMemory,
   allowedWriteIntents,
+  accountBalances = null,
 } = {}) {
   const [state, dispatch] = useReducer(
     uniConversationReducer,
@@ -79,9 +80,10 @@ export function useUniConversation({
         referenceDate,
         overrides,
         workspaceType,
+        accountBalances,
       });
     },
-    [accountTypes, accounts, allowedWriteIntents, categories, referenceDate, workspaceType],
+    [accountBalances, accountTypes, accounts, allowedWriteIntents, categories, referenceDate, workspaceType],
   );
 
   const interpret = useCallback((content) => {

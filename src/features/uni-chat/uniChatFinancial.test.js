@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildFinancialContext } from './useUniChatFinancialData.js';
 import { classifyFinancialQuery, buildQueryResponse } from './financialQueryInterpreter.js';
+import { buildConfirmationFromAction } from './uniChatAdapter.js';
 
 test('buildFinancialContext retorna estrutura esperada', () => {
   const ctx = buildFinancialContext({
@@ -196,4 +197,54 @@ test('buildQueryResponse retorna fallback para workspace sem dados', () => {
 
   const response = buildQueryResponse('recent_transactions', ctx, 'pessoal');
   assert.ok(response.text.includes('não tem transações registradas'));
+});
+
+// ============================================================================
+// BUG REAL (BUG 5): chaves React duplicadas no card de confirmação. O card
+// usava key={label}; transferência montava DUAS linhas "Conta" (origem e
+// destino com o mesmo rótulo) -- chave duplicada no React. Agora cada linha
+// tem key semântica estável e o destino é rotulado "Conta de destino".
+// ============================================================================
+
+test('BUG REAL (BUG 5): card de transferência tem keys únicas e rótulos distintos (origem/destino)', () => {
+  const card = buildConfirmationFromAction({
+    typeLabel: 'Transferência',
+    transactionType: 'transfer',
+    account: { name: 'Nubank' },
+    destinationAccount: { name: 'Inter' },
+    amount: 100,
+    date: '2026-07-11',
+    category: null,
+    description: 'Transferência para Inter',
+  });
+
+  assert.ok(card, 'card montado');
+  const keys = card.rows.map((row) => row.key);
+  assert.equal(new Set(keys).size, keys.length, 'todas as keys são únicas');
+  const contaRows = card.rows.filter((row) => row.label === 'Conta');
+  assert.equal(contaRows.length, 0, 'nenhuma linha sem discriminar origem/destino');
+  assert.equal(card.rows.find((row) => row.key === 'account').label, 'Conta de origem');
+  assert.equal(card.rows.find((row) => row.key === 'account').value, 'Nubank');
+  assert.equal(card.rows.find((row) => row.key === 'destination-account').label, 'Conta de destino');
+  assert.equal(card.rows.find((row) => row.key === 'destination-account').value, 'Inter');
+  assert.equal(card.rows.find((row) => row.key === 'amount').label, 'Valor');
+});
+
+test('BUG REAL (BUG 5): card de despesa mantém uma única linha "Conta" com key estável', () => {
+  const card = buildConfirmationFromAction({
+    typeLabel: 'Despesa',
+    transactionType: 'expense',
+    account: { name: 'Nubank' },
+    category: { name: 'Alimentação' },
+    description: 'Mercado',
+    amount: 85,
+    date: '2026-07-11',
+  });
+
+  const keys = card.rows.map((row) => row.key);
+  assert.equal(new Set(keys).size, keys.length);
+  const contaRows = card.rows.filter((row) => row.label === 'Conta');
+  assert.equal(contaRows.length, 1);
+  assert.equal(contaRows[0].key, 'account');
+  assert.equal(card.rows.find((row) => row.key === 'category').label, 'Categoria');
 });

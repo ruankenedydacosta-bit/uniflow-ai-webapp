@@ -103,6 +103,7 @@ export {
   isUnsupportedIntentEligibleForPlan,
   looksLikeComplexFinancialText,
   looksLikeFreshFinancialStatement,
+  looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
   splitFinancialClauses,
 } from './financialPlanTrigger.js';

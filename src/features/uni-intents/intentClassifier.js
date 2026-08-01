@@ -4,6 +4,8 @@ export const FINANCIAL_INTENTS = Object.freeze([
   'register_transfer',
   'create_goal',
   'check_balance',
+  'set_balance',
+  'ambiguous_balance_or_income',
   'forecast',
   'question',
 ]);
@@ -38,6 +40,37 @@ const INTENT_RULES = [
     ],
   },
   {
+    intent: 'set_balance',
+    confidence: 0.95,
+    patterns: [
+      // Declaração de saldo-alvo ("Meu saldo no Nubank é R$ 1.000",
+      // "Meu saldo é 1000", "O saldo da conta está 500") -- exige um valor
+      // monetário na frase para nunca engolir perguntas ("qual é meu
+      // saldo?" não tem valor e continua sendo check_balance).
+      /^(?:meu\s+|o\s+|nosso\s+)?saldo\b.*?\b(?:e|eh|esta|estou|ficou|fica|vai\s+ficar)\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
+      /^(?:coloca|define|ajusta|ajuste|corrige|corrija)\s+(?:meu\s+|o\s+)?saldo\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
+      // "Tenho R$ 1.000 DE SALDO" -- valor + "de saldo" explicito tambem e
+      // declaracao de saldo (vem antes do padrao de despesa "reais de" e
+      // do padrao ambiguo "tenho <valor>"). O dinheiro pode vir antes OU
+      // depois de "saldo" ("tenho 500 reais de saldo" / "tenho de saldo 500").
+      /^(?:eu\s+)?tenho\b(?=.*?(?:r\s*\$|reais?|\d|mil)(?:\b|\s)).*?\b(?:de|em)\s+saldo\b/u,
+    ],
+  },
+  {
+    intent: 'ambiguous_balance_or_income',
+    confidence: 0.88,
+    patterns: [
+      // "Tenho R$ 1.000" / "Tenho 1.000 na poupança" -- declaração com
+      // verbo "ter" e valor monetário. Ambígua por natureza: pode ser
+      // receita declarada ou saldo declarado. Sempre ancorada no início
+      // para nunca capturar perguntas ("quanto tenho...") nem respostas
+      // de pendência ("tenho no Nubank").
+      /^(?:eu\s+)?tenho\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
+      /^(?:eu\s+)?estou\s+com\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
+      /^(?:eu\s+)?to\s+com\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
+    ],
+  },
+  {
     intent: 'check_balance',
     confidence: 0.94,
     patterns: [
@@ -53,7 +86,22 @@ const INTENT_RULES = [
     confidence: 0.96,
     patterns: [
       /^(?:eu\s+)?(?:recebi|ganhei|faturei)\b/,
-      /^(?:entrou|caiu)\s+[\d.,]+/,
+      // BUG REAL: "Entrou mil reais." (valor por extenso) não batia no padrão
+      // antigo (que exigia algarismos logo depois do verbo) e caía em
+      // 'question' -- e o FinancialQueryEngine ainda a capturava como
+      // transaction_reference. O lookahead aceita valor em algarismo OU por
+      // extenso (R$/reais/mil/palavras numéricas) em qualquer posição da
+      // declaração.
+      // BUG REAL: "Entraram mil reais."/"Caiu quinhentos." -- plural do
+      // verbo (entraram/cairam) e número por extenso sem "reais"
+      // ("quinhentos") não batiam e viravam 'question'. A lista de palavras
+      // numéricas cobre o número por extenso comum de lançamentos.
+      /^(?:entrou|caiu|entraram|cairam)\b(?=.*?\b(?:r\s*\$|\d+(?:[.,]\d+)?|reais?|mil|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos)\b)/u,
+      // BUG REAL: "Entrou meu salário." -- declaração com verbo e
+      // possessivo, sem valor explícito; antes virava 'question'/
+      // transaction_reference (e, com pendência ativa, virava nome de
+      // conta proposto). Sem valor, o fluxo de pendência pergunta o valor.
+      /^(?:entrou|caiu|entraram|cairam)\s+(?:meu|minha|meus|minhas)\b/,
       /\brecebi\s+(?:r\$\s*)?[\d.,]+/,
       // BUG REAL: comandos imperativos ("lance uma receita de...",
       // "registra uma entrada de...") nao tinham nenhum verbo reconhecido --

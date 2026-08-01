@@ -40,36 +40,72 @@ export function buildUniMessage(text, options = {}) {
   };
 }
 
+function formatSignedCurrency(amount) {
+  if (amount == null) return '';
+  const value = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(Math.abs(amount));
+  return `${amount < 0 ? '-' : '+'}${value}`;
+}
+
 export function buildConfirmationFromAction(action, workspaceType = 'personal') {
   if (!action) return null;
 
   const rows = [];
+  const isBalanceAdjustment = action.balanceTarget != null && action.transactionType === 'adjustment';
+  const isTransfer = action.transactionType === 'transfer';
 
+  // BUG REAL (BUG 5): cada linha tem key estável semântica -- labels se
+  // repetem (transferência mostra duas linhas de conta) e key={label}
+  // duplicava a chave React ("Conta").
   if (action.typeLabel) {
-    rows.push({ label: 'Tipo', value: action.typeLabel });
-  }
-  if (action.category?.name) {
-    rows.push({ label: 'Categoria', value: action.category.name });
-  }
-  if (action.description) {
-    rows.push({ label: 'Descrição', value: action.description });
-  }
-  if (action.amount != null) {
-    rows.push({ label: 'Valor', value: formatCurrency(action.amount), emphasis: true });
-  }
-  if (action.date) {
-    rows.push({ label: 'Data', value: formatDate(action.date) });
+    rows.push({ key: 'type', label: 'Tipo', value: action.typeLabel });
   }
   if (action.account?.name) {
-    rows.push({ label: 'Conta', value: action.account.name });
+    rows.push({
+      key: 'account',
+      label: isTransfer ? 'Conta de origem' : 'Conta',
+      value: action.account.name,
+    });
+  }
+  if (isTransfer && action.destinationAccount?.name) {
+    rows.push({ key: 'destination-account', label: 'Conta de destino', value: action.destinationAccount.name });
+  }
+  if (isBalanceAdjustment) {
+    if (action.currentBalance != null) {
+      rows.push({ key: 'current-balance', label: 'Saldo atual', value: formatCurrency(action.currentBalance) });
+    }
+    if (action.balanceDelta != null) {
+      rows.push({ key: 'adjustment', label: 'Ajuste', value: formatSignedCurrency(action.balanceDelta) });
+    }
+    if (action.balanceTarget != null) {
+      rows.push({ key: 'new-balance', label: 'Novo saldo', value: formatCurrency(action.balanceTarget), emphasis: true });
+    }
+  } else {
+    if (action.category?.name) {
+      rows.push({ key: 'category', label: 'Categoria', value: action.category.name });
+    }
+    if (action.description) {
+      rows.push({ key: 'description', label: 'Descrição', value: action.description });
+    }
+    if (action.amount != null) {
+      rows.push({ key: 'amount', label: 'Valor', value: formatCurrency(action.amount), emphasis: true });
+    }
+  }
+  if (action.date) {
+    rows.push({ key: 'date', label: 'Data', value: formatDate(action.date) });
   }
   rows.push({
+    key: 'workspace',
     label: 'Espaço',
     value: workspaceType === 'business' ? 'Empresa' : 'Pessoal',
   });
 
   return {
-    title: `Nova ${(action.typeLabel || 'movimentação').toLowerCase()}`,
+    title: isBalanceAdjustment
+      ? 'Novo ajuste de saldo'
+      : `Nova ${(action.typeLabel || 'movimentação').toLowerCase()}`,
     status: 'pending',
     rows,
   };

@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import { buildFinancialContext } from './useUniChatFinancialData.js';
 import { buildQueryResponse } from './financialQueryInterpreter.js';
 import { resolveFinancialQuery } from './financialQueryEngine.js';
+import { classifyIntent } from '../uni-intents/index.js';
+import { parseFinancialText } from '../uni-intents/financialParser.js';
 
 const ACCOUNTS = [
   { id: 'acc-nubank', name: 'Nubank', current_balance: 500 },
@@ -101,4 +103,46 @@ test('snapshot isola os dados por workspace: outro conjunto não vaza no context
   assert.equal(otherCtx.snapshot.hasData, false);
   assert.equal(otherCtx.snapshot.accountsById.size, 0);
   assert.equal(otherCtx.hasData, false);
+});
+
+// ============================================================================
+// CORREÇÃO URGENTE (prioridade declaração > consulta):
+// no fluxo real, frases declarativas são classificadas como AÇÃO antes de
+// qualquer motor de consulta rodar -- e os motores devolvem handled:false
+// para elas, garantindo que o fluxo de registro (com confirmação) acontece.
+// ============================================================================
+
+test('CORREÇÃO URGENTE: fluxo real -- "Recebi mil reais" é ação de registro, os motores de consulta ficam de fora', () => {
+  const ctx = buildCtx();
+  // Passo 1 (gate do UniChatPage): classifyIntent enxerga ação declarada.
+  assert.equal(classifyIntent('Recebi mil reais').intent, 'register_income');
+  assert.equal(classifyIntent('Meu saldo no Nubank é mil reais').intent, 'set_balance');
+  // Passo 2: o motor de consulta NÃO responde a declarações (handled:false),
+  // então o fluxo não pode desviar para resposta de consulta.
+  assert.equal(resolveFinancialQuery({ text: 'Recebi mil reais', snapshot: ctx.snapshot }).handled, false);
+  assert.equal(resolveFinancialQuery({ text: 'Meu saldo no Nubank é mil reais', snapshot: ctx.snapshot }).handled, false);
+  // Passo 3: o parser de registro interpreta e fica pronto para confirmação.
+  const parsed = parseFinancialText('Recebi mil reais');
+  assert.equal(parsed.intent, 'register_income');
+  assert.equal(parsed.entities.amount, 1000);
+  assert.equal(parsed.ready, true);
+});
+
+test('CORREÇÃO URGENTE: fluxo real -- "Tenho mil reais" pede decisão (ambiguidade), nunca responde saldo', () => {
+  const ctx = buildCtx();
+  assert.equal(classifyIntent('Tenho mil reais').intent, 'ambiguous_balance_or_income');
+  assert.equal(resolveFinancialQuery({ text: 'Tenho mil reais', snapshot: ctx.snapshot }).handled, false);
+  const parsed = parseFinancialText('Tenho mil reais');
+  assert.equal(parsed.intent, 'ambiguous_balance_or_income');
+  assert.equal(parsed.entities.amount, 1000);
+});
+
+test('CORREÇÃO URGENTE: fluxo real -- consultas genuínas continuam respondendo pelo motor/interpretador', () => {
+  const ctx = buildCtx();
+  assert.equal(classifyIntent('Quanto tenho no Nubank?').intent, 'check_balance');
+  assert.equal(resolveFinancialQuery({ text: 'Quanto tenho no Nubank?', snapshot: ctx.snapshot }).handled, true);
+  assert.equal(classifyIntent('Quanto recebi este mês?').intent, 'question');
+  assert.equal(resolveFinancialQuery({ text: 'Quanto recebi este mês?', snapshot: ctx.snapshot }).handled, false);
+  const income = buildQueryResponse({ type: 'monthly_income' }, ctx, 'pessoal');
+  assert.ok(income.text.includes('3.000') || income.text.includes('3000'), 'receita do mês deve ser respondida com o valor real');
 });
