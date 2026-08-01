@@ -1,10 +1,12 @@
-// Uni Engine (Fase 1 — Shadow Mode + Fase 2 — Integração Cognitiva Assistida).
+// Uni Engine (Fase 1 — Shadow Mode + Fase 2 — Integração Cognitiva Assistida
+// + Fase 3 — Memória Inteligente Persistente em Shadow).
 //
 // Camada cognitiva analítica e descartável sobre o pipeline atual da Uni.
 // O motor apenas observa, analisa, classifica, planeja, valida, compara,
 // resolve referências implícitas, diagnostica e registra telemetria redigida
 // — NUNCA executa, NUNCA altera a resposta entregue ao usuário e NUNCA chama
-// rede/executor/voz.
+// executor/voz. A memória persistente (Fase 3) é recuperada e capturada
+// apenas para Shadow (appliedToDecision = false).
 export {
   UNI_ENGINE_VERSION,
   UNI_ENGINE_MESSAGE_TYPES,
@@ -68,3 +70,5 @@ export {
   redactTelemetry,
   redactText,
 } from './telemetry/redactTelemetry.js';
+// Fase 3 — Memória Inteligente Persistente (Shadow-only).
+export * as uniMemory from './memory/index.js';

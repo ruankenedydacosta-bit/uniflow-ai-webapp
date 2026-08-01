@@ -8,6 +8,17 @@
 //   - VITE_UNI_ENGINE_SHADOW_MODE         → shadowMode (default: true)
 //   - VITE_UNI_ENGINE_TELEMETRY_ENABLED   → telemetryEnabled (default: DEV)
 //
+// Fase 3 — Memória Inteligente Persistente (separada do motor cognitivo):
+//   - VITE_UNI_ENGINE_MEMORY_ENABLED          → memoryEnabled (default: false)
+//   - VITE_UNI_ENGINE_MEMORY_READ_ENABLED     → memoryReadEnabled (default: false)
+//   - VITE_UNI_ENGINE_MEMORY_WRITE_ENABLED    → memoryWriteEnabled (default: false)
+//   - VITE_UNI_ENGINE_MEMORY_SHADOW_MODE      → memoryShadowMode (default: true)
+//
+// Padrões seguros: leitura desligada, escrita desligada, shadow ligado.
+// Nenhuma variável ausente ativa memória. A memória depende do motor ligado
+// (`enabled`), e leitura/escrita dependem de `memoryEnabled` — cascata
+// segura contra ativação acidental em produção.
+//
 // Nesta fase `learningEnabled` permanece SEMPRE falso.
 //
 // A configuração é testável: `createUniEngineConfig({ env })` recebe um mapa
@@ -20,6 +31,10 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   shadowMode: true,
   telemetryEnabled: false,
   learningEnabled: false,
+  memoryEnabled: false,
+  memoryReadEnabled: false,
+  memoryWriteEnabled: false,
+  memoryShadowMode: true,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -57,12 +72,41 @@ export function createUniEngineConfig(overrides = {}) {
     ),
     // Fase 1: aprendizado assistido ainda não existe — nunca ativável.
     learningEnabled: false,
+    // Fase 3 — Memória Inteligente Persistente. Separada do motor: leitura e
+    // escrita têm flags próprias e nascem desligadas.
+    memoryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_MEMORY_ENABLED', false),
+    memoryReadEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_MEMORY_READ_ENABLED',
+      false,
+    ),
+    memoryWriteEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_MEMORY_WRITE_ENABLED',
+      false,
+    ),
+    memoryShadowMode: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_MEMORY_SHADOW_MODE',
+      true,
+    ),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
   // roda com enabled=false, independentemente do restante.
   if (!config.enabled) {
     config.shadowMode = false;
+  }
+
+  // Fase 3 — cascata de segurança da memória: memória exige motor ligado;
+  // leitura/escrita exigem memória ligada; shadow de memória exige memória.
+  if (!config.enabled) {
+    config.memoryEnabled = false;
+  }
+  if (!config.memoryEnabled) {
+    config.memoryReadEnabled = false;
+    config.memoryWriteEnabled = false;
+    config.memoryShadowMode = false;
   }
 
   return Object.freeze(config);

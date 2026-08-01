@@ -1,4 +1,5 @@
-// Shadow Mode do Uni Engine (Fase 1 + Fase 2 — Integração Cognitiva Assistida).
+// Shadow Mode do Uni Engine (Fase 1 + Fase 2 — Integração Cognitiva Assistida
+// + Fase 3 — Memória Inteligente Persistente).
 //
 // runUniEngineShadow(input, options):
 //   1. validar entrada;
@@ -15,16 +16,19 @@
 //   12. calcular métricas de concordância (Fase 2);
 //   13. montar sugestões estruturadas (Fase 2 — apenas disponibilizadas);
 //   14. atualizar memória operacional injetada (Fase 2);
-//   15. gerar telemetria (redigida);
-//   16. retornar resultado SOMENTE para diagnóstico — sempre descartável.
+//   15. recuperar memórias persistentes + avaliar candidatos (Fase 3 — Shadow);
+//   16. gerar telemetria (redigida);
+//   17. retornar resultado SOMENTE para diagnóstico — sempre descartável.
 //
 // Garantias:
 //   - nunca lança erro que quebre o chat (try/catch interno);
-//   - sem rede, sem LLM, sem Supabase, sem executor, sem voz;
+//   - sem LLM, sem executor, sem voz; rede APENAS via adapter de memória em
+//     modo fire-and-forget (nunca bloqueia o envio);
 //   - síncrono e leve (meta < 20 ms para entradas comuns);
 //   - com enabled=false o motor nem roda;
 //   - o pipeline atual continua intocado — o motor NUNCA executa, NUNCA
 //     confirma, NUNCA responde; apenas produz inteligência.
+//   - Fase 3: `persistentMemory.appliedToDecision` permanece SEMPRE falso.
 import {
   createCorrelationId,
   createEmptyUniEngineResult,
@@ -59,6 +63,9 @@ import { expandCognitivePlan } from './expandCognitivePlan.js';
 import { buildEngineSuggestions } from './buildEngineSuggestions.js';
 import { buildDivergenceDiagnostics } from './buildDivergenceDiagnostics.js';
 import { computeAgreementMetrics } from './computeAgreementMetrics.js';
+// Fase 3 — Memória Inteligente Persistente (somente Shadow; nunca executa).
+import { resolveMemoryConflict } from './memory/resolveMemoryConflict.js';
+import { MEMORY_POLICY } from './memory/memoryPolicy.js';
 
 function nowMillis() {
   if (typeof performance?.now === 'function') return performance.now();
@@ -89,6 +96,7 @@ function buildDisabledResult({ correlationId, latencyMs }) {
     agreementMetrics: null,
     divergenceDiagnostics: [],
     operationalMemory: null,
+    persistentMemory: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],
@@ -115,6 +123,94 @@ function buildSafeErrorResult({ correlationId, error, latencyMs, isDev }) {
   };
 }
 
+// Fase 3 — Seção persistentMemory do Shadow Mode.
+//
+// Regra absoluta: `appliedToDecision` permanece SEMPRE falso nesta fase.
+// A leitura usa o adapter síncrono (cache-first, < 10 ms); a escrita captura
+// candidatos de forma fire-and-forget — o motor nunca espera rede, nunca
+// chama executor, voz ou LLM. Qualquer falha cai apenas em diagnostics e
+// telemetria redigida — o pipeline atual permanece oficial e intocado.
+function buildPersistentMemorySection({ config, memoryAdapter, input, normalized, classification, epistemicState, cognitiveContext, snapshot }) {
+  const section = {
+    enabled: true,
+    retrieved: [],
+    candidates: [],
+    conflicts: [],
+    appliedToDecision: false,
+    diagnostics: {
+      readEnabled: Boolean(config.memoryReadEnabled),
+      writeEnabled: Boolean(config.memoryWriteEnabled),
+      errorCode: null,
+    },
+  };
+
+  try {
+    if (config.memoryReadEnabled && typeof memoryAdapter?.retrieveRelevantSync === 'function') {
+      const retrieval = memoryAdapter.retrieveRelevantSync({
+        message: normalized?.text ?? input.message?.text ?? null,
+        cognitiveContext,
+        limit: MEMORY_POLICY.maxRetrievedMemories,
+      });
+      if (retrieval && !retrieval.error && retrieval.data?.memories) {
+        section.retrieved = retrieval.data.memories;
+      }
+    }
+
+    if (config.memoryWriteEnabled && typeof memoryAdapter?.evaluateCandidatesSync === 'function') {
+      const evaluation = memoryAdapter.evaluateCandidatesSync({
+        message: input.message ?? null,
+        classification,
+        epistemicState,
+        cognitiveContext,
+        snapshot,
+        operationalMemory: input.memory ?? null,
+      });
+      const candidates = Array.isArray(evaluation?.candidates) ? evaluation.candidates : [];
+      section.candidates = candidates.map((candidate) => ({
+        memoryType: candidate.memoryType,
+        subjectKey: candidate.subjectKey,
+        value: candidate.value,
+        confidence: Number(candidate.confidence ?? 0).toFixed(4),
+        status: candidate.status,
+        evidenceType: candidate.evidenceType,
+      }));
+
+      // Conflitos entre candidatos e memórias recuperadas (apenas Shadow).
+      if (candidates.length > 0 && section.retrieved.length > 0) {
+        for (const candidate of candidates) {
+          const target = section.retrieved.find((memory) => memory.subjectKey === candidate.subjectKey);
+          if (!target) continue;
+          const conflict = resolveMemoryConflict(target, candidate);
+          if (conflict.outcome !== 'ignore') {
+            section.conflicts.push({
+              subjectKey: candidate.subjectKey,
+              outcome: conflict.outcome,
+              reason: conflict.reason,
+            });
+          }
+        }
+      }
+
+      // Persistência fire-and-forget: nunca bloqueia o envio; falha só vira
+      // telemetria. O service captura e nunca lança erro tratável ao chat.
+      if (candidates.length > 0 && typeof memoryAdapter?.captureCandidates === 'function') {
+        try {
+          memoryAdapter.captureCandidates({
+            candidates,
+            sourceMessageId: input.message?.id ?? null,
+          });
+        } catch {
+          section.diagnostics.errorCode = 'MEMORY_CAPTURE_FIRE_AND_FORGET_FAILED';
+        }
+      }
+    }
+  } catch (error) {
+    section.diagnostics.errorCode = error?.code ?? 'MEMORY_SECTION_ERROR';
+  }
+
+  return section;
+}
+
 export function runUniEngineShadow(input, options = {}) {
   const safeOptions = options && typeof options === 'object' ? options : {};
   const config = safeOptions.config ?? UNI_ENGINE_DEFAULT_CONFIG;
@@ -128,6 +224,10 @@ export function runUniEngineShadow(input, options = {}) {
     safeOptions.operationalMemory != null && typeof safeOptions.operationalMemory === 'object'
       ? safeOptions.operationalMemory
       : null;
+
+  // Fase 3 — adapter opcional de memória persistente (fornecido pelo
+  // chamador; o motor nunca importa Supabase).
+  const memoryAdapter = safeOptions.memoryAdapter ?? null;
 
   if (!config?.enabled || !isUniEngineShadowEnabled(config)) {
     return buildDisabledResult({
@@ -272,6 +372,23 @@ export function runUniEngineShadow(input, options = {}) {
       updateOperationalMemory(operationalMemory, memoryPatch);
     }
 
+    // Fase 3 — memória persistente SOMENTE em Shadow: recupera memórias
+    // relevantes (cache síncrono), avalia candidatos e dispara persistência
+    // fire-and-forget. `appliedToDecision` permanece falso.
+    let persistentMemory = null;
+    if (config.memoryEnabled && memoryAdapter) {
+      persistentMemory = buildPersistentMemorySection({
+        config,
+        memoryAdapter,
+        input,
+        normalized,
+        classification,
+        epistemicState,
+        cognitiveContext,
+        snapshot: input.context?.financialSnapshot ?? null,
+      });
+    }
+
     if (config.telemetryEnabled) {
       const telemetry = buildUniEngineTelemetry({
         correlationId,
@@ -284,6 +401,7 @@ export function runUniEngineShadow(input, options = {}) {
         },
         latencyMs,
         metrics: agreementMetrics,
+        persistentMemory,
       });
       emitUniEngineTelemetry(telemetry, safeOptions.telemetryAdapter ?? null);
     }
@@ -307,6 +425,7 @@ export function runUniEngineShadow(input, options = {}) {
       operationalMemory: operationalMemory
         ? readOperationalMemory(operationalMemory)
         : null,
+      persistentMemory,
       diagnostics: {
         rulesUsed: classification.rulesUsed ?? [],
         ambiguities: classification.ambiguities ?? [],

@@ -34,6 +34,16 @@ export const TELEMETRY_ALLOWED_FIELDS = Object.freeze([
   'implicitReferenceResolved',
   'contextSwitch',
   'divergenceCount',
+  // Fase 3 — métricas da memória persistente (apenas agregados redigidos;
+  // nenhum conteúdo de memória, nenhum valor, nenhum ID externo).
+  'memoryEnabled',
+  'memoryReadEnabled',
+  'memoryWriteEnabled',
+  'memoryAppliedToDecision',
+  'memoryRetrievedCount',
+  'memoryCandidatesCount',
+  'memoryConflictsCount',
+  'memoryErrorCode',
 ]);
 
 const REDACTED = '[redacted]';

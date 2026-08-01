@@ -16,6 +16,7 @@ export function buildUniEngineTelemetry({
   diagnostics = null,
   latencyMs = null,
   metrics = null,
+  persistentMemory = null,
 } = {}) {
   const safeClassification = classification ?? {};
   const safePlan = plan ?? {};
@@ -23,6 +24,10 @@ export function buildUniEngineTelemetry({
   const safeDiagnostics = diagnostics ?? {};
   const safeValidation = validation ?? {};
   const safeMetrics = metrics ?? {};
+  const memorySection = persistentMemory && typeof persistentMemory === 'object'
+    ? persistentMemory
+    : null;
+  const memoryDiagnostics = memorySection?.diagnostics ?? {};
 
   return {
     correlationId: correlationId ?? null,
@@ -49,6 +54,15 @@ export function buildUniEngineTelemetry({
     implicitReferenceResolved: safeMetrics.implicitReferenceResolved ?? null,
     contextSwitch: safeMetrics.contextSwitch ?? null,
     divergenceCount: safeMetrics.divergenceCount ?? 0,
+    // Fase 3 — métricas da memória persistente (agregados redigidos).
+    memoryEnabled: Boolean(memorySection?.enabled),
+    memoryReadEnabled: Boolean(memoryDiagnostics.readEnabled),
+    memoryWriteEnabled: Boolean(memoryDiagnostics.writeEnabled),
+    memoryAppliedToDecision: Boolean(memorySection?.appliedToDecision),
+    memoryRetrievedCount: Array.isArray(memorySection?.retrieved) ? memorySection.retrieved.length : 0,
+    memoryCandidatesCount: Array.isArray(memorySection?.candidates) ? memorySection.candidates.length : 0,
+    memoryConflictsCount: Array.isArray(memorySection?.conflicts) ? memorySection.conflicts.length : 0,
+    memoryErrorCode: memoryDiagnostics.errorCode ?? null,
   };
 }
 

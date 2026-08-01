@@ -77,11 +77,42 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { classifyIntent } from '../uni-intents/index.js';
-import { createUniEngine, projectFinancialSnapshot, createOperationalMemory } from '../uni-engine/index.js';
+import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 // Fase 2 — memória operacional do Uni Engine: objeto TEMPORÁRIO por conversa
 // (não persiste nada). O pipeline nunca lê esta memória; apenas o motor.
 const uniEngineMemoryByConversation = new Map();
+// Fase 3 — memória persistente do Uni Engine (Shadow-only). Adapter por
+// sessão; o serviço isola por userId + workspaceId e nunca influencia a
+// resposta entregue ao usuário (appliedToDecision permanece false).
+let uniMemoryServiceInstance = null;
+const uniMemoryAdapterBySession = new Map();
+function getUniMemoryService() {
+  if (!uniMemoryServiceInstance) {
+    uniMemoryServiceInstance = uniMemory.createUniMemoryService({
+      config: uniEngine.getConfig(),
+      repository: uniMemory.createSupabaseMemoryRepository(),
+    });
+  }
+  return uniMemoryServiceInstance;
+}
+function getUniMemoryAdapter(userId, workspaceId) {
+  const key = `${String(userId ?? 'anon')}::${String(workspaceId ?? 'none')}`;
+  if (!uniMemoryAdapterBySession.has(key)) {
+    uniMemoryAdapterBySession.set(
+      key,
+      getUniMemoryService().createEngineAdapter({ userId, workspaceId }),
+    );
+  }
+  return uniMemoryAdapterBySession.get(key);
+}
+function warmUniMemoryCache(userId, workspaceId) {
+  if (!userId || !workspaceId) return;
+  const service = getUniMemoryService();
+  if (service.retrieveRelevantSync({ userId, workspaceId }).data == null) {
+    service.warm({ userId, workspaceId }).catch(() => {});
+  }
+}
 import {
   classifyFinancialQuery,
   buildQueryResponse,
@@ -2081,6 +2112,11 @@ export default function UniChatPage({ variant = 'full' }) {
       if (!uniEngineMemoryByConversation.has(memoryKey)) {
         uniEngineMemoryByConversation.set(memoryKey, createOperationalMemory());
       }
+      let memoryAdapter = null;
+      if (uniEngine.getConfig().memoryEnabled && user?.id && effectiveWorkspace?.id) {
+        warmUniMemoryCache(user.id, effectiveWorkspace.id);
+        memoryAdapter = getUniMemoryAdapter(user.id, effectiveWorkspace.id);
+      }
       uniEngine.runShadow({
         message: {
           id: userMsg.id,
@@ -2110,6 +2146,7 @@ export default function UniChatPage({ variant = 'full' }) {
           resultType: pendingAction?.status ?? financialConversation.state.status ?? 'unknown',
         },
         operationalMemory: uniEngineMemoryByConversation.get(memoryKey),
+        memoryAdapter,
       });
     } catch {
       // Shadow mode jamais quebra o chat — falha silenciosa.

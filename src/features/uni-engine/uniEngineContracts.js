@@ -306,6 +306,9 @@ export function createEmptyUniEngineResult({ correlationId, engineVersion = UNI_
     agreementMetrics: null,
     divergenceDiagnostics: [],
     operationalMemory: null,
+    // Fase 3 — memória persistente recuperada/capturada SOMENTE para Shadow.
+    // `appliedToDecision` permanece SEMPRE falso nesta fase.
+    persistentMemory: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],
