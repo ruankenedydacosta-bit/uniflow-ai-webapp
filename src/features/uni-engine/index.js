@@ -80,3 +80,6 @@ export * as epistemic from './epistemic/index.js';
 // Fase 5 — Camada de Decisão Cognitiva (Shadow-only).
 export * as decision from './decision/index.js';
 export { runDecisionLayer } from './decision/runDecisionLayer.js';
+// Fase 6 — Planning Engine estruturado (Shadow-only).
+export * as planning from './planning/index.js';
+export { runPlanningEngine } from './planning/runPlanningEngine.js';

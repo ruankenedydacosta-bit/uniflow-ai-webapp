@@ -317,6 +317,8 @@ export function createEmptyUniEngineResult({ correlationId, engineVersion = UNI_
     // recomendada nunca é aplicada (`shadow.appliedToDecision` = false).
     // Ausente ou nulo quando a flag de decisão está desligada.
     decisionLayer: null,
+    // Fase 6 — plano multi-etapas estruturado e descartável. Nunca executado.
+    planning: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],

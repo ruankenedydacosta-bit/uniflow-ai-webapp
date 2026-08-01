@@ -25,6 +25,11 @@
 //   - VITE_UNI_ENGINE_DECISION_SHADOW      → decisionShadowMode (default: false)
 //   - VITE_UNI_ENGINE_DECISION_TELEMETRY   → decisionTelemetryEnabled (default: false)
 //
+// Fase 6 — Planning Engine (Shadow Mode puro):
+//   - VITE_UNI_ENGINE_PLANNING_ENABLED     → planningEnabled (default: false)
+//   - VITE_UNI_ENGINE_PLANNING_SHADOW      → planningShadowMode (default: false)
+//   - VITE_UNI_ENGINE_PLANNING_TELEMETRY   → planningTelemetryEnabled (default: false)
+//
 // Padrões seguros: leitura desligada, escrita desligada, shadow ligado.
 // Nenhuma variável ausente ativa memória. A memória depende do motor ligado
 // (`enabled`), e leitura/escrita dependem de `memoryEnabled` — cascata
@@ -54,6 +59,9 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   decisionEnabled: false,
   decisionShadowMode: false,
   decisionTelemetryEnabled: false,
+  planningEnabled: false,
+  planningShadowMode: false,
+  planningTelemetryEnabled: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -143,6 +151,21 @@ export function createUniEngineConfig(overrides = {}) {
       'VITE_UNI_ENGINE_DECISION_TELEMETRY',
       false,
     ),
+    planningEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_PLANNING_ENABLED',
+      false,
+    ),
+    planningShadowMode: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_PLANNING_SHADOW',
+      false,
+    ),
+    planningTelemetryEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_PLANNING_TELEMETRY',
+      false,
+    ),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -181,6 +204,15 @@ export function createUniEngineConfig(overrides = {}) {
   if (!config.decisionEnabled) {
     config.decisionShadowMode = false;
     config.decisionTelemetryEnabled = false;
+  }
+
+  // Fase 6 — Planning Engine exige motor e flag própria. A execução segue
+  // impossível: somente a combinação enabled + planning + shadow produz
+  // uma representação descartável.
+  if (!config.enabled) config.planningEnabled = false;
+  if (!config.planningEnabled) {
+    config.planningShadowMode = false;
+    config.planningTelemetryEnabled = false;
   }
 
   return Object.freeze(config);
