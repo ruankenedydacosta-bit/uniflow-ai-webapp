@@ -82,6 +82,9 @@ import { runDecisionLayer } from './decision/runDecisionLayer.js';
 import { runPlanningEngine } from './planning/runPlanningEngine.js';
 // Fase 7 — Goal Engine (somente Shadow; nunca persiste objetivos).
 import { runGoalEngine } from './goals/runGoalEngine.js';
+// Fase 8 — Reflection & Learning Engine (somente Shadow; nunca aplica
+// candidatos, nunca altera resposta/execução/memória/voz/UI).
+import { runReflectionEngine } from './reflection/runReflectionEngine.js';
 
 function nowMillis() {
   if (typeof performance?.now === 'function') return performance.now();
@@ -125,6 +128,7 @@ function buildDisabledResult({ correlationId, latencyMs }) {
     decisionLayer: null,
     planning: null,
     goals: null,
+    reflection: null,
   };
 }
 
@@ -611,6 +615,54 @@ export function runUniEngineShadow(input, options = {}) {
       });
     }
 
+    // Fase 8 — Reflection & Learning Engine SOMENTE em Shadow: revisa a
+    // interação, compara o que o pipeline entendeu com o que aconteceu,
+    // detecta correções e divergências e gera candidatos de aprendizado que
+    // NUNCA são aplicados (`shadow.applied/persisted/changedBehavior`
+    // permanecem falsos). Consome as Fases 1–7 somente em leitura e nunca
+    // altera resposta, execução, voz, memória, UI ou banco.
+    let reflection = null;
+    if (config.reflectionEnabled && config.reflectionShadowMode) {
+      reflection = runReflectionEngine({
+        correlationId,
+        engineVersion: UNI_ENGINE_VERSION,
+        messageText: input.message?.text ?? null,
+        history: Array.isArray(input.context?.conversationHistory)
+          ? input.context.conversationHistory
+          : [],
+        classification: classification ?? null,
+        comparison: comparison ?? null,
+        divergenceDiagnostics: divergenceDiagnostics ?? null,
+        epistemicModel: epistemicSection ?? null,
+        epistemicState: epistemicState ?? null,
+        decisionLayer: decisionLayer ?? null,
+        planning: planning ?? null,
+        goals: goals ?? null,
+        persistentMemory: persistentMemory ?? null,
+        operationalMemory: operationalMemory ?? null,
+        pipeline: {
+          responseEmitted: Boolean(input.currentPipeline?.resultType),
+          actionConfirmed: input.currentPipeline?.resultType === 'completed'
+            || input.currentPipeline?.resultType === 'success',
+          actionExecuted: input.currentPipeline?.resultType === 'completed'
+            || input.currentPipeline?.resultType === 'success',
+          pendingStillActive: Boolean(input.currentPipeline?.pendingActive),
+          ambiguous: (classification?.ambiguities?.length ?? 0) > 0,
+        },
+        systemError: false,
+        providerError: false,
+        voiceFailed: false,
+        now: Date.now(),
+        featureFlags: {
+          reflectionShadowMode: config.reflectionShadowMode,
+          reflectionTelemetryEnabled: config.reflectionTelemetryEnabled,
+          learningCandidatesEnabled: config.learningCandidatesEnabled,
+        },
+        telemetryAdapter: safeOptions.telemetryAdapter ?? null,
+        isDev,
+      });
+    }
+
     if (config.telemetryEnabled) {
       const telemetry = buildUniEngineTelemetry({
         correlationId,
@@ -668,6 +720,7 @@ export function runUniEngineShadow(input, options = {}) {
       decisionLayer,
       planning,
       goals,
+      reflection,
       diagnostics: {
         rulesUsed: classification.rulesUsed ?? [],
         ambiguities: classification.ambiguities ?? [],

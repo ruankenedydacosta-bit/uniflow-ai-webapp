@@ -323,6 +323,11 @@ export function createEmptyUniEngineResult({ correlationId, engineVersion = UNI_
     // representados e avaliados, nunca persistidos (`shadow.appliedToDecision`
     // permanece SEMPRE falso). Ausente ou nulo quando a flag está desligada.
     goals: null,
+    // Fase 8 — Reflection & Learning Engine SOMENTE para Shadow. Revisa a
+    // interação e gera candidatos de aprendizado que NUNCA são aplicados
+    // (`shadow.applied/persisted/changedBehavior` permanecem SEMPRE falsos).
+    // Ausente ou nulo quando a flag de reflexão está desligada.
+    reflection: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],

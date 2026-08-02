@@ -86,3 +86,6 @@ export { runPlanningEngine } from './planning/runPlanningEngine.js';
 // Fase 7 — Goal Engine estruturado (Shadow-only).
 export * as goals from './goals/index.js';
 export { runGoalEngine } from './goals/runGoalEngine.js';
+// Fase 8 — Reflection & Learning Engine (Shadow-only).
+export * as reflection from './reflection/index.js';
+export { runReflectionEngine } from './reflection/runReflectionEngine.js';

@@ -35,6 +35,19 @@
 //   - VITE_UNI_ENGINE_GOALS_SHADOW         → goalsShadowMode (default: true)
 //   - VITE_UNI_ENGINE_GOALS_TELEMETRY      → goalsTelemetryEnabled (default: false)
 //
+// Fase 8 — Reflection & Learning Engine (Shadow Mode puro):
+//   - VITE_UNI_ENGINE_REFLECTION_ENABLED            → reflectionEnabled (default: false)
+//   - VITE_UNI_ENGINE_REFLECTION_SHADOW             → reflectionShadowMode (default: true)
+//   - VITE_UNI_ENGINE_REFLECTION_TELEMETRY          → reflectionTelemetryEnabled (default: false)
+//   - VITE_UNI_ENGINE_LEARNING_CANDIDATES_ENABLED   → learningCandidatesEnabled (default: false)
+//
+// Regras da Fase 8:
+//   - motor desligado → reflexão desligada;
+//   - reflexão desligada → telemetria desligada;
+//   - learning candidates desligado → pode refletir, mas não gerar candidatos;
+//   - variável ausente nunca ativa;
+//   - produção nunca ativa acidentalmente.
+//
 // Padrões seguros: leitura desligada, escrita desligada, shadow ligado.
 // Nenhuma variável ausente ativa memória. A memória depende do motor ligado
 // (`enabled`), e leitura/escrita dependem de `memoryEnabled` — cascata
@@ -70,6 +83,10 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   goalsEnabled: false,
   goalsShadowMode: true,
   goalsTelemetryEnabled: false,
+  reflectionEnabled: false,
+  reflectionShadowMode: true,
+  reflectionTelemetryEnabled: false,
+  learningCandidatesEnabled: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -191,6 +208,28 @@ export function createUniEngineConfig(overrides = {}) {
       'VITE_UNI_ENGINE_GOALS_TELEMETRY',
       false,
     ),
+    // Fase 8 — Reflection & Learning Engine. Nasce desligado; shadow ligado
+    // por padrão (refletir é seguro); telemetria sempre desligada por padrão.
+    reflectionEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_REFLECTION_ENABLED',
+      false,
+    ),
+    reflectionShadowMode: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_REFLECTION_SHADOW',
+      true,
+    ),
+    reflectionTelemetryEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_REFLECTION_TELEMETRY',
+      false,
+    ),
+    learningCandidatesEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_LEARNING_CANDIDATES_ENABLED',
+      false,
+    ),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -246,6 +285,17 @@ export function createUniEngineConfig(overrides = {}) {
   if (!config.goalsEnabled) {
     config.goalsShadowMode = false;
     config.goalsTelemetryEnabled = false;
+  }
+
+  // Fase 8 — Reflection & Learning Engine exige o motor ligado; shadow e
+  // telemetria exigem a reflexão ligada; learning candidates exigem a
+  // reflexão ligada. Nada liga reflexão acidentalmente — todas as flags
+  // nascem false, exceto reflectionShadowMode (true quando ligada).
+  if (!config.enabled) config.reflectionEnabled = false;
+  if (!config.reflectionEnabled) {
+    config.reflectionShadowMode = false;
+    config.reflectionTelemetryEnabled = false;
+    config.learningCandidatesEnabled = false;
   }
 
   return Object.freeze(config);
