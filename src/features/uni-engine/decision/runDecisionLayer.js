@@ -22,6 +22,7 @@ import {
   createDecisionShadow,
   validateDecisionResult,
 } from './decisionContracts.js';
+import { isValidDecisionRisk, isValidDecisionType } from './decisionTypes.js';
 import { evaluateDecisionContext } from './evaluateDecisionContext.js';
 import { computeDecisionConfidence } from './computeDecisionConfidence.js';
 import { detectDecisionRisk } from './detectDecisionRisk.js';
@@ -134,13 +135,16 @@ export function runDecisionLayer(input = {}) {
       risk: riskResult,
     });
 
-    const recommendations = buildDecisionSuggestions({ decisionType, context });
+    const recommendationDetails = buildDecisionSuggestions({ decisionType, context });
 
     const result = {
       version: DECISION_LAYER_VERSION,
       correlationId,
       enabled: true,
       shadowMode: Boolean(flags.decisionShadowMode ?? true),
+      fallbackUsed: false,
+      fallbackReason: null,
+      errorCode: null,
       decisionType,
       decision: {
         type: decisionType,
@@ -162,7 +166,8 @@ export function runDecisionLayer(input = {}) {
       requiredInformation: context.missingFields,
       dependencies: context.dependencies,
       diagnostics: context.diagnostics,
-      recommendations,
+      recommendations: recommendationDetails.map((entry) => entry.suggestion),
+      recommendationDetails,
       missingInformation: context.missingFields,
       requiredSources: requiredSourcesOf({ decisionType, context }),
       contextEvaluation: {
@@ -179,31 +184,35 @@ export function runDecisionLayer(input = {}) {
         totalMs: 0,
         ...sectionTimings,
       },
+      latencyMs: 0,
       telemetry: null,
     };
 
+    result.latency.totalMs = Number((nowMillis() - start).toFixed(3));
+    result.latencyMs = result.latency.totalMs;
+
     // Validação contratual defensiva (determinística — nunca deve falhar).
-    const validation = validateDecisionResult({
-      decisionType: result.decisionType,
-      confidence: result.confidence,
-      risk: result.risk,
-      reason: result.reason,
-      recommendedExecutor: result.recommendedExecutor,
-      recommendedQuestion: result.recommendedQuestion,
-      requiredInformation: result.requiredInformation,
-      dependencies: result.dependencies,
-      diagnostics: result.diagnostics,
-      recommendations: result.recommendations.map((entry) => entry.suggestion),
-      shadow: result.shadow,
-      latency: result.latency,
-    });
+    const validation = validateDecisionResult(result);
     if (!validation.valid) {
       errorCode = `DECISION_VALIDATION_${validation.errors[0] ?? 'FAILED'}`;
+      result.fallbackUsed = true;
+      result.fallbackReason = 'DECISION_CONTRACT_INVALID';
+      result.errorCode = errorCode;
       result.diagnostics = [...result.diagnostics, 'UNKNOWN'];
+      // Sanitiza campos corrompidos pelo input para garantir um fallback
+      // SEMPRE válido e serializável (nunca funções, objetos ou tipos errados).
+      result.decisionType = isValidDecisionType(result.decisionType) ? result.decisionType : 'UNKNOWN';
+      result.confidence = typeof result.confidence === 'number' && Number.isFinite(result.confidence)
+        ? Math.min(1, Math.max(0, result.confidence))
+        : 0;
+      result.risk = isValidDecisionRisk(result.risk) ? result.risk : 'NONE';
+      result.reason = Array.isArray(result.reason) ? result.reason.filter((line) => typeof line === 'string') : [];
+      result.recommendedExecutor = typeof result.recommendedExecutor === 'string' ? result.recommendedExecutor : null;
+      result.recommendedQuestion = typeof result.recommendedQuestion === 'string' ? result.recommendedQuestion : null;
+      result.requiredInformation = Array.isArray(result.requiredInformation) ? result.requiredInformation.map(String) : [];
     }
 
     const t4 = nowMillis();
-    result.latency.totalMs = Number((t4 - start).toFixed(3));
 
     // Telemetria redigida — somente agregados (nunca texto, valores ou IDs).
     if (flags.decisionTelemetryEnabled) {
@@ -237,6 +246,9 @@ export function runDecisionLayer(input = {}) {
       correlationId,
       enabled: true,
       shadowMode: Boolean(flags.decisionShadowMode ?? true),
+      fallbackUsed: true,
+      fallbackReason: 'DECISION_LAYER_ERROR',
+      errorCode: error?.code ?? 'DECISION_LAYER_ERROR',
       decisionType: 'UNKNOWN',
       decision: {
         type: 'UNKNOWN',
@@ -260,8 +272,8 @@ export function runDecisionLayer(input = {}) {
       contextEvaluation: context ?? null,
       shadow: createDecisionShadow({ shadowMode: Boolean(flags.decisionShadowMode ?? true) }),
       latency: { totalMs: latencyMs, ...sectionTimings },
+      latencyMs,
       telemetry: null,
-      errorCode: error?.code ?? 'DECISION_LAYER_ERROR',
     };
   }
 }

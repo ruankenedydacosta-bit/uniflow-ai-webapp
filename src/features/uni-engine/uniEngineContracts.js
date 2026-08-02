@@ -37,6 +37,26 @@
 // agreementMetrics, divergenceDiagnostics, operationalMemory).
 export const UNI_ENGINE_VERSION = '2.0';
 
+// Fase 10 (Production Readiness) — revisão de consolidação. A versão
+// funcional permanece UNI_ENGINE_VERSION (compatibilidade total); a revisão
+// indica o nível de consolidação atual (health check, observability,
+// envelopes padronizados e documentação). Nunca influencia o comportamento.
+export const UNI_ENGINE_REVISION = '10.0';
+
+// Nomes canônicos dos módulos da Uni Engine (Fases 1–9). Usados por health
+// check e observability; qualquer outro nome é rejeitado pelos contratos.
+export const UNI_ENGINE_MODULE_NAMES = Object.freeze([
+  'core',
+  'memory',
+  'epistemic',
+  'decision',
+  'planning',
+  'goals',
+  'reflection',
+  'activation',
+  'telemetry',
+]);
+
 export const UNI_ENGINE_MESSAGE_TYPES = Object.freeze([
   'action',
   'query',

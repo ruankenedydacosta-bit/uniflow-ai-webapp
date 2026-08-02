@@ -137,6 +137,9 @@ export function createGoalEngineResult(seed = {}) {
     version: GOAL_ENGINE_VERSION,
     enabled: Boolean(safe.enabled),
     shadowMode: Boolean(safe.shadowMode),
+    fallbackUsed: Boolean(safe.fallbackUsed),
+    fallbackReason: typeof safe.fallbackReason === 'string' ? safe.fallbackReason : null,
+    errorCode: typeof safe.errorCode === 'string' ? safe.errorCode : null,
     goalDetected: Boolean(safe.goalDetected),
     goal: createGoalDefinition(safe.goal),
     type: isValidGoalType(safe.type) ? safe.type : 'UNKNOWN',
@@ -218,6 +221,9 @@ export function validateGoalEngineResult(result) {
   if (result.progress != null && (result.progress < 0 || result.progress > 100)) errors.push('PROGRESS_INVALID');
   if (!isPlainObject(result.goal)) errors.push('GOAL_INVALID');
   if (!isPlainObject(result.shadow) || result.shadow.appliedToDecision !== false || result.shadow.appliedToResponse !== false || result.shadow.executed !== false) errors.push('SHADOW_INVALID');
+  if (typeof result.fallbackUsed !== 'boolean') errors.push('FALLBACK_USED_INVALID');
+  if (result.fallbackReason != null && typeof result.fallbackReason !== 'string') errors.push('FALLBACK_REASON_INVALID');
+  if (result.errorCode != null && typeof result.errorCode !== 'string') errors.push('ERROR_CODE_INVALID');
   if (!isSerializableValue(result) || findFunctionsInValue(result).length > 0) errors.push('NOT_SERIALIZABLE');
   return { valid: errors.length === 0, errors };
 }
@@ -227,6 +233,9 @@ export function createEmptyGoalEngineResult(overrides = {}) {
   return createGoalEngineResult({
     enabled: false,
     shadowMode: safe.shadowMode ?? true,
+    fallbackUsed: Boolean(safe.fallbackUsed),
+    fallbackReason: safe.fallbackReason ?? null,
+    errorCode: safe.errorCode ?? null,
     goalDetected: false,
     goal: {},
     type: 'UNKNOWN',

@@ -77,6 +77,8 @@ test('engine é determinístico exceto latência', () => {
   const second = runPlanningEngine(source);
   first.latency = null;
   second.latency = null;
+  first.latencyMs = null;
+  second.latencyMs = null;
   assert.deepEqual(first, second);
 });
 

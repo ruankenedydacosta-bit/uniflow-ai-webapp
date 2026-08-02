@@ -84,16 +84,29 @@ export function goalStatus({
 export function runGoalEngine(input = {}) {
   const safe = input && typeof input === 'object' ? input : {};
   const start = nowMillis();
-  const featureFlags = safe.featureFlags && typeof safe.featureFlags === 'object' ? safe.featureFlags : {};
-  const workspaceType = String(
-    safe.userPreferences?.workspaceType
-      ?? safe.session?.workspaceType
-      ?? 'personal',
-  );
-  const referenceDate = safe.financialSnapshot?.referenceDate ?? null;
-  const enabled = Boolean(featureFlags.goalsEnabled);
-  const shadowMode = Boolean(featureFlags.goalsShadowMode);
-  const telemetryEnabled = Boolean(featureFlags.goalsTelemetryEnabled);
+
+  const emptyFallback = (errorCode = null) => {
+    const result = createEmptyGoalEngineResult({
+      shadowMode: true,
+      fallbackUsed: errorCode !== null,
+      fallbackReason: errorCode !== null ? 'GOAL_ENGINE_INTERNAL_ERROR' : null,
+      errorCode,
+    });
+    result.latencyMs = Number((nowMillis() - start).toFixed(3));
+    return result;
+  };
+
+  try {
+    const featureFlags = safe.featureFlags && typeof safe.featureFlags === 'object' ? safe.featureFlags : {};
+    const workspaceType = String(
+      safe.userPreferences?.workspaceType
+        ?? safe.session?.workspaceType
+        ?? 'personal',
+    );
+    const referenceDate = safe.financialSnapshot?.referenceDate ?? null;
+    const enabled = Boolean(featureFlags.goalsEnabled);
+    const shadowMode = Boolean(featureFlags.goalsShadowMode);
+    const telemetryEnabled = Boolean(featureFlags.goalsTelemetryEnabled);
 
   if (!enabled || !shadowMode) {
     const empty = createEmptyGoalEngineResult({ shadowMode: shadowMode || true });
@@ -101,13 +114,6 @@ export function runGoalEngine(input = {}) {
     return empty;
   }
 
-  const emptyFallback = () => {
-    const result = createEmptyGoalEngineResult({ shadowMode: shadowMode || true });
-    result.latencyMs = Number((nowMillis() - start).toFixed(3));
-    return result;
-  };
-
-  try {
     const goalIntent = detectGoalIntent(safe);
     const candidate = extractGoalCandidate({
       goalIntent,
@@ -182,6 +188,9 @@ export function runGoalEngine(input = {}) {
     const result = createGoalEngineResult({
       enabled,
       shadowMode,
+      fallbackUsed: false,
+      fallbackReason: null,
+      errorCode: null,
       goalDetected: Boolean(goalIntent.detected),
       goal,
       type,
@@ -206,7 +215,7 @@ export function runGoalEngine(input = {}) {
     });
 
     const validation = validateGoalEngineResult(result);
-    if (!validation.valid) return emptyFallback();
+    if (!validation.valid) return emptyFallback(validation.errors[0] ?? 'GOAL_VALIDATION_FAILED');
 
     result.latencyMs = Number((nowMillis() - start).toFixed(3));
 
@@ -225,7 +234,7 @@ export function runGoalEngine(input = {}) {
 
     return result;
   } catch {
-    return emptyFallback();
+    return emptyFallback('GOAL_ENGINE_INTERNAL_ERROR');
   }
 }
 

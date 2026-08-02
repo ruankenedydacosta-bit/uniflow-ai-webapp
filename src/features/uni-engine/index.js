@@ -1,6 +1,7 @@
 // Uni Engine (Fase 1 — Shadow Mode + Fase 2 — Integração Cognitiva Assistida
 // + Fase 3 — Memória Inteligente Persistente em Shadow + Fase 4 — Modelo
-// Epistêmico completo em Shadow).
+// Epistêmico completo em Shadow + Fases 5–9 — Decisão, Planning, Goals,
+// Reflection e Activation em Shadow + Fase 10 — Production Readiness).
 //
 // Camada cognitiva analítica e descartável sobre o pipeline atual da Uni.
 // O motor apenas observa, analisa, classifica, planeja, valida, compara,
@@ -10,8 +11,12 @@
 // apenas para Shadow (appliedToDecision = false). O modelo epistêmico
 // (Fase 4) estrutura fontes, confiança, conflitos e staleness — também
 // apenas para Shadow (appliedToDecision = false, execução sempre bloqueada).
+// A Fase 10 adiciona health check e observability (leitura pura do config +
+// resultado) sem alterar nenhum contrato existente de forma destrutiva.
 export {
   UNI_ENGINE_VERSION,
+  UNI_ENGINE_REVISION,
+  UNI_ENGINE_MODULE_NAMES,
   UNI_ENGINE_MESSAGE_TYPES,
   UNI_ENGINE_PLAN_DECISIONS,
   UNI_ENGINE_EPISTEMIC_STATUSES,
@@ -92,3 +97,9 @@ export { runReflectionEngine } from './reflection/runReflectionEngine.js';
 // Fase 9 — Activation Engine (ativação gradual, Shadow-first).
 export * as activation from './activation/index.js';
 export { runActivationEngine } from './activation/runActivationEngine.js';
+// Fase 10 — Health Check e Observability (Production Readiness). Leitura
+// pura do config + resultado; nunca executa, nunca registra dados sensíveis.
+export * as health from './health/index.js';
+export { runEngineHealthCheck } from './health/buildEngineHealth.js';
+export * as observability from './observability/index.js';
+export { buildObservabilitySnapshot } from './observability/buildObservabilitySnapshot.js';

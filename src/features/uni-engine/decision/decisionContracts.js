@@ -77,6 +77,12 @@ export function createDecisionShadow(overrides = {}) {
 export function createDecisionResult(seed = {}) {
   const safe = seed && typeof seed === 'object' ? seed : {};
   return {
+    version: DECISION_LAYER_VERSION,
+    enabled: Boolean(safe.enabled),
+    shadowMode: Boolean(safe.shadowMode),
+    fallbackUsed: Boolean(safe.fallbackUsed),
+    fallbackReason: typeof safe.fallbackReason === 'string' ? safe.fallbackReason : null,
+    errorCode: typeof safe.errorCode === 'string' ? safe.errorCode : null,
     decisionType: isValidDecisionType(safe.decisionType) ? safe.decisionType : 'UNKNOWN',
     confidence: typeof safe.confidence === 'number' ? Number(safe.confidence) : 0,
     risk: isValidDecisionRisk(safe.risk) ? safe.risk : 'NONE',
@@ -95,6 +101,11 @@ export function createDecisionResult(seed = {}) {
       : [],
     shadow: createDecisionShadow(safe.shadow),
     latency: isPlainObject(safe.latency) ? { ...safe.latency } : {},
+    latencyMs: typeof safe.latencyMs === 'number'
+      ? Number(safe.latencyMs)
+      : typeof safe.latency?.totalMs === 'number'
+        ? Number(safe.latency.totalMs)
+        : 0,
   };
 }
 
@@ -148,6 +159,11 @@ export function validateDecisionResult(result) {
   if (result.shadow?.executorCalled !== false) {
     errors.push('SHADOW_EXECUTOR_BLOCKED');
   }
+  if (typeof result.enabled !== 'boolean') errors.push('ENABLED_INVALID');
+  if (typeof result.shadowMode !== 'boolean') errors.push('SHADOW_MODE_INVALID');
+  if (typeof result.fallbackUsed !== 'boolean') errors.push('FALLBACK_USED_INVALID');
+  if (result.fallbackReason != null && typeof result.fallbackReason !== 'string') errors.push('FALLBACK_REASON_INVALID');
+  if (result.errorCode != null && typeof result.errorCode !== 'string') errors.push('ERROR_CODE_INVALID');
   if (!isSerializableValue(result)) {
     errors.push('RESULT_NOT_SERIALIZABLE');
   }
@@ -157,6 +173,9 @@ export function validateDecisionResult(result) {
   if (!isPlainObject(result.latency) || typeof result.latency.totalMs !== 'number') {
     errors.push('LATENCY_INVALID');
   }
+  if (typeof result.latencyMs !== 'number' || !Number.isFinite(result.latencyMs) || result.latencyMs < 0) {
+    errors.push('LATENCY_MS_INVALID');
+  }
   return { valid: errors.length === 0, errors };
 }
 
@@ -164,6 +183,11 @@ export function validateDecisionResult(result) {
 export function createEmptyDecisionResult(overrides = {}) {
   const safe = overrides && typeof overrides === 'object' ? overrides : {};
   return createDecisionResult({
+    enabled: false,
+    shadowMode: Boolean(safe.shadowMode ?? true),
+    fallbackUsed: Boolean(safe.fallbackUsed),
+    fallbackReason: safe.fallbackReason ?? null,
+    errorCode: safe.errorCode ?? null,
     decisionType: 'UNKNOWN',
     confidence: 0,
     risk: 'NONE',

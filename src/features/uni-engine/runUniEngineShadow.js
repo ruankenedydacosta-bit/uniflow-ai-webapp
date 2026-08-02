@@ -32,6 +32,7 @@
 import {
   createCorrelationId,
   createEmptyUniEngineResult,
+  UNI_ENGINE_REVISION,
   UNI_ENGINE_VERSION,
   validateUniEngineInput,
 } from './uniEngineContracts.js';
@@ -102,9 +103,12 @@ function safeCorrelationId(options) {
 function buildDisabledResult({ correlationId, latencyMs }) {
   return {
     engineVersion: UNI_ENGINE_VERSION,
+    revision: UNI_ENGINE_REVISION,
     correlationId,
     enabled: false,
     skipped: true,
+    fallbackUsed: false,
+    fallbackReason: null,
     normalizedMessage: null,
     classification: null,
     epistemicState: null,
@@ -141,6 +145,12 @@ function buildSafeErrorResult({ correlationId, error, latencyMs, isDev }) {
   }
   return {
     ...createEmptyUniEngineResult({ correlationId }),
+    engineVersion: UNI_ENGINE_VERSION,
+    revision: UNI_ENGINE_REVISION,
+    enabled: true,
+    skipped: false,
+    fallbackUsed: true,
+    fallbackReason: error?.code ?? 'UNKNOWN_ERROR',
     diagnostics: {
       ...createEmptyUniEngineResult({ correlationId }).diagnostics,
       errorCode: error?.code ?? 'UNKNOWN_ERROR',
@@ -158,6 +168,7 @@ function buildSafeErrorResult({ correlationId, error, latencyMs, isDev }) {
 // chama executor, voz ou LLM. Qualquer falha cai apenas em diagnostics e
 // telemetria redigida — o pipeline atual permanece oficial e intocado.
 function buildPersistentMemorySection({ config, memoryAdapter, input, normalized, classification, epistemicState, cognitiveContext, snapshot }) {
+  const sectionStart = nowMillis();
   const section = {
     enabled: true,
     retrieved: [],
@@ -168,6 +179,7 @@ function buildPersistentMemorySection({ config, memoryAdapter, input, normalized
       readEnabled: Boolean(config.memoryReadEnabled),
       writeEnabled: Boolean(config.memoryWriteEnabled),
       errorCode: null,
+      latencyMs: null,
     },
   };
 
@@ -235,6 +247,7 @@ function buildPersistentMemorySection({ config, memoryAdapter, input, normalized
     section.diagnostics.errorCode = error?.code ?? 'MEMORY_SECTION_ERROR';
   }
 
+  section.diagnostics.latencyMs = Number((nowMillis() - sectionStart).toFixed(2));
   return section;
 }
 
@@ -602,6 +615,7 @@ export function runUniEngineShadow(input, options = {}) {
           staleItems: section.staleItems,
           sufficiency: section.sufficiency,
           recommendations: section.recommendations,
+          latencyMs: section.diagnostics.latencyMs,
         });
       }
     }
@@ -871,9 +885,12 @@ export function runUniEngineShadow(input, options = {}) {
 
     return {
       engineVersion: UNI_ENGINE_VERSION,
+      revision: UNI_ENGINE_REVISION,
       correlationId,
       enabled: true,
       skipped: false,
+      fallbackUsed: classification.fallbackUsed ?? false,
+      fallbackReason: null,
       normalizedMessage: normalized,
       classification,
       epistemicState,

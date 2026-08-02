@@ -64,6 +64,9 @@ function buildEmptyResult({ shadowMode, errorCode, latencyMs }) {
   const result = createEmptyReflectionResult({ shadowMode });
   return {
     ...result,
+    fallbackUsed: errorCode !== null,
+    fallbackReason: errorCode !== null ? 'REFLECTION_INTERNAL_ERROR' : null,
+    errorCode,
     diagnostics: errorCode ? ['SHADOW_ONLY', 'FALLBACK_USED'] : result.diagnostics,
     latencyMs,
     telemetry: {
@@ -248,6 +251,9 @@ export function runReflectionEngine(input = {}) {
     return createReflectionResult({
       enabled: true,
       shadowMode,
+      fallbackUsed: false,
+      fallbackReason: null,
+      errorCode: null,
       reflectionTriggered: true,
       outcome,
       signals,

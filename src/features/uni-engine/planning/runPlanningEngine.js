@@ -63,6 +63,11 @@ export function runPlanningEngine(input = {}) {
     });
     const recommendations = buildPlanningSuggestions({ goal, dependencyEvaluation, status });
     const result = createPlanningResult({
+      enabled: Boolean(safe.featureFlags?.planningEnabled),
+      shadowMode: Boolean(safe.featureFlags?.planningShadowMode ?? true),
+      fallbackUsed: false,
+      fallbackReason: null,
+      errorCode: null,
       goal,
       goalType: goal.type,
       status,
@@ -79,7 +84,14 @@ export function runPlanningEngine(input = {}) {
       latency: { totalMs: Number((nowMillis() - start).toFixed(3)) },
     });
     const validation = validatePlanningResult(result);
-    if (!validation.valid) return createEmptyPlanningResult({ shadowMode: true });
+    if (!validation.valid) {
+      return createEmptyPlanningResult({
+        shadowMode: safe.featureFlags?.planningShadowMode ?? true,
+        fallbackUsed: true,
+        fallbackReason: 'PLANNING_VALIDATION_FAILED',
+        errorCode: validation.errors[0] ?? 'PLANNING_VALIDATION_FAILED',
+      });
+    }
     if (safe.featureFlags?.planningTelemetryEnabled) {
       result.telemetry = emitPlanningTelemetry(buildPlanningTelemetry({
         correlationId: safe.correlationId,
@@ -94,7 +106,12 @@ export function runPlanningEngine(input = {}) {
     }
     return result;
   } catch {
-    const result = createEmptyPlanningResult({ shadowMode: true });
+    const result = createEmptyPlanningResult({
+      shadowMode: safe.featureFlags?.planningShadowMode ?? true,
+      fallbackUsed: true,
+      fallbackReason: 'PLANNING_INTERNAL_ERROR',
+      errorCode: 'PLANNING_INTERNAL_ERROR',
+    });
     result.latency.totalMs = Number((nowMillis() - start).toFixed(3));
     return result;
   }

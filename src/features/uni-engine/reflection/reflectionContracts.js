@@ -164,6 +164,9 @@ export function createReflectionResult(seed = {}) {
     version: REFLECTION_VERSION,
     enabled: Boolean(safe.enabled),
     shadowMode: Boolean(safe.shadowMode),
+    fallbackUsed: Boolean(safe.fallbackUsed),
+    fallbackReason: typeof safe.fallbackReason === 'string' ? safe.fallbackReason : null,
+    errorCode: typeof safe.errorCode === 'string' ? safe.errorCode : null,
     reflectionTriggered: Boolean(safe.reflectionTriggered),
     outcome: isValidReflectionOutcome(safe.outcome) ? safe.outcome : 'UNKNOWN',
     signals: signals.map((signal) => createReflectionSignal(signal)),
@@ -213,6 +216,9 @@ export function validateReflectionResult(result) {
     || result.shadow.changedBehavior !== false) {
     errors.push('SHADOW_INVALID');
   }
+  if (typeof result.fallbackUsed !== 'boolean') errors.push('FALLBACK_USED_INVALID');
+  if (result.fallbackReason != null && typeof result.fallbackReason !== 'string') errors.push('FALLBACK_REASON_INVALID');
+  if (result.errorCode != null && typeof result.errorCode !== 'string') errors.push('ERROR_CODE_INVALID');
   if (!isSerializableValue(result) || findFunctionsInValue(result).length > 0) {
     errors.push('NOT_SERIALIZABLE');
   }
@@ -250,6 +256,9 @@ export function createEmptyReflectionResult(overrides = {}) {
     version: REFLECTION_VERSION,
     enabled: false,
     shadowMode: safe.shadowMode ?? true,
+    fallbackUsed: Boolean(safe.fallbackUsed),
+    fallbackReason: safe.fallbackReason ?? null,
+    errorCode: safe.errorCode ?? null,
     reflectionTriggered: false,
     outcome: 'UNKNOWN',
     signals: [],

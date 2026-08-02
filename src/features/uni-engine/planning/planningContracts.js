@@ -75,6 +75,11 @@ export function createPlanningResult(seed = {}) {
   const confidence = finiteOrNull(safe.confidence);
   return {
     version: PLANNING_ENGINE_VERSION,
+    enabled: Boolean(safe.enabled),
+    shadowMode: Boolean(safe.shadowMode),
+    fallbackUsed: Boolean(safe.fallbackUsed),
+    fallbackReason: typeof safe.fallbackReason === 'string' ? safe.fallbackReason : null,
+    errorCode: typeof safe.errorCode === 'string' ? safe.errorCode : null,
     goal: createPlanningGoal(safe.goal),
     goalType: isValidGoalType(safe.goalType) ? safe.goalType : 'UNKNOWN',
     status: isValidPlanningStatus(safe.status) ? safe.status : 'UNKNOWN',
@@ -91,6 +96,7 @@ export function createPlanningResult(seed = {}) {
       : [],
     shadow: createPlanningShadow(safe.shadow),
     latency: object(safe.latency) ? { ...safe.latency } : { totalMs: 0 },
+    latencyMs: finiteOrNull(safe.latencyMs) ?? finiteOrNull(safe.latency?.totalMs) ?? 0,
     telemetry: safe.telemetry ?? null,
   };
 }
@@ -108,12 +114,17 @@ export function validatePlanningResult(result) {
   if (!object(result.timeline)) errors.push('TIMELINE_INVALID');
   if (!object(result.shadow) || result.shadow.planExecuted !== false || result.shadow.appliedToDecision !== false) errors.push('SHADOW_INVALID');
   if (!object(result.latency) || typeof result.latency.totalMs !== 'number') errors.push('LATENCY_INVALID');
+  if (typeof result.latencyMs !== 'number' || !Number.isFinite(result.latencyMs) || result.latencyMs < 0) errors.push('LATENCY_MS_INVALID');
+  if (typeof result.fallbackUsed !== 'boolean') errors.push('FALLBACK_USED_INVALID');
+  if (result.errorCode != null && typeof result.errorCode !== 'string') errors.push('ERROR_CODE_INVALID');
   if (!isSerializableValue(result) || findFunctionsInValue(result).length > 0) errors.push('NOT_SERIALIZABLE');
   return { valid: errors.length === 0, errors };
 }
 
 export function createEmptyPlanningResult(overrides = {}) {
   return createPlanningResult({
+    enabled: false,
+    shadowMode: overrides.shadowMode ?? true,
     goal: {},
     goalType: 'UNKNOWN',
     status: 'UNKNOWN',
@@ -124,5 +135,9 @@ export function createEmptyPlanningResult(overrides = {}) {
     recommendations: ['NO_ACTION'],
     shadow: { shadowMode: overrides.shadowMode ?? true },
     latency: { totalMs: 0 },
+    latencyMs: 0,
+    fallbackUsed: Boolean(overrides.fallbackUsed),
+    fallbackReason: overrides.fallbackReason ?? null,
+    errorCode: overrides.errorCode ?? null,
   });
 }

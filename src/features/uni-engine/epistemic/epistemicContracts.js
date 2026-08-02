@@ -256,6 +256,10 @@ export function createEpistemicModelSection(overrides = {}) {
     sufficiency: isPlainObject(safe.sufficiency) ? safe.sufficiency : {},
     recommendations: Array.isArray(safe.recommendations) ? safe.recommendations : [],
     appliedToDecision: false,
+    latencyMs:
+      typeof safe.latencyMs === 'number' && Number.isFinite(safe.latencyMs)
+        ? Number(safe.latencyMs.toFixed(2))
+        : null,
   };
 }
 
