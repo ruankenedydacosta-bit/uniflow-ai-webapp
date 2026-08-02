@@ -83,3 +83,6 @@ export { runDecisionLayer } from './decision/runDecisionLayer.js';
 // Fase 6 — Planning Engine estruturado (Shadow-only).
 export * as planning from './planning/index.js';
 export { runPlanningEngine } from './planning/runPlanningEngine.js';
+// Fase 7 — Goal Engine estruturado (Shadow-only).
+export * as goals from './goals/index.js';
+export { runGoalEngine } from './goals/runGoalEngine.js';

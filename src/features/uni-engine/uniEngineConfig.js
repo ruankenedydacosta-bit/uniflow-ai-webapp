@@ -30,6 +30,11 @@
 //   - VITE_UNI_ENGINE_PLANNING_SHADOW      → planningShadowMode (default: false)
 //   - VITE_UNI_ENGINE_PLANNING_TELEMETRY   → planningTelemetryEnabled (default: false)
 //
+// Fase 7 — Goal Engine (Shadow Mode puro):
+//   - VITE_UNI_ENGINE_GOALS_ENABLED        → goalsEnabled (default: false)
+//   - VITE_UNI_ENGINE_GOALS_SHADOW         → goalsShadowMode (default: true)
+//   - VITE_UNI_ENGINE_GOALS_TELEMETRY      → goalsTelemetryEnabled (default: false)
+//
 // Padrões seguros: leitura desligada, escrita desligada, shadow ligado.
 // Nenhuma variável ausente ativa memória. A memória depende do motor ligado
 // (`enabled`), e leitura/escrita dependem de `memoryEnabled` — cascata
@@ -62,6 +67,9 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   planningEnabled: false,
   planningShadowMode: false,
   planningTelemetryEnabled: false,
+  goalsEnabled: false,
+  goalsShadowMode: true,
+  goalsTelemetryEnabled: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -166,6 +174,23 @@ export function createUniEngineConfig(overrides = {}) {
       'VITE_UNI_ENGINE_PLANNING_TELEMETRY',
       false,
     ),
+    // Fase 7 — Goal Engine. Nasce desligado; shadow ligado por padrão
+    // (sombrear é seguro); telemetria sempre desligada por padrão.
+    goalsEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_GOALS_ENABLED',
+      false,
+    ),
+    goalsShadowMode: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_GOALS_SHADOW',
+      true,
+    ),
+    goalsTelemetryEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_GOALS_TELEMETRY',
+      false,
+    ),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -213,6 +238,14 @@ export function createUniEngineConfig(overrides = {}) {
   if (!config.planningEnabled) {
     config.planningShadowMode = false;
     config.planningTelemetryEnabled = false;
+  }
+
+  // Fase 7 — Goal Engine exige o motor ligado; shadow e telemetria exigem o
+  // engine ligado. Nada liga objetivos acidentalmente.
+  if (!config.enabled) config.goalsEnabled = false;
+  if (!config.goalsEnabled) {
+    config.goalsShadowMode = false;
+    config.goalsTelemetryEnabled = false;
   }
 
   return Object.freeze(config);

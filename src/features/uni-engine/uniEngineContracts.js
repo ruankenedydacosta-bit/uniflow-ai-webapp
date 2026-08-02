@@ -319,6 +319,10 @@ export function createEmptyUniEngineResult({ correlationId, engineVersion = UNI_
     decisionLayer: null,
     // Fase 6 — plano multi-etapas estruturado e descartável. Nunca executado.
     planning: null,
+    // Fase 7 — Goal Engine estruturado SOMENTE para Shadow. Objetivos são
+    // representados e avaliados, nunca persistidos (`shadow.appliedToDecision`
+    // permanece SEMPRE falso). Ausente ou nulo quando a flag está desligada.
+    goals: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],

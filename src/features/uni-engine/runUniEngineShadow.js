@@ -80,6 +80,8 @@ import {
 import { runDecisionLayer } from './decision/runDecisionLayer.js';
 // Fase 6 — Planning Engine (somente Shadow; nunca executa planos).
 import { runPlanningEngine } from './planning/runPlanningEngine.js';
+// Fase 7 — Goal Engine (somente Shadow; nunca persiste objetivos).
+import { runGoalEngine } from './goals/runGoalEngine.js';
 
 function nowMillis() {
   if (typeof performance?.now === 'function') return performance.now();
@@ -122,6 +124,7 @@ function buildDisabledResult({ correlationId, latencyMs }) {
     },
     decisionLayer: null,
     planning: null,
+    goals: null,
   };
 }
 
@@ -573,6 +576,41 @@ export function runUniEngineShadow(input, options = {}) {
       });
     }
 
+    // Fase 7 — Goal Engine SOMENTE em Shadow: identifica, estrutura, avalia
+    // e acompanha objetivos financeiros sem persistir, executar ou alterar
+    // qualquer resposta. Consome as Fases 1–6 somente em leitura e nunca
+    // aciona banco, executor, voz ou UI.
+    let goals = null;
+    if (config.goalsEnabled && config.goalsShadowMode) {
+      goals = runGoalEngine({
+        correlationId,
+        engineVersion: UNI_ENGINE_VERSION,
+        normalizedMessage: normalized,
+        classification,
+        cognitiveContext,
+        cognitivePlan: finalPlan,
+        decisionLayer: decisionLayer ?? null,
+        planning,
+        epistemicModel: epistemicSection ?? null,
+        operationalMemory: operationalMemory ?? null,
+        persistentMemory: persistentMemory ?? null,
+        financialSnapshot: input.context?.financialSnapshot ?? null,
+        pendingAction: input.context?.pendingAction ?? null,
+        session: {
+          ...input.session,
+          workspaceType: input.context?.userPreferences?.workspaceType ?? null,
+        },
+        userPreferences: input.context?.userPreferences ?? null,
+        featureFlags: {
+          goalsEnabled: config.goalsEnabled,
+          goalsShadowMode: config.goalsShadowMode,
+          goalsTelemetryEnabled: config.goalsTelemetryEnabled,
+        },
+        timestamp: input.message?.createdAt ?? new Date().toISOString(),
+        telemetryAdapter: safeOptions.telemetryAdapter ?? null,
+      });
+    }
+
     if (config.telemetryEnabled) {
       const telemetry = buildUniEngineTelemetry({
         correlationId,
@@ -629,6 +667,7 @@ export function runUniEngineShadow(input, options = {}) {
       epistemicModel,
       decisionLayer,
       planning,
+      goals,
       diagnostics: {
         rulesUsed: classification.rulesUsed ?? [],
         ambiguities: classification.ambiguities ?? [],
