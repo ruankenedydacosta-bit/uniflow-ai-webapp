@@ -85,6 +85,8 @@ import { runGoalEngine } from './goals/runGoalEngine.js';
 // Fase 8 — Reflection & Learning Engine (somente Shadow; nunca aplica
 // candidatos, nunca altera resposta/execução/memória/voz/UI).
 import { runReflectionEngine } from './reflection/runReflectionEngine.js';
+import { runActivationEngine } from './activation/runActivationEngine.js';
+import { ACTIVATION_POLICY, describeConfidence } from './activation/activationPolicy.js';
 
 function nowMillis() {
   if (typeof performance?.now === 'function') return performance.now();
@@ -129,6 +131,7 @@ function buildDisabledResult({ correlationId, latencyMs }) {
     planning: null,
     goals: null,
     reflection: null,
+    activation: null,
   };
 }
 
@@ -288,6 +291,114 @@ function buildEpistemicModelSection({ input, normalized, cognitiveContext, plan,
   }
   section.diagnostics.latencyMs = Number((nowMillis() - start).toFixed(2));
   return section;
+}
+
+// Fase 9 — campos estruturados sugeridos por capacidade. SOMENTE chaves e
+// bandas seguras (nunca texto, IDs ou valores). O adapter seguro valida cada
+// campo contra o contrato da capacidade antes de qualquer consumo.
+function buildActivationSuggested(capability, context) {
+  const safe = context ?? {};
+  switch (capability) {
+    case 'METADATA_ONLY':
+      return {
+        hasData: Boolean(safe.classification),
+        intentBand: safe.classification?.primaryIntent ?? null,
+        confidenceBand: safe.classification?.confidence != null
+          ? describeConfidence(safe.classification.confidence)
+          : null,
+        riskBand: safe.decisionLayer?.risk ?? null,
+        engineVersion: UNI_ENGINE_VERSION,
+      };
+    case 'QUESTION_GUIDANCE':
+      return {
+        questionKey: safe.decisionLayer?.nextDecisionType === 'ask'
+          ? 'missing_field'
+          : null,
+        fieldsStillMissing: Array.isArray(safe.comparison?.missingFields)
+          ? safe.comparison.missingFields.slice(0, 8)
+          : [],
+      };
+    case 'CLARIFICATION_GUIDANCE':
+      return {
+        clarificationKey: (safe.classification?.ambiguities?.length ?? 0) > 0
+          ? 'ambiguous_intent'
+          : null,
+        ambiguityType: safe.classification?.ambiguities?.[0]?.type ?? null,
+        optionsCount: Math.min(safe.classification?.ambiguities?.length ?? 0, 8),
+      };
+    case 'RESPONSE_STYLE_GUIDANCE':
+      return {
+        styleKey: safe.decisionLayer?.decisionType === 'respond' ? 'concise' : null,
+        toneBand: 'neutral',
+      };
+    case 'RESPONSE_LENGTH_GUIDANCE':
+      return {
+        lengthBand: safe.decisionLayer?.decisionType === 'respond' ? 'short' : null,
+      };
+    case 'RISK_WARNING':
+      return {
+        riskBand: safe.decisionLayer?.risk ?? safe.planning?.risk ?? null,
+        warningCode: safe.decisionLayer?.risk === 'HIGH' || safe.decisionLayer?.risk === 'CRITICAL'
+          ? 'confirmation_required'
+          : null,
+        blockerCount: 0,
+      };
+    case 'CONFIDENCE_DISCLOSURE':
+      return {
+        confidenceBand: safe.classification?.confidence != null
+          ? describeConfidence(safe.classification.confidence)
+          : null,
+      };
+    case 'DECISION_RECOMMENDATION':
+      return {
+        recommendedDecisionKey: safe.decisionLayer?.nextDecisionType ?? null,
+      };
+    case 'DIAGNOSTICS_ONLY':
+      return {
+        diagnostics: Array.isArray(safe.reflection?.diagnostics)
+          ? safe.reflection.diagnostics.slice(0, 8)
+          : [],
+        blockerCodes: Array.isArray(safe.reflection?.blockers)
+          ? safe.reflection.blockers.slice(0, 8)
+          : [],
+        divergenceCount: Number(safe.comparison?.agreementMetrics?.divergenceCount ?? 0),
+      };
+    case 'CATEGORY_SUGGESTION':
+      return {
+        suggestedCategoryKeys: safe.reflection?.suggestedCategories ?? [],
+      };
+    case 'ACCOUNT_SUGGESTION':
+      return {
+        suggestedAccountKeys: safe.reflection?.suggestedAccounts ?? [],
+      };
+    case 'GOAL_SUGGESTION':
+      return {
+        suggestedGoalTypes: safe.goals?.type ? [safe.goals.type] : [],
+      };
+    case 'PLANNING_SUGGESTION':
+      return {
+        suggestedStepOrder: Array.isArray(safe.planning?.steps)
+          ? safe.planning.steps.map((step) => step?.id ?? null).filter(Boolean)
+          : [],
+      };
+    case 'MEMORY_READ_GUIDANCE':
+      return {
+        relevantMemoryKeys: Array.isArray(safe.epistemicModel?.memoryKeys)
+          ? safe.epistemicModel.memoryKeys.slice(0, 8)
+          : [],
+        memoryCount: Number(safe.epistemicModel?.memoryCount ?? 0),
+      };
+    case 'EPISTEMIC_CAUTION':
+      return {
+        cautionCodes: Array.isArray(safe.epistemicModel?.recommendations)
+          ? safe.epistemicModel.recommendations.slice(0, 8)
+          : [],
+        conflictCount: Number(safe.epistemicModel?.conflicts?.length ?? 0),
+        staleCount: Number(safe.epistemicModel?.staleItems?.length ?? 0),
+      };
+    default:
+      return null;
+  }
 }
 
 export function runUniEngineShadow(input, options = {}) {
@@ -663,6 +774,68 @@ export function runUniEngineShadow(input, options = {}) {
       });
     }
 
+    // Fase 9 — Activation Engine (ativação gradual): avalia, para cada
+    // capacidade com flag ligada, se ela PODE influenciar o pipeline real.
+    // O resultado é SOMENTE metadata/orientação estruturada — a resposta
+    // real continua legado por padrão; nenhuma execução, escrita de memória
+    // ou aplicação de aprendizado acontece nesta fase.
+    let activation = null;
+    if (config.activationEnabled) {
+      const activationEnvironment = isDev ? 'development' : 'production';
+      const activationUserId = input.session?.userId ?? null;
+      const activationWorkspaceType =
+        input.context?.userPreferences?.workspaceType ?? 'personal';
+      const activationConfidence =
+        decisionLayer?.confidence
+        ?? epistemicState?.confidence
+        ?? classification?.confidence
+        ?? null;
+      const activationRisk = decisionLayer?.risk ?? planning?.risk ?? null;
+      const activationDataSufficient =
+        Boolean(input.context?.financialSnapshot?.hasData);
+      const enabledCapabilities = Object.entries(config.activationCapabilities)
+        .filter(([, enabled]) => enabled)
+        .map(([capability]) => capability)
+        .slice(0, ACTIVATION_POLICY.maxCapabilities);
+
+      activation = {
+        enabled: true,
+        shadowMode: config.activationShadowMode,
+        environment: activationEnvironment,
+        decisions: enabledCapabilities.map((capability) => runActivationEngine({
+          capability,
+          engineEnabled: true,
+          activationEnabled: true,
+          capabilityEnabled: true,
+          environment: activationEnvironment,
+          shadowMode: config.activationShadowMode,
+          confidence: activationConfidence,
+          risk: activationRisk,
+          workspaceType: activationWorkspaceType,
+          dataSufficient: activationDataSufficient,
+          userId: activationUserId,
+          testUserIds: config.activationTestUserIds,
+          rolloutPercent: config.activationRolloutPercent,
+          requested: true,
+          suggested: buildActivationSuggested(capability, {
+            decisionLayer,
+            planning,
+            goals,
+            reflection,
+            classification,
+            comparison,
+            epistemicModel: epistemicSection ?? null,
+          }),
+          legacy: { effect: 'none' },
+          legacyAvailable: true,
+          telemetryEnabled: config.activationTelemetryEnabled,
+          telemetryAdapter: safeOptions.telemetryAdapter ?? null,
+          engineVersion: UNI_ENGINE_VERSION,
+          isDev,
+        })),
+      };
+    }
+
     if (config.telemetryEnabled) {
       const telemetry = buildUniEngineTelemetry({
         correlationId,
@@ -721,6 +894,7 @@ export function runUniEngineShadow(input, options = {}) {
       planning,
       goals,
       reflection,
+      activation,
       diagnostics: {
         rulesUsed: classification.rulesUsed ?? [],
         ambiguities: classification.ambiguities ?? [],

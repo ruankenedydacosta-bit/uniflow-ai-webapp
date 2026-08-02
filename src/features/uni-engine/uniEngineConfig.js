@@ -41,6 +41,41 @@
 //   - VITE_UNI_ENGINE_REFLECTION_TELEMETRY          → reflectionTelemetryEnabled (default: false)
 //   - VITE_UNI_ENGINE_LEARNING_CANDIDATES_ENABLED   → learningCandidatesEnabled (default: false)
 //
+// Fase 9 — Activation Engine (ativação gradual):
+//   - VITE_UNI_ENGINE_ACTIVATION_ENABLED              → activationEnabled (default: false)
+//   - VITE_UNI_ENGINE_ACTIVATION_SHADOW               → activationShadowMode (default: true)
+//   - VITE_UNI_ENGINE_ACTIVATION_TELEMETRY            → activationTelemetryEnabled (default: false)
+//   - VITE_UNI_ENGINE_ACTIVATION_ENVIRONMENTS         → activationEnvironments (default: ['development'])
+//   - VITE_UNI_ENGINE_ACTIVATION_TEST_USER_IDS        → activationTestUserIds (default: [])
+//   - VITE_UNI_ENGINE_ACTIVATION_ROLLOUT_PERCENT      → activationRolloutPercent (default: 0, clamp 0–100)
+//
+// Flags por capacidade (Fase 9), todas false por padrão:
+//   - VITE_UNI_ENGINE_CAP_METADATA_ONLY               → activationCapabilities.METADATA_ONLY
+//   - VITE_UNI_ENGINE_CAP_DIAGNOSTICS_ONLY            → activationCapabilities.DIAGNOSTICS_ONLY
+//   - VITE_UNI_ENGINE_CAP_QUESTION_GUIDANCE           → activationCapabilities.QUESTION_GUIDANCE
+//   - VITE_UNI_ENGINE_CAP_CLARIFICATION_GUIDANCE      → activationCapabilities.CLARIFICATION_GUIDANCE
+//   - VITE_UNI_ENGINE_CAP_RESPONSE_STYLE_GUIDANCE     → activationCapabilities.RESPONSE_STYLE_GUIDANCE
+//   - VITE_UNI_ENGINE_CAP_RESPONSE_LENGTH_GUIDANCE    → activationCapabilities.RESPONSE_LENGTH_GUIDANCE
+//   - VITE_UNI_ENGINE_CAP_CATEGORY_SUGGESTION         → activationCapabilities.CATEGORY_SUGGESTION
+//   - VITE_UNI_ENGINE_CAP_ACCOUNT_SUGGESTION          → activationCapabilities.ACCOUNT_SUGGESTION
+//   - VITE_UNI_ENGINE_CAP_GOAL_SUGGESTION             → activationCapabilities.GOAL_SUGGESTION
+//   - VITE_UNI_ENGINE_CAP_PLANNING_SUGGESTION         → activationCapabilities.PLANNING_SUGGESTION
+//   - VITE_UNI_ENGINE_CAP_RISK_WARNING                → activationCapabilities.RISK_WARNING
+//   - VITE_UNI_ENGINE_CAP_CONFIDENCE_DISCLOSURE       → activationCapabilities.CONFIDENCE_DISCLOSURE
+//   - VITE_UNI_ENGINE_CAP_MEMORY_READ_GUIDANCE        → activationCapabilities.MEMORY_READ_GUIDANCE
+//   - VITE_UNI_ENGINE_CAP_EPISTEMIC_CAUTION           → activationCapabilities.EPISTEMIC_CAUTION
+//   - VITE_UNI_ENGINE_CAP_DECISION_RECOMMENDATION     → activationCapabilities.DECISION_RECOMMENDATION
+//
+// Regras da Fase 9:
+//   - motor desligado → activation desligada;
+//   - activation desligada → shadow/telemetria desligados e TODAS as
+//     capacidades false;
+//   - capacidades proibidas (RESPONSE_CONTENT_INFLUENCE, MEMORY_WRITE,
+//     FINANCIAL_EXECUTION, LEARNING_APPLICATION) NÃO têm flag — bloqueio
+//     absoluto na política;
+//   - produção não ativa por acidente;
+//   - IDs de teste nunca entram na telemetria.
+//
 // Regras da Fase 8:
 //   - motor desligado → reflexão desligada;
 //   - reflexão desligada → telemetria desligada;
@@ -87,6 +122,29 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   reflectionShadowMode: true,
   reflectionTelemetryEnabled: false,
   learningCandidatesEnabled: false,
+  activationEnabled: false,
+  activationShadowMode: true,
+  activationTelemetryEnabled: false,
+  activationEnvironments: ['development'],
+  activationTestUserIds: [],
+  activationRolloutPercent: 0,
+  activationCapabilities: Object.freeze({
+    METADATA_ONLY: false,
+    DIAGNOSTICS_ONLY: false,
+    QUESTION_GUIDANCE: false,
+    CLARIFICATION_GUIDANCE: false,
+    RESPONSE_STYLE_GUIDANCE: false,
+    RESPONSE_LENGTH_GUIDANCE: false,
+    CATEGORY_SUGGESTION: false,
+    ACCOUNT_SUGGESTION: false,
+    GOAL_SUGGESTION: false,
+    PLANNING_SUGGESTION: false,
+    RISK_WARNING: false,
+    CONFIDENCE_DISCLOSURE: false,
+    MEMORY_READ_GUIDANCE: false,
+    EPISTEMIC_CAUTION: false,
+    DECISION_RECOMMENDATION: false,
+  }),
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -98,6 +156,46 @@ function parseBooleanEnv(source, name, fallback) {
     return raw.trim().toLowerCase() === 'true' || raw.trim() === '1';
   }
   return fallback;
+}
+
+// Lista de ambientes permitidos: string separada por vírgula. Somente
+// ambientes do enum são aceitos; valor inválido nunca ativa.
+const VALID_ENVIRONMENTS = new Set(['development', 'staging', 'production', 'test']);
+
+function parseActivationEnvironments(source, name) {
+  const raw = source?.[name];
+  if (Array.isArray(raw)) {
+    return raw.filter((item) => typeof item === 'string' && VALID_ENVIRONMENTS.has(item.trim()));
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter((item) => VALID_ENVIRONMENTS.has(item));
+  }
+  return [];
+}
+
+// Lista de IDs de usuário de teste. Nunca vai para a telemetria.
+function parseTestUserIds(source, name) {
+  const raw = source?.[name];
+  if (Array.isArray(raw)) {
+    return raw.filter((item) => typeof item === 'string' && item.trim());
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw.split(',').map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+// Percentual de rollout: inteiro clampado entre 0 e 100; inválido → 0.
+function parseRolloutPercent(source, name) {
+  const raw = source?.[name];
+  const value = typeof raw === 'number' ? raw : Number.parseInt(raw, 10);
+  if (!Number.isFinite(value)) return 0;
+  if (value < 0) return 0;
+  if (value > 100) return 100;
+  return Math.round(value);
 }
 
 export function resolveUniEngineEnv(source) {
@@ -230,6 +328,53 @@ export function createUniEngineConfig(overrides = {}) {
       'VITE_UNI_ENGINE_LEARNING_CANDIDATES_ENABLED',
       false,
     ),
+    // Fase 9 — Activation Engine (ativação gradual). Tudo nasce desligado;
+    // ambiente permite apenas desenvolvimento por padrão; teste nunca entra
+    // na telemetria; rollout percentual clampado entre 0 e 100.
+    activationEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_ACTIVATION_ENABLED',
+      false,
+    ),
+    activationShadowMode: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_ACTIVATION_SHADOW',
+      true,
+    ),
+    activationTelemetryEnabled: parseBooleanEnv(
+      env,
+      'VITE_UNI_ENGINE_ACTIVATION_TELEMETRY',
+      false,
+    ),
+    activationEnvironments: parseActivationEnvironments(
+      env,
+      'VITE_UNI_ENGINE_ACTIVATION_ENVIRONMENTS',
+    ),
+    activationTestUserIds: parseTestUserIds(
+      env,
+      'VITE_UNI_ENGINE_ACTIVATION_TEST_USER_IDS',
+    ),
+    activationRolloutPercent: parseRolloutPercent(
+      env,
+      'VITE_UNI_ENGINE_ACTIVATION_ROLLOUT_PERCENT',
+    ),
+    activationCapabilities: {
+      METADATA_ONLY: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_METADATA_ONLY', false),
+      DIAGNOSTICS_ONLY: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_DIAGNOSTICS_ONLY', false),
+      QUESTION_GUIDANCE: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_QUESTION_GUIDANCE', false),
+      CLARIFICATION_GUIDANCE: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_CLARIFICATION_GUIDANCE', false),
+      RESPONSE_STYLE_GUIDANCE: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_RESPONSE_STYLE_GUIDANCE', false),
+      RESPONSE_LENGTH_GUIDANCE: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_RESPONSE_LENGTH_GUIDANCE', false),
+      CATEGORY_SUGGESTION: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_CATEGORY_SUGGESTION', false),
+      ACCOUNT_SUGGESTION: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_ACCOUNT_SUGGESTION', false),
+      GOAL_SUGGESTION: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_GOAL_SUGGESTION', false),
+      PLANNING_SUGGESTION: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_PLANNING_SUGGESTION', false),
+      RISK_WARNING: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_RISK_WARNING', false),
+      CONFIDENCE_DISCLOSURE: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_CONFIDENCE_DISCLOSURE', false),
+      MEMORY_READ_GUIDANCE: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_MEMORY_READ_GUIDANCE', false),
+      EPISTEMIC_CAUTION: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_EPISTEMIC_CAUTION', false),
+      DECISION_RECOMMENDATION: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_DECISION_RECOMMENDATION', false),
+    },
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -298,7 +443,23 @@ export function createUniEngineConfig(overrides = {}) {
     config.learningCandidatesEnabled = false;
   }
 
-  return Object.freeze(config);
+  // Fase 9 — Activation Engine exige o motor ligado; shadow, telemetria,
+  // ambientes, test users, rollout e TODAS as capacidades exigem a
+  // activation ligada. Activation desligada força tudo para false —
+  // variável ausente ou inválida nunca ativa.
+  if (!config.enabled) config.activationEnabled = false;
+  if (!config.activationEnabled) {
+    config.activationShadowMode = false;
+    config.activationTelemetryEnabled = false;
+    config.activationEnvironments = [];
+    config.activationTestUserIds = [];
+    config.activationRolloutPercent = 0;
+    for (const capability of Object.keys(config.activationCapabilities)) {
+      config.activationCapabilities[capability] = false;
+    }
+  }
+
+  return Object.freeze({ ...config, activationCapabilities: Object.freeze(config.activationCapabilities) });
 }
 
 export function isUniEngineShadowEnabled(config) {

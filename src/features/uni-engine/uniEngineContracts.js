@@ -328,6 +328,11 @@ export function createEmptyUniEngineResult({ correlationId, engineVersion = UNI_
     // (`shadow.applied/persisted/changedBehavior` permanecem SEMPRE falsos).
     // Ausente ou nulo quando a flag de reflexão está desligada.
     reflection: null,
+    // Fase 9 — Activation Engine (ativação gradual). Avalia capacidades e
+    // decide o que PODE influenciar o pipeline real de forma controlada,
+    // reversível e limitada. Ausente ou nulo quando a flag de activation
+    // está desligada. Nenhuma capacidade nasce ativa.
+    activation: null,
     diagnostics: {
       rulesUsed: [],
       ambiguities: [],

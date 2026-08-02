@@ -89,3 +89,6 @@ export { runGoalEngine } from './goals/runGoalEngine.js';
 // Fase 8 — Reflection & Learning Engine (Shadow-only).
 export * as reflection from './reflection/index.js';
 export { runReflectionEngine } from './reflection/runReflectionEngine.js';
+// Fase 9 — Activation Engine (ativação gradual, Shadow-first).
+export * as activation from './activation/index.js';
+export { runActivationEngine } from './activation/runActivationEngine.js';
