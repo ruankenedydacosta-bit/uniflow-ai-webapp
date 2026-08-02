@@ -49,6 +49,18 @@
 //   - VITE_UNI_ENGINE_ACTIVATION_TEST_USER_IDS        → activationTestUserIds (default: [])
 //   - VITE_UNI_ENGINE_ACTIVATION_ROLLOUT_PERCENT      → activationRolloutPercent (default: 0, clamp 0–100)
 //
+// Parte 1 — Integration (integração segura e controlada ao pipeline real):
+//   - VITE_UNI_ENGINE_INTEGRATION_ENABLED             → integrationEnabled (default: false)
+//   - VITE_UNI_ENGINE_INTEGRATION_SHADOW              → integrationShadowMode (default: true)
+//   - VITE_UNI_ENGINE_INTEGRATION_TELEMETRY           → integrationTelemetryEnabled (default: false)
+//
+// Regras da Parte 1:
+//   - integração exige motor ligado E Activation ligada (cada capacidade
+//     precisa da autorização da Activation Engine);
+//   - integração desligada → pipeline 100% legado;
+//   - integração em Shadow Mode avalia, mas NUNCA aplica;
+//   - produção não ativa acidentalmente; nenhum ID em logs/telemetria.
+//
 // Flags por capacidade (Fase 9), todas false por padrão:
 //   - VITE_UNI_ENGINE_CAP_METADATA_ONLY               → activationCapabilities.METADATA_ONLY
 //   - VITE_UNI_ENGINE_CAP_DIAGNOSTICS_ONLY            → activationCapabilities.DIAGNOSTICS_ONLY
@@ -145,6 +157,11 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
     EPISTEMIC_CAUTION: false,
     DECISION_RECOMMENDATION: false,
   }),
+  // Parte 1 — Integration. Tudo nasce desligado; shadow ligado por padrão
+  // (avaliar é seguro); telemetria sempre desligada por padrão.
+  integrationEnabled: false,
+  integrationShadowMode: true,
+  integrationTelemetryEnabled: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -375,6 +392,10 @@ export function createUniEngineConfig(overrides = {}) {
       EPISTEMIC_CAUTION: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_EPISTEMIC_CAUTION', false),
       DECISION_RECOMMENDATION: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CAP_DECISION_RECOMMENDATION', false),
     },
+    // Parte 1 — Integration. Nasce desligada; exige motor + Activation.
+    integrationEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_INTEGRATION_ENABLED', false),
+    integrationShadowMode: parseBooleanEnv(env, 'VITE_UNI_ENGINE_INTEGRATION_SHADOW', true),
+    integrationTelemetryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_INTEGRATION_TELEMETRY', false),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -457,6 +478,17 @@ export function createUniEngineConfig(overrides = {}) {
     for (const capability of Object.keys(config.activationCapabilities)) {
       config.activationCapabilities[capability] = false;
     }
+  }
+
+  // Parte 1 — Integration exige o motor ligado E a Activation ligada
+  // (cada capacidade precisa ser autorizada pela Activation Engine).
+  // Integration desligada força shadow e telemetria para false — variável
+  // ausente ou inválida nunca ativa; produção nunca ativa por acidente.
+  if (!config.enabled) config.integrationEnabled = false;
+  if (!config.activationEnabled) config.integrationEnabled = false;
+  if (!config.integrationEnabled) {
+    config.integrationShadowMode = false;
+    config.integrationTelemetryEnabled = false;
   }
 
   return Object.freeze({ ...config, activationCapabilities: Object.freeze(config.activationCapabilities) });

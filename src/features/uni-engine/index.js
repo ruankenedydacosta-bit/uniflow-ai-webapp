@@ -103,3 +103,9 @@ export * as health from './health/index.js';
 export { runEngineHealthCheck } from './health/buildEngineHealth.js';
 export * as observability from './observability/index.js';
 export { buildObservabilitySnapshot } from './observability/buildObservabilitySnapshot.js';
+// Parte 1 — Integration (integração segura e controlada ao pipeline real).
+// Camada adaptadora isolada: valida capacidades autorizadas e transforma
+// SOMENTE orientações seguras; pipeline legado continua a fonte final da
+// resposta e da execução. Tudo nasce desligado.
+export * as integration from './integration/index.js';
+export { runUniEngineIntegration } from './integration/runUniEngineIntegration.js';
