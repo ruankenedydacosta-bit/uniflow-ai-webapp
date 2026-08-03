@@ -315,14 +315,17 @@ test('todas as áreas de toque interativas (perfil, plano, menu, logout, voltar)
 // aqui, não reescrito).
 // ============================================================================
 
-test('resolveSimplifiedGreeting nunca infere "Sr."/"Sra." -- só usa quando o campo já existe explicitamente no profile', () => {
+test('resolveSimplifiedGreeting nunca infere tratamento e só usa a preferência explícita do perfil', () => {
   const withoutSalutation = resolveSimplifiedGreeting({ full_name: 'Ricardo Souza' }, null);
   assert.equal(withoutSalutation.salutation, '');
-  assert.equal(withoutSalutation.heading, 'Olá, Ricardo');
+  assert.equal(withoutSalutation.heading, 'Ricardo');
 
-  const withSalutation = resolveSimplifiedGreeting({ full_name: 'Ricardo Souza', salutation: 'Sr.' }, null);
-  assert.equal(withSalutation.salutation, 'Sr.');
-  assert.equal(withSalutation.heading, 'Sr. Ricardo');
+  const withSalutation = resolveSimplifiedGreeting({
+    full_name: 'Ricardo Souza',
+    treatment_preference: 'senhor',
+  }, null);
+  assert.equal(withSalutation.salutation, 'senhor');
+  assert.equal(withSalutation.heading, 'senhor Ricardo');
 });
 
 test('resolveSimplifiedGreeting sem nenhum nome disponível cai no fallback neutro "você" (nunca inventa)', () => {

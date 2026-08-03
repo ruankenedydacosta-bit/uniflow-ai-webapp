@@ -11,8 +11,12 @@ import { VOICE_TTS_ERROR_CODES } from './voiceTtsStatus.js';
 // HTTP (401/403/422/429/5xx), nunca em cancelamento.
 const MAX_NETWORK_RETRIES = 1;
 
-function providerError(code, message) {
-  return Object.assign(new Error(message ?? code), { code });
+function providerError(code, message, details = {}) {
+  return Object.assign(new Error(message ?? code), {
+    code,
+    retryable: Boolean(details.retryable),
+    providerStatus: Number.isInteger(details.providerStatus) ? details.providerStatus : null,
+  });
 }
 
 export function createElevenLabsTtsProvider({
@@ -109,10 +113,10 @@ export function createElevenLabsTtsProvider({
     } catch {
       const reason = requestController.signal.reason;
       const code = reason === 'timeout'
-        ? VOICE_TTS_ERROR_CODES.TIMEOUT
+        ? VOICE_TTS_ERROR_CODES.PROVIDER_TIMEOUT
         : reason === 'cancelled'
           ? VOICE_TTS_ERROR_CODES.CANCELLED
-          : VOICE_TTS_ERROR_CODES.NETWORK;
+          : VOICE_TTS_ERROR_CODES.NETWORK_ERROR;
       return { ok: false, code };
     } finally {
       runtime.clearTimeout?.(timeout);
@@ -122,19 +126,30 @@ export function createElevenLabsTtsProvider({
 
   async function mapHttpError(response) {
     const body = await response.json().catch(() => null);
-    const codeFromBody = typeof body?.code === 'string' ? body.code : null;
+    const structuredError = body?.error && typeof body.error === 'object' ? body.error : null;
+    const codeFromBody = typeof structuredError?.code === 'string'
+      ? structuredError.code
+      : typeof body?.code === 'string'
+        ? body.code
+        : null;
     if (codeFromBody && VOICE_TTS_ERROR_CODES[codeFromBody]) {
-      return VOICE_TTS_ERROR_CODES[codeFromBody];
+      return {
+        code: VOICE_TTS_ERROR_CODES[codeFromBody],
+        retryable: Boolean(structuredError?.retryable),
+        providerStatus: Number.isInteger(structuredError?.provider_status)
+          ? structuredError.provider_status
+          : null,
+      };
     }
-    if (response.status === 401) return VOICE_TTS_ERROR_CODES.UNAUTHORIZED;
-    if (response.status === 403) return VOICE_TTS_ERROR_CODES.FORBIDDEN;
-    if (response.status === 429) return VOICE_TTS_ERROR_CODES.RATE_LIMIT;
+    if (response.status === 401) return { code: VOICE_TTS_ERROR_CODES.UNAUTHORIZED };
+    if (response.status === 403) return { code: VOICE_TTS_ERROR_CODES.FORBIDDEN };
+    if (response.status === 429) return { code: VOICE_TTS_ERROR_CODES.PROVIDER_RATE_LIMIT, retryable: true };
     if (response.status === 400 || response.status === 413 || response.status === 422) {
-      return VOICE_TTS_ERROR_CODES.INVALID_TEXT;
+      return { code: VOICE_TTS_ERROR_CODES.INVALID_REQUEST };
     }
-    if (response.status === 503) return VOICE_TTS_ERROR_CODES.NOT_CONFIGURED;
-    if (response.status === 504) return VOICE_TTS_ERROR_CODES.TIMEOUT;
-    return VOICE_TTS_ERROR_CODES.PROVIDER_ERROR;
+    if (response.status === 503) return { code: VOICE_TTS_ERROR_CODES.CONFIGURATION_ERROR };
+    if (response.status === 504) return { code: VOICE_TTS_ERROR_CODES.PROVIDER_TIMEOUT, retryable: true };
+    return { code: VOICE_TTS_ERROR_CODES.PROVIDER_ERROR, retryable: response.status >= 500 };
   }
 
   /**
@@ -163,7 +178,7 @@ export function createElevenLabsTtsProvider({
 
     let attempt = await performRequest({ text, accessToken });
     let retries = 0;
-    while (!attempt.ok && attempt.code === VOICE_TTS_ERROR_CODES.NETWORK && retries < MAX_NETWORK_RETRIES) {
+    while (!attempt.ok && attempt.code === VOICE_TTS_ERROR_CODES.NETWORK_ERROR && retries < MAX_NETWORK_RETRIES) {
       retries += 1;
       attempt = await performRequest({ text, accessToken });
     }
@@ -172,10 +187,12 @@ export function createElevenLabsTtsProvider({
 
     const { response } = attempt;
     if (!response.ok) {
-      const code = await mapHttpError(response);
-      throw providerError(code, 'tts_request_rejected');
+      const mappedError = await mapHttpError(response);
+      throw providerError(mappedError.code, 'tts_request_rejected', mappedError);
     }
 
+    const cacheStatus = response.headers?.get?.('X-Uni-Voice-Cache') ?? null;
+    const cacheHit = String(cacheStatus).toUpperCase() === 'HIT';
     const blob = await response.blob();
     objectUrl = runtime.URL.createObjectURL(blob);
     audio = new runtime.Audio(objectUrl);
@@ -187,7 +204,10 @@ export function createElevenLabsTtsProvider({
         activeSettle = null;
         releaseAudio();
         onEnded?.();
-        resolve({ providerName: 'elevenlabs_tts' });
+        resolve({
+          providerName: cacheHit ? 'cache' : 'elevenlabs_tts',
+          cacheHit,
+        });
       };
       audio.onerror = () => {
         activeSettle = null;
@@ -199,7 +219,10 @@ export function createElevenLabsTtsProvider({
       audio.play().catch((playError) => {
         activeSettle = null;
         releaseAudio();
-        const err = providerError(VOICE_TTS_ERROR_CODES.AUDIO_PLAYBACK_ERROR, playError?.message ?? 'tts_playback_failed');
+        const code = playError?.name === 'NotAllowedError'
+          ? VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED
+          : VOICE_TTS_ERROR_CODES.AUDIO_PLAYBACK_ERROR;
+        const err = providerError(code, playError?.message ?? 'tts_playback_failed');
         onError?.(err);
         reject(err);
       });

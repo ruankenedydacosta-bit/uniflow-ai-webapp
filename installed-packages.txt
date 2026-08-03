@@ -1,0 +1,14 @@
+uniflow-ai-app@0.0.0 /Users/wagnerweber/uniflow-ai-webapp/uniflow-ai-app
+├── @eslint/js@10.0.1
+├── @supabase/supabase-js@2.110.2
+├── @types/react-dom@19.2.3
+├── @types/react@19.2.17
+├── @vitejs/plugin-react@6.0.3
+├── eslint-plugin-react-hooks@7.1.1
+├── eslint-plugin-react-refresh@0.5.3
+├── eslint@10.6.0
+├── globals@17.7.0
+├── react-dom@19.2.7
+├── react@19.2.7
+└── vite@8.1.4
+

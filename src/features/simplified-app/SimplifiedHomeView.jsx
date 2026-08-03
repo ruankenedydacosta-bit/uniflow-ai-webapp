@@ -1,8 +1,8 @@
-import { useEffect, useId, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
 import { VOICE_CAPTURE_STATES, useSharedUniVoiceInput, useVoiceIntensity } from '../uni-voice/index.js';
-import { AUTO_SPEAK_MAX_LENGTH, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
+import { VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import { UniMark } from './SimplifiedIcons.jsx';
 import {
   isVoiceErrorState,
@@ -121,14 +121,12 @@ function CompactResponse({
 
   if (!lastUser && !lastUni) return null;
 
-  // BLOCO UNI 2: mensagens longas demais para autoplay (ver
-  // AUTO_SPEAK_MAX_LENGTH) continuam completas na tela -- só ganham este
-  // botão manual, já que a Home (ao contrário do chat completo) não tem
-  // um "Ouvir" por mensagem.
+  // O texto permanece disponível mesmo quando autoplay/provedor falha.
+  // A ação manual é sempre oferecida e não participa da deduplicação do
+  // autoplay: o usuário pode solicitar uma nova tentativa conscientemente.
   const showManualSpeak = Boolean(
     voiceEnabled
     && lastUni?.text
-    && lastUni.text.length > AUTO_SPEAK_MAX_LENGTH
     && typeof onSpeakMessage === 'function',
   );
 
@@ -184,7 +182,24 @@ function SimplifiedHomeView({
     () => resolveSimplifiedGreeting(profile, user),
     [profile, user],
   );
+  const [welcomeVoiceError, setWelcomeVoiceError] = useState(null);
   const sessionKey = buildWelcomeSessionKey(user, session);
+
+  const requestWelcomeVoice = useCallback(
+    () => voiceController.speak(greeting.spokenGreeting, {
+      messageId: 'welcome',
+      source: 'greeting',
+    }),
+    [greeting.spokenGreeting, voiceController],
+  );
+  const applyWelcomeVoiceResult = useCallback((result) => {
+    setWelcomeVoiceError(result?.error ?? null);
+    return result;
+  }, []);
+  const speakWelcome = useCallback(
+    () => requestWelcomeVoice().then(applyWelcomeVoiceResult),
+    [applyWelcomeVoiceResult, requestWelcomeVoice],
+  );
 
   useEffect(() => voiceInput.registerHandlers({
     onBeforeStart: onBeforeVoiceStart,
@@ -202,15 +217,18 @@ function SimplifiedHomeView({
     // autoplay de mensagens (UniChatPage) só é armado quando a fala da
     // saudação TERMINA ou FALHA (finally), nunca antes (preparando/
     // carregando/tocando ficam bloqueando). Sucesso e falha liberam igual.
-    void voiceController.speak(greeting.voiceText)
-      .catch(() => {
-        // A saudação visual continua disponível mesmo quando o navegador
-        // bloqueia áudio; a tentativa permanece limitada a uma vez por sessão.
-      })
+    void requestWelcomeVoice()
+      .then(applyWelcomeVoiceResult)
       .finally(() => {
         onWelcomeVoiceSettled?.();
       });
-  }, [greeting.voiceText, sessionKey, voiceController, voiceEnabled, onWelcomeVoiceSettled]);
+  }, [
+    applyWelcomeVoiceResult,
+    onWelcomeVoiceSettled,
+    requestWelcomeVoice,
+    sessionKey,
+    voiceEnabled,
+  ]);
 
   useEffect(() => {
     if (
@@ -370,11 +388,19 @@ function SimplifiedHomeView({
   return (
     <div className={styles.home} data-simplified-home>
       <section className={styles.greeting} aria-labelledby="simplified-home-title">
-        <p>Seja bem-vindo,</p>
-        <h1 id="simplified-home-title">{greeting.heading}</h1>
+        <p>{greeting.visualGreeting.eyebrow}</p>
+        <h1 id="simplified-home-title">{greeting.displayName}</h1>
         <p className={styles.greetingMessage}>
           Estou aqui para ajudar você a tomar as <strong>melhores decisões</strong> financeiras.
         </p>
+        {welcomeVoiceError ? (
+          <div className={styles.greetingVoiceFallback} role="status" aria-live="polite">
+            <span>{welcomeVoiceError.message}</span>
+            <button type="button" className={styles.manualSpeak} onClick={() => void speakWelcome()}>
+              Ouvir saudação
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <CompactResponse

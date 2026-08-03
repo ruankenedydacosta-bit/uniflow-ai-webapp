@@ -526,7 +526,8 @@ test('handleSpeakMessage marca a mensagem ativa ANTES de chamar speak() com a ve
   // BLOCO VOZ 1: a voz usa SEMPRE a versão curta (buildSpeechText), mesmo
   // para textos acima de MAX_TTS_TEXT_LENGTH -- o texto completo exibido
   // (message.text no MessageBubble) nunca é alterado.
-  assert.match(fnBody, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\)\);/);
+  assert.match(fnBody, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\), \{/);
+  assert.match(fnBody, /source: requestMetadata\.source \?\? 'manual_replay'/);
   const setIdx = fnBody.indexOf('setVoiceMessageId(message.id);');
   const speakIdx = fnBody.indexOf('void uniVoice.speak(');
   assert.ok(setIdx >= 0 && speakIdx > setIdx, 'a mensagem ativa deve ser marcada antes de iniciar a geração');
@@ -638,12 +639,10 @@ test('BLOCO VOZ 1: existem EXATAMENTE dois pontos diretos de uniVoice.speak (han
   const page = await source('UniChatPage.jsx');
   const occurrences = page.match(/uniVoice\.speak\(/g) ?? [];
   assert.equal(occurrences.length, 2, 'uniVoice.speak deve ter exatamente dois pontos de chamada diretos: handleSpeakMessage (mensagens) e speakSideEffectNotice (avisos de efeito colateral, via reportConfirmationError). O autoplay chama handleSpeakMessage(), nunca uniVoice.speak() diretamente');
-  // A ÚNICA chamada direta de handleSpeakMessage(...) deve ser a do efeito
-  // de autoplay -- os outros pontos de disparo (MessageBubble, o fallback
-  // manual em SimplifiedHomeView) só RECEBEM a referência via prop
-  // onSpeakMessage={handleSpeakMessage}, nunca chamam a função eles mesmos.
-  const directCalls = page.match(/handleSpeakMessage\(lastMessage\);/g) ?? [];
-  assert.equal(directCalls.length, 1, 'esperava exatamente uma chamada direta -- handleSpeakMessage(lastMessage) no efeito de autoplay');
+  // O autoplay passa pelo adaptador de origem, enquanto o botão manual
+  // continua recebendo handleSpeakMessage diretamente.
+  const directCalls = page.match(/handleAutomaticSpeakMessage\(lastMessage\);/g) ?? [];
+  assert.equal(directCalls.length, 1, 'esperava exatamente uma chamada direta do adaptador de autoplay');
   assert.match(page, /onSpeakMessage=\{handleSpeakMessage\}/, 'MessageBubble deveria continuar recebendo handleSpeakMessage por prop (disparo manual)');
   // speakSideEffectNotice só pode ser chamada pelo ponto central
   // reportConfirmationError -- nenhuma chamada solta/aleatória pelo arquivo.
@@ -667,14 +666,14 @@ test('BLOCO VOZ 1: efeito de autoplay existe, é gated por isSimplifiedExperienc
   // para voz acontece dentro de handleSpeakMessage (buildSpeechText), nunca
   // aqui.
   assert.doesNotMatch(block, /AUTO_SPEAK_MAX_LENGTH|lastMessage\.text\.length/);
-  assert.match(block, /handleSpeakMessage\(lastMessage\);/);
+  assert.match(block, /handleAutomaticSpeakMessage\(lastMessage\);/);
 });
 
 test('BLOCO UNI 2: o efeito de autoplay NUNCA retorna uma função de limpeza (cleanup) -- evita que o cleanup de uma mensagem antiga interrompa a fala de uma mensagem nova que já começou', async () => {
   const page = await source('UniChatPage.jsx');
   const idx = page.indexOf('reprodução automática da resposta ATUAL da');
   const startEffect = page.indexOf('useEffect(() => {', idx);
-  const endEffect = page.indexOf('}, [messages, isSimplifiedExperience, voicePreference.enabled, handleSpeakMessage, user?.id, historyHydrated]);', startEffect);
+  const endEffect = page.indexOf('}, [messages, isSimplifiedExperience, voicePreference.enabled, handleAutomaticSpeakMessage, user?.id, historyHydrated]);', startEffect);
   assert.ok(startEffect > -1 && endEffect > startEffect);
   const effectBody = page.slice(startEffect, endEffect);
   assert.doesNotMatch(effectBody, /return \(\) =>/, 'o efeito de autoplay não deveria ter cleanup');
@@ -695,10 +694,10 @@ test('BLOCO VOZ 1: resposta curta E resposta longa falam -- o autoplay não filt
   // sucesso ou resposta longa) é candidata -- sem gate de tamanho e sem
   // filtro por tipo/conteúdo.
   assert.doesNotMatch(block, /lastMessage\.text\.length|lastMessage\.type|lastMessage\.confirmation|lastMessage\.highlight/);
-  assert.match(block, /handleSpeakMessage\(lastMessage\);/);
+  assert.match(block, /handleAutomaticSpeakMessage\(lastMessage\);/);
   // A versão curta para voz (buildSpeechText) é aplicada dentro de
   // handleSpeakMessage, nunca no efeito nem no texto visível.
-  assert.match(page, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\)\);/);
+  assert.match(page, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\), \{/);
   assert.match(page, /buildSpeechText\(text, MAX_TTS_TEXT_LENGTH\)/);
 });
 
@@ -813,7 +812,7 @@ test('BLOCO VOZ 1: Strict Mode não duplica -- a marcação no registro acontece
   const idx = page.indexOf('reprodução automática da resposta ATUAL da');
   const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
   const markIdx = block.indexOf('markAutoSpokenMessage(user?.id, lastMessage.id);');
-  const speakIdx = block.indexOf('handleSpeakMessage(lastMessage);');
+  const speakIdx = block.indexOf('handleAutomaticSpeakMessage(lastMessage);');
   assert.ok(markIdx > -1 && speakIdx > markIdx, 'a marcação deve acontecer ANTES da narração -- o re-mount (Strict Mode ou remount real) bloqueia a repetição');
 });
 
@@ -824,7 +823,8 @@ test('BLOCO VOZ 1: o botão manual "Ouvir" não consulta o registro de autoplay 
     page.indexOf('// BLOCO VOZ 1: ponto ÚNICO para narrar'),
   );
   assert.doesNotMatch(handleSpeakBlock, /hasAutoSpokenMessage|markAutoSpokenMessage|spokenMessageSession/, 'o disparo manual passa direto pelo registro -- nunca bloqueado pelo autoplay');
-  assert.match(handleSpeakBlock, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\)\);/);
+  assert.match(handleSpeakBlock, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\), \{/);
+  assert.match(handleSpeakBlock, /source: requestMetadata\.source \?\? 'manual_replay'/);
   assert.match(page, /onSpeakMessage=\{handleSpeakMessage\}/);
 });
 
@@ -840,7 +840,7 @@ test('BLOCO VOZ HIDRATAÇÃO: o autoplay é gated pelo marco historyHydrated (au
   const idx = page.indexOf('reprodução automática da resposta ATUAL da');
   const block = page.slice(idx, page.indexOf('useEffect(() => {\n    if (!activeId) return;', idx));
   assert.match(block, /if \(!historyHydrated\) return;/);
-  assert.match(block, /\}, \[messages, isSimplifiedExperience, voicePreference\.enabled, handleSpeakMessage, user\?\.id, historyHydrated\]\);/);
+  assert.match(block, /\}, \[messages, isSimplifiedExperience, voicePreference\.enabled, handleAutomaticSpeakMessage, user\?\.id, historyHydrated\]\);/);
 });
 
 test('BLOCO VOZ HIDRATAÇÃO: maybeArmAutoplay é o ÚNICO ponto que arma o autoplay -- snapshot marca o histórico restaurado como já narrado ANTES de habilitar, e nunca usa timeout', async () => {
@@ -1506,4 +1506,1414 @@ test('BUG 5: hidratação funde mensagens por IDENTIDADE (clientMessageId/dbId) 
   assert.match(loadBlock, /localIds\.has\(msg\.clientMessageId \?\? msg\.dbId \?\? msg\.id\)/);
   assert.match(loadBlock, /return \[\.\.\.prev, \.\.\.dbOnly\]/);
   assert.doesNotMatch(loadBlock, /prev\.length < loadedMessages\.length/);
+});
+
+// ============================================================================
+// PARTE 2 — BLOCO 1: Uni Engine conectada ao pipeline real em Shadow Mode
+// ============================================================================
+
+// Fatia o fonte entre dois marcadores de início (sem depender de contagem de
+// chaves) para inspecionar callbacks únicos do arquivo.
+function betweenMarkers(page, from, to) {
+  const start = page.indexOf(from);
+  if (start === -1) return '';
+  const end = to ? page.indexOf(to, start) : -1;
+  return end === -1 ? page.slice(start) : page.slice(start, end);
+}
+
+test('BLOCO 1: a Uni Engine roda somente APÓS o resultado legado -- no ponto único de saída de resposta, nunca no envio', async () => {
+  const page = await source('UniChatPage.jsx');
+  // O envio apenas guarda o turno do usuário -- a engine não roda antes do
+  // resultado legado existir (nenhum uniEngine.runShadow dentro de sendText).
+  const sendBlock = extractFunctionBody(page, 'function sendText(text) {').body;
+  assert.match(sendBlock, /lastEngineTurnRef\.current = \{/);
+  assert.match(sendBlock, /userMessageId: userMsg\.id/);
+  assert.match(sendBlock, /lastUniEngineShadowRef\.current = null;/);
+  assert.doesNotMatch(sendBlock, /uniEngine\.runShadow\(/);
+  // O motor observa (runShadow + runUniEngineIntegration) no ponto que JÁ
+  // recebe o texto legado final, chamado por buildGuidedUniMessage →
+  // createAssistantResponse.
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.ok(runBlock.length > 0, 'runEngineObservational não localizado');
+  assert.match(runBlock, /uniEngine\.runShadow\(\{/);
+  assert.match(runBlock, /runUniEngineIntegration\(\{/);
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /runEngineObservational\(legacyText, options\)/);
+  const buildBlock = betweenMarkers(
+    page,
+    'const buildGuidedUniMessage = useCallback',
+    'const { createAssistantResponse } = useUniResponsePipeline',
+  );
+  assert.match(buildBlock, /applyEngineGuidanceToResponse\(text, messageOptions\)/);
+});
+
+test('BLOCO 1: finalText exibido é SEMPRE o texto legado -- a resposta nunca é substituída pelo resultado da engine', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /return legacyText;/);
+  assert.doesNotMatch(guidedBlock, /result\.finalText/);
+  assert.doesNotMatch(guidedBlock, /finalText \?\? legacyText/);
+});
+
+test('BLOCO 1: engine desligada não altera nada -- config é sempre lida via uniEngine.getConfig e o texto exibido continua legado', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /uniEngine\.getConfig\(\)/);
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  // nenhum branch lê o resultado da engine para decidir o texto exibido
+  assert.match(guidedBlock, /return legacyText;/);
+  assert.doesNotMatch(guidedBlock, /shadow/);
+});
+
+test('BLOCO 1: erro interno da engine nunca quebra o chat -- try/catch silencioso no ponto de observação', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /try \{/);
+  assert.match(runBlock, /\} catch \{/);
+  assert.doesNotMatch(runBlock, /throw /);
+  // o fallback silencioso zera os refs e o texto legado segue intacto
+  assert.match(runBlock, /lastUniEngineShadowRef\.current = null;/);
+  assert.match(runBlock, /lastEngineIntegrationResultRef\.current = null;/);
+});
+
+test('BLOCO 1: Shadow Mode não aplica guidance -- capabilities são calculadas na integração mas nunca alteram o fluxo real', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  // a integração é chamada (calcula guidance/diagnostics/metadata/comparação)...
+  assert.match(runBlock, /runUniEngineIntegration\(\{/);
+  // ...mas o texto retornado ao pipeline é sempre o legado
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /return legacyText;/);
+  assert.doesNotMatch(guidedBlock, /questionGuidance/);
+  assert.doesNotMatch(guidedBlock, /clarificationGuidance/);
+  assert.doesNotMatch(guidedBlock, /styleGuidance/);
+  assert.doesNotMatch(guidedBlock, /lengthGuidance/);
+});
+
+test('BLOCO 1: Pending Action não é alterada -- a observação só LÊ o estado (refs), nunca escreve setPendingAction/savePendingAction', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /pendingActionRef\.current/);
+  assert.doesNotMatch(runBlock, /setPendingAction\(/);
+  assert.doesNotMatch(runBlock, /savePendingAction\(/);
+});
+
+test('BLOCO 1: confirmação não é pulada -- a observação não chama confirm/provideInput nem muta o estado de confirmação', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.doesNotMatch(runBlock, /\.confirm\(/);
+  assert.doesNotMatch(runBlock, /provideInput\(/);
+  assert.doesNotMatch(runBlock, /confirmation: \{/);
+});
+
+test('BLOCO 1: nenhuma execução financeira e nenhuma chamada direta a banco/Supabase/RPC no ponto de observação', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.doesNotMatch(runBlock, /executeFinancialIntentAction/);
+  assert.doesNotMatch(runBlock, /executeConfirmedFinancialAction/);
+  assert.doesNotMatch(runBlock, /\.rpc\(/);
+  assert.doesNotMatch(runBlock, /supabase/);
+});
+
+test('BLOCO 1: nenhuma escrita de memória no chat -- a observação não persiste pending action nem memória de conversa', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.doesNotMatch(runBlock, /savePendingAction\(/);
+  assert.doesNotMatch(runBlock, /savePendingActionStack\(/);
+  // o único contato com memória é o adapter de captura Shadow (gated), nunca
+  // uma escrita direta do chat
+  assert.match(runBlock, /memoryAdapter/);
+});
+
+test('BLOCO 1: nenhum TTS adicional é disparado -- a observação nunca chama uniVoice.speak nem o autoplay', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.doesNotMatch(runBlock, /uniVoice\.speak/);
+  assert.doesNotMatch(runBlock, /handleAutomaticSpeakMessage/);
+  assert.doesNotMatch(runBlock, /handleSpeakMessage/);
+});
+
+test('BLOCO 1: sem execução duplicada para a mesma resposta -- guarda dedup por mensagem do usuário antes de rodar a engine', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /lastEngineAnalyzedMessageIdRef\.current === turn\.userMessageId/);
+  // a guarda de dedup roda ANTES do try (antes de qualquer execução da engine)
+  assert.ok(
+    runBlock.indexOf('lastEngineAnalyzedMessageIdRef.current === turn.userMessageId')
+      < runBlock.indexOf('try {'),
+    'a guarda de dedup vem antes da execução da engine',
+  );
+});
+
+test('BLOCO 1: resultado da engine/integração permanece serializável e fica só em ref local -- nunca persistido em banco/memória/telemetria', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /lastUniEngineShadowRef\.current = shadow;/);
+  assert.match(runBlock, /lastEngineIntegrationResultRef\.current = result;/);
+  assert.doesNotMatch(runBlock, /localStorage/);
+  assert.doesNotMatch(runBlock, /saveHistory\(/);
+  assert.doesNotMatch(runBlock, /syncMessageToSupabase/);
+});
+
+// PARTE 2 — BLOCO 4: snapshot observacional consolidado da conversa.
+// Construído APÓS integrationSnapshot + guidanceSnapshot, guardado apenas em
+// ref dedicado, com falha segura e SEM nunca alterar o pipeline legado.
+test('BLOCO 4: snapshot observacional é construído DEPOIS da integração e das guidance', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const integrationAssign = runBlock.indexOf('lastEngineIntegrationResultRef.current = result;');
+  const guidanceAssign = runBlock.indexOf('lastGuidanceSnapshotRef.current = buildGuidanceSnapshot({');
+  const observationAssign = runBlock.indexOf('lastObservationSnapshotRef.current = buildConversationObservationSnapshot({');
+  assert.ok(integrationAssign !== -1, 'integração atribui ao ref de integração');
+  assert.ok(guidanceAssign !== -1, 'guidance atribui ao ref de guidance');
+  assert.ok(observationAssign !== -1, 'observation atribui ao ref dedicado');
+  assert.ok(guidanceAssign > integrationAssign, 'guidance é construída após a integração');
+  assert.ok(observationAssign > guidanceAssign, 'observation é construída após integration e guidance');
+  assert.match(runBlock, /buildObservationSnapshot\(\{/);
+  assert.match(runBlock, /integrationSnapshot: result,/);
+  assert.match(runBlock, /guidanceSnapshot: lastGuidanceSnapshotRef\.current,/);
+  assert.match(runBlock, /activationSnapshot: shadow\?\.activation \?\? null,/);
+});
+
+test('BLOCO 4: snapshot fica SOMENTE em ref dedicado -- nenhum state React, nenhuma renderização', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /lastObservationSnapshotRef\.current = /);
+  assert.doesNotMatch(runBlock, /setObservationSnapshot/);
+  assert.doesNotMatch(runBlock, /useState\(/);
+  assert.doesNotMatch(runBlock, /render\(/);
+});
+
+test('BLOCO 4: helper local tem falha segura -- erro na construção do snapshot não quebra o chat', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /const buildConversationObservationSnapshot = \(/);
+  assert.match(runBlock, /if \(!integrationSnapshot && !guidanceSnapshot\) return null;/);
+  assert.match(runBlock, /\} catch \{\s*\n\s*return null;\s*\n\s*\}/);
+  assert.match(runBlock, /lastObservationSnapshotRef\.current = null;/);
+});
+
+test('BLOCO 4: finalText continua sendo o legado -- observation jamais altera a resposta', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(runBlock, /buildObservationSnapshot/);
+  assert.match(guidedBlock, /return legacyText;/);
+});
+
+test('BLOCO 4: snapshot não duplica execução -- dedup ocorre antes da construção', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const dedupGuard = runBlock.indexOf('lastEngineAnalyzedMessageIdRef.current === turn.userMessageId');
+  const helperDef = runBlock.indexOf('const buildConversationObservationSnapshot = (');
+  assert.ok(dedupGuard !== -1 && helperDef !== -1);
+  assert.ok(dedupGuard < helperDef, 'dedup acontece antes de construir o snapshot');
+});
+
+test('BLOCO 4: pipeline legado intacto -- nenhuma execução, confirmação, memória, TTS ou persistência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.doesNotMatch(runBlock, /executeFinancialIntentAction/);
+  assert.doesNotMatch(runBlock, /executeConfirmedFinancialAction/);
+  assert.doesNotMatch(runBlock, /\.rpc\(/);
+  assert.doesNotMatch(runBlock, /savePendingActionStack/);
+  assert.doesNotMatch(runBlock, /uniVoice\.speak/);
+  assert.doesNotMatch(runBlock, /handleAutomaticSpeakMessage/);
+  assert.doesNotMatch(runBlock, /localStorage/);
+  assert.doesNotMatch(runBlock, /syncMessageToSupabase/);
+  assert.doesNotMatch(runBlock, /insertMessage/);
+  assert.doesNotMatch(runBlock, /await saveDecision/);
+  assert.doesNotMatch(runBlock, /confirmation\./);
+  assert.doesNotMatch(runBlock, /provideInput/);
+});
+
+test('BLOCO 4: snapshot observacional do chat é serializável e determinístico (mesma entrada -> mesma saída)', async () => {
+  const { buildObservationSnapshot } = await import('../uni-engine/observation/buildObservationSnapshot.js');
+  const { buildGuidanceSnapshot } = await import('../uni-engine/guidance/buildGuidanceSnapshot.js');
+  const { runUniEngineIntegration } = await import('../uni-engine/integration/runUniEngineIntegration.js');
+  const {
+    buildIntegrationConfig,
+    buildEngineResult,
+    buildActiveDecision,
+    legacyClarification,
+  } = await import('../uni-engine/integration/testFixtures.js');
+  const engine = buildEngineResult({
+    decisionLayer: { decisionType: 'ask', nextDecisionType: 'ask', risk: 'LOW', confidence: 0.9 },
+    comparison: { missingFields: ['amount'], agreementMetrics: { divergenceCount: 0 } },
+    activation: {
+      enabled: true,
+      shadowMode: false,
+      environment: 'development',
+      decisions: [buildActiveDecision('QUESTION_GUIDANCE')],
+    },
+  });
+  const integrationSnapshot = runUniEngineIntegration({
+    config: buildIntegrationConfig(),
+    legacy: legacyClarification(),
+    engineResult: engine,
+    context: { isDev: true, confidence: 0.9, risk: 'LOW', dataSufficient: true },
+  });
+  const guidanceSnapshot = buildGuidanceSnapshot({
+    legacy: legacyClarification(),
+    engineResult: engine,
+    context: { isDev: true },
+  });
+  const snapshot = buildObservationSnapshot({
+    integrationSnapshot,
+    guidanceSnapshot,
+    activationSnapshot: engine.activation,
+    context: { isDev: true, environment: 'development' },
+  });
+  assert.equal(snapshot.mode, 'observational');
+  assert.equal(snapshot.legacyPreserved, true);
+  assert.equal(snapshot.integrationSnapshot != null, true);
+  assert.equal(snapshot.guidanceSnapshot != null, true);
+  assert.equal(snapshot.activationSnapshot != null, true);
+  assert.doesNotThrow(() => JSON.stringify(snapshot));
+  const again = buildObservationSnapshot({
+    integrationSnapshot,
+    guidanceSnapshot,
+    activationSnapshot: engine.activation,
+    context: { isDev: true, environment: 'development' },
+  });
+  assert.equal(JSON.stringify(again), JSON.stringify(snapshot));
+});
+
+// PARTE 2 — BLOCO 5: estabilização — ciclo de vida dos refs observacionais.
+// Todo novo turno zera os quatro refs de análise (shadow, integração,
+// guidance, observação) antes de registrar o turno do usuário; o guard de
+// deduplicação NÃO é zerado (ele persiste por mensagem do usuário).
+test('BLOCO 5: novo turno zera TODOS os refs observacionais (shadow, integration, guidance, observation)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.match(sendBlock, /lastUniEngineShadowRef\.current = null;/);
+  assert.match(sendBlock, /lastEngineIntegrationResultRef\.current = null;/);
+  assert.match(sendBlock, /lastGuidanceSnapshotRef\.current = null;/);
+  assert.match(sendBlock, /lastObservationSnapshotRef\.current = null;/);
+  const shadowReset = sendBlock.indexOf('lastUniEngineShadowRef.current = null;');
+  const observationReset = sendBlock.indexOf('lastObservationSnapshotRef.current = null;');
+  assert.ok(shadowReset !== -1 && observationReset !== -1);
+  assert.ok(observationReset > shadowReset, 'observation é zerado junto com os demais refs');
+});
+
+test('BLOCO 5: guard de deduplicação NÃO é zerado no novo turno -- persiste por mensagem do usuário', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.doesNotMatch(sendBlock, /lastEngineAnalyzedMessageIdRef\.current = null;/);
+});
+
+test('BLOCO 5: catch do runEngineObservational zera os quatro refs juntos (falha segura consistente)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const catchStart = runBlock.indexOf('} catch {');
+  const catchSlice = runBlock.slice(catchStart);
+  assert.match(catchSlice, /lastUniEngineShadowRef\.current = null;/);
+  assert.match(catchSlice, /lastEngineIntegrationResultRef\.current = null;/);
+  assert.match(catchSlice, /lastGuidanceSnapshotRef\.current = null;/);
+  assert.match(catchSlice, /lastObservationSnapshotRef\.current = null;/);
+});
+
+test('BLOCO 5: financialStateRef é sincronizado por um ÚNICO efeito -- sem duplicação', async () => {
+  const page = await source('UniChatPage.jsx');
+  const syncBlock = betweenMarkers(
+    page,
+    'const lastObservationSnapshotRef = useRef(null);',
+    '// BLOCO VOZ 1:',
+  );
+  const effectCount = (syncBlock.match(/financialStateRef\.current = financialConversation\.state;/g) || []).length;
+  assert.equal(effectCount, 1, `esperado 1 sincronização, encontradas ${effectCount}`);
+});
+
+// ============================================================================
+// PARTE 3 — DECISION READINESS: camada observacional de prontidão técnica.
+// O readiness consome o Observation Snapshot (Parte 2) + decisão da
+// Decision Layer + decisões de Activation, tudo via ref dedicado, SEM
+// aplicar nada, SEM state React, SEM persistência. Nunca re-executa a
+// Decision Layer nem a Activation Engine.
+// ============================================================================
+
+test('BLOCO 3: readiness é importado e o ref dedicado existe ao lado dos refs observacionais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const importLine = page.match(/import \{[\s\S]*?\} from '\.\.\/uni-engine\/index\.js';/)[0];
+  assert.match(importLine, /buildDecisionReadinessSnapshot/);
+  const refBlock = betweenMarkers(
+    page,
+    'const lastObservationSnapshotRef = useRef(null);',
+    'const lastEngineAnalyzedMessageIdRef = useRef(null);',
+  );
+  assert.match(refBlock, /const lastDecisionReadinessSnapshotRef = useRef\(null\);/);
+});
+
+test('BLOCO 3: readiness é construído DEPOIS do observation snapshot e consome a decisão da Decision Layer', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /const buildConversationReadinessSnapshot = \(/);
+  assert.match(runBlock, /if \(!observationSnapshot\) return null;/);
+  assert.match(runBlock, /buildDecisionReadinessSnapshot\(\{/);
+  assert.match(runBlock, /observationSnapshot,\s*\n\s*decisionSnapshot,/);
+  const observationAssign = runBlock.indexOf('lastObservationSnapshotRef.current = buildConversationObservationSnapshot({');
+  const readinessAssign = runBlock.indexOf('lastDecisionReadinessSnapshotRef.current = buildConversationReadinessSnapshot({');
+  assert.ok(observationAssign !== -1, 'observation atribui ao ref dedicado');
+  assert.ok(readinessAssign !== -1, 'readiness atribui ao ref dedicado');
+  assert.ok(readinessAssign > observationAssign, 'readiness é construída após o observation snapshot');
+  const readinessAssignBlock = runBlock.slice(readinessAssign, readinessAssign + 400);
+  assert.match(readinessAssignBlock, /observationSnapshot: lastObservationSnapshotRef\.current,/);
+  assert.match(readinessAssignBlock, /decisionSnapshot: shadow\?\.decisionLayer \?\? null,/);
+});
+
+test('BLOCO 3: readiness fica SOMENTE em ref -- nenhum state, renderização, aplicação ou persistência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /lastDecisionReadinessSnapshotRef\.current = /);
+  assert.doesNotMatch(runBlock, /setReadiness/);
+  assert.doesNotMatch(runBlock, /useState\(/);
+  assert.doesNotMatch(runBlock, /applyEngineGuidanceToResponse/);
+  assert.doesNotMatch(runBlock, /executeFinancialIntentAction/);
+  assert.doesNotMatch(runBlock, /\.rpc\(/);
+  assert.doesNotMatch(runBlock, /localStorage/);
+  assert.doesNotMatch(runBlock, /syncMessageToSupabase/);
+  assert.doesNotMatch(runBlock, /uniVoice\.speak/);
+});
+
+test('BLOCO 3: helper local tem falha segura -- erro na construção não quebra o chat', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const helperStart = runBlock.indexOf('const buildConversationReadinessSnapshot = (');
+  const helperBlock = runBlock.slice(helperStart, helperStart + 500);
+  assert.match(helperBlock, /if \(!observationSnapshot\) return null;/);
+  assert.match(helperBlock, /\} catch \{\s*\n\s*return null;\s*\n\s*\}/);
+});
+
+test('BLOCO 3: novo turno zera o ref de readiness junto com os demais refs observacionais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.match(sendBlock, /lastObservationSnapshotRef\.current = null;/);
+  assert.match(sendBlock, /lastDecisionReadinessSnapshotRef\.current = null;/);
+  const observationReset = sendBlock.indexOf('lastObservationSnapshotRef.current = null;');
+  const readinessReset = sendBlock.indexOf('lastDecisionReadinessSnapshotRef.current = null;');
+  assert.ok(readinessReset > observationReset, 'readiness é zerado junto com os demais refs');
+});
+
+test('BLOCO 3: catch do runEngineObservational zera o ref de readiness (falha segura consistente)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const catchStart = runBlock.indexOf('} catch {');
+  const catchSlice = runBlock.slice(catchStart);
+  assert.match(catchSlice, /lastObservationSnapshotRef\.current = null;/);
+  assert.match(catchSlice, /lastDecisionReadinessSnapshotRef\.current = null;/);
+});
+
+// ============================================================================
+// PARTE 4 — BLOCO 1: CAPABILITY ACTIVATION READINESS observacional.
+// Determina, a partir das decisões de Activation JÁ produzidas, quais
+// capabilities poderiam ser ativadas no futuro — sem nunca ativar nada, sem
+// state React, sem persistência. Fluxo: Integration → Guidance → Observation
+// → Decision Readiness → Capability Readiness.
+// ============================================================================
+
+test('BLOCO 1: capability readiness é importado e o ref dedicado existe ao lado dos demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const importLine = page.match(/import \{[\s\S]*?\} from '\.\.\/uni-engine\/index\.js';/)[0];
+  assert.match(importLine, /buildCapabilityReadinessSnapshot/);
+  const refBlock = betweenMarkers(
+    page,
+    'const lastDecisionReadinessSnapshotRef = useRef(null);',
+    'const lastEngineAnalyzedMessageIdRef = useRef(null);',
+  );
+  assert.match(refBlock, /const lastCapabilityReadinessSnapshotRef = useRef\(null\);/);
+});
+
+test('BLOCO 1: capability readiness é construído DEPOIS do decision readiness', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /const buildConversationCapabilityReadinessSnapshot = \(/);
+  assert.match(runBlock, /if \(!observationSnapshot\) return null;/);
+  assert.match(runBlock, /buildCapabilityReadinessSnapshot\(\{/);
+  const readinessAssign = runBlock.indexOf('lastDecisionReadinessSnapshotRef.current = buildConversationReadinessSnapshot({');
+  const capabilityAssign = runBlock.indexOf('lastCapabilityReadinessSnapshotRef.current = buildConversationCapabilityReadinessSnapshot({');
+  assert.ok(readinessAssign !== -1, 'decision readiness atribui ao ref dedicado');
+  assert.ok(capabilityAssign !== -1, 'capability readiness atribui ao ref dedicado');
+  assert.ok(capabilityAssign > readinessAssign, 'capability readiness é construída após o decision readiness');
+  const capabilityBlock = runBlock.slice(capabilityAssign, capabilityAssign + 400);
+  assert.match(capabilityBlock, /observationSnapshot: lastObservationSnapshotRef\.current,/);
+  assert.match(capabilityBlock, /decisionReadinessSnapshot: lastDecisionReadinessSnapshotRef\.current \?\? null,/);
+});
+
+test('BLOCO 1: capability readiness fica SOMENTE em ref -- nenhum state, aplicação ou persistência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /lastCapabilityReadinessSnapshotRef\.current = /);
+  assert.doesNotMatch(runBlock, /setCapabilityReadiness/);
+  assert.doesNotMatch(runBlock, /useState\(/);
+  assert.doesNotMatch(runBlock, /applyEngineGuidanceToResponse/);
+  assert.doesNotMatch(runBlock, /executeFinancialIntentAction/);
+  assert.doesNotMatch(runBlock, /\.rpc\(/);
+  assert.doesNotMatch(runBlock, /localStorage/);
+  assert.doesNotMatch(runBlock, /syncMessageToSupabase/);
+  assert.doesNotMatch(runBlock, /uniVoice\.speak/);
+});
+
+test('BLOCO 1: helper local tem falha segura -- erro na construção não quebra o chat', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const helperStart = runBlock.indexOf('const buildConversationCapabilityReadinessSnapshot = (');
+  const helperBlock = runBlock.slice(helperStart, helperStart + 700);
+  assert.match(helperBlock, /if \(!observationSnapshot\) return null;/);
+  assert.match(helperBlock, /\} catch \{\s*\n\s*return null;\s*\n\s*\}/);
+});
+
+test('BLOCO 1: novo turno zera o ref de capability readiness junto com os demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.match(sendBlock, /lastDecisionReadinessSnapshotRef\.current = null;/);
+  assert.match(sendBlock, /lastCapabilityReadinessSnapshotRef\.current = null;/);
+  const readinessReset = sendBlock.indexOf('lastDecisionReadinessSnapshotRef.current = null;');
+  const capabilityReset = sendBlock.indexOf('lastCapabilityReadinessSnapshotRef.current = null;');
+  assert.ok(capabilityReset > readinessReset, 'capability readiness é zerado junto com os demais refs');
+});
+
+test('BLOCO 1: catch do runEngineObservational zera o ref de capability readiness', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const catchStart = runBlock.indexOf('} catch {');
+  const catchSlice = runBlock.slice(catchStart);
+  assert.match(catchSlice, /lastDecisionReadinessSnapshotRef\.current = null;/);
+  assert.match(catchSlice, /lastCapabilityReadinessSnapshotRef\.current = null;/);
+});
+
+test('BLOCO 1: pipeline legado intacto -- nenhuma activation, confirmação, memória, TTS ou persistência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.doesNotMatch(runBlock, /runActivationEngine/);
+  assert.doesNotMatch(runBlock, /executeConfirmedFinancialAction/);
+  assert.doesNotMatch(runBlock, /savePendingActionStack/);
+  assert.doesNotMatch(runBlock, /handleAutomaticSpeakMessage/);
+  assert.doesNotMatch(runBlock, /insertMessage/);
+  assert.doesNotMatch(runBlock, /await saveDecision/);
+  assert.doesNotMatch(runBlock, /confirmation\./);
+  assert.doesNotMatch(runBlock, /provideInput/);
+});
+
+test('BLOCO 1: snapshot de capability readiness é serializável e determinístico', async () => {
+  const { buildCapabilityReadinessSnapshot } = await import('../uni-engine/index.js');
+  const { buildObservationSnapshot } = await import('../uni-engine/observation/buildObservationSnapshot.js');
+  const { buildGuidanceSnapshot } = await import('../uni-engine/guidance/buildGuidanceSnapshot.js');
+  const { runUniEngineIntegration } = await import('../uni-engine/integration/runUniEngineIntegration.js');
+  const {
+    buildIntegrationConfig,
+    buildEngineResult,
+    buildActiveDecision,
+    legacyClarification,
+  } = await import('../uni-engine/integration/testFixtures.js');
+  const engine = buildEngineResult({
+    decisionLayer: { decisionType: 'ask', nextDecisionType: 'ask', risk: 'LOW', confidence: 0.9 },
+    comparison: { missingFields: ['amount'], agreementMetrics: { divergenceCount: 0 } },
+    activation: {
+      enabled: true,
+      shadowMode: true,
+      environment: 'development',
+      decisions: [buildActiveDecision('QUESTION_GUIDANCE')],
+    },
+  });
+  const legacy = legacyClarification();
+  const integrationSnapshot = runUniEngineIntegration({
+    config: buildIntegrationConfig(),
+    legacy,
+    engineResult: engine,
+    context: { isDev: true, confidence: 0.9, risk: 'LOW', dataSufficient: true },
+  });
+  const guidanceSnapshot = buildGuidanceSnapshot({
+    legacy,
+    engineResult: engine,
+    context: { isDev: true },
+  });
+  const observationSnapshot = buildObservationSnapshot({
+    integrationSnapshot,
+    guidanceSnapshot,
+    activationSnapshot: engine.activation,
+    context: { isDev: true, environment: 'development' },
+  });
+  const snapshot = buildCapabilityReadinessSnapshot({
+    observationSnapshot,
+    decisionReadinessSnapshot: { version: '1.0', mode: 'observational' },
+    context: { isDev: true, environment: 'development' },
+  });
+  assert.equal(snapshot.mode, 'observational');
+  assert.equal(snapshot.legacyPreserved, true);
+  assert.equal(snapshot.applied, false);
+  assert.equal(snapshot.shadowMode, true);
+  assert.ok(snapshot.eligibleCapabilities.includes('QUESTION_GUIDANCE'));
+  assert.doesNotThrow(() => JSON.stringify(snapshot));
+  const again = buildCapabilityReadinessSnapshot({
+    observationSnapshot,
+    decisionReadinessSnapshot: { version: '1.0', mode: 'observational' },
+    context: { isDev: true, environment: 'development' },
+  });
+  assert.equal(JSON.stringify(again), JSON.stringify(snapshot));
+});
+
+// ============================================================================
+// PARTE 4 — BLOCO 2: EXECUTION READINESS observacional.
+// Avalia se uma FUTURA execução seria segura — sem nunca executar nada, sem
+// state React, sem persistência. Fluxo: Integration → Guidance → Observation
+// → Decision Readiness → Capability Readiness → Execution Readiness.
+// ============================================================================
+
+test('BLOCO 2: execution readiness é importado e o ref dedicado existe ao lado dos demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const importLine = page.match(/import \{[\s\S]*?\} from '\.\.\/uni-engine\/index\.js';/)[0];
+  assert.match(importLine, /buildExecutionReadinessSnapshot/);
+  const refBlock = betweenMarkers(
+    page,
+    'const lastCapabilityReadinessSnapshotRef = useRef(null);',
+    'const lastEngineAnalyzedMessageIdRef = useRef(null);',
+  );
+  assert.match(refBlock, /const lastExecutionReadinessSnapshotRef = useRef\(null\);/);
+});
+
+test('BLOCO 2: execution readiness é construído DEPOIS do capability readiness', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /const buildConversationExecutionReadinessSnapshot = \(/);
+  assert.match(runBlock, /if \(!observationSnapshot\) return null;/);
+  assert.match(runBlock, /buildExecutionReadinessSnapshot\(\{/);
+  const capabilityAssign = runBlock.indexOf('lastCapabilityReadinessSnapshotRef.current = buildConversationCapabilityReadinessSnapshot({');
+  const executionAssign = runBlock.indexOf('lastExecutionReadinessSnapshotRef.current = buildConversationExecutionReadinessSnapshot({');
+  assert.ok(capabilityAssign !== -1, 'capability readiness atribui ao ref dedicado');
+  assert.ok(executionAssign !== -1, 'execution readiness atribui ao ref dedicado');
+  assert.ok(executionAssign > capabilityAssign, 'execution readiness é construída após o capability readiness');
+  const executionBlock = runBlock.slice(executionAssign, executionAssign + 400);
+  assert.match(executionBlock, /observationSnapshot: lastObservationSnapshotRef\.current,/);
+  assert.match(executionBlock, /decisionReadinessSnapshot: lastDecisionReadinessSnapshotRef\.current \?\? null,/);
+  assert.match(executionBlock, /capabilityReadinessSnapshot: lastCapabilityReadinessSnapshotRef\.current \?\? null,/);
+});
+
+test('BLOCO 2: execution readiness fica SOMENTE em ref -- nenhum state, execução ou persistência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /lastExecutionReadinessSnapshotRef\.current = /);
+  assert.doesNotMatch(runBlock, /setExecutionReadiness/);
+  assert.doesNotMatch(runBlock, /useState\(/);
+  assert.doesNotMatch(runBlock, /executeFinancialIntentAction/);
+  assert.doesNotMatch(runBlock, /executeConfirmedFinancialAction/);
+  assert.doesNotMatch(runBlock, /\.rpc\(/);
+  assert.doesNotMatch(runBlock, /localStorage/);
+  assert.doesNotMatch(runBlock, /syncMessageToSupabase/);
+  assert.doesNotMatch(runBlock, /uniVoice\.speak/);
+});
+
+test('BLOCO 2: helper local tem falha segura -- erro na construção não quebra o chat', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const helperStart = runBlock.indexOf('const buildConversationExecutionReadinessSnapshot = (');
+  const helperBlock = runBlock.slice(helperStart, helperStart + 700);
+  assert.match(helperBlock, /if \(!observationSnapshot\) return null;/);
+  assert.match(helperBlock, /\} catch \{\s*\n\s*return null;\s*\n\s*\}/);
+});
+
+test('BLOCO 2: novo turno zera o ref de execution readiness junto com os demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.match(sendBlock, /lastCapabilityReadinessSnapshotRef\.current = null;/);
+  assert.match(sendBlock, /lastExecutionReadinessSnapshotRef\.current = null;/);
+  const capabilityReset = sendBlock.indexOf('lastCapabilityReadinessSnapshotRef.current = null;');
+  const executionReset = sendBlock.indexOf('lastExecutionReadinessSnapshotRef.current = null;');
+  assert.ok(executionReset > capabilityReset, 'execution readiness é zerado junto com os demais refs');
+});
+
+test('BLOCO 2: catch do runEngineObservational zera o ref de execution readiness', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const catchStart = runBlock.indexOf('} catch {');
+  const catchSlice = runBlock.slice(catchStart);
+  assert.match(catchSlice, /lastCapabilityReadinessSnapshotRef\.current = null;/);
+  assert.match(catchSlice, /lastExecutionReadinessSnapshotRef\.current = null;/);
+});
+
+test('BLOCO 2: pipeline legado intacto -- nenhuma execução, activation, confirmação, memória ou TTS', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.doesNotMatch(runBlock, /runActivationEngine/);
+  assert.doesNotMatch(runBlock, /runDecisionLayer/);
+  assert.doesNotMatch(runBlock, /savePendingActionStack/);
+  assert.doesNotMatch(runBlock, /handleAutomaticSpeakMessage/);
+  assert.doesNotMatch(runBlock, /insertMessage/);
+  assert.doesNotMatch(runBlock, /await saveDecision/);
+  assert.doesNotMatch(runBlock, /confirmation\./);
+  assert.doesNotMatch(runBlock, /provideInput/);
+});
+
+test('BLOCO 2: snapshot de execution readiness é serializável e determinístico', async () => {
+  const { buildExecutionReadinessSnapshot } = await import('../uni-engine/index.js');
+  const { buildObservationSnapshot } = await import('../uni-engine/observation/buildObservationSnapshot.js');
+  const { buildGuidanceSnapshot } = await import('../uni-engine/guidance/buildGuidanceSnapshot.js');
+  const { runUniEngineIntegration } = await import('../uni-engine/integration/runUniEngineIntegration.js');
+  const { buildCapabilityReadinessSnapshot } = await import('../uni-engine/capability-readiness/buildCapabilityReadinessSnapshot.js');
+  const {
+    buildIntegrationConfig,
+    buildEngineResult,
+    buildActiveDecision,
+    legacyClarification,
+  } = await import('../uni-engine/integration/testFixtures.js');
+  const engine = buildEngineResult({
+    decisionLayer: { decisionType: 'ask', nextDecisionType: 'ask', risk: 'LOW', confidence: 0.9 },
+    comparison: { missingFields: ['amount'], agreementMetrics: { divergenceCount: 0 } },
+    activation: {
+      enabled: true,
+      shadowMode: true,
+      environment: 'development',
+      decisions: [buildActiveDecision('QUESTION_GUIDANCE')],
+    },
+  });
+  const legacy = legacyClarification();
+  const integrationSnapshot = runUniEngineIntegration({
+    config: buildIntegrationConfig(),
+    legacy,
+    engineResult: engine,
+    context: { isDev: true, confidence: 0.9, risk: 'LOW', dataSufficient: true },
+  });
+  const guidanceSnapshot = buildGuidanceSnapshot({
+    legacy,
+    engineResult: engine,
+    context: { isDev: true },
+  });
+  const observationSnapshot = buildObservationSnapshot({
+    integrationSnapshot,
+    guidanceSnapshot,
+    activationSnapshot: engine.activation,
+    context: { isDev: true, environment: 'development' },
+  });
+  const capabilityReadinessSnapshot = buildCapabilityReadinessSnapshot({
+    observationSnapshot,
+    decisionReadinessSnapshot: { version: '1.0', mode: 'observational', decisionStatus: 'ASK' },
+    context: { isDev: true, environment: 'development' },
+  });
+  const snapshot = buildExecutionReadinessSnapshot({
+    observationSnapshot,
+    decisionReadinessSnapshot: {
+      version: '1.0',
+      mode: 'observational',
+      decisionAvailable: true,
+      decisionStatus: 'ASK',
+      confidence: 0.9,
+      risk: 'LOW',
+      missingInformation: ['amount'],
+      circuitBreakerStatus: { open: false, openCapabilities: [] },
+    },
+    capabilityReadinessSnapshot,
+    context: { isDev: true, environment: 'development' },
+  });
+  assert.equal(snapshot.mode, 'observational');
+  assert.equal(snapshot.legacyPreserved, true);
+  assert.equal(snapshot.applied, false);
+  assert.equal(snapshot.shadowMode, true);
+  assert.equal(snapshot.executionAvailable, false);
+  assert.ok(snapshot.requiredCapabilities.includes('FINANCIAL_EXECUTION'));
+  assert.doesNotThrow(() => JSON.stringify(snapshot));
+  const again = buildExecutionReadinessSnapshot({
+    observationSnapshot,
+    decisionReadinessSnapshot: {
+      version: '1.0',
+      mode: 'observational',
+      decisionAvailable: true,
+      decisionStatus: 'ASK',
+      confidence: 0.9,
+      risk: 'LOW',
+      missingInformation: ['amount'],
+      circuitBreakerStatus: { open: false, openCapabilities: [] },
+    },
+    capabilityReadinessSnapshot,
+    context: { isDev: true, environment: 'development' },
+  });
+  assert.equal(JSON.stringify(again), JSON.stringify(snapshot));
+});
+
+// ============================================================================
+// PARTE 5 — BLOCO 1: APPLICATION (primeira ativação controlada).
+// Aplica SOMENTE RESPONSE_STYLE_GUIDANCE e RESPONSE_LENGTH_GUIDANCE, em DEV,
+// com Integration + Activation habilitadas e usuário autorizado. O resultado
+// fica SOMENTE em ref dedicado — nada é persistido, nada executa.
+// PARTE 5 — BLOCO 4: a resposta visível passa a ser selecionada com segurança
+// no ponto ÚNICO de saída (applyEngineGuidanceToResponse): o finalText só
+// substitui o texto legado quando selectControlledVisibleResponse aprovar,
+// usando o resultado FRESCO da MESMA execução (retorno direto, nunca um ref
+// antigo). Qualquer falha → texto legado intacto.
+// ============================================================================
+
+test('PARTE 5: application é importado e o ref dedicado existe ao lado dos demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const importLine = page.match(/import \{[\s\S]*?\} from '\.\.\/uni-engine\/index\.js';/)[0];
+  assert.match(importLine, /runControlledGuidanceApplication/);
+  const refBlock = betweenMarkers(
+    page,
+    'const lastExecutionReadinessSnapshotRef = useRef(null);',
+    'const lastEngineAnalyzedMessageIdRef = useRef(null);',
+  );
+  assert.match(refBlock, /const lastApplicationResultRef = useRef\(null\);/);
+});
+
+test('PARTE 5: application é executado DEPOIS do execution readiness', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /runControlledGuidanceApplication\(\{/);
+  const executionAssign = runBlock.indexOf('lastExecutionReadinessSnapshotRef.current = buildConversationExecutionReadinessSnapshot({');
+  const applicationAssign = runBlock.indexOf('lastApplicationResultRef.current = runControlledGuidanceApplication({');
+  assert.ok(executionAssign !== -1, 'execution readiness atribui ao ref dedicado');
+  assert.ok(applicationAssign !== -1, 'application atribui ao ref dedicado');
+  assert.ok(applicationAssign > executionAssign, 'application é executada após o execution readiness');
+  const applicationBlock = runBlock.slice(applicationAssign, applicationAssign + 400);
+  assert.match(applicationBlock, /config: uniEngine\.getConfig\(\),/);
+  assert.match(applicationBlock, /legacy: legacyResult,/);
+  assert.match(applicationBlock, /engineResult: shadow,/);
+  assert.match(applicationBlock, /guidance: lastGuidanceSnapshotRef\.current \?\? null,/);
+});
+
+test('PARTE 5: application fica SOMENTE em ref -- nenhum state, execução ou persistência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /lastApplicationResultRef\.current = /);
+  assert.doesNotMatch(runBlock, /setApplicationResult/);
+  assert.doesNotMatch(runBlock, /useState\(/);
+  assert.doesNotMatch(runBlock, /executeFinancialIntentAction/);
+  assert.doesNotMatch(runBlock, /executeConfirmedFinancialAction/);
+  assert.doesNotMatch(runBlock, /\.rpc\(/);
+  assert.doesNotMatch(runBlock, /localStorage/);
+  assert.doesNotMatch(runBlock, /syncMessageToSupabase/);
+  assert.doesNotMatch(runBlock, /uniVoice\.speak/);
+});
+
+test('PARTE 5 BLOCO 4: resposta visível vem da seleção segura -- seletor importado da engine', async () => {
+  const page = await source('UniChatPage.jsx');
+  const importLine = page.match(/import \{[\s\S]*?\} from '\.\.\/uni-engine\/index\.js';/)[0];
+  assert.match(importLine, /selectControlledVisibleResponse/);
+});
+
+test('PARTE 5 BLOCO 4: runEngineObservational RETORNA o resultado fresco da application (nunca um ref antigo)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /if \(!turn \|\| !turn\.userMessageId\) return null;/);
+  assert.match(runBlock, /if \(lastEngineAnalyzedMessageIdRef\.current === turn\.userMessageId\) return lastApplicationResultRef\.current;/);
+  assert.match(runBlock, /return lastApplicationResultRef\.current;/);
+  const catchStart = runBlock.indexOf('} catch {');
+  assert.match(runBlock.slice(catchStart), /return null;/);
+});
+
+test('PARTE 5 BLOCO 4: applyEngineGuidanceToResponse usa o RETORNO do mesmo turno e o seletor', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /const applicationResult = runEngineObservational\(legacyText, options\);/);
+  assert.match(guidedBlock, /if \(!applicationResult\) return legacyText;/);
+  assert.match(guidedBlock, /selectControlledVisibleResponse\(\{/);
+  assert.doesNotMatch(guidedBlock, /lastApplicationResultRef/);
+});
+
+test('PARTE 5 BLOCO 4: seletor recebe legacy, resultado fresco, config, ambiente, autorização e execution readiness', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /legacyText,/);
+  assert.match(guidedBlock, /applicationResult,/);
+  assert.match(guidedBlock, /config: uniEngine\.getConfig\(\),/);
+  assert.match(guidedBlock, /environment: import\.meta\.env\.DEV \? 'development' : 'production',/);
+  assert.match(guidedBlock, /authorized: Boolean\(/);
+  assert.match(guidedBlock, /activationTestUserIds/);
+  assert.match(guidedBlock, /executionReady:/);
+  assert.match(guidedBlock, /lastExecutionReadinessSnapshotRef\.current\?\.executionBlockedReasons/);
+});
+
+test('PARTE 5 BLOCO 4: nenhum state, persistência, duplicidade de mensagem, execução ou TTS no ponto de saída', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /return legacyText;/);
+  assert.doesNotMatch(guidedBlock, /setMessages|setState|useState\(/);
+  assert.doesNotMatch(guidedBlock, /syncMessageToSupabase/);
+  assert.doesNotMatch(guidedBlock, /localStorage/);
+  assert.doesNotMatch(guidedBlock, /\.rpc\(/);
+  assert.doesNotMatch(guidedBlock, /pushMessage/);
+  assert.doesNotMatch(guidedBlock, /executeFinancialIntentAction|executeConfirmedFinancialAction/);
+  assert.doesNotMatch(guidedBlock, /uniVoice\.speak/);
+  assert.doesNotMatch(guidedBlock, /result\.finalText/);
+});
+
+test('PARTE 5 BLOCO 4: contexto da application reforça confiança, risco e circuit breaker do mesmo turno', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const applicationAssign = runBlock.indexOf('lastApplicationResultRef.current = runControlledGuidanceApplication({');
+  const applicationBlock = runBlock.slice(applicationAssign, applicationAssign + 1100);
+  assert.match(applicationBlock, /confidence: typeof shadow\?\.decisionLayer\?\.confidence === 'number'/);
+  assert.match(applicationBlock, /risk: typeof shadow\?\.decisionLayer\?\.risk === 'string'/);
+  assert.match(applicationBlock, /circuitBreakerOpen: \(lastExecutionReadinessSnapshotRef\.current\?\.executionBlockedReasons \?\? \[\]\)/);
+});
+
+test('PARTE 5: buildGuidedUniMessage passa o texto orientado ao buildUniMessage (ponto único de saída)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const buildBlock = betweenMarkers(
+    page,
+    'const buildGuidedUniMessage = useCallback',
+    'const { createAssistantResponse } = useUniResponsePipeline',
+  );
+  assert.match(buildBlock, /applyEngineGuidanceToResponse\(text, messageOptions\)/);
+});
+
+test('PARTE 5: novo turno zera o ref de application junto com os demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.match(sendBlock, /lastExecutionReadinessSnapshotRef\.current = null;/);
+  assert.match(sendBlock, /lastApplicationResultRef\.current = null;/);
+  const executionReset = sendBlock.indexOf('lastExecutionReadinessSnapshotRef.current = null;');
+  const applicationReset = sendBlock.indexOf('lastApplicationResultRef.current = null;');
+  assert.ok(applicationReset > executionReset, 'application é zerado junto com os demais refs');
+});
+
+test('PARTE 5: catch do runEngineObservational zera o ref de application', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const catchStart = runBlock.indexOf('} catch {');
+  const catchSlice = runBlock.slice(catchStart);
+  assert.match(catchSlice, /lastExecutionReadinessSnapshotRef\.current = null;/);
+  assert.match(catchSlice, /lastApplicationResultRef\.current = null;/);
+});
+
+// ============================================================================
+// PARTE 7 — CONVERSATION PLANNER observacional.
+// Determina QUAL deve ser o próximo passo lógico da conversa (NEXT_STEP_*),
+// consumindo SOMENTE os snapshots já existentes (Observation → Guidance →
+// Decision → Capability Readiness → Execution Readiness → Application →
+// Conversation Planner). Nunca gera texto, nunca executa, nunca altera o
+// pipeline legado. Fluxo: ... → Application → Conversation Planner → retorno
+// observacional.
+// ============================================================================
+
+test('PARTE 7: conversation planner importado e o ref dedicado existe ao lado dos demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const importLine = page.match(/import \{[\s\S]*?\} from '\.\.\/uni-engine\/index\.js';/)[0];
+  assert.match(importLine, /buildConversationPlanSnapshot/);
+  const refBlock = betweenMarkers(
+    page,
+    'const lastApplicationResultRef = useRef(null);',
+    'useEffect(() => {',
+  );
+  assert.match(refBlock, /const lastConversationPlannerSnapshotRef = useRef\(null\);/);
+});
+
+test('PARTE 7: planner é construído DEPOIS da application (fluxo observacional completo)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /const buildConversationPlannerSnapshot = \(\{/);
+  assert.match(runBlock, /buildConversationPlanSnapshot\(\{/);
+  const applicationAssign = runBlock.indexOf('lastApplicationResultRef.current = runControlledGuidanceApplication({');
+  const plannerAssign = runBlock.indexOf('lastConversationPlannerSnapshotRef.current = buildConversationPlannerSnapshot({');
+  assert.ok(applicationAssign !== -1, 'application atribui ao ref dedicado');
+  assert.ok(plannerAssign !== -1, 'conversation planner atribui ao ref dedicado');
+  assert.ok(plannerAssign > applicationAssign, 'conversation planner é construído após a application');
+  const plannerBlock = runBlock.slice(plannerAssign, plannerAssign + 700);
+  assert.match(plannerBlock, /observationSnapshot: lastObservationSnapshotRef\.current,/);
+  assert.match(plannerBlock, /decisionSnapshot: shadow\?\.decisionLayer \?\? null,/);
+  assert.match(plannerBlock, /decisionReadinessSnapshot: lastDecisionReadinessSnapshotRef\.current \?\? null,/);
+  assert.match(plannerBlock, /capabilityReadinessSnapshot: lastCapabilityReadinessSnapshotRef\.current \?\? null,/);
+  assert.match(plannerBlock, /executionReadinessSnapshot: lastExecutionReadinessSnapshotRef\.current \?\? null,/);
+  assert.match(plannerBlock, /applicationResult: lastApplicationResultRef\.current,/);
+});
+
+test('PARTE 7: snapshot do planner fica SOMENTE em ref -- nenhum state, execução, texto ou persistência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.doesNotMatch(runBlock, /runActivationEngine/);
+  assert.doesNotMatch(runBlock, /executeConfirmedFinancialAction/);
+  assert.doesNotMatch(runBlock, /savePendingActionStack/);
+  assert.doesNotMatch(runBlock, /syncMessageToSupabase/);
+  assert.doesNotMatch(runBlock, /insertMessage/);
+  assert.doesNotMatch(runBlock, /localStorage/);
+  assert.doesNotMatch(runBlock, /\.rpc\(/);
+  assert.doesNotMatch(runBlock, /return lastConversationPlannerSnapshotRef\.current;/);
+  assert.doesNotMatch(runBlock, /conversationPlannerSnapshotRef\.current.*(finalText|text:)/);
+  assert.doesNotMatch(runBlock, /uniVoice\.speak/);
+});
+
+test('PARTE 7: snapshot do planner é serializável e determinístico (fluxo real)', async () => {
+  const {
+    createUniEngineConfig,
+    runUniEngineIntegration,
+    buildGuidanceSnapshot,
+    buildObservationSnapshot,
+    runControlledGuidanceApplication,
+    buildConversationPlanSnapshot,
+  } = await import('../uni-engine/index.js');
+  const {
+    buildEngineResult,
+    buildActiveDecision,
+    legacyClarification,
+    buildIntegrationConfig,
+  } = await import('../uni-engine/integration/testFixtures.js');
+  const legacy = legacyClarification();
+  const engine = buildEngineResult({
+    decisionLayer: { decisionType: 'ask', nextDecisionType: 'ask', risk: 'LOW', confidence: 0.9 },
+    comparison: { missingFields: ['account'], agreementMetrics: { divergenceCount: 0 } },
+    activation: {
+      enabled: true,
+      shadowMode: true,
+      environment: 'development',
+      decisions: [buildActiveDecision('QUESTION_GUIDANCE')],
+    },
+  });
+  const integrationSnapshot = runUniEngineIntegration({
+    config: buildIntegrationConfig(),
+    legacy,
+    engineResult: engine,
+    context: { isDev: true, confidence: 0.9, risk: 'LOW', dataSufficient: true },
+  });
+  const guidanceSnapshot = buildGuidanceSnapshot({
+    legacy,
+    engineResult: engine,
+    context: { isDev: true },
+  });
+  const observationSnapshot = buildObservationSnapshot({
+    integrationSnapshot,
+    guidanceSnapshot,
+    activationSnapshot: engine.activation,
+    context: { isDev: true, environment: 'development' },
+  });
+  const config = createUniEngineConfig({
+    env: {
+      VITE_UNI_ENGINE_ENABLED: 'true',
+      VITE_UNI_ENGINE_SHADOW_MODE: 'true',
+      VITE_UNI_ENGINE_ACTIVATION_ENABLED: 'true',
+      VITE_UNI_ENGINE_ACTIVATION_SHADOW: 'false',
+      VITE_UNI_ENGINE_ACTIVATION_ENVIRONMENTS: 'development',
+      VITE_UNI_ENGINE_ACTIVATION_TEST_USER_IDS: 'test-user-1',
+      VITE_UNI_ENGINE_CAP_QUESTION_GUIDANCE: 'true',
+      VITE_UNI_ENGINE_INTEGRATION_ENABLED: 'true',
+      VITE_UNI_ENGINE_INTEGRATION_SHADOW: 'false',
+      VITE_UNI_ENGINE_APPLICATION_ENABLED: 'true',
+      VITE_UNI_ENGINE_APPLICATION_TELEMETRY: 'false',
+    },
+  });
+  const applicationResult = runControlledGuidanceApplication({
+    config,
+    legacy,
+    engineResult: engine,
+    context: { isDev: true, environment: 'development', userId: 'test-user-1' },
+  });
+  const inputs = {
+    observationSnapshot,
+    decisionSnapshot: engine.decisionLayer,
+    applicationResult,
+    context: { isDev: true, environment: 'development' },
+  };
+  const snapshot = buildConversationPlanSnapshot(inputs);
+  assert.equal(snapshot.mode, 'observational');
+  assert.equal(snapshot.plannerStatus, 'PLANNED');
+  assert.equal(snapshot.nextStep, 'NEXT_STEP_QUESTION');
+  assert.equal(snapshot.legacyPreserved, true);
+  assert.equal(snapshot.applied, false);
+  assert.equal(snapshot.shadowMode, true);
+  assert.equal(Object.isFrozen(snapshot), true);
+  assert.doesNotThrow(() => JSON.stringify(snapshot));
+  const again = buildConversationPlanSnapshot(inputs);
+  assert.equal(JSON.stringify(again), JSON.stringify(snapshot));
+});
+
+test('PARTE 7: novo turno zera o ref do planner junto com os demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.match(sendBlock, /lastApplicationResultRef\.current = null;/);
+  assert.match(sendBlock, /lastConversationPlannerSnapshotRef\.current = null;/);
+  const applicationReset = sendBlock.indexOf('lastApplicationResultRef.current = null;');
+  const plannerReset = sendBlock.indexOf('lastConversationPlannerSnapshotRef.current = null;');
+  assert.ok(plannerReset > applicationReset, 'planner é zerado junto com os demais refs');
+});
+
+test('PARTE 7: catch do runEngineObservational zera o ref do planner', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const catchStart = runBlock.indexOf('} catch {');
+  const catchSlice = runBlock.slice(catchStart);
+  assert.match(catchSlice, /lastApplicationResultRef\.current = null;/);
+  assert.match(catchSlice, /lastConversationPlannerSnapshotRef\.current = null;/);
+});
+
+// ============================================================================
+// PARTE 8 — CONVERSATION ROUTING controlado (DEV).
+// Ponto ÚNICO de saída: consulta o Conversation Plan do MESMO turno uma única
+// vez por mensagem e seleciona a rota (ANSWER/QUESTION/CLARIFICATION/
+// CONFIRMATION/WAIT/NONE). A rota legada nunca é contornada; o resultado fica
+// SOMENTE em ref dedicado; nenhum state React, nenhuma execução, nenhuma
+// persistência, nenhum TTS.
+// ============================================================================
+
+test('PARTE 8: seletor importado do index e ref dedicado ao lado do planner', async () => {
+  const page = await source('UniChatPage.jsx');
+  const importLine = page.match(/import \{[\s\S]*?\} from '\.\.\/uni-engine\/index\.js';/)[0];
+  assert.match(importLine, /selectControlledConversationRoute/);
+  const refBlock = betweenMarkers(
+    page,
+    'const lastConversationPlannerSnapshotRef = useRef(null);',
+    'useEffect(() => {',
+  );
+  assert.match(refBlock, /const lastConversationRoutingSnapshotRef = useRef\(null\);/);
+});
+
+test('PARTE 8: seletor consultado UMA vez no ponto único de saída, com planner do mesmo turno', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  const occurrences = guidedBlock.match(/selectControlledConversationRoute\(/g) ?? [];
+  assert.equal(occurrences.length, 1, 'seletor consultado exatamente uma vez por mensagem');
+  assert.match(guidedBlock, /sameTurn:/);
+  assert.match(guidedBlock, /lastConversationPlannerSnapshotRef\.current/);
+  assert.match(guidedBlock, /lastConversationRoutingSnapshotRef\.current = routingSnapshot;/);
+  assert.doesNotMatch(guidedBlock, /setMessages|setState|useState\(/);
+  assert.doesNotMatch(guidedBlock, /syncMessageToSupabase/);
+  assert.doesNotMatch(guidedBlock, /localStorage/);
+  assert.doesNotMatch(guidedBlock, /\.rpc\(/);
+  assert.doesNotMatch(guidedBlock, /pushMessage/);
+  assert.doesNotMatch(guidedBlock, /executeFinancialIntentAction|executeConfirmedFinancialAction/);
+  assert.doesNotMatch(guidedBlock, /uniVoice\.speak/);
+});
+
+test('PARTE 8: rota ANSWER usa o finalText; qualquer outra rota preserva o texto legado', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /selectedRoute === 'ROUTE_ANSWER'/);
+  assert.match(guidedBlock, /selectControlledVisibleResponse\(\{/);
+  assert.match(guidedBlock, /return legacyText;/);
+});
+
+test('PARTE 8: novo turno zera o ref do roteamento junto com os demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.match(sendBlock, /lastConversationRoutingSnapshotRef\.current = null;/);
+});
+
+test('PARTE 8: catch do runEngineObservational zera o ref do roteamento', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const catchStart = runBlock.indexOf('} catch {');
+  const catchSlice = runBlock.slice(catchStart);
+  assert.match(catchSlice, /lastConversationRoutingSnapshotRef\.current = null;/);
+});
+
+test('PARTE 8: seletor com flag desligada nunca aplica rota (fluxo real)', async () => {
+  const {
+    createUniEngineConfig,
+    runUniEngineIntegration,
+    buildGuidanceSnapshot,
+    buildObservationSnapshot,
+    runControlledGuidanceApplication,
+    buildConversationPlanSnapshot,
+    selectControlledConversationRoute,
+  } = await import('../uni-engine/index.js');
+  const {
+    buildEngineResult,
+    buildActiveDecision,
+    legacyClarification,
+    buildIntegrationConfig,
+  } = await import('../uni-engine/integration/testFixtures.js');
+  const legacy = legacyClarification();
+  const engine = buildEngineResult({
+    decisionLayer: { decisionType: 'ask', nextDecisionType: 'ask', risk: 'LOW', confidence: 0.9 },
+    comparison: { missingFields: ['account'], agreementMetrics: { divergenceCount: 0 } },
+    activation: {
+      enabled: true,
+      shadowMode: true,
+      environment: 'development',
+      decisions: [buildActiveDecision('QUESTION_GUIDANCE')],
+    },
+  });
+  const integrationSnapshot = runUniEngineIntegration({
+    config: buildIntegrationConfig(),
+    legacy,
+    engineResult: engine,
+    context: { isDev: true, confidence: 0.9, risk: 'LOW', dataSufficient: true },
+  });
+  const guidanceSnapshot = buildGuidanceSnapshot({
+    legacy,
+    engineResult: engine,
+    context: { isDev: true },
+  });
+  const observationSnapshot = buildObservationSnapshot({
+    integrationSnapshot,
+    guidanceSnapshot,
+    activationSnapshot: engine.activation,
+    context: { isDev: true, environment: 'development' },
+  });
+  const config = createUniEngineConfig({
+    env: {
+      VITE_UNI_ENGINE_ENABLED: 'true',
+      VITE_UNI_ENGINE_SHADOW_MODE: 'true',
+      VITE_UNI_ENGINE_ACTIVATION_ENABLED: 'true',
+      VITE_UNI_ENGINE_ACTIVATION_SHADOW: 'false',
+      VITE_UNI_ENGINE_ACTIVATION_ENVIRONMENTS: 'development',
+      VITE_UNI_ENGINE_ACTIVATION_TEST_USER_IDS: 'test-user-1',
+      VITE_UNI_ENGINE_CAP_QUESTION_GUIDANCE: 'true',
+      VITE_UNI_ENGINE_INTEGRATION_ENABLED: 'true',
+      VITE_UNI_ENGINE_INTEGRATION_SHADOW: 'false',
+      VITE_UNI_ENGINE_APPLICATION_ENABLED: 'true',
+      VITE_UNI_ENGINE_APPLICATION_TELEMETRY: 'false',
+    },
+  });
+  const applicationResult = runControlledGuidanceApplication({
+    config,
+    legacy,
+    engineResult: engine,
+    context: { isDev: true, environment: 'development', userId: 'test-user-1' },
+  });
+  const plan = buildConversationPlanSnapshot({
+    observationSnapshot,
+    decisionSnapshot: engine.decisionLayer,
+    applicationResult,
+    context: { isDev: true, environment: 'development' },
+  });
+  const routing = selectControlledConversationRoute({
+    config,
+    environment: 'development',
+    authorized: true,
+    conversationPlan: plan,
+    sameTurn: true,
+    legacyText: legacy.text,
+    legacyResponse: { text: legacy.text },
+    applicationResult,
+    isDev: true,
+  });
+  assert.equal(routing.enabled, false);
+  assert.equal(routing.applied, false);
+  assert.equal(routing.selectedRoute, 'ROUTE_LEGACY_FALLBACK');
+  assert.equal(routing.fallbackReason, 'ROUTING_DISABLED');
+  assert.equal(routing.legacyPreserved, true);
+  assert.equal(routing.safety.financialExecution, false);
+  assert.equal(Object.isFrozen(routing), true);
 });

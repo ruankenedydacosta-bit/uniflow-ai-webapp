@@ -98,7 +98,7 @@ test('fluxo: autentica -> sanitiza/valida -> calcula cache key -> procura cache 
   const authCallIdx = EDGE_SOURCE.indexOf('const userId = await getAuthenticatedUserId(');
   const sanitizeIdx = EDGE_SOURCE.indexOf('const text = sanitizeText(payload.text);');
   const cacheLookupCallIdx = EDGE_SOURCE.indexOf('const cacheRow = await findCacheRow(');
-  const providerCallIdx = EDGE_SOURCE.indexOf('const providerResponse = await fetch(`${ELEVENLABS_BASE_URL}');
+  const providerCallIdx = EDGE_SOURCE.indexOf('const providerResponse = await fetch(providerUrl');
   assert.ok(authCallIdx >= 0 && sanitizeIdx > authCallIdx, 'autenticacao deve vir antes da sanitizacao');
   assert.ok(cacheLookupCallIdx > sanitizeIdx, 'busca de cache deve vir depois da sanitizacao/validacao');
   assert.ok(providerCallIdx > cacheLookupCallIdx, 'chamada ao provedor deve vir depois da busca de cache');
@@ -193,8 +193,9 @@ test('isolamento por usuario: cache key e storage path SEMPRE incluem userId -- 
   assert.match(lookupBody, /user_id=eq\.\$\{encodeURIComponent\(userId\)\}/);
 });
 
-test('nenhum texto sensivel nem chave em logs -- sem console.log/console.error com o texto, a chave ou o service role key', () => {
-  assert.doesNotMatch(EDGE_SOURCE, /console\.(log|info|warn|error)\(/);
+test('log de diagnóstico registra somente código/status/retry, nunca texto, usuário ou segredo', () => {
+  assert.match(EDGE_SOURCE, /console\.warn\('uni_voice_tts_provider_failure', \{ code, providerStatus, retryable \}\);/);
+  assert.doesNotMatch(EDGE_SOURCE, /console\.(?:log|info|warn|error)\([^\n]*(?:text|userId|voiceId|providerKey|serviceRoleKey)/);
 });
 
 test('service role key nunca retorna ao cliente -- so usada nos headers server-side das chamadas internas', () => {
@@ -213,7 +214,7 @@ test('ELEVEN1/ELEVEN2: autenticacao, sanitizacao, limite de caracteres, dados se
   assert.match(EDGE_SOURCE, /if \(text\.length > MAX_TEXT_LENGTH\)/);
   assert.match(EDGE_SOURCE, /containsSensitiveData\(text\)/);
   assert.match(EDGE_SOURCE, /providerResponse\.status === 429/);
-  assert.match(EDGE_SOURCE, /'NOT_CONFIGURED'/);
+  assert.match(EDGE_SOURCE, /'CONFIGURATION_ERROR'/);
 });
 
 test('Edge Function continua sem allowlist -- disponivel para qualquer usuario autenticado, igual a ELEVEN1', () => {
@@ -222,14 +223,14 @@ test('Edge Function continua sem allowlist -- disponivel para qualquer usuario a
 });
 
 // ----------------------------------------------------------------------------
-// Frontend permanece intocado: mesma API publica de useUniVoiceTts, mesma
-// experiencia visual da ELEVEN2. Cache e puramente uma otimizacao
-// server-side; o cliente so recebe bytes de audio, como sempre recebeu.
+// A decisao de cache permanece 100% server-side. O frontend apenas le o
+// header de diagnostico para distinguir cache de geracao na telemetria DEV.
 // ----------------------------------------------------------------------------
 
-test('elevenLabsTtsProvider.js/useUniVoiceTts.js nunca mencionam cache/storage/HIT/MISS -- decisao de cache e 100% server-side', () => {
+test('frontend apenas identifica cache HIT; consulta, storage e chave continuam exclusivamente server-side', () => {
   const providerSource = readFileSync(new URL('./elevenLabsTtsProvider.js', import.meta.url), 'utf8');
   const hookSource = readFileSync(new URL('./useUniVoiceTts.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(providerSource, /cache|storage|X-Uni-Voice-Cache/i);
-  assert.doesNotMatch(hookSource, /cache|storage|X-Uni-Voice-Cache/i);
+  assert.match(providerSource, /X-Uni-Voice-Cache/);
+  assert.doesNotMatch(providerSource, /from\(['"]uni_voice_cache|storage\.from|cache_key/i);
+  assert.doesNotMatch(hookSource, /from\(['"]uni_voice_cache|storage\.from|cache_key|X-Uni-Voice-Cache/i);
 });

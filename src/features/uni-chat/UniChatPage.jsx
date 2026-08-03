@@ -77,7 +77,7 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { classifyIntent } from '../uni-intents/index.js';
-import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory } from '../uni-engine/index.js';
+import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 // Fase 2 — memória operacional do Uni Engine: objeto TEMPORÁRIO por conversa
 // (não persiste nada). O pipeline nunca lê esta memória; apenas o motor.
@@ -246,6 +246,9 @@ export default function UniChatPage({ variant = 'full' }) {
   const location = useLocation();
   const initialContextRef = useRef(false);
   const isSimplifiedExperience = variant === 'simplified-home' || variant === 'simplified';
+  const automaticVoiceSource = variant === 'simplified-home'
+    ? 'home_response'
+    : 'chat_response';
   const effectiveWorkspace = isSimplifiedExperience
     ? simplifiedProduct?.workspace ?? null
     : workspace;
@@ -270,15 +273,101 @@ export default function UniChatPage({ variant = 'full' }) {
   // as demais sempre veem IDLE (botao "Ouvir" neutro).
   const [voiceMessageId, setVoiceMessageId] = useState(null);
 
+  // PARTE 1 — INTEGRAÇÃO: refs de apoio da camada adaptadora no ponto único
+  // de saída. O resultado do Shadow mais recente alimenta as decisões da
+  // Activation; o estado da conversa financeira é lido por ref (sem recriar
+  // callbacks); o último resultado da integração fica para auditoria.
+  const lastUniEngineShadowRef = useRef(null);
+  const lastEngineIntegrationResultRef = useRef(null);
+  const financialStateRef = useRef(null);
+  // PARTE 2 — BLOCO 1: a Uni Engine passa a ser acionada SOMENTE depois que
+  // existe um resultado legado utilizável (no ponto único de saída de
+  // resposta). `lastEngineTurnRef` guarda o turno do usuário (mensagem +
+  // flags de pendência) para a engine observar no momento certo;
+  // `lastEngineAnalyzedMessageIdRef` deduplica a execução por mensagem do
+  // usuário — a mesma resposta/turno nunca roda a engine duas vezes.
+  const lastEngineTurnRef = useRef(null);
+  const lastEngineAnalyzedMessageIdRef = useRef(null);
+  // PARTE 2 — BLOCO 2: snapshot observacional das guidances (Question,
+  // Clarification, Style, Length) calculado após o resultado legado, apenas
+  // para diagnóstico em memória. Nunca altera texto, nunca aplica, nunca
+  // persiste — o pipeline legado segue intacto.
+  const lastGuidanceSnapshotRef = useRef(null);
+  // PARTE 2 — BLOCO 4: snapshot observacional consolidado da conversa
+  // (integrationSnapshot + guidanceSnapshot + activationSnapshot +
+  // diagnostics + capabilities + metadata + timestamps + shadowMode).
+  // Fica SOMENTE em ref dedicado — nenhum state React, nenhuma renderização
+  // adicional, nunca persistido, nunca enviado a banco/backend/RPC.
+  const lastObservationSnapshotRef = useRef(null);
+  // PARTE 3 — DECISION READINESS: snapshot estritamente observacional que
+  // consome o Observation Snapshot e responde tecnicamente se o sistema
+  // ESTARIA pronto para uma aplicação futura. Fica SOMENTE em ref dedicado —
+  // nenhum state React, nenhuma renderização, nunca persistido, nada é
+  // aplicado ao usuário (legacyPreserved true, applied false).
+  const lastDecisionReadinessSnapshotRef = useRef(null);
+  // PARTE 4 — CAPABILITY ACTIVATION READINESS: snapshot estritamente
+  // observacional que determina quais capabilities poderiam ser ativadas no
+  // futuro a partir das decisões de Activation JÁ produzidas. Fica SOMENTE
+  // em ref dedicado — nenhum state React, nenhuma renderização, nunca
+  // persistido, nenhuma capability é ativada (legacyPreserved true,
+  // applied false).
+  const lastCapabilityReadinessSnapshotRef = useRef(null);
+  // PARTE 4 — EXECUTION READINESS: snapshot estritamente observacional que
+  // avalia se uma FUTURA execução seria segura. Fica SOMENTE em ref
+  // dedicado — nenhum state React, nenhuma renderização, nunca persistido,
+  // nenhuma execução acontece (legacyPreserved true, applied false).
+  const lastExecutionReadinessSnapshotRef = useRef(null);
+  // PARTE 5 — APPLICATION (primeira ativação controlada): resultado da camada
+  // de APLICAÇÃO controlada (RESPONSE_STYLE_GUIDANCE e RESPONSE_LENGTH_GUIDANCE,
+  // somente em DEV com Integration + Activation habilitadas e usuário
+  // autorizado). Fica SOMENTE em ref dedicado — nenhum state React, nenhuma
+  // renderização, nunca persistido, nada é aplicado à resposta exibida (a
+  // fonte final continua o texto legado; o resultado finalText nunca substitui
+  // a mensagem entregue ao usuário nesta parte).
+  const lastApplicationResultRef = useRef(null);
+  // PARTE 7 — CONVERSATION PLANNER: snapshot estritamente observacional que
+  // determina QUAL deve ser o próximo passo lógico da conversa (NEXT_STEP_*),
+  // consumindo SOMENTE os snapshots já existentes (Observation, Guidance,
+  // Decision, Capability Readiness, Execution Readiness e Application). Fica
+  // SOMENTE em ref dedicado — nenhum state React, nenhuma renderização,
+  // nunca persistido, nenhum plano é executado (legacyPreserved true,
+  // applied false, nunca gera texto).
+  const lastConversationPlannerSnapshotRef = useRef(null);
+  // PARTE 8 — CONVERSATION ROUTING: resultado estritamente observacional que
+  // consulta o Conversation Planner do MESMO turno e seleciona a rota
+  // conversacional (ANSWER/QUESTION/CLARIFICATION/CONFIRMATION/WAIT/NONE),
+  // habilitado SOMENTE em DEV (flag explícita). Fica SOMENTE em ref dedicado —
+  // nenhum state React, nenhuma renderização, nunca persistido, a rota legada
+  // nunca é contornada (legacyPreserved true, applied false por padrão).
+  const lastConversationRoutingSnapshotRef = useRef(null);
+  // PARTE 9 — COGNITIVE ORCHESTRATOR: snapshot consolidado final de todas as
+  // camadas já produzidas (Observation → Guidance → Decision → Capability Readiness
+  // → Execution Readiness → Application → Conversation Planner → Conversation Routing).
+  // Nunca reexecuta nenhuma camada. O orquestrador fica SOMENTE em ref dedicado —
+  // nenhum state React, nenhuma renderização, nunca persistido, nenhuma resposta
+  // entregue ao usuário altera (applied false, legacyPreserved true). Uma única
+  // consulta por mensagem; exceção nunca escapa (snapshot vazio falho-safe).
+  const lastCognitiveOrchestratorSnapshotRef = useRef(null);
+  useEffect(() => {
+    financialStateRef.current = financialConversation.state;
+  }, [financialConversation.state]);
+
   // BLOCO VOZ 1: SEMPRE fala, mesmo quando o texto é longo demais para o
   // limite da Edge Function (MAX_TTS_TEXT_LENGTH) -- gera uma versão curta e
   // natural (buildSpeechText) para a voz, mas nunca altera o texto completo
   // exibido na tela (message.text no MessageBubble continua intacto).
-  const handleSpeakMessage = useCallback((message) => {
+  const handleSpeakMessage = useCallback((message, requestMetadata = {}) => {
     if (!message?.text) return;
     setVoiceMessageId(message.id);
-    void uniVoice.speak(buildSpeechText(message.text, MAX_TTS_TEXT_LENGTH));
+    void uniVoice.speak(buildSpeechText(message.text, MAX_TTS_TEXT_LENGTH), {
+      messageId: message.id,
+      source: requestMetadata.source ?? 'manual_replay',
+    });
   }, [uniVoice]);
+
+  const handleAutomaticSpeakMessage = useCallback((message) => {
+    handleSpeakMessage(message, { source: automaticVoiceSource });
+  }, [automaticVoiceSource, handleSpeakMessage]);
 
   // BLOCO VOZ 1: ponto ÚNICO para narrar um efeito colateral que NÃO gera
   // uma nova mensagem no array `messages` (ex.: erro de confirmação escrito
@@ -291,8 +380,11 @@ export default function UniChatPage({ variant = 'full' }) {
   const speakSideEffectNotice = useCallback((text) => {
     if (!isSimplifiedExperience || !voicePreference.enabled) return;
     if (!text) return;
-    void uniVoice.speak(buildSpeechText(text, MAX_TTS_TEXT_LENGTH));
-  }, [isSimplifiedExperience, voicePreference.enabled, uniVoice]);
+    void uniVoice.speak(buildSpeechText(text, MAX_TTS_TEXT_LENGTH), {
+      messageId: null,
+      source: automaticVoiceSource,
+    });
+  }, [automaticVoiceSource, isSimplifiedExperience, voicePreference.enabled, uniVoice]);
 
   // BLOCO VOZ 1: registro + narração de erro de confirmação num ponto
   // central único (conta/categoria/transação). O erro fica visível no card
@@ -1197,8 +1289,8 @@ export default function UniChatPage({ variant = 'full' }) {
     if (hasAutoSpokenMessage(user?.id, lastMessage.id)) return;
     markAutoSpokenMessage(user?.id, lastMessage.id);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- autoplay controlado (guardado pelo registro por sessão): sincroniza a voz com a última mensagem real, nunca um loop (o registro já impede reexecução para o mesmo id).
-    handleSpeakMessage(lastMessage);
-  }, [messages, isSimplifiedExperience, voicePreference.enabled, handleSpeakMessage, user?.id, historyHydrated]);
+    handleAutomaticSpeakMessage(lastMessage);
+  }, [messages, isSimplifiedExperience, voicePreference.enabled, handleAutomaticSpeakMessage, user?.id, historyHydrated]);
 
   // FASE UNI PIPE: pipeline oficial de resposta da Uni (texto + voz).
   //
@@ -1214,8 +1306,400 @@ export default function UniChatPage({ variant = 'full' }) {
   // saudação não pendente). Se os gates fecham neste instante, a mensagem
   // fica sem marca e o efeito de autoplay a narra assim que abrirem — a
   // marcação só acontece no momento de falar, nunca há duplicação.
+  // PARTE 2 — BLOCO 1: a Uni Engine roda SOMENTE depois que existe um
+  // resultado legado utilizável — este é o ponto ÚNICO de saída de resposta
+  // (createAssistantResponse → buildMessage) e já recebe o texto legado
+  // final. Aqui a engine observa (runUniEngineShadow) e a camada de
+  // integração calcula guidance/diagnostics/metadata/comparação, mas tudo
+  // permanece observacional: o resultado vai apenas para refs de diagnóstico
+  // (lastUniEngineShadowRef/lastEngineIntegrationResultRef) e NUNCA altera a
+  // resposta exibida. Deduplicação por mensagem do usuário: a mesma resposta
+  // não roda a engine duas vezes. Falha segura: qualquer erro interno é
+  // capturado e o pipeline legado segue intacto.
+  // PARTE 5 — BLOCO 4: runEngineObservational também RETORNA o resultado da
+  // Application do MESMO turno (retorno direto, nunca um ref antigo). Sem
+  // turno, deduplicado ou em erro → null, e o seletor usa o texto legado.
+  const runEngineObservational = useCallback((legacyText, messageOptions = {}) => {
+    const turn = lastEngineTurnRef.current;
+    if (!turn || !turn.userMessageId) return null;
+    if (lastEngineAnalyzedMessageIdRef.current === turn.userMessageId) return lastApplicationResultRef.current;
+    lastEngineAnalyzedMessageIdRef.current = turn.userMessageId;
+    // PARTE 2 — BLOCO 4: helper local com falha segura para construir o
+    // snapshot observacional consolidado da conversa. Ele é criado ANTES do
+    // try principal para que um erro NA CONSTRUÇÃO do snapshot nunca derrube
+    // a engine nem zere os refs de shadow/integração/guidance já gravados —
+    // retorna null (ou deixa o ref em null) e o pipeline legado segue
+    // intacto. Nada aqui aplica guidance, persiste ou chama serviços.
+    const buildConversationObservationSnapshot = ({ integrationSnapshot = null, guidanceSnapshot = null, activationSnapshot = null } = {}) => {
+      try {
+        if (!integrationSnapshot && !guidanceSnapshot) return null;
+        return buildObservationSnapshot({
+          integrationSnapshot,
+          guidanceSnapshot,
+          activationSnapshot,
+          context: {
+            environment: import.meta.env.DEV ? 'development' : 'production',
+            isDev: import.meta.env.DEV,
+          },
+        });
+      } catch {
+        return null;
+      }
+    };
+    // PARTE 3 — DECISION READINESS: helper local com falha segura. Um erro NA
+    // CONSTRUÇÃO do snapshot de prontidão nunca derruba a engine nem zera os
+    // refs já gravados — retorna null (ou deixa o ref em null) e o pipeline
+    // legado segue intacto. Nada aqui aplica capacidade, persiste ou chama
+    // serviços; a Decision Layer e a Activation Engine apenas são lidas.
+    const buildConversationReadinessSnapshot = ({ observationSnapshot = null, decisionSnapshot = null } = {}) => {
+      try {
+        if (!observationSnapshot) return null;
+        return buildDecisionReadinessSnapshot({
+          observationSnapshot,
+          decisionSnapshot,
+          context: {
+            environment: import.meta.env.DEV ? 'development' : 'production',
+            isDev: import.meta.env.DEV,
+          },
+        });
+      } catch {
+        return null;
+      }
+    };
+    // PARTE 4 — CAPABILITY ACTIVATION READINESS: helper local com falha
+    // segura. Determina, de forma observacional, quais capabilities poderiam
+    // ser ativadas no futuro a partir das decisões de Activation JÁ
+    // existentes. Um erro NA CONSTRUÇÃO nunca derruba a engine nem zera os
+    // refs já gravados — retorna null e o pipeline legado segue intacto.
+    // Nada aqui ativa capability, persiste ou chama serviços.
+    const buildConversationCapabilityReadinessSnapshot = ({ observationSnapshot = null, decisionReadinessSnapshot = null } = {}) => {
+      try {
+        if (!observationSnapshot) return null;
+        return buildCapabilityReadinessSnapshot({
+          observationSnapshot,
+          decisionReadinessSnapshot,
+          context: {
+            environment: import.meta.env.DEV ? 'development' : 'production',
+            isDev: import.meta.env.DEV,
+          },
+        });
+      } catch {
+        return null;
+      }
+    };
+    // PARTE 4 — EXECUTION READINESS: helper local com falha segura. Avalia,
+    // de forma observacional, se uma FUTURA execução seria segura. Um erro NA
+    // CONSTRUÇÃO nunca derruba a engine nem zera os refs já gravados —
+    // retorna null e o pipeline legado segue intacto. Nada aqui executa,
+    // persiste ou chama serviços.
+    const buildConversationExecutionReadinessSnapshot = ({ observationSnapshot = null, decisionReadinessSnapshot = null, capabilityReadinessSnapshot = null } = {}) => {
+      try {
+        if (!observationSnapshot) return null;
+        return buildExecutionReadinessSnapshot({
+          observationSnapshot,
+          decisionReadinessSnapshot,
+          capabilityReadinessSnapshot,
+          context: {
+            environment: import.meta.env.DEV ? 'development' : 'production',
+            isDev: import.meta.env.DEV,
+          },
+        });
+      } catch {
+        return null;
+      }
+    };
+    // PARTE 7 — CONVERSATION PLANNER: helper local com falha segura.
+    // Determina, de forma observacional, QUAL deve ser o próximo passo lógico
+    // da conversa (NEXT_STEP_*), consumindo SOMENTE os snapshots JÁ
+    // existentes. Um erro NA CONSTRUÇÃO nunca derruba a engine nem zera os
+    // refs já gravados — retorna null e o pipeline legado segue intacto. Nada
+    // aqui gera texto, executa, persiste ou chama serviços.
+    const buildConversationPlannerSnapshot = ({ observationSnapshot = null, decisionSnapshot = null, decisionReadinessSnapshot = null, capabilityReadinessSnapshot = null, executionReadinessSnapshot = null, applicationResult = null } = {}) => {
+      try {
+        return buildConversationPlanSnapshot({
+          observationSnapshot,
+          decisionSnapshot,
+          decisionReadinessSnapshot,
+          capabilityReadinessSnapshot,
+          executionReadinessSnapshot,
+          applicationResult,
+          context: {
+            environment: import.meta.env.DEV ? 'development' : 'production',
+            isDev: import.meta.env.DEV,
+          },
+        });
+      } catch {
+        return null;
+      }
+    };
+    try {
+      const memoryKey = activeId ?? 'default-conversation';
+      if (!uniEngineMemoryByConversation.has(memoryKey)) {
+        uniEngineMemoryByConversation.set(memoryKey, createOperationalMemory());
+      }
+      let memoryAdapter = null;
+      if (uniEngine.getConfig().memoryEnabled && user?.id && effectiveWorkspace?.id) {
+        warmUniMemoryCache(user.id, effectiveWorkspace.id);
+        memoryAdapter = getUniMemoryAdapter(user.id, effectiveWorkspace.id);
+      }
+      const shadow = uniEngine.runShadow({
+        message: turn.userMessage,
+        session: {
+          userId: user?.id ?? null,
+          workspaceId: effectiveWorkspace?.id ?? null,
+          conversationId: activeId ?? null,
+        },
+        context: {
+          pendingAction: pendingActionRef.current ?? null,
+          conversationHistory: messages ?? [],
+          financialSnapshot: projectFinancialSnapshot(financialContext.snapshot),
+          userPreferences: {
+            conversationStyle: 'balanced',
+            workspaceType: financialWorkspaceType ?? 'personal',
+          },
+          currentRoute: 'uni-chat',
+        },
+        currentPipeline: {
+          detectedIntent: classifyIntent(turn.userMessage.text).intent,
+          pendingIntent: (pendingActionRef.current ?? financialStateRef.current?.action)?.intent ?? null,
+          pendingActive: Boolean(turn.hasPendingConversation),
+          resultType: pendingActionRef.current?.status ?? financialStateRef.current?.status ?? 'unknown',
+        },
+        operationalMemory: uniEngineMemoryByConversation.get(memoryKey),
+        memoryAdapter,
+      });
+      lastUniEngineShadowRef.current = shadow;
+      const convState = financialStateRef.current ?? {};
+      const action = pendingActionRef.current ?? convState.action ?? null;
+      const isConfirmation = messageOptions?.type === 'confirmation';
+      const legacyResult = {
+        text: legacyText,
+        responseType: isConfirmation
+          ? 'confirmation'
+          : convState.status === 'needs_clarification'
+            ? 'clarification'
+            : 'generic',
+        issueField: action?.issues?.[0]?.field ?? null,
+        transactionType: action?.transactionType ?? null,
+        conversationStyle,
+        hasConfirmationCard: isConfirmation,
+        status: convState.status ?? null,
+      };
+      const result = runUniEngineIntegration({
+        config: uniEngine.getConfig(),
+        legacy: legacyResult,
+        engineResult: shadow,
+        context: {
+          environment: import.meta.env.DEV ? 'development' : 'production',
+          userId: user?.id ?? null,
+          workspaceType: financialWorkspaceType,
+          isDev: import.meta.env.DEV,
+          telemetryAdapter: null,
+        },
+      });
+      lastEngineIntegrationResultRef.current = result;
+      // PARTE 2 — BLOCO 2: consolida as guidances em um snapshot observacional
+      // em memória (Question/Clarification/Style/Length) após a integração.
+      // O resultado fica apenas em ref local — nunca altera a resposta, nunca
+      // persiste, nunca executa.
+      lastGuidanceSnapshotRef.current = buildGuidanceSnapshot({
+        legacy: legacyResult,
+        engineResult: shadow,
+        context: {
+          environment: import.meta.env.DEV ? 'development' : 'production',
+          isDev: import.meta.env.DEV,
+        },
+      });
+      // PARTE 2 — BLOCO 4: consolida o estado observacional completo da
+      // conversa DEPOIS que integrationSnapshot e guidanceSnapshot estão
+      // disponíveis (result e lastGuidanceSnapshotRef). O resultado fica
+      // apenas no ref dedicado — nunca altera a resposta, nunca aplica
+      // guidance, nunca persiste, nunca provoca renderização.
+      lastObservationSnapshotRef.current = buildConversationObservationSnapshot({
+        integrationSnapshot: result,
+        guidanceSnapshot: lastGuidanceSnapshotRef.current,
+        activationSnapshot: shadow?.activation ?? null,
+      });
+      // PARTE 3 — DECISION READINESS: consolida, DEPOIS do observation
+      // snapshot, a prontidão técnica de uma aplicação FUTURA. O resultado
+      // fica apenas no ref dedicado — nada é aplicado, nada altera a
+      // resposta, nada persiste, nenhuma exceção escapa (falha segura).
+      lastDecisionReadinessSnapshotRef.current = buildConversationReadinessSnapshot({
+        observationSnapshot: lastObservationSnapshotRef.current,
+        decisionSnapshot: shadow?.decisionLayer ?? null,
+      });
+      // PARTE 4 — CAPABILITY ACTIVATION READINESS: consolida, DEPOIS do
+      // decision readiness, quais capabilities poderiam ser ativadas no
+      // futuro (leitura das decisões de Activation JÁ produzidas). O
+      // resultado fica apenas no ref dedicado — nenhuma capability é
+      // ativada, nada altera a resposta, nada persiste, nenhuma exceção
+      // escapa (falha segura).
+      lastCapabilityReadinessSnapshotRef.current = buildConversationCapabilityReadinessSnapshot({
+        observationSnapshot: lastObservationSnapshotRef.current,
+        decisionReadinessSnapshot: lastDecisionReadinessSnapshotRef.current ?? null,
+      });
+      // PARTE 4 — EXECUTION READINESS: consolida, DEPOIS do capability
+      // readiness, se uma FUTURA execução seria segura (leitura dos
+      // resultados JÁ produzidos). O resultado fica apenas no ref dedicado —
+      // nenhuma execução acontece, nada altera a resposta, nada persiste,
+      // nenhuma exceção escapa (falha segura).
+      lastExecutionReadinessSnapshotRef.current = buildConversationExecutionReadinessSnapshot({
+        observationSnapshot: lastObservationSnapshotRef.current,
+        decisionReadinessSnapshot: lastDecisionReadinessSnapshotRef.current ?? null,
+        capabilityReadinessSnapshot: lastCapabilityReadinessSnapshotRef.current ?? null,
+      });
+      // PARTE 5 — APPLICATION (primeira ativação controlada): aplica SOMENTE
+      // RESPONSE_STYLE_GUIDANCE e RESPONSE_LENGTH_GUIDANCE, exclusivamente em
+      // DEV, com Integration + Activation habilitadas e usuário autorizado.
+      // O resultado fica no ref dedicado E é retornado para a seleção segura
+      // do texto visível (Bloco 4): finalText só substitui a mensagem quando
+      // selectControlledVisibleResponse aprovar (resultado do MESMO turno) —
+      // nada é persistido, nada executa, nenhuma exceção escapa (falha
+      // segura). O contexto reforça confiança/risco/circuit breaker do
+      // decision layer e do execution readiness recém-computados.
+      lastApplicationResultRef.current = runControlledGuidanceApplication({
+        config: uniEngine.getConfig(),
+        legacy: legacyResult,
+        engineResult: shadow,
+        guidance: lastGuidanceSnapshotRef.current ?? null,
+        context: {
+          environment: import.meta.env.DEV ? 'development' : 'production',
+          userId: user?.id ?? null,
+          isDev: import.meta.env.DEV,
+          telemetryAdapter: null,
+          activationDecisions: shadow?.activation?.decisions ?? [],
+          confidence: typeof shadow?.decisionLayer?.confidence === 'number'
+            ? shadow.decisionLayer.confidence
+            : null,
+          risk: typeof shadow?.decisionLayer?.risk === 'string'
+            ? shadow.decisionLayer.risk
+            : null,
+          circuitBreakerOpen: (lastExecutionReadinessSnapshotRef.current?.executionBlockedReasons ?? [])
+            .includes('CIRCUIT_BREAKER_OPEN'),
+        },
+      });
+      // PARTE 7 — CONVERSATION PLANNER: consolida, DEPOIS da Application, o
+      // plano observacional do próximo passo lógico da conversa (NEXT_STEP_*),
+      // consumindo SOMENTE os snapshots JÁ produzidos nesta ordem: Observation
+      // → Guidance → Decision → Capability Readiness → Execution Readiness →
+      // Application → Conversation Planner. O resultado fica apenas no ref
+      // dedicado — nenhum plano é executado, nada gera texto, nada altera a
+      // resposta, nada persiste, nenhuma exceção escapa (falha segura).
+      lastConversationPlannerSnapshotRef.current = buildConversationPlannerSnapshot({
+        observationSnapshot: lastObservationSnapshotRef.current,
+        decisionSnapshot: shadow?.decisionLayer ?? null,
+        decisionReadinessSnapshot: lastDecisionReadinessSnapshotRef.current ?? null,
+        capabilityReadinessSnapshot: lastCapabilityReadinessSnapshotRef.current ?? null,
+        executionReadinessSnapshot: lastExecutionReadinessSnapshotRef.current ?? null,
+        applicationResult: lastApplicationResultRef.current,
+      });
+      return lastApplicationResultRef.current;
+    } catch {
+      lastUniEngineShadowRef.current = null;
+      lastEngineIntegrationResultRef.current = null;
+      lastGuidanceSnapshotRef.current = null;
+      lastObservationSnapshotRef.current = null;
+      lastDecisionReadinessSnapshotRef.current = null;
+      lastCapabilityReadinessSnapshotRef.current = null;
+      lastExecutionReadinessSnapshotRef.current = null;
+      lastApplicationResultRef.current = null;
+      lastConversationPlannerSnapshotRef.current = null;
+      lastConversationRoutingSnapshotRef.current = null;
+      lastCognitiveOrchestratorSnapshotRef.current = null;
+      // Shadow Mode jamais quebra o chat — falha silenciosa, legado intacto.
+      return null;
+    }
+  }, [activeId, conversationStyle, effectiveWorkspace?.id, financialContext.snapshot, financialWorkspaceType, messages, user?.id]);
+
+  // PARTE 1 — INTEGRAÇÃO: camada adaptadora no ponto ÚNICO de saída de
+  // resposta (createAssistantResponse). Em Shadow Mode (BLOCO 1) o texto
+  // exibido é SEMPRE o texto legado — o resultado da integração fica em ref
+  // apenas para diagnóstico/comparação/testes. Nenhuma guidance altera o
+  // fluxo real nesta etapa.
+  // PARTE 5 — BLOCO 4: a resposta visível só pode ser o finalText da
+  // Application quando a seleção segura aprovar. O resultado vem do RETORNO
+  // de runEngineObservational (execução do MESMO turno — jamais um ref
+  // antigo); sem resultado fresco, o texto legado é mantido intacto.
+  // PARTE 8 — CONVERSATION ROUTING (BLOCO ÚNICO): o seletor consulta o
+  // Conversation Plan do MESMO turno (recém-reconstruído em
+  // runEngineObservational, chamada síncrona anterior neste mesmo call stack)
+  // e decide a rota conversacional. A rota legada NUNCA é contornada: o
+  // resultado fica SOMENTE no ref dedicado (sem state React, sem render) e
+  // apenas a rota ANSWER pode usar o finalText da Application — qualquer
+  // outra rota devolve o texto legado intacto. Consulta UMA única vez por
+  // mensagem; exceção nunca escapa (rota legada).
+  // PARTE 9 — COGNITIVE ORCHESTRATOR (BLOCO ÚNICO): o orquestrador consolida todas
+  // as camadas já produzidas (Observation → Guidance → Decision → Capability Readiness
+  // → Execution Readiness → Application → Conversation Planner → Conversation Routing)
+  // — nenhuma reexecução. O snapshot fica SOMENTE em ref dedicado — sem state React,
+  // nenhuma renderização, nunca persistido, nenhuma resposta entregue ao usuário
+  // altera (applied false, legacyPreserved true). Consulta UMA única vez por
+  // mensagem; exceção nunca escapa (snapshot vazio falho-safe).
+  const applyEngineGuidanceToResponse = useCallback((text, options = {}) => {
+    const legacyText = typeof text === 'string' ? text : '';
+    if (!legacyText) return legacyText;
+    const applicationResult = runEngineObservational(legacyText, options);
+    if (!applicationResult) return legacyText;
+    const plannerSnapshot = lastConversationPlannerSnapshotRef.current;
+    const routingSnapshot = selectControlledConversationRoute({
+      config: uniEngine.getConfig(),
+      environment: import.meta.env.DEV ? 'development' : 'production',
+      authorized: Boolean(
+        user?.id
+        && (uniEngine.getConfig().activationTestUserIds ?? []).includes(user.id),
+      ),
+      conversationPlan: plannerSnapshot,
+      sameTurn: plannerSnapshot !== null,
+      legacyText,
+      legacyResponse: { text: legacyText },
+      applicationResult,
+      isDev: import.meta.env.DEV,
+    });
+    lastConversationRoutingSnapshotRef.current = routingSnapshot;
+    const orchestratorSnapshot = buildCognitiveOrchestratorSnapshot({
+      config: uniEngine.getConfig(),
+      environment: import.meta.env.DEV ? 'development' : 'production',
+      authorized: Boolean(
+        user?.id
+        && (uniEngine.getConfig().activationTestUserIds ?? []).includes(user.id),
+      ),
+      isDev: import.meta.env.DEV,
+      observation: { mode: 'observational', legacyPreserved: true, serializable: true },
+      guidance: { mode: 'observational', legacyPreserved: true, serializable: true },
+      decision: { mode: 'observational', legacyPreserved: true, serializable: true },
+      capabilityReadiness: { mode: 'observational', legacyPreserved: true, serializable: true },
+      executionReadiness: { mode: 'observational', legacyPreserved: true, serializable: true },
+      application: applicationResult,
+      conversationPlan: plannerSnapshot,
+      conversationRoute: routingSnapshot,
+    });
+    lastCognitiveOrchestratorSnapshotRef.current = orchestratorSnapshot;
+    if (routingSnapshot.selectedRoute === 'ROUTE_ANSWER') {
+      return selectControlledVisibleResponse({
+        legacyText,
+        applicationResult,
+        config: uniEngine.getConfig(),
+        environment: import.meta.env.DEV ? 'development' : 'production',
+        authorized: Boolean(
+          user?.id
+          && (uniEngine.getConfig().activationTestUserIds ?? []).includes(user.id),
+        ),
+        executionReady: (lastExecutionReadinessSnapshotRef.current?.executionBlockedReasons ?? [])
+          .includes('CIRCUIT_BREAKER_OPEN') !== true,
+      });
+    }
+    return legacyText;
+  }, [runEngineObservational, user?.id]);
+
+  // A orientação entra no ÚNICO ponto de construção de mensagem do pipeline
+  // oficial (buildMessage) — nenhum caminho de resposta fala por fora.
+  const buildGuidedUniMessage = useCallback((text, messageOptions = {}) => {
+    const guidedText = applyEngineGuidanceToResponse(text, messageOptions);
+    return buildUniMessage(guidedText, messageOptions);
+  }, [applyEngineGuidanceToResponse]);
+
   const { createAssistantResponse } = useUniResponsePipeline({
-    buildMessage: buildUniMessage,
+    buildMessage: buildGuidedUniMessage,
     pushMessage,
     persistMessage: syncMessageToSupabase,
     shouldAutoSpeak: () => (
@@ -1228,7 +1712,7 @@ export default function UniChatPage({ variant = 'full' }) {
     markSpoken: markAutoSpokenMessage,
     hasNarratedText,
     markNarratedText,
-    speakMessage: handleSpeakMessage,
+    speakMessage: handleAutomaticSpeakMessage,
     userId: user?.id,
   });
 
@@ -2103,54 +2587,34 @@ export default function UniChatPage({ variant = 'full' }) {
       || financialConversation.state.status === 'needs_clarification'
       || isFinancialPlanActive(),
     );
-    // UNI ENGINE (FASE 1 + FASE 2 — SHADOW MODE): observa a mensagem,
-    // analisa, resolve referências implícitas e compara com o pipeline
-    // atual. O resultado é descartável e nunca influencia a resposta
-    // entregue ao usuário.
-    try {
-      const memoryKey = activeId ?? 'default-conversation';
-      if (!uniEngineMemoryByConversation.has(memoryKey)) {
-        uniEngineMemoryByConversation.set(memoryKey, createOperationalMemory());
-      }
-      let memoryAdapter = null;
-      if (uniEngine.getConfig().memoryEnabled && user?.id && effectiveWorkspace?.id) {
-        warmUniMemoryCache(user.id, effectiveWorkspace.id);
-        memoryAdapter = getUniMemoryAdapter(user.id, effectiveWorkspace.id);
-      }
-      uniEngine.runShadow({
-        message: {
-          id: userMsg.id,
-          text,
-          source: 'text',
-          createdAt: new Date().toISOString(),
-        },
-        session: {
-          userId: user?.id ?? null,
-          workspaceId: effectiveWorkspace?.id ?? null,
-          conversationId: activeId ?? null,
-        },
-        context: {
-          pendingAction: pendingAction ?? null,
-          conversationHistory: messages ?? [],
-          financialSnapshot: projectFinancialSnapshot(financialContext.snapshot),
-          userPreferences: {
-            conversationStyle: 'balanced',
-            workspaceType: financialWorkspaceType ?? 'personal',
-          },
-          currentRoute: 'uni-chat',
-        },
-        currentPipeline: {
-          detectedIntent: classifyIntent(text).intent,
-          pendingIntent: (pendingAction ?? financialConversation.state.action)?.intent ?? null,
-          pendingActive: hasPendingConversation,
-          resultType: pendingAction?.status ?? financialConversation.state.status ?? 'unknown',
-        },
-        operationalMemory: uniEngineMemoryByConversation.get(memoryKey),
-        memoryAdapter,
-      });
-    } catch {
-      // Shadow mode jamais quebra o chat — falha silenciosa.
-    }
+    // PARTE 2 — BLOCO 1 (SHADOW MODE): a Uni Engine observa a interação,
+    // mas SOMENTE depois que o resultado legado existir — a execução do
+    // motor acontece no ponto único de saída de resposta
+    // (applyEngineGuidanceToResponse/runEngineObservational), nunca aqui.
+    // Este bloco apenas guarda o turno do usuário (mensagem + flags) para a
+    // engine analisar no momento certo e zera os resultados anteriores da
+    // engine para o novo turno. A engine permanece descartável e nunca
+    // influencia a resposta entregue ao usuário.
+    lastEngineTurnRef.current = {
+      userMessageId: userMsg.id,
+      userMessage: {
+        id: userMsg.id,
+        text,
+        source: 'text',
+        createdAt: new Date().toISOString(),
+      },
+      hasPendingConversation,
+    };
+    lastUniEngineShadowRef.current = null;
+    lastEngineIntegrationResultRef.current = null;
+    lastGuidanceSnapshotRef.current = null;
+    lastObservationSnapshotRef.current = null;
+    lastDecisionReadinessSnapshotRef.current = null;
+    lastCapabilityReadinessSnapshotRef.current = null;
+    lastExecutionReadinessSnapshotRef.current = null;
+    lastApplicationResultRef.current = null;
+    lastConversationPlannerSnapshotRef.current = null;
+    lastConversationRoutingSnapshotRef.current = null;
     if (hasPendingConversation) {
       // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
       // explícita NOVA. Se a frase é reconhecida como ação financeira

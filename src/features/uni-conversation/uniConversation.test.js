@@ -10,6 +10,7 @@ import {
   uniConversationReducer,
 } from './uniConversationReducer.js';
 import {
+  buildAccountClarificationQuestion,
   buildClarificationResponse,
   buildCompletionResponse,
   buildConfirmationResponse,
@@ -290,6 +291,36 @@ test('campo obrigatório ausente pergunta primeiro pela conta', () => {
   assert.equal(action.status, 'needs_clarification');
   assert.equal(action.issues[0].field, 'account');
   assert.equal(action.issues[0].code, 'account_required');
+});
+
+test('receitas por linguagem natural perguntam pela conta de recebimento, nunca por pagamento', () => {
+  for (const input of ['Recebi mil reais.', 'Entrou mil reais.', 'Ganhei R$ 500.']) {
+    const action = createAction(input);
+    assert.equal(action.transactionType, 'income', `intenção incorreta para: ${input}`);
+    assert.equal(action.issues[0].code, 'account_required');
+    const response = buildClarificationResponse(action);
+    assert.equal(response.text, 'Em qual conta você recebeu esse valor?');
+    assert.doesNotMatch(response.text, /fez esse pagamento/i);
+  }
+});
+
+test('despesa, transferência e ajuste de saldo usam perguntas específicas por intenção e campo', () => {
+  assert.equal(
+    buildAccountClarificationQuestion({ transactionType: 'expense' }),
+    'Em qual conta você fez esse pagamento?',
+  );
+  assert.equal(
+    buildAccountClarificationQuestion({ transactionType: 'transfer' }, 'account'),
+    'De qual conta o valor foi transferido?',
+  );
+  assert.equal(
+    buildAccountClarificationQuestion({ transactionType: 'transfer' }, 'destinationAccount'),
+    'Para qual conta o valor foi transferido?',
+  );
+  assert.equal(
+    buildAccountClarificationQuestion({ transactionType: 'adjustment' }),
+    'Em qual conta você quer ajustar o saldo?',
+  );
 });
 
 test('conta inexistente não é substituída silenciosamente', () => {

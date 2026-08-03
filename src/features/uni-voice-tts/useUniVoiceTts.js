@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSession } from '../../app/SessionContext.jsx';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient.js';
 import { sanitizeVoiceOutputText, containsSensitiveVoiceData } from '../uni-voice-output/voiceOutputPolicy.js';
+import { createBrowserSpeechTtsProvider } from './browserSpeechTtsProvider.js';
 import { createElevenLabsTtsProvider } from './elevenLabsTtsProvider.js';
+import { createFallbackVoiceTtsProvider } from './fallbackVoiceTtsProvider.js';
+import { resolveVoiceFallbackPolicy } from './voiceFallbackPolicy.js';
 import { MAX_TTS_TEXT_LENGTH } from './voiceTtsConfig.js';
 import { VOICE_TTS_STATUS, VOICE_TTS_ERROR_CODES, getVoiceTtsErrorMessage } from './voiceTtsStatus.js';
+import { createVoiceTtsRequestContext, recordVoiceTtsTelemetry } from './voiceTtsTelemetry.js';
 
-function buildError(code) {
-  return { code, message: getVoiceTtsErrorMessage(code) };
+function buildError(code, details = {}) {
+  return Object.freeze({
+    code,
+    message: getVoiceTtsErrorMessage(code),
+    retryable: Boolean(details.retryable),
+    providerStatus: Number.isInteger(details.providerStatus) ? details.providerStatus : null,
+  });
 }
 
 /**
@@ -20,21 +30,38 @@ function buildError(code) {
  * remocao de markdown/dados sensiveis.
  */
 export function useUniVoiceTts() {
+  const { user } = useSession();
   const [status, setStatus] = useState(VOICE_TTS_STATUS.IDLE);
   const [error, setError] = useState(null);
 
-  const provider = useMemo(() => createElevenLabsTtsProvider({
-    supabase,
-    supabaseUrl,
-    supabaseAnonKey,
-    enabled: isSupabaseConfigured,
-    runtime: globalThis,
-  }), []);
+  const provider = useMemo(() => {
+    const runtime = globalThis;
+    const primaryProvider = createElevenLabsTtsProvider({
+      supabase,
+      supabaseUrl,
+      supabaseAnonKey,
+      enabled: isSupabaseConfigured,
+      runtime,
+    });
+    const browserProvider = createBrowserSpeechTtsProvider({ runtime });
+    const policy = resolveVoiceFallbackPolicy({
+      env: import.meta.env,
+      userId: user?.id ?? null,
+    });
+    return createFallbackVoiceTtsProvider({ primaryProvider, browserProvider, policy });
+  }, [user?.id]);
 
   // Cleanup ao desmontar: nunca deixa audio tocando nem Blob URL pendurada.
   useEffect(() => () => provider.stop(), [provider]);
 
-  const speak = useCallback(async (text) => {
+  const speak = useCallback(async (text, requestMetadata = {}) => {
+    const requestContext = createVoiceTtsRequestContext(requestMetadata);
+    const recordProviderEvent = (event) => recordVoiceTtsTelemetry({
+      ...requestContext,
+      ...event,
+      deduplicated: false,
+    });
+
     if (!provider.isSupported()) {
       const err = buildError(VOICE_TTS_ERROR_CODES.UNAVAILABLE);
       setStatus(VOICE_TTS_STATUS.UNAVAILABLE);
@@ -73,6 +100,7 @@ export function useUniVoiceTts() {
       await provider.speak(sanitized, {
         onPlaying: () => setStatus(VOICE_TTS_STATUS.PLAYING),
         onEnded: () => setStatus(VOICE_TTS_STATUS.STOPPED),
+        onProviderEvent: recordProviderEvent,
       });
       return { error: null };
     } catch (providerError) {
@@ -80,7 +108,10 @@ export function useUniVoiceTts() {
         setStatus(VOICE_TTS_STATUS.STOPPED);
         return { error: null };
       }
-      const err = buildError(providerError?.code ?? VOICE_TTS_ERROR_CODES.PROVIDER_ERROR);
+      const err = buildError(
+        providerError?.code ?? VOICE_TTS_ERROR_CODES.PROVIDER_ERROR,
+        providerError,
+      );
       setStatus(VOICE_TTS_STATUS.ERROR);
       setError(err);
       return { error: err };

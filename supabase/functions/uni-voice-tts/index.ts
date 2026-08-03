@@ -36,11 +36,42 @@ const CORS_HEADERS = {
   'Access-Control-Expose-Headers': 'X-Uni-Voice-Cache',
 };
 
-function jsonResponse(status: number, code: string, message: string) {
-  return new Response(JSON.stringify({ code, error: message }), {
+function jsonResponse(
+  status: number,
+  code: string,
+  message: string,
+  details: { providerStatus?: number | null; retryable?: boolean } = {},
+) {
+  return new Response(JSON.stringify({
+    error: {
+      code,
+      message,
+      provider_status: Number.isInteger(details.providerStatus) ? details.providerStatus : null,
+      retryable: Boolean(details.retryable),
+    },
+  }), {
     status,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
+}
+
+async function readProviderErrorTag(response: Response) {
+  const body = await response.json().catch(() => null);
+  const candidate = body?.detail?.status ?? body?.detail?.code ?? body?.status ?? body?.code;
+  return typeof candidate === 'string' ? candidate.toLowerCase() : '';
+}
+
+function providerErrorResponse(
+  status: number,
+  code: string,
+  message: string,
+  providerStatus: number | null,
+  retryable: boolean,
+) {
+  // Diagnóstico seguro: somente classificação e status HTTP do provedor.
+  // Nunca registra texto, usuário, voice ID, chave ou corpo da resposta.
+  console.warn('uni_voice_tts_provider_failure', { code, providerStatus, retryable });
+  return jsonResponse(status, code, message, { providerStatus, retryable });
 }
 
 function audioResponse(audio: BodyInit, contentType: string, cacheStatus: 'HIT' | 'MISS') {
@@ -243,7 +274,7 @@ Deno.serve(async (request) => {
   const cacheEnabled = Boolean(serviceRoleKey);
 
   if (!supabaseUrl || !anonKey || !providerKey || !voiceId) {
-    return jsonResponse(503, 'NOT_CONFIGURED', 'A geração de voz não está configurada neste ambiente.');
+    return jsonResponse(503, 'CONFIGURATION_ERROR', 'A geração de voz não está configurada neste ambiente.');
   }
 
   const userId = await getAuthenticatedUserId(authorization, supabaseUrl, anonKey);
@@ -253,22 +284,22 @@ Deno.serve(async (request) => {
   try {
     payload = await request.json();
   } catch {
-    return jsonResponse(400, 'INVALID_TEXT', 'Não foi possível ler esta solicitação.');
+    return jsonResponse(400, 'INVALID_REQUEST', 'Não foi possível ler esta solicitação.');
   }
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    return jsonResponse(400, 'INVALID_TEXT', 'Não foi possível ler esta solicitação.');
+    return jsonResponse(400, 'INVALID_REQUEST', 'Não foi possível ler esta solicitação.');
   }
   if ('user_id' in payload || 'voice_id' in payload || 'model_id' in payload || 'api_key' in payload) {
-    return jsonResponse(400, 'INVALID_TEXT', 'A solicitação contém campos não permitidos.');
+    return jsonResponse(400, 'INVALID_REQUEST', 'A solicitação contém campos não permitidos.');
   }
 
   const text = sanitizeText(payload.text);
-  if (!text) return jsonResponse(400, 'INVALID_TEXT', 'Informe um texto para gerar a voz.');
+  if (!text) return jsonResponse(400, 'INVALID_REQUEST', 'Informe um texto para gerar a voz.');
   if (text.length > MAX_TEXT_LENGTH) {
-    return jsonResponse(413, 'INVALID_TEXT', `Use um texto de até ${MAX_TEXT_LENGTH} caracteres.`);
+    return jsonResponse(413, 'INVALID_REQUEST', `Use um texto de até ${MAX_TEXT_LENGTH} caracteres.`);
   }
   if (containsSensitiveData(text)) {
-    return jsonResponse(422, 'INVALID_TEXT', 'Este texto contém dados que não podem ser enviados ao provedor de voz.');
+    return jsonResponse(422, 'INVALID_REQUEST', 'Este texto contém dados que não podem ser enviados ao provedor de voz.');
   }
 
   // ELEVEN2.1 -- procura cache antes de chamar a ElevenLabs. Qualquer falha
@@ -309,7 +340,9 @@ Deno.serve(async (request) => {
   const timeout = setTimeout(() => controller.abort('timeout'), timeoutMs);
 
   try {
-    const providerResponse = await fetch(`${ELEVENLABS_BASE_URL}/${encodeURIComponent(voiceId)}`, {
+    const providerUrl = `${ELEVENLABS_BASE_URL}/${encodeURIComponent(voiceId)}`
+      + `?output_format=${encodeURIComponent(outputFormat)}`;
+    const providerResponse = await fetch(providerUrl, {
       method: 'POST',
       headers: {
         'xi-api-key': providerKey,
@@ -319,21 +352,40 @@ Deno.serve(async (request) => {
       body: JSON.stringify({
         text,
         model_id: modelId,
-        output_format: outputFormat,
       }),
       signal: controller.signal,
     });
 
-    if (providerResponse.status === 429) {
-      return jsonResponse(429, 'RATE_LIMIT', 'Muitas solicitações de voz. Tente novamente em instantes.');
-    }
-    if (providerResponse.status === 401 || providerResponse.status === 403) {
-      // Credencial do provedor invalida/revogada -- nunca repassa o detalhe
-      // do provedor, so um erro generico e seguro.
-      return jsonResponse(502, 'PROVIDER_ERROR', 'Não consegui gerar a voz agora.');
-    }
     if (!providerResponse.ok) {
-      return jsonResponse(502, 'PROVIDER_ERROR', 'Não consegui gerar a voz agora.');
+      const providerTag = await readProviderErrorTag(providerResponse);
+      if (providerTag.includes('quota')) {
+        return providerErrorResponse(
+          502, 'PROVIDER_QUOTA_ERROR', 'O limite do serviço de voz foi atingido.',
+          providerResponse.status, false,
+        );
+      }
+      if (providerResponse.status === 401 || providerResponse.status === 403) {
+        return providerErrorResponse(
+          502, 'PROVIDER_AUTH_ERROR', 'O serviço de voz precisa ser reconectado.',
+          providerResponse.status, false,
+        );
+      }
+      if (providerResponse.status === 429) {
+        return providerErrorResponse(
+          429, 'PROVIDER_RATE_LIMIT', 'Muitas solicitações de voz. Tente novamente em instantes.',
+          providerResponse.status, true,
+        );
+      }
+      if (providerResponse.status === 400 || providerResponse.status === 422) {
+        return providerErrorResponse(
+          422, 'INVALID_REQUEST', 'O provedor recusou os parâmetros da geração de voz.',
+          providerResponse.status, false,
+        );
+      }
+      return providerErrorResponse(
+        502, 'PROVIDER_ERROR', 'Não consegui gerar a voz agora.',
+        providerResponse.status, providerResponse.status >= 500,
+      );
     }
 
     const contentType = providerResponse.headers.get('Content-Type') ?? 'audio/mpeg';
@@ -375,7 +427,13 @@ Deno.serve(async (request) => {
   } catch (error) {
     const timedOut = controller.signal.reason === 'timeout'
       || (error instanceof DOMException && error.name === 'AbortError');
-    return jsonResponse(timedOut ? 504 : 502, timedOut ? 'TIMEOUT' : 'PROVIDER_ERROR', 'Não consegui gerar a voz agora.');
+    return providerErrorResponse(
+      timedOut ? 504 : 502,
+      timedOut ? 'PROVIDER_TIMEOUT' : 'NETWORK_ERROR',
+      timedOut ? 'A geração de voz demorou demais.' : 'Não foi possível conectar ao provedor de voz.',
+      null,
+      true,
+    );
   } finally {
     clearTimeout(timeout);
   }

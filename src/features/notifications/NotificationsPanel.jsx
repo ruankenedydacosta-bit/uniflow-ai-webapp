@@ -7,6 +7,15 @@ import {
 } from './notificationFormatting.js';
 import styles from './NotificationsPanel.module.css';
 
+const TYPE_ICONS = Object.freeze({
+  financeiro: '↕',
+  metas: '◎',
+  agenda: '□',
+  crm: '◇',
+  sistema: '!',
+  uni: 'U',
+});
+
 function NotificationsPanel({
   notifications = [],
   isLoading = false,
@@ -35,14 +44,16 @@ function NotificationsPanel({
         <span className={styles.unreadSummary} role="status">
           {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}` : 'Tudo em dia'}
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={unreadCount === 0 || isLoading}
-          onClick={() => onMarkAllAsRead?.()}
-        >
-          Marcar todas como lidas
-        </Button>
+        {unreadCount > 0 ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={isLoading}
+            onClick={() => onMarkAllAsRead?.()}
+          >
+            Marcar todas como lidas
+          </Button>
+        ) : null}
       </div>
 
       {isLoading ? (
@@ -55,9 +66,11 @@ function NotificationsPanel({
           </Button>
         </div>
       ) : notifications.length === 0 ? (
-        <p className={styles.stateMessage} role="status">
-          Nenhuma notificação por enquanto.
-        </p>
+        <div className={styles.stateMessage} role="status">
+          <span className={styles.emptyIcon} aria-hidden="true">✓</span>
+          <strong>Nenhuma notificação por enquanto.</strong>
+          <span>Toda informação importante sobre sua conta aparecerá aqui.</span>
+        </div>
       ) : (
         <ul className={styles.list} aria-label="Lista de notificações">
           {notifications.map((notification) => {
@@ -70,6 +83,9 @@ function NotificationsPanel({
                   onClick={() => handleItemActivate(notification)}
                   aria-label={`${notification.title}${unread ? ' (não lida)' : ''}`}
                 >
+                  <span className={styles.itemIcon} data-type={notification.type} aria-hidden="true">
+                    {TYPE_ICONS[notification.type] ?? '•'}
+                  </span>
                   <span className={styles.itemTop}>
                     <span className={styles.itemType}>{getNotificationTypeLabel(notification.type)}</span>
                     <span className={styles.itemDate}>{formatNotificationDate(notification.created_at)}</span>

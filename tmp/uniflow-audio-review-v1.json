@@ -1,0 +1,626 @@
+[
+  {
+    "audioId": "closing_general_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:26:40.293Z"
+  },
+  {
+    "audioId": "confirmation_general_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:26:30.640Z"
+  },
+  {
+    "audioId": "confirmation_general_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:26:55.603Z"
+  },
+  {
+    "audioId": "confirmation_general_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:27:24.760Z"
+  },
+  {
+    "audioId": "confirmation_general_004",
+    "status": "replace",
+    "observation": "Voz com um TOM timido substituir futuramente por uma mais confiante...",
+    "timestamp": "2026-07-16T15:30:01.929Z"
+  },
+  {
+    "audioId": "confirmation_general_005",
+    "status": "replace",
+    "observation": "Voz com um TOM timido para essa frase, substituir futuramente por uma mais confiante ",
+    "timestamp": "2026-07-16T15:30:29.137Z"
+  },
+  {
+    "audioId": "confirmation_general_006",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:30:37.400Z"
+  },
+  {
+    "audioId": "confirmation_general_007",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:30:49.432Z"
+  },
+  {
+    "audioId": "confirmation_save_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:27:01.355Z"
+  },
+  {
+    "audioId": "confirmation_save_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:27:06.508Z"
+  },
+  {
+    "audioId": "confirmation_save_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:30:46.061Z"
+  },
+  {
+    "audioId": "confirmation_sensitive_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:27:29.865Z"
+  },
+  {
+    "audioId": "confirmation_sensitive_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:30:42.011Z"
+  },
+  {
+    "audioId": "error_temporary_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:26:11.626Z"
+  },
+  {
+    "audioId": "error_understanding_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:26:26.240Z"
+  },
+  {
+    "audioId": "error_understanding_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:30:52.813Z"
+  },
+  {
+    "audioId": "error_understanding_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:30:56.713Z"
+  },
+  {
+    "audioId": "error_understanding_004",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:31:00.463Z"
+  },
+  {
+    "audioId": "error_understanding_005",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:31:06.599Z"
+  },
+  {
+    "audioId": "error_understanding_006",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:31:10.391Z"
+  },
+  {
+    "audioId": "error_understanding_007",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:53:49.275Z"
+  },
+  {
+    "audioId": "error_understanding_008",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:31:18.351Z"
+  },
+  {
+    "audioId": "error_understanding_009",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:31:30.816Z"
+  },
+  {
+    "audioId": "error_understanding_011",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:00.136Z"
+  },
+  {
+    "audioId": "finance_attention_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:06.758Z"
+  },
+  {
+    "audioId": "finance_insight_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:11.731Z"
+  },
+  {
+    "audioId": "finance_progress_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:21.164Z"
+  },
+  {
+    "audioId": "finance_suggestion_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:16.749Z"
+  },
+  {
+    "audioId": "greeting_afternoon_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:50.732Z"
+  },
+  {
+    "audioId": "greeting_evening_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:47.312Z"
+  },
+  {
+    "audioId": "greeting_general_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:55.569Z"
+  },
+  {
+    "audioId": "greeting_general_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:44:58.927Z"
+  },
+  {
+    "audioId": "greeting_morning_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:41.701Z"
+  },
+  {
+    "audioId": "listening_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:25.651Z"
+  },
+  {
+    "audioId": "listening_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:34.199Z"
+  },
+  {
+    "audioId": "listening_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:56.054Z"
+  },
+  {
+    "audioId": "listening_004",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:33:01.643Z"
+  },
+  {
+    "audioId": "listening_006",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:33:07.995Z"
+  },
+  {
+    "audioId": "listening_007",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:35:54.960Z"
+  },
+  {
+    "audioId": "listening_008",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:35:52.347Z"
+  },
+  {
+    "audioId": "listening_009",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:35:50.390Z"
+  },
+  {
+    "audioId": "listening_010",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:07.440Z"
+  },
+  {
+    "audioId": "listening_to_processing_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:03.553Z"
+  },
+  {
+    "audioId": "onboarding_basic_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:37:19.007Z"
+  },
+  {
+    "audioId": "onboarding_basic_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:37:24.624Z"
+  },
+  {
+    "audioId": "onboarding_basic_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:37:45.976Z"
+  },
+  {
+    "audioId": "onboarding_closing_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:13.969Z"
+  },
+  {
+    "audioId": "onboarding_closing_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:17.908Z"
+  },
+  {
+    "audioId": "onboarding_closing_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:22.679Z"
+  },
+  {
+    "audioId": "onboarding_goals_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:43.777Z"
+  },
+  {
+    "audioId": "onboarding_goals_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:49.102Z"
+  },
+  {
+    "audioId": "onboarding_goals_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:53.085Z"
+  },
+  {
+    "audioId": "onboarding_introduction_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:28.625Z"
+  },
+  {
+    "audioId": "onboarding_introduction_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:34.274Z"
+  },
+  {
+    "audioId": "onboarding_introduction_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:38.332Z"
+  },
+  {
+    "audioId": "positive_achievement_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:38:00.160Z"
+  },
+  {
+    "audioId": "positive_achievement_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:38:21.900Z"
+  },
+  {
+    "audioId": "positive_achievement_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:38:28.232Z"
+  },
+  {
+    "audioId": "positive_achievement_004",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:38:34.416Z"
+  },
+  {
+    "audioId": "positive_progress_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:37:54.691Z"
+  },
+  {
+    "audioId": "positive_progress_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:38:05.118Z"
+  },
+  {
+    "audioId": "positive_progress_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:38:39.709Z"
+  },
+  {
+    "audioId": "positive_progress_004",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:38:44.817Z"
+  },
+  {
+    "audioId": "proactive_attention_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:40:27.364Z"
+  },
+  {
+    "audioId": "proactive_opportunity_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:40:20.835Z"
+  },
+  {
+    "audioId": "proactive_pattern_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:40:24.081Z"
+  },
+  {
+    "audioId": "proactive_suggestion_001",
+    "status": "replace",
+    "observation": "Muito meiga tem que ter um tom de surpresa pois é para mostrar algo interessante",
+    "timestamp": "2026-07-16T15:39:26.165Z"
+  },
+  {
+    "audioId": "proactive_suggestion_002",
+    "status": "replace",
+    "observation": "TOM muito timido pelo fato do usuario gostar do que vai ver tem que ser um TOM alegre",
+    "timestamp": "2026-07-16T15:40:14.934Z"
+  },
+  {
+    "audioId": "proactive_suggestion_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:40:30.582Z"
+  },
+  {
+    "audioId": "proactive_suggestion_004",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:40:33.890Z"
+  },
+  {
+    "audioId": "processing_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:32:30.992Z"
+  },
+  {
+    "audioId": "processing_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:40:41.211Z"
+  },
+  {
+    "audioId": "processing_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:40:45.403Z"
+  },
+  {
+    "audioId": "processing_004",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:40:49.627Z"
+  },
+  {
+    "audioId": "processing_005",
+    "status": "replace",
+    "observation": "TOM muito sem graça por algo esta quase pronto deixa mais alegre e frase ampla exemp: ESTÁ QUASE PRONTO.",
+    "timestamp": "2026-07-16T15:41:43.013Z"
+  },
+  {
+    "audioId": "processing_006",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:41:49.914Z"
+  },
+  {
+    "audioId": "processing_007",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:41:55.703Z"
+  },
+  {
+    "audioId": "processing_008",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:41:59.188Z"
+  },
+  {
+    "audioId": "processing_009",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:42:03.493Z"
+  },
+  {
+    "audioId": "processing_010",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:42:10.822Z"
+  },
+  {
+    "audioId": "processing_011",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:42:16.139Z"
+  },
+  {
+    "audioId": "processing_012",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:42:21.059Z"
+  },
+  {
+    "audioId": "returning_user_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:58.976Z"
+  },
+  {
+    "audioId": "returning_user_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:44:02.732Z"
+  },
+  {
+    "audioId": "returning_user_004",
+    "status": "replace",
+    "observation": "MUDAR PARA ALGO MAIS FELIZ PARECE UMA PERGUNTA TRISTE RSR",
+    "timestamp": "2026-07-16T15:44:38.457Z"
+  },
+  {
+    "audioId": "returning_user_005",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:44:43.597Z"
+  },
+  {
+    "audioId": "returning_user_006",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:44:46.970Z"
+  },
+  {
+    "audioId": "returning_user_007",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:44:51.204Z"
+  },
+  {
+    "audioId": "returning_user_008",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:44:54.721Z"
+  },
+  {
+    "audioId": "returning_user_009",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:45:03.893Z"
+  },
+  {
+    "audioId": "support_emotional_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:42:24.336Z"
+  },
+  {
+    "audioId": "support_emotional_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:09.128Z"
+  },
+  {
+    "audioId": "support_emotional_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:12.695Z"
+  },
+  {
+    "audioId": "support_emotional_004",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:16.574Z"
+  },
+  {
+    "audioId": "support_emotional_005",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:20.854Z"
+  },
+  {
+    "audioId": "support_emotional_006",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:28.141Z"
+  },
+  {
+    "audioId": "support_emotional_007",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:26.103Z"
+  },
+  {
+    "audioId": "support_emotional_008",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:43:36.445Z"
+  },
+  {
+    "audioId": "support_emotional_009",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:44:07.325Z"
+  },
+  {
+    "audioId": "waiting_for_user_001",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:36:56.651Z"
+  },
+  {
+    "audioId": "waiting_for_user_002",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:37:00.781Z"
+  },
+  {
+    "audioId": "waiting_for_user_003",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:37:04.282Z"
+  },
+  {
+    "audioId": "waiting_for_user_004",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:37:09.247Z"
+  },
+  {
+    "audioId": "waiting_for_user_005",
+    "status": "approved",
+    "observation": "",
+    "timestamp": "2026-07-16T15:37:12.923Z"
+  }
+]

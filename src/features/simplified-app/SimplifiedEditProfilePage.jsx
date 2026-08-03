@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
-import { updateProfile } from '../../services/profileService.js';
+import {
+  removeProfileAvatar,
+  uploadProfileAvatar,
+  validateProfileAvatarFile,
+} from '../../services/storage.service.js';
 import Avatar from '../../components/ui/Avatar/Avatar.jsx';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
@@ -20,6 +24,17 @@ import {
   TrashIcon,
 } from './SimplifiedIcons.jsx';
 import styles from './simplifiedEditProfile.module.css';
+import {
+  buildSimplifiedProfilePayload,
+  createSimplifiedProfileForm,
+  formatPhone,
+  LOCALE_OPTIONS,
+  PROFILE_LIMITS,
+  serializeSimplifiedProfileForm,
+  TEXT_SIZE_OPTIONS,
+  TREATMENT_OPTIONS,
+  validateSimplifiedProfileForm,
+} from './simplifiedProfilePreferences.js';
 
 function BackIcon() {
   return (
@@ -39,40 +54,41 @@ function HomeIconPlaceholder() {
   );
 }
 
-function cleanText(value) {
-  return typeof value === 'string' ? value.trim() : '';
+function localToday() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${today.getFullYear()}-${month}-${day}`;
 }
 
-/**
- * ETAPA 4 -- Editar perfil (Fase 1 confirmou por auditoria real do schema):
- * a tabela public.profiles só tem full_name, avatar_url e phone como campos
- * de identidade editáveis de verdade. Não existem colunas para nome
- * preferido, saudação, data de nascimento, idioma, tamanho de texto ou
- * endereço -- por isso essas seções aparecem visualmente (fidelidade à
- * referência) mas ficam honestamente marcadas como indisponíveis para
- * edição nesta versão, em vez de fingir persistência que não existe.
- */
 function SimplifiedEditProfilePage() {
   const navigate = useNavigate();
-  const { user, profile, refreshSession } = useSession();
-
-  const originalFullName = cleanText(profile?.full_name);
-  const originalPhone = cleanText(profile?.phone);
-
-  const [fullName, setFullName] = useState(originalFullName);
-  const [phone, setPhone] = useState(originalPhone);
+  const { user, profile, updateOwnProfile } = useSession();
+  const initialForm = createSimplifiedProfileForm(profile, user);
+  const [form, setForm] = useState(initialForm);
+  const [savedForm, setSavedForm] = useState(initialForm);
   const [isAddressOpen, setIsAddressOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [validationError, setValidationError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [photoNotice, setPhotoNotice] = useState(null);
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarRemovalRequested, setAvatarRemovalRequested] = useState(false);
+  const [avatarError, setAvatarError] = useState(null);
   const [showRemovePhotoConfirm, setShowRemovePhotoConfirm] = useState(false);
-  const [isRemovingPhoto, setIsRemovingPhoto] = useState(false);
-  const [removePhotoError, setRemovePhotoError] = useState(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
+  const fileInputRef = useRef(null);
+  const mutationRef = useRef(false);
 
-  const isDirty = fullName !== originalFullName || phone !== originalPhone;
+  const profileDirty = serializeSimplifiedProfileForm(form) !== serializeSimplifiedProfileForm(savedForm);
+  const photoDirty = Boolean(selectedAvatarFile || avatarRemovalRequested);
+  const isDirty = profileDirty || photoDirty;
+
+  useEffect(() => () => {
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+  }, [avatarPreview]);
 
   useEffect(() => {
     if (!isDirty) return undefined;
@@ -117,51 +133,101 @@ function SimplifiedEditProfilePage() {
     setPendingNavigation(null);
   }
 
-  async function handleSave() {
-    if (!user?.id || !isDirty) return;
-    setIsSaving(true);
+  function updateField(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+    setValidationError(null);
     setSaveError(null);
     setSaveSuccess(false);
-
-    const result = await updateProfile(user.id, {
-      full_name: fullName,
-      phone,
-    });
-
-    setIsSaving(false);
-
-    if (result.error) {
-      setSaveError('Não foi possível salvar agora. Tente novamente.');
-      return;
-    }
-
-    // Mostra a confirmação antes de ressincronizar a sessão: refreshSession
-    // aciona brevemente o loading global (mesmo mecanismo do switchWorkspace
-    // em SessionContext.jsx), o que desmonta e remonta esta tela -- aguardar
-    // a chamada aqui perderia o estado local e a mensagem nunca apareceria.
-    setSaveSuccess(true);
-    refreshSession();
   }
 
-  async function handleConfirmRemovePhoto() {
-    if (!user?.id) return;
-    setIsRemovingPhoto(true);
-    setRemovePhotoError(null);
-
-    const result = await updateProfile(user.id, { avatar_url: null });
-
-    setIsRemovingPhoto(false);
-
-    if (result.error) {
-      setRemovePhotoError('Não foi possível remover a foto agora. Tente novamente.');
+  function handleAvatarChange(event) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = '';
+    const error = validateProfileAvatarFile(file);
+    if (error) {
+      setAvatarError(error);
       return;
     }
 
-    await refreshSession();
+    setAvatarError(null);
+    setSelectedAvatarFile(file);
+    setAvatarRemovalRequested(false);
+    setAvatarPreview(URL.createObjectURL(file));
+    setSaveSuccess(false);
+  }
+
+  function handleConfirmRemovePhoto() {
+    setSelectedAvatarFile(null);
+    setAvatarPreview(null);
+    setAvatarRemovalRequested(true);
+    setAvatarError(null);
     setShowRemovePhotoConfirm(false);
+    setSaveSuccess(false);
   }
 
-  const hasAvatar = Boolean(profile?.avatar_url);
+  async function handleSave() {
+    if (!user?.id || !isDirty || mutationRef.current) return;
+
+    const formError = validateSimplifiedProfileForm(form);
+    if (formError) {
+      setValidationError(formError);
+      return;
+    }
+
+    mutationRef.current = true;
+    setIsSaving(true);
+    setSaveError(null);
+    setValidationError(null);
+    setSaveSuccess(false);
+
+    let uploadedAvatarPath = null;
+    const previousAvatarPath = profile?.avatar_path ?? null;
+
+    try {
+      if (selectedAvatarFile) {
+        const uploadResult = await uploadProfileAvatar(user.id, selectedAvatarFile);
+        if (uploadResult.error) {
+          setSaveError('Não foi possível enviar a foto. Verifique o arquivo e tente novamente.');
+          return;
+        }
+        uploadedAvatarPath = uploadResult.data.path;
+      }
+
+      const payload = buildSimplifiedProfilePayload(form);
+      if (selectedAvatarFile || avatarRemovalRequested) {
+        payload.avatar_path = uploadedAvatarPath;
+        payload.avatar_url = null;
+      }
+
+      const result = await updateOwnProfile(payload);
+      if (result.error) {
+        if (uploadedAvatarPath) await removeProfileAvatar(uploadedAvatarPath, user.id);
+        setSaveError('Não foi possível salvar agora. Tente novamente.');
+        return;
+      }
+
+      if (previousAvatarPath && previousAvatarPath !== uploadedAvatarPath && (selectedAvatarFile || avatarRemovalRequested)) {
+        await removeProfileAvatar(previousAvatarPath, user.id);
+      }
+
+      const nextForm = createSimplifiedProfileForm(result.data, user);
+      setForm(nextForm);
+      setSavedForm(nextForm);
+      setSelectedAvatarFile(null);
+      setAvatarPreview(null);
+      setAvatarRemovalRequested(false);
+      setSaveSuccess(true);
+    } catch {
+      if (uploadedAvatarPath) await removeProfileAvatar(uploadedAvatarPath, user.id);
+      setSaveError('Não foi possível salvar agora. Tente novamente.');
+    } finally {
+      mutationRef.current = false;
+      setIsSaving(false);
+    }
+  }
+
+  const hasAvatar = Boolean(avatarPreview || (!avatarRemovalRequested && profile?.avatar_url));
+  const displayedAvatar = avatarRemovalRequested ? undefined : avatarPreview || profile?.avatar_url || undefined;
 
   return (
     <div className={styles.page} data-simplified-edit-profile>
@@ -187,19 +253,25 @@ function SimplifiedEditProfilePage() {
 
       <section className={styles.card} aria-label="Foto de perfil">
         <div className={styles.photoRow}>
-          <Avatar src={profile?.avatar_url || undefined} name={fullName || undefined} size="xl" />
+          <Avatar src={displayedAvatar} name={form.full_name || undefined} size="xl" />
           <div className={styles.photoInfo}>
             <strong>Foto de perfil</strong>
-            <p>Mostre quem você é para a Uni.</p>
+            <p>JPEG, PNG ou WebP de até 5 MB.</p>
+            <input
+              ref={fileInputRef}
+              className={styles.fileInput}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarChange}
+              aria-label="Selecionar nova foto de perfil"
+            />
             <div className={styles.photoActions}>
               <Button
                 type="button"
                 variant="primary"
                 size="sm"
                 leftIcon={<CameraIcon />}
-                onClick={() => setPhotoNotice(
-                  'O envio de novas fotos ainda não está disponível nesta versão.',
-                )}
+                onClick={() => fileInputRef.current?.click()}
               >
                 Trocar foto
               </Button>
@@ -215,9 +287,9 @@ function SimplifiedEditProfilePage() {
                 Remover foto
               </Button>
             </div>
-            {photoNotice ? (
-              <p className={styles.notice} role="status">{photoNotice}</p>
-            ) : null}
+            {avatarPreview ? <p className={styles.notice} role="status">Prévia pronta. Salve para confirmar a nova foto.</p> : null}
+            {avatarRemovalRequested ? <p className={styles.notice} role="status">A foto será removida ao salvar.</p> : null}
+            {avatarError ? <p className={styles.fieldError} role="alert">{avatarError}</p> : null}
           </div>
         </div>
       </section>
@@ -231,24 +303,30 @@ function SimplifiedEditProfilePage() {
           <input
             type="text"
             className={styles.input}
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
+            value={form.full_name}
+            onChange={(event) => updateField('full_name', event.target.value)}
             placeholder="Seu nome completo"
             autoComplete="name"
+            maxLength={PROFILE_LIMITS.FULL_NAME}
+            required
           />
         </label>
 
-        <div className={styles.field}>
+        <label className={styles.field}>
           <span className={styles.fieldLabel}>
             <span className={styles.fieldIcon} aria-hidden="true"><AccountIcon /></span>
             Como deseja ser chamado
           </span>
-          <div className={styles.unavailableRow}>
-            <span>Ainda não definido</span>
-            <Badge variant="default" size="sm">Em breve</Badge>
-          </div>
-          <p className={styles.fieldHint}>Isso ficará disponível em uma próxima versão.</p>
-        </div>
+          <input
+            type="text"
+            className={styles.input}
+            value={form.preferred_name}
+            onChange={(event) => updateField('preferred_name', event.target.value)}
+            placeholder="Ex.: Ruan, Ru ou Dona Maria"
+            maxLength={PROFILE_LIMITS.PREFERRED_NAME}
+          />
+          <p className={styles.fieldHint}>Opcional. Seu nome completo permanece inalterado.</p>
+        </label>
 
         <div className={styles.field}>
           <span className={styles.fieldLabel}>
@@ -272,56 +350,94 @@ function SimplifiedEditProfilePage() {
           <input
             type="tel"
             className={styles.input}
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            placeholder="Adicionar telefone"
+            value={form.phone}
+            onChange={(event) => updateField('phone', formatPhone(event.target.value))}
+            placeholder="(11) 99999-9999"
             autoComplete="tel"
+            inputMode="numeric"
           />
+          <p className={styles.fieldHint}>Opcional. Nenhuma verificação por SMS será enviada.</p>
         </label>
 
         <div className={styles.fieldRow}>
-          <div className={styles.field}>
+          <label className={styles.field}>
             <span className={styles.fieldLabel}>
               <span className={styles.fieldIcon} aria-hidden="true"><AccountIcon /></span>
               Forma de tratamento
             </span>
-            <div className={styles.unavailableRow}>
-              <span>Não informado</span>
-              <Badge variant="default" size="sm">Em breve</Badge>
-            </div>
-          </div>
+            <select
+              className={styles.input}
+              value={form.treatment_preference}
+              onChange={(event) => updateField('treatment_preference', event.target.value)}
+            >
+              {TREATMENT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
 
-          <div className={styles.field}>
+          {form.treatment_preference === 'other' ? (
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Como prefere ser tratado</span>
+              <input
+                type="text"
+                className={styles.input}
+                value={form.custom_treatment}
+                onChange={(event) => updateField('custom_treatment', event.target.value)}
+                maxLength={PROFILE_LIMITS.CUSTOM_TREATMENT}
+                placeholder="Informe uma forma curta"
+              />
+            </label>
+          ) : null}
+
+          <label className={styles.field}>
             <span className={styles.fieldLabel}>
               <span className={styles.fieldIcon} aria-hidden="true"><AccountIcon /></span>
               Data de nascimento
             </span>
-            <div className={styles.unavailableRow}>
-              <span>Ainda não definido</span>
-              <Badge variant="default" size="sm">Opcional</Badge>
-            </div>
-          </div>
+            <input
+              type="date"
+              className={styles.input}
+              value={form.birth_date}
+              max={localToday()}
+              onChange={(event) => updateField('birth_date', event.target.value)}
+            />
+            <p className={styles.fieldHint}>Opcional.</p>
+          </label>
 
-          <div className={styles.field}>
+          <label className={styles.field}>
             <span className={styles.fieldLabel}>
               <span className={styles.fieldIcon} aria-hidden="true"><GlobeIcon /></span>
               Idioma
             </span>
-            <div className={styles.unavailableRow}>
-              <span>Português (Brasil)</span>
-            </div>
-          </div>
+            <select
+              className={styles.input}
+              value={form.locale}
+              onChange={(event) => updateField('locale', event.target.value)}
+            >
+              {LOCALE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <p className={styles.fieldHint}>Outros idiomas serão habilitados somente quando houver tradução completa.</p>
+          </label>
 
-          <div className={styles.field}>
+          <label className={styles.field}>
             <span className={styles.fieldLabel}>
               <span className={styles.fieldIcon} aria-hidden="true"><TextSizeIcon /></span>
               Tamanho do texto
             </span>
-            <div className={styles.unavailableRow}>
-              <span>Padrão</span>
-              <Badge variant="default" size="sm">Em breve</Badge>
-            </div>
-          </div>
+            <select
+              className={styles.input}
+              value={form.text_size}
+              onChange={(event) => updateField('text_size', event.target.value)}
+            >
+              {TEXT_SIZE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <p className={styles.fieldHint}>A preferência é aplicada ao aplicativo simplificado.</p>
+          </label>
         </div>
       </section>
 
@@ -343,12 +459,12 @@ function SimplifiedEditProfilePage() {
         </button>
         {isAddressOpen ? (
           <div className={styles.expandBody}>
-            <p>Nenhum endereço cadastrado ainda. Isso ficará disponível junto com o pagamento.</p>
+            <p>Os dados de cobrança ainda não possuem uma estrutura segura definida. Nenhuma informação fictícia será armazenada.</p>
           </div>
         ) : null}
       </section>
 
-      {saveError ? <p className={styles.errorBanner} role="alert">{saveError}</p> : null}
+      {validationError || saveError ? <p className={styles.errorBanner} role="alert">{validationError || saveError}</p> : null}
       {saveSuccess && !isDirty ? (
         <p className={styles.successBanner} role="status">Alterações salvas com sucesso.</p>
       ) : null}
@@ -387,16 +503,15 @@ function SimplifiedEditProfilePage() {
 
       <Modal
         open={showRemovePhotoConfirm}
-        onClose={() => { if (!isRemovingPhoto) { setShowRemovePhotoConfirm(false); setRemovePhotoError(null); } }}
+        onClose={() => setShowRemovePhotoConfirm(false)}
         title="Remover foto de perfil?"
-        description="Você poderá adicionar outra foto quando o envio estiver disponível."
+        description="A remoção será concluída quando você salvar as alterações."
         footer={(
           <>
             <Button
               type="button"
               variant="secondary"
-              onClick={() => { setShowRemovePhotoConfirm(false); setRemovePhotoError(null); }}
-              disabled={isRemovingPhoto}
+              onClick={() => setShowRemovePhotoConfirm(false)}
             >
               Cancelar
             </Button>
@@ -404,14 +519,13 @@ function SimplifiedEditProfilePage() {
               type="button"
               variant="danger"
               onClick={handleConfirmRemovePhoto}
-              loading={isRemovingPhoto}
             >
               Remover foto
             </Button>
           </>
         )}
       >
-        {removePhotoError ? <p className={styles.errorBanner} role="alert">{removePhotoError}</p> : null}
+        <p className={styles.fieldHint}>Você poderá selecionar uma nova foto antes de salvar.</p>
       </Modal>
 
       <Modal

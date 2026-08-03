@@ -28,13 +28,11 @@ const PROFILE_COPY = Object.freeze({
 
 const ISSUE_MESSAGES = Object.freeze({
   amount_required: 'Qual foi o valor dessa movimentação?',
-  account_required: (action) => (action?.transactionType === 'adjustment'
-    ? 'Em qual conta você quer ajustar o saldo?'
-    : 'Em qual conta você fez esse pagamento?'),
+  account_required: (action) => buildAccountClarificationQuestion(action, 'account'),
   account_not_found: 'Não encontrei essa conta entre as contas deste espaço. Qual conta você quer usar?',
   account_ambiguous: 'Encontrei mais de uma conta parecida. Qual delas você quer usar?',
   account_archived: 'Encontrei essa conta arquivada. Você quer reativá-la ou criar uma nova conta?',
-  destination_account_required: 'Para qual conta o valor foi transferido?',
+  destination_account_required: (action) => buildAccountClarificationQuestion(action, 'destinationAccount'),
   category_required: 'Em qual categoria essa movimentação se encaixa?',
   // BLOCO B1/B2: mensagens dinâmicas, dependem da categoria/nome proposto pela ação.
   category_approximate: (action) => `Esse gasto parece ser de ${action?.proposedCategory?.name ?? 'uma categoria existente'}. Posso usar essa categoria?`,
@@ -52,6 +50,24 @@ const ISSUE_MESSAGES = Object.freeze({
   balance_required: 'Não consegui identificar o saldo atual dessa conta para calcular o ajuste. Tente novamente em instantes.',
   balance_same: 'O saldo dessa conta já é esse valor. Se quiser registrar outro lançamento, é só dizer o que aconteceu.',
 });
+
+export function buildAccountClarificationQuestion(action, field = 'account') {
+  if (action?.transactionType === 'income') {
+    return 'Em qual conta você recebeu esse valor?';
+  }
+  if (action?.transactionType === 'expense') {
+    return 'Em qual conta você fez esse pagamento?';
+  }
+  if (action?.transactionType === 'transfer') {
+    return field === 'destinationAccount'
+      ? 'Para qual conta o valor foi transferido?'
+      : 'De qual conta o valor foi transferido?';
+  }
+  if (action?.transactionType === 'adjustment') {
+    return 'Em qual conta você quer ajustar o saldo?';
+  }
+  return 'Qual conta você quer usar nesta movimentação?';
+}
 
 function resolveCopy(options = {}) {
   const personality = resolvePersonality({

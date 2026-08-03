@@ -571,6 +571,31 @@ function SessionProvider({ children }) {
     };
   }, [state.profile, state.user]);
 
+  const updateOwnProfile = useCallback(async (changes) => {
+    if (!state.user?.id || !state.profile) {
+      return {
+        data: null,
+        error: {
+          code: 'PROFILE_REQUIRED',
+          message: 'Perfil autenticado indisponível.',
+        },
+      };
+    }
+
+    const result = await updateProfile(state.user.id, changes);
+    if (result.error || !result.data) return result;
+
+    setState((currentState) => ({
+      ...currentState,
+      profile: {
+        ...currentState.profile,
+        ...result.data,
+      },
+    }));
+
+    return result;
+  }, [state.profile, state.user]);
+
   const signInWithPassword = useCallback(
     async ({ email, password }) => {
       authActionRef.current = true;
@@ -804,12 +829,13 @@ function SessionProvider({ children }) {
       availableWorkspaceTypes: getAvailableWorkspaceTypes(availableWorkspaces),
       selectedWorkspaceType,
       createWorkspaceProfile,
+      updateOwnProfile,
       updateConversationStyle,
       isSwitchingWorkspace: workspaceSwitchState.isLoading,
       switchWorkspace,
       workspaceSwitchError: workspaceSwitchState.error,
     }),
-    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithGoogle, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updateConversationStyle, updatePassword, workspaceSwitchState],
+    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithGoogle, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updateConversationStyle, updateOwnProfile, updatePassword, workspaceSwitchState],
   );
 
   return (

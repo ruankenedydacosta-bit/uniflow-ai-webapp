@@ -54,6 +54,20 @@
 //   - VITE_UNI_ENGINE_INTEGRATION_SHADOW              → integrationShadowMode (default: true)
 //   - VITE_UNI_ENGINE_INTEGRATION_TELEMETRY           → integrationTelemetryEnabled (default: false)
 //
+// Parte 5 — Application (primeira ativação controlada):
+//   - VITE_UNI_ENGINE_APPLICATION_ENABLED             → applicationEnabled (default: false)
+//   - VITE_UNI_ENGINE_APPLICATION_TELEMETRY           → applicationTelemetryEnabled (default: false)
+//
+// Regras da Parte 5:
+//   - a aplicação exige motor ligado E Activation ligada E Integration ligada;
+//   - RESPONSE_STYLE_GUIDANCE e RESPONSE_LENGTH_GUIDANCE podem ser APLICADAS
+//     (texto); QUESTION_GUIDANCE (Bloco 2) e CLARIFICATION_GUIDANCE (Bloco 3)
+//     produzem APENAS decisões observacionais (questionDecision /
+//     clarificationDecision) — nunca texto de pergunta/esclarecimento; a Uni
+//     nunca gera automaticamente;
+//   - aplicação desligada → pipeline 100% legado (fallback ao texto legado);
+//   - produção não ativa acidentalmente; nenhum ID em logs/telemetria.
+//
 // Regras da Parte 1:
 //   - integração exige motor ligado E Activation ligada (cada capacidade
 //     precisa da autorização da Activation Engine);
@@ -162,6 +176,39 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   integrationEnabled: false,
   integrationShadowMode: true,
   integrationTelemetryEnabled: false,
+  // Parte 5 — Application (primeira ativação controlada). Tudo nasce
+  // desligado; aplicação exige motor + Activation + Integration ligadas.
+  applicationEnabled: false,
+  applicationTelemetryEnabled: false,
+  // Parte 6 — Controlled Question (perguntas seguras pelo pipeline legado).
+  // Interruptor MESTRE da parte: sem ele, NENHUMA pergunta controlada é
+  // emitida, mesmo com as flags das capacidades autorizadas.
+  controlledQuestionsEnabled: false,
+// Parte 8 — Conversation Routing (roteamento conversacional controlado em
+// DEV). Interruptor MESTRE da parte: sem ele, o pipeline legado NUNCA
+// consulta o Conversation Planner para selecionar rota — a saída é sempre
+// 100% legada. Exige motor + Activation + Integration + Application.
+conversationRoutingEnabled: false,
+  // Parte 9 — Cognitive Orchestrator (consolidação final do Uni Engine).
+  // Interruptor MESTRE da parte: sem ele, o pipeline legado nunca consolida
+  // as camadas cognitivas — a saída é sempre 100% legada. Exige motor +
+  // Activation + Integration + Application.
+cognitiveOrchestratorEnabled: false,
+  // Parte 10 — Controlled Rollout (rollout operacional, gates e auditoria).
+  // Interruptor MESTRE da parte: sem ele, o pipeline legado nunca aplica
+  // nenhuma capability permitida por rollout — a saída é sempre 100% legada.
+  // Exige motor + Activation + Integration + Application.
+rolloutEnabled: false,
+  // Parte 9 — Cognitive Orchestrator (consolidação final do Uni Engine).
+  // Interruptor MESTRE da parte: sem ele, o pipeline legado nunca consolida
+  // as camadas cognitivas — a saída é sempre 100% legada. Exige motor +
+  // Activation + Integration + Application.
+  cognitiveOrchestratorEnabled: false,
+  // Parte 9 — Cognitive Orchestrator (consolidação final do Uni Engine).
+  // Interruptor MESTRE da parte: sem ele, o pipeline legado nunca consolida
+  // as camadas cognitivas — a saída é sempre 100% legada. Exige motor +
+  // Activation + Integration + Application.
+  cognitiveOrchestratorEnabled: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -396,6 +443,19 @@ export function createUniEngineConfig(overrides = {}) {
     integrationEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_INTEGRATION_ENABLED', false),
     integrationShadowMode: parseBooleanEnv(env, 'VITE_UNI_ENGINE_INTEGRATION_SHADOW', true),
     integrationTelemetryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_INTEGRATION_TELEMETRY', false),
+    // Parte 5 — Application. Nasce desligada; exige motor + Activation +
+    // Integration; telemetria sempre desligada por padrão.
+    applicationEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_APPLICATION_ENABLED', false),
+    applicationTelemetryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_APPLICATION_TELEMETRY', false),
+    // Parte 6 — Controlled Question (perguntas seguras pelo pipeline legado).
+    // Interruptor mestre; false por padrão. Usuário nunca é autorizado por
+    // ausência de configuração.
+    controlledQuestionsEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CONTROLLED_QUESTIONS_ENABLED', false),
+    // Parte 8 — Conversation Routing (roteamento conversacional controlado em
+    // DEV). Interruptor mestre; false por padrão. O pipeline legado só
+    // consulta o Conversation Planner do MESMO turno com a flag explícita
+    // ligada — ausência nunca ativa; produção nunca ativa por acidente.
+    conversationRoutingEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED', false),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -490,6 +550,41 @@ export function createUniEngineConfig(overrides = {}) {
     config.integrationShadowMode = false;
     config.integrationTelemetryEnabled = false;
   }
+
+  // Parte 5 — Application exige motor + Activation + Integration ligadas.
+  // Application desligada força telemetria para false — variável ausente ou
+  // inválida nunca ativa; produção nunca ativa por acidente.
+  if (!config.enabled) config.applicationEnabled = false;
+  if (!config.activationEnabled) config.applicationEnabled = false;
+  if (!config.integrationEnabled) config.applicationEnabled = false;
+  if (!config.applicationEnabled) {
+    config.applicationTelemetryEnabled = false;
+  }
+
+  // Parte 6 — Controlled Question exige motor + Activation + Integration +
+  // Application ligadas. Interruptor desligado (ou qualquer dependência
+  // desligada) força false — pergunta controlada nunca liga por acidente.
+  if (!config.enabled) config.controlledQuestionsEnabled = false;
+  if (!config.activationEnabled) config.controlledQuestionsEnabled = false;
+  if (!config.integrationEnabled) config.controlledQuestionsEnabled = false;
+  if (!config.applicationEnabled) config.controlledQuestionsEnabled = false;
+
+  // Parte 8 — Conversation Routing exige motor + Activation + Integration +
+  // Application ligadas (mesma cascata da Parte 6). Interruptor desligado
+  // (ou qualquer dependência desligada) força false — o roteamento controlado
+  // nunca liga por acidente; produção nunca ativa por acidente.
+  if (!config.enabled) config.conversationRoutingEnabled = false;
+  if (!config.activationEnabled) config.conversationRoutingEnabled = false;
+  if (!config.integrationEnabled) config.conversationRoutingEnabled = false;
+  if (!config.applicationEnabled) config.conversationRoutingEnabled = false;
+
+  // Parte 9 — Cognitive Orchestrator exige motor + Activation + Integration +
+  // Application ligadas. Interruptor desligado (ou qualquer dependência desligada)
+  // força false — orquestração nunca liga por acidente; produção nunca ativa por acidente.
+  if (!config.enabled) config.cognitiveOrchestratorEnabled = false;
+  if (!config.activationEnabled) config.cognitiveOrchestratorEnabled = false;
+  if (!config.integrationEnabled) config.cognitiveOrchestratorEnabled = false;
+  if (!config.applicationEnabled) config.cognitiveOrchestratorEnabled = false;
 
   return Object.freeze({ ...config, activationCapabilities: Object.freeze(config.activationCapabilities) });
 }

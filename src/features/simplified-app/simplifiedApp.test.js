@@ -137,8 +137,9 @@ test('saudação usa primeiro nome real sem inferir tratamento', () => {
     { email: 'ricardo@example.com' },
   );
   assert.equal(greeting.name, 'Ricardo');
-  assert.equal(greeting.heading, 'Olá, Ricardo');
+  assert.equal(greeting.heading, 'Ricardo');
   assert.equal(greeting.salutation, '');
+  assert.deepEqual(greeting.visualGreeting, { eyebrow: 'Boas-vindas,', name: 'Ricardo' });
   assert.equal(greeting.hasKnownName, true);
   assert.equal(Object.isFrozen(greeting), true);
 });
@@ -147,12 +148,22 @@ test('saudação respeita tratamento explícito e usa fallback seguro', () => {
   assert.equal(
     resolveSimplifiedGreeting({
       preferred_name: 'Helena',
-      preferred_salutation: 'Sra.',
+      treatment_preference: 'senhora',
     }).heading,
-    'Sra. Helena',
+    'senhora Helena',
   );
-  assert.equal(resolveSimplifiedGreeting({}, {}).heading, 'Olá');
-  assert.doesNotMatch(resolveSimplifiedGreeting({ full_name: 'Ana Souza' }).heading, /Sra?\./);
+  assert.equal(resolveSimplifiedGreeting({}, {}).heading, 'você');
+  assert.doesNotMatch(resolveSimplifiedGreeting({ full_name: 'Ana Souza' }).heading, /senhora/i);
+});
+
+test('Home usa a mesma saudação estruturada no texto e no TTS', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /useMemo\(\s*\(\) => resolveSimplifiedGreeting\(profile, user\),\s*\[profile, user\]/);
+  assert.match(home, /greeting\.visualGreeting\.eyebrow/);
+  assert.match(home, /greeting\.displayName/);
+  assert.doesNotMatch(home, /<h1[^>]*>\{greeting\.addressedName\}<\/h1>/);
+  assert.match(home, /voiceController\.speak\(greeting\.spokenGreeting\)/);
+  assert.doesNotMatch(home, /<p>Seja bem-vindo,/);
 });
 
 test('boas-vindas por voz são reivindicadas uma vez por sessão autenticada', () => {
@@ -479,7 +490,7 @@ test('Home remove o card visual de boas-vindas sem remover o TTS por sessão', a
   const home = await source('./SimplifiedHomeView.jsx');
   assert.doesNotMatch(home, /Boas-vindas reproduzidas por voz|VoiceWelcomeCard/);
   assert.match(home, /claimWelcomeVoice\(sessionKey\)/);
-  assert.match(home, /voiceController\.speak\(greeting\.voiceText\)/);
+  assert.match(home, /voiceController\.speak\(greeting\.spokenGreeting\)/);
 });
 
 test('UniChat mantém a orquestração e entrega o snapshot à variante compacta', async () => {
@@ -700,6 +711,57 @@ test('shell mantém notificações reais e exatamente a navegação nova', async
   assert.match(shell, /location\.pathname === SIMPLIFIED_ROUTES\.RECORDS/);
 });
 
+test('notificações da Home usam painel integrado e nunca Modal branco', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /className=\{styles\.notificationsDropdown\}/);
+  assert.match(shell, /id="simplified-notifications-panel"/);
+  assert.doesNotMatch(shell, /import Modal/);
+  assert.doesNotMatch(shell, /<Modal/);
+});
+
+test('sino alterna abertura e expõe aria-expanded e aria-controls', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  const header = await source('./SimplifiedHeader.jsx');
+  assert.match(shell, /function toggleNotifications\(\)/);
+  assert.match(header, /aria-expanded=\{isNotificationsOpen\}/);
+  assert.match(header, /aria-controls="simplified-notifications-panel"/);
+});
+
+test('painel fecha por Escape, clique externo e mudança de rota com cleanup', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /event\.key === 'Escape'/);
+  assert.match(shell, /document\.addEventListener\('pointerdown'/);
+  assert.match(shell, /document\.removeEventListener\('pointerdown'/);
+  assert.match(shell, /\[closeNotifications, location\.pathname\]/);
+});
+
+test('cliques rápidos cancelam timers anteriores e reabrem o painel sem acumular estado', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /window\.clearTimeout\(closeTimerRef\.current\)/);
+  assert.match(shell, /window\.cancelAnimationFrame\(openFrameRef\.current\)/);
+  assert.match(shell, /if \(closeTimerRef\.current\) \{\s*openNotifications\(\)/);
+});
+
+test('foco entra no painel e retorna ao sino ao fechar', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /notificationPanelRef\.current\?\.focus\(\)/);
+  assert.match(shell, /notificationButtonRef\.current\?\.focus\(\)/);
+});
+
+test('sino mostra quantidade real limitada a 9+', async () => {
+  const header = await source('./SimplifiedHeader.jsx');
+  assert.match(header, /unreadCount > 9 \? '9\+' : String\(unreadCount\)/);
+  assert.match(header, /styles\.notificationCount/);
+});
+
+test('preferência de tamanho textual é aplicada como atributo no shell', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  const css = await source('./simplifiedApp.module.css');
+  assert.match(shell, /data-text-size=\{profile\?\.text_size \?\? 'standard'\}/);
+  assert.match(css, /\.shell\[data-text-size="small"\]/);
+  assert.match(css, /\.shell\[data-text-size="large"\]/);
+});
+
 test('BUG REAL: .uniButton (botão grande da Uni) tem touch-action: none e bloqueia seleção/callout/drag nativos que poderiam interromper o toque prolongado', async () => {
   const css = await source('./simplifiedApp.module.css');
   const idx = css.indexOf('.uniButton {');
@@ -720,6 +782,7 @@ test('CSS cobre safe areas, toque, mobile estreito, desktop e redução de movim
   assert.match(css, /@media \(max-width: 359px\)/);
   assert.match(css, /@media \(min-width: 768px\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /\.notificationsDropdown\s*\{\s*transition: none;/);
   assert.match(css, /overflow-x: clip/);
   assert.doesNotMatch(css, /tela principal uni|background-image:\s*url/i);
 });
@@ -785,13 +848,11 @@ test('BUG 3: prefers-reduced-motion desliga a animação do anel de intensidade 
 });
 
 // ============================================================================
-// BLOCO UNI 2: fallback manual "Ouvir resposta" em CompactResponse (Home) --
-// só existe para mensagens LONGAS DEMAIS para autoplay (ver
-// AUTO_SPEAK_MAX_LENGTH); mensagens curtas nunca precisam dele porque já
-// foram faladas automaticamente pelo efeito em UniChatPage.jsx.
+// Fallback manual "Ouvir resposta" em CompactResponse (Home): permanece
+// disponível sempre que há texto da Uni, inclusive após falha do provider.
 // ============================================================================
 
-test('BLOCO UNI 2: CompactResponse mostra "Ouvir resposta" só quando a mensagem é longa demais para autoplay E a voz está habilitada', async () => {
+test('BLOCO UNI 2: CompactResponse mantém texto e mostra "Ouvir resposta" quando a voz está habilitada', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function CompactResponse({');
   const endIdx = home.indexOf('function SimplifiedHomeView({');
@@ -799,9 +860,18 @@ test('BLOCO UNI 2: CompactResponse mostra "Ouvir resposta" só quando a mensagem
   const block = home.slice(idx, endIdx);
   assert.match(
     block,
-    /const showManualSpeak = Boolean\(\s*\n\s*voiceEnabled\s*\n\s*&& lastUni\?\.text\s*\n\s*&& lastUni\.text\.length > AUTO_SPEAK_MAX_LENGTH\s*\n\s*&& typeof onSpeakMessage === 'function',\s*\n\s*\);/,
+    /const showManualSpeak = Boolean\(\s*\n\s*voiceEnabled\s*\n\s*&& lastUni\?\.text\s*\n\s*&& typeof onSpeakMessage === 'function',\s*\n\s*\);/,
   );
   assert.match(block, /onClick=\{\(\) => onSpeakMessage\(lastUni\)\}/);
+  assert.match(block, /lastUni\.text/);
+});
+
+test('falha na saudação mantém fallback textual e tentativa manual sem duplicar o claim da sessão', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /setWelcomeVoiceError\(result\?\.error \?\? null\)/);
+  assert.match(home, /welcomeVoiceError\.message/);
+  assert.match(home, />\s*Ouvir saudação\s*</);
+  assert.equal((home.match(/claimWelcomeVoice\(sessionKey\)/g) ?? []).length, 1);
 });
 
 test('BLOCO UNI 2: SimplifiedHomeView repassa onSpeakMessage e voiceEnabled para CompactResponse (fallback manual funciona de ponta a ponta)', async () => {

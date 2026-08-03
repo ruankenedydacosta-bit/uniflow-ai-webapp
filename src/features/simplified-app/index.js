@@ -34,7 +34,10 @@ export {
   SIMPLIFIED_ROUTES,
 } from './simplifiedRoutes.js';
 export { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
-export { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
+export {
+  resolveSimplifiedGreeting,
+  resolveUserDisplayName,
+} from './simplifiedGreeting.js';
 export {
   SUPPORT_WHATSAPP_NUMBER,
   buildSupportWhatsAppUrl,

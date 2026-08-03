@@ -47,25 +47,27 @@ test('cabeçalho tem botão voltar para Conta, título e Falar com a Uni real', 
 });
 
 // ============================================================================
-// Foto de perfil -- avatar real, remoção honesta, upload honestamente
-// indisponível (sem bucket/infra de storage real).
+// Foto de perfil -- preview e storage privado, sempre confirmado no salvar.
 // ============================================================================
 
 test('avatar usa src/name reais (Avatar já trata fallback de iniciais)', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  assert.match(content, /<Avatar src=\{profile\?\.avatar_url \|\| undefined\} name=\{fullName \|\| undefined\}/);
+  assert.match(content, /<Avatar src=\{displayedAvatar\} name=\{form\.full_name \|\| undefined\}/);
 });
 
-test('Trocar foto não faz upload real -- mostra aviso honesto, não finge sucesso', async () => {
+test('Trocar foto valida, cria preview e envia somente no salvamento explícito', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  assert.match(content, /envio de novas fotos ainda não está disponível/i);
-  assert.doesNotMatch(content, /storage\.from/);
+  assert.match(content, /validateProfileAvatarFile\(file\)/);
+  assert.match(content, /URL\.createObjectURL\(file\)/);
+  assert.match(content, /uploadProfileAvatar\(user\.id, selectedAvatarFile\)/);
 });
 
-test('Remover foto abre confirmação e persiste avatar_url: null via profileService', async () => {
+test('Remover foto abre confirmação e só persiste a remoção no salvamento', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
   assert.match(content, /setShowRemovePhotoConfirm\(true\)/);
-  assert.match(content, /updateProfile\(user\.id, \{ avatar_url: null \}\)/);
+  assert.match(content, /setAvatarRemovalRequested\(true\)/);
+  assert.match(content, /payload\.avatar_path = uploadedAvatarPath/);
+  assert.match(content, /payload\.avatar_url = null/);
   assert.match(content, /disabled=\{!hasAvatar\}/);
 });
 
@@ -75,14 +77,15 @@ test('modal de remover foto não usa window.confirm', async () => {
 });
 
 // ============================================================================
-// Campos reais persistidos -- apenas full_name e phone (colunas reais).
+// Campos reais persistidos via contrato fechado e SessionContext.
 // ============================================================================
 
 test('nome completo e telefone são editáveis e persistidos via updateProfile', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  assert.match(content, /value=\{fullName\}/);
-  assert.match(content, /value=\{phone\}/);
-  assert.match(content, /updateProfile\(user\.id, \{\s*full_name: fullName,\s*phone,\s*\}\)/);
+  assert.match(content, /value=\{form\.full_name\}/);
+  assert.match(content, /value=\{form\.phone\}/);
+  assert.match(content, /buildSimplifiedProfilePayload\(form\)/);
+  assert.match(content, /updateOwnProfile\(payload\)/);
 });
 
 test('e-mail vem de user.email (Auth) e não é um input comum editável', async () => {
@@ -105,31 +108,39 @@ test('telefone não exibe badge Verificado (sem verificação real desse dado)',
 });
 
 // ============================================================================
-// Campos sem suporte real no schema -- honestos, não persistidos, não
-// fingem sucesso.
+// Preferências funcionais, sem inferência ou suporte multilíngue fictício.
 // ============================================================================
 
-test('campos sem coluna real (nome preferido, forma de tratamento, nascimento, texto) ficam marcados honestamente', async () => {
+test('nome preferido, tratamento, nascimento e texto são controles editáveis reais', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
   assert.match(content, /Como deseja ser chamado/);
   assert.match(content, /Forma de tratamento/);
   assert.match(content, /Data de nascimento/);
   assert.match(content, /Tamanho do texto/);
-  const unavailableCount = (content.match(/Em breve/g) || []).length;
-  assert.ok(unavailableCount >= 3, 'deveria marcar múltiplos campos indisponíveis como "Em breve"');
+  assert.match(content, /value=\{form\.preferred_name\}/);
+  assert.match(content, /TREATMENT_OPTIONS\.map/);
+  assert.match(content, /type="date"/);
+  assert.match(content, /TEXT_SIZE_OPTIONS\.map/);
+  assert.doesNotMatch(content, />Em breve</);
 });
 
-test('esses campos honestos não entram no updateProfile (não fabricam persistência)', async () => {
+test('payload centralizado inclui somente preferências oficiais', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  const updateCalls = content.match(/updateProfile\(user\.id, \{[^}]*\}\)/g) || [];
-  for (const call of updateCalls) {
-    assert.doesNotMatch(call, /preferred_name|salutation|birth_date|language|text_size|address/);
-  }
+  const utility = await source('./simplifiedProfilePreferences.js');
+  assert.match(content, /buildSimplifiedProfilePayload\(form\)/);
+  assert.match(utility, /preferred_name:/);
+  assert.match(utility, /treatment_preference:/);
+  assert.match(utility, /birth_date:/);
+  assert.match(utility, /locale:/);
+  assert.match(utility, /text_size:/);
+  assert.doesNotMatch(utility, /address:/);
 });
 
-test('idioma mostra o único idioma real suportado, sem fingir preferência configurável', async () => {
+test('idioma oferece apenas Português Brasil enquanto não há tradução real', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  assert.match(content, /Português \(Brasil\)/);
+  const utility = await source('./simplifiedProfilePreferences.js');
+  assert.match(content, /LOCALE_OPTIONS\.map/);
+  assert.match(utility, /value: 'pt-BR', label: 'Português \(Brasil\)'/);
 });
 
 // ============================================================================
@@ -141,7 +152,7 @@ test('seção de endereço é expansível e honestamente vazia (sem CEP/rua fict
   const content = await source('./SimplifiedEditProfilePage.jsx');
   assert.match(content, /isAddressOpen/);
   assert.match(content, /aria-expanded=\{isAddressOpen\}/);
-  assert.match(content, /Nenhum endereço cadastrado ainda/);
+  assert.match(content, /não possuem uma estrutura segura definida/);
   assert.doesNotMatch(content, /01310-100|Av\. Paulista/);
 });
 
@@ -149,11 +160,10 @@ test('seção de endereço é expansível e honestamente vazia (sem CEP/rua fict
 // Salvar / Cancelar -- dirty-check real, botão desabilitado sem alteração.
 // ============================================================================
 
-test('isDirty compara com valores originais reais do profile', async () => {
+test('isDirty compara o payload normalizado e alterações de foto', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  assert.match(content, /const originalFullName = cleanText\(profile\?\.full_name\)/);
-  assert.match(content, /const originalPhone = cleanText\(profile\?\.phone\)/);
-  assert.match(content, /const isDirty = fullName !== originalFullName \|\| phone !== originalPhone/);
+  assert.match(content, /serializeSimplifiedProfileForm\(form\) !== serializeSimplifiedProfileForm\(savedForm\)/);
+  assert.match(content, /const photoDirty = Boolean\(selectedAvatarFile \|\| avatarRemovalRequested\)/);
 });
 
 test('botão Salvar alterações fica desabilitado sem alterações e durante o salvamento', async () => {
@@ -162,9 +172,11 @@ test('botão Salvar alterações fica desabilitado sem alterações e durante o 
   assert.match(content, /loading=\{isSaving\}/);
 });
 
-test('salvar mostra sucesso antes de disparar refreshSession (evita perder o feedback no remount do loading global)', async () => {
+test('salvar atualiza o perfil pela sessão sem reload global', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  assert.match(content, /setSaveSuccess\(true\);\s*refreshSession\(\);/);
+  assert.match(content, /const result = await updateOwnProfile\(payload\)/);
+  assert.match(content, /setSaveSuccess\(true\)/);
+  assert.doesNotMatch(content, /refreshSession\(\)/);
 });
 
 test('erro ao salvar mostra mensagem simples, não trava a tela', async () => {

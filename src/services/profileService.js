@@ -1,8 +1,14 @@
-import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { isSupabaseConfigured, supabase } from './supabaseClient.js';
+import { createProfileAvatarSignedUrl } from './storage.service.js';
 
 const BASE_PROFILE_FIELDS =
   'id, full_name, avatar_url, phone, user_mode, current_workspace_id, onboarding_completed, onboarding_data, onboarding_completed_at, created_at, updated_at';
-const PROFILE_FIELDS = `${BASE_PROFILE_FIELDS}, conversation_style`;
+const CONVERSATION_PROFILE_FIELDS = `${BASE_PROFILE_FIELDS}, conversation_style`;
+const PROFILE_PREFERENCE_FIELDS =
+  'preferred_name, treatment_preference, custom_treatment, birth_date, locale, text_size, avatar_path';
+const PROFILE_FIELDS = `${CONVERSATION_PROFILE_FIELDS}, ${PROFILE_PREFERENCE_FIELDS}`;
+
+const PROFILE_PREFERENCE_COLUMNS = PROFILE_PREFERENCE_FIELDS.split(', ');
 
 export function isConversationStyleColumnMissing(error) {
   const code = String(error?.code ?? '');
@@ -20,6 +26,27 @@ export function isConversationStyleColumnMissing(error) {
       )
     )
   );
+}
+
+export function isProfilePreferencesColumnMissing(error) {
+  const code = String(error?.code ?? '');
+  const message = String(error?.message ?? '').toLowerCase();
+  return (
+    ['42703', 'PGRST204'].includes(code)
+    && PROFILE_PREFERENCE_COLUMNS.some((column) => message.includes(column))
+  ) || (
+    PROFILE_PREFERENCE_COLUMNS.some((column) => message.includes(column))
+    && ['does not exist', 'schema cache', 'could not find'].some((part) => message.includes(part))
+  );
+}
+
+async function hydrateProfileAvatar(profile) {
+  if (!profile?.avatar_path) return profile;
+  const signedUrlResult = await createProfileAvatarSignedUrl(profile.avatar_path);
+  return {
+    ...profile,
+    avatar_url: signedUrlResult.data ?? profile.avatar_url ?? null,
+  };
 }
 
 function createUnavailableResult() {
@@ -60,6 +87,34 @@ export async function getProfile(userId) {
     .eq('id', userId)
     .maybeSingle();
 
+  if (isProfilePreferencesColumnMissing(profileResult.error)) {
+    const conversationResult = await supabase
+      .from('profiles')
+      .select(CONVERSATION_PROFILE_FIELDS)
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!isConversationStyleColumnMissing(conversationResult.error)) {
+      return {
+        data: conversationResult.data,
+        error: conversationResult.error,
+        isConfigured: true,
+      };
+    }
+
+    const baseResult = await supabase
+      .from('profiles')
+      .select(BASE_PROFILE_FIELDS)
+      .eq('id', userId)
+      .maybeSingle();
+
+    return {
+      data: baseResult.data,
+      error: baseResult.error,
+      isConfigured: true,
+    };
+  }
+
   if (isConversationStyleColumnMissing(profileResult.error)) {
     const { data, error } = await supabase
       .from('profiles')
@@ -75,7 +130,7 @@ export async function getProfile(userId) {
   }
 
   return {
-    data: profileResult.data,
+    data: await hydrateProfileAvatar(profileResult.data),
     error: profileResult.error,
     isConfigured: true,
   };
@@ -126,6 +181,13 @@ export async function updateProfile(userId, changes = {}) {
     onboarding_data: changes.onboarding_data,
     onboarding_completed_at: changes.onboarding_completed_at,
     conversation_style: changes.conversation_style,
+    preferred_name: changes.preferred_name,
+    treatment_preference: changes.treatment_preference,
+    custom_treatment: changes.custom_treatment,
+    birth_date: changes.birth_date,
+    locale: changes.locale,
+    text_size: changes.text_size,
+    avatar_path: changes.avatar_path,
   };
   const updatePayload = Object.fromEntries(
     Object.entries(allowedChanges).filter(([, value]) => value !== undefined),
@@ -136,11 +198,14 @@ export async function updateProfile(userId, changes = {}) {
   }
 
   const updatesConversationStyle = updatePayload.conversation_style !== undefined;
+  const updatesPreferences = PROFILE_PREFERENCE_COLUMNS.some(
+    (column) => updatePayload[column] !== undefined,
+  );
   const { data, error } = await supabase
     .from('profiles')
     .update(updatePayload)
     .eq('id', userId)
-    .select(updatesConversationStyle ? PROFILE_FIELDS : BASE_PROFILE_FIELDS)
+    .select(updatesConversationStyle || updatesPreferences ? PROFILE_FIELDS : BASE_PROFILE_FIELDS)
     .maybeSingle();
 
   if (updatesConversationStyle && isConversationStyleColumnMissing(error)) {
@@ -149,6 +214,17 @@ export async function updateProfile(userId, changes = {}) {
       error: {
         code: 'CONVERSATION_STYLE_UNAVAILABLE',
         message: 'A preferência de conversa ainda não está disponível neste ambiente.',
+      },
+      isConfigured: true,
+    };
+  }
+
+  if (updatesPreferences && isProfilePreferencesColumnMissing(error)) {
+    return {
+      data: null,
+      error: {
+        code: 'PROFILE_PREFERENCES_UNAVAILABLE',
+        message: 'As preferências de perfil ainda não estão disponíveis neste ambiente.',
       },
       isConfigured: true,
     };
@@ -167,7 +243,7 @@ export async function updateProfile(userId, changes = {}) {
   }
 
   return {
-    data,
+    data: await hydrateProfileAvatar(data),
     error,
     isConfigured: true,
   };

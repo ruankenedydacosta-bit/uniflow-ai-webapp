@@ -1,7 +1,14 @@
 import { BellIcon, UniMark } from './SimplifiedIcons.jsx';
 import styles from './simplifiedApp.module.css';
 
-function SimplifiedHeader({ unreadCount = 0, onNotifications }) {
+function SimplifiedHeader({
+  unreadCount = 0,
+  isNotificationsOpen = false,
+  notificationButtonRef,
+  onNotifications,
+}) {
+  const badgeLabel = unreadCount > 9 ? '9+' : String(unreadCount);
+
   return (
     <header className={styles.header}>
       <div className={styles.brandLockup} aria-label="UniFlow AI">
@@ -10,16 +17,20 @@ function SimplifiedHeader({ unreadCount = 0, onNotifications }) {
       </div>
 
       <button
+        ref={notificationButtonRef}
         type="button"
         className={styles.notificationButton}
         aria-label={unreadCount > 0
           ? `Notificações, ${unreadCount} não lidas`
           : 'Notificações'}
-        aria-haspopup="dialog"
+        aria-expanded={isNotificationsOpen}
+        aria-controls="simplified-notifications-panel"
         onClick={onNotifications}
       >
         <BellIcon />
-        {unreadCount > 0 ? <span className={styles.notificationDot} aria-hidden="true" /> : null}
+        {unreadCount > 0 ? (
+          <span className={styles.notificationCount} aria-hidden="true">{badgeLabel}</span>
+        ) : null}
       </button>
     </header>
   );

@@ -109,3 +109,62 @@ export { buildObservabilitySnapshot } from './observability/buildObservabilitySn
 // resposta e da execução. Tudo nasce desligado.
 export * as integration from './integration/index.js';
 export { runUniEngineIntegration } from './integration/runUniEngineIntegration.js';
+// Parte 2 — Guidance observacional (Bloco 2). Módulo que calcula e
+// consolida as quatro guidances (Question, Clarification, Style, Length) em
+// um snapshot SOMENTE em memória — nunca aplica, nunca altera a resposta.
+// Reutiliza o cálculo da Parte 1; a integração existente fica intacta.
+export * as guidance from './guidance/index.js';
+export { buildGuidanceSnapshot } from './guidance/buildGuidanceSnapshot.js';
+// Parte 2 — Observação da conversa (Bloco 3). Camada que consolida os
+// snapshots da integração, do guidance e da activation em um único estado
+// TÉCNICO da conversa — sempre em memória, redigido, congelado e sem efeitos.
+export * as observation from './observation/index.js';
+export { buildObservationSnapshot } from './observation/buildObservationSnapshot.js';
+// Parte 3 — Decision Readiness. Camada estritamente observacional que
+// consome o Observation Snapshot e responde tecnicamente se o sistema
+// ESTARIA pronto para uma aplicação futura — nunca aplica, nunca altera a
+// resposta. Reutiliza Decision Layer e Activation Engine existentes.
+export * as readiness from './readiness/index.js';
+export { buildDecisionReadinessSnapshot } from './readiness/buildDecisionReadinessSnapshot.js';
+// Parte 4 — Capability Activation Readiness (Bloco 1). Camada estritamente
+// observacional que determina, a partir das decisões de Activation JÁ
+// produzidas, quais capabilities poderiam ser ativadas no futuro — nunca
+// ativa nada, nunca altera a resposta, nunca persiste.
+export * as capabilityReadiness from './capability-readiness/index.js';
+export { buildCapabilityReadinessSnapshot } from './capability-readiness/buildCapabilityReadinessSnapshot.js';
+// Parte 4 — Execution Readiness (Bloco 2). Camada estritamente observacional
+// que avalia se uma FUTURA execução seria segura — nunca executa nada, nunca
+// altera a resposta, nunca persiste. Lê apenas resultados já produzidos.
+export * as executionReadiness from './execution-readiness/index.js';
+export { buildExecutionReadinessSnapshot } from './execution-readiness/buildExecutionReadinessSnapshot.js';
+// Parte 5 — Application (primeira ativação controlada). Camada de APLICAÇÃO
+// que consome o pipeline legado + a Uni Engine + a Activation + a guidance
+// observacional e aplica SOMENTE RESPONSE_STYLE_GUIDANCE e
+// RESPONSE_LENGTH_GUIDANCE, em DEV, com Integration e Activation habilitadas
+// e usuário autorizado. NUNCA aplica Question/Clarification nesta parte,
+// NUNCA executa e faz fallback imediato ao texto legado em qualquer falha.
+export * as application from './application/index.js';
+export { runControlledGuidanceApplication } from './application/runControlledGuidanceApplication.js';
+export { selectControlledVisibleResponse } from './application/selectControlledVisibleResponse.js';
+export { runControlledQuestionApplication } from './application/runControlledQuestionApplication.js';
+// Parte 7 — Conversation Planner. Camada estritamente observacional que
+// determina QUAL deve ser o próximo passo lógico da conversa (NEXT_STEP_*),
+// consumindo SOMENTE os snapshots já existentes (Observation, Guidance, Decision,
+// Capability Readiness, Execution Readiness e Application). Nunca gera texto,
+// nunca responde, nunca executa e nunca altera o pipeline legado — o plano
+// fica em memória para a FUTURA camada de ativação.
+export * as conversationPlanner from './conversation-planner/index.js';
+export { buildConversationPlanSnapshot } from './conversation-planner/buildConversationPlanSnapshot.js';
+// Parte 8 — Conversation Routing (roteamento conversacional controlado em DEV).
+// O pipeline legado consulta o Conversation Planner do MESMO turno para
+// selecionar, de forma controlada, qual caminho conversacional JÁ autorizado
+// deve prevalecer. Nunca cria texto, nunca executa, nunca escreve memória e
+// nunca substitui a máquina de estados legada — qualquer falha → rota legada
+// integral (confirmação obrigatória com precedência máxima).
+export * as conversationRouting from './conversation-routing/index.js';
+export { selectControlledConversationRoute } from './conversation-routing/selectControlledConversationRoute.js';
+// Parte 9 — Cognitive Orchestrator (consolidação final do Uni Engine).
+// Orquestra todas as camadas já produzidas em um único snapshot observacional.
+// Nunca reexecuta nenhuma camada. Qualquer falha → vazio fail-safe (FALLBACK).
+export * as cognitiveOrchestrator from './cognitive-orchestrator/index.js';
+export { buildCognitiveOrchestratorSnapshot } from './cognitive-orchestrator/buildCognitiveOrchestratorSnapshot.js';

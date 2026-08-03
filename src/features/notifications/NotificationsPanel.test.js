@@ -34,10 +34,24 @@ test('estado vazio mostra mensagem clara com role="status", nunca uma lista vazi
   assert.match(block, /Nenhuma notificação por enquanto\./);
 });
 
-test('"Marcar todas como lidas" fica desabilitado quando nao ha nao lidas ou durante loading', async () => {
+test('"Marcar todas como lidas" só aparece quando há não lidas e fica desabilitado durante loading', async () => {
   const content = await source('NotificationsPanel.jsx');
-  assert.match(content, /disabled=\{unreadCount === 0 \|\| isLoading\}/);
+  assert.match(content, /\{unreadCount > 0 \? \(/);
+  assert.match(content, /disabled=\{isLoading\}/);
   assert.match(content, /onClick=\{\(\) => onMarkAllAsRead\?\.\(\)\}/);
+});
+
+test('estado vazio tem ícone, título e orientação útil sem inventar notificação', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /className=\{styles\.emptyIcon\}/);
+  assert.match(content, /Nenhuma notificação por enquanto\./);
+  assert.match(content, /Toda informação importante sobre sua conta aparecerá aqui\./);
+});
+
+test('itens reais exibem indicador visual por categoria', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /const TYPE_ICONS = Object\.freeze/);
+  assert.match(content, /data-type=\{notification\.type\}/);
 });
 
 test('clicar num item nao lido chama onMarkAsRead; clicar num ja lido nao chama de novo', async () => {

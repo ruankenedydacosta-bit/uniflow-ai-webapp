@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import './voiceFallback.test.js';
 import { createElevenLabsTtsProvider } from './elevenLabsTtsProvider.js';
 import { VOICE_TTS_ERROR_CODES, getVoiceTtsErrorMessage } from './voiceTtsStatus.js';
 import { MAX_TTS_TEXT_LENGTH, TTS_FUNCTION_NAME } from './voiceTtsConfig.js';
@@ -141,31 +142,51 @@ test('stop() revoga a Blob URL e libera o audio mesmo sem terminar sozinho', asy
 // Erros HTTP -- lidos do corpo {code,...} da Edge Function quando presente
 // ----------------------------------------------------------------------------
 
-test('401/403/429 mapeados a partir do code retornado pela Edge Function', async () => {
+test('erros legados continuam mapeados a partir do code retornado pela Edge Function', async () => {
   for (const [status, code] of [[401, 'UNAUTHORIZED'], [403, 'FORBIDDEN'], [429, 'RATE_LIMIT']]) {
     const provider = makeProvider({ fetchImpl: async () => jsonResponse(status, { code, error: 'x' }) });
     await assert.rejects(provider.speak('Olá'), { code });
   }
 });
 
-test('503 (NOT_CONFIGURED) e 500 (PROVIDER_ERROR) são mapeados corretamente', async () => {
+test('503 legado e 500 estruturado são mapeados corretamente', async () => {
   const notConfigured = makeProvider({ fetchImpl: async () => jsonResponse(503, { code: 'NOT_CONFIGURED', error: 'x' }) });
   await assert.rejects(notConfigured.speak('Olá'), { code: 'NOT_CONFIGURED' });
 
-  const providerError = makeProvider({ fetchImpl: async () => jsonResponse(500, { code: 'PROVIDER_ERROR', error: 'x' }) });
-  await assert.rejects(providerError.speak('Olá'), { code: 'PROVIDER_ERROR' });
+  const providerError = makeProvider({ fetchImpl: async () => jsonResponse(502, {
+    error: { code: 'PROVIDER_ERROR', message: 'x', provider_status: 500, retryable: true },
+  }) });
+  await assert.rejects(providerError.speak('Olá'), {
+    code: 'PROVIDER_ERROR', providerStatus: 500, retryable: true,
+  });
 });
 
 test('corpo de erro sem "code" reconhecido cai no mapeamento por status HTTP', async () => {
   const provider = makeProvider({ fetchImpl: async () => jsonResponse(413, {}) });
-  await assert.rejects(provider.speak('Olá'), { code: 'INVALID_TEXT' });
+  await assert.rejects(provider.speak('Olá'), { code: 'INVALID_REQUEST' });
+});
+
+test('erros estruturados distinguem autenticação, quota, rate limit e timeout do provider', async () => {
+  for (const [code, status, retryable] of [
+    ['PROVIDER_AUTH_ERROR', 401, false],
+    ['PROVIDER_QUOTA_ERROR', 402, false],
+    ['PROVIDER_RATE_LIMIT', 429, true],
+    ['PROVIDER_TIMEOUT', 504, true],
+  ]) {
+    const provider = makeProvider({ fetchImpl: async () => jsonResponse(502, {
+      error: { code, message: 'safe', provider_status: status, retryable },
+    }) });
+    await assert.rejects(provider.speak('Olá'), {
+      code, providerStatus: status, retryable,
+    });
+  }
 });
 
 // ----------------------------------------------------------------------------
 // Timeout, rede, retry seletivo, cancelamento
 // ----------------------------------------------------------------------------
 
-test('timeout -> TIMEOUT, nunca re-tentado (uma unica chamada)', async () => {
+test('timeout -> PROVIDER_TIMEOUT, nunca re-tentado (uma unica chamada)', async () => {
   let calls = 0;
   const fetchImpl = (url, opts) => {
     calls += 1;
@@ -178,7 +199,7 @@ test('timeout -> TIMEOUT, nunca re-tentado (uma unica chamada)', async () => {
     });
   };
   const provider = makeProvider({ fetchImpl, timeoutMs: 20 });
-  await assert.rejects(provider.speak('Olá'), { code: 'TIMEOUT' });
+  await assert.rejects(provider.speak('Olá'), { code: 'PROVIDER_TIMEOUT' });
   assert.equal(calls, 1);
 });
 
@@ -195,11 +216,11 @@ test('falha de rede tenta novamente exatamente 1 vez; sucesso na 2a tentativa fu
   assert.equal(result.providerName, 'elevenlabs_tts');
 });
 
-test('falha de rede persistente para em 2 tentativas (1 original + 1 retry), erro final NETWORK', async () => {
+test('falha de rede persistente para em 2 tentativas (1 original + 1 retry), erro final NETWORK_ERROR', async () => {
   let calls = 0;
   const fetchImpl = async () => { calls += 1; throw new Error('network down'); };
   const provider = makeProvider({ fetchImpl });
-  await assert.rejects(provider.speak('Olá'), { code: 'NETWORK' });
+  await assert.rejects(provider.speak('Olá'), { code: 'NETWORK_ERROR' });
   assert.equal(calls, 2);
 });
 
@@ -223,6 +244,20 @@ test('BUG REAL (BUG 3): 502 da Edge Function vira PROVIDER_ERROR sem retry -- UI
   const provider = makeProvider({ fetchImpl });
   await assert.rejects(provider.speak('Olá'), { code: 'PROVIDER_ERROR' });
   assert.equal(calls, 1, '502 é erro HTTP: nunca re-tenta');
+});
+
+test('play bloqueado pelo navegador vira AUTOPLAY_BLOCKED, distinto de erro do provider', async () => {
+  const { runtime } = createFakeRuntime();
+  runtime.Audio = class BlockedAudio {
+    play() {
+      const error = new Error('gesture required');
+      error.name = 'NotAllowedError';
+      return Promise.reject(error);
+    }
+    pause() {}
+  };
+  const provider = makeProvider({ runtime, fetchImpl: async () => jsonResponse(200, {}) });
+  await assert.rejects(provider.speak('Olá'), { code: 'AUTOPLAY_BLOCKED' });
 });
 
 test('BUG REAL (BUG 3): hook de voz captura erro do provider e devolve { error } sem lançar', async () => {
@@ -275,10 +310,12 @@ test('getVoiceTtsErrorMessage cobre todos os codigos exigidos pela ELEVEN1, nunc
   }
 });
 
-test('todos os 11 codigos de erro exigidos pela fase estao presentes', () => {
+test('códigos legados e estruturados exigidos pela fase estão presentes', () => {
   const required = [
     'UNAVAILABLE', 'NOT_CONFIGURED', 'UNAUTHORIZED', 'FORBIDDEN', 'RATE_LIMIT',
     'INVALID_TEXT', 'TIMEOUT', 'NETWORK', 'PROVIDER_ERROR', 'CANCELLED', 'AUDIO_PLAYBACK_ERROR',
+    'CONFIGURATION_ERROR', 'INVALID_REQUEST', 'PROVIDER_AUTH_ERROR', 'PROVIDER_QUOTA_ERROR',
+    'PROVIDER_RATE_LIMIT', 'PROVIDER_TIMEOUT', 'NETWORK_ERROR', 'AUTOPLAY_BLOCKED',
   ];
   for (const code of required) {
     assert.equal(VOICE_TTS_ERROR_CODES[code], code, `codigo ${code} ausente`);
@@ -335,10 +372,10 @@ test('Edge Function exige Authorization Bearer e rejeita usuario nao autenticado
   assert.match(EDGE_SOURCE, /if \(!userId\) return jsonResponse\(401,/);
 });
 
-test('Edge Function retorna NOT_CONFIGURED (503) quando faltar chave OU voice ID, sem chamar a ElevenLabs', () => {
+test('Edge Function retorna CONFIGURATION_ERROR (503) quando faltar chave OU voice ID, sem chamar a ElevenLabs', () => {
   assert.match(
     EDGE_SOURCE,
-    /if \(!supabaseUrl \|\| !anonKey \|\| !providerKey \|\| !voiceId\) \{\s*\n\s*return jsonResponse\(503, 'NOT_CONFIGURED',/,
+    /if \(!supabaseUrl \|\| !anonKey \|\| !providerKey \|\| !voiceId\) \{\s*\n\s*return jsonResponse\(503, 'CONFIGURATION_ERROR',/,
   );
 });
 
@@ -375,6 +412,20 @@ test('Edge Function tem modelo/formato/timeout configuraveis com defaults seguro
   assert.match(EDGE_SOURCE, /DEFAULT_MODEL_ID = 'eleven_multilingual_v2'/);
   assert.match(EDGE_SOURCE, /DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128'/);
   assert.match(EDGE_SOURCE, /Deno\.env\.get\('ELEVENLABS_MODEL_ID'\) \|\| DEFAULT_MODEL_ID/);
+});
+
+test('Edge Function envia output_format na query e não no corpo JSON do provider', () => {
+  assert.match(EDGE_SOURCE, /\?output_format=\$\{encodeURIComponent\(outputFormat\)\}/);
+  const bodyStart = EDGE_SOURCE.indexOf('body: JSON.stringify({');
+  const bodyEnd = EDGE_SOURCE.indexOf('}),', bodyStart);
+  assert.ok(bodyStart > -1 && bodyEnd > bodyStart);
+  assert.doesNotMatch(EDGE_SOURCE.slice(bodyStart, bodyEnd), /output_format/);
+});
+
+test('Edge Function devolve erro estruturado e registra somente metadados seguros', () => {
+  assert.match(EDGE_SOURCE, /error: \{\s*\n\s*code,\s*\n\s*message,\s*\n\s*provider_status: Number\.isInteger\(details\.providerStatus\)[\s\S]*?retryable: Boolean\(details\.retryable\),/);
+  assert.match(EDGE_SOURCE, /console\.warn\('uni_voice_tts_provider_failure', \{ code, providerStatus, retryable \}\);/);
+  assert.doesNotMatch(EDGE_SOURCE, /console\.(?:log|info|warn|error)\([^\n]*(?:text|providerKey|voiceId|userId)/);
 });
 
 test('Edge Function usa o mesmo criterio de timeout/AbortController ja validado em generate-uni-premium-voice', () => {

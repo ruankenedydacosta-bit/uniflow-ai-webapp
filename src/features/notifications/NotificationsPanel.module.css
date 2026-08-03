@@ -27,6 +27,27 @@
   text-align: center;
 }
 
+.stateMessage p {
+  margin: 0;
+}
+
+.stateMessage strong {
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+}
+
+.emptyIcon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--uf-color-success) 46%, transparent);
+  border-radius: var(--uf-radius-full, 999px);
+  background: color-mix(in srgb, var(--uf-color-success) 12%, transparent);
+  color: var(--uf-color-success);
+  font-size: 20px;
+}
+
 .list {
   display: grid;
   gap: var(--uf-space-4);
@@ -42,7 +63,7 @@
   display: grid;
   gap: var(--uf-space-4);
   width: 100%;
-  padding: var(--uf-space-12);
+  padding: var(--uf-space-12) var(--uf-space-12) var(--uf-space-12) 52px;
   border: none;
   border-radius: var(--uf-radius-8);
   background: transparent;
@@ -50,6 +71,21 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.itemIcon {
+  position: absolute;
+  top: var(--uf-space-12);
+  left: var(--uf-space-12);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--uf-radius-full, 999px);
+  background: var(--uf-color-ai-subtle);
+  color: var(--uf-color-primary);
+  font-size: 13px;
+  font-weight: var(--uf-font-weight-semibold);
 }
 
 .item:hover,

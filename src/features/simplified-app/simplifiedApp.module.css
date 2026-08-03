@@ -1,10 +1,20 @@
 .shell {
+  --simplified-user-text-size: 16px;
   min-height: 100vh;
   min-height: 100dvh;
   background:
     radial-gradient(circle at 50% 26%, rgba(37, 99, 235, .13), transparent 32%),
     #020713;
   color: #f8fafc;
+  font-size: var(--simplified-user-text-size);
+}
+
+.shell[data-text-size="small"] {
+  --simplified-user-text-size: 15px;
+}
+
+.shell[data-text-size="large"] {
+  --simplified-user-text-size: 17px;
 }
 
 .shellSurface {
@@ -29,6 +39,12 @@
     max(22px, env(safe-area-inset-right))
     8px
     max(22px, env(safe-area-inset-left));
+}
+
+.shellTopRegion {
+  position: relative;
+  z-index: 15;
+  min-width: 0;
 }
 
 .brandLockup {
@@ -108,6 +124,113 @@
   border: 2px solid #020713;
   border-radius: 50%;
   background: #10b981;
+}
+
+.notificationCount {
+  position: absolute;
+  top: 5px;
+  right: 2px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding-inline: 4px;
+  border: 2px solid #020713;
+  border-radius: 999px;
+  background: #10b981;
+  color: #020713;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.notificationsDropdown {
+  --uf-color-text-primary: #f8fafc;
+  --uf-color-text-secondary: #c3ccdc;
+  --uf-color-text-tertiary: #9aa7bd;
+  --uf-color-primary-subtle: rgba(37, 99, 235, .14);
+  --uf-color-ai-subtle: rgba(124, 58, 237, .16);
+  --uf-color-success: #10b981;
+  max-height: 0;
+  margin: 0 max(18px, env(safe-area-inset-right));
+  padding: 0 18px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: rgba(4, 13, 33, .92);
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition:
+    max-height 240ms ease,
+    margin 240ms ease,
+    padding 240ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    opacity 180ms ease,
+    transform 220ms ease;
+  backdrop-filter: blur(14px);
+}
+
+.notificationsDropdown[data-open="true"] {
+  max-height: min(560px, calc(100dvh - 160px));
+  margin-bottom: 14px;
+  padding: 18px;
+  border-color: rgba(96, 116, 255, .38);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, .36), inset 0 1px rgba(255, 255, 255, .04);
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.notificationsDropdown:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 3px;
+}
+
+.notificationsDropdownHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.notificationsDropdownHeader h2,
+.notificationsDropdownHeader p {
+  margin: 0;
+}
+
+.notificationsDropdownHeader h2 {
+  color: #f8fafc;
+  font-size: 20px;
+}
+
+.notificationsDropdownHeader p {
+  margin-top: 3px;
+  color: #9aa7bd;
+  font-size: 13px;
+}
+
+.notificationsClose {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 50%;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.notificationsClose:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 3px;
 }
 
 .mainContent {
@@ -251,6 +374,16 @@
   background-clip: text;
   color: transparent;
   font-weight: 600;
+}
+
+.greetingVoiceFallback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  color: #c9cfdb;
+  font-size: 14px;
 }
 
 .compactResponse {
@@ -694,6 +827,10 @@
   .navigationItem,
   .uniButton,
   .uniVoiceLevelRing {
+    transition: none;
+  }
+
+  .notificationsDropdown {
     transition: none;
   }
 
