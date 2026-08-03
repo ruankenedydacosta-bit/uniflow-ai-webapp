@@ -50,7 +50,7 @@ const Input = forwardRef(function Input(
   ref
 ) {
   if (process.env.NODE_ENV !== 'production' && !multiline && !INPUT_TYPES.includes(type)) {
-    // eslint-disable-next-line no-console
+     
     console.warn(`[Input] type="${type}" não é um dos tipos suportados: ${INPUT_TYPES.join(', ')}`);
   }
 

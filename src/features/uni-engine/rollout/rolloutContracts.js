@@ -9,16 +9,11 @@
 import { isSerializableValue } from '../uniEngineContracts.js';
 import {
   ROLLOUT_VERSION,
-  ROLLOUT_STAGES,
-  OPERATIONAL_STATUSES,
   ROLLOUT_SAFETY_KEYS,
   OPERATIONAL_METADATA_ALLOWED_KEYS,
   isRolloutStage,
-  isOperationalStatus,
-  isRolloutSafetyKey,
-  isOperationalMetadataKey,
 } from './rolloutTypes.js';
-import { ROLLOUT_POLICY } from './rolloutPolicy.js';
+import { ROLLOUT_POLICY, isRolloutEnabledByConfig, isEnvironmentAllowedByRolloutPolicy, isRolloutStageEffective } from './rolloutPolicy.js';
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -146,7 +141,7 @@ export function validateRolloutSnapshot(snapshot) {
   if (snapshot.version !== ROLLOUT_VERSION) errors.push('VERSION_INVALID');
   if (snapshot.mode !== 'observational') errors.push('MODE_NOT_OBSERVATIONAL');
   if (!isRolloutStage(snapshot.requestedStage)) errors.push('REQUESTED_STAGE_INVALID');
-  if (!isOperationalStatus(snapshot.effectiveStage)) errors.push('EFFECTIVE_STAGE_INVALID');
+  if (!isRolloutStage(snapshot.effectiveStage)) errors.push('EFFECTIVE_STAGE_INVALID');
   if (!Array.isArray(snapshot.diagnostics)) errors.push('DIAGNOSTICS_NOT_ARRAY');
   if (!isPlainObject(snapshot.metadata)) errors.push('METADATA_INVALID');
   if (!isRolloutSafetyKeyKeys(snapshot.safety)) errors.push('SAFETY_INVALID');

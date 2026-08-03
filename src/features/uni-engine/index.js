@@ -109,6 +109,14 @@ export { buildObservabilitySnapshot } from './observability/buildObservabilitySn
 // resposta e da execução. Tudo nasce desligado.
 export * as integration from './integration/index.js';
 export { runUniEngineIntegration } from './integration/runUniEngineIntegration.js';
+// Gateway único de entrada (BLOCO 1) — camada de borda observacional que
+// normaliza um turno, builda o contexto, roda a integração e consolida os
+// snapshots (Observation, Rollout, Decision Readiness, Capability Readiness,
+// Execution Readiness e Cognitive Orchestrator) em um único resultado
+// serializável. Nunca executa nada, nunca altera a resposta entregue e
+// qualquer falha → resultado falha-seguro (fallback) sem escapar.
+export * as gateway from './gateway/index.js';
+export { runUniEngineGateway } from './gateway/index.js';
 // Parte 2 — Guidance observacional (Bloco 2). Módulo que calcula e
 // consolida as quatro guidances (Question, Clarification, Style, Length) em
 // um snapshot SOMENTE em memória — nunca aplica, nunca altera a resposta.
@@ -168,3 +176,12 @@ export { selectControlledConversationRoute } from './conversation-routing/select
 // Nunca reexecuta nenhuma camada. Qualquer falha → vazio fail-safe (FALLBACK).
 export * as cognitiveOrchestrator from './cognitive-orchestrator/index.js';
 export { buildCognitiveOrchestratorSnapshot } from './cognitive-orchestrator/buildCognitiveOrchestratorSnapshot.js';
+export { createEmptyCognitiveOrchestratorSnapshot } from './cognitive-orchestrator/cognitiveOrchestratorContracts.js';
+// Parte 11 — Context Bridge (Fase 11, Bloco 2). Adaptador puro que
+// transforma snapshots JÁ produzidos no MESMO turno (Gateway, Integration,
+// Cognitive Orchestrator, Rollout, Readiness, resposta legada, Pending Action
+// e confirmação) em um contexto mínimo, serializável e imutável para o único
+// ponto de construção da resposta. Nunca reexecuta nenhuma camada, nunca gera
+// texto, nunca executa e nunca persiste — qualquer falha → legado integral.
+export * as contextBridge from './context-bridge/index.js';
+export { buildEngineResponseContext } from './context-bridge/buildEngineResponseContext.js';

@@ -162,7 +162,7 @@ test('Home usa a mesma saudação estruturada no texto e no TTS', async () => {
   assert.match(home, /greeting\.visualGreeting\.eyebrow/);
   assert.match(home, /greeting\.displayName/);
   assert.doesNotMatch(home, /<h1[^>]*>\{greeting\.addressedName\}<\/h1>/);
-  assert.match(home, /voiceController\.speak\(greeting\.spokenGreeting\)/);
+  assert.match(home, /voiceController\.speak\(greeting\.spokenGreeting,\s*\{/);
   assert.doesNotMatch(home, /<p>Seja bem-vindo,/);
 });
 
@@ -490,7 +490,7 @@ test('Home remove o card visual de boas-vindas sem remover o TTS por sessão', a
   const home = await source('./SimplifiedHomeView.jsx');
   assert.doesNotMatch(home, /Boas-vindas reproduzidas por voz|VoiceWelcomeCard/);
   assert.match(home, /claimWelcomeVoice\(sessionKey\)/);
-  assert.match(home, /voiceController\.speak\(greeting\.spokenGreeting\)/);
+  assert.match(home, /voiceController\.speak\(greeting\.spokenGreeting,\s*\{/);
 });
 
 test('UniChat mantém a orquestração e entrega o snapshot à variante compacta', async () => {

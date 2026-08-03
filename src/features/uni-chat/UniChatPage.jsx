@@ -13,6 +13,7 @@ import {
   clearPendingAction,
   completeAccountCreationDependency,
   completeCategoryCreationDependency,
+  confirmPendingAction,
   createPendingActionCoordinator,
   CATEGORY_RESOLUTION_STATUS,
   findAccountCreationConflicts,
@@ -77,7 +78,7 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { classifyIntent } from '../uni-intents/index.js';
-import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot } from '../uni-engine/index.js';
+import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 // Fase 2 — memória operacional do Uni Engine: objeto TEMPORÁRIO por conversa
 // (não persiste nada). O pipeline nunca lê esta memória; apenas o motor.
@@ -273,13 +274,11 @@ export default function UniChatPage({ variant = 'full' }) {
   // as demais sempre veem IDLE (botao "Ouvir" neutro).
   const [voiceMessageId, setVoiceMessageId] = useState(null);
 
-  // PARTE 1 — INTEGRAÇÃO: refs de apoio da camada adaptadora no ponto único
-  // de saída. O resultado do Shadow mais recente alimenta as decisões da
-  // Activation; o estado da conversa financeira é lido por ref (sem recriar
-  // callbacks); o último resultado da integração fica para auditoria.
-  const lastUniEngineShadowRef = useRef(null);
   const lastEngineIntegrationResultRef = useRef(null);
   const financialStateRef = useRef(null);
+  // BLOCO 1 — GATEWAY ÚNICO DE ENTRADA: ref dedicada apenas em memória
+  // sem state React, sem render adicional, reset no novo turno, reset no catch.
+  const lastUniEngineGatewayResultRef = useRef(null);
   // PARTE 2 — BLOCO 1: a Uni Engine passa a ser acionada SOMENTE depois que
   // existe um resultado legado utilizável (no ponto único de saída de
   // resposta). `lastEngineTurnRef` guarda o turno do usuário (mensagem +
@@ -348,9 +347,13 @@ export default function UniChatPage({ variant = 'full' }) {
   // entregue ao usuário altera (applied false, legacyPreserved true). Uma única
   // consulta por mensagem; exceção nunca escapa (snapshot vazio falho-safe).
   const lastCognitiveOrchestratorSnapshotRef = useRef(null);
-  useEffect(() => {
-    financialStateRef.current = financialConversation.state;
-  }, [financialConversation.state]);
+  // FASE 11 — BLOCO 2 (CONTEXT BRIDGE): resultado da ponte de contexto,
+  // consumida UMA única vez por turno no ponto único de construção da
+  // resposta. Fica SOMENTE em ref (nenhum state React, nenhuma renderização,
+  // nada persistido) — zerado no novo turno e no catch; nunca reexecuta a
+  // Uni Engine e nunca altera o texto legado por si mesma.
+  const lastContextBridgeResultRef = useRef(null);
+  const lastEngineContextBridgeTurnRef = useRef(null);
 
   // BLOCO VOZ 1: SEMPRE fala, mesmo quando o texto é longo demais para o
   // limite da Edge Function (MAX_TTS_TEXT_LENGTH) -- gera uma versão curta e
@@ -466,6 +469,7 @@ export default function UniChatPage({ variant = 'full' }) {
     categories: categoryState.categories,
     workspaceBalance: balanceState.workspaceBalance,
     accountBalances: balanceState.accountBalances,
+    referenceDate: getLocalIsoDate(),
   });
 
   const financialConversation = useUniConversation({
@@ -481,23 +485,28 @@ export default function UniChatPage({ variant = 'full' }) {
     allowedWriteIntents: ALLOWED_CHAT_WRITE_INTENTS,
     accountBalances: financialContext.snapshot.accountBalancesById,
   });
+  useEffect(() => {
+    financialStateRef.current = financialConversation.state;
+  }, [financialConversation.state]);
   const saveAccountForDependency = accountState.saveAccount;
-  const accountDependencyCoordinator = useMemo(
-    () => createPendingActionCoordinator({
+  // BLOCO 5: coordinator persistido em ref para manter proteção de execução
+  // única entre renders (useMemo cria novo a cada render, ref sobrevive).
+  const accountDependencyCoordinatorRef = useRef(null);
+  if (!accountDependencyCoordinatorRef.current) {
+    accountDependencyCoordinatorRef.current = createPendingActionCoordinator({
       create_financial_account: async ({ fields }) => saveAccountForDependency(fields.account),
-    }),
-    [saveAccountForDependency],
-  );
+    });
+  }
   const saveCategoryForDependency = categoryState.saveCategory;
-  const categoryDependencyCoordinator = useMemo(
-    () => createPendingActionCoordinator({
+  const categoryDependencyCoordinatorRef = useRef(null);
+  if (!categoryDependencyCoordinatorRef.current) {
+    categoryDependencyCoordinatorRef.current = createPendingActionCoordinator({
       create_financial_category: async ({ fields }) => saveCategoryForDependency({
         ...fields.category,
         applies_to: financialWorkspaceType,
       }),
-      }),
-    [financialWorkspaceType, saveCategoryForDependency],
-  );
+    });
+  }
 
   // BLOCO D: mesma Edge Function/flag do chat (uni-chat-llm + VITE_UNI_LLM_ENABLED,
   // via uniLlm.enabled) -- nenhum novo secret, nenhuma nova variável de
@@ -804,6 +813,7 @@ export default function UniChatPage({ variant = 'full' }) {
     saveActiveId(resolved.activeId);
     return resolved;
   });
+
   const [mode, setMode] = useState(initialChatState.mode);
   const [messages, setMessages] = useState(initialChatState.messages);
   const [inputValue, setInputValue] = useState('');
@@ -940,7 +950,10 @@ export default function UniChatPage({ variant = 'full' }) {
     ) {
       return;
     }
+    // Reset hydration flag for new conversation -- prevents ghost confirmation
+    // fix from running before this conversation's hydration completes.
     restoredPendingIdentityRef.current = identityKey;
+    setPendingHydrated(false);
     setPendingHydrated(true);
     const storedStack = loadPendingActionStack(pendingActionIdentity);
     const storedDependency = storedStack ? getActivePendingAction(storedStack) : null;
@@ -976,6 +989,23 @@ export default function UniChatPage({ variant = 'full' }) {
         setPendingActionStack(storedStack);
       }
       setPendingAction(snapshot.action);
+      // Restaurar status de confirmação da mensagem correspondente:
+      // se o ghost fix marcou como 'expired' antes da hidratação completar,
+      // voltar para 'pending' agora que a ação foi restaurada.
+      const clientOpId = snapshot.action.clientOperationId;
+      if (clientOpId) {
+        setMessages((current) =>
+          current.map((message) => {
+            if (
+              message.confirmation?.status === 'expired'
+              && message.clientOperationId === clientOpId
+            ) {
+              return { ...message, confirmation: { ...message.confirmation, status: 'pending' } };
+            }
+            return message;
+          }),
+        );
+      }
     }
   }, [
     accountState.accounts,
@@ -1312,7 +1342,7 @@ export default function UniChatPage({ variant = 'full' }) {
   // final. Aqui a engine observa (runUniEngineShadow) e a camada de
   // integração calcula guidance/diagnostics/metadata/comparação, mas tudo
   // permanece observacional: o resultado vai apenas para refs de diagnóstico
-  // (lastUniEngineShadowRef/lastEngineIntegrationResultRef) e NUNCA altera a
+  // (lastEngineIntegrationResultRef) e NUNCA altera a
   // resposta exibida. Deduplicação por mensagem do usuário: a mesma resposta
   // não roda a engine duas vezes. Falha segura: qualquer erro interno é
   // capturado e o pipeline legado segue intacto.
@@ -1442,6 +1472,25 @@ export default function UniChatPage({ variant = 'full' }) {
         warmUniMemoryCache(user.id, effectiveWorkspace.id);
         memoryAdapter = getUniMemoryAdapter(user.id, effectiveWorkspace.id);
       }
+      // BLOCO 1 — GATEWAY ÚNICO DE ENTRADA: uma execução por turno. O
+      // resultado fica apenas no ref dedicado (lastUniEngineGatewayResultRef)
+      // e é descartável — nunca altera a resposta nem duplica mensagens.
+      if (lastUniEngineGatewayResultRef.current?.turnId !== turn.userMessage.id) {
+        lastUniEngineGatewayResultRef.current = runUniEngineGateway({
+          conversationHistory: messages ?? [],
+          conversationId: activeId ?? null,
+          currentRoute: 'uni-chat',
+          financialSnapshot: projectFinancialSnapshot(financialContext.snapshot),
+          source: 'text',
+          text: turn.userMessage.text,
+          turnId: turn.userMessage.id,
+          userPreferences: {
+            conversationStyle: 'balanced',
+            workspaceType: financialWorkspaceType ?? 'personal',
+          },
+          config: uniEngine.getConfig(),
+        });
+      }
       const shadow = uniEngine.runShadow({
         message: turn.userMessage,
         session: {
@@ -1468,8 +1517,7 @@ export default function UniChatPage({ variant = 'full' }) {
         operationalMemory: uniEngineMemoryByConversation.get(memoryKey),
         memoryAdapter,
       });
-      lastUniEngineShadowRef.current = shadow;
-      const convState = financialStateRef.current ?? {};
+       const convState = financialStateRef.current ?? {};
       const action = pendingActionRef.current ?? convState.action ?? null;
       const isConfirmation = messageOptions?.type === 'confirmation';
       const legacyResult = {
@@ -1594,8 +1642,8 @@ export default function UniChatPage({ variant = 'full' }) {
         applicationResult: lastApplicationResultRef.current,
       });
       return lastApplicationResultRef.current;
-    } catch {
-      lastUniEngineShadowRef.current = null;
+     } catch {
+       lastUniEngineGatewayResultRef.current = null;
       lastEngineIntegrationResultRef.current = null;
       lastGuidanceSnapshotRef.current = null;
       lastObservationSnapshotRef.current = null;
@@ -1606,6 +1654,8 @@ export default function UniChatPage({ variant = 'full' }) {
       lastConversationPlannerSnapshotRef.current = null;
       lastConversationRoutingSnapshotRef.current = null;
       lastCognitiveOrchestratorSnapshotRef.current = null;
+      lastContextBridgeResultRef.current = null;
+      lastEngineContextBridgeTurnRef.current = null;
       // Shadow Mode jamais quebra o chat — falha silenciosa, legado intacto.
       return null;
     }
@@ -1674,6 +1724,54 @@ export default function UniChatPage({ variant = 'full' }) {
       conversationRoute: routingSnapshot,
     });
     lastCognitiveOrchestratorSnapshotRef.current = orchestratorSnapshot;
+    // FASE 11 — BLOCO 2 (CONTEXT BRIDGE): o contexto técnico do MESMO turno
+    // (Gateway + Integration + Orchestrator + Rollout + Readiness + resposta
+    // legada + Pending Action + confirmação) é consumido UMA única vez por
+    // turno aqui, no ponto único de construção da resposta. A ponte é uma
+    // função pura de snapshots JÁ produzidos — nunca reexecuta camada alguma.
+    // Se qualquer gate falhar, influenceAllowed é false e o texto legado é
+    // preservado integralmente. Nada cria state React, nada persiste e nada
+    // dispara TTS.
+    const bridgeTurnId = lastEngineTurnRef.current?.userMessageId ?? null;
+    let bridgeContext = lastContextBridgeResultRef.current;
+    if (bridgeContext === null || lastEngineContextBridgeTurnRef.current !== bridgeTurnId) {
+      bridgeContext = buildEngineResponseContext({
+        gatewayResult: lastUniEngineGatewayResultRef.current,
+        integrationResult: lastEngineIntegrationResultRef.current,
+        cognitiveSnapshot: orchestratorSnapshot,
+        rolloutSnapshot: lastUniEngineGatewayResultRef.current?.rolloutSnapshot ?? null,
+        operationalReadiness: lastUniEngineGatewayResultRef.current?.operationalReadiness ?? null,
+        legacyResponse: { text: legacyText },
+        pendingAction: pendingActionRef.current ?? null,
+        confirmationState: options?.type === 'confirmation'
+          ? { pending: true }
+          : null,
+        sameTurn: lastUniEngineGatewayResultRef.current?.turnId === bridgeTurnId,
+        requestedInfluences: [
+          'RESPONSE_STYLE_GUIDANCE',
+          'RESPONSE_LENGTH_GUIDANCE',
+          'QUESTION_GUIDANCE',
+          'CLARIFICATION_GUIDANCE',
+          'CONVERSATION_ROUTING',
+        ],
+        config: uniEngine.getConfig(),
+        environment: import.meta.env.DEV ? 'development' : 'production',
+        userId: user?.id ?? null,
+        isDev: import.meta.env.DEV,
+        selectedRoute: routingSnapshot.selectedRoute ?? null,
+        circuitBreakerOpen: (lastExecutionReadinessSnapshotRef.current?.executionBlockedReasons ?? [])
+          .includes('CIRCUIT_BREAKER_OPEN'),
+        context: {
+          confidence: typeof plannerSnapshot?.confidence === 'number'
+            ? plannerSnapshot.confidence
+            : null,
+          risk: plannerSnapshot?.risk ?? null,
+        },
+      });
+      lastContextBridgeResultRef.current = bridgeContext;
+      lastEngineContextBridgeTurnRef.current = bridgeTurnId;
+    }
+    if (bridgeContext.influenceAllowed === false) return legacyText;
     if (routingSnapshot.selectedRoute === 'ROUTE_ANSWER') {
       return selectControlledVisibleResponse({
         legacyText,
@@ -1891,6 +1989,18 @@ export default function UniChatPage({ variant = 'full' }) {
 
     const requestId = ++loadRequestIdRef.current;
 
+    // Limpar pending action da conversa ANTIGA no sessionStorage antes de trocar.
+    // A identidade da conversa antiga ainda está em activeIdRef.current.
+    const oldIdentity = {
+      userId: user?.id,
+      workspaceId: effectiveWorkspace?.id,
+      conversationId: activeIdRef.current,
+    };
+    if (oldIdentity.userId && oldIdentity.workspaceId && oldIdentity.conversationId) {
+      clearPendingAction(oldIdentity);
+      clearPendingActionStack(oldIdentity);
+    }
+
     setActiveId(id);
     setMessages(conv.messages || []);
     // BLOCO VOZ HIDRATAÇÃO: trocar de conversa RESTAURA conteúdo antigo
@@ -2048,6 +2158,7 @@ export default function UniChatPage({ variant = 'full' }) {
       createAssistantResponse(result.response.text, {
         type: 'confirmation',
         confirmation,
+        clientOperationId: result.action.clientOperationId,
       });
       return;
     }
@@ -2069,6 +2180,7 @@ export default function UniChatPage({ variant = 'full' }) {
       {
         type: 'confirmation',
         confirmation,
+        clientOperationId: dependency.action?.clientOperationId,
       },
     );
   }
@@ -2083,6 +2195,7 @@ export default function UniChatPage({ variant = 'full' }) {
       {
         type: 'confirmation',
         confirmation,
+        clientOperationId: dependency.action?.clientOperationId,
       },
     );
   }
@@ -2560,6 +2673,7 @@ export default function UniChatPage({ variant = 'full' }) {
       void publishConversationResultWithInference(result);
   }
 
+  // BLOCO 1 — GATEWAY ÚNICO DE ENTRADA: voz (onFinalTranscript) e texto (onSend) convergem para o mesmo sendText, ponto único que alimenta o runUniEngineGateway em cada turno.
   function sendText(text) {
     if (!text.trim() || isTyping || isExecutingAction) return;
     setExecutionError(null);
@@ -2605,7 +2719,7 @@ export default function UniChatPage({ variant = 'full' }) {
       },
       hasPendingConversation,
     };
-    lastUniEngineShadowRef.current = null;
+    lastUniEngineGatewayResultRef.current = null;
     lastEngineIntegrationResultRef.current = null;
     lastGuidanceSnapshotRef.current = null;
     lastObservationSnapshotRef.current = null;
@@ -2615,6 +2729,9 @@ export default function UniChatPage({ variant = 'full' }) {
     lastApplicationResultRef.current = null;
     lastConversationPlannerSnapshotRef.current = null;
     lastConversationRoutingSnapshotRef.current = null;
+    lastCognitiveOrchestratorSnapshotRef.current = null;
+    lastContextBridgeResultRef.current = null;
+    lastEngineContextBridgeTurnRef.current = null;
     if (hasPendingConversation) {
       // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
       // explícita NOVA. Se a frase é reconhecida como ação financeira
@@ -2781,6 +2898,8 @@ export default function UniChatPage({ variant = 'full' }) {
 
   async function handleConfirmAction(id) {
     if (confirmingRef.current) return;
+    const currentConversationId = activeIdRef.current;
+    const currentWorkspaceId = effectiveWorkspace?.id;
     const stack = pendingActionStackRef.current;
     const activeStackAction = stack ? getActivePendingAction(stack) : null;
     const accountDependencyActive = isAccountCreationDependency(activeStackAction);
@@ -2792,6 +2911,10 @@ export default function UniChatPage({ variant = 'full' }) {
     setExecutionError(null);
 
     try {
+      // Guard: se a conversa mudou durante a execução, abortar.
+      if (activeIdRef.current !== currentConversationId) {
+        return;
+      }
       if (accountDependencyActive) {
         const requestedAccount = activeStackAction.fields.account;
         const conflicts = findAccountCreationConflicts({
@@ -2817,7 +2940,18 @@ export default function UniChatPage({ variant = 'full' }) {
             conflicts.exact[0],
           );
         } else {
-          dependencyOutcome = await accountDependencyCoordinator.execute(stack);
+          // BLOCO 5: marcar dependência como EXECUTING antes de executar (idempotência).
+          const activeDep = getActivePendingAction(stack);
+          if (activeDep?.type === 'create_financial_account') {
+            confirmPendingAction(stack, activeDep.id);
+            setPendingActionStack(stack); // sincronizar estado
+          }
+          dependencyOutcome = await accountDependencyCoordinatorRef.current.execute(stack);
+        }
+
+        // Guard: se a conversa OU workspace mudou durante a execução, abortar.
+        if (activeIdRef.current !== currentConversationId || effectiveWorkspace?.id !== currentWorkspaceId) {
+          return;
         }
 
         if (
@@ -2833,6 +2967,20 @@ export default function UniChatPage({ variant = 'full' }) {
 
         const account = dependencyOutcome.completedAction.result;
         const parentSnapshot = dependencyOutcome.resumedAction.fields.snapshot;
+
+        // BLOCO 5: validar que a transação pai ainda é válida após a dependência.
+        const parentAction = parentSnapshot?.action;
+        const parentAccountId = parentAction?.account?.id ?? parentAction?.payload?.account_id;
+        const parentCategoryId = parentAction?.category?.id ?? parentAction?.payload?.category_id;
+        const parentAccountValid = !parentAccountId || accountState.accounts.some((a) => a.id === parentAccountId);
+        const parentCategoryValid = !parentCategoryId || categoryState.categories.some((c) => c.id === parentCategoryId);
+        if (!parentAccountValid || !parentCategoryValid) {
+          reportConfirmationError(id, 'A movimentação original não é mais válida (conta/categoria removida).');
+          setIsExecutingAction(false);
+          confirmingRef.current = false;
+          return;
+        }
+
         financialConversation.restore(parentSnapshot);
         const resumedResult = financialConversation.provideInput({
           accountId: account.id,
@@ -2884,7 +3032,18 @@ export default function UniChatPage({ variant = 'full' }) {
             categoryResolution.category,
           );
         } else {
-          dependencyOutcome = await categoryDependencyCoordinator.execute(stack);
+          // BLOCO 5: marcar dependência como EXECUTING antes de executar (idempotência).
+          const activeDep = getActivePendingAction(stack);
+          if (activeDep?.type === 'create_financial_category') {
+            confirmPendingAction(stack, activeDep.id);
+            setPendingActionStack(stack);
+          }
+          dependencyOutcome = await categoryDependencyCoordinatorRef.current.execute(stack);
+        }
+
+        // Guard: se a conversa OU workspace mudou durante a execução, abortar.
+        if (activeIdRef.current !== currentConversationId || effectiveWorkspace?.id !== currentWorkspaceId) {
+          return;
         }
 
         if (
@@ -2900,6 +3059,20 @@ export default function UniChatPage({ variant = 'full' }) {
 
         const category = dependencyOutcome.completedAction.result;
         const parentSnapshot = dependencyOutcome.resumedAction.fields.snapshot;
+
+        // BLOCO 5: validar que a transação pai ainda é válida após a dependência.
+        const parentAction = parentSnapshot?.action;
+        const parentAccountId = parentAction?.account?.id ?? parentAction?.payload?.account_id;
+        const parentCategoryId = parentAction?.category?.id ?? parentAction?.payload?.category_id;
+        const parentAccountValid = !parentAccountId || accountState.accounts.some((a) => a.id === parentAccountId);
+        const parentCategoryValid = !parentCategoryId || categoryState.categories.some((c) => c.id === parentCategoryId);
+        if (!parentAccountValid || !parentCategoryValid) {
+          reportConfirmationError(id, 'A movimentação original não é mais válida (conta/categoria removida).');
+          setIsExecutingAction(false);
+          confirmingRef.current = false;
+          return;
+        }
+
         financialConversation.restore(parentSnapshot);
         const resumedResult = financialConversation.provideInput({
           categoryId: category.id,
@@ -2933,6 +3106,11 @@ export default function UniChatPage({ variant = 'full' }) {
       }
 
       const outcome = await financialConversation.confirm();
+
+      // Guard: se a conversa mudou durante a execução, abortar.
+      if (activeIdRef.current !== currentConversationId) {
+        return;
+      }
 
       if (!confirmingRef.current) return;
       if (!outcome || outcome.result?.error || !outcome.result?.data) {
@@ -2975,6 +3153,7 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function handleCancelAction(id, { cascade = false } = {}) {
+    if (confirmingRef.current) return;
     const stack = pendingActionStackRef.current;
     const activeStackAction = stack ? getActivePendingAction(stack) : null;
     if (isAccountCreationDependency(activeStackAction)) {

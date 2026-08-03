@@ -13,6 +13,7 @@ import {
   isRolloutEnabledByConfig,
   isEnvironmentAllowedByRolloutPolicy,
   isRolloutStageAllowed,
+  isRolloutStageEffective,
 } from './rolloutPolicy.js';
 import { buildRolloutSnapshot } from './buildRolloutSnapshot.js';
 import { buildOperationalReadinessReport } from './buildOperationalReadinessReport.js';
@@ -25,15 +26,6 @@ function warn(isDev, message) {
   if (isDev && typeof console?.warn === 'function') {
     console.warn(`[uni-engine] rollout-evaluate ${message}`);
   }
-}
-
-function isRolloutStageEffective(current, request) {
-  if (!isRolloutStage(request)) return false;
-  const order = ROLLOUT_STAGES.indexOf;
-  const currentIdx = order(current);
-  const requestIdx = order(request);
-  if (currentIdx === -1 || requestIdx === -1) return false;
-  return requestIdx >= currentIdx;
 }
 
 export function evaluateRolloutEligibility(options = {}) {
@@ -154,7 +146,7 @@ export function evaluateRolloutEligibility(options = {}) {
       userAuthorized: false,
       requestedStage: 'ROLLOUT_OFF',
       isDev,
-      sameTurn,
+      sameTurn: false,
       circuitBreakerClosed: false,
       observation: null,
       guidance: null,

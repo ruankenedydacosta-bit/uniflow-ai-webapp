@@ -23,14 +23,6 @@ function isValidSeverity(severity) {
   return SEVERITIES.includes(severity);
 }
 
-function isRolloutStage(value) {
-  return ROLLOUT_STAGES.includes(value);
-}
-
-function isOperationalStatus(value) {
-  return OPERATIONAL_STATUSES.includes(value);
-}
-
 export function createRolloutDiagnostic(input) {
   const safe = input && typeof input === 'object' ? input : {};
   const code = isValidCode(safe.code) ? safe.code : 'UNKNOWN';
@@ -66,7 +58,6 @@ export function buildRolloutDiagnostics({
   requestedStage = 'ROLLOUT_OFF',
   effectiveStage = 'ROLLOUT_OFF',
   eligible = false,
-  visibleInfluenceAllowed = false,
   environmentAllowed = false,
   userAuthorized = false,
   rolloutEnabled = false,

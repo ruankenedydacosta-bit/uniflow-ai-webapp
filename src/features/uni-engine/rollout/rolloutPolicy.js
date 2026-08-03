@@ -2,7 +2,7 @@
 //
 // Política fechada para activação gradual do Uni Engine, permitindo controle
 // detalhado de quais capacidades podem ser aplicadas e quando.
-import { ROLLOUT_VERSION } from './rolloutTypes.js';
+import { ROLLOUT_VERSION, ROLLOUT_STAGES, isRolloutStage } from './rolloutTypes.js';
 
 export const ROLLOUT_POLICY = Object.freeze({
   version: ROLLOUT_VERSION,
@@ -16,10 +16,6 @@ export const ROLLOUT_POLICY = Object.freeze({
   maxDiagnostics: 12,
   maxSources: 8,
 });
-
-function isPlainObject(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 export function isRolloutEnabledByConfig(config) {
   const safeConfig = config ?? {};
@@ -57,11 +53,10 @@ export function isStageAllowedByStage(stage) {
   }
 }
 
-function isRolloutStageEffective(current, request) {
+export function isRolloutStageEffective(current, request) {
   if (!isRolloutStage(request)) return false;
-  const order = ROLLOUT_STAGES.indexOf;
-  const currentIdx = order(current);
-  const requestIdx = order(request);
+  const currentIdx = ROLLOUT_STAGES.indexOf(current);
+  const requestIdx = ROLLOUT_STAGES.indexOf(request);
   if (currentIdx === -1 || requestIdx === -1) return false;
   return requestIdx >= currentIdx;
 }

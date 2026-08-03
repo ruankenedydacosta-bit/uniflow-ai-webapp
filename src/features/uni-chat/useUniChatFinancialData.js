@@ -1,7 +1,10 @@
 import { useMemo } from 'react';
 import { buildFinancialSnapshot } from './financialSnapshot.js';
 
-function getCurrentMonthYear() {
+function getCurrentMonthYear(referenceDate = null) {
+  if (typeof referenceDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(referenceDate)) {
+    return { month: Number(referenceDate.slice(5, 7)) - 1, year: Number(referenceDate.slice(0, 4)) };
+  }
   const now = new Date();
   return { month: now.getMonth(), year: now.getFullYear() };
 }
@@ -19,12 +22,13 @@ export function buildFinancialContext({
   categories,
   workspaceBalance,
   accountBalances,
+  referenceDate = null,
 } = {}) {
   const safeAccounts = accounts || [];
   const safeTransactions = transactions || [];
   const safeCategories = categories || [];
 
-  const currentMonth = getCurrentMonthYear();
+  const currentMonth = getCurrentMonthYear(referenceDate);
 
   const monthlyTransactions = safeTransactions.filter((tx) =>
     isInCurrentMonth(tx, currentMonth.month, currentMonth.year),
@@ -88,6 +92,7 @@ export function buildFinancialContext({
       transactions: safeTransactions,
       workspaceBalance,
       accountBalances,
+      referenceDate,
     }),
   };
 }

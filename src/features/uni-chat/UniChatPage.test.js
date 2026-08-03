@@ -1242,7 +1242,7 @@ test('heurística de roteamento detecta cláusulas encadeadas por conjunção co
 test('BUG 2 REAL: pendingHydrated marca quando a tentativa de restauração de pendências realmente rodou', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /const \[pendingHydrated, setPendingHydrated\] = useState\(false\);/);
-  assert.match(page, /restoredPendingIdentityRef\.current = identityKey;\s*\n\s*setPendingHydrated\(true\);/);
+  assert.match(page, /restoredPendingIdentityRef\.current = identityKey;\s*\n\s*setPendingHydrated\(false\);\s*\n\s*setPendingHydrated\(true\);/);
 });
 
 test('BUG 2 REAL: confirmações órfãs (sem pendingAction/pendingActionStack/financialPlan reais) são saneadas para "expired" após a hidratação, nunca antes', async () => {
@@ -1528,7 +1528,6 @@ test('BLOCO 1: a Uni Engine roda somente APÓS o resultado legado -- no ponto ú
   const sendBlock = extractFunctionBody(page, 'function sendText(text) {').body;
   assert.match(sendBlock, /lastEngineTurnRef\.current = \{/);
   assert.match(sendBlock, /userMessageId: userMsg\.id/);
-  assert.match(sendBlock, /lastUniEngineShadowRef\.current = null;/);
   assert.doesNotMatch(sendBlock, /uniEngine\.runShadow\(/);
   // O motor observa (runShadow + runUniEngineIntegration) no ponto que JÁ
   // recebe o texto legado final, chamado por buildGuidedUniMessage →
@@ -1595,9 +1594,8 @@ test('BLOCO 1: erro interno da engine nunca quebra o chat -- try/catch silencios
   assert.match(runBlock, /try \{/);
   assert.match(runBlock, /\} catch \{/);
   assert.doesNotMatch(runBlock, /throw /);
-  // o fallback silencioso zera os refs e o texto legado segue intacto
-  assert.match(runBlock, /lastUniEngineShadowRef\.current = null;/);
-  assert.match(runBlock, /lastEngineIntegrationResultRef\.current = null;/);
+   // o fallback silencioso zera os refs e o texto legado segue intacto
+   assert.match(runBlock, /lastEngineIntegrationResultRef\.current = null;/);
 });
 
 test('BLOCO 1: Shadow Mode não aplica guidance -- capabilities são calculadas na integração mas nunca alteram o fluxo real', async () => {
@@ -1708,8 +1706,7 @@ test('BLOCO 1: resultado da engine/integração permanece serializável e fica s
     'const runEngineObservational = useCallback',
     'const applyEngineGuidanceToResponse = useCallback',
   );
-  assert.match(runBlock, /lastUniEngineShadowRef\.current = shadow;/);
-  assert.match(runBlock, /lastEngineIntegrationResultRef\.current = result;/);
+   assert.match(runBlock, /lastEngineIntegrationResultRef\.current = result;/);
   assert.doesNotMatch(runBlock, /localStorage/);
   assert.doesNotMatch(runBlock, /saveHistory\(/);
   assert.doesNotMatch(runBlock, /syncMessageToSupabase/);
@@ -1878,14 +1875,11 @@ test('BLOCO 5: novo turno zera TODOS os refs observacionais (shadow, integration
     'lastEngineTurnRef.current = {',
     'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
   );
-  assert.match(sendBlock, /lastUniEngineShadowRef\.current = null;/);
-  assert.match(sendBlock, /lastEngineIntegrationResultRef\.current = null;/);
-  assert.match(sendBlock, /lastGuidanceSnapshotRef\.current = null;/);
-  assert.match(sendBlock, /lastObservationSnapshotRef\.current = null;/);
-  const shadowReset = sendBlock.indexOf('lastUniEngineShadowRef.current = null;');
-  const observationReset = sendBlock.indexOf('lastObservationSnapshotRef.current = null;');
-  assert.ok(shadowReset !== -1 && observationReset !== -1);
-  assert.ok(observationReset > shadowReset, 'observation é zerado junto com os demais refs');
+   assert.match(sendBlock, /lastEngineIntegrationResultRef\.current = null;/);
+   assert.match(sendBlock, /lastGuidanceSnapshotRef\.current = null;/);
+   assert.match(sendBlock, /lastObservationSnapshotRef\.current = null;/);
+   const observationReset = sendBlock.indexOf('lastObservationSnapshotRef.current = null;');
+   assert.ok(observationReset !== -1);
 });
 
 test('BLOCO 5: guard de deduplicação NÃO é zerado no novo turno -- persiste por mensagem do usuário', async () => {
@@ -1907,7 +1901,6 @@ test('BLOCO 5: catch do runEngineObservational zera os quatro refs juntos (falha
   );
   const catchStart = runBlock.indexOf('} catch {');
   const catchSlice = runBlock.slice(catchStart);
-  assert.match(catchSlice, /lastUniEngineShadowRef\.current = null;/);
   assert.match(catchSlice, /lastEngineIntegrationResultRef\.current = null;/);
   assert.match(catchSlice, /lastGuidanceSnapshotRef\.current = null;/);
   assert.match(catchSlice, /lastObservationSnapshotRef\.current = null;/);
@@ -1917,8 +1910,8 @@ test('BLOCO 5: financialStateRef é sincronizado por um ÚNICO efeito -- sem dup
   const page = await source('UniChatPage.jsx');
   const syncBlock = betweenMarkers(
     page,
-    'const lastObservationSnapshotRef = useRef(null);',
-    '// BLOCO VOZ 1:',
+    'financialContext.snapshot.accountBalancesById,',
+    'const saveAccountForDependency = accountState.saveAccount;',
   );
   const effectCount = (syncBlock.match(/financialStateRef\.current = financialConversation\.state;/g) || []).length;
   assert.equal(effectCount, 1, `esperado 1 sincronização, encontradas ${effectCount}`);

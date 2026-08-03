@@ -675,6 +675,25 @@ function SessionProvider({ children }) {
     authActionRef.current = true;
 
     try {
+      // Limpar pending actions do usuário atual no sessionStorage antes do logout.
+      // As chaves têm o formato: uniflow.uni.pending-action.v1:${userId}:${workspaceId}:${conversationId}
+      const currentUserId = state.user?.id;
+      if (currentUserId) {
+        try {
+          const prefix = `uniflow.uni.pending-action.v1:${currentUserId}:`;
+          const keysToRemove = [];
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key && key.startsWith(prefix)) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach((key) => sessionStorage.removeItem(key));
+        } catch {
+          // sessionStorage pode não estar disponível (modo privado, etc.)
+        }
+      }
+
       const result = await signOutService();
 
       if (!result.error) {

@@ -2,6 +2,20 @@ import { VOICE_TTS_ERROR_CODES } from './voiceTtsStatus.js';
 
 const TRUE_VALUE = 'true';
 
+// Falhas do LADO DO PROVEDOR (ElevenLabs/Edge Function): qualquer uma delas
+// significa que o audio oficial nao foi gerado -- o fallback do navegador e
+// a substitucao legitima. Erros de sessao/texto/cancelamento (UNAUTHORIZED,
+// INVALID_TEXT, CANCELLED, etc.) nunca acionam o fallback: nao sao falha do
+// provedor e nao adiantaria trocar de mecanismo de voz.
+const BROWSER_FALLBACK_ELIGIBLE_CODES = Object.freeze([
+  VOICE_TTS_ERROR_CODES.PROVIDER_QUOTA_ERROR,
+  VOICE_TTS_ERROR_CODES.PROVIDER_AUTH_ERROR,
+  VOICE_TTS_ERROR_CODES.PROVIDER_ERROR,
+  VOICE_TTS_ERROR_CODES.PROVIDER_TIMEOUT,
+  VOICE_TTS_ERROR_CODES.PROVIDER_RATE_LIMIT,
+  VOICE_TTS_ERROR_CODES.NETWORK_ERROR,
+]);
+
 function isEnabled(value) {
   return String(value ?? '').trim().toLowerCase() === TRUE_VALUE;
 }
@@ -38,6 +52,7 @@ export function resolveVoiceFallbackPolicy({ env = {}, userId = null } = {}) {
 export function shouldUseBrowserFallback(error, policy) {
   return Boolean(
     policy?.browserFallbackAllowed
-    && error?.code === VOICE_TTS_ERROR_CODES.PROVIDER_QUOTA_ERROR,
+    && error?.code
+    && BROWSER_FALLBACK_ELIGIBLE_CODES.includes(error.code),
   );
 }

@@ -33,6 +33,8 @@ const ACCOUNT_BALANCES = [
   { account_id: 'acc-itau', derived_balance: 260 },
 ];
 
+const REFERENCE_DATE = '2026-07-15';
+
 function buildCtx() {
   return buildFinancialContext({
     accounts: ACCOUNTS,
@@ -40,6 +42,7 @@ function buildCtx() {
     transactions: TRANSACTIONS,
     workspaceBalance: 740.5,
     accountBalances: ACCOUNT_BALANCES,
+    referenceDate: REFERENCE_DATE,
   });
 }
 
