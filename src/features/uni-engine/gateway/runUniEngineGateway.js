@@ -296,7 +296,9 @@ export function runUniEngineGateway(input) {
       serializable: true,
     });
 
-    if (result.serializable) {
+    // Fase 14 — telemetria do gateway SÓ sai quando habilitada explicitamente
+    // (config.telemetryEnabled). Sem a flag, nada é logado no shadow gateway.
+    if (result.serializable && config.telemetryEnabled) {
       emitUniEngineTelemetry(buildUniEngineTelemetry({
         correlationId: result.turnId,
         diagnostics: result.diagnostics,

@@ -2910,3 +2910,222 @@ test('PARTE 8: seletor com flag desligada nunca aplica rota (fluxo real)', async
   assert.equal(routing.safety.financialExecution, false);
   assert.equal(Object.isFrozen(routing), true);
 });
+
+// ============================================================================
+// FASE 14 — PIPELINE COGNITIVO OBSERVACIONAL (comparador legado × Engine,
+// snapshot 12 camadas, telemetria técnica em memória).
+// Tudo puramente diagnóstico: influenceApplied sempre false, nenhuma resposta
+// visível alterada, nenhuma escrita, nenhuma rede, nenhum TTS, nenhuma ação.
+// ============================================================================
+
+test('FASE 14: imports do pipeline cognitivo vindos do uni-engine', async () => {
+  const page = await source('UniChatPage.jsx');
+  const importLine = page.match(/import \{[\s\S]*?\} from '\.\.\/uni-engine\/index\.js';/)[0];
+  assert.match(importLine, /compareLegacyWithEngine/);
+  assert.match(importLine, /buildCognitivePipelineSnapshot/);
+  assert.match(importLine, /createEmptyCognitivePipelineSnapshot/);
+  assert.match(importLine, /recordCognitiveTelemetry/);
+  const engineIndex = await source('../uni-engine/index.js');
+  assert.match(engineIndex, /getCognitiveTelemetrySnapshot/);
+  assert.match(engineIndex, /resetCognitiveTelemetry/);
+  assert.match(engineIndex, /sanitizeCognitiveTelemetryEntry/);
+  assert.match(engineIndex, /buildCognitiveComparisonDiagnostics/);
+});
+
+test('FASE 14: refs dedicados do pipeline cognitivo existem ao lado dos demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const refBlock = betweenMarkers(
+    page,
+    'const lastContextBridgeResultRef = useRef(null);',
+    'const handleSpeakMessage = useCallback',
+  );
+  assert.match(refBlock, /const lastEngineComparisonRef = useRef\(null\);/);
+  assert.match(refBlock, /const lastCognitivePipelineSnapshotRef = useRef\(null\);/);
+});
+
+test('FASE 14: comparador legado × Engine executado UMA vez no runEngineObservational (deduplicado por guard de mensagem)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const occurrences = runBlock.match(/compareLegacyWithEngine\(\{/g) ?? [];
+  assert.equal(occurrences.length, 1, 'comparador consultado exatamente uma vez por turno');
+  assert.match(runBlock, /lastEngineComparisonRef\.current = compareLegacyWithEngine\(\{/);
+  assert.match(runBlock, /plan: lastConversationPlannerSnapshotRef\.current/);
+  assert.match(runBlock, /shadow\?\.classification\?\.primaryIntent/);
+  assert.match(runBlock, /shadow\?\.decisionLayer\?\.confidence/);
+  assert.match(runBlock, /shadow\?\.epistemicModel\?\.conflicts/);
+});
+
+test('FASE 14: comparador sempre influenciável por VOCABULÁRIO fechado — sem texto completo no bloco de comparação', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  assert.match(runBlock, /influenceApplied/);
+  assert.doesNotMatch(runBlock, /compareLegacyWithEngine\(\{[\s\S]*?legacy:\s*legacyText/);
+});
+
+test('FASE 14: snapshot do pipeline consolidado com as 12 camadas no ponto único de saída', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /buildCognitivePipelineSnapshot\(\{/);
+  assert.match(guidedBlock, /lastCognitivePipelineSnapshotRef\.current = pipelineSnapshot;/);
+  assert.match(guidedBlock, /gateway: lastUniEngineGatewayResultRef\.current/);
+  assert.match(guidedBlock, /conversationRoute: routingSnapshot/);
+  assert.match(guidedBlock, /orchestrator: orchestratorSnapshot/);
+  assert.match(guidedBlock, /contextBridge: bridgeContext/);
+  assert.match(guidedBlock, /comparison,/);
+});
+
+test('FASE 14: snapshot deduplicado por turno — só é construído quando ainda não existe para o turno', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /lastCognitivePipelineSnapshotRef\.current\?\.turnId !== fase14TurnId/);
+  assert.match(guidedBlock, /lastEngineComparisonRef\.current\?\.turnId === fase14TurnId/);
+});
+
+test('FASE 14: telemetria cultural técnica SÓ registra com telemetryEnabled', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /recordCognitiveTelemetry\(\{/);
+  const recordIdx = guidedBlock.indexOf('recordCognitiveTelemetry({');
+  const gateNearRecord = guidedBlock.indexOf('engineConfig.telemetryEnabled', recordIdx - 400);
+  assert.ok(gateNearRecord !== -1 && gateNearRecord < recordIdx, 'telemetria gated pela flag antes de registrar');
+});
+
+test('FASE 14: snapshot e telemetria são falho-safe — jamais quebram a resposta legada', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /\} catch \{/);
+  assert.match(guidedBlock, /createEmptyCognitivePipelineSnapshot\(\{/);
+  assert.match(guidedBlock, /return legacyText;/);
+  assert.doesNotMatch(guidedBlock, /setMessages/);
+  assert.doesNotMatch(guidedBlock, /\.rpc\(/);
+  assert.doesNotMatch(guidedBlock, /uniVoice\.speak/);
+  assert.doesNotMatch(guidedBlock, /localStorage/);
+});
+
+test('FASE 14: novo turno zera os refs cognitivos junto com os demais', async () => {
+  const page = await source('UniChatPage.jsx');
+  const sendBlock = betweenMarkers(
+    page,
+    'lastEngineTurnRef.current = {',
+    'const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;',
+  );
+  assert.match(sendBlock, /lastEngineComparisonRef\.current = null;/);
+  assert.match(sendBlock, /lastCognitivePipelineSnapshotRef\.current = null;/);
+});
+
+test('FASE 14: catch do runEngineObservational zera os refs do pipeline', async () => {
+  const page = await source('UniChatPage.jsx');
+  const runBlock = betweenMarkers(
+    page,
+    'const runEngineObservational = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
+  );
+  const catchStart = runBlock.indexOf('} catch {');
+  const catchSlice = runBlock.slice(catchStart);
+  assert.match(catchSlice, /lastEngineComparisonRef\.current = null;/);
+  assert.match(catchSlice, /lastCognitivePipelineSnapshotRef\.current = null;/);
+});
+
+test('FASE 14: troca de conversa zera os refs do pipeline e limpa a telemetria em memória', async () => {
+  const page = await source('UniChatPage.jsx');
+  const switchBlock = betweenMarkers(
+    page,
+    'function switchConversation(id) {',
+    'async function handleUnresolvedMessage',
+  );
+  assert.match(switchBlock, /lastEngineComparisonRef\.current = null;/);
+  assert.match(switchBlock, /lastCognitivePipelineSnapshotRef\.current = null;/);
+  assert.match(switchBlock, /resetCognitiveTelemetry\(\);/);
+});
+
+test('FASE 14: pipeline cognitivo NUNCA aplica influência visível no bloco de saída', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.doesNotMatch(guidedBlock, /pipelineSnapshot\.applied === true/);
+  assert.doesNotMatch(guidedBlock, /pipelineSnapshot\.influenceApplied === true/);
+  assert.doesNotMatch(guidedBlock, /executeFinancialIntentAction/);
+  assert.doesNotMatch(guidedBlock, /executeConfirmedFinancialAction/);
+  assert.doesNotMatch(guidedBlock, /pushMessage/);
+  assert.doesNotMatch(guidedBlock, /syncMessageToSupabase/);
+});
+
+test('FASE 14: telemetria do gateway do shadow só sai com flag em runUniEngineGateway', async () => {
+  const gateway = await source('../uni-engine/gateway/runUniEngineGateway.js');
+  assert.match(gateway, /config\.telemetryEnabled/);
+  const emitIdx = gateway.indexOf('emitUniEngineTelemetry(');
+  const gateIdx = gateway.indexOf('result.serializable && config.telemetryEnabled', emitIdx - 80);
+  assert.ok(gateIdx !== -1, 'emissão condicionada a serializable + telemetryEnabled');
+});
+
+test('FASE 14: pipeline cognitivo serializável e sem reexecução em adição ao fluxo real', async () => {
+  const {
+    buildCognitivePipelineSnapshot,
+    compareLegacyWithEngine,
+    buildCognitiveComparisonDiagnostics,
+  } = await import('../uni-engine/index.js');
+  const snapshot = buildCognitivePipelineSnapshot({
+    turnId: 't1',
+    messageId: 't1',
+    config: { enabled: true, shadowMode: true, telemetryEnabled: true, epistemicEnabled: true },
+    gateway: { accepted: true, fallbackUsed: false, diagnostics: { errorCode: null } },
+    conversationPlan: { nextStep: 'NEXT_STEP_ANSWER' },
+    comparison: { agreementStatus: 'agreement' },
+    divergences: [],
+  });
+  const clone = JSON.parse(JSON.stringify(snapshot));
+  assert.deepEqual(clone, snapshot);
+  assert.equal(snapshot.serializable, true);
+  assert.equal(snapshot.influenceApplied, false);
+  assert.equal(snapshot.legacyPreserved, true);
+
+  const comparison = compareLegacyWithEngine({
+    turnId: 't1',
+    messageId: 't1',
+    legacy: { intent: 'INCOME', responseType: 'generic' },
+    engine: { enabled: true, intent: 'INCOME', confidence: 0.9 },
+    plan: { nextStep: 'NEXT_STEP_ANSWER' },
+  });
+  assert.equal(comparison.influenceApplied, false);
+  assert.equal(comparison.legacyPreserved, true);
+  const diagnostics = buildCognitiveComparisonDiagnostics({ comparison });
+  assert.equal(diagnostics.influenceApplied, false);
+});
+
+test('FASE 14: rollback lógico por flags — nada depende de rebuild de arquitetura', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.doesNotMatch(page, /DELETE FROM/);
+  assert.doesNotMatch(page, /drop column/);
+  const configSource = await source('../uni-engine/uniEngineConfig.js');
+  assert.match(configSource, /cognitiveOrchestratorEnabled/);
+  assert.match(configSource, /conversationRoutingEnabled/);
+  assert.match(configSource, /VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED/);
+  assert.match(configSource, /VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED/);
+});

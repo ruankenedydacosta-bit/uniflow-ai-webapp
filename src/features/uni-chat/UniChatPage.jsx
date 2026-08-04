@@ -78,7 +78,7 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { classifyIntent } from '../uni-intents/index.js';
-import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext } from '../uni-engine/index.js';
+import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 // Fase 2 — memória operacional do Uni Engine: objeto TEMPORÁRIO por conversa
 // (não persiste nada). O pipeline nunca lê esta memória; apenas o motor.
@@ -354,6 +354,20 @@ export default function UniChatPage({ variant = 'full' }) {
   // Uni Engine e nunca altera o texto legado por si mesma.
   const lastContextBridgeResultRef = useRef(null);
   const lastEngineContextBridgeTurnRef = useRef(null);
+  // FASE 14 — BLOCO 3 (COGNITIVE COMPARISON): comparação observacional
+  // legado × Engine produzida UMA única vez por turno. Compara a decisão do
+  // pipeline legado com a rota/decisão interna da Uni Engine e NUNCA altera
+  // resposta (influenceApplied sempre false; legacyPreserved sempre true).
+  // Fica SOMENTE em ref (nenhum state React, nenhuma renderização, nada
+  // persistido) — zerado no novo turno e no catch; nunca reexecuta nada.
+  const lastEngineComparisonRef = useRef(null);
+  // FASE 14 — BLOCO 2: snapshot cognitivo consolidado do turno que agrega os
+  // 12 componentes observacionais (gateway → observation → epistemic →
+  // readiness → plan → route → orchestrator → context bridge → comparison →
+  // divergence diagnostics). Consome SOMENTE resultados já produzidos no
+  // turno. Fica SOMENTE em ref dedicado — nenhum state React, nenhuma
+  // renderização, nunca persistido, falha-safe (engine segue intacta).
+  const lastCognitivePipelineSnapshotRef = useRef(null);
 
   // BLOCO VOZ 1: SEMPRE fala, mesmo quando o texto é longo demais para o
   // limite da Edge Function (MAX_TTS_TEXT_LENGTH) -- gera uma versão curta e
@@ -1641,6 +1655,36 @@ export default function UniChatPage({ variant = 'full' }) {
         executionReadinessSnapshot: lastExecutionReadinessSnapshotRef.current ?? null,
         applicationResult: lastApplicationResultRef.current,
       });
+      // FASE 14 — BLOCO 3 (COGNITIVE COMPARISON): comparador observacional
+      // legado × Engine. Executado UMA única vez por turno (o guard
+      // lastEngineAnalyzedMessageIdRef deduplica a mensagem; o comparador
+      // nunca reexecuta camada alguma). Puramente diagnóstico — influenceApplied
+      // sempre false, legacyPreserved sempre true, nada persiste, nada altera a
+      // resposta entregue. A rota interna da Engine é derivada do plano do
+      // MESMO turno; a rota legada é derivada de responseType/pendingActive.
+      lastEngineComparisonRef.current = compareLegacyWithEngine({
+        turnId: turn.userMessage.id,
+        messageId: turn.userMessage.id,
+        legacy: {
+          ...legacyResult,
+          pendingActive: Boolean(turn.hasPendingConversation),
+          fallbackUsed: lastUniEngineGatewayResultRef.current?.fallbackUsed === true,
+        },
+        engine: {
+          enabled: Boolean(uniEngine.getConfig().enabled),
+          skipped: shadow?.skipped === true,
+          intent: shadow?.classification?.primaryIntent ?? null,
+          confidence: typeof shadow?.decisionLayer?.confidence === 'number'
+            ? shadow.decisionLayer.confidence
+            : null,
+          fallbackUsed: lastUniEngineGatewayResultRef.current?.fallbackUsed === true,
+          errorCode: lastUniEngineGatewayResultRef.current?.diagnostics?.errorCode ?? null,
+          epistemicConflicts: Array.isArray(shadow?.epistemicModel?.conflicts)
+            ? shadow.epistemicModel.conflicts.length
+            : 0,
+        },
+        plan: lastConversationPlannerSnapshotRef.current,
+      });
       return lastApplicationResultRef.current;
      } catch {
        lastUniEngineGatewayResultRef.current = null;
@@ -1656,6 +1700,8 @@ export default function UniChatPage({ variant = 'full' }) {
       lastCognitiveOrchestratorSnapshotRef.current = null;
       lastContextBridgeResultRef.current = null;
       lastEngineContextBridgeTurnRef.current = null;
+      lastEngineComparisonRef.current = null;
+      lastCognitivePipelineSnapshotRef.current = null;
       // Shadow Mode jamais quebra o chat — falha silenciosa, legado intacto.
       return null;
     }
@@ -1770,6 +1816,79 @@ export default function UniChatPage({ variant = 'full' }) {
       });
       lastContextBridgeResultRef.current = bridgeContext;
       lastEngineContextBridgeTurnRef.current = bridgeTurnId;
+    }
+    // FASE 14 — BLOCO 2 (COGNITIVE PIPELINE) + BLOCO 4 (TELEMETRIA): snapshot
+    // cognitivo consolidado do turno, agregando os 12 componentes já
+    // produzidos (gateway → observation → epistemic → readiness → plan →
+    // route → orchestrator → context bridge → comparison → divergence
+    // diagnostics). Consome SOMENTE resultados do MESMO turno — nunca
+    // reexecuta camada alguma. Guarda apenas em ref dedicado e registra a
+    // telemetria técnica em memória (sanitizada, buffer limitado) SOMENTE
+    // quando config.telemetryEnabled. Falha aqui nunca escapa e nunca altera
+    // a resposta (legado preservado).
+    const fase14TurnId = lastEngineTurnRef.current?.userMessageId ?? null;
+    if (
+      fase14TurnId
+      && lastCognitivePipelineSnapshotRef.current?.turnId !== fase14TurnId
+      && lastEngineComparisonRef.current?.turnId === fase14TurnId
+    ) {
+      try {
+        const engineConfig = uniEngine.getConfig();
+        const comparison = lastEngineComparisonRef.current ?? null;
+        const divergences = comparison?.divergenceType
+          ? [{
+              type: comparison.divergenceType,
+              severity: comparison.divergenceSeverity ?? 'medium',
+              reason: (comparison.reasonCodes ?? []).find((code) => code !== 'NO_INFLUENCE') ?? null,
+            }]
+          : [];
+        const pipelineSnapshot = buildCognitivePipelineSnapshot({
+          turnId: fase14TurnId,
+          messageId: lastEngineTurnRef.current?.userMessage?.id ?? null,
+          config: engineConfig,
+          gateway: lastUniEngineGatewayResultRef.current ?? null,
+          observation: lastObservationSnapshotRef.current ?? null,
+          epistemic: engineConfig.epistemicEnabled
+            ? { enabled: true }
+            : null,
+          decisionReadiness: lastDecisionReadinessSnapshotRef.current ?? null,
+          capabilityReadiness: lastCapabilityReadinessSnapshotRef.current ?? null,
+          executionReadiness: lastExecutionReadinessSnapshotRef.current ?? null,
+          conversationPlan: plannerSnapshot,
+          conversationRoute: routingSnapshot,
+          orchestrator: orchestratorSnapshot,
+          contextBridge: bridgeContext ?? null,
+          comparison,
+          divergences,
+        });
+        lastCognitivePipelineSnapshotRef.current = pipelineSnapshot;
+        if (engineConfig.telemetryEnabled) {
+          recordCognitiveTelemetry({
+            turnId: pipelineSnapshot.turnId,
+            messageId: pipelineSnapshot.messageId,
+            agreementStatus: comparison?.agreementStatus ?? null,
+            agreement: comparison?.agreement ?? false,
+            divergenceType: comparison?.divergenceType ?? null,
+            divergenceSeverity: comparison?.divergenceSeverity ?? null,
+            reasonCodes: comparison?.reasonCodes ?? [],
+            engineSkipped: comparison?.engineSkipped ?? false,
+            engineErrorCode: comparison?.engineErrorCode ?? null,
+            fallbackUsed: lastUniEngineGatewayResultRef.current?.fallbackUsed === true,
+            rollbackStatus: pipelineSnapshot.rollbackStatus,
+            flags: engineConfig,
+            layers: pipelineSnapshot,
+            safety: lastUniEngineGatewayResultRef.current?.safety ?? null,
+            latencyMs: pipelineSnapshot.latencyMs,
+            timestamp: pipelineSnapshot.timestamp,
+          });
+        }
+      } catch {
+        // Fase 14 nunca quebra o chat — snapshot/telemetria descartáveis.
+        lastCognitivePipelineSnapshotRef.current = createEmptyCognitivePipelineSnapshot({
+          turnId: fase14TurnId,
+          messageId: lastEngineTurnRef.current?.userMessage?.id ?? null,
+        });
+      }
     }
     if (bridgeContext.influenceAllowed === false) return legacyText;
     if (routingSnapshot.selectedRoute === 'ROUTE_ANSWER') {
@@ -2024,6 +2143,25 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
+    // FASE 14 — isolamento de conversa: zera os resultados observacionais do
+    // pipeline cognitivo e limpa a telemetria técnica em memória ao trocar de
+    // conversa. Nada persiste, nada influencia a nova conversa.
+    lastUniEngineGatewayResultRef.current = null;
+    lastEngineIntegrationResultRef.current = null;
+    lastGuidanceSnapshotRef.current = null;
+    lastObservationSnapshotRef.current = null;
+    lastDecisionReadinessSnapshotRef.current = null;
+    lastCapabilityReadinessSnapshotRef.current = null;
+    lastExecutionReadinessSnapshotRef.current = null;
+    lastApplicationResultRef.current = null;
+    lastConversationPlannerSnapshotRef.current = null;
+    lastConversationRoutingSnapshotRef.current = null;
+    lastCognitiveOrchestratorSnapshotRef.current = null;
+    lastContextBridgeResultRef.current = null;
+    lastEngineContextBridgeTurnRef.current = null;
+    lastEngineComparisonRef.current = null;
+    lastCognitivePipelineSnapshotRef.current = null;
+    resetCognitiveTelemetry();
     saveActiveId(id);
     saveActiveSource(conv.source || 'local');
 
@@ -2732,6 +2870,8 @@ export default function UniChatPage({ variant = 'full' }) {
     lastCognitiveOrchestratorSnapshotRef.current = null;
     lastContextBridgeResultRef.current = null;
     lastEngineContextBridgeTurnRef.current = null;
+    lastEngineComparisonRef.current = null;
+    lastCognitivePipelineSnapshotRef.current = null;
     if (hasPendingConversation) {
       // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
       // explícita NOVA. Se a frase é reconhecida como ação financeira

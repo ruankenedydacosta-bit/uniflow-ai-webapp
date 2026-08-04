@@ -185,3 +185,26 @@ export { createEmptyCognitiveOrchestratorSnapshot } from './cognitive-orchestrat
 // texto, nunca executa e nunca persiste — qualquer falha → legado integral.
 export * as contextBridge from './context-bridge/index.js';
 export { buildEngineResponseContext } from './context-bridge/buildEngineResponseContext.js';
+// Fase 14 — Cognitive Comparison (comparador observacional legado × Engine).
+// Puramente diagnóstico: nunca altera resposta, nunca aplica rota, nunca
+// executa, nunca persiste; produz objeto totalmente serializável.
+export * as cognitiveComparison from './cognitive-comparison/index.js';
+export { compareLegacyWithEngine } from './cognitive-comparison/index.js';
+export { engineRouteFromPlan, legacyRouteFromResponse } from './cognitive-comparison/index.js';
+export { buildCognitiveComparisonDiagnostics } from './cognitive-comparison/index.js';
+// Fase 14 — Cognitive Pipeline (snapshot cognitivo consolidado do turno).
+// Consolida os 12 componentes observacionais em um resultado serializável.
+export * as cognitivePipeline from './cognitive-pipeline/index.js';
+export { buildCognitivePipelineSnapshot } from './cognitive-pipeline/buildCognitivePipelineSnapshot.js';
+export { createEmptyCognitivePipelineSnapshot } from './cognitive-pipeline/cognitivePipelineContracts.js';
+// Fase 14 — Cognitive Telemetry (telemetria técnica em memória, sanitizada,
+// com buffer limitado). Nunca persiste, nunca envia a serviço externo.
+export { COGNITIVE_TELEMETRY_VERSION } from './telemetry/cognitiveTelemetry.js';
+export {
+  createCognitiveTelemetryStore,
+  globalCognitiveTelemetryStore,
+  recordCognitiveTelemetry,
+  getCognitiveTelemetrySnapshot,
+  resetCognitiveTelemetry,
+  sanitizeCognitiveTelemetryEntry,
+} from './telemetry/cognitiveTelemetry.js';
