@@ -456,6 +456,12 @@ export function createUniEngineConfig(overrides = {}) {
     // consulta o Conversation Planner do MESMO turno com a flag explícita
     // ligada — ausência nunca ativa; produção nunca ativa por acidente.
     conversationRoutingEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED', false),
+    // Parte 9 — Cognitive Orchestrator (consolidação final do Uni Engine).
+    // Interruptor MESTRE da parte; false por padrão. Exige motor + Activation
+    // + Integration + Application habilitadas (cascata abaixo). Sem essa flag,
+    // o pipeline legado nunca consolida as camadas cognitivas — saída 100%
+    // legada. Produção nunca ativa por acidente.
+    cognitiveOrchestratorEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED', false),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca

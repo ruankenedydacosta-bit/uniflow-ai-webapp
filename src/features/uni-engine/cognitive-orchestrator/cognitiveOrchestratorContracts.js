@@ -50,12 +50,11 @@ function sanitizeMetadata(value) {
 
 function sanitizeLayer(key, value) {
   if (!isPlainObject(value)) return null;
-  const sanitized = { ...value };
-  if (sanitized.serializable === false) return null;
-  if (key !== 'application' && key !== 'conversationRoute' && sanitized.applied === true) {
+  if (value.serializable === false) return null;
+  if (key !== 'application' && key !== 'conversationRoute' && value.applied === true) {
     return null;
   }
-  return sanitized;
+  return value;
 }
 
 export function createEmptyCognitiveOrchestratorSnapshot(options = {}) {

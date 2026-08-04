@@ -98,10 +98,25 @@ export function buildCognitiveOrchestratorSnapshot(options = {}) {
     const sameTurn = isPlainObject(route) && route.sameTurn === true;
     const sameTurnViolated = isPlainObject(route) && route.sameTurn !== true;
 
+    // Camadas obrigatórias para ORCHESTRATED: as seis cognitivas essenciais.
+    // conversationPlan/conversationRoute são opcionais — quando ausentes não
+    // rebaixam o status (consolidação observacional das camadas produzidas).
+    const REQUIRED_ORCHESTRATOR_LAYERS = [
+      'observation',
+      'guidance',
+      'decision',
+      'capabilityReadiness',
+      'executionReadiness',
+      'application',
+    ];
+
+    const missingRequired = REQUIRED_ORCHESTRATOR_LAYERS.filter((layerName) => missingLayers.includes(layerName));
+    const invalidRequired = REQUIRED_ORCHESTRATOR_LAYERS.filter((layerName) => invalidLayers.includes(layerName));
+
     let orchestratorStatus;
     if (validLayers.length === 0) {
       orchestratorStatus = 'EMPTY';
-    } else if (invalidLayers.length > 0 || missingLayers.length > 0 || sameTurnViolated) {
+    } else if (invalidRequired.length > 0 || missingRequired.length > 0 || sameTurnViolated) {
       orchestratorStatus = 'PARTIAL';
     } else {
       orchestratorStatus = 'ORCHESTRATED';

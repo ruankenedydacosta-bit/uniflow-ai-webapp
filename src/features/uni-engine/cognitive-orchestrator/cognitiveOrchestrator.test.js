@@ -46,9 +46,18 @@ function createIntegrationConfig() {
 // Fixtures
 // ---------------------------------------------------------------------------
 
+const SHORT_FORM_SOURCE_TEXT =
+  'Entendi que pode ser um lançamento financeiro, mas não consegui identificar todos os detalhes. '
+  + 'Pode reformular dizendo o valor e do que se trata? Por exemplo: "Gastei R$ 50 no mercado."';
+
 function createLegacy(userId, context, decisions = []) {
   return {
     userId,
+    text: context.text ?? null,
+    responseType: 'generic',
+    status: 'ready',
+    risk: 'LOW',
+    conversationStyle: null,
     context: {
       conversationId: context.conversationId ?? 'test-conv',
       workspaceId: context.workspaceId ?? 'test-ws',
@@ -77,6 +86,115 @@ function buildEngineResult({ decisionLayer, activation, capabilities = [] } = {}
       shadowMode: false,
       environment: 'development',
       decisions: capabilities.map((c) => ({ capability: c, activationStatus: 'ACTIVE_TEST' })),
+    },
+    capabilityReadiness: {
+      enabled: true,
+      shadowMode: true,
+      plannerStatus: 'PLANNED',
+      evaluatedCapabilities: capabilities,
+      eligibleCapabilities: capabilities,
+      blockedCapabilities: [],
+      missingDependencies: [],
+      nextRecommendedCapability: null,
+      diagnostics: [],
+      legacyPreserved: true,
+      applied: false,
+      serializable: true,
+    },
+  };
+}
+
+const REQUIRED_ACTIVATION_GATES = Object.freeze([
+  'ENGINE_ENABLED',
+  'ACTIVATION_ENABLED',
+  'CAPABILITY_ENABLED',
+  'ENVIRONMENT_ALLOWED',
+  'CONFIDENCE_THRESHOLD',
+  'RISK_THRESHOLD',
+  'WORKSPACE_COMPATIBLE',
+  'DATA_SUFFICIENCY',
+  'CAPABILITY_POLICY',
+  'CIRCUIT_BREAKER',
+]);
+
+function buildActiveActivationDecision(capability) {
+  return {
+    version: '1.0',
+    enabled: true,
+    shadowMode: false,
+    environment: 'development',
+    capability,
+    requested: true,
+    eligible: true,
+    activationStatus: 'ACTIVE_TEST',
+    rolloutMode: 'TEST_USERS',
+    rolloutBucket: 1,
+    confidence: 0.9,
+    confidenceThreshold: 0.6,
+    risk: 'LOW',
+    workspaceType: 'personal',
+    dataSufficient: true,
+    gates: REQUIRED_ACTIVATION_GATES.map((name) => ({
+      name,
+      passed: true,
+      reasonCode: `${name}_OK`,
+      severity: 'none',
+      metadata: {},
+    })),
+    applied: true,
+    appliedEffect: {
+      applied: true,
+      effect: 'guidance',
+      fields: [],
+      blockedBy: null,
+    },
+    fallbackUsed: false,
+    fallbackReason: null,
+    comparison: null,
+    diagnostics: [],
+    telemetry: null,
+    shadow: {
+      shadowMode: false,
+      appliedToDecision: false,
+      appliedToResponse: true,
+      executed: false,
+      persisted: false,
+      changedBehavior: false,
+      memoryModified: false,
+      databaseCalled: false,
+      voiceTouched: false,
+    },
+    latencyMs: 1.2,
+  };
+}
+
+function buildActiveEngineResult(capabilities = []) {
+  return {
+    engineVersion: '2.0',
+    revision: '10.0',
+    enabled: true,
+    skipped: false,
+    correlationId: 'ue_orchestrator_test',
+    decisionLayer: {
+      decisionType: 'respond',
+      nextDecisionType: 'respond',
+      risk: 'LOW',
+      confidence: 0.9,
+    },
+    classification: {
+      primaryIntent: 'register_expense',
+      ambiguities: [],
+      confidence: 0.9,
+    },
+    comparison: {
+      missingFields: [],
+      agreementMetrics: { divergenceCount: 0 },
+    },
+    activation: {
+      enabled: true,
+      shadowMode: false,
+      environment: 'development',
+      decisions: capabilities.map(buildActiveActivationDecision),
     },
     capabilityReadiness: {
       enabled: true,
@@ -204,6 +322,7 @@ test('Cognitive Orchestrator orquestra todas as camadas - fluxo completo', async
       VITE_UNI_ENGINE_CONTROLLED_QUESTIONS_ENABLED: 'true',
       VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED: 'true',
       VITE_UNI_ENGINE_CONTROLLED_QUESTION_TEMPLATE_ACCOUNT: 'true',
+      VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED: 'true',
     },
   });
 
@@ -384,6 +503,7 @@ test('Cognitive Orchestrator com aplicação inválida → ORCHESTRATED_PARCIAL'
       VITE_UNI_ENGINE_CONTROLLED_QUESTIONS_ENABLED: 'true',
       VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED: 'true',
       VITE_UNI_ENGINE_CONTROLLED_QUESTION_TEMPLATE_ACCOUNT: 'true',
+      VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED: 'true',
     },
   });
 
@@ -421,6 +541,7 @@ test('Cognitive Orchestrator orquestra rota ANSWER', async () => {
       VITE_UNI_ENGINE_APPLICATION_TELEMETRY: 'false',
       VITE_UNI_ENGINE_CONTROLLED_QUESTIONS_ENABLED: 'true',
       VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED: 'true',
+      VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED: 'true',
     },
   });
 
@@ -429,11 +550,13 @@ test('Cognitive Orchestrator orquestra rota ANSWER', async () => {
     workspaceId: 'ws-1',
     environment: 'development',
     metadata: {},
+    text: SHORT_FORM_SOURCE_TEXT,
   });
 
-  const engine = buildEngineResult({
-    capabilities: ['QUESTION_GUIDANCE', 'RESPONSE_STYLE_GUIDANCE'],
-  });
+  const engine = buildActiveEngineResult([
+    'QUESTION_GUIDANCE',
+    'RESPONSE_STYLE_GUIDANCE',
+  ]);
 
   const integrationSnapshot = runUniEngineIntegration({
     config: createIntegrationConfig(),
@@ -562,9 +685,12 @@ test('Cognitive Orchestrator nunca reexecuta observação/guidance/decision/acti
   const obsBlock = betweenMarkers(
     page,
     'const runEngineObservational = useCallback',
-    'const runEngineGuidance = useCallback',
+    'const applyEngineGuidanceToResponse = useCallback',
   );
-  assert.match(obsBlock, /if !lastObservationSnapshotRef/);
+  assert.match(
+    obsBlock,
+    /lastEngineAnalyzedMessageIdRef\.current === turn\.userMessageId/,
+  );
 });
 
 test('Cognitive Orchestrator nunca executa camadas não autorizadas (sem financialExecution)', async () => {
@@ -594,6 +720,7 @@ test('Cognitive Orchestrator aplica estilo/length quando autorizado, caso contr�
       VITE_UNI_ENGINE_APPLICATION_TELEMETRY: 'false',
       VITE_UNI_ENGINE_CONTROLLED_QUESTIONS_ENABLED: 'true',
       VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED: 'true',
+      VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED: 'true',
     },
   });
 
@@ -759,6 +886,7 @@ test('Cognitive Orchestrator aplica estilo/length quando autorizado, caso contr�
       VITE_UNI_ENGINE_APPLICATION_TELEMETRY: 'false',
       VITE_UNI_ENGINE_CONTROLLED_QUESTIONS_ENABLED: 'true',
       VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED: 'true',
+      VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED: 'true',
     },
   });
 
@@ -767,11 +895,13 @@ test('Cognitive Orchestrator aplica estilo/length quando autorizado, caso contr�
     workspaceId: 'ws-1',
     environment: 'development',
     metadata: {},
+    text: SHORT_FORM_SOURCE_TEXT,
   });
 
-  const engine = buildEngineResult({
-    capabilities: ['RESPONSE_STYLE_GUIDANCE', 'RESPONSE_LENGTH_GUIDANCE'],
-  });
+  const engine = buildActiveEngineResult([
+    'RESPONSE_STYLE_GUIDANCE',
+    'RESPONSE_LENGTH_GUIDANCE',
+  ]);
 
   const integrationSnapshot = runUniEngineIntegration({
     config: createIntegrationConfig(),

@@ -209,6 +209,19 @@ export function findFunctionsInValue(value, path = '', found = []) {
   return found;
 }
 
+export function deepFreeze(value) {
+  if (value === null || typeof value !== 'object') return value;
+  if (Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  for (const key of Object.keys(value)) {
+    const val = value[key];
+    if (val !== null && typeof val === 'object' && !Object.isFrozen(val)) {
+      deepFreeze(val);
+    }
+  }
+  return value;
+}
+
 export function validateUniEngineInput(input) {
   const errors = [];
   if (!isPlainObject(input)) {

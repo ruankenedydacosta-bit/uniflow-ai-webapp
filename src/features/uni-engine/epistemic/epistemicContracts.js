@@ -6,9 +6,7 @@ import {
   isSerializableValue,
   deepFreeze,
 } from '../uniEngineContracts.js';
-import { KNOWLEDGE_TYPES, KNOWLEDGE_STATUSES, EVIDENCE_TYPES, SOURCE_TYPES, CONFIDENCE_LEVELS } from './epistemicTypes.js';
-
-export const EPISTEMIC_VERSION = '1.0';
+import { KNOWLEDGE_TYPES, KNOWLEDGE_STATUSES, EVIDENCE_TYPES, SOURCE_TYPES, CONFIDENCE_LEVELS, EPISTEMIC_VERSION, EPISTEMIC_STATUSES, EPISTEMIC_SOURCES, EPISTEMIC_CLAIM_TYPES, EPISTEMIC_EVIDENCE_TYPES } from './epistemicTypes.js';
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -246,4 +244,241 @@ export const EPISTEMIC_FEATURE_FLAGS = {
   memoryWrite: 'VITE_UNI_ENGINE_MEMORY_WRITE_ENABLED',
   learning: 'VITE_UNI_ENGINE_REFLECTION_ENABLED',
   learningCandidates: 'VITE_UNI_ENGINE_LEARNING_CANDIDATES_ENABLED',
+};
+
+// Compatibilidade com API anterior (Fase 4) — mantida para buildEpistemicEvidence.js
+// e outros consumidores legados.
+
+// Chave de idempotência determinística: a MESMA combinação
+// (tipo + fonte + sujeito + valor + instante) nunca conta duas vezes.
+export function buildEvidenceKey({ type, source, subject, value, observedAt }) {
+  const valueKey =
+    typeof value === 'object' && value !== null
+      ? JSON.stringify(value)
+      : String(value ?? 'null');
+  return [
+    type ?? 'unknown',
+    source ?? 'unknown',
+    subject ?? 'unknown',
+    valueKey,
+    observedAt ?? 'no-time',
+  ].join('::');
+}
+
+export function createEpistemicEvidence(seed = {}) {
+  const safe = seed && typeof seed === 'object' ? seed : {};
+  return {
+    evidenceId: safe.evidenceId ?? null,
+    source: safe.source ?? 'unknown',
+    type: safe.type ?? null,
+    value: safe.value ?? null,
+    weight: typeof safe.weight === 'number' ? safe.weight : 0,
+    confidence:
+      typeof safe.confidence === 'number' ? Number(safe.confidence.toFixed(4)) : 0,
+    observedAt: safe.observedAt ?? null,
+    verifiedAt: safe.verifiedAt ?? null,
+    expiresAt: safe.expiresAt ?? null,
+    metadata: isPlainObject(safe.metadata) ? safe.metadata : {},
+  };
+}
+
+export function validateEpistemicEvidence(evidence) {
+  const errors = [];
+  if (!isPlainObject(evidence)) {
+    return { valid: false, errors: ['EVIDENCE_NOT_OBJECT'] };
+  }
+  if (!EPISTEMIC_EVIDENCE_TYPES.includes(evidence.type)) {
+    errors.push('EVIDENCE_TYPE_INVALID');
+  }
+  if (!EPISTEMIC_SOURCES.includes(evidence.source)) {
+    errors.push('EVIDENCE_SOURCE_INVALID');
+  }
+  if (
+    typeof evidence.weight !== 'number'
+    || !Number.isFinite(evidence.weight)
+    || evidence.weight < -1
+    || evidence.weight > 1
+  ) {
+    errors.push('EVIDENCE_WEIGHT_INVALID');
+  }
+  if (
+    typeof evidence.confidence !== 'number'
+    || evidence.confidence < 0
+    || evidence.confidence > 1
+  ) {
+    errors.push('EVIDENCE_CONFIDENCE_INVALID');
+  }
+  if (evidence.value != null && !isSerializableValue(evidence.value)) {
+    errors.push('EVIDENCE_VALUE_NOT_SERIALIZABLE');
+  }
+  if (evidence.metadata != null && !isPlainObject(evidence.metadata)) {
+    errors.push('EVIDENCE_METADATA_INVALID');
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+export function createEpistemicItem(seed = {}) {
+  const safe = seed && typeof seed === 'object' ? seed : {};
+  return {
+    subject: safe.subject ?? null,
+    value: safe.value ?? null,
+    claimType: safe.claimType ?? null,
+    epistemicStatus: safe.epistemicStatus ?? 'unknown',
+    confidence: typeof safe.confidence === 'number' ? safe.confidence : 0,
+    source: safe.source ?? 'unknown',
+    sourcePriority: typeof safe.sourcePriority === 'number' ? safe.sourcePriority : null,
+    evidence: Array.isArray(safe.evidence) ? safe.evidence : [],
+    contradictions: Array.isArray(safe.contradictions) ? safe.contradictions : [],
+    lastVerifiedAt: safe.lastVerifiedAt ?? null,
+    expiresAt: safe.expiresAt ?? null,
+    staleAfter: safe.staleAfter ?? null,
+    requiresVerification: Boolean(safe.requiresVerification),
+    usableFor: createUsableFor(safe.usableFor),
+    restrictions: Array.isArray(safe.restrictions) ? safe.restrictions : [],
+    diagnostics: isPlainObject(safe.diagnostics) ? safe.diagnostics : {},
+    verifiedAt: safe.verifiedAt ?? null,
+    expiresAt: safe.expiresAt ?? null,
+    metadata: isPlainObject(safe.metadata) ? safe.metadata : {},
+  };
+}
+
+function createUsableFor(overrides = {}) {
+  const safe = overrides && typeof overrides === 'object' ? overrides : {};
+  return {
+    display: Boolean(safe.display),
+    suggestion: Boolean(safe.suggestion),
+    question: Boolean(safe.question),
+    confirmation: Boolean(safe.confirmation),
+    execution: false,
+    memory_candidate: Boolean(safe.memory_candidate),
+    none: true,
+  };
+}
+
+export function validateEpistemicItem(item, policy = null) {
+  const errors = [];
+  if (!isPlainObject(item)) {
+    return { valid: false, errors: ['ITEM_NOT_OBJECT'] };
+  }
+  if (!EPISTEMIC_STATUSES.includes(item.epistemicStatus)) {
+    errors.push('ITEM_STATUS_INVALID');
+  }
+  if (!EPISTEMIC_SOURCES.includes(item.source)) {
+    errors.push('ITEM_SOURCE_INVALID');
+  }
+  if (!EPISTEMIC_CLAIM_TYPES.includes(item.claimType)) {
+    errors.push('ITEM_CLAIM_TYPE_INVALID');
+  }
+  if (!isValidEpistemicConfidence(item.confidence)) {
+    errors.push('ITEM_CONFIDENCE_INVALID');
+  }
+  if (!Array.isArray(item.evidence) || item.evidence.length === 0) {
+    errors.push('ITEM_EVIDENCE_REQUIRED');
+  }
+  for (const evidence of item.evidence) {
+    const validation = validateEpistemicEvidence(evidence);
+    if (!validation.valid) {
+      errors.push('ITEM_EVIDENCE_INVALID');
+      break;
+    }
+  }
+  if (item.value != null && !isSerializableValue(item.value)) {
+    errors.push('ITEM_VALUE_NOT_SERIALIZABLE');
+  }
+  if (item.usableFor != null) {
+    const capabilities = item.usableFor;
+    if (!isPlainObject(capabilities)) {
+      errors.push('ITEM_USABLE_FOR_INVALID');
+    } else if (capabilities.execution === true) {
+      errors.push('ITEM_EXECUTION_BLOCKED');
+    }
+  }
+  const maxEvidence = policy?.maxEvidencePerItem ?? 32;
+  if (item.evidence.length > maxEvidence) {
+    errors.push('ITEM_TOO_MANY_EVIDENCE');
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+export function isValidEpistemicConfidence(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+export function confidenceBandOf(value) {
+  const confidence = Number(value) || 0;
+  for (const band of EPISTEMIC_CONFIDENCE_BANDS) {
+    if (confidence >= band.min && confidence <= band.max) return band.label;
+  }
+  return 'insufficient';
+}
+
+export function createEpistemicModelSection(overrides = {}) {
+  const safe = overrides && typeof overrides === 'object' ? overrides : {};
+  return {
+    items: Array.isArray(safe.items) ? safe.items : [],
+    conflicts: Array.isArray(safe.conflicts) ? safe.conflicts : [],
+    staleItems: Array.isArray(safe.staleItems) ? safe.staleItems : [],
+    sufficiency: isPlainObject(safe.sufficiency) ? safe.sufficiency : {},
+    recommendations: Array.isArray(safe.recommendations) ? safe.recommendations : [],
+    appliedToDecision: false,
+    latencyMs:
+      typeof safe.latencyMs === 'number' && Number.isFinite(safe.latencyMs)
+        ? Number(safe.latencyMs.toFixed(2))
+        : null,
+  };
+}
+
+export const EPISTEMIC_MODEL_VERSION = '1.0';
+
+export const EPISTEMIC_CONFIDENCE_BANDS = Object.freeze([
+  { label: 'insufficient', min: 0.0, max: 0.24 },
+  { label: 'low', min: 0.25, max: 0.49 },
+  { label: 'moderate', min: 0.5, max: 0.69 },
+  { label: 'high', min: 0.7, max: 0.89 },
+  { label: 'very_high', min: 0.9, max: 1.0 },
+]);
+
+export const EPISTEMIC_USABLE_FOR_CAPABILITIES = Object.freeze([
+  'display',
+  'suggestion',
+  'question',
+  'confirmation',
+  'execution',
+  'memory_candidate',
+  'none',
+]);
+
+export function serializeEpistemicItem(item) {
+  const safe = item && typeof item === 'object' ? item : {};
+  const copy = createEpistemicItem({
+    subject: safe.subject,
+    value: isSerializableValue(safe.value) ? safe.value : null,
+    claimType: safe.claimType,
+    epistemicStatus: safe.epistemicStatus,
+    confidence: Number(safe.confidence ?? 0),
+    source: safe.source,
+    sourcePriority: safe.sourcePriority,
+    evidence: Array.isArray(safe.evidence)
+      ? safe.evidence.map((evidence) => createEpistemicEvidence(evidence))
+      : [],
+    contradictions: Array.isArray(safe.contradictions)
+      ? safe.contradictions.map((contradiction) => (
+        isPlainObject(contradiction) ? { ...contradiction } : contradiction
+      ))
+      : [],
+    lastVerifiedAt: safe.lastVerifiedAt,
+    expiresAt: safe.expiresAt,
+    staleAfter: safe.staleAfter,
+    requiresVerification: Boolean(safe.requiresVerification),
+    usableFor: safe.usableFor,
+    restrictions: Array.isArray(safe.restrictions) ? [...safe.restrictions] : [],
+    diagnostics: isPlainObject(safe.diagnostics) ? { ...safe.diagnostics } : {},
+  });
+  copy.confidence = Number(copy.confidence.toFixed(4));
+  return copy;
+}
+
+export {
+  findFunctionsInValue,
+  isSerializableValue,
 };
