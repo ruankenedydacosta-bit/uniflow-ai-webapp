@@ -166,10 +166,11 @@ test('corpo de erro sem "code" reconhecido cai no mapeamento por status HTTP', a
   await assert.rejects(provider.speak('Olá'), { code: 'INVALID_REQUEST' });
 });
 
-test('erros estruturados distinguem autenticação, quota, rate limit e timeout do provider', async () => {
+test('erros estruturados distinguem autenticação, quota, voiceId inexistente, rate limit e timeout do provider', async () => {
   for (const [code, status, retryable] of [
     ['PROVIDER_AUTH_ERROR', 401, false],
     ['PROVIDER_QUOTA_ERROR', 402, false],
+    ['PROVIDER_VOICE_NOT_FOUND', 404, false],
     ['PROVIDER_RATE_LIMIT', 429, true],
     ['PROVIDER_TIMEOUT', 504, true],
   ]) {
@@ -315,7 +316,7 @@ test('códigos legados e estruturados exigidos pela fase estão presentes', () =
     'UNAVAILABLE', 'NOT_CONFIGURED', 'UNAUTHORIZED', 'FORBIDDEN', 'RATE_LIMIT',
     'INVALID_TEXT', 'TIMEOUT', 'NETWORK', 'PROVIDER_ERROR', 'CANCELLED', 'AUDIO_PLAYBACK_ERROR',
     'CONFIGURATION_ERROR', 'INVALID_REQUEST', 'PROVIDER_AUTH_ERROR', 'PROVIDER_QUOTA_ERROR',
-    'PROVIDER_RATE_LIMIT', 'PROVIDER_TIMEOUT', 'NETWORK_ERROR', 'AUTOPLAY_BLOCKED',
+    'PROVIDER_VOICE_NOT_FOUND', 'PROVIDER_RATE_LIMIT', 'PROVIDER_TIMEOUT', 'NETWORK_ERROR', 'AUTOPLAY_BLOCKED',
   ];
   for (const code of required) {
     assert.equal(VOICE_TTS_ERROR_CODES[code], code, `codigo ${code} ausente`);
@@ -375,7 +376,7 @@ test('Edge Function exige Authorization Bearer e rejeita usuario nao autenticado
 test('Edge Function retorna CONFIGURATION_ERROR (503) quando faltar chave OU voice ID, sem chamar a ElevenLabs', () => {
   assert.match(
     EDGE_SOURCE,
-    /if \(!supabaseUrl \|\| !anonKey \|\| !providerKey \|\| !voiceId\) \{\s*\n\s*return jsonResponse\(503, 'CONFIGURATION_ERROR',/,
+    /if \(!supabaseUrl \|\| !anonKey \|\| !providerKey \|\| !voiceId\) \{[\s\S]*?return jsonResponse\(503, 'CONFIGURATION_ERROR',/,
   );
 });
 
@@ -403,7 +404,7 @@ test('Edge Function nunca loga a chave, e a usa apenas no header xi-api-key da E
   // ElevenLabs) -- em nenhum lugar o valor de providerKey e interpolado
   // dentro do corpo/mensagem de uma resposta ao cliente.
   const providerKeyUsages = EDGE_SOURCE.match(/providerKey/g) ?? [];
-  assert.equal(providerKeyUsages.length, 3, 'providerKey deve aparecer só na leitura do secret, no check de config e no header xi-api-key');
+  assert.equal(providerKeyUsages.length, 4, 'providerKey deve aparecer só na leitura do secret, no check de config, no diagnóstico de variável ausente e no header xi-api-key');
   assert.match(EDGE_SOURCE, /'xi-api-key': providerKey,/);
   assert.match(EDGE_SOURCE, /'Cache-Control': 'no-store'/);
 });
@@ -422,10 +423,26 @@ test('Edge Function envia output_format na query e não no corpo JSON do provide
   assert.doesNotMatch(EDGE_SOURCE.slice(bodyStart, bodyEnd), /output_format/);
 });
 
-test('Edge Function devolve erro estruturado e registra somente metadados seguros', () => {
+test('Edge Function devolve erro estruturado e registra somente metadados seguros (code/status/retryable/providerTag)', () => {
   assert.match(EDGE_SOURCE, /error: \{\s*\n\s*code,\s*\n\s*message,\s*\n\s*provider_status: Number\.isInteger\(details\.providerStatus\)[\s\S]*?retryable: Boolean\(details\.retryable\),/);
-  assert.match(EDGE_SOURCE, /console\.warn\('uni_voice_tts_provider_failure', \{ code, providerStatus, retryable \}\);/);
+  assert.match(
+    EDGE_SOURCE,
+    /console\.warn\('uni_voice_tts_provider_failure', \{\s*\n\s*code, providerStatus, retryable, providerTag: providerTag \|\| null,\s*\n\s*\}\);/,
+  );
   assert.doesNotMatch(EDGE_SOURCE, /console\.(?:log|info|warn|error)\([^\n]*(?:text|providerKey|voiceId|userId)/);
+});
+
+test('ELEVEN3 -- Edge Function distingue voiceId inexistente (404/voice_not_found) do erro genérico e loga a tag do provedor', () => {
+  assert.match(EDGE_SOURCE, /providerTag\.includes\('voice_not_found'\) \|\| providerResponse\.status === 404/);
+  assert.match(EDGE_SOURCE, /'PROVIDER_VOICE_NOT_FOUND'/);
+  // A tag/status nunca aparecem sozinhos numa mensagem visível ao usuário --
+  // só dentro do console.warn (diagnóstico interno).
+  assert.doesNotMatch(EDGE_SOURCE, /jsonResponse\([^)]*voice_not_found/);
+});
+
+test('ELEVEN3 -- erro de configuração loga quais variáveis de ambiente estão ausentes (nunca o valor)', () => {
+  assert.match(EDGE_SOURCE, /console\.warn\('uni_voice_tts_configuration_error', \{ missing \}\);/);
+  assert.doesNotMatch(EDGE_SOURCE, /uni_voice_tts_configuration_error'[^)]*providerKey\b/);
 });
 
 test('Edge Function usa o mesmo criterio de timeout/AbortController ja validado em generate-uni-premium-voice', () => {

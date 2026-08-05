@@ -37,3 +37,4 @@ claude-prototype/
 graphify-out/
 .vercel
 .secrets_tmp_token.txt
+.env*

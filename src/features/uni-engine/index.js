@@ -267,3 +267,22 @@ export { selectFinancialVisibleResponse } from './financial-runtime/response-sel
 // Rollout/produção/canary nascem desligados; legado é sempre o fallback.
 export { assignFinancialRolloutBucket } from './financial-rollout/assignment/financialRolloutAssignment.js';
 export { runFinancialRolloutIntegration } from './financial-rollout/integration/financialRolloutIntegration.js';
+// Fase 20 — Tool Calling (base + adaptador OpenAI + integração). Infraestrutura
+// de tool calling isolada: tudo nasce desligado, nenhuma ferramenta real é
+// registrada em produção, e a execução só acontece via dispatcher com
+// autorização explícita. O adaptador interpreta o formato bruto de tool call
+// da camada OpenAI existente; a integração conecta esse adaptador ao pipeline
+// da Uni com guardas de turno/execução única.
+export * as toolCalling from './tool-calling/index.js';
+export { runToolCallingIntegration } from './tool-calling/integration/index.js';
+// Fase 20.2/20.3 — ferramentas financeiras reais de leitura + contexto
+// pronto (registry + dispatcher + idempotency + telemetry) para conectar
+// definitivamente o Tool Calling ao pipeline conversacional.
+export { createFinancialDataToolsContext } from './tool-calling/financial-tools/index.js';
+// Sprint 1 (IA Conversacional) — schema `tools` da OpenAI derivado dos 6
+// tools de leitura já aprovados, sem duplicar a definição.
+export { buildOpenAiToolsSchema } from './tool-calling/financial-tools/index.js';
+// Fase 22 — Resposta Inteligente Integrada: combina o texto do LLM com a
+// narrativa do Tool Calling (Fase 21) numa resposta final única, coerente e
+// sem redundância, respeitando o conversationStyle.
+export { composeFinalResponseText } from './tool-calling/response/index.js';

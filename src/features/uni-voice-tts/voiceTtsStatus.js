@@ -28,6 +28,10 @@ export const VOICE_TTS_ERROR_CODES = Object.freeze({
   INVALID_REQUEST: 'INVALID_REQUEST',
   PROVIDER_AUTH_ERROR: 'PROVIDER_AUTH_ERROR',
   PROVIDER_QUOTA_ERROR: 'PROVIDER_QUOTA_ERROR',
+  // ELEVEN3: voiceId configurado (ELEVENLABS_VOICE_ID) não existe/não está
+  // acessível com a chave atual -- distinto de PROVIDER_ERROR genérico para
+  // diagnóstico claro (era a causa mais comum do 502 antes desta correção).
+  PROVIDER_VOICE_NOT_FOUND: 'PROVIDER_VOICE_NOT_FOUND',
   PROVIDER_RATE_LIMIT: 'PROVIDER_RATE_LIMIT',
   PROVIDER_TIMEOUT: 'PROVIDER_TIMEOUT',
   NETWORK_ERROR: 'NETWORK_ERROR',
@@ -56,6 +60,7 @@ const ERROR_MESSAGES = Object.freeze({
   [VOICE_TTS_ERROR_CODES.CONFIGURATION_ERROR]: 'A geração de voz ainda não está configurada corretamente.',
   [VOICE_TTS_ERROR_CODES.INVALID_REQUEST]: 'Não foi possível preparar este texto para a voz.',
   [VOICE_TTS_ERROR_CODES.PROVIDER_AUTH_ERROR]: 'O serviço de voz precisa ser reconectado.',
+  [VOICE_TTS_ERROR_CODES.PROVIDER_VOICE_NOT_FOUND]: 'A voz oficial da Uni não está disponível agora.',
   [VOICE_TTS_ERROR_CODES.PROVIDER_QUOTA_ERROR]: 'O limite do serviço de voz foi atingido.',
   [VOICE_TTS_ERROR_CODES.PROVIDER_RATE_LIMIT]: 'Muitas solicitações de voz. Tente novamente em instantes.',
   [VOICE_TTS_ERROR_CODES.PROVIDER_TIMEOUT]: 'A geração de voz demorou demais. Tente novamente.',

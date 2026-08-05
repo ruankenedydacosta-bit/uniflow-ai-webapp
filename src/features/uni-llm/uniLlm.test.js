@@ -441,6 +441,110 @@ test('chamada em modo suporte inclui mode e productContext no corpo enviado', as
 });
 
 // ============================================================================
+// Sprint 1 (IA Conversacional) -- tools/tool_calls end-to-end. Sem a flag
+// VITE_UNI_LLM_TOOLS_ENABLED (default, sempre o caso neste ambiente de
+// teste Node puro -- import.meta.env não populado), buildLlmPayload nunca
+// inclui `tools`; o corpo continua byte-idêntico (já coberto acima). Os
+// testes abaixo cobrem o transporte (provider/orquestrador) assumindo que
+// `tools` FOI passado -- ou seja, o comportamento com a flag ligada.
+// ============================================================================
+
+test('buildLlmPayload nao inclui tools por padrao (flag desligada neste ambiente)', () => {
+  const payload = buildLlmPayload({ text: 'oi', messages: [], financialContext: { hasData: false } });
+  assert.equal(payload.tools, undefined);
+});
+
+test('provider inclui tools no corpo quando fornecido, omite quando ausente', async () => {
+  let capturedBody = null;
+  const provider = makeProvider({
+    fetchImpl: async (_url, init) => {
+      capturedBody = init.body;
+      return jsonResponse(200, { text: 'ok' });
+    },
+  });
+  await provider.generateResponse({
+    system: 'sys',
+    messages: [{ role: 'user', content: 'qual meu saldo?' }],
+    tools: [{ type: 'function', function: { name: 'get_financial_summary', description: 'x', parameters: { type: 'object', properties: {} } } }],
+  });
+  const parsed = JSON.parse(capturedBody);
+  assert.equal(parsed.tools.length, 1);
+  assert.equal(parsed.tools[0].function.name, 'get_financial_summary');
+
+  capturedBody = null;
+  await provider.generateResponse({ system: 'sys', messages: [{ role: 'user', content: 'oi' }] });
+  assert.equal('tools' in JSON.parse(capturedBody), false);
+});
+
+test('provider repassa tool_calls quando presentes na resposta da Edge Function', async () => {
+  const toolCalls = [{ id: 'call_1', type: 'function', function: { name: 'get_financial_summary', arguments: '{}' } }];
+  const provider = makeProvider({
+    fetchImpl: async () => jsonResponse(200, { text: null, usage: { promptTokens: 5 }, tool_calls: toolCalls }),
+  });
+  const result = await provider.generateResponse({ system: 'sys', messages: [{ role: 'user', content: 'qual meu saldo?' }] });
+  assert.equal(result.error, null);
+  assert.equal(result.text, null);
+  assert.deepEqual(result.tool_calls, toolCalls);
+});
+
+test('provider: resposta so com tool_calls (texto vazio) NUNCA vira erro EMPTY', async () => {
+  const toolCalls = [{ id: 'call_1', type: 'function', function: { name: 'get_financial_summary', arguments: '{}' } }];
+  const provider = makeProvider({
+    fetchImpl: async () => jsonResponse(200, { tool_calls: toolCalls }),
+  });
+  const result = await provider.generateResponse({ system: 'sys', messages: [{ role: 'user', content: 'qual meu saldo?' }] });
+  assert.equal(result.error, null);
+  assert.deepEqual(result.tool_calls, toolCalls);
+});
+
+test('provider: resposta sem texto e sem tool_calls continua sendo EMPTY (comportamento preservado)', async () => {
+  const provider = makeProvider({ fetchImpl: async () => jsonResponse(200, {}) });
+  const result = await provider.generateResponse({ system: 'sys', messages: [{ role: 'user', content: 'oi' }] });
+  assert.equal(result.error.code, 'EMPTY');
+  assert.equal(result.tool_calls, undefined);
+});
+
+test('orquestrador repassa tool_calls mesmo quando a resposta nao tem texto', async () => {
+  const toolCalls = [{ id: 'call_1', type: 'function', function: { name: 'get_financial_summary', arguments: '{}' } }];
+  const provider = {
+    generateResponse: async () => ({ text: null, usage: null, tool_calls: toolCalls, error: null }),
+  };
+  const orchestrator = createUniLlmOrchestrator({ provider, logger: silentLogger });
+  const result = await orchestrator.generateContextualResponse({
+    text: 'qual meu saldo?', messages: [], financialContext: { hasData: false },
+  });
+  assert.equal(result.text, null);
+  assert.deepEqual(result.tool_calls, toolCalls);
+});
+
+test('orquestrador: texto invalido (parece acao estruturada) descartado, mas tool_calls legitimo e preservado', async () => {
+  const toolCalls = [{ id: 'call_1', type: 'function', function: { name: 'get_financial_summary', arguments: '{}' } }];
+  const provider = {
+    generateResponse: async () => ({
+      text: '{"action":"create","transaction":{"amount":50}}',
+      usage: null,
+      tool_calls: toolCalls,
+      error: null,
+    }),
+  };
+  const orchestrator = createUniLlmOrchestrator({ provider, logger: silentLogger });
+  const result = await orchestrator.generateContextualResponse({
+    text: 'gastei 50 no mercado', messages: [], financialContext: { hasData: false },
+  });
+  assert.equal(result.text, null);
+  assert.deepEqual(result.tool_calls, toolCalls);
+});
+
+test('orquestrador: sem tool_calls e sem texto valido continua caindo no fallback (null) -- comportamento preservado', async () => {
+  const provider = { generateResponse: async () => ({ text: null, usage: null, tool_calls: null, error: null }) };
+  const orchestrator = createUniLlmOrchestrator({ provider, logger: silentLogger });
+  const result = await orchestrator.generateContextualResponse({
+    text: 'oi', messages: [], financialContext: { hasData: false },
+  });
+  assert.equal(result, null);
+});
+
+// ============================================================================
 // SUPORTE1 -- useUniLlm passa a expor generateSupportResponse, com a MESMA
 // instância de provider (transporte compartilhado com o financeiro).
 // AI_STATUS ganha CANCELLED (cancelamento nunca deve parecer um erro real).

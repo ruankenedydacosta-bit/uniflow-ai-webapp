@@ -193,8 +193,11 @@ test('isolamento por usuario: cache key e storage path SEMPRE incluem userId -- 
   assert.match(lookupBody, /user_id=eq\.\$\{encodeURIComponent\(userId\)\}/);
 });
 
-test('log de diagnóstico registra somente código/status/retry, nunca texto, usuário ou segredo', () => {
-  assert.match(EDGE_SOURCE, /console\.warn\('uni_voice_tts_provider_failure', \{ code, providerStatus, retryable \}\);/);
+test('log de diagnóstico registra somente código/status/retry/providerTag, nunca texto, usuário ou segredo', () => {
+  assert.match(
+    EDGE_SOURCE,
+    /console\.warn\('uni_voice_tts_provider_failure', \{\s*\n\s*code, providerStatus, retryable, providerTag: providerTag \|\| null,\s*\n\s*\}\);/,
+  );
   assert.doesNotMatch(EDGE_SOURCE, /console\.(?:log|info|warn|error)\([^\n]*(?:text|userId|voiceId|providerKey|serviceRoleKey)/);
 });
 

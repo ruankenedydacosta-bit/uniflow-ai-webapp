@@ -53,7 +53,10 @@ import {
   looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
 } from '../uni-conversation';
-import { useUniLlm, AI_STATUS, resolveConversationStyle } from '../uni-llm';
+import {
+  useUniLlm, AI_STATUS, resolveConversationStyle,
+  createPhraseStructuredFactService, isLlmPhrasingFlagEnabled,
+} from '../uni-llm';
 import { createCategoryInferenceService } from '../uni-category-inference/index.js';
 import { createFinancialPlanService } from '../uni-financial-plan/index.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
@@ -80,6 +83,11 @@ import { reserveMessageIds } from './messageIdRegistry.js';
 import { classifyIntent } from '../uni-intents/index.js';
 import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
+
+// FASE 20.1 — Tool Calling. Integração isolada ao pipeline com guardas de
+// turno/execução única no módulo de integração. Desligada por padrão: sem
+// flag explícita, nenhuma tool call é disparada e a saída é 100% legada.
+import { runToolCallingIntegration, createFinancialDataToolsContext, composeFinalResponseText } from '../uni-engine/index.js';
 // Fase 2 — memória operacional do Uni Engine: objeto TEMPORÁRIO por conversa
 // (não persiste nada). O pipeline nunca lê esta memória; apenas o motor.
 const uniEngineMemoryByConversation = new Map();
@@ -287,6 +295,13 @@ export default function UniChatPage({ variant = 'full' }) {
   // usuário — a mesma resposta/turno nunca roda a engine duas vezes.
   const lastEngineTurnRef = useRef(null);
   const lastEngineAnalyzedMessageIdRef = useRef(null);
+  // FASE 20.1 — Tool Calling: ref dedicado para guardar o id da última
+  // mensagem processada pelo módulo de integração (deduplicação adicional aos
+  // refs da engine, por segurança, além do guard interno da integração).
+  const lastToolCallingProcessedMessageIdRef = useRef(null);
+  // FASE 20.1 — Tool Calling: ref dedicado para guardar o último resultado da
+  // integração (diagnóstico técnico em memória; nunca influencia a resposta).
+  const lastUniToolCallingResultRef = useRef(null);
   // PARTE 2 — BLOCO 2: snapshot observacional das guidances (Question,
   // Clarification, Style, Length) calculado após o resultado legado, apenas
   // para diagnóstico em memória. Nunca altera texto, nunca aplica, nunca
@@ -587,9 +602,56 @@ export default function UniChatPage({ variant = 'full' }) {
     return financialConversation.provideInput({ aiInference: inference });
   }
 
+  // Sprint 1 (IA Conversacional) -- ponte "fato estruturado -> frase
+  // natural" para as perguntas de clarificação (conta/categoria faltando
+  // etc.). Mesma Edge Function/flag base do chat (uni-chat-llm +
+  // VITE_UNI_LLM_ENABLED), com o gate ADICIONAL VITE_UNI_LLM_PHRASING_ENABLED
+  // (default desligado) -- nenhum novo secret, nenhuma nova Edge Function.
+  // Nunca decide conta/categoria, nunca persiste -- apenas fraseia o mesmo
+  // `issue` que uniResponseBuilder.js já usa para o texto canônico.
+  const phraseStructuredFactService = useMemo(
+    () => createPhraseStructuredFactService({
+      supabase,
+      supabaseUrl,
+      supabaseAnonKey,
+      enabled: uniLlm.enabled && isLlmPhrasingFlagEnabled(),
+    }),
+    [uniLlm.enabled],
+  );
+
+  async function attemptNaturalPhrasing(result) {
+    const action = result?.action;
+    const issue = action?.issues?.[0];
+    if (action?.status !== 'needs_clarification' || !issue || !phraseStructuredFactService.isSupported()) {
+      return result;
+    }
+
+    const fact = {
+      situation: 'needs_clarification',
+      field: issue.field,
+      code: issue.code,
+      transactionType: action.transactionType ?? null,
+      amount: action.amount ?? null,
+      // Só nomes -- nunca IDs, saldos ou outros dados internos dos candidatos.
+      candidates: Array.isArray(issue.candidates)
+        ? issue.candidates.slice(0, 8).map((candidate) => candidate?.name).filter(Boolean)
+        : [],
+    };
+
+    const { text } = await phraseStructuredFactService.phraseFact({ fact });
+    if (!text) {
+      // Erro, timeout, resposta inválida etc. -- nunca bloqueia o fluxo:
+      // segue com o texto canônico original de uniResponseBuilder.js.
+      return result;
+    }
+
+    return { ...result, response: { ...result.response, text } };
+  }
+
   async function publishConversationResultWithInference(result) {
-    const finalResult = await attemptCategoryInference(result);
-    publishConversationResult(finalResult);
+    const categorized = await attemptCategoryInference(result);
+    const phrased = await attemptNaturalPhrasing(categorized);
+    publishConversationResult(phrased);
   }
 
   // BLOCO E: mesma Edge Function/flag do chat (uni-chat-llm + VITE_UNI_LLM_ENABLED),
@@ -2334,6 +2396,11 @@ export default function UniChatPage({ variant = 'full' }) {
     lastEngineComparisonRef.current = null;
     lastCognitivePipelineSnapshotRef.current = null;
     lastFinancialReasoningResultRef.current = null;
+    // FASE 20.1/20.3 — Tool Calling: zera a deduplicação por mensagem ao
+    // trocar de conversa/workspace. Estado sempre por instância (ref) —
+    // runToolCallingIntegration não guarda nenhum estado de módulo.
+    lastToolCallingProcessedMessageIdRef.current = null;
+    lastUniToolCallingResultRef.current = null;
     resetCognitiveTelemetry();
     saveActiveId(id);
     saveActiveSource(conv.source || 'local');
@@ -2365,6 +2432,15 @@ export default function UniChatPage({ variant = 'full' }) {
   async function handleUnresolvedMessage(text, history) {
     lastUnresolvedRef.current = { text, history };
     let llmText = null;
+    // FASE 20.1 — Tool Calling: fonte bruta de tool calls vinda da camada
+    // LLM existente (a Edge Function). Nenhuma flag e default: fica null e
+    // a integração não dispara nada.
+    let rawToolCalls = null;
+    // FASE 21 — zera o resultado do turno anterior no início de CADA turno
+    // (antes só era zerado na troca de conversa): sem isso, um turno sem
+    // tool_calls reaproveitaria por engano o responseText de um turno
+    // anterior na mesma conversa.
+    lastUniToolCallingResultRef.current = null;
     if (uniLlm.enabled) {
       setIsTyping(true);
       setAiStatus(AI_STATUS.LOADING);
@@ -2379,6 +2455,13 @@ export default function UniChatPage({ variant = 'full' }) {
           conversationStyle,
         });
         llmText = outcome?.text ?? null;
+        // FASE 20.1 — fonte bruta de tool calls: leitura defensiva do retorno
+        // da camada LLM existente (a Edge Function), SEM criar segunda
+        // chamada. Hoje o contrato é { text, usage } — sem tool_calls a
+        // integração permanece inerte (nenhum dispatcher é disparado).
+        rawToolCalls = Array.isArray(outcome?.tool_calls) && outcome.tool_calls.length > 0
+          ? outcome.tool_calls
+          : null;
       } catch {
         llmText = null;
       } finally {
@@ -2401,7 +2484,78 @@ export default function UniChatPage({ variant = 'full' }) {
       }
       aiCancelledRef.current = false;
     }
-    createAssistantResponse(llmText || UNI_DETERMINISTIC_FALLBACK_TEXT);
+    // FASE 20.3 — Tool Calling: integra as tool calls brutas retornadas pela
+    // camada LLM existente à infraestrutura da Fase 20, conectada de forma
+    // real (registry + dispatcher de leitura financeira, nunca null).
+    // Desligada por padrão via toolCallingEnabled; mesmo ligada, só executa
+    // fora de shadow mode (toolCallingShadowMode=false) e apenas quando não
+    // há Pending Action em curso — dois gates adicionais, redundantes com os
+    // gates internos do dispatcher/selection, propositalmente conservadores
+    // para manter Tool Calling desligado por padrão em produção. Execução
+    // única por mensagem via lastToolCallingProcessedMessageIdRef (ref por
+    // instância — nenhum estado de módulo); qualquer falha é capturada e
+    // nunca altera a resposta publicada (createAssistantResponse continua o
+    // ÚNICO ponto de saída, chamado exatamente uma vez logo abaixo).
+    if (rawToolCalls) {
+      const toolCallingConfig = uniEngine.getConfig();
+      if (toolCallingConfig.toolCallingEnabled) {
+        const toolCallingTurnId = lastEngineTurnRef.current?.userMessageId ?? null;
+        const toolCallingMessageId = lastEngineTurnRef.current?.userMessage?.id ?? null;
+        const alreadyProcessed = lastToolCallingProcessedMessageIdRef.current === toolCallingMessageId;
+        if (!alreadyProcessed) {
+          lastToolCallingProcessedMessageIdRef.current = toolCallingMessageId;
+          try {
+            const { registry, dispatcher } = createFinancialDataToolsContext({
+              snapshot: financialContext.snapshot,
+              config: { enabled: true },
+              telemetryEnabled: toolCallingConfig.toolCallingTelemetryEnabled === true,
+              allowWrites: false,
+            });
+            const authorization = {
+              authorized: true,
+              executionAllowed: toolCallingConfig.toolCallingShadowMode !== true,
+              pendingAction: Boolean(pendingActionRef.current),
+              confirmationPending: false,
+            };
+            lastUniToolCallingResultRef.current = await runToolCallingIntegration({
+              rawToolCalls,
+              dispatcher,
+              registry,
+              config: toolCallingConfig,
+              authorization,
+              context: {
+                turnId: toolCallingTurnId,
+                messageId: toolCallingMessageId,
+                conversationId: activeId ?? null,
+                workspaceId: effectiveWorkspace?.id ?? null,
+                environment: import.meta.env.DEV ? 'development' : 'production',
+              },
+              conversationStyle,
+            });
+          } catch {
+            lastUniToolCallingResultRef.current = null;
+          }
+        }
+      }
+    }
+    // FASE 22 — Resposta Inteligente Integrada: quando o turno produziu um
+    // responseText (narrativa do Tool Calling, Fase 21), ele é COMBINADO
+    // com o texto do LLM em vez de substituí-lo — preserva a voz/contexto
+    // conversacional que a Uni já tinha construído (llmText) e evita
+    // redundância quando os dois dizem a mesma coisa (composeFinalResponseText
+    // é uma função pura, sem chamar o LLM nem o Tool Calling de novo). Sem
+    // ToolResult válido (Tool Calling desligado, sem tool_calls, erro,
+    // timeout, ferramenta desconhecida etc.), o comportamento legado
+    // permanece exatamente igual: composeFinalResponseText devolve o
+    // llmText inalterado. createAssistantResponse continua sendo o único
+    // ponto de publicação, chamado exatamente uma vez.
+    const toolCallingResponseText = lastUniToolCallingResultRef.current?.responseText ?? null;
+    const finalResponseText = composeFinalResponseText({
+      llmText,
+      toolResponseText: toolCallingResponseText,
+      conversationStyle,
+    });
+    createAssistantResponse(finalResponseText || UNI_DETERMINISTIC_FALLBACK_TEXT);
   }
 
   function handleCancelAi() {
@@ -3046,6 +3200,10 @@ export default function UniChatPage({ variant = 'full' }) {
     lastEngineComparisonRef.current = null;
     lastCognitivePipelineSnapshotRef.current = null;
     lastFinancialReasoningResultRef.current = null;
+    // FASE 20.1 — Tool Calling: novo turno zera a deduplicação local (o
+    // estado do módulo de integração é atualizado por messageId conforme o
+    // fluxo avança, nunca no início do turno).
+    lastToolCallingProcessedMessageIdRef.current = null;
     if (hasPendingConversation) {
       // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
       // explícita NOVA. Se a frase é reconhecida como ação financeira

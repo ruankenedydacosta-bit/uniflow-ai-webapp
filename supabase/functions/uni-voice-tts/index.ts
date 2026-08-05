@@ -67,10 +67,16 @@ function providerErrorResponse(
   message: string,
   providerStatus: number | null,
   retryable: boolean,
+  providerTag: string = '',
 ) {
-  // Diagnóstico seguro: somente classificação e status HTTP do provedor.
-  // Nunca registra texto, usuário, voice ID, chave ou corpo da resposta.
-  console.warn('uni_voice_tts_provider_failure', { code, providerStatus, retryable });
+  // Diagnóstico seguro: classificação, status HTTP e a "tag" curta que o
+  // provedor devolve (ex.: "voice_not_found", "invalid_api_key", "quota_
+  // exceeded") -- nunca o texto, usuário, voice ID, chave ou corpo bruto da
+  // resposta. Essa tag é o que permite distinguir rapidamente nos logs se
+  // uma falha é de autenticação, payload, voiceId inválido, quota etc.
+  console.warn('uni_voice_tts_provider_failure', {
+    code, providerStatus, retryable, providerTag: providerTag || null,
+  });
   return jsonResponse(status, code, message, { providerStatus, retryable });
 }
 
@@ -274,6 +280,15 @@ Deno.serve(async (request) => {
   const cacheEnabled = Boolean(serviceRoleKey);
 
   if (!supabaseUrl || !anonKey || !providerKey || !voiceId) {
+    // Diagnóstico claro de QUAL variável está ausente -- nunca o valor,
+    // apenas os nomes das secrets não configuradas neste ambiente.
+    const missing = [
+      !supabaseUrl && 'SUPABASE_URL',
+      !anonKey && 'SUPABASE_ANON_KEY',
+      !providerKey && 'ELEVENLABS_API_KEY',
+      !voiceId && 'ELEVENLABS_VOICE_ID',
+    ].filter(Boolean);
+    console.warn('uni_voice_tts_configuration_error', { missing });
     return jsonResponse(503, 'CONFIGURATION_ERROR', 'A geração de voz não está configurada neste ambiente.');
   }
 
@@ -358,33 +373,48 @@ Deno.serve(async (request) => {
 
     if (!providerResponse.ok) {
       const providerTag = await readProviderErrorTag(providerResponse);
+      // ELEVEN3 -- causa raiz mais comum de 502 "silencioso": o voiceId
+      // configurado (ELEVENLABS_VOICE_ID) não existe ou não está acessível
+      // com a chave atual. A ElevenLabs devolve 404 com
+      // detail.status="voice_not_found" -- antes disso caía no branch
+      // genérico PROVIDER_ERROR (502) sem nenhuma pista de que o problema
+      // era o voiceId. Agora é uma causa distinta e logada explicitamente.
+      if (providerTag.includes('voice_not_found') || providerResponse.status === 404) {
+        return providerErrorResponse(
+          502, 'PROVIDER_VOICE_NOT_FOUND', 'A voz configurada não foi encontrada no serviço de voz.',
+          providerResponse.status, false, providerTag || 'voice_not_found',
+        );
+      }
       if (providerTag.includes('quota')) {
         return providerErrorResponse(
           502, 'PROVIDER_QUOTA_ERROR', 'O limite do serviço de voz foi atingido.',
-          providerResponse.status, false,
+          providerResponse.status, false, providerTag,
         );
       }
-      if (providerResponse.status === 401 || providerResponse.status === 403) {
+      if (
+        providerResponse.status === 401 || providerResponse.status === 403
+        || providerTag.includes('invalid_api_key') || providerTag.includes('unauthorized')
+      ) {
         return providerErrorResponse(
           502, 'PROVIDER_AUTH_ERROR', 'O serviço de voz precisa ser reconectado.',
-          providerResponse.status, false,
+          providerResponse.status, false, providerTag || 'auth_error',
         );
       }
       if (providerResponse.status === 429) {
         return providerErrorResponse(
           429, 'PROVIDER_RATE_LIMIT', 'Muitas solicitações de voz. Tente novamente em instantes.',
-          providerResponse.status, true,
+          providerResponse.status, true, providerTag,
         );
       }
       if (providerResponse.status === 400 || providerResponse.status === 422) {
         return providerErrorResponse(
           422, 'INVALID_REQUEST', 'O provedor recusou os parâmetros da geração de voz.',
-          providerResponse.status, false,
+          providerResponse.status, false, providerTag || 'invalid_payload',
         );
       }
       return providerErrorResponse(
         502, 'PROVIDER_ERROR', 'Não consegui gerar a voz agora.',
-        providerResponse.status, providerResponse.status >= 500,
+        providerResponse.status, providerResponse.status >= 500, providerTag || 'unclassified',
       );
     }
 
@@ -433,6 +463,7 @@ Deno.serve(async (request) => {
       timedOut ? 'A geração de voz demorou demais.' : 'Não foi possível conectar ao provedor de voz.',
       null,
       true,
+      timedOut ? 'timeout' : (error instanceof Error ? error.name : 'network_error'),
     );
   } finally {
     clearTimeout(timeout);

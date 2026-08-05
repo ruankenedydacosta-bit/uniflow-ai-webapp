@@ -63,6 +63,22 @@
 //   - VITE_UNI_ENGINE_FINANCIAL_REASONING_SHADOW      → financialReasoningShadowMode (default: true)
 //   - VITE_UNI_ENGINE_FINANCIAL_REASONING_TELEMETRY   → financialReasoningTelemetryEnabled (default: false)
 //
+// Fase 20 — Tool Calling (base + adaptador OpenAI). Tudo nasce desligado:
+//   - VITE_UNI_ENGINE_TOOL_CALLING_ENABLED      → toolCallingEnabled (default: false)
+//   - VITE_UNI_ENGINE_TOOL_CALLING_SHADOW       → toolCallingShadowMode (default: true)
+//   - VITE_UNI_ENGINE_TOOL_CALLING_TELEMETRY    → toolCallingTelemetryEnabled (default: false)
+//   - VITE_UNI_ENGINE_TOOL_CALLING_REQUIRED     → toolCallingRequired (default: false)
+//
+// Regras da Fase 20:
+//   - Tool Calling exige o motor cognitivo ligado (`enabled`); desligado,
+//     nenhum dispatcher roda e a saída é 100% legada;
+//   - nenhuma execução sem autorização explícita e executionAllowed;
+//   - Pending Action / confirmação pendente sempre bloqueiam execução;
+//   - ferramentas writes=true exigem allowWrites explícito do registry;
+//   - nenhuma ferramenta real é registrada em produção — apenas fixtures
+//     seguras de teste na pasta de integração;
+//   - produção nunca ativa por acidente.
+//
 // Regras da Parte 5:
 //   - a aplicação exige motor ligado E Activation ligada E Integration ligada;
 //   - RESPONSE_STYLE_GUIDANCE e RESPONSE_LENGTH_GUIDANCE podem ser APLICADAS
@@ -210,7 +226,14 @@ cognitiveOrchestratorEnabled: false,
   // Interruptor MESTRE da parte: sem ele, o pipeline legado nunca aplica
   // nenhuma capability permitida por rollout — a saída é sempre 100% legada.
   // Exige motor + Activation + Integration + Application.
-rolloutEnabled: false,
+  rolloutEnabled: false,
+  // Fase 20 — Tool Calling. Tudo nasce desligado; shadow ligado por padrão
+  // (avaliar é seguro); telemetria sempre desligada por padrão; nenhuma
+  // execução é obrigatória por padrão.
+  toolCallingEnabled: false,
+  toolCallingShadowMode: true,
+  toolCallingTelemetryEnabled: false,
+  toolCallingRequired: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -544,6 +567,13 @@ financialRolloutEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT
     }
     return [];
   })(),
+  // Fase 20 — Tool Calling. Nasce desligado; shadow ligado por padrão
+  // (avaliar é seguro); telemetria sempre desligada por padrão; nenhuma
+  // execução é obrigatória por padrão. Variável ausente nunca ativa.
+  toolCallingEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_TOOL_CALLING_ENABLED', false),
+  toolCallingShadowMode: parseBooleanEnv(env, 'VITE_UNI_ENGINE_TOOL_CALLING_SHADOW', true),
+  toolCallingTelemetryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_TOOL_CALLING_TELEMETRY', false),
+  toolCallingRequired: parseBooleanEnv(env, 'VITE_UNI_ENGINE_TOOL_CALLING_REQUIRED', false),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -706,6 +736,17 @@ financialRolloutEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT
     config.financialRolloutProductionEnabled = false;
     config.financialRolloutCanaryEnabled = false;
     config.financialRolloutTelemetryEnabled = false;
+  }
+
+  // Fase 20 — Tool Calling exige o motor cognitivo ligado; shadow, telemetria
+  // e required exigem o Tool Calling ligado. Desligado → nenhum dispatcher,
+  // nenhuma execução, saída 100% legada. Variável ausente ou inválida nunca
+  // ativa — produção nunca ativa por acidente.
+  if (!config.enabled) config.toolCallingEnabled = false;
+  if (!config.toolCallingEnabled) {
+    config.toolCallingShadowMode = false;
+    config.toolCallingTelemetryEnabled = false;
+    config.toolCallingRequired = false;
   }
 
   return Object.freeze({ ...config, activationCapabilities: Object.freeze(config.activationCapabilities) });

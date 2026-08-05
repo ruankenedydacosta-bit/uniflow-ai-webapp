@@ -1,11 +1,13 @@
 // Montagem do contexto minimo, sanitizado e truncado enviado ao LLM.
 import { buildPersonalityInstructions } from '../uni-personality/index.js';
 import { buildContextGuidanceLines } from '../uni-chat/uniContextCopy.js';
+import { buildOpenAiToolsSchema } from '../uni-engine/tool-calling/financial-tools/index.js';
 import {
   buildConversationStyleInstructions,
   resolveConversationStyle,
   resolveConversationStyleTokenBudget,
 } from './conversationStyle.js';
+import { isLlmToolsFlagEnabled } from './llmConfig.js';
 
 export const MAX_HISTORY_MESSAGES = 8;
 export const MAX_MESSAGE_CHARS = 500;
@@ -97,6 +99,29 @@ export function buildSystemPrompt({ personalityProfileId, workspaceType, financi
     '- Voce NAO pode criar, alterar ou excluir transacoes/contas. Movimentacoes financeiras',
     '  passam obrigatoriamente pelo fluxo de confirmacao do proprio app. No maximo sugira;',
     '  nunca emita comandos, JSON de acao ou instrucoes estruturadas de mutacao financeira.',
+    '',
+    'PERSONALIDADE:',
+    '- Voce e a Uni, uma consultora financeira acessivel -- nunca se apresente como',
+    '  chatbot, assistente virtual, IA ou robo. Converse como uma pessoa que entende',
+    '  de dinheiro e quer genuinamente ajudar, nunca como um menu ou um fluxo.',
+    '',
+    'LINGUAGEM:',
+    '- Evite jargao financeiro sem necessidade. Se um termo tecnico (categoria,',
+    '  saldo consolidado, etc.) puder confundir, explique em uma frase simples e',
+    '  com um exemplo concreto antes ou junto da pergunta.',
+    '  Exemplo: "categoria e so o tipo do gasto -- mercado, combustivel, farmacia".',
+    '',
+    'CONVERSACAO E VARIACAO:',
+    '- Varie a frase mesmo quando a intencao se repete (ex.: pedir a mesma',
+    '  informacao faltante em turnos diferentes). Nunca repita literalmente a',
+    '  mesma frase duas vezes na mesma conversa quando puder dizer de outro jeito.',
+    '- Nunca liste opcoes como um menu numerado nem soe como um fluxo programado.',
+    '',
+    'ACOLHIMENTO:',
+    '- Se o texto do usuario sinalizar preocupacao, ansiedade, medo ou frustracao',
+    '  (financeira ou nao), acolha PRIMEIRO com uma frase curta e genuina, e so',
+    '  depois traga a resposta/pergunta financeira. Nunca ignore a emocao para ir',
+    '  direto ao dado.',
   ];
 
   const contextLines = ['', 'CONTEXTO FINANCEIRO DISPONIVEL (agregado):'];
@@ -142,6 +167,12 @@ export function buildLlmPayload({
   return {
     system,
     messages: [...history, { role: 'user', content: userText }].filter((m) => m.content),
+    // Sprint 1 (IA Conversacional): só inclui `tools` com a flag explícita
+    // ligada (default desligada) -- sem ela, `tools` fica `undefined` e o
+    // payload é byte-a-byte igual ao de antes desta sprint. As definições
+    // vêm de FINANCIAL_READ_TOOL_META (Fase 20.2, único ponto de verdade),
+    // nunca duplicadas aqui.
+    tools: isLlmToolsFlagEnabled() ? buildOpenAiToolsSchema() : undefined,
     // BLOCO A1: conversationStyle e o orcamento de tokens correspondente vao
     // no meta -- o orquestrador repassa maxOutputTokens ao provider/Edge
     // Function; nunca confiavel cegamente no servidor (que sempre clampa).

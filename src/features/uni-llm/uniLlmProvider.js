@@ -1,8 +1,11 @@
 // Provider de LLM da Uni (contrato desacoplado).
 //
-// Contrato: generateResponse({ system, messages }) -> { text, usage, error }
+// Contrato: generateResponse({ system, messages }) -> { text, usage, tool_calls, error }
 // NUNCA lanca; sempre resolve com um objeto. Em qualquer falha retorna
 // { text: null, error: { code, message } } para o orquestrador cair no fallback.
+// `tool_calls` (Sprint 1 -- IA Conversacional) só é não-nulo quando a chamada
+// incluiu `tools` (flag VITE_UNI_LLM_TOOLS_ENABLED) e a OpenAI decidiu usar
+// alguma ferramenta -- ausente/null em todo o resto do tráfego, hoje 100%.
 //
 // A chamada real ao provedor (ex.: OpenAI) acontece dentro da Edge Function
 // `uni-chat-llm`. Este provider apenas orquestra auth, timeout/cancelamento e
@@ -61,7 +64,7 @@ export function createUniLlmProvider({
     currentController?.abort('cancelled');
   }
 
-  async function performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens }) {
+  async function performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens, tools }) {
     const controller = new AbortController();
     currentController = controller;
     const timeout = runtime.setTimeout?.(() => controller.abort('timeout'), timeoutMs);
@@ -73,6 +76,10 @@ export function createUniLlmProvider({
       // byte-identico ao de OPENAI1/OPENAI2: { system, messages }.
       // BLOCO A1: `maxOutputTokens` segue a mesma regra -- omitido quando
       // ausente, nunca quebra o formato ja validado.
+      // Sprint 1 (IA Conversacional): `tools` idem -- omitido (undefined)
+      // sempre que a flag VITE_UNI_LLM_TOOLS_ENABLED estiver desligada
+      // (buildLlmPayload nunca o inclui nesse caso), corpo continua
+      // byte-identico ao de antes desta sprint.
       const response = await fetchImpl(`${supabaseUrl}/functions/v1/${UNI_LLM_FUNCTION_NAME}`, {
         method: 'POST',
         headers: {
@@ -80,7 +87,7 @@ export function createUniLlmProvider({
           apikey: supabaseAnonKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ system, messages, mode, productContext, maxOutputTokens }),
+        body: JSON.stringify({ system, messages, mode, productContext, maxOutputTokens, tools }),
         signal: controller.signal,
       });
       return { ok: true, response };
@@ -94,7 +101,7 @@ export function createUniLlmProvider({
     }
   }
 
-  async function generateResponse({ system, messages, mode, productContext, maxOutputTokens } = {}) {
+  async function generateResponse({ system, messages, mode, productContext, maxOutputTokens, tools } = {}) {
     if (!isSupported()) {
       return { text: null, usage: null, error: { code: 'UNSUPPORTED', message: 'llm_unavailable' } };
     }
@@ -110,11 +117,11 @@ export function createUniLlmProvider({
       return { text: null, usage: null, error: { code: 'UNAUTHORIZED', message: 'llm_auth_required' } };
     }
 
-    let attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens });
+    let attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens, tools });
     let retries = 0;
     while (!attempt.ok && attempt.code === 'NETWORK' && retries < MAX_NETWORK_RETRIES) {
       retries += 1;
-      attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens });
+      attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens, tools });
     }
 
     if (!attempt.ok) {
@@ -139,7 +146,13 @@ export function createUniLlmProvider({
     }
 
     const text = typeof data?.text === 'string' ? data.text : null;
-    if (!text) {
+    // Sprint 1 (IA Conversacional): quando a OpenAI decide chamar uma
+    // ferramenta, ela frequentemente devolve `content` vazio junto com
+    // `tool_calls` -- isso NUNCA pode ser tratado como resposta vazia/erro,
+    // senão o tool_calls seria descartado aqui e o Tool Calling (Fase 20+)
+    // nunca teria uma chance real de disparar.
+    const toolCalls = Array.isArray(data?.tool_calls) && data.tool_calls.length > 0 ? data.tool_calls : null;
+    if (!text && !toolCalls) {
       return { text: null, usage: null, error: { code: 'EMPTY', message: 'llm_empty_response' } };
     }
 
@@ -147,7 +160,13 @@ export function createUniLlmProvider({
     // -- documentos usados, matched, escalate) quando presente na resposta.
     // Ausente/undefined em chamadas financeiras (mode omitido) -- nunca
     // quebra o contrato existente, so acrescenta um campo novo.
-    return { text, usage: data?.usage ?? null, knowledge: data?.knowledge ?? null, error: null };
+    return {
+      text,
+      usage: data?.usage ?? null,
+      knowledge: data?.knowledge ?? null,
+      tool_calls: toolCalls,
+      error: null,
+    };
   }
 
   return {

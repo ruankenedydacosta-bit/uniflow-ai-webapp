@@ -125,6 +125,7 @@ test('falhas do lado do provedor (502/quota/auth/timeout/rede) acionam fallback 
   for (const code of [
     'PROVIDER_QUOTA_ERROR',
     'PROVIDER_AUTH_ERROR',
+    'PROVIDER_VOICE_NOT_FOUND',
     'PROVIDER_ERROR',
     'PROVIDER_TIMEOUT',
     'PROVIDER_RATE_LIMIT',
@@ -235,6 +236,20 @@ test('telemetria fica silenciosa fora de DEV', () => {
   });
   assert.equal(result, null);
   assert.equal(logs.length, 0);
+});
+
+test('voiceId inexistente no ElevenLabs (PROVIDER_VOICE_NOT_FOUND) aciona o fallback do navegador', async () => {
+  const primary = createProviderDouble({ result: providerError('PROVIDER_VOICE_NOT_FOUND') });
+  const browser = createProviderDouble({ name: 'browser_speech_tts' });
+  const provider = createFallbackVoiceTtsProvider({
+    primaryProvider: primary,
+    browserProvider: browser,
+    policy: { browserFallbackAllowed: true, forceBrowserTts: false },
+  });
+  const result = await provider.speak('Seja bem-vindo, senhor Ruan.');
+  assert.equal(result.providerName, 'browser_speech_tts');
+  assert.equal(primary.calls.speak, 1);
+  assert.equal(browser.calls.speak, 1);
 });
 
 test('502 generico da Edge Function (PROVIDER_ERROR) tambem usa o fallback do navegador', async () => {

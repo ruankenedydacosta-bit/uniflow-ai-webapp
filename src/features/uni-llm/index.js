@@ -1,4 +1,7 @@
-export { resolveLlmConfig, isLlmFlagEnabled, isLlmBackendConfigured, UNI_LLM_FLAG } from './llmConfig.js';
+export {
+  resolveLlmConfig, isLlmFlagEnabled, isLlmBackendConfigured, UNI_LLM_FLAG,
+  isLlmToolsFlagEnabled, isLlmPhrasingFlagEnabled, UNI_LLM_TOOLS_FLAG, UNI_LLM_PHRASING_FLAG,
+} from './llmConfig.js';
 export {
   CONVERSATION_STYLES,
   DEFAULT_CONVERSATION_STYLE,
@@ -22,3 +25,4 @@ export { validateLlmResponse, looksLikeStructuredFinancialAction } from './llmRe
 export { createUniLlmProvider, UNI_LLM_FUNCTION_NAME } from './uniLlmProvider.js';
 export { createUniLlmOrchestrator } from './uniLlmOrchestrator.js';
 export { useUniLlm } from './useUniLlm.js';
+export { createPhraseStructuredFactService, PHRASE_STRUCTURED_FACT_TIMEOUT_MS } from './phraseStructuredFact.js';

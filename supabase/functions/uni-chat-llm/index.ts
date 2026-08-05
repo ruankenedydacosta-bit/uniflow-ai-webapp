@@ -66,7 +66,50 @@ const UNI_MODE = {
   SUPPORT: 'support',
   CATEGORY_INFERENCE: 'category_inference',
   FINANCIAL_PLAN: 'financial_plan',
+  // Sprint 1 (IA Conversacional): fraseia um fato estruturado (JSON) em
+  // texto natural -- ver PHRASE_FACT_INSTRUCTIONS abaixo.
+  PHRASE_FACT: 'phrase_fact',
 } as const;
+
+// Sprint 1 (IA Conversacional): allowlist fixa dos 6 tools de leitura já
+// aprovados (Fase 20.2). O servidor NUNCA aceita um nome de ferramenta fora
+// desta lista, mesmo que o cliente derive o schema de FINANCIAL_READ_TOOL_META
+// -- defesa em profundidade, mesmo padrão já usado para `payload.system`/
+// `payload.messages` nos outros modos isolados.
+const ALLOWED_TOOL_NAMES = new Set([
+  'get_financial_summary',
+  'get_expense_breakdown',
+  'compare_financial_periods',
+  'get_goal_progress',
+  'get_account_summary',
+  'get_recurring_expenses',
+]);
+
+function normalizeTools(raw: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(raw)) return [];
+  const tools: Array<Record<string, unknown>> = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const record = item as Record<string, unknown>;
+    if (record.type !== 'function') continue;
+    const fn = record.function;
+    if (!fn || typeof fn !== 'object') continue;
+    const fnRecord = fn as Record<string, unknown>;
+    const name = typeof fnRecord.name === 'string' ? fnRecord.name : '';
+    if (!ALLOWED_TOOL_NAMES.has(name)) continue;
+    tools.push({
+      type: 'function',
+      function: {
+        name,
+        description: typeof fnRecord.description === 'string' ? fnRecord.description.slice(0, 500) : '',
+        parameters: fnRecord.parameters && typeof fnRecord.parameters === 'object'
+          ? fnRecord.parameters
+          : { type: 'object', properties: {} },
+      },
+    });
+  }
+  return tools;
+}
 const MAX_PRODUCT_CONTEXT_ENTRIES = 5;
 const MAX_PRODUCT_CONTEXT_ENTRY_CHARS = 700;
 const MAX_PRODUCT_CONTEXT_TOTAL_CHARS = 3000;
@@ -202,6 +245,47 @@ function validateCategoryInferenceOutput(text: string, allowedIds: Set<string>):
       reason,
     },
   };
+}
+
+// Sprint 1 (IA Conversacional): fraseia um fato estruturado em texto
+// natural. Mesma postura de isolamento dos outros modos -- `system`/
+// `messages` do cliente são IGNORADOS por completo; a IA recebe SOMENTE o
+// JSON do fato (já sanitizado/clampado pelo cliente antes de enviar, nunca
+// dado financeiro sensível cru) e nunca decide nem executa nada, só
+// fraseia. Saída é texto livre curto (não JSON) -- por isso NUNCA usa
+// response_format json_object.
+const PHRASE_FACT_OUTPUT_TOKENS = 90;
+const MAX_PHRASE_FACT_JSON_CHARS = 600;
+
+const PHRASE_FACT_INSTRUCTIONS = `Voce e a Uni, uma consultora financeira acessivel, conversando em portugues do Brasil (pt-BR).
+
+Voce recebe um FATO ESTRUTURADO (JSON) sobre o que falta ou o que aconteceu numa conversa financeira. Sua UNICA tarefa e transformar esse fato numa frase curta, natural e calorosa.
+
+Regras obrigatorias:
+- Responda APENAS com a frase final -- sem aspas, sem JSON, sem explicar a tarefa, sem repetir o fato literalmente.
+- No maximo 1 a 2 frases curtas.
+- Nunca invente nenhum dado que nao esteja no JSON recebido (nome de conta, categoria, valor, opcao).
+- Nunca se apresente como chatbot, assistente virtual, IA ou robo.
+- Nunca liste opcoes como um menu numerado.
+- Se o fato indicar situacao "needs_clarification", a frase DEVE ser uma pergunta clara sobre o campo que falta -- nunca uma afirmacao.
+- Se o JSON trouxer candidatos/opcoes, pode mencionar alguns na pergunta, mas nunca invente opcoes que nao estejam la.
+- Voce nunca propoe, confirma ou executa nenhuma acao financeira -- so formula a frase/pergunta pedida.`;
+
+function normalizePhraseFactInput(raw: unknown): { factText: string } {
+  const record = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+  const fact = record.fact;
+  if (!fact || typeof fact !== 'object' || Array.isArray(fact)) return { factText: '' };
+  let json: string;
+  try {
+    json = JSON.stringify(fact);
+  } catch {
+    return { factText: '' };
+  }
+  return { factText: clampCategoryInferenceText(json, MAX_PHRASE_FACT_JSON_CHARS) };
+}
+
+function buildPhraseFactUserMessage(factText: string) {
+  return `Fato estruturado (JSON):\n${factText}\n\nResponda apenas com a frase final, em portugues do Brasil.`;
 }
 
 // BLOCO E: plano financeiro (multioperacoes, transferencias, parcelamento,
@@ -577,13 +661,20 @@ function normalizeMessages(raw: unknown) {
     .slice(-MAX_MESSAGES);
 }
 
+// Sprint 1 (IA Conversacional): forma bruta de tool_calls devolvida pela
+// OpenAI -- repassada como está até o frontend (que já sabe interpretar
+// esse formato desde a Fase 20.1). Este arquivo nunca interpreta o
+// conteúdo de `arguments`; só valida a forma para nunca quebrar o parse
+// do cliente.
+type RawToolCall = { id: string; type: 'function'; function: { name: string; arguments: string } };
+
 // Motivo normalizado do resultado -- usado so para observabilidade segura
 // (logSafeMetric) e para o mapeamento de status HTTP. Nunca carrega texto.
 type AdapterOutcome =
-  | { status: 200; text: string | null; usage: { promptTokens: number; completionTokens: number } | null; reason: 'ok' | 'empty' | 'refusal' }
-  | { status: 401; text: null; usage: null; reason: 'invalid_key' }
-  | { status: 429; text: null; usage: null; reason: 'rate_limit' | 'insufficient_quota' }
-  | { status: 502; text: null; usage: null; reason: 'provider_error' | 'server_error' };
+  | { status: 200; text: string | null; usage: { promptTokens: number; completionTokens: number } | null; reason: 'ok' | 'empty' | 'refusal' | 'tool_calls'; toolCalls: RawToolCall[] | null }
+  | { status: 401; text: null; usage: null; reason: 'invalid_key'; toolCalls: null }
+  | { status: 429; text: null; usage: null; reason: 'rate_limit' | 'insufficient_quota'; toolCalls: null }
+  | { status: 502; text: null; usage: null; reason: 'provider_error' | 'server_error'; toolCalls: null };
 
 // Adapter OpenAI: unico ponto que conhece o provedor concreto. Para trocar de
 // provedor no futuro, basta implementar outro adapter com a mesma assinatura.
@@ -593,10 +684,11 @@ type AdapterOutcome =
 // unica forma oficial de diferenciar os dois), e erro do lado do provedor
 // (>=500) de erro de payload nosso (4xx que nao seja auth/quota).
 async function callOpenAiAdapter(
-  { apiKey, model, system, messages, signal, maxOutputTokens, jsonResponseFormat = false }:
+  { apiKey, model, system, messages, signal, maxOutputTokens, jsonResponseFormat = false, tools = [] }:
   {
     apiKey: string; model: string; system: string; messages: Array<{ role: string; content: string }>;
     signal: AbortSignal; maxOutputTokens: number; jsonResponseFormat?: boolean;
+    tools?: Array<Record<string, unknown>>;
   },
 ): Promise<AdapterOutcome> {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -624,6 +716,10 @@ async function callOpenAiAdapter(
       // explicitamente (validateCategoryInferenceOutput), nunca confiado
       // apenas por causa deste parametro.
       ...(jsonResponseFormat ? { response_format: { type: 'json_object' } } : {}),
+      // Sprint 1 (IA Conversacional): `tools` só é incluído no corpo quando
+      // não-vazio -- payload byte-idêntico ao de antes desta sprint em
+      // qualquer chamada sem tools (todo tráfego hoje, flag desligada).
+      ...(tools.length > 0 ? { tools, tool_choice: 'auto' } : {}),
       // 'developer' e o role oficial atual para instrucoes de sistema na
       // familia de modelos GPT em uso (substitui 'system'; ver comentario
       // no topo do arquivo).
@@ -633,7 +729,7 @@ async function callOpenAiAdapter(
   });
 
   if (response.status === 401) {
-    return { status: 401, text: null, usage: null, reason: 'invalid_key' };
+    return { status: 401, text: null, usage: null, reason: 'invalid_key', toolCalls: null };
   }
   if (response.status === 429) {
     let code = '';
@@ -646,26 +742,49 @@ async function callOpenAiAdapter(
       text: null,
       usage: null,
       reason: code === 'insufficient_quota' ? 'insufficient_quota' : 'rate_limit',
+      toolCalls: null,
     };
   }
   if (!response.ok) {
-    return { status: 502, text: null, usage: null, reason: response.status >= 500 ? 'server_error' : 'provider_error' };
+    return {
+      status: 502, text: null, usage: null,
+      reason: response.status >= 500 ? 'server_error' : 'provider_error',
+      toolCalls: null,
+    };
   }
 
   const data = await response.json();
   const choice = data?.choices?.[0];
   const refusal = choice?.message?.refusal;
   if (typeof refusal === 'string' && refusal) {
-    return { status: 200, text: null, usage: null, reason: 'refusal' };
+    return { status: 200, text: null, usage: null, reason: 'refusal', toolCalls: null };
   }
-  const text = choice?.message?.content;
   const usage = data?.usage
     ? { promptTokens: data.usage.prompt_tokens, completionTokens: data.usage.completion_tokens }
     : null;
-  if (typeof text !== 'string' || !text) {
-    return { status: 200, text: null, usage, reason: 'empty' };
+
+  // Sprint 1 (IA Conversacional): quando a OpenAI decide usar uma
+  // ferramenta, `message.content` costuma vir vazio/null e o pedido real
+  // está em `message.tool_calls`. Valida só a FORMA (id/name/arguments
+  // string) -- nunca interpreta o conteúdo de `arguments`, que é
+  // responsabilidade exclusiva do dispatcher client-side (Fase 20+).
+  const rawToolCalls = Array.isArray(choice?.message?.tool_calls) ? choice.message.tool_calls : [];
+  const toolCalls: RawToolCall[] = rawToolCalls.filter((call: unknown) => {
+    const record = call as Record<string, unknown>;
+    const fn = record?.function as Record<string, unknown> | undefined;
+    return typeof record?.id === 'string' && record.id
+      && typeof fn?.name === 'string' && fn.name
+      && typeof fn?.arguments === 'string';
+  });
+
+  const text = choice?.message?.content;
+  if (toolCalls.length > 0) {
+    return { status: 200, text: typeof text === 'string' ? text : null, usage, reason: 'tool_calls', toolCalls };
   }
-  return { status: 200, text, usage, reason: 'ok' };
+  if (typeof text !== 'string' || !text) {
+    return { status: 200, text: null, usage, reason: 'empty', toolCalls: null };
+  }
+  return { status: 200, text, usage, reason: 'ok', toolCalls: null };
 }
 
 // OPENAI4: observabilidade segura -- so metadados operacionais, nunca texto
@@ -733,12 +852,18 @@ Deno.serve(async (request) => {
       ? UNI_MODE.CATEGORY_INFERENCE
       : payload.mode === UNI_MODE.FINANCIAL_PLAN
         ? UNI_MODE.FINANCIAL_PLAN
-        : UNI_MODE.FINANCIAL;
+        : payload.mode === UNI_MODE.PHRASE_FACT
+          ? UNI_MODE.PHRASE_FACT
+          : UNI_MODE.FINANCIAL;
 
   let system: string;
   let messages: Array<{ role: string; content: string }>;
   let productContext: Array<{ id: string; title: string; content: string }> = [];
   let categoryInferenceInput: ReturnType<typeof normalizeCategoryInferenceInput> | null = null;
+  // Sprint 1 (IA Conversacional): só populado (e só repassado à OpenAI) no
+  // modo financeiro -- todo outro modo mantém tools=[] (comportamento
+  // idêntico ao de antes desta sprint, `tools` nunca vai no corpo).
+  const tools = mode === UNI_MODE.FINANCIAL ? normalizeTools(payload.tools) : [];
 
   if (mode === UNI_MODE.SUPPORT) {
     // Modo suporte: o `system` do cliente e ignorado por completo -- nunca
@@ -770,6 +895,14 @@ Deno.serve(async (request) => {
     messages = financialPlanInput.phrase
       ? [{ role: 'user', content: buildFinancialPlanUserMessage(financialPlanInput) }]
       : [];
+  } else if (mode === UNI_MODE.PHRASE_FACT) {
+    // Sprint 1: mesma garantia -- `system`/`messages` do cliente ignorados
+    // por completo. Só o fato estruturado (já sanitizado) chega à IA.
+    const phraseFactInput = normalizePhraseFactInput(payload.phraseFact);
+    system = PHRASE_FACT_INSTRUCTIONS;
+    messages = phraseFactInput.factText
+      ? [{ role: 'user', content: buildPhraseFactUserMessage(phraseFactInput.factText) }]
+      : [];
   } else {
     system = clampText(payload.system, MAX_SYSTEM_CHARS);
     messages = normalizeMessages(payload.messages);
@@ -789,7 +922,9 @@ Deno.serve(async (request) => {
       ? CATEGORY_INFERENCE_OUTPUT_TOKENS
       : mode === UNI_MODE.FINANCIAL_PLAN
         ? FINANCIAL_PLAN_OUTPUT_TOKENS
-        : DEFAULT_OUTPUT_TOKENS;
+        : mode === UNI_MODE.PHRASE_FACT
+          ? PHRASE_FACT_OUTPUT_TOKENS
+          : DEFAULT_OUTPUT_TOKENS;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort('timeout'), PROVIDER_TIMEOUT_MS);
@@ -814,6 +949,7 @@ Deno.serve(async (request) => {
       signal: controller.signal,
       maxOutputTokens,
       jsonResponseFormat: mode === UNI_MODE.CATEGORY_INFERENCE || mode === UNI_MODE.FINANCIAL_PLAN,
+      tools,
     });
 
     if (result.status === 401) {
@@ -825,6 +961,17 @@ Deno.serve(async (request) => {
     }
     if (result.status === 429) {
       return finish(429, result.reason, { error: 'Muitas solicitacoes. Tente em instantes.' });
+    }
+    // Sprint 1 (IA Conversacional): tool_calls (com ou sem texto) NUNCA cai
+    // no branch de "resposta vazia" abaixo -- só o modo financeiro chega
+    // aqui com `tools` não-vazio, então isso nunca afeta support/
+    // category_inference/financial_plan/phrase_fact.
+    if (result.status === 200 && result.toolCalls && result.toolCalls.length > 0) {
+      return finish(200, 'tool_calls', {
+        text: result.text ? clampText(result.text, 2000) || null : null,
+        usage: result.usage,
+        tool_calls: result.toolCalls,
+      }, result.usage);
     }
     if (result.status !== 200 || !result.text) {
       // Cobre: erro do provedor (502), resposta vazia e recusa do modelo --

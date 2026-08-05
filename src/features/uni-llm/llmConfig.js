@@ -12,6 +12,15 @@
 // e o frontend trata esse 503 como "indisponivel" e cai no fluxo deterministico.
 
 export const UNI_LLM_FLAG = 'VITE_UNI_LLM_ENABLED';
+// Sprint 1 (IA Conversacional) — flags adicionais, também desligadas por
+// padrão, seguindo exatamente o mesmo critério acima:
+//   - VITE_UNI_LLM_TOOLS_ENABLED: envia os 6 tools de leitura (Fase 20.2)
+//     para a OpenAI no modo financeiro. Sem ela, o payload nunca inclui
+//     `tools` — comportamento idêntico ao de antes desta sprint.
+//   - VITE_UNI_LLM_PHRASING_ENABLED: liga a ponte "fato estruturado → frase
+//     natural" usada para perguntas de clarificação (ver phraseStructuredFact.js).
+export const UNI_LLM_TOOLS_FLAG = 'VITE_UNI_LLM_TOOLS_ENABLED';
+export const UNI_LLM_PHRASING_FLAG = 'VITE_UNI_LLM_PHRASING_ENABLED';
 
 function readEnv() {
   try {
@@ -23,6 +32,14 @@ function readEnv() {
 
 export function isLlmFlagEnabled(env = readEnv()) {
   return env?.[UNI_LLM_FLAG] === 'true';
+}
+
+export function isLlmToolsFlagEnabled(env = readEnv()) {
+  return env?.[UNI_LLM_TOOLS_FLAG] === 'true';
+}
+
+export function isLlmPhrasingFlagEnabled(env = readEnv()) {
+  return env?.[UNI_LLM_PHRASING_FLAG] === 'true';
 }
 
 // O backend (Edge Function) so pode ser chamado quando o Supabase esta

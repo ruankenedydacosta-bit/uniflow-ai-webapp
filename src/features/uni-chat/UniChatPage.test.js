@@ -234,7 +234,7 @@ test('useUniConversation injeta a categoria recém-criada antes do próximo rend
 
 test('UniChatPage consome useUniLlm e AI_STATUS do bloco consolidado', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{ useUniLlm, AI_STATUS, resolveConversationStyle \} from '\.\.\/uni-llm';/);
+  assert.match(page, /import \{\s*\n\s*useUniLlm, AI_STATUS, resolveConversationStyle,\s*\n\s*createPhraseStructuredFactService, isLlmPhrasingFlagEnabled,\s*\n\s*\} from '\.\.\/uni-llm';/);
   assert.match(page, /const uniLlm = useUniLlm\(\);/);
 });
 
@@ -259,7 +259,7 @@ test('mensagem não resolvida só tenta o LLM quando habilitado, e sempre cai no
   );
   assert.match(fnBody, /if \(uniLlm\.enabled\) \{/);
   assert.match(fnBody, /catch \{\s*\n\s*llmText = null;/);
-  assert.match(fnBody, /createAssistantResponse\(llmText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\)/);
+  assert.match(fnBody, /createAssistantResponse\(finalResponseText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\)/);
 });
 
 test('pergunta futura ampla é interceptada ANTES do LLM, nunca chega a handleUnresolvedMessage', async () => {
@@ -429,7 +429,7 @@ test('a mensagem final (sucesso ou fallback determinístico) sempre passa pelo p
     page.indexOf('function handleCancelAi'),
   );
   const afterEnabledBlock = fnBody.slice(fnBody.lastIndexOf('aiCancelledRef.current = false;'));
-  assert.match(afterEnabledBlock, /createAssistantResponse\(llmText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\);/);
+  assert.match(afterEnabledBlock, /createAssistantResponse\(finalResponseText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\);/);
 });
 
 test('handleCancelAi só age durante AI_STATUS.LOADING; marca aiCancelledRef ANTES de chamar uniLlm.cancel() (senao a corrida perderia o cancelamento)', async () => {
@@ -3171,4 +3171,100 @@ test('FASE 14: rollback lógico por flags — nada depende de rebuild de arquite
   assert.match(configSource, /conversationRoutingEnabled/);
   assert.match(configSource, /VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED/);
   assert.match(configSource, /VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED/);
+});
+
+test('FASE 21: createAssistantResponse permanece o único ponto de publicação em handleUnresolvedMessage', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function handleUnresolvedMessage'),
+    page.indexOf('function handleCancelAi'),
+  );
+  const matches = fnBody.match(/createAssistantResponse\(/g) ?? [];
+  assert.equal(matches.length, 1, 'createAssistantResponse deve ser chamado exatamente uma vez em handleUnresolvedMessage');
+});
+
+test('FASE 22: responseText do Tool Calling é combinado com llmText via composeFinalResponseText (nunca o substitui cegamente)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function handleUnresolvedMessage'),
+    page.indexOf('function handleCancelAi'),
+  );
+  assert.match(fnBody, /const toolCallingResponseText = lastUniToolCallingResultRef\.current\?\.responseText \?\? null;/);
+  assert.match(
+    fnBody,
+    /const finalResponseText = composeFinalResponseText\(\{\s*\n\s*llmText,\s*\n\s*toolResponseText: toolCallingResponseText,\s*\n\s*conversationStyle,\s*\n\s*\}\);/,
+  );
+  assert.match(fnBody, /createAssistantResponse\(finalResponseText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\);/);
+});
+
+test('FASE 22: composeFinalResponseText é importado da uni-engine (nenhuma lógica de composição duplicada em UniChatPage)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{ runToolCallingIntegration, createFinancialDataToolsContext, composeFinalResponseText \} from '\.\.\/uni-engine\/index\.js';/);
+});
+
+test('FASE 21: lastUniToolCallingResultRef é zerado no início de CADA turno (não só na troca de conversa)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function handleUnresolvedMessage'),
+    page.indexOf('let rawToolCalls = null;') + 'let rawToolCalls = null;'.length + 400,
+  );
+  assert.match(fnBody, /let rawToolCalls = null;[\s\S]{0,300}lastUniToolCallingResultRef\.current = null;/);
+});
+
+test('FASE 21: conversationStyle é passado para runToolCallingIntegration (mesmo eixo de estilo usado no resto da Uni)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const callBlock = page.slice(
+    page.indexOf('lastUniToolCallingResultRef.current = await runToolCallingIntegration({'),
+    page.indexOf('lastUniToolCallingResultRef.current = await runToolCallingIntegration({') + 900,
+  );
+  assert.match(callBlock, /conversationStyle,/);
+});
+
+// ============================================================================
+// Sprint 1 (IA Conversacional) -- ponte "fato estruturado -> frase natural"
+// para as perguntas de clarificação, atrás de VITE_UNI_LLM_PHRASING_ENABLED
+// (default desligada). Fallback para o texto canônico (uniResponseBuilder.js)
+// é preservado em qualquer falha/flag desligada.
+// ============================================================================
+
+test('Sprint 1: attemptNaturalPhrasing só age em needs_clarification, com service suportado, senão preserva o result original', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function attemptNaturalPhrasing'),
+    page.indexOf('async function publishConversationResultWithInference'),
+  );
+  assert.match(fnBody, /action\?\.status !== 'needs_clarification' \|\| !issue \|\| !phraseStructuredFactService\.isSupported\(\)/);
+  assert.match(fnBody, /return result;/);
+});
+
+test('Sprint 1: attemptNaturalPhrasing nunca envia IDs/saldos dos candidatos -- só nomes', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function attemptNaturalPhrasing'),
+    page.indexOf('async function publishConversationResultWithInference'),
+  );
+  assert.match(fnBody, /issue\.candidates\.slice\(0, 8\)\.map\(\(candidate\) => candidate\?\.name\)/);
+});
+
+test('Sprint 1: falha/ausência de texto fraseado preserva o result original (fallback para o texto canônico)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function attemptNaturalPhrasing'),
+    page.indexOf('async function publishConversationResultWithInference'),
+  );
+  assert.match(fnBody, /if \(!text\) \{[\s\S]{0,200}return result;/);
+});
+
+test('Sprint 1: publishConversationResultWithInference encadeia categoria (Fase D) depois fraseio natural, nessa ordem', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function publishConversationResultWithInference'),
+    page.indexOf('async function publishConversationResultWithInference') + 400,
+  );
+  assert.match(fnBody, /const categorized = await attemptCategoryInference\(result\);\s*\n\s*const phrased = await attemptNaturalPhrasing\(categorized\);\s*\n\s*publishConversationResult\(phrased\);/);
+});
+
+test('Sprint 1: phraseStructuredFactService combina uniLlm.enabled com a flag adicional VITE_UNI_LLM_PHRASING_ENABLED', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /enabled: uniLlm\.enabled && isLlmPhrasingFlagEnabled\(\),/);
 });
