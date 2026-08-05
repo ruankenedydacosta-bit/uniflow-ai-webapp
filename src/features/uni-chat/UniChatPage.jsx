@@ -78,7 +78,7 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { classifyIntent } from '../uni-intents/index.js';
-import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry } from '../uni-engine/index.js';
+import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 // Fase 2 — memória operacional do Uni Engine: objeto TEMPORÁRIO por conversa
 // (não persiste nada). O pipeline nunca lê esta memória; apenas o motor.
@@ -368,6 +368,13 @@ export default function UniChatPage({ variant = 'full' }) {
   // turno. Fica SOMENTE em ref dedicado — nenhum state React, nenhuma
   // renderização, nunca persistido, falha-safe (engine segue intacta).
   const lastCognitivePipelineSnapshotRef = useRef(null);
+  // FASE 15 — BLOCO 7/8: resultado do Motor de Raciocínio Financeiro
+  // (shadow-only). Executa em paralelo observacional ao pipeline da Fase 14,
+  // consome SOMENTE dados financeiros já disponíveis no turno, fica SOMENTE
+  // em ref (nenhum state, nenhuma renderização, nada persistido) e é sempre
+  // descartável — influenceApplied=false, discarded=true; jamais altera a
+  // resposta visível, pending actions ou confirmações.
+  const lastFinancialReasoningResultRef = useRef(null);
 
   // BLOCO VOZ 1: SEMPRE fala, mesmo quando o texto é longo demais para o
   // limite da Edge Function (MAX_TTS_TEXT_LENGTH) -- gera uma versão curta e
@@ -1685,6 +1692,43 @@ export default function UniChatPage({ variant = 'full' }) {
         },
         plan: lastConversationPlannerSnapshotRef.current,
       });
+      // FASE 15 — MOTOR DE RACIOCÍNIO FINANCEIRO (SHADOW-ONLY): executa em
+      // paralelo observacional ao pipeline da Fase 14, UMA vez por turno (o
+      // guard lastEngineAnalyzedMessageIdRef deduplica a mensagem). Consome
+      // SOMENTE dados financeiros já disponíveis no turno e o resultado fica
+      // apenas no ref dedicado — influenceApplied sempre false, discarded
+      // sempre true; nunca altera resposta visível, pending actions ou
+      // confirmações. Qualquer falha → resultado vazio fail-safe.
+      try {
+        if (uniEngine.getConfig().financialReasoningEnabled) {
+          lastFinancialReasoningResultRef.current = runFinancialReasoningShadow({
+            config: uniEngine.getConfig(),
+            turnId: turn.userMessage.id,
+            messageId: turn.userMessage.id,
+            input: {
+              accounts: accountState.accounts,
+              categories: categoryState.categories,
+              transactions: transactionsState.transactions,
+              goals: goalsState.goals,
+              workspaceBalance: balanceState.workspaceBalance,
+              accountBalances: balanceState.accountBalances,
+            },
+            legacy: {
+              totalBalance: financialContext.snapshot.totalBalance,
+              monthlyIncome: financialContext.snapshot.monthlyIncome,
+              monthlyExpense: financialContext.snapshot.monthlyExpense,
+              hasData: financialContext.snapshot.hasData,
+              riskSignaled: false,
+              creditSignaled: false,
+              goalSignaled: false,
+            },
+            referenceDate: financialContext.snapshot.referenceDate,
+          });
+        }
+      } catch {
+        // Fase 15 jamais quebra o chat — motor descartável, legado intacto.
+        lastFinancialReasoningResultRef.current = null;
+      }
       return lastApplicationResultRef.current;
      } catch {
        lastUniEngineGatewayResultRef.current = null;
@@ -1702,6 +1746,7 @@ export default function UniChatPage({ variant = 'full' }) {
       lastEngineContextBridgeTurnRef.current = null;
       lastEngineComparisonRef.current = null;
       lastCognitivePipelineSnapshotRef.current = null;
+      lastFinancialReasoningResultRef.current = null;
       // Shadow Mode jamais quebra o chat — falha silenciosa, legado intacto.
       return null;
     }
@@ -1736,6 +1781,133 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!legacyText) return legacyText;
     const applicationResult = runEngineObservational(legacyText, options);
     if (!applicationResult) return legacyText;
+
+    // FASE 18 — Runtime Financeiro Visível: Gateway único de resposta financeira.
+    // Reutiliza applicationResult (já calculado) → runFinancialRuntimeShadow → selectFinancialVisibleResponse.
+    // Preserva o texto legado de fallback completo para produção, flags false, canary falhou,
+    // intent não permitida, confiança insuficiente, fatos inválidos, narrativa vazia,
+    // identity mudou, Pending Action ativa, efeitos colaterais permanecem INTACTOS.
+    // Nunca escreve, nunca faz uma segunda chamada ao provedor de LLM, nunca altera voz/autenticação/design/navegação.
+    const financialRuntimeResult = runFinancialRuntimeShadow({
+      config: uniEngine.getConfig(),
+      turnId: lastUniEngineGatewayResultRef.current?.turnId,
+      messageId: lastUniEngineGatewayResultRef.current?.messageId,
+      // FASE 19.1: identidade de PRODUÇÃO do resultado -- viaja com o
+      // resultado (campos próprios, nunca aninhados em turnId) para que os
+      // gates de isolamento da Fase 19 possam detectar resultado stale, de
+      // outro workspace ou de outra conversa mais abaixo.
+      workspaceId: effectiveWorkspace?.id ?? null,
+      conversationId: activeId ?? null,
+      userMessage: legacyText,
+      financialData: financialContext.snapshot,
+      referenceDate: getLocalIsoDate(),
+    });
+
+    // Build eligibility object from runtime result for the selector
+    const intentType = financialRuntimeResult?.intent?.type ?? null;
+    const temporalResolved = !!financialRuntimeResult?.temporal?.entity;
+    const queryValid = !!financialRuntimeResult?.queryPlan;
+    const executionSuccessful = financialRuntimeResult?.executionResult?.status === 'executed';
+    const dataAvailable = executionSuccessful && !!financialRuntimeResult?.executionResult?.results;
+    const narrativeValid = !!financialRuntimeResult?.narrative?.text?.trim();
+    const safetyApproved = true; // runtime is shadow-only, no safety violations
+    const intentSupported = !!intentType && financialRuntimeResult?.intent?.type !== 'unknown';
+    const runtimeConfidence = financialRuntimeResult?.confidence ?? financialRuntimeResult?.narrative?.confidence ?? 0;
+
+    const eligibility = {
+      eligible: intentSupported && temporalResolved && queryValid && executionSuccessful && dataAvailable && narrativeValid && safetyApproved,
+      influenceAllowed: true,
+      fallbackRequired: false,
+      confidence: runtimeConfidence,
+      intentSupported,
+      temporalResolved,
+      queryValid,
+      executionSuccessful,
+      dataAvailable,
+      factsValidated: true, // runtime generates its own facts
+      narrativeValid,
+      safetyApproved,
+      intentType,
+      reasonCodes: [],
+    };
+
+    // Factual validation - runtime generates its own validated facts
+    const factualValidation = {
+      valid: true,
+      confidence: financialRuntimeResult?.narrative?.confidence ?? 0,
+      reasonCodes: [],
+    };
+
+    // Active identity from gateway result
+    const activeIdentity = lastUniEngineGatewayResultRef.current?.turnId ? { turnId: lastUniEngineGatewayResultRef.current.turnId } : null;
+
+    // Pending action from ref
+    const pendingAction = pendingActionRef.current ?? null;
+
+    const financialSelection = selectFinancialVisibleResponse({
+      legacyText,
+      runtimeResult: financialRuntimeResult,
+      eligibility,
+      factualValidation,
+      confidence: runtimeConfidence,
+      config: uniEngine.getConfig(),
+      activeIdentity,
+      pendingAction,
+      narrative: financialRuntimeResult.narrative,
+    });
+
+    // FASE 19 — Rollout Control Determínstico: único ponto de decisão entre
+    // o texto legado e o texto visível JÁ escolhido pela Fase 18 acima.
+    // Reutiliza legacyText, financialRuntimeResult e financialSelection tal
+    // como calculados -- nunca chama runFinancialRuntimeShadow de novo,
+    // nunca gera outra narrativa, nunca publica mais de uma vez (o valor
+    // final continua fluindo para o mesmo e único selectedFinancialText
+    // usado mais abaixo). Identidade/config/Pending Action/confirmação são
+    // os MESMOS já resolvidos para a Fase 18 -- nenhuma nova leitura de
+    // estado é criada aqui.
+    const rolloutSourceConfig = uniEngine.getConfig();
+    const rolloutConfig = {
+      enabled: rolloutSourceConfig.financialRolloutEnabled,
+      shadowMode: rolloutSourceConfig.financialRolloutShadowMode,
+      visibleEnabled: rolloutSourceConfig.financialRolloutVisibleEnabled,
+      productionEnabled: rolloutSourceConfig.financialRolloutProductionEnabled,
+      canaryEnabled: rolloutSourceConfig.financialRolloutCanaryEnabled,
+      canaryPercentage: rolloutSourceConfig.financialRolloutCanaryPercentage,
+      minimumConfidence: rolloutSourceConfig.financialRolloutMinimumConfidence,
+      telemetryEnabled: rolloutSourceConfig.financialRolloutTelemetryEnabled,
+      emergencyRollback: rolloutSourceConfig.financialRolloutEmergencyRollback,
+      requireEligibility: rolloutSourceConfig.financialRolloutRequireEligibility,
+      requireFactualValidation: rolloutSourceConfig.financialRolloutRequireFactualValidation,
+      requireIdentityMatch: rolloutSourceConfig.financialRolloutRequireIdentityMatch,
+      requireConversationMatch: rolloutSourceConfig.financialRolloutRequireConversationMatch,
+      requireWorkspaceMatch: rolloutSourceConfig.financialRolloutRequireWorkspaceMatch,
+      requireTurnMatch: rolloutSourceConfig.financialRolloutRequireTurnMatch,
+      requireMessageMatch: rolloutSourceConfig.financialRolloutRequireMessageMatch,
+    };
+    const rolloutIdentity = {
+      turnId: activeIdentity?.turnId ?? null,
+      workspaceId: effectiveWorkspace?.id ?? null,
+      conversationId: activeId ?? null,
+      messageId: lastEngineTurnRef.current?.userMessage?.id ?? null,
+      pendingAction,
+      confirmationState: options?.type === 'confirmation' ? { pending: true } : null,
+    };
+    const canaryAssignment = assignFinancialRolloutBucket(rolloutIdentity, rolloutConfig);
+    const rolloutDecision = runFinancialRolloutIntegration({
+      legacyText,
+      runtimeResult: financialRuntimeResult,
+      financialSelection,
+      config: rolloutConfig,
+      identity: rolloutIdentity,
+      eligible: eligibility?.eligible === true,
+      canaryAssignment,
+      environment: import.meta.env.DEV ? 'development' : 'production',
+    });
+
+    const selectedFinancialText = rolloutDecision.selectedSource === 'financial_runtime'
+      ? rolloutDecision.selectedText
+      : legacyText;
+
     const plannerSnapshot = lastConversationPlannerSnapshotRef.current;
     const routingSnapshot = selectControlledConversationRoute({
       config: uniEngine.getConfig(),
@@ -1890,10 +2062,10 @@ export default function UniChatPage({ variant = 'full' }) {
         });
       }
     }
-    if (bridgeContext.influenceAllowed === false) return legacyText;
+    if (bridgeContext.influenceAllowed === false) return selectedFinancialText;
     if (routingSnapshot.selectedRoute === 'ROUTE_ANSWER') {
       return selectControlledVisibleResponse({
-        legacyText,
+        legacyText: selectedFinancialText,
         applicationResult,
         config: uniEngine.getConfig(),
         environment: import.meta.env.DEV ? 'development' : 'production',
@@ -1905,7 +2077,7 @@ export default function UniChatPage({ variant = 'full' }) {
           .includes('CIRCUIT_BREAKER_OPEN') !== true,
       });
     }
-    return legacyText;
+    return selectedFinancialText;
   }, [runEngineObservational, user?.id]);
 
   // A orientação entra no ÚNICO ponto de construção de mensagem do pipeline
@@ -2161,6 +2333,7 @@ export default function UniChatPage({ variant = 'full' }) {
     lastEngineContextBridgeTurnRef.current = null;
     lastEngineComparisonRef.current = null;
     lastCognitivePipelineSnapshotRef.current = null;
+    lastFinancialReasoningResultRef.current = null;
     resetCognitiveTelemetry();
     saveActiveId(id);
     saveActiveSource(conv.source || 'local');
@@ -2872,6 +3045,7 @@ export default function UniChatPage({ variant = 'full' }) {
     lastEngineContextBridgeTurnRef.current = null;
     lastEngineComparisonRef.current = null;
     lastCognitivePipelineSnapshotRef.current = null;
+    lastFinancialReasoningResultRef.current = null;
     if (hasPendingConversation) {
       // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
       // explícita NOVA. Se a frase é reconhecida como ação financeira

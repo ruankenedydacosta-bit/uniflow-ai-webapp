@@ -208,3 +208,62 @@ export {
   resetCognitiveTelemetry,
   sanitizeCognitiveTelemetryEntry,
 } from './telemetry/cognitiveTelemetry.js';
+// Fase 15 — Financial Reasoning Engine (Shadow-only). Motor de raciocínio
+// financeiro observacional: consolida snapshot serializável, diagnostica,
+// infere, planeja e compara com o pipeline legado — NUNCA executa, NUNCA
+// escreve, NUNCA altera resposta visível e NUNCA chama serviços externos.
+export * as financialReasoning from './financial-reasoning/index.js';
+export { runFinancialReasoningShadow } from './financial-reasoning/engine/runFinancialReasoningShadow.js';
+export { buildFinancialReasoningSnapshot } from './financial-reasoning/snapshot/buildFinancialSnapshot.js';
+export { buildFinancialDiagnostics } from './financial-reasoning/diagnostics/buildFinancialDiagnostics.js';
+export { buildFinancialInference } from './financial-reasoning/inference/buildFinancialInference.js';
+export { buildFinancialPlanner } from './financial-reasoning/planner/buildFinancialPlanner.js';
+export { compareFinancialPipelines } from './financial-reasoning/comparison/buildFinancialComparison.js';
+export {
+  createFinancialTelemetryStore,
+  buildFinancialTelemetryEntry,
+  recordFinancialTelemetry,
+  getFinancialTelemetrySnapshot,
+  resetFinancialTelemetry,
+} from './financial-reasoning/telemetry/financialTelemetry.js';
+// Fase 16 — Inteligência Financeira Conversacional (Shadow-only).
+// Camada conversacional sobre o motor financeiro: detecta intenção,
+// resolve referências temporais, enriquece contexto, planeja consultas,
+// executa em shadow, compara períodos e gera narrativas — NUNCA executa,
+// NUNCA escreve, NUNCA altera resposta visível.
+export * as financialConversational from './financial-conversational/index.js';
+export { runFinancialConversationalShadow } from './financial-conversational/integration/runFinancialConversationalShadow.js';
+export { resolveTemporalReferences } from './financial-conversational/temporal/index.js';
+export { enrichFinancialContext } from './financial-conversational/context/index.js';
+export { planFinancialQuery } from './financial-conversational/query-planner/index.js';
+export { executeFinancialQuery } from './financial-conversational/executor/index.js';
+export { compareFinancialPeriods } from './financial-conversational/period-comparison/index.js';
+export { generateFinancialNarrative } from './financial-conversational/narrator/index.js';
+export { compareLegacyWithConversational } from './financial-conversational/comparison/index.js';
+// Fase 17 — Runtime Conversacional Financeiro (Shadow-only).
+// Runtime que conecta a conversa da Uni ao motor financeiro das Fases 15-16.
+// Pipeline: intent → temporal → query planning → execution → comparison → narrative
+// Garantias: influenceApplied=false, executionAllowed=false, discarded=true, sem efeitos.
+export * as financialRuntime from './financial-runtime/index.js';
+export { resolveFinancialIntent } from './financial-runtime/intent/index.js';
+export { resolveRuntimeTemporal } from './financial-runtime/temporal/index.js';
+export { planFinancialQuery as planFinancialRuntimeQuery } from './financial-runtime/query/index.js';
+export { executeFinancialQuery as executeFinancialRuntimeQuery } from './financial-runtime/executor/index.js';
+export { compareRuntimePeriods } from './financial-runtime/comparator/index.js';
+export { generateRuntimeNarrative } from './financial-runtime/narrator/index.js';
+export { runFinancialRuntimeShadow } from './financial-runtime/shadow/index.js';
+export { compareLegacyWithRuntime } from './financial-runtime/comparison/index.js';
+// Fase 18 — Runtime Financeiro Visível (Gateway + Seletor). Escolhe entre a
+// resposta do runtime financeiro e a resposta legada com base em gates de
+// segurança (flag explícita, elegibilidade, validação factual, confiança,
+// identidade do turno) — qualquer gate reprovado cai para o texto legado.
+export { selectFinancialVisibleResponse } from './financial-runtime/response-selection/index.js';
+// Fase 19 — Rollout Control Determínstico. Decide, com base em flags,
+// canary determinístico e confiança mínima, se a resposta visível já
+// escolhida pela Fase 18 pode substituir o texto legado NESTE turno — nunca
+// reexecuta o runtime financeiro, nunca gera nova narrativa. Cascata:
+// engine off → financial reasoning off → financial runtime off → visible
+// runtime off → rollout off → production off → canary off → legado.
+// Rollout/produção/canary nascem desligados; legado é sempre o fallback.
+export { assignFinancialRolloutBucket } from './financial-rollout/assignment/financialRolloutAssignment.js';
+export { runFinancialRolloutIntegration } from './financial-rollout/integration/financialRolloutIntegration.js';

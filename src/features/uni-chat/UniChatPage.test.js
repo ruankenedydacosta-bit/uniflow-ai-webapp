@@ -1581,7 +1581,50 @@ test('BLOCO 1: engine desligada não altera nada -- config é sempre lida via un
   );
   // nenhum branch lê o resultado da engine para decidir o texto exibido
   assert.match(guidedBlock, /return legacyText;/);
-  assert.doesNotMatch(guidedBlock, /shadow/);
+  // FASE 18: este bloco agora também lê runFinancialRuntimeShadow +
+  // selectFinancialVisibleResponse (Runtime Financeiro Visível) -- a
+  // invariante "engine desligada não altera nada" não é mais "nunca
+  // referenciar shadow no texto-fonte" (esse texto mudou por design
+  // aprovado), e sim: o seletor central só troca o texto legado quando
+  // config.financialRuntimeVisibleEnabled === true, e essa flag é sempre
+  // lida em tempo real de uniEngine.getConfig() -- nunca hardcoded --
+  // então com o motor desligado (cascata de segurança em
+  // uniEngineConfig.js força a flag para false) o texto exibido continua
+  // sempre o legado.
+  assert.match(guidedBlock, /selectFinancialVisibleResponse\(\{/);
+  assert.match(guidedBlock, /config: uniEngine\.getConfig\(\),/);
+  assert.doesNotMatch(guidedBlock, /financialRuntimeVisibleEnabled:\s*true/);
+});
+
+test('FASE 19: rollout é o único ponto de decisão final -- reutiliza legacyText/financialRuntimeResult/financialSelection já calculados, nunca reexecuta o runtime nem gera outra narrativa', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  // exatamente uma chamada de cada função da Fase 19 -- nunca duplicada
+  const rolloutCalls = guidedBlock.match(/runFinancialRolloutIntegration\(\{/g) ?? [];
+  assert.equal(rolloutCalls.length, 1, 'runFinancialRolloutIntegration deve ser chamada exatamente uma vez por turno');
+  const canaryCalls = guidedBlock.match(/assignFinancialRolloutBucket\(/g) ?? [];
+  assert.equal(canaryCalls.length, 1, 'assignFinancialRolloutBucket deve ser chamada exatamente uma vez por turno');
+  // exatamente uma chamada ao runtime financeiro (Fase 17) e ao seletor da Fase 18 -- rollout nunca os re-executa
+  const runtimeShadowCalls = guidedBlock.match(/runFinancialRuntimeShadow\(\{/g) ?? [];
+  assert.equal(runtimeShadowCalls.length, 1, 'runFinancialRuntimeShadow nunca deve ser chamada uma segunda vez pelo rollout');
+  const financialSelectionCalls = guidedBlock.match(/selectFinancialVisibleResponse\(\{/g) ?? [];
+  assert.equal(financialSelectionCalls.length, 1, 'selectFinancialVisibleResponse nunca deve ser chamada uma segunda vez pelo rollout');
+  // reutiliza o resultado já calculado -- nunca cria um novo runtimeResult/financialSelection
+  assert.match(guidedBlock, /runtimeResult:\s*financialRuntimeResult,\s*\n\s*financialSelection,/);
+  // config do rollout sempre lida de uniEngine\.getConfig\(\) -- nenhuma flag hardcoded como true
+  assert.match(guidedBlock, /const rolloutSourceConfig = uniEngine\.getConfig\(\);/);
+  assert.doesNotMatch(guidedBlock, /financialRolloutEnabled:\s*true/);
+  assert.doesNotMatch(guidedBlock, /financialRolloutProductionEnabled:\s*true/);
+  assert.doesNotMatch(guidedBlock, /financialRolloutCanaryEnabled:\s*true/);
+  // Pending Action e confirmação pendente do MESMO turno (nenhum novo estado é lido)
+  assert.match(guidedBlock, /pendingAction,\s*\n\s*confirmationState: options\?\.type === 'confirmation'/);
+  // única publicação: o valor final de selectedFinancialText vem do rollout, e é a mesma
+  // variável consumida mais abaixo pelo resto da função (nenhum segundo return/publish)
+  assert.match(guidedBlock, /const selectedFinancialText = rolloutDecision\.selectedSource === 'financial_runtime'/);
 });
 
 test('BLOCO 1: erro interno da engine nunca quebra o chat -- try/catch silencioso no ponto de observação', async () => {
