@@ -363,6 +363,13 @@ test('consistência: memória consistente x usuário x banco → CONSISTENT', ()
     financialSnapshot: FRESH_SNAPSHOT,
     persistentMemory: [MEMORY_CONSISTENT],
     conversationContext: { lastIntent: 'check_balance' },
+    // ETAPA 7: sem `now` explícito, snapshotFreshness() cai no Date.now() real
+    // -- FRESH_SNAPSHOT.referenceDate é uma data fixa (2026-07-29) que se
+    // torna "stale" à medida que o tempo real passa, fazendo este teste
+    // divergir por conta da data do sistema, não por regressão de código.
+    // NOW (2026-07-30, já usado por contextOf() no resto deste arquivo) é a
+    // referência injetável correta.
+    now: NOW,
   });
   assert.equal(consistency, 'CONSISTENT');
 });
@@ -372,6 +379,7 @@ test('consistência: contexto x intenção divergente → PARTIAL', () => {
     intent: { type: 'check_balance' },
     financialSnapshot: FRESH_SNAPSHOT,
     conversationContext: { lastIntent: 'register_expense' },
+    now: NOW,
   });
   assert.equal(consistency, 'PARTIAL');
 });
@@ -380,6 +388,7 @@ test('consistência: snapshot velho → PARTIAL (nunca bloqueia sozinho)', () =>
   const consistency = evaluateDecisionConsistency({
     intent: { type: 'check_balance' },
     financialSnapshot: STALE_SNAPSHOT,
+    now: NOW,
   });
   assert.equal(consistency, 'PARTIAL');
 });
@@ -388,6 +397,7 @@ test('consistência: banco x usuário com reivindicação de saldo → CONFLICTI
   const consistency = evaluateDecisionConsistency({
     intent: { type: 'set_balance' },
     financialSnapshot: FRESH_SNAPSHOT,
+    now: NOW,
     epistemicModel: {
       items: [{
         subject: 'balance:total',
