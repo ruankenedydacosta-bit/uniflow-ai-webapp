@@ -1,0 +1,20 @@
+// Uni Engine — Motor de Raciocínio Financeiro (Fase 15). Tipos (barrel).
+export {
+  FINANCIAL_REASONING_VERSION,
+  FINANCIAL_DIAGNOSTIC_TYPES,
+  FINANCIAL_DIAGNOSTIC_PRIORITIES,
+  FINANCIAL_INFERENCE_TYPES,
+  FINANCIAL_PLANNER_OBJECTIVES,
+  FINANCIAL_PLANNER_ACTIONS,
+  FINANCIAL_COMPARISON_STATUSES,
+  FINANCIAL_REASONING_STATUSES,
+  FINANCIAL_REASONING_STAGES,
+  isFinancialDiagnosticType,
+  isFinancialDiagnosticPriority,
+  isFinancialInferenceType,
+  isFinancialPlannerObjective,
+  isFinancialPlannerAction,
+  isFinancialComparisonStatus,
+  isFinancialReasoningStatus,
+  isFinancialReasoningStage,
+} from './financialReasoningTypes.js';
