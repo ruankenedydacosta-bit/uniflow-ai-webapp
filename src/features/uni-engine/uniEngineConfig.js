@@ -58,6 +58,11 @@
 //   - VITE_UNI_ENGINE_APPLICATION_ENABLED             → applicationEnabled (default: false)
 //   - VITE_UNI_ENGINE_APPLICATION_TELEMETRY           → applicationTelemetryEnabled (default: false)
 //
+// Fase 15 — Motor de Raciocínio Financeiro (Shadow Mode puro):
+//   - VITE_UNI_ENGINE_FINANCIAL_REASONING_ENABLED     → financialReasoningEnabled (default: false)
+//   - VITE_UNI_ENGINE_FINANCIAL_REASONING_SHADOW      → financialReasoningShadowMode (default: true)
+//   - VITE_UNI_ENGINE_FINANCIAL_REASONING_TELEMETRY   → financialReasoningTelemetryEnabled (default: false)
+//
 // Regras da Parte 5:
 //   - a aplicação exige motor ligado E Activation ligada E Integration ligada;
 //   - RESPONSE_STYLE_GUIDANCE e RESPONSE_LENGTH_GUIDANCE podem ser APLICADAS
@@ -180,6 +185,13 @@ export const UNI_ENGINE_DEFAULT_CONFIG = Object.freeze({
   // desligado; aplicação exige motor + Activation + Integration ligadas.
   applicationEnabled: false,
   applicationTelemetryEnabled: false,
+  // Fase 15 — Motor de Raciocínio Financeiro (Shadow Mode puro). Tudo nasce
+  // desligado; shadow ligado por padrão (observar é seguro); telemetria
+  // sempre desligada por padrão. O motor NUNCA aplica, NUNCA executa e NUNCA
+  // escreve — produz apenas inteligência descartável.
+  financialReasoningEnabled: false,
+  financialReasoningShadowMode: true,
+  financialReasoningTelemetryEnabled: false,
   // Parte 6 — Controlled Question (perguntas seguras pelo pipeline legado).
   // Interruptor MESTRE da parte: sem ele, NENHUMA pergunta controlada é
   // emitida, mesmo com as flags das capacidades autorizadas.
@@ -199,16 +211,6 @@ cognitiveOrchestratorEnabled: false,
   // nenhuma capability permitida por rollout — a saída é sempre 100% legada.
   // Exige motor + Activation + Integration + Application.
 rolloutEnabled: false,
-  // Parte 9 — Cognitive Orchestrator (consolidação final do Uni Engine).
-  // Interruptor MESTRE da parte: sem ele, o pipeline legado nunca consolida
-  // as camadas cognitivas — a saída é sempre 100% legada. Exige motor +
-  // Activation + Integration + Application.
-  cognitiveOrchestratorEnabled: false,
-  // Parte 9 — Cognitive Orchestrator (consolidação final do Uni Engine).
-  // Interruptor MESTRE da parte: sem ele, o pipeline legado nunca consolida
-  // as camadas cognitivas — a saída é sempre 100% legada. Exige motor +
-  // Activation + Integration + Application.
-  cognitiveOrchestratorEnabled: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -252,10 +254,15 @@ function parseTestUserIds(source, name) {
   return [];
 }
 
-// Percentual de rollout: inteiro clampado entre 0 e 100; inválido → 0.
+// Percentual de rollout (canary): inteiro clampado entre 0 e 100; inválido → 0.
 function parseRolloutPercent(source, name) {
   const raw = source?.[name];
-  const value = typeof raw === 'number' ? raw : Number.parseInt(raw, 10);
+  let value = 0;
+  if (typeof raw === 'number') {
+    value = raw;
+  } else if (typeof raw === 'string') {
+    value = Number.parseInt(raw, 10);
+  }
   if (!Number.isFinite(value)) return 0;
   if (value < 0) return 0;
   if (value > 100) return 100;
@@ -452,16 +459,91 @@ export function createUniEngineConfig(overrides = {}) {
     // ausência de configuração.
     controlledQuestionsEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CONTROLLED_QUESTIONS_ENABLED', false),
     // Parte 8 — Conversation Routing (roteamento conversacional controlado em
-    // DEV). Interruptor mestre; false por padrão. O pipeline legado só
-    // consulta o Conversation Planner do MESMO turno com a flag explícita
-    // ligada — ausência nunca ativa; produção nunca ativa por acidente.
+    // DEV). Interruptor mestre; false por padrão. O pipeline legado NUNCA
+    // consulta o Conversation Planner para selecionar rota — a saída é sempre
+    // 100% legada. Exige motor + Activation + Integration + Application.
     conversationRoutingEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_CONVERSATION_ROUTING_ENABLED', false),
     // Parte 9 — Cognitive Orchestrator (consolidação final do Uni Engine).
-    // Interruptor MESTRE da parte; false por padrão. Exige motor + Activation
-    // + Integration + Application habilitadas (cascata abaixo). Sem essa flag,
-    // o pipeline legado nunca consolida as camadas cognitivas — saída 100%
-    // legada. Produção nunca ativa por acidente.
+    // Interruptor mestre da parte: sem ele, o pipeline legado nunca consolida
+    // as camadas cognitivas — a saída é sempre 100% legada. Exige motor +
+    // Activation + Integration + Application.
     cognitiveOrchestratorEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_COGNITIVE_ORCHESTRATOR_ENABLED', false),
+    // Fase 15 — Motor de Raciocínio Financeiro. Nasce desligado; shadow ligado
+    // por padrão (observar é seguro); telemetria sempre desligada por padrão.
+    financialReasoningEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_REASONING_ENABLED', false),
+    financialReasoningShadowMode: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_REASONING_SHADOW', true),
+    financialReasoningTelemetryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_REASONING_TELEMETRY', false),
+    // Fase 18 — Runtime Financeiro Visível. Nasce desligado; shadow mode visível
+    // nasce desligado (requer opt-in explícito); telemetria sempre desligada por padrão.
+    // Resposta visível controlada: exige intenção allowlisted, confiança >= 0.90,
+    // validação factual, feature flag explícita, ambiente autorizado.
+    financialRuntimeVisibleEnabled: parseBooleanEnv(env, 'VITE_UNI_FINANCIAL_RUNTIME_VISIBLE_ENABLED', false),
+    financialRuntimeVisibleCanaryEnabled: parseBooleanEnv(env, 'VITE_UNI_FINANCIAL_RUNTIME_VISIBLE_CANARY_ENABLED', false),
+    financialRuntimeVisibleTelemetryEnabled: parseBooleanEnv(env, 'VITE_UNI_FINANCIAL_RUNTIME_VISIBLE_TELEMETRY', false),
+    financialRuntimeVisibleMinConfidence: parseFloat(env?.VITE_UNI_FINANCIAL_RUNTIME_VISIBLE_MIN_CONFIDENCE ?? '0.90'),
+    // Allowlist de intenções permitidas para resposta visível (string separada por vírgula).
+    financialRuntimeVisibleAllowedIntents: (() => {
+      const raw = env?.VITE_UNI_FINANCIAL_RUNTIME_VISIBLE_ALLOWED_INTENTS;
+      if (typeof raw === 'string' && raw.trim()) {
+        return raw.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      return [
+        'balance_query',
+        'income_query',
+        'expense_query',
+        'savings_query',
+        'net_worth_query',
+        'cashflow_query',
+        'category_breakdown_query',
+        'account_query',
+        'period_comparison_query',
+        'projection_query',
+        'goals_query',
+        'credit_query',
+        'investments_query',
+        'recurring_query',
+        'installments_query',
+      ];
+    })(),
+    // Fase 19 — Rollout Control Determínstico. Tudo nasce DESLIGADO por padrão;
+// Canary percent 0 seleciona ninguém; produção bloqueada até flag explícita true;
+// Cascade seguro: motor/engine desligado ⇒ rollout desligado;
+// Shadow mode nunca aprova influência;
+// Telemetria só ligada quando explicitamente configurada.
+// Allowlist de intenções permitidas para rollout (string separada por vírgula).
+financialRolloutEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_ENABLED', false),
+  financialRolloutShadowMode: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_SHADOW_MODE', true),
+  financialRolloutVisibleEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_VISIBLE_ENABLED', false),
+  financialRolloutProductionEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_PRODUCTION_ENABLED', false),
+  financialRolloutCanaryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_CANARY_ENABLED', false),
+  financialRolloutCanaryPercentage: parseInt(env?.VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_CANARY_PERCENTAGE ?? '0', 10),
+  financialRolloutMinimumConfidence: parseFloat(env?.VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_MIN_CONFIDENCE ?? '0.90'),
+  financialRolloutTelemetryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_TELEMETRY_ENABLED', false),
+  financialRolloutEmergencyRollback: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_EMERGENCY_ROLLBACK', false),
+  financialRolloutRequireEligibility: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_REQUIRE_ELIGIBILITY', true),
+  financialRolloutRequireFactualValidation: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_REQUIRE_FACTUAL_VALIDATION', true),
+  financialRolloutRequireIdentityMatch: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_REQUIRE_IDENTITY_MATCH', true),
+  financialRolloutRequireConversationMatch: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_REQUIRE_CONVERSATION_MATCH', true),
+  financialRolloutRequireWorkspaceMatch: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_REQUIRE_WORKSPACE_MATCH', true),
+  // FASE 19.1: turnId/messageId são strings simples reais no contrato do
+  // runtime -- gates de turno/mensagem comparam identity.turnId/messageId
+  // (turno atual) contra runtimeResult.turnId/messageId (turno de produção).
+  financialRolloutRequireTurnMatch: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_REQUIRE_TURN_MATCH', true),
+  financialRolloutRequireMessageMatch: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_REQUIRE_MESSAGE_MATCH', true),
+  financialRolloutAllowedIntents: (() => {
+    const raw = env?.VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_ALLOWED_INTENTS;
+    if (typeof raw === 'string' && raw.trim()) {
+      return raw.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [];
+  })(),
+  financialRolloutDeniedIntents: (() => {
+    const raw = env?.VITE_UNI_ENGINE_FINANCIAL_ROLLOUT_DENIED_INTENTS;
+    if (typeof raw === 'string' && raw.trim()) {
+      return raw.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [];
+  })(),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -591,6 +673,40 @@ export function createUniEngineConfig(overrides = {}) {
   if (!config.activationEnabled) config.cognitiveOrchestratorEnabled = false;
   if (!config.integrationEnabled) config.cognitiveOrchestratorEnabled = false;
   if (!config.applicationEnabled) config.cognitiveOrchestratorEnabled = false;
+
+  // Fase 15 — Motor de Raciocínio Financeiro exige o motor cognitivo ligado;
+  // shadow e telemetria do motor financeiro exigem o próprio motor ligado.
+  // Variável ausente ou inválida nunca ativa — produção nunca ativa por
+  // acidente.
+  if (!config.enabled) config.financialReasoningEnabled = false;
+  if (!config.financialReasoningEnabled) {
+    config.financialReasoningShadowMode = false;
+    config.financialReasoningTelemetryEnabled = false;
+  }
+
+  // Fase 18 — Runtime Financeiro Visível exige o Motor de Raciocínio
+  // Financeiro ligado (financialReasoningEnabled); canary e telemetria
+  // exigem o runtime visível ligado. Variável ausente ou inválida nunca
+  // ativa — produção nunca ativa por acidente.
+  if (!config.enabled) config.financialRuntimeVisibleEnabled = false;
+  if (!config.financialReasoningEnabled) config.financialRuntimeVisibleEnabled = false;
+  if (!config.financialRuntimeVisibleEnabled) {
+    config.financialRuntimeVisibleCanaryEnabled = false;
+    config.financialRuntimeVisibleTelemetryEnabled = false;
+  }
+
+  // Fase 19 — Rollout Control Determínstico exige o Motor de Raciocínio
+  // Financeiro ligado (financialReasoningEnabled); produção, canary e
+  // telemetria exigem o rollout ligado. Cascata segura: motor/engine
+  // desligado ⇒ rollout desligado, conforme o próprio contrato da Fase 19.
+  if (!config.enabled) config.financialRolloutEnabled = false;
+  if (!config.financialReasoningEnabled) config.financialRolloutEnabled = false;
+  if (!config.financialRolloutEnabled) {
+    config.financialRolloutVisibleEnabled = false;
+    config.financialRolloutProductionEnabled = false;
+    config.financialRolloutCanaryEnabled = false;
+    config.financialRolloutTelemetryEnabled = false;
+  }
 
   return Object.freeze({ ...config, activationCapabilities: Object.freeze(config.activationCapabilities) });
 }
