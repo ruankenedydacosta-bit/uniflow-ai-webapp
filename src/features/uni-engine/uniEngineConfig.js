@@ -68,6 +68,7 @@
 //   - VITE_UNI_ENGINE_TOOL_CALLING_SHADOW       → toolCallingShadowMode (default: true)
 //   - VITE_UNI_ENGINE_TOOL_CALLING_TELEMETRY    → toolCallingTelemetryEnabled (default: false)
 //   - VITE_UNI_ENGINE_TOOL_CALLING_REQUIRED     → toolCallingRequired (default: false)
+//   - VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED → toolCallingExecutionAllowed (default: false)
 //
 // Regras da Fase 20:
 //   - Tool Calling exige o motor cognitivo ligado (`enabled`); desligado,
@@ -234,6 +235,7 @@ cognitiveOrchestratorEnabled: false,
   toolCallingShadowMode: true,
   toolCallingTelemetryEnabled: false,
   toolCallingRequired: false,
+  toolCallingExecutionAllowed: false,
 });
 
 const BOOLEAN_VALUES = new Set(['true', '1', 'false', '0']);
@@ -574,6 +576,7 @@ financialRolloutEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT
   toolCallingShadowMode: parseBooleanEnv(env, 'VITE_UNI_ENGINE_TOOL_CALLING_SHADOW', true),
   toolCallingTelemetryEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_TOOL_CALLING_TELEMETRY', false),
   toolCallingRequired: parseBooleanEnv(env, 'VITE_UNI_ENGINE_TOOL_CALLING_REQUIRED', false),
+  toolCallingExecutionAllowed: parseBooleanEnv(env, 'VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED', false),
   };
 
   // Segurança: shadowMode só faz sentido com o motor ligado; o motor nunca
@@ -747,7 +750,9 @@ financialRolloutEnabled: parseBooleanEnv(env, 'VITE_UNI_ENGINE_FINANCIAL_ROLLOUT
     config.toolCallingShadowMode = false;
     config.toolCallingTelemetryEnabled = false;
     config.toolCallingRequired = false;
+    config.toolCallingExecutionAllowed = false;
   }
+  if (config.toolCallingShadowMode) config.toolCallingExecutionAllowed = false;
 
   return Object.freeze({ ...config, activationCapabilities: Object.freeze(config.activationCapabilities) });
 }

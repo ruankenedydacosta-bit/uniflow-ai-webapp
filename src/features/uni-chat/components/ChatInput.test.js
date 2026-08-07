@@ -37,3 +37,9 @@ test('interromper a fala nunca chama voiceInput.toggle()/start() no mesmo clique
   const block = code.slice(idx, idx + 100);
   assert.doesNotMatch(block, /voiceInput\.(toggle|start)\(\)/);
 });
+
+test('transcrição final envia a origem voice ao gateway comum', async () => {
+  const code = await source();
+  assert.match(code, /onSend\(next, \{ source: 'voice' \}\);/);
+  assert.match(code, /onSend\(value\.trim\(\)\);/);
+});

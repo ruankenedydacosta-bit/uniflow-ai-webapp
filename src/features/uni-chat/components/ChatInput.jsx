@@ -29,7 +29,7 @@ export default function ChatInput({
       const current = (valueRef.current || '').trim();
       const next = current ? `${current} ${clean}` : clean;
       onChange(next);
-      onSend(next);
+      onSend(next, { source: 'voice' });
     },
   }), [
     onBeforeVoiceStart,

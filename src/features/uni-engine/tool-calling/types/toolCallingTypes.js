@@ -13,6 +13,7 @@ export const TOOL_CALLING_DEFAULT_CONFIG = Object.freeze({
   toolCallingShadowMode: true,
   toolCallingTelemetryEnabled: false,
   toolCallingRequired: false,
+  toolCallingExecutionAllowed: false,
 });
 
 // Status de uma chamada de ferramenta (resultado padronizado).
@@ -70,5 +71,6 @@ export function validateToolCallingConfig(config) {
   if (typeof config.toolCallingShadowMode !== 'boolean') errors.push('TOOL_CALLING_SHADOW_MODE_MISSING_OR_NOT_BOOLEAN');
   if (typeof config.toolCallingTelemetryEnabled !== 'boolean') errors.push('TOOL_CALLING_TELEMETRY_MISSING_OR_NOT_BOOLEAN');
   if (typeof config.toolCallingRequired !== 'boolean') errors.push('TOOL_CALLING_REQUIRED_MISSING_OR_NOT_BOOLEAN');
+  if (typeof config.toolCallingExecutionAllowed !== 'boolean') errors.push('TOOL_CALLING_EXECUTION_ALLOWED_MISSING_OR_NOT_BOOLEAN');
   return { valid: errors.length === 0, errors };
 }

@@ -431,6 +431,15 @@ test('missing information: pendência pronta exige confirmação', () => {
   assert.deepEqual(missing, ['confirmation']);
 });
 
+test('missing information: confirm_pending satisfaz confirmação pronta', () => {
+  const missing = buildMissingInformation({
+    intent: 'confirm_pending',
+    cognitivePlan: { missingFields: [] },
+    pendingAction: { status: 'ready' },
+  });
+  assert.deepEqual(missing, []);
+});
+
 test('missing information: nunca preenche automaticamente', () => {
   const missing = buildMissingInformation({
     cognitivePlan: { missingFields: ['amount', 'category'] },

@@ -346,7 +346,7 @@ test('entrada por voz concatena, envia a transcrição e usa o workspace ativo',
   const chatInput = await source('components/ChatInput.jsx');
   const provider = await source('../uni-voice/UniVoiceInputProvider.jsx');
   assert.match(chatInput, /const next = current \? `\$\{current\} \$\{clean\}` : clean;/);
-  assert.match(chatInput, /onSend\(next\);/);
+  assert.match(chatInput, /onSend\(next, \{ source: 'voice' \}\);/);
   assert.match(chatInput, /onBeforeStart: onBeforeVoiceStart/);
   assert.match(provider, /workspaceId: workspace\?\.id/);
 });
@@ -720,7 +720,7 @@ test('BLOCO VOZ 1: estado intermediário NUNCA fala -- loading/digitação/trans
   // Nenhuma fala dentro de sendText/handleUnresolvedMessage (loading,
   // isTyping, transcrição) -- só o efeito de autoplay observa messages.
   const sendTextBlock = page.slice(
-    page.indexOf('function sendText(text) {'),
+    page.indexOf('function sendText(text, metadata) {'),
     page.indexOf('function handleSuggestionSelect'),
   );
   assert.doesNotMatch(sendTextBlock, /uniVoice\.speak|speakSideEffectNotice/);
@@ -1002,7 +1002,7 @@ test('BLOCO E: financialPlanService usa a MESMA Edge Function/flag do chat, sem 
 test('BLOCO E: heurística determinística tenta o plano neural ANTES do parser de uma única operação para texto complexo', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /import \{[\s\S]*?looksLikeComplexFinancialText[\s\S]*?\} from '\.\.\/uni-conversation';/);
-  const sendTextIdx = page.indexOf('function sendText(text) {');
+  const sendTextIdx = page.indexOf('function sendText(text, metadata) {');
   const runDeterministicIdx = page.indexOf('runDeterministicFinancialFlow(text, historySnapshot);', sendTextIdx);
   assert.ok(sendTextIdx > -1 && runDeterministicIdx > -1);
   const slice = page.slice(sendTextIdx, runDeterministicIdx);
@@ -1597,7 +1597,7 @@ test('BLOCO 1: a Uni Engine roda somente APÓS o resultado legado -- no ponto ú
   const page = await source('UniChatPage.jsx');
   // O envio apenas guarda o turno do usuário -- a engine não roda antes do
   // resultado legado existir (nenhum uniEngine.runShadow dentro de sendText).
-  const sendBlock = extractFunctionBody(page, 'function sendText(text) {').body;
+  const sendBlock = extractFunctionBody(page, 'function sendText(text, metadata) {').body;
   assert.match(sendBlock, /lastEngineTurnRef\.current = \{/);
   assert.match(sendBlock, /userMessageId: userMsg\.id/);
   assert.doesNotMatch(sendBlock, /uniEngine\.runShadow\(/);
@@ -1697,6 +1697,21 @@ test('FASE 19: rollout é o único ponto de decisão final -- reutiliza legacyTe
   // única publicação: o valor final de selectedFinancialText vem do rollout, e é a mesma
   // variável consumida mais abaixo pelo resto da função (nenhum segundo return/publish)
   assert.match(guidedBlock, /const selectedFinancialText = rolloutDecision\.selectedSource === 'financial_runtime'/);
+});
+
+test('FASE 19: runtime recebe a mensagem do usuário e identidade completa do turno ativo', async () => {
+  const page = await source('UniChatPage.jsx');
+  const guidedBlock = betweenMarkers(
+    page,
+    'const applyEngineGuidanceToResponse = useCallback',
+    'const buildGuidedUniMessage = useCallback',
+  );
+  assert.match(guidedBlock, /userMessage: engineTurn\?\.userMessage\?\.text \?\? ''/);
+  assert.doesNotMatch(guidedBlock, /userMessage: legacyText/);
+  assert.match(guidedBlock, /userId: user\?\.id \?\? null/);
+  assert.match(guidedBlock, /workspaceId: effectiveWorkspace\?\.id \?\? null/);
+  assert.match(guidedBlock, /conversationId: activeId \?\? null/);
+  assert.match(guidedBlock, /messageId: runtimeMessageId/);
 });
 
 test('BLOCO 1: erro interno da engine nunca quebra o chat -- try/catch silencioso no ponto de observação', async () => {
@@ -3534,4 +3549,16 @@ test('Sprint 2: dispatcher/executor/registry do Tool Calling (Sprint 1) permanec
   // mesma dedupe por mensagem, sem nenhum novo gate/condição introduzido
   // por conversationalMemoryRef.
   assert.match(page, /lastToolCallingProcessedMessageIdRef\.current === toolCallingMessageId/);
+});
+
+test('FASE 20: Tool Calling usa autorização central, identidade completa e opt-in de execução', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const authorization = buildToolCallingAuthorization\(\{/);
+  assert.match(page, /userId: user\?\.id \?\? null/);
+  assert.match(page, /workspaceId: effectiveWorkspace\?\.id \?\? null/);
+  assert.match(page, /conversationId: activeId \?\? null/);
+  assert.doesNotMatch(page, /const authorization = \{\s*authorized: true/);
+  const config = await source('../uni-engine/uniEngineConfig.js');
+  assert.match(config, /VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED/);
+  assert.match(config, /toolCallingExecutionAllowed: false/);
 });

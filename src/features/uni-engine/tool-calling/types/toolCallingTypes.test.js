@@ -4,8 +4,6 @@ import assert from 'node:assert/strict';
 import {
   TOOL_CALLING_VERSION,
   TOOL_CALLING_DEFAULT_CONFIG,
-  TOOL_CALL_STATUSES,
-  TOOL_CALL_SELECTION_DECISIONS,
   TOOL_CALL_SAFETY_KEYS,
   isToolCallStatus,
   isToolCallSelectionDecision,
@@ -22,6 +20,7 @@ test('types - config padrão é congelada e desligada por padrão', () => {
   assert.equal(TOOL_CALLING_DEFAULT_CONFIG.toolCallingShadowMode, true);
   assert.equal(TOOL_CALLING_DEFAULT_CONFIG.toolCallingTelemetryEnabled, false);
   assert.equal(TOOL_CALLING_DEFAULT_CONFIG.toolCallingRequired, false);
+  assert.equal(TOOL_CALLING_DEFAULT_CONFIG.toolCallingExecutionAllowed, false);
 });
 
 test('types - status fechados incluem estados de segurança', () => {

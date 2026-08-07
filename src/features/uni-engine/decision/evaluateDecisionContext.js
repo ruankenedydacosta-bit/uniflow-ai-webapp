@@ -33,6 +33,24 @@ const PARTIAL_CONSISTENCY = 'PARTIAL';
 const CONFLICTING_CONSISTENCY = 'CONFLICTING';
 const UNKNOWN_CONSISTENCY = 'UNKNOWN';
 
+const CONFIRMATION_INTENT_TYPES = new Set([
+  'confirmation',
+  'confirm',
+  'confirm_pending',
+]);
+
+function isConfirmationIntent(intentType) {
+  return CONFIRMATION_INTENT_TYPES.has(String(intentType ?? ''));
+}
+
+function isCorrectionIntent(intentType) {
+  return String(intentType ?? '') === 'correction';
+}
+
+function isExplicitConfirmationIntent(intentType) {
+  return isConfirmationIntent(intentType) || isCorrectionIntent(intentType);
+}
+
 // Estados de memória que a camada IGNORA como apoio (espelha a Fase 3/4:
 // memória superseded/expirada/contestada nunca é verdade).
 const EXCLUDED_MEMORY_STATUSES = new Set([
@@ -219,9 +237,9 @@ export function evaluateContextSufficiency({ intent, cognitivePlan, epistemicMod
   needed += 1;
   if (!hasConflicts) satisfied += 1;
 
-  if (pendingReady || (safeIntent.type === 'confirmation' || safeIntent.type === 'correction')) {
+  if (pendingReady || isExplicitConfirmationIntent(safeIntent.type)) {
     needed += 1;
-    if (pendingReady || safeIntent.type === 'correction') satisfied += 1;
+    if (pendingReady || isCorrectionIntent(safeIntent.type)) satisfied += 1;
   }
 
   if (needed === 0) return UNKNOWN_SUFFICIENCY;
@@ -291,7 +309,7 @@ export function buildMissingInformation({ cognitivePlan, pendingAction, epistemi
 
   const pendingStatus = pendingStatusOf(pendingAction);
   if (pendingStatus === 'ready') {
-    const confirmation = ['confirmation', 'correction'].includes(String(intent ?? ''));
+    const confirmation = isExplicitConfirmationIntent(intent);
     if (!confirmation) missing.add('confirmation');
   }
 
@@ -555,7 +573,7 @@ export function evaluateDecisionContext(input = {}) {
 
   const evidence = {
     intentKnown: intent.known,
-    intentConfirmed: intent.type === 'confirmation' || intent.type === 'correction',
+    intentConfirmed: isExplicitConfirmationIntent(intent.type),
     intentType: intent.type,
     memoryAvailable: usableMemories.length > 0 || Object.keys(operationalMemory ?? {}).length > 0,
     memoryCount: usableMemories.length,

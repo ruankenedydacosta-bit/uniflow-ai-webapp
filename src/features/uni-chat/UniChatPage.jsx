@@ -97,7 +97,7 @@ import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { dedupeMessagesForRender, mergeRestoredMessages } from './mergeRestoredMessages.js';
 import { classifyIntent } from '../uni-intents/index.js';
-import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration } from '../uni-engine/index.js';
+import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration, buildToolCallingAuthorization } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 
 // FASE 20.1 — Tool Calling. Integração isolada ao pipeline com guardas de
@@ -1849,14 +1849,19 @@ export default function UniChatPage({ variant = 'full' }) {
       // resultado fica apenas no ref dedicado (lastUniEngineGatewayResultRef)
       // e é descartável — nunca altera a resposta nem duplica mensagens.
       if (lastUniEngineGatewayResultRef.current?.turnId !== turn.userMessage.id) {
+        const gatewaySource = turn.userMessage.source === 'voice' ? 'voice' : 'text';
         lastUniEngineGatewayResultRef.current = runUniEngineGateway({
           conversationHistory: messages ?? [],
           conversationId: activeId ?? null,
           currentRoute: 'uni-chat',
           financialSnapshot: projectFinancialSnapshot(financialContext.snapshot),
-          source: 'text',
-          text: turn.userMessage.text,
+          source: gatewaySource,
+          ...(gatewaySource === 'voice'
+            ? { transcript: turn.userMessage.text }
+            : { text: turn.userMessage.text }),
           turnId: turn.userMessage.id,
+          userId: user?.id ?? null,
+          workspaceId: effectiveWorkspace?.id ?? null,
           userPreferences: {
             conversationStyle: 'balanced',
             workspaceType: financialWorkspaceType ?? 'personal',
@@ -2102,7 +2107,7 @@ export default function UniChatPage({ variant = 'full' }) {
       // Shadow Mode jamais quebra o chat — falha silenciosa, legado intacto.
       return null;
     }
-  }, [activeId, conversationStyle, effectiveWorkspace?.id, financialContext.snapshot, financialWorkspaceType, messages, user?.id]);
+  }, [accountState.accounts, activeId, balanceState.accountBalances, balanceState.workspaceBalance, categoryState.categories, conversationStyle, effectiveWorkspace?.id, financialContext.snapshot, financialWorkspaceType, goalsState.goals, messages, transactionsState.transactions, user?.id]);
 
   // PARTE 1 — INTEGRAÇÃO: camada adaptadora no ponto ÚNICO de saída de
   // resposta (createAssistantResponse). Em Shadow Mode (BLOCO 1) o texto
@@ -2140,17 +2145,22 @@ export default function UniChatPage({ variant = 'full' }) {
     // intent não permitida, confiança insuficiente, fatos inválidos, narrativa vazia,
     // identity mudou, Pending Action ativa, efeitos colaterais permanecem INTACTOS.
     // Nunca escreve, nunca faz uma segunda chamada ao provedor de LLM, nunca altera voz/autenticação/design/navegação.
+    const engineTurn = lastEngineTurnRef.current;
+    const runtimeTurnId = lastUniEngineGatewayResultRef.current?.turnId
+      ?? engineTurn?.userMessage?.id
+      ?? null;
+    const runtimeMessageId = engineTurn?.userMessage?.id ?? null;
     const financialRuntimeResult = runFinancialRuntimeShadow({
       config: uniEngine.getConfig(),
-      turnId: lastUniEngineGatewayResultRef.current?.turnId,
-      messageId: lastUniEngineGatewayResultRef.current?.messageId,
+      turnId: runtimeTurnId,
+      messageId: runtimeMessageId,
       // FASE 19.1: identidade de PRODUÇÃO do resultado -- viaja com o
       // resultado (campos próprios, nunca aninhados em turnId) para que os
       // gates de isolamento da Fase 19 possam detectar resultado stale, de
       // outro workspace ou de outra conversa mais abaixo.
       workspaceId: effectiveWorkspace?.id ?? null,
       conversationId: activeId ?? null,
-      userMessage: legacyText,
+      userMessage: engineTurn?.userMessage?.text ?? '',
       financialData: financialContext.snapshot,
       referenceDate: getLocalIsoDate(),
     });
@@ -2190,8 +2200,15 @@ export default function UniChatPage({ variant = 'full' }) {
       reasonCodes: [],
     };
 
-    // Active identity from gateway result
-    const activeIdentity = lastUniEngineGatewayResultRef.current?.turnId ? { turnId: lastUniEngineGatewayResultRef.current.turnId } : null;
+    // Identidade completa do turno ativo: resposta financeira de outro
+    // usuário/workspace/conversa/mensagem nunca pode atravessar este gate.
+    const activeIdentity = runtimeTurnId ? {
+      userId: user?.id ?? null,
+      workspaceId: effectiveWorkspace?.id ?? null,
+      conversationId: activeId ?? null,
+      turnId: runtimeTurnId,
+      messageId: runtimeMessageId,
+    } : null;
 
     // Pending action from ref
     const pendingAction = pendingActionRef.current ?? null;
@@ -2238,9 +2255,10 @@ export default function UniChatPage({ variant = 'full' }) {
     };
     const rolloutIdentity = {
       turnId: activeIdentity?.turnId ?? null,
-      workspaceId: effectiveWorkspace?.id ?? null,
-      conversationId: activeId ?? null,
-      messageId: lastEngineTurnRef.current?.userMessage?.id ?? null,
+      userId: activeIdentity?.userId ?? null,
+      workspaceId: activeIdentity?.workspaceId ?? null,
+      conversationId: activeIdentity?.conversationId ?? null,
+      messageId: activeIdentity?.messageId ?? null,
       pendingAction,
       confirmationState: options?.type === 'confirmation' ? { pending: true } : null,
     };
@@ -2430,7 +2448,7 @@ export default function UniChatPage({ variant = 'full' }) {
       });
     }
     return selectedFinancialText;
-  }, [runEngineObservational, user?.id]);
+  }, [activeId, effectiveWorkspace?.id, financialContext.snapshot, runEngineObservational, user?.id]);
 
   // A orientação entra no ÚNICO ponto de construção de mensagem do pipeline
   // oficial (buildMessage) — nenhum caminho de resposta fala por fora.
@@ -2816,8 +2834,8 @@ export default function UniChatPage({ variant = 'full' }) {
     // camada LLM existente à infraestrutura da Fase 20, conectada de forma
     // real (registry + dispatcher de leitura financeira, nunca null).
     // Desligada por padrão via toolCallingEnabled; mesmo ligada, só executa
-    // fora de shadow mode (toolCallingShadowMode=false) e apenas quando não
-    // há Pending Action em curso — dois gates adicionais, redundantes com os
+    // fora de shadow mode, com opt-in de execução separado e identidade
+    // completa, e apenas quando não há Pending Action em curso — gates adicionais, redundantes com os
     // gates internos do dispatcher/selection, propositalmente conservadores
     // para manter Tool Calling desligado por padrão em produção. Execução
     // única por mensagem via lastToolCallingProcessedMessageIdRef (ref por
@@ -2839,12 +2857,20 @@ export default function UniChatPage({ variant = 'full' }) {
               telemetryEnabled: toolCallingConfig.toolCallingTelemetryEnabled === true,
               allowWrites: false,
             });
-            const authorization = {
-              authorized: true,
-              executionAllowed: toolCallingConfig.toolCallingShadowMode !== true,
-              pendingAction: Boolean(pendingActionRef.current),
-              confirmationPending: false,
+            const pendingToolAction = pendingActionRef.current;
+            const toolCallingIdentity = {
+              userId: user?.id ?? null,
+              workspaceId: effectiveWorkspace?.id ?? null,
+              conversationId: activeId ?? null,
+              turnId: toolCallingTurnId,
+              messageId: toolCallingMessageId,
             };
+            const authorization = buildToolCallingAuthorization({
+              config: toolCallingConfig,
+              identity: toolCallingIdentity,
+              pendingAction: Boolean(pendingToolAction),
+              confirmationPending: pendingToolAction?.status === 'ready',
+            });
             lastUniToolCallingResultRef.current = await runToolCallingIntegration({
               rawToolCalls,
               dispatcher,
@@ -3544,8 +3570,9 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   // BLOCO 1 — GATEWAY ÚNICO DE ENTRADA: voz (onFinalTranscript) e texto (onSend) convergem para o mesmo sendText, ponto único que alimenta o runUniEngineGateway em cada turno.
-  function sendText(text) {
+  function sendText(text, metadata) {
     if (!text.trim() || isTyping || isExecutingAction) return;
+    const messageSource = metadata?.source === 'voice' ? 'voice' : 'text';
     setExecutionError(null);
     setAiStatus(AI_STATUS.UNAVAILABLE);
     lastUnresolvedRef.current = null;
@@ -3588,7 +3615,7 @@ export default function UniChatPage({ variant = 'full' }) {
       userMessage: {
         id: userMsg.id,
         text,
-        source: 'text',
+        source: messageSource,
         createdAt: new Date().toISOString(),
       },
       hasPendingConversation,

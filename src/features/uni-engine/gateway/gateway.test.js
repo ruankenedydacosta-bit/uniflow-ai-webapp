@@ -103,7 +103,10 @@ test('gateway ref é resetada no novo turno', async () => {
 test('gateway converte texto e voz para entrada comum', async () => {
   const page = await source('../../uni-chat/UniChatPage.jsx');
   const adapter = await source('../../uni-chat/uniChatAdapter.js');
-  assert.match(page, /onFinalTranscript.*onSend/);
+  assert.match(page, /const gatewaySource = turn\.userMessage\.source === 'voice'/);
+  assert.match(page, /\{ transcript: turn\.userMessage\.text \}/);
+  assert.match(page, /userId: user\?\.id \?\? null/);
+  assert.match(page, /workspaceId: effectiveWorkspace\?\.id \?\? null/);
   assert.match(adapter, /buildUserMessage/);
 });
 

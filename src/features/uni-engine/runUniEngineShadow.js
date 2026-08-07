@@ -285,7 +285,7 @@ function buildEpistemicModelSection({ input, normalized, cognitiveContext, plan,
       operationalMemory: operationalMemory ?? null,
       persistentMemories: persistentMemory?.retrieved ?? null,
       plan,
-      now: new Date().toISOString(),
+      now: input.message?.createdAt ?? new Date().toISOString(),
       epistemicState: epistemicState ?? null,
       session: input.session ?? null,
     });
@@ -659,7 +659,7 @@ export function runUniEngineShadow(input, options = {}) {
           decisionShadowMode: config.decisionShadowMode,
           decisionTelemetryEnabled: config.decisionTelemetryEnabled,
         },
-        timestamp: new Date().toISOString(),
+        timestamp: input.message?.createdAt ?? new Date().toISOString(),
         telemetryAdapter: safeOptions.telemetryAdapter ?? null,
       });
 

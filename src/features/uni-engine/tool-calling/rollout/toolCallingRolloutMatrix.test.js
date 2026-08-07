@@ -2,10 +2,9 @@
 //
 // Matriz oficial de rollout: cobre toda combinação válida da cascata de
 // flags (toolCallingEnabled, toolCallingShadowMode, toolCallingTelemetryEnabled,
-// toolCallingRequired) contra o comportamento REAL do pipeline (cascata de
+// toolCallingRequired, toolCallingExecutionAllowed) contra o comportamento REAL do pipeline (cascata de
 // config → runToolCallingIntegration → dispatcher → executor), usando o
-// mesmo padrão de autorização que src/features/uni-chat/UniChatPage.jsx usa
-// em produção (authorization.executionAllowed = !toolCallingShadowMode).
+// mesmo autorizador central usado por src/features/uni-chat/UniChatPage.jsx.
 //
 // Estados cobertos:
 //   OFF               → 100% legado (nenhum dispatcher chamado)
@@ -24,6 +23,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createUniEngineConfig } from '../../uniEngineConfig.js';
 import { runToolCallingIntegration } from '../integration/index.js';
+import { buildToolCallingAuthorization } from '../authorization/index.js';
 import {
   createFinancialDataToolsContext,
 } from '../financial-tools/index.js';
@@ -56,12 +56,16 @@ function buildEngineConfig(envOverrides = {}) {
 // Mesma regra usada em UniChatPage.jsx: executionAllowed só é true fora de
 // shadow mode; pendingAction/confirmationPending nunca ativos nestes testes.
 function buildAuthorization(config) {
-  return {
-    authorized: true,
-    executionAllowed: config.toolCallingShadowMode !== true,
-    pendingAction: false,
-    confirmationPending: false,
-  };
+  return buildToolCallingAuthorization({
+    config,
+    identity: {
+      userId: 'user-matrix',
+      workspaceId: 'ws-matrix',
+      conversationId: 'conv-matrix',
+      turnId: 'turn-matrix',
+      messageId: 'msg-matrix',
+    },
+  });
 }
 
 async function runMatrixCall(config, { withPipeline = true, messageId = 'msg-matrix' } = {}) {
@@ -95,6 +99,7 @@ test('MATRIZ - OFF (config.enabled=false): toolCallingEnabled cai para false, e 
   assert.equal(config.toolCallingShadowMode, false);
   assert.equal(config.toolCallingTelemetryEnabled, false);
   assert.equal(config.toolCallingRequired, false);
+  assert.equal(config.toolCallingExecutionAllowed, false);
 });
 
 test('MATRIZ - motor ligado, Tool Calling nunca ligado por padrão (opt-in explícito) — shadow cai junto por estar desligado', () => {
@@ -104,10 +109,12 @@ test('MATRIZ - motor ligado, Tool Calling nunca ligado por padrão (opt-in expl�
   // false quando toolCallingEnabled é false -- não há shadow sem Tool
   // Calling ligado. Confirmado abaixo com toolCallingEnabled=true isolado.
   assert.equal(config.toolCallingShadowMode, false);
+  assert.equal(config.toolCallingExecutionAllowed, false);
 
   const enabledConfig = buildEngineConfig({ VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true' });
   assert.equal(enabledConfig.toolCallingEnabled, true);
   assert.equal(enabledConfig.toolCallingShadowMode, true);
+  assert.equal(enabledConfig.toolCallingExecutionAllowed, false);
 });
 
 test('MATRIZ - toolCallingEnabled=false força shadow/telemetry/required=false mesmo se pedidos via env', () => {
@@ -116,11 +123,13 @@ test('MATRIZ - toolCallingEnabled=false força shadow/telemetry/required=false m
     VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
     VITE_UNI_ENGINE_TOOL_CALLING_TELEMETRY: 'true',
     VITE_UNI_ENGINE_TOOL_CALLING_REQUIRED: 'true',
+    VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true',
   });
   assert.equal(config.toolCallingEnabled, false);
   assert.equal(config.toolCallingShadowMode, false);
   assert.equal(config.toolCallingTelemetryEnabled, false);
   assert.equal(config.toolCallingRequired, false);
+  assert.equal(config.toolCallingExecutionAllowed, false);
 });
 
 test('MATRIZ - toolCallingEnabled=true + shadow=true + telemetry=true + required=true: combinação válida, nenhum campo é forçado', () => {
@@ -134,6 +143,16 @@ test('MATRIZ - toolCallingEnabled=true + shadow=true + telemetry=true + required
   assert.equal(config.toolCallingShadowMode, true);
   assert.equal(config.toolCallingTelemetryEnabled, true);
   assert.equal(config.toolCallingRequired, true);
+  assert.equal(config.toolCallingExecutionAllowed, false);
+});
+
+test('MATRIZ - shadow=false sem opt-in de execução permanece observacional', () => {
+  const config = buildEngineConfig({
+    VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true',
+    VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
+  });
+  assert.equal(config.toolCallingExecutionAllowed, false);
+  assert.equal(buildAuthorization(config).executionAllowed, false);
 });
 
 test('MATRIZ - rolloutEnabled (Parte 10, subsistema geral) é independente de Tool Calling: nenhuma combinação entre eles é inválida', () => {
@@ -184,6 +203,7 @@ test('MATRIZ - ON + Execution => Tool Calling executa de verdade e publica (resp
   const config = buildEngineConfig({
     VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true',
     VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
+    VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true',
   });
   const result = await runMatrixCall(config);
   assert.equal(result.enabled, true);
@@ -198,6 +218,7 @@ test('MATRIZ - Required + pipeline disponível: executa normalmente, nenhum erro
     VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true',
     VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
     VITE_UNI_ENGINE_TOOL_CALLING_REQUIRED: 'true',
+    VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true',
   });
   const result = await runMatrixCall(config);
   assert.equal(result.executed, true);
@@ -223,6 +244,7 @@ test('ROLLBACK - desligar toolCallingEnabled entre dois turnos volta imediatamen
   const onConfig = buildEngineConfig({
     VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true',
     VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
+    VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true',
   });
   const first = await runMatrixCall(onConfig, { messageId: 'msg-rollback-1' });
   assert.equal(first.executed, true);
@@ -237,6 +259,7 @@ test('ROLLBACK - voltar de Execution para Shadow bloqueia execução no turno se
   const executionConfig = buildEngineConfig({
     VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true',
     VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
+    VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true',
   });
   const executed = await runMatrixCall(executionConfig, { messageId: 'msg-rollback-3' });
   assert.equal(executed.executed, true);
@@ -257,6 +280,7 @@ test('ISOLAMENTO - dois turnos com contextos (workspace/conversation) diferentes
   const config = buildEngineConfig({
     VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true',
     VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
+    VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true',
   });
   const snapshot = buildSnapshot();
   const { dispatcher, registry, idempotency } = createFinancialDataToolsContext({ snapshot, config: { enabled: true } });
@@ -287,6 +311,7 @@ test('ISOLAMENTO - cada turno em produção recebe um contexto de tool calling N
   const config = buildEngineConfig({
     VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true',
     VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
+    VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true',
   });
   const first = await runMatrixCall(config, { messageId: 'msg-iso-1' });
   const second = await runMatrixCall(config, { messageId: 'msg-iso-2' });
@@ -305,8 +330,8 @@ test('SEGURANÇA - em todos os estados da matriz, o resultado nunca expõe data/
   const states = [
     buildEngineConfig({ VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'false' }),
     buildEngineConfig({ VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true', VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'true' }),
-    buildEngineConfig({ VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true', VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false' }),
-    buildEngineConfig({ VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true', VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false', VITE_UNI_ENGINE_TOOL_CALLING_REQUIRED: 'true' }),
+    buildEngineConfig({ VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true', VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false', VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true' }),
+    buildEngineConfig({ VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true', VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false', VITE_UNI_ENGINE_TOOL_CALLING_REQUIRED: 'true', VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true' }),
   ];
   let index = 0;
   for (const config of states) {
@@ -327,6 +352,7 @@ test('SEGURANÇA - nenhuma escrita financeira é possível em nenhum estado (all
   const config = buildEngineConfig({
     VITE_UNI_ENGINE_TOOL_CALLING_ENABLED: 'true',
     VITE_UNI_ENGINE_TOOL_CALLING_SHADOW: 'false',
+    VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED: 'true',
   });
   const { registry } = createFinancialDataToolsContext({ snapshot: buildSnapshot(), config: { enabled: true }, allowWrites: false });
   const blocked = registry.registerTool({ name: 'write_tool', handler: () => ({ data: {} }), writes: true });

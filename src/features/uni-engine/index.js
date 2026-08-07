@@ -275,6 +275,7 @@ export { runFinancialRolloutIntegration } from './financial-rollout/integration/
 // da Uni com guardas de turno/execução única.
 export * as toolCalling from './tool-calling/index.js';
 export { runToolCallingIntegration } from './tool-calling/integration/index.js';
+export { buildToolCallingAuthorization } from './tool-calling/authorization/index.js';
 // Fase 20.2/20.3 — ferramentas financeiras reais de leitura + contexto
 // pronto (registry + dispatcher + idempotency + telemetry) para conectar
 // definitivamente o Tool Calling ao pipeline conversacional.

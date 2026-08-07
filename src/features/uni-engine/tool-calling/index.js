@@ -27,6 +27,7 @@ export * as executor from './executor/index.js';
 export * as dispatcher from './dispatcher/index.js';
 export * as idempotency from './idempotency/index.js';
 export * as telemetry from './telemetry/index.js';
+export * as authorization from './authorization/index.js';
 // Fase 20.1 — adaptador OpenAI (borda com o pipeline existente).
 export * as adapters from './adapters/index.js';
 export * as integration from './integration/index.js';
@@ -40,6 +41,10 @@ export { executeTool, executeToolSync } from './executor/index.js';
 export { createToolCallingDispatcher } from './dispatcher/index.js';
 export { createIdempotencyStore } from './idempotency/index.js';
 export { createToolCallingTelemetryStore, hashToolCallId } from './telemetry/index.js';
+export {
+  buildToolCallingAuthorization,
+  hasCompleteToolCallingIdentity,
+} from './authorization/index.js';
 export {
   createEmptyToolResult,
   createToolResult,
