@@ -3,8 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/uniflow-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>uniflow-ai-app</title>
+
+    <style>
+      #uniflow-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #020817;
+        opacity: 1;
+        visibility: visible;
+        transition:
+          opacity 320ms ease,
+          visibility 320ms ease;
+      }
+
+      #uniflow-splash.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      #uniflow-splash img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #uniflow-splash {
+          transition: none;
+        }
+      }
+    </style>
+
     <script>
       // FOUC guard: aplica data-theme antes do React montar, espelhando
       // src/features/theme (chave 'uniflow.theme.preference', padrão 'light').
@@ -13,18 +54,26 @@
           var KEY = 'uniflow.theme.preference';
           var VALID = { light: 1, dark: 1, uniflow: 1, system: 1 };
           var pref = 'light';
+
           try {
             var stored = window.localStorage.getItem(KEY);
             if (stored && VALID[stored]) pref = stored;
           } catch (e) {}
+
           var effective = pref;
+
           if (pref === 'system') {
             var dark = false;
+
             try {
-              dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+              dark = window.matchMedia(
+                '(prefers-color-scheme: dark)',
+              ).matches;
             } catch (e) {}
+
             effective = dark ? 'dark' : 'light';
           }
+
           var root = document.documentElement;
           root.setAttribute('data-theme', effective);
           root.setAttribute('data-theme-preference', pref);
@@ -32,8 +81,30 @@
       })();
     </script>
   </head>
+
   <body>
+    <div id="uniflow-splash" aria-hidden="true">
+      <img src="/uniflow-splash.png" alt="" />
+    </div>
+
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
+
+    <script>
+      window.addEventListener('load', function () {
+        var splash = document.getElementById('uniflow-splash');
+
+        if (!splash) return;
+
+        window.setTimeout(function () {
+          splash.classList.add('is-hidden');
+
+          window.setTimeout(function () {
+            splash.remove();
+          }, 350);
+        }, 450);
+      });
+    </script>
   </body>
 </html>
