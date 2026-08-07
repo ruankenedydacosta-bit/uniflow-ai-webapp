@@ -160,8 +160,28 @@ export function createMediaRecorderAdapter({
     return true;
   }
 
+  // HOTFIX FINAL (deadlock "OUVINDO..." travado após start/cancel
+  // repetidos) -- CAUSA RAIZ: a guarda antiga `(!recorder && !stream)`
+  // fazia cancel() ser um NO-OP completo (nunca marcava `canceled=true`
+  // nem incrementava `permissionRequestId`) sempre que chamado ENQUANTO
+  // `getUserMedia()` ainda estava pendente (a janela mais comum num
+  // cancelamento rápido: usuário solta/cancela antes da permissão
+  // resolver). Sem esses dois marcadores setados, quando a promise de
+  // getUserMedia finalmente resolvia (ainda que bem depois), a checagem
+  // em `start()` (`if (disposed || canceled || requestId !==
+  // permissionRequestId)`) não pegava o cancelamento -- a sessão seguia
+  // adiante, criava o MediaRecorder de verdade e chamava `recorder.start()`
+  // mesmo já tendo sido cancelada, prendendo a UI em "ouvindo" para uma
+  // captura que o usuário já achava encerrada. Só não travava sempre
+  // porque `useUniVoiceInput.cancel()` também chama `dispose()` logo em
+  // seguida (que corrige os dois marcadores) -- mas isso dependia da ORDEM
+  // exata de duas chamadas em dois arquivos diferentes, não de cancel()
+  // ser correto sozinho. Agora cancel() sempre marca a sessão como
+  // cancelada, independente de recorder/stream já existirem -- correção na
+  // causa raiz, idempotente (uma segunda chamada cai no guard `canceled` e
+  // não faz nada).
   function cancel() {
-    if ((!recorder && !stream) || canceled) return false;
+    if (canceled) return false;
     canceled = true;
     permissionRequestId += 1;
     if (recorder?.state === 'recording') recorder.stop();

@@ -503,6 +503,25 @@ test('um único gesto por vez: pointerdown repetido enquanto já pressionado é 
   assert.match(home.slice(cancelIdx, cancelIdx + 200), /if \(pressedGestureRef\.current !== event\.pointerId\) return;/);
 });
 
+// HOTFIX FINAL (deadlock "OUVINDO..." travado até reload/troca de rota) --
+// CAUSA RAIZ: o botão "Cancelar escuta" chamava voiceInput.cancel DIRETO,
+// nunca passando por pressedGestureRef. Se o usuário ainda estava com o
+// ponteiro pressionado no botão principal (pointerdown já disparado) e
+// clicava em "Cancelar escuta" em vez de soltar, a captura era cancelada
+// mas pressedGestureRef.current ficava preso no pointerId antigo -- todo
+// pointerdown seguinte no botão principal era silenciosamente ignorado
+// (`if (pressedGestureRef.current !== null) return;`), exigindo reload/
+// troca de rota para destravar.
+test('HOTFIX FINAL: "Cancelar escuta" também libera pressedGestureRef (não é mais um cancelamento independente do gesto rastreado)', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(
+    home,
+    /function handleCancelVoiceButtonClick\(\) \{\s*\n\s*pressedGestureRef\.current = null;\s*\n\s*voiceInput\.cancel\(\);\s*\n\s*\}/,
+  );
+  assert.match(home, /onClick=\{handleCancelVoiceButtonClick\}/);
+  assert.doesNotMatch(home, /onClick=\{voiceInput\.cancel\}/);
+});
+
 test('não inicia nova gravação durante o processamento (isInteractionBusy inclui capture busy/typing/executing)', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /const isCaptureBusy = \[\s*VOICE_CAPTURE_STATES\.REQUESTING_PERMISSION,\s*VOICE_CAPTURE_STATES\.PROCESSING,\s*\]\.includes\(voiceInput\.status\);/);

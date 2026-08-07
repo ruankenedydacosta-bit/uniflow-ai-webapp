@@ -112,6 +112,111 @@ test('cancelamento não envia áudio e libera microfone', async () => {
   assert.equal(track.stopped, true);
 });
 
+// ============================================================================
+// HOTFIX FINAL (deadlock "OUVINDO..." travado após start/cancel repetidos)
+// -- CAUSA RAIZ: cancel() só marcava a sessão como cancelada (canceled=true
+// + permissionRequestId incrementado) quando `recorder`/`stream` já
+// existiam. Chamado ENQUANTO getUserMedia() ainda estava pendente (a janela
+// mais comum de um cancelamento rápido), cancel() virava um NO-OP -- a
+// promise pendente, ao resolver mais tarde, não encontrava nenhum marcador
+// de cancelamento e seguia adiante criando o MediaRecorder e chamando
+// recorder.start() mesmo já cancelado, prendendo a UI em "ouvindo" para
+// sempre. Corrigido para marcar a sessão como cancelada
+// INCONDICIONALMENTE.
+// ============================================================================
+
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+
+test('A) start -> cancel (com getUserMedia ainda pendente) -> resolver tardio da permissão NUNCA inicia a gravação', async () => {
+  const deferred = createDeferred();
+  const { runtime, track } = createRuntime({ getUserMedia: () => deferred.promise });
+  let audioSent = false;
+  let started = 0;
+  const adapter = createMediaRecorderAdapter({
+    runtime,
+    onStart: () => { started += 1; },
+    onAudio: () => { audioSent = true; },
+  });
+
+  const startPromise = adapter.start(); // fica pendente em getUserMedia
+  assert.equal(adapter.cancel(), true, 'cancel() enquanto getUserMedia está pendente deve reportar sucesso');
+
+  // resolver tardio da permissão -- exatamente a race do bug real.
+  deferred.resolve({ getTracks: () => [track] });
+  const started_ = await startPromise;
+
+  assert.equal(started_, false, 'start() deve resolver como não iniciado');
+  assert.equal(started, 0, 'onStart nunca deve disparar para uma sessão já cancelada');
+  assert.equal(audioSent, false);
+  assert.equal(track.stopped, true, 'a track do stream tardio deve ser liberada, nunca deixada ativa');
+});
+
+test('B) start -> cancel -> start novamente (adaptador novo) -> captura funcional normalmente', async () => {
+  const { runtime: runtime1 } = createRuntime();
+  const adapter1 = createMediaRecorderAdapter({ runtime: runtime1 });
+  await adapter1.start();
+  assert.equal(adapter1.cancel(), true);
+
+  // useUniVoiceInput sempre cria um adaptador NOVO por start() -- replica
+  // aqui: segunda captura é uma instância independente.
+  const { runtime: runtime2 } = createRuntime();
+  let capture = null;
+  const adapter2 = createMediaRecorderAdapter({ runtime: runtime2, onAudio: (value) => { capture = value; } });
+  assert.equal(await adapter2.start(), true, 'a segunda captura deve iniciar normalmente, sem contaminação da primeira');
+  assert.equal(adapter2.stop(), true);
+  assert.ok(capture.audio instanceof Blob, 'a segunda captura deve produzir áudio normalmente');
+});
+
+test('C) start/cancel repetido várias vezes seguidas nunca fica preso em "gravando"', async () => {
+  for (let i = 0; i < 6; i += 1) {
+    const { runtime } = createRuntime();
+    const adapter = createMediaRecorderAdapter({ runtime });
+    await adapter.start();
+    assert.equal(adapter.cancel(), true, `ciclo ${i}: cancel deve sempre reportar sucesso`);
+  }
+});
+
+test('D) callback onstop tardio de uma sessão já cancelada nunca produz áudio (a sessão cancelada nunca chega a chamar recorder.start())', async () => {
+  const deferred = createDeferred();
+  const { runtime, track } = createRuntime({ getUserMedia: () => deferred.promise });
+  let audioSent = false;
+  const adapter = createMediaRecorderAdapter({ runtime, onAudio: () => { audioSent = true; } });
+
+  const startPromise = adapter.start();
+  adapter.cancel();
+  deferred.resolve({ getTracks: () => [track] });
+  await startPromise;
+
+  // mesmo que o navegador ainda entregasse um onstop tardio de algum jeito,
+  // não há recorder ativo para essa sessão -- nunca produz áudio.
+  assert.equal(audioSent, false);
+});
+
+test('E) cancel() chamado duas vezes seguidas continua seguro (idempotente, nunca lança)', async () => {
+  const { runtime, track } = createRuntime();
+  const adapter = createMediaRecorderAdapter({ runtime });
+  await adapter.start();
+  assert.equal(adapter.cancel(), true, 'primeira chamada cancela de verdade');
+  assert.equal(adapter.cancel(), false, 'segunda chamada é um no-op seguro, nunca lança');
+  assert.equal(track.stopped, true);
+});
+
+test('F) cancel() chamado ANTES de qualquer start() nunca lança, e um start() real na mesma instância continua funcionando depois (start() sempre reseta o marcador de cancelamento no início da própria sessão)', async () => {
+  const { runtime } = createRuntime();
+  const adapter = createMediaRecorderAdapter({ runtime });
+  assert.equal(adapter.cancel(), true, 'idempotente e seguro mesmo sem sessão ativa -- nunca lança');
+  let audioSent = false;
+  const adapter2 = createMediaRecorderAdapter({ runtime, onAudio: () => { audioSent = true; } });
+  assert.equal(await adapter2.start(), true, 'uma nova instância de adaptador nunca é afetada pelo cancel() de outra');
+  assert.equal(adapter2.stop(), true);
+  assert.equal(audioSent, true);
+});
+
 test('permissão negada é classificada sem manter stream', async () => {
   const denied = Object.assign(new Error('denied'), { name: 'NotAllowedError' });
   const { runtime } = createRuntime({ getUserMedia: async () => { throw denied; } });
@@ -266,6 +371,24 @@ test('Edge Function valida origem, sessão, workspace, MIME, tamanho e duração
   assert.match(edge, /ALLOWED_MIME_TYPES/);
   assert.match(edge, /OPENAI_API_KEY/);
   assert.doesNotMatch(edge, /service_role|SERVICE_ROLE/);
+});
+
+// HOTFIX FINAL (422 em producao -- "Fala nao identificada" para audio real
+// e completo): auditoria do pipeline cliente (MediaRecorder -> Blob ->
+// upload) nao encontrou nenhum bug estrutural -- Blob montado corretamente
+// so apos onstop, sem race condition, mime/duracao/tamanho validados nos
+// dois lados. O 422 sempre vinha de OpenAI responder 200 com texto vazio.
+// Default do modelo trocado de 'gpt-4o-mini-transcribe' (mais novo, menos
+// maduro) para 'whisper-1' (mesmo endpoint/contrato, mais robusto para
+// fala curta/coloquial em PT-BR) -- UNI_TRANSCRIPTION_MODEL continua
+// disponivel para sobrescrever.
+test('HOTFIX FINAL: modelo padrao de transcricao e whisper-1 (trocado de gpt-4o-mini-transcribe), com UNI_TRANSCRIPTION_MODEL ainda disponivel para sobrescrever', () => {
+  const edge = readFileSync(
+    new URL('../../../supabase/functions/uni-voice-transcribe/index.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(edge, /Deno\.env\.get\('UNI_TRANSCRIPTION_MODEL'\) \?\? 'whisper-1'/);
+  assert.doesNotMatch(edge, /\?\? 'gpt-4o-mini-transcribe'/);
 });
 
 test('logs server-side contêm somente métricas, nunca transcrição ou identidade', () => {

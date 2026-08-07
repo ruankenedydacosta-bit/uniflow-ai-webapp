@@ -619,6 +619,24 @@ function SimplifiedHomeView({
     endVoiceCapture({ canceled: false });
   }
 
+  // HOTFIX FINAL (deadlock "OUVINDO..." travado): o botão "Cancelar escuta"
+  // é um segundo ponto de saída da captura, independente do gesto de
+  // pressionar/soltar -- mas chamava `voiceInput.cancel` DIRETO, nunca
+  // passando por `pressedGestureRef`. Se o usuário ainda estava com o
+  // ponteiro pressionado no botão principal (pointerdown já disparado,
+  // pointerup nunca chega a acontecer porque o usuário usa este botão em
+  // vez de soltar) e clicava aqui, a captura era cancelada corretamente,
+  // mas `pressedGestureRef.current` ficava PRESO no pointerId antigo para
+  // sempre -- `handleVoicePointerDown` (`if (pressedGestureRef.current !==
+  // null) return;`) passava a IGNORAR silenciosamente todo pointerdown
+  // seguinte no botão principal, exigindo reload/troca de rota para
+  // destravar. Cancelar por aqui agora sempre libera o gesto rastreado
+  // também (idempotente -- se não havia gesto ativo, é um no-op).
+  function handleCancelVoiceButtonClick() {
+    pressedGestureRef.current = null;
+    voiceInput.cancel();
+  }
+
   return (
     <div className={styles.home} data-simplified-home>
       <section className={styles.greeting} aria-labelledby="simplified-home-title">
@@ -679,7 +697,7 @@ function SimplifiedHomeView({
           <span className={styles.uniButtonLabel}>{stateCopy.button}</span>
         </button>
         {voiceInput.isActive ? (
-          <button type="button" className={styles.cancelVoice} onClick={voiceInput.cancel}>
+          <button type="button" className={styles.cancelVoice} onClick={handleCancelVoiceButtonClick}>
             Cancelar escuta
           </button>
         ) : null}

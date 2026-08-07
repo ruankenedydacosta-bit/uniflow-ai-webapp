@@ -129,7 +129,18 @@ Deno.serve(async (request) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
   const providerKey = Deno.env.get('OPENAI_API_KEY') ?? '';
-  const model = Deno.env.get('UNI_TRANSCRIPTION_MODEL') ?? 'gpt-4o-mini-transcribe';
+  // HOTFIX FINAL (422 em producao -- "Fala nao identificada"): trocado o
+  // default de 'gpt-4o-mini-transcribe' para 'whisper-1'. Auditoria
+  // completa do pipeline cliente (MediaRecorder -> Blob -> upload) nao
+  // encontrou nenhum bug estrutural -- o Blob e montado corretamente so
+  // apos onstop (sem race condition), mime type/duracao/tamanho validados
+  // corretamente nos dois lados. O 422 sempre vinha de OpenAI responder 200
+  // com texto vazio para audio real e completo -- sintoma consistente com
+  // o modelo mais novo (gpt-4o-mini-transcribe) sendo menos robusto que o
+  // whisper-1 (mais maduro, mesmo endpoint/contrato) para fala curta/
+  // coloquial em PT-BR. UNI_TRANSCRIPTION_MODEL continua disponivel para
+  // sobrescrever caso necessario.
+  const model = Deno.env.get('UNI_TRANSCRIPTION_MODEL') ?? 'whisper-1';
   if (!supabaseUrl || !anonKey || !providerKey) {
     return jsonResponse(503, { error: 'Transcricao indisponivel.' }, origin);
   }
