@@ -5,15 +5,22 @@
 // uma (fora Editar perfil/Segurança, que ganham mensagem própria) é um
 // placeholder honesto -- "ainda não implementado", nunca uma tela em
 // branco nem dado fictício.
+//
+// BLOCO FINAL DO MVP (Sobre a UniFlow AI): "Notificações" e "Privacidade e
+// dados" foram removidas TOTALMENTE (id + rota) do menu Conta -- de
+// propósito, não um esquecimento. Notificações já têm um lar oficial (o
+// sino da Home, NotificationBell.jsx) e nunca deveriam existir duplicadas
+// aqui; Privacidade e dados será implementada no futuro junto de LGPD,
+// exportação/exclusão de conta e permissões -- construir um placeholder
+// agora só criaria uma promessa vazia.
 export const ACCOUNT_SUBROUTE_IDS = Object.freeze({
   EDIT_PROFILE: 'edit-profile',
   SECURITY: 'security',
   PLAN: 'plan',
   PAYMENTS: 'payments',
+  PAYMENT_HISTORY: 'payment-history',
   MY_ACCOUNTS: 'my-accounts',
-  NOTIFICATIONS: 'notifications',
   VOICE: 'voice',
-  PRIVACY: 'privacy',
   SUPPORT: 'support',
   ABOUT: 'about',
 });
@@ -39,34 +46,35 @@ export const ACCOUNT_SUBROUTES = Object.freeze({
     title: 'Pagamento e assinatura',
     description: 'A integração de pagamento ainda não está disponível nesta versão.',
   }),
+  // BLOCO FINAL DO MVP (Histórico de pagamentos): tela real única que serve
+  // tanto "Ver histórico de pagamentos" (Seu plano) quanto "Notas fiscais e
+  // recibos" -- mesmos dados (billing_payments), cada item já traz seu
+  // próprio comprovante (invoice_url) quando existe.
+  [ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY]: Object.freeze({
+    path: '/app/conta/pagamentos/historico',
+    title: 'Histórico de pagamentos',
+    description: 'Seus pagamentos e recibos, quando disponíveis.',
+  }),
   [ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS]: Object.freeze({
     path: '/app/conta/minhas-contas',
     title: 'Minhas contas',
     description: 'Em breve você poderá gerenciar suas contas financeiras por aqui.',
-  }),
-  [ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS]: Object.freeze({
-    path: '/app/conta/notificacoes',
-    title: 'Notificações',
-    description: 'Em breve você poderá ajustar alertas e lembretes por aqui.',
   }),
   [ACCOUNT_SUBROUTE_IDS.VOICE]: Object.freeze({
     path: '/app/conta/voz',
     title: 'Voz da Uni',
     description: 'Escolha como a Uni deve desenvolver as respostas.',
   }),
-  [ACCOUNT_SUBROUTE_IDS.PRIVACY]: Object.freeze({
-    path: '/app/conta/privacidade',
-    title: 'Privacidade e dados',
-    description: 'Em breve você verá aqui como seus dados são usados.',
-  }),
   [ACCOUNT_SUBROUTE_IDS.SUPPORT]: Object.freeze({
     path: '/app/conta/suporte',
     title: 'Suporte',
     description: 'Em breve você poderá falar com nossa equipe diretamente por aqui.',
   }),
+  // BLOCO FINAL DO MVP (Sobre a UniFlow AI): tela institucional real,
+  // primeira versão oficial do MVP (v1.0.0) -- ver appIdentity.js.
   [ACCOUNT_SUBROUTE_IDS.ABOUT]: Object.freeze({
     path: '/app/conta/sobre',
-    title: 'Sobre o UniFlow AI',
-    description: 'Informações sobre o aplicativo.',
+    title: 'Sobre a UniFlow AI',
+    description: 'Conheça a UniFlow AI: quem somos, nossa missão e o que a Uni faz por você.',
   }),
 });

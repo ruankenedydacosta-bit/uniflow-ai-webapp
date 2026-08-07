@@ -66,6 +66,28 @@ export function createTransactionDuplicateForm(transaction) {
   };
 }
 
+// Rótulos honestos por tipo -- mesmos já usados em transactionExportUtils.js
+// (TRANSACTION_TYPE_LABELS), reaproveitados aqui como base do fallback.
+const NEUTRAL_DESCRIPTION_BY_TYPE = {
+  income: 'Entrada',
+  expense: 'Despesa',
+  transfer: 'Transferência entre contas',
+  adjustment: 'Ajuste de saldo',
+};
+
+// A descrição é OPCIONAL na interface (usuário nunca é obrigado a digitar),
+// mas a coluna transactions.description no banco é NOT NULL + CHECK
+// length(btrim(description)) > 0 (supabase/migrations/20260711000200_002_financial_core.sql).
+// Em vez de relaxar essa constraint (migração não comprovadamente
+// necessária) ou forçar o usuário a preencher, sintetizamos aqui uma
+// descrição neutra e honesta (nunca inventa detalhes) só para persistência
+// quando o campo é deixado em branco.
+export function resolveTransactionDescription(form) {
+  const typed = form.description?.trim();
+  if (typed) return typed;
+  return NEUTRAL_DESCRIPTION_BY_TYPE[form.transaction_type] ?? 'Lançamento';
+}
+
 export function buildTransactionMutationPayload(form) {
   const payload = {
     account_id: form.account_id,
@@ -73,7 +95,7 @@ export function buildTransactionMutationPayload(form) {
       form.transaction_type === 'transfer' ? form.destination_account_id : null,
     category_id: form.category_id || null,
     transaction_type: form.transaction_type,
-    description: form.description,
+    description: resolveTransactionDescription(form),
     amount: form.amount,
     transaction_date: form.transaction_date,
     status: form.status ?? 'completed',

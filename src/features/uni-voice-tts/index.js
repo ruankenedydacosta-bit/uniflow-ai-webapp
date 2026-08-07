@@ -7,6 +7,7 @@ export {
   shouldUseBrowserFallback,
 } from './voiceFallbackPolicy.js';
 export { buildSpeechText } from './speechText.js';
+export { normalizeFinancialTextForSpeech } from './normalizeFinancialTextForSpeech.js';
 export { useUniVoiceTts } from './useUniVoiceTts.js';
 export {
   createVoiceTtsRequestContext,

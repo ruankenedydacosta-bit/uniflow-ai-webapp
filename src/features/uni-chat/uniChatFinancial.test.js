@@ -248,3 +248,46 @@ test('BUG REAL (BUG 5): card de despesa mantém uma única linha "Conta" com key
   assert.equal(contaRows[0].key, 'account');
   assert.equal(card.rows.find((row) => row.key === 'category').label, 'Categoria');
 });
+
+// ============================================================================
+// FASE ESTADOS DE PROCESSAMENTO: buildConfirmationFromAction expõe
+// actionKind (campo aditivo) -- alimenta useUniProcessingMessage('executing',
+// { actionKind }) para um rótulo honesto durante a execução real.
+// ============================================================================
+
+test('actionKind é "adjustment" para ajuste de saldo, mesmo que transactionType também seja "adjustment"', () => {
+  const card = buildConfirmationFromAction({
+    typeLabel: 'Ajuste',
+    transactionType: 'adjustment',
+    balanceTarget: 1200,
+    balanceDelta: 200,
+    currentBalance: 1000,
+    account: { name: 'Nubank' },
+  });
+  assert.equal(card.actionKind, 'adjustment');
+});
+
+test('actionKind reflete transactionType real para despesa/entrada/transferência', () => {
+  const expense = buildConfirmationFromAction({
+    typeLabel: 'Despesa', transactionType: 'expense', account: { name: 'Nubank' }, amount: 10, date: '2026-07-11',
+  });
+  const income = buildConfirmationFromAction({
+    typeLabel: 'Entrada', transactionType: 'income', account: { name: 'Nubank' }, amount: 10, date: '2026-07-11',
+  });
+  const transfer = buildConfirmationFromAction({
+    typeLabel: 'Transferência',
+    transactionType: 'transfer',
+    account: { name: 'Nubank' },
+    destinationAccount: { name: 'Inter' },
+    amount: 10,
+    date: '2026-07-11',
+  });
+  assert.equal(expense.actionKind, 'expense');
+  assert.equal(income.actionKind, 'income');
+  assert.equal(transfer.actionKind, 'transfer');
+});
+
+test('actionKind é null quando a ação não informa transactionType', () => {
+  const card = buildConfirmationFromAction({ typeLabel: 'Movimentação', account: { name: 'Nubank' } });
+  assert.equal(card.actionKind, null);
+});

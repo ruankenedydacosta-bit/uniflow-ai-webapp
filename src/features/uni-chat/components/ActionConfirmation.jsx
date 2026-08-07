@@ -1,6 +1,10 @@
 import UniSignatureWave from './UniSignatureWave';
 import styles from './ActionConfirmation.module.css';
 
+// FASE ESTADOS DE PROCESSAMENTO: `processingLabel` (opcional, default
+// "Registrando…") -- alimentado por useUniProcessingMessage('executing',
+// { actionKind }) para refletir a ação real (ajuste de saldo, transferência
+// etc.) em vez de um rótulo genérico fixo.
 export default function ActionConfirmation({
   data,
   onConfirm,
@@ -8,6 +12,7 @@ export default function ActionConfirmation({
   onCancel,
   isExecuting = false,
   executionError = null,
+  processingLabel = 'Registrando…',
 }) {
   if (!data) return null;
   const { title, rows = [], status = 'pending', editable = true } = data;
@@ -24,7 +29,7 @@ export default function ActionConfirmation({
         {status === 'canceled' && <span className={styles.statusCancel}>Cancelado</span>}
         {status === 'expired' && <span className={styles.statusCancel}>Expirado</span>}
         {status === 'pending' && isExecuting && (
-          <span className={styles.statusProcessing}>Registrando…</span>
+          <span className={styles.statusProcessing}>{processingLabel}</span>
         )}
       </div>
 
@@ -52,7 +57,7 @@ export default function ActionConfirmation({
             onClick={onConfirm}
             disabled={isExecuting}
           >
-            {isExecuting ? 'Registrando…' : 'Confirmar'}
+            {isExecuting ? processingLabel : 'Confirmar'}
           </button>
           {editable && (
             <button

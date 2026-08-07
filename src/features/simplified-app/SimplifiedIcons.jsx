@@ -369,6 +369,46 @@ export function ChevronDownIcon() {
   );
 }
 
+// BLOCO FINAL DO MVP (Sobre a UniFlow AI): 4 ícones novos, no MESMO estilo
+// (viewBox 32x32, stroke via CSS do chamador -- nunca fill/inline style
+// aqui) já usado por todos os demais ícones deste arquivo. Nenhuma
+// identidade visual nova é criada, só estendida.
+export function RocketIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M16 4c5 3 7 8 7 13l-7 7-7-7c0-5 2-10 7-13Z" />
+      <circle cx="16" cy="13" r="2.6" />
+      <path d="M11 21l-3 6M21 21l3 6" />
+    </svg>
+  );
+}
+
+export function BrainIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M13 6a4 4 0 0 0-4 4 4 4 0 0 0-2 7 4 4 0 0 0 3 6.5A4 4 0 0 0 13 26V6Z" />
+      <path d="M19 6a4 4 0 0 1 4 4 4 4 0 0 1 2 7 4 4 0 0 1-3 6.5A4 4 0 0 1 19 26V6Z" />
+    </svg>
+  );
+}
+
+export function HandshakeIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M4 15l6-5 5 3 3-3 10 6-4 4-4-3" />
+      <path d="M13 13l6 6-3 3-7-6M20 22l-2 2" />
+    </svg>
+  );
+}
+
+export function SparkleIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M16 4l2.4 8.6L27 15l-8.6 2.4L16 26l-2.4-8.6L5 15l8.6-2.4Z" />
+    </svg>
+  );
+}
+
 export function UniMark() {
   const gradientId = useId().replace(/:/g, '');
 

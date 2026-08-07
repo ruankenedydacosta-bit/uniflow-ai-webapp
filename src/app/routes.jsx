@@ -22,10 +22,12 @@ import {
   ACCOUNT_SUBROUTE_IDS,
   ACCOUNT_SUBROUTES,
   SIMPLIFIED_ROUTES,
+  SimplifiedAboutPage,
   SimplifiedAccountPage,
   SimplifiedAccountSubpagePlaceholder,
   SimplifiedEditProfilePage,
   SimplifiedMyAccountsPage,
+  SimplifiedPaymentHistoryPage,
   SimplifiedPaymentsPage,
   SimplifiedPlanPage,
   SimplifiedRecordsPage,
@@ -198,6 +200,13 @@ export const appRoutes = [
     element: <SimplifiedPaymentsPage />,
   },
   {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY].title,
+    simplified: true,
+    element: <SimplifiedPaymentHistoryPage />,
+  },
+  {
     path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path,
     label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].title,
     title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].title,
@@ -218,6 +227,13 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedVoicePage />,
   },
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].title,
+    simplified: true,
+    element: <SimplifiedAboutPage />,
+  },
   // ETAPA 4 (Fase 8): demais rotas internas de Conta -- placeholders
   // honestos e consistentes (título + botão voltar + mensagem curta),
   // nunca uma tela em branco. A construção completa de cada uma acontece
@@ -229,9 +245,11 @@ export const appRoutes = [
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path
     ))
     .map((subroute) => ({
       path: subroute.path,

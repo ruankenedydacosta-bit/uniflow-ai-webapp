@@ -1,0 +1,256 @@
+/* BLOCO REGISTROS iOS (refino visual): o Modal compartilhado (Modal.jsx) usa
+   tokens --uf-* que resolvem CLARO quando data-theme="light" (padrão desta
+   conta) -- enquanto o resto do app "simplified" é sempre escuro via cores
+   fixas. Redefinir os tokens aqui (mesmo padrão já usado em
+   .notificationsDropdown de simplifiedApp.module.css) faz TODO o chrome do
+   Modal (header/título/descrição/botão fechar, herdados por cascata de CSS
+   custom properties) renderizar com a identidade escura oficial, sem tocar
+   no Modal.jsx/Modal.module.css compartilhado (que continua reativo ao tema
+   nas demais telas). */
+.balanceDialog {
+  --uf-color-bg-elevated: linear-gradient(145deg, rgba(14, 31, 62, .96), rgba(4, 13, 33, .98));
+  --uf-color-bg-sunken: rgba(10, 22, 48, .82);
+  --uf-color-bg-surface-hover: rgba(15, 30, 58, .95);
+  --uf-color-border-default: rgba(86, 109, 151, .42);
+  --uf-color-border-subtle: rgba(86, 109, 151, .28);
+  --uf-color-border-strong: rgba(96, 116, 255, .5);
+  --uf-color-text-primary: #f8fafc;
+  --uf-color-text-secondary: #c3ccdc;
+  --uf-color-text-tertiary: #9aa7bd;
+  --uf-color-primary: #2563eb;
+  --uf-color-danger: #ef4444;
+  --uf-color-danger-subtle: rgba(239, 68, 68, .16);
+  --uf-color-info-subtle: rgba(37, 99, 235, .14);
+  --uf-gradient-success: linear-gradient(145deg, #16a34a, #10b981);
+  --uf-focus-ring-color: #67e8f9;
+  max-width: 420px;
+}
+
+.darkOverlay {
+  background: rgba(3, 8, 20, .68) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Mesmos tokens de .balanceDialog, aplicados ao FinanceAccountModal quando
+   aberto a partir do sub-fluxo "Criar conta" desta modal -- mantém a
+   identidade escura consistente entre as duas telas empilhadas. */
+.accountDialogDark {
+  --uf-color-bg-elevated: linear-gradient(145deg, rgba(14, 31, 62, .96), rgba(4, 13, 33, .98));
+  --uf-color-bg-sunken: rgba(10, 22, 48, .82);
+  --uf-color-bg-surface-hover: rgba(15, 30, 58, .95);
+  --uf-color-border-default: rgba(86, 109, 151, .42);
+  --uf-color-border-subtle: rgba(86, 109, 151, .28);
+  --uf-color-border-strong: rgba(96, 116, 255, .5);
+  --uf-color-text-primary: #f8fafc;
+  --uf-color-text-secondary: #c3ccdc;
+  --uf-color-text-tertiary: #9aa7bd;
+  --uf-color-primary: #2563eb;
+  --uf-color-danger: #ef4444;
+  --uf-color-danger-subtle: rgba(239, 68, 68, .16);
+  --uf-color-info-subtle: rgba(37, 99, 235, .14);
+  --uf-focus-ring-color: #67e8f9;
+}
+
+.form,
+.confirmContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+  min-width: 0;
+}
+
+.amountField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.amountInput {
+  width: 100%;
+  min-height: var(--uf-tap-target-min);
+  padding: 0 var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-sunken);
+  color: var(--uf-color-text-primary);
+  font: inherit;
+  font-size: 20px;
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.amountInput:focus-visible {
+  border-color: var(--uf-color-primary);
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-16);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-info-subtle);
+}
+
+.emptyState p {
+  margin: 0;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+}
+
+.accountField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+}
+
+.accountLabelRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--uf-space-8);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.createAccountLink {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--uf-color-primary);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-medium);
+  cursor: pointer;
+}
+
+.createAccountLink:hover {
+  text-decoration: underline;
+}
+
+.accountSelect {
+  width: 100%;
+  min-height: var(--uf-tap-target-min);
+  padding: 0 var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-sunken);
+  color: var(--uf-color-text-primary);
+  font: inherit;
+}
+
+.accountSelect:focus-visible {
+  border-color: var(--uf-color-primary);
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.summaryList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-12);
+  margin: 0;
+  padding: var(--uf-space-16);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-sunken);
+}
+
+.summaryList > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-8);
+}
+
+.summaryList dt {
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-caption-size);
+}
+
+.summaryList dd {
+  margin: 0;
+  color: var(--uf-color-text-primary);
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.summaryDelta {
+  padding-top: var(--uf-space-8);
+  border-top: 1px solid var(--uf-color-border-default);
+}
+
+.positive {
+  color: var(--uf-color-success);
+}
+
+.negative {
+  color: var(--uf-color-danger);
+}
+
+.errorMessage {
+  margin: 0;
+  padding: var(--uf-space-12);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-danger-subtle);
+  color: var(--uf-color-danger);
+  font-size: var(--uf-text-caption-size);
+}
+
+.successContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--uf-space-8);
+  padding: var(--uf-space-16) 0;
+  text-align: center;
+}
+
+.successIcon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--uf-space-8);
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-gradient-success);
+  color: var(--uf-color-text-primary);
+  font-size: 22px;
+}
+
+.successContent strong {
+  color: var(--uf-color-text-primary);
+  font-size: 18px;
+}
+
+.successContent p {
+  margin: 0;
+  color: var(--uf-color-text-secondary);
+}
+
+.successContent .actions {
+  justify-content: center;
+  width: 100%;
+  margin-top: var(--uf-space-8);
+}
+
+@media (max-width: 767px) {
+  .balanceDialog {
+    max-height: calc(100dvh - var(--uf-space-24));
+  }
+
+  .actions > button:last-child {
+    width: 100%;
+  }
+}

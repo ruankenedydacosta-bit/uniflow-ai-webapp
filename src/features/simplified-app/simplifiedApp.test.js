@@ -23,7 +23,10 @@ import {
 import {
   buildWelcomeSessionKey,
   claimWelcomeVoice,
+  clearWelcomeVoiceBlocked,
+  getWelcomeVoiceBlocked,
   isWelcomeVoicePending,
+  markWelcomeVoiceBlocked,
   markWelcomeVoiceSettled,
   releaseWelcomeVoice,
   resetWelcomeVoiceSessions,
@@ -260,6 +263,69 @@ test('chave nula ou vazia nunca fica pendente -- modo demo não bloqueia o autop
   resetWelcomeVoiceSessions();
 });
 
+// ============================================================================
+// BUGFIX iOS (saudação perdida ao remontar a Home): autoplay bloqueado pelo
+// Safari (NotAllowedError) precisa sobreviver a Home desmontar/remontar, já
+// que claimWelcomeVoice só libera UMA tentativa automática por sessão.
+// ============================================================================
+
+test('markWelcomeVoiceBlocked persiste o erro -- sobrevive a "remontagem" (nova leitura simulando useState novo)', () => {
+  resetWelcomeVoiceSessions();
+  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
+  assert.equal(getWelcomeVoiceBlocked(key), null, 'antes de qualquer tentativa não há erro bloqueado');
+  const autoplayError = { code: 'AUTOPLAY_BLOCKED', message: 'Não foi possível tocar automaticamente.' };
+  markWelcomeVoiceBlocked(key, autoplayError);
+  assert.deepEqual(getWelcomeVoiceBlocked(key), autoplayError, 'erro persiste para uma nova leitura, como um remount faria');
+  resetWelcomeVoiceSessions();
+});
+
+test('clearWelcomeVoiceBlocked remove o erro quando a saudação finalmente toca com sucesso', () => {
+  resetWelcomeVoiceSessions();
+  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
+  markWelcomeVoiceBlocked(key, { code: 'AUTOPLAY_BLOCKED' });
+  assert.notEqual(getWelcomeVoiceBlocked(key), null);
+  clearWelcomeVoiceBlocked(key);
+  assert.equal(getWelcomeVoiceBlocked(key), null);
+  resetWelcomeVoiceSessions();
+});
+
+test('releaseWelcomeVoice também limpa o erro bloqueado persistido', () => {
+  resetWelcomeVoiceSessions();
+  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
+  markWelcomeVoiceBlocked(key, { code: 'AUTOPLAY_BLOCKED' });
+  releaseWelcomeVoice(key);
+  assert.equal(getWelcomeVoiceBlocked(key), null);
+  resetWelcomeVoiceSessions();
+});
+
+test('chave nula ou vazia nunca é marcada/lida como bloqueada', () => {
+  resetWelcomeVoiceSessions();
+  markWelcomeVoiceBlocked(null, { code: 'AUTOPLAY_BLOCKED' });
+  markWelcomeVoiceBlocked('', { code: 'AUTOPLAY_BLOCKED' });
+  assert.equal(getWelcomeVoiceBlocked(null), null);
+  assert.equal(getWelcomeVoiceBlocked(''), null);
+  resetWelcomeVoiceSessions();
+});
+
+test('SimplifiedHomeView inicializa welcomeVoiceError a partir do erro persistido (não de useState(null)) e sincroniza quando sessionKey muda', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(
+    home,
+    /useState\(\(\) => getWelcomeVoiceBlocked\(sessionKey\)\)/,
+    'estado inicial deve vir do módulo persistido, não de null fixo',
+  );
+  assert.match(
+    home,
+    /if \(sessionKey !== prevSessionKey\) \{\s*setPrevSessionKey\(sessionKey\);\s*setWelcomeVoiceError\(getWelcomeVoiceBlocked\(sessionKey\)\);\s*\}/,
+  );
+});
+
+test('SimplifiedHomeView persiste sucesso/erro da saudação via markWelcomeVoiceBlocked/clearWelcomeVoiceBlocked', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /markWelcomeVoiceBlocked\(sessionKey, error\)/);
+  assert.match(home, /clearWelcomeVoiceBlocked\(sessionKey\)/);
+});
+
 test('Home reutiliza o controlador compartilhado e não cria capturador paralelo', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /useSharedUniVoiceInput\(\)/);
@@ -326,25 +392,29 @@ test('beginVoiceCapture chama voiceInput.start() e nunca navega, mesmo em erro d
   const endIdx = home.indexOf('function endVoiceCapture', idx);
   assert.ok(idx > -1 && endIdx > idx);
   const slice = home.slice(idx, endIdx);
-  assert.match(slice, /if \(isInteractionBusy\) return false;/);
-  assert.match(slice, /if \(isVoiceErrorState\(voiceInput\.status\)\) voiceInput\.reset\(\);/);
-  assert.match(slice, /void voiceInput\.start\(\);/);
+  assert.match(slice, /if \(plan\.resetError\) voiceInput\.reset\(\);/);
+  assert.match(
+    slice,
+    /if \(plan\.startCapture\) \{\s*(?:\/\/[^\n]*\n\s*)*onBeforeVoiceStart\?\.\(\);\s*setTurnStartToken\(\(token\) => token \+ 1\);\s*void voiceInput\.start\(\);\s*\}/,
+  );
   assert.doesNotMatch(slice, /navigate\(/);
 });
 
-// BLOCO UNI 2: pressionar o botão enquanto a Uni fala interrompe a fala
-// (voiceController.stop()) em vez de iniciar uma gravação nova -- nunca
-// grava por cima da resposta, e o próprio usuário ganha uma forma real de
-// cortar uma fala longa demais.
-test('BLOCO UNI 2: beginVoiceCapture interrompe a fala (voiceController.stop()) em vez de iniciar a captura quando isSpeaking é true, e nunca inicia a gravação nesse mesmo toque', async () => {
+// HOTFIX (barge-in): pressionar o botão enquanto a Uni fala interrompe a
+// fala (voiceController.stop()) E inicia a captura no MESMO gesto -- nunca
+// exige soltar e apertar de novo (ver resolveBargeInPlan, simplifiedHomeState.js).
+test('HOTFIX: beginVoiceCapture interrompe a fala (voiceController.stop()) E inicia a captura no MESMO gesto quando isSpeaking é true', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function beginVoiceCapture() {');
   const endIdx = home.indexOf('function endVoiceCapture', idx);
   const slice = home.slice(idx, endIdx);
-  assert.match(slice, /if \(isSpeaking\) \{\s*\n\s*voiceController\.stop\(\);\s*\n\s*return false;\s*\n\s*\}/);
-  const speakingIdx = slice.indexOf('if (isSpeaking)');
-  const startIdx = slice.indexOf('void voiceInput.start();');
-  assert.ok(speakingIdx > -1 && startIdx > speakingIdx, 'a checagem de isSpeaking deve vir ANTES de iniciar a captura');
+  assert.match(slice, /const plan = resolveBargeInPlan\(\{/);
+  assert.match(slice, /if \(plan\.interruptSpeech\) voiceController\.stop\(\);/);
+  assert.match(slice, /if \(!plan\.proceed\) return false;/);
+  const interruptIdx = slice.indexOf('if (plan.interruptSpeech)');
+  const startIdx = slice.indexOf('if (plan.startCapture) {');
+  assert.ok(interruptIdx > -1 && startIdx > interruptIdx, 'interromper a fala deve vir ANTES de iniciar a captura, no mesmo gesto');
+  assert.match(slice, /return true;\s*\}\s*$/, 'quando o plano prossegue (mesmo interrompendo a fala), o gesto é tratado como iniciado (true)');
 });
 
 test('pointerup encerra e envia (stop), nunca navega para /app/uni', async () => {
@@ -438,7 +508,8 @@ test('não inicia nova gravação durante o processamento (isInteractionBusy inc
   assert.match(home, /const isCaptureBusy = \[\s*VOICE_CAPTURE_STATES\.REQUESTING_PERMISSION,\s*VOICE_CAPTURE_STATES\.PROCESSING,\s*\]\.includes\(voiceInput\.status\);/);
   assert.match(home, /const isInteractionBusy = isTyping \|\| isExecuting \|\| isCaptureBusy;/);
   const beginIdx = home.indexOf('function beginVoiceCapture() {');
-  assert.match(home.slice(beginIdx, beginIdx + 100), /if \(isInteractionBusy\) return false;/);
+  const beginEndIdx = home.indexOf('function endVoiceCapture', beginIdx);
+  assert.match(home.slice(beginIdx, beginEndIdx), /if \(!plan\.proceed\) return false;/);
 });
 
 test('o botão principal não tem onClick/onTap para abrir o chat -- só pointerdown/up/cancel/lostpointercapture e teclado equivalente', async () => {
@@ -472,7 +543,10 @@ test('erro de permissão de microfone aparece com mensagem clara na própria Hom
 test('estados de texto do botão refletem o padrão push-to-talk (parado/pressionado), sem "toque novamente"', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /button: 'FALAR COM A UNI'/);
-  assert.match(home, /button: 'SOLTE PARA ENVIAR'/);
+  // HOTFIX FINAL: durante captura ativa o texto obrigatório é "OUVINDO…"
+  // (nunca "SOLTE PARA ENVIAR" nem qualquer texto anterior como "CONFIRME
+  // A AÇÃO") -- ver resolveSimplifiedUniState/isCapturingVoice.
+  assert.match(home, /button: 'OUVINDO…'/);
   assert.doesNotMatch(home, /[Tt]oque novamente/);
 });
 
@@ -548,6 +622,81 @@ test('Registros preserva voz real, navegação e estados acessíveis', async () 
   assert.match(records, /Nenhum registro corresponde aos filtros/);
 });
 
+// ============================================================================
+// BLOCO REGISTROS iOS: seletor de mês próprio (MonthPickerModal) substitui
+// o <input type="month"> nativo, que no Safari iOS não abre showPicker() de
+// forma confiável.
+// ============================================================================
+
+test('Registros não usa mais <input type="month"> nativo -- MonthSelector abre MonthPickerModal', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  assert.doesNotMatch(records, /<input[^>]*type="month"/);
+  assert.doesNotMatch(records, /showPicker/);
+  assert.match(records, /import MonthPickerModal from '\.\/MonthPickerModal\.jsx';/);
+  assert.match(records, /<MonthPickerModal/);
+  assert.match(records, /initialDate=\{month\.date\}/);
+});
+
+test('MonthSelector aplica a data escolhida e fecha o modal via onApply', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const fnStart = records.indexOf('function MonthSelector(');
+  const fnSlice = records.slice(fnStart, records.indexOf('\n}', fnStart));
+  assert.match(fnSlice, /onApply=\{\(nextDate\) => \{\s*onChange\(nextDate\);\s*setPickerOpen\(false\);\s*\}\}/);
+  assert.match(fnSlice, /onClose=\{\(\) => setPickerOpen\(false\)\}/);
+});
+
+test('MonthPickerModal preserva a regra existente de bloqueio de mês futuro (sem usar mais o atributo max)', async () => {
+  const modal = await source('./MonthPickerModal.jsx');
+  assert.match(modal, /function isMonthDisabled\(year, monthIndex, today\)/);
+  assert.match(modal, /year > todayYear \|\| \(year === todayYear && monthIndex > todayMonth\)/);
+  assert.match(modal, /disabled=\{disabled\}/);
+});
+
+test('MonthPickerModal tem título, ano navegável, grade de 12 meses, "Este mês", Cancelar e Aplicar', async () => {
+  const modal = await source('./MonthPickerModal.jsx');
+  assert.match(modal, /Selecionar período/);
+  assert.match(modal, /aria-label="Ano anterior"/);
+  assert.match(modal, /aria-label="Próximo ano"/);
+  assert.match(modal, /MONTH_LABELS\.map/);
+  assert.match(modal, />\s*Este mês\s*</);
+  assert.match(modal, />\s*Cancelar\s*</);
+  assert.match(modal, />\s*Aplicar\s*</);
+  assert.match(modal, /aria-label="Fechar"/);
+});
+
+test('MonthPickerModal fecha por Escape, backdrop e X -- nunca window.confirm', async () => {
+  const modal = await source('./MonthPickerModal.jsx');
+  assert.match(modal, /event\.key === 'Escape'\) onClose\(\)/);
+  assert.match(modal, /function handleOverlayClick\(event\) \{\s*if \(event\.target === event\.currentTarget\) onClose\(\);/);
+  assert.doesNotMatch(modal, /window\.confirm/);
+});
+
+test('MonthPickerModal bloqueia o scroll da página enquanto aberto e restaura ao fechar', async () => {
+  const modal = await source('./MonthPickerModal.jsx');
+  assert.match(modal, /document\.body\.style\.overflow = 'hidden'/);
+  assert.match(modal, /document\.body\.style\.overflow = previousOverflow/);
+});
+
+test('MonthPickerModal é portal para document.body e usa role="dialog" acessível', async () => {
+  const modal = await source('./MonthPickerModal.jsx');
+  assert.match(modal, /createPortal\(/);
+  assert.match(modal, /document\.body,/);
+  assert.match(modal, /role="dialog"/);
+  assert.match(modal, /aria-modal="true"/);
+  assert.match(modal, /aria-labelledby=\{titleId\}/);
+});
+
+test('CSS do MonthPickerModal usa identidade escura (sem fundo branco), safe area e dvh', async () => {
+  const css = await source('./MonthPickerModal.module.css');
+  assert.match(css, /background: rgba\(3, 8, 20, \.68\)/);
+  assert.match(css, /linear-gradient\(145deg, rgba\(14, 31, 62, \.96\), rgba\(4, 13, 33, \.98\)\)/);
+  assert.match(css, /env\(safe-area-inset-top\)/);
+  assert.match(css, /env\(safe-area-inset-bottom\)/);
+  assert.match(css, /100dvh/);
+  assert.match(css, /100svh/);
+  assert.doesNotMatch(css, /background:\s*#fff|background:\s*white/);
+});
+
 test('provider bloqueia consumidores até o workspace Pessoal oficial estar ativo', async () => {
   const provider = await source('./SimplifiedProductProvider.jsx');
   assert.match(provider, /findPersonalWorkspace\(availableWorkspaces\)/);
@@ -608,6 +757,48 @@ test('resumo mensal separa receitas e despesas e preserva saldo derivado oficial
     balance: 2850.5,
   });
   assert.equal(Object.isFrozen(summary), true);
+});
+
+// ── BLOCO FINAL DO MVP (Saldo manual) ────────────────────────────────────
+
+test('card Saldo abre a modal "Atualizar saldo", passando accountState completo (contas com derived_balance + saveAccount)', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  assert.match(records, /import UpdateBalanceModal from '\.\/UpdateBalanceModal\.jsx';/);
+  assert.match(records, /<UpdateBalanceModal/);
+  assert.match(records, /onChanged=\{refresh\}/);
+  assert.match(records, /accountState=\{displayAccountState\}/);
+  assert.match(records, /onBalanceClick=\{openBalanceModal\}/);
+  assert.match(records, /key=\{balanceModalOpen \? 'balance-modal-open' : 'balance-modal-closed'\}/);
+});
+
+// Correção (Bloco Saldo + Cobrança): diferente de "Novo registro", abrir o
+// saldo manual NUNCA exige conta ativa -- a modal mostra o estado vazio com
+// "Criar conta" quando não há nenhuma. Só a permissão de workspace bloqueia.
+test('abrir o saldo manual exige permissão, mas nunca exige conta ativa preexistente (modal mostra o estado vazio)', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const fnStart = records.indexOf('function openBalanceModal()');
+  assert.ok(fnStart > -1, 'openBalanceModal deve existir');
+  const fnSlice = records.slice(fnStart, records.indexOf('\n  }', fnStart));
+  assert.match(fnSlice, /if \(!canManage\) return;/);
+  assert.doesNotMatch(fnSlice, /activeAccounts\.length/);
+});
+
+test('card Saldo vira um botão acessível (nunca um <article> estático) que nunca duplica o valor para leitores de tela', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  assert.match(records, /card\.id === 'balance' \? \(/);
+  assert.match(records, /onClick=\{onBalanceClick\}/);
+  assert.match(records, /Toque para atualizar o saldo/);
+  // O <strong> do card Saldo fica aria-hidden -- o valor já está no
+  // aria-label do <button> pai, evitando leitura duplicada.
+  assert.match(records, /<strong aria-hidden="true">\{formatCurrency\(card\.value\)\}<\/strong>/);
+});
+
+test('histórico exibe o sinal correto de um ajuste de saldo positivo (nunca sempre vermelho como despesa)', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  assert.match(records, /const isPositiveAdjustment = transaction\.transaction_type === 'adjustment'/);
+  assert.match(records, /&& Number\(transaction\.adjustment_delta\) > 0;/);
+  assert.match(records, /isIncome \|\| isPositiveAdjustment \? styles\.positiveAmount/);
+  assert.match(records, /\{isIncome \|\| isPositiveAdjustment \? '\+' : isTransfer \? '' : '-'\}/);
 });
 
 test('intervalo mensal usa o primeiro e o último dia reais', () => {
@@ -799,6 +990,13 @@ test('CSS de Registros cobre grade responsiva, toque, safe area e movimento redu
   assert.doesNotMatch(css, /background-image:\s*url/i);
 });
 
+test('campo de busca do histórico usa font-size >= 16px -- evita o zoom automático do Safari iOS ao focar', async () => {
+  const css = await source('./simplifiedRecords.module.css');
+  const start = css.indexOf('.historyFilters input,');
+  const slice = css.slice(start, css.indexOf('}', start));
+  assert.match(slice, /font-size: 16px;/);
+});
+
 // ============================================================================
 // BUG 3: animação de escuta do botão da Uni -- intensidade real do
 // microfone via AnalyserNode sobre o MESMO stream do motor de voz
@@ -848,43 +1046,133 @@ test('BUG 3: prefers-reduced-motion desliga a animação do anel de intensidade 
 });
 
 // ============================================================================
-// Fallback manual "Ouvir resposta" em CompactResponse (Home): permanece
-// disponível sempre que há texto da Uni, inclusive após falha do provider.
+// HOTFIX P1.4: "Ouvir resposta" foi removido do card compacto da Home --
+// o fluxo principal ali é sempre automático (autoplay). O replay manual
+// continua existindo apenas no chat completo (MessageBubble.jsx).
 // ============================================================================
 
-test('BLOCO UNI 2: CompactResponse mantém texto e mostra "Ouvir resposta" quando a voz está habilitada', async () => {
+test('HOTFIX P1.4: CompactResponse não tem botão "Ouvir resposta" nem showManualSpeak', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function CompactResponse({');
   const endIdx = home.indexOf('function SimplifiedHomeView({');
   assert.ok(idx > -1 && endIdx > idx);
   const block = home.slice(idx, endIdx);
-  assert.match(
-    block,
-    /const showManualSpeak = Boolean\(\s*\n\s*voiceEnabled\s*\n\s*&& lastUni\?\.text\s*\n\s*&& typeof onSpeakMessage === 'function',\s*\n\s*\);/,
-  );
-  assert.match(block, /onClick=\{\(\) => onSpeakMessage\(lastUni\)\}/);
+  assert.doesNotMatch(block, /showManualSpeak/);
+  assert.doesNotMatch(block, /onClick=\{\(\) => onSpeakMessage\(lastUni\)\}/);
+  assert.doesNotMatch(block, />\s*Ouvir resposta\s*</);
   assert.match(block, /lastUni\.text/);
 });
 
 test('falha na saudação mantém fallback textual e tentativa manual sem duplicar o claim da sessão', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /setWelcomeVoiceError\(result\?\.error \?\? null\)/);
+  assert.match(home, /const error = result\?\.error \?\? null;/);
+  assert.match(home, /setWelcomeVoiceError\(error\);/);
   assert.match(home, /welcomeVoiceError\.message/);
   assert.match(home, />\s*Ouvir saudação\s*</);
   assert.equal((home.match(/claimWelcomeVoice\(sessionKey\)/g) ?? []).length, 1);
 });
 
-test('BLOCO UNI 2: SimplifiedHomeView repassa onSpeakMessage e voiceEnabled para CompactResponse (fallback manual funciona de ponta a ponta)', async () => {
+test('HOTFIX P1.4: SimplifiedHomeView não repassa onSpeakMessage/voiceEnabled para CompactResponse', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('<CompactResponse');
   const endIdx = home.indexOf('/>', idx);
   const block = home.slice(idx, endIdx);
-  assert.match(block, /voiceEnabled=\{voiceEnabled\}/);
-  assert.match(block, /onSpeakMessage=\{onSpeakMessage\}/);
+  assert.doesNotMatch(block, /voiceEnabled=\{voiceEnabled\}/);
+  assert.doesNotMatch(block, /onSpeakMessage=\{onSpeakMessage\}/);
 });
 
 test('BLOCO UNI 2: isSpeaking em SimplifiedHomeView deriva de voiceController.status (LOADING ou PLAYING), nunca da captura', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /const SPEAKING_VOICE_STATUSES = new Set\(\[VOICE_TTS_STATUS\.LOADING, VOICE_TTS_STATUS\.PLAYING\]\);/);
   assert.match(home, /const isSpeaking = SPEAKING_VOICE_STATUSES\.has\(voiceController\.status\);/);
+});
+
+// ============================================================================
+// HOTFIX — Barge-in e captura imediata de voz
+// ============================================================================
+
+test('Requisito 3 — handleVoicePointerUp encerra UMA única gravação: nula o gesto ANTES de chamar endVoiceCapture, e um segundo pointerup com o mesmo pointerId é ignorado', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const idx = home.indexOf('function handleVoicePointerUp(event) {');
+  const endIdx = home.indexOf('function handleVoicePointerCancel', idx);
+  assert.ok(idx > -1 && endIdx > idx);
+  const slice = home.slice(idx, endIdx);
+  // Guarda de reentrância: só processa o pointerId que esta função já está
+  // rastreando -- um pointerup duplicado (mesmo id) ou de outro ponteiro
+  // nunca chama endVoiceCapture de novo.
+  assert.match(slice, /if \(pressedGestureRef\.current !== event\.pointerId\) return;/);
+  const guardIdx = slice.indexOf('if (pressedGestureRef.current !== event.pointerId) return;');
+  const nullIdx = slice.indexOf('pressedGestureRef.current = null;');
+  const endCaptureIdx = slice.indexOf('endVoiceCapture({ canceled: false });');
+  assert.ok(guardIdx > -1 && nullIdx > guardIdx && endCaptureIdx > nullIdx,
+    'a ordem precisa ser: checar → nular a referência do gesto → só então encerrar a captura');
+  // endVoiceCapture, por sua vez, só chama voiceInput.stop() uma vez
+  // (branch única, sem fallthrough para cancel()).
+  const endCaptureFnIdx = home.indexOf('function endVoiceCapture(');
+  const endCaptureFnEndIdx = home.indexOf('\n  }', endCaptureFnIdx);
+  const endCaptureBody = home.slice(endCaptureFnIdx, endCaptureFnEndIdx);
+  assert.equal((endCaptureBody.match(/voiceInput\.stop\(\)/g) ?? []).length, 1);
+});
+
+test('Requisito 4 — o botão principal só escuta Pointer Events (nunca onTouchStart/onTouchEnd); pointerdown e touchstart nunca podem iniciar duas gravações porque só existe um listener', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.doesNotMatch(home, /onTouchStart=/);
+  assert.doesNotMatch(home, /onTouchEnd=/);
+  assert.doesNotMatch(home, /addEventListener\(\s*['"]touchstart['"]/);
+  // setPointerCapture no pointerdown é o mecanismo real de unificação --
+  // Pointer Events já cobrem touch/mouse/pen num único evento, então o
+  // botão nunca precisa (nem pode) escutar os dois tipos de evento.
+  const beginIdx = home.indexOf('function handleVoicePointerDown(event) {');
+  const beginEndIdx = home.indexOf('function handleVoicePointerUp', beginIdx);
+  const slice = home.slice(beginIdx, beginEndIdx);
+  assert.match(slice, /if \(pressedGestureRef\.current !== null\) return;/, 'um gesto já em andamento bloqueia um novo pointerdown concorrente');
+  assert.match(slice, /event\.currentTarget\.setPointerCapture\?\.\(event\.pointerId\);/);
+});
+
+test('Requisito 6 — nenhuma mensagem é publicada duas vezes: onFinalTranscript ignora transcrição vazia e useUniVoiceInput descarta resultado de transcrição obsoleto (requestId)', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const finalIdx = home.indexOf('onFinalTranscript: (transcript) => {');
+  const finalEndIdx = home.indexOf('}),', finalIdx);
+  const finalSlice = home.slice(finalIdx, finalEndIdx);
+  assert.match(finalSlice, /if \(cleanTranscript\) onSendTranscript\(cleanTranscript\);/, 'transcrição vazia nunca publica mensagem');
+
+  const voiceInput = await source('../uni-voice/useUniVoiceInput.js');
+  // requestIdRef garante que só o resultado da transcrição MAIS RECENTE
+  // dispara COMPLETE/onFinalTranscript -- uma segunda gravação disparada
+  // por engano nunca deixa a primeira publicar uma mensagem atrasada.
+  assert.match(voiceInput, /const requestId = \+\+requestIdRef\.current;/);
+  assert.match(voiceInput, /if \(requestId !== requestIdRef\.current\) return;/);
+  // start() recusa uma segunda gravação enquanto a anterior ainda está
+  // ativa (adapter já existe OU status já é de captura em andamento).
+  assert.match(voiceInput, /if \(adapterRef\.current \|\| isVoiceCaptureActive\(state\.status\) \|\| !workspaceId\) return false;/);
+});
+
+test('Repetição sem travamento — os 3 caminhos de soltar (pointerup/pointercancel/lostpointercapture) sempre zeram pressedGestureRef ANTES de encerrar, garantindo que o próximo pointerdown comece limpo', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  for (const marker of [
+    'function handleVoicePointerUp(event) {',
+    'function handleVoicePointerCancel(event) {',
+    'function handleVoiceLostPointerCapture(event) {',
+  ]) {
+    const idx = home.indexOf(marker);
+    assert.ok(idx > -1, `${marker} não encontrado`);
+    const endIdx = home.indexOf('\n  }', idx);
+    const slice = home.slice(idx, endIdx);
+    const nullIdx = slice.indexOf('pressedGestureRef.current = null;');
+    const endCaptureIdx = slice.indexOf('endVoiceCapture(');
+    assert.ok(nullIdx > -1 && endCaptureIdx > nullIdx,
+      `${marker}: pressedGestureRef precisa ser zerado ANTES de endVoiceCapture, senão o próximo gesto pode ficar preso`);
+  }
+  // beginVoiceCapture nunca marca o gesto como em andamento por conta
+  // própria -- é handleVoicePointerDown quem seta pressedGestureRef.current
+  // = event.pointerId DEPOIS de beginVoiceCapture() confirmar (return
+  // true), então uma 5ª, 10ª, Nª repetição sempre parte de pressedGestureRef
+  // === null (nunca acumula um AudioContext/analyser "órfão" de um gesto
+  // anterior mal encerrado).
+  const downIdx = home.indexOf('function handleVoicePointerDown(event) {');
+  const downEndIdx = home.indexOf('\n  }', downIdx);
+  const downSlice = home.slice(downIdx, downEndIdx);
+  assert.match(downSlice, /if \(pressedGestureRef\.current !== null\) return;/);
+  assert.match(downSlice, /if \(!beginVoiceCapture\(\)\) return;/);
+  assert.match(downSlice, /pressedGestureRef\.current = event\.pointerId;/);
 });

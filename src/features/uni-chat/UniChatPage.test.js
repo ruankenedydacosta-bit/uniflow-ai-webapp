@@ -234,7 +234,7 @@ test('useUniConversation injeta a categoria recém-criada antes do próximo rend
 
 test('UniChatPage consome useUniLlm e AI_STATUS do bloco consolidado', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{\s*\n\s*useUniLlm, AI_STATUS, resolveConversationStyle,\s*\n\s*createPhraseStructuredFactService, isLlmPhrasingFlagEnabled,\s*\n\s*\} from '\.\.\/uni-llm';/);
+  assert.match(page, /import \{\s*\n\s*useUniLlm, AI_STATUS, resolveConversationStyle,\s*\n\s*createPhraseStructuredFactService, isLlmPhrasingFlagEnabled,\s*\n\s*createFinancialIntentInterpreter, isSemanticIntentFlagEnabled,\s*\n\s*isFinancialOrchestratorFlagEnabled, isCompoundFinancialQueriesFlagEnabled,\s*\n\s*createFinancialResponseComposer, isLlmResponseComposerFlagEnabled,\s*\n\s*\} from '\.\.\/uni-llm';/);
   assert.match(page, /const uniLlm = useUniLlm\(\);/);
 });
 
@@ -508,7 +508,7 @@ test('nenhum log de texto de mensagem/prompt no console -- só o(s) código(s) d
 
 test('UniChatPage usa exclusivamente useUniVoiceTts/useVoicePreference/VOICE_TTS_STATUS + buildSpeechText/MAX_TTS_TEXT_LENGTH (BLOCO VOZ 1) -- não importa mais useUniVoiceOutput', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{\s*\n\s*useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS, MAX_TTS_TEXT_LENGTH, buildSpeechText,\s*\n\s*\} from '\.\.\/uni-voice-tts';/);
+  assert.match(page, /import \{\s*\n\s*useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS, MAX_TTS_TEXT_LENGTH, buildSpeechText,\s*\n\s*normalizeFinancialTextForSpeech,\s*\n\s*\} from '\.\.\/uni-voice-tts';/);
   // O comentario de cabecalho pode CITAR o hook antigo por contexto
   // arquitetural; o que nao pode existir e um import real dele.
   assert.doesNotMatch(page, /from '\.\.\/uni-voice-output'/);
@@ -526,7 +526,7 @@ test('handleSpeakMessage marca a mensagem ativa ANTES de chamar speak() com a ve
   // BLOCO VOZ 1: a voz usa SEMPRE a versão curta (buildSpeechText), mesmo
   // para textos acima de MAX_TTS_TEXT_LENGTH -- o texto completo exibido
   // (message.text no MessageBubble) nunca é alterado.
-  assert.match(fnBody, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\), \{/);
+  assert.match(fnBody, /void uniVoice\.speak\(\s*\n\s*buildSpeechText\(normalizeFinancialTextForSpeech\(message\.text\), MAX_TTS_TEXT_LENGTH\),/);
   assert.match(fnBody, /source: requestMetadata\.source \?\? 'manual_replay'/);
   const setIdx = fnBody.indexOf('setVoiceMessageId(message.id);');
   const speakIdx = fnBody.indexOf('void uniVoice.speak(');
@@ -697,8 +697,8 @@ test('BLOCO VOZ 1: resposta curta E resposta longa falam -- o autoplay não filt
   assert.match(block, /handleAutomaticSpeakMessage\(lastMessage\);/);
   // A versão curta para voz (buildSpeechText) é aplicada dentro de
   // handleSpeakMessage, nunca no efeito nem no texto visível.
-  assert.match(page, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\), \{/);
-  assert.match(page, /buildSpeechText\(text, MAX_TTS_TEXT_LENGTH\)/);
+  assert.match(page, /void uniVoice\.speak\(\s*\n\s*buildSpeechText\(normalizeFinancialTextForSpeech\(message\.text\), MAX_TTS_TEXT_LENGTH\),/);
+  assert.match(page, /buildSpeechText\(normalizeFinancialTextForSpeech\(text\), MAX_TTS_TEXT_LENGTH\)/);
 });
 
 test('BLOCO VOZ 1: pergunta, pedido de confirmação e sucesso entram no MESMO autoplay -- toda resposta da Uni passa pelo pipeline oficial (createAssistantResponse), nenhum caminho fala por fora (sem duplicação)', async () => {
@@ -765,7 +765,7 @@ test('BLOCO VOZ 1: falha do TTS nunca quebra a interface -- speak é fire-and-fo
     page.indexOf('const handleSpeakMessage = useCallback'),
     page.indexOf('// BLOCO VOZ 1: ponto ÚNICO para narrar'),
   );
-  assert.match(handleSpeakBlock, /void uniVoice\.speak\(buildSpeechText/);
+  assert.match(handleSpeakBlock, /void uniVoice\.speak\(\s*\n?\s*buildSpeechText/);
   assert.doesNotMatch(handleSpeakBlock, /try|catch/);
   const sideEffectBlock = page.slice(
     page.indexOf('const speakSideEffectNotice = useCallback'),
@@ -823,7 +823,7 @@ test('BLOCO VOZ 1: o botão manual "Ouvir" não consulta o registro de autoplay 
     page.indexOf('// BLOCO VOZ 1: ponto ÚNICO para narrar'),
   );
   assert.doesNotMatch(handleSpeakBlock, /hasAutoSpokenMessage|markAutoSpokenMessage|spokenMessageSession/, 'o disparo manual passa direto pelo registro -- nunca bloqueado pelo autoplay');
-  assert.match(handleSpeakBlock, /void uniVoice\.speak\(buildSpeechText\(message\.text, MAX_TTS_TEXT_LENGTH\), \{/);
+  assert.match(handleSpeakBlock, /void uniVoice\.speak\(\s*\n\s*buildSpeechText\(normalizeFinancialTextForSpeech\(message\.text\), MAX_TTS_TEXT_LENGTH\),/);
   assert.match(handleSpeakBlock, /source: requestMetadata\.source \?\? 'manual_replay'/);
   assert.match(page, /onSpeakMessage=\{handleSpeakMessage\}/);
 });
@@ -1377,7 +1377,10 @@ test('BUG 1: handlePendingConversationInput consulta o FinancialQueryEngine ANTE
 test('BUG 1: o gate do engine responde consultas reconhecidas dentro do fluxo de pendência e preserva a pendência (retorna true sem tocar o estado da conversa)', async () => {
   const page = await source('UniChatPage.jsx');
   const { body: slice } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
-  assert.match(slice, /if \(\s*engineOutcome\.handled\s*&&\s*engineOutcome\.queryType !== 'transaction_reference'\s*\)\s*\{\s*syncMessageToSupabase\(userMsg\);/);
+  // Sprint 2: entre a condição e syncMessageToSupabase agora só existe o
+  // efeito colateral opcional de memória (remember) -- nunca uma segunda
+  // publicação nem uma mudança na condição em si.
+  assert.match(slice, /if \(\s*engineOutcome\.handled\s*&&\s*engineOutcome\.queryType !== 'transaction_reference'\s*\)\s*\{[\s\S]*?syncMessageToSupabase\(userMsg\);/);
   assert.match(slice, /createAssistantResponse\(\s*engineOutcome\.response\.text,\s*\{ highlight: engineOutcome\.response\.highlight \},\s*\);/);
   assert.match(slice, /return true;\s*\}/, 'o gate responde a consulta e mantém a Pending Action intacta para o próximo input');
   // transaction_reference ("caixa", "confirmar", nomes/valores isolados) NÃO
@@ -1393,8 +1396,11 @@ test('CORREÇÃO URGENTE: runDeterministicFinancialFlow consulta os motores de c
   // Declarações/ações (set_balance, ambiguidade, receita, despesa,
   // transferência, meta) pulam o FinancialQueryEngine e o interpretador
   // legado e vão direto para o fluxo de registro (interpret).
-  assert.match(slice, /if \(!ACTION_STATEMENT_INTENTS\.has\(classifyIntent\(text\)\.intent\)\) \{/);
-  const gateIdx = slice.indexOf('ACTION_STATEMENT_INTENTS.has(classifyIntent(text).intent)');
+  // Sprint 2: o gate consome resolvedText (pós-memória conversacional),
+  // nunca o text bruto -- mas a REGRA em si (ação vence consulta) é a
+  // mesma de antes.
+  assert.match(slice, /if \(!ACTION_STATEMENT_INTENTS\.has\(classifyIntent\(resolvedText\)\.intent\)\) \{/);
+  const gateIdx = slice.indexOf('ACTION_STATEMENT_INTENTS.has(classifyIntent(resolvedText).intent)');
   const engineIdx = slice.indexOf('const engineOutcome = resolveFinancialQuery({');
   const interpreterIdx = slice.indexOf('const queryType = classifyFinancialQuery(text);');
   const interpretIdx = slice.indexOf('const result = financialConversation.interpret(text);');
@@ -1489,23 +1495,89 @@ test('BUG 4: scroll consome stickToBottom em layout effect -- "Ver conversa comp
   assert.match(scrollBlock, /if \(!stickToBottom\.current\) return;/);
   assert.match(scrollBlock, /scrollRef\.current/);
   assert.match(scrollBlock, /el\.scrollTop = el\.scrollHeight;/);
-  assert.match(scrollBlock, /}, \[messages\]\);/);
+  assert.match(scrollBlock, /}, \[messages, historyHydrated, messagesMountTick\]\);/);
   // Contrato de aderência: nada de setTimeout arbitrário para rolar.
   assert.doesNotMatch(scrollBlock, /setTimeout\(/);
   // O usuário que rolou para cima (stickToBottom=false) mantém a leitura.
   assert.match(scrollBlock, /rolou para cima/);
 });
 
-test('BUG 5: hidratação funde mensagens por IDENTIDADE (clientMessageId/dbId) -- nunca por comprimento ou índice', async () => {
+// HOTFIX FINAL -- causa raiz real medida diretamente no DOM: clicar no link
+// real "Ver conversa completa" (troca de rota client-side, SEM reload) faz
+// `.body`/`.messages` montarem pela primeira vez nesse commit, mas
+// `messages`/`historyHydrated` já tinham o MESMO valor de quando a Home
+// (early return, nunca renderiza `.body`) era exibida -- o efeito de scroll
+// não tinha nenhuma dependência nova para reagir, e o container ficava com
+// scrollTop=0 (medido: distanceFromBottom ~8878px). `messagesMountTick`
+// fecha esse gap.
+test('HOTFIX FINAL: callback ref de `.messages` incrementa messagesMountTick a cada montagem -- entra nas dependências do layout effect de scroll, nunca faz a rolagem sozinho (child ref pode disparar antes do parent ref -- scrollRef.current -- estar anexado no mesmo commit)', async () => {
   const page = await source('UniChatPage.jsx');
+  const scrollBlock = page.slice(
+    page.indexOf('function scrollToLatest()'),
+    page.indexOf('function pushMessage'),
+  );
+  assert.match(scrollBlock, /const \[messagesMountTick, setMessagesMountTick\] = useState\(0\);/);
+  assert.match(scrollBlock, /const setMessagesContentRef = useCallback\(\(node\) => \{\s*\n\s*if \(node\) setMessagesMountTick\(\(tick\) => tick \+ 1\);\s*\n\s*\}, \[\]\);/);
+  // o callback ref NUNCA mexe em scrollRef/scrollTop diretamente -- só sinaliza;
+  // quem rola é sempre o useLayoutEffect (depois que TODO o commit, inclusive
+  // o ref pai .body, já assentou).
+  const refIdx = scrollBlock.indexOf('const setMessagesContentRef = useCallback');
+  const refEndIdx = scrollBlock.indexOf('}, []);', refIdx);
+  const refBody = scrollBlock.slice(refIdx, refEndIdx);
+  assert.doesNotMatch(refBody, /scrollRef\.current/);
+  assert.doesNotMatch(refBody, /scrollTop/);
+  assert.match(page, /<div className=\{styles\.messages\} ref=\{setMessagesContentRef\}>/);
+});
+
+test('HOTFIX FINAL P2: posicionamento no fim reage também à conclusão da hidratação (historyHydrated), não só a mudanças de `messages` -- e reconfirma a posição após o paint real via requestAnimationFrame (pega reflow tardio, ex.: fonte web assíncrona), sem timer arbitrário', async () => {
+  const page = await source('UniChatPage.jsx');
+  const scrollBlock = page.slice(
+    page.indexOf('function scrollToLatest()'),
+    page.indexOf('function pushMessage'),
+  );
+  assert.match(scrollBlock, /const rafId = window\.requestAnimationFrame\(\(\) => \{/);
+  assert.match(scrollBlock, /return \(\) => window\.cancelAnimationFrame\(rafId\);/);
+  // o callback do rAF confere stickToBottom.current DE NOVO (não reaplica
+  // cegamente) -- se o usuário rolou para cima entre o commit e o paint, o
+  // rAF também respeita a leitura manual.
+  const rafIdx = scrollBlock.indexOf('const rafId = window.requestAnimationFrame(() => {');
+  const rafBody = scrollBlock.slice(rafIdx, scrollBlock.indexOf('});', rafIdx));
+  assert.match(rafBody, /if \(!stickToBottom\.current\) return;/);
+});
+
+// BUG 1 (Sprint 4, Bloco 4.0): a fusão por identidade (antes inline e
+// quebrada -- comparava dbId, presente só em mensagens restauradas, contra
+// clientMessageId, nunca preenchido por dbToMessage) foi extraída para
+// mergeRestoredMessages.js, onde é coberta por testes COMPORTAMENTAIS reais
+// (mergeRestoredMessages.test.js) que reproduzem o defeito e confirmam a
+// correção. Aqui só confirmamos que a hidratação delega para essa função
+// central, em vez de reimplementar a lógica inline.
+test('BUG 1: hidratação delega a fusão de mensagens para mergeRestoredMessages (identidade estável, testada em mergeRestoredMessages.test.js)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{ dedupeMessagesForRender, mergeRestoredMessages \} from '\.\/mergeRestoredMessages\.js';/);
   const loadBlock = page.slice(
     page.indexOf('const requestId = ++loadRequestIdRef.current'),
     page.indexOf('const pendingSyncRef = useRef([])'),
   );
-  assert.match(loadBlock, /clientMessageId \?\? msg\.dbId \?\? msg\.id/);
-  assert.match(loadBlock, /localIds\.has\(msg\.clientMessageId \?\? msg\.dbId \?\? msg\.id\)/);
-  assert.match(loadBlock, /return \[\.\.\.prev, \.\.\.dbOnly\]/);
+  assert.match(loadBlock, /setMessages\(\(prev\) => mergeRestoredMessages\(prev, loadedMessages\)\);/);
+  // nenhuma reimplementação inline sobreviveu -- a lógica antiga (comparação
+  // quebrada dbId/clientMessageId, merge por comprimento) não existe mais
+  // aqui, só a chamada à função central.
+  assert.doesNotMatch(loadBlock, /localIds\.has\(/);
   assert.doesNotMatch(loadBlock, /prev\.length < loadedMessages\.length/);
+});
+
+// HOTFIX FINAL P1: barreira final de segurança logo antes do .map() que
+// gera as keys React -- protege mesmo que alguma origem upstream ainda
+// entregue duas entradas com a mesma identidade (ver dedupeMessagesForRender
+// em mergeRestoredMessages.js, coberta por testes comportamentais próprios).
+test('HOTFIX FINAL P1: o chat completo renderiza renderedMessages (dedupeMessagesForRender(messages)), nunca messages cru, no .map() que gera as keys', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const renderedMessages = useMemo\(\(\) => dedupeMessagesForRender\(messages\), \[messages\]\);/);
+  assert.match(page, /\{renderedMessages\.map\(\(message\) => \(/);
+  // `messages` (estado real) nunca é substituído -- hidratação/scroll/
+  // persistência continuam operando sobre a fonte de verdade intocada.
+  assert.match(page, /setMessages\(\(prev\) => mergeRestoredMessages\(prev, loadedMessages\)\);/);
 });
 
 // ============================================================================
@@ -3267,4 +3339,199 @@ test('Sprint 1: publishConversationResultWithInference encadeia categoria (Fase 
 test('Sprint 1: phraseStructuredFactService combina uniLlm.enabled com a flag adicional VITE_UNI_LLM_PHRASING_ENABLED', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /enabled: uniLlm\.enabled && isLlmPhrasingFlagEnabled\(\),/);
+});
+
+// ============================================================================
+// Sprint 2 — Memória Conversacional + Interpretação Temporal
+// ============================================================================
+
+test('Sprint 2: conversationalMemoryRef é criado com createConversationalMemory (mesmo padrão createXStore)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const conversationalMemoryRef = useRef\(createConversationalMemory\(\)\);/);
+  assert.match(page, /createConversationalMemory,\n\s*classifyPendingActionRelation,\n\} from '..\/uni-conversation';/);
+});
+
+test('Sprint 2: conversationalMemoryRef é resetado em switchConversation, junto dos demais refs por conversa', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function switchConversation(id) {');
+  assert.notEqual(body, '');
+  assert.match(body, /lastToolCallingProcessedMessageIdRef\.current = null;/);
+  assert.match(body, /conversationalMemoryRef\.current\.reset\(\);/);
+});
+
+test('Sprint 2: resolveReferences é chamado ANTES do motor de consultas em runDeterministicFinancialFlow', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
+  assert.notEqual(body, '');
+  const resolveIndex = body.indexOf('conversationalMemoryRef.current.resolveReferences(text)');
+  const engineIndex = body.indexOf('resolveFinancialQuery({');
+  assert.ok(resolveIndex > -1, 'resolveReferences deve ser chamado dentro da função');
+  assert.ok(engineIndex > -1, 'resolveFinancialQuery deve continuar sendo chamado');
+  assert.ok(resolveIndex < engineIndex, 'resolveReferences precisa rodar antes do motor de consultas');
+  // O parser determinístico (resolveFinancialQuery) recebe o texto JÁ
+  // resolvido -- nunca o texto bruto -- sem que o próprio parser saiba que
+  // existe substituição.
+  assert.match(body, /resolveFinancialQuery\(\{\s*text: resolvedText,/);
+});
+
+test('Sprint 2: resolveReferences também roda antes do motor de consultas no caminho de pendência (handlePendingConversationInput)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
+  assert.notEqual(body, '');
+  const resolveIndex = body.indexOf('conversationalMemoryRef.current.resolveReferences(text)');
+  const engineIndex = body.indexOf('resolveFinancialQuery({');
+  assert.ok(resolveIndex > -1 && engineIndex > -1 && resolveIndex < engineIndex);
+});
+
+test('Sprint 2/3/4: lastQuery da memória é repassado ao motor de consultas nos pontos de chamada (2 do determinístico + 1 do semântico da Sprint 3 + 1 do orquestrador da Sprint 4)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const occurrences = page.match(/lastQuery: conversationalMemoryRef\.current\.getLastQuery\(\),/g) || [];
+  assert.equal(occurrences.length, 4);
+});
+
+test('Sprint 2: consultas de período bem-sucedidas alimentam a memória (remember) sem duplicar a publicação da resposta', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: runBody } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
+  const rememberIndex = runBody.indexOf('conversationalMemoryRef.current.remember({');
+  const createAssistantIndex = runBody.indexOf('createAssistantResponse(\n            engineOutcome.response.text,');
+  assert.ok(rememberIndex > -1);
+  assert.ok(createAssistantIndex > -1);
+  // remember() nunca substitui createAssistantResponse -- é chamado antes,
+  // como efeito colateral de memória, e a publicação continua sendo feita
+  // por uma única chamada a createAssistantResponse (ponto único de saída).
+  assert.ok(rememberIndex < createAssistantIndex);
+  // Dentro do bloco "if (engineOutcome.handled)" especificamente, a
+  // publicação continua sendo feita por UMA única chamada a
+  // createAssistantResponse (ponto único de saída) -- remember() nunca
+  // adiciona uma segunda.
+  const { body: handledBlock } = extractFunctionBody(runBody, 'if (engineOutcome.handled) {');
+  const createAssistantCallsInBlock = (handledBlock.match(/createAssistantResponse\(/g) || []).length;
+  assert.equal(createAssistantCallsInBlock, 1);
+});
+
+test('Sprint 2: um registro confirmado alimenta a memória com conta/categoria reais (nunca inventadas) antes da resposta final', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function handleConfirmAction(id) {');
+  assert.notEqual(body, '');
+  assert.match(body, /const persistedTransaction = outcome\.result\.data;/);
+  assert.match(body, /accountState\.accounts\s*\n\s*\.find\(\(account\) => account\.id === persistedTransaction\?\.account_id\)\?\.name \?\? null;/);
+  assert.match(body, /conversationalMemoryRef\.current\.remember\(\{/);
+});
+
+test('Sprint 2: llmContext adiciona a data de referência ao system prompt de forma puramente aditiva', async () => {
+  const llmContext = await source('../uni-llm/llmContext.js');
+  assert.match(llmContext, /Data de referencia de hoje: \$\{referenceDate\}\.`\);/);
+  assert.match(llmContext, /referenceDate: referenceDate \?\? financialContext\?\.snapshot\?\.referenceDate \?\? null,/);
+});
+
+// ============================================================================
+// Sprint 4 (Bloco 4.2) — Orquestrador Semântico Financeiro
+// ============================================================================
+
+test('Sprint 4: attemptSemanticFinancialQuery checa isFinancialOrchestratorFlagEnabled ANTES de decidir o caminho', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  assert.match(body, /const useOrchestrator = isFinancialOrchestratorFlagEnabled\(\);/);
+  const useOrchestratorIndex = body.indexOf('const useOrchestrator');
+  const ifUseOrchestratorIndex = body.indexOf('if (useOrchestrator) {');
+  assert.ok(useOrchestratorIndex > -1 && ifUseOrchestratorIndex > -1 && useOrchestratorIndex < ifUseOrchestratorIndex);
+});
+
+test('Sprint 4: com a flag desligada, o caminho é BYTE A BYTE o da Sprint 3 -- resolveSemanticFinancialIntent continua sendo chamado fora do bloco useOrchestrator', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  const ifBlockEnd = body.indexOf('const outcome = resolveSemanticFinancialIntent({');
+  const ifUseOrchestratorIndex = body.indexOf('if (useOrchestrator) {');
+  assert.ok(ifBlockEnd > ifUseOrchestratorIndex, 'resolveSemanticFinancialIntent (Sprint 3) deve continuar existindo como fallback quando useOrchestrator é false');
+});
+
+test('Sprint 4: consultas compostas exigem a própria flag -- isCompound/subIntents são descartados quando ela está desligada', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  assert.match(body, /const allowCompound = isCompoundFinancialQueriesFlagEnabled\(\);/);
+  assert.match(body, /isCompound: false, subIntents: \[\]/);
+});
+
+test('Sprint 4: escrita nunca é executada pelo orquestrador -- publishConversationResultWithInference/executeFinancialIntentAction não são chamados dentro de attemptSemanticFinancialQuery', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  assert.doesNotMatch(body, /executeFinancialIntentAction/);
+  assert.doesNotMatch(body, /publishConversationResultWithInference/);
+});
+
+test('Sprint 4: catálogo de capacidades só é montado quando o orquestrador está ligado (nunca gasta ciclo com a flag desligada)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  assert.match(body, /availableCapabilities: useOrchestrator\s*\n\s*\? buildOrchestratorCapabilityCatalog\(\)\.map/);
+});
+
+test('Sprint 4: composição final passa por composeNaturalFinancialResponse, nunca publica o texto cru sem essa camada', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  assert.match(body, /const deterministicText = composeNaturalFinancialResponse\(\{/);
+  assert.match(body, /createAssistantResponse\(finalText,/);
+});
+
+test('Sprint 4 Ciclo 3 (Bloco 4.4): composição via LLM só é tentada quando a flag/serviço estão disponíveis, e sempre com deterministicText como fallback obrigatório', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  assert.match(body, /let finalText = deterministicText;/);
+  assert.match(body, /if \(financialResponseComposer\.isSupported\(\) && result\.structuredResult\) \{/);
+  assert.match(body, /deterministicText,/);
+  assert.match(body, /finalText = composed\.text \?\? deterministicText;/);
+});
+
+test('Sprint 4 Ciclo 4 (Bloco 4.8): universeEntityNames real (contas + categorias) é repassado ao composer via LLM para o guardrail de entidades', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  assert.match(body, /universeEntityNames: \[\s*\n\s*\.\.\.accountState\.accounts\.map\(\(account\) => account\.name\),\s*\n\s*\.\.\.categoryState\.categories\.map\(\(category\) => category\.name\),\s*\n\s*\],/);
+});
+
+test('Fase 1 (correção do kill switch, Bloco 4.10): enabled do composer é passado como FUNÇÃO, nunca um booleano pré-calculado -- kill switch precisa ter efeito imediato', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /enabled: \(\) => uniLlm\.enabled && isLlmResponseComposerFlagEnabled\(\),/);
+  // Nunca mais o padrão antigo (booleano calculado uma vez dentro do useMemo).
+  assert.doesNotMatch(page, /enabled: uniLlm\.enabled && isLlmResponseComposerFlagEnabled\(\),/);
+});
+
+test('Sprint 4 Ciclo 4 (Bloco 4.9): telemetria de validação real é registrada tanto para a interpretação quanto para o composer, sempre em DEV', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{ recordFinancialValidationEvent \} from '\.\/financialValidationTelemetry\.js';/);
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  assert.match(body, /recordFinancialValidationEvent\(\s*\n\s*\{\s*\n\s*mode: 'financial_intent',/);
+  assert.match(body, /recordFinancialValidationEvent\(\s*\n\s*\{\s*\n\s*mode: 'financial_response_compose',/);
+  // Registrada logo após a chamada de interpretação, ANTES do early
+  // return por erro -- prova que o evento é registrado mesmo quando a
+  // interpretação falha (a chamada aconteceu e custou de qualquer forma).
+  const interpretCallIndex = body.indexOf('await financialIntentInterpreter.interpretFinancialIntent(');
+  const recordCallIndex = body.indexOf("mode: 'financial_intent',");
+  const earlyReturnIndex = body.indexOf('if (error || !interpretation) return false;');
+  assert.ok(interpretCallIndex > -1 && recordCallIndex > interpretCallIndex && recordCallIndex < earlyReturnIndex);
+});
+
+test('Sprint 4 Ciclo 3 (Bloco 4.6.2): status "unsupported" responde direto, sem cair no fallback conversacional (evita segunda chamada LLM no mesmo turno)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  const unsupportedIndex = body.indexOf("result.status === 'unsupported'");
+  assert.ok(unsupportedIndex > -1, 'deve checar explicitamente o status unsupported');
+  const returnTrueAfter = body.indexOf('return true;', unsupportedIndex);
+  const nextFallbackCheck = body.indexOf("result.status !== 'handled'", unsupportedIndex);
+  assert.ok(returnTrueAfter > -1 && returnTrueAfter < nextFallbackCheck, 'unsupported deve responder e retornar true ANTES do fallback geral');
+});
+
+test('Sprint 4 Ciclo 3 (Bloco 4.6.3): telemetria DEV é registrada para todo turno do orquestrador, nunca condicional ao sucesso', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
+  const telemetryIndex = body.indexOf('logFinancialOrchestratorTelemetry(');
+  const needsClarificationIndex = body.indexOf("result.status === 'needs_clarification'");
+  assert.ok(telemetryIndex > -1 && telemetryIndex < needsClarificationIndex, 'telemetria deve ser registrada antes de qualquer branch de status, cobrindo todos os resultados');
+  assert.match(body, /isDev: import\.meta\.env\.DEV/);
+});
+
+test('Sprint 2: dispatcher/executor/registry do Tool Calling (Sprint 1) permanecem intactos -- nenhuma referência nova a eles nesta Sprint', async () => {
+  const page = await source('UniChatPage.jsx');
+  // Confirma que o wiring de Tool Calling continua exatamente como estava:
+  // mesma dedupe por mensagem, sem nenhum novo gate/condição introduzido
+  // por conversationalMemoryRef.
+  assert.match(page, /lastToolCallingProcessedMessageIdRef\.current === toolCallingMessageId/);
 });

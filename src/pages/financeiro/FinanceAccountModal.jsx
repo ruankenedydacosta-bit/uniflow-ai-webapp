@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import { cx } from '../../utils/cx';
 import { formatCurrency } from '../../utils/formatters';
 import {
   CrudRow,
@@ -20,7 +21,29 @@ const EMPTY_FORM = {
 const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar contas deste espaço.';
 const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir contas deste espaço.';
 
-function FinanceAccountModal({ accountState, canDelete = true, canManage = true, onChanged, onClose, open }) {
+// `autoCloseOnCreate` (opcional, default false): quando true, fecha a modal
+// automaticamente após criar a PRIMEIRA conta criada nesta sessão de uso --
+// usado por fluxos que abrem esta modal apenas para criar rapidamente uma
+// conta e voltar (ex.: UpdateBalanceModal.jsx), sem alterar em nada o
+// comportamento padrão (gerenciar várias contas) usado em FinanceiroPage e
+// SimplifiedMyAccountsPage, onde a prop nunca é passada.
+// `className`/`overlayClassName` (opcionais): permitem que um fluxo chamador
+// force a identidade escura oficial (ex.: sub-fluxo "Criar conta" dentro de
+// UpdateBalanceModal.jsx) sem afetar o uso padrão desta modal em
+// FinanceiroPage.jsx/SimplifiedMyAccountsPage.jsx, que continuam reativos ao
+// tema --uf-* do site (comportamento inalterado quando as props não são
+// passadas).
+function FinanceAccountModal({
+  accountState,
+  autoCloseOnCreate = false,
+  canDelete = true,
+  canManage = true,
+  className,
+  overlayClassName,
+  onChanged,
+  onClose,
+  open,
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
@@ -55,6 +78,7 @@ function FinanceAccountModal({ accountState, canDelete = true, canManage = true,
     event.preventDefault();
     if (accountState.isMutating || !canManage) return;
     const balance = form.balance || '0';
+    const isCreate = !editingId;
     const result = await accountState.saveAccount(
       {
         name: form.name,
@@ -67,6 +91,9 @@ function FinanceAccountModal({ accountState, canDelete = true, canManage = true,
     if (!result.error) {
       await onChanged?.();
       resetForm();
+      if (autoCloseOnCreate && isCreate) {
+        onClose();
+      }
     }
   }
 
@@ -90,7 +117,8 @@ function FinanceAccountModal({ accountState, canDelete = true, canManage = true,
         ? 'Comece por aqui para organizar os dados deste perfil.'
         : 'Organize as fontes usadas nos lançamentos deste perfil.'}
       size="md"
-      className={styles.accountDialog}
+      className={cx(styles.accountDialog, className)}
+      overlayClassName={overlayClassName}
     >
       <div className={styles.accountContent}>
         <form className={styles.accountForm} onSubmit={handleSubmit}>

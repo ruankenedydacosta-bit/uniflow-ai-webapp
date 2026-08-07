@@ -449,6 +449,20 @@ test('chamada em modo suporte inclui mode e productContext no corpo enviado', as
 // `tools` FOI passado -- ou seja, o comportamento com a flag ligada.
 // ============================================================================
 
+test('Sprint 2: buildLlmPayload inclui a data de referencia no system prompt quando o snapshot a fornece', () => {
+  const payload = buildLlmPayload({
+    text: 'oi',
+    messages: [],
+    financialContext: { hasData: false, snapshot: { referenceDate: '2026-08-05' } },
+  });
+  assert.match(payload.system, /Data de referencia de hoje: 2026-08-05\./);
+});
+
+test('Sprint 2: sem referenceDate no snapshot, o system prompt sai exatamente como antes (aditivo, nunca obrigatorio)', () => {
+  const payload = buildLlmPayload({ text: 'oi', messages: [], financialContext: { hasData: false } });
+  assert.ok(!payload.system.includes('Data de referencia de hoje'));
+});
+
 test('buildLlmPayload nao inclui tools por padrao (flag desligada neste ambiente)', () => {
   const payload = buildLlmPayload({ text: 'oi', messages: [], financialContext: { hasData: false } });
   assert.equal(payload.tools, undefined);

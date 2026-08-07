@@ -1,0 +1,255 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(3, 8, 20, .68);
+  backdrop-filter: blur(6px);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 360px;
+  max-height: min(640px, calc(100dvh - 32px));
+  max-height: min(640px, calc(100svh - 32px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  padding-top: max(20px, calc(env(safe-area-inset-top) + 8px));
+  padding-bottom: max(20px, calc(env(safe-area-inset-bottom) + 8px));
+  border: 1px solid rgba(96, 116, 255, .38);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .96), rgba(4, 13, 33, .98));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .42), inset 0 1px rgba(255, 255, 255, .04);
+  color: #f8fafc;
+}
+
+.dialog:focus-visible {
+  outline: none;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.closeButton {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 999px;
+  background: rgba(10, 22, 48, .82);
+  color: #c3ccdc;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: #f8fafc;
+  background: rgba(15, 30, 58, .95);
+}
+
+.closeButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.yearRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.yearNav {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 999px;
+  background: rgba(10, 22, 48, .82);
+  color: #e2e8f0;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.yearNav:hover {
+  background: rgba(15, 30, 58, .95);
+}
+
+.yearNav:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.yearLabel {
+  min-width: 64px;
+  text-align: center;
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.monthCell {
+  min-height: var(--uf-tap-target-min, 44px);
+  padding: 12px 4px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 14px;
+  background: rgba(10, 22, 48, .82);
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.monthCell:hover:not(:disabled) {
+  border-color: rgba(96, 116, 255, .5);
+  background: rgba(15, 30, 58, .95);
+}
+
+.monthCell:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.monthCell:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.monthCellSelected {
+  border-color: transparent;
+  background: linear-gradient(105deg, #234cff, #248de3 50%, #12c79c);
+  color: #f8fafc;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, .32);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.thisMonthButton {
+  padding: 10px 14px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 999px;
+  background: rgba(10, 22, 48, .82);
+  color: #c3ccdc;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.thisMonthButton:hover {
+  color: #f8fafc;
+  background: rgba(15, 30, 58, .95);
+}
+
+.thisMonthButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.actionsRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cancelButton {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 999px;
+  background: transparent;
+  color: #c3ccdc;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelButton:hover {
+  color: #f8fafc;
+  border-color: rgba(96, 116, 255, .5);
+}
+
+.cancelButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.applyButton {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(105deg, #234cff, #248de3 50%, #12c79c);
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, .28);
+}
+
+.applyButton:hover {
+  filter: brightness(1.06);
+}
+
+.applyButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+@media (max-width: 359px) {
+  .dialog {
+    max-width: 320px;
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .monthGrid {
+    gap: 8px;
+  }
+
+  .monthCell {
+    padding: 10px 2px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monthCell {
+    transition: none;
+  }
+}

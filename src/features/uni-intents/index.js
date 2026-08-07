@@ -24,3 +24,4 @@ export {
   isValidIsoDate,
   resolveRelativeDateExpression,
 } from './relativeDateResolver.js';
+export { resolveTemporalRange } from './temporalRangeResolver.js';

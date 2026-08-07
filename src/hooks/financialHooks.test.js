@@ -20,6 +20,7 @@ import {
   createTransactionDuplicateForm,
   createTransactionEditForm,
   getSelectableTransactionAccounts,
+  resolveTransactionDescription,
 } from '../pages/financeiro/transactionFormUtils.js';
 
 function renderHook(useHook, props) {
@@ -730,4 +731,42 @@ test('payment_method e notes preenchidos sao enviados com trim no payload', () =
   const payload = buildTransactionMutationPayload(form);
   assert.equal(payload.payment_method, 'Cartão de crédito');
   assert.equal(payload.notes, 'Plano anual');
+});
+
+// ============================================================================
+// BLOCO REGISTROS iOS: descrição é opcional na UI, mas transactions.description
+// no banco é NOT NULL + CHECK não-vazia (supabase/migrations/20260711000200_002_financial_core.sql).
+// resolveTransactionDescription sintetiza um valor neutro e honesto só para
+// persistência quando o usuário deixa o campo em branco -- nunca inventa
+// detalhes, nunca obriga o usuário a digitar.
+// ============================================================================
+
+test('resolveTransactionDescription usa o texto digitado (com trim) quando presente', () => {
+  assert.equal(
+    resolveTransactionDescription({ description: '  Mercado do mês  ', transaction_type: 'expense' }),
+    'Mercado do mês',
+  );
+});
+
+test('resolveTransactionDescription sintetiza um rótulo neutro honesto por tipo quando o campo está vazio', () => {
+  assert.equal(resolveTransactionDescription({ description: '', transaction_type: 'income' }), 'Entrada');
+  assert.equal(resolveTransactionDescription({ description: '   ', transaction_type: 'expense' }), 'Despesa');
+  assert.equal(resolveTransactionDescription({ description: '', transaction_type: 'transfer' }), 'Transferência entre contas');
+  assert.equal(resolveTransactionDescription({ description: '', transaction_type: 'adjustment' }), 'Ajuste de saldo');
+});
+
+test('buildTransactionMutationPayload nunca envia descrição vazia -- usa o fallback neutro quando o formulário não preenche', () => {
+  const payload = buildTransactionMutationPayload({
+    account_id: 'account-1',
+    destination_account_id: '',
+    category_id: '',
+    transaction_type: 'expense',
+    description: '',
+    amount: '50',
+    transaction_date: '2026-08-01',
+    status: 'completed',
+    payment_method: '',
+    notes: '',
+  });
+  assert.equal(payload.description, 'Despesa');
 });

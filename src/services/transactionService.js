@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const TRANSACTION_FIELDS =
-  'id, workspace_id, account_id, destination_account_id, category_id, transaction_type, description, amount, transaction_date, competence_date, status, payment_method, notes, is_recurring, recurrence_rule, installment_number, installment_total, source_type, external_provider, external_transaction_id, external_account_id, imported_at, last_synced_at, metadata, created_by, created_at, updated_at';
+  'id, workspace_id, account_id, destination_account_id, category_id, transaction_type, description, amount, adjustment_delta, transaction_date, competence_date, status, payment_method, notes, is_recurring, recurrence_rule, installment_number, installment_total, source_type, external_provider, external_transaction_id, external_account_id, imported_at, last_synced_at, metadata, created_by, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -53,16 +53,35 @@ function normalizeSingleResult(data, error, message) {
 function hasRequiredTransactionFields(transaction) {
   const normalizedAmount = Number(transaction.amount);
 
+  // Descrição NUNCA é obrigatória aqui -- a UI já resolve um valor honesto
+  // (ver resolveTransactionDescription em transactionFormUtils.js) antes de
+  // chamar este serviço, mas o service em si não deve barrar um chamador
+  // que não a preencha. A coluna description no banco continua NOT NULL +
+  // não-vazia; normalizeTransactionDescription (abaixo) garante um valor
+  // válido antes do insert/update em vez de rejeitar a chamada aqui.
   return Boolean(
     transaction.account_id &&
       transaction.transaction_type &&
-      typeof transaction.description === 'string' &&
-      transaction.description.trim() &&
       transaction.amount !== undefined &&
       Number.isFinite(normalizedAmount) &&
       normalizedAmount > 0 &&
       transaction.transaction_date,
   );
+}
+
+// Mesmo fallback neutro/honesto usado no formulário (transactionFormUtils.js)
+// -- última linha de defesa para nunca falhar a constraint NOT NULL/não-vazia
+// de transactions.description mesmo se um chamador futuro não usar a UI.
+const NEUTRAL_DESCRIPTION_BY_TYPE = {
+  income: 'Entrada',
+  expense: 'Despesa',
+  transfer: 'Transferência entre contas',
+  adjustment: 'Ajuste de saldo',
+};
+
+function normalizeTransactionDescription(transaction) {
+  const trimmed = typeof transaction.description === 'string' ? transaction.description.trim() : '';
+  return trimmed || NEUTRAL_DESCRIPTION_BY_TYPE[transaction.transaction_type] || 'Lançamento';
 }
 
 const PERIOD_PAGE_SIZE = 500;
@@ -256,7 +275,7 @@ export async function createTransaction(workspaceId, transaction = {}) {
 
   if (!hasRequiredTransactionFields(transaction)) {
     return createValidationResult(
-      'Conta, tipo, descricao, valor positivo e data sao obrigatorios.',
+      'Conta, tipo, valor positivo e data sao obrigatorios.',
     );
   }
 
@@ -281,7 +300,7 @@ export async function createTransaction(workspaceId, transaction = {}) {
       'adjustment_delta',
       'metadata',
     ]),
-    description: transaction.description.trim(),
+    description: normalizeTransactionDescription(transaction),
   };
 
   const { data, error } = await supabase
@@ -347,13 +366,16 @@ export async function updateTransaction(
 
   const payload = buildTransactionUpdatePayload(changes);
 
-  if (typeof payload.description === 'string') {
-    payload.description = payload.description.trim();
-  } else if (payload.description !== undefined) {
-    return createValidationResult('A descricao deve ser um texto valido.');
+  // Descrição em branco nunca bloqueia a edição -- mesmo fallback neutro
+  // usado na criação (normalizeTransactionDescription), nunca uma rejeição.
+  if (payload.description !== undefined) {
+    payload.description = normalizeTransactionDescription({
+      description: payload.description,
+      transaction_type: payload.transaction_type,
+    });
   }
 
-  if (Object.keys(payload).length === 0 || payload.description === '') {
+  if (Object.keys(payload).length === 0) {
     return createValidationResult('Nenhuma alteracao valida foi informada.');
   }
 

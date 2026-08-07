@@ -72,7 +72,9 @@ export function buildSanitizedHistory(messages = [], limit = MAX_HISTORY_MESSAGE
     .filter((m) => m.content);
 }
 
-export function buildSystemPrompt({ personalityProfileId, workspaceType, financialSummary, conversationStyle } = {}) {
+export function buildSystemPrompt({
+  personalityProfileId, workspaceType, financialSummary, conversationStyle, referenceDate,
+} = {}) {
   const personality = buildPersonalityInstructions({
     preferredProfile: personalityProfileId,
     context: { workspaceType },
@@ -125,6 +127,13 @@ export function buildSystemPrompt({ personalityProfileId, workspaceType, financi
   ];
 
   const contextLines = ['', 'CONTEXTO FINANCEIRO DISPONIVEL (agregado):'];
+  // Sprint 2 (Interpretação Temporal): linha puramente aditiva -- ajuda a
+  // LLM a resolver expressoes temporais ("mes passado", "essa semana") no
+  // caminho de fallback (quando o motor deterministico nao reconhece a
+  // consulta), sem criar novo modo nem tocar a Edge Function.
+  if (typeof referenceDate === 'string' && referenceDate) {
+    contextLines.push(`- Data de referencia de hoje: ${referenceDate}.`);
+  }
   if (financialSummary?.hasData) {
     contextLines.push(`- Perfil ativo: ${financialSummary.mode}`);
     contextLines.push(`- Saldo atual: R$ ${financialSummary.balance}`);
@@ -152,6 +161,7 @@ export function buildLlmPayload({
   personalityProfileId,
   workspaceType,
   conversationStyle,
+  referenceDate,
 } = {}) {
   const financialSummary = buildSanitizedFinancialSummary(financialContext, mode);
   const safeStyle = resolveConversationStyle(conversationStyle);
@@ -160,6 +170,7 @@ export function buildLlmPayload({
     workspaceType,
     financialSummary,
     conversationStyle: safeStyle,
+    referenceDate: referenceDate ?? financialContext?.snapshot?.referenceDate ?? null,
   });
   const history = buildSanitizedHistory(messages);
   const userText = sanitizeText(text);

@@ -1,3 +1,38 @@
+/* BLOCO REGISTROS iOS (refino visual): o Modal compartilhado (Modal.jsx)
+   usado por FinanceTransactionModal ("Lançamentos") e FinanceAccountModal
+   usa tokens --uf-* que resolvem CLAROS quando data-theme="light" (padrão
+   desta conta). Redefinir os tokens aqui (mesmo padrão de
+   .notificationsDropdown em simplifiedApp.module.css) força a identidade
+   escura oficial em todo o chrome herdado por cascata, sem alterar o Modal
+   compartilhado nem FinanceTransactionModal quando usado no Financeiro
+   desktop (FinanceiroPage.jsx), que continua reativo ao tema do site. */
+.transactionDialogDark {
+  --uf-color-bg-elevated: linear-gradient(145deg, rgba(14, 31, 62, .96), rgba(4, 13, 33, .98));
+  --uf-color-bg-sunken: rgba(10, 22, 48, .82);
+  --uf-color-bg-surface-hover: rgba(15, 30, 58, .95);
+  --uf-color-border-default: rgba(86, 109, 151, .42);
+  --uf-color-border-subtle: rgba(86, 109, 151, .28);
+  --uf-color-border-strong: rgba(96, 116, 255, .5);
+  --uf-color-text-primary: #f8fafc;
+  --uf-color-text-secondary: #c3ccdc;
+  --uf-color-text-tertiary: #9aa7bd;
+  --uf-color-primary: #2563eb;
+  --uf-color-danger: #ef4444;
+  --uf-color-danger-subtle: rgba(239, 68, 68, .16);
+  --uf-color-info: #22d3ee;
+  --uf-color-info-subtle: rgba(37, 99, 235, .14);
+  --uf-color-success: #10b981;
+  --uf-color-success-subtle: rgba(16, 185, 129, .14);
+  --uf-color-warning: #f59e0b;
+  --uf-color-warning-subtle: rgba(245, 158, 11, .14);
+  --uf-focus-ring-color: #67e8f9;
+}
+
+.darkOverlay {
+  background: rgba(3, 8, 20, .68) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
 .recordsPage {
   width: min(100%, 920px);
   min-height: calc(100dvh - 112px);
@@ -213,15 +248,6 @@
   stroke-width: 2.2;
 }
 
-.monthNativeInput {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  opacity: 0;
-  pointer-events: none;
-  color-scheme: dark;
-}
-
 .summaryCards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -313,6 +339,29 @@
 
 .balance strong {
   color: #3f7fff;
+}
+
+.balanceButton {
+  width: 100%;
+  border: 1px solid rgba(86, 109, 151, .42);
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: border-color .15s ease, transform .1s ease;
+}
+
+.balanceButton:hover {
+  border-color: rgba(59, 130, 246, .55);
+}
+
+.balanceButton:active {
+  transform: scale(.98);
+}
+
+.balanceButton:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, .55);
+  outline-offset: 2px;
 }
 
 .recordsSection {
@@ -602,7 +651,8 @@
   background: #071329;
   color: #f8fafc;
   font: inherit;
-  font-size: 14px;
+  /* >=16px evita o zoom automático do Safari iOS ao focar o campo. */
+  font-size: 16px;
 }
 
 .searchField {
@@ -690,7 +740,7 @@
 .talkButton:focus-visible,
 .viewTabs button:focus-visible,
 .sectionHeading button:focus-visible,
-.monthSelector input:focus-visible,
+.monthSelector:focus-visible,
 .categoryCard:focus-visible,
 .newRecordAction:focus-visible,
 .transactionRow:focus-visible,
@@ -763,8 +813,7 @@
     min-height: 48px;
   }
 
-  .monthSelector input {
-    width: 135px;
+  .monthSelector {
     font-size: 15px;
   }
 
@@ -905,10 +954,6 @@
 
   .monthSelector {
     gap: 4px;
-  }
-
-  .monthSelector input {
-    width: 122px;
     font-size: 14px;
   }
 

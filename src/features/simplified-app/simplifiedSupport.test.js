@@ -42,21 +42,34 @@ test('index.js exporta SimplifiedSupportPage', async () => {
 // Cabeçalho.
 // ============================================================================
 
-test('cabeçalho tem botão voltar, título "Suporte" e Falar com a Uni real', async () => {
+test('cabeçalho tem botão voltar e título "Suporte" -- SEM "Falar com a Uni" duplicado (reorganização dos acessos à Uni)', async () => {
   const content = await source('./SimplifiedSupportPage.jsx');
   assert.match(content, /aria-label="Voltar para Conta"/);
   assert.match(content, /navigate\(SIMPLIFIED_ROUTES\.ACCOUNT\)/);
   assert.match(content, /<h1>Suporte<\/h1>/);
+  const headerStart = content.indexOf('<header className={styles.header}>');
+  const headerEnd = content.indexOf('</header>', headerStart);
+  const headerSlice = content.slice(headerStart, headerEnd);
+  assert.doesNotMatch(headerSlice, /Falar com a Uni/);
 });
 
 // ============================================================================
-// Canais -- Uni real, atendente via WhatsApp (nunca telefone/e-mail).
+// Canais -- Uni real (único ponto de entrada agora, o card principal),
+// atendente via WhatsApp (nunca telefone/e-mail).
 // ============================================================================
 
-test('canal Uni navega para a rota pessoal real, sem chatbot paralelo', async () => {
+test('card "Conversar com a Uni" é o ÚNICO ponto de entrada da Uni nesta tela (cabeçalho não duplica mais) -- navega para a rota pessoal real', async () => {
   const content = await source('./SimplifiedSupportPage.jsx');
   const uniOccurrences = content.match(/navigate\(SIMPLIFIED_ROUTES\.UNI\)/g) ?? [];
-  assert.ok(uniOccurrences.length >= 2);
+  assert.equal(uniOccurrences.length, 1, 'deve haver exatamente 1 ponto de entrada da Uni (o card principal)');
+});
+
+test('card "Conversar com a Uni" usa a descrição exata pedida (entender como usar o app e encontrar funcionalidades)', async () => {
+  const content = await source('./SimplifiedSupportPage.jsx');
+  assert.match(
+    content,
+    /A Uni pode ajudar você a entender como utilizar o aplicativo e encontrar rapidamente as funcionalidades\./,
+  );
 });
 
 test('nunca menciona telefone, ligação ou e-mail como canal de suporte', async () => {

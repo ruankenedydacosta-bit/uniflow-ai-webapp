@@ -16,10 +16,23 @@
 //   01/07 a 31/07
 //
 // Reutiliza e estende o resolveTemporalReferences da Fase 16.
+//
+// BUG REAL (Sprint 3, corrigido na origem): este arquivo construía a data
+// de referência com `new Date(referenceDate)` (uma string 'YYYY-MM-DD' vira
+// meia-noite UTC) e depois lia/escrevia com getters LOCAIS
+// (getFullYear/getMonth/getDay/getDate/setDate/setMonth). Em qualquer fuso
+// com offset negativo (ex.: America/Sao_Paulo, UTC-3), meia-noite UTC do
+// dia D é ainda o dia D-1 no relógio local -- então "esta semana"/"mês
+// passado"/etc podiam resolver com 1 dia de deslocamento, sobretudo perto
+// da virada do dia, da semana, do mês ou do ano. Toda a aritmética abaixo
+// agora usa APENAS Date.UTC(...) na construção e getters/setters UTC
+// (getUTC*/setUTC*) -- nunca mistura os dois. Outros consumidores deste
+// módulo (resolveRuntimeTemporal/extractRuntimeTemporalEntities) herdam a
+// correção automaticamente, sem precisar de nenhuma mudança própria.
 
 import { RUNTIME_TEMPORAL_ENTITIES, isRuntimeTemporalEntity } from '../types/index.js';
 import { resolveTemporalReferences, extractTemporalEntities } from '../../financial-conversational/temporal/index.js';
-import { deepFreeze, roundMoney } from '../utils/shared.js';
+import { deepFreeze } from '../utils/shared.js';
 
 // A Fase 16 (resolveTemporalReferences/extractTemporalEntities) usa seu
 // próprio vocabulário de tipos ('current_month', 'previous_month',
@@ -44,29 +57,60 @@ function normalizeText(text) {
   return String(text ?? '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .trim();
+}
+
+// Único ponto de construção da data de referência -- sempre meia-noite
+// UTC, nunca `new Date(referenceDate)` interpretado depois com getters
+// locais. Uma string 'YYYY-MM-DD' inválida ou ausente cai no "agora" real,
+// também ancorado em UTC (Date.now() já é um instante absoluto; só as
+// COMPONENTES de ano/mês/dia usadas daqui pra baixo precisam ser lidas via
+// getUTC*, nunca via getFullYear/getMonth/getDate locais).
+function parseReferenceDate(referenceDate) {
+  if (typeof referenceDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(referenceDate)) {
+    const [year, month, day] = referenceDate.slice(0, 10).split('-').map(Number);
+    const candidate = new Date(Date.UTC(year, month - 1, day));
+    if (!Number.isNaN(candidate.getTime())) return candidate;
+  }
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+function toIso(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function shiftDaysUtc(date, days) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days));
+}
+
+function shiftMonthsUtc(date, months) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, date.getUTCDate()));
 }
 
 function getMonthBounds(year, month) {
   const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const endDate = new Date(year, month, 0).getDate();
-  const end = `${year}-${String(month).padStart(2, '0')}-${endDate}`;
+  // Dia 0 do mês seguinte, em UTC, é o último dia do mês pedido -- mesma
+  // técnica de antes, só que ancorada em Date.UTC em vez do construtor
+  // local `new Date(year, month, 0)`.
+  const endDate = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const end = `${year}-${String(month).padStart(2, '0')}-${String(endDate).padStart(2, '0')}`;
   return { start, end };
 }
 
 function resolveSpecificMonth(text, referenceDate) {
   const normalized = normalizeText(text);
   const words = normalized.split(/\s+/);
-  const now = referenceDate ? new Date(referenceDate) : new Date();
+  const now = parseReferenceDate(referenceDate);
 
   for (let i = 0; i < words.length; i++) {
     const month = MONTH_NAMES[words[i]];
     if (month) {
-      let year = now.getFullYear();
+      let year = now.getUTCFullYear();
       if (i + 1 < words.length && /^\d{4}$/.test(words[i + 1])) {
         year = parseInt(words[i + 1], 10);
-      } else if (month > now.getMonth() + 1) {
+      } else if (month > now.getUTCMonth() + 1) {
         year -= 1;
       }
 
@@ -106,30 +150,26 @@ function resolveSpecificYear(text) {
   return null;
 }
 
-function startOfWeek(date) {
-  const d = new Date(date);
-  const day = d.getDay();
+function startOfWeekUtc(date) {
+  const day = date.getUTCDay();
   // Semana começa na segunda-feira (dia 1); domingo (0) volta 6 dias.
   const diff = day === 0 ? 6 : day - 1;
-  d.setDate(d.getDate() - diff);
-  return d;
+  return shiftDaysUtc(date, -diff);
 }
 
 function resolveRelativePeriod(text, referenceDate) {
   const normalized = normalizeText(text);
-  const ref = referenceDate ? new Date(referenceDate) : new Date();
+  const ref = parseReferenceDate(referenceDate);
 
   // "hoje", "ontem"
   if (/\bhoje\b/i.test(normalized)) {
-    const iso = ref.toISOString().slice(0, 10);
+    const iso = toIso(ref);
     return {
       entity: 'today', period: 'today', start: iso, end: iso, label: 'hoje',
     };
   }
   if (/\bontem\b/i.test(normalized)) {
-    const yesterday = new Date(ref);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const iso = yesterday.toISOString().slice(0, 10);
+    const iso = toIso(shiftDaysUtc(ref, -1));
     return {
       entity: 'yesterday', period: 'yesterday', start: iso, end: iso, label: 'ontem',
     };
@@ -137,41 +177,38 @@ function resolveRelativePeriod(text, referenceDate) {
 
   // "esta semana", "semana passada"
   if (/\besta\s+semana\b/i.test(normalized)) {
-    const start = startOfWeek(ref);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
+    const start = startOfWeekUtc(ref);
+    const end = shiftDaysUtc(start, 6);
     return {
       entity: 'this_week',
       period: 'this_week',
-      start: start.toISOString().slice(0, 10),
-      end: end.toISOString().slice(0, 10),
+      start: toIso(start),
+      end: toIso(end),
       label: 'esta semana',
     };
   }
   if (/\bsemana\s+passada\b/i.test(normalized)) {
-    const start = startOfWeek(ref);
-    start.setDate(start.getDate() - 7);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
+    const start = shiftDaysUtc(startOfWeekUtc(ref), -7);
+    const end = shiftDaysUtc(start, 6);
     return {
       entity: 'last_week',
       period: 'last_week',
-      start: start.toISOString().slice(0, 10),
-      end: end.toISOString().slice(0, 10),
+      start: toIso(start),
+      end: toIso(end),
       label: 'semana passada',
     };
   }
 
   // "este mês", "mês passado", "mês que vem"
   if (/\beste\s+m[eê]s\b/i.test(normalized)) {
-    const bounds = getMonthBounds(ref.getFullYear(), ref.getMonth() + 1);
+    const bounds = getMonthBounds(ref.getUTCFullYear(), ref.getUTCMonth() + 1);
     return {
       entity: 'this_month', period: 'this_month', start: bounds.start, end: bounds.end, label: 'este mês',
     };
   }
   if (/\bm[eê]s\s+passado\b/i.test(normalized)) {
-    let year = ref.getFullYear();
-    let month = ref.getMonth(); // mês anterior (0-based já é o mês -1 em relação ao atual 1-based)
+    let year = ref.getUTCFullYear();
+    let month = ref.getUTCMonth(); // mês anterior (0-based já é o mês -1 em relação ao atual 1-based)
     if (month === 0) {
       month = 12;
       year -= 1;
@@ -182,8 +219,8 @@ function resolveRelativePeriod(text, referenceDate) {
     };
   }
   if (/\bm[eê]s\s+que\s+vem\b/i.test(normalized)) {
-    let year = ref.getFullYear();
-    let month = ref.getMonth() + 2;
+    let year = ref.getUTCFullYear();
+    let month = ref.getUTCMonth() + 2;
     if (month > 12) {
       month = 1;
       year += 1;
@@ -198,16 +235,14 @@ function resolveRelativePeriod(text, referenceDate) {
   const lastMonthsMatch = normalized.match(/[uú]ltimos\s+(\d+)\s+m[eê]ses?/i);
   if (lastMonthsMatch) {
     const n = parseInt(lastMonthsMatch[1], 10);
-    const start = new Date(ref);
-    start.setMonth(start.getMonth() - n + 1);
-    start.setDate(1);
-    const end = new Date(ref);
+    const shifted = shiftMonthsUtc(ref, -(n - 1));
+    const start = new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), 1));
     return {
       entity: 'last_n_months',
       period: 'last_n_months',
       n,
-      start: start.toISOString().slice(0, 10),
-      end: end.toISOString().slice(0, 10),
+      start: toIso(start),
+      end: toIso(ref),
       label: `últimos ${n} meses`,
     };
   }
@@ -215,33 +250,31 @@ function resolveRelativePeriod(text, referenceDate) {
   const lastDaysMatch = normalized.match(/[uú]ltimos\s+(\d+)\s+dias?/i);
   if (lastDaysMatch) {
     const n = parseInt(lastDaysMatch[1], 10);
-    const start = new Date(ref);
-    start.setDate(start.getDate() - n + 1);
-    const end = new Date(ref);
+    const start = shiftDaysUtc(ref, -(n - 1));
     return {
       entity: 'last_n_days',
       period: 'last_n_days',
       n,
-      start: start.toISOString().slice(0, 10),
-      end: end.toISOString().slice(0, 10),
+      start: toIso(start),
+      end: toIso(ref),
       label: `últimos ${n} dias`,
     };
   }
 
   // "este ano", "ano passado"
   if (/\beste\s+ano\b/i.test(normalized)) {
-    const year = ref.getFullYear();
+    const year = ref.getUTCFullYear();
     return {
       entity: 'this_year',
       period: 'this_year',
       year,
       start: `${year}-01-01`,
-      end: ref.toISOString().slice(0, 10),
+      end: toIso(ref),
       label: String(year),
     };
   }
   if (/\bano\s+passado\b/i.test(normalized)) {
-    const year = ref.getFullYear() - 1;
+    const year = ref.getUTCFullYear() - 1;
     return {
       entity: 'last_year',
       period: 'last_year',
@@ -257,7 +290,7 @@ function resolveRelativePeriod(text, referenceDate) {
 
 function resolveDateRange(text, referenceDate) {
   const normalized = normalizeText(text);
-  const ref = referenceDate ? new Date(referenceDate) : new Date();
+  const ref = parseReferenceDate(referenceDate);
 
   // "DD/MM/AAAA a DD/MM/AAAA" (ano explícito nos dois lados)
   const rangeMatchWithYear = normalized.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})\s*(?:a|at[eé]|[-–])\s*(\d{1,2})[/-](\d{1,2})[/-](\d{4})/i);
@@ -276,7 +309,7 @@ function resolveDateRange(text, referenceDate) {
   // "DD/MM a DD/MM" (sem ano -- assume o ano de referenceDate/hoje)
   const rangeMatchNoYear = normalized.match(/\b(\d{1,2})[/-](\d{1,2})\s*(?:a|at[eé]|[-–])\s*(\d{1,2})[/-](\d{1,2})\b/i);
   if (rangeMatchNoYear) {
-    const year = ref.getFullYear();
+    const year = ref.getUTCFullYear();
     const start = `${year}-${rangeMatchNoYear[2].padStart(2, '0')}-${rangeMatchNoYear[1].padStart(2, '0')}`;
     const end = `${year}-${rangeMatchNoYear[4].padStart(2, '0')}-${rangeMatchNoYear[3].padStart(2, '0')}`;
     return {
@@ -291,9 +324,9 @@ function resolveDateRange(text, referenceDate) {
   return null;
 }
 
-function resolveSpecificDate(text, referenceDate) {
+function resolveSpecificDate(text) {
   const normalized = normalizeText(text);
-  const dateMatch = normalized.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  const dateMatch = normalized.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
   if (dateMatch) {
     const date = `${dateMatch[3]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}`;
     return {
@@ -335,7 +368,7 @@ export function resolveRuntimeTemporal(text, referenceDate = null) {
   let resolved = resolveDateRange(text, referenceDate);
   if (resolved) return deepFreeze({ ...resolved, confidence: 0.95, originalText: text });
 
-  resolved = resolveSpecificDate(text, referenceDate);
+  resolved = resolveSpecificDate(text);
   if (resolved) return deepFreeze({ ...resolved, confidence: 0.9, originalText: text });
 
   resolved = resolveRelativePeriod(text, referenceDate);

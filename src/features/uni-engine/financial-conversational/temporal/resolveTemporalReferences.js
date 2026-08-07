@@ -47,24 +47,42 @@ function normalizeText(text) {
     .trim();
 }
 
+// BUG REAL (Sprint 3, corrigido na origem): este arquivo construía a data
+// de referência com `new Date(referenceDate)` (uma string 'YYYY-MM-DD' vira
+// meia-noite UTC) e depois lia/escrevia com getters LOCAIS. Em qualquer
+// fuso de offset negativo (ex.: America/Sao_Paulo, UTC-3) isso deslocava o
+// resultado em 1 dia perto de virada de semana/mês/ano. Mesma correção já
+// aplicada em resolveRuntimeTemporal.js (Fase 17) -- toda a aritmética
+// abaixo usa APENAS Date.UTC(...) e getters/setters UTC, nunca os dois
+// misturados.
+function parseReferenceDateUtc(referenceDate) {
+  if (typeof referenceDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(referenceDate)) {
+    const [year, month, day] = referenceDate.slice(0, 10).split('-').map(Number);
+    const candidate = new Date(Date.UTC(year, month - 1, day));
+    if (!Number.isNaN(candidate.getTime())) return candidate;
+  }
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
 function getMonthBounds(year, month) {
   const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const endDate = new Date(year, month, 0).getDate();
-  const end = `${year}-${String(month).padStart(2, '0')}-${endDate}`;
+  const endDate = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const end = `${year}-${String(month).padStart(2, '0')}-${String(endDate).padStart(2, '0')}`;
   return { start, end };
 }
 
 function getCurrentMonthBounds(referenceDate) {
-  const ref = referenceDate ? new Date(referenceDate) : new Date();
-  const year = ref.getFullYear();
-  const month = ref.getMonth() + 1;
+  const ref = parseReferenceDateUtc(referenceDate);
+  const year = ref.getUTCFullYear();
+  const month = ref.getUTCMonth() + 1;
   return getMonthBounds(year, month);
 }
 
 function getPreviousMonthBounds(referenceDate) {
-  const ref = referenceDate ? new Date(referenceDate) : new Date();
-  let year = ref.getFullYear();
-  let month = ref.getMonth();
+  const ref = parseReferenceDateUtc(referenceDate);
+  let year = ref.getUTCFullYear();
+  let month = ref.getUTCMonth();
   if (month === 0) {
     month = 12;
     year -= 1;
@@ -91,23 +109,21 @@ function resolveRelativePattern(text, referenceDate) {
         resolved.end = bounds.end;
         resolved.granularity = 'month';
       } else if (resolved.type === 'last_n_months') {
-        const ref = referenceDate ? new Date(referenceDate) : new Date();
-        const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
-        const start = new Date(ref.getFullYear(), ref.getMonth() - (resolved.n - 1), 1);
+        const ref = parseReferenceDateUtc(referenceDate);
+        const end = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth() + 1, 0));
+        const start = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth() - (resolved.n - 1), 1));
         resolved.start = start.toISOString().slice(0, 10);
         resolved.end = end.toISOString().slice(0, 10);
         resolved.granularity = 'month';
       } else if (resolved.type === 'last_n_days') {
-        const ref = referenceDate ? new Date(referenceDate) : new Date();
-        const end = new Date(ref);
-        const start = new Date(ref);
-        start.setDate(start.getDate() - resolved.n + 1);
+        const ref = parseReferenceDateUtc(referenceDate);
+        const start = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate() - resolved.n + 1));
         resolved.start = start.toISOString().slice(0, 10);
-        resolved.end = end.toISOString().slice(0, 10);
+        resolved.end = ref.toISOString().slice(0, 10);
         resolved.granularity = 'day';
       } else if (resolved.type === 'year_to_date') {
-        const ref = referenceDate ? new Date(referenceDate) : new Date();
-        const year = ref.getFullYear();
+        const ref = parseReferenceDateUtc(referenceDate);
+        const year = ref.getUTCFullYear();
         resolved.start = `${year}-01-01`;
         resolved.end = ref.toISOString().slice(0, 10);
         resolved.granularity = 'month';
@@ -131,9 +147,9 @@ function resolveSpecificMonth(text, referenceDate) {
       } else if (i > 0 && /^\d{4}$/.test(words[i - 1])) {
         year = parseInt(words[i - 1], 10);
       } else {
-        const ref = referenceDate ? new Date(referenceDate) : new Date();
-        year = ref.getFullYear();
-        if (month > ref.getMonth() + 1) year -= 1;
+        const ref = parseReferenceDateUtc(referenceDate);
+        year = ref.getUTCFullYear();
+        if (month > ref.getUTCMonth() + 1) year -= 1;
       }
       if (year && year >= 2000 && year <= 2100) {
         const bounds = getMonthBounds(year, month);

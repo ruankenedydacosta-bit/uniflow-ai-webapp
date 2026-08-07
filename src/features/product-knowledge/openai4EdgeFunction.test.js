@@ -56,7 +56,7 @@ test('orcamento de tokens de saida e clampado server-side, nunca confia cegament
 test('modo suporte nunca usa o orcamento de tokens vindo do cliente -- so o modo financeiro pode', () => {
   assert.match(
     EDGE_SOURCE,
-    /const maxOutputTokens = mode === UNI_MODE\.FINANCIAL\s*\n\s*\? resolveOutputTokenBudget\(payload\.maxOutputTokens\)\s*\n\s*: mode === UNI_MODE\.CATEGORY_INFERENCE\s*\n\s*\? CATEGORY_INFERENCE_OUTPUT_TOKENS\s*\n\s*: mode === UNI_MODE\.FINANCIAL_PLAN\s*\n\s*\? FINANCIAL_PLAN_OUTPUT_TOKENS\s*\n\s*: DEFAULT_OUTPUT_TOKENS;/,
+    /const maxOutputTokens = mode === UNI_MODE\.FINANCIAL\s*\n\s*\? resolveOutputTokenBudget\(payload\.maxOutputTokens\)\s*\n\s*: mode === UNI_MODE\.CATEGORY_INFERENCE\s*\n\s*\? CATEGORY_INFERENCE_OUTPUT_TOKENS\s*\n\s*: mode === UNI_MODE\.FINANCIAL_PLAN\s*\n\s*\? FINANCIAL_PLAN_OUTPUT_TOKENS\s*\n\s*: mode === UNI_MODE\.PHRASE_FACT\s*\n\s*\? PHRASE_FACT_OUTPUT_TOKENS\s*\n\s*: mode === UNI_MODE\.FINANCIAL_INTENT\s*\n\s*\? FINANCIAL_INTENT_OUTPUT_TOKENS\s*\n\s*: mode === UNI_MODE\.FINANCIAL_RESPONSE_COMPOSE\s*\n\s*\? FINANCIAL_RESPONSE_COMPOSE_OUTPUT_TOKENS\s*\n\s*: DEFAULT_OUTPUT_TOKENS;/,
   );
 });
 
@@ -65,7 +65,7 @@ test('usa o role "developer" para as instrucoes de sistema, o caminho oficial at
 });
 
 test('chave invalida (401 do provedor) nunca reflete detalhe do provedor -- vira 503 generico', () => {
-  assert.match(EDGE_SOURCE, /if \(response\.status === 401\) \{\s*return \{ status: 401, text: null, usage: null, reason: 'invalid_key' \};/);
+  assert.match(EDGE_SOURCE, /if \(response\.status === 401\) \{\s*return \{ status: 401, text: null, usage: null, reason: 'invalid_key', toolCalls: null \};/);
   assert.match(EDGE_SOURCE, /if \(result\.status === 401\) \{[\s\S]{0,200}return finish\(503, result\.reason, \{ error: 'A resposta por IA nao esta configurada neste ambiente\.' \}\);/);
 });
 
@@ -164,8 +164,8 @@ test('categoryInference so aceita categorias pessoais/validas e nunca confia ceg
   assert.match(EDGE_SOURCE, /if \(categories\.length >= MAX_CATEGORY_INFERENCE_OPTIONS\) break;/);
 });
 
-test('resposta usa response_format json_object apenas nos modos estruturados (category_inference e financial_plan)', () => {
-  assert.match(EDGE_SOURCE, /jsonResponseFormat: mode === UNI_MODE\.CATEGORY_INFERENCE \|\| mode === UNI_MODE\.FINANCIAL_PLAN,/);
+test('resposta usa response_format json_object apenas nos modos estruturados (category_inference, financial_plan e financial_intent da Sprint 3)', () => {
+  assert.match(EDGE_SOURCE, /jsonResponseFormat: mode === UNI_MODE\.CATEGORY_INFERENCE \|\| mode === UNI_MODE\.FINANCIAL_PLAN \|\| mode === UNI_MODE\.FINANCIAL_INTENT,/);
   assert.match(EDGE_SOURCE, /response_format: \{ type: 'json_object' \}/);
 });
 

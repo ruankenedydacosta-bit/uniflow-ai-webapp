@@ -1,3 +1,82 @@
+.transactionDialog {
+  max-width: min(680px, calc(100vw - 24px));
+}
+
+/* Reorganização em blocos (Dados principais / Informações opcionais / Ação
+   / Lançamentos existentes) para não ser um formulário longo único --
+   tokens --uf-* preservam reatividade ao tema em qualquer contexto (o
+   Registros simplificado sobrescreve esses tokens via .transactionDialogDark
+   em simplifiedRecords.module.css; o Financeiro desktop segue o tema do
+   site normalmente). */
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-20);
+}
+
+.formBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-color-bg-sunken);
+}
+
+@media (max-width: 767px) {
+  .transactionDialog {
+    max-height: calc(100dvh - var(--uf-space-24));
+    max-height: calc(100svh - var(--uf-space-24));
+  }
+}
+
+/* Histórico ("Lançamentos existentes"): indicador visual de tipo (receita/
+   despesa/transferência/ajuste -- ajustes manuais ficam DISTINTOS de
+   receita/despesa, nunca herdando a cor de um dos dois) + ações compactas
+   (Editar/Duplicar/Excluir agrupadas, tamanho reduzido, sempre alcançáveis
+   no toque em vez de 3 textos soltos competindo por espaço). */
+.historyTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--uf-space-8);
+}
+
+.historyDot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.historyDot_income {
+  background: var(--uf-color-success, #10b981);
+}
+
+.historyDot_expense {
+  background: var(--uf-color-danger, #ef4444);
+}
+
+.historyDot_transfer {
+  background: var(--uf-color-primary, #2563eb);
+}
+
+.historyDot_adjustment {
+  background: var(--uf-color-warning, #f59e0b);
+}
+
+.historyActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--uf-space-4);
+}
+
+.historyActions button {
+  padding-inline: var(--uf-space-8);
+  font-size: var(--uf-text-micro-size);
+}
+
 .filtersPanel {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

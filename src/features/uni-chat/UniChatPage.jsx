@@ -52,17 +52,29 @@ import {
   looksLikeFreshFinancialStatement,
   looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
+  createConversationalMemory,
+  classifyPendingActionRelation,
 } from '../uni-conversation';
 import {
   useUniLlm, AI_STATUS, resolveConversationStyle,
   createPhraseStructuredFactService, isLlmPhrasingFlagEnabled,
+  createFinancialIntentInterpreter, isSemanticIntentFlagEnabled,
+  isFinancialOrchestratorFlagEnabled, isCompoundFinancialQueriesFlagEnabled,
+  createFinancialResponseComposer, isLlmResponseComposerFlagEnabled,
 } from '../uni-llm';
+import { resolveSemanticFinancialIntent } from './semanticFinancialQuery.js';
+import { runFinancialSemanticOrchestrator, buildOrchestratorCapabilityCatalog } from './financialSemanticOrchestrator.js';
+import { composeNaturalFinancialResponse } from './composeNaturalFinancialResponse.js';
+import { composeFinancialResponseWithLlm } from './composeFinancialResponseWithLlm.js';
+import { buildFinancialOrchestratorTelemetryEntry, logFinancialOrchestratorTelemetry } from './financialOrchestratorTelemetry.js';
+import { recordFinancialValidationEvent } from './financialValidationTelemetry.js';
 import { createCategoryInferenceService } from '../uni-category-inference/index.js';
 import { createFinancialPlanService } from '../uni-financial-plan/index.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
 import {
   useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS, MAX_TTS_TEXT_LENGTH, buildSpeechText,
+  normalizeFinancialTextForSpeech,
 } from '../uni-voice-tts';
 import {
   hasAutoSpokenMessage,
@@ -74,12 +86,16 @@ import {
   markNarratedText,
 } from '../uni-voice-tts/narratedTextSession.js';
 import { buildWelcomeSessionKey, isWelcomeVoicePending, markWelcomeVoiceSettled } from '../simplified-app/welcomeVoiceSession.js';
+import { useUniProcessingMessage } from './useUniProcessingMessage.js';
+import { resolveOperationHintFromIntent } from './uniProcessingMessages.js';
+import { useTextAudioSync } from './useTextAudioSync.js';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances } from '../../hooks';
 import { useGoals } from '../goals/useGoals';
 import { buildFutureProjections } from '../future/futureService';
 import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
+import { dedupeMessagesForRender, mergeRestoredMessages } from './mergeRestoredMessages.js';
 import { classifyIntent } from '../uni-intents/index.js';
 import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration } from '../uni-engine/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
@@ -302,6 +318,11 @@ export default function UniChatPage({ variant = 'full' }) {
   // FASE 20.1 — Tool Calling: ref dedicado para guardar o último resultado da
   // integração (diagnóstico técnico em memória; nunca influencia a resposta).
   const lastUniToolCallingResultRef = useRef(null);
+  // Sprint 2 — Memória Conversacional: contexto de curto prazo (conta/
+  // categoria/última consulta) por instância de conversa, nunca persiste.
+  // Resetado nos mesmos pontos em que financialConversation/
+  // lastToolCallingProcessedMessageIdRef já são resetados.
+  const conversationalMemoryRef = useRef(createConversationalMemory());
   // PARTE 2 — BLOCO 2: snapshot observacional das guidances (Question,
   // Clarification, Style, Length) calculado após o resultado legado, apenas
   // para diagnóstico em memória. Nunca altera texto, nunca aplica, nunca
@@ -395,13 +416,22 @@ export default function UniChatPage({ variant = 'full' }) {
   // limite da Edge Function (MAX_TTS_TEXT_LENGTH) -- gera uma versão curta e
   // natural (buildSpeechText) para a voz, mas nunca altera o texto completo
   // exibido na tela (message.text no MessageBubble continua intacto).
+  // HOTFIX FINAL P3: normalizeFinancialTextForSpeech roda ANTES de
+  // buildSpeechText (nunca depois) -- o corte por tamanho precisa operar
+  // sobre o texto já por extenso (mais longo que "R$ 497,80"), senão o
+  // corte poderia terminar no meio de uma expressão monetária. Só afeta o
+  // texto enviado ao provider de TTS -- message.text (visual/persistido)
+  // nunca é tocado.
   const handleSpeakMessage = useCallback((message, requestMetadata = {}) => {
     if (!message?.text) return;
     setVoiceMessageId(message.id);
-    void uniVoice.speak(buildSpeechText(message.text, MAX_TTS_TEXT_LENGTH), {
-      messageId: message.id,
-      source: requestMetadata.source ?? 'manual_replay',
-    });
+    void uniVoice.speak(
+      buildSpeechText(normalizeFinancialTextForSpeech(message.text), MAX_TTS_TEXT_LENGTH),
+      {
+        messageId: message.id,
+        source: requestMetadata.source ?? 'manual_replay',
+      },
+    );
   }, [uniVoice]);
 
   const handleAutomaticSpeakMessage = useCallback((message) => {
@@ -419,7 +449,7 @@ export default function UniChatPage({ variant = 'full' }) {
   const speakSideEffectNotice = useCallback((text) => {
     if (!isSimplifiedExperience || !voicePreference.enabled) return;
     if (!text) return;
-    void uniVoice.speak(buildSpeechText(text, MAX_TTS_TEXT_LENGTH), {
+    void uniVoice.speak(buildSpeechText(normalizeFinancialTextForSpeech(text), MAX_TTS_TEXT_LENGTH), {
       messageId: null,
       source: automaticVoiceSource,
     });
@@ -646,6 +676,258 @@ export default function UniChatPage({ variant = 'full' }) {
     }
 
     return { ...result, response: { ...result.response, text } };
+  }
+
+  // Sprint 3 (Interpretação Semântica) -- mesma Edge Function/gate base do
+  // chat (uni-chat-llm + VITE_UNI_LLM_ENABLED), com a flag PRÓPRIA e nova
+  // VITE_UNI_SEMANTIC_INTENT_ENABLED (default desligada, nunca reaproveita
+  // as flags de tools/phrasing da Sprint 1, que têm responsabilidades
+  // diferentes). Com a flag desligada, `enabled` é sempre false e nenhuma
+  // chamada extra é feita -- comportamento idêntico ao anterior.
+  const financialIntentInterpreter = useMemo(
+    () => createFinancialIntentInterpreter({
+      supabase,
+      supabaseUrl,
+      supabaseAnonKey,
+      enabled: uniLlm.enabled && isSemanticIntentFlagEnabled(),
+    }),
+    [uniLlm.enabled],
+  );
+
+  // Sprint 4 Ciclo 3 (Bloco 4.4) -- composição natural REAL via LLM,
+  // atrás da própria flag (VITE_UNI_LLM_RESPONSE_COMPOSER_ENABLED). Só é
+  // efetivamente chamada quando o orquestrador já produziu um resultado
+  // "handled" com fatos estruturados válidos -- desligada, o caminho
+  // determinístico existente (composeNaturalFinancialResponse) continua
+  // sendo o único usado, byte a byte igual ao comportamento anterior.
+  //
+  // Fase 1 (correção do kill switch, Bloco 4.10): `enabled` é passado como
+  // FUNÇÃO (nunca um booleano pré-calculado) -- isLlmResponseComposerFlagEnabled()
+  // (que consulta o kill switch via localStorage) só pode ter efeito
+  // IMEDIATO, numa aba já aberta, se for reavaliada a cada verificação de
+  // isSupported(), em vez de congelada uma única vez quando este useMemo
+  // roda. `uniLlm.enabled` continua vindo da dependência do useMemo (só
+  // muda quando o próprio hook muda, comportamento inalterado).
+  const financialResponseComposer = useMemo(
+    () => createFinancialResponseComposer({
+      supabase,
+      supabaseUrl,
+      supabaseAnonKey,
+      enabled: () => uniLlm.enabled && isLlmResponseComposerFlagEnabled(),
+    }),
+    [uniLlm.enabled],
+  );
+
+  // Sprint 3 -- último passo determinístico antes do fallback conversacional
+  // genérico (handleUnresolvedMessage). Só interpreta; a validação de
+  // entidades e a execução real continuam 100% no motor determinístico já
+  // existente (ver semanticFinancialQuery.js). Nunca roda com uma pending
+  // action ativa (esta função só é chamada de dentro de
+  // runDeterministicFinancialFlow, que por sua vez só roda quando
+  // hasPendingConversation é falso -- ver sendText).
+  async function attemptSemanticFinancialQuery(text, historySnapshot) {
+    if (!financialIntentInterpreter.isSupported()) return false;
+
+    // Sprint 4 (Bloco 4.2) -- orquestrador central, atrás da própria flag
+    // (VITE_UNI_FINANCIAL_ORCHESTRATOR_ENABLED, cumulativa com a flag da
+    // Sprint 3). Desligada, `useOrchestrator` é sempre false e o restante
+    // desta função é BYTE A BYTE o comportamento da Sprint 3 -- nenhuma
+    // chamada extra, nenhuma mudança de resultado.
+    const useOrchestrator = isFinancialOrchestratorFlagEnabled();
+
+    // Bloco 4.9 -- telemetria DEV de validação real: mede a latência da
+    // chamada de interpretação isoladamente (independente da telemetria
+    // do orquestrador, Bloco 4.6.3, que mede outra coisa -- o tempo do
+    // ORQUESTRADOR, não da chamada LLM em si). Registrada sempre,
+    // sucesso ou falha, porque a chamada acontece (e custa) de qualquer
+    // forma. Nunca altera o fluxo -- só observa.
+    const interpretStartedAt = Date.now();
+    const { interpretation, error, usage: interpretUsage } = await financialIntentInterpreter.interpretFinancialIntent({
+      text,
+      conversationHistory: historySnapshot,
+      referenceDate: financialContext.snapshot.referenceDate,
+      accounts: accountState.accounts.map((account) => account.name),
+      categories: categoryState.categories.map((category) => category.name),
+      availableCapabilities: useOrchestrator
+        ? buildOrchestratorCapabilityCatalog().map((capability) => capability.id)
+        : [],
+    });
+    recordFinancialValidationEvent(
+      {
+        mode: 'financial_intent',
+        llmCallCount: 1,
+        durationMs: Date.now() - interpretStartedAt,
+        usage: interpretUsage,
+      },
+      { isDev: import.meta.env.DEV },
+    );
+    if (error || !interpretation) return false;
+
+    if (useOrchestrator) {
+      const requestStartedAt = Date.now();
+      // Consultas compostas exigem a própria flag adicional -- desligada,
+      // isCompound/subIntents são descartados com segurança antes mesmo de
+      // chegar ao orquestrador (nunca uma consulta composta "escapa" com a
+      // flag desligada).
+      const allowCompound = isCompoundFinancialQueriesFlagEnabled();
+      const effectiveInterpretation = allowCompound
+        ? interpretation
+        : { ...interpretation, isCompound: false, subIntents: [] };
+
+      const result = runFinancialSemanticOrchestrator({
+        interpretation: effectiveInterpretation,
+        snapshot: financialContext.snapshot,
+        mode,
+        conversationStyle,
+        history: historySnapshot,
+        referenceDate: financialContext.snapshot.referenceDate,
+        lastQuery: conversationalMemoryRef.current.getLastQuery(),
+      });
+
+      // Bloco 4.6.3 -- telemetria DEV, só metadados (nunca texto/valores
+      // reais). Sempre registrada, independente do resultado.
+      logFinancialOrchestratorTelemetry(
+        buildFinancialOrchestratorTelemetryEntry({
+          intent: result.intent,
+          source: result.source,
+          llmCallCount: 1,
+          modesUsed: ['financial_intent'],
+          totalDurationMs: Date.now() - requestStartedAt,
+          composerUsed: false,
+          subIntentCount: Array.isArray(result.executionPlan?.steps) ? result.executionPlan.steps.length : 0,
+          status: result.status,
+        }),
+        { isDev: import.meta.env.DEV },
+      );
+
+      if (result.status === 'needs_clarification' && result.responseDraft) {
+        createAssistantResponse(result.responseDraft);
+        return true;
+      }
+
+      // Bloco 4.6.2 -- anti-fallback-duplo: "unsupported" já é uma resposta
+      // honesta e definitiva do orquestrador (a LLM já interpretou a frase
+      // e o registro de capacidades já confirmou que não há suporte) --
+      // cair em handleUnresolvedMessage aqui seria uma SEGUNDA chamada LLM
+      // desnecessária no mesmo turno, arriscando inclusive prometer uma
+      // capacidade que não existe. Responde direto, sem fallback.
+      if (result.status === 'unsupported') {
+        createAssistantResponse(
+          'Ainda não consigo te ajudar com isso especificamente, mas posso mostrar saldo, resumo do período, maiores despesas, receitas ou suas últimas movimentações.',
+        );
+        return true;
+      }
+
+      // status 'not_financial' ou 'fallback': cai para o fallback
+      // conversacional geral (handleUnresolvedMessage) de propósito --
+      // 'not_financial' pode ser uma pergunta legítima fora do domínio
+      // financeiro (ex.: "Quem foi Einstein?"), e 'fallback' indica que a
+      // interpretação não resultou em nada executável (entidade não
+      // resolvida/ponte legada não reconheceu) -- mesmo comportamento já
+      // estabelecido antes deste ciclo.
+      if (result.status !== 'handled' || !result.responseDraft) return false;
+
+      // Bloco 4.3.1/4.3.4 -- composição determinística (acolhimento +
+      // explicação de termo quando aplicável); nunca recalcula o texto já
+      // pronto vindo do orquestrador. Este texto é SEMPRE calculado -- é o
+      // fallback seguro obrigatório da composição via LLM abaixo.
+      const deterministicText = composeNaturalFinancialResponse({
+        responseDraft: result.responseDraft,
+        reasoningTags: interpretation.reasoningTags,
+      }) ?? result.responseDraft;
+
+      // Bloco 4.4 -- composição REAL via LLM, só tentada quando a flag
+      // própria está ligada e há fatos estruturados reais para embasar o
+      // texto. Guardrails (validateComposedResponse) + reformulação única
+      // + fallback determinístico acontecem dentro de
+      // composeFinancialResponseWithLlm; aqui só decide SE tenta.
+      let finalText = deterministicText;
+      if (financialResponseComposer.isSupported() && result.structuredResult) {
+        const hasEmotionalSignal = Array.isArray(interpretation.reasoningTags)
+          && interpretation.reasoningTags.some((tag) => typeof tag === 'string' && tag.includes('emotional'));
+        const composeStartedAt = Date.now();
+        const composed = await composeFinancialResponseWithLlm({
+          composeFinancialResponseViaLlm: financialResponseComposer.composeFinancialResponseViaLlm,
+          structuredFacts: result.structuredResult,
+          userIntent: result.intent,
+          operation: result.intent,
+          conversationStyle,
+          emotionalContext: hasEmotionalSignal,
+          explanationRequest: null,
+          deterministicText,
+          // Bloco 4.8 -- guardrail textual de entidades: `allowedEntityNames`
+          // já vem embutido em result.structuredResult.entityNames (o
+          // orquestrador calcula a partir do texto determinístico
+          // confiável); aqui só fornecemos o UNIVERSO real de nomes do
+          // workspace (mesma lista de nomes, nunca saldo/id, já enviada à
+          // interpretação semântica -- Sprint 3) para diferenciar "conta
+          // real só que fora de escopo" de "conta inventada".
+          universeEntityNames: [
+            ...accountState.accounts.map((account) => account.name),
+            ...categoryState.categories.map((category) => category.name),
+          ],
+        });
+        finalText = composed.text ?? deterministicText;
+        logFinancialOrchestratorTelemetry(
+          buildFinancialOrchestratorTelemetryEntry({
+            intent: result.intent,
+            source: 'llm_composer',
+            llmCallCount: composed.attempts,
+            modesUsed: composed.attempts > 0 ? ['financial_response_compose'] : [],
+            composerUsed: composed.composerUsed,
+            status: composed.composerUsed ? 'handled' : 'fallback',
+            fallbackReason: composed.fallbackReason,
+          }),
+          { isDev: import.meta.env.DEV },
+        );
+        // Bloco 4.9 -- mesmo evento acima, mas alimentando o AGREGADOR de
+        // validação real (taxa de sucesso/fallback/bloqueio por guardrail/
+        // latência/custo) em vez de só um log pontual. Nenhuma decisão do
+        // sistema depende deste registro.
+        recordFinancialValidationEvent(
+          {
+            mode: 'financial_response_compose',
+            llmCallCount: composed.attempts,
+            durationMs: Date.now() - composeStartedAt,
+            composerUsed: composed.composerUsed,
+            fallbackReason: composed.fallbackReason,
+            usage: composed.usage,
+          },
+          { isDev: import.meta.env.DEV },
+        );
+      }
+
+      if (result.executionPlan?.type !== 'compound') {
+        conversationalMemoryRef.current.remember({
+          queryType: result.intent,
+          queryParams: result.resolvedEntities,
+          response: finalText,
+        });
+      }
+      createAssistantResponse(finalText, { highlight: result.structuredResult?.highlight ?? null });
+      return true;
+    }
+
+    const outcome = resolveSemanticFinancialIntent({
+      interpretation,
+      snapshot: financialContext.snapshot,
+      mode,
+      conversationStyle,
+      history: historySnapshot,
+      referenceDate: financialContext.snapshot.referenceDate,
+      lastQuery: conversationalMemoryRef.current.getLastQuery(),
+    });
+    if (!outcome.handled) return false;
+
+    if (outcome.queryParams) {
+      conversationalMemoryRef.current.remember({
+        queryType: outcome.queryType,
+        queryParams: outcome.queryParams,
+        response: outcome.response.text,
+      });
+    }
+    createAssistantResponse(outcome.response.text, { highlight: outcome.response.highlight });
+    return true;
   }
 
   async function publishConversationResultWithInference(result) {
@@ -901,6 +1183,13 @@ export default function UniChatPage({ variant = 'full' }) {
   const [messages, setMessages] = useState(initialChatState.messages);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  // HOTFIX P1 (mensagens de processamento honestas): reaproveita a
+  // classificação já feita por classifyIntent no início do turno para
+  // escolher UMA mensagem de "interpretando" compatível com a operação real
+  // (consultando dados / organizando movimentação / calculando impacto) --
+  // nunca uma nova regra. `null` quando o intent não mapeia para nada
+  // específico, caindo no genérico "Entendendo seu pedido…".
+  const [interpretingOperationHint, setInterpretingOperationHint] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [conversations, setConversations] = useState(initialChatState.conversations);
@@ -1247,6 +1536,7 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
+    conversationalMemoryRef.current.reset();
     const candidates = updated
       .filter((c) => c.mode === correctMode)
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -2191,23 +2481,12 @@ export default function UniChatPage({ variant = 'full' }) {
       markRestoredMessagesAsSpoken(user?.id, loadedMessages);
       reserveMessageIds(loadedMessages);
 
-      setMessages((prev) => {
-        if (prev.length === 0) return loadedMessages;
-        // BUG REAL (BUG 5): merge por IDENTIDADE (clientMessageId/dbId),
-        // nunca por comprimento: mensagens locais ainda não sincronizadas
-        // (fila pendente) são preservadas; mensagens restauradas do banco
-        // que já existem localmente não duplicam.
-        const localIds = new Set(
-          prev
-            .map((msg) => msg.clientMessageId ?? msg.dbId ?? msg.id)
-            .filter(Boolean),
-        );
-        const dbOnly = loadedMessages.filter(
-          (msg) => !localIds.has(msg.clientMessageId ?? msg.dbId ?? msg.id),
-        );
-        if (dbOnly.length === 0) return prev;
-        return [...prev, ...dbOnly];
-      });
+      // BUG 1 (Sprint 4, Bloco 4.0): merge por identidade estável -- ver
+      // mergeRestoredMessages.js para a estratégia completa e o porquê da
+      // ordem clientMessageId > id > dbId (dbToMessage agora preenche
+      // clientMessageId com o mesmo valor gravado como client_message_id,
+      // então a identidade local e a restaurada sempre coincidem).
+      setMessages((prev) => mergeRestoredMessages(prev, loadedMessages));
 
       setConversations((prev) =>
         prev.map((c) =>
@@ -2322,12 +2601,58 @@ export default function UniChatPage({ variant = 'full' }) {
   // rolou para cima (stickToBottom=false) mantém a leitura. Layout effect
   // (sem setTimeout arbitrário): o DOM já contém o conteúdo novo quando
   // roda, então scrollHeight está correto.
+  //
+  // HOTFIX FINAL P2 -- CAUSA RAIZ REAL do "abre longe do fim": a hidratação
+  // do Supabase pode alterar `messages` mais de uma vez (estado local ->
+  // mesclado) e este efeito já reage a cada mudança -- mas a ALTURA real do
+  // conteúdo também pode mudar DEPOIS do commit, sem um novo `messages`
+  // (ex.: reflow de fonte web carregando de forma assíncrona, imagens/
+  // ícones). `scrollTop = scrollHeight` lido só no momento do commit não
+  // captura esse reflow tardio. Duas camadas de defesa, sem timer
+  // arbitrário: (1) `historyHydrated` nas dependências garante pelo menos
+  // mais uma passagem de posicionamento exatamente quando a hidratação
+  // termina, mesmo que `messages` já estivesse referencialmente igual
+  // àquele instante; (2) um requestAnimationFrame extra reconfirma a
+  // posição depois que o navegador realmente pintou o frame -- pega
+  // qualquer reflow que aconteça entre o commit do React e o paint real.
+  // HOTFIX FINAL -- CAUSA RAIZ REAL (confirmada por medição direta no DOM,
+  // clicando no link real "Ver conversa completa" -- nunca por reload de
+  // página): Home (`variant="simplified-home"`) retorna ANTES de renderizar
+  // `.body`/`.messages` (early return). Ao navegar de Home para /app/uni
+  // via troca de rota client-side (sem reload), `.body` é montado no DOM
+  // pela PRIMEIRA VEZ nesse commit -- mas `messages`/`historyHydrated` já
+  // tinham o MESMO valor de antes (hidratação já tinha terminado enquanto a
+  // Home era exibida), então o efeito abaixo não tinha nenhuma dependência
+  // NOVA para reagir, e o container recém-montado ficava com scrollTop=0
+  // (medido: distanceFromBottom ~8878px). `messagesMountTick` fecha esse
+  // gap: o callback ref de `.messages` (que dispara de forma confiável
+  // sempre que esse nó é montado, comprovado por instrumentação direta)
+  // incrementa um contador que entra nas dependências do efeito principal
+  // -- o posicionamento real continua acontecendo SÓ dentro do
+  // useLayoutEffect (nunca no próprio callback ref), porque layout effects
+  // rodam DEPOIS que TODOS os refs do commit já foram anexados (React
+  // anexa refs de filho antes do pai durante o commit -- `.messages`, filha
+  // de `.body`, podia disparar seu callback ref num instante em que
+  // `scrollRef.current` de `.body` ainda era null; o efeito, por rodar
+  // depois do commit inteiro, nunca tem esse problema).
+  const [messagesMountTick, setMessagesMountTick] = useState(0);
+  const setMessagesContentRef = useCallback((node) => {
+    if (node) setMessagesMountTick((tick) => tick + 1);
+  }, []);
+
   useLayoutEffect(() => {
     if (!stickToBottom.current) return;
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages]);
+    const rafId = window.requestAnimationFrame(() => {
+      if (!stickToBottom.current) return;
+      const node = scrollRef.current;
+      if (!node) return;
+      node.scrollTop = node.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [messages, historyHydrated, messagesMountTick]);
 
   function pushMessage(msg) {
     setMessages((prev) => [...prev, msg]);
@@ -2401,6 +2726,9 @@ export default function UniChatPage({ variant = 'full' }) {
     // runToolCallingIntegration não guarda nenhum estado de módulo.
     lastToolCallingProcessedMessageIdRef.current = null;
     lastUniToolCallingResultRef.current = null;
+    // Sprint 2 — troca de conversa nunca carrega memória conversacional da
+    // conversa anterior (nunca é memória de longo prazo).
+    conversationalMemoryRef.current.reset();
     resetCognitiveTelemetry();
     saveActiveId(id);
     saveActiveSource(conv.source || 'local');
@@ -2781,17 +3109,31 @@ export default function UniChatPage({ variant = 'full' }) {
     // alimentando o fluxo de pendência (nunca uma pergunta financeira de
     // verdade: pergunta com começo claro é filtrada por
     // isLikelyFinancialQuestion antes de qualquer criação de conta).
+    // Sprint 2 — Memória Conversacional: referências ("essa conta", "essa
+    // categoria", "isso", "ele"/"ela") são resolvidas para o valor literal
+    // ANTES de qualquer parser -- o motor de consultas recebe texto puro,
+    // sem saber que existe substituição. Nunca inventa: sem nada lembrado,
+    // o texto sai inalterado.
+    const resolvedQueryText = conversationalMemoryRef.current.resolveReferences(text);
     const engineOutcome = resolveFinancialQuery({
-      text,
+      text: resolvedQueryText,
       snapshot: financialContext.snapshot,
       mode,
       conversationStyle,
       history: messages,
+      lastQuery: conversationalMemoryRef.current.getLastQuery(),
     });
     if (
       engineOutcome.handled
       && engineOutcome.queryType !== 'transaction_reference'
     ) {
+      if (engineOutcome.queryParams) {
+        conversationalMemoryRef.current.remember({
+          queryType: engineOutcome.queryType,
+          queryParams: engineOutcome.queryParams,
+          response: engineOutcome.response.text,
+        });
+      }
       syncMessageToSupabase(userMsg);
       createAssistantResponse(
         engineOutcome.response.text,
@@ -2940,6 +3282,44 @@ export default function UniChatPage({ variant = 'full' }) {
     });
     if (resolvedInput.kind !== 'correction') {
       const accountNames = resolvedInput.accounts?.map((account) => account.name).filter(Boolean) ?? [];
+
+      // BUG 2 (Sprint 4, Bloco 4.0): antes de tratar "não encontrei essa
+      // conta/categoria" como proposta de CRIAR uma conta/categoria com o
+      // texto INTEIRO do usuário (causa raiz do bug real: "Estou gastando
+      // demais?" virando nome de conta), classifica se o texto realmente
+      // parece resposta à pendência, mudança de assunto, ou é ambíguo. Ver
+      // classifyPendingActionRelation.js para a estratégia completa e por
+      // que "confirmar"/"cancelar" e matches diretos de conta/categoria
+      // nunca chegam a esta checagem (resolvidos antes, sem mudança de
+      // comportamento). `isLikelyFinancialQuestion` continua existindo como
+      // segundo guard, mas a classificação central resolve o caso que ele
+      // não cobria (perguntas sem pronome interrogativo inicial).
+      if (resolvedInput.kind === 'account_not_found' || resolvedInput.kind === 'category_not_found') {
+        const relation = classifyPendingActionRelation({
+          pendingAction: { field: resolvedInput.kind === 'account_not_found' ? 'account' : 'category' },
+          userText: text,
+          conversationContext: { referenceDate: getLocalIsoDate() },
+          availableAccounts: accountState.accounts,
+          availableCategories: categoryState.categories,
+        });
+
+        if (relation.relation === 'changes_subject') {
+          // pendência permanece intacta (nunca desaparece silenciosamente)
+          // -- a nova pergunta é respondida pelo fallback conversacional
+          // normal, fora do fluxo de pendência. Publicação única
+          // preservada: handleUnresolvedMessage é o mesmo ponto de saída
+          // já usado por runDeterministicFinancialFlow.
+          void handleUnresolvedMessage(text, messages);
+          return true;
+        }
+        if (relation.relation === 'ambiguous') {
+          createAssistantResponse(relation.suggestedClarification);
+          return true;
+        }
+        // relation === 'answers_pending': segue o fluxo já existente abaixo,
+        // comportamento idêntico ao anterior para frases inequívocas.
+      }
+
       if (
         resolvedInput.kind === 'account_not_found'
         && !isLikelyFinancialQuestion(text)
@@ -2980,12 +3360,19 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function runDeterministicFinancialFlow(text, historySnapshot) {
+      // Sprint 2 — Memória Conversacional: resolve referências ("essa
+      // conta", "essa categoria", "isso", "ele"/"ela") para o valor literal
+      // ANTES de qualquer parser. Nunca inventa: sem nada lembrado, o texto
+      // sai inalterado e os parsers determinísticos recebem exatamente o
+      // que recebiam antes desta Sprint.
+      const resolvedText = conversationalMemoryRef.current.resolveReferences(text);
+
       // REGRA GERAL DE PRIORIDADE: declarações/ações financeiras vencem
       // consultas. Frase reconhecida como ação (set_balance, ambiguidade
       // saldo/receita, receita, despesa, transferência, meta) pula os
       // motores de consulta e vai direto para o fluxo de registro; os
       // motores só rodam para perguntas e referências reais.
-      if (!ACTION_STATEMENT_INTENTS.has(classifyIntent(text).intent)) {
+      if (!ACTION_STATEMENT_INTENTS.has(classifyIntent(resolvedText).intent)) {
         // Motor de consultas financeiras inteligentes: responde com dados
         // estruturados do FinancialSnapshot (contas, transações, saldos,
         // accountName/categoryName) antes de qualquer outro caminho. Quando
@@ -2993,14 +3380,22 @@ export default function UniChatPage({ variant = 'full' }) {
         // determinístico atual segue intacto (classificador legado → parser de
         // registro → plano financeiro → LLM).
         const engineOutcome = resolveFinancialQuery({
-          text,
+          text: resolvedText,
           snapshot: financialContext.snapshot,
           mode,
           conversationStyle,
           history: historySnapshot,
+          lastQuery: conversationalMemoryRef.current.getLastQuery(),
         });
 
         if (engineOutcome.handled) {
+          if (engineOutcome.queryParams) {
+            conversationalMemoryRef.current.remember({
+              queryType: engineOutcome.queryType,
+              queryParams: engineOutcome.queryParams,
+              response: engineOutcome.response.text,
+            });
+          }
           // FASE UNI PIPE: a resposta do FinancialQueryEngine passa pelo
           // pipeline oficial (cria → persiste → render → autoplay → fala),
           // garantindo que TODA consulta respondida com dados estruturados
@@ -3116,7 +3511,17 @@ export default function UniChatPage({ variant = 'full' }) {
           })();
           return;
         }
-        void handleUnresolvedMessage(text, historySnapshot);
+        // Sprint 3 (Interpretação Semântica): último passo determinístico
+        // antes do fallback conversacional genérico -- só tentado quando a
+        // flag está ligada (isSupported() já reflete isso); com a flag
+        // desligada, attemptSemanticFinancialQuery resolve false
+        // imediatamente e o comportamento é idêntico ao de antes desta
+        // Sprint (vai direto para handleUnresolvedMessage).
+        void (async () => {
+          const handled = await attemptSemanticFinancialQuery(text, historySnapshot);
+          if (handled) return;
+          void handleUnresolvedMessage(text, historySnapshot);
+        })();
         return;
       }
 
@@ -3146,6 +3551,10 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     stickToBottom.current = true;
     const historySnapshot = messages;
+    // HOTFIX P1: hint da operação real deste turno, derivado do intent já
+    // classificado abaixo (reaproveitado, nunca recalculado por regra
+    // nova) -- usado só para escolher a mensagem de "interpretando" certa.
+    setInterpretingOperationHint(resolveOperationHintFromIntent(classifyIntent(text).intent));
 
     const userMsg = buildUserMessage(text);
     pushMessage(userMsg);
@@ -3274,6 +3683,7 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
+    conversationalMemoryRef.current.reset();
     const candidates = conversations
       .filter((c) => c.mode === next)
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -3322,6 +3732,7 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
+    conversationalMemoryRef.current.reset();
     stickToBottom.current = true;
   }
 
@@ -3360,6 +3771,7 @@ export default function UniChatPage({ variant = 'full' }) {
       lastUnresolvedRef.current = null;
       confirmingRef.current = false;
       financialConversation.reset();
+      conversationalMemoryRef.current.reset();
       saveHistory(nextList);
       saveActiveId(conv.id);
     } else {
@@ -3594,6 +4006,30 @@ export default function UniChatPage({ variant = 'full' }) {
         return;
       }
 
+      // BUG REAL (Sprint 2.1, BUG 1): a confirmação de um lançamento SIMPLES
+      // (sem dependência de criação de conta/categoria) é persistida via
+      // executeConfirmedFinancialAction -- uma RPC direta ao Supabase que
+      // NUNCA passa por transactionsState.saveTransaction, então o upsert
+      // otimista local daquele hook nunca roda. financialContext.snapshot
+      // (usado pelo FinancialQueryEngine) ficava com os dados de ANTES do
+      // lançamento até o próximo refresh natural acontecer por acaso --
+      // daí "R$ 67,80" logo após confirmar e "R$ 117,80" alguns segundos
+      // depois. Sem atraso: espera os hooks recarregarem do servidor ANTES
+      // de liberar a confirmação, garantindo que a PRÓXIMA consulta já
+      // enxergue o lançamento novo.
+      await Promise.all([
+        transactionsState.refresh(),
+        balanceState.refresh(),
+        accountState.refresh(),
+        categoryState.refresh(),
+      ]);
+
+      // Guard: se a conversa mudou durante o refresh, abortar antes de
+      // publicar qualquer coisa na conversa errada.
+      if (activeIdRef.current !== currentConversationId) {
+        return;
+      }
+
       const successText = outcome.response?.text
         || 'Prontinho! Registrei essa movimentação para você.';
       setMessages((prev) =>
@@ -3603,6 +4039,22 @@ export default function UniChatPage({ variant = 'full' }) {
             : m,
         ),
       );
+      // Sprint 2 — Memória Conversacional: um registro confirmado alimenta a
+      // memória (conta/categoria) para que a próxima pergunta possa dizer
+      // "essa conta"/"essa categoria" -- só os campos realmente resolvidos
+      // no lançamento persistido, nunca inventados.
+      const persistedTransaction = outcome.result.data;
+      const rememberedAccountName = accountState.accounts
+        .find((account) => account.id === persistedTransaction?.account_id)?.name ?? null;
+      const rememberedCategoryName = persistedTransaction?.category_id
+        ? categoryState.categories.find((category) => category.id === persistedTransaction.category_id)?.name ?? null
+        : null;
+      if (rememberedAccountName || rememberedCategoryName) {
+        conversationalMemoryRef.current.remember({
+          account: rememberedAccountName,
+          category: rememberedCategoryName,
+        });
+      }
       createAssistantResponse(successText);
       financialConversation.reset();
       clearCurrentPendingAction();
@@ -3645,7 +4097,13 @@ export default function UniChatPage({ variant = 'full' }) {
         pendingActionStackRef.current = null;
         setPendingActionStack(null);
         setPendingAction(null);
-        financialConversation.cancel();
+        // BUG REAL (Sprint 2.1, BUG 6): cancel() só troca o status para
+        // CANCELED -- o reducer preserva state.action/state.parsed
+        // intactos (ver uniConversationReducer.js). Quando o cancelamento
+        // é DEFINITIVO (sem nada a retomar), reset() é o correto: volta
+        // ao estado inicial de verdade, sem nenhum campo/issue da
+        // movimentação cancelada sobrevivendo para o próximo turno.
+        financialConversation.reset();
         clearCurrentPendingAction();
         createAssistantResponse('Tudo bem. Cancelei a criação da conta e a movimentação.');
         return;
@@ -3678,7 +4136,10 @@ export default function UniChatPage({ variant = 'full' }) {
         pendingActionStackRef.current = null;
         setPendingActionStack(null);
         setPendingAction(null);
-        financialConversation.cancel();
+        // BUG REAL (Sprint 2.1, BUG 6): ver comentário equivalente no
+        // cancelamento de dependência de conta acima -- reset() garante
+        // que nenhum campo/issue da movimentação cancelada sobrevive.
+        financialConversation.reset();
         clearCurrentPendingAction();
         createAssistantResponse('Tudo bem. Cancelei a criação da categoria e a movimentação.');
         return;
@@ -3706,7 +4167,11 @@ export default function UniChatPage({ variant = 'full' }) {
       ),
     );
     createAssistantResponse('Sem problemas, cancelei esse registro.');
-    financialConversation.cancel();
+    // BUG REAL (Sprint 2.1, BUG 6): idem -- cancelamento definitivo do
+    // lançamento simples (com card já confirmável) usa reset(), não
+    // cancel(), para não deixar account/category/issues da movimentação
+    // cancelada sobrevivendo em financialConversation.state.action.
+    financialConversation.reset();
     clearCurrentPendingAction();
     pendingActionStackRef.current = null;
     setPendingActionStack(null);
@@ -3716,6 +4181,36 @@ export default function UniChatPage({ variant = 'full' }) {
     uniVoice.stop();
     setVoiceMessageId(null);
   }
+
+  // FASE ESTADOS DE PROCESSAMENTO: fonte única (hooks compartilhados com
+  // SimplifiedHomeView -- ver CompactResponse) para a mensagem rotativa de
+  // processamento e a revelação de texto sincronizada à voz. Calculado
+  // ANTES do branch de retorno de `variant === 'simplified-home'` (hooks
+  // nunca podem ficar depois de um return condicional).
+  const pendingConfirmationMessage = useMemo(
+    () => messages.find((m) => m.confirmation?.status === 'pending') ?? null,
+    [messages],
+  );
+  const chatProcessingState = isExecutingAction ? 'executing' : (isTyping ? 'interpreting' : 'idle');
+  const chatProcessingMessage = useUniProcessingMessage(chatProcessingState, {
+    actionKind: pendingConfirmationMessage?.confirmation?.actionKind ?? null,
+    operationHint: interpretingOperationHint,
+  });
+  const activeVoiceMessage = useMemo(() => {
+    if (!voiceMessageId) return null;
+    const found = messages.find((m) => m.id === voiceMessageId);
+    return found ? { id: found.id, text: found.text } : null;
+  }, [voiceMessageId, messages]);
+  const textAudioSync = useTextAudioSync({ activeMessage: activeVoiceMessage, ttsStatus: uniVoice.status });
+  // HOTFIX FINAL (chaves duplicadas ainda chegando ao render): barreira
+  // final de segurança, aplicada só na lista que o chat completo realmente
+  // renderiza (ver dedupeMessagesForRender em mergeRestoredMessages.js) --
+  // nunca substitui `messages` (o estado real/fonte de verdade continua
+  // intocado para hidratação, scroll, persistência etc.), só protege o
+  // `.map()` de gerar `key`s repetidas mesmo que alguma origem upstream
+  // (ex.: histórico já contaminado no banco antes da correção de
+  // saveMessages) ainda entregue duas entradas com a mesma identidade.
+  const renderedMessages = useMemo(() => dedupeMessagesForRender(messages), [messages]);
 
   const isEmpty = messages.length === 0;
   const filteredConversations = conversations.filter((c) => c.mode === mode);
@@ -3733,11 +4228,12 @@ export default function UniChatPage({ variant = 'full' }) {
         aiStatus={aiStatus}
         voiceEnabled={voicePreference.enabled}
         voiceController={uniVoice}
+        voiceMessageId={voiceMessageId}
+        interpretingOperationHint={interpretingOperationHint}
         onSendTranscript={sendText}
         onBeforeVoiceStart={handleBeforeVoiceStart}
         onConfirmAction={handleConfirmAction}
         onCancelAction={handleCancelAction}
-        onSpeakMessage={handleSpeakMessage}
         onWelcomeVoiceSettled={handleWelcomeVoiceSettled}
       />
     );
@@ -3784,8 +4280,8 @@ export default function UniChatPage({ variant = 'full' }) {
             workspaceType={financialWorkspaceType}
           />
         ) : (
-          <div className={styles.messages}>
-            {messages.map((message) => (
+          <div className={styles.messages} ref={setMessagesContentRef}>
+            {renderedMessages.map((message) => (
               <MessageBubble
                 key={message.id}
                 message={message}
@@ -3801,11 +4297,17 @@ export default function UniChatPage({ variant = 'full' }) {
                 onSpeakMessage={handleSpeakMessage}
                 onPauseResumeVoice={handlePauseResumeVoice}
                 onStopVoice={handleStopVoice}
+                displayText={
+                  textAudioSync.activeMessageId === message.id ? textAudioSync.displayText : undefined
+                }
+                processingLabel={
+                  message.confirmation?.status === 'pending' ? chatProcessingMessage ?? undefined : undefined
+                }
               />
             ))}
             {isTyping && (
               <>
-                <TypingIndicator />
+                <TypingIndicator message={chatProcessingMessage} />
                 {aiStatus === AI_STATUS.LOADING && (
                   <button
                     type="button"

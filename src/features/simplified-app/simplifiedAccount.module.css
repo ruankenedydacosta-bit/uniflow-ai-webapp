@@ -250,15 +250,19 @@
   cursor: pointer;
 }
 
-.plan_not_configured,
-.plan_inactive {
+.plan_neutral {
   border-color: rgba(148, 163, 184, .35);
   background: linear-gradient(135deg, rgba(71, 85, 105, .18), rgba(15, 23, 42, .3));
 }
 
-.plan_past_due {
+.plan_warn {
   border-color: rgba(245, 158, 11, .45);
   background: linear-gradient(135deg, rgba(245, 158, 11, .16), rgba(15, 23, 42, .3));
+}
+
+.plan_danger {
+  border-color: rgba(239, 68, 68, .45);
+  background: linear-gradient(135deg, rgba(239, 68, 68, .16), rgba(15, 23, 42, .3));
 }
 
 .planIcon {
@@ -295,13 +299,16 @@
   line-height: 1.25;
 }
 
-.plan_not_configured .planStatusLabel,
-.plan_inactive .planStatusLabel {
+.plan_neutral .planStatusLabel {
   color: #cbd5e1;
 }
 
-.plan_past_due .planStatusLabel {
+.plan_warn .planStatusLabel {
   color: #f59e0b;
+}
+
+.plan_danger .planStatusLabel {
+  color: #f87171;
 }
 
 .planName {

@@ -206,6 +206,21 @@ test('transcrição vazia é rejeitada sem enviar mensagem ao chat', async () =>
   assert.equal(result.error.code, 'EMPTY_TRANSCRIPT');
 });
 
+// HOTFIX FINAL P4: diagnóstico sanitizado (DEV only) para todo caminho que
+// resolve em EMPTY_TRANSCRIPT/422 -- nunca "mascara" silenciosamente, só
+// não expõe nada em produção (voiceTranscriptionTelemetry.test.js cobre a
+// sanitização/gate por DEV exaustivamente; aqui confirmamos que o provider
+// realmente chama o registro nos dois caminhos que produzem EMPTY_TRANSCRIPT).
+test('HOTFIX FINAL P4: o provider registra o diagnóstico (status, duração, tamanho, mime, errorKind) tanto no 422 explícito quanto no 200-com-texto-vazio', () => {
+  const source = readFileSync(new URL('./uniVoiceTranscriptionProvider.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ recordVoiceTranscriptionTelemetry \} from '\.\/voiceTranscriptionTelemetry\.js';/);
+  const occurrences = source.match(/recordVoiceTranscriptionTelemetry\(\{/g) ?? [];
+  assert.equal(occurrences.length, 2, 'um registro no branch !response.ok (422/outros erros HTTP) e outro no 200 com texto vazio');
+  assert.match(source, /responseStatus: response\.status,/);
+  assert.match(source, /blobSizeBytes: audio\.size,/);
+  assert.match(source, /mimeType: audio\.type,/);
+});
+
 test('timeout de transcrição falha de forma controlada', async () => {
   const provider = createUniVoiceTranscriptionProvider({
     client: { auth: { getSession: async () => ({ data: { session: { access_token: 'token' } } }) } },

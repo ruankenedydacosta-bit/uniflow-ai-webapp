@@ -9,6 +9,7 @@ import {
   VOICE_AUDIO_MIME_TYPES,
 } from './mediaRecorderAdapter.js';
 import { sanitizeVoiceTranscript } from './speechRecognitionAdapter.js';
+import { recordVoiceTranscriptionTelemetry } from './voiceTranscriptionTelemetry.js';
 
 export const UNI_VOICE_TRANSCRIBE_FUNCTION = 'uni-voice-transcribe';
 export const UNI_VOICE_TRANSCRIPTION_TIMEOUT_MS = 20_000;
@@ -82,20 +83,49 @@ export function createUniVoiceTranscriptionProvider({
       });
 
       if (!response.ok) {
+        // HOTFIX P0.5: a Edge Function responde 422 ("Fala nao identificada")
+        // quando o provedor transcreve mas nao ha fala reconhecivel -- um
+        // resultado ESPERADO (ex.: gravacao muito curta/silenciosa, usuario
+        // solta o botao quase imediatamente), nao uma falha tecnica. Sem
+        // este caso, 422 caia no fallback 'TRANSCRIPTION_FAILED' generico e
+        // useUniVoiceInput.js despachava VOICE_CAPTURE_STATES.ERROR ("Nao
+        // consegui concluir. Tente novamente.") em vez do estado amigavel
+        // NO_SPEECH ja existente especificamente para este caso -- mesmo
+        // codigo ('EMPTY_TRANSCRIPT') que o proprio 200-com-texto-vazio ja
+        // usa logo abaixo.
         const code = response.status === 401 ? 'UNAUTHORIZED'
           : response.status === 403 ? 'WORKSPACE_FORBIDDEN'
             : response.status === 413 ? 'AUDIO_TOO_LARGE'
               : response.status === 415 ? 'UNSUPPORTED_AUDIO_TYPE'
-                : response.status === 429 ? 'RATE_LIMIT'
-                  : response.status === 504 ? 'TIMEOUT' : 'TRANSCRIPTION_FAILED';
+                : response.status === 422 ? 'EMPTY_TRANSCRIPT'
+                  : response.status === 429 ? 'RATE_LIMIT'
+                    : response.status === 504 ? 'TIMEOUT' : 'TRANSCRIPTION_FAILED';
+        // HOTFIX FINAL P4: diagnóstico sanitizado (DEV only, nunca conteúdo
+        // de áudio/texto) -- distingue um 422 legítimo (áudio realmente sem
+        // fala reconhecível) de um 422 causado por algo quebrado no envio
+        // (duração/tamanho/mime type suspeitos para um áudio que deveria
+        // ser válido).
+        recordVoiceTranscriptionTelemetry({
+          responseStatus: response.status,
+          errorKind: code,
+          durationMs,
+          blobSizeBytes: audio.size,
+          mimeType: audio.type,
+        });
         return { text: null, error: { code } };
       }
 
       const data = await response.json();
       const text = sanitizeVoiceTranscript(data?.text);
-      return text
-        ? { text, error: null }
-        : { text: null, error: { code: 'EMPTY_TRANSCRIPT' } };
+      if (text) return { text, error: null };
+      recordVoiceTranscriptionTelemetry({
+        responseStatus: response.status,
+        errorKind: 'EMPTY_TRANSCRIPT',
+        durationMs,
+        blobSizeBytes: audio.size,
+        mimeType: audio.type,
+      });
+      return { text: null, error: { code: 'EMPTY_TRANSCRIPT' } };
     } catch {
       return {
         text: null,

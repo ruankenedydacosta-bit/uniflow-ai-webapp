@@ -38,10 +38,10 @@ const METHODS_AND_FUNCTIONS = [
   ['healthCheck', 'billing-health', undefined],
 ];
 
-test('billingService expõe exatamente os 7 métodos (6 pedidos + healthCheck, compatível com a arquitetura) -- BLOCO ASAAS CHECKOUT adiciona createCheckout', () => {
+test('billingService expõe exatamente os 8 métodos (6 pedidos + healthCheck + listPayments) -- BLOCO FINAL DO MVP adiciona listPayments (histórico real)', () => {
   const service = makeService({ fetchImpl: async () => jsonResponse(200, {}) });
   assert.deepEqual(Object.keys(service).sort(), [
-    'cancelSubscription', 'createCheckout', 'createCustomer', 'createSubscription', 'getSubscription', 'healthCheck', 'syncSubscription',
+    'cancelSubscription', 'createCheckout', 'createCustomer', 'createSubscription', 'getSubscription', 'healthCheck', 'listPayments', 'syncSubscription',
   ]);
 });
 
@@ -180,4 +180,85 @@ test('billingService.js nunca importa/referencia a Asaas diretamente, nem chama 
   assert.doesNotMatch(source, /api\.asaas\.com/);
   assert.doesNotMatch(source, /sandbox\.asaas\.com/);
   assert.doesNotMatch(source, /ASAAS_API_KEY/);
+});
+
+// ============================================================================
+// BLOCO FINAL DO MVP (Histórico de pagamentos): listPayments() -- leitura
+// direta (RLS) de billing_payments, nunca uma Edge Function nova, nunca a
+// Asaas diretamente.
+// ============================================================================
+
+function fakeSupabaseWithTable({ token = 'jwt-token', tableRows = [], tableError = null, capture } = {}) {
+  const base = fakeSupabase(token);
+  return {
+    ...base,
+    from(table) {
+      const query = {
+        table,
+        filters: {},
+        orders: [],
+        select(fields) { query.fields = fields; return query; },
+        eq(column, value) { query.filters[column] = value; return query; },
+        order(column, opts) { query.orders.push([column, opts]); return query; },
+        limit(n) { query.limitValue = n; return query; },
+        then(resolve) {
+          capture?.(query);
+          return resolve({ data: tableError ? null : tableRows, error: tableError });
+        },
+      };
+      return query;
+    },
+  };
+}
+
+test('listPayments consulta diretamente billing_payments (RLS), nunca uma Edge Function nova', async () => {
+  let calledFunction = false;
+  const captured = [];
+  const supabase = fakeSupabaseWithTable({ tableRows: [], capture: (q) => captured.push(q) });
+  const service = makeService({
+    supabase,
+    fetchImpl: async () => { calledFunction = true; return jsonResponse(200, {}); },
+  });
+  const result = await service.listPayments({ workspaceId: 'ws-1' });
+  assert.equal(calledFunction, false);
+  assert.equal(result.error, null);
+  assert.deepEqual(result.data, []);
+  assert.equal(captured[0].table, 'billing_payments');
+  assert.equal(captured[0].filters.workspace_id, 'ws-1');
+});
+
+test('listPayments ordena por due_date desc (nulls por último) e depois created_at desc -- mais recente primeiro', async () => {
+  const captured = [];
+  const supabase = fakeSupabaseWithTable({ tableRows: [], capture: (q) => captured.push(q) });
+  const service = makeService({ supabase });
+  await service.listPayments({ workspaceId: 'ws-1' });
+  assert.deepEqual(captured[0].orders, [
+    ['due_date', { ascending: false, nullsFirst: false }],
+    ['created_at', { ascending: false }],
+  ]);
+});
+
+test('listPayments sem workspaceId resolve lista vazia sem consultar nada', async () => {
+  let queried = false;
+  const supabase = fakeSupabaseWithTable({ tableRows: [{ id: 'p1' }], capture: () => { queried = true; } });
+  const service = makeService({ supabase });
+  const result = await service.listPayments({});
+  assert.deepEqual(result.data, []);
+  assert.equal(result.error, null);
+  assert.equal(queried, false);
+});
+
+test('listPayments erro de consulta normaliza para { data: null, error } -- nunca lança', async () => {
+  const supabase = fakeSupabaseWithTable({ tableError: { message: 'boom' } });
+  const service = makeService({ supabase });
+  const result = await service.listPayments({ workspaceId: 'ws-1' });
+  assert.equal(result.data, null);
+  assert.equal(result.error.code, 'PAYMENTS_QUERY_FAILED');
+});
+
+test('listPayments sem Supabase configurado resolve SUPABASE_NOT_CONFIGURED, nunca lança', async () => {
+  const service = createBillingService({});
+  const result = await service.listPayments({ workspaceId: 'ws-1' });
+  assert.equal(result.data, null);
+  assert.equal(result.error.code, 'SUPABASE_NOT_CONFIGURED');
 });

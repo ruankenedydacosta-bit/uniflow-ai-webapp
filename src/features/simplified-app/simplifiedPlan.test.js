@@ -72,32 +72,26 @@ test('cabeçalho tem botão voltar, título "Seu plano" e Falar com a Uni real',
 });
 
 // ============================================================================
-// Estados do plano -- honestos, cobrindo os 8 estados reais do backend.
+// Estados do plano -- honestos, cobrindo os 9 estados reais do backend.
+// Correção (Bloco Saldo + Cobrança): resolvePlanState/renewsAt/etc. saíram
+// de SimplifiedPlanPage.jsx para subscriptionPresentation.js (fonte única
+// reaproveitada por Conta e Pagamento e assinatura também) -- cobertura
+// detalhada de cada estado vive em subscriptionPresentation.test.js; aqui
+// só confirmamos que esta tela usa a fonte compartilhada.
 // ============================================================================
 
-test('resolvePlanState trata os 8 estados reais: not_configured, active, pending, trialing, past_due, suspended, cancel_scheduled, canceled/expired', async () => {
+test('usa a fonte única de apresentação de assinatura (subscriptionPresentation.js), nunca reimplementa o mapeamento de status aqui', async () => {
   const content = await source('./SimplifiedPlanPage.jsx');
-  assert.match(content, /status: 'not_configured', label: 'Pagamento ainda não configurado'/);
-  assert.match(content, /status: 'cancel_scheduled', label: 'Cancelamento agendado'/);
-  assert.match(content, /status: 'active', label: 'Seu plano está ativo'/);
-  assert.match(content, /status: 'pending', label: 'Aguardando pagamento'/);
-  assert.match(content, /status: 'trialing', label: 'Período de teste'/);
-  assert.match(content, /status: 'past_due', label: 'Pagamento em atraso'/);
-  assert.match(content, /status: 'suspended', label: 'Assinatura suspensa'/);
-  assert.match(content, /status: 'canceled', label: 'Plano cancelado'/);
-  assert.match(content, /return \{ status: 'expired', label: 'Plano expirado'/);
+  assert.match(
+    content,
+    /import \{\s*\n\s*formatDate,\s*\n\s*resolveCancelEffectiveAt,\s*\n\s*resolvePlanState,\s*\n\s*resolveRenewsAt,\s*\n\s*resolveTrialEndsAt,\s*\n\s*\} from '\.\/subscriptionPresentation\.js';/,
+  );
+  assert.doesNotMatch(content, /function resolvePlanState/);
+  assert.doesNotMatch(content, /function formatDate/);
 });
 
-test('cancel_at_period_end é checado ANTES de "active" puro -- nunca mostra "ativo" sem indicar o cancelamento agendado', async () => {
+test('sem assinatura nunca vira "Plano ativo" -- fallback honesto not_configured', async () => {
   const content = await source('./SimplifiedPlanPage.jsx');
-  const activeCancelIdx = content.indexOf("status === 'active' && cancelAtPeriodEnd");
-  const activeOnlyIdx = content.indexOf("if (status === 'active') {");
-  assert.ok(activeCancelIdx > -1 && activeOnlyIdx > activeCancelIdx, 'a checagem com cancelAtPeriodEnd deve vir antes da checagem simples de active');
-});
-
-test('sem assinatura nunca vira "Plano ativo" -- cai no fallback honesto not_configured', async () => {
-  const content = await source('./SimplifiedPlanPage.jsx');
-  assert.match(content, /if \(!subscription\?\.exists\) \{\s*\n\s*return \{ status: 'not_configured'/);
   assert.match(content, /Você ainda não possui uma assinatura ativa\./);
 });
 
@@ -119,8 +113,9 @@ test('nunca exibe cartão, bandeira ou últimos 4 dígitos fictícios', async ()
 
 test('renova em / acesso até / teste encerra em só aparecem quando há dado real (current_period_ends_at/cancel_effective_at/trial_ends_at)', async () => {
   const content = await source('./SimplifiedPlanPage.jsx');
-  assert.match(content, /const renewsAt = \['active', 'cancel_scheduled', 'trialing'\]\.includes\(planState\.status\)/);
-  assert.match(content, /const cancelEffectiveAt = planState\.status === 'cancel_scheduled' \? subscription\?\.cancel_effective_at : null;/);
+  assert.match(content, /const renewsAt = resolveRenewsAt\(subscription, planState\);/);
+  assert.match(content, /const cancelEffectiveAt = resolveCancelEffectiveAt\(subscription, planState\);/);
+  assert.match(content, /const trialEndsAt = resolveTrialEndsAt\(subscription, planState\);/);
   assert.match(content, /\{renewsAt \? \(/);
   assert.match(content, /\{cancelEffectiveAt \? \(/);
 });
@@ -213,9 +208,10 @@ test('modal de cancelamento não pode ser fechado durante isCancelling (evita ca
 // Acessos inferiores -- rotas reais/placeholders honestos existentes.
 // ============================================================================
 
-test('acessos inferiores navegam para rotas reais já existentes (nenhuma nova rota inventada)', async () => {
+test('"Ver histórico de pagamentos" e "Notas fiscais e recibos" abrem a MESMA tela real de histórico (BLOCO FINAL DO MVP) -- reutilizam os mesmos dados', async () => {
   const content = await source('./SimplifiedPlanPage.jsx');
-  assert.match(content, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PAYMENTS\]\.path\)/);
+  const matches = content.match(/navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PAYMENT_HISTORY\]\.path\)/g) ?? [];
+  assert.equal(matches.length, 2, 'ambos os quick links devem apontar para a tela real de histórico');
   assert.match(content, /navigate\(PERSONAL_PLAN_ROUTE\)/);
 });
 

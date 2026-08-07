@@ -38,16 +38,28 @@
   --uni-shadow-glow: var(--uf-shadow-glow-ai);
   --uni-ease: var(--uf-ease-smooth);
 
-  position: relative;
+  /* HOTFIX (compositor coberto pela navegação inferior): o ancestral
+     imersivo (.shellSurface, CSS Grid "auto 1fr auto") só declara
+     min-height:100dvh, nunca height:100dvh -- então um .page com
+     height:100dvh (mesmo com max-height:100% aqui) inflava o grid inteiro
+     acima da viewport real, empurrando o compositor e a navegação
+     inferior para fora da área visível (só reaparecia quando o viewport
+     era artificialmente comprimido). position:fixed remove o .page do
+     fluxo do grid por completo e o ancora diretamente às bordas REAIS do
+     viewport, usando as alturas oficiais do cabeçalho/navegação inferior
+     (--simplified-header-height/--simplified-bottom-nav-height, ver
+     simplifiedApp.module.css) -- nunca um número mágico novo. Nenhum
+     ancestral usa transform/filter/perspective, então o viewport
+     continua sendo o containing block real do fixed. max-width + margin
+     auto continuam centralizando horizontalmente, idêntico a antes (o
+     centro do viewport é o mesmo centro de .shellSurface). */
+  position: fixed;
+  top: var(--simplified-header-height, 86px);
+  right: 0;
+  bottom: var(--simplified-bottom-nav-height, 108px);
+  left: 0;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  /* Dentro do shell imersivo, o pai tem altura definida e este max-height:100%
-     faz o .page respeitar (viewport - bottom nav), sem restringir o 100dvh
-     original caso algum dia seja renderizado fora de um shell com altura
-     própria. */
-  max-height: 100%;
-  width: 100%;
   min-height: 0;
   max-width: 480px;
   margin: 0 auto;
@@ -61,7 +73,16 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  scroll-behavior: smooth;
+  /* HOTFIX FINAL P3: `scroll-behavior: smooth` aplicava-se a QUALQUER
+     escrita em scrollTop, inclusive o posicionamento inicial no fim do
+     histórico (useLayoutEffect em UniChatPage.jsx) -- com a hidratação do
+     Supabase mudando `messages` mais de uma vez (local -> mesclado), cada
+     mudança reiniciava a animação de rolagem em andamento, podendo deixar a
+     tela parada no meio do histórico em vez de no final. Rolagem "grudada
+     no fim" (abrir a conversa, hidratação, resposta nova) agora é sempre
+     instantânea via scrollTop direto; suave continua só onde é pedido
+     explicitamente (scrollIntoView({behavior:'smooth'}) no botão "novas
+     mensagens"), que não depende desta propriedade CSS. */
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }

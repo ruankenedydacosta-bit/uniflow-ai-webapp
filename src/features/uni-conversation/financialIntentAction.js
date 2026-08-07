@@ -1,5 +1,6 @@
 import {
   ACCOUNT_RESOLUTION_STATUS,
+  normalizeAccountIdentity,
   resolveFinancialAccount,
 } from './accountResolution.js';
 import {
@@ -52,6 +53,42 @@ function isValidDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+// BUG REAL (Sprint 2.1, BUG 2): "Gastei 50 reais no Nubank." não era
+// reconhecido -- extractAccount só cobre "na conta X"/"no banco X"/"pelo
+// X" para receita/despesa (a forma coloquial "no/na <Nome>" sem "conta"/
+// "banco" só era tentada em declarações de saldo ambíguas). Ampliar aquele
+// regex cegamente quebrava casos reais já cobertos por teste ("Gastei
+// cinquentão no mercado" precisa continuar com account: null, "mercado"
+// vira descrição/categoria, nunca uma conta inventada).
+//
+// Correção correta: só este módulo (financialIntentAction.js) tem a lista
+// REAL de contas do workspace -- então, e SOMENTE quando nenhuma conta foi
+// extraída do jeito normal, procura no texto bruto por uma correspondência
+// INEQUÍVOCA (uma única conta ativa cujo nome/instituição aparece no
+// texto). Se nenhuma conta real bater (ex.: "mercado"), o resultado
+// continua null e o comportamento anterior é preservado -- nunca inventa
+// nem propõe criar uma conta a partir de uma palavra qualquer.
+function findAccountMentionedInText(accounts, input) {
+  if (typeof input !== 'string' || !input.trim() || !Array.isArray(accounts) || !accounts.length) {
+    return null;
+  }
+  const normalizedInput = normalizeAccountIdentity(input);
+  if (!normalizedInput) return null;
+
+  const matches = new Map();
+  for (const account of accounts) {
+    if (!account || account.is_active === false) continue;
+    const identities = [account.name, account.institution_name]
+      .map((value) => normalizeAccountIdentity(value))
+      .filter((identity) => identity.length >= 4);
+    if (identities.some((identity) => normalizedInput.includes(identity))) {
+      matches.set(account.id, account);
+    }
+  }
+  const unique = [...matches.values()];
+  return unique.length === 1 ? unique[0].name : null;
 }
 
 function sanitizeDescription(value) {
@@ -150,11 +187,20 @@ export function buildFinancialIntentAction({
   let description = sanitizeDescription(
     overrides.description ?? parsed.entities.description,
   ) ?? (isAdjustment ? 'Ajuste de saldo' : null);
+  const explicitAccountName = overrides.accountName ?? parsed.entities.account;
+  // BUG REAL (Sprint 2.1, BUG 2): só tenta a correspondência por texto
+  // bruto contra a lista real de contas quando a extração normal não achou
+  // NADA -- nunca substitui uma conta já identificada, e fica de fora de
+  // transferência (origem/destino têm semântica própria, já resolvida
+  // separadamente).
+  const fallbackAccountName = !explicitAccountName && (transactionType === 'income' || transactionType === 'expense')
+    ? findAccountMentionedInText(accounts, parsed.input)
+    : null;
   const accountResult = resolveFinancialAccount({
     accounts,
     accountTypes,
     accountId: overrides.accountId,
-    requestedName: overrides.accountName ?? parsed.entities.account,
+    requestedName: explicitAccountName ?? fallbackAccountName,
     requestedType: overrides.accountType,
     decision: overrides.accountDecision,
     input: parsed.input,

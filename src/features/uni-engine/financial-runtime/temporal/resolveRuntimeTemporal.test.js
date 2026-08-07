@@ -123,3 +123,92 @@ test('temporal: resultado é serializável', () => {
   assert.doesNotThrow(() => JSON.stringify(result));
   assert.deepEqual(JSON.parse(JSON.stringify(result)), result);
 });
+// ============================================================================
+// Sprint 3 — correção do bug de fuso horário na ORIGEM. O código antigo
+// construía a data de referência com `new Date(referenceDate)` (uma string
+// 'YYYY-MM-DD' vira meia-noite UTC) e depois lia/escrevia com getters
+// LOCAIS -- em qualquer fuso de offset negativo (ex.: America/Sao_Paulo,
+// UTC-3, que é o fuso real deste ambiente de testes), isso deslocava
+// "esta semana"/"mês passado"/etc em 1 dia. Estes testes fixam datas de
+// referência exatas e checam start/end literalmente -- os testes antigos
+// acima só checavam o `entity`, nunca os valores, por isso nunca pegaram
+// o bug.
+// ============================================================================
+
+test('Sprint 3 (fuso horário): "esta semana" a partir de uma quarta-feira -- segunda a domingo exatos', () => {
+  // 2026-08-05 é uma quarta-feira.
+  const result = resolveRuntimeTemporal('esta semana', '2026-08-05');
+  assert.equal(result.start, '2026-08-03');
+  assert.equal(result.end, '2026-08-09');
+});
+
+test('Sprint 3 (fuso horário): "semana passada" a partir da mesma quarta-feira', () => {
+  const result = resolveRuntimeTemporal('semana passada', '2026-08-05');
+  assert.equal(result.start, '2026-07-27');
+  assert.equal(result.end, '2026-08-02');
+});
+
+test('Sprint 3 (fuso horário): "esta semana"/"semana passada" a partir de um DOMINGO (caso extremo do cálculo de início de semana)', () => {
+  // 2026-08-09 é domingo.
+  const thisWeek = resolveRuntimeTemporal('esta semana', '2026-08-09');
+  assert.equal(thisWeek.start, '2026-08-03');
+  assert.equal(thisWeek.end, '2026-08-09');
+  const lastWeek = resolveRuntimeTemporal('semana passada', '2026-08-09');
+  assert.equal(lastWeek.start, '2026-07-27');
+  assert.equal(lastWeek.end, '2026-08-02');
+});
+
+test('Sprint 3 (fuso horário): "este mês"/"mês passado" com referenceDate no PRIMEIRO dia do mês -- caso mais sensível ao bug', () => {
+  const thisMonth = resolveRuntimeTemporal('este mês', '2026-08-01');
+  assert.equal(thisMonth.start, '2026-08-01');
+  assert.equal(thisMonth.end, '2026-08-31');
+  const lastMonth = resolveRuntimeTemporal('mês passado', '2026-08-01');
+  assert.equal(lastMonth.start, '2026-07-01');
+  assert.equal(lastMonth.end, '2026-07-31');
+});
+
+test('Sprint 3 (fuso horário): "este mês"/"mês que vem" com referenceDate no ÚLTIMO dia do mês', () => {
+  const thisMonth = resolveRuntimeTemporal('este mês', '2026-08-31');
+  assert.equal(thisMonth.start, '2026-08-01');
+  assert.equal(thisMonth.end, '2026-08-31');
+  const nextMonth = resolveRuntimeTemporal('mês que vem', '2026-08-31');
+  assert.equal(nextMonth.start, '2026-09-01');
+  assert.equal(nextMonth.end, '2026-09-30');
+});
+
+test('Sprint 3 (fuso horário): virada de ano -- "mês passado"/"ano passado" a partir de 1º de janeiro', () => {
+  const lastMonth = resolveRuntimeTemporal('mês passado', '2026-01-01');
+  assert.equal(lastMonth.start, '2025-12-01');
+  assert.equal(lastMonth.end, '2025-12-31');
+  const lastYear = resolveRuntimeTemporal('ano passado', '2026-01-01');
+  assert.equal(lastYear.start, '2025-01-01');
+  assert.equal(lastYear.end, '2025-12-31');
+});
+
+test('Sprint 3 (fuso horário): virada de ano -- "mês que vem" a partir de 31 de dezembro', () => {
+  const nextMonth = resolveRuntimeTemporal('mês que vem', '2026-12-31');
+  assert.equal(nextMonth.start, '2027-01-01');
+  assert.equal(nextMonth.end, '2027-01-31');
+});
+
+test('Sprint 3 (fuso horário): "hoje"/"ontem" nunca deslocam 1 dia em nenhuma borda de mês/ano', () => {
+  assert.equal(resolveRuntimeTemporal('hoje', '2026-01-01').start, '2026-01-01');
+  assert.equal(resolveRuntimeTemporal('ontem', '2026-01-01').start, '2025-12-31');
+  assert.equal(resolveRuntimeTemporal('hoje', '2026-03-01').start, '2026-03-01');
+  assert.equal(resolveRuntimeTemporal('ontem', '2026-03-01').start, '2026-02-28');
+});
+
+test('Sprint 3 (fuso horário): "últimos 7/30 dias" contam a partir da referência, inclusive, sem deslocamento', () => {
+  const last7 = resolveRuntimeTemporal('últimos 7 dias', '2026-08-05');
+  assert.equal(last7.start, '2026-07-30');
+  assert.equal(last7.end, '2026-08-05');
+  const last30 = resolveRuntimeTemporal('últimos 30 dias', '2026-01-05');
+  assert.equal(last30.start, '2025-12-07');
+  assert.equal(last30.end, '2026-01-05');
+});
+
+test('Sprint 3 (fuso horário): "este ano"/"ano passado" com referenceDate em 31 de dezembro', () => {
+  const thisYear = resolveRuntimeTemporal('este ano', '2026-12-31');
+  assert.equal(thisYear.start, '2026-01-01');
+  assert.equal(thisYear.end, '2026-12-31');
+});

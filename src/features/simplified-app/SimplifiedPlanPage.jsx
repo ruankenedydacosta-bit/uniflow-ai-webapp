@@ -14,6 +14,13 @@ import {
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
+  formatDate,
+  resolveCancelEffectiveAt,
+  resolvePlanState,
+  resolveRenewsAt,
+  resolveTrialEndsAt,
+} from './subscriptionPresentation.js';
+import {
   AlertTriangleIcon,
   CalendarIcon,
   CardIcon,
@@ -37,15 +44,6 @@ function BackIcon() {
   );
 }
 
-function formatDate(value) {
-  if (!value) return '';
-  try {
-    return new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  } catch {
-    return '';
-  }
-}
-
 function firstDayOfMonthISO() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
@@ -53,43 +51,6 @@ function firstDayOfMonthISO() {
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
-}
-
-// BLOCO FINAL DO MVP: mapeia o `internal_status` real devolvido por
-// billing-get-subscription (backend Asaas já homologado no Sandbox) para o
-// estado exibido nesta tela -- substitui a leitura direta de
-// getWorkspaceSubscriptionAny (Bloco Asaas 2.5) por uma fonte única já
-// testada (a Edge Function), que também sabe sobre cancel_at_period_end e
-// needs_regularization (past_due/suspended), estados que a leitura direta
-// da tabela não distinguia.
-function resolvePlanState(subscription) {
-  if (!subscription?.exists) {
-    return { status: 'not_configured', label: 'Pagamento ainda não configurado', tone: 'neutral' };
-  }
-  const { internal_status: status, cancel_at_period_end: cancelAtPeriodEnd } = subscription;
-  if (status === 'active' && cancelAtPeriodEnd) {
-    return { status: 'cancel_scheduled', label: 'Cancelamento agendado', tone: 'warn' };
-  }
-  if (status === 'active') {
-    return { status: 'active', label: 'Seu plano está ativo', tone: 'ok' };
-  }
-  if (status === 'pending') {
-    return { status: 'pending', label: 'Aguardando pagamento', tone: 'neutral' };
-  }
-  if (status === 'trialing') {
-    return { status: 'trialing', label: 'Período de teste', tone: 'ok' };
-  }
-  if (status === 'past_due') {
-    return { status: 'past_due', label: 'Pagamento em atraso', tone: 'warn' };
-  }
-  if (status === 'suspended') {
-    return { status: 'suspended', label: 'Assinatura suspensa', tone: 'danger' };
-  }
-  if (status === 'canceled') {
-    return { status: 'canceled', label: 'Plano cancelado', tone: 'danger' };
-  }
-  // 'expired'
-  return { status: 'expired', label: 'Plano expirado', tone: 'danger' };
 }
 
 function SimplifiedPlanPage() {
@@ -144,11 +105,9 @@ function SimplifiedPlanPage() {
 
   const planState = useMemo(() => resolvePlanState(subscription), [subscription]);
 
-  const renewsAt = ['active', 'cancel_scheduled', 'trialing'].includes(planState.status)
-    ? subscription?.current_period_ends_at
-    : null;
-  const cancelEffectiveAt = planState.status === 'cancel_scheduled' ? subscription?.cancel_effective_at : null;
-  const trialEndsAt = planState.status === 'trialing' ? subscription?.trial_ends_at : null;
+  const renewsAt = resolveRenewsAt(subscription, planState);
+  const cancelEffectiveAt = resolveCancelEffectiveAt(subscription, planState);
+  const trialEndsAt = resolveTrialEndsAt(subscription, planState);
   const canCancel = planState.status === 'active';
 
   const usageMessage = isLoadingTransactions
@@ -309,7 +268,7 @@ function SimplifiedPlanPage() {
         <button
           type="button"
           className={styles.quickLink}
-          onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].path)}
+          onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY].path)}
         >
           <span className={styles.quickLinkIcon} aria-hidden="true"><CardIcon /></span>
           Ver histórico de pagamentos
@@ -325,7 +284,7 @@ function SimplifiedPlanPage() {
         <button
           type="button"
           className={styles.quickLink}
-          onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].path)}
+          onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY].path)}
         >
           <span className={styles.quickLinkIcon} aria-hidden="true"><ReceiptIcon /></span>
           Notas fiscais e recibos

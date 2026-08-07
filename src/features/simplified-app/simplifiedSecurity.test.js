@@ -38,13 +38,34 @@ test('index.js exporta SimplifiedSecurityPage', async () => {
 // Cabeçalho.
 // ============================================================================
 
-test('cabeçalho tem botão voltar, título, subtítulo curto e Falar com a Uni real', async () => {
+test('cabeçalho tem botão voltar, título e subtítulo curto -- SEM "Falar com a Uni" (reorganização dos acessos à Uni)', async () => {
   const content = await source('./SimplifiedSecurityPage.jsx');
   assert.match(content, /aria-label="Voltar para Conta"/);
   assert.match(content, /navigate\(SIMPLIFIED_ROUTES\.ACCOUNT\)/);
   assert.match(content, /<h1>Segurança<\/h1>/);
   assert.match(content, /Gerencie a segurança da sua conta\./);
-  assert.match(content, /navigate\(SIMPLIFIED_ROUTES\.UNI\)/);
+  const headerStart = content.indexOf('<header className={styles.header}>');
+  const headerEnd = content.indexOf('</header>', headerStart);
+  const headerSlice = content.slice(headerStart, headerEnd);
+  assert.doesNotMatch(headerSlice, /Falar com a Uni/);
+  assert.doesNotMatch(content, /SIMPLIFIED_ROUTES\.UNI/);
+});
+
+// ============================================================================
+// Reorganização dos acessos à Uni: card final vira "Ajuda" simples,
+// direciona para Suporte (nunca abre conversa direto).
+// ============================================================================
+
+test('card final é "Ajuda" (Headset, descrição curta, botão "Ajuda") e navega para Suporte -- nunca abre a Uni direto', async () => {
+  const content = await source('./SimplifiedSecurityPage.jsx');
+  const cardStart = content.indexOf('aria-label="Ajuda"');
+  assert.ok(cardStart > -1, 'card Ajuda deve existir');
+  const cardSlice = content.slice(cardStart, content.indexOf('</section>', cardStart));
+  assert.match(cardSlice, /<HeadsetIcon \/>/);
+  assert.match(cardSlice, /<strong>Ajuda<\/strong>/);
+  assert.match(cardSlice, />\s*Ajuda\s*<\/button>/);
+  assert.match(cardSlice, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SUPPORT\]\.path\)/);
+  assert.doesNotMatch(cardSlice, /SIMPLIFIED_ROUTES\.UNI/);
 });
 
 // ============================================================================

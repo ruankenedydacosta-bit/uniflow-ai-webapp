@@ -10,6 +10,8 @@ import {
   monthKeyOf,
   normalizeFinancialText,
   roundMoney,
+  queryTransactionsInRange,
+  aggregateFinancialRange,
 } from './financialSnapshot.js';
 
 const REFERENCE_DATE = '2026-07-15';
@@ -154,4 +156,95 @@ test('snapshot é puro e determinístico: mesma entrada, mesma saída', () => {
   assert.deepEqual(first.transactions, second.transactions);
   assert.equal(first.totalBalance, second.totalBalance);
   assert.deepEqual(first.expensesByCategory, second.expensesByCategory);
+});
+
+// ── Sprint 4 (Bloco 4.2): agregados adicionais para as capacidades recém
+// conectadas (income_by_account/category, expenses_by_account, top_expenses) ──
+
+test('despesas por conta somam o mês corrente por conta real', () => {
+  const snapshot = buildSnapshot();
+  assert.equal(snapshot.expensesByAccount.get('Nubank'), 178.83);
+  assert.equal(snapshot.expensesByAccount.get('Itaú'), 105);
+});
+
+test('receitas por conta e por categoria refletem o mês corrente', () => {
+  const snapshot = buildSnapshot();
+  assert.equal(snapshot.incomeByAccount.get('Nubank'), 3000);
+  assert.equal(snapshot.incomeByCategory.get('Sem categoria'), 3000);
+  assert.equal(snapshot.incomeByAccount.get('Itaú'), undefined);
+});
+
+test('maiores despesas do mês corrente vêm ordenadas por valor, nunca por data', () => {
+  const snapshot = buildSnapshot();
+  assert.deepEqual(
+    snapshot.topExpensesCurrentMonth.map((tx) => tx.id),
+    ['t1', 't8', 't2', 't7', 't9'],
+  );
+  assert.equal(snapshot.topExpensesCurrentMonth[0].amount, 120.5);
+});
+
+test('sem despesas no mês, topExpensesCurrentMonth vem vazio -- nunca inventa uma entrada', () => {
+  const empty = buildFinancialSnapshot({ referenceDate: REFERENCE_DATE });
+  assert.deepEqual(empty.topExpensesCurrentMonth, []);
+  assert.equal(empty.incomeByAccount.size, 0);
+  assert.equal(empty.expensesByAccount.size, 0);
+});
+
+// ── Sprint 4 (Bloco 4.5.1): API de agregação por intervalo arbitrário ──
+
+test('queryTransactionsInRange filtra por data inclusive, sem depender do mês corrente', () => {
+  const snapshot = buildSnapshot();
+  const june = queryTransactionsInRange(snapshot, { start: '2026-06-01', end: '2026-06-30' });
+  assert.deepEqual(june.map((t) => t.id), ['t4']);
+});
+
+test('queryTransactionsInRange filtra por conta/categoria/tipo simultaneamente', () => {
+  const snapshot = buildSnapshot();
+  const result = queryTransactionsInRange(snapshot, {
+    start: '2026-07-01', end: '2026-07-31',
+    accountIds: ['acc-nubank'], transactionTypes: ['expense'],
+  });
+  assert.deepEqual(result.map((t) => t.id).sort(), ['t1', 't7', 't9']);
+});
+
+test('queryTransactionsInRange respeita limit', () => {
+  const snapshot = buildSnapshot();
+  const result = queryTransactionsInRange(snapshot, { start: '2026-06-01', end: '2026-07-31', limit: 2 });
+  assert.equal(result.length, 2);
+});
+
+test('queryTransactionsInRange sem snapshot/transactions válidos nunca lança, devolve vazio', () => {
+  assert.deepEqual(queryTransactionsInRange(null), []);
+  assert.deepEqual(queryTransactionsInRange({}), []);
+});
+
+test('aggregateFinancialRange agrega um intervalo de vários meses corretamente (nunca limitado ao mês atual)', () => {
+  const snapshot = buildSnapshot();
+  const range = { start: '2026-06-01', end: '2026-07-31' };
+  const result = aggregateFinancialRange(snapshot, range);
+  // junho: t4 (90 expense); julho: t1,t2,t7,t8,t9 (283.83) + t3 (3000 income)
+  assert.equal(result.expense, 373.83);
+  assert.equal(result.income, 3000);
+  assert.equal(result.transactionCount, 7);
+});
+
+test('aggregateFinancialRange topExpenses ordena por valor dentro do intervalo pedido', () => {
+  const snapshot = buildSnapshot();
+  const result = aggregateFinancialRange(snapshot, { start: '2026-06-01', end: '2026-07-31' });
+  assert.equal(result.topExpenses[0].id, 't1');
+});
+
+test('aggregateFinancialRange com intervalo sem nenhuma transação real devolve zeros/vazios, nunca inventa', () => {
+  const snapshot = buildSnapshot();
+  const result = aggregateFinancialRange(snapshot, { start: '2020-01-01', end: '2020-01-31' });
+  assert.equal(result.income, 0);
+  assert.equal(result.expense, 0);
+  assert.deepEqual(result.topExpenses, []);
+  assert.equal(result.transactionCount, 0);
+});
+
+test('aggregateFinancialRange nunca lança com range nulo/malformado', () => {
+  const snapshot = buildSnapshot();
+  assert.doesNotThrow(() => aggregateFinancialRange(snapshot, null));
+  assert.doesNotThrow(() => aggregateFinancialRange(null, { start: '2026-01-01', end: '2026-01-31' }));
 });

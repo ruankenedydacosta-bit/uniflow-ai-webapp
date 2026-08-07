@@ -99,7 +99,8 @@ test('MessageBubble nunca conhece fetch, Audio ou a Edge Function diretamente --
 test('respostas da Uni usam o renderizador Markdown seguro compartilhado com o suporte', async () => {
   const page = await source('MessageBubble.jsx');
   assert.match(page, /import SafeMarkdown/);
-  assert.match(page, /<SafeMarkdown className=\{styles\.text\}>\{message\.text\}<\/SafeMarkdown>/);
+  assert.match(page, /<SafeMarkdown className=\{styles\.text\}>\{resolvedText\}<\/SafeMarkdown>/);
+  assert.match(page, /const resolvedText = displayText \|\| message\.text;/);
   assert.doesNotMatch(page, /dangerouslySetInnerHTML/);
 });
 

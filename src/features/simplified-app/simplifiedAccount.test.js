@@ -15,15 +15,18 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // Rotas internas -- fonte única, paths reais, sem duplicidade.
 // ============================================================================
 
-test('ACCOUNT_SUBROUTES tem exatamente os 10 paths pedidos, sob /app/conta/', () => {
+// BLOCO FINAL DO MVP (Sobre a UniFlow AI): "notificacoes" e "privacidade"
+// foram removidos TOTALMENTE (nunca só escondidos do menu) -- Notificações
+// já mora exclusivamente no sino da Home; Privacidade e dados fica para uma
+// tarefa futura junto de LGPD/exportação/exclusão de conta.
+test('ACCOUNT_SUBROUTES tem exatamente os 9 paths pedidos, sob /app/conta/ -- notificacoes/privacidade removidos', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path).sort();
   assert.deepEqual(paths, [
     '/app/conta/editar-perfil',
     '/app/conta/minhas-contas',
-    '/app/conta/notificacoes',
     '/app/conta/pagamentos',
+    '/app/conta/pagamentos/historico',
     '/app/conta/plano',
-    '/app/conta/privacidade',
     '/app/conta/seguranca',
     '/app/conta/sobre',
     '/app/conta/suporte',
@@ -41,7 +44,7 @@ test('todo subroute tem título e descrição honesta (nunca vazio, nunca dado f
   }
 });
 
-test('nenhum path duplicado entre os 10 subroutes', () => {
+test('nenhum path duplicado entre os 9 subroutes', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path);
   assert.equal(paths.length, new Set(paths).size);
 });
@@ -59,8 +62,10 @@ test('routes.jsx: /app/conta usa SimplifiedAccountPage, não mais o placeholder 
 
 test('routes.jsx: as rotas internas de Conta são geradas a partir de ACCOUNT_SUBROUTES (fonte única, sem paths hardcoded soltos)', async () => {
   const routes = await source('../../app/routes.jsx');
-  // Editar perfil, Segurança e Plano ganharam telas reais; as demais 7
-  // subrotas continuam geradas dinamicamente como placeholders honestos.
+  // Todas as 9 subrotas hoje têm tela real (Editar perfil, Segurança, Plano,
+  // Pagamentos, Histórico, Minhas contas, Voz, Suporte, Sobre) -- o loop de
+  // placeholders genéricos continua existindo (infraestrutura para futuras
+  // subrotas), mas não gera nenhuma rota hoje.
   assert.match(routes, /Object\.values\(ACCOUNT_SUBROUTES\)\s*\n\s*\.filter\(\(subroute\) => \(/);
   assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\]\.path/);
   assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SECURITY\]\.path/);
@@ -71,6 +76,8 @@ test('routes.jsx: as rotas internas de Conta são geradas a partir de ACCOUNT_SU
   assert.match(routes, /<SimplifiedPlanPage \/>/);
   assert.match(routes, /<SimplifiedVoicePage \/>/);
   assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.VOICE\]\.path/);
+  assert.match(routes, /<SimplifiedAboutPage \/>/);
+  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.ABOUT\]\.path/);
   assert.match(routes, /simplified: true,/);
 });
 
@@ -134,33 +141,35 @@ test('ações Editar perfil e Segurança navegam para as rotas internas preparad
   assert.match(page, /goTo\(ACCOUNT_SUBROUTE_IDS\.SECURITY\)/);
 });
 
-// ---------- Card do plano: 4 estados honestos, nunca dado inventado ----------
+// ---------- Card do plano: fonte única, nunca dado inventado ----------
+//
+// Correção (Bloco Saldo + Cobrança): esta tela não reimplementa mais seu
+// próprio resolvePlanState -- reaproveita subscriptionPresentation.js (a
+// MESMA fonte de "Seu plano"/"Pagamento e assinatura"), buscando sua
+// própria assinatura via billingService.getSubscription() em vez de
+// useSession().subscription (esse último é filtrado para controle de
+// acesso e escondia assinaturas canceladas/suspensas/pendentes como "sem
+// assinatura"). Cobertura detalhada de cada estado vive em
+// subscriptionPresentation.test.js.
 
-test('resolvePlanState nunca inventa assinatura: sem subscription -> "Pagamento ainda não configurado"', async () => {
+test('busca a própria assinatura via billingService.getSubscription() -- nunca mais reaproveita useSession().subscription (filtrado para controle de acesso) para exibição', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const fnBody = page.slice(page.indexOf('function resolvePlanState'), page.indexOf('function SimplifiedAccountPage'));
-  assert.match(fnBody, /if \(!subscription\) \{\s*\n\s*return \{ status: 'not_configured', label: 'Pagamento ainda não configurado' \};/);
+  assert.match(page, /import \{ getSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+  assert.match(page, /getSubscription\(\{ workspaceId \}\)\.then/);
+  assert.doesNotMatch(page, /const \{ user, profile, workspace, subscription, signOut \} = useSession\(\);/);
 });
 
-test('resolvePlanState: active/trialing mostra status real e só usa current_period_ends_at real (nunca uma data inventada)', async () => {
+test('usa a fonte única de apresentação de assinatura (subscriptionPresentation.js), nunca reimplementa o mapeamento de status aqui', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const fnBody = page.slice(page.indexOf('function resolvePlanState'), page.indexOf('function SimplifiedAccountPage'));
-  assert.match(fnBody, /subscription\.status === 'active' \|\| subscription\.status === 'trialing'/);
-  assert.match(fnBody, /renewsAt: subscription\.current_period_ends_at \?\? null,/);
+  assert.match(page, /import \{ formatDate, resolvePlanState, resolveRenewsAt \} from '\.\/subscriptionPresentation\.js';/);
+  assert.doesNotMatch(page, /function resolvePlanState/);
+  assert.doesNotMatch(page, /function formatDate/);
 });
 
-test('resolvePlanState: past_due -> "Pagamento pendente"; canceled/expired -> "Plano não ativo"', async () => {
+test('card do plano só mostra preço/renovação quando o estado é realmente "ok" (active/trialing) -- nunca nos demais estados', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const fnBody = page.slice(page.indexOf('function resolvePlanState'), page.indexOf('function SimplifiedAccountPage'));
-  assert.match(fnBody, /subscription\.status === 'past_due'/);
-  assert.match(fnBody, /Pagamento pendente/);
-  assert.match(fnBody, /Plano não ativo/);
-});
-
-test('card do plano só mostra preço/renovação quando o estado é realmente "active" -- nunca exibido nos outros 3 estados', async () => {
-  const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /\{planState\.status === 'active' \? \(\s*\n\s*<span className=\{styles\.planPrice\}>/);
-  assert.match(page, /\{planState\.status === 'active' && planState\.renewsAt \? \(/);
+  assert.match(page, /\{planState\.tone === 'ok' \? \(\s*\n\s*<span className=\{styles\.planPrice\}>/);
+  assert.match(page, /\{renewsAt \? \(/);
 });
 
 test('preço exibido vem da constante compartilhada de personal-plan, nunca um valor duplicado/hardcoded na tela de Conta', async () => {
@@ -169,18 +178,30 @@ test('preço exibido vem da constante compartilhada de personal-plan, nunca um v
   assert.doesNotMatch(page, /R\$\s*29,90/);
 });
 
-// ---------- Menu principal: 7 itens, subtítulos dinâmicos e honestos ----------
+// ---------- Menu principal: 5 itens, subtítulos dinâmicos e honestos ----------
+// BLOCO FINAL DO MVP (Sobre a UniFlow AI): "Notificações" (já tem lar
+// oficial no sino da Home) e "Privacidade e dados" (fora de escopo até
+// LGPD/exportação/exclusão de conta) foram removidas TOTALMENTE do menu --
+// nunca deve haver dois lugares para a mesma funcionalidade (notificações),
+// e nunca um placeholder vazio prometendo algo que não existe ainda
+// (privacidade).
 
-test('menu tem exatamente os 7 itens pedidos, na ordem pedida', async () => {
+test('menu tem exatamente os 5 itens pedidos, na ordem pedida -- Notificações e Privacidade e dados removidas', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const order = [
-    'PAYMENTS', 'MY_ACCOUNTS', 'NOTIFICATIONS', 'VOICE', 'PRIVACY', 'SUPPORT', 'ABOUT',
-  ];
+  const order = ['PAYMENTS', 'MY_ACCOUNTS', 'VOICE', 'SUPPORT', 'ABOUT'];
   const indices = order.map((id) => page.indexOf(`ACCOUNT_SUBROUTE_IDS.${id},`));
   assert.ok(indices.every((i) => i > -1), 'algum item do menu está ausente');
   for (let i = 1; i < indices.length; i += 1) {
     assert.ok(indices[i] > indices[i - 1], `ordem incorreta: ${order[i - 1]} deveria vir antes de ${order[i]}`);
   }
+  assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.NOTIFICATIONS/);
+  assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.PRIVACY/);
+});
+
+test('NOTIFICATIONS e PRIVACY não existem mais em ACCOUNT_SUBROUTE_IDS/ACCOUNT_SUBROUTES -- remoção total, não só do menu', async () => {
+  const routesSource = await source('./simplifiedAccountRoutes.js');
+  assert.doesNotMatch(routesSource, /NOTIFICATIONS:/);
+  assert.doesNotMatch(routesSource, /PRIVACY:/);
 });
 
 test('"Minhas contas" usa a contagem real de useAccounts -- nunca um número fixo', async () => {
@@ -194,9 +215,9 @@ test('"Pagamento e assinatura" nunca mostra um cartão inventado (ex.: "Visa fin
   assert.doesNotMatch(page, /Visa final|final 1234|Mastercard final/i);
 });
 
-test('"Sobre o UniFlow AI" mostra uma versão real declarada explicitamente, não um placeholder solto', async () => {
+test('"Sobre a UniFlow AI" mostra uma versão real declarada explicitamente (fonte única appIdentity.js), não um placeholder solto', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /const APP_VERSION = '[\d.]+';/);
+  assert.match(page, /import \{ APP_VERSION \} from '\.\/appIdentity\.js';/);
   assert.match(page, /Versão \$\{APP_VERSION\}/);
 });
 

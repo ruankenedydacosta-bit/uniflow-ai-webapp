@@ -1,0 +1,416 @@
+.page {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    40px
+    max(18px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  color: #f8fafc;
+}
+
+/* ---------- Cabeçalho ---------- */
+
+.header {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.titleGroup {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 50%;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.backButton:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.titleGroup h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(20px, 5.6vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 30px 20px 26px;
+  text-align: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(124, 58, 237, .16), transparent 60%),
+    linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.heroMark {
+  display: inline-flex;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 0 18px rgba(124, 58, 237, .45));
+}
+
+.heroMark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.heroName {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.heroVersion {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, .16);
+  color: #a78bfa;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.heroTagline {
+  max-width: 34ch;
+  margin: 6px 0 0;
+  color: #a8b2c5;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ---------- Cards genéricos (identidade já aprovada) ---------- */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.card h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.card p {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.cardHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardHeaderIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  color: #a78bfa;
+}
+
+.cardHeaderIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.specialCard {
+  border-color: rgba(124, 58, 237, .4);
+  background:
+    linear-gradient(145deg, rgba(124, 58, 237, .1), rgba(4, 13, 33, .94));
+}
+
+/* ---------- Seções em grid (o que a Uni faz / princípios) ---------- */
+
+.sectionTitle {
+  margin: 0 0 14px;
+  color: #f8fafc;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.capabilityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.capabilityCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  font-size: 13.5px;
+  font-weight: 620;
+  line-height: 1.3;
+}
+
+.capabilityIcon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.capabilityIcon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.3;
+}
+
+.toneblue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
+.tonegreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+.tonepurple { background: rgba(124, 58, 237, .18); color: #a78bfa; }
+.tonered { background: rgba(239, 68, 68, .18); color: #ff6b6b; }
+
+.principleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.principleCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.principleCard strong {
+  font-size: 14.5px;
+}
+
+.principleCard p {
+  margin: 0;
+  color: #a8b2c5;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.principleIcon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.principleIcon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Futuro ---------- */
+
+.futureList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.futureList li {
+  position: relative;
+  padding-left: 20px;
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.futureList li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+}
+
+.futureNote {
+  margin-top: 4px;
+  color: #a78bfa;
+  font-weight: 650;
+  font-style: italic;
+}
+
+/* ---------- Agradecimento ---------- */
+
+.thanksCard {
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  border-color: rgba(45, 212, 191, .4);
+  background: linear-gradient(145deg, rgba(16, 185, 129, .1), rgba(4, 13, 33, .94));
+}
+
+.thanksIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(45, 212, 191, .18);
+  color: #2dd4bf;
+}
+
+.thanksIcon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.thanksCard p {
+  max-width: 44ch;
+  color: #e2e8f5;
+}
+
+/* ---------- Rodapé ---------- */
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 14px;
+  color: #7c8aa8;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.footerMark {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 4px;
+  opacity: .85;
+}
+
+.footerMark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.footer strong {
+  color: #cbd5e1;
+  font-size: 13.5px;
+}
+
+/* ---------- Microanimações (scroll reveal) ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px) scale(.98);
+  transition: opacity .6s ease, transform .6s ease;
+}
+
+.revealVisible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 420px) {
+  .capabilityGrid,
+  .principleGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding-inline: 42px;
+  }
+}

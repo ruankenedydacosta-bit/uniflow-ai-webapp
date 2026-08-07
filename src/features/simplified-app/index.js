@@ -20,6 +20,8 @@ export { default as SimplifiedEditProfilePage } from './SimplifiedEditProfilePag
 export { default as SimplifiedSecurityPage } from './SimplifiedSecurityPage.jsx';
 export { default as SimplifiedPlanPage } from './SimplifiedPlanPage.jsx';
 export { default as SimplifiedPaymentsPage } from './SimplifiedPaymentsPage.jsx';
+export { default as SimplifiedPaymentHistoryPage } from './SimplifiedPaymentHistoryPage.jsx';
+export { default as SimplifiedAboutPage } from './SimplifiedAboutPage.jsx';
 export { default as SimplifiedMyAccountsPage } from './SimplifiedMyAccountsPage.jsx';
 export { default as SimplifiedSupportPage } from './SimplifiedSupportPage.jsx';
 export { default as SimplifiedVoicePage } from './SimplifiedVoicePage.jsx';

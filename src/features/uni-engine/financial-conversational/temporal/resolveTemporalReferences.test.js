@@ -98,3 +98,46 @@ test('temporal: buildTemporalContext enriquece com snapshot', () => {
   assert.equal(context.periodKey, '2026-08');
   assert.equal(context.isCurrentPeriod, true);
 });
+// ============================================================================
+// Sprint 3 — correção do bug de fuso horário na ORIGEM (mesma causa raiz de
+// resolveRuntimeTemporal.js/Fase 17: `new Date(referenceDate)` + getters
+// LOCAIS deslocava o resultado em 1 dia em fusos de offset negativo, ex.
+// America/Sao_Paulo -- o fuso real deste ambiente de testes).
+// ============================================================================
+
+test('Sprint 3 (fuso horário): "este mês"/"mês passado" com referenceDate no primeiro dia do mês', () => {
+  const thisMonth = resolveTemporalReferences('este mês', '2026-08-01');
+  assert.equal(thisMonth.resolved.start, '2026-08-01');
+  assert.equal(thisMonth.resolved.end, '2026-08-31');
+  const lastMonth = resolveTemporalReferences('mês passado', '2026-08-01');
+  assert.equal(lastMonth.resolved.start, '2026-07-01');
+  assert.equal(lastMonth.resolved.end, '2026-07-31');
+});
+
+test('Sprint 3 (fuso horário): virada de ano -- "mês passado" e "últimos 3 meses" a partir de 1º de janeiro', () => {
+  const lastMonth = resolveTemporalReferences('mês passado', '2026-01-01');
+  assert.equal(lastMonth.resolved.start, '2025-12-01');
+  assert.equal(lastMonth.resolved.end, '2025-12-31');
+  const last3Months = resolveTemporalReferences('últimos 3 meses', '2026-01-01');
+  assert.equal(last3Months.resolved.start, '2025-11-01');
+  assert.equal(last3Months.resolved.end, '2026-01-31');
+});
+
+test('Sprint 3 (fuso horário): "últimos N dias" nunca deslocam 1 dia perto de virada de mês', () => {
+  const result = resolveTemporalReferences('7 dias atrás', '2026-08-01');
+  assert.equal(result.resolved.start, '2026-07-26');
+  assert.equal(result.resolved.end, '2026-08-01');
+});
+
+test('Sprint 3 (fuso horário): "este ano" (year_to_date) com referenceDate em 1º de janeiro', () => {
+  const result = resolveTemporalReferences('este ano', '2026-01-01');
+  assert.equal(result.resolved.start, '2026-01-01');
+  assert.equal(result.resolved.end, '2026-01-01');
+});
+
+test('Sprint 3 (fuso horário): mês nomeado sem ano, próximo à virada de ano', () => {
+  // Em dezembro de 2026, "janeiro" (mês futuro) deve resolver para o ano
+  // ANTERIOR ao ano de referência (já passou, é o mais recente janeiro).
+  const result = resolveTemporalReferences('janeiro', '2026-12-15');
+  assert.equal(result.resolved.year, 2026);
+});

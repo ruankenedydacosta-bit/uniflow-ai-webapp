@@ -1,8 +1,13 @@
 export { useUniConversation } from './useUniConversation.js';
+export { createConversationalMemory } from './conversationalMemory.js';
 export {
   classifyPendingActionReply,
   resolvePendingActionInput,
 } from './pendingActionInput.js';
+export {
+  classifyPendingActionRelation,
+  PENDING_ACTION_RELATIONS,
+} from './classifyPendingActionRelation.js';
 export {
   clearPendingActionStack,
   clearPendingAction,

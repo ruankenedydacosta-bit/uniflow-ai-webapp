@@ -21,9 +21,13 @@ test('UNI_MODE tem exatamente FINANCIAL, SUPPORT, CATEGORY_INFERENCE (BLOCO D) e
 });
 
 test('modo desconhecido/ausente sempre cai em FINANCIAL (compatibilidade com OPENAI1/OPENAI2)', () => {
+  // Nota: esta asserção já estava desatualizada antes da Sprint 3 (não
+  // acompanhava PHRASE_FACT, adicionado na Sprint 1) -- corrigida aqui de
+  // passagem para cobrir a cadeia real completa, incluindo FINANCIAL_INTENT
+  // (Sprint 3).
   assert.match(
     EDGE_SOURCE,
-    /const mode = payload\.mode === UNI_MODE\.SUPPORT\s*\n\s*\? UNI_MODE\.SUPPORT\s*\n\s*: payload\.mode === UNI_MODE\.CATEGORY_INFERENCE\s*\n\s*\? UNI_MODE\.CATEGORY_INFERENCE\s*\n\s*: payload\.mode === UNI_MODE\.FINANCIAL_PLAN\s*\n\s*\? UNI_MODE\.FINANCIAL_PLAN\s*\n\s*: UNI_MODE\.FINANCIAL;/,
+    /const mode = payload\.mode === UNI_MODE\.SUPPORT\s*\n\s*\? UNI_MODE\.SUPPORT\s*\n\s*: payload\.mode === UNI_MODE\.CATEGORY_INFERENCE\s*\n\s*\? UNI_MODE\.CATEGORY_INFERENCE\s*\n\s*: payload\.mode === UNI_MODE\.FINANCIAL_PLAN\s*\n\s*\? UNI_MODE\.FINANCIAL_PLAN\s*\n\s*: payload\.mode === UNI_MODE\.PHRASE_FACT\s*\n\s*\? UNI_MODE\.PHRASE_FACT\s*\n\s*: payload\.mode === UNI_MODE\.FINANCIAL_INTENT\s*\n\s*\? UNI_MODE\.FINANCIAL_INTENT\s*\n\s*: payload\.mode === UNI_MODE\.FINANCIAL_RESPONSE_COMPOSE\s*\n\s*\? UNI_MODE\.FINANCIAL_RESPONSE_COMPOSE\s*\n\s*: UNI_MODE\.FINANCIAL;/,
   );
 });
 
@@ -102,4 +106,16 @@ test('CORS e autenticacao (ELEVEN/OPENAI1/2) preservados -- nenhuma rota nova se
   assert.match(EDGE_SOURCE, /authorization\.startsWith\('Bearer '\)/);
   assert.match(EDGE_SOURCE, /getAuthenticatedUserId\(authorization, supabaseUrl, anonKey\)/);
   assert.match(EDGE_SOURCE, /'Access-Control-Allow-Origin': '\*'/);
+});
+
+// ── Fase 1 (correção de formatação monetária, Bloco 4.4) ────────────────
+
+test('FINANCIAL_RESPONSE_COMPOSE_INSTRUCTIONS exige formato brasileiro completo (R$ com milhar/decimal) em todo valor monetário', () => {
+  const start = EDGE_SOURCE.indexOf('const FINANCIAL_RESPONSE_COMPOSE_INSTRUCTIONS =');
+  assert.ok(start > -1, 'FINANCIAL_RESPONSE_COMPOSE_INSTRUCTIONS deve existir');
+  const end = EDGE_SOURCE.indexOf('`;', start);
+  const promptSlice = EDGE_SOURCE.slice(start, end);
+  assert.match(promptSlice, /Todo valor monetario deve SEMPRE aparecer no formato brasileiro completo/);
+  assert.match(promptSlice, /R\$ 13\.045,90/);
+  assert.match(promptSlice, /Nunca escreva um valor monetario como numero solto/);
 });

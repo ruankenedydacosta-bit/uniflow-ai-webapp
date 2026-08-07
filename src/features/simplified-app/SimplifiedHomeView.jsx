@@ -6,11 +6,20 @@ import { VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import { UniMark } from './SimplifiedIcons.jsx';
 import {
   isVoiceErrorState,
+  resolveBargeInPlan,
   resolveSimplifiedUniState,
   SIMPLIFIED_UNI_STATES,
 } from './simplifiedHomeState.js';
 import { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
-import { buildWelcomeSessionKey, claimWelcomeVoice } from './welcomeVoiceSession.js';
+import { useUniProcessingMessage } from '../uni-chat/useUniProcessingMessage.js';
+import { useTextAudioSync } from '../uni-chat/useTextAudioSync.js';
+import {
+  buildWelcomeSessionKey,
+  claimWelcomeVoice,
+  clearWelcomeVoiceBlocked,
+  getWelcomeVoiceBlocked,
+  markWelcomeVoiceBlocked,
+} from './welcomeVoiceSession.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
 
@@ -23,7 +32,11 @@ const STATE_COPY = Object.freeze({
     description: 'Pressione e segure o botão para falar.',
   }),
   [SIMPLIFIED_UNI_STATES.LISTENING]: Object.freeze({
-    button: 'SOLTE PARA ENVIAR',
+    // HOTFIX FINAL: texto obrigatório durante captura ativa (ver
+    // resolveSimplifiedUniState/isCapturingVoice) -- precisa aparecer no
+    // MESMO gesto que inicia a gravação, inclusive por cima de qualquer
+    // texto anterior como "CONFIRME A AÇÃO".
+    button: 'OUVINDO…',
     title: 'A Uni está ouvindo você.',
     description: 'Solte o botão para encerrar e enviar.',
   }),
@@ -106,6 +119,19 @@ function LightWave() {
   );
 }
 
+// FASE ESTADOS DE PROCESSAMENTO: estados que mostram a mensagem de
+// processamento rotativa NO LUGAR da última resposta (em vez da resposta
+// do turno anterior, que ficaria "presa" na tela enquanto um novo turno já
+// está em andamento). waiting_confirmation fica de fora -- o próprio card
+// de confirmação já comunica "aguardando você"; speaking/success/error/idle
+// já têm sua própria UI (texto final, já revelado ou já visível).
+const PROCESSING_DISPLAY_STATES = new Set([
+  SIMPLIFIED_UNI_STATES.LISTENING,
+  SIMPLIFIED_UNI_STATES.TRANSCRIBING,
+  SIMPLIFIED_UNI_STATES.INTERPRETING,
+  SIMPLIFIED_UNI_STATES.EXECUTING,
+]);
+
 function CompactResponse({
   messages,
   isExecuting,
@@ -113,36 +139,192 @@ function CompactResponse({
   onConfirmAction,
   onEditAction,
   onCancelAction,
-  voiceEnabled,
-  onSpeakMessage,
+  interactionState,
+  voiceStatus,
+  voiceCaptureStatus,
+  voiceMessageId,
+  turnStartToken,
+  interpretingOperationHint,
 }) {
   const lastUser = [...messages].reverse().find((message) => message.from === 'user');
   const lastUni = [...messages].reverse().find((message) => message.from === 'uni');
+  const pendingConfirmationMessage = [...messages].reverse()
+    .find((message) => message.confirmation?.status === 'pending') ?? null;
+
+  // HOTFIX P0 (2ª investigação) -- CAUSA RAIZ REAL: antes, `activeMessage`
+  // apontava para `lastUni` INCONDICIONALMENTE, então TODA montagem (ex.:
+  // reload da Home) via `useTextAudioSync` nascer em fase 'pending' para a
+  // ÚLTIMA resposta JÁ CONCLUÍDA e persistida -- tratando-a como se
+  // estivesse prestes a tocar (mostrando "Entendendo seu pedido..." e,
+  // depois, revelando-a do zero). `voiceMessageId` é a MESMA fonte de
+  // verdade que o chat completo já usa (UniChatPage.jsx, setVoiceMessageId
+  // em handleSpeakMessage) para saber qual mensagem a voz está REALMENTE
+  // visando -- nasce null a cada mount e só é setado no instante exato de
+  // um speak() real (autoplay de uma resposta nova OU clique manual em
+  // "Ouvir resposta"), nunca por hidratação/reload. Ao gatear
+  // `activeMessage` por essa identidade (em vez de "a última mensagem
+  // qualquer"), uma resposta concluída e persistida nunca mais é tratada
+  // como candidata a reveal/processing só por existir -- ela só entra
+  // nesse fluxo quando ALGUÉM (autoplay do turno vivo ou o próprio
+  // usuário) pede explicitamente para ouvi-la.
+  const isVoiceTargetingLastUni = Boolean(voiceMessageId) && lastUni?.id === voiceMessageId;
+  const textAudioSync = useTextAudioSync({
+    activeMessage: isVoiceTargetingLastUni ? { id: lastUni.id, text: lastUni.text } : null,
+    ttsStatus: voiceStatus,
+  });
+
+  // HOTFIX P0.1 (identidade de turno -- resposta antiga reaparecendo):
+  // `turnStartToken` muda toda vez que um NOVO turno de verdade começa
+  // (ver beginVoiceCapture em SimplifiedHomeView). Ao mudar, guarda qual
+  // era o ÚLTIMO id de mensagem da Uni NESSE instante (baseline) -- até
+  // que um id REALMENTE NOVO apareça em `lastUni`, o turno é considerado
+  // "aguardando resposta nova" independente de qualquer nuance de
+  // interactionState/voiceInput.status (não depende de enumerar estados
+  // "de processamento" -- é uma comparação de IDENTIDADE, robusta a
+  // qualquer race entre captura, TTS e publicação). Ajustado durante a
+  // renderização (nunca em efeito), mesmo padrão de reset-por-key já
+  // usado no projeto.
+  const currentLastUniId = lastUni?.id ?? null;
+  const [turnState, setTurnState] = useState(() => ({
+    token: turnStartToken,
+    baselineUniId: currentLastUniId,
+    awaitingFreshResponse: false,
+  }));
+  // Rede de segurança (evita P0.4 -- fluxo travado): se a captura for
+  // cancelada/falhar sem NUNCA produzir uma mensagem nova (ex.: usuário
+  // solta fora do botão sem falar, cancela explicitamente, ou permissão
+  // negada), o turno precisa de uma saída sem que `currentLastUniId` jamais
+  // mude -- senão `awaitingFreshResponse` ficaria travado em true para
+  // sempre, escondendo a última resposta real indefinidamente.
+  //
+  // HOTFIX FINAL (causa raiz real da "resposta fantasma" intermitente,
+  // confirmada por rastreamento do pipeline em UniChatPage.jsx): `interactionState
+  // === IDLE` sozinho é uma FALSA saída. `sendText` zera `isTyping` (via
+  // setTimeout, UNI_THINK_MIN_MS) ANTES de o pipeline de resposta
+  // (determinístico -> semântico/LLM -> handleUnresolvedMessage) sequer
+  // começar a trabalhar de verdade -- `handleUnresolvedMessage` só volta a
+  // marcar `isTyping=true` bem mais tarde, já dentro do await da chamada ao
+  // LLM. Nesse intervalo (que pode durar segundos, com round-trip de LLM),
+  // se o reset automático de `voiceInput` (1600ms após COMPLETED, ver
+  // efeito abaixo) já tiver zerado `voiceInput.status` para IDLE,
+  // `resolveSimplifiedUniState` cai no `return IDLE` final -- mesmo com o
+  // pipeline de resposta genuinamente ainda em andamento. Essa era
+  // exatamente a janela em que a resposta ANTERIOR reaparecia: "Entendendo
+  // seu pedido..." -> IDLE espúrio (abandona o turno por engano) ->
+  // `lastUni` antigo reaparece -> `handleUnresolvedMessage` marca
+  // isTyping=true de novo -> "Entendendo seu pedido..." reaparece -> só
+  // então a resposta nova chega. `interactionState === ERROR` já cobre
+  // TODO abandono real por falha (permissão negada/sem fala/não suportado
+  // -- ver isVoiceErrorState, todos mapeados para ERROR, nunca IDLE); o
+  // único abandono real que caía em IDLE é cancelamento explícito da
+  // captura (`voiceInput.cancel()`), coberto agora por
+  // `voiceCaptureStatus === CANCELED` diretamente -- identidade real do
+  // estado de captura, não inferência por enumeração de um estado agregado
+  // que também é o valor de repouso "nada está acontecendo".
+  const isTurnAbandoned = (
+    interactionState === SIMPLIFIED_UNI_STATES.ERROR
+    || voiceCaptureStatus === VOICE_CAPTURE_STATES.CANCELED
+  );
+  if (turnStartToken !== turnState.token) {
+    setTurnState({ token: turnStartToken, baselineUniId: currentLastUniId, awaitingFreshResponse: true });
+  } else if (turnState.awaitingFreshResponse
+    && (currentLastUniId !== turnState.baselineUniId || isTurnAbandoned)) {
+    setTurnState((prev) => ({ ...prev, awaitingFreshResponse: false }));
+  }
+  const isTurnAwaitingFreshResponse = turnState.awaitingFreshResponse;
+
+  // HOTFIX (bug 2 -- resposta nova aparecia completa e "voltava" para
+  // parcial): enquanto a mensagem ativa de voz ainda está em fase
+  // 'pending' (publicada, mas o áudio real ainda não começou a tocar),
+  // nunca mostra o texto -- nem o antigo, nem uma prévia do novo.
+  const isVoicePendingPlayback = Boolean(
+    lastUni
+    && textAudioSync.activeMessageId === lastUni.id
+    && textAudioSync.phase === 'pending',
+  );
+  // HOTFIX P1.1: nunca expõe o detalhe técnico "preparando o áudio" --
+  // enquanto o áudio ainda não começou a tocar de verdade, continua
+  // mostrando um estado natural já existente do produto (a mesma família
+  // de mensagens do "interpreting"), nunca um estágio novo.
+  const processingState = isVoicePendingPlayback ? 'interpreting' : interactionState;
+
+  // Hooks SEMPRE chamados, nunca depois de um return condicional (ver
+  // early return "sem lastUser/lastUni" logo abaixo) -- usam valores de
+  // fallback seguros quando ainda não há nada para processar/revelar.
+  const processingMessage = useUniProcessingMessage(processingState, {
+    actionKind: pendingConfirmationMessage?.confirmation?.actionKind ?? null,
+    operationHint: processingState === 'interpreting' ? interpretingOperationHint : null,
+  });
 
   if (!lastUser && !lastUni) return null;
 
-  // O texto permanece disponível mesmo quando autoplay/provedor falha.
-  // A ação manual é sempre oferecida e não participa da deduplicação do
-  // autoplay: o usuário pode solicitar uma nova tentativa conscientemente.
-  const showManualSpeak = Boolean(
-    voiceEnabled
-    && lastUni?.text
-    && typeof onSpeakMessage === 'function',
+  // HOTFIX P0 (2ª investigação): `isAwaitingNewResponse` (baseado em "a
+  // última mensagem do array é do usuário") foi REMOVIDO -- além de já
+  // redundante frente a `isTurnAwaitingFreshResponse` (que cobre o MESMO
+  // intervalo com identidade de turno real, nunca apenas inferindo pelo
+  // remetente da última mensagem), ele era PERIGOSO no reload: se a
+  // conversa persistida terminar com uma mensagem do usuário sem resposta
+  // (ex.: aba fechada no meio de um turno), essa condição ficava
+  // permanentemente true numa montagem nova (nada nunca faria isTyping
+  // virar true de novo), prendendo o indicador de processamento para
+  // sempre. `isTurnAwaitingFreshResponse` nasce SEMPRE false no mount.
+  //
+  // HOTFIX P0 (4ª investigação) -- CAUSA RAIZ REAL do "resposta antiga
+  // reaparece no meio do turno": `showProcessingIndicator` exigia
+  // `processingMessage` truthy, mas `processingMessage` deriva de
+  // `interactionState`, que passa por sub-estados SEM mensagem própria no
+  // meio de um turno real -- ex.: `resolveSimplifiedUniState` devolve
+  // 'success' assim que `voiceInput.status` vira COMPLETED, um instante
+  // ANTES de `isTyping` virar true (sendText/setIsTyping roda depois, no
+  // callback onFinalTranscript). Nesse render intermediário,
+  // `isTurnAwaitingFreshResponse` já está corretamente true (nenhuma
+  // resposta nova chegou ainda) mas `getProcessingMessageSequence('success')`
+  // devolve [] -- `processingMessage` vira null, `showProcessingIndicator`
+  // vira false, e o código caía no fallback `lastUni?.text`, reexibindo a
+  // resposta do turno ANTERIOR por um instante. A identidade de turno
+  // (`isTurnAwaitingFreshResponse`) já era a fonte de verdade correta; o bug
+  // era deixar a DECISÃO de esconder `lastUni` também depender de existir
+  // um texto de processamento bonito para o sub-estado exato. Agora a
+  // decisão é só: turno aguardando resposta fresca -> NUNCA mostra
+  // `lastUni`, mesmo sem um label específico (usa o fallback genérico
+  // abaixo, nunca deixa a tela em branco nem volta ao texto antigo).
+  const showProcessingIndicator = Boolean(
+    isTurnAwaitingFreshResponse
+    || isVoicePendingPlayback
+    || (processingMessage && PROCESSING_DISPLAY_STATES.has(interactionState)),
   );
+  // Fallback honesto para sub-estados de turno ativo sem mensagem própria
+  // (ex.: a janela 'success' descrita acima) -- nunca inventa uma operação
+  // específica, reaproveita a mesma frase genérica já usada por
+  // "interpreting" sem hint reconhecido.
+  const displayedProcessingMessage = processingMessage ?? 'Entendendo seu pedido…';
+  // HOTFIX (abandono da revelação progressiva): a resposta nunca aparece
+  // parcialmente -- ou está oculta (pending, cai no indicador de
+  // processamento acima) ou está 100% visível de uma vez, junto com a voz.
+  const uniDisplayText = lastUni && textAudioSync.activeMessageId === lastUni.id
+    ? textAudioSync.displayText
+    : lastUni?.text;
 
   return (
     <section className={styles.compactResponse} aria-label="Resposta da Uni" aria-live="polite">
       {lastUser?.text ? (
         <p className={styles.transcript}><span>Você</span>{lastUser.text}</p>
       ) : null}
-      {lastUni?.text ? (
-        <p className={styles.uniResponse}><span>Uni</span>{lastUni.text}</p>
+      {showProcessingIndicator ? (
+        <p className={styles.uniProcessing} role="status">
+          <span className={styles.uniProcessingDot} aria-hidden="true" />
+          {displayedProcessingMessage}
+        </p>
+      ) : lastUni?.text ? (
+        <p className={styles.uniResponse}>
+          <span>Uni</span>
+          {uniDisplayText}
+        </p>
       ) : null}
-      {showManualSpeak ? (
-        <button type="button" className={styles.manualSpeak} onClick={() => onSpeakMessage(lastUni)}>
-          Ouvir resposta
-        </button>
-      ) : null}
+      {/* HOTFIX P1.4: "Ouvir resposta" removido do card compacto da Home --
+          o fluxo principal aqui é sempre automático (autoplay). O botão
+          continua existindo no chat completo (MessageBubble.jsx), que
+          preserva a experiência de replay manual já aprovada. */}
       {lastUni?.confirmation?.status === 'pending' ? (
         <ActionConfirmation
           data={lastUni.confirmation}
@@ -151,6 +333,7 @@ function CompactResponse({
           onCancel={() => onCancelAction(lastUni.id)}
           isExecuting={isExecuting}
           executionError={executionError}
+          processingLabel={processingMessage ?? undefined}
         />
       ) : null}
       <Link className={styles.detailsLink} to={SIMPLIFIED_ROUTES.UNI}>Ver conversa completa</Link>
@@ -169,11 +352,12 @@ function SimplifiedHomeView({
   aiStatus,
   voiceEnabled,
   voiceController,
+  voiceMessageId,
+  interpretingOperationHint,
   onSendTranscript,
   onBeforeVoiceStart,
   onConfirmAction,
   onCancelAction,
-  onSpeakMessage,
   onWelcomeVoiceSettled,
 }) {
   const navigate = useNavigate();
@@ -182,8 +366,21 @@ function SimplifiedHomeView({
     () => resolveSimplifiedGreeting(profile, user),
     [profile, user],
   );
-  const [welcomeVoiceError, setWelcomeVoiceError] = useState(null);
   const sessionKey = buildWelcomeSessionKey(user, session);
+  // BUGFIX iOS: nasce já lendo o erro persistido em welcomeVoiceSession.js
+  // (não um useState local zerado) -- assim o botão "Ouvir saudação"
+  // reaparece mesmo que a Home tenha sido desmontada (navegação Home ->
+  // outra rota -> Home) desde a última tentativa bloqueada pelo Safari.
+  const [welcomeVoiceError, setWelcomeVoiceError] = useState(() => getWelcomeVoiceBlocked(sessionKey));
+  // BUGFIX iOS: sessionKey pode passar de null -> valor real (hidratação de
+  // sessão) depois da montagem -- ajusta durante a renderização (não em
+  // efeito) seguindo o padrão oficial do React para resetar estado quando
+  // uma "key" muda: https://react.dev/learn/you-might-not-need-an-effect
+  const [prevSessionKey, setPrevSessionKey] = useState(sessionKey);
+  if (sessionKey !== prevSessionKey) {
+    setPrevSessionKey(sessionKey);
+    setWelcomeVoiceError(getWelcomeVoiceBlocked(sessionKey));
+  }
 
   const requestWelcomeVoice = useCallback(
     () => voiceController.speak(greeting.spokenGreeting, {
@@ -193,9 +390,15 @@ function SimplifiedHomeView({
     [greeting.spokenGreeting, voiceController],
   );
   const applyWelcomeVoiceResult = useCallback((result) => {
-    setWelcomeVoiceError(result?.error ?? null);
+    const error = result?.error ?? null;
+    setWelcomeVoiceError(error);
+    if (error) {
+      markWelcomeVoiceBlocked(sessionKey, error);
+    } else {
+      clearWelcomeVoiceBlocked(sessionKey);
+    }
     return result;
-  }, []);
+  }, [sessionKey]);
   const speakWelcome = useCallback(
     () => requestWelcomeVoice().then(applyWelcomeVoiceResult),
     [applyWelcomeVoiceResult, requestWelcomeVoice],
@@ -248,9 +451,8 @@ function SimplifiedHomeView({
     (message) => message.confirmation?.status === 'pending',
   );
   // BLOCO UNI 2: reflete a SAÍDA de voz (TTS), nunca a captura -- usado
-  // para mostrar o estado "falando" e para impedir que um toque no botão
-  // inicie uma gravação nova enquanto a Uni ainda está respondendo (só
-  // interrompe a fala nesse caso, ver beginVoiceCapture).
+  // para mostrar o estado "falando" e, em beginVoiceCapture, para decidir
+  // se o gesto precisa primeiro interromper (barge-in) antes de gravar.
   const isSpeaking = SPEAKING_VOICE_STATUSES.has(voiceController.status);
   const interactionState = resolveSimplifiedUniState({
     voiceStatus: voiceInput.status,
@@ -285,19 +487,51 @@ function SimplifiedHomeView({
   // navigate aqui). Um único gesto rastreado por vez (pressedGestureRef)
   // evita disparo duplo entre pointerdown/keydown concorrentes.
   const pressedGestureRef = useRef(null);
+  // HOTFIX P0.1: token monotônico que identifica um NOVO turno de voz --
+  // incrementado só quando uma captura de verdade começa (plan.proceed &&
+  // plan.startCapture), nunca num gesto rejeitado. CompactResponse usa a
+  // MUDANÇA deste valor para saber com certeza que uma resposta antiga não
+  // pode mais representar o turno atual, até que uma mensagem da Uni
+  // REALMENTE NOVA (id diferente) apareça.
+  const [turnStartToken, setTurnStartToken] = useState(0);
 
   function beginVoiceCapture() {
-    if (isInteractionBusy) return false;
-    // BLOCO UNI 2: pressionar enquanto a Uni fala INTERROMPE a fala (dá ao
-    // usuário uma forma real de cortar uma resposta) mas NUNCA inicia a
-    // gravação no mesmo gesto -- evita capturar o instante do "corte" como
-    // parte do áudio e mantém a regra de nunca gravar por cima da fala.
-    if (isSpeaking) {
-      voiceController.stop();
-      return false;
+    // HOTFIX (barge-in): pressionar enquanto a Uni fala INTERROMPE a fala
+    // E inicia a captura no MESMO gesto -- nunca exige soltar e apertar de
+    // novo. voiceController.stop() é síncrono e já limpa o <audio>/
+    // AbortController ANTES de retornar (onplay/onended/onerror são
+    // desligados antes do pause() -- ver elevenLabsTtsProvider.stop()/
+    // releaseAudio()), então nenhum callback tardio da fala interrompida
+    // pode chegar depois e mexer no estado da gravação que começa a seguir.
+    const plan = resolveBargeInPlan({
+      isInteractionBusy,
+      isSpeaking,
+      isVoiceError: isVoiceErrorState(voiceInput.status),
+    });
+    if (!plan.proceed) return false;
+    if (plan.interruptSpeech) voiceController.stop();
+    if (plan.resetError) voiceInput.reset();
+    if (plan.startCapture) {
+      // HOTFIX P0 (3ª investigação): `onBeforeVoiceStart` (que zera
+      // voiceMessageId em UniChatPage.jsx) antes só era disparado
+      // INDIRETAMENTE via voiceInput.registerHandlers({onBeforeStart}),
+      // chamado de DENTRO de voiceInput.start() -- mas start() tem
+      // early-returns próprios (adapterRef.current/isVoiceCaptureActive/
+      // !workspaceId/!adapter.supported) que podem pular esse callback
+      // ANTES de chegar nele. Nesses casos, turnStartToken já tinha
+      // incrementado (abaixo) mas voiceMessageId continuava apontando
+      // para a mensagem antiga -- textAudioSync mantinha a resposta
+      // anterior como "ativa" e um STOPPED chegando logo em seguida
+      // (do voiceController.stop() acima) a revelava por completo,
+      // fazendo-a reaparecer. Chamar aqui, DIRETO e incondicional, tira
+      // essa garantia crítica de dentro de um fluxo com early-returns.
+      // Idempotente (stop()/setVoiceMessageId(null) num estado já
+      // limpo são no-ops) -- seguro mesmo chamado de novo por dentro de
+      // voiceInput.start() quando ele prossegue normalmente.
+      onBeforeVoiceStart?.();
+      setTurnStartToken((token) => token + 1);
+      void voiceInput.start();
     }
-    if (isVoiceErrorState(voiceInput.status)) voiceInput.reset();
-    void voiceInput.start();
     return true;
   }
 
@@ -410,8 +644,12 @@ function SimplifiedHomeView({
         onConfirmAction={onConfirmAction}
         onEditAction={() => navigate(SIMPLIFIED_ROUTES.UNI)}
         onCancelAction={onCancelAction}
-        voiceEnabled={voiceEnabled}
-        onSpeakMessage={onSpeakMessage}
+        interactionState={interactionState}
+        voiceStatus={voiceController.status}
+        voiceCaptureStatus={voiceInput.status}
+        voiceMessageId={voiceMessageId}
+        turnStartToken={turnStartToken}
+        interpretingOperationHint={interpretingOperationHint}
       />
       <LightWave />
 

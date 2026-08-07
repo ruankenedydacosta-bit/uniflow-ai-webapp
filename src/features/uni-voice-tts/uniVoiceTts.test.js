@@ -138,6 +138,44 @@ test('stop() revoga a Blob URL e libera o audio mesmo sem terminar sozinho', asy
   assert.equal(calls.revoked, 1);
 });
 
+// HOTFIX (barge-in) — Requisito 5: um callback nativo tardio ('ended'/
+// 'error') do <audio> INTERROMPIDO nunca pode chegar depois de stop() e
+// mexer no estado de uma captura de voz que já começou no mesmo gesto.
+// releaseAudio() desliga onplay/onended/onerror ANTES de pause() -- então
+// o evento nativo, mesmo que o navegador o dispare de forma assíncrona,
+// encontra handlers já nulos.
+test('Requisito 5 — callback tardio do áudio interrompido (onended) nunca dispara depois de stop(): o handler já foi desligado', async () => {
+  const { runtime, calls } = createFakeRuntime();
+  let liveInstance = null;
+  class ControllableAudio {
+    constructor() {
+      this.src = '';
+      liveInstance = this;
+    }
+    play() { calls.played += 1; this.onplay?.(); return Promise.resolve(); }
+    pause() { calls.paused += 1; }
+  }
+  runtime.Audio = ControllableAudio;
+  const provider = makeProvider({ runtime, fetchImpl: async () => jsonResponse(200, {}) });
+
+  let onEndedCalls = 0;
+  const playback = provider
+    .speak('Frase interrompida pelo barge-in', { onEnded: () => { onEndedCalls += 1; } })
+    .catch(() => {});
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  // Barge-in: o usuário pressionou o botão -- interrompe a fala.
+  provider.stop();
+  assert.equal(liveInstance.onended, null, 'onended precisa estar desligado imediatamente após stop()');
+
+  // Callback tardio simulado: o navegador dispara 'ended' depois do stop()
+  // (race real de áudio) -- precisa ser um no-op seguro, nunca lançar nem
+  // disparar onEnded de novo.
+  assert.doesNotThrow(() => liveInstance.onended?.());
+  await playback;
+  assert.equal(onEndedCalls, 0, 'onEnded (e portanto qualquer troca de estado dependente dele) nunca deve disparar depois de stop()');
+});
+
 // ----------------------------------------------------------------------------
 // Erros HTTP -- lidos do corpo {code,...} da Edge Function quando presente
 // ----------------------------------------------------------------------------

@@ -398,7 +398,17 @@
   place-items: center;
   border-radius: 50%;
   background: rgba(124, 58, 237, .18);
-  font-size: 24px;
+  color: #a78bfa;
+}
+
+.helpMascot svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
 }
 
 .helpText {

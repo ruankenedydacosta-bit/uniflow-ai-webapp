@@ -114,10 +114,6 @@ function SimplifiedSupportPage() {
             <p className={styles.subtitle}>A Uni está aqui para ajudar você.</p>
           </div>
         </div>
-        <button type="button" className={styles.talkButton} onClick={() => navigate(SIMPLIFIED_ROUTES.UNI)}>
-          <span className={styles.talkIcon} aria-hidden="true"><MicIcon /></span>
-          Falar com a Uni
-        </button>
       </header>
 
       <div className={styles.channelsGrid}>
@@ -127,7 +123,7 @@ function SimplifiedSupportPage() {
             <span className={styles.channelBubble} aria-hidden="true"><ChatBubbleIcon /></span>
           </div>
           <strong>Conversar com a Uni</strong>
-          <p>A Uni resolve a maioria dos problemas em poucos segundos.</p>
+          <p>A Uni pode ajudar você a entender como utilizar o aplicativo e encontrar rapidamente as funcionalidades.</p>
           <Button
             type="button"
             variant="secondary"

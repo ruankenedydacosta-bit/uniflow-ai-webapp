@@ -20,6 +20,15 @@
 
 import { isSupabaseConfigured, supabase, supabaseAnonKey, supabaseUrl } from './supabaseClient.js';
 
+// BLOCO FINAL DO MVP (Histórico de pagamentos): `billing_payments` é
+// escrita 100% pelo backend (billing-webhook, service role) -- a leitura do
+// cliente é uma consulta direta protegida por RLS
+// (billing_payments_select_active_member, migration 024), o mesmo padrão já
+// usado por outras leituras deste projeto (workspaceService.js,
+// transactionService.js). Nunca consulta a Asaas diretamente.
+const PAYMENT_FIELDS =
+  'id, asaas_payment_id, asaas_subscription_id, status, billing_type, value, due_date, paid_at, invoice_url, created_at';
+
 export function createBillingService({
   supabase: supabaseClient,
   supabaseUrl: baseUrl,
@@ -117,6 +126,31 @@ export function createBillingService({
     syncSubscription({ workspaceId } = {}) {
       return invokeBillingFunction('billing-sync', { workspace_id: workspaceId });
     },
+    // BLOCO FINAL DO MVP (Histórico de pagamentos): lista real de
+    // `billing_payments` do workspace, mais recente primeiro. RLS
+    // (`is_workspace_member`) já isola por workspace -- o `.eq` abaixo é
+    // defesa em profundidade, mesmo padrão de outras leituras do projeto.
+    async listPayments({ workspaceId, limit = 50 } = {}) {
+      if (!supabaseClient) {
+        return { data: null, error: { code: 'SUPABASE_NOT_CONFIGURED', message: 'billing_unavailable' } };
+      }
+      if (!workspaceId) {
+        return { data: [], error: null };
+      }
+
+      const { data, error } = await supabaseClient
+        .from('billing_payments')
+        .select(PAYMENT_FIELDS)
+        .eq('workspace_id', workspaceId)
+        .order('due_date', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        return { data: null, error: { code: 'PAYMENTS_QUERY_FAILED', message: 'billing_payments_unavailable' } };
+      }
+      return { data: data ?? [], error: null };
+    },
     // BILLING2: metodo novo (nao previsto no contrato original do Bloco 1),
     // adicionado por ser compativel com a arquitetura -- ver Parte 11 da
     // tarefa ("healthCheck(), se compatível com a arquitetura").
@@ -142,4 +176,5 @@ export const createCheckout = defaultBillingService.createCheckout;
 export const cancelSubscription = defaultBillingService.cancelSubscription;
 export const getSubscription = defaultBillingService.getSubscription;
 export const syncSubscription = defaultBillingService.syncSubscription;
+export const listPayments = defaultBillingService.listPayments;
 export const healthCheck = defaultBillingService.healthCheck;

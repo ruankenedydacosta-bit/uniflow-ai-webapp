@@ -32,6 +32,28 @@ const CANCELLATION_PATTERNS = [
   /^n[ãa]o,?\s*cancela(?:r)?[.!]?$/,
 ];
 
+// HOTFIX FINAL P2: marcadores fortes de abandono que aparecem dentro de uma
+// frase mais longa (nunca a frase inteira sozinha) -- "esquece isso, falei
+// errado.", "cancela isso.", "não quero mais registrar isso." não batiam em
+// CANCELLATION_PATTERNS (âncora de frase INTEIRA) e caíam como resposta ao
+// campo pendente, arriscando propor uma conta/categoria com o texto
+// inteiro. Diferente da lista acima, aqui o match é por CONTAINS -- mas a
+// lista continua pequena e fechada a marcadores inequívocos de desistência
+// (nunca uma palavra isolada que poderia ser parte legítima de uma
+// conta/categoria/descrição real).
+const CANCELLATION_CONTAINS_PATTERNS = [
+  /falei errado/,
+  /quis dizer errado/,
+  /nao quero mais registrar/,
+  /nao quero mais fazer isso/,
+  /nao precisa mais registrar/,
+  /esquece isso/,
+  /deixa pra la isso/,
+  /cancela isso/,
+  /desconsidera isso/,
+  /ignora isso/,
+];
+
 const ACCOUNT_IDENTITY_FIELDS = Object.freeze([
   'name',
   'institution_name',
@@ -71,6 +93,7 @@ export function classifyPendingActionReply(value) {
   const normalized = normalizeFinancialText(value).replace(/[!?]+$/g, '');
   if (CONFIRMATION_PATTERNS.some((pattern) => pattern.test(normalized))) return 'confirm';
   if (CANCELLATION_PATTERNS.some((pattern) => pattern.test(normalized))) return 'cancel';
+  if (CANCELLATION_CONTAINS_PATTERNS.some((pattern) => pattern.test(normalized))) return 'cancel';
   return 'input';
 }
 
@@ -96,7 +119,50 @@ export function resolvePendingActionInput({
             : /\b(?:descricao|descrição|identificar)\b/.test(normalized) ? 'description'
               : null;
   const field = explicitField ?? firstIssue;
+  const result = resolveForField(field, { text, parsed, accounts, categories, workspaceId });
+  if (result.kind === 'correction') return result;
 
+  // BUG REAL (contexto/correção perdidos): a Uni pergunta um campo (ex.:
+  // "Em qual conta?") mas o usuário responde corrigindo OUTRO campo já
+  // preenchido antes ("na verdade foram 55", "corrige para 80") -- sem
+  // esta rede, o texto era testado só contra o campo pendente (conta),
+  // nunca batia com nenhuma conta real, e virava "não encontrei essa
+  // conta" ou uma proposta de criar uma conta chamada "na verdade foram
+  // 55". Only kicks in quando a tentativa no campo pendente FALHOU e o
+  // texto inteiro não é nada além de uma expressão de valor (nunca
+  // reinterpreta uma resposta legítima de conta/categoria que só por
+  // acaso contém um número). Preserva tudo que já foi confirmado antes
+  // (mercado/despesa/etc.) -- só o valor muda; o campo que estava
+  // realmente pendente (conta) continua pendente e volta a ser
+  // perguntado no próximo turno (buildAction re-deriva os issues a
+  // partir dos overrides acumulados).
+  if (field !== 'amount' && looksLikePureAmountCorrection(text, parsed)) {
+    const amountResult = resolveForField('amount', { text, parsed, accounts, categories, workspaceId });
+    if (amountResult.kind === 'correction') return amountResult;
+  }
+
+  return result;
+}
+
+// Verdadeiro quando o texto inteiro é essencialmente "uma quantia e nada
+// mais" (com marcadores de correção opcionais como "na verdade"/"corrige
+// para"/"era"/"eram") -- nunca dispara para uma resposta de conta/categoria
+// que só coincidentemente contém um número (ex.: "Conta 55" continua não
+// batendo, porque "conta" sobra como conteúdo significativo após remover o
+// valor e os marcadores).
+const AMOUNT_CORRECTION_FILLER_WORDS = /\b(?:na verdade|de verdade|corrige|corrigir|corrigindo|corrigido|para|pra|foram|foi|era|eram|é|eh|na real|acho que|na verdade foram|na verdade era|R\$|reais?|rs)\b/g;
+
+function looksLikePureAmountCorrection(text, parsed) {
+  const amount = Number(parsed?.entities?.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return false;
+  const normalized = normalizeFinancialText(text).replace(/[.,!?]+$/g, '');
+  const withoutFillers = normalized.replace(AMOUNT_CORRECTION_FILLER_WORDS, ' ');
+  const withoutNumbers = withoutFillers.replace(/[\d.,]+/g, ' ');
+  const remainder = withoutNumbers.replace(/\s+/g, ' ').trim();
+  return remainder.length === 0;
+}
+
+function resolveForField(field, { text, parsed, accounts, categories, workspaceId }) {
   if (field === 'amount') {
     const amount = Number(parsed.entities.amount);
     return Number.isFinite(amount) && amount > 0

@@ -10,6 +10,11 @@ const VOICE_STATUS_LABELS = Object.freeze({
   [VOICE_TTS_STATUS.PAUSED]: 'Pausado',
 });
 
+// FASE ESTADOS DE PROCESSAMENTO: `displayText` (opcional, default
+// message.text) e `processingLabel` (repassado a ActionConfirmation) --
+// alimentados por useTextAudioSync/useUniProcessingMessage em
+// UniChatPage.jsx. Nenhum dos dois altera message.text em si (o histórico
+// persistido continua com o texto completo original).
 export default function MessageBubble({
   message,
   onConfirmAction,
@@ -24,8 +29,19 @@ export default function MessageBubble({
   onSpeakMessage,
   onPauseResumeVoice,
   onStopVoice,
+  displayText,
+  processingLabel,
 }) {
   const isUser = message.from === 'user';
+  // HOTFIX continuidade texto/voz: `||` (não `??`) -- em 'pending' (áudio
+  // ainda não começou de verdade), o hook devolve displayText='' deliberadamente
+  // (nunca revela o texto antes da hora); o chat completo preserva o
+  // comportamento anterior de sempre mostrar o texto completo assim que a
+  // mensagem é publicada, então uma string vazia também cai no fallback.
+  // HOTFIX (abandono da revelação progressiva): não existe mais estado
+  // intermediário -- ou o texto está oculto (pending, fallback abaixo) ou
+  // está 100% visível de uma vez, nunca parcial.
+  const resolvedText = displayText || message.text;
 
   if (message.type === 'confirmation') {
     return (
@@ -44,6 +60,7 @@ export default function MessageBubble({
             onCancel={() => onCancelAction?.(message.id)}
             isExecuting={isExecuting}
             executionError={executionError}
+            {...(processingLabel ? { processingLabel } : {})}
           />
         </div>
       </div>
@@ -96,7 +113,7 @@ export default function MessageBubble({
               {renderWithHighlight(message.text, message.highlight)}
             </p>
           ) : (
-            <SafeMarkdown className={styles.text}>{message.text}</SafeMarkdown>
+            <SafeMarkdown className={styles.text}>{resolvedText}</SafeMarkdown>
           )}
         </div>
         <div className={styles.metaRow}>

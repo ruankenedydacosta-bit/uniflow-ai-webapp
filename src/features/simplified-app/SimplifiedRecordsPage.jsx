@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { useAccounts, useCategories, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
 import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionModal.jsx';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import MonthPickerModal from './MonthPickerModal.jsx';
+import UpdateBalanceModal from './UpdateBalanceModal.jsx';
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -17,7 +19,6 @@ import {
 } from './SimplifiedIcons.jsx';
 import {
   buildCategorySummaries,
-  dateFromMonthInput,
   filterRecordTransactions,
   formatRelativeTransactionDate,
   getMonthRange,
@@ -100,37 +101,33 @@ function formatMonthLabel(date) {
   return `${capitalized}/${date.getFullYear()}`;
 }
 
+// BLOCO REGISTROS iOS: substitui inteiramente o input nativo de mês (Safari
+// iOS não abre o seletor de forma confiável) por um modal próprio
+// (MonthPickerModal) com a identidade visual da UniFlow.
 function MonthSelector({ month, onChange }) {
-  const inputRef = useRef(null);
-
-  function openPicker() {
-    if (typeof inputRef.current?.showPicker === 'function') {
-      inputRef.current.showPicker();
-    } else {
-      inputRef.current?.focus();
-    }
-  }
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
-    <button type="button" className={styles.monthSelector} onClick={openPicker}>
-      <span className={styles.monthIcon} aria-hidden="true"><CalendarIcon /></span>
-      <span>{formatMonthLabel(month.date)}</span>
-      <span className={styles.srOnly}>Selecionar mês</span>
-      <input
-        ref={inputRef}
-        className={styles.monthNativeInput}
-        type="month"
-        tabIndex={-1}
-        aria-hidden="true"
-        value={month.inputValue}
-        max={getMonthRange(new Date()).inputValue}
-        onChange={(event) => onChange(dateFromMonthInput(event.target.value))}
+    <>
+      <button type="button" className={styles.monthSelector} onClick={() => setPickerOpen(true)}>
+        <span className={styles.monthIcon} aria-hidden="true"><CalendarIcon /></span>
+        <span>{formatMonthLabel(month.date)}</span>
+        <span className={styles.srOnly}>Selecionar mês</span>
+      </button>
+      <MonthPickerModal
+        open={pickerOpen}
+        initialDate={month.date}
+        onApply={(nextDate) => {
+          onChange(nextDate);
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
       />
-    </button>
+    </>
   );
 }
 
-function MonthlySummary({ summary }) {
+function MonthlySummary({ onBalanceClick, summary }) {
   const cards = [
     { id: 'income', label: 'Receitas', value: summary.income, Icon: ArrowDownIcon },
     { id: 'expense', label: 'Despesas', value: summary.expense, Icon: ArrowUpIcon },
@@ -140,15 +137,31 @@ function MonthlySummary({ summary }) {
   return (
     <div className={styles.summaryCards}>
       {cards.map((card) => (
-        <article key={card.id} className={`${styles.summaryCard} ${styles[card.id]}`}>
-          <div>
-            <span className={styles.summaryIcon} aria-hidden="true"><card.Icon /></span>
-            <h3>{card.label}</h3>
-          </div>
-          <strong aria-label={`${card.label}: ${formatCurrency(card.value)}`}>
-            {formatCurrency(card.value)}
-          </strong>
-        </article>
+        card.id === 'balance' ? (
+          <button
+            key={card.id}
+            type="button"
+            className={`${styles.summaryCard} ${styles[card.id]} ${styles.balanceButton}`}
+            onClick={onBalanceClick}
+            aria-label={`${card.label}: ${formatCurrency(card.value)}. Toque para atualizar o saldo.`}
+          >
+            <div>
+              <span className={styles.summaryIcon} aria-hidden="true"><card.Icon /></span>
+              <h3>{card.label}</h3>
+            </div>
+            <strong aria-hidden="true">{formatCurrency(card.value)}</strong>
+          </button>
+        ) : (
+          <article key={card.id} className={`${styles.summaryCard} ${styles[card.id]}`}>
+            <div>
+              <span className={styles.summaryIcon} aria-hidden="true"><card.Icon /></span>
+              <h3>{card.label}</h3>
+            </div>
+            <strong aria-label={`${card.label}: ${formatCurrency(card.value)}`}>
+              {formatCurrency(card.value)}
+            </strong>
+          </article>
+        )
       ))}
     </div>
   );
@@ -304,6 +317,11 @@ function TransactionList({
           {visible.map((transaction) => {
             const isIncome = transaction.transaction_type === 'income';
             const isTransfer = transaction.transaction_type === 'transfer';
+            // BLOCO FINAL DO MVP (Saldo manual): "adjustment" pode ser
+            // positivo ou negativo -- ao contrário de income/expense, o
+            // sinal correto vem de adjustment_delta, nunca do tipo sozinho.
+            const isPositiveAdjustment = transaction.transaction_type === 'adjustment'
+              && Number(transaction.adjustment_delta) > 0;
             const category = categoryMap.get(transaction.category_id);
             const categoryKey = category?.name ?? (isTransfer ? 'Transferência' : 'Outros');
             const categoryPresentation = buildCategorySummaries(
@@ -330,8 +348,8 @@ function TransactionList({
                     {accountMap.get(transaction.account_id)?.name ?? 'Conta não disponível'}
                   </small>
                 </span>
-                <b className={isIncome ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
-                  {isIncome ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
+                <b className={isIncome || isPositiveAdjustment ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
+                  {isIncome || isPositiveAdjustment ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
                 </b>
                 <span className={styles.chevron} aria-hidden="true">›</span>
               </button>
@@ -362,6 +380,7 @@ function SimplifiedRecordsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
+  const [balanceModalOpen, setBalanceModalOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === 'undefined' ? true : navigator.onLine
   ));
@@ -485,6 +504,15 @@ function SimplifiedRecordsPage() {
     setTransactionDialog({ type: 'expense', transactionId: null });
   }
 
+  function openBalanceModal() {
+    // Correção (Bloco Saldo + Cobrança): diferente de "Novo registro", o
+    // saldo manual PODE abrir sem nenhuma conta ativa -- a própria modal
+    // mostra o estado vazio com "Criar conta" como ação principal, nunca
+    // bloqueia silenciosamente o toque no card.
+    if (!canManage) return;
+    setBalanceModalOpen(true);
+  }
+
   function updateFilter(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
     setVisibleCount(PAGE_SIZE);
@@ -532,7 +560,7 @@ function SimplifiedRecordsPage() {
             <>
               {activeTab === 'summary' ? (
                 <>
-                  <MonthlySummary summary={summary} />
+                  <MonthlySummary summary={summary} onBalanceClick={openBalanceModal} />
                   <CategoryGrid
                     categories={categorySummaries}
                     expanded={showAllCategories}
@@ -628,6 +656,16 @@ function SimplifiedRecordsPage() {
         accountState={displayAccountState}
         categoryState={categoryState}
         transactionState={transactionState}
+        className={styles.transactionDialogDark}
+        overlayClassName={styles.darkOverlay}
+      />
+
+      <UpdateBalanceModal
+        key={balanceModalOpen ? 'balance-modal-open' : 'balance-modal-closed'}
+        open={balanceModalOpen}
+        onClose={() => setBalanceModalOpen(false)}
+        onChanged={refresh}
+        accountState={displayAccountState}
       />
     </>
   );

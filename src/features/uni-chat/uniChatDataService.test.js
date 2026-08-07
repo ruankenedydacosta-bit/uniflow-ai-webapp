@@ -83,6 +83,16 @@ test('saveMessages (lote) tambem trata 23505 como sucesso -- sem duplicidade em 
   assert.match(fnBody, /if \(error\.code === '23505'\) \{\s*\n\s*markOnline\(\);\s*\n\s*return true;/);
 });
 
+test('BUG REAL (chaves duplicadas, causa raiz #1): saveMessages usa upsert com ignoreDuplicates, nunca insert puro -- um .insert() de lote falha ATOMICAMENTE inteiro se qualquer linha colidir com o indice unico, descartando silenciosamente mensagens novas junto com a duplicata', async () => {
+  const content = await source('uniChatDataService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function saveMessages'),
+    content.indexOf('// —————— MIGRATION'),
+  );
+  assert.match(fnBody, /\.upsert\(dbMsgs, \{ onConflict: 'conversation_id,client_message_id', ignoreDuplicates: true \}\)/);
+  assert.doesNotMatch(fnBody, /\.insert\(dbMsgs\)/);
+});
+
 test('falha de persistencia (erro na query) nunca lanca -- retorna null/false para o chamador tratar sem tela branca', async () => {
   const content = await source('uniChatDataService.js');
   assert.doesNotMatch(content, /throw /);

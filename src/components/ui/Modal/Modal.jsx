@@ -14,6 +14,7 @@ function Modal({
   closeOnOverlayClick = true,
   closeOnEsc = true,
   className,
+  overlayClassName,
   ...props
 }) {
   const generatedId = useId();
@@ -53,7 +54,7 @@ function Modal({
   }
 
   return createPortal(
-    <div className={styles.overlay} onClick={handleOverlayClick}>
+    <div className={cx(styles.overlay, overlayClassName)} onClick={handleOverlayClick}>
       <div
         className={cx(styles.dialog, styles[size], className)}
         role="dialog"

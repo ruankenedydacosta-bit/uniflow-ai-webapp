@@ -137,6 +137,18 @@ test('fetchAllPages: respeita o teto de seguranca maxPages, mesmo se toda pagina
   assert.equal(result.data.length, 6);
 });
 
+// BLOCO FINAL DO MVP (Saldo manual): sem adjustment_delta na projeção, a UI
+// não tem como saber se um ajuste foi positivo ou negativo (amount é sempre
+// positivo -- abs(delta) -- por desenho da RPC de ajuste).
+test('TRANSACTION_FIELDS inclui adjustment_delta -- necessário para exibir o sinal correto de um ajuste de saldo', async () => {
+  const content = await source('transactionService.js');
+  const fieldsLine = content.slice(
+    content.indexOf('const TRANSACTION_FIELDS ='),
+    content.indexOf(';', content.indexOf('const TRANSACTION_FIELDS =')),
+  );
+  assert.match(fieldsLine, /adjustment_delta/);
+});
+
 // ============================================================================
 // listTransactionsForPeriod -- leitura de fonte para o contrato de query
 // (mesmo padrao dos demais services do repositorio: sem Supabase real
@@ -217,4 +229,40 @@ test('listTransactions mantem o cap de 100 e o default de 50 (lista recente, nao
     content.indexOf('export async function getTransaction('),
   );
   assert.match(fnBody, /Math\.min\(Math\.max\(Number\(limit\) \|\| 50, 1\), 100\)/);
+});
+
+// ============================================================================
+// BLOCO REGISTROS iOS: descrição nunca é obrigatória no service (frontend
+// já sintetiza um valor neutro/honesto via resolveTransactionDescription,
+// mas o service em si também nunca deve rejeitar uma chamada por descrição
+// vazia -- normalizeTransactionDescription é a última linha de defesa
+// contra a constraint NOT NULL/não-vazia de transactions.description).
+// ============================================================================
+
+test('hasRequiredTransactionFields não exige mais descrição', async () => {
+  const content = await readFile(new URL('./transactionService.js', import.meta.url), 'utf8');
+  const fnStart = content.indexOf('function hasRequiredTransactionFields(transaction) {');
+  const fnBody = content.slice(fnStart, content.indexOf('\n}', fnStart));
+  assert.doesNotMatch(fnBody, /transaction\.description/);
+});
+
+test('mensagem de validação de createTransaction não menciona mais "descricao" como obrigatória', async () => {
+  const content = await readFile(new URL('./transactionService.js', import.meta.url), 'utf8');
+  assert.match(content, /'Conta, tipo, valor positivo e data sao obrigatorios\.'/);
+  assert.doesNotMatch(content, /descricao sao obrigatorios/);
+});
+
+test('normalizeTransactionDescription sintetiza um rótulo neutro por tipo e é usada na criação e na edição', async () => {
+  const content = await readFile(new URL('./transactionService.js', import.meta.url), 'utf8');
+  assert.match(content, /function normalizeTransactionDescription\(transaction\) \{/);
+  assert.match(content, /description: normalizeTransactionDescription\(transaction\)/);
+  assert.match(content, /payload\.description = normalizeTransactionDescription\(\{/);
+});
+
+test('updateTransaction nunca rejeita uma edição por descrição vazia', async () => {
+  const content = await readFile(new URL('./transactionService.js', import.meta.url), 'utf8');
+  const fnStart = content.indexOf('export async function updateTransaction(');
+  const fnBody = content.slice(fnStart, content.indexOf('\nexport ', fnStart + 10));
+  assert.doesNotMatch(fnBody, /A descricao deve ser um texto valido/);
+  assert.doesNotMatch(fnBody, /payload\.description === ''/);
 });

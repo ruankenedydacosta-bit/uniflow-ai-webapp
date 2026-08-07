@@ -107,6 +107,12 @@ export function buildConfirmationFromAction(action, workspaceType = 'personal') 
       ? 'Novo ajuste de saldo'
       : `Nova ${(action.typeLabel || 'movimentação').toLowerCase()}`,
     status: 'pending',
+    // FASE ESTADOS DE PROCESSAMENTO: campo aditivo (não usado pelos
+    // consumidores existentes de `rows`/`title`/`status`) que identifica o
+    // tipo real da ação -- alimenta useUniProcessingMessage('executing', …)
+    // para mostrar um rótulo honesto ("Atualizando seu saldo…",
+    // "Registrando sua movimentação…" etc.) em vez de um texto genérico.
+    actionKind: isBalanceAdjustment ? 'adjustment' : (action.transactionType ?? null),
     rows,
   };
 }

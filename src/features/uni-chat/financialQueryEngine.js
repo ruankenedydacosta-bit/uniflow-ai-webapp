@@ -18,6 +18,7 @@
 
 import { extractAmount } from '../uni-intents/entityExtractor.js';
 import { resolveRelativeDateExpression } from '../uni-intents/relativeDateResolver.js';
+import { resolveTemporalRange } from '../uni-intents/temporalRangeResolver.js';
 import { normalizeFinancialText, roundMoney } from './financialSnapshot.js';
 
 const MONTH_NAMES = [
@@ -32,6 +33,12 @@ const GENERIC_ACCOUNT_PHRASES = new Set([
   'conta', 'banco', 'cartao', 'carteira', 'minha conta', 'meu banco',
   'minhas contas', 'minha', 'minhas', 'nossa', 'nossas', 'nossa conta',
   'nossas contas', 'essa conta', 'essas contas', 'essa', 'essas',
+  // BUG REAL (Sprint 2.1, BUG 3): "nessa conta"/"naquela conta" (sem
+  // memória para resolver) nunca podem virar tentativa de nome de conta
+  // literal -- mesma lógica de "essa conta" acima.
+  'nessa conta', 'nessas contas', 'nessa', 'nessas',
+  'aquela conta', 'aquelas contas', 'aquela', 'aquelas',
+  'naquela conta', 'naquelas contas', 'naquela', 'naquelas',
 ]);
 const MONTH_PHRASES = new Set(MONTH_NAMES.map((name) => normalizeFinancialText(name)));
 
@@ -51,6 +58,11 @@ const GENERIC_WORDS = new Set([
   'coisas', 'entrada', 'entradas', 'receita', 'receitas', 'saldo', 'mes', 'meses',
   'dia', 'dias', 'hoje', 'ontem', 'amanha', 'anteontem', 'agora', 'aquilo',
   'esse', 'essa', 'esses', 'essas', 'aquele', 'aquela', 'aqueles', 'aquelas',
+  // BUG REAL (Sprint 2.1, BUG 3): "nesse"/"nessa" (contração de "em
+  // esse"/"em essa", ex.: "nesse mês", "só nessa conta") nunca constavam
+  // aqui -- sobravam como "keyword" de descrição e viravam um nome de
+  // busca literal ("Não encontrei gastos com Nesse.").
+  'nesse', 'nessa', 'nesses', 'nessas', 'naquele', 'naquela', 'naqueles', 'naquelas',
   'este', 'estes', 'estas', 'meu', 'minha', 'meus', 'minhas', 'seu', 'sua',
   'ver', 'mostrar', 'mostra', 've', 'veja', 'favor', 'saber', 'sabe', 'dizer',
   'fiz', 'faz', 'fazer', 'saiu', 'sairam', 'entrou', 'entraram',
@@ -61,6 +73,23 @@ const GENERIC_WORDS = new Set([
   'dezessete', 'dezoito', 'dezenove', 'vinte', 'trinta', 'quarenta', 'cinquenta',
   'sessenta', 'setenta', 'oitenta', 'noventa', 'cem', 'cento', 'mil', 'milhao',
   'milhoes',
+  // Fase 1 (correção de roteamento, Sprint 4): "total"/"todas as contas"
+  // -- resposta comum a uma clarificação pendente ("De qual conta você
+  // quer ver o saldo?" -> "O total, de todas as contas.") -- sobravam
+  // como "keyword" de descrição e viravam busca literal de transação
+  // ("Não encontrei nenhuma movimentação com 'Total'."), quando a frase
+  // não tinha NENHUMA intenção de buscar uma transação por nome. Mesmo
+  // padrão de bug já corrigido para "nesse/nessa" (Sprint 2.1, BUG 3)
+  // logo acima.
+  'total', 'totais', 'todo', 'toda', 'todos', 'todas',
+  // Fase 1 (correção de roteamento, Sprint 4): pronomes/verbos de fala
+  // coloquial ("Me diz quanto eu já gastei", "Me fala aí quanto sobrou",
+  // "Pode me dizer quanto eu tenho") sobravam como keyword de descrição
+  // (ex.: "me" virava o termo de busca) e disparavam falsos positivos de
+  // ambiguidade de categoria/conta contra nomes reais que não têm nenhuma
+  // relação com a frase. Mesmo padrão de bug do "total"/"nesse" acima.
+  'me', 'te', 'lhe', 'diz', 'diga', 'disse', 'fala', 'fale', 'falar',
+  'pode', 'podia', 'poderia', 'consegue', 'consegui',
 ]);
 
 // "cinquentão" = radical "cinquent" + sufixo "ão" (o "a" final é substituído).
@@ -171,8 +200,22 @@ function stripLeadingGenericAccountTokens(phrase) {
 // Resolução de contas e categorias por nome (account_id / category_id)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// BUG 3 (Sprint 4, Bloco 4.0): candidatos de ambiguidade devem refletir
+// apenas contas/categorias REALMENTE ativas -- mesma regra já aplicada em
+// accountResolution.js (activeMatches/archivedMatches) e em
+// pendingActionInput.js (filter(item => item?.is_active !== false)).
+// Sem esse filtro, uma conta arquivada com o mesmo nome de uma conta ativa
+// (ex.: "Nubank" arquivada + "Nubank" ativa) entrava como candidato
+// distinto e inflava "Encontrei N contas correspondentes" com uma entrada
+// que o usuário nem vê em "Minhas contas". A dedupe por account.id (via
+// exactIds/Set) já existia e continua correta -- o bug era a AUSÊNCIA do
+// filtro de status antes dela, não a dedupe em si.
+function filterActive(records) {
+  return records.filter((record) => record?.is_active !== false);
+}
+
 export function findAccountsByPhrase(snapshot, phrase) {
-  const accounts = [...snapshot.accountsById.values()];
+  const accounts = filterActive([...snapshot.accountsById.values()]);
   const normalized = normalizeFinancialText(phrase);
   if (!normalized) return { matches: [], ambiguous: false };
 
@@ -193,7 +236,7 @@ export function findAccountsByPhrase(snapshot, phrase) {
 }
 
 export function findCategoriesByPhrase(snapshot, phrase) {
-  const categories = [...snapshot.categoriesById.values()];
+  const categories = filterActive([...snapshot.categoriesById.values()]);
   const normalized = normalizeFinancialText(phrase);
   if (!normalized) return { matches: [], ambiguous: false };
 
@@ -368,7 +411,7 @@ export function classifyQueryType(text) {
   }
 
   if (
-    /\bquanto\s+(?:eu\s+)?gastei\b/.test(n)
+    /\bquanto\s+(?:eu\s+)?(?:ja\s+)?gastei\b/.test(n)
     || /\bquanto\s+(?:gastou|gastamos|gastava)\s+(?:com|em|de|na|no|nas|nos)\b/.test(n)
     || /\bquanto\s+(?:foi|custou|custava|saiu)\s+(?:de|com|em|na|no|nas|nos)\b/.test(n)
     || /\bmeus\s+gastos?\s+com\b/.test(n)
@@ -377,9 +420,25 @@ export function classifyQueryType(text) {
   }
 
   if (
-    /^(?:o|a|os|as|esse|essa|esses|essas|aquele|aquela|aqueles|aquelas|outro|outra)\b/.test(n)
-    || /\b(?:aquele|aquela|aqueles|aquelas|esse|essa|esses|essas)\s+(?:gasto|despesa|compra|transacao|movimentacao|coisa|valor)\b/.test(n)
-    || /\b(?:o|a)\s+de\s+(?:hoje|ontem|amanha|anteontem)\b/.test(n)
+    (
+      /^(?:o|a|os|as|esse|essa|esses|essas|aquele|aquela|aqueles|aquelas|outro|outra)\b/.test(n)
+      || /\b(?:aquele|aquela|aqueles|aquelas|esse|essa|esses|essas)\s+(?:gasto|despesa|compra|transacao|movimentacao|coisa|valor)\b/.test(n)
+      || /\b(?:o|a)\s+de\s+(?:hoje|ontem|amanha|anteontem)\b/.test(n)
+    )
+    // Fase 1 (correção de roteamento, Sprint 4): um determinante sozinho
+    // ("O saldo total.", "O total, de todas as contas.") nunca basta --
+    // precisa sobrar ALGUM critério real (palavra de descrição, valor,
+    // data ou conta) depois de remover as palavras genéricas, senão a
+    // frase não é uma referência a transação nenhuma, é só uma resposta
+    // de clarificação mal reconhecida. Mesmo critério já usado no fallback
+    // de palavra solta logo abaixo -- nunca duplicado, só aplicado cedo o
+    // suficiente para não classificar essas frases incorretamente.
+    && (
+      extractDescriptionKeywords(text).length > 0
+      || extractQueryAmount(text) != null
+      || extractQueryDate(text) != null
+      || extractAccountReference(text) != null
+    )
   ) {
     return 'transaction_reference';
   }
@@ -712,6 +771,110 @@ function resolveLastMovementQuery(snapshot, queryType) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Sprint 2 — Memória Conversacional: refinamento e comparação de consultas
+// agregadas de período (ex.: "quanto já gastei esse mês" → "Só nessa
+// conta." → "Agora compara com o mês passado."). Depende de `lastQuery`,
+// fornecido pelo chamador (createConversationalMemory().getLastQuery()) --
+// este motor nunca guarda estado entre chamadas.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function sumExpensesInRange(snapshot, start, end, extraFilter) {
+  const matches = snapshot.transactions.filter((tx) => (
+    tx.transaction_type === 'expense'
+    && tx.transaction_date >= start
+    && tx.transaction_date <= end
+    && (typeof extraFilter === 'function' ? extraFilter(tx) : true)
+  ));
+  return {
+    total: roundMoney(matches.reduce((sum, tx) => sum + roundMoney(tx.amount), 0)),
+    count: matches.length,
+  };
+}
+
+const COMPARISON_PATTERN = /\bcompar[ae]\s+com\b/i;
+
+// "Agora compara com o mês passado." -- resolve o novo período a partir do
+// que vem depois de "compara(r) com"; o período BASE é o da última consulta
+// de período (lastQuery), ou o mês corrente quando não há uma. Nenhuma
+// lógica de comparação nova além de somar/subtrair os dois totais reais.
+function tryResolveComparisonQuery({ text, snapshot, mode, conversationStyle, referenceDate, lastQuery }) {
+  if (!COMPARISON_PATTERN.test(text)) return null;
+  const remainder = text.replace(COMPARISON_PATTERN, ' ').trim();
+  const newRange = resolveTemporalRange(remainder, referenceDate);
+  if (newRange.status !== 'resolved') return null;
+
+  const basePeriod = lastQuery?.queryParams?.kind === 'period_expenses'
+    ? { start: lastQuery.queryParams.start, end: lastQuery.queryParams.end, label: lastQuery.queryParams.label }
+    : (() => {
+        const current = resolveTemporalRange('este mês', referenceDate);
+        return current.status === 'resolved' ? current : null;
+      })();
+  if (!basePeriod) return null;
+
+  const subject = mode === 'empresa' ? 'sua empresa' : 'você';
+  const baseSum = sumExpensesInRange(snapshot, basePeriod.start, basePeriod.end);
+  const newSum = sumExpensesInRange(snapshot, newRange.start, newRange.end);
+  const delta = roundMoney(baseSum.total - newSum.total);
+  const deltaText = delta === 0
+    ? 'gastou o mesmo valor nos dois períodos'
+    : `gastou ${fmtCurrency(Math.abs(delta))} ${delta > 0 ? 'a mais' : 'a menos'} em ${basePeriod.label} do que em ${newRange.label}`;
+  const responseText = `Em ${basePeriod.label}: ${fmtCurrency(baseSum.total)}. Em ${newRange.label}: ${fmtCurrency(newSum.total)}. ${capitalize(subject)} ${deltaText}.`;
+
+  return {
+    handled: true,
+    response: {
+      text: conversationStyle === 'simple' ? condenseForSimpleStyle(responseText) : responseText,
+      highlight: fmtCurrency(newSum.total),
+    },
+    queryType: 'period_comparison',
+    queryParams: { kind: 'period_comparison', periodA: basePeriod, periodB: newRange },
+  };
+}
+
+// "Só nessa conta." -- só dispara quando a classificação normal não
+// reconheceu a frase E existe uma consulta de período anterior para
+// refinar. Depois que createConversationalMemory().resolveReferences() já
+// substituiu "nessa conta" pelo nome literal, extractAccountReference
+// encontra a conta normalmente -- nenhuma lógica de extração nova.
+function tryResolveQueryRefinement({ text, snapshot, mode, conversationStyle, lastQuery }) {
+  if (!lastQuery || lastQuery.queryParams?.kind !== 'period_expenses') return null;
+  const accountPhrase = extractAccountReference(text);
+  if (!accountPhrase) return null;
+
+  const { matches, ambiguous } = findAccountsByPhrase(snapshot, accountPhrase);
+  if (ambiguous) {
+    const names = matches.map((account) => account.name).join(', ');
+    return {
+      handled: true,
+      response: {
+        text: `Encontrei ${matches.length} contas correspondentes: ${names}. Qual delas você quer consultar?`,
+        highlight: null,
+      },
+      queryType: 'category_expenses',
+    };
+  }
+  if (!matches.length) return null;
+
+  const account = matches[0];
+  const { start, end, label } = lastQuery.queryParams;
+  const subject = mode === 'empresa' ? 'sua empresa' : 'você';
+  const { total } = sumExpensesInRange(snapshot, start, end, (tx) => tx.account_id === account.id);
+  const responseText = total > 0
+    ? `Em ${label}, ${subject} gastou ${fmtCurrency(total)} na conta ${account.name}.`
+    : `Não encontrei gastos na conta ${account.name} em ${label}.`;
+
+  return {
+    handled: true,
+    response: {
+      text: conversationStyle === 'simple' ? condenseForSimpleStyle(responseText) : responseText,
+      highlight: total > 0 ? fmtCurrency(total) : null,
+    },
+    queryType: 'category_expenses',
+    queryParams: { kind: 'period_expenses', start, end, label, accountId: account.id },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Entrada pública do motor
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -722,13 +885,38 @@ export function resolveFinancialQuery({
   conversationStyle,
   history = [],
   referenceDate = null,
+  lastQuery = null,
 } = {}) {
   if (typeof text !== 'string' || !text.trim() || !snapshot) return { handled: false };
 
-  const queryType = classifyQueryType(text);
-  if (!queryType) return { handled: false };
-
   const effectiveReferenceDate = referenceDate ?? snapshot.referenceDate ?? null;
+
+  const comparisonOutcome = tryResolveComparisonQuery({
+    text, snapshot, mode, conversationStyle, referenceDate: effectiveReferenceDate, lastQuery,
+  });
+  if (comparisonOutcome) return comparisonOutcome;
+
+  // "Só nessa conta." -- o prefixo "só/somente" é um sinal explícito de
+  // refinamento (restringir a última consulta), então tem prioridade sobre
+  // a classificação normal (que, sem isso, tentaria adivinhar uma
+  // transação isolada pelo nome da conta). Sem esse prefixo, o refinamento
+  // só é tentado como último recurso, depois que classifyQueryType não
+  // reconhece nada.
+  if (/^\s*s[oó](?:mente)?(?=\s|$)/i.test(text)) {
+    const explicitRefinement = tryResolveQueryRefinement({
+      text, snapshot, mode, conversationStyle, lastQuery,
+    });
+    if (explicitRefinement) return explicitRefinement;
+  }
+
+  const queryType = classifyQueryType(text);
+  if (!queryType) {
+    const refinementOutcome = tryResolveQueryRefinement({
+      text, snapshot, mode, conversationStyle, lastQuery,
+    });
+    return refinementOutcome ?? { handled: false };
+  }
+
   const contextHint = collectContextHint(history, effectiveReferenceDate);
 
   const criteria = {
@@ -904,8 +1092,37 @@ export function resolveFinancialQuery({
         }
       }
 
-      const categoryPhrase = phrase || criteria.descriptionKeywords?.[0];
+      // "nos últimos 7 dias"/"nos últimos 30 dias" etc. batem acidentalmente
+      // no padrão de extractCategoryPhrase (a preposição "nos" antes de
+      // "últimos N dias" parece "nos <categoria>") -- uma frase que o
+      // próprio resolvedor temporal reconhece nunca é tratada como nome de
+      // categoria.
+      const phraseIsTemporal = phrase && resolveTemporalRange(phrase, effectiveReferenceDate).status === 'resolved';
+      const categoryPhrase = phraseIsTemporal ? null : (phrase || criteria.descriptionKeywords?.[0]);
       if (!categoryPhrase) {
+        // Sprint 2 (Interpretação Temporal): sem categoria mencionada --
+        // tenta resolver um período temporal explícito na frase ("quanto já
+        // gastei esse mês", "quanto gastei nos últimos 7 dias") e responde
+        // com o total REAL (soma das transações no intervalo, dado já
+        // disponível em snapshot.transactions -- nenhuma ferramenta nova,
+        // nenhuma aproximação por mês inteiro necessária, já que o
+        // snapshot tem a data exata de cada transação). Nunca inventa: sem
+        // expressão temporal reconhecida, mantém o comportamento anterior.
+        const range = resolveTemporalRange(text, effectiveReferenceDate);
+        if (range.status === 'resolved') {
+          const { total } = sumExpensesInRange(snapshot, range.start, range.end);
+          result = {
+            handled: true,
+            response: {
+              text: total > 0
+                ? `Em ${range.label}, ${subject} gastou ${fmtCurrency(total)}.`
+                : `Não encontrei gastos em ${range.label}.`,
+              highlight: total > 0 ? fmtCurrency(total) : null,
+            },
+            queryParams: { kind: 'period_expenses', start: range.start, end: range.end, label: range.label },
+          };
+          break;
+        }
         result = { handled: false };
         break;
       }
@@ -972,6 +1189,54 @@ export function resolveFinancialQuery({
         break;
       }
 
+      // BUG REAL (Sprint 2.1, BUG 4): "quanto já gastei no Nubank?" batia
+      // no padrão de categoria (a preposição "no" antes do nome), mas
+      // "Nubank" é o nome de uma CONTA -- sem esta checagem, caía direto
+      // na inferência por descrição abaixo e respondia "não encontrei
+      // gastos com Nubank" mesmo havendo transações reais na conta,
+      // porque a busca comparava a string livre contra a descrição da
+      // transação, nunca o account_id de verdade.
+      const { matches: accountMatchesForPhrase, ambiguous: accountAmbiguousForPhrase } =
+        findAccountsByPhrase(snapshot, categoryPhrase);
+      if (accountAmbiguousForPhrase) {
+        const names = accountMatchesForPhrase.map((account) => account.name).join(', ');
+        result = {
+          handled: true,
+          response: {
+            text: `Encontrei ${accountMatchesForPhrase.length} contas correspondentes: ${names}. Qual delas você quer consultar?`,
+            highlight: null,
+          },
+        };
+        break;
+      }
+      if (accountMatchesForPhrase.length === 1) {
+        const matchedAccount = accountMatchesForPhrase[0];
+        const currentMonthRange = resolveTemporalRange('este mês', effectiveReferenceDate);
+        const { total: accountTotal } = sumExpensesInRange(
+          snapshot,
+          currentMonthRange.start,
+          currentMonthRange.end,
+          (tx) => tx.account_id === matchedAccount.id,
+        );
+        result = {
+          handled: true,
+          response: {
+            text: accountTotal > 0
+              ? `Em ${MONTH_NAMES[currentMonthIndex - 1]}, ${subject} gastou ${fmtCurrency(accountTotal)} na conta ${matchedAccount.name}.`
+              : `Não encontrei gastos na conta ${matchedAccount.name} em ${MONTH_NAMES[currentMonthIndex - 1]}.`,
+            highlight: accountTotal > 0 ? fmtCurrency(accountTotal) : null,
+          },
+          queryParams: {
+            kind: 'period_expenses',
+            start: currentMonthRange.start,
+            end: currentMonthRange.end,
+            label: MONTH_NAMES[currentMonthIndex - 1],
+            accountId: matchedAccount.id,
+          },
+        };
+        break;
+      }
+
       // Sem categoria correspondente → inferência por descrição (dados reais).
       const keywords = criteria.descriptionKeywords?.length
         ? criteria.descriptionKeywords
@@ -1020,5 +1285,6 @@ export function resolveFinancialQuery({
       highlight: result.response.highlight ?? null,
     },
     queryType,
+    queryParams: result.queryParams ?? null,
   };
 }

@@ -12,9 +12,9 @@ import {
   CheckIcon,
   ClockIcon,
   DeviceIcon,
+  HeadsetIcon,
   LockIcon,
   MailIcon,
-  MicIcon,
   PhoneIcon,
   ShieldIcon,
   XCircleIcon,
@@ -123,10 +123,6 @@ function SimplifiedSecurityPage() {
             <p className={styles.subtitle}>Gerencie a segurança da sua conta.</p>
           </div>
         </div>
-        <button type="button" className={styles.talkButton} onClick={() => navigate(SIMPLIFIED_ROUTES.UNI)}>
-          <span className={styles.talkIcon} aria-hidden="true"><MicIcon /></span>
-          Falar com a Uni
-        </button>
       </header>
 
       <section className={`${styles.card} ${styles.overviewCard}`} aria-label="Visão geral da proteção da conta">
@@ -278,14 +274,17 @@ function SimplifiedSecurityPage() {
       </section>
 
       <section className={`${styles.card} ${styles.helpCard}`} aria-label="Ajuda">
-        <span className={styles.helpMascot} aria-hidden="true">🙂</span>
+        <span className={styles.helpMascot} aria-hidden="true"><HeadsetIcon /></span>
         <div className={styles.helpText}>
-          <strong>Precisa de ajuda?</strong>
-          <p>Posso explicar cada item desta tela e ajudar você a manter sua conta segura.</p>
+          <strong>Ajuda</strong>
+          <p>Precisa de ajuda com a segurança da sua conta? Fale com o nosso suporte.</p>
         </div>
-        <button type="button" className={styles.talkButton} onClick={() => navigate(SIMPLIFIED_ROUTES.UNI)}>
-          <span className={styles.talkIcon} aria-hidden="true"><MicIcon /></span>
-          Falar com a Uni
+        <button
+          type="button"
+          className={styles.talkButton}
+          onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path)}
+        >
+          Ajuda
         </button>
       </section>
 

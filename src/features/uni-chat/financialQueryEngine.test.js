@@ -109,6 +109,83 @@ test('findCategoriesByPhrase resolve categorias e marca ambiguidade', () => {
   assert.equal(food.matches[0].id, 'cat-food');
 });
 
+// ── BUG 3 (Sprint 4, Bloco 4.0): reprodução comportamental real do defeito
+// "Encontrei 3 contas correspondentes: Nubank, Nubank, No Nubank" -- uma
+// conta ARQUIVADA com o mesmo nome de uma conta ativa não pode aparecer
+// como candidato de ambiguidade. ──────────────────────────────────────────
+
+test('BUG 3: "Nub" com uma única conta Nubank ativa nunca é ambíguo', () => {
+  const snapshot = buildSnapshot({
+    accounts: [{ id: 'acc-nubank', name: 'Nubank', current_balance: 500 }],
+  });
+  const result = findAccountsByPhrase(snapshot, 'Nub');
+  assert.equal(result.matches.length, 1);
+  assert.equal(result.ambiguous, false);
+});
+
+test('BUG 3: reprodução exata do bug relatado -- conta arquivada "Nubank" + conta ativa "Nubank" + conta ativa "No Nubank" nunca produz 3 candidatos para "Nub"', () => {
+  const snapshot = buildSnapshot({
+    accounts: [
+      { id: 'acc-nubank-ativa', name: 'Nubank', current_balance: 500, is_active: true },
+      { id: 'acc-nubank-arquivada', name: 'Nubank', current_balance: 0, is_active: false },
+      { id: 'acc-no-nubank', name: 'No Nubank', current_balance: 100, is_active: true },
+    ],
+  });
+  const result = findAccountsByPhrase(snapshot, 'Nub');
+  // só as 2 contas ATIVAS podem aparecer -- a arquivada nunca entra como
+  // candidato, mesmo tendo o mesmo nome de uma conta ativa.
+  assert.equal(result.matches.length, 2, `esperado 2 candidatos ativos, recebido ${result.matches.length}: ${result.matches.map((m) => m.name).join(', ')}`);
+  assert.deepEqual(result.matches.map((m) => m.id).sort(), ['acc-no-nubank', 'acc-nubank-ativa']);
+  assert.ok(!result.matches.some((m) => m.id === 'acc-nubank-arquivada'), 'conta arquivada nunca deve aparecer nos candidatos');
+});
+
+test('BUG 3: duas contas ATIVAS reais com o mesmo nome permanecem distintas (não é uma dedupe por nome)', () => {
+  const snapshot = buildSnapshot({
+    accounts: [
+      { id: 'acc-nubank-pessoal', name: 'Nubank', current_balance: 500, is_active: true },
+      { id: 'acc-nubank-conjunta', name: 'Nubank', current_balance: 900, is_active: true },
+    ],
+  });
+  const result = findAccountsByPhrase(snapshot, 'Nubank');
+  assert.equal(result.matches.length, 2);
+  assert.equal(result.ambiguous, true);
+  assert.deepEqual(result.matches.map((m) => m.id).sort(), ['acc-nubank-conjunta', 'acc-nubank-pessoal']);
+});
+
+test('BUG 3: conta arquivada isolada (sem homônima ativa) não aparece como candidata', () => {
+  const snapshot = buildSnapshot({
+    accounts: [{ id: 'acc-old', name: 'Conta Antiga', current_balance: 0, is_active: false }],
+  });
+  const result = findAccountsByPhrase(snapshot, 'Conta Antiga');
+  assert.equal(result.matches.length, 0);
+});
+
+test('BUG 3: ausência de candidatos continua honesta (matches vazio, não inventa)', () => {
+  const snapshot = buildSnapshot();
+  const result = findAccountsByPhrase(snapshot, 'Banco XP');
+  assert.equal(result.matches.length, 0);
+  assert.equal(result.ambiguous, false);
+});
+
+test('BUG 3: um candidato inequívoco nunca é marcado como ambíguo', () => {
+  const snapshot = buildSnapshot();
+  const result = findAccountsByPhrase(snapshot, 'Itaú');
+  assert.equal(result.matches.length, 1);
+  assert.equal(result.ambiguous, false);
+});
+
+test('BUG 3: findCategoriesByPhrase também ignora categorias arquivadas na ambiguidade', () => {
+  const snapshot = buildSnapshot({
+    categories: [
+      { id: 'cat-food-ativa', name: 'Alimentação', is_active: true },
+      { id: 'cat-food-arquivada', name: 'Alimentação', is_active: false },
+    ],
+  });
+  const result = findCategoriesByPhrase(snapshot, 'Alimentação');
+  assert.equal(result.matches.length, 1);
+  assert.equal(result.matches[0].id, 'cat-food-ativa');
+});
+
 // ── Classificação (Fase 3) ──────────────────────────────────────────────────
 
 test('classifyQueryType reconhece os tipos de consulta suportados', () => {
@@ -457,4 +534,169 @@ test('motor é determinístico: mesma consulta e snapshot produzem a mesma respo
   const first = resolveFinancialQuery({ text: 'aquele gasto do mercado', snapshot: buildSnapshot() });
   const second = resolveFinancialQuery({ text: 'aquele gasto do mercado', snapshot: buildSnapshot() });
   assert.equal(first.response.text, second.response.text);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sprint 2 — Memória Conversacional + Interpretação Temporal
+// ─────────────────────────────────────────────────────────────────────────────
+
+test('Sprint 2: "quanto já gastei esse mês" (com "já") responde com o total real do período', () => {
+  const result = resolveFinancialQuery({
+    text: 'quanto já gastei esse mês',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(result.handled, true);
+  assert.match(result.response.text, /R\$\s*358,83/);
+  assert.equal(result.queryType, 'category_expenses');
+  assert.deepEqual(result.queryParams, {
+    kind: 'period_expenses', start: '2026-07-01', end: '2026-07-31', label: 'este mês',
+  });
+});
+
+test('Sprint 2: "quanto gastei nos últimos 7 dias" resolve o intervalo e soma as transações reais', () => {
+  const result = resolveFinancialQuery({
+    text: 'quanto gastei nos últimos 7 dias',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(result.handled, true);
+  // 2026-07-09 a 2026-07-15: t11(09), t2(10), t8(12), t10(13), t1(14) = 50+45+60+50+120.5
+  assert.match(result.response.text, /R\$\s*325,50/);
+});
+
+test('Sprint 2: refinamento "Só nessa conta." reaproveita a última consulta de período (lastQuery)', () => {
+  const first = resolveFinancialQuery({
+    text: 'quanto já gastei esse mês',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(first.queryParams.kind, 'period_expenses');
+
+  const refined = resolveFinancialQuery({
+    text: 'Só na conta Nubank.',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+    lastQuery: { queryType: first.queryType, queryParams: first.queryParams },
+  });
+  assert.equal(refined.handled, true);
+  // t1(120.5) + t7(33.33) + t10(50) = 203.83, só Nubank em julho/2026
+  assert.match(refined.response.text, /R\$\s*203,83/);
+  assert.match(refined.response.text, /Nubank/);
+});
+
+test('Sprint 2: refinamento sem lastQuery de período nunca inventa um total -- cai no comportamento normal (transaction_reference)', () => {
+  const result = resolveFinancialQuery({
+    text: 'Só na conta Nubank.',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(result.handled, true);
+  assert.equal(result.queryType, 'transaction_reference');
+  assert.ok(!result.response.text.includes('R$'));
+});
+
+test('Sprint 2: comparação "Agora compara com o mês passado." usa a última consulta como período base', () => {
+  const first = resolveFinancialQuery({
+    text: 'quanto já gastei esse mês',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+
+  const comparison = resolveFinancialQuery({
+    text: 'Agora compara com o mês passado.',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+    lastQuery: { queryType: first.queryType, queryParams: first.queryParams },
+  });
+  assert.equal(comparison.handled, true);
+  assert.equal(comparison.queryType, 'period_comparison');
+  // mês corrente (julho) = 358.83; mês passado (junho) = t4 (90).
+  assert.match(comparison.response.text, /358,83/);
+  assert.match(comparison.response.text, /90,00/);
+  assert.match(comparison.response.text, /a mais/);
+});
+
+test('Sprint 2: comparação sem consulta anterior ainda funciona, usando o mês corrente como base', () => {
+  const comparison = resolveFinancialQuery({
+    text: 'compara com o mês passado',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(comparison.handled, true);
+  assert.equal(comparison.queryType, 'period_comparison');
+});
+
+test('Sprint 2: intervalo temporal não reconhecido no texto de comparação nunca inventa uma resposta', () => {
+  const result = resolveFinancialQuery({
+    text: 'compara com o mercado',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.deepEqual(result, { handled: false });
+});
+
+// ── Fase 1 (correção de roteamento) ──────────────────────────────────────
+// Achado real em validação DEV: uma resposta de clarificação como "O total,
+// de todas as contas." ou "O saldo total." era tratada como busca de
+// transação por descrição ("total" sobrava como keyword), respondendo
+// incorretamente "Não encontrei nenhuma movimentação com 'Total'." em vez
+// de nunca reconhecer a frase como consulta de transação (deixando a
+// camada semântica/composer resolver a clarificação de verdade).
+test('Fase 1: "O total, de todas as contas." nunca é tratada como busca de transação por descrição', () => {
+  const result = resolveFinancialQuery({
+    text: 'O total, de todas as contas.',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.deepEqual(result, { handled: false });
+});
+
+test('Fase 1: "O saldo total." nunca é tratada como busca de transação por descrição', () => {
+  const result = resolveFinancialQuery({
+    text: 'O saldo total.',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.deepEqual(result, { handled: false });
+});
+
+test('Fase 1: extractDescriptionKeywords nunca extrai "total"/"todas"/"todos" como palavra de busca', () => {
+  assert.deepEqual(extractDescriptionKeywords('o total'), []);
+  assert.deepEqual(extractDescriptionKeywords('de todas as contas'), []);
+  assert.deepEqual(extractDescriptionKeywords('todos os gastos'), []);
+});
+
+// Achado real em validação DEV: "Me diz quanto eu já gastei nesse mês."
+// respondia com falsa ambiguidade de categoria ("Encontrei 2 categorias
+// correspondentes: Alimentação, Transporte...") porque "me" sobrava como
+// keyword de descrição e virava termo de busca de categoria, mesmo a
+// frase não tendo nenhuma relação com nenhuma categoria real.
+test('Fase 1: "Me diz quanto eu já gastei nesse mês." responde com o total real do período, nunca com falsa ambiguidade de categoria', () => {
+  const result = resolveFinancialQuery({
+    text: 'Me diz quanto eu já gastei nesse mês.',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(result.handled, true);
+  assert.doesNotMatch(result.response.text, /categorias correspondentes/);
+});
+
+test('Fase 1: "Pode me dizer quanto eu tenho?" nunca gera ambiguidade espúria a partir de "me"/"pode"', () => {
+  const result = resolveFinancialQuery({
+    text: 'Pode me dizer quanto eu tenho?',
+    snapshot: buildSnapshot(),
+    referenceDate: REFERENCE_DATE,
+  });
+  if (result.handled) {
+    assert.doesNotMatch(result.response.text, /categorias correspondentes|contas correspondentes/);
+  }
+});
+
+test('Fase 1: extractDescriptionKeywords nunca extrai pronomes/verbos de fala coloquial ("me"/"diz"/"fala"/"pode") como palavra de busca', () => {
+  assert.deepEqual(extractDescriptionKeywords('me diz quanto eu ja gastei nesse mes'), []);
+  // "sobrou" é uma palavra de conteúdo real (não é preenchimento) -- deve
+  // continuar sobrando; só "me"/"fala"/"ai" (preenchimento) são filtrados.
+  assert.deepEqual(extractDescriptionKeywords('me fala ai quanto sobrou'), ['sobrou']);
+  assert.deepEqual(extractDescriptionKeywords('pode me dizer quanto eu tenho'), []);
 });

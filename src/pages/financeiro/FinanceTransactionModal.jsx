@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import { cx } from '../../utils/cx';
 import { formatCurrency } from '../../utils/formatters';
 import styles from './FinanceTransactionModal.module.css';
 import {
@@ -75,14 +76,32 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Mesmos rótulos honestos já usados no seletor "Tipo" deste formulário
+// (linhas 343-346) -- reaproveitados no histórico para o indicador visual
+// de receita/despesa/transferência/ajuste exigido pelo bloco "Lançamentos
+// existentes".
+const HISTORY_TYPE_LABELS = {
+  income: 'Entrada',
+  expense: 'Despesa',
+  transfer: 'Transferência',
+  adjustment: 'Ajuste',
+};
+
 const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar lançamentos deste espaço.';
 const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir este lançamento.';
 
+// `className`/`overlayClassName` (opcionais): mesmo padrão aditivo já usado
+// em FinanceAccountModal.jsx -- permitem que o Registros simplificado force
+// a identidade escura oficial sem afetar o uso padrão desta modal em
+// FinanceiroPage.jsx (desktop), que continua reativo ao tema --uf-* do
+// site quando as props não são passadas.
 function FinanceTransactionModal({
   accountState,
   canDeleteTransaction = () => true,
   canManage = true,
   categoryState,
+  className,
+  overlayClassName,
   duplicateFromTransactionId,
   editingTransactionId,
   initialType = 'expense',
@@ -299,7 +318,6 @@ function FinanceTransactionModal({
     canManage &&
     !transactionState.isMutating &&
     form.account_id &&
-    form.description.trim() &&
     Number(form.amount) > 0 &&
     form.transaction_date &&
     (form.transaction_type !== 'transfer' || form.destination_account_id),
@@ -314,19 +332,22 @@ function FinanceTransactionModal({
       title="Lançamentos"
       description="Registre entradas, despesas, transferências e ajustes deste espaço."
       size="xl"
+      className={cx(styles.transactionDialog, className)}
+      overlayClassName={overlayClassName}
       footer={
         <Button variant="ghost" onClick={handleClose} disabled={transactionState.isMutating}>
           Fechar
         </Button>
       }
     >
-      <div className="uf-flex uf-flex-column uf-gap-lg">
+      <div className={styles.modalBody}>
         <form className="uf-flex uf-flex-column uf-gap-md" onSubmit={handleSubmit}>
           {duplicateNotice && !editingId ? (
             <FormMessage tone="info">
               Dados copiados de outro lançamento. Revise antes de salvar — a data foi ajustada para hoje.
             </FormMessage>
           ) : null}
+          <section className={styles.formBlock} aria-label="Dados principais">
           <SelectField
             id="finance-transaction-type"
             label="Tipo"
@@ -401,16 +422,6 @@ function FinanceTransactionModal({
             ))}
           </SelectField>
           <Input
-            id="finance-transaction-description"
-            label="Descrição"
-            value={form.description}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, description: event.target.value }))
-            }
-            required
-            fullWidth
-          />
-          <Input
             id="finance-transaction-amount"
             label="Valor"
             type="number"
@@ -432,6 +443,19 @@ function FinanceTransactionModal({
               setForm((current) => ({ ...current, transaction_date: event.target.value }))
             }
             required
+            fullWidth
+          />
+          </section>
+
+          <section className={styles.formBlock} aria-label="Informações opcionais">
+          <Input
+            id="finance-transaction-description"
+            label="Descrição (opcional)"
+            placeholder="Ex.: Mercado do mês, salário, transferência para reserva..."
+            value={form.description}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, description: event.target.value }))
+            }
             fullWidth
           />
           <Input
@@ -561,6 +585,9 @@ function FinanceTransactionModal({
               'Não foi possível concluir o lançamento. Revise os dados e tente novamente.',
             )}
           </FormMessage>
+          </section>
+
+          <section className={styles.formBlock} aria-label="Ação">
           <div className="uf-flex uf-items-center uf-justify-end uf-gap-sm uf-flex-wrap">
             {editingId ? (
               <Button variant="ghost" onClick={resetForm} disabled={transactionState.isMutating}>
@@ -576,9 +603,10 @@ function FinanceTransactionModal({
               {editingId ? 'Salvar lançamento' : 'Criar lançamento'}
             </Button>
           </div>
+          </section>
         </form>
 
-        <div className="uf-flex uf-flex-column uf-gap-md">
+        <div className={styles.formBlock} aria-label="Lançamentos existentes">
           <div className="uf-flex uf-items-center uf-gap-sm uf-flex-wrap">
             <Input
               id="finance-transaction-list-search"
@@ -726,62 +754,86 @@ function FinanceTransactionModal({
           {listedTransactions.map((transaction) => {
             const hasGroup = Boolean(transaction.metadata?.installment_group_id);
             const canDeleteThisTransaction = canDeleteTransaction(transaction);
+            const isAdjustment = transaction.transaction_type === 'adjustment';
+            const isPositiveAdjustment = isAdjustment && Number(transaction.adjustment_delta) > 0;
+            const isIncome = transaction.transaction_type === 'income' || isPositiveAdjustment;
+            const typeTone = isIncome ? 'income' : transaction.transaction_type === 'transfer' ? 'transfer' : 'expense';
+            const accountName = accountsById.get(transaction.account_id)?.name ?? 'Conta não disponível';
+            const categoryName = categoriesById.get(transaction.category_id)?.name ?? null;
+            const detailParts = [
+              HISTORY_TYPE_LABELS[transaction.transaction_type] ?? transaction.transaction_type,
+              formatCurrency(transaction.amount),
+              transaction.transaction_date,
+              accountName,
+              categoryName,
+            ].filter(Boolean);
             return (
               <CrudRow
                 key={transaction.id}
+                // Ajustes manuais de saldo ficam visualmente distintos de
+                // receita/despesa: indicador dedicado (isAdjustment), nunca
+                // confundido com uma cor fixa de "sempre vermelho".
                 title={
-                  transaction.installment_total > 1
-                    ? `${transaction.description} (${transaction.installment_number}/${transaction.installment_total})`
-                    : transaction.description
+                  <span className={styles.historyTitle}>
+                    <span
+                      className={`${styles.historyDot} ${styles[`historyDot_${isAdjustment ? 'adjustment' : typeTone}`]}`}
+                      aria-hidden="true"
+                    />
+                    {transaction.installment_total > 1
+                      ? `${transaction.description} (${transaction.installment_number}/${transaction.installment_total})`
+                      : transaction.description}
+                  </span>
                 }
-                detail={`${transaction.transaction_date} · ${formatCurrency(transaction.amount)}`}
+                detail={detailParts.join(' · ')}
               >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={transactionState.isMutating || !canManage}
-                  title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
-                  onClick={() => handleEdit(transaction)}
-                >
-                  Editar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={transactionState.isMutating || !canManage}
-                  title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
-                  onClick={() => handleDuplicate(transaction)}
-                >
-                  Duplicar
-                </Button>
-                {pendingDeleteId === transaction.id && hasGroup ? (
-                  <SelectField
-                    id={`finance-transaction-delete-scope-${transaction.id}`}
-                    label="Excluir"
-                    value={deleteScope}
-                    onChange={(event) => setDeleteScope(event.target.value)}
+                <div className={styles.historyActions}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={transactionState.isMutating || !canManage}
+                    title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+                    onClick={() => handleEdit(transaction)}
                   >
-                    <option value="only">Somente esta parcela</option>
-                    <option value="forward">Esta e as próximas</option>
-                    <option value="all">Todas do grupo</option>
-                  </SelectField>
-                ) : null}
-                {canDeleteThisTransaction ? (
-                  <DeleteActions
-                    isConfirming={pendingDeleteId === transaction.id}
-                    isLoading={transactionState.isMutating}
-                    onRequest={() => {
-                      setDeleteScope('only');
-                      setPendingDeleteId(transaction.id);
-                    }}
-                    onCancel={() => setPendingDeleteId(null)}
-                    onConfirm={() => handleDelete(transaction.id)}
-                  />
-                ) : (
-                  <Button variant="ghost" size="sm" disabled title={DELETE_BLOCKED_TITLE}>
-                    Excluir
+                    Editar
                   </Button>
-                )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={transactionState.isMutating || !canManage}
+                    title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+                    onClick={() => handleDuplicate(transaction)}
+                  >
+                    Duplicar
+                  </Button>
+                  {pendingDeleteId === transaction.id && hasGroup ? (
+                    <SelectField
+                      id={`finance-transaction-delete-scope-${transaction.id}`}
+                      label="Excluir"
+                      value={deleteScope}
+                      onChange={(event) => setDeleteScope(event.target.value)}
+                    >
+                      <option value="only">Somente esta parcela</option>
+                      <option value="forward">Esta e as próximas</option>
+                      <option value="all">Todas do grupo</option>
+                    </SelectField>
+                  ) : null}
+                  {canDeleteThisTransaction ? (
+                    <DeleteActions
+                      isConfirming={pendingDeleteId === transaction.id}
+                      isLoading={transactionState.isMutating}
+                      onRequest={() => {
+                        setDeleteScope('only');
+                        setPendingDeleteId(transaction.id);
+                      }}
+                      onCancel={() => setPendingDeleteId(null)}
+                      onConfirm={() => handleDelete(transaction.id)}
+                    />
+                  ) : (
+                    <Button variant="ghost" size="sm" disabled title={DELETE_BLOCKED_TITLE}>
+                      Excluir
+                    </Button>
+                  )}
+                </div>
               </CrudRow>
             );
           })}

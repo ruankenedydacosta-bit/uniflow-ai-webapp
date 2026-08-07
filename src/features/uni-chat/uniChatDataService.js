@@ -1,5 +1,5 @@
-import { supabase, isSupabaseConfigured } from '../../services/supabaseClient';
-import { loadHistory as loadLocalHistory } from './chatHistory';
+import { supabase, isSupabaseConfigured } from '../../services/supabaseClient.js';
+import { loadHistory as loadLocalHistory } from './chatHistory.js';
 
 const CONVERSATIONS_TABLE = 'uni_conversations';
 const MESSAGES_TABLE = 'uni_messages';
@@ -62,11 +62,12 @@ function dbToConversation(row) {
   };
 }
 
-function dbToMessage(row) {
+export function dbToMessage(row) {
   const meta = row.metadata || {};
   const msg = {
     id: row.client_message_id || row.id,
     dbId: row.id,
+    clientMessageId: row.client_message_id || null,
     from: row.role === 'user' ? 'user' : 'uni',
     type: row.message_type || 'text',
     text: row.content || '',
@@ -370,9 +371,24 @@ export async function saveMessages(convId, msgs) {
 
   const dbMsgs = msgs.map(m => messageToDb(m, convId, userId));
 
+  // BUG REAL (chaves duplicadas, causa raiz #1): um .insert() com várias
+  // linhas é UMA ÚNICA instrução -- se QUALQUER linha colidir com o índice
+  // único uni_messages_client_id_uidx (conversation_id, client_message_id),
+  // o Postgres rejeita o LOTE INTEIRO (23505), inclusive as mensagens
+  // genuinamente novas que nunca tinham sido salvas. O código antigo tratava
+  // esse erro como sucesso (`return true`) sem inserir nada -- mensagens
+  // novas silenciosamente nunca chegavam ao banco. Isso acontecia sempre que
+  // a MESMA conversa local era promovida a uma conversa Supabase mais de uma
+  // vez (ex.: duas abas/duas montagens enviando a primeira mensagem quase ao
+  // mesmo tempo, cada uma criando sua própria uni_conversations e tentando
+  // reenviar o mesmo lote de mensagens locais). upsert com
+  // ignoreDuplicates faz cada linha do lote ser resolvida
+  // independentemente: linhas novas são inseridas, linhas já existentes
+  // (mesmo client_message_id na mesma conversa) são simplesmente puladas --
+  // nunca perde dado novo, nunca duplica linha.
   const { error } = await supabase
     .from(MESSAGES_TABLE)
-    .insert(dbMsgs);
+    .upsert(dbMsgs, { onConflict: 'conversation_id,client_message_id', ignoreDuplicates: true });
 
   if (error) {
     if (error.code === '23505') {
