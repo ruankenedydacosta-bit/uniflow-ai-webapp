@@ -28,6 +28,11 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
     activeProvider = null;
   }
 
+  async function preparePlayback() {
+    if (policy.forceBrowserTts) return browserProvider.preparePlayback?.() ?? browserProvider.isSupported();
+    return primaryProvider.preparePlayback?.() ?? primaryProvider.isSupported();
+  }
+
   async function speak(text, callbacks) {
     stop();
 
@@ -92,6 +97,7 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
     providerName: 'fallback_voice_tts',
     isSupported,
     healthCheck,
+    preparePlayback,
     speak,
     play,
     pause,

@@ -77,20 +77,24 @@ test('saveMessage trata violacao de unicidade (23505) buscando a mensagem ja exi
   assert.match(fnBody, /\.eq\('client_message_id', dbMsg\.client_message_id\)/);
 });
 
-test('saveMessages (lote) tambem trata 23505 como sucesso -- sem duplicidade em reenvio de fila pendente', async () => {
-  const content = await source('uniChatDataService.js');
-  const fnBody = content.slice(content.indexOf('export async function saveMessages'));
-  assert.match(fnBody, /if \(error\.code === '23505'\) \{\s*\n\s*markOnline\(\);\s*\n\s*return true;/);
-});
-
-test('BUG REAL (chaves duplicadas, causa raiz #1): saveMessages usa upsert com ignoreDuplicates, nunca insert puro -- um .insert() de lote falha ATOMICAMENTE inteiro se qualquer linha colidir com o indice unico, descartando silenciosamente mensagens novas junto com a duplicata', async () => {
+test('saveMessages reutiliza saveMessage por item para tratar 23505 sem perder mensagens novas', async () => {
   const content = await source('uniChatDataService.js');
   const fnBody = content.slice(
     content.indexOf('export async function saveMessages'),
     content.indexOf('// —————— MIGRATION'),
   );
-  assert.match(fnBody, /\.upsert\(dbMsgs, \{ onConflict: 'conversation_id,client_message_id', ignoreDuplicates: true \}\)/);
-  assert.doesNotMatch(fnBody, /\.insert\(dbMsgs\)/);
+  assert.match(fnBody, /await saveMessage\(convId, message, userId\)/);
+  assert.match(fnBody, /const uniqueMessages = Array\.from\(new Map\(/);
+});
+
+test('BUG REAL: saveMessages nao usa upsert contra indice parcial nem insert atomico de lote', async () => {
+  const content = await source('uniChatDataService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function saveMessages'),
+    content.indexOf('// —————— MIGRATION'),
+  );
+  assert.doesNotMatch(fnBody, /\.upsert\(/);
+  assert.doesNotMatch(fnBody, /\.insert\(/);
 });
 
 test('falha de persistencia (erro na query) nunca lanca -- retorna null/false para o chamador tratar sem tela branca', async () => {

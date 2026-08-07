@@ -13,6 +13,7 @@ import {
 } from './simplifiedProductConfig.js';
 import { SIMPLIFIED_UNI_STATES } from './simplifiedHomeState.js';
 import { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
+import { readVisualViewport } from './useVisualViewport.js';
 import { resolveInitialConversationState } from '../uni-chat/chatHistory.js';
 import {
   buildCategorySummaries,
@@ -25,7 +26,9 @@ import {
   claimWelcomeVoice,
   clearWelcomeVoiceBlocked,
   getWelcomeVoiceBlocked,
+  isWelcomeVoiceActivated,
   isWelcomeVoicePending,
+  markWelcomeVoiceActivated,
   markWelcomeVoiceBlocked,
   markWelcomeVoiceSettled,
   releaseWelcomeVoice,
@@ -56,6 +59,29 @@ test('configuração simplificada é imutável e declara somente o produto pesso
   });
   assert.equal(Object.isFrozen(SIMPLIFIED_PRODUCT_CONFIG), true);
   assert.equal(SIMPLIFIED_ROUTES.UNI, '/app/uni');
+});
+
+test('visualViewport calcula teclado e área visível sem valores negativos', () => {
+  assert.deepEqual(readVisualViewport({
+    innerHeight: 844,
+    visualViewport: { height: 514, offsetTop: 0 },
+  }), { height: 514, offsetTop: 0, keyboardInset: 330 });
+  assert.deepEqual(readVisualViewport({
+    innerHeight: 844,
+    visualViewport: { height: 800, offsetTop: 80 },
+  }), { height: 800, offsetTop: 80, keyboardInset: 0 });
+});
+
+test('shell acompanha visualViewport e remove listeners do teclado no cleanup', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  const hook = await source('./useVisualViewport.js');
+  const css = await source('./simplifiedApp.module.css');
+  assert.match(shell, /const viewportStyle = useVisualViewport\(\);/);
+  assert.match(shell, /style=\{viewportStyle\}/);
+  assert.match(hook, /visualViewport/);
+  assert.match(hook, /addEventListener\('resize', scheduleSync\)/);
+  assert.match(hook, /removeEventListener\('resize', scheduleSync\)/);
+  assert.match(css, /height: var\(--uf-visual-viewport-height, 100dvh\);/);
 });
 
 test('workspace Empresa stale exige ativação do workspace Pessoal', () => {
@@ -169,6 +195,15 @@ test('Home usa a mesma saudação estruturada no texto e no TTS', async () => {
   assert.doesNotMatch(home, /<p>Seja bem-vindo,/);
 });
 
+test('saudação automática usa o gesto seguinte somente quando o Safari bloqueia o autoplay', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /retryWelcomeOnGestureRef\.current = autoplayBlocked/);
+  assert.match(home, /attemptWelcomeVoice\(\{ userInitiated: true \}\)/);
+  assert.match(home, /window\.addEventListener\('pointerdown', retryAfterUserGesture, true\)/);
+  assert.match(home, /source: 'greeting',[\s\S]{0,80}\.\.\.requestMetadata/);
+  assert.doesNotMatch(home, />\s*Ouvir saudação\s*</);
+});
+
 test('boas-vindas por voz são reivindicadas uma vez por sessão autenticada', () => {
   resetWelcomeVoiceSessions();
   const sessionKey = buildWelcomeSessionKey(
@@ -181,6 +216,32 @@ test('boas-vindas por voz são reivindicadas uma vez por sessão autenticada', (
   releaseWelcomeVoice(sessionKey);
   assert.equal(claimWelcomeVoice(sessionKey), true);
   resetWelcomeVoiceSessions();
+});
+
+test('ativação de voz persiste na navegação interna e é liberada ao retornar do background', () => {
+  resetWelcomeVoiceSessions();
+  const sessionKey = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
+
+  assert.equal(isWelcomeVoiceActivated(sessionKey), false);
+  markWelcomeVoiceActivated(sessionKey);
+  assert.equal(isWelcomeVoiceActivated(sessionKey), true);
+  releaseWelcomeVoice(sessionKey);
+  assert.equal(isWelcomeVoiceActivated(sessionKey), false);
+  resetWelcomeVoiceSessions();
+});
+
+test('Safari exige um único CTA que prepara microfone e áudio antes da saudação', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /isAppleWebKitRuntime\(window\)/);
+  assert.match(home, /voiceController\.preparePlayback\?\.\(\)/);
+  assert.match(home, /voiceInput\.prepareMicrophone\(\)/);
+  assert.match(home, /await Promise\.all\(\[/);
+  assert.match(home, /ATIVAR VOZ E MICROFONE/);
+  assert.match(home, /playbackPreparationAttempted: true/);
+  assert.match(home, /void attemptWelcomeVoice\(\{/);
+  assert.doesNotMatch(home, /await attemptWelcomeVoice\(\{\s*userInitiated: true/);
+  assert.match(home, /disabled=\{voiceActivationRequired \|\| voiceActivationPending/);
+  assert.doesNotMatch(home, />\s*Ouvir saudação\s*</);
 });
 
 test('chave da saudação é ESTÁVEL durante o login -- preferência a last_sign_in_at sobre expires_at (TOKEN_REFRESHED silencioso não refaz a saudação ao voltar para Home)', () => {
@@ -307,17 +368,15 @@ test('chave nula ou vazia nunca é marcada/lida como bloqueada', () => {
   resetWelcomeVoiceSessions();
 });
 
-test('SimplifiedHomeView inicializa welcomeVoiceError a partir do erro persistido (não de useState(null)) e sincroniza quando sessionKey muda', async () => {
+test('SimplifiedHomeView recupera bloqueio persistido sem renderizar fallback manual', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(
     home,
-    /useState\(\(\) => getWelcomeVoiceBlocked\(sessionKey\)\)/,
-    'estado inicial deve vir do módulo persistido, não de null fixo',
+    /retryWelcomeOnGestureRef\.current = getWelcomeVoiceBlocked\(sessionKey\)\?\.code/,
+    'bloqueio deve rearmar a tentativa invisível no próximo gesto',
   );
-  assert.match(
-    home,
-    /if \(sessionKey !== prevSessionKey\) \{\s*setPrevSessionKey\(sessionKey\);\s*setWelcomeVoiceError\(getWelcomeVoiceBlocked\(sessionKey\)\);\s*\}/,
-  );
+  assert.doesNotMatch(home, /welcomeVoiceError/);
+  assert.doesNotMatch(home, /greetingVoiceFallback/);
 });
 
 test('SimplifiedHomeView persiste sucesso/erro da saudação via markWelcomeVoiceBlocked/clearWelcomeVoiceBlocked', async () => {
@@ -1082,13 +1141,22 @@ test('HOTFIX P1.4: CompactResponse não tem botão "Ouvir resposta" nem showManu
   assert.match(block, /lastUni\.text/);
 });
 
-test('falha na saudação mantém fallback textual e tentativa manual sem duplicar o claim da sessão', async () => {
+test('falha de autoplay não cria botão e mantém uma única reivindicação inicial da sessão', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /const error = result\?\.error \?\? null;/);
-  assert.match(home, /setWelcomeVoiceError\(error\);/);
-  assert.match(home, /welcomeVoiceError\.message/);
-  assert.match(home, />\s*Ouvir saudação\s*</);
-  assert.equal((home.match(/claimWelcomeVoice\(sessionKey\)/g) ?? []).length, 1);
+  assert.match(home, /markWelcomeVoiceBlocked\(sessionKey, error\)/);
+  assert.doesNotMatch(home, />\s*Ouvir saudação\s*</);
+  assert.match(home, /if \(!claimWelcomeVoice\(sessionKey\)\) return;/);
+});
+
+test('retorno real do background exige nova ativação no Safari e rearma saudação nos demais navegadores', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /welcomeWasBackgroundedRef\.current = true/);
+  assert.match(home, /releaseWelcomeVoice\(sessionKey\)/);
+  assert.match(home, /if \(isAppleVoiceRuntime\) \{\s*setVoiceActivationError\(null\);\s*setVoiceActivationRequired\(true\);/);
+  assert.match(home, /window\.addEventListener\('pagehide', markBackgrounded\)/);
+  assert.match(home, /window\.addEventListener\('pageshow', greetAfterForegroundReturn\)/);
+  assert.match(home, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
 });
 
 test('HOTFIX P1.4: SimplifiedHomeView não repassa onSpeakMessage/voiceEnabled para CompactResponse', async () => {
@@ -1153,7 +1221,7 @@ test('Requisito 6 — nenhuma mensagem é publicada duas vezes: onFinalTranscrip
   const finalIdx = home.indexOf('onFinalTranscript: (transcript) => {');
   const finalEndIdx = home.indexOf('}),', finalIdx);
   const finalSlice = home.slice(finalIdx, finalEndIdx);
-  assert.match(finalSlice, /if \(cleanTranscript\) onSendTranscript\(cleanTranscript\);/, 'transcrição vazia nunca publica mensagem');
+  assert.match(finalSlice, /if \(cleanTranscript\) onSendTranscript\(cleanTranscript, \{ source: 'voice' \}\);/, 'transcrição vazia nunca publica mensagem e preserva origem de voz');
 
   const voiceInput = await source('../uni-voice/useUniVoiceInput.js');
   // requestIdRef garante que só o resultado da transcrição MAIS RECENTE

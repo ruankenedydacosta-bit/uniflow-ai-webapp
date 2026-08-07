@@ -11,8 +11,8 @@
      para elas. */
   --simplified-header-height: 102px;
   --simplified-bottom-nav-height: calc(96px + 10px + max(10px, env(safe-area-inset-bottom)));
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: var(--uf-visual-viewport-height, 100dvh);
+  height: var(--uf-visual-viewport-height, 100dvh);
   background:
     radial-gradient(circle at 50% 26%, rgba(37, 99, 235, .13), transparent 32%),
     #020713;
@@ -30,8 +30,8 @@
 
 .shellSurface {
   width: min(100%, 920px);
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: var(--uf-visual-viewport-height, 100dvh);
+  height: var(--uf-visual-viewport-height, 100dvh);
   display: grid;
   grid-template-rows: auto 1fr auto;
   margin-inline: auto;
@@ -340,6 +340,7 @@
   flex-direction: column;
   align-items: center;
   margin-inline: auto;
+  background: #010611;
   padding:
     10px
     max(22px, env(safe-area-inset-right))
@@ -391,14 +392,54 @@
   font-weight: 600;
 }
 
-.greetingVoiceFallback {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
+.voiceActivation {
+  display: grid;
+  justify-items: start;
+  gap: 7px;
   margin-top: 14px;
-  color: #c9cfdb;
+}
+
+.voiceActivationButton {
+  min-height: 48px;
+  padding: 11px 18px;
+  border: 1px solid rgba(45, 212, 191, .72);
+  border-radius: 24px;
+  background: linear-gradient(105deg, rgba(37, 99, 235, .22), rgba(124, 58, 237, .3), rgba(16, 185, 129, .2));
+  box-shadow: 0 0 24px rgba(37, 99, 235, .18);
+  color: #a5f3fc;
+  font: inherit;
   font-size: 14px;
+  font-weight: 780;
+  letter-spacing: .02em;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+.voiceActivationButton:hover {
+  border-color: #67e8f9;
+  box-shadow: 0 0 30px rgba(34, 211, 238, .24);
+}
+
+.voiceActivationButton:active {
+  transform: scale(.98);
+}
+
+.voiceActivationButton:disabled {
+  cursor: wait;
+  opacity: .72;
+}
+
+.voiceActivation small {
+  max-width: 440px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.voiceActivation p {
+  margin: 0;
+  color: #fda4af;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .compactResponse {
@@ -475,23 +516,6 @@
   color: #67e8f9;
   font-size: 13px;
   font-weight: 650;
-}
-
-.manualSpeak {
-  min-height: 40px;
-  padding: 0 14px;
-  align-self: start;
-  border-radius: 999px;
-  border: 1px solid rgba(103, 232, 249, .4);
-  background: transparent;
-  color: #67e8f9;
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.manualSpeak:focus-visible {
-  outline: 3px solid #67e8f9;
-  outline-offset: 4px;
 }
 
 .lightWave {
@@ -889,6 +913,7 @@
 @media (prefers-reduced-motion: reduce) {
   .navigationItem,
   .uniButton,
+  .voiceActivationButton,
   .uniVoiceLevelRing {
     transition: none;
   }

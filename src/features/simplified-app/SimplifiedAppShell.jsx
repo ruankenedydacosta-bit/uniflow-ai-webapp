@@ -6,6 +6,7 @@ import { useNotifications } from '../notifications/useNotifications.js';
 import SimplifiedBottomNavigation from './SimplifiedBottomNavigation.jsx';
 import SimplifiedHeader from './SimplifiedHeader.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useVisualViewport } from './useVisualViewport.js';
 import styles from './simplifiedApp.module.css';
 
 function SimplifiedAppShell({ children }) {
@@ -18,6 +19,7 @@ function SimplifiedAppShell({ children }) {
   const notificationPanelRef = useRef(null);
   const closeTimerRef = useRef(null);
   const openFrameRef = useRef(null);
+  const viewportStyle = useVisualViewport();
   const {
     notifications,
     unreadCount,
@@ -126,6 +128,7 @@ function SimplifiedAppShell({ children }) {
   return (
     <div
       className={styles.shell}
+      style={viewportStyle}
       data-simplified-app-shell
       data-text-size={profile?.text_size ?? 'standard'}
     >

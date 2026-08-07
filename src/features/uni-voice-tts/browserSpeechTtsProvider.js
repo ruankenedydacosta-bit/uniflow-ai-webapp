@@ -31,6 +31,10 @@ export function createBrowserSpeechTtsProvider({ runtime = globalThis } = {}) {
       : { available: false, reason: 'BROWSER_SPEECH_UNAVAILABLE' };
   }
 
+  async function preparePlayback() {
+    return isSupported();
+  }
+
   function clearActiveUtterance() {
     if (activeUtterance) {
       activeUtterance.onstart = null;
@@ -118,6 +122,7 @@ export function createBrowserSpeechTtsProvider({ runtime = globalThis } = {}) {
     providerName: 'browser_speech_tts',
     isSupported,
     healthCheck,
+    preparePlayback,
     speak,
     play,
     pause,

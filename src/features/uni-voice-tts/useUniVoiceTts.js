@@ -54,6 +54,30 @@ export function useUniVoiceTts() {
   // Cleanup ao desmontar: nunca deixa audio tocando nem Blob URL pendurada.
   useEffect(() => () => provider.stop(), [provider]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
+
+    const stopForPageLifecycle = () => {
+      provider.stop();
+      setStatus(VOICE_TTS_STATUS.STOPPED);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') stopForPageLifecycle();
+    };
+
+    window.addEventListener('pagehide', stopForPageLifecycle);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', stopForPageLifecycle);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [provider]);
+
+  const preparePlayback = useCallback(
+    () => provider.preparePlayback?.() ?? Promise.resolve(false),
+    [provider],
+  );
+
   const speak = useCallback(async (text, requestMetadata = {}) => {
     const requestContext = createVoiceTtsRequestContext(requestMetadata);
     const recordProviderEvent = (event) => recordVoiceTtsTelemetry({
@@ -97,6 +121,12 @@ export function useUniVoiceTts() {
     setError(null);
 
     try {
+      if (
+        (requestMetadata.userInitiated || requestMetadata.source === 'manual_replay')
+        && !requestMetadata.playbackPreparationAttempted
+      ) {
+        await preparePlayback();
+      }
       await provider.speak(sanitized, {
         onPlaying: () => setStatus(VOICE_TTS_STATUS.PLAYING),
         onEnded: () => setStatus(VOICE_TTS_STATUS.STOPPED),
@@ -116,7 +146,7 @@ export function useUniVoiceTts() {
       setError(err);
       return { error: err };
     }
-  }, [provider]);
+  }, [preparePlayback, provider]);
 
   const play = useCallback(() => {
     const started = provider.play();
@@ -150,6 +180,7 @@ export function useUniVoiceTts() {
   return {
     status,
     error,
+    preparePlayback,
     speak,
     play,
     pause,

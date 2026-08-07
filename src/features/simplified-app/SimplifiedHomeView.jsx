@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
-import { VOICE_CAPTURE_STATES, useSharedUniVoiceInput, useVoiceIntensity } from '../uni-voice/index.js';
-import { VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
+import {
+  isAppleWebKitRuntime,
+  VOICE_CAPTURE_STATES,
+  useSharedUniVoiceInput,
+  useVoiceIntensity,
+} from '../uni-voice/index.js';
+import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import { UniMark } from './SimplifiedIcons.jsx';
 import {
   isVoiceErrorState,
@@ -18,12 +23,25 @@ import {
   claimWelcomeVoice,
   clearWelcomeVoiceBlocked,
   getWelcomeVoiceBlocked,
+  isWelcomeVoiceActivated,
   markWelcomeVoiceBlocked,
+  markWelcomeVoiceActivated,
+  releaseWelcomeVoice,
 } from './welcomeVoiceSession.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
 
 const SPEAKING_VOICE_STATUSES = new Set([VOICE_TTS_STATUS.LOADING, VOICE_TTS_STATUS.PLAYING]);
+
+function getVoiceActivationError(errorCode) {
+  if (errorCode === 'permission_denied') {
+    return 'Permita o acesso ao microfone nos ajustes do Safari e tente novamente.';
+  }
+  if (errorCode === 'microphone_not_found') {
+    return 'Nenhum microfone foi encontrado neste dispositivo.';
+  }
+  return 'Não consegui ativar o microfone. Tente novamente.';
+}
 
 const STATE_COPY = Object.freeze({
   [SIMPLIFIED_UNI_STATES.IDLE]: Object.freeze({
@@ -367,48 +385,57 @@ function SimplifiedHomeView({
     [profile, user],
   );
   const sessionKey = buildWelcomeSessionKey(user, session);
-  // BUGFIX iOS: nasce já lendo o erro persistido em welcomeVoiceSession.js
-  // (não um useState local zerado) -- assim o botão "Ouvir saudação"
-  // reaparece mesmo que a Home tenha sido desmontada (navegação Home ->
-  // outra rota -> Home) desde a última tentativa bloqueada pelo Safari.
-  const [welcomeVoiceError, setWelcomeVoiceError] = useState(() => getWelcomeVoiceBlocked(sessionKey));
-  // BUGFIX iOS: sessionKey pode passar de null -> valor real (hidratação de
-  // sessão) depois da montagem -- ajusta durante a renderização (não em
-  // efeito) seguindo o padrão oficial do React para resetar estado quando
-  // uma "key" muda: https://react.dev/learn/you-might-not-need-an-effect
-  const [prevSessionKey, setPrevSessionKey] = useState(sessionKey);
-  if (sessionKey !== prevSessionKey) {
-    setPrevSessionKey(sessionKey);
-    setWelcomeVoiceError(getWelcomeVoiceBlocked(sessionKey));
-  }
+  const isAppleVoiceRuntime = useMemo(
+    () => typeof window !== 'undefined' && isAppleWebKitRuntime(window),
+    [],
+  );
+  const welcomeAttemptInFlightRef = useRef(false);
+  const retryWelcomeOnGestureRef = useRef(false);
+  const welcomeWasBackgroundedRef = useRef(false);
+  const [voiceActivationRequired, setVoiceActivationRequired] = useState(
+    () => Boolean(
+      voiceEnabled
+      && sessionKey
+      && isAppleVoiceRuntime
+      && !isWelcomeVoiceActivated(sessionKey)
+    ),
+  );
+  const [voiceActivationPending, setVoiceActivationPending] = useState(false);
+  const [voiceActivationError, setVoiceActivationError] = useState(null);
 
   const requestWelcomeVoice = useCallback(
-    () => voiceController.speak(greeting.spokenGreeting, {
+    (requestMetadata = {}) => voiceController.speak(greeting.spokenGreeting, {
       messageId: 'welcome',
       source: 'greeting',
+      ...requestMetadata,
     }),
     [greeting.spokenGreeting, voiceController],
   );
-  const applyWelcomeVoiceResult = useCallback((result) => {
-    const error = result?.error ?? null;
-    setWelcomeVoiceError(error);
-    if (error) {
-      markWelcomeVoiceBlocked(sessionKey, error);
-    } else {
-      clearWelcomeVoiceBlocked(sessionKey);
+  const attemptWelcomeVoice = useCallback(async ({ userInitiated = false, ...requestMetadata } = {}) => {
+    if (!voiceEnabled || !sessionKey || welcomeAttemptInFlightRef.current) return null;
+
+    welcomeAttemptInFlightRef.current = true;
+    try {
+      const result = await requestWelcomeVoice({ userInitiated, ...requestMetadata });
+      const error = result?.error ?? null;
+      const autoplayBlocked = error?.code === VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED;
+      retryWelcomeOnGestureRef.current = autoplayBlocked;
+
+      if (autoplayBlocked) markWelcomeVoiceBlocked(sessionKey, error);
+      else if (!error) clearWelcomeVoiceBlocked(sessionKey);
+
+      return result;
+    } finally {
+      welcomeAttemptInFlightRef.current = false;
+      onWelcomeVoiceSettled?.();
     }
-    return result;
-  }, [sessionKey]);
-  const speakWelcome = useCallback(
-    () => requestWelcomeVoice().then(applyWelcomeVoiceResult),
-    [applyWelcomeVoiceResult, requestWelcomeVoice],
-  );
+  }, [onWelcomeVoiceSettled, requestWelcomeVoice, sessionKey, voiceEnabled]);
 
   useEffect(() => voiceInput.registerHandlers({
     onBeforeStart: onBeforeVoiceStart,
     onFinalTranscript: (transcript) => {
       const cleanTranscript = String(transcript ?? '').trim();
-      if (cleanTranscript) onSendTranscript(cleanTranscript);
+      if (cleanTranscript) onSendTranscript(cleanTranscript, { source: 'voice' });
     },
   }), [onBeforeVoiceStart, onSendTranscript, voiceInput]);
 
@@ -416,21 +443,125 @@ function SimplifiedHomeView({
     if (!voiceEnabled) return;
     if (!claimWelcomeVoice(sessionKey)) return;
 
+    if (isAppleVoiceRuntime) return;
+
     // BLOCO VOZ HIDRATAÇÃO: a saudação tem prioridade exclusiva -- o
     // autoplay de mensagens (UniChatPage) só é armado quando a fala da
     // saudação TERMINA ou FALHA (finally), nunca antes (preparando/
     // carregando/tocando ficam bloqueando). Sucesso e falha liberam igual.
-    void requestWelcomeVoice()
-      .then(applyWelcomeVoiceResult)
-      .finally(() => {
-        onWelcomeVoiceSettled?.();
-      });
+    void attemptWelcomeVoice();
   }, [
-    applyWelcomeVoiceResult,
-    onWelcomeVoiceSettled,
-    requestWelcomeVoice,
+    attemptWelcomeVoice,
+    isAppleVoiceRuntime,
     sessionKey,
     voiceEnabled,
+  ]);
+
+  useEffect(() => {
+    if (isAppleVoiceRuntime) return undefined;
+    retryWelcomeOnGestureRef.current = getWelcomeVoiceBlocked(sessionKey)?.code
+      === VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED;
+    return undefined;
+  }, [isAppleVoiceRuntime, sessionKey]);
+
+  useEffect(() => {
+    if (
+      !voiceEnabled
+      || isAppleVoiceRuntime
+      || typeof window === 'undefined'
+      || typeof document === 'undefined'
+    ) {
+      return undefined;
+    }
+
+    const retryAfterUserGesture = (event) => {
+      if (!retryWelcomeOnGestureRef.current || document.visibilityState === 'hidden') return;
+      if (event.target instanceof Element && event.target.closest('[data-uni-voice-control]')) return;
+      retryWelcomeOnGestureRef.current = false;
+      void attemptWelcomeVoice({ userInitiated: true });
+    };
+
+    window.addEventListener('pointerdown', retryAfterUserGesture, true);
+    window.addEventListener('keydown', retryAfterUserGesture, true);
+    return () => {
+      window.removeEventListener('pointerdown', retryAfterUserGesture, true);
+      window.removeEventListener('keydown', retryAfterUserGesture, true);
+    };
+  }, [attemptWelcomeVoice, isAppleVoiceRuntime, voiceEnabled]);
+
+  useEffect(() => {
+    if (!voiceEnabled || !sessionKey || typeof window === 'undefined' || typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const markBackgrounded = () => {
+      welcomeWasBackgroundedRef.current = true;
+    };
+    const greetAfterForegroundReturn = () => {
+      if (!welcomeWasBackgroundedRef.current || document.visibilityState === 'hidden') return;
+      welcomeWasBackgroundedRef.current = false;
+      releaseWelcomeVoice(sessionKey);
+      if (!claimWelcomeVoice(sessionKey)) return;
+      if (isAppleVoiceRuntime) {
+        setVoiceActivationError(null);
+        setVoiceActivationRequired(true);
+        return;
+      }
+      void attemptWelcomeVoice();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') markBackgrounded();
+      else greetAfterForegroundReturn();
+    };
+
+    window.addEventListener('pagehide', markBackgrounded);
+    window.addEventListener('pageshow', greetAfterForegroundReturn);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', markBackgrounded);
+      window.removeEventListener('pageshow', greetAfterForegroundReturn);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [attemptWelcomeVoice, isAppleVoiceRuntime, sessionKey, voiceEnabled]);
+
+  const handleActivateVoice = useCallback(async () => {
+    if (voiceActivationPending || !sessionKey) return;
+
+    setVoiceActivationPending(true);
+    setVoiceActivationError(null);
+    claimWelcomeVoice(sessionKey);
+
+    try {
+      const playbackPreparation = voiceController.preparePlayback?.() ?? Promise.resolve(false);
+      const microphonePreparation = voiceInput.prepareMicrophone();
+      const [, microphoneResult] = await Promise.all([
+        playbackPreparation,
+        microphonePreparation,
+      ]);
+
+      if (!microphoneResult?.granted) {
+        setVoiceActivationError(getVoiceActivationError(microphoneResult?.errorCode));
+        return;
+      }
+
+      markWelcomeVoiceActivated(sessionKey);
+      setVoiceActivationRequired(false);
+      setVoiceActivationPending(false);
+      void attemptWelcomeVoice({
+        userInitiated: true,
+        playbackPreparationAttempted: true,
+      });
+    } catch {
+      setVoiceActivationError('Não consegui concluir a ativação. Tente novamente.');
+    } finally {
+      setVoiceActivationPending(false);
+    }
+  }, [
+    attemptWelcomeVoice,
+    sessionKey,
+    voiceActivationPending,
+    voiceController,
+    voiceInput,
   ]);
 
   useEffect(() => {
@@ -645,12 +776,20 @@ function SimplifiedHomeView({
         <p className={styles.greetingMessage}>
           Estou aqui para ajudar você a tomar as <strong>melhores decisões</strong> financeiras.
         </p>
-        {welcomeVoiceError ? (
-          <div className={styles.greetingVoiceFallback} role="status" aria-live="polite">
-            <span>{welcomeVoiceError.message}</span>
-            <button type="button" className={styles.manualSpeak} onClick={() => void speakWelcome()}>
-              Ouvir saudação
+        {voiceActivationRequired ? (
+          <div className={styles.voiceActivation}>
+            <button
+              type="button"
+              className={styles.voiceActivationButton}
+              onClick={handleActivateVoice}
+              disabled={voiceActivationPending}
+            >
+              {voiceActivationPending ? 'ATIVANDO...' : 'ATIVAR VOZ E MICROFONE'}
             </button>
+            <small>
+              Toque uma vez para permitir o microfone e ouvir a saudação da Uni.
+            </small>
+            {voiceActivationError ? <p role="alert">{voiceActivationError}</p> : null}
           </div>
         ) : null}
       </section>
@@ -678,7 +817,7 @@ function SimplifiedHomeView({
           data-state={interactionState}
           aria-label={isListening ? 'Solte para enviar o áudio' : 'Pressione e segure para falar com a Uni'}
           aria-pressed={isListening}
-          disabled={isInteractionBusy && !isListening}
+          disabled={voiceActivationRequired || voiceActivationPending || (isInteractionBusy && !isListening)}
           onPointerDown={handleVoicePointerDown}
           onPointerUp={handleVoicePointerUp}
           onPointerCancel={handleVoicePointerCancel}
@@ -686,6 +825,7 @@ function SimplifiedHomeView({
           onKeyDown={handleVoiceKeyDown}
           onKeyUp={handleVoiceKeyUp}
           onContextMenu={(event) => event.preventDefault()}
+          data-uni-voice-control
         >
           <span className={styles.uniButtonRing} aria-hidden="true" />
           <span

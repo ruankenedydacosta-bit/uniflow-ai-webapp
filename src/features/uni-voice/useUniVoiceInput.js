@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { createMediaRecorderAdapter } from './mediaRecorderAdapter.js';
+import {
+  createMediaRecorderAdapter,
+  requestVoiceMicrophonePermission,
+} from './mediaRecorderAdapter.js';
 import { uniVoiceTranscriptionProvider } from './uniVoiceTranscriptionProvider.js';
 import {
   initialVoiceCaptureState,
@@ -134,6 +137,11 @@ export function useUniVoiceInput({
     return started;
   }, [releaseAdapter, runtime, state.status, transcribe, workspaceId]);
 
+  const prepareMicrophone = useCallback(() => {
+    const browserRuntime = runtime ?? (typeof window !== 'undefined' ? window : undefined);
+    return requestVoiceMicrophonePermission(browserRuntime);
+  }, [runtime]);
+
   const stop = useCallback(() => {
     if (!adapterRef.current || state.status !== VOICE_CAPTURE_STATES.LISTENING) return false;
     return adapterRef.current.stop();
@@ -166,6 +174,34 @@ export function useUniVoiceInput({
     dispatch({ type: 'RESET' });
   }, [cancel]);
 
+  useEffect(() => {
+    const browserRuntime = runtime ?? (typeof window !== 'undefined' ? window : undefined);
+    const browserDocument = browserRuntime?.document;
+    if (!browserRuntime?.addEventListener || !browserDocument?.addEventListener) return undefined;
+
+    const cancelForLifecycle = () => {
+      const hasCapture = Boolean(adapterRef.current);
+      const hasPendingTranscription = state.status === VOICE_CAPTURE_STATES.PROCESSING;
+      if (!hasCapture && !hasPendingTranscription) return;
+
+      requestIdRef.current += 1;
+      adapterRef.current?.cancel();
+      dispatch({ type: 'CANCEL' });
+      releaseAdapter();
+    };
+
+    const handleVisibilityChange = () => {
+      if (browserDocument.visibilityState === 'hidden') cancelForLifecycle();
+    };
+
+    browserRuntime.addEventListener('pagehide', cancelForLifecycle);
+    browserDocument.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      browserRuntime.removeEventListener('pagehide', cancelForLifecycle);
+      browserDocument.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [releaseAdapter, runtime, state.status]);
+
   useEffect(() => () => {
     requestIdRef.current += 1;
     adapterRef.current?.dispose();
@@ -185,6 +221,7 @@ export function useUniVoiceInput({
     cancel,
     toggle,
     reset,
+    prepareMicrophone,
     getActiveStream,
   };
 }

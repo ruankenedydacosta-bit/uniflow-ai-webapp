@@ -4,7 +4,9 @@ import test from 'node:test';
 import {
   createMediaRecorderAdapter,
   getSupportedVoiceMimeType,
+  isAppleWebKitRuntime,
   isMediaRecorderSupported,
+  requestVoiceMicrophonePermission,
   VOICE_AUDIO_MAX_BYTES,
   VOICE_AUDIO_MAX_DURATION_MS,
 } from './mediaRecorderAdapter.js';
@@ -71,6 +73,41 @@ test('captura real usa getUserMedia e MediaRecorder nativos', async () => {
   assert.equal(await adapter.start(), true);
   assert.equal(started, 1);
   adapter.dispose();
+});
+
+test('preflight solicita o microfone e encerra a track sem iniciar MediaRecorder', async () => {
+  const { runtime, track } = createRuntime();
+  let recorderCreated = 0;
+  runtime.MediaRecorder = class extends FakeMediaRecorder {
+    constructor(...args) {
+      super(...args);
+      recorderCreated += 1;
+    }
+  };
+
+  const result = await requestVoiceMicrophonePermission(runtime);
+
+  assert.deepEqual(result, { granted: true, errorCode: null });
+  assert.equal(track.stopped, true);
+  assert.equal(recorderCreated, 0);
+  assert.equal(Object.isFrozen(result), true);
+});
+
+test('preflight preserva a recusa de permissão sem iniciar captura', async () => {
+  const denial = Object.assign(new Error('denied'), { name: 'NotAllowedError' });
+  const { runtime } = createRuntime({ getUserMedia: async () => { throw denial; } });
+
+  assert.deepEqual(
+    await requestVoiceMicrophonePermission(runtime),
+    { granted: false, errorCode: 'permission_denied' },
+  );
+});
+
+test('preflight sem getUserMedia retorna unsupported de forma controlada', async () => {
+  assert.deepEqual(
+    await requestVoiceMicrophonePermission({ navigator: {} }),
+    { granted: false, errorCode: 'unsupported' },
+  );
 });
 
 test('BUG 3: onStreamReady expõe o MESMO stream já capturado (sem um segundo getUserMedia)', async () => {
@@ -236,6 +273,68 @@ test('navegador incompatível mantém fallback textual', () => {
 
 test('MIME é escolhido por allowlist fechada', () => {
   assert.equal(getSupportedVoiceMimeType(FakeMediaRecorder), 'audio/webm;codecs=opus');
+});
+
+test('Safari/iOS prefere audio/mp4 quando WebM e MP4 estão disponíveis', async () => {
+  class SafariMediaRecorder extends FakeMediaRecorder {
+    static isTypeSupported(type) {
+      return type === 'audio/mp4' || type.startsWith('audio/webm');
+    }
+  }
+  const { runtime } = createRuntime();
+  runtime.MediaRecorder = SafariMediaRecorder;
+  runtime.navigator.userAgent = 'Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1';
+  runtime.navigator.platform = 'iPhone';
+  let capture = null;
+  const adapter = createMediaRecorderAdapter({
+    runtime,
+    onAudio: (value) => { capture = value; },
+  });
+
+  assert.equal(isAppleWebKitRuntime(runtime), true);
+  assert.equal(await adapter.start(), true);
+  assert.equal(adapter.stop(), true);
+  assert.equal(capture.mimeType, 'audio/mp4');
+  assert.equal(capture.audio.type, 'audio/mp4');
+});
+
+test('Chrome/Android continua preferindo WebM/Opus', () => {
+  const { runtime } = createRuntime();
+  runtime.navigator.userAgent = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126 Mobile Safari/537.36';
+  runtime.navigator.platform = 'Linux armv8l';
+  assert.equal(isAppleWebKitRuntime(runtime), false);
+  assert.equal(getSupportedVoiceMimeType(runtime.MediaRecorder, {
+    preferMp4: isAppleWebKitRuntime(runtime),
+  }), 'audio/webm;codecs=opus');
+});
+
+test('Safari tenta constraints simples quando rejeita constraints avançadas', async () => {
+  const { runtime, stream } = createRuntime();
+  const constraints = [];
+  runtime.navigator.mediaDevices.getUserMedia = async (value) => {
+    constraints.push(value);
+    if (constraints.length === 1) {
+      throw Object.assign(new Error('unsupported constraints'), { name: 'OverconstrainedError' });
+    }
+    return stream;
+  };
+  const adapter = createMediaRecorderAdapter({ runtime });
+
+  assert.equal(await adapter.start(), true);
+  assert.equal(constraints.length, 2);
+  assert.deepEqual(constraints[1], { audio: true, video: false });
+  adapter.dispose();
+});
+
+test('ciclo de vida iOS cancela captura e transcrição ao ocultar página e remove listeners', () => {
+  const source = readFileSync(new URL('./useUniVoiceInput.js', import.meta.url), 'utf8');
+  assert.match(source, /addEventListener\('pagehide', cancelForLifecycle\)/);
+  assert.match(source, /addEventListener\('visibilitychange', handleVisibilityChange\)/);
+  assert.match(source, /visibilityState === 'hidden'/);
+  assert.match(source, /requestIdRef\.current \+= 1/);
+  assert.match(source, /adapterRef\.current\?\.cancel\(\)/);
+  assert.match(source, /removeEventListener\('pagehide', cancelForLifecycle\)/);
+  assert.match(source, /removeEventListener\('visibilitychange', handleVisibilityChange\)/);
 });
 
 test('validação cliente bloqueia áudio vazio, grande, longo e workspace ausente', () => {

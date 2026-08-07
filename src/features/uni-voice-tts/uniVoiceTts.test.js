@@ -34,9 +34,10 @@ function fakeSupabase(token = 'jwt-token') {
 }
 
 function createFakeRuntime() {
-  const calls = { created: 0, revoked: 0, paused: 0, played: 0 };
+  const calls = { audioInstances: 0, created: 0, revoked: 0, paused: 0, played: 0 };
   class Audio {
     constructor() {
+      calls.audioInstances += 1;
       this.src = '';
     }
     play() {
@@ -61,7 +62,14 @@ function createFakeRuntime() {
   };
 }
 
-function makeProvider({ fetchImpl, enabled = true, token = 'jwt-token', timeoutMs = 20000, runtime } = {}) {
+function makeProvider({
+  fetchImpl,
+  enabled = true,
+  token = 'jwt-token',
+  timeoutMs = 20000,
+  playbackPreparationTimeoutMs,
+  runtime,
+} = {}) {
   return createElevenLabsTtsProvider({
     supabase: fakeSupabase(token),
     supabaseUrl: 'https://demo.supabase.co',
@@ -70,6 +78,7 @@ function makeProvider({ fetchImpl, enabled = true, token = 'jwt-token', timeoutM
     fetchImpl,
     runtime: runtime ?? createFakeRuntime().runtime,
     timeoutMs,
+    playbackPreparationTimeoutMs,
   });
 }
 
@@ -111,6 +120,38 @@ test('sucesso: gera Blob URL, toca e revoga ao terminar (onended)', async () => 
   assert.equal(calls.created, 1);
   assert.equal(calls.revoked, 1);
   assert.equal(calls.played, 1);
+});
+
+test('Safari prepara e reutiliza um único elemento de áudio antes da resposta assíncrona', async () => {
+  const { runtime, calls } = createFakeRuntime();
+  const provider = makeProvider({ runtime, fetchImpl: async () => jsonResponse(200, {}) });
+
+  assert.equal(await provider.preparePlayback(), true);
+  assert.equal(calls.played, 1);
+  await provider.speak('Resposta depois da rede');
+  assert.equal(calls.played, 2);
+  assert.equal(calls.audioInstances, 1);
+});
+
+test('Safari libera a ativação quando play() da preparação nunca resolve', async () => {
+  const { runtime, calls } = createFakeRuntime();
+  runtime.Audio = class PendingAudio {
+    play() {
+      calls.played += 1;
+      return new Promise(() => {});
+    }
+    pause() { calls.paused += 1; }
+    load() {}
+  };
+  const provider = makeProvider({
+    runtime,
+    fetchImpl: async () => jsonResponse(200, {}),
+    playbackPreparationTimeoutMs: 5,
+  });
+
+  assert.equal(await provider.preparePlayback(), false);
+  assert.equal(calls.played, 1);
+  assert.ok(calls.paused >= 1);
 });
 
 test('novo speak() sempre encerra o audio anterior primeiro -- apenas um ativo', async () => {
@@ -399,6 +440,15 @@ test('texto valido mas longo demais para TTS usa TEXT_TOO_LONG (nao INVALID_TEXT
 
 test('cleanup: hook para o audio no unmount (useEffect com cleanup chamando provider.stop)', () => {
   assert.match(HOOK_SOURCE, /useEffect\(\(\) => \(\) => provider\.stop\(\), \[provider\]\);/);
+});
+
+test('hook prepara reprodução manual e interrompe TTS ao ocultar a página no Safari', () => {
+  assert.match(HOOK_SOURCE, /requestMetadata\.userInitiated \|\| requestMetadata\.source === 'manual_replay'/);
+  assert.match(HOOK_SOURCE, /!requestMetadata\.playbackPreparationAttempted/);
+  assert.match(HOOK_SOURCE, /await preparePlayback\(\)/);
+  assert.match(HOOK_SOURCE, /window\.addEventListener\('pagehide', stopForPageLifecycle\)/);
+  assert.match(HOOK_SOURCE, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
+  assert.match(HOOK_SOURCE, /window\.removeEventListener\('pagehide', stopForPageLifecycle\)/);
 });
 
 // ----------------------------------------------------------------------------

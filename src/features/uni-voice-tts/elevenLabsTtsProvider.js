@@ -10,6 +10,8 @@ import { VOICE_TTS_ERROR_CODES } from './voiceTtsStatus.js';
 // usado por uniLlmProvider.js (OPENAI1). Nunca em TIMEOUT, nunca em erro
 // HTTP (401/403/422/429/5xx), nunca em cancelamento.
 const MAX_NETWORK_RETRIES = 1;
+const SILENT_WAV_DATA_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+const DEFAULT_PLAYBACK_PREPARATION_TIMEOUT_MS = 700;
 
 function providerError(code, message, details = {}) {
   return Object.assign(new Error(message ?? code), {
@@ -27,6 +29,7 @@ export function createElevenLabsTtsProvider({
   fetchImpl = globalThis.fetch,
   runtime = globalThis,
   timeoutMs = DEFAULT_TTS_TIMEOUT_MS,
+  playbackPreparationTimeoutMs = DEFAULT_PLAYBACK_PREPARATION_TIMEOUT_MS,
 } = {}) {
   let audio = null;
   let objectUrl = null;
@@ -39,6 +42,15 @@ export function createElevenLabsTtsProvider({
 
   function isSupported() {
     return Boolean(enabled && supabase && supabaseUrl && supabaseAnonKey && fetchImpl && runtime?.Audio && runtime?.URL?.createObjectURL);
+  }
+
+  function ensureAudio() {
+    if (!audio) {
+      audio = new runtime.Audio();
+      audio.preload = 'auto';
+      audio.playsInline = true;
+    }
+    return audio;
   }
 
   async function healthCheck() {
@@ -56,10 +68,41 @@ export function createElevenLabsTtsProvider({
       audio.onerror = null;
       audio.pause();
       audio.src = '';
+      audio.load?.();
     }
-    audio = null;
     if (objectUrl) runtime.URL?.revokeObjectURL?.(objectUrl);
     objectUrl = null;
+  }
+
+  async function preparePlayback() {
+    if (!isSupported()) return false;
+    stop();
+    const playback = ensureAudio();
+    const previousMuted = Boolean(playback.muted);
+    playback.muted = true;
+    playback.src = SILENT_WAV_DATA_URI;
+    try {
+      let timeoutId = null;
+      const playbackStarted = await Promise.race([
+        Promise.resolve(playback.play()).then(() => true, () => false),
+        new Promise((resolve) => {
+          timeoutId = runtime.setTimeout?.(() => resolve(false), playbackPreparationTimeoutMs);
+        }),
+      ]);
+      runtime.clearTimeout?.(timeoutId);
+
+      if (!playbackStarted) return false;
+      playback.pause();
+      playback.currentTime = 0;
+      return true;
+    } catch {
+      return false;
+    } finally {
+      playback.pause();
+      playback.src = '';
+      playback.load?.();
+      playback.muted = previousMuted;
+    }
   }
 
   // Cancela uma geracao EM ANDAMENTO (fetch ainda nao respondeu). Nunca
@@ -195,7 +238,8 @@ export function createElevenLabsTtsProvider({
     const cacheHit = String(cacheStatus).toUpperCase() === 'HIT';
     const blob = await response.blob();
     objectUrl = runtime.URL.createObjectURL(blob);
-    audio = new runtime.Audio(objectUrl);
+    audio = ensureAudio();
+    audio.src = objectUrl;
 
     return new Promise((resolve, reject) => {
       activeSettle = { resolve, reject };
@@ -230,6 +274,6 @@ export function createElevenLabsTtsProvider({
   }
 
   return {
-    providerName: 'elevenlabs_tts', isSupported, healthCheck, speak, play, pause, resume, stop, cancel,
+    providerName: 'elevenlabs_tts', isSupported, healthCheck, preparePlayback, speak, play, pause, resume, stop, cancel,
   };
 }

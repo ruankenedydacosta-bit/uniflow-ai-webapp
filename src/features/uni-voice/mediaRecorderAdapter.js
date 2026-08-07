@@ -7,6 +7,11 @@ export const VOICE_AUDIO_MIME_TYPES = Object.freeze([
   'audio/ogg;codecs=opus',
 ]);
 
+const APPLE_AUDIO_MIME_TYPES = Object.freeze([
+  'audio/mp4',
+  ...VOICE_AUDIO_MIME_TYPES.filter((mimeType) => mimeType !== 'audio/mp4'),
+]);
+
 function mapCaptureError(error) {
   if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') {
     return 'permission_denied';
@@ -20,9 +25,55 @@ function stopTracks(stream) {
   stream?.getTracks?.().forEach((track) => track.stop());
 }
 
-export function getSupportedVoiceMimeType(MediaRecorderClass = globalThis.MediaRecorder) {
+async function requestAudioStream(runtime) {
+  try {
+    return await runtime.navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+      video: false,
+    });
+  } catch (error) {
+    if (!['OverconstrainedError', 'TypeError'].includes(error?.name)) throw error;
+    return runtime.navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  }
+}
+
+export async function requestVoiceMicrophonePermission(runtime = globalThis) {
+  if (!runtime?.navigator?.mediaDevices?.getUserMedia) {
+    return Object.freeze({ granted: false, errorCode: 'unsupported' });
+  }
+
+  try {
+    const stream = await requestAudioStream(runtime);
+    stopTracks(stream);
+    return Object.freeze({ granted: true, errorCode: null });
+  } catch (error) {
+    return Object.freeze({ granted: false, errorCode: mapCaptureError(error) });
+  }
+}
+
+export function isAppleWebKitRuntime(runtime = globalThis) {
+  const navigator = runtime?.navigator;
+  const userAgent = String(navigator?.userAgent || '');
+  const platform = String(navigator?.platform || '');
+  const isTouchMac = platform === 'MacIntel' && Number(navigator?.maxTouchPoints) > 1;
+  const isAppleMobile = /iPhone|iPad|iPod/i.test(userAgent);
+  const isDesktopSafari = /Safari/i.test(userAgent)
+    && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|OPR|Android/i.test(userAgent);
+  return /AppleWebKit/i.test(userAgent)
+    && (isAppleMobile || isTouchMac || isDesktopSafari);
+}
+
+export function getSupportedVoiceMimeType(
+  MediaRecorderClass = globalThis.MediaRecorder,
+  { preferMp4 = false } = {},
+) {
   if (!MediaRecorderClass) return '';
-  return VOICE_AUDIO_MIME_TYPES.find(
+  const candidates = preferMp4 ? APPLE_AUDIO_MIME_TYPES : VOICE_AUDIO_MIME_TYPES;
+  return candidates.find(
     (mimeType) => MediaRecorderClass.isTypeSupported?.(mimeType),
   ) ?? '';
 }
@@ -84,14 +135,7 @@ export function createMediaRecorderAdapter({
     canceled = false;
 
     try {
-      const nextStream = await runtime.navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-        video: false,
-      });
+      const nextStream = await requestAudioStream(runtime);
 
       if (disposed || canceled || requestId !== permissionRequestId) {
         stopTracks(nextStream);
@@ -104,7 +148,9 @@ export function createMediaRecorderAdapter({
       // voz (ex.: AnalyserNode no botao da Uni) -- puramente informativo,
       // nunca afeta a gravacao/transcricao.
       onStreamReady?.(stream);
-      const mimeType = getSupportedVoiceMimeType(runtime.MediaRecorder);
+      const mimeType = getSupportedVoiceMimeType(runtime.MediaRecorder, {
+        preferMp4: isAppleWebKitRuntime(runtime),
+      });
       recorder = mimeType
         ? new runtime.MediaRecorder(stream, { mimeType })
         : new runtime.MediaRecorder(stream);

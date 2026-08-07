@@ -4,6 +4,23 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
+test('splash possui fallback temporal e restauração pageshow para não prender tela escura no Safari', async () => {
+  const html = await source('../../index.html');
+  assert.match(html, /window\.addEventListener\('load',[\s\S]*?\{ once: true \}/);
+  assert.match(html, /window\.addEventListener\('pageshow'/);
+  assert.match(html, /if \(event\.persisted\) hideSplash\(0\)/);
+  assert.match(html, /hideSplash\(0\);[\s\S]*?4000/);
+  assert.match(html, /if \(hidden\) return;/);
+});
+
+test('documento declara instalação standalone e ícone oficial para iOS', async () => {
+  const html = await source('../../index.html');
+  assert.match(html, /name="viewport"[\s\S]{0,100}viewport-fit=cover/);
+  assert.match(html, /name="apple-mobile-web-app-capable" content="yes"/);
+  assert.match(html, /name="apple-mobile-web-app-status-bar-style" content="black-translucent"/);
+  assert.match(html, /rel="apple-touch-icon" href="\/uniflow-app-icon\.png"/);
+});
+
 test('Vercel possui fallback SPA para deep links do React Router', async () => {
   const config = JSON.parse(await source('../../vercel.json'));
   assert.deepEqual(config.rewrites, [{ source: '/(.*)', destination: '/index.html' }]);

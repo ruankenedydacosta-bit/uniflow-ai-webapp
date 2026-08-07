@@ -887,7 +887,10 @@ test('BLOCO VOZ HIDRATAÇÃO: a saudação tem prioridade exclusiva -- UniChatPa
   assert.match(page, /onWelcomeVoiceSettled=\{handleWelcomeVoiceSettled\}/);
   const home = await source('../simplified-app/SimplifiedHomeView.jsx');
   assert.match(home, /onWelcomeVoiceSettled,/);
-  assert.match(home, /\.finally\(\(\) => \{\s*\n\s*onWelcomeVoiceSettled\?\.\(\);\s*\n\s*\}\);/);
+  assert.match(
+    home,
+    /finally \{\s*\n\s*welcomeAttemptInFlightRef\.current = false;\s*\n\s*onWelcomeVoiceSettled\?\.\(\);\s*\n\s*\}/,
+  );
 });
 
 test('BLOCO VOZ HIDRATAÇÃO (deadlock corrigido): handleWelcomeVoiceSettled chama markWelcomeVoiceSettled ANTES de maybeArmAutoplay -- pendingWelcome nunca fica preso e historyHydrated é armado após settled', async () => {

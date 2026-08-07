@@ -10,7 +10,9 @@ export { useSharedUniVoiceInput } from './useSharedUniVoiceInput.js';
 export {
   createMediaRecorderAdapter,
   getSupportedVoiceMimeType,
+  isAppleWebKitRuntime,
   isMediaRecorderSupported,
+  requestVoiceMicrophonePermission,
   VOICE_AUDIO_MAX_BYTES,
   VOICE_AUDIO_MAX_DURATION_MS,
   VOICE_AUDIO_MIME_TYPES,

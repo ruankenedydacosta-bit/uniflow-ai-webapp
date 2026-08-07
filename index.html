@@ -7,6 +7,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="UniFlow AI" />
+    <link rel="apple-touch-icon" href="/uniflow-app-icon.png" />
     <title>uniflow-ai-app</title>
 
     <style>
@@ -92,19 +96,36 @@
     <script type="module" src="/src/main.jsx"></script>
 
     <script>
-      window.addEventListener('load', function () {
-        var splash = document.getElementById('uniflow-splash');
+      (function () {
+        var hidden = false;
 
-        if (!splash) return;
+        function hideSplash(delay) {
+          if (hidden) return;
+          var splash = document.getElementById('uniflow-splash');
 
-        window.setTimeout(function () {
-          splash.classList.add('is-hidden');
+          if (!splash) return;
 
           window.setTimeout(function () {
-            splash.remove();
-          }, 350);
-        }, 450);
-      });
+            if (hidden) return;
+            hidden = true;
+            splash.classList.add('is-hidden');
+
+            window.setTimeout(function () {
+              splash.remove();
+            }, 350);
+          }, delay);
+        }
+
+        window.addEventListener('load', function () {
+          hideSplash(450);
+        }, { once: true });
+        window.addEventListener('pageshow', function (event) {
+          if (event.persisted) hideSplash(0);
+        });
+        window.setTimeout(function () {
+          hideSplash(0);
+        }, 4000);
+      })();
     </script>
   </body>
 </html>

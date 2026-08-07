@@ -116,7 +116,17 @@ export function useVoiceIntensity({ getStream, active, runtime } = {}) {
       setLevel(toVisualLevel(smoothedRef.current));
       rafRef.current = requestFrame(tick);
     };
-    rafRef.current = requestFrame(tick);
+    const startAnalysis = () => {
+      if (!disposed) rafRef.current = requestFrame(tick);
+    };
+    const resumeResult = audioContext.state === 'suspended'
+      ? audioContext.resume?.()
+      : null;
+    if (resumeResult?.then) {
+      void resumeResult.catch(() => {}).finally(startAnalysis);
+    } else {
+      startAnalysis();
+    }
 
     return () => {
       disposed = true;

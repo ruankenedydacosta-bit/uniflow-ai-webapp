@@ -369,34 +369,17 @@ export async function saveMessages(convId, msgs) {
   const userId = await getUserId();
   if (!userId) return false;
 
-  const dbMsgs = msgs.map(m => messageToDb(m, convId, userId));
+  // O indice de idempotencia e parcial (client_message_id IS NOT NULL),
+  // portanto o PostgREST nao consegue inferi-lo num upsert por colunas e
+  // responde 400. Reutilizar saveMessage preserva a mesma regra 23505 por
+  // item: duplicatas sao recuperadas e mensagens novas continuam gravadas.
+  const uniqueMessages = Array.from(new Map(
+    msgs.map((message) => [message.clientMessageId ?? message.id, message]),
+  ).values());
 
-  // BUG REAL (chaves duplicadas, causa raiz #1): um .insert() com várias
-  // linhas é UMA ÚNICA instrução -- se QUALQUER linha colidir com o índice
-  // único uni_messages_client_id_uidx (conversation_id, client_message_id),
-  // o Postgres rejeita o LOTE INTEIRO (23505), inclusive as mensagens
-  // genuinamente novas que nunca tinham sido salvas. O código antigo tratava
-  // esse erro como sucesso (`return true`) sem inserir nada -- mensagens
-  // novas silenciosamente nunca chegavam ao banco. Isso acontecia sempre que
-  // a MESMA conversa local era promovida a uma conversa Supabase mais de uma
-  // vez (ex.: duas abas/duas montagens enviando a primeira mensagem quase ao
-  // mesmo tempo, cada uma criando sua própria uni_conversations e tentando
-  // reenviar o mesmo lote de mensagens locais). upsert com
-  // ignoreDuplicates faz cada linha do lote ser resolvida
-  // independentemente: linhas novas são inseridas, linhas já existentes
-  // (mesmo client_message_id na mesma conversa) são simplesmente puladas --
-  // nunca perde dado novo, nunca duplica linha.
-  const { error } = await supabase
-    .from(MESSAGES_TABLE)
-    .upsert(dbMsgs, { onConflict: 'conversation_id,client_message_id', ignoreDuplicates: true });
-
-  if (error) {
-    if (error.code === '23505') {
-      markOnline();
-      return true;
-    }
-    markOffline();
-    return false;
+  for (const message of uniqueMessages) {
+    const saved = await saveMessage(convId, message, userId);
+    if (!saved) return false;
   }
 
   markOnline();

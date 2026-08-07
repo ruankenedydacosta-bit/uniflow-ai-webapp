@@ -81,3 +81,9 @@ test('useVoiceIntensity chama stopAnalysis tanto quando `active` cai quanto no u
 test('useVoiceIntensity respeita prefers-reduced-motion desligando a análise em si, não só via CSS', () => {
   assert.match(SOURCE, /if \(prefersReducedMotion\(browserRuntime\)\) return undefined;/);
 });
+
+test('Safari retoma AudioContext suspenso antes de iniciar a análise', () => {
+  assert.match(SOURCE, /audioContext\.state === 'suspended'/);
+  assert.match(SOURCE, /audioContext\.resume\?\.\(\)/);
+  assert.match(SOURCE, /resumeResult\.catch\(\(\) => \{\}\)\.finally\(startAnalysis\)/);
+});
