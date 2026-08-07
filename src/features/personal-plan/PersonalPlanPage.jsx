@@ -503,8 +503,12 @@ if (!resolvedWorkspaceId) {
         </h2>
 
         <div className={styles.benefitsGrid}>
-          {PERSONAL_PLAN_BENEFITS.map((benefit) => (
-            <article key={benefit.id} className={styles.benefitCard}>
+          {PERSONAL_PLAN_BENEFITS.map((benefit, index) => (
+            <article
+              key={benefit.id}
+              className={styles.benefitCard}
+              style={{ '--benefit-index': index }}
+            >
               <span className={styles.benefitIcon}>
                 <PlanBenefitIcon type={benefit.id} />
               </span>

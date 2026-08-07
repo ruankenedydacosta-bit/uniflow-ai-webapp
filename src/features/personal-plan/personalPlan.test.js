@@ -361,6 +361,51 @@ test('CSS cobre breakpoints, safe areas, foco e redução de movimento', async (
 });
 
 // ============================================================================
+// REFINAMENTO VISUAL (bloco da parceria UniFlow AI + SmartTech) -- CAUSA
+// RAIZ do corte/sobreposição visto em produção: (1) .brandFrame combinava
+// overflow:hidden com uma logo forçada a width:100%+transform:scale(1.13),
+// então em telas mais largas a imagem escalada excedia a caixa e a borda
+// "comia" parte do símbolo; (2) .brandWave tinha margin-top NEGATIVO
+// (-16px), puxando a onda para cima por cima do rodapé das logos. Corrigido
+// com object-fit:contain (a logo nunca excede a caixa, nunca é cortada,
+// qualquer viewport) e margin vertical sempre >= 0 (só a margem lateral,
+// para a onda "sangrar" até a borda da tela, continua negativa).
+// ============================================================================
+
+test('HOTFIX (logos da parceria cortadas): .brandFrame nunca usa overflow:hidden -- a logo escala com object-fit:contain, nunca é cortada em nenhuma largura de tela', async () => {
+  const css = await source('./PersonalPlan.module.css');
+  const idx = css.indexOf('.brandFrame {');
+  const block = css.slice(idx, css.indexOf('}', idx) + 1);
+  // real CSS declaration only -- os comentários explicativos no bloco
+  // mencionam "overflow:hidden" como texto (causa raiz antiga), então a
+  // checagem exige o ';' de uma declaração real, nunca casa com o comentário.
+  assert.doesNotMatch(block, /overflow:\s*hidden;/);
+  assert.match(block, /overflow:\s*visible;/);
+  const imgIdx = css.indexOf('.brandFrame img {');
+  const imgBlock = css.slice(imgIdx, css.indexOf('}', imgIdx) + 1);
+  assert.match(imgBlock, /object-fit:\s*contain/);
+  assert.match(imgBlock, /max-width:\s*100%/);
+  assert.match(imgBlock, /max-height:\s*100%/);
+});
+
+test('HOTFIX (onda sobrepondo a parceria): .brandWave nunca tem margem vertical NEGATIVA (só a margem lateral, para sangrar até a borda, pode ser negativa) -- a onda nunca mais pode ser puxada para cima, por cima das logos', async () => {
+  const css = await source('./PersonalPlan.module.css');
+  const idx = css.indexOf('.brandWave {');
+  const block = css.slice(idx, css.indexOf('}', idx) + 1);
+  const marginMatch = block.match(/margin:\s*(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)/);
+  assert.ok(marginMatch, 'declaração de margin não encontrada em .brandWave');
+  const [, top] = marginMatch;
+  assert.ok(!top.startsWith('-'), `margin-top de .brandWave precisa ser >= 0 (era ${top}) -- negativo reproduz a onda sobrepondo a parceria`);
+});
+
+test('parceria: .brandSection fica acima da onda no empilhamento (z-index), garantia extra contra sobreposição futura', async () => {
+  const css = await source('./PersonalPlan.module.css');
+  const idx = css.indexOf('.brandSection {');
+  const block = css.slice(idx, css.indexOf('}', idx) + 1);
+  assert.match(block, /z-index:\s*1/);
+});
+
+// ============================================================================
 // HOTFIX (botão "Voltar para entrar ou criar conta" voltava sozinho para
 // /plano-pessoal): CAUSA RAIZ -- /login é rota pública, e o guard em
 // App.jsx redireciona QUALQUER usuário autenticado numa rota pública
