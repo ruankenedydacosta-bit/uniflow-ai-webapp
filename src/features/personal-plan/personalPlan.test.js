@@ -359,3 +359,42 @@ test('CSS cobre breakpoints, safe areas, foco e redução de movimento', async (
   assert.match(css, /focus-visible/);
   assert.match(css, /overflow-x: hidden/);
 });
+
+// ============================================================================
+// HOTFIX (botão "Voltar para entrar ou criar conta" voltava sozinho para
+// /plano-pessoal): CAUSA RAIZ -- /login é rota pública, e o guard em
+// App.jsx redireciona QUALQUER usuário autenticado numa rota pública
+// (/, /welcome, /login) de volta para onde ele "pertence" no funil (aqui,
+// de volta para /plano-pessoal, já que a sessão continuava ativa e sem
+// assinatura desbloqueada). Corrigido encerrando a sessão real (mesmo
+// signOut já usado em SimplifiedAccountPage.jsx) ANTES de navegar -- só
+// depois disso session vira null e /login deixa de ser redirecionado.
+// ============================================================================
+
+test('HOTFIX: botão "Voltar para entrar ou criar conta" encerra a sessão real (signOut) ANTES de navegar para /login -- nunca navega primeiro', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  assert.match(page, /signOut,\s*\n\} = useSession\(\);/);
+  const idx = page.indexOf('async function handleBackToAuth() {');
+  const endIdx = page.indexOf('\n  }', idx);
+  const body = page.slice(idx, endIdx);
+  assert.match(body, /await signOut\(\);/);
+  assert.match(body, /navigate\('\/login'\);/);
+  const signOutIdx = body.indexOf('await signOut();');
+  const navigateIdx = body.indexOf("navigate('/login');");
+  assert.ok(signOutIdx > -1 && navigateIdx > signOutIdx, 'signOut precisa acontecer ANTES do navigate -- navegar primeiro reproduz o bug (App.jsx redireciona de volta enquanto a sessão antiga ainda está ativa)');
+});
+
+test('HOTFIX: botão "Voltar para entrar ou criar conta" é protegido contra duplo clique (isReturningToAuth)', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const idx = page.indexOf('async function handleBackToAuth() {');
+  const body = page.slice(idx, page.indexOf('\n  }', idx));
+  assert.match(body, /if \(isReturningToAuth\) return;/);
+  assert.match(body, /setIsReturningToAuth\(true\);/);
+  assert.match(page, /onClick=\{handleBackToAuth\}/);
+  assert.match(page, /disabled=\{isReturningToAuth\}/);
+});
+
+test('HOTFIX: causa raiz documentada -- App.jsx redireciona usuário autenticado saindo de rota pública (/, /welcome, /login) de volta ao funil, nunca deixa /login renderizar para sessão ativa', async () => {
+  const app = await source('../../app/App.jsx');
+  assert.match(app, /\['\/', '\/welcome', '\/login'\]\.includes\(location\.pathname\)\s*\n\s*&& session\s*\n\s*&& !sessionError/);
+});

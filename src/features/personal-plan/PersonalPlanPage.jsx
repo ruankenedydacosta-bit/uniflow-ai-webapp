@@ -235,6 +235,7 @@ const {
   workspace,
   availableWorkspaces,
   createWorkspaceProfile,
+  signOut,
 } = useSession();
   const userId = resolvePresentationUserId(session, isSupabaseConfigured);
   // GUARD FIX: resolver compartilhado com App.jsx (nunca duas
@@ -424,6 +425,28 @@ if (!resolvedWorkspaceId) {
     navigate(SIMPLIFIED_ROUTES.HOME);
   }
 
+  // HOTFIX (botão "Voltar para entrar ou criar conta" voltava sozinho para
+  // /plano-pessoal): CAUSA RAIZ -- /login é rota pública, e o guard em
+  // App.jsx redireciona QUALQUER usuário autenticado que caia numa rota
+  // pública (/, /welcome, /login) de volta para onde ele "pertence" no
+  // funil (aqui, de volta para /plano-pessoal, já que a sessão continuava
+  // ativa e sem assinatura desbloqueada). Não há como um usuário
+  // autenticado "visitar" /login sem sair da sessão primeiro -- por
+  // desenho, é exatamente isso que esse botão pede ("voltar à
+  // autenticação" = sair do fluxo atual). Encerra a sessão real (mesmo
+  // signOut já usado em SimplifiedAccountPage.jsx) e só então navega --
+  // depois do signOut, session vira null e /login deixa de ser
+  // redirecionado pelo guard, renderizando normalmente (Entrar/Criar
+  // conta/Google/e-mail-senha). Nenhum outro guard/redirect foi tocado.
+  const [isReturningToAuth, setIsReturningToAuth] = useState(false);
+
+  async function handleBackToAuth() {
+    if (isReturningToAuth) return;
+    setIsReturningToAuth(true);
+    await signOut();
+    navigate('/login');
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.pageGlow} aria-hidden="true" />
@@ -528,16 +551,26 @@ if (!resolvedWorkspaceId) {
             <Button type="button" variant="primary" fullWidth onClick={handleGoHome}>Ir para o início</Button>
           </>
         ) : (
-          <button
-            type="button"
-            className={styles.subscribeButton}
-            onClick={() => setFlowState('method_modal')}
-            disabled={flowState === 'checking'}
-          >
-            <CrownIcon />
-            <span>ASSINAR PLANO PESSOAL</span>
-            <span className={styles.buttonArrow} aria-hidden="true">›</span>
-          </button>
+          <>
+            <button
+              type="button"
+              className={styles.subscribeButton}
+              onClick={() => setFlowState('method_modal')}
+              disabled={flowState === 'checking'}
+            >
+              <CrownIcon />
+              <span>ASSINAR PLANO PESSOAL</span>
+              <span className={styles.buttonArrow} aria-hidden="true">›</span>
+            </button>
+            <button
+              type="button"
+              className={styles.backToAuthLink}
+              onClick={handleBackToAuth}
+              disabled={isReturningToAuth}
+            >
+              <span aria-hidden="true">←</span> Voltar para entrar ou criar conta
+            </button>
+          </>
         )}
 
         <p className={styles.paymentSecurity}>
