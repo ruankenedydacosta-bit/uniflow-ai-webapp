@@ -28,3 +28,29 @@ test('updateAgendaItem converte ausencia de linha com precondicao em conflito se
   assert.match(body, /code: 'AGENDA_ITEM_CONFLICT'/);
   assert.doesNotMatch(body, /throw /);
 });
+
+test('setAgendaItemStatus exige e aplica updated_at na mesma operação', async () => {
+  const content = await source();
+  const body = content.slice(
+    content.indexOf('export async function setAgendaItemStatus'),
+    content.indexOf('export async function deleteAgendaItem'),
+  );
+
+  assert.match(body, /\{ expectedUpdatedAt \} = \{\}/);
+  assert.match(body, /if \(!expectedUpdatedAt \|\| Number\.isNaN/);
+  assert.match(body, /\.eq\('workspace_id', workspaceId\)/);
+  assert.match(body, /\.eq\('id', itemId\)/);
+  assert.match(body, /\.eq\('updated_at', expectedUpdatedAt\)/);
+});
+
+test('setAgendaItemStatus retorna conflito seguro quando a versão não existe mais', async () => {
+  const content = await source();
+  const body = content.slice(
+    content.indexOf('export async function setAgendaItemStatus'),
+    content.indexOf('export async function deleteAgendaItem'),
+  );
+
+  assert.match(body, /if \(!error && !data\)/);
+  assert.match(body, /code: 'AGENDA_ITEM_CONFLICT'/);
+  assert.doesNotMatch(body, /throw /);
+});

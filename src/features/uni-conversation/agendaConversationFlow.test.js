@@ -52,11 +52,15 @@ function makeHarness(seed = []) {
       item.updated_at = '2026-08-08T11:00:00.000Z';
       return { data: item, error: null };
     },
-    async setAgendaItemStatus(workspaceId, itemId, status) {
-      calls.push({ operation: 'status', workspaceId, itemId, status });
+    async setAgendaItemStatus(workspaceId, itemId, status, options = {}) {
+      calls.push({ operation: 'status', workspaceId, itemId, status, options });
       const item = items.find((candidate) => candidate.id === itemId && candidate.workspace_id === workspaceId);
       if (!item) return { data: null, error: { code: 'not_found' } };
+      if (options.expectedUpdatedAt && options.expectedUpdatedAt !== item.updated_at) {
+        return { data: null, error: { code: 'AGENDA_ITEM_CONFLICT' } };
+      }
       item.status = status;
+      item.updated_at = '2026-08-08T11:00:00.000Z';
       return { data: item, error: null };
     },
     async deleteAgendaItem(workspaceId, itemId) {
@@ -172,6 +176,47 @@ test('edição altera o título explicitamente sem perder o restante do item', a
   assert.equal(update.changes.starts_at, undefined);
 });
 
+test('edição altera somente o título sem exigir as palavras título ou nome', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+
+  const result = await turn(flow, 'Muda minha reunião para alinhamento.');
+  assert.match(result.text, /Atualizei/);
+  assert.deepEqual(calls.find((call) => call.operation === 'update').changes, {
+    title: 'alinhamento',
+  });
+});
+
+test('edição combina título, data e horário numa única atualização', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+
+  const result = await turn(
+    flow,
+    'Muda o título da reunião para alinhamento e a data para sexta que vem às 16h.',
+  );
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.equal(update.changes.title, 'alinhamento');
+  assert.match(update.changes.starts_at, /^2026-08-21T/);
+  assert.equal(new Date(update.changes.starts_at).getHours(), 16);
+});
+
+test('edição implícita combina título, data e horário sem contaminar o título', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+
+  const result = await turn(flow, 'Muda minha reunião para alinhamento sexta que vem às 16h.');
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.equal(update.changes.title, 'alinhamento');
+  assert.match(update.changes.starts_at, /^2026-08-21T/);
+  assert.equal(new Date(update.changes.starts_at).getHours(), 16);
+});
+
 test('edição altera a data e preserva o horário existente', async () => {
   const originalStartsAt = '2026-08-12T15:00:00.000Z';
   const { flow, calls } = makeHarness([
@@ -269,13 +314,14 @@ test('pendência de Agenda pode ser abandonada antes de uma nova declaração fi
   assert.equal(calls.length, 0);
 });
 
-test('conclusão marca o compromisso correspondente como concluído', async () => {
-  const { flow, items } = makeHarness([
+test('conclusão marca o compromisso com a versão esperada', async () => {
+  const { flow, calls, items } = makeHarness([
     { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-08T12:00:00.000Z' },
   ]);
   const result = await turn(flow, 'Já fiz aquela reunião. Pode marcar como concluída.');
   assert.match(result.text, /concluído/);
   assert.equal(items[0].status, 'completed');
+  assert.equal(calls.at(-1).options.expectedUpdatedAt, '2026-08-08T10:00:00.000Z');
 });
 
 test('cancelamento exige confirmação antes de alterar o status', async () => {
@@ -288,6 +334,19 @@ test('cancelamento exige confirmação antes de alterar o status', async () => {
   const second = await turn(flow, 'Sim.');
   assert.match(second.text, /Cancelei/);
   assert.equal(items[0].status, 'cancelled');
+});
+
+test('confirmação antiga de cancelamento não sobrescreve alteração recente', async () => {
+  const { flow, calls, items } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-14T12:00:00.000Z' },
+  ]);
+  await turn(flow, 'Cancela minha reunião de sexta.');
+  items[0].updated_at = '2026-08-08T10:30:00.000Z';
+
+  const result = await turn(flow, 'Sim.');
+  assert.match(result.text, /mudou desde que você o consultou/);
+  assert.equal(items[0].status, 'scheduled');
+  assert.equal(calls.at(-1).options.expectedUpdatedAt, '2026-08-08T10:00:00.000Z');
 });
 
 test('negação preserva o compromisso e encerra a confirmação', async () => {

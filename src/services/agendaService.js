@@ -219,7 +219,12 @@ export async function updateAgendaItem(
  * nunca 'scheduled' (sem reabertura nesta fase, mesma cautela ja aplicada a
  * crm_opportunities.outcome).
  */
-export async function setAgendaItemStatus(workspaceId, itemId, status) {
+export async function setAgendaItemStatus(
+  workspaceId,
+  itemId,
+  status,
+  { expectedUpdatedAt } = {},
+) {
   if (!supabase) {
     return createUnavailableResult(null);
   }
@@ -232,13 +237,25 @@ export async function setAgendaItemStatus(workspaceId, itemId, status) {
     return createValidationResult('Status do item de agenda invalido.');
   }
 
+  if (!expectedUpdatedAt || Number.isNaN(new Date(expectedUpdatedAt).getTime())) {
+    return createValidationResult('Versao esperada do item de agenda invalida.');
+  }
+
   const { data, error } = await supabase
     .from('agenda_items')
     .update({ status })
     .eq('workspace_id', workspaceId)
     .eq('id', itemId)
+    .eq('updated_at', expectedUpdatedAt)
     .select(AGENDA_ITEM_FIELDS)
     .maybeSingle();
+
+  if (!error && !data) {
+    return createResult(null, {
+      code: 'AGENDA_ITEM_CONFLICT',
+      message: 'Este compromisso foi alterado em outro lugar. Atualize a Agenda e tente novamente.',
+    });
+  }
 
   return normalizeSingleResult(data, error, 'Item de agenda nao encontrado para definir o status.');
 }

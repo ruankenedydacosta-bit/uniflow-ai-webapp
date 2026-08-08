@@ -190,9 +190,9 @@ export function useAgenda({
   );
 
   const setItemStatus = useCallback(
-    (itemId, nextStatus) =>
+    (itemId, nextStatus, options) =>
       performMutation(
-        () => setAgendaItemStatus(workspaceId, itemId, nextStatus),
+        () => setAgendaItemStatus(workspaceId, itemId, nextStatus, options),
         (data) => {
           if (!data?.id) return;
           setItems((current) => sortAgendaItems(upsertRecord(current, data)));

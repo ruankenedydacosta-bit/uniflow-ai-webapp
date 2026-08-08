@@ -31,7 +31,11 @@ function AgendaStatusConfirmModal({ item, targetStatus, agenda, onClose }) {
     // Contrato real (useAgenda.js): agenda.setItemStatus sempre resolve
     // para { data, error, isConfigured }, nunca lanca excecao. Falha
     // segura: um resultado ausente/mal-formado NUNCA e tratado como sucesso.
-    const result = await agenda.setItemStatus(item.id, targetStatus);
+    const result = await agenda.setItemStatus(
+      item.id,
+      targetStatus,
+      { expectedUpdatedAt: item.updated_at },
+    );
 
     if (result && !result.error) {
       // Reconcilia a lista com os filtros ativos -- se o novo status sair

@@ -51,9 +51,12 @@ test('rodapé tem um botao ghost de dismiss com texto "Cancelar" (distinto do bo
   );
 });
 
-test('chama agenda.setItemStatus(item.id, targetStatus) -- nunca chama com o literal scheduled, nunca monta payload com id', async () => {
+test('chama setItemStatus com a versão exibida -- nunca chama com scheduled nem monta payload com id', async () => {
   const contents = await source('AgendaStatusConfirmModal.jsx');
-  assert.match(contents, /agenda\.setItemStatus\(item\.id, targetStatus\)/);
+  assert.match(
+    contents,
+    /agenda\.setItemStatus\(\s*\n\s*item\.id,\s*\n\s*targetStatus,\s*\n\s*\{ expectedUpdatedAt: item\.updated_at \},\s*\n\s*\)/,
+  );
   assert.doesNotMatch(contents, /setItemStatus\([^)]*'scheduled'/);
   assert.doesNotMatch(contents, /\{\s*id:\s*item\.id/);
 });

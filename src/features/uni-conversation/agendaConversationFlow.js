@@ -155,7 +155,7 @@ const GENERIC_EDIT_SUBJECTS = new Set([
 function extractExplicitTitleChange(text) {
   const normalized = normalizeFinancialText(text);
   const match = normalized.match(
-    /\b(?:titulo|nome)\b(?:\s+(?:do|da|de)\s+(.+?))?\s+(?:para|como)\s+(.+)$/,
+    /\b(?:titulo|nome)\b(?:\s+(?:do|da|de)\s+(.+?))?\s+(?:para|como)\s+(.+?)(?=\s+e\s+(?:(?:a|o)\s+)?(?:data|horario)\b|$)/,
   );
   if (!match) return { target: null, title: null };
   const title = match[2].replace(/[.,!?]+$/g, '').trim();
@@ -165,9 +165,28 @@ function extractExplicitTitleChange(text) {
   };
 }
 
+function extractImplicitTitleChange(text) {
+  const normalized = normalizeFinancialText(text);
+  const match = normalized.match(
+    /^\s*(?:muda(?:r)?|altera(?:r)?|edita(?:r)?)\s+(?:meu|minha|o|a)?\s*(.+?)\s+(?:para|pra|como)\s+(.+)$/,
+  );
+  if (!match) return { target: null, title: null };
+
+  const destination = match[2].replace(/[.,!?]+$/g, '').trim();
+  const title = extractTitle(`para ${destination}`)?.replace(/^para\s+/, '').trim();
+  if (!title || GENERIC_EDIT_SUBJECTS.has(title)) return { target: null, title: null };
+
+  return {
+    target: extractTitle(match[1]),
+    title,
+  };
+}
+
 function extractEditTargetSubject(text) {
   const explicitTitle = extractExplicitTitleChange(text);
   if (explicitTitle.target) return explicitTitle.target;
+  const implicitTitle = extractImplicitTitleChange(text);
+  if (implicitTitle.target) return implicitTitle.target;
 
   const normalized = normalizeFinancialText(text)
     .replace(/^\s*(?:muda(?:r)?|remarca(?:r)?|reagenda(?:r)?|adia(?:r)?|antecipa(?:r)?|edita(?:r)?|altera(?:r)?)\s+/, '')
@@ -182,13 +201,16 @@ function extractEditTargetSubject(text) {
 function extractEditChanges(text, referenceDate) {
   const normalized = normalizeFinancialText(text);
   const explicitTitle = extractExplicitTitleChange(text);
+  const implicitTitle = extractImplicitTitleChange(text);
   const destination = normalized.match(/\b(?:para|pra)\s+(.+)$/)?.[1] ?? '';
   const canUseWholeTextForDate = /\b(?:remarca|reagenda|adia|antecipa)\b/.test(normalized);
   const dateSource = destination || (canUseWholeTextForDate ? normalized : '');
   const date = dateSource ? resolveAgendaDate(dateSource, referenceDate) : null;
 
   return {
-    ...(explicitTitle.title ? { title: explicitTitle.title } : {}),
+    ...(explicitTitle.title || implicitTitle.title
+      ? { title: explicitTitle.title ?? implicitTitle.title }
+      : {}),
     ...(date ? { date } : {}),
     ...(extractTime(text) ? { time: extractTime(text) } : {}),
   };
@@ -438,7 +460,12 @@ export function createAgendaConversationFlow({ services = defaultServices } = {}
         : { handled: true, text: successText(action, item) };
     }
     const status = action === 'complete' ? 'completed' : 'cancelled';
-    const result = await services.setAgendaItemStatus(identity.workspaceId, item.id, status);
+    const result = await services.setAgendaItemStatus(
+      identity.workspaceId,
+      item.id,
+      status,
+      { expectedUpdatedAt: item.updated_at },
+    );
     return result.error
       ? { handled: true, text: serviceErrorText(result.error) }
       : { handled: true, text: successText(action, result.data) };
