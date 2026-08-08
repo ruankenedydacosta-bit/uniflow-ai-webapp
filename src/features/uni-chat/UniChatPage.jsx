@@ -101,6 +101,11 @@ import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uni
 import { validateFinancialFacts } from '../uni-engine/financial-runtime/factual-validation/index.js';
 import { validateFinancialRuntimeSafety } from '../uni-engine/financial-runtime/eligibility/index.js';
 import { normalizeTelemetryErrorCode, telemetry } from '../observability/index.js';
+import {
+  recordFinancialShadowValidation,
+  recordToolCallingProposal,
+  recordToolCallingResult,
+} from '../uni-engine/telemetry/uniEngineObservability.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 
 // FASE 20.1 — Tool Calling. Integração isolada ao pipeline com guardas de
@@ -2215,6 +2220,18 @@ export default function UniChatPage({ variant = 'full' }) {
     const factsValidated = factualValidation.valid === true;
     const safetyValidation = validateFinancialRuntimeSafety(financialRuntimeResult);
     const safetyApproved = safetyValidation.approved === true;
+    void recordFinancialShadowValidation({
+      runtimeResult: financialRuntimeResult,
+      factualValidation,
+      safetyValidation,
+      identity: {
+        userId: user?.id ?? null,
+        workspaceId: effectiveWorkspace?.id ?? null,
+        conversationId: activeId ?? null,
+        messageId: runtimeMessageId,
+        turnId: runtimeTurnId,
+      },
+    });
     const intentSupported = !!intentType && financialRuntimeResult?.intent?.type !== 'unknown';
     const runtimeConfidence = financialRuntimeResult?.confidence ?? financialRuntimeResult?.narrative?.confidence ?? 0;
     const eligible = intentSupported && temporalResolved && queryValid
@@ -2912,6 +2929,11 @@ export default function UniChatPage({ variant = 'full' }) {
               pendingAction: Boolean(pendingToolAction),
               confirmationPending: pendingToolAction?.status === 'ready',
             });
+            void recordToolCallingProposal({
+              identity: toolCallingIdentity,
+              count: rawToolCalls.length,
+              authorization,
+            });
             lastUniToolCallingResultRef.current = await runToolCallingIntegration({
               rawToolCalls,
               dispatcher,
@@ -2927,8 +2949,22 @@ export default function UniChatPage({ variant = 'full' }) {
               },
               conversationStyle,
             });
+            void recordToolCallingResult({
+              identity: toolCallingIdentity,
+              result: lastUniToolCallingResultRef.current,
+            });
           } catch {
             lastUniToolCallingResultRef.current = null;
+            void recordToolCallingResult({
+              identity: {
+                userId: user?.id ?? null,
+                workspaceId: effectiveWorkspace?.id ?? null,
+                conversationId: activeId ?? null,
+                turnId: toolCallingTurnId,
+                messageId: toolCallingMessageId,
+              },
+              errorCode: 'TOOL_CALLING_INTEGRATION_ERROR',
+            });
           }
         }
       }

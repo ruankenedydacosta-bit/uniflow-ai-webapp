@@ -182,6 +182,25 @@ test('shadow 62: telemetria só sai com telemetryEnabled e sempre redigida', () 
   assert.equal(silent.length, 0, 'telemetria desabilitada não deve emitir nada');
 });
 
+test('shadow: observabilidade central acompanha o turno sem alterar o resultado', () => {
+  const calls = [];
+  const observabilityApi = {
+    event: (name, data, identity) => calls.push({ kind: 'event', name, data, identity }),
+    error: (name, data, identity) => calls.push({ kind: 'error', name, data, identity }),
+    metric: (name, data, identity) => calls.push({ kind: 'metric', name, data, identity }),
+  };
+  const input = buildBaseInput({ message: { text: 'Gastei 50 reais no mercado' } });
+  const result = runUniEngineShadow(input, { config: TEST_CONFIG_ENABLED, observabilityApi });
+
+  assert.equal(result.enabled, true);
+  assert.ok(calls.some((entry) => entry.name === 'uni_engine.shadow_started'));
+  assert.ok(calls.some((entry) => entry.name === 'uni_engine.shadow_completed'));
+  assert.ok(calls.some((entry) => entry.name === 'uni_engine.latency_ms'));
+  assert.equal(JSON.stringify(calls.map((entry) => entry.data)).includes(input.message.text), false);
+  assert.ok(calls.every((entry) => entry.data.executionAllowed !== true));
+  assert.ok(calls.every((entry) => entry.data.writes !== true));
+});
+
 test('shadow 63: correlationId injetado é preservado na resposta', () => {
   const result = runUniEngineShadow(buildBaseInput(), {
     config: TEST_CONFIG_ENABLED,

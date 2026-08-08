@@ -88,6 +88,11 @@ import { runGoalEngine } from './goals/runGoalEngine.js';
 import { runReflectionEngine } from './reflection/runReflectionEngine.js';
 import { runActivationEngine } from './activation/runActivationEngine.js';
 import { ACTIVATION_POLICY, describeConfidence } from './activation/activationPolicy.js';
+import {
+  recordShadowFailure,
+  recordShadowResult,
+  recordShadowStarted,
+} from './telemetry/uniEngineObservability.js';
 
 function nowMillis() {
   if (typeof performance?.now === 'function') return performance.now();
@@ -439,15 +444,29 @@ export function runUniEngineShadow(input, options = {}) {
     });
   }
 
+  void recordShadowStarted({
+    api: safeOptions.observabilityApi,
+    input,
+    correlationId,
+  });
+
   try {
     const inputValidation = validateUniEngineInput(input);
     if (!inputValidation.valid) {
-      return buildSafeErrorResult({
+      const invalidResult = buildSafeErrorResult({
         correlationId,
         error: { code: inputValidation.errors[0] ?? 'INVALID_INPUT' },
         latencyMs: nowMillis() - start,
         isDev,
       });
+      void recordShadowFailure({
+        api: safeOptions.observabilityApi,
+        input,
+        correlationId,
+        errorCode: invalidResult.diagnostics.errorCode,
+        latencyMs: invalidResult.diagnostics.latencyMs,
+      });
+      return invalidResult;
     }
 
     const normalized = normalizeUserMessage(input.message, {
@@ -883,7 +902,7 @@ export function runUniEngineShadow(input, options = {}) {
       }
     }
 
-    return {
+    const result = {
       engineVersion: UNI_ENGINE_VERSION,
       revision: UNI_ENGINE_REVISION,
       correlationId,
@@ -921,13 +940,23 @@ export function runUniEngineShadow(input, options = {}) {
         divergenceCount: divergenceDiagnostics.length,
       },
     };
+    void recordShadowResult({ api: safeOptions.observabilityApi, input, result });
+    return result;
   } catch (error) {
     const message = error?.message ?? String(error);
-    return buildSafeErrorResult({
+    const errorResult = buildSafeErrorResult({
       correlationId,
       error: { code: 'ENGINE_INTERNAL_ERROR', message },
       latencyMs: nowMillis() - start,
       isDev,
     });
+    void recordShadowFailure({
+      api: safeOptions.observabilityApi,
+      input,
+      correlationId,
+      errorCode: errorResult.diagnostics.errorCode,
+      latencyMs: errorResult.diagnostics.latencyMs,
+    });
+    return errorResult;
   }
 }

@@ -14,6 +14,9 @@ export const TELEMETRY_EVENT_NAMES = Object.freeze([
   'planning.completed',
   'tts.lifecycle',
   'tool_calling.evaluated',
+  'uni_engine.shadow_module_evaluated',
+  'uni_engine.shadow_started',
+  'uni_engine.shadow_validation',
   'uni_engine.shadow_completed',
   'voice.lifecycle',
 ]);
