@@ -70,6 +70,7 @@ test('agendamentos coloquiais são agenda_schedule_create', () => {
     'bota na agenda',
     'bota na minha agenda',
     'marca aí',
+    'marca aquele negócio pra sexta',
     'bota pra sexta',
     'bota pra amanhã',
     'tenho um negócio amanhã',
@@ -88,6 +89,12 @@ test('agendamentos coloquiais são agenda_schedule_create', () => {
       `"${frase}" deveria agendar, veio ${resultado.intent}`,
     );
   }
+});
+
+test('obrigação financeira futura com valor preserva conflito em vez de escrever Agenda ou Financeiro', () => {
+  const resultado = classifyIntent('Amanhã tenho que pagar 300 reais');
+  assert.equal(resultado.intent, 'agenda_financial_conflict');
+  assert.ok(resultado.signals.includes('agenda_temporal_financial_conflict'));
 });
 
 test('interjeições regionais não geram lançamento financeiro nem região', () => {

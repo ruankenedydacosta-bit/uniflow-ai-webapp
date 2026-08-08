@@ -96,6 +96,11 @@ const AGENDA_CASES = [
     input: 'Não tem horário definido para essa reunião ainda',
     intent: 'agenda_no_time',
   },
+  {
+    label: 'conflito entre lembrete futuro e operação financeira',
+    input: 'Amanhã tenho que pagar 300 reais',
+    intent: 'agenda_financial_conflict',
+  },
 ];
 
 for (const { label, input, intent } of AGENDA_CASES) {

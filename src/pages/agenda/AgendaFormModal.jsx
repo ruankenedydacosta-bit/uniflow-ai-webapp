@@ -81,7 +81,7 @@ function AgendaFormModal({ open, mode = 'create', item = null, agenda, clientsSt
 
     const payload = buildAgendaItemCreationPayload(form);
     const result = isEditing
-      ? await agenda.updateItem(item.id, payload)
+      ? await agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
       : await agenda.createItem(payload);
 
     if (result && !result.error) {

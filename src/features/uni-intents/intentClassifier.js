@@ -33,6 +33,7 @@ export const AGENDA_INTENTS = Object.freeze([
   'agenda_cancel',
   'agenda_query',
   'agenda_no_time',
+  'agenda_financial_conflict',
 ]);
 
 export const AGENDA_INTENT_SET = new Set(AGENDA_INTENTS);
@@ -71,6 +72,23 @@ function detectAgendaIntent(normalizedText) {
     ...buildAgendaReminderPatterns(),
   ])) {
     return { intent: 'agenda_reminder_create', confidence: 0.97, signals: ['agenda_reminder_heuristic'] };
+  }
+
+  // 1a. Obrigação financeira FUTURA sem comando explícito de lembrete
+  // ("Amanhã tenho que pagar 300 reais") é semanticamente ambígua: pode
+  // significar "me lembre" ou "quero registrar uma operação". Preservamos
+  // os dois sinais e pedimos escolha antes de qualquer escrita. Comandos
+  // explícitos de lembrete já retornaram no bloco anterior.
+  if (
+    /\b(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|semana\s+que\s+vem|mes\s+que\s+vem|daqui\s+a)\b/.test(text)
+    && /\b(?:tenho\s+que|preciso|vou)\s+pagar\b/.test(text)
+    && /\b(?:r\s*\$\s*)?\d+(?:[.,]\d+)?\s*(?:reais?)?\b/.test(text)
+  ) {
+    return {
+      intent: 'agenda_financial_conflict',
+      confidence: 0.72,
+      signals: ['agenda_temporal_financial_conflict'],
+    };
   }
 
   // 1b. Objeto vago DEMAIS para assumir ("Bota aquele negócio pra sexta.",
@@ -118,7 +136,7 @@ function detectAgendaIntent(normalizedText) {
 
   // 4. Edição de compromisso ("remarcar reunião", "adiar compromisso")
   if (has([
-    /\b(?:remarcar|reagendar|adiar|antecipar|editar|mudar)\b.*\b(?:reuniao|compromisso|consulta|evento|horario)\b/,
+    /\b(?:remarcar|reagendar|adiar|antecipar|editar|muda(?:r)?)\b.*\b(?:reuniao|compromisso|consulta|evento|horario|titulo|nome)\b/,
     /\bmuda(?:r)?\b[^.!?]+\b(?:para|pras?|as)\s+\d{1,2}(?:[:h]\d{2})?\s*h?\b/,
   ])) {
     return { intent: 'agenda_edit', confidence: 0.97, signals: ['agenda_edit_heuristic'] };

@@ -365,6 +365,16 @@ test('getAgendaItemErrorMessage: AGENDA_ITEM_NOT_FOUND e um codigo seguro (item 
   );
 });
 
+test('getAgendaItemErrorMessage: conflito otimista usa mensagem segura do dominio', () => {
+  assert.equal(
+    getAgendaItemErrorMessage(
+      { code: 'AGENDA_ITEM_CONFLICT', message: 'Este compromisso foi alterado em outro lugar.' },
+      'fallback',
+    ),
+    'Este compromisso foi alterado em outro lugar.',
+  );
+});
+
 test('getAgendaItemErrorMessage: erro cru de cliente de outro workspace vira mensagem amigavel', () => {
   assert.equal(
     getAgendaItemErrorMessage(

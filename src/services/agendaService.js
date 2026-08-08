@@ -162,7 +162,12 @@ export async function createAgendaItem(workspaceId, item = {}) {
   return createResult(data, error);
 }
 
-export async function updateAgendaItem(workspaceId, itemId, changes = {}) {
+export async function updateAgendaItem(
+  workspaceId,
+  itemId,
+  changes = {},
+  { expectedUpdatedAt } = {},
+) {
   if (!supabase) {
     return createUnavailableResult(null);
   }
@@ -183,13 +188,28 @@ export async function updateAgendaItem(workspaceId, itemId, changes = {}) {
     return createValidationResult('Nenhuma alteracao valida foi informada.');
   }
 
-  const { data, error } = await supabase
+  if (expectedUpdatedAt && Number.isNaN(new Date(expectedUpdatedAt).getTime())) {
+    return createValidationResult('Versao esperada do item de agenda invalida.');
+  }
+
+  let query = supabase
     .from('agenda_items')
     .update(payload)
     .eq('workspace_id', workspaceId)
-    .eq('id', itemId)
-    .select(AGENDA_ITEM_FIELDS)
-    .maybeSingle();
+    .eq('id', itemId);
+
+  if (expectedUpdatedAt) {
+    query = query.eq('updated_at', expectedUpdatedAt);
+  }
+
+  const { data, error } = await query.select(AGENDA_ITEM_FIELDS).maybeSingle();
+
+  if (!error && !data && expectedUpdatedAt) {
+    return createResult(null, {
+      code: 'AGENDA_ITEM_CONFLICT',
+      message: 'Este compromisso foi alterado em outro lugar. Atualize a Agenda e tente novamente.',
+    });
+  }
 
   return normalizeSingleResult(data, error, 'Item de agenda nao encontrado para atualizacao.');
 }

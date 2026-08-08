@@ -3369,11 +3369,16 @@ test('Sprint 2: conversationalMemoryRef é criado com createConversationalMemory
   assert.match(page, /createConversationalMemory,\n\s*classifyPendingActionRelation,\n\s*createAgendaConversationFlow,\n\} from '..\/uni-conversation';/);
 });
 
-test('Agenda voice-first usa o mesmo sendText de voz e texto e roda antes da pendência financeira', async () => {
+test('Agenda voice-first usa o mesmo sendText e abandona pendência antes de uma fala financeira nova', async () => {
   const page = await source('UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
   assert.match(body, /metadata\?\.source === 'voice'/);
   assert.match(body, /agendaConversationRef\.current\.handle\(\{/);
+  assert.match(body, /const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation/);
+  assert.match(body, /agendaConversationRef\.current\.abandonPending\(agendaIdentity\);/);
+  const abandonIndex = body.indexOf('agendaConversationRef.current.abandonPending(agendaIdentity);');
+  const handleIndex = body.indexOf('agendaConversationRef.current.handle({');
+  assert.ok(abandonIndex >= 0 && handleIndex > abandonIndex);
   assert.match(body, /if \(hasAgendaConversation\)[\s\S]*return;[\s\S]*if \(hasPendingConversation\)/);
 });
 
@@ -3382,7 +3387,9 @@ test('Agenda voice-first usa identidade do workspace autenticado e o pipeline of
   const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
   assert.match(body, /workspaceId: effectiveWorkspace\?\.id/);
   assert.match(body, /conversationId: activeId \?\? 'local-conversation'/);
-  assert.match(body, /if \(result\.handled\) createAssistantResponse\(result\.text\)/);
+  assert.match(body, /if \(result\.route === 'financial' && result\.financialText\)/);
+  assert.match(body, /runDeterministicFinancialFlow\(result\.financialText, historySnapshot\)/);
+  assert.match(body, /if \(result\.handled && result\.text\) createAssistantResponse\(result\.text\)/);
 });
 
 test('Sprint 2: conversationalMemoryRef é resetado em switchConversation, junto dos demais refs por conversa', async () => {

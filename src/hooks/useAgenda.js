@@ -178,9 +178,9 @@ export function useAgenda({
   );
 
   const updateItem = useCallback(
-    (itemId, changes) =>
+    (itemId, changes, options) =>
       performMutation(
-        () => updateAgendaItem(workspaceId, itemId, changes),
+        () => updateAgendaItem(workspaceId, itemId, changes, options),
         (data) => {
           if (!data?.id) return;
           setItems((current) => sortAgendaItems(upsertRecord(current, data)));

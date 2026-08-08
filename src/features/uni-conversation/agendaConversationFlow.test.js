@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { classifyIntent } from '../uni-intents/index.js';
 import { createAgendaConversationFlow } from './agendaConversationFlow.js';
 
 const IDENTITY = Object.freeze({
@@ -10,7 +11,12 @@ const IDENTITY = Object.freeze({
 const REFERENCE_DATE = '2026-08-08';
 
 function makeHarness(seed = []) {
-  const items = seed.map((item) => ({ status: 'scheduled', is_all_day: false, ...item }));
+  const items = seed.map((item) => ({
+    status: 'scheduled',
+    is_all_day: false,
+    updated_at: '2026-08-08T10:00:00.000Z',
+    ...item,
+  }));
   const calls = [];
   let sequence = items.length;
   const services = {
@@ -31,15 +37,19 @@ function makeHarness(seed = []) {
             && (!filters.status || item.status === filters.status)
             && startsAt >= from
             && startsAt <= to;
-        }),
+        }).map((item) => ({ ...item })),
         error: null,
       };
     },
-    async updateAgendaItem(workspaceId, itemId, changes) {
-      calls.push({ operation: 'update', workspaceId, itemId, changes });
+    async updateAgendaItem(workspaceId, itemId, changes, options = {}) {
+      calls.push({ operation: 'update', workspaceId, itemId, changes, options });
       const item = items.find((candidate) => candidate.id === itemId && candidate.workspace_id === workspaceId);
       if (!item) return { data: null, error: { code: 'not_found' } };
+      if (options.expectedUpdatedAt && options.expectedUpdatedAt !== item.updated_at) {
+        return { data: null, error: { code: 'AGENDA_ITEM_CONFLICT' } };
+      }
       Object.assign(item, changes);
+      item.updated_at = '2026-08-08T11:00:00.000Z';
       return { data: item, error: null };
     },
     async setAgendaItemStatus(workspaceId, itemId, status) {
@@ -147,6 +157,35 @@ test('edição encontra um item e altera somente o horário', async () => {
   assert.match(result.text, /Atualizei/);
   const update = calls.find((call) => call.operation === 'update');
   assert.equal(new Date(update.changes.starts_at).getHours(), 16);
+  assert.equal(update.options.expectedUpdatedAt, '2026-08-08T10:00:00.000Z');
+});
+
+test('edição altera o título explicitamente sem perder o restante do item', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+
+  const result = await turn(flow, 'Muda o título da reunião para Alinhamento semanal.');
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.equal(update.changes.title, 'alinhamento semanal');
+  assert.equal(update.changes.starts_at, undefined);
+});
+
+test('edição altera a data e preserva o horário existente', async () => {
+  const originalStartsAt = '2026-08-12T15:00:00.000Z';
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: originalStartsAt },
+  ]);
+
+  const result = await turn(flow, 'Muda minha reunião para sexta que vem.');
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.match(update.changes.starts_at, /^2026-08-21T/);
+  assert.equal(
+    new Date(update.changes.starts_at).getHours(),
+    new Date(originalStartsAt).getHours(),
+  );
 });
 
 test('edição ambígua lista opções e aguarda escolha', async () => {
@@ -157,6 +196,77 @@ test('edição ambígua lista opções e aguarda escolha', async () => {
   const result = await turn(flow, 'Muda meu dentista de amanhã para 16h.');
   assert.match(result.text, /Encontrei mais de um/);
   assert.equal(flow.hasPending(IDENTITY), true);
+});
+
+test('seleção parcial que ainda corresponde a dois itens não escolhe silenciosamente o primeiro', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'alpha', workspace_id: IDENTITY.workspaceId, title: 'Reunião projeto Alfa', starts_at: '2026-08-14T15:00:00.000Z' },
+    { id: 'beta', workspace_id: IDENTITY.workspaceId, title: 'Reunião projeto Beta', starts_at: '2026-08-14T18:00:00.000Z' },
+  ]);
+
+  await turn(flow, 'Muda minha reunião de sexta para 16h.');
+  const ambiguous = await turn(flow, 'Reunião projeto.');
+  assert.match(ambiguous.text, /Ainda há mais de uma opção/);
+  assert.equal(calls.filter((call) => call.operation === 'update').length, 0);
+
+  const selected = await turn(flow, 'Reunião projeto Beta.');
+  assert.match(selected.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.equal(update.itemId, 'beta');
+});
+
+test('conflito por updated_at impede confirmação antiga de sobrescrever edição recente', async () => {
+  const { flow, calls, items } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+
+  const first = await turn(flow, 'Muda minha reunião.');
+  assert.match(first.text, /O que você quer alterar/);
+  items[0].updated_at = '2026-08-08T10:30:00.000Z';
+
+  const result = await turn(flow, 'Muda o título para Revisão final.');
+  assert.match(result.text, /mudou desde que você o consultou/);
+  assert.equal(items[0].title, 'Reunião');
+  assert.equal(calls.at(-1).options.expectedUpdatedAt, '2026-08-08T10:00:00.000Z');
+});
+
+test('conflito temporal-financeiro preserva escolha sem escrita e encaminha rascunho financeiro explícito', async () => {
+  const { flow, calls } = makeHarness();
+  const first = await turn(flow, 'Amanhã tenho que pagar 300 reais.');
+  assert.match(first.text, /lembrete.*operação financeira/i);
+  assert.equal(calls.length, 0);
+
+  const choice = await turn(flow, 'Operação financeira.');
+  assert.equal(choice.route, 'financial');
+  assert.equal(choice.handled, true);
+  assert.match(choice.financialText, /^Registre uma despesa:/);
+  assert.equal(classifyIntent(choice.financialText).intent, 'register_expense');
+  assert.equal(calls.length, 0);
+});
+
+test('escolha por lembrete continua pedindo horário e só grava depois da resposta', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Amanhã tenho que pagar 300 reais.');
+  const choice = await turn(flow, 'Quero um lembrete na Agenda.');
+  assert.match(choice.text, /horário/);
+  assert.equal(calls.length, 0);
+
+  await turn(flow, 'Sem horário.');
+  assert.equal(calls.at(-1).operation, 'create');
+  assert.equal(calls.at(-1).payload.item_type, 'reminder');
+  assert.equal(calls.at(-1).payload.title, 'pagar 300 reais');
+});
+
+test('pendência de Agenda pode ser abandonada antes de uma nova declaração financeira', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Me lembra da reunião amanhã.');
+  assert.equal(flow.hasPending(IDENTITY), true);
+  assert.equal(flow.abandonPending(IDENTITY), true);
+
+  const financial = await turn(flow, 'Gastei R$ 50 no almoço.');
+  assert.equal(financial.handled, false);
+  assert.equal(flow.hasPending(IDENTITY), false);
+  assert.equal(calls.length, 0);
 });
 
 test('conclusão marca o compromisso correspondente como concluído', async () => {

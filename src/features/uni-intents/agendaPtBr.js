@@ -57,6 +57,7 @@ export const PT_BR_SCHEDULE_COLLOQUIALS = Object.freeze([
   // a presença de valor monetário em QUALQUER ponto desqualifica o
   // agendamento e a frase segue para as regras financeiras.
   /\bbota\b(?=[\s\S]*?\b(?:pra|para)\b)(?![\s\S]*\b(?:r[eé]ais?|r\s*\$|\d)\b)/,
+  /\bmarca\b(?=[\s\S]*?\b(?:pra|para)\b)(?![\s\S]*\b(?:r[eé]ais?|r\s*\$|\d)\b)/,
   /\b(?:anota|marca)\s+ai\b(?![\s\S]*\b(?:r[eé]ais?|r\s*\$|\d)\b)/,
   /\bmarca\s+(?:uma\s+|um\s+|na\s+)?(?:reuniao|compromisso|consulta|dentista|evento|negocio)\b/,
   /\b(?:tenho|tive|vou\s+ter)\s+(?:um\s+|uma\s+|uns\s+|umas\s+)?(?:negocio|compromisso|reuniao|dentista|consulta|evento|entrevista)\b/,

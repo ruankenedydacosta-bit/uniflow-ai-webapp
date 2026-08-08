@@ -3675,8 +3675,19 @@ export default function UniChatPage({ variant = 'full' }) {
       conversationId: activeId ?? 'local-conversation',
     };
     const declaredIntent = classifyIntent(text).intent;
-    const hasAgendaConversation = agendaConversationRef.current.hasPending(agendaIdentity)
-      || declaredIntent.startsWith('agenda_');
+    const hasPendingAgendaConversation = agendaConversationRef.current.hasPending(agendaIdentity);
+    const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation
+      && !declaredIntent.startsWith('agenda_')
+      && (
+        looksLikeFreshFinancialStatement(text)
+        || looksLikeFreshBalanceStatement(text)
+        || ACTION_STATEMENT_INTENTS.has(declaredIntent)
+      );
+    if (shouldAbandonAgendaForFinancial) {
+      agendaConversationRef.current.abandonPending(agendaIdentity);
+    }
+    const hasAgendaConversation = !shouldAbandonAgendaForFinancial
+      && (hasPendingAgendaConversation || declaredIntent.startsWith('agenda_'));
     const hasPendingConversation = Boolean(
       hasAgendaConversation
       ||
@@ -3741,7 +3752,11 @@ export default function UniChatPage({ variant = 'full' }) {
         referenceDate: getLocalIsoDate(),
       }).then((result) => {
         setIsTyping(false);
-        if (result.handled) createAssistantResponse(result.text);
+        if (result.route === 'financial' && result.financialText) {
+          runDeterministicFinancialFlow(result.financialText, historySnapshot);
+          return;
+        }
+        if (result.handled && result.text) createAssistantResponse(result.text);
       }).catch(() => {
         setIsTyping(false);
         createAssistantResponse('Não consegui atualizar sua agenda agora. Tente novamente em instantes.');
