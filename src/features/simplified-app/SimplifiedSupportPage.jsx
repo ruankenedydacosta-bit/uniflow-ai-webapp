@@ -4,7 +4,6 @@ import { listOwnSupportRequests } from '../uni-support/supportRequestService.js'
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
-import { SIMPLIFIED_FEATURE_FLAGS } from './simplifiedFeatureFlags.js';
 import { buildSupportWhatsAppUrl } from './simplifiedSupportConfig.js';
 import {
   CalendarIcon,
@@ -130,11 +129,7 @@ function SimplifiedSupportPage() {
             variant="secondary"
             fullWidth
             leftIcon={<span className={styles.buttonIcon} aria-hidden="true"><MicIcon /></span>}
-            onClick={() => navigate(
-              SIMPLIFIED_FEATURE_FLAGS.supportNavEnabled
-                ? SIMPLIFIED_ROUTES.SUPPORT_CHAT
-                : SIMPLIFIED_ROUTES.UNI,
-            )}
+            onClick={() => navigate(SIMPLIFIED_ROUTES.SUPPORT_CHAT)}
           >
             Falar com a Uni
           </Button>

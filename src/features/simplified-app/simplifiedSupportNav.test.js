@@ -29,15 +29,15 @@ test('LOTE D: rota de conversa de suporte é SEMPRE registrada e a entrada conti
   const routes = await source('../../app/routes.jsx');
   assert.equal(SIMPLIFIED_ROUTES.SUPPORT_CHAT, '/app/conta/suporte/uni');
   assert.match(routes, /path: SIMPLIFIED_ROUTES\.SUPPORT_CHAT/);
-  assert.match(routes, /<SupportCenterPage \/>/);
+  assert.match(routes, /<SimplifiedUniSupportPage \/>/);
   assert.doesNotMatch(routes, /SIMPLIFIED_FEATURE_FLAGS\.supportNavEnabled/);
 });
 
-test('LOTE D: botão "Falar com a Uni" navega para a conversa de suporte', async () => {
+test('LOTE E: botão "Falar com a Uni" navega para a conversa de suporte dedicada', async () => {
   const page = await source('./SimplifiedSupportPage.jsx');
   assert.match(page, /simplifiedRoutes\.js/);
   assert.match(page, /SIMPLIFIED_ROUTES\.SUPPORT_CHAT/);
-  assert.match(page, /: SIMPLIFIED_ROUTES\.UNI/);
+  assert.doesNotMatch(page, /SIMPLIFIED_FEATURE_FLAGS\.supportNavEnabled/);
 });
 
 test('LOTE D: chat de suporte preserva conversa e prompt sem caminho financeiro', async () => {

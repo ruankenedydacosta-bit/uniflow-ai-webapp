@@ -34,6 +34,7 @@ import {
   SimplifiedRecordsPage,
   SimplifiedSecurityPage,
   SimplifiedSupportPage,
+  SimplifiedUniSupportPage,
   SimplifiedVoicePage,
 } from '../features/simplified-app';
 // eslint-disable-next-line react-refresh/only-export-components -- lazy route component kept beside route declarations
@@ -179,6 +180,11 @@ export const appRoutes = [
   // LOTE D: rota interna da conversa de Suporte da Uni é SEMPRE registrada
   // -- o acesso é via Conta > Suporte (o item "Falar com a Uni"), não pela
   // barra inferior.
+  // LOTE E: a rota agora monta a experiência DEDICADA de "Uni Suporte"
+  // (SimplifiedUniSupportPage) -- compacta, no shell escuro do Lote F, com
+  // a MESMA base de suporte (useUniSupportChat / conversation_type='support'
+  // / orquestrador e prompt existentes). A Central de Suporte legada segue
+  // disponível na rota do app legado (/suporte).
   {
     path: SIMPLIFIED_ROUTES.SUPPORT_CHAT,
     label: 'Uni Suporte',
@@ -186,7 +192,7 @@ export const appRoutes = [
     simplified: true,
     element: (
       <Suspense fallback={null}>
-        <SupportCenterPage />
+        <SimplifiedUniSupportPage />
       </Suspense>
     ),
   },
