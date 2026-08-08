@@ -33,26 +33,27 @@ test('monta o payload uma unica vez com buildAgendaItemCreationPayload, reutiliz
   assert.equal(occurrences.length, 1);
 });
 
-test('criacao restaura operação persistida e envia seu UUID; edicao envia updated_at esperado', async () => {
+test('flag ON restaura operação e envia UUID; OFF mantém payload legado', async () => {
   const contents = await source('AgendaFormModal.jsx');
   assert.match(
     contents,
-    /const creationOperation = isEditing[\s\S]*?getOrCreateAgendaOperation\(\{[\s\S]*?userId,[\s\S]*?workspaceId,[\s\S]*?origin: CREATE_OPERATION_ORIGIN,[\s\S]*?intent: payload,[\s\S]*?\}\);/,
+    /if \(AGENDA_IDEMPOTENCY_ENABLED && !isEditing\) \{[\s\S]*?creationOperation = await getOrCreateAgendaOperation\(\{[\s\S]*?intent: payload/,
   );
   assert.match(
     contents,
-    /client_operation_id: creationOperation\.clientOperationId/,
+    /\.\.\.\(creationOperation[\s\S]*?client_operation_id: creationOperation\.clientOperationId[\s\S]*?: \{\}\)/,
   );
-  assert.match(contents, /clearAgendaOperation\(\{[\s\S]*?clientOperationId: creationOperation\.clientOperationId/);
+  assert.match(contents, /clearCreationOperation\(creationOperation\)/);
   assert.match(contents, /AGENDA_ITEM_IDEMPOTENCY_CONFLICT/);
 });
 
-test('cancelamento explícito do formulário limpa a operação restaurada da origem', async () => {
+test('cancelamento explícito limpa somente a operação atual pelo UUID', async () => {
   const contents = await source('AgendaFormModal.jsx');
   assert.match(
     contents,
-    /function handleClose\(\) \{[\s\S]*?clearAgendaOperationsForOrigin\(\{[\s\S]*?userId,[\s\S]*?workspaceId,[\s\S]*?origin: CREATE_OPERATION_ORIGIN/,
+    /async function handleClose\(\) \{[\s\S]*?getCurrentAgendaOperation\(\{[\s\S]*?origin: CREATE_OPERATION_ORIGIN[\s\S]*?clearAgendaOperation\(\{[\s\S]*?clientOperationId: operation\.clientOperationId/,
   );
+  assert.doesNotMatch(contents, /clearAgendaOperationsForOrigin|clearAgendaOperationByIntent/);
 });
 
 test('edicao nunca envia id dentro do payload (buildAgendaItemCreationPayload nao inclui id; item.id so e usado como argumento de updateItem)', async () => {

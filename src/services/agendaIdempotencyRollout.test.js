@@ -7,14 +7,17 @@ const rollout = () => readFile(
   'utf8',
 );
 
-test('rollout exige migration aplicada e validada antes do frontend novo', async () => {
+test('rollout exige deploy OFF, migration validada e só então ativação B.2', async () => {
   const content = await rollout();
+  const deployOff = content.indexOf('implantar o frontend/backend compatível com a flag OFF');
   const migration = content.indexOf('aplicar `supabase/migrations/20260808003000_030_agenda_item_idempotency.sql`');
   const validation = content.indexOf('validar a coluna UUID');
-  const frontend = content.indexOf('somente depois liberar o frontend/backend');
+  const enable = content.indexOf('somente depois habilitar `VITE_AGENDA_IDEMPOTENCY_ENABLED=true`');
 
-  assert.ok(migration >= 0);
+  assert.ok(deployOff >= 0);
+  assert.ok(migration > deployOff);
   assert.ok(validation > migration);
-  assert.ok(frontend > validation);
-  assert.match(content, /código novo não deve ser promovido/);
+  assert.ok(enable > validation);
+  assert.match(content, /flag deve permanecer OFF/);
+  assert.match(content, /nenhuma consulta ou escrita referencia `agenda_items\.client_operation_id`/);
 });

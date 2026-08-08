@@ -19,6 +19,7 @@ import {
   clearAgendaOperation,
   getOrCreateAgendaOperation,
 } from '../../services/agendaOperationStore.js';
+import { AGENDA_IDEMPOTENCY_ENABLED } from '../../services/agendaIdempotencyConfig.js';
 
 const AGENDA_INTENTS = new Set([
   'agenda_reminder_create',
@@ -368,6 +369,12 @@ function successText(action, item) {
 }
 
 function serviceErrorText(error) {
+  if (error?.code === 'AGENDA_OPERATION_STORAGE_UNAVAILABLE') {
+    return 'Não consegui proteger esta criação para tentativas seguras. Verifique o armazenamento do navegador e tente novamente.';
+  }
+  if (error?.code === 'AGENDA_OPERATION_PAYLOAD_CONFLICT') {
+    return 'A criação pendente tem dados diferentes. Cancele essa operação e inicie uma nova.';
+  }
   if (error?.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT') {
     return 'Essa tentativa de criação conflita com outro compromisso. Revise os dados e tente novamente.';
   }
@@ -389,6 +396,7 @@ function buildFinancialDraft(originalText) {
 export function createAgendaConversationFlow({
   services = defaultServices,
   createOperationId = createAgendaClientOperationId,
+  idempotencyEnabled = AGENDA_IDEMPOTENCY_ENABLED,
   operationStorage,
   operationStore = {
     getOrCreate: getOrCreateAgendaOperation,
@@ -430,7 +438,7 @@ export function createAgendaConversationFlow({
   }
 
   async function clearCreationOperation(identity, clientOperationId) {
-    if (!clientOperationId) return false;
+    if (!idempotencyEnabled || !clientOperationId) return false;
     return operationStore.clear({
       ...operationScope(identity),
       clientOperationId,
@@ -441,7 +449,7 @@ export function createAgendaConversationFlow({
   async function startPending(identity, type, fields) {
     const base = getStack(identity) ?? createPendingActionStack(identity);
     let pendingFields = fields;
-    if (type === PENDING_TYPES.CREATE && !fields.clientOperationId) {
+    if (idempotencyEnabled && type === PENDING_TYPES.CREATE && !fields.clientOperationId) {
       const operation = await operationStore.getOrCreate({
         ...operationScope(identity),
         intent: creationIntent(fields),
@@ -466,14 +474,15 @@ export function createAgendaConversationFlow({
   }
 
   async function createItem(identity, fields) {
-    const operation = await operationStore.getOrCreate({
-      ...operationScope(identity),
-      intent: creationIntent(fields),
-      preferredOperationId: fields.clientOperationId,
-      createOperationId,
-      storage: operationStorage,
-    });
-    const clientOperationId = operation.clientOperationId;
+    const operation = idempotencyEnabled
+      ? await operationStore.getOrCreate({
+        ...operationScope(identity),
+        intent: creationIntent(fields),
+        preferredOperationId: fields.clientOperationId,
+        createOperationId,
+        storage: operationStorage,
+      })
+      : null;
 
     const result = await services.createAgendaItem(identity.workspaceId, {
       item_type: fields.itemType ?? 'appointment',
@@ -481,10 +490,13 @@ export function createAgendaConversationFlow({
       starts_at: toStartIso(fields.date, fields.time, fields.allDay),
       ends_at: null,
       is_all_day: Boolean(fields.allDay),
-      client_operation_id: clientOperationId,
-    });
-    if (!result.error || result.error.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT') {
-      await clearCreationOperation(identity, clientOperationId);
+      ...(operation ? { client_operation_id: operation.clientOperationId } : {}),
+    }, { idempotencyEnabled });
+    if (
+      operation
+      && (!result.error || result.error.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT')
+    ) {
+      await clearCreationOperation(identity, operation.clientOperationId);
     }
     return result;
   }
@@ -714,7 +726,7 @@ export function createAgendaConversationFlow({
     return null;
   }
 
-  async function handle({ text, identity, referenceDate }) {
+  async function handleInternal({ text, identity, referenceDate }) {
     if (!identity?.userId || !identity?.workspaceId || !identity?.conversationId) {
       return { handled: true, text: 'Não consegui identificar seu espaço atual. Atualize a página e tente novamente.' };
     }
@@ -851,7 +863,20 @@ export function createAgendaConversationFlow({
   }
 
   return Object.freeze({
-    handle,
+    async handle(args) {
+      try {
+        return await handleInternal(args);
+      } catch (error) {
+        if (
+          error?.code === 'AGENDA_OPERATION_STORAGE_UNAVAILABLE'
+          || error?.code === 'AGENDA_OPERATION_PAYLOAD_CONFLICT'
+          || error?.code === 'AGENDA_OPERATION_SCOPE_REQUIRED'
+        ) {
+          return { handled: true, text: serviceErrorText(error), error };
+        }
+        throw error;
+      }
+    },
     abandonPending(identity) {
       if (!identity?.userId || !identity?.workspaceId || !identity?.conversationId) return false;
       const key = identityKey(identity);

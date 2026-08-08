@@ -21,6 +21,7 @@ function createOperationStorage() {
 function makeHarness(seed = [], {
   createOperationId,
   createResults = [],
+  idempotencyEnabled = true,
   operationStorage = createOperationStorage(),
 } = {}) {
   const items = seed.map((item) => ({
@@ -32,8 +33,8 @@ function makeHarness(seed = [], {
   const calls = [];
   let sequence = items.length;
   const services = {
-    async createAgendaItem(workspaceId, payload) {
-      calls.push({ operation: 'create', workspaceId, payload });
+    async createAgendaItem(workspaceId, payload, options) {
+      calls.push({ operation: 'create', workspaceId, payload, options });
       const plannedResult = createResults.shift();
       if (plannedResult) return plannedResult;
       const data = { id: `item-${++sequence}`, workspace_id: workspaceId, status: 'scheduled', ...payload };
@@ -86,7 +87,12 @@ function makeHarness(seed = [], {
     },
   };
   return {
-    flow: createAgendaConversationFlow({ services, createOperationId, operationStorage }),
+    flow: createAgendaConversationFlow({
+      services,
+      createOperationId,
+      idempotencyEnabled,
+      operationStorage,
+    }),
     calls,
     items,
     operationStorage,
@@ -132,6 +138,55 @@ test('criação aceita data absoluta sem depender de interpretação externa', a
   const { flow, calls } = makeHarness();
   await turn(flow, 'Marca uma reunião em 20/08/2026 às 14h.');
   assert.match(calls[0].payload.starts_at, /^2026-08-20T/);
+});
+
+test('flag OFF preserva criação legada sem storage nem client_operation_id', async () => {
+  const { flow, calls } = makeHarness([], {
+    idempotencyEnabled: false,
+    operationStorage: null,
+  });
+  const result = await turn(flow, 'Tenho dentista amanhã às 15h.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].payload.client_operation_id, undefined);
+  assert.deepEqual(calls[0].options, { idempotencyEnabled: false });
+});
+
+test('flag ON exige operação persistida antes de chamar o serviço', async () => {
+  const { flow, calls } = makeHarness([], {
+    idempotencyEnabled: true,
+    operationStorage: null,
+  });
+  const result = await turn(flow, 'Tenho dentista amanhã às 15h.');
+
+  assert.match(result.text, /armazenamento do navegador/);
+  assert.equal(calls.length, 0);
+});
+
+test('falha no write do sessionStorage impede qualquer escrita da Agenda', async () => {
+  const operationStorage = {
+    getItem: () => null,
+    setItem: () => { throw new Error('write blocked'); },
+  };
+  const { flow, calls } = makeHarness([], { operationStorage });
+  const result = await turn(flow, 'Tenho dentista amanhã às 15h.');
+
+  assert.match(result.text, /proteger esta criação/);
+  assert.equal(calls.length, 0);
+});
+
+test('falha no readback do sessionStorage impede qualquer escrita da Agenda', async () => {
+  let persisted = null;
+  const operationStorage = {
+    getItem: () => (persisted ? `${persisted.slice(0, -1)},` : null),
+    setItem: (_key, value) => { persisted = value; },
+  };
+  const { flow, calls } = makeHarness([], { operationStorage });
+  const result = await turn(flow, 'Tenho dentista amanhã às 15h.');
+
+  assert.match(result.text, /proteger esta criação/);
+  assert.equal(calls.length, 0);
 });
 
 test('retry da mesma intenção reutiliza client_operation_id após falha', async () => {

@@ -4,9 +4,10 @@ import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import {
   clearAgendaOperation,
-  clearAgendaOperationsForOrigin,
+  getCurrentAgendaOperation,
   getOrCreateAgendaOperation,
 } from '../../services/agendaOperationStore.js';
+import { AGENDA_IDEMPOTENCY_ENABLED } from '../../services/agendaIdempotencyConfig.js';
 import { FormMessage, SelectField, TextareaField } from './AgendaFormPrimitives.jsx';
 import {
   AGENDA_ITEM_TYPE_LABELS,
@@ -67,12 +68,25 @@ function AgendaFormModal({
   // passam por este handler. Mesmo padrao de OpportunityFormModal/ClientFormModal.
   async function handleClose() {
     if (isMutating) return;
-    if (!isEditing && userId && workspaceId) {
-      await clearAgendaOperationsForOrigin({
-        userId,
-        workspaceId,
-        origin: CREATE_OPERATION_ORIGIN,
-      });
+    if (AGENDA_IDEMPOTENCY_ENABLED && !isEditing && userId && workspaceId) {
+      try {
+        const operation = await getCurrentAgendaOperation({
+          userId,
+          workspaceId,
+          origin: CREATE_OPERATION_ORIGIN,
+        });
+        if (operation) {
+          await clearAgendaOperation({
+            userId,
+            workspaceId,
+            origin: CREATE_OPERATION_ORIGIN,
+            clientOperationId: operation.clientOperationId,
+          });
+        }
+      } catch (error) {
+        setMutationError(getAgendaItemErrorMessage(error));
+        return;
+      }
     }
     onClose();
   }
@@ -89,6 +103,22 @@ function AgendaFormModal({
     }));
   }
 
+  async function clearCreationOperation(operation) {
+    if (!operation) return true;
+    try {
+      await clearAgendaOperation({
+        userId,
+        workspaceId,
+        origin: CREATE_OPERATION_ORIGIN,
+        clientOperationId: operation.clientOperationId,
+      });
+      return true;
+    } catch (error) {
+      setMutationError(getAgendaItemErrorMessage(error));
+      return false;
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (isMutating) return;
@@ -103,30 +133,31 @@ function AgendaFormModal({
     }
 
     const payload = buildAgendaItemCreationPayload(form);
-    const creationOperation = isEditing
-      ? null
-      : await getOrCreateAgendaOperation({
-        userId,
-        workspaceId,
-        origin: CREATE_OPERATION_ORIGIN,
-        intent: payload,
-      });
+    let creationOperation = null;
+    if (AGENDA_IDEMPOTENCY_ENABLED && !isEditing) {
+      try {
+        creationOperation = await getOrCreateAgendaOperation({
+          userId,
+          workspaceId,
+          origin: CREATE_OPERATION_ORIGIN,
+          intent: payload,
+        });
+      } catch (error) {
+        setMutationError(getAgendaItemErrorMessage(error));
+        return;
+      }
+    }
     const result = isEditing
       ? await agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
       : await agenda.createItem({
         ...payload,
-        client_operation_id: creationOperation.clientOperationId,
+        ...(creationOperation
+          ? { client_operation_id: creationOperation.clientOperationId }
+          : {}),
       });
 
     if (result && !result.error) {
-      if (creationOperation) {
-        await clearAgendaOperation({
-          userId,
-          workspaceId,
-          origin: CREATE_OPERATION_ORIGIN,
-          clientOperationId: creationOperation.clientOperationId,
-        });
-      }
+      if (!(await clearCreationOperation(creationOperation))) return;
       // Reconcilia a lista com os filtros ativos (periodo/status/tipo) --
       // o upsert local do hook nao valida contra os filtros da consulta
       // atual, entao um item criado/editado fora do filtro so refletiria
@@ -140,12 +171,7 @@ function AgendaFormModal({
     }
 
     if (result?.error?.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT' && creationOperation) {
-      await clearAgendaOperation({
-        userId,
-        workspaceId,
-        origin: CREATE_OPERATION_ORIGIN,
-        clientOperationId: creationOperation.clientOperationId,
-      });
+      if (!(await clearCreationOperation(creationOperation))) return;
     }
 
     setMutationError(

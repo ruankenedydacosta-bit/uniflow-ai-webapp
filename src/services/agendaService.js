@@ -1,7 +1,8 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
+import { AGENDA_IDEMPOTENCY_ENABLED } from './agendaIdempotencyConfig.js';
 
-const AGENDA_ITEM_FIELDS =
-  'id, workspace_id, item_type, title, description, location, starts_at, ends_at, is_all_day, status, client_id, assigned_user_id, client_operation_id, created_by, created_at, updated_at';
+const LEGACY_AGENDA_ITEM_FIELDS =
+  'id, workspace_id, item_type, title, description, location, starts_at, ends_at, is_all_day, status, client_id, assigned_user_id, created_by, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const AGENDA_ITEM_STATUSES = Object.freeze(['completed', 'cancelled']);
@@ -63,12 +64,27 @@ const MUTABLE_AGENDA_ITEM_FIELDS = [
   'assigned_user_id',
 ];
 
-const CREATABLE_AGENDA_ITEM_FIELDS = [
-  ...MUTABLE_AGENDA_ITEM_FIELDS,
-  'client_operation_id',
-];
-
 const IDEMPOTENT_AGENDA_CREATE_FIELDS = [...MUTABLE_AGENDA_ITEM_FIELDS];
+
+export function getAgendaItemFields(idempotencyEnabled = AGENDA_IDEMPOTENCY_ENABLED) {
+  return idempotencyEnabled
+    ? LEGACY_AGENDA_ITEM_FIELDS.replace('created_by', 'client_operation_id, created_by')
+    : LEGACY_AGENDA_ITEM_FIELDS;
+}
+
+export function buildAgendaCreationPayload(
+  workspaceId,
+  item,
+  idempotencyEnabled = AGENDA_IDEMPOTENCY_ENABLED,
+) {
+  return {
+    workspace_id: workspaceId,
+    ...pickDefined(item, idempotencyEnabled
+      ? [...MUTABLE_AGENDA_ITEM_FIELDS, 'client_operation_id']
+      : MUTABLE_AGENDA_ITEM_FIELDS),
+    title: item.title.trim(),
+  };
+}
 
 function createIdempotencyConflict() {
   return {
@@ -145,7 +161,7 @@ export async function listAgendaItems(
 
   let query = supabase
     .from('agenda_items')
-    .select(AGENDA_ITEM_FIELDS)
+    .select(getAgendaItemFields())
     .eq('workspace_id', workspaceId)
     .order('starts_at', { ascending: true });
 
@@ -184,7 +200,7 @@ export async function getAgendaItem(workspaceId, itemId) {
 
   const { data, error } = await supabase
     .from('agenda_items')
-    .select(AGENDA_ITEM_FIELDS)
+    .select(getAgendaItemFields())
     .eq('workspace_id', workspaceId)
     .eq('id', itemId)
     .maybeSingle();
@@ -192,7 +208,11 @@ export async function getAgendaItem(workspaceId, itemId) {
   return normalizeSingleResult(data, error, 'Item de agenda nao encontrado neste workspace.');
 }
 
-export async function createAgendaItem(workspaceId, item = {}) {
+export async function createAgendaItem(
+  workspaceId,
+  item = {},
+  { idempotencyEnabled = AGENDA_IDEMPOTENCY_ENABLED } = {},
+) {
   if (!supabase) {
     return createUnavailableResult(null);
   }
@@ -213,22 +233,30 @@ export async function createAgendaItem(workspaceId, item = {}) {
     return createValidationResult('Data e hora de inicio sao obrigatorias.');
   }
 
-  if (item.client_operation_id !== undefined && !isValidUuid(item.client_operation_id)) {
+  if (
+    idempotencyEnabled
+    && !isValidUuid(item.client_operation_id)
+  ) {
     return createValidationResult('Chave da operacao de Agenda invalida.');
   }
 
-  const payload = {
-    workspace_id: workspaceId,
-    ...pickDefined(item, CREATABLE_AGENDA_ITEM_FIELDS),
-    title: item.title.trim(),
-  };
+  const payload = buildAgendaCreationPayload(workspaceId, item, idempotencyEnabled);
+
+  if (!idempotencyEnabled) {
+    const { data, error } = await supabase
+      .from('agenda_items')
+      .insert(payload)
+      .select(getAgendaItemFields(false))
+      .single();
+    return createResult(data, error);
+  }
 
   const result = await resolveIdempotentAgendaCreation({
     payload,
     findExisting: async () => {
       const { data, error } = await supabase
         .from('agenda_items')
-        .select(AGENDA_ITEM_FIELDS)
+        .select(getAgendaItemFields(true))
         .eq('workspace_id', workspaceId)
         .eq('client_operation_id', payload.client_operation_id)
         .maybeSingle();
@@ -238,7 +266,7 @@ export async function createAgendaItem(workspaceId, item = {}) {
       const { data, error } = await supabase
         .from('agenda_items')
         .insert(insertPayload)
-        .select(AGENDA_ITEM_FIELDS)
+        .select(getAgendaItemFields(true))
         .single();
       return { data, error };
     },
@@ -287,7 +315,7 @@ export async function updateAgendaItem(
     query = query.eq('updated_at', expectedUpdatedAt);
   }
 
-  const { data, error } = await query.select(AGENDA_ITEM_FIELDS).maybeSingle();
+  const { data, error } = await query.select(getAgendaItemFields()).maybeSingle();
 
   if (!error && !data && expectedUpdatedAt) {
     return createResult(null, {
@@ -332,7 +360,7 @@ export async function setAgendaItemStatus(
     .eq('workspace_id', workspaceId)
     .eq('id', itemId)
     .eq('updated_at', expectedUpdatedAt)
-    .select(AGENDA_ITEM_FIELDS)
+    .select(getAgendaItemFields())
     .maybeSingle();
 
   if (!error && !data) {

@@ -3,8 +3,7 @@ import test from 'node:test';
 import {
   AGENDA_OPERATION_STORAGE_KEY,
   clearAgendaOperation,
-  clearAgendaOperationByIntent,
-  clearAgendaOperationsForOrigin,
+  getCurrentAgendaOperation,
   getOrCreateAgendaOperation,
 } from './agendaOperationStore.js';
 
@@ -15,11 +14,21 @@ const WORKSPACE_B = 'workspace-b';
 const OP_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const OP_B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
-function createStorage() {
+function createStorage({ failRead = false, failWrite = false, corruptReadback = false } = {}) {
   const values = new Map();
+  let wrote = false;
   return {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, value),
+    getItem(key) {
+      if (failRead) throw new Error('read blocked');
+      const value = values.get(key) ?? null;
+      if (corruptReadback && wrote && value) return `${value.slice(0, -1)},`;
+      return value;
+    },
+    setItem(key, value) {
+      if (failWrite) throw new Error('write blocked');
+      values.set(key, value);
+      wrote = true;
+    },
     snapshot: () => values.get(AGENDA_OPERATION_STORAGE_KEY) ?? '[]',
   };
 }
@@ -42,7 +51,7 @@ function scope(overrides = {}) {
   };
 }
 
-test('criação normal persiste somente escopo técnico, hash e UUID', async () => {
+test('operação explícita persiste somente estrutura técnica mínima', async () => {
   const storage = createStorage();
   const operation = await getOrCreateAgendaOperation({
     ...scope(), storage, createOperationId: () => OP_A,
@@ -50,95 +59,112 @@ test('criação normal persiste somente escopo técnico, hash e UUID', async () 
   const persisted = storage.snapshot();
 
   assert.equal(operation.clientOperationId, OP_A);
+  assert.equal(operation.state, 'pending');
   assert.match(operation.fingerprint, /^sha256:[0-9a-f]{64}$/);
   assert.doesNotMatch(persisted, /Dentista|2026-08-09|title|starts_at|description/i);
   assert.deepEqual(Object.keys(JSON.parse(persisted)[0]).sort(), [
-    'clientOperationId', 'fingerprint', 'origin', 'userId', 'workspaceId',
+    'clientOperationId', 'fingerprint', 'origin', 'state', 'userId', 'workspaceId',
   ]);
 });
 
-test('reload e retry da mesma intenção reutilizam o UUID', async () => {
+test('reload da mesma aba reutiliza UUID da operação atual', async () => {
   const storage = createStorage();
-  const first = await getOrCreateAgendaOperation({
-    ...scope(), storage, createOperationId: () => OP_A,
-  });
+  await getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A });
   const restored = await getOrCreateAgendaOperation({
     ...scope(), storage, createOperationId: () => OP_B,
   });
 
-  assert.equal(restored.clientOperationId, first.clientOperationId);
+  assert.equal(restored.clientOperationId, OP_A);
   assert.equal(restored.restored, true);
 });
 
-test('reload antes da confirmação restaura a operação técnica sem persistir payload', async () => {
-  const storage = createStorage();
-  const partialIntent = { item_type: 'reminder', date: '2026-08-10', time: null };
-  await getOrCreateAgendaOperation({
-    ...scope({ intent: partialIntent }), storage, createOperationId: () => OP_A,
-  });
-  const restored = await getOrCreateAgendaOperation({
-    ...scope({ intent: partialIntent }), storage, createOperationId: () => OP_B,
-  });
+test('duas abas com payload idêntico recebem UUIDs independentes', async () => {
+  const tabA = createStorage();
+  const tabB = createStorage();
+  const [first, second] = await Promise.all([
+    getOrCreateAgendaOperation({ ...scope(), storage: tabA, createOperationId: () => OP_A }),
+    getOrCreateAgendaOperation({ ...scope(), storage: tabB, createOperationId: () => OP_B }),
+  ]);
 
-  assert.equal(restored.clientOperationId, OP_A);
-  assert.doesNotMatch(storage.snapshot(), /2026-08-10|reminder|date|time/);
+  assert.equal(first.clientOperationId, OP_A);
+  assert.equal(second.clientOperationId, OP_B);
 });
 
-test('duas abas concorrentes convergem na mesma operação', async () => {
+test('duas chamadas simultâneas na mesma aba compartilham a operação', async () => {
   const storage = createStorage();
   const [first, second] = await Promise.all([
     getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A }),
     getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_B }),
   ]);
 
-  assert.equal(first.clientOperationId, second.clientOperationId);
+  assert.equal(first.clientOperationId, OP_A);
+  assert.equal(second.clientOperationId, OP_A);
   assert.equal(JSON.parse(storage.snapshot()).length, 1);
 });
 
-test('sucesso ou cancelamento explícito limpa e nova intenção recebe novo UUID', async () => {
-  const storage = createStorage();
-  const first = await getOrCreateAgendaOperation({
-    ...scope(), storage, createOperationId: () => OP_A,
-  });
-  assert.equal(await clearAgendaOperation({ ...scope(), storage, clientOperationId: first.clientOperationId }), true);
-  const next = await getOrCreateAgendaOperation({
-    ...scope(), storage, createOperationId: () => OP_B,
-  });
-
-  assert.equal(next.clientOperationId, OP_B);
-  assert.notEqual(next.clientOperationId, first.clientOperationId);
+test('Web Locks ausente não altera a segurança do mutex da aba', async () => {
+  assert.doesNotMatch(
+    await import('node:fs/promises').then(({ readFile }) => readFile(new URL('./agendaOperationStore.js', import.meta.url), 'utf8')),
+    /navigator\.locks|Web Locks|localStorage/,
+  );
 });
 
-test('cancelamento explícito também pode limpar pelo fingerprint canônico', async () => {
+test('fingerprint divergente valida e bloqueia reuso implícito da operação', async () => {
   const storage = createStorage();
   await getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A });
 
-  assert.equal(await clearAgendaOperationByIntent({ ...scope(), storage }), true);
-  assert.equal(storage.snapshot(), '[]');
+  await assert.rejects(
+    getOrCreateAgendaOperation({ ...scope({ intent: intent('Fisioterapia') }), storage }),
+    { code: 'AGENDA_OPERATION_PAYLOAD_CONFLICT' },
+  );
 });
 
-test('cancelamento explícito do formulário limpa operações restauradas da origem', async () => {
+test('evolução explícita do mesmo fluxo preserva UUID e atualiza apenas o hash', async () => {
   const storage = createStorage();
-  await getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A });
-
-  assert.equal(await clearAgendaOperationsForOrigin({ ...scope(), storage }), true);
-  assert.equal(storage.snapshot(), '[]');
-});
-
-test('timeout não limpa a operação; novo registry após reload restaura UUID', async () => {
-  const storage = createStorage();
-  await getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A });
-
-  const afterTimeout = await getOrCreateAgendaOperation({
-    ...scope(), storage, createOperationId: () => OP_B,
+  const partial = await getOrCreateAgendaOperation({
+    ...scope({ intent: { item_type: 'reminder', date: '2026-08-10' } }),
+    storage,
+    createOperationId: () => OP_A,
   });
-  assert.equal(afterTimeout.clientOperationId, OP_A);
+  const complete = await getOrCreateAgendaOperation({
+    ...scope(), storage, preferredOperationId: partial.clientOperationId,
+  });
+
+  assert.equal(complete.clientOperationId, OP_A);
+  assert.notEqual(complete.fingerprint, partial.fingerprint);
 });
 
-test('mesmo payload fica isolado entre usuários e workspaces', async () => {
+test('limpeza remove somente a operação específica', async () => {
   const storage = createStorage();
-  const operationIds = [OP_A, OP_B, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'];
-  const createOperationId = () => operationIds.shift();
+  await getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A });
+  await getOrCreateAgendaOperation({
+    ...scope({ origin: 'agenda-form' }), storage, createOperationId: () => OP_B,
+  });
+
+  assert.equal(await clearAgendaOperation({
+    ...scope(), storage, clientOperationId: OP_A,
+  }), true);
+  assert.equal(JSON.parse(storage.snapshot()).length, 1);
+  assert.equal((await getCurrentAgendaOperation({
+    ...scope({ origin: 'agenda-form' }), storage,
+  })).clientOperationId, OP_B);
+});
+
+test('cancelamento na aba A não remove a operação da aba B', async () => {
+  const tabA = createStorage();
+  const tabB = createStorage();
+  await getOrCreateAgendaOperation({ ...scope(), storage: tabA, createOperationId: () => OP_A });
+  await getOrCreateAgendaOperation({ ...scope(), storage: tabB, createOperationId: () => OP_B });
+
+  await clearAgendaOperation({ ...scope(), storage: tabA, clientOperationId: OP_A });
+  assert.equal(await getCurrentAgendaOperation({ ...scope(), storage: tabA }), null);
+  assert.equal((await getCurrentAgendaOperation({ ...scope(), storage: tabB })).clientOperationId, OP_B);
+});
+
+test('isolamento por usuário e workspace cria operações distintas', async () => {
+  const storage = createStorage();
+  const ids = [OP_A, OP_B, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'];
+  const createOperationId = () => ids.shift();
   const first = await getOrCreateAgendaOperation({ ...scope(), storage, createOperationId });
   const otherUser = await getOrCreateAgendaOperation({
     ...scope({ userId: USER_B }), storage, createOperationId,
@@ -151,15 +177,16 @@ test('mesmo payload fica isolado entre usuários e workspaces', async () => {
   assert.notEqual(first.clientOperationId, otherWorkspace.clientOperationId);
 });
 
-test('payload divergente produz outro fingerprint e nunca reutiliza a chave implicitamente', async () => {
-  const storage = createStorage();
-  const first = await getOrCreateAgendaOperation({
-    ...scope(), storage, createOperationId: () => OP_A,
+for (const [name, storage] of [
+  ['storage indisponível', null],
+  ['falha de leitura', createStorage({ failRead: true })],
+  ['falha de escrita', createStorage({ failWrite: true })],
+  ['falha no readback', createStorage({ corruptReadback: true })],
+]) {
+  test(`${name} falha fechado`, async () => {
+    await assert.rejects(
+      getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A }),
+      { code: 'AGENDA_OPERATION_STORAGE_UNAVAILABLE' },
+    );
   });
-  const divergent = await getOrCreateAgendaOperation({
-    ...scope({ intent: intent('Fisioterapia') }), storage, createOperationId: () => OP_B,
-  });
-
-  assert.notEqual(first.fingerprint, divergent.fingerprint);
-  assert.notEqual(first.clientOperationId, divergent.clientOperationId);
-});
+}

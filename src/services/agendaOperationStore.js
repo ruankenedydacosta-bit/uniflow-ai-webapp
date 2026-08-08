@@ -1,14 +1,18 @@
 import { createAgendaClientOperationId } from './agendaService.js';
 
-export const AGENDA_OPERATION_STORAGE_KEY = 'uniflow:agenda:create-operations:v1';
-const AGENDA_OPERATION_LOCK_NAME = 'uniflow:agenda:create-operations:v1';
+export const AGENDA_OPERATION_STORAGE_KEY = 'uniflow:agenda:pending-operations:v2';
+export const AGENDA_OPERATION_STATE = Object.freeze({ PENDING: 'pending' });
 
-let inProcessLock = Promise.resolve();
+let inTabMutex = Promise.resolve();
+
+function operationError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
 
 function defaultStorage() {
   if (typeof window === 'undefined') return null;
   try {
-    return window.localStorage ?? null;
+    return window.sessionStorage ?? null;
   } catch {
     return null;
   }
@@ -35,51 +39,94 @@ function bytesToHex(bytes) {
 export async function createAgendaIntentFingerprint(intent) {
   const subtle = globalThis.crypto?.subtle;
   if (!subtle || typeof TextEncoder !== 'function') {
-    throw new Error('AGENDA_OPERATION_FINGERPRINT_UNAVAILABLE');
+    throw operationError(
+      'AGENDA_OPERATION_STORAGE_UNAVAILABLE',
+      'Não foi possível validar a operação da Agenda neste navegador.',
+    );
   }
   const canonicalIntent = JSON.stringify(canonicalize(intent));
   const digest = await subtle.digest('SHA-256', new TextEncoder().encode(canonicalIntent));
   return `sha256:${bytesToHex(digest)}`;
 }
 
-function readRecords(storage) {
-  if (!storage) return [];
-  try {
-    const parsed = JSON.parse(storage.getItem(AGENDA_OPERATION_STORAGE_KEY) ?? '[]');
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((record) => (
-      record
-      && typeof record.userId === 'string'
-      && typeof record.workspaceId === 'string'
-      && typeof record.origin === 'string'
-      && /^sha256:[0-9a-f]{64}$/.test(record.fingerprint)
-      && typeof record.clientOperationId === 'string'
-    ));
-  } catch {
-    return [];
-  }
-}
-
-function writeRecords(storage, records) {
-  if (!storage) return false;
-  try {
-    storage.setItem(AGENDA_OPERATION_STORAGE_KEY, JSON.stringify(records));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function assertScope({ userId, workspaceId, origin }) {
   if (!userId || !workspaceId || !origin) {
-    throw new Error('AGENDA_OPERATION_SCOPE_REQUIRED');
+    throw operationError(
+      'AGENDA_OPERATION_SCOPE_REQUIRED',
+      'Não foi possível identificar a operação da Agenda.',
+    );
   }
 }
 
-async function withInProcessLock(callback) {
-  const previous = inProcessLock;
+function isValidRecord(record) {
+  return Boolean(
+    record
+    && typeof record.clientOperationId === 'string'
+    && typeof record.userId === 'string'
+    && typeof record.workspaceId === 'string'
+    && typeof record.origin === 'string'
+    && /^sha256:[0-9a-f]{64}$/.test(record.fingerprint)
+    && record.state === AGENDA_OPERATION_STATE.PENDING,
+  );
+}
+
+function readRecords(storage) {
+  if (!storage) {
+    throw operationError(
+      'AGENDA_OPERATION_STORAGE_UNAVAILABLE',
+      'O armazenamento seguro da operação não está disponível.',
+    );
+  }
+  try {
+    const raw = storage.getItem(AGENDA_OPERATION_STORAGE_KEY);
+    if (raw == null) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || !parsed.every(isValidRecord)) {
+      throw new Error('invalid operation records');
+    }
+    return parsed;
+  } catch {
+    throw operationError(
+      'AGENDA_OPERATION_STORAGE_UNAVAILABLE',
+      'Não foi possível verificar a operação pendente da Agenda.',
+    );
+  }
+}
+
+function sameRecord(left, right) {
+  return left.clientOperationId === right.clientOperationId
+    && left.userId === right.userId
+    && left.workspaceId === right.workspaceId
+    && left.origin === right.origin
+    && left.fingerprint === right.fingerprint
+    && left.state === right.state;
+}
+
+function writeRecordsWithReadback(storage, records) {
+  try {
+    storage.setItem(AGENDA_OPERATION_STORAGE_KEY, JSON.stringify(records));
+  } catch {
+    throw operationError(
+      'AGENDA_OPERATION_STORAGE_UNAVAILABLE',
+      'Não foi possível persistir a operação pendente da Agenda.',
+    );
+  }
+  const persisted = readRecords(storage);
+  if (
+    persisted.length !== records.length
+    || records.some((record, index) => !sameRecord(record, persisted[index]))
+  ) {
+    throw operationError(
+      'AGENDA_OPERATION_STORAGE_UNAVAILABLE',
+      'A operação pendente da Agenda não pôde ser confirmada no armazenamento.',
+    );
+  }
+}
+
+async function withInTabMutex(callback) {
+  const previous = inTabMutex;
   let release;
-  inProcessLock = new Promise((resolve) => { release = resolve; });
+  inTabMutex = new Promise((resolve) => { release = resolve; });
   await previous;
   try {
     return await callback();
@@ -88,11 +135,10 @@ async function withInProcessLock(callback) {
   }
 }
 
-async function withOperationLock(callback) {
-  if (globalThis.navigator?.locks?.request) {
-    return globalThis.navigator.locks.request(AGENDA_OPERATION_LOCK_NAME, callback);
-  }
-  return withInProcessLock(callback);
+function matchesScope(record, { userId, workspaceId, origin }) {
+  return record.userId === userId
+    && record.workspaceId === workspaceId
+    && record.origin === origin;
 }
 
 export async function getOrCreateAgendaOperation({
@@ -107,25 +153,62 @@ export async function getOrCreateAgendaOperation({
   assertScope({ userId, workspaceId, origin });
   const fingerprint = await createAgendaIntentFingerprint(intent);
 
-  return withOperationLock(async () => {
+  return withInTabMutex(async () => {
     const records = readRecords(storage);
-    const existing = records.find((record) => (
-      record.userId === userId
-      && record.workspaceId === workspaceId
-      && record.origin === origin
-      && record.fingerprint === fingerprint
-    ));
-    if (existing) return Object.freeze({ ...existing, restored: true });
+    const index = records.findIndex((record) => matchesScope(record, {
+      userId, workspaceId, origin,
+    }));
+    const existing = records[index] ?? null;
+
+    if (existing) {
+      if (preferredOperationId && preferredOperationId !== existing.clientOperationId) {
+        throw operationError(
+          'AGENDA_OPERATION_PAYLOAD_CONFLICT',
+          'A operação restaurada não corresponde ao fluxo atual da Agenda.',
+        );
+      }
+      if (existing.fingerprint !== fingerprint) {
+        if (!preferredOperationId) {
+          throw operationError(
+            'AGENDA_OPERATION_PAYLOAD_CONFLICT',
+            'Os dados da operação restaurada são diferentes. Cancele e inicie novamente.',
+          );
+        }
+        const updated = { ...existing, fingerprint };
+        const nextRecords = [...records];
+        nextRecords[index] = updated;
+        writeRecordsWithReadback(storage, nextRecords);
+        return Object.freeze({ ...updated, restored: true });
+      }
+      writeRecordsWithReadback(storage, records);
+      return Object.freeze({ ...existing, restored: true });
+    }
 
     const record = {
+      clientOperationId: preferredOperationId ?? createOperationId(),
       userId,
       workspaceId,
       origin,
       fingerprint,
-      clientOperationId: preferredOperationId ?? createOperationId(),
+      state: AGENDA_OPERATION_STATE.PENDING,
     };
-    writeRecords(storage, [...records, record]);
+    writeRecordsWithReadback(storage, [...records, record]);
     return Object.freeze({ ...record, restored: false });
+  });
+}
+
+export async function getCurrentAgendaOperation({
+  userId,
+  workspaceId,
+  origin,
+  storage = defaultStorage(),
+}) {
+  assertScope({ userId, workspaceId, origin });
+  return withInTabMutex(async () => {
+    const records = readRecords(storage);
+    return records.find((record) => matchesScope(record, {
+      userId, workspaceId, origin,
+    })) ?? null;
   });
 }
 
@@ -138,59 +221,14 @@ export async function clearAgendaOperation({
 }) {
   assertScope({ userId, workspaceId, origin });
   if (!clientOperationId) return false;
-  return withOperationLock(async () => {
+  return withInTabMutex(async () => {
     const records = readRecords(storage);
     const remaining = records.filter((record) => !(
-      record.userId === userId
-      && record.workspaceId === workspaceId
-      && record.origin === origin
+      matchesScope(record, { userId, workspaceId, origin })
       && record.clientOperationId === clientOperationId
     ));
     if (remaining.length === records.length) return false;
-    writeRecords(storage, remaining);
-    return true;
-  });
-}
-
-export async function clearAgendaOperationsForOrigin({
-  userId,
-  workspaceId,
-  origin,
-  storage = defaultStorage(),
-}) {
-  assertScope({ userId, workspaceId, origin });
-  return withOperationLock(async () => {
-    const records = readRecords(storage);
-    const remaining = records.filter((record) => !(
-      record.userId === userId
-      && record.workspaceId === workspaceId
-      && record.origin === origin
-    ));
-    if (remaining.length === records.length) return false;
-    writeRecords(storage, remaining);
-    return true;
-  });
-}
-
-export async function clearAgendaOperationByIntent({
-  userId,
-  workspaceId,
-  origin,
-  intent,
-  storage = defaultStorage(),
-}) {
-  assertScope({ userId, workspaceId, origin });
-  const fingerprint = await createAgendaIntentFingerprint(intent);
-  return withOperationLock(async () => {
-    const records = readRecords(storage);
-    const remaining = records.filter((record) => !(
-      record.userId === userId
-      && record.workspaceId === workspaceId
-      && record.origin === origin
-      && record.fingerprint === fingerprint
-    ));
-    if (remaining.length === records.length) return false;
-    writeRecords(storage, remaining);
+    writeRecordsWithReadback(storage, remaining);
     return true;
   });
 }

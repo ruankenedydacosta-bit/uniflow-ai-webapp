@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { resolveIdempotentAgendaCreation } from './agendaService.js';
+import {
+  buildAgendaCreationPayload,
+  getAgendaItemFields,
+  resolveIdempotentAgendaCreation,
+} from './agendaService.js';
 
 const source = () => readFile(new URL('./agendaService.js', import.meta.url), 'utf8');
 
@@ -72,6 +76,34 @@ test('idempotência: primeira criação insere e devolve o compromisso', async (
   assert.equal(result.error, null);
   assert.equal(result.data.title, 'Reunião');
   assert.equal(harness.insertCount, 1);
+});
+
+test('flag OFF não consulta nem escreve client_operation_id', () => {
+  const input = basePayload();
+  const payload = buildAgendaCreationPayload(WORKSPACE_A, input, false);
+
+  assert.doesNotMatch(getAgendaItemFields(false), /client_operation_id/);
+  assert.equal(payload.client_operation_id, undefined);
+  assert.equal(payload.title, 'Reunião');
+});
+
+test('flag ON inclui client_operation_id no select e payload B.2', () => {
+  const input = basePayload();
+  const payload = buildAgendaCreationPayload(WORKSPACE_A, input, true);
+
+  assert.match(getAgendaItemFields(true), /client_operation_id/);
+  assert.equal(payload.client_operation_id, OPERATION_A);
+});
+
+test('flag ON exige UUID antes de alcançar o caminho idempotente', async () => {
+  const content = await source();
+  const body = content.slice(
+    content.indexOf('export async function createAgendaItem'),
+    content.indexOf('export async function updateAgendaItem'),
+  );
+
+  assert.match(body, /idempotencyEnabled\s*&& !isValidUuid\(item\.client_operation_id\)/);
+  assert.doesNotMatch(body, /item\.client_operation_id !== undefined/);
 });
 
 test('idempotência: retry idêntico retorna o item existente sem novo insert', async () => {
@@ -156,6 +188,8 @@ test('createAgendaItem consulta a chave sempre dentro do workspace e trata corri
   assert.match(body, /\.eq\('client_operation_id', payload\.client_operation_id\)/);
   assert.match(content, /inserted\.error\.code !== '23505'/);
   assert.match(content, /isCompatibleAgendaCreation\(concurrent\.data, payload\)/);
+  assert.match(body, /if \(!idempotencyEnabled\)/);
+  assert.match(body, /select\(getAgendaItemFields\(false\)\)/);
 });
 
 test('updateAgendaItem aplica updated_at esperado na mesma query do workspace e item', async () => {
