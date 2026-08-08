@@ -1,5 +1,6 @@
 import { TTS_FUNCTION_NAME, DEFAULT_TTS_TIMEOUT_MS } from './voiceTtsConfig.js';
 import { VOICE_TTS_ERROR_CODES } from './voiceTtsStatus.js';
+import { telemetry } from '../observability/index.js';
 
 // ELEVEN1: unico ponto do frontend que sabe da existencia da Edge Function
 // uni-voice-tts. Nenhum componente React chama fetch diretamente nem
@@ -137,6 +138,7 @@ export function createElevenLabsTtsProvider({
   }
 
   async function performRequest({ text, accessToken }) {
+    const requestStartedAt = Date.now();
     const requestController = new AbortController();
     controller = requestController;
     const timeout = runtime.setTimeout?.(() => requestController.abort('timeout'), timeoutMs);
@@ -152,6 +154,21 @@ export function createElevenLabsTtsProvider({
         body: JSON.stringify({ text }),
         signal: requestController.signal,
       });
+      void telemetry.event('edge_function.lifecycle', {
+        status: response.ok ? 'success' : 'error',
+        stage: 'tts_request',
+        source: 'edge_function',
+        provider: 'elevenlabs',
+      });
+      if (!response.ok) {
+        void telemetry.error('edge_function.failure', {
+          errorCode: `HTTP_${response.status}`,
+          stage: 'tts_request',
+          source: 'edge_function',
+          provider: 'elevenlabs',
+          recoverable: response.status >= 500 || response.status === 429,
+        });
+      }
       return { ok: true, response };
     } catch {
       const reason = requestController.signal.reason;
@@ -160,8 +177,21 @@ export function createElevenLabsTtsProvider({
         : reason === 'cancelled'
           ? VOICE_TTS_ERROR_CODES.CANCELLED
           : VOICE_TTS_ERROR_CODES.NETWORK_ERROR;
+      void telemetry.error('edge_function.failure', {
+        errorCode: code,
+        stage: 'tts_request',
+        source: 'edge_function',
+        provider: 'elevenlabs',
+        recoverable: code !== VOICE_TTS_ERROR_CODES.CANCELLED,
+      });
       return { ok: false, code };
     } finally {
+      void telemetry.metric('edge_function.latency_ms', {
+        value: Math.max(0, Date.now() - requestStartedAt),
+        unit: 'ms',
+        source: 'tts',
+        status: requestController.signal.aborted ? 'aborted' : 'completed',
+      });
       runtime.clearTimeout?.(timeout);
       if (controller === requestController) controller = null;
     }

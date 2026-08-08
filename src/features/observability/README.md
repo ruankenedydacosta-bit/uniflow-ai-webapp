@@ -12,6 +12,9 @@ migrado neste lote.
 - `telemetryPseudonymization.js`: SHA-256 por sessao e por escopo.
 - `telemetryAdapters.js`: contrato desacoplado e despacho fail-safe.
 - `telemetryClient.js`: API central, desligada por padrao.
+- `telemetryRuntime.js`: singleton local usado pelos dominios funcionais.
+- `sentryTelemetryAdapter.js`: unico ponto que conhece o SDK do Sentry.
+- `telemetryBootstrap.js`: erros globais e recuperaveis do React sem payload.
 
 ## Identidade e correlacao
 
@@ -29,8 +32,8 @@ ser tratado como identidade de usuario nem usado para retencao, DAU/WAU/MAU ou
 funis entre sessoes. Sem Web Crypto, a correlacao e omitida em vez de usar um
 hash fraco.
 
-Qualquer adapter externo futuro deve usar somente essa correlacao efemera. Nao
-deve receber um identificador estavel de usuario.
+O Sentry inicial deve usar somente essa correlacao efemera. Nao deve receber um
+identificador estavel de usuario.
 
 ### Identificador pseudonimo estavel futuro
 
@@ -58,6 +61,23 @@ instalacao, nao o usuario, e nao substitui esse contrato.
 Texto de conversa, transcricao, audio, valores e descricoes financeiras, nomes,
 e-mails, telefones, documentos, IDs brutos, payloads, tokens, cookies, secrets e
 credenciais nunca fazem parte do contrato de saida.
+
+## Adapter Sentry
+
+O Sentry e conectado somente pelo adapter e permanece desligado sem os tres
+requisitos simultaneos: `VITE_UNIFLOW_TELEMETRY_ENABLED=true`,
+`VITE_SENTRY_ENABLED=true` e `VITE_SENTRY_DSN` HTTPS valido. O DSN nao existe no
+codigo e nenhuma configuracao remota foi alterada.
+
+As integracoes automaticas do SDK, breadcrumbs, captura de requests, Session
+Replay, auto session tracking e tracing automatico ficam desabilitados. O
+adapter recebe apenas envelopes ja sanitizados e usa `beforeSend` como segunda
+barreira. Eventos que nao carregam a marca interna da fundacao sao descartados.
+
+O lote inicial cobre apenas erros globais/bootstrap, falhas tecnicas de
+sessao/auth e Supabase, voz/microfone, TTS, Edge Functions da voz/Uni e a
+orquestracao Shadow da Uni Engine. Latencias sao metricas tecnicas sem payload.
+Nenhum resultado altera UI, resposta, fluxo financeiro ou rollout.
 
 ## Migracao futura
 

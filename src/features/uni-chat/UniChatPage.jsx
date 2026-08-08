@@ -100,6 +100,7 @@ import { classifyIntent } from '../uni-intents/index.js';
 import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration, buildToolCallingAuthorization } from '../uni-engine/index.js';
 import { validateFinancialFacts } from '../uni-engine/financial-runtime/factual-validation/index.js';
 import { validateFinancialRuntimeSafety } from '../uni-engine/financial-runtime/eligibility/index.js';
+import { normalizeTelemetryErrorCode, telemetry } from '../observability/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 
 // FASE 20.1 — Tool Calling. Integração isolada ao pipeline com guardas de
@@ -1725,6 +1726,7 @@ export default function UniChatPage({ variant = 'full' }) {
   // Application do MESMO turno (retorno direto, nunca um ref antigo). Sem
   // turno, deduplicado ou em erro → null, e o seletor usa o texto legado.
   const runEngineObservational = useCallback((legacyText, messageOptions = {}) => {
+    const engineStartedAt = Date.now();
     const turn = lastEngineTurnRef.current;
     if (!turn || !turn.userMessageId) return null;
     if (lastEngineAnalyzedMessageIdRef.current === turn.userMessageId) return lastApplicationResultRef.current;
@@ -1896,6 +1898,18 @@ export default function UniChatPage({ variant = 'full' }) {
         },
         operationalMemory: uniEngineMemoryByConversation.get(memoryKey),
         memoryAdapter,
+      });
+      void telemetry.metric('uni_engine.latency_ms', {
+        value: Math.max(0, Date.now() - engineStartedAt),
+        unit: 'ms',
+        source: 'shadow',
+        status: 'completed',
+      }, {
+        userId: user?.id ?? null,
+        workspaceId: effectiveWorkspace?.id ?? null,
+        conversationId: activeId ?? null,
+        messageId: turn.userMessage.id,
+        turnId: turn.userMessage.id,
       });
        const convState = financialStateRef.current ?? {};
       const action = pendingActionRef.current ?? convState.action ?? null;
@@ -2089,7 +2103,25 @@ export default function UniChatPage({ variant = 'full' }) {
         lastFinancialReasoningResultRef.current = null;
       }
       return lastApplicationResultRef.current;
-     } catch {
+     } catch (error) {
+       void telemetry.error('uni_orchestration.failure', {
+         errorCode: normalizeTelemetryErrorCode(error?.name, 'UNI_ORCHESTRATION_FAILED'),
+         stage: 'shadow_orchestration',
+         source: 'uni_engine',
+         recoverable: true,
+       }, {
+         userId: user?.id ?? null,
+         workspaceId: effectiveWorkspace?.id ?? null,
+         conversationId: activeId ?? null,
+         messageId: lastEngineTurnRef.current?.userMessage?.id ?? null,
+         turnId: lastEngineTurnRef.current?.userMessage?.id ?? null,
+       });
+       void telemetry.metric('uni_engine.latency_ms', {
+         value: Math.max(0, Date.now() - engineStartedAt),
+         unit: 'ms',
+         source: 'shadow',
+         status: 'error',
+       });
        lastUniEngineGatewayResultRef.current = null;
       lastEngineIntegrationResultRef.current = null;
       lastGuidanceSnapshotRef.current = null;

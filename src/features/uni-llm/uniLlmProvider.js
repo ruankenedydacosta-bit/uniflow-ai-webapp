@@ -12,6 +12,8 @@
 // mapeamento de erros. A troca de provedor no futuro e feita na Edge Function,
 // sem reescrever o chat.
 
+import { telemetry } from '../observability/index.js';
+
 export const UNI_LLM_FUNCTION_NAME = 'uni-chat-llm';
 export const DEFAULT_LLM_TIMEOUT_MS = 20000;
 
@@ -65,6 +67,7 @@ export function createUniLlmProvider({
   }
 
   async function performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens, tools }) {
+    const requestStartedAt = Date.now();
     const controller = new AbortController();
     currentController = controller;
     const timeout = runtime.setTimeout?.(() => controller.abort('timeout'), timeoutMs);
@@ -90,12 +93,40 @@ export function createUniLlmProvider({
         body: JSON.stringify({ system, messages, mode, productContext, maxOutputTokens, tools }),
         signal: controller.signal,
       });
+      void telemetry.event('edge_function.lifecycle', {
+        status: response.ok ? 'success' : 'error',
+        stage: 'uni_llm',
+        source: 'edge_function',
+        provider: 'uni_llm',
+      });
+      if (!response.ok) {
+        void telemetry.error('edge_function.failure', {
+          errorCode: `HTTP_${response.status}`,
+          stage: 'uni_llm',
+          source: 'edge_function',
+          provider: 'uni_llm',
+          recoverable: response.status >= 500 || response.status === 429,
+        });
+      }
       return { ok: true, response };
     } catch {
       const reason = controller.signal.reason;
       const code = reason === 'timeout' ? 'TIMEOUT' : reason === 'cancelled' ? 'CANCELLED' : 'NETWORK';
+      void telemetry.error('edge_function.failure', {
+        errorCode: code,
+        stage: 'uni_llm',
+        source: 'edge_function',
+        provider: 'uni_llm',
+        recoverable: code !== 'CANCELLED',
+      });
       return { ok: false, code };
     } finally {
+      void telemetry.metric('edge_function.latency_ms', {
+        value: Math.max(0, Date.now() - requestStartedAt),
+        unit: 'ms',
+        source: 'uni_llm',
+        status: controller.signal.aborted ? 'aborted' : 'completed',
+      });
       runtime.clearTimeout?.(timeout);
       if (currentController === controller) currentController = null;
     }

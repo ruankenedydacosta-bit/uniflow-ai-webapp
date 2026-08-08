@@ -44,6 +44,7 @@ import {
 } from './workspaceSelection.js';
 import { resetAutoSpokenMessages } from '../features/uni-voice-tts/spokenMessageSession.js';
 import { resetNarratedTexts } from '../features/uni-voice-tts/narratedTextSession.js';
+import { normalizeTelemetryErrorCode, telemetry } from '../features/observability/index.js';
 
 const SessionContext = createContext(null);
 
@@ -64,6 +65,15 @@ function logAuthDevelopment(message) {
   if (import.meta.env.DEV) {
     console.info(`[Auth DEV] ${message}`);
   }
+}
+
+function reportSessionDataFailure(stage, error, identity = {}) {
+  void telemetry.error('supabase.failure', {
+    errorCode: normalizeTelemetryErrorCode(error?.code, 'SUPABASE_OPERATION_FAILED'),
+    stage,
+    source: 'session',
+    recoverable: true,
+  }, identity);
 }
 
 // NOTA DE ARQUITETURA (Fase 1): a derivação sessão → `access` vive agora em
@@ -181,6 +191,9 @@ function SessionProvider({ children }) {
       }
 
       if (profileResult.error) {
+        reportSessionDataFailure('session_profile', profileResult.error, {
+          userId: nextSession.user.id,
+        });
         setState((currentState) => ({
           ...currentState,
           session: nextSession,
@@ -243,6 +256,10 @@ function SessionProvider({ children }) {
       }
 
       if (workspaceResult.error) {
+        reportSessionDataFailure('session_workspace', workspaceResult.error, {
+          userId: nextSession.user.id,
+          workspaceId: profileResult.data.current_workspace_id,
+        });
         setAvailableWorkspaces([]);
         setState((currentState) => ({
           ...currentState,
@@ -280,6 +297,10 @@ function SessionProvider({ children }) {
       }
 
       if (subscriptionResult.error) {
+        reportSessionDataFailure('session_subscription', subscriptionResult.error, {
+          userId: nextSession.user.id,
+          workspaceId: workspaceResult.data?.id,
+        });
         setState((currentState) => ({
           ...currentState,
           profile: profileResult.data,

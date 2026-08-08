@@ -1,4 +1,16 @@
 import { getSupabaseConfigStatus, supabase } from './supabaseClient';
+import { normalizeTelemetryErrorCode, telemetry } from '../features/observability/index.js';
+
+function observeAuthError(stage, error) {
+  if (error) {
+    void telemetry.error('auth.failure', {
+      errorCode: normalizeTelemetryErrorCode(error.code, 'AUTH_OPERATION_FAILED'),
+      stage,
+      source: 'supabase',
+      recoverable: true,
+    });
+  }
+}
 
 function createServiceUnavailableResult() {
   return {
@@ -24,6 +36,7 @@ export async function getCurrentUser() {
 
   const { data, error } = await supabase.auth.getUser();
 
+  observeAuthError('get_user', error);
   return {
     data,
     error,
@@ -44,6 +57,7 @@ export async function getSession() {
 
   const { data, error } = await supabase.auth.getSession();
 
+  observeAuthError('get_session', error);
   return {
     data,
     error,
@@ -73,6 +87,7 @@ export async function signInWithPassword({ email, password } = {}) {
     password,
   });
 
+  observeAuthError('sign_in_password', error);
   return {
     data,
     error,
@@ -101,6 +116,7 @@ export async function signInWithGoogle(redirectTo) {
     options: { redirectTo },
   });
 
+  observeAuthError('sign_in_google', error);
   return {
     data,
     error,
@@ -121,6 +137,7 @@ export async function signUpWithEmail({ email, password, fullName } = {}) {
 
   const { data, error } = await supabase.auth.signUp(credentials);
 
+  observeAuthError('sign_up_email', error);
   return {
     data,
     error,
@@ -141,6 +158,7 @@ export async function requestPasswordReset(email, redirectTo) {
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
+  observeAuthError('password_reset', error);
   return {
     data: null,
     error,
@@ -161,6 +179,7 @@ export async function updatePassword(newPassword) {
 
   const { data, error } = await supabase.auth.updateUser({ password: newPassword });
 
+  observeAuthError('password_update', error);
   return {
     data,
     error,
@@ -175,6 +194,7 @@ export async function signOut() {
 
   const { error } = await supabase.auth.signOut();
 
+  observeAuthError('sign_out', error);
   return {
     data: null,
     error,

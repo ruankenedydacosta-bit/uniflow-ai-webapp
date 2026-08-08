@@ -10,6 +10,7 @@ import {
 } from './mediaRecorderAdapter.js';
 import { sanitizeVoiceTranscript } from './speechRecognitionAdapter.js';
 import { recordVoiceTranscriptionTelemetry } from './voiceTranscriptionTelemetry.js';
+import { telemetry } from '../observability/index.js';
 
 export const UNI_VOICE_TRANSCRIBE_FUNCTION = 'uni-voice-transcribe';
 export const UNI_VOICE_TRANSCRIPTION_TIMEOUT_MS = 20_000;
@@ -70,6 +71,7 @@ export function createUniVoiceTranscriptionProvider({
 
     const controller = new AbortController();
     const timeout = runtime.setTimeout?.(() => controller.abort('timeout'), timeoutMs);
+    const requestStartedAt = Date.now();
 
     try {
       const response = await fetchImpl(`${url}/functions/v1/${UNI_VOICE_TRANSCRIBE_FUNCTION}`, {
@@ -112,6 +114,13 @@ export function createUniVoiceTranscriptionProvider({
           blobSizeBytes: audio.size,
           mimeType: audio.type,
         });
+        void telemetry.error('edge_function.failure', {
+          errorCode: code,
+          stage: 'voice_transcription',
+          source: 'edge_function',
+          provider: 'transcription',
+          recoverable: response.status >= 500 || response.status === 429,
+        }, { workspaceId });
         return { text: null, error: { code } };
       }
 
@@ -127,11 +136,25 @@ export function createUniVoiceTranscriptionProvider({
       });
       return { text: null, error: { code: 'EMPTY_TRANSCRIPT' } };
     } catch {
+      const code = controller.signal.reason === 'timeout' ? 'TIMEOUT' : 'NETWORK';
+      void telemetry.error('edge_function.failure', {
+        errorCode: code,
+        stage: 'voice_transcription',
+        source: 'edge_function',
+        provider: 'transcription',
+        recoverable: true,
+      }, { workspaceId });
       return {
         text: null,
-        error: { code: controller.signal.reason === 'timeout' ? 'TIMEOUT' : 'NETWORK' },
+        error: { code },
       };
     } finally {
+      void telemetry.metric('edge_function.latency_ms', {
+        value: Math.max(0, Date.now() - requestStartedAt),
+        unit: 'ms',
+        source: 'transcription',
+        status: controller.signal.aborted ? 'aborted' : 'completed',
+      }, { workspaceId });
       runtime.clearTimeout?.(timeout);
     }
   }

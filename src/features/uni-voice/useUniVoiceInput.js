@@ -11,6 +11,7 @@ import {
   VOICE_CAPTURE_STATES,
 } from './voiceCaptureReducer.js';
 import { getVoiceInputMessage } from './voiceInputMessages.js';
+import { normalizeTelemetryErrorCode, telemetry } from '../observability/index.js';
 
 const CAPTURE_ERROR_STATES = Object.freeze({
   permission_denied: VOICE_CAPTURE_STATES.PERMISSION_DENIED,
@@ -63,6 +64,7 @@ export function useUniVoiceInput({
   }, []);
 
   const transcribe = useCallback(async ({ audio, durationMs }) => {
+    const transcriptionStartedAt = Date.now();
     const requestId = ++requestIdRef.current;
     dispatch({ type: 'PROCESS' });
     releaseAdapter();
@@ -74,6 +76,13 @@ export function useUniVoiceInput({
     });
     if (requestId !== requestIdRef.current) return;
 
+    void telemetry.metric('voice.latency_ms', {
+      value: Math.max(0, Date.now() - transcriptionStartedAt),
+      unit: 'ms',
+      source: 'transcription',
+      status: result?.text ? 'success' : 'error',
+    }, { workspaceId, requestId: String(requestId) });
+
     if (result?.text) {
       dispatch({ type: 'COMPLETE' });
       callbacksRef.current.onFinalTranscript?.(result.text);
@@ -81,6 +90,12 @@ export function useUniVoiceInput({
     }
 
     const code = result?.error?.code ?? 'transcription_failed';
+    void telemetry.error('voice.failure', {
+      errorCode: normalizeTelemetryErrorCode(code, 'TRANSCRIPTION_FAILED'),
+      stage: 'transcription',
+      source: 'microphone',
+      recoverable: true,
+    }, { workspaceId, requestId: String(requestId) });
     dispatch({
       type: 'FAIL',
       status: code === 'EMPTY_TRANSCRIPT'
@@ -98,6 +113,11 @@ export function useUniVoiceInput({
       runtime: browserRuntime,
       onStart: () => {
         dispatch({ type: 'START_LISTENING' });
+        void telemetry.event('voice.lifecycle', {
+          status: 'listening',
+          stage: 'capture',
+          source: 'microphone',
+        }, { workspaceId });
         callbacksRef.current.onCaptureStart?.();
       },
       onStreamReady: (stream) => {
@@ -108,8 +128,19 @@ export function useUniVoiceInput({
       },
       onCancel: () => {
         dispatch({ type: 'CANCEL' });
+        void telemetry.event('voice.lifecycle', {
+          status: 'cancelled',
+          stage: 'capture',
+          source: 'microphone',
+        }, { workspaceId });
       },
       onError: ({ code }) => {
+        void telemetry.error('voice.failure', {
+          errorCode: normalizeTelemetryErrorCode(code, 'CAPTURE_FAILED'),
+          stage: 'capture',
+          source: 'microphone',
+          recoverable: true,
+        }, { workspaceId });
         dispatch({
           type: 'FAIL',
           status: CAPTURE_ERROR_STATES[code] ?? VOICE_CAPTURE_STATES.ERROR,

@@ -9,6 +9,7 @@ import { resolveVoiceFallbackPolicy } from './voiceFallbackPolicy.js';
 import { MAX_TTS_TEXT_LENGTH } from './voiceTtsConfig.js';
 import { VOICE_TTS_STATUS, VOICE_TTS_ERROR_CODES, getVoiceTtsErrorMessage } from './voiceTtsStatus.js';
 import { createVoiceTtsRequestContext, recordVoiceTtsTelemetry } from './voiceTtsTelemetry.js';
+import { telemetry } from '../observability/index.js';
 
 function buildError(code, details = {}) {
   return Object.freeze({
@@ -79,6 +80,7 @@ export function useUniVoiceTts() {
   );
 
   const speak = useCallback(async (text, requestMetadata = {}) => {
+    const voiceStartedAt = Date.now();
     const requestContext = createVoiceTtsRequestContext(requestMetadata);
     const recordProviderEvent = (event) => recordVoiceTtsTelemetry({
       ...requestContext,
@@ -132,6 +134,15 @@ export function useUniVoiceTts() {
         onEnded: () => setStatus(VOICE_TTS_STATUS.STOPPED),
         onProviderEvent: recordProviderEvent,
       });
+      void telemetry.metric('voice.latency_ms', {
+        value: Math.max(0, Date.now() - voiceStartedAt),
+        unit: 'ms',
+        source: 'tts',
+        status: 'success',
+      }, {
+        messageId: requestMetadata.messageId == null ? null : String(requestMetadata.messageId),
+        requestId: requestContext.requestId,
+      });
       return { error: null };
     } catch (providerError) {
       if (providerError?.code === VOICE_TTS_ERROR_CODES.CANCELLED) {
@@ -144,6 +155,15 @@ export function useUniVoiceTts() {
       );
       setStatus(VOICE_TTS_STATUS.ERROR);
       setError(err);
+      void telemetry.metric('voice.latency_ms', {
+        value: Math.max(0, Date.now() - voiceStartedAt),
+        unit: 'ms',
+        source: 'tts',
+        status: 'error',
+      }, {
+        messageId: requestMetadata.messageId == null ? null : String(requestMetadata.messageId),
+        requestId: requestContext.requestId,
+      });
       return { error: err };
     }
   }, [preparePlayback, provider]);
