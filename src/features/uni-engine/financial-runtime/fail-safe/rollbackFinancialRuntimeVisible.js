@@ -2,8 +2,6 @@
 // Fail-safe determinístico e rollback de última instância para o runtime financeiro visível.
 // Implementa comportamento seguro quando a aplicação normal falha ou parâmetros inválidos.
 
-import { isSerializableValue } from '../uniEngineContracts.js';
-
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
   if (Array.isArray(value)) {
