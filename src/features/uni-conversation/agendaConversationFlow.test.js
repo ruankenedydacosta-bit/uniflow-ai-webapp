@@ -1,0 +1,243 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createAgendaConversationFlow } from './agendaConversationFlow.js';
+
+const IDENTITY = Object.freeze({
+  userId: 'user-a',
+  workspaceId: '11111111-1111-4111-8111-111111111111',
+  conversationId: 'conversation-a',
+});
+const REFERENCE_DATE = '2026-08-08';
+
+function makeHarness(seed = []) {
+  const items = seed.map((item) => ({ status: 'scheduled', is_all_day: false, ...item }));
+  const calls = [];
+  let sequence = items.length;
+  const services = {
+    async createAgendaItem(workspaceId, payload) {
+      calls.push({ operation: 'create', workspaceId, payload });
+      const data = { id: `item-${++sequence}`, workspace_id: workspaceId, status: 'scheduled', ...payload };
+      items.push(data);
+      return { data, error: null };
+    },
+    async listAgendaItems(workspaceId, filters) {
+      calls.push({ operation: 'list', workspaceId, filters });
+      const from = filters.startsFrom ? new Date(filters.startsFrom).getTime() : -Infinity;
+      const to = filters.startsTo ? new Date(filters.startsTo).getTime() : Infinity;
+      return {
+        data: items.filter((item) => {
+          const startsAt = new Date(item.starts_at).getTime();
+          return item.workspace_id === workspaceId
+            && (!filters.status || item.status === filters.status)
+            && startsAt >= from
+            && startsAt <= to;
+        }),
+        error: null,
+      };
+    },
+    async updateAgendaItem(workspaceId, itemId, changes) {
+      calls.push({ operation: 'update', workspaceId, itemId, changes });
+      const item = items.find((candidate) => candidate.id === itemId && candidate.workspace_id === workspaceId);
+      if (!item) return { data: null, error: { code: 'not_found' } };
+      Object.assign(item, changes);
+      return { data: item, error: null };
+    },
+    async setAgendaItemStatus(workspaceId, itemId, status) {
+      calls.push({ operation: 'status', workspaceId, itemId, status });
+      const item = items.find((candidate) => candidate.id === itemId && candidate.workspace_id === workspaceId);
+      if (!item) return { data: null, error: { code: 'not_found' } };
+      item.status = status;
+      return { data: item, error: null };
+    },
+    async deleteAgendaItem(workspaceId, itemId) {
+      calls.push({ operation: 'delete', workspaceId, itemId });
+      const index = items.findIndex((candidate) => candidate.id === itemId && candidate.workspace_id === workspaceId);
+      if (index < 0) return { data: null, error: { code: 'not_found' } };
+      const [data] = items.splice(index, 1);
+      return { data: { id: data.id }, error: null };
+    },
+  };
+  return { flow: createAgendaConversationFlow({ services }), calls, items };
+}
+
+function turn(flow, text, identity = IDENTITY) {
+  return flow.handle({ text, identity, referenceDate: REFERENCE_DATE });
+}
+
+test('criação relativa preserva assunto e pergunta pelo horário', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Me lembra da reunião daqui 10 dias.');
+  assert.equal(result.text, 'Quer colocar um horário ou deixo como compromisso do dia?');
+  assert.equal(calls.length, 0);
+  assert.equal(flow.hasPending(IDENTITY), true);
+});
+
+test('resposta sem horário cria compromisso do dia sem inventar hora', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Me lembra da reunião daqui 10 dias.');
+  const result = await turn(flow, 'Pode deixar sem horário.');
+  assert.match(result.text, /compromisso do dia/);
+  assert.equal(calls[0].operation, 'create');
+  assert.equal(calls[0].payload.title, 'reuniao');
+  assert.equal(calls[0].payload.is_all_day, true);
+  assert.match(calls[0].payload.starts_at, /^2026-08-18T/);
+  assert.equal(flow.hasPending(IDENTITY), false);
+});
+
+test('criação com horário salva dentista amanhã às 15h', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Tenho dentista amanhã às 15h.');
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'dentista');
+  assert.equal(calls[0].payload.is_all_day, false);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
+  assert.match(calls[0].payload.starts_at, /^2026-08-09T/);
+});
+
+test('criação aceita data absoluta sem depender de interpretação externa', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Marca uma reunião em 20/08/2026 às 14h.');
+  assert.match(calls[0].payload.starts_at, /^2026-08-20T/);
+});
+
+test('objeto vago pergunta o assunto e preserva a data já informada', async () => {
+  const { flow, calls } = makeHarness();
+  const first = await turn(flow, 'Bota aquele negócio pra sexta.');
+  assert.match(first.text, /O que você quer/);
+  const second = await turn(flow, 'Reunião do projeto.');
+  assert.match(second.text, /horário/);
+  await turn(flow, 'Sem horário.');
+  assert.equal(calls.at(-1).payload.title, 'reuniao do projeto');
+  assert.match(calls.at(-1).payload.starts_at, /^2026-08-14T/);
+});
+
+test('consulta vazia de amanhã responde sem inventar compromissos', async () => {
+  const { flow } = makeHarness();
+  const result = await turn(flow, 'O que tenho amanhã?');
+  assert.equal(result.text, 'Você não tem compromissos nesse período.');
+});
+
+test('consulta de semana lista múltiplos compromissos reais', async () => {
+  const { flow } = makeHarness([
+    { id: 'a', workspace_id: IDENTITY.workspaceId, title: 'Dentista', starts_at: '2026-08-08T15:00:00.000Z' },
+    { id: 'b', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-09T12:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'O que tenho esta semana?');
+  assert.match(result.text, /Dentista/);
+  assert.match(result.text, /Reunião/);
+});
+
+test('consulta de sexta usa a próxima sexta, não uma data passada', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'O que tenho na sexta?');
+  assert.match(calls[0].filters.startsFrom, /^2026-08-14T/);
+});
+
+test('consulta do fim do mês usa o último dia do mês', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'O que tenho no fim do mês?');
+  assert.match(calls[0].filters.startsFrom, /^2026-08-31T/);
+});
+
+test('edição encontra um item e altera somente o horário', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'dentista', workspace_id: IDENTITY.workspaceId, title: 'Dentista', starts_at: '2026-08-09T15:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'Muda meu dentista de amanhã para 16h.');
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.equal(new Date(update.changes.starts_at).getHours(), 16);
+});
+
+test('edição ambígua lista opções e aguarda escolha', async () => {
+  const { flow } = makeHarness([
+    { id: 'a', workspace_id: IDENTITY.workspaceId, title: 'Dentista A', starts_at: '2026-08-09T15:00:00.000Z' },
+    { id: 'b', workspace_id: IDENTITY.workspaceId, title: 'Dentista B', starts_at: '2026-08-09T18:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'Muda meu dentista de amanhã para 16h.');
+  assert.match(result.text, /Encontrei mais de um/);
+  assert.equal(flow.hasPending(IDENTITY), true);
+});
+
+test('conclusão marca o compromisso correspondente como concluído', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-08T12:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'Já fiz aquela reunião. Pode marcar como concluída.');
+  assert.match(result.text, /concluído/);
+  assert.equal(items[0].status, 'completed');
+});
+
+test('cancelamento exige confirmação antes de alterar o status', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-14T12:00:00.000Z' },
+  ]);
+  const first = await turn(flow, 'Cancela minha reunião de sexta.');
+  assert.match(first.text, /Quer mesmo cancelar/);
+  assert.equal(items[0].status, 'scheduled');
+  const second = await turn(flow, 'Sim.');
+  assert.match(second.text, /Cancelei/);
+  assert.equal(items[0].status, 'cancelled');
+});
+
+test('negação preserva o compromisso e encerra a confirmação', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-14T12:00:00.000Z' },
+  ]);
+  await turn(flow, 'Cancela minha reunião de sexta.');
+  const result = await turn(flow, 'Não.');
+  assert.match(result.text, /Mantive/);
+  assert.equal(items[0].status, 'scheduled');
+  assert.equal(flow.hasPending(IDENTITY), false);
+});
+
+test('cancelamento ambíguo lista opções sem cancelar nenhuma', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'a', workspace_id: IDENTITY.workspaceId, title: 'Reunião A', starts_at: '2026-08-14T12:00:00.000Z' },
+    { id: 'b', workspace_id: IDENTITY.workspaceId, title: 'Reunião B', starts_at: '2026-08-14T18:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'Cancela minha reunião de sexta.');
+  assert.match(result.text, /Encontrei mais de um/);
+  assert.ok(items.every((item) => item.status === 'scheduled'));
+});
+
+test('exclusão exige confirmação e usa a operação real de delete', async () => {
+  const { flow, calls, items } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-14T12:00:00.000Z' },
+  ]);
+  const first = await turn(flow, 'Excluir minha reunião de sexta.');
+  assert.match(first.text, /Quer mesmo excluir/);
+  assert.equal(items.length, 1);
+  const second = await turn(flow, 'Confirmar.');
+  assert.match(second.text, /Excluí/);
+  assert.equal(items.length, 0);
+  assert.equal(calls.at(-1).operation, 'delete');
+});
+
+test('isolamento de workspace impede encontrar item de outro espaço', async () => {
+  const { flow } = makeHarness([
+    { id: 'foreign', workspace_id: '22222222-2222-4222-8222-222222222222', title: 'Reunião', starts_at: '2026-08-14T12:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'Cancela minha reunião de sexta.');
+  assert.match(result.text, /Não encontrei/);
+});
+
+test('frase financeira não é capturada pelo fluxo de Agenda', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Gastei R$ 50 no almoço.');
+  assert.equal(result.handled, false);
+  assert.equal(calls.length, 0);
+});
+
+test('falha do serviço vira resposta segura e curta', async () => {
+  const services = {
+    createAgendaItem: async () => ({ data: null, error: { code: 'offline' } }),
+    listAgendaItems: async () => ({ data: [], error: { code: 'offline' } }),
+    updateAgendaItem: async () => ({ data: null, error: { code: 'offline' } }),
+    setAgendaItemStatus: async () => ({ data: null, error: { code: 'offline' } }),
+    deleteAgendaItem: async () => ({ data: null, error: { code: 'offline' } }),
+  };
+  const flow = createAgendaConversationFlow({ services });
+  const result = await turn(flow, 'Tenho dentista amanhã às 15h.');
+  assert.match(result.text, /Tente novamente/);
+});

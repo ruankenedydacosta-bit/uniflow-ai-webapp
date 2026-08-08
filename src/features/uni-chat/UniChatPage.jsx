@@ -54,6 +54,7 @@ import {
   looksLikeUnclassifiedFinancialStatement,
   createConversationalMemory,
   classifyPendingActionRelation,
+  createAgendaConversationFlow,
 } from '../uni-conversation';
 import {
   useUniLlm, AI_STATUS, resolveConversationStyle,
@@ -1204,6 +1205,10 @@ export default function UniChatPage({ variant = 'full' }) {
   const [activeId, setActiveId] = useState(initialChatState.activeId);
   const [pendingAction, setPendingAction] = useState(null);
   const [pendingActionStack, setPendingActionStack] = useState(null);
+  const agendaConversationRef = useRef(null);
+  if (!agendaConversationRef.current) {
+    agendaConversationRef.current = createAgendaConversationFlow();
+  }
   const [pendingHydrated, setPendingHydrated] = useState(false);
   const [executionError, setExecutionError] = useState(null);
   const [isExecutingAction, setIsExecutingAction] = useState(false);
@@ -3664,7 +3669,17 @@ export default function UniChatPage({ variant = 'full' }) {
     pushMessage(userMsg);
     setInputValue('');
 
+    const agendaIdentity = {
+      userId: user?.id,
+      workspaceId: effectiveWorkspace?.id,
+      conversationId: activeId ?? 'local-conversation',
+    };
+    const declaredIntent = classifyIntent(text).intent;
+    const hasAgendaConversation = agendaConversationRef.current.hasPending(agendaIdentity)
+      || declaredIntent.startsWith('agenda_');
     const hasPendingConversation = Boolean(
+      hasAgendaConversation
+      ||
       pendingAction
       || isAccountCreationDependency(
         pendingActionStackRef.current
@@ -3717,6 +3732,22 @@ export default function UniChatPage({ variant = 'full' }) {
     // estado do módulo de integração é atualizado por messageId conforme o
     // fluxo avança, nunca no início do turno).
     lastToolCallingProcessedMessageIdRef.current = null;
+    if (hasAgendaConversation) {
+      setIsTyping(true);
+      syncMessageToSupabase(userMsg);
+      void agendaConversationRef.current.handle({
+        text,
+        identity: agendaIdentity,
+        referenceDate: getLocalIsoDate(),
+      }).then((result) => {
+        setIsTyping(false);
+        if (result.handled) createAssistantResponse(result.text);
+      }).catch(() => {
+        setIsTyping(false);
+        createAssistantResponse('Não consegui atualizar sua agenda agora. Tente novamente em instantes.');
+      });
+      return;
+    }
     if (hasPendingConversation) {
       // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
       // explícita NOVA. Se a frase é reconhecida como ação financeira
@@ -3728,7 +3759,6 @@ export default function UniChatPage({ variant = 'full' }) {
       // usuário reiterando/completando o próprio lançamento) continua
       // alimentando a pendência como resposta legítima.
       const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;
-      const declaredIntent = classifyIntent(text).intent;
       if (
         looksLikeFreshFinancialStatement(text)
         || looksLikeFreshBalanceStatement(text)

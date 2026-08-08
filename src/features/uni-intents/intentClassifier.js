@@ -111,6 +111,7 @@ function detectAgendaIntent(normalizedText) {
     /\b(?:proximos?|proximas?)\s+(?:compromissos?|eventos?|reunioes?|lembretes?)\b/,
     /\bcompromissos?\s+(?:de\s+)?(?:hoje|amanha|semana)\b/,
     /\bcompromissos?[^.!?]{0,40}\b(?:de\s+)?(?:hoje|amanha|semana)\b/,
+    /\b(?:o\s+que|quais?\s+coisas?)\s+(?:eu\s+)?tenho\b[^.!?]*(?:hoje|amanha|semana|sexta|sabado|domingo|fim\s+do\s+mes)/,
   ])) {
     return { intent: 'agenda_query', confidence: 0.97, signals: ['agenda_query_heuristic'] };
   }
@@ -118,6 +119,7 @@ function detectAgendaIntent(normalizedText) {
   // 4. Edição de compromisso ("remarcar reunião", "adiar compromisso")
   if (has([
     /\b(?:remarcar|reagendar|adiar|antecipar|editar|mudar)\b.*\b(?:reuniao|compromisso|consulta|evento|horario)\b/,
+    /\bmuda(?:r)?\b[^.!?]+\b(?:para|pras?|as)\s+\d{1,2}(?:[:h]\d{2})?\s*h?\b/,
   ])) {
     return { intent: 'agenda_edit', confidence: 0.97, signals: ['agenda_edit_heuristic'] };
   }
@@ -125,6 +127,7 @@ function detectAgendaIntent(normalizedText) {
   // 5. Concluir/cancelar/excluir
   if (has([
     /\b(?:concluir|finalizar)\b.*\b(?:reuniao|compromisso|evento|lembrete)\b/,
+    /\b(?:ja\s+fiz|pode\s+marcar\s+como\s+concluida?)\b.*\b(?:reuniao|compromisso|evento|lembrete)?\b/,
     /\b(?:cancelar|excluir|desmarcar|remover|cancela)\b.*\b(?:reuniao|compromisso|evento|agenda|consula)\b/,
   ])) {
     const cancelled = /\b(?:cancelar|excluir|desmarcar|remover|cancela)\b/.test(normalizedText);

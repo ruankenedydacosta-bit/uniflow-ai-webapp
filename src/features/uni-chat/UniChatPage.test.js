@@ -1190,7 +1190,7 @@ test('CORREÇÃO URGENTE: pendência incompatível é abandonada quando a frase 
   // pendência (ex.: reiterar o próprio lançamento); intenção DIFERENTE é
   // um novo enunciado explícito e abandona a pendência.
   assert.match(slice, /const pendingActionIntent = \(pendingAction \?\? financialConversation\.state\.action\)\?\.intent;/);
-  assert.match(slice, /const declaredIntent = classifyIntent\(text\)\.intent;/);
+  assert.match(page.slice(page.indexOf('function sendText(text, metadata) {'), idx), /const declaredIntent = classifyIntent\(text\)\.intent;/);
   assert.match(slice, /ACTION_STATEMENT_INTENTS\.has\(declaredIntent\) && declaredIntent !== pendingActionIntent/);
   assert.match(slice, /abandonStalePendingState\(\);/);
 });
@@ -3366,7 +3366,23 @@ test('Sprint 1: phraseStructuredFactService combina uniLlm.enabled com a flag ad
 test('Sprint 2: conversationalMemoryRef é criado com createConversationalMemory (mesmo padrão createXStore)', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /const conversationalMemoryRef = useRef\(createConversationalMemory\(\)\);/);
-  assert.match(page, /createConversationalMemory,\n\s*classifyPendingActionRelation,\n\} from '..\/uni-conversation';/);
+  assert.match(page, /createConversationalMemory,\n\s*classifyPendingActionRelation,\n\s*createAgendaConversationFlow,\n\} from '..\/uni-conversation';/);
+});
+
+test('Agenda voice-first usa o mesmo sendText de voz e texto e roda antes da pendência financeira', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
+  assert.match(body, /metadata\?\.source === 'voice'/);
+  assert.match(body, /agendaConversationRef\.current\.handle\(\{/);
+  assert.match(body, /if \(hasAgendaConversation\)[\s\S]*return;[\s\S]*if \(hasPendingConversation\)/);
+});
+
+test('Agenda voice-first usa identidade do workspace autenticado e o pipeline oficial de resposta', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
+  assert.match(body, /workspaceId: effectiveWorkspace\?\.id/);
+  assert.match(body, /conversationId: activeId \?\? 'local-conversation'/);
+  assert.match(body, /if \(result\.handled\) createAssistantResponse\(result\.text\)/);
 });
 
 test('Sprint 2: conversationalMemoryRef é resetado em switchConversation, junto dos demais refs por conversa', async () => {

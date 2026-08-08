@@ -31,6 +31,7 @@ export {
   validatePendingActionStack,
 } from './pendingActionStack.js';
 export { createPendingActionCoordinator } from './pendingActionCoordinator.js';
+export { createAgendaConversationFlow } from './agendaConversationFlow.js';
 export {
   buildAccountCreationConfirmation,
   buildCategoryCreationConfirmation,
