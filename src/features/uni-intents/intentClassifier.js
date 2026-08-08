@@ -1,3 +1,12 @@
+// CAMADA pt-BR COLOQUIAL (Agenda) -- superfície de extensão oficial para a
+// futura `src/features/uni-language/pt-br/`. Ver comentários em agendaPtBr.
+import {
+  buildAgendaReminderPatterns,
+  buildAgendaSchedulePatterns,
+  hasAgendaVagueSubject,
+  stripColloquialLead,
+} from './agendaPtBr.js';
+
 export const FINANCIAL_INTENTS = Object.freeze([
   'register_income',
   'register_expense',
@@ -28,31 +37,68 @@ export const AGENDA_INTENTS = Object.freeze([
 
 export const AGENDA_INTENT_SET = new Set(AGENDA_INTENTS);
 
-// CAMADA 0 -- heurística de Agenda (NUNCA IA): determina a intenção de
+// CAMADA 0 -- heurística de Agenda (não é IA): determina a intenção de
 // agenda/lembrete se houver evidência semântica explícita. Roda SEMPRE
 // antes das regras financeiras, para evitar falso-positivo financeiro.
+//
+// Integração pt-BR coloquial (GÍRIAS/REGIONALISMOS/INTERJEIÇÕES e reduções
+// de voz): a peça `agendaPtBr.js` abaixo nos fornece a superfície de
+// extensão oficial para a futura camada `src/features/uni-language/pt-br/`
+// (aliases semânticos, variações regionais, abreviações, erros comuns de
+// transcrição por voz e equivalência canônica). Regras desta fase:
+// - NUNCA alterar o texto original/transcrição; `stripColloquialLead`
+//   opera na cópia normalizada do classificador (representação auxiliar);
+// - aceitar interjeições ("bah", "uai", "oxe", "bora"...), "me avisa",
+//   "me dá um toque", "não deixa eu esquecer", "anota aí", "bota na
+//   agenda", "marca aí", "tenho um negócio", "semana que vem";
+// - se o objeto for vago ("aquele negócio"), NÃO inventar: sinalizar
+//   `agenda_vague_subject` para o orquestrador perguntar ao usuário.
 function detectAgendaIntent(normalizedText) {
-  const has = (patterns) => patterns.some((pattern) => pattern.test(normalizedText));
+  // Interjeições de voz ("bah,", "uai", "oxe", "sexta...") são removidas do
+  // INÍCIO da cópia normalizada ANTES de qualquer padrão -- o texto do
+  // usuário nunca muda; a normalização é auxiliar e descartada em seguida.
+  const text = stripColloquialLead(normalizedText);
+  const has = (patterns) => patterns.some((pattern) => pattern.test(text));
 
   // 1. Lembrete ("me lembra de...", "preciso que você me lembre", "cria um
-  //    lembrete...") -- deve vencer TUDO antes das demais heurísticas e
-  //    das regras financeiras.
+  //    lembrete...", e pt-BR coloquial "me avisa", "me dá um toque",
+  //    "não deixa eu esquecer") -- deve vencer TUDO antes das demais
+  //    heurísticas e das regras financeiras.
   if (has([
     /\b(?:me\s+)?lembr(?:a|ar|e|ou|ando)\b/,
     /\blembrete\b/,
     /\bavis(?:ar|e|a|em)\b.*\blembrar\b/,
+    ...buildAgendaReminderPatterns(),
   ])) {
     return { intent: 'agenda_reminder_create', confidence: 0.97, signals: ['agenda_reminder_heuristic'] };
   }
 
+  // 1b. Objeto vago DEMAIS para assumir ("Bota aquele negócio pra sexta.",
+  //     "Marca aí pra amanhã") -- NÃO inventamos o compromisso: devolvemos
+  //     criação de agenda com sinal de ambiguidade para o orquestrador
+  //     perguntar ("Claro. O que você quer que eu marque para sexta?").
+  //     Fica antes de agenda_query porque a frase contém tempo futuro,
+  //     mas também antes das regras financeiras para nunca virar
+  //     lançamento ("anota aí 50 reais" NÃO passa aqui -- tem valor).
+  if (has(buildAgendaSchedulePatterns()) && hasAgendaVagueSubject(text)) {
+    return {
+      intent: 'agenda_schedule_create',
+      confidence: 0.7,
+      signals: ['agenda_vague_subject', 'agenda_schedule_heuristic'],
+    };
+  }
+
   // 2. Criação de compromisso ("marcar uma reunião", "tenho um
-  //    compromisso", "agendar consulta", "reunião daqui a 10 dias") --
-  //    vem ANTES de agenda_query, porque "tenho um compromisso amanhã"
-  //    também contém "compromisso amanhã" (padrão de consulta).
+  //    compromisso", "agendar consulta", "reunião daqui a 10 dias",
+  //    coloquial "bota na agenda", "tenho um negocio", "sexta tenho
+  //    dentista", "daqui uns dez dias") -- vem ANTES de agenda_query, porque
+  //    "tenho um compromisso amanhã" também contém "compromisso amanhã"
+  //    (padrão de consulta).
   if (has([
     /\b(?:marcar|agendar|criar)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|evento|consulta|agenda)\b/,
     /\b(?:eu\s+)?(?:tenho|tive|vou\s+ter)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|consulta|evento)\b/,
     /\b(?:reuniao|compromisso|consulta|evento)\b[^.!?]*\b(?:daqui\s+a|daqui|em)\s*\d+\s*(?:dia|dias|semana|semanas|mes|meses|ano|anos)\b/,
+    ...buildAgendaSchedulePatterns(),
   ])) {
     return { intent: 'agenda_schedule_create', confidence: 0.97, signals: ['agenda_schedule_heuristic'] };
   }
