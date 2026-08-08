@@ -58,10 +58,16 @@ test('cabeçalho tem botão voltar e título "Suporte" -- SEM "Falar com a Uni" 
 // atendente via WhatsApp (nunca telefone/e-mail).
 // ============================================================================
 
-test('card "Conversar com a Uni" é o ÚNICO ponto de entrada da Uni nesta tela (cabeçalho não duplica mais) -- navega para a rota pessoal real', async () => {
+test('card "Conversar com a Uni" é o único ponto de entrada e respeita a flag de suporte isolado', async () => {
   const content = await source('./SimplifiedSupportPage.jsx');
-  const uniOccurrences = content.match(/navigate\(SIMPLIFIED_ROUTES\.UNI\)/g) ?? [];
-  assert.equal(uniOccurrences.length, 1, 'deve haver exatamente 1 ponto de entrada da Uni (o card principal)');
+  const cardStart = content.indexOf('aria-label="Conversar com a Uni"');
+  const cardEnd = content.indexOf('aria-label="Falar com um atendente"', cardStart);
+  const card = content.slice(cardStart, cardEnd);
+  const navigationOccurrences = card.match(/onClick=\{\(\) => navigate\(/g) ?? [];
+  assert.equal(navigationOccurrences.length, 1, 'deve haver exatamente 1 ponto de entrada da Uni (o card principal)');
+  assert.match(card, /SIMPLIFIED_FEATURE_FLAGS\.supportNavEnabled/);
+  assert.match(card, /\? SIMPLIFIED_ROUTES\.SUPPORT_CHAT/);
+  assert.match(card, /: SIMPLIFIED_ROUTES\.UNI/);
 });
 
 test('card "Conversar com a Uni" usa a descrição exata pedida (entender como usar o app e encontrar funcionalidades)', async () => {

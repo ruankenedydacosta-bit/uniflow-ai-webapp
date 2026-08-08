@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { AccountIcon, CalendarIcon, HomeIcon, RecordsIcon } from './SimplifiedIcons.jsx';
+import { AccountIcon, CalendarIcon, HelpIcon, HomeIcon, RecordsIcon } from './SimplifiedIcons.jsx';
 import {
   SIMPLIFIED_NAVIGATION,
   SIMPLIFIED_ROUTE_IDS,
@@ -10,6 +10,7 @@ const ICONS = Object.freeze({
   [SIMPLIFIED_ROUTE_IDS.HOME]: HomeIcon,
   [SIMPLIFIED_ROUTE_IDS.RECORDS]: RecordsIcon,
   [SIMPLIFIED_ROUTE_IDS.AGENDA]: CalendarIcon,
+  [SIMPLIFIED_ROUTE_IDS.SUPPORT]: HelpIcon,
   [SIMPLIFIED_ROUTE_IDS.ACCOUNT]: AccountIcon,
 });
 

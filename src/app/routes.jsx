@@ -175,6 +175,19 @@ export const appRoutes = [
       element: <SimplifiedAgendaPage />,
     }]
     : []),
+  ...(SIMPLIFIED_FEATURE_FLAGS.supportNavEnabled
+    ? [{
+      path: SIMPLIFIED_ROUTES.SUPPORT_CHAT,
+      label: 'Uni Suporte',
+      title: 'Uni Suporte',
+      simplified: true,
+      element: (
+        <Suspense fallback={null}>
+          <SupportCenterPage />
+        </Suspense>
+      ),
+    }]
+    : []),
   {
     path: SIMPLIFIED_ROUTES.ACCOUNT,
     label: 'Conta',
