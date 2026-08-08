@@ -11,8 +11,61 @@
      para elas. */
   --simplified-header-height: 102px;
   --simplified-bottom-nav-height: calc(96px + 10px + max(10px, env(safe-area-inset-bottom)));
+  /* LOTE F -- paleta escura UNI escopada a ESTA shell (mesmas chaves
+     --uf-* do Design System, valores do data-theme dark): qualquer
+     componente reutilizado dentro da experiência simplificada (AgendaPage
+     legada, modais, páginas) consome tokens --uf-*. Com o tema do usuário
+     em "light" (padrão do app legado) esses tokens apontavam para cores
+     claras e Vazavam branco por dentro da shell escura. Este bloco fecha
+     o circuito dentro do limite da shell: nenhum vazamento light/legacy
+     aqui, sem tocar theme.css nem migrar componentes. */
+  --uf-color-scheme: dark;
+  --uf-color-scrollbar-thumb: var(--uf-gray-700);
+  --uf-color-scrollbar-thumb-hover: var(--uf-gray-600);
+  --uf-color-bg-canvas: #0B0D12;
+  --uf-color-bg-surface: #14171D;
+  --uf-color-bg-surface-hover: #1B1F27;
+  --uf-color-bg-elevated: #20242C;
+  --uf-color-bg-sunken: #07080C;
+  --uf-color-text-primary: #F4F5F7;
+  --uf-color-text-secondary: #B0B5BF;
+  --uf-color-text-tertiary: #858C98;
+  --uf-color-text-disabled: #626A76;
+  --uf-color-text-inverse: #0B0D12;
+  --uf-color-text-brand: #8BADEF;
+  --uf-color-text-ai: #B39AE0;
+  --uf-color-border-subtle: rgba(255, 255, 255, .06);
+  --uf-color-border-default: rgba(255, 255, 255, .1);
+  --uf-color-border-strong: rgba(255, 255, 255, .17);
+  --uf-color-divider: rgba(255, 255, 255, .07);
+  --uf-color-overlay: rgba(5, 7, 12, .74);
+  --uf-color-primary: #5B8DEF;
+  --uf-color-primary-hover: #76A0F1;
+  --uf-color-primary-active: #4676D4;
+  --uf-color-primary-subtle: rgba(91, 141, 239, .12);
+  --uf-color-ai: #846EB0;
+  --uf-color-ai-hover: #967FC2;
+  --uf-color-ai-active: #705A99;
+  --uf-color-ai-subtle: rgba(132, 110, 176, .12);
+  --uf-focus-ring-color: rgba(91, 141, 239, .62);
+  --uf-shadow-color: 0, 0, 0;
+  --uf-shadow-sm: 0 2px 8px -3px rgba(var(--uf-shadow-color), .36);
+  --uf-shadow-md: 0 14px 32px -16px rgba(var(--uf-shadow-color), .5);
+  --uf-shadow-lg: 0 28px 60px -24px rgba(var(--uf-shadow-color), .6);
+  --uf-shadow-glow-ai: 0 8px 26px -12px rgba(132, 110, 176, .3);
+  --uf-glass-bg: rgba(18, 22, 30, .76);
+  --uf-glass-bg-strong: rgba(18, 22, 30, .92);
+  --uf-glass-border: var(--uf-color-border-default);
+  --uf-gradient-brand: linear-gradient(100deg, #5B8DEF, #846EB0);
+  --uf-gradient-ai: linear-gradient(135deg, #5B8DEF, #846EB0, #5B8DEF);
   min-height: var(--uf-visual-viewport-height, 100dvh);
   height: var(--uf-visual-viewport-height, 100dvh);
+  /* LOTE F -- um ÚNICO fluxo de scroll: o .mainContent (row 1fr da malha)
+     é o container de scroll; a shell trava a altura e o documento body
+     nunca rola. O fundo claro global (light/legacy) nunca "bounce" de
+     baixo, e o conteúdo não disputa espaço com a navegação inferior. */
+  overflow: hidden;
+  overscroll-behavior-y: contain;
   background:
     radial-gradient(circle at 50% 26%, rgba(37, 99, 235, .13), transparent 32%),
     #020713;
@@ -35,6 +88,9 @@
   display: grid;
   grid-template-rows: auto 1fr auto;
   margin-inline: auto;
+  /* LOTE F -- a malha nunca excede a altura da shell (senão o documento
+     voltaria a rolar): tudo o que sobrar fica dentro do .mainContent. */
+  overflow: hidden;
   background:
     linear-gradient(180deg, rgba(2, 8, 22, .96), rgba(1, 6, 17, .99));
   box-shadow: 0 0 90px rgba(0, 0, 0, .4);
@@ -246,7 +302,19 @@
 
 .mainContent {
   min-width: 0;
+  min-height: 0;
+  /* LOTE F -- ÚNICO container de scroll do app: o documento nunca rola
+     (shell/shellSurface travados acima), o bounce claro não aparece e o
+     conteúdo sempre termina antes da barra inferior. */
+  overflow-y: auto;
   overflow-x: clip;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  /* LOTE F -- o scroll termina SEMPRE acima da navegação inferior: nada
+     fica escondido atrás dela, com folga para as telas que usam botões
+     de ação no fim (safe areas incluídas). */
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  scrollbar-gutter: stable;
 }
 
 .agendaPage {

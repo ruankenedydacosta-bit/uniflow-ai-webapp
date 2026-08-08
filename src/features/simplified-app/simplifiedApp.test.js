@@ -1056,6 +1056,23 @@ test('CSS cobre safe areas, toque, mobile estreito, desktop e redução de movim
   assert.doesNotMatch(css, /tela principal uni|background-image:\s*url/i);
 });
 
+test('LOTE F: a shell trava o viewport escuro e o .mainContent é o único container de scroll', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const shellStart = css.indexOf('.shell {');
+  const shellBlock = css.slice(shellStart, css.indexOf('.shell[data-text-size', shellStart));
+  assert.match(shellBlock, /overflow: hidden/);
+  assert.match(shellBlock, /overscroll-behavior-y: contain/);
+  assert.match(shellBlock, /--uf-color-bg-canvas:\s*#[0-9a-fA-F]{6};/);
+  assert.match(shellBlock, /--uf-color-text-primary:\s*#[0-9a-fA-F]{6};/);
+  const mainIdx = css.indexOf('.mainContent {');
+  const mainBlock = css.slice(mainIdx, css.indexOf('}', mainIdx));
+  assert.match(mainBlock, /overflow-y: auto;/);
+  assert.match(mainBlock, /overflow-x: clip/);
+  assert.match(mainBlock, /overscroll-behavior-y: contain/);
+  assert.match(mainBlock, /padding-bottom: max\(16px, env\(safe-area-inset-bottom\)\)/);
+  assert.doesNotMatch(css, /data-theme="?light"?/);
+});
+
 test('CSS de Registros cobre grade responsiva, toque, safe area e movimento reduzido', async () => {
   const css = await source('./simplifiedRecords.module.css');
   assert.match(css, /env\(safe-area-inset-top\)/);
