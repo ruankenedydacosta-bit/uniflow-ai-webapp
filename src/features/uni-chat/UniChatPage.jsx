@@ -98,6 +98,8 @@ import { reserveMessageIds } from './messageIdRegistry.js';
 import { dedupeMessagesForRender, mergeRestoredMessages } from './mergeRestoredMessages.js';
 import { classifyIntent } from '../uni-intents/index.js';
 import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration, buildToolCallingAuthorization } from '../uni-engine/index.js';
+import { validateFinancialFacts } from '../uni-engine/financial-runtime/factual-validation/index.js';
+import { validateFinancialRuntimeSafety } from '../uni-engine/financial-runtime/eligibility/index.js';
 const uniEngine = createUniEngine({ env: import.meta.env, isDev: import.meta.env.DEV });
 
 // FASE 20.1 — Tool Calling. Integração isolada ao pipeline com guardas de
@@ -2172,32 +2174,39 @@ export default function UniChatPage({ variant = 'full' }) {
     const executionSuccessful = financialRuntimeResult?.executionResult?.status === 'executed';
     const dataAvailable = executionSuccessful && !!financialRuntimeResult?.executionResult?.results;
     const narrativeValid = !!financialRuntimeResult?.narrative?.text?.trim();
-    const safetyApproved = true; // runtime is shadow-only, no safety violations
+    const factualValidation = validateFinancialFacts({
+      narrative: financialRuntimeResult?.narrative,
+      executionResult: financialRuntimeResult?.executionResult,
+      runtimeResult: financialRuntimeResult,
+      snapshot: financialContext.snapshot,
+    });
+    const factsValidated = factualValidation.valid === true;
+    const safetyValidation = validateFinancialRuntimeSafety(financialRuntimeResult);
+    const safetyApproved = safetyValidation.approved === true;
     const intentSupported = !!intentType && financialRuntimeResult?.intent?.type !== 'unknown';
     const runtimeConfidence = financialRuntimeResult?.confidence ?? financialRuntimeResult?.narrative?.confidence ?? 0;
+    const eligible = intentSupported && temporalResolved && queryValid
+      && executionSuccessful && dataAvailable && factsValidated
+      && narrativeValid && safetyApproved;
 
     const eligibility = {
-      eligible: intentSupported && temporalResolved && queryValid && executionSuccessful && dataAvailable && narrativeValid && safetyApproved,
-      influenceAllowed: true,
-      fallbackRequired: false,
+      eligible,
+      influenceAllowed: eligible,
+      fallbackRequired: !eligible,
       confidence: runtimeConfidence,
       intentSupported,
       temporalResolved,
       queryValid,
       executionSuccessful,
       dataAvailable,
-      factsValidated: true, // runtime generates its own facts
+      factsValidated,
       narrativeValid,
       safetyApproved,
       intentType,
-      reasonCodes: [],
-    };
-
-    // Factual validation - runtime generates its own validated facts
-    const factualValidation = {
-      valid: true,
-      confidence: financialRuntimeResult?.narrative?.confidence ?? 0,
-      reasonCodes: [],
+      reasonCodes: [
+        ...(factsValidated ? [] : factualValidation.reasonCodes),
+        ...(safetyApproved ? [] : ['SAFETY_REJECTED']),
+      ],
     };
 
     // Identidade completa do turno ativo: resposta financeira de outro

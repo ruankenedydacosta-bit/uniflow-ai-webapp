@@ -20,4 +20,7 @@ export {
   validateVisibleIntentsCoverage,
 } from './visibleIntents.js';
 
-export { evaluateFinancialEligibility } from './evaluateFinancialEligibility.js';
+export {
+  evaluateFinancialEligibility,
+  validateFinancialRuntimeSafety,
+} from './evaluateFinancialEligibility.js';

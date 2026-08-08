@@ -1,6 +1,6 @@
 // Uni Engine — Fase 18: Contratos de Elegibilidade do Runtime Financeiro.
 // Contratos para a elegibilidade do runtime financeiro para resposta visível.
-import { isSerializableValue } from '../uniEngineContracts.js';
+import { isSerializableValue } from '../../uniEngineContracts.js';
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;

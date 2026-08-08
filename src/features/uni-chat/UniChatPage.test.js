@@ -3565,3 +3565,13 @@ test('FASE 20: Tool Calling usa autorização central, identidade completa e opt
   assert.match(config, /VITE_UNI_ENGINE_TOOL_CALLING_EXECUTION_ALLOWED/);
   assert.match(config, /toolCallingExecutionAllowed: false/);
 });
+
+test('Gate 0: fatos e safety do runtime financeiro dependem de validadores reais', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const factualValidation = validateFinancialFacts\(\{/);
+  assert.match(page, /const factsValidated = factualValidation\.valid === true/);
+  assert.match(page, /const safetyValidation = validateFinancialRuntimeSafety\(financialRuntimeResult\)/);
+  assert.match(page, /const safetyApproved = safetyValidation\.approved === true/);
+  assert.doesNotMatch(page, /factsValidated:\s*true/);
+  assert.doesNotMatch(page, /const safetyApproved = true/);
+});

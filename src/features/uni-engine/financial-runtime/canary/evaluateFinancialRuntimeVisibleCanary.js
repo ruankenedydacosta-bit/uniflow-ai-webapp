@@ -1,7 +1,5 @@
 // Uni Engine — Fase 18: Implementação Canary Determínstica.
 // Canary determinístico para aprovação de Feature Flags na Fase 18.
-import { isSerializableValue } from '../uniEngineContracts.js';
-
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
   if (Array.isArray(value)) {

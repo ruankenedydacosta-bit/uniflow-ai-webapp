@@ -7,7 +7,7 @@ import { validateFinancialFacts } from '../factual-validation/validateFinancialF
 import { calculateFinancialConfidence } from '../confidence/calculateFinancialConfidence.js';
 import { evaluateFinancialRuntimeVisibleCanary } from '../canary/evaluateFinancialRuntimeVisibleCanary.js';
 import { isIntentVisibleAllowed, isWriteIntent } from '../eligibility/visibleIntents.js';
-import { RUNTIME_TEMPORAL_ENTITIES } from '../types/index.js';
+import { RUNTIME_SAFETY_KEYS, RUNTIME_TEMPORAL_ENTITIES } from '../types/index.js';
 import { createEmptyFinancialEligibilityResult, validateFinancialEligibilityResult } from './financialEligibilityContracts.js';
 
 function deepFreeze(value) {
@@ -20,6 +20,36 @@ function deepFreeze(value) {
     frozen[key] = deepFreeze(value[key]);
   }
   return Object.freeze(frozen);
+}
+
+export function validateFinancialRuntimeSafety(runtimeResult) {
+  const safeRuntime = runtimeResult && typeof runtimeResult === 'object' ? runtimeResult : null;
+  const reasonCodes = [];
+
+  if (!safeRuntime) {
+    return deepFreeze({ approved: false, reasonCodes: ['RUNTIME_RESULT_MISSING'] });
+  }
+
+  if (safeRuntime.shadowMode !== true) reasonCodes.push('SHADOW_MODE_REQUIRED');
+  if (safeRuntime.executionAllowed !== false) reasonCodes.push('EXECUTION_NOT_BLOCKED');
+  if (safeRuntime.influenceApplied !== false) reasonCodes.push('INFLUENCE_NOT_BLOCKED');
+  if (safeRuntime.executed !== false) reasonCodes.push('EXECUTION_EFFECT_DETECTED');
+  if (safeRuntime.persisted !== false) reasonCodes.push('PERSISTENCE_EFFECT_DETECTED');
+  if (safeRuntime.discarded !== true) reasonCodes.push('RESULT_NOT_DISCARDED');
+  if (safeRuntime.legacyPreserved !== true) reasonCodes.push('LEGACY_NOT_PRESERVED');
+
+  const safety = safeRuntime.safety && typeof safeRuntime.safety === 'object'
+    ? safeRuntime.safety
+    : null;
+  if (!safety) {
+    reasonCodes.push('SAFETY_SNAPSHOT_MISSING');
+  } else {
+    for (const key of RUNTIME_SAFETY_KEYS) {
+      if (safety[key] !== false) reasonCodes.push(`SAFETY_${key.toUpperCase()}_NOT_BLOCKED`);
+    }
+  }
+
+  return deepFreeze({ approved: reasonCodes.length === 0, reasonCodes });
 }
 
 export function evaluateFinancialEligibility(input = {}) {
@@ -158,9 +188,17 @@ export function evaluateFinancialEligibility(input = {}) {
     });
   }
 
+  const safetyValidation = validateFinancialRuntimeSafety(safeRuntime);
+  if (!safetyValidation.approved) {
+    return deepFreeze({
+      ...createEmptyFinancialEligibilityResult(safeInput),
+      reasonCodes: ['SAFETY_REJECTED'],
+    });
+  }
+
   // 11. Calcular confiança determinística
   const confidence = calculateFinancialConfidence({
-    eligibility: { eligible: true, intentSupported: true, temporalResolved: true, queryValid: true, executionSuccessful: true, dataAvailable: true, factsValidated: factualValidation.valid, narrativeValid: true, safetyApproved: true, confidence: 0 },
+    eligibility: { eligible: true, intentSupported: true, temporalResolved: true, queryValid: true, executionSuccessful: true, dataAvailable: true, factsValidated: factualValidation.valid, narrativeValid: true, safetyApproved: safetyValidation.approved, confidence: 0 },
     factualValidation,
     runtimeResult: safeRuntime,
   });
@@ -221,10 +259,10 @@ export function evaluateFinancialEligibility(input = {}) {
     temporalResolved: true,
     queryValid: true,
     executionSuccessful: true,
-    factsValidated: true,
+    factsValidated: factualValidation.valid,
     narrativeValid: true,
     dataAvailable: true,
-    safetyApproved: true,
+    safetyApproved: safetyValidation.approved,
     fallbackRequired: false,
     influenceAllowed: true,
     serializable: true,
