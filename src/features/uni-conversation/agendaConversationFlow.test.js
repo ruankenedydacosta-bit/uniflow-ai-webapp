@@ -217,6 +217,25 @@ test('edição implícita combina título, data e horário sem contaminar o tít
   assert.equal(new Date(update.changes.starts_at).getHours(), 16);
 });
 
+for (const [text, expectedDate] of [
+  ['Muda minha reunião para amanhã.', '2026-08-09'],
+  ['Adia minha reunião para sexta.', '2026-08-14'],
+  ['Passa minha consulta para segunda.', '2026-08-10'],
+]) {
+  test(`edição temporal preserva o título existente: ${text}`, async () => {
+    const title = text.includes('consulta') ? 'Consulta' : 'Reunião';
+    const { flow, calls } = makeHarness([
+      { id: 'item', workspace_id: IDENTITY.workspaceId, title, starts_at: '2026-08-12T15:00:00.000Z' },
+    ]);
+
+    const result = await turn(flow, text);
+    assert.match(result.text, /Atualizei/);
+    const changes = calls.find((call) => call.operation === 'update').changes;
+    assert.match(changes.starts_at, new RegExp(`^${expectedDate}T`));
+    assert.equal(Object.hasOwn(changes, 'title'), false);
+  });
+}
+
 test('edição altera a data e preserva o horário existente', async () => {
   const originalStartsAt = '2026-08-12T15:00:00.000Z';
   const { flow, calls } = makeHarness([

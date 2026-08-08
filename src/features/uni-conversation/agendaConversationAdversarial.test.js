@@ -165,6 +165,20 @@ test('adversarial: edição isolada de data não altera título', async () => {
   assert.equal(Object.hasOwn(changes ?? {}, 'title'), false);
 });
 
+test('regressão B.1.2: amanhã não deixa preposição residual como novo título', async () => {
+  const { flow, calls } = createFlow([
+    { id: 'a', title: 'Reunião', starts_at: '2026-08-12T12:00:00.000Z' },
+  ]);
+  await flow.handle({
+    text: 'Muda minha reunião para amanhã', identity: IDENTITY, referenceDate: '2026-08-08',
+  });
+
+  const changes = calls.find((call) => call.operation === 'update')?.changes;
+  assert.match(changes?.starts_at ?? '', /^2026-08-09T/);
+  assert.equal(Object.hasOwn(changes ?? {}, 'title'), false);
+  assert.notEqual(changes?.title, 'para');
+});
+
 test('adversarial: edição isolada de horário não altera título', async () => {
   const { flow, calls } = createFlow([
     { id: 'a', title: 'Reunião', starts_at: '2026-08-09T12:00:00.000Z' },

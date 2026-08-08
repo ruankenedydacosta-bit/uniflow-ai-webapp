@@ -173,7 +173,9 @@ function extractImplicitTitleChange(text) {
   if (!match) return { target: null, title: null };
 
   const destination = match[2].replace(/[.,!?]+$/g, '').trim();
-  const title = extractTitle(`para ${destination}`)?.replace(/^para\s+/, '').trim();
+  const title = extractTitle(`para ${destination}`)
+    ?.replace(/^(?:para|pra|como)\b\s*/, '')
+    .trim();
   if (!title || GENERIC_EDIT_SUBJECTS.has(title)) return { target: null, title: null };
 
   return {
@@ -189,7 +191,7 @@ function extractEditTargetSubject(text) {
   if (implicitTitle.target) return implicitTitle.target;
 
   const normalized = normalizeFinancialText(text)
-    .replace(/^\s*(?:muda(?:r)?|remarca(?:r)?|reagenda(?:r)?|adia(?:r)?|antecipa(?:r)?|edita(?:r)?|altera(?:r)?)\s+/, '')
+    .replace(/^\s*(?:muda(?:r)?|remarca(?:r)?|reagenda(?:r)?|adia(?:r)?|passa(?:r)?|antecipa(?:r)?|edita(?:r)?|altera(?:r)?)\s+/, '')
     .replace(/^(?:meu|minha|o|a)\s+/, '');
   const subjectSegment = normalized.split(
     /\b(?:de|para|pra)\s+(?=(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|\d{1,2}(?::\d{2})?h?))\b/,
@@ -228,7 +230,7 @@ function hasEditChanges(changes) {
 
 function hasExplicitEditChangeCue(text) {
   const normalized = normalizeFinancialText(text);
-  return /\b(?:muda|mudar|altera|alterar|remarca|reagenda|adia|antecipa|titulo|nome|data|horario|para|pra)\b/.test(normalized);
+  return /\b(?:muda|mudar|altera|alterar|remarca|reagenda|adia|passa|antecipa|titulo|nome|data|horario|para|pra)\b/.test(normalized);
 }
 
 function formatItemLocalTime(item) {
