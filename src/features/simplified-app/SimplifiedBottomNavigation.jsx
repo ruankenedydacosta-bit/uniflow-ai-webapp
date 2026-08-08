@@ -1,18 +1,25 @@
 import { NavLink } from 'react-router-dom';
-import { AccountIcon, HomeIcon, RecordsIcon } from './SimplifiedIcons.jsx';
-import { SIMPLIFIED_NAVIGATION, SIMPLIFIED_ROUTE_IDS } from './simplifiedRoutes.js';
+import { AccountIcon, CalendarIcon, HomeIcon, RecordsIcon } from './SimplifiedIcons.jsx';
+import {
+  SIMPLIFIED_NAVIGATION,
+  SIMPLIFIED_ROUTE_IDS,
+} from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
 
 const ICONS = Object.freeze({
   [SIMPLIFIED_ROUTE_IDS.HOME]: HomeIcon,
   [SIMPLIFIED_ROUTE_IDS.RECORDS]: RecordsIcon,
+  [SIMPLIFIED_ROUTE_IDS.AGENDA]: CalendarIcon,
   [SIMPLIFIED_ROUTE_IDS.ACCOUNT]: AccountIcon,
 });
 
 function SimplifiedBottomNavigation() {
   return (
     <nav className={styles.bottomNavigation} aria-label="Navegação principal">
-      <div className={styles.bottomNavigationInner}>
+      <div
+        className={styles.bottomNavigationInner}
+        style={{ '--simplified-navigation-count': SIMPLIFIED_NAVIGATION.length }}
+      >
         {SIMPLIFIED_NAVIGATION.map((item) => {
           const Icon = ICONS[item.id];
           return (
@@ -34,4 +41,3 @@ function SimplifiedBottomNavigation() {
 }
 
 export default SimplifiedBottomNavigation;
-

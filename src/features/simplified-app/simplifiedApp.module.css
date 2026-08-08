@@ -249,6 +249,16 @@
   overflow-x: clip;
 }
 
+.agendaPage {
+  width: min(100%, 960px);
+  margin-inline: auto;
+  padding:
+    18px
+    max(18px, env(safe-area-inset-right))
+    0
+    max(18px, env(safe-area-inset-left));
+}
+
 .bottomNavigation {
   position: sticky;
   bottom: 0;
@@ -264,7 +274,7 @@
 .bottomNavigationInner {
   min-height: 96px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--simplified-navigation-count, 3), minmax(0, 1fr));
   align-items: stretch;
   overflow: hidden;
   border: 1px solid rgba(37, 99, 235, .48);
@@ -817,6 +827,12 @@
   .home {
     min-height: calc(100dvh - 192px);
     padding-inline: max(18px, env(safe-area-inset-left));
+  }
+
+  .agendaPage {
+    padding-inline:
+      max(12px, env(safe-area-inset-left))
+      max(12px, env(safe-area-inset-right));
   }
 
   .greeting {

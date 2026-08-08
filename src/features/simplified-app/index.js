@@ -14,6 +14,7 @@ export {
 } from './simplifiedProductConfig.js';
 export { default as SimplifiedHomeView } from './SimplifiedHomeView.jsx';
 export { default as SimplifiedRecordsPage } from './SimplifiedRecordsPage.jsx';
+export { default as SimplifiedAgendaPage } from './SimplifiedAgendaPage.jsx';
 export { default as SimplifiedAccountPage } from './SimplifiedAccountPage.jsx';
 export { default as SimplifiedAccountSubpagePlaceholder } from './SimplifiedAccountSubpagePlaceholder.jsx';
 export { default as SimplifiedEditProfilePage } from './SimplifiedEditProfilePage.jsx';
@@ -31,10 +32,17 @@ export {
 } from './simplifiedHomeState.js';
 export { default as SimplifiedPlaceholderPage } from './SimplifiedPlaceholderPage.jsx';
 export {
+  buildSimplifiedNavigation,
+  resolveSimplifiedNavigation,
   SIMPLIFIED_NAVIGATION,
   SIMPLIFIED_ROUTE_IDS,
   SIMPLIFIED_ROUTES,
 } from './simplifiedRoutes.js';
+export {
+  resolveSimplifiedFeatureFlags,
+  SIMPLIFIED_FEATURE_FLAGS,
+  SIMPLIFIED_FEATURE_FLAG_KEYS,
+} from './simplifiedFeatureFlags.js';
 export { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 export {
   resolveSimplifiedGreeting,

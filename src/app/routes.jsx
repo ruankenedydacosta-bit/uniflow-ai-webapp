@@ -21,7 +21,9 @@ import { PERSONAL_PLAN_RETURN_ROUTE, PersonalPlanPage, PersonalPlanReturnPage } 
 import {
   ACCOUNT_SUBROUTE_IDS,
   ACCOUNT_SUBROUTES,
+  SIMPLIFIED_FEATURE_FLAGS,
   SIMPLIFIED_ROUTES,
+  SimplifiedAgendaPage,
   SimplifiedAboutPage,
   SimplifiedAccountPage,
   SimplifiedAccountSubpagePlaceholder,
@@ -164,6 +166,15 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedRecordsPage />,
   },
+  ...(SIMPLIFIED_FEATURE_FLAGS.agendaEnabled
+    ? [{
+      path: SIMPLIFIED_ROUTES.AGENDA,
+      label: 'Agenda',
+      title: 'Agenda',
+      simplified: true,
+      element: <SimplifiedAgendaPage />,
+    }]
+    : []),
   {
     path: SIMPLIFIED_ROUTES.ACCOUNT,
     label: 'Conta',
