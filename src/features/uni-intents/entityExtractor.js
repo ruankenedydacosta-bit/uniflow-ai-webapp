@@ -1,4 +1,8 @@
-import { normalizeFinancialText } from './intentClassifier.js';
+import {
+  normalizeFinancialText,
+  AGENDA_INTENT_SET,
+  classifyIntent,
+} from './intentClassifier.js';
 import { resolveRelativeDateExpression } from './relativeDateResolver.js';
 
 const MONEY_PATTERN = /(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(milhares?|milhar|mil|k|reais?|contos?)?/iu;
@@ -277,6 +281,9 @@ function hasAmbiguousAmount(input) {
 export function extractAmount(input) {
   if (typeof input !== 'string') return null;
   if (hasAmbiguousAmount(input)) return null;
+  // CAMADA 0: agenda/lembrete pode citar números que NÃO são dinheiro
+  // ("reunião daqui 10 dias", "me lembra em 2 horas") -- nunca vira valor.
+  if (AGENDA_INTENT_SET.has(classifyIntent(input).intent)) return null;
 
   const match = input.match(MONEY_PATTERN);
   if (!match) {
@@ -456,6 +463,21 @@ export function extractEntities(input, options = {}) {
   const safeOptions = options && typeof options === 'object' ? options : {};
   const intent = safeOptions.intent ?? 'question';
   const referenceDate = safeOptions.referenceDate ?? null;
+
+  // CAMADA 0 (AGENDA): intents de agenda/lembrete NUNCA produzem entidades
+  // monetárias -- números associados a compromissos ("reunião daqui 10
+  // dias") não são valores. A data relativa ainda é resolvida (a base
+  // determinística de agenda reaproveita extractDate).
+  if (AGENDA_INTENT_SET.has(intent)) {
+    return {
+      amount: null,
+      category: null,
+      description: null,
+      account: null,
+      date: extractDate(input, referenceDate),
+    };
+  }
+
   const isTransfer = intent === 'register_transfer';
   const account = [
     'register_income',

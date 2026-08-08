@@ -1,4 +1,15 @@
 import { extractAmount } from '../uni-intents/index.js';
+import { classifyIntent, AGENDA_INTENT_SET } from '../uni-intents/intentClassifier.js';
+
+// CAMADA 0: frases de agenda/lembrete ("tenho uma reunião daqui 10 dias",
+// "me lembra amanhã") NUNCA são candidatas a plano financeiro -- números de
+// tempo não são dinheiro. Único sinal determinístico aceito depois da
+// CAMADA 0 do classifier: se o intent é de AGENDA_INTENTS, todas as demais
+// funções deste módulo respondem false sem olhar o resto.
+export function isAgendaExpression(text) {
+  if (typeof text !== 'string' || !text.trim()) return false;
+  return AGENDA_INTENT_SET.has(classifyIntent(text).intent);
+}
 
 // BLOCO E: heurística determinística (nunca IA) que decide QUANDO vale a
 // pena chamar a camada neural (financial_plan) em vez do parser de uma
@@ -84,6 +95,7 @@ function clauseHasFinancialSignal(clause) {
  */
 export function looksLikeComplexFinancialText(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
+  if (isAgendaExpression(text)) return false;
   if (!FINANCIAL_VERB_RE.test(text) && !TRANSFER_RE.test(text)) return false;
   // Transferência nunca é modelada pelo parser de uma única operação (que
   // só entende income/expense) -- qualquer menção a transferência já basta
@@ -122,6 +134,7 @@ export function isUnsupportedIntentEligibleForPlan(intent) {
  */
 export function looksLikeFreshFinancialStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
+  if (isAgendaExpression(text)) return false;
   return FINANCIAL_VERB_RE.test(text) && hasAnyAmountMention(text);
 }
 
@@ -135,6 +148,7 @@ export function looksLikeFreshFinancialStatement(text) {
  */
 export function looksLikeFreshBalanceStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
+  if (isAgendaExpression(text)) return false;
   if (!hasAnyAmountMention(text)) return false;
   const normalized = text.trim().toLowerCase();
   return /(^|[\s,:])(?:meu|o|nosso)\s+saldo/.test(normalized)
@@ -164,6 +178,7 @@ const LAUNCH_NOUN_RE = /\b(despesa|gasto|receita|entrada|pagamento)\b/i;
 
 export function looksLikeUnclassifiedFinancialStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
+  if (isAgendaExpression(text)) return false;
   if (!hasAnyAmountMention(text)) return false;
   return FINANCIAL_VERB_RE.test(text) || LAUNCH_NOUN_RE.test(text);
 }

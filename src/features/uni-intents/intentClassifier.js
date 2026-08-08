@@ -10,6 +10,96 @@ export const FINANCIAL_INTENTS = Object.freeze([
   'question',
 ]);
 
+// Intenções de Agenda/Lembrete -- NUNCA entram no fluxo financeiro (nem em
+// FINANCIAL_INTENTS nem em ACTION_STATEMENT_INTENTS): com evidência
+// semântica de agenda, a frase é resolvida ANTES da interpretação
+// financeira, para que números associados a unidades temporais ("daqui 10
+// dias", "2 semanas", "mês que vem") jamais sejam interpretados como
+// valores monetários.
+export const AGENDA_INTENTS = Object.freeze([
+  'agenda_reminder_create',
+  'agenda_schedule_create',
+  'agenda_edit',
+  'agenda_complete',
+  'agenda_cancel',
+  'agenda_query',
+  'agenda_no_time',
+]);
+
+export const AGENDA_INTENT_SET = new Set(AGENDA_INTENTS);
+
+// CAMADA 0 -- heurística de Agenda (NUNCA IA): determina a intenção de
+// agenda/lembrete se houver evidência semântica explícita. Roda SEMPRE
+// antes das regras financeiras, para evitar falso-positivo financeiro.
+function detectAgendaIntent(normalizedText) {
+  const has = (patterns) => patterns.some((pattern) => pattern.test(normalizedText));
+
+  // 1. Lembrete ("me lembra de...", "preciso que você me lembre", "cria um
+  //    lembrete...") -- deve vencer TUDO antes das demais heurísticas e
+  //    das regras financeiras.
+  if (has([
+    /\b(?:me\s+)?lembr(?:a|ar|e|ou|ando)\b/,
+    /\blembrete\b/,
+    /\bavis(?:ar|e|a|em)\b.*\blembrar\b/,
+  ])) {
+    return { intent: 'agenda_reminder_create', confidence: 0.97, signals: ['agenda_reminder_heuristic'] };
+  }
+
+  // 2. Criação de compromisso ("marcar uma reunião", "tenho um
+  //    compromisso", "agendar consulta", "reunião daqui a 10 dias") --
+  //    vem ANTES de agenda_query, porque "tenho um compromisso amanhã"
+  //    também contém "compromisso amanhã" (padrão de consulta).
+  if (has([
+    /\b(?:marcar|agendar|criar)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|evento|consulta|agenda)\b/,
+    /\b(?:eu\s+)?(?:tenho|tive|vou\s+ter)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|consulta|evento)\b/,
+    /\b(?:reuniao|compromisso|consulta|evento)\b[^.!?]*\b(?:daqui\s+a|daqui|em)\s*\d+\s*(?:dia|dias|semana|semanas|mes|meses|ano|anos)\b/,
+  ])) {
+    return { intent: 'agenda_schedule_create', confidence: 0.97, signals: ['agenda_schedule_heuristic'] };
+  }
+
+  // 2. Consulta de agenda ("qual é minha agenda?", "próximos compromissos")
+  if (has([
+    /\b(?:qual|quais)\b.*\bagenda\b/,
+    /\bminha\s+agenda\b/,
+    /\bagenda\s+(?:do|da)\s+(?:dia|hoje|semana|mes|proximo)\b/,
+    /\b(?:proximos?|proximas?)\s+(?:compromissos?|eventos?|reunioes?|lembretes?)\b/,
+    /\bcompromissos?\s+(?:de\s+)?(?:hoje|amanha|semana)\b/,
+    /\bcompromissos?[^.!?]{0,40}\b(?:de\s+)?(?:hoje|amanha|semana)\b/,
+  ])) {
+    return { intent: 'agenda_query', confidence: 0.97, signals: ['agenda_query_heuristic'] };
+  }
+
+  // 4. Edição de compromisso ("remarcar reunião", "adiar compromisso")
+  if (has([
+    /\b(?:remarcar|reagendar|adiar|antecipar|editar|mudar)\b.*\b(?:reuniao|compromisso|consulta|evento|horario)\b/,
+  ])) {
+    return { intent: 'agenda_edit', confidence: 0.97, signals: ['agenda_edit_heuristic'] };
+  }
+
+  // 5. Concluir/cancelar/excluir
+  if (has([
+    /\b(?:concluir|finalizar)\b.*\b(?:reuniao|compromisso|evento|lembrete)\b/,
+    /\b(?:cancelar|excluir|desmarcar|remover|cancela)\b.*\b(?:reuniao|compromisso|evento|agenda|consula)\b/,
+  ])) {
+    const cancelled = /\b(?:cancelar|excluir|desmarcar|remover|cancela)\b/.test(normalizedText);
+    return {
+      intent: cancelled ? 'agenda_cancel' : 'agenda_complete',
+      confidence: 0.97,
+      signals: ['agenda_status_heuristic'],
+    };
+  }
+
+  // 6. "Não tem horário" / "sem horário" (resposta à pergunta de horário)
+  if (has([
+    /\b(?:nao|sem|sem\s+horario)\s*(?:tem|temos|existe|definid)?\s*horario\b/,
+    /\bhorario\b.*\b(?:nao\s+temos?|sem|qualquer)\b/,
+  ])) {
+    return { intent: 'agenda_no_time', confidence: 0.96, signals: ['agenda_no_time_heuristic'] };
+  }
+
+  return null;
+}
+
 const INTENT_RULES = [
   {
     intent: 'register_transfer',
@@ -47,13 +137,13 @@ const INTENT_RULES = [
       // "Meu saldo é 1000", "O saldo da conta está 500") -- exige um valor
       // monetário na frase para nunca engolir perguntas ("qual é meu
       // saldo?" não tem valor e continua sendo check_balance).
-      /^(?:meu\s+|o\s+|nosso\s+)?saldo\b.*?\b(?:e|eh|esta|estou|ficou|fica|vai\s+ficar)\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
-      /^(?:coloca|define|ajusta|ajuste|corrige|corrija)\s+(?:meu\s+|o\s+)?saldo\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
+      /^(?:meu\s+|o\s+|nosso\s+)?saldo\b.*?\b(?:e|eh|esta|estou|ficou|fica|vai\s+ficar)\b.*?(?:r\s*\$|real|reais?|mil|\d)\b/u,
+      /^(?:coloca|define|ajusta|ajuste|corrige|corrija)\s+(?:meu\s+|o\s+)?saldo\b.*?(?:r\s*\$|real|reais?|mil|\d)\b/u,
       // "Tenho R$ 1.000 DE SALDO" -- valor + "de saldo" explicito tambem e
       // declaracao de saldo (vem antes do padrao de despesa "reais de" e
       // do padrao ambiguo "tenho <valor>"). O dinheiro pode vir antes OU
       // depois de "saldo" ("tenho 500 reais de saldo" / "tenho de saldo 500").
-      /^(?:eu\s+)?tenho\b(?=.*?(?:r\s*\$|reais?|\d|mil)(?:\b|\s)).*?\b(?:de|em)\s+saldo\b/u,
+      /^(?:eu\s+)?tenho\b(?=[\s\S]*?(?:r\s*\$|real|reais?|mil|\d)(\b|\s)).*?\b(?:de|em)\s+saldo\b/u,
     ],
   },
   {
@@ -62,12 +152,12 @@ const INTENT_RULES = [
     patterns: [
       // "Tenho R$ 1.000" / "Tenho 1.000 na poupança" -- declaração com
       // verbo "ter" e valor monetário. Ambígua por natureza: pode ser
-      // receita declarada ou saldo declarado. Sempre ancorada no início
+      // de produzir uma receita declarada ou saldo declarado. Sempre ancorado no início
       // para nunca capturar perguntas ("quanto tenho...") nem respostas
       // de pendência ("tenho no Nubank").
-      /^(?:eu\s+)?tenho\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
-      /^(?:eu\s+)?estou\s+com\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
-      /^(?:eu\s+)?to\s+com\b.*?(?:r\s*\$|reais?|\d|mil)\b/u,
+      /^(?:eu\s+)?tenho\b(?![\s\S]*?\b\d+\s+(?:dia|dias|semana|semanas|mes|meses|ano|anos|horas|minutos)\b)[\s\S]*?(?:r\s*\$|real|reais?|mil|\d)\b/u,
+      /^(?:eu\s+)?estou\s+com\b(?![\s\S]*?\b\d+\s+(?:dia|dias|semana|semanas|mes|meses|ano|anos|horas|minutos)\b)[\s\S]*?(?:r\s*\$|real|reais?|mil|\d)\b/u,
+      /^(?:eu\s+)?to\s+com\b(?![\s\S]*?\b\d+\s+(?:dia|dias|semana|semanas|mes|meses|ano|anos|horas|minutos)\b)[\s\S]*?(?:r\s*\$|real|reais?|mil|\d)\b/u,
     ],
   },
   {
@@ -88,26 +178,18 @@ const INTENT_RULES = [
       /^(?:eu\s+)?(?:recebi|ganhei|faturei)\b/,
       // BUG REAL: "Entrou mil reais." (valor por extenso) não batia no padrão
       // antigo (que exigia algarismos logo depois do verbo) e caía em
-      // 'question' -- e o FinancialQueryEngine ainda a capturava como
+      // 'question' -- e o FinancialQueryEngine ainda a classificava como
       // transaction_reference. O lookahead aceita valor em algarismo OU por
       // extenso (R$/reais/mil/palavras numéricas) em qualquer posição da
       // declaração.
       // BUG REAL: "Entraram mil reais."/"Caiu quinhentos." -- plural do
       // verbo (entraram/cairam) e número por extenso sem "reais"
       // ("quinhentos") não batiam e viravam 'question'. A lista de palavras
-      // numéricas cobre o número por extenso comum de lançamentos.
+      // numéricas ganhou os plurais e o sufixo de gíria ("cinquentão").
       /^(?:entrou|caiu|entraram|cairam)\b(?=.*?\b(?:r\s*\$|\d+(?:[.,]\d+)?|reais?|mil|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos)\b)/u,
-      // BUG REAL: "Entrou meu salário." -- declaração com verbo e
-      // possessivo, sem valor explícito; antes virava 'question'/
-      // transaction_reference (e, com pendência ativa, virava nome de
-      // conta proposto). Sem valor, o fluxo de pendência pergunta o valor.
       /^(?:entrou|caiu|entraram|cairam)\s+(?:meu|minha|meus|minhas)\b/,
       /\brecebi\s+(?:r\$\s*)?[\d.,]+/,
-      // BUG REAL: comandos imperativos ("lance uma receita de...",
-      // "registra uma entrada de...") nao tinham nenhum verbo reconhecido --
-      // caiam em 'question' e a frase acabava indo para o chat geral. Precisam
-      // vir ANTES do bloco de register_expense (mesmo verbo imperativo serve
-      // para os dois) para que "receita/entrada" explicita desambigue certo.
+      // ➝ receita/entrada explícita ("lance uma receita de...", "registra uma)
       /^(?:lance|lanca|registra|registre|anota|anote)\s+(?:uma\s+)?(?:receita|entrada)\b/,
     ],
   },
@@ -117,8 +199,8 @@ const INTENT_RULES = [
     patterns: [
       // BUG REAL EM PRODUCAO: "Coloquei duzentos reais de gasolina." caia
       // aqui como 'question' (nenhum verbo batia), o parser devolvia
-      // handled:false e a frase acabava no chat geral, que respondia "nao
-      // consigo registrar daqui". "coloquei/botei" sao verbos comuns de
+      // handled:false e a frase ia para o chat geral, que respondia "ah,
+      // não consigo registrar daqui". "coloquei/botei" são verbos comuns de
       // lancamento coloquial que faltavam nesta lista.
       /^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|coloquei|botei)\b/,
       /^(?:custou|saiu|foi)\s+(?:r\$\s*)?[\d.,]+/,
@@ -129,16 +211,12 @@ const INTENT_RULES = [
       // BUG REAL (fluxo de confirmação financeira simples): "Cinquenta reais
       // de gasolina." não tem NENHUM verbo -- nem os anteriores, nem
       // "gastei/paguei/etc" -- e caía em 'question'/unsupported. O parser de
-      // uma única operação nunca chegava a criar a ação pendente, e a frase
-      // inteira (incluindo as rodadas seguintes de "no Nubank"/"correto")
-      // era respondida pelo chat geral (LLM em modo consultivo, sem nenhuma
-      // máquina de estados) -- daí o texto solto pedindo confirmação de novo
-      // em vez de montar o card. "<valor> reais de <algo>" é uma declaração
-      // de despesa inequívoca mesmo sem verbo, contanto que a frase não
-      // COMECE com uma pergunta ("quanto/quantos/qual/quando/como/onde/por
-      // que" -- essas já são interceptadas antes por classifyFinancialQuery,
-      // mas a guarda aqui evita reclassificar uma pergunta como lançamento
-      // se ela escapar daquele classificador).
+      // uma única operação nunca chegava a criar a ação pendente, e o resultado
+      // era gasto desajeitado. O padrão "<valor> reais de <algo>" cobre
+      // valores sem verbo, desde que não comece com pergunta ("quanto/quantos/
+      // qual/quais/quando/como/onde/por que" -- essas já são interceptadas
+      // antes por classifyFinancialQuery, mas esta guarda evita reclassificar
+      // uma pergunta como lançamento se ela escapar).
       /^(?!\s*(?:quanto|quantos|quantas|qual|quais|quando|como|onde|por\s*que|porque)\b)(?:[\p{L}\p{N}.,$]+\s+){0,3}reais?\s+de\s+\p{L}/u,
     ],
   },
@@ -161,6 +239,10 @@ export function classifyIntent(input) {
   if (!normalizedText) {
     return { intent: 'question', confidence: 0, signals: [] };
   }
+
+  // CAMADA 0 -- agenda/lembrete resolve ANTES de qualquer regra financeira.
+  const agendaIntent = detectAgendaIntent(normalizedText);
+  if (agendaIntent) return agendaIntent;
 
   for (const rule of INTENT_RULES) {
     const matchedPattern = rule.patterns.find((pattern) =>
