@@ -33,11 +33,15 @@ test('monta o payload uma unica vez com buildAgendaItemCreationPayload, reutiliz
   assert.equal(occurrences.length, 1);
 });
 
-test('criacao chama agenda.createItem(payload); edicao envia updated_at esperado ao updateItem', async () => {
+test('criacao envia client_operation_id estável; edicao envia updated_at esperado', async () => {
   const contents = await source('AgendaFormModal.jsx');
   assert.match(
     contents,
-    /const result = isEditing\s*\n\s*\? await agenda\.updateItem\(item\.id, payload, \{ expectedUpdatedAt: item\.updated_at \}\)\s*\n\s*: await agenda\.createItem\(payload\);/,
+    /const result = isEditing\s*\n\s*\? await agenda\.updateItem\(item\.id, payload, \{ expectedUpdatedAt: item\.updated_at \}\)\s*\n\s*: await agenda\.createItem\(\{[\s\S]*?\.\.\.payload,[\s\S]*?client_operation_id: clientOperationId,[\s\S]*?\}\);/,
+  );
+  assert.match(
+    contents,
+    /const \[clientOperationId\] = useState\(\(\) => \(\s*\n\s*isEditing \? null : createAgendaClientOperationId\(\)\s*\n\s*\)\);/,
   );
 });
 

@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const AGENDA_ITEM_FIELDS =
-  'id, workspace_id, item_type, title, description, location, starts_at, ends_at, is_all_day, status, client_id, assigned_user_id, created_by, created_at, updated_at';
+  'id, workspace_id, item_type, title, description, location, starts_at, ends_at, is_all_day, status, client_id, assigned_user_id, client_operation_id, created_by, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const AGENDA_ITEM_STATUSES = Object.freeze(['completed', 'cancelled']);
@@ -63,7 +63,73 @@ const MUTABLE_AGENDA_ITEM_FIELDS = [
   'assigned_user_id',
 ];
 
-const CREATABLE_AGENDA_ITEM_FIELDS = [...MUTABLE_AGENDA_ITEM_FIELDS];
+const CREATABLE_AGENDA_ITEM_FIELDS = [
+  ...MUTABLE_AGENDA_ITEM_FIELDS,
+  'client_operation_id',
+];
+
+const IDEMPOTENT_AGENDA_CREATE_FIELDS = [...MUTABLE_AGENDA_ITEM_FIELDS];
+
+function createIdempotencyConflict() {
+  return {
+    data: null,
+    error: {
+      code: 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT',
+      message: 'Esta operação já foi usada para criar um compromisso diferente.',
+    },
+  };
+}
+
+function normalizeCreationField(field, value) {
+  if (field === 'title' && typeof value === 'string') return value.trim();
+  if (field === 'starts_at' || field === 'ends_at') {
+    if (value == null) return null;
+    const timestamp = new Date(value);
+    return Number.isNaN(timestamp.getTime()) ? String(value) : timestamp.toISOString();
+  }
+  if (field === 'is_all_day') return Boolean(value);
+  return value ?? null;
+}
+
+function isCompatibleAgendaCreation(existing, payload) {
+  return IDEMPOTENT_AGENDA_CREATE_FIELDS.every((field) => (
+    normalizeCreationField(field, existing[field])
+      === normalizeCreationField(field, payload[field])
+  ));
+}
+
+export function createAgendaClientOperationId() {
+  if (typeof globalThis.crypto?.randomUUID !== 'function') {
+    throw new Error('UUID seguro indisponivel para a operacao da Agenda.');
+  }
+  return globalThis.crypto.randomUUID();
+}
+
+export async function resolveIdempotentAgendaCreation({
+  payload,
+  findExisting,
+  insertItem,
+}) {
+  if (!payload.client_operation_id) return insertItem(payload);
+
+  const existing = await findExisting();
+  if (existing.error) return existing;
+  if (existing.data) {
+    return isCompatibleAgendaCreation(existing.data, payload)
+      ? existing
+      : createIdempotencyConflict();
+  }
+
+  const inserted = await insertItem(payload);
+  if (!inserted.error || inserted.error.code !== '23505') return inserted;
+
+  const concurrent = await findExisting();
+  if (concurrent.error) return concurrent;
+  if (!concurrent.data) return inserted;
+  return isCompatibleAgendaCreation(concurrent.data, payload)
+    ? concurrent
+    : createIdempotencyConflict();
+}
 
 export async function listAgendaItems(
   workspaceId,
@@ -147,19 +213,38 @@ export async function createAgendaItem(workspaceId, item = {}) {
     return createValidationResult('Data e hora de inicio sao obrigatorias.');
   }
 
+  if (item.client_operation_id !== undefined && !isValidUuid(item.client_operation_id)) {
+    return createValidationResult('Chave da operacao de Agenda invalida.');
+  }
+
   const payload = {
     workspace_id: workspaceId,
     ...pickDefined(item, CREATABLE_AGENDA_ITEM_FIELDS),
     title: item.title.trim(),
   };
 
-  const { data, error } = await supabase
-    .from('agenda_items')
-    .insert(payload)
-    .select(AGENDA_ITEM_FIELDS)
-    .single();
+  const result = await resolveIdempotentAgendaCreation({
+    payload,
+    findExisting: async () => {
+      const { data, error } = await supabase
+        .from('agenda_items')
+        .select(AGENDA_ITEM_FIELDS)
+        .eq('workspace_id', workspaceId)
+        .eq('client_operation_id', payload.client_operation_id)
+        .maybeSingle();
+      return { data, error };
+    },
+    insertItem: async (insertPayload) => {
+      const { data, error } = await supabase
+        .from('agenda_items')
+        .insert(insertPayload)
+        .select(AGENDA_ITEM_FIELDS)
+        .single();
+      return { data, error };
+    },
+  });
 
-  return createResult(data, error);
+  return createResult(result.data, result.error);
 }
 
 export async function updateAgendaItem(

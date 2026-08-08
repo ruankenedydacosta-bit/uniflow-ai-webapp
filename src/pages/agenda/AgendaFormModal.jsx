@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import { createAgendaClientOperationId } from '../../services/agendaService.js';
 import { FormMessage, SelectField, TextareaField } from './AgendaFormPrimitives.jsx';
 import {
   AGENDA_ITEM_TYPE_LABELS,
@@ -38,6 +39,9 @@ const ITEM_TYPE_OPTIONS = AGENDA_ITEM_TYPES.map((value) => ({
 function AgendaFormModal({ open, mode = 'create', item = null, agenda, clientsState, onClose }) {
   const isEditing = mode === 'edit';
   const activeClients = clientsState.activeClients;
+  const [clientOperationId] = useState(() => (
+    isEditing ? null : createAgendaClientOperationId()
+  ));
 
   const [form, setForm] = useState(() =>
     isEditing ? createAgendaItemEditForm(item) : createEmptyAgendaItemForm(),
@@ -82,7 +86,10 @@ function AgendaFormModal({ open, mode = 'create', item = null, agenda, clientsSt
     const payload = buildAgendaItemCreationPayload(form);
     const result = isEditing
       ? await agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
-      : await agenda.createItem(payload);
+      : await agenda.createItem({
+        ...payload,
+        client_operation_id: clientOperationId,
+      });
 
     if (result && !result.error) {
       // Reconcilia a lista com os filtros ativos (periodo/status/tipo) --

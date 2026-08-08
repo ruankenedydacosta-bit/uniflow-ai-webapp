@@ -8,6 +8,7 @@ import {
 } from './pendingActionStack.js';
 import { classifyIntent, normalizeFinancialText, resolveRelativeDateExpression } from '../uni-intents/index.js';
 import {
+  createAgendaClientOperationId,
   createAgendaItem,
   deleteAgendaItem,
   listAgendaItems,
@@ -363,6 +364,9 @@ function successText(action, item) {
 }
 
 function serviceErrorText(error) {
+  if (error?.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT') {
+    return 'Essa tentativa de criação conflita com outro compromisso. Revise os dados e tente novamente.';
+  }
   if (error?.code === 'AGENDA_ITEM_CONFLICT') {
     return 'Esse compromisso mudou desde que você o consultou. Confira a Agenda e tente novamente.';
   }
@@ -378,8 +382,12 @@ function buildFinancialDraft(originalText) {
   return `Registre uma despesa: ${details || originalText}`;
 }
 
-export function createAgendaConversationFlow({ services = defaultServices } = {}) {
+export function createAgendaConversationFlow({
+  services = defaultServices,
+  createOperationId = createAgendaClientOperationId,
+} = {}) {
   const stacks = new Map();
+  const createRetryOperations = new Map();
   let actionSequence = 0;
 
   function identityKey(identity) {
@@ -397,11 +405,14 @@ export function createAgendaConversationFlow({ services = defaultServices } = {}
 
   function startPending(identity, type, fields) {
     const base = getStack(identity) ?? createPendingActionStack(identity);
+    const pendingFields = type === PENDING_TYPES.CREATE && !fields.clientOperationId
+      ? { ...fields, clientOperationId: createOperationId() }
+      : fields;
     const transition = pushPendingAction(base, {
       id: `agenda-${type}-${++actionSequence}`,
       type,
       deduplicationKey: `${type}:${normalizeIdentity(JSON.stringify(fields))}`,
-      fields,
+      fields: pendingFields,
     });
     setStack(identity, transition.stack);
     return transition.activeAction;
@@ -413,13 +424,27 @@ export function createAgendaConversationFlow({ services = defaultServices } = {}
   }
 
   async function createItem(identity, fields) {
+    const retryKey = `${identityKey(identity)}:${JSON.stringify({
+      itemType: fields.itemType ?? 'appointment',
+      title: fields.title,
+      date: fields.date,
+      time: fields.time,
+      allDay: Boolean(fields.allDay),
+    })}`;
+    const clientOperationId = fields.clientOperationId
+      ?? createRetryOperations.get(retryKey)
+      ?? createOperationId();
+    createRetryOperations.set(retryKey, clientOperationId);
+
     const result = await services.createAgendaItem(identity.workspaceId, {
       item_type: fields.itemType ?? 'appointment',
       title: fields.title,
       starts_at: toStartIso(fields.date, fields.time, fields.allDay),
       ends_at: null,
       is_all_day: Boolean(fields.allDay),
+      client_operation_id: clientOperationId,
     });
+    if (!result.error) createRetryOperations.delete(retryKey);
     return result;
   }
 
@@ -688,7 +713,7 @@ export function createAgendaConversationFlow({ services = defaultServices } = {}
       }
       const result = await createItem(identity, fields);
       return result.error
-        ? { handled: true, text: serviceErrorText() }
+        ? { handled: true, text: serviceErrorText(result.error) }
         : { handled: true, text: successText('create', result.data) };
     }
 

@@ -10,7 +10,7 @@ const IDENTITY = Object.freeze({
 });
 const REFERENCE_DATE = '2026-08-08';
 
-function makeHarness(seed = []) {
+function makeHarness(seed = [], { createOperationId, createResults = [] } = {}) {
   const items = seed.map((item) => ({
     status: 'scheduled',
     is_all_day: false,
@@ -22,6 +22,8 @@ function makeHarness(seed = []) {
   const services = {
     async createAgendaItem(workspaceId, payload) {
       calls.push({ operation: 'create', workspaceId, payload });
+      const plannedResult = createResults.shift();
+      if (plannedResult) return plannedResult;
       const data = { id: `item-${++sequence}`, workspace_id: workspaceId, status: 'scheduled', ...payload };
       items.push(data);
       return { data, error: null };
@@ -71,7 +73,11 @@ function makeHarness(seed = []) {
       return { data: { id: data.id }, error: null };
     },
   };
-  return { flow: createAgendaConversationFlow({ services }), calls, items };
+  return {
+    flow: createAgendaConversationFlow({ services, createOperationId }),
+    calls,
+    items,
+  };
 }
 
 function turn(flow, text, identity = IDENTITY) {
@@ -112,6 +118,62 @@ test('criação aceita data absoluta sem depender de interpretação externa', a
   const { flow, calls } = makeHarness();
   await turn(flow, 'Marca uma reunião em 20/08/2026 às 14h.');
   assert.match(calls[0].payload.starts_at, /^2026-08-20T/);
+});
+
+test('retry da mesma intenção reutiliza client_operation_id após falha', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const { flow, calls } = makeHarness([], {
+    createOperationId: () => operationIds.shift(),
+    createResults: [{ data: null, error: { code: 'timeout' } }],
+  });
+
+  const first = await turn(flow, 'Tenho dentista amanhã às 15h.');
+  assert.match(first.text, /Tente novamente/);
+  const retry = await turn(flow, 'Tenho dentista amanhã às 15h.');
+  assert.match(retry.text, /Pronto/);
+
+  const creates = calls.filter((call) => call.operation === 'create');
+  assert.equal(creates.length, 2);
+  assert.equal(creates[0].payload.client_operation_id, creates[1].payload.client_operation_id);
+  assert.equal(operationIds.length, 1);
+});
+
+test('duas intenções legítimas iguais após sucesso recebem UUIDs diferentes', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const { flow, calls } = makeHarness([], {
+    createOperationId: () => operationIds.shift(),
+  });
+
+  await turn(flow, 'Tenho dentista amanhã às 15h.');
+  await turn(flow, 'Tenho dentista amanhã às 15h.');
+
+  const creates = calls.filter((call) => call.operation === 'create');
+  assert.notEqual(
+    creates[0].payload.client_operation_id,
+    creates[1].payload.client_operation_id,
+  );
+});
+
+test('intenção pendente mantém client_operation_id ao repetir a confirmação após falha', async () => {
+  const operationId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const { flow, calls } = makeHarness([], {
+    createOperationId: () => operationId,
+    createResults: [{ data: null, error: { code: 'timeout' } }],
+  });
+
+  await turn(flow, 'Me lembra da reunião amanhã.');
+  await turn(flow, 'Sem horário.');
+  await turn(flow, 'Sem horário.');
+
+  const creates = calls.filter((call) => call.operation === 'create');
+  assert.equal(creates.length, 2);
+  assert.ok(creates.every((call) => call.payload.client_operation_id === operationId));
 });
 
 test('objeto vago pergunta o assunto e preserva a data já informada', async () => {
