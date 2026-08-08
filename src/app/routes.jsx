@@ -21,7 +21,6 @@ import { PERSONAL_PLAN_RETURN_ROUTE, PersonalPlanPage, PersonalPlanReturnPage } 
 import {
   ACCOUNT_SUBROUTE_IDS,
   ACCOUNT_SUBROUTES,
-  SIMPLIFIED_FEATURE_FLAGS,
   SIMPLIFIED_ROUTES,
   SimplifiedAgendaPage,
   SimplifiedAboutPage,
@@ -166,28 +165,31 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedRecordsPage />,
   },
-  ...(SIMPLIFIED_FEATURE_FLAGS.agendaEnabled
-    ? [{
-      path: SIMPLIFIED_ROUTES.AGENDA,
-      label: 'Agenda',
-      title: 'Agenda',
-      simplified: true,
-      element: <SimplifiedAgendaPage />,
-    }]
-    : []),
-  ...(SIMPLIFIED_FEATURE_FLAGS.supportNavEnabled
-    ? [{
-      path: SIMPLIFIED_ROUTES.SUPPORT_CHAT,
-      label: 'Uni Suporte',
-      title: 'Uni Suporte',
-      simplified: true,
-      element: (
-        <Suspense fallback={null}>
-          <SupportCenterPage />
-        </Suspense>
-      ),
-    }]
-    : []),
+  // LOTE D: rota interna de Agenda é SEMPRE registrada (a barra inferior
+  // não a expõe; o acesso é por fluxos internos, ex. card da Uni). A flag
+  // VITE_SIMPLIFIED_AGENDA_ENABLED deixou de controlar a existência da
+  // rota -- só ajustes programáticos futuros usariam a flag.
+  {
+    path: SIMPLIFIED_ROUTES.AGENDA,
+    label: 'Agenda',
+    title: 'Agenda',
+    simplified: true,
+    element: <SimplifiedAgendaPage />,
+  },
+  // LOTE D: rota interna da conversa de Suporte da Uni é SEMPRE registrada
+  // -- o acesso é via Conta > Suporte (o item "Falar com a Uni"), não pela
+  // barra inferior.
+  {
+    path: SIMPLIFIED_ROUTES.SUPPORT_CHAT,
+    label: 'Uni Suporte',
+    title: 'Uni Suporte',
+    simplified: true,
+    element: (
+      <Suspense fallback={null}>
+        <SupportCenterPage />
+      </Suspense>
+    ),
+  },
   {
     path: SIMPLIFIED_ROUTES.ACCOUNT,
     label: 'Conta',

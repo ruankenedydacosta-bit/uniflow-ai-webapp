@@ -1,4 +1,3 @@
-import { SIMPLIFIED_FEATURE_FLAGS } from './simplifiedFeatureFlags.js';
 import { ACCOUNT_SUBROUTE_IDS, ACCOUNT_SUBROUTES } from './simplifiedAccountRoutes.js';
 
 export const SIMPLIFIED_ROUTE_IDS = Object.freeze({
@@ -32,38 +31,24 @@ const BASE_NAVIGATION = Object.freeze([
   }),
 ]);
 
-const AGENDA_NAVIGATION_ITEM = Object.freeze({
-  id: SIMPLIFIED_ROUTE_IDS.AGENDA,
-  label: 'Agenda',
-  path: SIMPLIFIED_ROUTES.AGENDA,
-});
-
+// LOTE D: a base de navegação é FIXA -- Home | Registros | Conta. Agenda e
+// Suporte NÃO aparecem na barra inferior: são alcançados por fluxos
+// internos (/app/agenda via a Uni, /app/conta/suporte/uni via Conta), com
+// as rotas sempre registradas. As flags de habilitação continuam existindo
+// para mudanças programáticas, mas a estrutura fixa é a fonte da verdade
+// do componente de navegação.
 const ACCOUNT_NAVIGATION_ITEM = Object.freeze({
   id: SIMPLIFIED_ROUTE_IDS.ACCOUNT,
   label: 'Conta',
   path: SIMPLIFIED_ROUTES.ACCOUNT,
 });
 
-const SUPPORT_NAVIGATION_ITEM = Object.freeze({
-  id: SIMPLIFIED_ROUTE_IDS.SUPPORT,
-  label: 'Suporte',
-  path: SIMPLIFIED_ROUTES.SUPPORT,
-});
-
-export function buildSimplifiedNavigation({ agendaEnabled = false, supportNavEnabled = false } = {}) {
-  return Object.freeze([
-    ...BASE_NAVIGATION,
-    ...(agendaEnabled ? [AGENDA_NAVIGATION_ITEM] : []),
-    ...(supportNavEnabled ? [SUPPORT_NAVIGATION_ITEM] : []),
-    ACCOUNT_NAVIGATION_ITEM,
-  ]);
+export function buildSimplifiedNavigation() {
+  return Object.freeze([...BASE_NAVIGATION, ACCOUNT_NAVIGATION_ITEM]);
 }
 
-export function resolveSimplifiedNavigation(featureFlags = {}) {
-  return buildSimplifiedNavigation({
-    agendaEnabled: featureFlags.agendaEnabled === true,
-    supportNavEnabled: featureFlags.supportNavEnabled === true,
-  });
+export function resolveSimplifiedNavigation() {
+  return buildSimplifiedNavigation();
 }
 
-export const SIMPLIFIED_NAVIGATION = resolveSimplifiedNavigation(SIMPLIFIED_FEATURE_FLAGS);
+export const SIMPLIFIED_NAVIGATION = resolveSimplifiedNavigation();

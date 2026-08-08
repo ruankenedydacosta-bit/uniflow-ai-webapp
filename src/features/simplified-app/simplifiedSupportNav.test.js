@@ -12,45 +12,35 @@ import {
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-test('navegação da Uni Suporte nasce desligada e exige true literal', () => {
+test('LOTE D: Suporte sai da barra inferior e a navegação é fixa em três itens', () => {
   assert.equal(SIMPLIFIED_FEATURE_FLAG_KEYS.SUPPORT_NAV, 'VITE_SIMPLIFIED_SUPPORT_NAV_ENABLED');
   assert.equal(resolveSimplifiedFeatureFlags({}).supportNavEnabled, false);
-  assert.equal(resolveSimplifiedFeatureFlags({ VITE_SIMPLIFIED_SUPPORT_NAV_ENABLED: 'TRUE' }).supportNavEnabled, false);
-  assert.equal(resolveSimplifiedFeatureFlags({ VITE_SIMPLIFIED_SUPPORT_NAV_ENABLED: 'true' }).supportNavEnabled, true);
-});
-
-test('flag desligada preserva a navegação atual e flag ligada expõe somente Suporte', () => {
   assert.deepEqual(
-    resolveSimplifiedNavigation({}).map(({ label }) => label),
-    ['Home', 'Registros', 'Conta'],
-  );
-  assert.deepEqual(
-    resolveSimplifiedNavigation({ supportNavEnabled: true }).map(({ label, path }) => ({ label, path })),
+    resolveSimplifiedNavigation().map(({ label, path }) => ({ label, path })),
     [
       { label: 'Home', path: '/app/home' },
       { label: 'Registros', path: '/app/registros' },
-      { label: 'Suporte', path: '/app/conta/suporte' },
       { label: 'Conta', path: '/app/conta' },
     ],
   );
 });
 
-test('rota de conversa simplificada reutiliza SupportCenterPage somente com a flag', async () => {
+test('LOTE D: rota de conversa de suporte é SEMPRE registrada e a entrada continua em Conta', async () => {
   const routes = await source('../../app/routes.jsx');
   assert.equal(SIMPLIFIED_ROUTES.SUPPORT_CHAT, '/app/conta/suporte/uni');
-  assert.match(routes, /SIMPLIFIED_FEATURE_FLAGS\.supportNavEnabled/);
   assert.match(routes, /path: SIMPLIFIED_ROUTES\.SUPPORT_CHAT/);
   assert.match(routes, /<SupportCenterPage \/>/);
+  assert.doesNotMatch(routes, /SIMPLIFIED_FEATURE_FLAGS\.supportNavEnabled/);
 });
 
-test('entrada da tela de suporte mantém o comportamento atual quando desligada e usa o chat de suporte quando ligada', async () => {
+test('LOTE D: botão "Falar com a Uni" navega para a conversa de suporte', async () => {
   const page = await source('./SimplifiedSupportPage.jsx');
-  assert.match(page, /SIMPLIFIED_FEATURE_FLAGS\.supportNavEnabled/);
-  assert.match(page, /\? SIMPLIFIED_ROUTES\.SUPPORT_CHAT/);
+  assert.match(page, /simplifiedRoutes\.js/);
+  assert.match(page, /SIMPLIFIED_ROUTES\.SUPPORT_CHAT/);
   assert.match(page, /: SIMPLIFIED_ROUTES\.UNI/);
 });
 
-test('chat reutilizado preserva conversa e prompt de suporte sem caminho financeiro', async () => {
+test('LOTE D: chat de suporte preserva conversa e prompt sem caminho financeiro', async () => {
   const [chat, context] = await Promise.all([
     source('../uni-support/useUniSupportChat.js'),
     source('../product-knowledge/uniSupportContext.js'),
@@ -62,9 +52,8 @@ test('chat reutilizado preserva conversa e prompt de suporte sem caminho finance
   assert.doesNotMatch(context, /financialContext|financialSummary/);
 });
 
-test('navegação usa ícone existente e mantém quantidade de colunas responsiva', async () => {
+test('LOTE D: navegação com três itens mantém contagem responsiva na barra', async () => {
   const navigation = await source('./SimplifiedBottomNavigation.jsx');
-  assert.match(navigation, /HelpIcon/);
-  assert.match(navigation, /SIMPLIFIED_ROUTE_IDS\.SUPPORT/);
+  assert.match(navigation, /SIMPLIFIED_ROUTE_IDS\.ACCOUNT/);
   assert.match(navigation, /--simplified-navigation-count/);
 });
