@@ -2,7 +2,11 @@ import { useState } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
-import { createAgendaClientOperationId } from '../../services/agendaService.js';
+import {
+  clearAgendaOperation,
+  clearAgendaOperationsForOrigin,
+  getOrCreateAgendaOperation,
+} from '../../services/agendaOperationStore.js';
 import { FormMessage, SelectField, TextareaField } from './AgendaFormPrimitives.jsx';
 import {
   AGENDA_ITEM_TYPE_LABELS,
@@ -36,12 +40,20 @@ const ITEM_TYPE_OPTIONS = AGENDA_ITEM_TYPES.map((value) => ({
  * payload (buildAgendaItemCreationPayload) e a mesma validacao
  * (validateAgendaItemForm) sao reutilizados sem parametro de modo.
  */
-function AgendaFormModal({ open, mode = 'create', item = null, agenda, clientsState, onClose }) {
+const CREATE_OPERATION_ORIGIN = 'agenda-form';
+
+function AgendaFormModal({
+  open,
+  mode = 'create',
+  item = null,
+  agenda,
+  clientsState,
+  userId,
+  workspaceId,
+  onClose,
+}) {
   const isEditing = mode === 'edit';
   const activeClients = clientsState.activeClients;
-  const [clientOperationId] = useState(() => (
-    isEditing ? null : createAgendaClientOperationId()
-  ));
 
   const [form, setForm] = useState(() =>
     isEditing ? createAgendaItemEditForm(item) : createEmptyAgendaItemForm(),
@@ -53,8 +65,15 @@ function AgendaFormModal({ open, mode = 'create', item = null, agenda, clientsSt
   // Bloqueia fechamento (X, overlay, ESC ou botao Cancelar) enquanto uma
   // mutacao esta em andamento -- todos os gatilhos de fechamento do Modal
   // passam por este handler. Mesmo padrao de OpportunityFormModal/ClientFormModal.
-  function handleClose() {
+  async function handleClose() {
     if (isMutating) return;
+    if (!isEditing && userId && workspaceId) {
+      await clearAgendaOperationsForOrigin({
+        userId,
+        workspaceId,
+        origin: CREATE_OPERATION_ORIGIN,
+      });
+    }
     onClose();
   }
 
@@ -84,14 +103,30 @@ function AgendaFormModal({ open, mode = 'create', item = null, agenda, clientsSt
     }
 
     const payload = buildAgendaItemCreationPayload(form);
+    const creationOperation = isEditing
+      ? null
+      : await getOrCreateAgendaOperation({
+        userId,
+        workspaceId,
+        origin: CREATE_OPERATION_ORIGIN,
+        intent: payload,
+      });
     const result = isEditing
       ? await agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
       : await agenda.createItem({
         ...payload,
-        client_operation_id: clientOperationId,
+        client_operation_id: creationOperation.clientOperationId,
       });
 
     if (result && !result.error) {
+      if (creationOperation) {
+        await clearAgendaOperation({
+          userId,
+          workspaceId,
+          origin: CREATE_OPERATION_ORIGIN,
+          clientOperationId: creationOperation.clientOperationId,
+        });
+      }
       // Reconcilia a lista com os filtros ativos (periodo/status/tipo) --
       // o upsert local do hook nao valida contra os filtros da consulta
       // atual, entao um item criado/editado fora do filtro so refletiria
@@ -102,6 +137,15 @@ function AgendaFormModal({ open, mode = 'create', item = null, agenda, clientsSt
       await agenda.refresh();
       onClose();
       return;
+    }
+
+    if (result?.error?.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT' && creationOperation) {
+      await clearAgendaOperation({
+        userId,
+        workspaceId,
+        origin: CREATE_OPERATION_ORIGIN,
+        clientOperationId: creationOperation.clientOperationId,
+      });
     }
 
     setMutationError(

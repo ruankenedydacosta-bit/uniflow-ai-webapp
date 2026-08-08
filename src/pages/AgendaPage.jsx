@@ -474,6 +474,8 @@ function AgendaPage() {
           mode="create"
           agenda={agenda}
           clientsState={clientsState}
+          userId={user?.id}
+          workspaceId={workspaceId}
           onClose={handleCloseCreate}
         />
       ) : null}
@@ -486,6 +488,8 @@ function AgendaPage() {
           item={editingItem}
           agenda={agenda}
           clientsState={clientsState}
+          userId={user?.id}
+          workspaceId={workspaceId}
           onClose={handleCloseEdit}
         />
       ) : null}

@@ -15,6 +15,10 @@ import {
   setAgendaItemStatus,
   updateAgendaItem,
 } from '../../services/agendaService.js';
+import {
+  clearAgendaOperation,
+  getOrCreateAgendaOperation,
+} from '../../services/agendaOperationStore.js';
 
 const AGENDA_INTENTS = new Set([
   'agenda_reminder_create',
@@ -385,9 +389,13 @@ function buildFinancialDraft(originalText) {
 export function createAgendaConversationFlow({
   services = defaultServices,
   createOperationId = createAgendaClientOperationId,
+  operationStorage,
+  operationStore = {
+    getOrCreate: getOrCreateAgendaOperation,
+    clear: clearAgendaOperation,
+  },
 } = {}) {
   const stacks = new Map();
-  const createRetryOperations = new Map();
   let actionSequence = 0;
 
   function identityKey(identity) {
@@ -403,11 +411,45 @@ export function createAgendaConversationFlow({
     else stacks.delete(identityKey(identity));
   }
 
-  function startPending(identity, type, fields) {
+  function operationScope(identity) {
+    return {
+      userId: identity.userId,
+      workspaceId: identity.workspaceId,
+      origin: `uni:${identity.conversationId}`,
+    };
+  }
+
+  function creationIntent(fields) {
+    return {
+      itemType: fields.itemType ?? 'appointment',
+      title: fields.title ?? null,
+      date: fields.date ?? null,
+      time: fields.time ?? null,
+      allDay: Boolean(fields.allDay),
+    };
+  }
+
+  async function clearCreationOperation(identity, clientOperationId) {
+    if (!clientOperationId) return false;
+    return operationStore.clear({
+      ...operationScope(identity),
+      clientOperationId,
+      storage: operationStorage,
+    });
+  }
+
+  async function startPending(identity, type, fields) {
     const base = getStack(identity) ?? createPendingActionStack(identity);
-    const pendingFields = type === PENDING_TYPES.CREATE && !fields.clientOperationId
-      ? { ...fields, clientOperationId: createOperationId() }
-      : fields;
+    let pendingFields = fields;
+    if (type === PENDING_TYPES.CREATE && !fields.clientOperationId) {
+      const operation = await operationStore.getOrCreate({
+        ...operationScope(identity),
+        intent: creationIntent(fields),
+        createOperationId,
+        storage: operationStorage,
+      });
+      pendingFields = { ...fields, clientOperationId: operation.clientOperationId };
+    }
     const transition = pushPendingAction(base, {
       id: `agenda-${type}-${++actionSequence}`,
       type,
@@ -424,17 +466,14 @@ export function createAgendaConversationFlow({
   }
 
   async function createItem(identity, fields) {
-    const retryKey = `${identityKey(identity)}:${JSON.stringify({
-      itemType: fields.itemType ?? 'appointment',
-      title: fields.title,
-      date: fields.date,
-      time: fields.time,
-      allDay: Boolean(fields.allDay),
-    })}`;
-    const clientOperationId = fields.clientOperationId
-      ?? createRetryOperations.get(retryKey)
-      ?? createOperationId();
-    createRetryOperations.set(retryKey, clientOperationId);
+    const operation = await operationStore.getOrCreate({
+      ...operationScope(identity),
+      intent: creationIntent(fields),
+      preferredOperationId: fields.clientOperationId,
+      createOperationId,
+      storage: operationStorage,
+    });
+    const clientOperationId = operation.clientOperationId;
 
     const result = await services.createAgendaItem(identity.workspaceId, {
       item_type: fields.itemType ?? 'appointment',
@@ -444,7 +483,9 @@ export function createAgendaConversationFlow({
       is_all_day: Boolean(fields.allDay),
       client_operation_id: clientOperationId,
     });
-    if (!result.error) createRetryOperations.delete(retryKey);
+    if (!result.error || result.error.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT') {
+      await clearCreationOperation(identity, clientOperationId);
+    }
     return result;
   }
 
@@ -505,6 +546,9 @@ export function createAgendaConversationFlow({
     const normalized = normalizeFinancialText(text);
 
     if (/^(?:cancela|cancelar|deixa|deixa pra la|nao quero)[.!]?$/.test(normalized)) {
+      if (active.type === PENDING_TYPES.CREATE) {
+        await clearCreationOperation(identity, active.fields.clientOperationId);
+      }
       const transition = cancelPendingAction(stack, active.id, { cascade: true });
       setStack(identity, transition.stack);
       return { handled: true, text: 'Tudo bem. Não alterei sua agenda.' };
@@ -548,7 +592,7 @@ export function createAgendaConversationFlow({
           itemType: 'reminder',
         };
         finishPending(identity, active, { choice: 'agenda' });
-        startPending(identity, PENDING_TYPES.CREATE, fields);
+        await startPending(identity, PENDING_TYPES.CREATE, fields);
         return { handled: true, text: 'Quer colocar um horário ou deixo como compromisso do dia?' };
       }
       if (/\b(?:financeir[ao]|operacao|lancamento|despesa|gasto)\b/.test(normalized)) {
@@ -653,7 +697,7 @@ export function createAgendaConversationFlow({
       }
       finishPending(identity, active, selected);
       if (['cancel', 'delete'].includes(active.fields.action)) {
-        startPending(identity, PENDING_TYPES.CANCEL, {
+        await startPending(identity, PENDING_TYPES.CANCEL, {
           action: active.fields.action,
           item: selected,
         });
@@ -690,7 +734,7 @@ export function createAgendaConversationFlow({
         title: extractTitle(text),
         date: resolveAgendaDate(text, referenceDate),
       };
-      startPending(identity, PENDING_TYPES.FINANCIAL_CONFLICT, fields);
+      await startPending(identity, PENDING_TYPES.FINANCIAL_CONFLICT, fields);
       return {
         handled: true,
         text: 'Isso é um lembrete para pagar na data informada ou você quer tratar como uma operação financeira?',
@@ -706,7 +750,7 @@ export function createAgendaConversationFlow({
         itemType: classification.intent === 'agenda_reminder_create' ? 'reminder' : 'appointment',
       };
       if (!fields.title || !fields.date || !fields.time) {
-        startPending(identity, PENDING_TYPES.CREATE, fields);
+        await startPending(identity, PENDING_TYPES.CREATE, fields);
         if (!fields.title) return { handled: true, text: 'Claro. O que você quer que eu coloque na agenda?' };
         if (!fields.date) return { handled: true, text: `Em qual dia você quer marcar ${fields.title}?` };
         return { handled: true, text: 'Quer colocar um horário ou deixo como compromisso do dia?' };
@@ -740,7 +784,7 @@ export function createAgendaConversationFlow({
       const subject = extractEditTargetSubject(text);
       const changes = extractEditChanges(text, referenceDate);
       if (!subject) {
-        startPending(identity, PENDING_TYPES.EDIT, {
+        await startPending(identity, PENDING_TYPES.EDIT, {
           item: null,
           items: null,
           changes,
@@ -758,7 +802,7 @@ export function createAgendaConversationFlow({
       if (candidates.error) return { handled: true, text: serviceErrorText(candidates.error) };
       if (!candidates.data.length) return { handled: true, text: 'Não encontrei esse compromisso na sua agenda.' };
       if (candidates.data.length > 1) {
-        startPending(identity, PENDING_TYPES.EDIT, {
+        await startPending(identity, PENDING_TYPES.EDIT, {
           item: null,
           items: candidates.data,
           changes,
@@ -769,7 +813,7 @@ export function createAgendaConversationFlow({
         };
       }
       if (!hasEditChanges(changes)) {
-        startPending(identity, PENDING_TYPES.EDIT, {
+        await startPending(identity, PENDING_TYPES.EDIT, {
           item: candidates.data[0],
           items: null,
           changes,
@@ -788,14 +832,14 @@ export function createAgendaConversationFlow({
     if (candidates.error) return { handled: true, text: serviceErrorText(candidates.error) };
     if (!candidates.data.length) return { handled: true, text: 'Não encontrei esse compromisso na sua agenda.' };
     if (candidates.data.length > 1) {
-      startPending(identity, PENDING_TYPES.DISAMBIGUATE, {
+      await startPending(identity, PENDING_TYPES.DISAMBIGUATE, {
         action,
         items: candidates.data,
       });
       return { handled: true, text: `Encontrei mais de um. Qual deles você quer? ${candidates.data.map(formatDateTime).join('; ')}.` };
     }
     if (['cancel', 'delete'].includes(action)) {
-      startPending(identity, PENDING_TYPES.CANCEL, { action, item: candidates.data[0] });
+      await startPending(identity, PENDING_TYPES.CANCEL, { action, item: candidates.data[0] });
       return {
         handled: true,
         text: action === 'delete'

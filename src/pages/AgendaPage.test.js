@@ -254,7 +254,7 @@ test('AgendaFormModal (criacao) e renderizado condicionalmente por isCreateOpen,
   const contents = await source('AgendaPage.jsx');
   assert.match(
     contents,
-    /\{isCreateOpen \? \(\s*\n\s*<AgendaFormModal\s*\n\s*key=\{`create-agenda-item-\$\{workspaceId\}`\}\s*\n\s*open\s*\n\s*mode="create"\s*\n\s*agenda=\{agenda\}\s*\n\s*clientsState=\{clientsState\}\s*\n\s*onClose=\{handleCloseCreate\}\s*\n\s*\/>\s*\n\s*\) : null\}/,
+    /\{isCreateOpen \? \(\s*\n\s*<AgendaFormModal\s*\n\s*key=\{`create-agenda-item-\$\{workspaceId\}`\}\s*\n\s*open\s*\n\s*mode="create"\s*\n\s*agenda=\{agenda\}\s*\n\s*clientsState=\{clientsState\}\s*\n\s*userId=\{user\?\.id\}\s*\n\s*workspaceId=\{workspaceId\}\s*\n\s*onClose=\{handleCloseCreate\}\s*\n\s*\/>\s*\n\s*\) : null\}/,
   );
 });
 
@@ -320,7 +320,7 @@ test('AgendaFormModal (edicao) e renderizado condicionalmente por editingItem, m
   const contents = await source('AgendaPage.jsx');
   assert.match(
     contents,
-    /\{editingItem \? \(\s*\n\s*<AgendaFormModal\s*\n\s*key=\{`edit-agenda-item-\$\{editingItem\.id\}`\}\s*\n\s*open\s*\n\s*mode="edit"\s*\n\s*item=\{editingItem\}\s*\n\s*agenda=\{agenda\}\s*\n\s*clientsState=\{clientsState\}\s*\n\s*onClose=\{handleCloseEdit\}\s*\n\s*\/>\s*\n\s*\) : null\}/,
+    /\{editingItem \? \(\s*\n\s*<AgendaFormModal\s*\n\s*key=\{`edit-agenda-item-\$\{editingItem\.id\}`\}\s*\n\s*open\s*\n\s*mode="edit"\s*\n\s*item=\{editingItem\}\s*\n\s*agenda=\{agenda\}\s*\n\s*clientsState=\{clientsState\}\s*\n\s*userId=\{user\?\.id\}\s*\n\s*workspaceId=\{workspaceId\}\s*\n\s*onClose=\{handleCloseEdit\}\s*\n\s*\/>\s*\n\s*\) : null\}/,
   );
 });
 

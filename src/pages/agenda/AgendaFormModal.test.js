@@ -33,15 +33,25 @@ test('monta o payload uma unica vez com buildAgendaItemCreationPayload, reutiliz
   assert.equal(occurrences.length, 1);
 });
 
-test('criacao envia client_operation_id estável; edicao envia updated_at esperado', async () => {
+test('criacao restaura operação persistida e envia seu UUID; edicao envia updated_at esperado', async () => {
   const contents = await source('AgendaFormModal.jsx');
   assert.match(
     contents,
-    /const result = isEditing\s*\n\s*\? await agenda\.updateItem\(item\.id, payload, \{ expectedUpdatedAt: item\.updated_at \}\)\s*\n\s*: await agenda\.createItem\(\{[\s\S]*?\.\.\.payload,[\s\S]*?client_operation_id: clientOperationId,[\s\S]*?\}\);/,
+    /const creationOperation = isEditing[\s\S]*?getOrCreateAgendaOperation\(\{[\s\S]*?userId,[\s\S]*?workspaceId,[\s\S]*?origin: CREATE_OPERATION_ORIGIN,[\s\S]*?intent: payload,[\s\S]*?\}\);/,
   );
   assert.match(
     contents,
-    /const \[clientOperationId\] = useState\(\(\) => \(\s*\n\s*isEditing \? null : createAgendaClientOperationId\(\)\s*\n\s*\)\);/,
+    /client_operation_id: creationOperation\.clientOperationId/,
+  );
+  assert.match(contents, /clearAgendaOperation\(\{[\s\S]*?clientOperationId: creationOperation\.clientOperationId/);
+  assert.match(contents, /AGENDA_ITEM_IDEMPOTENCY_CONFLICT/);
+});
+
+test('cancelamento explícito do formulário limpa a operação restaurada da origem', async () => {
+  const contents = await source('AgendaFormModal.jsx');
+  assert.match(
+    contents,
+    /function handleClose\(\) \{[\s\S]*?clearAgendaOperationsForOrigin\(\{[\s\S]*?userId,[\s\S]*?workspaceId,[\s\S]*?origin: CREATE_OPERATION_ORIGIN/,
   );
 });
 
@@ -274,7 +284,7 @@ test('mode default e "create"; isEditing deriva de mode === "edit"', async () =>
   const contents = await source('AgendaFormModal.jsx');
   assert.match(
     contents,
-    /function AgendaFormModal\(\{ open, mode = 'create', item = null, agenda, clientsState, onClose \}\) \{/,
+    /function AgendaFormModal\(\{[\s\S]*?mode = 'create',[\s\S]*?item = null,[\s\S]*?\}\) \{/,
   );
   assert.match(contents, /const isEditing = mode === 'edit';/);
 });

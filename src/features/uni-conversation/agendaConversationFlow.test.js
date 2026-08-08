@@ -10,7 +10,19 @@ const IDENTITY = Object.freeze({
 });
 const REFERENCE_DATE = '2026-08-08';
 
-function makeHarness(seed = [], { createOperationId, createResults = [] } = {}) {
+function createOperationStorage() {
+  const values = new Map();
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+}
+
+function makeHarness(seed = [], {
+  createOperationId,
+  createResults = [],
+  operationStorage = createOperationStorage(),
+} = {}) {
   const items = seed.map((item) => ({
     status: 'scheduled',
     is_all_day: false,
@@ -74,9 +86,11 @@ function makeHarness(seed = [], { createOperationId, createResults = [] } = {}) 
     },
   };
   return {
-    flow: createAgendaConversationFlow({ services, createOperationId }),
+    flow: createAgendaConversationFlow({ services, createOperationId, operationStorage }),
     calls,
     items,
+    operationStorage,
+    services,
   };
 }
 
@@ -139,6 +153,111 @@ test('retry da mesma intenção reutiliza client_operation_id após falha', asyn
   assert.equal(creates.length, 2);
   assert.equal(creates[0].payload.client_operation_id, creates[1].payload.client_operation_id);
   assert.equal(operationIds.length, 1);
+});
+
+test('timeout depois do commit + reload + retry reutiliza client_operation_id persistido', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const operationStorage = createOperationStorage();
+  const firstHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+    createResults: [{ data: null, error: { code: 'timeout' } }],
+  });
+  await turn(firstHarness.flow, 'Tenho dentista amanhã às 15h.');
+
+  const reloadedHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(reloadedHarness.flow, 'Tenho dentista amanhã às 15h.');
+
+  assert.equal(
+    firstHarness.calls[0].payload.client_operation_id,
+    reloadedHarness.calls[0].payload.client_operation_id,
+  );
+  assert.equal(operationIds.length, 1);
+});
+
+test('reload antes da confirmação restaura UUID ao repetir a intenção pendente', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const operationStorage = createOperationStorage();
+  const firstHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+
+  const reloadedHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(reloadedHarness.flow, 'Me lembra da reunião amanhã.');
+  await turn(reloadedHarness.flow, 'Sem horário.');
+
+  assert.equal(
+    reloadedHarness.calls[0].payload.client_operation_id,
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  );
+  assert.equal(operationIds.length, 1);
+});
+
+test('cancelamento explícito da intenção pendente limpa UUID restaurável', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const operationStorage = createOperationStorage();
+  const firstHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+  const canceled = await turn(firstHarness.flow, 'Cancelar.');
+  assert.match(canceled.text, /Não alterei/);
+
+  const nextHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(nextHarness.flow, 'Me lembra da reunião amanhã.');
+  await turn(nextHarness.flow, 'Sem horário.');
+
+  assert.equal(
+    nextHarness.calls[0].payload.client_operation_id,
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  );
+});
+
+test('conflito idempotente explícito limpa a operação antes de nova intenção', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const operationStorage = createOperationStorage();
+  const conflictHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+    createResults: [{ data: null, error: { code: 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT' } }],
+  });
+  const conflict = await turn(conflictHarness.flow, 'Tenho dentista amanhã às 15h.');
+  assert.match(conflict.text, /conflita/);
+
+  const nextHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(nextHarness.flow, 'Tenho dentista amanhã às 15h.');
+
+  assert.equal(
+    nextHarness.calls[0].payload.client_operation_id,
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  );
 });
 
 test('duas intenções legítimas iguais após sucesso recebem UUIDs diferentes', async () => {
@@ -393,6 +512,32 @@ test('pendência de Agenda pode ser abandonada antes de uma nova declaração fi
   assert.equal(financial.handled, false);
   assert.equal(flow.hasPending(IDENTITY), false);
   assert.equal(calls.length, 0);
+});
+
+test('abandono automático por nova fala não apaga operação; apenas cancelamento explícito limpa', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const operationStorage = createOperationStorage();
+  const firstHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+  assert.equal(firstHarness.flow.abandonPending(IDENTITY), true);
+
+  const restoredHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(restoredHarness.flow, 'Me lembra da reunião amanhã.');
+  await turn(restoredHarness.flow, 'Sem horário.');
+
+  assert.equal(
+    restoredHarness.calls[0].payload.client_operation_id,
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  );
 });
 
 test('conclusão marca o compromisso com a versão esperada', async () => {
