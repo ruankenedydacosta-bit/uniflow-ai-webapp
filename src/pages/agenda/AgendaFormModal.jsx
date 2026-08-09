@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import {
   clearAgendaOperation,
-  getCurrentAgendaOperation,
   getOrCreateAgendaOperation,
 } from '../../services/agendaOperationStore.js';
 import { AGENDA_IDEMPOTENCY_ENABLED } from '../../services/agendaIdempotencyConfig.js';
@@ -18,6 +17,10 @@ import {
   getAgendaItemErrorMessage,
   validateAgendaItemForm,
 } from './agendaFormUtils.js';
+import {
+  createAgendaFormSubmissionLifecycle,
+  runOwnedAgendaPreOperation,
+} from './agendaFormSubmissionLifecycle.js';
 
 // Derivado de AGENDA_ITEM_TYPES/AGENDA_ITEM_TYPE_LABELS (agendaFormUtils.js)
 // -- fonte unica compartilhada com AgendaPage.jsx, nunca uma segunda copia
@@ -62,32 +65,23 @@ function AgendaFormModal({
   const [validationError, setValidationError] = useState(null);
   const [mutationError, setMutationError] = useState(null);
   const isMutating = agenda.isMutating;
+  const submissionLifecycleRef = useRef(null);
+  const creationOperationRef = useRef(null);
+  if (submissionLifecycleRef.current == null) {
+    submissionLifecycleRef.current = createAgendaFormSubmissionLifecycle();
+  }
+
+  useEffect(() => () => {
+    submissionLifecycleRef.current.invalidate('unmount');
+  }, []);
 
   // Bloqueia fechamento (X, overlay, ESC ou botao Cancelar) enquanto uma
   // mutacao esta em andamento -- todos os gatilhos de fechamento do Modal
   // passam por este handler. Mesmo padrao de OpportunityFormModal/ClientFormModal.
   async function handleClose() {
     if (isMutating) return;
-    if (AGENDA_IDEMPOTENCY_ENABLED && !isEditing && userId && workspaceId) {
-      try {
-        const operation = await getCurrentAgendaOperation({
-          userId,
-          workspaceId,
-          origin: CREATE_OPERATION_ORIGIN,
-        });
-        if (operation) {
-          await clearAgendaOperation({
-            userId,
-            workspaceId,
-            origin: CREATE_OPERATION_ORIGIN,
-            clientOperationId: operation.clientOperationId,
-          });
-        }
-      } catch (error) {
-        setMutationError(getAgendaItemErrorMessage(error));
-        return;
-      }
-    }
+    submissionLifecycleRef.current.invalidate('close');
+    if (!(await clearCreationOperation(creationOperationRef.current))) return;
     onClose();
   }
 
@@ -112,16 +106,21 @@ function AgendaFormModal({
         origin: CREATE_OPERATION_ORIGIN,
         clientOperationId: operation.clientOperationId,
       });
+      if (creationOperationRef.current?.clientOperationId === operation.clientOperationId) {
+        creationOperationRef.current = null;
+      }
       return true;
     } catch (error) {
-      setMutationError(getAgendaItemErrorMessage(error));
+      if (submissionLifecycleRef.current.isMounted()) {
+        setMutationError(getAgendaItemErrorMessage(error));
+      }
       return false;
     }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (isMutating) return;
+    if (isMutating || submissionLifecycleRef.current.hasActive()) return;
 
     setValidationError(null);
     setMutationError(null);
@@ -133,55 +132,64 @@ function AgendaFormModal({
     }
 
     const payload = buildAgendaItemCreationPayload(form);
-    let creationOperation = null;
-    if (AGENDA_IDEMPOTENCY_ENABLED && !isEditing) {
-      try {
-        creationOperation = await getOrCreateAgendaOperation({
-          userId,
-          workspaceId,
-          origin: CREATE_OPERATION_ORIGIN,
-          intent: payload,
-        });
-      } catch (error) {
-        setMutationError(getAgendaItemErrorMessage(error));
+    const submissionOwner = submissionLifecycleRef.current.begin();
+    try {
+      const outcome = await runOwnedAgendaPreOperation({
+        lifecycle: submissionLifecycleRef.current,
+        owner: submissionOwner,
+        prepare: async () => {
+          if (!AGENDA_IDEMPOTENCY_ENABLED || isEditing) return null;
+          const operation = await getOrCreateAgendaOperation({
+            userId,
+            workspaceId,
+            origin: CREATE_OPERATION_ORIGIN,
+            intent: payload,
+          });
+          creationOperationRef.current = operation;
+          return operation;
+        },
+        mutate: (creationOperation) => (isEditing
+          ? agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
+          : agenda.createItem({
+            ...payload,
+            ...(creationOperation
+              ? { client_operation_id: creationOperation.clientOperationId }
+              : {}),
+          })),
+        onCancelledPrepared: clearCreationOperation,
+      });
+      if (outcome.status !== 'settled') return;
+
+      const { prepared: creationOperation, result } = outcome;
+      if (result && !result.error) {
+        if (!(await clearCreationOperation(creationOperation))) return;
+        if (!submissionLifecycleRef.current.isCurrent(submissionOwner)) return;
+        await agenda.refresh();
+        if (!submissionLifecycleRef.current.isCurrent(submissionOwner)) return;
+        onClose();
         return;
       }
-    }
-    const result = isEditing
-      ? await agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
-      : await agenda.createItem({
-        ...payload,
-        ...(creationOperation
-          ? { client_operation_id: creationOperation.clientOperationId }
-          : {}),
-      });
 
-    if (result && !result.error) {
-      if (!(await clearCreationOperation(creationOperation))) return;
-      // Reconcilia a lista com os filtros ativos (periodo/status/tipo) --
-      // o upsert local do hook nao valida contra os filtros da consulta
-      // atual, entao um item criado/editado fora do filtro so refletiria
-      // corretamente apos uma nova consulta real. Em edicao, se o item
-      // passou a nao corresponder mais aos filtros ativos, ele deve
-      // desaparecer da lista apos este refresh -- comportamento esperado,
-      // nao um bug.
-      await agenda.refresh();
-      onClose();
-      return;
-    }
+      if (result?.error?.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT' && creationOperation) {
+        if (!(await clearCreationOperation(creationOperation))) return;
+        if (!submissionLifecycleRef.current.isCurrent(submissionOwner)) return;
+      }
 
-    if (result?.error?.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT' && creationOperation) {
-      if (!(await clearCreationOperation(creationOperation))) return;
+      setMutationError(
+        getAgendaItemErrorMessage(
+          result?.error,
+          isEditing
+            ? 'Não foi possível atualizar o compromisso. Tente novamente.'
+            : 'Não foi possível criar o compromisso. Tente novamente.',
+        ),
+      );
+    } catch (error) {
+      if (submissionLifecycleRef.current.isCurrent(submissionOwner)) {
+        setMutationError(getAgendaItemErrorMessage(error));
+      }
+    } finally {
+      submissionLifecycleRef.current.complete(submissionOwner);
     }
-
-    setMutationError(
-      getAgendaItemErrorMessage(
-        result?.error,
-        isEditing
-          ? 'Não foi possível atualizar o compromisso. Tente novamente.'
-          : 'Não foi possível criar o compromisso. Tente novamente.',
-      ),
-    );
   }
 
   const hasActiveClients = activeClients.length > 0;

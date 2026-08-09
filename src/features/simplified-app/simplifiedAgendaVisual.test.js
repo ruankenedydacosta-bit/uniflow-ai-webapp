@@ -119,6 +119,17 @@ test('form: flag ON usa o store oficial e propaga client_operation_id; flag OFF 
   assert.match(form, /origin: CREATE_OPERATION_ORIGIN/);
 });
 
+test('form: cancelar/fechar/Escape/unmount invalida owner antes de a pre-operation poder criar', async () => {
+  const form = await source(`./${FORM_MODAL}`);
+  const ownerIndex = form.indexOf('const submissionOwner = submissionLifecycleRef.current.begin();');
+  const operationIndex = form.indexOf('getOrCreateAgendaOperation({', ownerIndex);
+  assert.ok(ownerIndex >= 0 && operationIndex > ownerIndex);
+  assert.match(form, /submissionLifecycleRef\.current\.invalidate\('close'\)/);
+  assert.match(form, /runOwnedAgendaPreOperation\(\{/);
+  assert.match(form, /onCancelledPrepared: clearCreationOperation/);
+  assert.match(form, /useEffect\(\(\) => \(\) => \{\s*submissionLifecycleRef\.current\.invalidate\('unmount'\);/);
+});
+
 test('Agenda simplificada fornece usuário e workspace ao mecanismo idempotente oficial', async () => {
   const page = await source('./SimplifiedAgendaPage.jsx');
   assert.match(page, /const \{ user, workspace \} = useSession\(\)/);

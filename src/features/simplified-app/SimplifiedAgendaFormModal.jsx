@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '../../components/ui/Button/Button.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
 import {
@@ -10,10 +10,13 @@ import {
 } from '../../pages/agenda/agendaFormUtils.js';
 import {
   clearAgendaOperation,
-  getCurrentAgendaOperation,
   getOrCreateAgendaOperation,
 } from '../../services/agendaOperationStore.js';
 import { AGENDA_IDEMPOTENCY_ENABLED } from '../../services/agendaIdempotencyConfig.js';
+import {
+  createAgendaFormSubmissionLifecycle,
+  runOwnedAgendaPreOperation,
+} from '../../pages/agenda/agendaFormSubmissionLifecycle.js';
 import { formatDayHeading } from './simplifiedAgendaCalendar.js';
 import styles from './simplifiedAgenda.module.css';
 
@@ -74,6 +77,15 @@ function SimplifiedAgendaFormModal({
   const [form, setForm] = useState(() => createInitialForm(item, defaultDay));
   const [localError, setLocalError] = useState(null);
   const isMutating = agenda.isMutating;
+  const submissionLifecycleRef = useRef(null);
+  const creationOperationRef = useRef(null);
+  if (submissionLifecycleRef.current == null) {
+    submissionLifecycleRef.current = createAgendaFormSubmissionLifecycle();
+  }
+
+  useEffect(() => () => {
+    submissionLifecycleRef.current.invalidate('unmount');
+  }, []);
 
   async function clearCreationOperation(operation) {
     if (!operation) return true;
@@ -84,28 +96,22 @@ function SimplifiedAgendaFormModal({
         origin: CREATE_OPERATION_ORIGIN,
         clientOperationId: operation.clientOperationId,
       });
+      if (creationOperationRef.current?.clientOperationId === operation.clientOperationId) {
+        creationOperationRef.current = null;
+      }
       return true;
     } catch (error) {
-      setLocalError(getAgendaItemErrorMessage(error));
+      if (submissionLifecycleRef.current.isMounted()) {
+        setLocalError(getAgendaItemErrorMessage(error));
+      }
       return false;
     }
   }
 
   async function handleClose() {
     if (isMutating) return;
-    if (AGENDA_IDEMPOTENCY_ENABLED && !isEditing && userId && workspaceId) {
-      try {
-        const operation = await getCurrentAgendaOperation({
-          userId,
-          workspaceId,
-          origin: CREATE_OPERATION_ORIGIN,
-        });
-        if (!(await clearCreationOperation(operation))) return;
-      } catch (error) {
-        setLocalError(getAgendaItemErrorMessage(error));
-        return;
-      }
-    }
+    submissionLifecycleRef.current.invalidate('close');
+    if (!(await clearCreationOperation(creationOperationRef.current))) return;
     onClose();
   }
 
@@ -114,7 +120,7 @@ function SimplifiedAgendaFormModal({
   }
 
   async function handleSave() {
-    if (isMutating) return;
+    if (isMutating || submissionLifecycleRef.current.hasActive()) return;
     setLocalError(null);
 
     const { dateValue, timeValue, ...rest } = form;
@@ -135,39 +141,54 @@ function SimplifiedAgendaFormModal({
     }
 
     const payload = buildAgendaItemCreationPayload(payloadForm);
-    let creationOperation = null;
-    if (AGENDA_IDEMPOTENCY_ENABLED && !isEditing) {
-      try {
-        creationOperation = await getOrCreateAgendaOperation({
-          userId,
-          workspaceId,
-          origin: CREATE_OPERATION_ORIGIN,
-          intent: payload,
-        });
-      } catch (error) {
-        setLocalError(getAgendaItemErrorMessage(error));
+    const submissionOwner = submissionLifecycleRef.current.begin();
+    try {
+      const outcome = await runOwnedAgendaPreOperation({
+        lifecycle: submissionLifecycleRef.current,
+        owner: submissionOwner,
+        prepare: async () => {
+          if (!AGENDA_IDEMPOTENCY_ENABLED || isEditing) return null;
+          const operation = await getOrCreateAgendaOperation({
+            userId,
+            workspaceId,
+            origin: CREATE_OPERATION_ORIGIN,
+            intent: payload,
+          });
+          creationOperationRef.current = operation;
+          return operation;
+        },
+        mutate: (creationOperation) => (isEditing
+          ? agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
+          : agenda.createItem({
+            ...payload,
+            ...(creationOperation
+              ? { client_operation_id: creationOperation.clientOperationId }
+              : {}),
+          })),
+        onCancelledPrepared: clearCreationOperation,
+      });
+      if (outcome.status !== 'settled') return;
+
+      const { prepared: creationOperation, result } = outcome;
+      if (result?.error) {
+        if (result.error.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT' && creationOperation) {
+          if (!(await clearCreationOperation(creationOperation))) return;
+          if (!submissionLifecycleRef.current.isCurrent(submissionOwner)) return;
+        }
+        setLocalError(getAgendaItemErrorMessage(result.error, 'Não foi possível salvar o compromisso. Tente novamente.'));
         return;
       }
-    }
-    const result = isEditing
-      ? await agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
-      : await agenda.createItem({
-        ...payload,
-        ...(creationOperation
-          ? { client_operation_id: creationOperation.clientOperationId }
-          : {}),
-      });
 
-    if (result?.error) {
-      if (result.error.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT' && creationOperation) {
-        if (!(await clearCreationOperation(creationOperation))) return;
+      if (!(await clearCreationOperation(creationOperation))) return;
+      if (!submissionLifecycleRef.current.isCurrent(submissionOwner)) return;
+      onClose();
+    } catch (error) {
+      if (submissionLifecycleRef.current.isCurrent(submissionOwner)) {
+        setLocalError(getAgendaItemErrorMessage(error));
       }
-      setLocalError(getAgendaItemErrorMessage(result.error, 'Não foi possível salvar o compromisso. Tente novamente.'));
-      return;
+    } finally {
+      submissionLifecycleRef.current.complete(submissionOwner);
     }
-
-    if (!(await clearCreationOperation(creationOperation))) return;
-    onClose();
   }
 
   const selectedDayHeading = form.dateValue

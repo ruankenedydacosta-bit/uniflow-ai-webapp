@@ -15,9 +15,12 @@ test('estado inicial usa createEmptyAgendaItemForm em criacao e createAgendaItem
   );
 });
 
-test('nao existe efeito de sincronizacao do form com props (modal desmonta ao fechar, useState basta)', async () => {
+test('único efeito é cleanup de ownership; não existe sincronização do form com props', async () => {
   const contents = await source('AgendaFormModal.jsx');
-  assert.doesNotMatch(contents, /useEffect/);
+  assert.equal(contents.match(/useEffect\(/g)?.length, 1);
+  assert.match(contents, /useEffect\(\(\) => \(\) => \{\s*submissionLifecycleRef\.current\.invalidate\('unmount'\);/);
+  const effect = contents.slice(contents.indexOf('useEffect('), contents.indexOf('}, []);') + 7);
+  assert.doesNotMatch(effect, /setForm/);
 });
 
 test('usa validateAgendaItemForm antes da mutation (mesma funcao, sem parametro de modo)', async () => {
@@ -37,7 +40,7 @@ test('flag ON restaura operação e envia UUID; OFF mantém payload legado', asy
   const contents = await source('AgendaFormModal.jsx');
   assert.match(
     contents,
-    /if \(AGENDA_IDEMPOTENCY_ENABLED && !isEditing\) \{[\s\S]*?creationOperation = await getOrCreateAgendaOperation\(\{[\s\S]*?intent: payload/,
+    /if \(!AGENDA_IDEMPOTENCY_ENABLED \|\| isEditing\) return null;[\s\S]*?const operation = await getOrCreateAgendaOperation\(\{[\s\S]*?intent: payload/,
   );
   assert.match(
     contents,
@@ -49,11 +52,19 @@ test('flag ON restaura operação e envia UUID; OFF mantém payload legado', asy
 
 test('cancelamento explícito limpa somente a operação atual pelo UUID', async () => {
   const contents = await source('AgendaFormModal.jsx');
-  assert.match(
-    contents,
-    /async function handleClose\(\) \{[\s\S]*?getCurrentAgendaOperation\(\{[\s\S]*?origin: CREATE_OPERATION_ORIGIN[\s\S]*?clearAgendaOperation\(\{[\s\S]*?clientOperationId: operation\.clientOperationId/,
-  );
+  assert.match(contents, /submissionLifecycleRef\.current\.invalidate\('close'\)/);
+  assert.match(contents, /clearCreationOperation\(creationOperationRef\.current\)/);
   assert.doesNotMatch(contents, /clearAgendaOperationsForOrigin|clearAgendaOperationByIntent/);
+});
+
+test('P1-E: owner nasce antes do pre-operation e é revalidado pela execução compartilhada', async () => {
+  const contents = await source('AgendaFormModal.jsx');
+  const ownerIndex = contents.indexOf('const submissionOwner = submissionLifecycleRef.current.begin();');
+  const operationIndex = contents.indexOf('getOrCreateAgendaOperation({', ownerIndex);
+  assert.ok(ownerIndex >= 0 && operationIndex > ownerIndex);
+  assert.match(contents, /runOwnedAgendaPreOperation\(\{/);
+  assert.match(contents, /onCancelledPrepared: clearCreationOperation/);
+  assert.match(contents, /useEffect\(\(\) => \(\) => \{\s*submissionLifecycleRef\.current\.invalidate\('unmount'\);/);
 });
 
 test('edicao nunca envia id dentro do payload (buildAgendaItemCreationPayload nao inclui id; item.id so e usado como argumento de updateItem)', async () => {
@@ -169,7 +180,7 @@ test('sucesso chama agenda.refresh() e depois onClose', async () => {
   const contents = await source('AgendaFormModal.jsx');
   assert.match(
     contents,
-    /if \(result && !result\.error\) \{[\s\S]*?await agenda\.refresh\(\);\s*\n\s*onClose\(\);\s*\n\s*return;\s*\n\s*\}/,
+    /if \(result && !result\.error\) \{[\s\S]*?await agenda\.refresh\(\);[\s\S]*?onClose\(\);\s*\n\s*return;\s*\n\s*\}/,
   );
 });
 
@@ -255,11 +266,11 @@ test('nao existe nenhuma UI de status no formulario (status permanece fora de es
   assert.doesNotMatch(contents, /setItemStatus/);
 });
 
-test('handleSubmit ignora chamadas concorrentes enquanto isMutating', async () => {
+test('handleSubmit ignora chamadas concorrentes durante mutation e pre-operation', async () => {
   const contents = await source('AgendaFormModal.jsx');
   assert.match(
     contents,
-    /async function handleSubmit\(event\) \{\s*\n\s*event\.preventDefault\(\);\s*\n\s*if \(isMutating\) return;/,
+    /async function handleSubmit\(event\) \{\s*\n\s*event\.preventDefault\(\);\s*\n\s*if \(isMutating \|\| submissionLifecycleRef\.current\.hasActive\(\)\) return;/,
   );
 });
 
