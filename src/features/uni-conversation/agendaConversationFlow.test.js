@@ -214,6 +214,81 @@ for (const text of ['Agenda amanhã 24h.', 'Agenda amanhã 10h60.']) {
   });
 }
 
+for (const text of [
+  'Agenda reunião amanhã dez e sessenta.',
+  'Agenda reunião amanhã 10h60.',
+  'Agenda reunião amanhã 25 horas.',
+  'Agenda reunião amanhã vinte e cinco horas.',
+  'Agenda reunião amanhã dez e setenta.',
+  'Agenda reunião amanhã duas e sessenta da tarde.',
+  'Agenda reunião amanhã 24h30.',
+  'Agenda reunião amanhã trinta horas.',
+  'Agenda reunião amanhã dez e quinze.',
+  'Agenda reunião amanhã dez e meia.',
+]) {
+  test(`parser rejeita a expressão temporal inválida inteira: ${text}`, () => {
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+  });
+}
+
+for (const [expression, expected] of [
+  ['00:00', '00:00'],
+  ['23:59', '23:59'],
+  ['24:00', null],
+  ['23:60', null],
+  ['09:05', '09:05'],
+  ['09:60', null],
+  ['10:', null],
+  ['0h', '00:00'],
+  ['23h', '23:00'],
+  ['24h', null],
+]) {
+  test(`fronteira numérica do horário: ${expression}`, () => {
+    assert.equal(
+      extractAgendaTime(`Agenda amanhã ${expression}`, { allowContextual: true }),
+      expected,
+    );
+  });
+}
+
+for (const malformed of [
+  'Agenda reunião amanhã dez e sessenta.',
+  'Agenda reunião amanhã 10h60.',
+  'Agenda reunião amanhã 25 horas.',
+  'Agenda reunião amanhã vinte e cinco horas.',
+  'Agenda reunião amanhã dez e setenta.',
+  'Agenda reunião amanhã duas e sessenta da tarde.',
+  'Agenda reunião amanhã 24h30.',
+]) {
+  test(`criação bloqueia horário malformado sem contaminar título: ${malformed}`, async () => {
+    const { flow, calls } = makeHarness();
+
+    const rejected = await turn(flow, malformed);
+
+    assert.match(rejected.text, /entender o horário/i);
+    assert.equal(rejected.handled, true);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.equal(flow.hasPending(IDENTITY), true);
+
+    const corrected = await turn(flow, 'dez horas');
+    assert.match(corrected.text, /Pronto/);
+    const create = calls.find((call) => call.operation === 'create');
+    assert.equal(create.payload.title, 'reuniao');
+    assert.equal(new Date(create.payload.starts_at).getHours(), 10);
+  });
+}
+
+test('edição com horário malformado não aplica alteração parcial', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+
+  const result = await turn(flow, 'Muda minha reunião para amanhã dez e sessenta.');
+
+  assert.match(result.text, /entender o horário/i);
+  assert.equal(calls.some((call) => call.operation === 'update'), false);
+});
+
 test('parser contextual permanece explicitamente desligado fora do contexto de Agenda', () => {
   assert.equal(extractAgendaTime('Agenda amanhã dez horas.'), null);
   assert.equal(extractAgendaTime('amanhã 10h'), null);
