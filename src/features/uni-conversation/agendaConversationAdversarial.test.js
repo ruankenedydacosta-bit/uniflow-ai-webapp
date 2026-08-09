@@ -116,7 +116,7 @@ test('adversarial: obrigação futura com valor preserva conflito e não grava a
 test('contrato: lançamento financeiro novo é desviado pelo gateway antes do fluxo de Agenda', () => {
   assert.equal(classifyIntent('Gastei R$ 50 no almoço').intent, 'register_expense');
   const abandonIndex = UNI_CHAT_SOURCE.indexOf(
-    'agendaConversationRef.current.abandonPending(agendaIdentity);',
+    'void agendaConversationRef.current.abandonPending(agendaIdentity).catch(() => {});',
   );
   const agendaHandleIndex = UNI_CHAT_SOURCE.indexOf('agendaConversationRef.current.handle({');
   assert.ok(abandonIndex >= 0 && agendaHandleIndex > abandonIndex);

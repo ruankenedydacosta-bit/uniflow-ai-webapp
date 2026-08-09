@@ -108,11 +108,22 @@ test('form: Cancelar não envia nada; Salvar passa por validateAgendaItemForm + 
   assert.match(form, /onClose\(\)/);
 });
 
-test('form: criação e edição são os MESMOS builders (createItem / updateItem), com client_operation_id via agendaService', async () => {
+test('form: flag ON usa o store oficial e propaga client_operation_id; flag OFF preserva payload legado', async () => {
   const form = await source(`./${FORM_MODAL}`);
   assert.match(form, /createAgendaItemEditForm/);
-  assert.match(form, /agenda\.createItem\(payload\)/);
-  assert.match(form, /agenda\.updateItem\(item\.id, payload\)/);
+  assert.match(form, /AGENDA_IDEMPOTENCY_ENABLED/);
+  assert.match(form, /getOrCreateAgendaOperation/);
+  assert.match(form, /clearAgendaOperation/);
+  assert.match(form, /client_operation_id: creationOperation\.clientOperationId/);
+  assert.match(form, /agenda\.updateItem\(item\.id, payload, \{ expectedUpdatedAt: item\.updated_at \}\)/);
+  assert.match(form, /origin: CREATE_OPERATION_ORIGIN/);
+});
+
+test('Agenda simplificada fornece usuário e workspace ao mecanismo idempotente oficial', async () => {
+  const page = await source('./SimplifiedAgendaPage.jsx');
+  assert.match(page, /const \{ user, workspace \} = useSession\(\)/);
+  assert.match(page, /userId=\{user\?\.id\}/);
+  assert.match(page, /workspaceId=\{workspaceId\}/);
 });
 
 test('form: mensagem de erro vem de getAgendaItemErrorMessage (nunca error.message cru)', async () => {

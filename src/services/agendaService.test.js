@@ -242,3 +242,16 @@ test('setAgendaItemStatus retorna conflito seguro quando a versão não existe m
   assert.match(body, /code: 'AGENDA_ITEM_CONFLICT'/);
   assert.doesNotMatch(body, /throw /);
 });
+
+test('deleteAgendaItem exige e aplica updated_at esperado na mesma exclusão', async () => {
+  const content = await source();
+  const body = content.slice(content.indexOf('export async function deleteAgendaItem'));
+
+  assert.match(body, /\{ expectedUpdatedAt \} = \{\}/);
+  assert.match(body, /if \(!expectedUpdatedAt \|\| Number\.isNaN/);
+  assert.match(body, /\.eq\('workspace_id', workspaceId\)/);
+  assert.match(body, /\.eq\('id', itemId\)/);
+  assert.match(body, /\.eq\('updated_at', expectedUpdatedAt\)/);
+  assert.match(body, /if \(!error && !data\)/);
+  assert.match(body, /code: 'AGENDA_ITEM_CONFLICT'/);
+});

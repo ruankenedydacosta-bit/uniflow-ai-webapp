@@ -202,9 +202,9 @@ export function useAgenda({
   );
 
   const removeItem = useCallback(
-    (itemId) =>
+    (itemId, options) =>
       performMutation(
-        () => deleteAgendaItem(workspaceId, itemId),
+        () => deleteAgendaItem(workspaceId, itemId, options),
         (data) => {
           if (!data?.id) return;
           setItems((current) => removeRecord(current, data.id));

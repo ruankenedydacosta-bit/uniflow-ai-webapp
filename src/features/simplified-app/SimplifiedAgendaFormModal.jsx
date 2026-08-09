@@ -8,6 +8,12 @@ import {
   shiftEndsAtOnEdit,
   validateAgendaItemForm,
 } from '../../pages/agenda/agendaFormUtils.js';
+import {
+  clearAgendaOperation,
+  getCurrentAgendaOperation,
+  getOrCreateAgendaOperation,
+} from '../../services/agendaOperationStore.js';
+import { AGENDA_IDEMPOTENCY_ENABLED } from '../../services/agendaIdempotencyConfig.js';
 import { formatDayHeading } from './simplifiedAgendaCalendar.js';
 import styles from './simplifiedAgenda.module.css';
 
@@ -53,14 +59,53 @@ function createInitialForm(item, defaultDay) {
   };
 }
 
-function SimplifiedAgendaFormModal({ item, defaultDay, agenda, onClose, onRequestDelete }) {
+const CREATE_OPERATION_ORIGIN = 'simplified-agenda-form';
+
+function SimplifiedAgendaFormModal({
+  item,
+  defaultDay,
+  agenda,
+  userId,
+  workspaceId,
+  onClose,
+  onRequestDelete,
+}) {
   const isEditing = Boolean(item);
   const [form, setForm] = useState(() => createInitialForm(item, defaultDay));
   const [localError, setLocalError] = useState(null);
   const isMutating = agenda.isMutating;
 
-  function handleClose() {
+  async function clearCreationOperation(operation) {
+    if (!operation) return true;
+    try {
+      await clearAgendaOperation({
+        userId,
+        workspaceId,
+        origin: CREATE_OPERATION_ORIGIN,
+        clientOperationId: operation.clientOperationId,
+      });
+      return true;
+    } catch (error) {
+      setLocalError(getAgendaItemErrorMessage(error));
+      return false;
+    }
+  }
+
+  async function handleClose() {
     if (isMutating) return;
+    if (AGENDA_IDEMPOTENCY_ENABLED && !isEditing && userId && workspaceId) {
+      try {
+        const operation = await getCurrentAgendaOperation({
+          userId,
+          workspaceId,
+          origin: CREATE_OPERATION_ORIGIN,
+        });
+        if (!(await clearCreationOperation(operation))) return;
+      } catch (error) {
+        setLocalError(getAgendaItemErrorMessage(error));
+        return;
+      }
+    }
     onClose();
   }
 
@@ -90,16 +135,39 @@ function SimplifiedAgendaFormModal({ item, defaultDay, agenda, onClose, onReques
     }
 
     const payload = buildAgendaItemCreationPayload(payloadForm);
+    let creationOperation = null;
+    if (AGENDA_IDEMPOTENCY_ENABLED && !isEditing) {
+      try {
+        creationOperation = await getOrCreateAgendaOperation({
+          userId,
+          workspaceId,
+          origin: CREATE_OPERATION_ORIGIN,
+          intent: payload,
+        });
+      } catch (error) {
+        setLocalError(getAgendaItemErrorMessage(error));
+        return;
+      }
+    }
     const result = isEditing
-      ? await agenda.updateItem(item.id, payload)
-      : await agenda.createItem(payload);
+      ? await agenda.updateItem(item.id, payload, { expectedUpdatedAt: item.updated_at })
+      : await agenda.createItem({
+        ...payload,
+        ...(creationOperation
+          ? { client_operation_id: creationOperation.clientOperationId }
+          : {}),
+      });
 
     if (result?.error) {
+      if (result.error.code === 'AGENDA_ITEM_IDEMPOTENCY_CONFLICT' && creationOperation) {
+        if (!(await clearCreationOperation(creationOperation))) return;
+      }
       setLocalError(getAgendaItemErrorMessage(result.error, 'Não foi possível salvar o compromisso. Tente novamente.'));
       return;
     }
 
-    if (!result?.error) onClose();
+    if (!(await clearCreationOperation(creationOperation))) return;
+    onClose();
   }
 
   const selectedDayHeading = form.dateValue

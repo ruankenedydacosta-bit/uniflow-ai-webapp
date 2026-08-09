@@ -373,7 +373,11 @@ export async function setAgendaItemStatus(
   return normalizeSingleResult(data, error, 'Item de agenda nao encontrado para definir o status.');
 }
 
-export async function deleteAgendaItem(workspaceId, itemId) {
+export async function deleteAgendaItem(
+  workspaceId,
+  itemId,
+  { expectedUpdatedAt } = {},
+) {
   if (!supabase) {
     return createUnavailableResult(null);
   }
@@ -382,13 +386,25 @@ export async function deleteAgendaItem(workspaceId, itemId) {
     return createValidationResult('Workspace ou item de agenda invalido para exclusao.');
   }
 
+  if (!expectedUpdatedAt || Number.isNaN(new Date(expectedUpdatedAt).getTime())) {
+    return createValidationResult('Versao esperada do item de agenda invalida.');
+  }
+
   const { data, error } = await supabase
     .from('agenda_items')
     .delete()
     .eq('workspace_id', workspaceId)
     .eq('id', itemId)
+    .eq('updated_at', expectedUpdatedAt)
     .select('id')
     .maybeSingle();
+
+  if (!error && !data) {
+    return createResult(null, {
+      code: 'AGENDA_ITEM_CONFLICT',
+      message: 'Este compromisso foi alterado ou removido em outro lugar. Atualize a Agenda e tente novamente.',
+    });
+  }
 
   return normalizeSingleResult(data, error, 'Item de agenda nao encontrado para exclusao.');
 }

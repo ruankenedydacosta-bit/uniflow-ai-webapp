@@ -758,7 +758,11 @@ export function createAgendaConversationFlow({
         : { handled: true, text: successText(action, result.data) };
     }
     if (action === 'delete') {
-      const result = await services.deleteAgendaItem(identity.workspaceId, item.id);
+      const result = await services.deleteAgendaItem(
+        identity.workspaceId,
+        item.id,
+        { expectedUpdatedAt: item.updated_at },
+      );
       return result.error
         ? { handled: true, text: serviceErrorText(result.error) }
         : { handled: true, text: successText(action, item) };
@@ -1123,11 +1127,19 @@ export function createAgendaConversationFlow({
         throw error;
       }
     },
-    abandonPending(identity) {
+    async abandonPending(identity) {
       if (!identity?.userId || !identity?.workspaceId || !identity?.conversationId) return false;
       const key = identityKey(identity);
-      if (!stacks.has(key)) return false;
-      stacks.delete(key);
+      const stack = stacks.get(key);
+      if (!stack) return false;
+      const active = getActivePendingAction(stack);
+      const transition = active
+        ? cancelPendingAction(stack, active.id, { cascade: true })
+        : { stack: { ...stack, actions: [] } };
+      setStack(identity, transition.stack);
+      if (active?.type === PENDING_TYPES.CREATE) {
+        await clearCreationOperation(identity, active.fields.clientOperationId);
+      }
       return true;
     },
     hasPending(identity) {

@@ -3722,7 +3722,7 @@ export default function UniChatPage({ variant = 'full' }) {
         || ACTION_STATEMENT_INTENTS.has(declaredIntent)
       );
     if (shouldAbandonAgendaForFinancial) {
-      agendaConversationRef.current.abandonPending(agendaIdentity);
+      void agendaConversationRef.current.abandonPending(agendaIdentity).catch(() => {});
     }
     const hasAgendaConversation = !shouldAbandonAgendaForFinancial
       && (hasPendingAgendaConversation || declaredIntent.startsWith('agenda_'));

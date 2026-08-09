@@ -29,7 +29,7 @@ function AgendaDeleteConfirmModal({ item, agenda, onClose }) {
     // Contrato real (useAgenda.js): agenda.removeItem sempre resolve para
     // { data, error, isConfigured }, nunca lanca excecao. Falha segura: um
     // resultado ausente/mal-formado NUNCA e tratado como sucesso.
-    const result = await agenda.removeItem(item.id);
+    const result = await agenda.removeItem(item.id, { expectedUpdatedAt: item.updated_at });
 
     if (result && !result.error) {
       await agenda.refresh();

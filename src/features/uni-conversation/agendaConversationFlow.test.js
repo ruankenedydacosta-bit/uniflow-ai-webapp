@@ -81,10 +81,13 @@ function makeHarness(seed = [], {
       item.updated_at = '2026-08-08T11:00:00.000Z';
       return { data: item, error: null };
     },
-    async deleteAgendaItem(workspaceId, itemId) {
-      calls.push({ operation: 'delete', workspaceId, itemId });
+    async deleteAgendaItem(workspaceId, itemId, options = {}) {
+      calls.push({ operation: 'delete', workspaceId, itemId, options });
       const index = items.findIndex((candidate) => candidate.id === itemId && candidate.workspace_id === workspaceId);
       if (index < 0) return { data: null, error: { code: 'not_found' } };
+      if (options.expectedUpdatedAt && options.expectedUpdatedAt !== items[index].updated_at) {
+        return { data: null, error: { code: 'AGENDA_ITEM_CONFLICT' } };
+      }
       const [data] = items.splice(index, 1);
       return { data: { id: data.id }, error: null };
     },
@@ -1133,7 +1136,7 @@ test('pendência de Agenda pode ser abandonada antes de uma nova declaração fi
   const { flow, calls } = makeHarness();
   await turn(flow, 'Me lembra da reunião amanhã.');
   assert.equal(flow.hasPending(IDENTITY), true);
-  assert.equal(flow.abandonPending(IDENTITY), true);
+  assert.equal(await flow.abandonPending(IDENTITY), true);
 
   const financial = await turn(flow, 'Gastei R$ 50 no almoço.');
   assert.equal(financial.handled, false);
@@ -1141,7 +1144,7 @@ test('pendência de Agenda pode ser abandonada antes de uma nova declaração fi
   assert.equal(calls.length, 0);
 });
 
-test('abandono automático por nova fala não apaga operação; apenas cancelamento explícito limpa', async () => {
+test('abandono explícito limpa somente a operação pendente antes de nova intenção', async () => {
   const operationIds = [
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
@@ -1152,7 +1155,7 @@ test('abandono automático por nova fala não apaga operação; apenas cancelame
     createOperationId: () => operationIds.shift(),
   });
   await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
-  assert.equal(firstHarness.flow.abandonPending(IDENTITY), true);
+  assert.equal(await firstHarness.flow.abandonPending(IDENTITY), true);
 
   const restoredHarness = makeHarness([], {
     operationStorage,
@@ -1163,7 +1166,7 @@ test('abandono automático por nova fala não apaga operação; apenas cancelame
 
   assert.equal(
     restoredHarness.calls[0].payload.client_operation_id,
-    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   );
 });
 
@@ -1234,6 +1237,21 @@ test('exclusão exige confirmação e usa a operação real de delete', async ()
   assert.match(second.text, /Excluí/);
   assert.equal(items.length, 0);
   assert.equal(calls.at(-1).operation, 'delete');
+  assert.equal(calls.at(-1).options.expectedUpdatedAt, '2026-08-08T10:00:00.000Z');
+});
+
+test('exclusão stale não remove versão alterada em outra aba', async () => {
+  const { flow, calls, items } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-08T12:00:00.000Z' },
+  ]);
+
+  assert.match((await turn(flow, 'Excluir minha reunião.')).text, /Quer mesmo excluir/);
+  items[0].updated_at = '2026-08-08T11:00:00.000Z';
+  const result = await turn(flow, 'sim');
+
+  assert.match(result.text, /mudou desde que você o consultou/);
+  assert.equal(items.length, 1);
+  assert.equal(calls.at(-1).options.expectedUpdatedAt, '2026-08-08T10:00:00.000Z');
 });
 
 test('isolamento de workspace impede encontrar item de outro espaço', async () => {

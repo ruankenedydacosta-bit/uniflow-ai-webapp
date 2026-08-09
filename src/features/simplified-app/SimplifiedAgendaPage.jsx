@@ -60,7 +60,7 @@ function ChevronLeftButtonIcon() {
 
 function SimplifiedAgendaPage() {
   const navigate = useNavigate();
-  const { workspace } = useSession();
+  const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
 
   const now = useMemo(() => new Date(), []);
@@ -235,6 +235,8 @@ function SimplifiedAgendaPage() {
           item={editingItem}
           defaultDay={new Date(`${selectedDayKey}T12:00:00`)}
           agenda={agenda}
+          userId={user?.id}
+          workspaceId={workspaceId}
           onClose={() => { setShowCreateModal(false); setEditingItem(null); }}
           onRequestDelete={(item) => { setShowCreateModal(false); setDeletingItem(item); }}
         />

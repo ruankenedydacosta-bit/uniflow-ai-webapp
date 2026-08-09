@@ -34,16 +34,17 @@ test('botao secundario: "Cancelar", variante ghost, chama handleClose', async ()
   );
 });
 
-test('chama agenda.removeItem(item.id) -- nao usa agenda.deleteItem (nao existe no hook)', async () => {
+test('chama removeItem com a versão esperada para impedir delete stale', async () => {
   const contents = await source('AgendaDeleteConfirmModal.jsx');
-  assert.match(contents, /agenda\.removeItem\(item\.id\)/);
+  assert.match(contents, /agenda\.removeItem\(item\.id, \{ expectedUpdatedAt: item\.updated_at \}\)/);
   assert.doesNotMatch(contents, /agenda\.deleteItem/);
 });
 
-test('nao envia payload nem objeto com id -- removeItem recebe somente item.id como argumento primitivo', async () => {
+test('não envia payload de dados; removeItem recebe apenas id e precondição de versão', async () => {
   const contents = await source('AgendaDeleteConfirmModal.jsx');
   assert.doesNotMatch(contents, /removeItem\(\{/);
   assert.doesNotMatch(contents, /payload/);
+  assert.match(contents, /expectedUpdatedAt: item\.updated_at/);
 });
 
 test('AGENDA_ITEM_NOT_FOUND continua seguro (getAgendaItemErrorMessage ja cobre, sem logica nova de erro aqui)', async () => {
