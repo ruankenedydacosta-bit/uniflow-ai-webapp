@@ -735,6 +735,7 @@ export default function UniChatPage({ variant = 'full' }) {
   // runDeterministicFinancialFlow, que por sua vez só roda quando
   // hasPendingConversation é falso -- ver sendText).
   async function attemptSemanticFinancialQuery(text, historySnapshot) {
+    const turnTokenAtStart = uniTurnTokenRef.current;
     if (!financialIntentInterpreter.isSupported()) return false;
 
     // Sprint 4 (Bloco 4.2) -- orquestrador central, atrás da própria flag
@@ -810,6 +811,7 @@ export default function UniChatPage({ variant = 'full' }) {
       );
 
       if (result.status === 'needs_clarification' && result.responseDraft) {
+        if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
         createAssistantResponse(result.responseDraft);
         return true;
       }
@@ -821,6 +823,7 @@ export default function UniChatPage({ variant = 'full' }) {
       // desnecessária no mesmo turno, arriscando inclusive prometer uma
       // capacidade que não existe. Responde direto, sem fallback.
       if (result.status === 'unsupported') {
+        if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
         createAssistantResponse(
           'Ainda não consigo te ajudar com isso especificamente, mas posso mostrar saldo, resumo do período, maiores despesas, receitas ou suas últimas movimentações.',
         );
@@ -913,6 +916,7 @@ export default function UniChatPage({ variant = 'full' }) {
           response: finalText,
         });
       }
+      if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
       createAssistantResponse(finalText, { highlight: result.structuredResult?.highlight ?? null });
       return true;
     }
@@ -927,6 +931,8 @@ export default function UniChatPage({ variant = 'full' }) {
       lastQuery: conversationalMemoryRef.current.getLastQuery(),
     });
     if (!outcome.handled) return false;
+
+    if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
 
     if (outcome.queryParams) {
       conversationalMemoryRef.current.remember({
@@ -992,6 +998,7 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   async function attemptFinancialPlan(text) {
+    const turnTokenAtStart = uniTurnTokenRef.current;
     if (!financialPlanService.isSupported()) return false;
 
     const pendingPlanSummary = isFinancialPlanActive()
@@ -1019,6 +1026,8 @@ export default function UniChatPage({ variant = 'full' }) {
       referenceDate: getLocalIsoDate(),
       workspaceType: financialWorkspaceType,
     });
+    // S4: turno novo durante a chamada neural anula o plano antigo.
+    if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
     setFinancialPlan(newPlan);
     createAssistantResponse(buildPlanSummaryText(newPlan));
     return true;
@@ -1033,7 +1042,7 @@ export default function UniChatPage({ variant = 'full' }) {
     setIsExecutingAction(true);
     setExecutionError(null);
 
-    // Uma operação por vez, pelo MESMO RPC atômico já usado pelo registro
+// Uma operação por vez, pelo MESMO RPC atômico já usado pelo registro
     // de uma única transação -- nunca em lote, nunca uma "transação
     // fantasma" que finge cobrir várias operações. Cada operação usa seu
     // próprio client_operation_id como chave de idempotência (o mesmo já
@@ -1048,22 +1057,28 @@ export default function UniChatPage({ variant = 'full' }) {
     const persistable = getPersistablePlanOperations(workingPlan)
       .filter((op) => op.status === PLAN_OPERATION_STATUS.READY);
 
-    for (const op of persistable) {
-      const result = await executeFinancialIntentAction(op.action, {
-        executeAtomicAction: executeConfirmedFinancialAction,
-      });
-      if (result?.error || !result?.data) {
-        workingPlan = markPlanOperationFailed(workingPlan, op.temporaryId);
+    try {
+      for (const op of persistable) {
+        const result = await executeFinancialIntentAction(op.action, {
+          executeAtomicAction: executeConfirmedFinancialAction,
+        });
+        if (result?.error || !result?.data) {
+          workingPlan = markPlanOperationFailed(workingPlan, op.temporaryId);
+          setFinancialPlan(workingPlan);
+          break;
+        }
+        workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId);
         setFinancialPlan(workingPlan);
-        break;
       }
-      workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId);
-      setFinancialPlan(workingPlan);
-    }
 
-    createAssistantResponse(buildPlanResultText(workingPlan));
-    setIsExecutingAction(false);
-    confirmingPlanRef.current = false;
+      createAssistantResponse(buildPlanResultText(workingPlan));
+    } finally {
+      // S6: rejeicao inesperada (rede/erro cru) nunca deixa a Uni travada
+      // com isExecutingAction=true e confirmingPlanRef=true -- o estado
+      // fica sempre recuperavel, pronto para retry.
+      setIsExecutingAction(false);
+      confirmingPlanRef.current = false;
+    }
 
     if ([PLAN_STATUS.COMPLETED, PLAN_STATUS.PARTIAL].includes(workingPlan.status)) {
       notifyFinancialDataChanged('uni-chat');
@@ -1234,6 +1249,11 @@ export default function UniChatPage({ variant = 'full' }) {
   // depois que a chamada resolve (o orquestrador nunca lanca e nunca expoe
   // o codigo do erro ao chamador).
   const aiCancelledRef = useRef(false);
+  // TOKEN DE TURNO (S4): incrementado a cada sendText. Cadeias assincronas
+  // (LLM, plano financeiro, semantica) capturam o token no inicio e so
+  // publicam a resposta se o token ainda for o atual -- resposta antiga
+  // chegando depois de um turno novo nunca sobrescreve a conversa atual.
+  const uniTurnTokenRef = useRef(0);
 
   useEffect(() => {
     activeIdRef.current = activeId;
@@ -2550,7 +2570,6 @@ export default function UniChatPage({ variant = 'full' }) {
     pendingRestoresRef.current += 1;
 
     dataService.loadMessages(activeId).then((loadedMessages) => {
-      pendingRestoresRef.current -= 1;
       if (requestId !== loadRequestIdRef.current) return;
       if (!loadedMessages || loadedMessages.length === 0) return;
       if (activeIdRef.current !== activeId) return;
@@ -2574,6 +2593,14 @@ export default function UniChatPage({ variant = 'full' }) {
           c.id === activeId ? { ...c, messages: loadedMessages, _messagesLoaded: true } : c,
         ),
       );
+    }).catch(() => {
+      // S8: falha de restore nunca pode deixar pendingRestoresRef preso --
+      // senão o autoplay de voz fica desarmado para sempre. O estado da
+      // conversa segue recuperável: o usuário pode tentar de novo.
+      if (requestId !== loadRequestIdRef.current) return;
+    }).finally(() => {
+      // decremento SEMPRE roda (sucesso ou erro), rearmando o autoplay.
+      pendingRestoresRef.current -= 1;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
@@ -2839,6 +2866,8 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   async function handleUnresolvedMessage(text, history) {
+    const turnTokenAtStart = uniTurnTokenRef.current;
+    if (!text.trim()) return;
     lastUnresolvedRef.current = { text, history };
     let llmText = null;
     // FASE 20.1 — Tool Calling: fonte bruta de tool calls vinda da camada
@@ -2991,6 +3020,11 @@ export default function UniChatPage({ variant = 'full' }) {
       toolResponseText: toolCallingResponseText,
       conversationStyle,
     });
+    // S4: resposta assincrona de um turno antigo nunca publica num turno
+    // novo (troca de conversa, nova pergunta no meio do LLM, retry
+    // cancelado por um novo sendText). A conversa segue recuperavel: o
+    // usuario pode perguntar de novo.
+    if (uniTurnTokenRef.current !== turnTokenAtStart) return;
     createAssistantResponse(finalResponseText || UNI_DETERMINISTIC_FALLBACK_TEXT);
   }
 
@@ -3668,6 +3702,10 @@ export default function UniChatPage({ variant = 'full' }) {
     const userMsg = buildUserMessage(text);
     pushMessage(userMsg);
     setInputValue('');
+    // TOKEN DE TURNO (S4): marca este sendText como o turno corrente --
+    // qualquer cadeia assincrona iniciada em turnos anteriores deve
+    // abortar a publicacao da resposta.
+    const turnToken = ++uniTurnTokenRef.current;
 
     const agendaIdentity = {
       userId: user?.id,
@@ -3790,6 +3828,9 @@ export default function UniChatPage({ variant = 'full' }) {
     syncMessageToSupabase(userMsg);
 
     setTimeout(() => {
+      // S4: se outro sendText rodou durante o delay, este turno esta
+      // obsoleto -- nao processa (evita resposta duplicada/concorrente).
+      if (uniTurnTokenRef.current !== turnToken) return;
       setIsTyping(false);
 
       // BLOCO E: heurística determinística (nunca IA) -- frases que
@@ -3946,6 +3987,8 @@ export default function UniChatPage({ variant = 'full' }) {
     try {
       // Guard: se a conversa mudou durante a execução, abortar.
       if (activeIdRef.current !== currentConversationId) {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
         return;
       }
       if (accountDependencyActive) {
@@ -3984,6 +4027,8 @@ export default function UniChatPage({ variant = 'full' }) {
 
         // Guard: se a conversa OU workspace mudou durante a execução, abortar.
         if (activeIdRef.current !== currentConversationId || effectiveWorkspace?.id !== currentWorkspaceId) {
+          setIsExecutingAction(false);
+          confirmingRef.current = false;
           return;
         }
 
@@ -4076,6 +4121,8 @@ export default function UniChatPage({ variant = 'full' }) {
 
         // Guard: se a conversa OU workspace mudou durante a execução, abortar.
         if (activeIdRef.current !== currentConversationId || effectiveWorkspace?.id !== currentWorkspaceId) {
+          setIsExecutingAction(false);
+          confirmingRef.current = false;
           return;
         }
 
@@ -4142,6 +4189,8 @@ export default function UniChatPage({ variant = 'full' }) {
 
       // Guard: se a conversa mudou durante a execução, abortar.
       if (activeIdRef.current !== currentConversationId) {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
         return;
       }
 
@@ -4176,6 +4225,8 @@ export default function UniChatPage({ variant = 'full' }) {
       // Guard: se a conversa mudou durante o refresh, abortar antes de
       // publicar qualquer coisa na conversa errada.
       if (activeIdRef.current !== currentConversationId) {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
         return;
       }
 
