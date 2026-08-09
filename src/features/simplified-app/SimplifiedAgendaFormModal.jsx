@@ -198,6 +198,9 @@ function SimplifiedAgendaFormModal({
   return (
     <Modal
       open
+      data-theme="uniflow"
+      className={styles.formDialog}
+      overlayClassName={styles.formOverlay}
       onClose={handleClose}
       closeOnOverlayClick={!isMutating}
       closeOnEsc={!isMutating}
@@ -235,6 +238,7 @@ function SimplifiedAgendaFormModal({
           <span>Título</span>
           <input
             type="text"
+            autoFocus
             value={form.title}
             onChange={(event) => update({ title: event.target.value })}
             aria-required="true"

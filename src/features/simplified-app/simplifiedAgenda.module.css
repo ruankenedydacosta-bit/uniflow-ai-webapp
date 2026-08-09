@@ -340,6 +340,28 @@
 
 /* ---------- Formulário simples (modal) ---------- */
 
+.formOverlay {
+  background: color-mix(in srgb, var(--uf-gray-950) 88%, transparent);
+}
+
+.formDialog {
+  color-scheme: dark;
+  border-color: var(--uf-color-border-strong);
+  background:
+    radial-gradient(circle at 88% 4%, rgba(37, 99, 235, .14), transparent 34%),
+    var(--uf-color-bg-elevated);
+  box-shadow: var(--uf-shadow-lg);
+}
+
+.formDialog > :last-child {
+  background: color-mix(in srgb, var(--uf-color-bg-elevated) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.formDialog > :last-child > * {
+  min-width: 108px;
+}
+
 .formFields {
   display: flex;
   flex-direction: column;
@@ -362,12 +384,20 @@
 .field textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-color-border-default);
   border-radius: 12px;
-  background: #050d1f;
-  color: #f8fafc;
+  background: var(--uf-color-bg-sunken);
+  color: var(--uf-color-text-primary);
   font: inherit;
   font-size: 15px;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible,
+.allDayRow input:focus-visible {
+  border-color: var(--uf-color-primary);
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
 }
 
 .field textarea {
@@ -430,6 +460,37 @@
 @media (max-width: 359px) {
   .page {
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+  }
+}
+
+@media (max-width: 480px) {
+  .formOverlay {
+    align-items: flex-end;
+    padding:
+      max(8px, env(safe-area-inset-top, 0px))
+      max(8px, env(safe-area-inset-right, 0px))
+      0
+      max(8px, env(safe-area-inset-left, 0px));
+  }
+
+  .formDialog {
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top, 0px)));
+    border-bottom: 0;
+    border-radius: var(--uf-radius-20) var(--uf-radius-20) 0 0;
+    overscroll-behavior: contain;
+    scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .formDialog > :last-child {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    flex-wrap: wrap;
+    padding-bottom: max(var(--uf-space-24), env(safe-area-inset-bottom, 0px));
+  }
+
+  .formDialog > :last-child > * {
+    flex: 1 1 108px;
   }
 }
 
