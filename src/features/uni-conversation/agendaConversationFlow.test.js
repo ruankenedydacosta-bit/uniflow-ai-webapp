@@ -289,6 +289,176 @@ test('edição com horário malformado não aplica alteração parcial', async (
   assert.equal(calls.some((call) => call.operation === 'update'), false);
 });
 
+test('AGENDA-PENDING-001 preserva título e data ao reparar horário com pontuação', async () => {
+  const { flow, calls } = makeHarness();
+
+  const invalid = await turn(flow, 'Agenda reunião amanhã dez e sessenta.');
+  assert.match(invalid.text, /entender o horário/i);
+
+  const repaired = await turn(flow, 'dez horas.');
+  assert.match(repaired.text, /Pronto/);
+  const create = calls.find((call) => call.operation === 'create');
+  assert.equal(create.payload.title, 'reuniao');
+  assert.match(create.payload.starts_at, /^2026-08-09T/);
+  assert.equal(new Date(create.payload.starts_at).getHours(), 10);
+});
+
+test('AGENDA-PENDING-001 continua recuperável após duas correções inválidas', async () => {
+  const { flow, calls } = makeHarness();
+
+  await turn(flow, 'Agenda reunião amanhã dez e sessenta.');
+  assert.match((await turn(flow, 'dez e setenta.')).text, /entender o horário/i);
+  assert.match((await turn(flow, 'dez horas.')).text, /Pronto/);
+  assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+});
+
+test('cancelar reparo temporal limpa pendência sem escrita', async () => {
+  const { flow, calls } = makeHarness();
+
+  await turn(flow, 'Agenda reunião amanhã dez e sessenta.');
+  assert.match((await turn(flow, 'Cancela.')).text, /Não alterei/);
+  assert.equal(flow.hasPending(IDENTITY), false);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+});
+
+for (const malformed of [
+  'Agenda reunião amanhã às 10 e meia.',
+  'Agenda reunião amanhã dez e meia.',
+  'Agenda reunião amanhã dez e quinze.',
+  'Agenda reunião amanhã dez e quarenta.',
+  'Agenda reunião amanhã uma e quinze.',
+  'Agenda reunião amanhã duas e meia da tarde.',
+]) {
+  test(`minutos falados não sofrem parse parcial: ${malformed}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, malformed);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+  });
+}
+
+for (const [text, expectedTitle] of [
+  ['Agenda reunião amanhã 10 pessoas.', 'reuniao 10 pessoas'],
+  ['Agenda reunião amanhã 5 convidados.', 'reuniao 5 convidados'],
+  ['Agenda reunião amanhã 20 clientes.', 'reuniao 20 clientes'],
+]) {
+  test(`quantidade contextual não vira horário: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, text);
+
+    assert.match(result.text, /horário/);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    await turn(flow, 'às 10 horas');
+    assert.equal(calls.find((call) => call.operation === 'create').payload.title, expectedTitle);
+  });
+}
+
+test('quantidade antes de horário explícito preserva título e usa o horário inequívoco', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião amanhã 3 pessoas às 10 horas.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'reuniao 3 pessoas');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+});
+
+test('período temporal numérico é removido integralmente do título', async () => {
+  const { flow, calls } = makeHarness();
+  assert.match((await turn(flow, 'Agenda reunião às 8 da manhã.')).text, /dia/);
+  await turn(flow, 'amanhã');
+
+  assert.equal(calls[0].payload.title, 'reuniao');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 8);
+});
+
+for (const range of [
+  'Agenda reunião amanhã de 10h às 11h.',
+  'Agenda reunião amanhã das 14h às 15h30.',
+  'Agenda reunião amanhã entre 9h e 10h.',
+]) {
+  test(`intervalo não é aceito parcialmente: ${range}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, range);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+  });
+}
+
+test('data relativa válida com horário explícito é consumida integralmente', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião daqui a dois dias às 10h.');
+
+  assert.match(result.text, /Pronto/);
+  assert.match(calls[0].payload.starts_at, /^2026-08-10T/);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.equal(calls[0].payload.title, 'reuniao');
+});
+
+test('duração relativa em horas não é reinterpretada parcialmente como data ou horário', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião daqui a duas horas.');
+
+  assert.match(result.text, /dia/);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+});
+
+test('semana que vem com horário inválido pede reparo sem parse parcial', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião semana que vem 10h60.');
+
+  assert.match(result.text, /entender o horário/i);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+});
+
+test('mês que vem permanece sem data inventada e não contamina o título', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião mês que vem às dez.');
+
+  assert.match(result.text, /dia/);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+  await turn(flow, 'dia 20');
+  assert.equal(calls.find((call) => call.operation === 'create').payload.title, 'reuniao');
+});
+
+test('nova consulta de Agenda não é sequestrada por criação pendente', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Me lembra da reunião amanhã.');
+
+  const result = await turn(flow, 'O que tenho sexta?');
+
+  assert.equal(result.handled, true);
+  assert.equal(calls.some((call) => call.operation === 'list'), true);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+});
+
+test('nova edição de Agenda não é sequestrada por criação pendente', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'consultation', workspace_id: IDENTITY.workspaceId, title: 'Consulta', starts_at: '2026-08-14T15:00:00.000Z' },
+  ]);
+  await turn(flow, 'Me lembra da reunião amanhã.');
+
+  const result = await turn(flow, 'Muda minha consulta para sexta às 16h.');
+
+  assert.match(result.text, /Atualizei/);
+  assert.equal(calls.some((call) => call.operation === 'update'), true);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+});
+
+test('nova criação de Agenda não é sequestrada por edição pendente', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+  await turn(flow, 'Muda minha reunião.');
+
+  const result = await turn(flow, 'Agenda consulta sexta às 15h.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls.some((call) => call.operation === 'create'), true);
+  assert.equal(calls.some((call) => call.operation === 'update'), false);
+});
+
 test('parser contextual permanece explicitamente desligado fora do contexto de Agenda', () => {
   assert.equal(extractAgendaTime('Agenda amanhã dez horas.'), null);
   assert.equal(extractAgendaTime('amanhã 10h'), null);

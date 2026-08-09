@@ -64,6 +64,8 @@ const AGENDA_DATE_CONTEXT_PATTERN = [
   'hoje',
   'amanha',
   'depois\\s+de\\s+amanha',
+  '(?:semana|mes)\\s+que\\s+vem',
+  'proxim[ao]\\s+(?:semana|mes)',
   '(?:domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?(?:\\s+que\\s+vem)?',
   'dia\\s+\\d{1,2}',
   '\\d{1,2}\\/\\d{1,2}(?:\\/\\d{2,4})?',
@@ -72,16 +74,16 @@ const SPOKEN_TIME_WITH_CUE = new RegExp(
   `\\b(?:as|das|para)\\s+(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?\\b`,
 );
 const SPOKEN_TIME_WITH_HOURS = new RegExp(
-  `^(${SPOKEN_HOUR_PATTERN})\\s+horas?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?$`,
+  `^(${SPOKEN_HOUR_PATTERN})\\s+horas?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?[.!?]?$`,
 );
 const CONTEXTUAL_NUMERIC_TIME = new RegExp(
-  `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(\\d{1,2})(?:[:h](\\d{2}))?\\s*(?:horas?|h)?\\b`,
+  `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(\\d{1,2})(?:[:h](\\d{2}))?(?:\\s*(?:horas?|h)\\b|(?=\\s*[.!?]?$))`,
 );
 const CONTEXTUAL_NUMERIC_TIME_WITH_PERIOD = new RegExp(
   `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(\\d{1,2})(?:[:h](\\d{2}))?\\s*(?:horas?|h)?\\s+(da\\s+manha|da\\s+tarde|da\\s+noite)\\b`,
 );
 const CONTEXTUAL_SPOKEN_TIME = new RegExp(
-  `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?\\b`,
+  `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(${SPOKEN_HOUR_PATTERN})(?:(?:\\s+horas?)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))|\\s+horas?\\b|(?=\\s*[.!?]?$))`,
 );
 const SPOKEN_TIME_WITH_PERIOD = new RegExp(
   `\\b(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?\\s+(da\\s+manha|da\\s+tarde|da\\s+noite)\\b`,
@@ -91,14 +93,14 @@ const SPOKEN_TIME_TITLE = new RegExp(
   'g',
 );
 const CONTEXTUAL_TIME_TITLE = new RegExp(
-  `(\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\b)\\s+(?:(?:\\d{1,2})(?:[:h]\\d{2})?\\s*(?:horas?|h)?|(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?)(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
+  `(\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\b)\\s+(?:(?:\\d{1,2})(?:(?:[:h]\\d{2})|\\s*(?:horas?|h)\\b)|(?:${SPOKEN_HOUR_PATTERN})\\s+horas?\\b|(?:(?:\\d{1,2})|(?:${SPOKEN_HOUR_PATTERN}))\\s+da\\s+(?:manha|tarde|noite)\\b|(?:(?:\\d{1,2})|(?:${SPOKEN_HOUR_PATTERN}))(?=\\s*[.!?]?$))`,
   'g',
 );
 const SPOKEN_PERIOD_TIME_TITLE = new RegExp(
   `\\b(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?\\s+da\\s+(?:manha|tarde|noite)\\b`,
   'g',
 );
-const NUMERIC_PERIOD_TIME_TITLE = /\b\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\s+da\s+(?:manha|tarde|noite)\b/g;
+const NUMERIC_PERIOD_TIME_TITLE = /\b(?:(?:as|das|para)\s+)?\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\s+da\s+(?:manha|tarde|noite)\b/g;
 const INVALID_TIME_CORRECTION_TEXT = 'Não consegui entender o horário. Pode informar novamente, por exemplo “10h30” ou “dez horas”?';
 
 const WEEKDAYS = Object.freeze([
@@ -197,6 +199,21 @@ function invalidTimeCandidate(normalized, allowContextual) {
   const prefix = allowContextual
     ? `(?:(?:${AGENDA_DATE_CONTEXT_PATTERN})|as|das|para)\\s+`
     : '(?:as|das|para)\\s+';
+  const range = normalized.match(
+    /\b(?:de|das|entre)\s+\d{1,2}(?:[:h]\d{0,2})?\s+(?:as|e)\s+\d{1,2}(?:[:h]\d{0,2})?\b/,
+  );
+  if (range) return { start: range.index, end: range.index + range[0].length };
+
+  const numericSpokenMinutesPattern = new RegExp(
+    `\\b${prefix}\\d{1,2}\\s+e\\s+(?:meia|${SPOKEN_NUMBER_TOKEN_PATTERN})(?:\\s+horas?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
+  );
+  const numericSpokenMinutes = normalized.match(numericSpokenMinutesPattern);
+  if (numericSpokenMinutes) {
+    return {
+      start: numericSpokenMinutes.index,
+      end: numericSpokenMinutes.index + numericSpokenMinutes[0].length,
+    };
+  }
   const numericPattern = new RegExp(
     `\\b${prefix}(\\d{1,3})(?:([:h])(\\d{0,3}))?\\s*(?:horas?|h)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?(?!\\w)`,
   );
@@ -306,14 +323,15 @@ function extractTitle(text) {
     .replace(/\b(?:ja\s+fiz|conclui|finalizei)\s+(?:aquele|aquela|o|a)?\s*/g, '')
     .replace(/\b(?:pode\s+)?marcar\s+como\s+concluida?\b/g, '')
     .replace(/\bdaqui\s+(?:a\s+|uns?\s+|umas?\s+|cerca\s+de\s+)?[\w\s]+?\s+(?:dias?|semanas?)\b/g, '')
-    .replace(CONTEXTUAL_TIME_TITLE, '$1')
+    .replace(CONTEXTUAL_TIME_TITLE, '$1 ')
     .replace(/\b(?:hoje|amanha|depois\s+de\s+amanha|fim\s+do\s+mes|final\s+do\s+mes)\b/g, '')
+    .replace(/\b(?:(?:semana|mes)\s+que\s+vem|proxim[ao]\s+(?:semana|mes))\b/g, '')
     .replace(/\b(?:(?:de|na|no|para|pra)\s+)?(?:domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?(?:\s+que\s+vem)?\b/g, '')
     .replace(/\b(?:(?:de|na|no|para|pra)\s+)?dia\s+\d{1,2}\b/g, '')
-    .replace(/\b(?:as|das|para)\s+\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?(?:\s+da\s+(?:manha|tarde|noite))?\b/g, '')
-    .replace(SPOKEN_TIME_TITLE, '')
-    .replace(SPOKEN_PERIOD_TIME_TITLE, '')
     .replace(NUMERIC_PERIOD_TIME_TITLE, '')
+    .replace(SPOKEN_PERIOD_TIME_TITLE, '')
+    .replace(/\b(?:as|das|para)\s+\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\b/g, '')
+    .replace(SPOKEN_TIME_TITLE, '')
     .replace(/\b(?:aquele|aquela)\s+(?:coisa|negocio|compromisso)\b/g, '')
     .replace(/[.,!?]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -622,6 +640,36 @@ export function createAgendaConversationFlow({
     });
   }
 
+  async function supersedePending(identity, active) {
+    if (active?.type === PENDING_TYPES.CREATE) {
+      await clearCreationOperation(identity, active.fields.clientOperationId);
+    }
+    const stack = getStack(identity);
+    if (!stack || !active) return;
+    const transition = cancelPendingAction(stack, active.id, { cascade: true });
+    setStack(identity, transition.stack);
+  }
+
+  function shouldSupersedePending(active, classification, text, referenceDate) {
+    if (!active || !AGENDA_INTENTS.has(classification.intent)) return false;
+    if (classification.intent === 'agenda_no_time' || active.type === PENDING_TYPES.FINANCIAL_CONFLICT) {
+      return false;
+    }
+    if (active.type === PENDING_TYPES.CREATE) {
+      if (!['agenda_reminder_create', 'agenda_schedule_create'].includes(classification.intent)) return true;
+      const candidateTitle = extractTitle(text);
+      const candidateDate = resolveAgendaDate(text, referenceDate);
+      return Boolean(
+        (candidateTitle && active.fields.title && candidateTitle !== active.fields.title)
+        || (candidateDate && active.fields.date && candidateDate !== active.fields.date),
+      );
+    }
+    if (active.type === PENDING_TYPES.EDIT) {
+      return ['agenda_reminder_create', 'agenda_schedule_create', 'agenda_query'].includes(classification.intent);
+    }
+    return false;
+  }
+
   async function startPending(identity, type, fields) {
     const base = getStack(identity) ?? createPendingActionStack(identity);
     let pendingFields = fields;
@@ -753,12 +801,19 @@ export function createAgendaConversationFlow({
       } else if (timeAnalysis.time) {
         fields.time = timeAnalysis.time;
         fields.allDay = false;
+        fields.repairField = null;
       }
       if (!fields.date) fields.date = resolveAgendaDate(text, referenceDate);
 
       const updated = updatePendingAction(stack, active.id, { fields });
       setStack(identity, updated.stack);
-      if (timeAnalysis.invalid) return { handled: true, text: INVALID_TIME_CORRECTION_TEXT };
+      if (timeAnalysis.invalid) {
+        const repair = updatePendingAction(updated.stack, updated.action.id, {
+          fields: { ...fields, repairField: 'time' },
+        });
+        setStack(identity, repair.stack);
+        return { handled: true, text: INVALID_TIME_CORRECTION_TEXT };
+      }
       if (!fields.title) return { handled: true, text: 'Claro. O que você quer que eu coloque na agenda?' };
       if (!fields.date) return { handled: true, text: `Em qual dia você quer marcar ${fields.title}?` };
       if (fields.time == null && !fields.allDay) {
@@ -911,10 +966,15 @@ export function createAgendaConversationFlow({
     }
 
     const agendaText = stripUniVocative(text);
+    const classification = classifyIntent(agendaText);
+    const currentStack = getStack(identity);
+    const currentPending = currentStack ? getActivePendingAction(currentStack) : null;
+    if (shouldSupersedePending(currentPending, classification, agendaText, referenceDate)) {
+      await supersedePending(identity, currentPending);
+    }
     const pendingResult = await handlePending(agendaText, identity, referenceDate);
     if (pendingResult) return pendingResult;
 
-    const classification = classifyIntent(agendaText);
     if (!AGENDA_INTENTS.has(classification.intent)) return { handled: false };
     if (classification.intent === 'agenda_no_time') {
       return { handled: true, text: 'Essa resposta precisa estar ligada a um compromisso que ainda estou montando.' };
@@ -936,6 +996,7 @@ export function createAgendaConversationFlow({
     if (['agenda_reminder_create', 'agenda_schedule_create'].includes(classification.intent)) {
       const timeAnalysis = analyzeAgendaTime(agendaText, { allowContextual: true });
       const fields = {
+        intent: classification.intent,
         title: classification.signals.includes('agenda_vague_subject') ? null : extractTitle(agendaText),
         date: resolveAgendaDate(agendaText, referenceDate),
         time: timeAnalysis.time,
@@ -943,6 +1004,7 @@ export function createAgendaConversationFlow({
         itemType: classification.intent === 'agenda_reminder_create' ? 'reminder' : 'appointment',
       };
       if (!fields.title || !fields.date || !fields.time) {
+        if (timeAnalysis.invalid) fields.repairField = 'time';
         await startPending(identity, PENDING_TYPES.CREATE, fields);
         if (timeAnalysis.invalid) return { handled: true, text: INVALID_TIME_CORRECTION_TEXT };
         if (!fields.title) return { handled: true, text: 'Claro. O que você quer que eu coloque na agenda?' };
