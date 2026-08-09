@@ -35,10 +35,7 @@ export function useUniVoiceTts() {
   const { user } = useSession();
   const [status, setStatus] = useState(VOICE_TTS_STATUS.IDLE);
   const [error, setError] = useState(null);
-  const requestOwnershipRef = useRef(null);
-  if (!requestOwnershipRef.current) {
-    requestOwnershipRef.current = createVoiceTtsRequestOwnership();
-  }
+  const requestOwnershipRef = useRef(createVoiceTtsRequestOwnership());
 
   const provider = useMemo(() => {
     const runtime = globalThis;
