@@ -27,7 +27,7 @@ test('cancelamento marca AI_STATUS.CANCELLED (nunca ERROR) -- mesma correção a
 test('cancel() só age durante LOADING, marca aiCancelledRef ANTES de chamar uniLlm.cancel()', () => {
   const fnBody = SOURCE.slice(SOURCE.indexOf('const cancel = useCallback'), SOURCE.indexOf('const retry = useCallback'));
   assert.match(fnBody, /if \(aiStatus !== AI_STATUS\.LOADING\) return;/);
-  assert.match(fnBody, /aiCancelledRef\.current = true;\s*\n\s*requestIdRef\.current \+= 1;\s*\n\s*uniLlm\.cancel\(\);/);
+  assert.match(fnBody, /aiCancelledRef\.current = true;\s*\n\s*requestIdRef\.current \+= 1;[\s\S]*releaseSupportRequestLock\(supportRequestInFlightRef\);\s*\n\s*uniLlm\.cancel\(\);/);
   assert.match(fnBody, /setIsTyping\(false\);/);
   assert.match(fnBody, /setAiStatus\(AI_STATUS\.CANCELLED\);/);
 });
@@ -63,4 +63,11 @@ test('resposta atrasada não atualiza estado depois de cancelamento ou nova soli
 test('desmontagem invalida a solicitação ativa e cancela o transporte', () => {
   assert.match(SOURCE, /mountedRef\.current = false;/);
   assert.match(SOURCE, /cancelLlmRef\.current\(\);/);
+});
+
+test('P1-12: lock síncrono bloqueia double submit no mesmo tick e é liberado em todos os términos', () => {
+  assert.match(SOURCE, /supportRequestInFlightRef = useRef\(false\)/);
+  const sendBlock = SOURCE.slice(SOURCE.indexOf('const sendText = useCallback'), SOURCE.indexOf('const cancel = useCallback'));
+  assert.match(sendBlock, /acquireSupportRequestLock\(supportRequestInFlightRef\)/);
+  assert.match(SOURCE, /releaseSupportRequestLock\(supportRequestInFlightRef\)/);
 });

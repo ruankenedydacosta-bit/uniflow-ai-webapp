@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useUniLlm, AI_STATUS } from '../uni-llm';
 import * as dataService from '../uni-chat/uniChatDataService';
 import { buildUserMessage, buildUniMessage } from '../uni-chat/uniChatAdapter';
+import { acquireSupportRequestLock, releaseSupportRequestLock } from './supportRequestLock.js';
 
 export const SUPPORT_FALLBACK_TEXT =
   'Não encontrei uma resposta confirmada para isso na base de conhecimento atual. ' +
@@ -25,6 +26,7 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
   const aiCancelledRef = useRef(false);
   const conversationIdRef = useRef(null);
   const requestIdRef = useRef(0);
+  const supportRequestInFlightRef = useRef(false);
   const mountedRef = useRef(true);
   const cancelLlmRef = useRef(uniLlm.cancel);
 
@@ -35,6 +37,7 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
   useEffect(() => () => {
     mountedRef.current = false;
     requestIdRef.current += 1;
+    releaseSupportRequestLock(supportRequestInFlightRef);
     cancelLlmRef.current();
   }, []);
 
@@ -78,6 +81,7 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
     }
 
     if (!mountedRef.current || requestId !== requestIdRef.current) return;
+    releaseSupportRequestLock(supportRequestInFlightRef);
     setIsTyping(false);
 
     const llmText = outcome?.text ?? null;
@@ -99,7 +103,7 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
 
   const sendText = useCallback((text) => {
     const trimmed = text.trim();
-    if (!trimmed || isTyping) return;
+    if (!trimmed || isTyping || !acquireSupportRequestLock(supportRequestInFlightRef)) return;
     setAiStatus(AI_STATUS.UNAVAILABLE);
     lastUnresolvedRef.current = null;
     const historySnapshot = messages;
@@ -116,6 +120,7 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
     if (aiStatus !== AI_STATUS.LOADING) return;
     aiCancelledRef.current = true;
     requestIdRef.current += 1;
+    releaseSupportRequestLock(supportRequestInFlightRef);
     uniLlm.cancel();
     setIsTyping(false);
     setAiStatus(AI_STATUS.CANCELLED);
@@ -124,7 +129,7 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
 
   const retry = useCallback(() => {
     const pending = lastUnresolvedRef.current;
-    if (!pending || isTyping) return;
+    if (!pending || isTyping || !acquireSupportRequestLock(supportRequestInFlightRef)) return;
     setAiStatus(AI_STATUS.UNAVAILABLE);
     void handleUnresolved(pending.text, pending.history);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -132,6 +137,7 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
 
   const reset = useCallback(() => {
     requestIdRef.current += 1;
+    releaseSupportRequestLock(supportRequestInFlightRef);
     uniLlm.cancel();
     setMessages([]);
     setConversationId(null);
