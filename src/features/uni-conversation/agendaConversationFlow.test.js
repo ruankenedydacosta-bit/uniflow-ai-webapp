@@ -281,6 +281,40 @@ for (const malformed of [
   });
 }
 
+for (const malformed of [
+  'Agenda reunião amanhã 10 horas e meia.',
+  'Agenda reunião amanhã dez horas e quinze.',
+  'Agenda reunião amanhã 10h e meia.',
+  'Agenda reunião amanhã duas horas e meia da tarde.',
+  'Agenda reunião amanhã uma hora e quinze.',
+]) {
+  test(`P1-A: minutos falados com marcador de hora são rejeitados como span único: ${malformed}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, malformed);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.equal(flow.hasPending(IDENTITY), true);
+  });
+}
+
+test('P1-A: conteúdo lexical comum depois de horário válido não é confundido com minuto falado', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião amanhã às dez horas com João.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'reuniao com joao');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+});
+
+test('P1-A: conjunção com texto comum não transforma horário válido em candidato malformado', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião amanhã às dez horas e banana.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls.some((call) => call.operation === 'create'), true);
+});
+
 test('edição com horário malformado não aplica alteração parcial', async () => {
   const { flow, calls } = makeHarness([
     { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
@@ -386,6 +420,21 @@ for (const range of [
 
     assert.match(result.text, /entender o horário/i);
     assert.equal(calls.some((call) => call.operation === 'create'), false);
+  });
+}
+
+for (const range of [
+  'Agenda reunião amanhã das 10 às 11.',
+  'Agenda reunião amanhã de dez horas até onze horas.',
+  'Agenda reunião amanhã das duas da tarde às três da tarde.',
+]) {
+  test(`P1-B: intervalo por extenso/até é rejeitado integralmente: ${range}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, range);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.equal(flow.hasPending(IDENTITY), true);
   });
 }
 

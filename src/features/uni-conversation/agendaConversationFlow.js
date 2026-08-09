@@ -199,19 +199,21 @@ function invalidTimeCandidate(normalized, allowContextual) {
   const prefix = allowContextual
     ? `(?:(?:${AGENDA_DATE_CONTEXT_PATTERN})|as|das|para)\\s+`
     : '(?:as|das|para)\\s+';
+  const rangePeriod = '(?:da\\s+(?:manha|tarde|noite))';
+  const rangeEndpoint = `(?:\\d{1,2}(?:[:h]\\d{0,2})?(?:\\s*horas?)?(?:\\s+${rangePeriod})?|(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+${rangePeriod})?)`;
   const range = normalized.match(
-    /\b(?:de|das|entre)\s+\d{1,2}(?:[:h]\d{0,2})?\s+(?:as|e)\s+\d{1,2}(?:[:h]\d{0,2})?\b/,
+    new RegExp(`\\b(?:de|das|entre)\\s+${rangeEndpoint}\\s+(?:as|ate|e)\\s+${rangeEndpoint}\\b`),
   );
   if (range) return { start: range.index, end: range.index + range[0].length };
 
-  const numericSpokenMinutesPattern = new RegExp(
-    `\\b${prefix}\\d{1,2}\\s+e\\s+(?:meia|${SPOKEN_NUMBER_TOKEN_PATTERN})(?:\\s+horas?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
+  const unsupportedSpokenMinutesPattern = new RegExp(
+    `\\b${prefix}(?:\\d{1,2}\\s*(?:horas?|h)?|(?:${SPOKEN_HOUR_PATTERN})\\s+horas?)\\s+e\\s+(?:meia|${SPOKEN_NUMBER_TOKEN_PATTERN})(?:\\s+horas?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
   );
-  const numericSpokenMinutes = normalized.match(numericSpokenMinutesPattern);
-  if (numericSpokenMinutes) {
+  const unsupportedSpokenMinutes = normalized.match(unsupportedSpokenMinutesPattern);
+  if (unsupportedSpokenMinutes) {
     return {
-      start: numericSpokenMinutes.index,
-      end: numericSpokenMinutes.index + numericSpokenMinutes[0].length,
+      start: unsupportedSpokenMinutes.index,
+      end: unsupportedSpokenMinutes.index + unsupportedSpokenMinutes[0].length,
     };
   }
   const numericPattern = new RegExp(
