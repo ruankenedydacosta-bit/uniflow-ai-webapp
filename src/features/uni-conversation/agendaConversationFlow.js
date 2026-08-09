@@ -202,7 +202,9 @@ function invalidTimeCandidate(normalized, allowContextual) {
   const rangePeriod = '(?:da\\s+(?:manha|tarde|noite))';
   const rangeEndpoint = `(?:\\d{1,2}(?:[:h]\\d{0,2})?(?:\\s*horas?)?(?:\\s+${rangePeriod})?|(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+${rangePeriod})?)`;
   const range = normalized.match(
-    new RegExp(`\\b(?:de|das|entre)\\s+${rangeEndpoint}\\s+(?:ate(?:\\s+(?:a|as))?|a|as|e)\\s+${rangeEndpoint}\\b`),
+    new RegExp(
+      `\\b(?:(?:(?:de|das)\\s+)?${rangeEndpoint}\\s+(?:ate(?:\\s+(?:a|as))?|a|as)\\s+${rangeEndpoint}|entre\\s+${rangeEndpoint}\\s+e\\s+${rangeEndpoint})\\b`,
+    ),
   );
   if (range) return { start: range.index, end: range.index + range[0].length };
 

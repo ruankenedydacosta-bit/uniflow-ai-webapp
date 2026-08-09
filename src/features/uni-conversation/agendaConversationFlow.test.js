@@ -475,6 +475,63 @@ test('P1-B Reviewer: intervalo com até às é rejeitado sem consumir o segundo 
 });
 
 for (const range of [
+  'Agenda reunião amanhã 10h às 11h.',
+  'Agenda reunião amanhã 10h até 11h.',
+  'Agenda reunião amanhã 10h até às 11h.',
+  'Agenda reunião amanhã dez horas até onze horas.',
+  'Agenda reunião amanhã duas da tarde às três da tarde.',
+]) {
+  test(`P1-B Reviewer: intervalo sem introdução é rejeitado integralmente: ${range}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, range);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.equal(flow.hasPending(IDENTITY), true);
+  });
+}
+
+for (const range of [
+  'Agenda reunião amanhã 10h até as 11h.',
+  'Agenda reunião sexta 10h às 11h.',
+  'Agenda reunião sexta 10h até 11h.',
+  'Agenda reunião dia 20 10h até às 11h.',
+  'Agenda reunião 10h às 11h.',
+  'Agenda reunião 10h até 11h.',
+  'Agenda reunião 10h até às 11h.',
+  'Agenda reunião dez horas às onze horas.',
+  'Agenda reunião oito da manhã às nove da manhã.',
+  'Agenda reunião duas da tarde até às três da tarde.',
+  'Agenda reunião 10:00 às 11:00.',
+  'Agenda reunião 10h30 às 11h30.',
+  'Agenda reunião 10h30 até 11h.',
+  'Agenda reunião 10h30 até às 11h.',
+]) {
+  test(`P1-B: matriz de intervalo sem introdução não sofre parse parcial: ${range}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, range);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.equal(flow.hasPending(IDENTITY), true);
+  });
+}
+
+for (const range of [
+  'Agenda reunião amanhã 10h60 até 11h.',
+  'Agenda reunião amanhã 10h até 25h.',
+  'Agenda reunião amanhã dez e sessenta até onze horas.',
+]) {
+  test(`P1-B: endpoint inválido impede qualquer criação parcial do range: ${range}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, range);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+  });
+}
+
+for (const range of [
   'Agenda reunião amanhã das 10 às 11.',
   'Agenda reunião amanhã de dez horas até onze horas.',
   'Agenda reunião amanhã de dez horas até às onze horas.',
