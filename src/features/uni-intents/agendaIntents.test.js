@@ -82,6 +82,11 @@ const AGENDA_CASES = [
     intent: 'agenda_edit',
   },
   {
+    label: 'muda minha reunião',
+    input: 'Muda minha reunião para sexta',
+    intent: 'agenda_edit',
+  },
+  {
     label: 'cancelar reunião',
     input: 'Cancelar a reunião de quinta-feira',
     intent: 'agenda_cancel',
