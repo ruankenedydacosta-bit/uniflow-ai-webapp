@@ -113,7 +113,7 @@ function detectAgendaIntent(normalizedText) {
   //    "tenho um compromisso amanhã" também contém "compromisso amanhã"
   //    (padrão de consulta).
   if (has([
-    /\b(?:marcar|agendar|criar)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|evento|consulta|agenda)\b/,
+    /\b(?:marcar|agendar|agenda|criar)\s+(?:(?:uma|um|a|as|o|os)\s+)?(?:reuniao|compromisso|evento|consulta|agenda)\b/,
     /\b(?:eu\s+)?(?:tenho|tive|vou\s+ter)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|consulta|evento)\b/,
     /\b(?:reuniao|compromisso|consulta|evento)\b[^.!?]*\b(?:daqui\s+a|daqui|em)\s*\d+\s*(?:dia|dias|semana|semanas|mes|meses|ano|anos)\b/,
     ...buildAgendaSchedulePatterns(),
@@ -125,7 +125,7 @@ function detectAgendaIntent(normalizedText) {
   if (has([
     /\b(?:qual|quais)\b.*\bagenda\b/,
     /\bminha\s+agenda\b/,
-    /\bagenda\s+(?:do|da)\s+(?:dia|hoje|semana|mes|proximo)\b/,
+    /\bagenda\s+(?:do|da|de)\s+(?:dia|hoje|amanha|semana|mes|proximo)\b/,
     /\b(?:proximos?|proximas?)\s+(?:compromissos?|eventos?|reunioes?|lembretes?)\b/,
     /\bcompromissos?\s+(?:de\s+)?(?:hoje|amanha|semana)\b/,
     /\bcompromissos?[^.!?]{0,40}\b(?:de\s+)?(?:hoje|amanha|semana)\b/,

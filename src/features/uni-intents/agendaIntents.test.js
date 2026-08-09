@@ -67,6 +67,16 @@ const AGENDA_CASES = [
     intent: 'agenda_schedule_create',
   },
   {
+    label: 'imperativo "agenda" cria compromisso',
+    input: 'Agenda uma reunião amanhã às 10',
+    intent: 'agenda_schedule_create',
+  },
+  {
+    label: '"agenda de hoje" é consulta direta',
+    input: 'Agenda de hoje',
+    intent: 'agenda_query',
+  },
+  {
     label: 'tenho compromisso',
     input: 'Eu tenho um compromisso amanhã às 15h',
     intent: 'agenda_schedule_create',
