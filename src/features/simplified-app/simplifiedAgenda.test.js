@@ -38,7 +38,14 @@ test('Lote D: rota de Agenda é SEMPRE registrada (acesso interno, não barra in
 
   assert.match(routes, /path: SIMPLIFIED_ROUTES\.AGENDA/);
   assert.doesNotMatch(routes, /SIMPLIFIED_FEATURE_FLAGS\.agendaEnabled/);
-  assert.match(wrapper, /<AgendaPage \/>/);
+  // LOTE AGENDA VISUAL: o wrapper simplificado deixou de embutir a lista
+  // legada e passou a ser o calendário visual. A página completa segue na
+  // rota legada /agenda (routes.jsx) e continua com o contrato real.
+  assert.doesNotMatch(wrapper, /<AgendaPage \/>/);
+  assert.match(wrapper, /useAgenda\(\{/);
+  assert.match(wrapper, /SimplifiedAgendaFormModal/);
+  assert.match(wrapper, /AgendaDeleteConfirmModal/);
+  assert.match(routes, /path: '\/agenda'/);
   assert.match(agenda, /useAgenda\(\{/);
   assert.match(agenda, /Carregando agenda/);
   assert.match(agenda, /Não foi possível carregar a agenda/);

@@ -18,6 +18,7 @@ import { APP_VERSION } from './appIdentity.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
   BankIcon,
+  CalendarIcon,
   CardIcon,
   CrownIcon,
   HelpIcon,
@@ -103,6 +104,18 @@ function SimplifiedAccountPage() {
   }
 
   const menuItems = [
+    // LOTE AGENDA VISUAL: a Agenda ganhou entrada própria logo abaixo do
+    // card "Seu plano" e ANTES de "Pagamento e assinatura". Não é subrota
+    // de Conta (não existe em ACCOUNT_SUBROUTES) -- navega pela rota
+    // interna /app/agenda (SIMPLIFIED_ROUTES.AGENDA), já sempre registrada.
+    {
+      id: 'agenda',
+      Icon: CalendarIcon,
+      tone: 'purple',
+      title: 'Agenda',
+      subtitle: 'Seus compromissos e lembretes',
+      to: SIMPLIFIED_ROUTES.AGENDA,
+    },
     {
       id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
       Icon: CardIcon,
@@ -222,7 +235,7 @@ function SimplifiedAccountPage() {
 
       <section className={styles.menuCard} aria-label="Configurações da conta">
         {menuItems.map((item) => (
-          <button key={item.id} type="button" className={styles.menuRow} onClick={() => goTo(item.id)}>
+          <button key={item.id} type="button" className={styles.menuRow} onClick={() => (item.to ? navigate(item.to) : goTo(item.id))}>
             <span className={`${styles.menuIcon} ${styles[`tone${item.tone.charAt(0).toUpperCase()}${item.tone.slice(1)}`]}`} aria-hidden="true">
               <item.Icon />
             </span>

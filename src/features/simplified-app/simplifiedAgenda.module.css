@@ -1,0 +1,446 @@
+.page {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    34px
+    max(18px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #f8fafc;
+}
+
+/* ---------- Cabeçalho (mesmo padrão de Pagamento e assinatura) ---------- */
+
+.header {
+  min-height: 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.titleGroup {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 50%;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.titleGroup h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(20px, 5.6vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Navegação de meses ---------- */
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.monthArrow {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 14px;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.monthArrow svg,
+.rotatedRight svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.rotatedRight svg {
+  display: block;
+  transform: rotate(180deg);
+}
+
+.monthLabel {
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(86, 109, 151, .3);
+  border-radius: 14px;
+  background: rgba(10, 22, 46, .6);
+  color: #f8fafc;
+  font: inherit;
+  font-size: clamp(17px, 4.6vw, 22px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+/* ---------- Grade do calendário ---------- */
+
+.calendarCard {
+  padding: 12px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 20px;
+  background:
+    linear-gradient(130deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+}
+
+.weekdayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.weekdayLabel {
+  text-align: center;
+  color: #93a3c4;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.dayCell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #e7ecf6;
+  cursor: pointer;
+}
+
+.dayNumber {
+  font-size: clamp(14px, 3.8vw, 17px);
+  font-weight: 700;
+}
+
+.outsideMonth .dayNumber {
+  color: #51607c;
+  font-weight: 500;
+}
+
+.hasEvents .dayNumber {
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.today .dayNumber {
+  color: #7cc4ff;
+}
+
+.today {
+  border-color: rgba(124, 196, 255, .55);
+  background: rgba(56, 130, 246, .14);
+}
+
+.selected {
+  border-color: rgba(124, 196, 255, .85);
+  background: rgba(56, 130, 246, .32);
+}
+
+.eventDot {
+  position: absolute;
+  bottom: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #6aa9f5;
+}
+
+.selected .eventDot {
+  background: #cfe2ff;
+}
+
+/* ---------- Painel do dia selecionado ---------- */
+
+.dayPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dayPanelHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.dayPanelHeader h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(16px, 4.4vw, 20px);
+  font-weight: 800;
+  line-height: 1.25;
+  text-transform: capitalize;
+}
+
+.addButton {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(100deg, #2563eb, #7c3aed);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.stateMessage {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(20, 32, 64, .5);
+  color: #a8b2c5;
+  font-size: 14.5px;
+}
+
+.errorBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.retryButton {
+  align-self: flex-start;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 14px;
+  background: rgba(14, 31, 62, .7);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dayItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.itemButton {
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 14px;
+  background:
+    linear-gradient(130deg, rgba(14, 31, 62, .55), rgba(4, 13, 33, .6));
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemTime {
+  flex: 0 0 auto;
+  min-width: 72px;
+  color: #7cc4ff;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.itemTitle {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: #e7ecf6;
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemChevron {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: #7f8db0;
+}
+
+.itemChevron svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+/* ---------- Formulário simples (modal) ---------- */
+
+.formFields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field span {
+  color: #9fb0d4;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(86, 109, 151, .42);
+  border-radius: 12px;
+  background: #050d1f;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 15px;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.fieldDisabled input {
+  opacity: .55;
+}
+
+.fieldRequired span::after {
+  content: ' *';
+  color: #f87171;
+}
+
+.allDayRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #e0e7f5;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.allDayRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb;
+}
+
+.reminderNote {
+  margin: 0;
+  color: #7f8db0;
+  font-size: 12.5px;
+}
+
+.formError {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, .12);
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+/* ---------- Acessibilidade ---------- */
+
+.backButton:focus-visible,
+.monthArrow:focus-visible,
+.monthLabel:focus-visible,
+.dayCell:focus-visible,
+.addButton:focus-visible,
+.retryButton:focus-visible,
+.itemButton:focus-visible {
+  outline: 3px solid rgba(91, 141, 239, .62);
+  outline-offset: 2px;
+}
+
+@media (max-width: 359px) {
+  .page {
+    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dayCell,
+  .itemButton,
+  .monthArrow,
+  .monthLabel,
+  .addButton,
+  .retryButton,
+  .backButton {
+    transition: none;
+  }
+}
