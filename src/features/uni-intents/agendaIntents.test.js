@@ -67,6 +67,11 @@ const AGENDA_CASES = [
     intent: 'agenda_schedule_create',
   },
   {
+    label: 'consulta natural com abreviação, finalidade e data',
+    input: 'Consulta com Dr. Paulo para levar os exames amanhã às 14h',
+    intent: 'agenda_schedule_create',
+  },
+  {
     label: 'imperativo "agenda" cria compromisso',
     input: 'Agenda uma reunião amanhã às 10',
     intent: 'agenda_schedule_create',

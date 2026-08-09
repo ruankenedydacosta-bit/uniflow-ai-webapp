@@ -119,6 +119,7 @@ function detectAgendaIntent(normalizedText) {
     /^agenda\s+(?!de\b)(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
     /^marca(?:r)?\s+(?:reuniao\s+)?(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
     /^(?:uma\s+)?(?:reuniao|compromisso|consulta|evento)\b[^.!?]{0,80}\b(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
+    /^(?:uma\s+)?consulta\b[\s\S]{0,120}\b(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
     ...buildAgendaSchedulePatterns(),
   ])) {
     return { intent: 'agenda_schedule_create', confidence: 0.97, signals: ['agenda_schedule_heuristic'] };
