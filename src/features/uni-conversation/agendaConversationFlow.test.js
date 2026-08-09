@@ -257,6 +257,9 @@ for (const [expression, expected] of [
 for (const malformed of [
   'Agenda reunião amanhã dez e sessenta.',
   'Agenda reunião amanhã 10h60.',
+  'Agenda reunião amanhã 10:60.',
+  'Agenda reunião amanhã 23h60.',
+  'Agenda reunião amanhã 25h.',
   'Agenda reunião amanhã 25 horas.',
   'Agenda reunião amanhã vinte e cinco horas.',
   'Agenda reunião amanhã dez e setenta.',
@@ -282,7 +285,14 @@ for (const malformed of [
 }
 
 for (const malformed of [
+  'Agenda reunião amanhã às 10 horas e 30 minutos.',
+  'Agenda reunião amanhã 10 horas e 30 minutos.',
+  'Agenda reunião amanhã às 10 horas e 15 minutos.',
+  'Agenda reunião amanhã às 10 horas e 45 minutos.',
+  'Agenda reunião amanhã 10h e 30.',
+  'Agenda reunião amanhã 10h e 30 minutos.',
   'Agenda reunião amanhã 10 horas e meia.',
+  'Agenda reunião amanhã dez horas e trinta minutos.',
   'Agenda reunião amanhã dez horas e quinze.',
   'Agenda reunião amanhã 10h e meia.',
   'Agenda reunião amanhã duas horas e meia da tarde.',
@@ -313,6 +323,32 @@ test('P1-A: conjunção com texto comum não transforma horário válido em cand
 
   assert.match(result.text, /Pronto/);
   assert.equal(calls.some((call) => call.operation === 'create'), true);
+});
+
+for (const [text, expectedTitle] of [
+  ['Agenda reunião amanhã às 10 horas e falar com João.', 'reuniao e falar com joao'],
+  ['Agenda reunião amanhã às 10 horas sobre vendas.', 'reuniao sobre vendas'],
+  ['Agenda reunião amanhã às 10h com João e Maria.', 'reuniao com joao e maria'],
+  ['Agenda reunião amanhã às 10h até amanhã.', null],
+]) {
+  test(`P1-A/B: texto não temporal após horário único permanece válido: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, text);
+
+    assert.match(result.text, /Pronto/);
+    assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+    assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+    if (expectedTitle) assert.equal(calls[0].payload.title, expectedTitle);
+  });
+}
+
+test('P1-A Reviewer: minuto numérico falado é rejeitado sem criação parcial', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião amanhã às 10 horas e 30 minutos.');
+
+  assert.match(result.text, /entender o horário/i);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+  assert.equal(flow.hasPending(IDENTITY), true);
 });
 
 test('edição com horário malformado não aplica alteração parcial', async () => {
@@ -411,7 +447,13 @@ test('período temporal numérico é removido integralmente do título', async (
 
 for (const range of [
   'Agenda reunião amanhã de 10h às 11h.',
+  'Agenda reunião amanhã de 10h até 11h.',
+  'Agenda reunião amanhã de 10h até às 11h.',
+  'Agenda reunião amanhã de 10h até as 11h.',
   'Agenda reunião amanhã das 14h às 15h30.',
+  'Agenda reunião amanhã das 10 até às 11.',
+  'Agenda reunião amanhã das 10 até as 11.',
+  'Agenda reunião amanhã das 10h30 às 11h30.',
   'Agenda reunião amanhã entre 9h e 10h.',
 ]) {
   test(`intervalo não é aceito parcialmente: ${range}`, async () => {
@@ -423,9 +465,21 @@ for (const range of [
   });
 }
 
+test('P1-B Reviewer: intervalo com até às é rejeitado sem consumir o segundo endpoint', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião amanhã de 10h30 até às 11h.');
+
+  assert.match(result.text, /entender o horário/i);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+  assert.equal(flow.hasPending(IDENTITY), true);
+});
+
 for (const range of [
   'Agenda reunião amanhã das 10 às 11.',
   'Agenda reunião amanhã de dez horas até onze horas.',
+  'Agenda reunião amanhã de dez horas até às onze horas.',
+  'Agenda reunião amanhã das dez horas às onze horas.',
+  'Agenda reunião amanhã entre nove e dez horas.',
   'Agenda reunião amanhã das duas da tarde às três da tarde.',
 ]) {
   test(`P1-B: intervalo por extenso/até é rejeitado integralmente: ${range}`, async () => {
