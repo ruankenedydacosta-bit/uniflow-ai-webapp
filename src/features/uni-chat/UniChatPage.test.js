@@ -3598,3 +3598,101 @@ test('Gate 0: fatos e safety do runtime financeiro dependem de validadores reais
   assert.doesNotMatch(page, /factsValidated:\s*true/);
   assert.doesNotMatch(page, /const safetyApproved = true/);
 });
+
+// ============================================================================
+// S6/S7 (lote estabilidade): nenhuma falha pode deixar a Uni travada --
+// confirmFinancialPlan usa try/finally que SEMPRE zera isExecutingAction e
+// confirmingPlanRef, e os guards de troca de conversa de
+// handleConfirmAction também zetam os flags antes de abortar.
+// ============================================================================
+
+test('S6: confirmFinancialPlan libera isExecutingAction/confirmingPlanRef em finally (nunca trava após erro)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('async function confirmFinancialPlan() {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 2600);
+  // o reset está dentro de um bloco finally que SEMPRE roda, sucesso ou erro
+  assert.match(slice, /try \{/);
+  assert.match(slice, /\} finally \{/);
+  const finallyBlock = slice.slice(slice.indexOf('} finally {'), slice.indexOf('} finally {') + 300);
+  assert.match(finallyBlock, /setIsExecutingAction\(false\)/);
+  assert.match(finallyBlock, /confirmingPlanRef\.current = false/);
+});
+
+test('S6: confirmFinancialPlan preserva o flow de notificação/sucesso SEM prender os flags', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('async function confirmFinancialPlan() {');
+  const slice = page.slice(idx, idx + 2800);
+  // o fluxo de sucesso continua depois do finally: notify para completed/partial
+  assert.match(slice, /notifyFinancialDataChanged\('uni-chat'\)/);
+  // e a publicação da resposta acontece dentro do try (antes do finally)
+  assert.ok(slice.indexOf('createAssistantResponse(buildPlanResultText') < slice.indexOf('} finally'));
+});
+
+test('S7: guards de troca de conversa em handleConfirmAction zeram isExecutingAction/confirmingRef antes de abortar', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('async function handleConfirmAction(id) {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, page.length);
+  // ambos os guards "conversa mudou" restauram os flags
+  assert.ok(
+    slice.match(/activeIdRef\.current !== currentConversationId\s*\)\s*\{\s*setIsExecutingAction\(false\);\s*confirmingRef\.current = false;/),
+    'guard de conversa deve restaurar flags',
+  );
+  assert.ok(
+    (slice.match(/activeIdRef\.current !== currentConversationId \|\| effectiveWorkspace\?\.id !== currentWorkspaceId\s*\)\s*\{\s*setIsExecutingAction\(false\);\s*confirmingRef\.current = false;/g) ?? []).length >= 2,
+    'guards de workspace devem restaurar flags',
+  );
+});
+
+// ============================================================
+// S4 (lote estabilidade): resposta assíncrona de turno antigo
+// nunca sobrescreve um turno novo -- token de turno único por
+// sendText, verificado pelas cadeias que publicam resposta.
+// ============================================================
+
+test('S4: sendText captura token de turno único por envio', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('function sendText(text, metadata) {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 1400);
+  assert.match(slice, /const turnToken = \+\+uniTurnTokenRef\.current;/);
+});
+
+test('S4: setTimeout do think-delay aborta quando o turno mudou (sem resposta duplicada/concorrente)', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /uniTurnTokenRef\.current !== turnToken\) return;/);
+});
+
+test('S4: handleUnresolvedMessage aborta publicação se um novo turno começou durante o LLM', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf('async function handleUnresolvedMessage(text, history) {');
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 400);
+  assert.match(slice, /const turnTokenAtStart = uniTurnTokenRef\.current;/);
+  // guard logo antes de createAssistantResponse final
+  assert.match(page, /if \(uniTurnTokenRef\.current !== turnTokenAtStart\) return;\s*\n\s*createAssistantResponse/);
+});
+
+test('S4: attemptFinancialPlan e attemptSemanticFinancialQuery usam o mesmo token anti-stale', async () => {
+  const page = await source('UniChatPage.jsx');
+  await assert.doesNotReject(async () => {
+    assert.match(page, /async function attemptFinancialPlan\(text\) \{\s*\n\s*const turnTokenAtStart = uniTurnTokenRef\.current;/);
+    assert.match(page, /async function attemptSemanticFinancialQuery\(text, historySnapshot\) \{\s*\n\s*const turnTokenAtStart = uniTurnTokenRef\.current;/);
+  });
+});
+
+// ============================================================
+// S8 (lote estabilidade): falha de restauração do Supabase nunca
+// desarma o autoplay para sempre -- decremento do
+// pendingRestoresRef é feito em finally.
+// ============================================================
+
+test('S8: pendingRestoresRef decrementa em finally do loadMessages (erro de restore não bloqueia autoplay)', async () => {
+  const page = await source('UniChatPage.jsx');
+  const idx = page.indexOf("dataService.loadMessages(activeId).then(");
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, idx + 2600);
+  assert.match(slice, /\.finally\(\(\) => \{\s*\n\s*\/\/ decremento SEMPRE roda \(sucesso ou erro\), rearmando o autoplay\.\s*\n\s*pendingRestoresRef\.current -= 1;/);
+  assert.match(slice, /\.catch\(/);
+});
