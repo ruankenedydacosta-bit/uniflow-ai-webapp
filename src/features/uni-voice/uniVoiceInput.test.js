@@ -14,7 +14,10 @@ import {
   createUniVoiceTranscriptionProvider,
   validateVoiceTranscriptionRequest,
 } from './uniVoiceTranscriptionProvider.js';
-import { sanitizeVoiceTranscript } from './speechRecognitionAdapter.js';
+import {
+  createSpeechRecognitionAdapter,
+  sanitizeVoiceTranscript,
+} from './speechRecognitionAdapter.js';
 import {
   initialVoiceCaptureState,
   voiceCaptureReducer,
@@ -64,6 +67,99 @@ function createRuntime({ getUserMedia } = {}) {
     track,
   };
 }
+
+function createSpeechRuntime() {
+  let recognition = null;
+  class FakeSpeechRecognition {
+    constructor() {
+      recognition = this;
+    }
+
+    start() {
+      this.onstart?.();
+    }
+
+    stop() {}
+
+    abort() {}
+  }
+
+  return {
+    runtime: { SpeechRecognition: FakeSpeechRecognition },
+    getRecognition: () => recognition,
+  };
+}
+
+function speechResult(transcript, isFinal) {
+  return Object.assign([{ transcript }], { isFinal });
+}
+
+test('SpeechRecognition nunca envia resultados interim e publica um único final consolidado', () => {
+  const { runtime, getRecognition } = createSpeechRuntime();
+  const finals = [];
+  const interim = [];
+  let processing = 0;
+  const adapter = createSpeechRecognitionAdapter({
+    runtime,
+    onInterim: (text) => interim.push(text),
+    onProcessing: () => { processing += 1; },
+    onFinal: (text) => finals.push(text),
+  });
+
+  assert.equal(adapter.start(), true);
+  const recognition = getRecognition();
+  recognition.onresult({ results: [speechResult('recebi', false)] });
+  recognition.onresult({ results: [speechResult('recebi cinquenta', false)] });
+  assert.deepEqual(finals, []);
+  recognition.onresult({ results: [speechResult('recebi cinquenta reais', true)] });
+  recognition.onend();
+  recognition.onend();
+
+  assert.deepEqual(interim.slice(0, 2), ['recebi', 'recebi cinquenta']);
+  assert.deepEqual(finals, ['recebi cinquenta reais']);
+  assert.equal(processing, 1);
+});
+
+test('stop concorrente e onend duplicado não publicam duas mensagens', () => {
+  const { runtime, getRecognition } = createSpeechRuntime();
+  const finals = [];
+  const adapter = createSpeechRecognitionAdapter({
+    runtime,
+    onFinal: (text) => finals.push(text),
+  });
+
+  adapter.start();
+  const recognition = getRecognition();
+  recognition.onresult({ results: [speechResult('agenda amanhã', true)] });
+  assert.equal(adapter.stop(), true);
+  assert.equal(adapter.stop(), false);
+  recognition.onend();
+  recognition.onend();
+
+  assert.deepEqual(finals, ['agenda amanhã']);
+});
+
+test('cancelamento e dispose descartam final tardio e removem callbacks', () => {
+  const { runtime, getRecognition } = createSpeechRuntime();
+  const finals = [];
+  const adapter = createSpeechRecognitionAdapter({
+    runtime,
+    onFinal: (text) => finals.push(text),
+  });
+
+  adapter.start();
+  const recognition = getRecognition();
+  recognition.onresult({ results: [speechResult('texto cancelado', true)] });
+  assert.equal(adapter.cancel(), true);
+  recognition.onend();
+  assert.deepEqual(finals, []);
+
+  adapter.dispose();
+  assert.equal(recognition.onstart, null);
+  assert.equal(recognition.onresult, null);
+  assert.equal(recognition.onerror, null);
+  assert.equal(recognition.onend, null);
+});
 
 test('captura real usa getUserMedia e MediaRecorder nativos', async () => {
   const { runtime } = createRuntime();
@@ -442,6 +538,21 @@ test('timeout de transcrição falha de forma controlada', async () => {
   });
   assert.equal(result.text, null);
   assert.equal(result.error.code, 'TIMEOUT');
+});
+
+test('exceção inesperada do provider sai de PROCESSING por FAIL e não publica transcrição', () => {
+  const source = readFileSync(new URL('./useUniVoiceInput.js', import.meta.url), 'utf8');
+  const transcribeBlock = source.slice(
+    source.indexOf('const transcribe = useCallback'),
+    source.indexOf('const start = useCallback'),
+  );
+
+  assert.match(transcribeBlock, /try \{\s*result = await transcriptionProvider\.transcribe/);
+  assert.match(transcribeBlock, /catch \(error\)/);
+  assert.match(transcribeBlock, /if \(requestId !== requestIdRef\.current\) return;/);
+  assert.match(transcribeBlock, /type: 'FAIL'/);
+  assert.match(transcribeBlock, /status: VOICE_CAPTURE_STATES\.ERROR/);
+  assert.match(transcribeBlock, /return;\s*\n\s*}\s*\n\s*if \(requestId !== requestIdRef\.current\) return;/);
 });
 
 test('reducer representa permissão, escuta, processamento, conclusão e cancelamento', () => {

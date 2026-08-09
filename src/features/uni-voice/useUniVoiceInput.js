@@ -69,11 +69,35 @@ export function useUniVoiceInput({
     dispatch({ type: 'PROCESS' });
     releaseAdapter();
 
-    const result = await transcriptionProvider.transcribe({
-      audio,
-      durationMs,
-      workspaceId,
-    });
+    let result;
+    try {
+      result = await transcriptionProvider.transcribe({
+        audio,
+        durationMs,
+        workspaceId,
+      });
+    } catch (error) {
+      if (requestId !== requestIdRef.current) return;
+      const code = error?.code ?? 'transcription_failed';
+      void telemetry.metric('voice.latency_ms', {
+        value: Math.max(0, Date.now() - transcriptionStartedAt),
+        unit: 'ms',
+        source: 'transcription',
+        status: 'error',
+      }, { workspaceId, requestId: String(requestId) });
+      void telemetry.error('voice.failure', {
+        errorCode: normalizeTelemetryErrorCode(code, 'TRANSCRIPTION_FAILED'),
+        stage: 'transcription',
+        source: 'microphone',
+        recoverable: true,
+      }, { workspaceId, requestId: String(requestId) });
+      dispatch({
+        type: 'FAIL',
+        status: VOICE_CAPTURE_STATES.ERROR,
+        errorCode: code,
+      });
+      return;
+    }
     if (requestId !== requestIdRef.current) return;
 
     void telemetry.metric('voice.latency_ms', {

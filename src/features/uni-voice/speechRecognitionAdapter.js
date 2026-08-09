@@ -53,6 +53,7 @@ export function createSpeechRecognitionAdapter({
   let canceled = false;
   let terminalError = null;
   let finalWasSent = false;
+  let ended = true;
 
   recognition.lang = 'pt-BR';
   recognition.interimResults = true;
@@ -70,6 +71,7 @@ export function createSpeechRecognitionAdapter({
 
   recognition.onstart = () => {
     active = true;
+    ended = false;
     onStart?.();
   };
 
@@ -94,11 +96,13 @@ export function createSpeechRecognitionAdapter({
   };
 
   recognition.onend = () => {
+    if (ended) return;
+    ended = true;
     active = false;
     stopping = false;
-    onProcessing?.();
 
     if (canceled || terminalError || finalWasSent) return;
+    onProcessing?.();
 
     const transcript = getFinalTranscript();
     if (!transcript) {
@@ -119,6 +123,7 @@ export function createSpeechRecognitionAdapter({
       terminalError = null;
       finalWasSent = false;
       stopping = false;
+      ended = false;
       finalResults.clear();
       active = true;
 
@@ -144,6 +149,7 @@ export function createSpeechRecognitionAdapter({
     },
     dispose() {
       canceled = true;
+      ended = true;
       recognition.onstart = null;
       recognition.onresult = null;
       recognition.onerror = null;
