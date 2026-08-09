@@ -155,25 +155,28 @@ export async function getOrCreateAgendaOperation({
 
   return withInTabMutex(async () => {
     const records = readRecords(storage);
-    const index = records.findIndex((record) => matchesScope(record, {
+    const matchesCurrentScope = (record) => matchesScope(record, {
       userId, workspaceId, origin,
-    }));
+    });
+    const scopedRecords = records.filter(matchesCurrentScope);
+    const index = preferredOperationId
+      ? records.findIndex((record) => (
+        matchesCurrentScope(record) && record.clientOperationId === preferredOperationId
+      ))
+      : records.findIndex((record) => (
+        matchesCurrentScope(record) && record.fingerprint === fingerprint
+      ));
     const existing = records[index] ?? null;
 
+    if (preferredOperationId && !existing && scopedRecords.length) {
+      throw operationError(
+        'AGENDA_OPERATION_PAYLOAD_CONFLICT',
+        'A operação restaurada não corresponde ao fluxo atual da Agenda.',
+      );
+    }
+
     if (existing) {
-      if (preferredOperationId && preferredOperationId !== existing.clientOperationId) {
-        throw operationError(
-          'AGENDA_OPERATION_PAYLOAD_CONFLICT',
-          'A operação restaurada não corresponde ao fluxo atual da Agenda.',
-        );
-      }
       if (existing.fingerprint !== fingerprint) {
-        if (!preferredOperationId) {
-          throw operationError(
-            'AGENDA_OPERATION_PAYLOAD_CONFLICT',
-            'Os dados da operação restaurada são diferentes. Cancele e inicie novamente.',
-          );
-        }
         const updated = { ...existing, fingerprint };
         const nextRecords = [...records];
         nextRecords[index] = updated;

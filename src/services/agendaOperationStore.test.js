@@ -109,12 +109,33 @@ test('Web Locks ausente não altera a segurança do mutex da aba', async () => {
   );
 });
 
-test('fingerprint divergente valida e bloqueia reuso implícito da operação', async () => {
+test('P1-C: fingerprint divergente inicia operação independente sem apagar o retry anterior', async () => {
+  const storage = createStorage();
+  await getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A });
+  const divergent = await getOrCreateAgendaOperation({
+    ...scope({ intent: intent('Fisioterapia') }),
+    storage,
+    createOperationId: () => OP_B,
+  });
+  const restoredOriginal = await getOrCreateAgendaOperation({
+    ...scope(), storage, createOperationId: () => 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  });
+
+  assert.equal(divergent.clientOperationId, OP_B);
+  assert.equal(restoredOriginal.clientOperationId, OP_A);
+  assert.equal(JSON.parse(storage.snapshot()).length, 2);
+});
+
+test('P1-C: preferredOperationId continua impedindo que um fluxo reutilize a operação errada', async () => {
   const storage = createStorage();
   await getOrCreateAgendaOperation({ ...scope(), storage, createOperationId: () => OP_A });
 
   await assert.rejects(
-    getOrCreateAgendaOperation({ ...scope({ intent: intent('Fisioterapia') }), storage }),
+    getOrCreateAgendaOperation({
+      ...scope({ intent: intent('Fisioterapia') }),
+      storage,
+      preferredOperationId: OP_B,
+    }),
     { code: 'AGENDA_OPERATION_PAYLOAD_CONFLICT' },
   );
 });

@@ -811,6 +811,51 @@ test('reload antes da confirmação restaura UUID ao repetir a intenção penden
   assert.equal(operationIds.length, 1);
 });
 
+test('P1-C: nova Agenda divergente após reload não é bloqueada pela operação órfã', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const operationStorage = createOperationStorage();
+  const firstHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+
+  const reloadedHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  const result = await turn(reloadedHarness.flow, 'Agenda consulta sexta às 15h.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(reloadedHarness.calls[0].payload.client_operation_id, 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+});
+
+test('P1-C: Financeiro após reload não apaga retry antigo nem bloqueia nova Agenda', async () => {
+  const operationIds = [
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  ];
+  const operationStorage = createOperationStorage();
+  const firstHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+
+  const reloadedHarness = makeHarness([], {
+    operationStorage,
+    createOperationId: () => operationIds.shift(),
+  });
+  assert.equal((await turn(reloadedHarness.flow, 'Gastei R$ 50 no almoço.')).handled, false);
+  const result = await turn(reloadedHarness.flow, 'Agenda consulta sexta às 15h.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(reloadedHarness.calls[0].payload.client_operation_id, 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+});
+
 test('cancelamento explícito da intenção pendente limpa UUID restaurável', async () => {
   const operationIds = [
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
