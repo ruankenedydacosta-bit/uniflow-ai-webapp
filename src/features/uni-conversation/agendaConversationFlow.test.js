@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { classifyIntent } from '../uni-intents/index.js';
 import {
+  AGENDA_TIME_CLASSIFICATION,
+  classifyAgendaTemporalRegion,
   createAgendaConversationFlow,
   extractAgendaTime,
 } from './agendaConversationFlow.js';
@@ -110,6 +112,10 @@ function makeHarness(seed = [], {
 
 function turn(flow, text, identity = IDENTITY) {
   return flow.handle({ text, identity, referenceDate: REFERENCE_DATE });
+}
+
+function normalizeFinancialTextForTest(value) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
 test('criação relativa preserva assunto e pergunta pelo horário', async () => {
@@ -695,6 +701,237 @@ for (const text of [
   });
 }
 
+for (const noun of [
+  'alunos', 'funcionários', 'fornecedores', 'vendedores', 'sócios',
+  'crianças', 'adultos', 'médicos', 'professores', 'empresas',
+]) {
+  test(`P1-01 estrutural: quantidade genérica preserva 10h e o substantivo ${noun}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã 10h para 11 ${noun}.`;
+    const classification = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(classification.kind, AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY);
+    assert.equal(classification.time, '10:00');
+    assert.match((await turn(flow, text)).text, /Pronto/);
+    assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+    assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+    assert.equal(calls[0].payload.title, `reuniao para 11 ${normalizeFinancialTextForTest(noun)}`);
+  });
+}
+
+for (const [suffix, expectedTitle] of [
+  ['com 11 alunos', 'reuniao com 11 alunos'],
+  ['com onze funcionários', 'reuniao com onze funcionarios'],
+  ['para vinte clientes', 'reuniao para vinte clientes'],
+  ['com três fornecedores', 'reuniao com tres fornecedores'],
+]) {
+  test(`P1-01 estrutural: número falado não substitui o horário em "${suffix}"`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã 10h ${suffix}.`;
+
+    assert.equal(
+      classifyAgendaTemporalRegion(text, { allowContextual: true }).kind,
+      AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY,
+    );
+    assert.match((await turn(flow, text)).text, /Pronto/);
+    assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+    assert.equal(calls[0].payload.title, expectedTitle);
+  });
+}
+
+for (const noun of [
+  'alunos', 'clientes', 'convidados', 'participantes', 'fornecedores', 'vendedores', 'empresas',
+]) {
+  test(`quantidade com até é conteúdo, não range: ${noun}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã 10h até 11 ${noun}.`;
+    const classification = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(classification.kind, AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY);
+    assert.equal(classification.time, '10:00');
+    assert.match((await turn(flow, text)).text, /Pronto/);
+    assert.equal(calls[0].payload.title, `reuniao ate 11 ${noun}`);
+  });
+}
+
+for (const expression of [
+  '10h para 11h',
+  '10h para às 11h',
+  'dez horas para onze horas',
+  '10:30 para 11:30',
+  '10h para 11h da manhã',
+  '10h para 11h da noite',
+  '10h para 11',
+  '10h para 11 da manhã',
+  'dez horas para onze da noite',
+]) {
+  test(`P1-02: dois horários com para pedem esclarecimento atomicamente: ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã ${expression}.`;
+    const classification = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(classification.kind, AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME);
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+    assert.match((await turn(flow, text)).text, /entender o horário/i);
+    assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+  });
+}
+
+for (const expression of [
+  '10h e 11h',
+  '10h e às 11h',
+  'às 10h e às 11h',
+  'dez e onze horas',
+  'dez horas e onze horas',
+  '10:30 e 11:30',
+]) {
+  test(`P1-03: dois horários com e nunca viram SINGLE_TIME: ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã ${expression}.`;
+    const classification = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(classification.kind, AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME);
+    assert.equal(classification.time, null);
+    assert.match((await turn(flow, text)).text, /entender o horário/i);
+    assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+  });
+}
+
+for (const expression of [
+  'das 10h às 11h',
+  'de 10h a 11h',
+  'entre 10h e 11h',
+  '10h até 11h',
+  '10h até às 11h',
+  '10h às 11h',
+]) {
+  test(`range real recebe decisão estrutural única: ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã ${expression}.`;
+    const classification = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(classification.kind, AGENDA_TIME_CLASSIFICATION.TIME_RANGE);
+    assert.equal(classification.time, null);
+    assert.match((await turn(flow, text)).text, /entender o horário/i);
+    assert.equal(calls.some((call) => 'create' === call.operation), false);
+  });
+}
+
+for (const [expression, expected] of [
+  ['dez h 15', '10:15'],
+  ['dez h e 15', '10:15'],
+  ['dez h e quinze', '10:15'],
+  ['10 h quinze', '10:15'],
+  ['10 horas 15', '10:15'],
+  ['10 horas e quinze', '10:15'],
+]) {
+  test(`híbrido estrutural válido: ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã às ${expression}.`;
+    const classification = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(classification.kind, AGENDA_TIME_CLASSIFICATION.SINGLE_TIME);
+    assert.equal(classification.time, expected);
+    assert.match((await turn(flow, text)).text, /Pronto/);
+    assert.equal(calls[0].payload.title, 'reuniao');
+  });
+}
+
+for (const expression of ['dez h 60', 'dez h e sessenta', '10 h 60', '10 horas e 60']) {
+  test(`híbrido estrutural inválido é rejeitado integralmente: ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã às ${expression}.`;
+    const classification = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(classification.kind, AGENDA_TIME_CLASSIFICATION.INVALID_TIME);
+    assert.ok(classification.span.end > classification.span.start);
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+    assert.match((await turn(flow, text)).text, /entender o horário/i);
+    assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+  });
+}
+
+for (const noun of ['alunos', 'parcelas', 'avaliações', 'unidades']) {
+  test(`meia contextual seguida de substantivo não é horário: ${noun}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã às três e meia ${noun}.`;
+
+    assert.equal(
+      classifyAgendaTemporalRegion(text, { allowContextual: true }).kind,
+      AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT,
+    );
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+    assert.doesNotMatch((await turn(flow, text)).text, /manhã.*(?:tarde|noite)/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+  });
+}
+
+test('meia seguida de unidade de duração não sofre consumo parcial como horário', async () => {
+  const { flow, calls } = makeHarness();
+  const text = 'Agenda reunião amanhã às três e meia horas.';
+
+  assert.equal(
+    classifyAgendaTemporalRegion(text, { allowContextual: true }).kind,
+    AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT,
+  );
+  assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+  const result = await turn(flow, text);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+  assert.doesNotMatch(result.text, /manhã.*(?:tarde|noite)/i);
+});
+
+for (const [text, expectedTitle] of [
+  ['Agenda reunião amanhã 10h para 11 alunos.', 'reuniao para 11 alunos'],
+  ['Agenda reunião sobre vendas amanhã 10h para 5 pessoas.', 'reuniao sobre vendas para 5 pessoas'],
+  ['Marca ligação para João amanhã às 10h.', 'ligacao para joao'],
+  ['Agenda reunião com onze clientes amanhã às 10h.', 'reuniao com onze clientes'],
+]) {
+  test(`título usa a mesma decisão estrutural do horário: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+
+    assert.match((await turn(flow, text)).text, /Pronto/);
+    assert.equal(calls[0].payload.title, expectedTitle);
+  });
+}
+
+test('pending recupera dois horários ambíguos sem perder título, data ou UUID', async () => {
+  const operationId = '12121212-1212-4212-8212-121212121212';
+  const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
+
+  assert.match((await turn(flow, 'Agenda reunião amanhã 10h e 11h.')).text, /entender o horário/i);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+  assert.match((await turn(flow, 'às 10h')).text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'reuniao');
+  assert.equal(calls[0].payload.client_operation_id, operationId);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+});
+
+test('pending mantém zero write ao trocar ambiguidade com para por range real', async () => {
+  const { flow, calls } = makeHarness();
+
+  assert.match((await turn(flow, 'Agenda reunião amanhã 10h para 11h.')).text, /entender o horário/i);
+  assert.match((await turn(flow, 'das 10h às 11h')).text, /entender o horário/i);
+  assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+  assert.equal(flow.hasPending(IDENTITY), true);
+});
+
+for (const [clock, expected] of [['10h', '10:00'], ['15:30', '15:30'], ['dez horas', '10:00']]) {
+  for (const connector of ['para', 'com', 'até']) {
+    for (const noun of ['alunos', 'dentistas', 'equipes']) {
+      test(`propriedade B/E: ${clock} ${connector} 11 ${noun}`, async () => {
+        const { flow, calls } = makeHarness();
+        const text = `Agenda reunião amanhã ${clock} ${connector} 11 ${noun}.`;
+        const classification = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+        assert.equal(classification.kind, AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY);
+        assert.equal(classification.time, expected);
+        assert.match((await turn(flow, text)).text, /Pronto/);
+        assert.equal(calls[0].payload.title, `reuniao ${normalizeFinancialTextForTest(connector)} 11 ${noun}`);
+      });
+    }
+  }
+}
+
 for (const [expression, expected] of [
   ['00:00', '00:00'],
   ['23:59', '23:59'],
@@ -745,27 +982,34 @@ for (const malformed of [
   });
 }
 
-for (const malformed of [
-  'Agenda reunião amanhã às 10 horas e 30 minutos.',
-  'Agenda reunião amanhã 10 horas e 30 minutos.',
-  'Agenda reunião amanhã às 10 horas e 15 minutos.',
-  'Agenda reunião amanhã às 10 horas e 45 minutos.',
-  'Agenda reunião amanhã 10h e 30.',
-  'Agenda reunião amanhã 10h e 30 minutos.',
-  'Agenda reunião amanhã 10 horas e meia.',
-  'Agenda reunião amanhã dez horas e trinta minutos.',
-  'Agenda reunião amanhã dez horas e quinze.',
-  'Agenda reunião amanhã 10h e meia.',
-  'Agenda reunião amanhã duas horas e meia da tarde.',
-  'Agenda reunião amanhã uma hora e quinze.',
+for (const [expression, expected] of [
+  ['às 10 horas e 30 minutos', '10:30'],
+  ['10 horas e 30 minutos', '10:30'],
+  ['às 10 horas e 15 minutos', '10:15'],
+  ['às 10 horas e 45 minutos', '10:45'],
+  ['10h e 30', '10:30'],
+  ['10h e 30 minutos', '10:30'],
+  ['10 horas e meia', '10:30'],
+  ['dez horas e trinta minutos', '10:30'],
+  ['dez horas e quinze', '10:15'],
+  ['10h e meia', '10:30'],
+  ['duas horas e meia da tarde', '14:30'],
+  ['uma hora e quinze', '01:15'],
 ]) {
-  test(`P1-A: minutos falados com marcador de hora são rejeitados como span único: ${malformed}`, async () => {
+  test(`híbrido PT-BR válido é aceito como span único: ${expression}`, async () => {
     const { flow, calls } = makeHarness();
-    const result = await turn(flow, malformed);
+    const text = `Agenda reunião amanhã ${expression}.`;
+    const result = await turn(flow, text);
 
-    assert.match(result.text, /entender o horário/i);
-    assert.equal(calls.some((call) => call.operation === 'create'), false);
-    assert.equal(flow.hasPending(IDENTITY), true);
+    assert.match(result.text, /Pronto/);
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), expected);
+    assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+    const createdAt = new Date(calls[0].payload.starts_at);
+    assert.equal(
+      `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`,
+      expected,
+    );
+    assert.equal(calls[0].payload.title, 'reuniao');
   });
 }
 
@@ -803,13 +1047,14 @@ for (const [text, expectedTitle] of [
   });
 }
 
-test('P1-A Reviewer: minuto numérico falado é rejeitado sem criação parcial', async () => {
+test('híbrido numérico explícito é aceito atomicamente como 10:30', async () => {
   const { flow, calls } = makeHarness();
   const result = await turn(flow, 'Agenda reunião amanhã às 10 horas e 30 minutos.');
 
-  assert.match(result.text, /entender o horário/i);
-  assert.equal(calls.some((call) => call.operation === 'create'), false);
-  assert.equal(flow.hasPending(IDENTITY), true);
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 30);
 });
 
 test('edição com horário malformado não aplica alteração parcial', async () => {
