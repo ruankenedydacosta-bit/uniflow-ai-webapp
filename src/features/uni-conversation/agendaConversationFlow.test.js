@@ -342,6 +342,71 @@ test('Preview R1: consulta com instrução explícita preserva observação', as
   assert.equal(calls[0].payload.description, 'Levar os exames');
 });
 
+for (const [expression, expected] of [
+  ['dez e quinze', '10:15'],
+  ['dez e quarenta', '10:40'],
+  ['três e meia', '03:30'],
+  ['três e trinta', '03:30'],
+  ['uma e quinze', '01:15'],
+  ['duas e quarenta e cinco', '02:45'],
+  ['10 e 15', '10:15'],
+  ['10 e 59', '10:59'],
+  ['10 e 00', '10:00'],
+]) {
+  test(`P1 parse parcial: minuto falado válido é consumido integralmente: ${expression}`, () => {
+    assert.equal(
+      extractAgendaTime(`Agenda reunião amanhã às ${expression}.`, { allowContextual: true }),
+      expected,
+    );
+  });
+}
+
+test('P1 parse parcial: dez e quinze preserva :15 durante clarificação AM/PM', async () => {
+  const { flow, calls } = makeHarness();
+  const first = await turn(flow, 'Agenda reunião amanhã às dez e quinze.');
+  assert.match(first.text, /10:15 da manhã.*10:15 da noite/i);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+
+  assert.match((await turn(flow, 'da manhã')).text, /Pronto/);
+  const createdAt = new Date(calls[0].payload.starts_at);
+  assert.equal(createdAt.getHours(), 10);
+  assert.equal(createdAt.getMinutes(), 15);
+});
+
+test('P1 parse parcial: dez e quarenta preserva :40 ao resolver para noite', async () => {
+  const { flow, calls } = makeHarness();
+  const first = await turn(flow, 'Agenda reunião amanhã às dez e quarenta.');
+  assert.match(first.text, /10:40 da manhã.*10:40 da noite/i);
+  assert.match((await turn(flow, 'da noite')).text, /Pronto/);
+
+  const createdAt = new Date(calls[0].payload.starts_at);
+  assert.equal(createdAt.getHours(), 22);
+  assert.equal(createdAt.getMinutes(), 40);
+});
+
+test('P1 parse parcial: resposta conversacional preserva pending, data, título e minutos', async () => {
+  const operationId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
+  await turn(flow, 'Agenda reunião amanhã.');
+  assert.match((await turn(flow, 'sim, às três e trinta')).text, /3:30 da manhã.*3:30 da tarde/i);
+  assert.match((await turn(flow, 'da tarde')).text, /Pronto/);
+
+  const create = calls.find((call) => call.operation === 'create');
+  assert.equal(create.payload.title, 'reuniao');
+  assert.equal(create.payload.client_operation_id, operationId);
+  assert.match(create.payload.starts_at, /^2026-08-09T/);
+  assert.equal(new Date(create.payload.starts_at).getHours(), 15);
+  assert.equal(new Date(create.payload.starts_at).getMinutes(), 30);
+});
+
+test('P1 parse parcial: "isso, três e meia da tarde" resolve pending como 15:30', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Agenda reunião amanhã.');
+  assert.match((await turn(flow, 'isso, três e meia da tarde')).text, /Pronto/);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
+  assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 30);
+});
+
 for (const [text, expected] of [
   ['Agenda amanhã dez horas.', '10:00'],
   ['Agenda amanhã dez.', '10:00'],
@@ -400,12 +465,82 @@ for (const text of [
   'Agenda reunião amanhã duas e sessenta da tarde.',
   'Agenda reunião amanhã 24h30.',
   'Agenda reunião amanhã trinta horas.',
-  'Agenda reunião amanhã dez e quinze.',
 ]) {
   test(`parser rejeita a expressão temporal inválida inteira: ${text}`, () => {
     assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
   });
 }
+
+for (const expression of [
+  'dez e sessenta',
+  'dez e setenta',
+  'dez e noventa',
+  '10 e 60',
+  '10 e 75',
+  '10h60',
+  '10:60',
+  '23h60',
+]) {
+  test(`P1 parse parcial: minuto inválido é rejeitado como span atômico: ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, `Agenda reunião amanhã às ${expression}.`);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.equal(calls.some((call) => call.operation === 'update'), false);
+    assert.equal(extractAgendaTime(`Agenda reunião amanhã às ${expression}.`, { allowContextual: true }), null);
+    assert.equal(flow.hasPending(IDENTITY), true);
+  });
+}
+
+test('P1 parse parcial: recuperação inválido -> válido -> AM preserva a mesma criação', async () => {
+  const operationId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
+  assert.match((await turn(flow, 'Agenda reunião amanhã às dez e sessenta.')).text, /entender o horário/i);
+  assert.match((await turn(flow, 'dez e quinze.')).text, /10:15 da manhã.*10:15 da noite/i);
+  assert.match((await turn(flow, 'da manhã')).text, /Pronto/);
+
+  const create = calls.find((call) => call.operation === 'create');
+  assert.equal(create.payload.title, 'reuniao');
+  assert.equal(create.payload.client_operation_id, operationId);
+  assert.match(create.payload.starts_at, /^2026-08-09T/);
+  assert.equal(new Date(create.payload.starts_at).getHours(), 10);
+  assert.equal(new Date(create.payload.starts_at).getMinutes(), 15);
+});
+
+test('P1 parse parcial: recuperação inválido -> inválido -> válido não cria parcialmente', async () => {
+  const { flow, calls } = makeHarness();
+  assert.match((await turn(flow, 'Agenda reunião amanhã às 10 e 60.')).text, /entender o horário/i);
+  assert.match((await turn(flow, '10 e 75')).text, /entender o horário/i);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+  assert.match((await turn(flow, 'dez e quarenta')).text, /10:40 da manhã.*10:40 da noite/i);
+  assert.match((await turn(flow, 'da noite')).text, /Pronto/);
+  assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+  assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 40);
+});
+
+for (const text of [
+  'Paguei dez e sessenta reais.',
+  'Tenho dez e quinze parcelas.',
+  'Trabalhei dez horas e quarenta minutos.',
+  'Minha nota foi três e meia.',
+  'Comprei meia dúzia.',
+  'Tenho reunião com 10 pessoas.',
+]) {
+  test(`P1 parse parcial: quantidade/dinheiro/duração não vira horário: ${text}`, () => {
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+  });
+}
+
+test('P2: "10h até 11 pessoas" mantém 10h como horário único, não como range', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião amanhã 10h até 11 pessoas');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.equal(calls[0].payload.title, 'reuniao ate 11 pessoas');
+});
 
 for (const [expression, expected] of [
   ['00:00', '00:00'],
@@ -566,20 +701,6 @@ test('cancelar reparo temporal limpa pendência sem escrita', async () => {
   assert.equal(flow.hasPending(IDENTITY), false);
   assert.equal(calls.some((call) => call.operation === 'create'), false);
 });
-
-for (const malformed of [
-  'Agenda reunião amanhã dez e quinze.',
-  'Agenda reunião amanhã dez e quarenta.',
-  'Agenda reunião amanhã uma e quinze.',
-]) {
-  test(`minutos falados não sofrem parse parcial: ${malformed}`, async () => {
-    const { flow, calls } = makeHarness();
-    const result = await turn(flow, malformed);
-
-    assert.match(result.text, /entender o horário/i);
-    assert.equal(calls.some((call) => call.operation === 'create'), false);
-  });
-}
 
 for (const [text, expectedTitle] of [
   ['Agenda reunião amanhã 10 pessoas.', 'reuniao 10 pessoas'],
