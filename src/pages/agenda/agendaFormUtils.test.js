@@ -11,6 +11,7 @@ import {
   isValidDatetimeLocalValue,
   normalizeDatetimeLocalToStartOfDay,
   parseDatetimeLocalValue,
+  shiftEndsAtOnEdit,
   validateAgendaItemForm,
 } from './agendaFormUtils.js';
 
@@ -330,6 +331,44 @@ test('buildAgendaItemCreationPayload: nunca inclui status, assigned_user_id, wor
   assert.equal('assigned_user_id' in payload, false);
   assert.equal('workspace_id' in payload, false);
   assert.equal('created_by' in payload, false);
+});
+
+test('shiftEndsAtOnEdit: move para data futura preservando a duracao (anti-trava do formulario simplificado)', () => {
+  const moved = shiftEndsAtOnEdit(
+    '2026-07-08T13:00:00.000Z',
+    '2026-07-08T14:30:00.000Z',
+    '2026-07-08T11:30',
+    '2026-07-10T15:00',
+  );
+  const expected = formatDatetimeLocalValue(
+    new Date(new Date('2026-07-10T15:00').getTime() + 90 * 60 * 1000).toISOString(),
+  );
+  assert.equal(moved, expected);
+});
+
+test('shiftEndsAtOnEdit: sem ends_at original devolve o valor atual intacto', () => {
+  assert.equal(
+    shiftEndsAtOnEdit('2026-07-08T13:00:00.000Z', null, '', '2026-07-10T15:00'),
+    '',
+  );
+});
+
+test('shiftEndsAtOnEdit: datas invalidas nao alteram ends_at', () => {
+  assert.equal(
+    shiftEndsAtOnEdit('nao-e-data', '2026-07-08T14:30:00.000Z', '2026-07-08T11:30', '2026-07-10T15:00'),
+    '2026-07-08T11:30',
+  );
+  assert.equal(
+    shiftEndsAtOnEdit('2026-07-08T13:00:00.000Z', '2026-07-08T14:30:00.000Z', '2026-07-08T11:30', null),
+    '2026-07-08T11:30',
+  );
+});
+
+test('shiftEndsAtOnEdit: ends_at anterior ao inicio nao vira fonte de duracao', () => {
+  assert.equal(
+    shiftEndsAtOnEdit('2026-07-08T15:00:00.000Z', '2026-07-08T10:00:00.000Z', '2026-07-08T11:30', '2026-07-09T09:00'),
+    '2026-07-08T11:30',
+  );
 });
 
 // --- traducao de erros ----------------------------------------------------------

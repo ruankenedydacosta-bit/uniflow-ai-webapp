@@ -159,6 +159,30 @@ export function isValidDatetimeLocalValue(localValue) {
 }
 
 /**
+ * Ao editar data/horario de um compromisso com ends_at, move o termino
+ * junto, preservando a duracao original. Sem isso, mover para frente barra
+ * na validacao (termino anterior ao inicio) e formularios sem campo de
+ * termino ficam impossiveis de salvar. Sem starts_at/ends_at originais
+ * validos ou sem novo inicio, devolve o ends_at informado intacto.
+ */
+export function shiftEndsAtOnEdit(originalStart, originalEnd, endsAtValue, newStartsAt) {
+  if (!originalStart || !originalEnd || !newStartsAt) return endsAtValue;
+  const start = new Date(originalStart);
+  const end = new Date(originalEnd);
+  const nextStart = new Date(newStartsAt);
+  if (
+    Number.isNaN(start.getTime())
+    || Number.isNaN(end.getTime())
+    || Number.isNaN(nextStart.getTime())
+    || end.getTime() < start.getTime()
+  ) {
+    return endsAtValue;
+  }
+  const duration = end.getTime() - start.getTime();
+  return formatDatetimeLocalValue(new Date(nextStart.getTime() + duration));
+}
+
+/**
  * "YYYY-MM-DDTHH:mm" (valor local do input) -> ISO (UTC) com o horario
  * normalizado para 00:00 local. Usado somente quando is_all_day === true.
  * Vazio/invalido -> null (a validacao de starts_at obrigatorio barra o

@@ -5,6 +5,7 @@ import {
   buildAgendaItemCreationPayload,
   createAgendaItemEditForm,
   getAgendaItemErrorMessage,
+  shiftEndsAtOnEdit,
   validateAgendaItemForm,
 } from '../../pages/agenda/agendaFormUtils.js';
 import { formatDayHeading } from './simplifiedAgendaCalendar.js';
@@ -72,10 +73,13 @@ function SimplifiedAgendaFormModal({ item, defaultDay, agenda, onClose, onReques
     setLocalError(null);
 
     const { dateValue, timeValue, ...rest } = form;
+    const startsAtValue = `${dateValue}T${form.is_all_day ? '00:00' : (timeValue || '09:00')}`;
     const payloadForm = {
       ...rest,
-      starts_at: `${dateValue}T${form.is_all_day ? '00:00' : (timeValue || '09:00')}`,
-      ends_at: form.is_all_day ? '' : rest.ends_at,
+      starts_at: startsAtValue,
+      ends_at: isEditing
+        ? shiftEndsAtOnEdit(item.starts_at, item.ends_at, rest.ends_at, startsAtValue)
+        : (form.is_all_day ? '' : rest.ends_at),
       is_all_day: form.is_all_day,
     };
 
