@@ -69,6 +69,7 @@ const SPOKEN_MINUTE_PATTERN = [
   'dezesseis', 'dezassete', 'dezessete', 'dezoito', 'dezenove', 'vinte', 'trinta',
   'quarenta', 'cinquenta', 'meia',
 ].join('|');
+const QUANTITY_NOUN_PATTERN = '(?:pessoas?|clientes?|convidados?|participantes?|parcelas?|avaliacoes?|unidades?)';
 const AGENDA_DATE_CONTEXT_PATTERN = [
   'hoje',
   'amanha',
@@ -101,7 +102,7 @@ const SPOKEN_TIME_WITH_PERIOD = new RegExp(
   `\\b(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?\\s+(da\\s+manha|da\\s+tarde|da\\s+noite)\\b`,
 );
 const SPOKEN_TIME_TITLE = new RegExp(
-  `\\b(?:as|das|para)\\s+(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
+  `\\b(?:as|das|para)\\s+(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b(?!\\s+${QUANTITY_NOUN_PATTERN}\\b|\\s+e\\s+meia\\s+${QUANTITY_NOUN_PATTERN}\\b)`,
   'g',
 );
 const CONTEXTUAL_TIME_TITLE = new RegExp(
@@ -113,7 +114,7 @@ const SPOKEN_PERIOD_TIME_TITLE = new RegExp(
   'g',
 );
 const COLLOQUIAL_TIME_TITLE = new RegExp(
-  `\\b(?:as\\s+|umas\\s+)?(?:${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s+e\\s+(?:${SPOKEN_MINUTE_PATTERN})(?:\\s+da\\s+(?:manha|tarde|noite))?\\b(?!\\s+horas?\\b)`,
+  `\\b(?:as\\s+|umas\\s+)?(?:${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s+e\\s+(?:${SPOKEN_MINUTE_PATTERN})(?:\\s+da\\s+(?:manha|tarde|noite))?\\b(?!\\s+horas?\\b|\\s+${QUANTITY_NOUN_PATTERN}\\b)`,
   'g',
 );
 const NUMERIC_PERIOD_TIME_TITLE = /\b(?:(?:as|das|para)\s+)?\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\s+da\s+(?:manha|tarde|noite)\b/g;
@@ -223,17 +224,17 @@ function matchColloquialTime(normalized, allowContextual) {
   const minute = `(${SPOKEN_MINUTE_PATTERN})`;
   const period = '(da\\s+manha|da\\s+tarde|da\\s+noite)';
   const withCue = normalized.match(
-    new RegExp(`\\b(?:as|umas)\\s+${hour}\\s+e\\s+${minute}(?:\\s+${period})?\\b(?!\\s+horas?\\b)`),
+    new RegExp(`\\b(?:as|umas)\\s+${hour}\\s+e\\s+${minute}(?:\\s+${period})?\\b(?!\\s+horas?\\b|\\s+${QUANTITY_NOUN_PATTERN}\\b)`),
   );
   if (withCue && formatColloquialTime(withCue)) return withCue;
   if (allowContextual) {
     const contextual = normalized.match(
-      new RegExp(`\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(?:as\\s+|umas\\s+)?${hour}\\s+e\\s+${minute}(?:\\s+${period})?\\b(?!\\s+horas?\\b)`),
+      new RegExp(`\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(?:as\\s+|umas\\s+)?${hour}\\s+e\\s+${minute}(?:\\s+${period})?\\b(?!\\s+horas?\\b|\\s+${QUANTITY_NOUN_PATTERN}\\b)`),
     );
     if (contextual && formatColloquialTime(contextual)) return contextual;
   }
   const standalone = normalized.match(
-    new RegExp(`^(?:as\\s+|umas\\s+)?${hour}\\s+e\\s+${minute}(?:\\s+${period})?(?!\\s+horas?\\b)$`),
+    new RegExp(`^(?:as\\s+|umas\\s+)?${hour}\\s+e\\s+${minute}(?:\\s+${period})?(?!\\s+horas?\\b|\\s+${QUANTITY_NOUN_PATTERN}\\b)$`),
   );
   return standalone && formatColloquialTime(standalone) ? standalone : null;
 }
@@ -278,7 +279,7 @@ function invalidTimeCandidate(normalized, allowContextual) {
     // "10h até 11 pessoas" contém uma quantidade, não um segundo endpoint
     // temporal. A exceção é deliberadamente estreita para não reabrir os
     // ranges de horário já bloqueados.
-    if (!/^\s+pessoas?\b/.test(normalized.slice(rangeEnd))) {
+    if (!new RegExp(`^\\s+${QUANTITY_NOUN_PATTERN}\\b`).test(normalized.slice(rangeEnd))) {
       return { start: range.index, end: rangeEnd };
     }
   }
@@ -304,7 +305,7 @@ function invalidTimeCandidate(normalized, allowContextual) {
   }
 
   const unsupportedSpokenMinutesPattern = new RegExp(
-    `\\b${prefix}(?:\\d{1,2}\\s*(?:horas?|h)|(?:${SPOKEN_HOUR_PATTERN})\\s+horas?)\\s+e\\s+(?:meia|\\d{1,3}|${SPOKEN_NUMBER_TOKEN_PATTERN})(?:\\s+minutos?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
+    `\\b${prefix}(?:\\d{1,2}|(?:${SPOKEN_HOUR_PATTERN}))\\s*(?:horas?|h)\\s+e\\s+(?:meia|\\d{1,3}|${SPOKEN_NUMBER_TOKEN_PATTERN})(?:\\s+minutos?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
   );
   const unsupportedSpokenMinutes = normalized.match(unsupportedSpokenMinutesPattern);
   if (unsupportedSpokenMinutes) {
@@ -350,6 +351,12 @@ function analyzeAgendaTime(text, { allowContextual = false } = {}) {
   if (invalidCandidate) {
     return { time: null, invalid: true, invalidCandidate, ambiguousPeriod: false };
   }
+  const quantityBoundColloquial = new RegExp(
+    `\\b(?:as|umas)\\s+(?:${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s+e\\s+meia\\s+${QUANTITY_NOUN_PATTERN}\\b`,
+  ).test(normalized);
+  if (quantityBoundColloquial) {
+    return { time: null, invalid: false, invalidCandidate: null, ambiguousPeriod: false };
+  }
   const time = extractAgendaTimeValue(normalized, allowContextual);
   return {
     time,
@@ -375,7 +382,9 @@ function extractAgendaTimeValue(normalized, allowContextual) {
   }
 
   const numeric = normalized.match(
-    /\b(?:as|das|para)\s+(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?\b/,
+    new RegExp(
+      `\\b(?:as|das|para)\\s+(\\d{1,2})(?:[:h](\\d{2}))?(?:\\s*(?:horas?|h))?\\b(?!\\s+${QUANTITY_NOUN_PATTERN}\\b)`,
+    ),
   ) ?? normalized.match(/^(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?$/);
   if (numeric) return formatExtractedTime(numeric[1], numeric[2]);
 
@@ -442,7 +451,13 @@ function extractTitle(text) {
     .replace(NUMERIC_PERIOD_TIME_TITLE, '')
     .replace(SPOKEN_PERIOD_TIME_TITLE, '')
     .replace(COLLOQUIAL_TIME_TITLE, '')
-    .replace(/\b(?:as|das|para)\s+\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\b/g, '')
+    .replace(
+      new RegExp(
+        `\\b(?:as|das|para)\\s+\\d{1,2}(?:[:h]\\d{2})?(?:\\s*(?:horas?|h))?\\b(?!\\s+${QUANTITY_NOUN_PATTERN}\\b)`,
+        'g',
+      ),
+      '',
+    )
     .replace(SPOKEN_TIME_TITLE, '')
     .replace(/\b(?:aquele|aquela)\s+(?:coisa|negocio|compromisso)\b/g, '')
     .replace(/[.,!?]+/g, ' ')

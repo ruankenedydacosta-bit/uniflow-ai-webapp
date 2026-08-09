@@ -542,6 +542,159 @@ test('P2: "10h até 11 pessoas" mantém 10h como horário único, não como rang
   assert.equal(calls[0].payload.title, 'reuniao ate 11 pessoas');
 });
 
+for (const expression of [
+  'dez h e sessenta',
+  'dez h e 60',
+  'dez horas e sessenta',
+  'dez horas e 60',
+  '10 h e sessenta',
+  '10 h e 60',
+  '10 horas e sessenta',
+  '10 horas e 60',
+  '10h e sessenta',
+  '10h e 60',
+  '10 e sessenta minutos',
+  '10 horas e 60 minutos',
+  'dez horas e sessenta minutos',
+  'dez h e 61',
+  'dez h e 70',
+  'dez h e 75',
+  'dez h e 80',
+  'dez h e 90',
+  'dez h e 99',
+]) {
+  test(`P1-A híbrido: rejeita atomicamente ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, `Agenda reunião amanhã às ${expression}.`);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.doesNotMatch(result.text, /manhã.*noite/i);
+    assert.equal(extractAgendaTime(`Agenda reunião amanhã às ${expression}.`, { allowContextual: true }), null);
+    assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+  });
+}
+
+test('P1-A híbrido: recuperação remove todo resíduo temporal do título e preserva UUID', async () => {
+  const operationId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+  const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
+  assert.match((await turn(flow, 'Agenda reunião amanhã às dez h e sessenta.')).text, /entender o horário/i);
+  assert.match((await turn(flow, 'dez e quinze da manhã')).text, /Pronto/);
+
+  const create = calls.find((call) => call.operation === 'create');
+  assert.equal(create.payload.title, 'reuniao');
+  assert.equal(create.payload.client_operation_id, operationId);
+  assert.equal(new Date(create.payload.starts_at).getHours(), 10);
+  assert.equal(new Date(create.payload.starts_at).getMinutes(), 15);
+});
+
+for (const [suffix, expectedTitle] of [
+  ['para 11 pessoas', 'reuniao para 11 pessoas'],
+  ['para 11 clientes', 'reuniao para 11 clientes'],
+  ['para 11 convidados', 'reuniao para 11 convidados'],
+  ['para 11 participantes', 'reuniao para 11 participantes'],
+  ['com 11 pessoas', 'reuniao com 11 pessoas'],
+  ['com 11 clientes', 'reuniao com 11 clientes'],
+  ['com 11 convidados', 'reuniao com 11 convidados'],
+  ['com 11 participantes', 'reuniao com 11 participantes'],
+  ['para duas pessoas', 'reuniao para duas pessoas'],
+  ['para vinte pessoas', 'reuniao para vinte pessoas'],
+  ['com três clientes', 'reuniao com tres clientes'],
+  ['com quinze convidados', 'reuniao com quinze convidados'],
+  ['até 11 pessoas', 'reuniao ate 11 pessoas'],
+  ['até 11 clientes', 'reuniao ate 11 clientes'],
+  ['até 11 convidados', 'reuniao ate 11 convidados'],
+  ['até 11 participantes', 'reuniao ate 11 participantes'],
+]) {
+  test(`P1-B quantidade: 10h permanece horário e título preserva "${suffix}"`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, `Agenda reunião amanhã 10h ${suffix}.`);
+
+    assert.match(result.text, /Pronto/);
+    assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+    assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+    assert.equal(calls[0].payload.title, expectedTitle);
+  });
+}
+
+for (const [text, expectedTitle] of [
+  ['Reunião sobre vendas amanhã às 10h para 5 pessoas.', 'reuniao sobre vendas para 5 pessoas'],
+  ['Reunião com João amanhã às 10h.', 'reuniao com joao'],
+]) {
+  test(`extração de título preserva conectores legítimos: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    assert.match((await turn(flow, text)).text, /Pronto/);
+    assert.equal(calls[0].payload.title, expectedTitle);
+    assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  });
+}
+
+for (const expression of [
+  'três e meia parcelas',
+  'três e meia pessoas',
+  'três e meia avaliações',
+  'três e meia unidades',
+]) {
+  test(`P2 meia: substantivo quantitativo impede promoção a horário: ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã às ${expression}.`;
+    const result = await turn(flow, text);
+
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.doesNotMatch(result.text, /manhã.*(?:tarde|noite)/i);
+  });
+}
+
+test('P2 meia: casos temporais válidos continuam preservados', async () => {
+  const ambiguous = makeHarness();
+  assert.match(
+    (await turn(ambiguous.flow, 'Agenda reunião amanhã às três e meia.')).text,
+    /3:30 da manhã.*3:30 da tarde/i,
+  );
+  assert.match((await turn(ambiguous.flow, 'da tarde')).text, /Pronto/);
+  assert.equal(new Date(ambiguous.calls[0].payload.starts_at).getHours(), 15);
+  assert.equal(new Date(ambiguous.calls[0].payload.starts_at).getMinutes(), 30);
+
+  const explicit = makeHarness();
+  assert.match(
+    (await turn(explicit.flow, 'Agenda reunião amanhã às três e meia da tarde.')).text,
+    /Pronto/,
+  );
+  assert.equal(new Date(explicit.calls[0].payload.starts_at).getHours(), 15);
+  assert.equal(new Date(explicit.calls[0].payload.starts_at).getMinutes(), 30);
+});
+
+test('pending aceita "pode ser dez e quinze da noite" sem perder contexto', async () => {
+  const operationId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+  const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
+  await turn(flow, 'Agenda reunião amanhã.');
+  assert.match((await turn(flow, 'pode ser dez e quinze da noite')).text, /Pronto/);
+
+  assert.equal(calls[0].payload.title, 'reuniao');
+  assert.equal(calls[0].payload.client_operation_id, operationId);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 22);
+  assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 15);
+});
+
+for (const text of [
+  'Paguei dez e quinze reais.',
+  'Paguei dez e sessenta reais.',
+  'Tenho quinze parcelas.',
+  'Tenho três e meia parcelas.',
+  'Minha nota foi três e meia.',
+  'Comprei meia dúzia.',
+  'Tenho onze clientes.',
+  'Tenho reunião com onze pessoas.',
+  'Trabalhei dez horas.',
+  'Trabalhei dez horas e trinta minutos.',
+  'A viagem dura dez horas e meia.',
+  'Avaliação três e meia.',
+]) {
+  test(`matriz final de falso positivo não extrai horário: ${text}`, () => {
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+  });
+}
+
 for (const [expression, expected] of [
   ['00:00', '00:00'],
   ['23:59', '23:59'],
