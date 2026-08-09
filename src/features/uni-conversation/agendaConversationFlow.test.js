@@ -134,6 +134,139 @@ test('criação com horário salva dentista amanhã às 15h', async () => {
   assert.match(calls[0].payload.starts_at, /^2026-08-09T/);
 });
 
+for (const [spokenHour, expectedHour] of [
+  ['uma hora', 1], ['duas horas', 2], ['três horas', 3], ['quatro horas', 4],
+  ['cinco horas', 5], ['seis horas', 6], ['sete horas', 7], ['oito horas', 8],
+  ['nove horas', 9], ['dez horas', 10], ['onze horas', 11], ['doze horas', 12],
+  ['treze horas', 13], ['quatorze horas', 14], ['quinze horas', 15],
+  ['dezesseis horas', 16], ['dezessete horas', 17], ['dezoito horas', 18],
+  ['dezenove horas', 19], ['vinte horas', 20], ['vinte e uma horas', 21],
+  ['vinte e duas horas', 22], ['vinte e três horas', 23],
+]) {
+  test(`criação aceita hora por extenso: ${spokenHour}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, `Tenho uma reunião amanhã às ${spokenHour}.`);
+
+    assert.match(result.text, /Pronto/);
+    assert.equal(new Date(calls[0].payload.starts_at).getHours(), expectedHour);
+    assert.equal(calls[0].payload.title, 'reuniao');
+  });
+}
+
+test('criação aceita hora por extenso sem a palavra horas', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda uma reunião amanhã às dez.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.equal(calls[0].payload.title, 'uma reuniao');
+});
+
+test('períodos naturais manhã e tarde ajustam a hora sem ambiguidade', async () => {
+  const morning = makeHarness();
+  await turn(morning.flow, 'Tenho uma reunião amanhã às oito da manhã.');
+  assert.equal(new Date(morning.calls[0].payload.starts_at).getHours(), 8);
+
+  const afternoon = makeHarness();
+  await turn(afternoon.flow, 'Tenho uma reunião amanhã às duas da tarde.');
+  assert.equal(new Date(afternoon.calls[0].payload.starts_at).getHours(), 14);
+});
+
+test('vocativo Fala Uni não contamina intent, título, data ou hora', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Fala Uni, tenho uma reunião amanhã às dez horas.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'reuniao');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.match(calls[0].payload.starts_at, /^2026-08-09T/);
+});
+
+test('vocativo Ei Uni é removido somente no início da criação', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Ei Uni, agenda uma reunião sexta às quinze horas.');
+
+  assert.equal(calls[0].payload.title, 'uma reuniao');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
+  assert.match(calls[0].payload.starts_at, /^2026-08-14T/);
+});
+
+test('vocativo Uni é removido somente no início da criação', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Uni, marca uma reunião sexta às quinze horas.');
+
+  assert.equal(calls[0].payload.title, 'uma reuniao');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
+});
+
+test('Uni permanece no assunto quando não é vocativo inicial', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Agenda uma reunião com a Uni amanhã às dez horas.');
+
+  assert.equal(calls[0].payload.title, 'uma reuniao com a uni');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+});
+
+test('objeto vago preserva a hora por extenso durante a desambiguação', async () => {
+  const { flow, calls } = makeHarness();
+  const first = await turn(flow, 'Marca aquele negócio pra sexta às quatorze horas.');
+  assert.match(first.text, /O que você quer/);
+
+  await turn(flow, 'Reunião do projeto.');
+  assert.equal(calls.at(-1).payload.title, 'reuniao do projeto');
+  assert.equal(new Date(calls.at(-1).payload.starts_at).getHours(), 14);
+});
+
+test('edição aceita hora por extenso sem transformar o horário em título', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+
+  const result = await turn(flow, 'Muda minha reunião para sexta às dezesseis horas.');
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.equal(new Date(update.changes.starts_at).getHours(), 16);
+  assert.equal(Object.hasOwn(update.changes, 'title'), false);
+});
+
+test('horários numéricos existentes continuam preservados', async () => {
+  const withHours = makeHarness();
+  await turn(withHours.flow, 'Tenho uma reunião amanhã às 10 horas.');
+  assert.equal(new Date(withHours.calls[0].payload.starts_at).getHours(), 10);
+  assert.equal(withHours.calls[0].payload.title, 'reuniao');
+
+  const withMinutes = makeHarness();
+  await turn(withMinutes.flow, 'Tenho uma reunião amanhã às 10:30.');
+  const startsAt = new Date(withMinutes.calls[0].payload.starts_at);
+  assert.equal(startsAt.getHours(), 10);
+  assert.equal(startsAt.getMinutes(), 30);
+});
+
+for (const [answer, expectedMinutes] of [
+  ['10', 0], ['10h', 0], ['10:00', 0], ['às 10', 0], ['às 10h', 0], ['às 10:30', 30],
+]) {
+  test(`resposta numérica de horário continua aceita: ${answer}`, async () => {
+    const { flow, calls } = makeHarness();
+    await turn(flow, 'Tenho uma reunião amanhã.');
+    const result = await turn(flow, answer);
+
+    assert.match(result.text, /Pronto/);
+    const startsAt = new Date(calls[0].payload.starts_at);
+    assert.equal(startsAt.getHours(), 10);
+    assert.equal(startsAt.getMinutes(), expectedMinutes);
+  });
+}
+
+for (const text of ['dez reais', 'paguei dez horas extras']) {
+  test(`expressão não temporal não vira criação de Agenda: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, text);
+
+    assert.equal(result.handled, false);
+    assert.equal(calls.length, 0);
+  });
+}
+
 test('criação aceita data absoluta sem depender de interpretação externa', async () => {
   const { flow, calls } = makeHarness();
   await turn(flow, 'Marca uma reunião em 20/08/2026 às 14h.');

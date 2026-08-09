@@ -43,9 +43,27 @@ const PENDING_TYPES = Object.freeze({
 const NUMBER_WORDS = Object.freeze({
   um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5,
   seis: 6, sete: 7, oito: 8, nove: 9, dez: 10, onze: 11, doze: 12,
-  treze: 13, quatorze: 14, quinze: 15, dezesseis: 16, dezessete: 17,
+  treze: 13, catorze: 14, quatorze: 14, quinze: 15, dezesseis: 16,
+  dezassete: 17, dezessete: 17,
   dezoito: 18, dezenove: 19, vinte: 20, trinta: 30,
 });
+
+const SPOKEN_HOUR_PATTERN = [
+  'vinte(?:\\s+e\\s+(?:uma|duas|tres))?',
+  'uma', 'duas', 'tres', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove',
+  'dez', 'onze', 'doze', 'treze', 'catorze', 'quatorze', 'quinze',
+  'dezesseis', 'dezassete', 'dezessete', 'dezoito', 'dezenove',
+].join('|');
+const SPOKEN_TIME_WITH_CUE = new RegExp(
+  `\\b(?:as|das|para)\\s+(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?\\b`,
+);
+const SPOKEN_TIME_WITH_HOURS = new RegExp(
+  `^(${SPOKEN_HOUR_PATTERN})\\s+horas?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?$`,
+);
+const SPOKEN_TIME_TITLE = new RegExp(
+  `\\b(?:as|das|para)\\s+(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
+  'g',
+);
 
 const WEEKDAYS = Object.freeze([
   'domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado',
@@ -88,6 +106,12 @@ function parseCount(value) {
   return compound ? NUMBER_WORDS[compound[1]] + NUMBER_WORDS[compound[2]] : null;
 }
 
+function stripUniVocative(text) {
+  return normalizeFinancialText(text)
+    .replace(/^\s*(?:(?:fala|ei)\s+uni(?:\s*[,;:!?.-]\s*|\s+)|uni\s*[,;:!?.-]\s*)/, '')
+    .trim();
+}
+
 function resolveAgendaDate(text, referenceDate) {
   const normalized = normalizeFinancialText(text);
   const relative = normalized.match(/\bdaqui\s+(?:a\s+|uns?\s+|umas?\s+|cerca\s+de\s+)?([\w\s]+?)\s+(dias?|semanas?)\b/);
@@ -124,10 +148,26 @@ function resolveAgendaDate(text, referenceDate) {
 
 function extractTime(text) {
   const normalized = normalizeFinancialText(text);
-  const match = normalized.match(/\b(?:as|das|para)\s+(\d{1,2})(?:[:h](\d{2}))?\s*h?\b/);
-  if (!match) return null;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2] ?? 0);
+  const numeric = normalized.match(
+    /\b(?:as|das|para)\s+(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?\b/,
+  ) ?? normalized.match(/^(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?$/);
+  if (numeric) {
+    const hours = Number(numeric[1]);
+    const minutes = Number(numeric[2] ?? 0);
+    if (hours > 23 || minutes > 59) return null;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  }
+
+  const spoken = normalized.match(SPOKEN_TIME_WITH_CUE)
+    ?? normalized.match(SPOKEN_TIME_WITH_HOURS);
+  if (!spoken) return null;
+
+  let hours = parseCount(spoken[1]);
+  const period = spoken[2] ?? '';
+  if (!Number.isInteger(hours) || hours < 1 || hours > 23) return null;
+  if (/\b(?:tarde|noite)\b/.test(period) && hours < 12) hours += 12;
+  if (/\bmanha\b/.test(period) && hours === 12) hours = 0;
+  const minutes = 0;
   if (hours > 23 || minutes > 59) return null;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
@@ -145,7 +185,8 @@ function extractTitle(text) {
     .replace(/\bdaqui\s+(?:a\s+|uns?\s+|umas?\s+|cerca\s+de\s+)?[\w\s]+?\s+(?:dias?|semanas?)\b/g, '')
     .replace(/\b(?:hoje|amanha|depois\s+de\s+amanha|fim\s+do\s+mes|final\s+do\s+mes)\b/g, '')
     .replace(/\b(?:(?:de|na|no|para|pra)\s+)?(?:domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?(?:\s+que\s+vem)?\b/g, '')
-    .replace(/\b(?:as|para)\s+\d{1,2}(?:[:h]\d{2})?\s*h?\b/g, '')
+    .replace(/\b(?:as|das|para)\s+\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\b/g, '')
+    .replace(SPOKEN_TIME_TITLE, '')
     .replace(/\b(?:aquele|aquela)\s+(?:coisa|negocio|compromisso)\b/g, '')
     .replace(/[.,!?]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -731,10 +772,11 @@ export function createAgendaConversationFlow({
       return { handled: true, text: 'Não consegui identificar seu espaço atual. Atualize a página e tente novamente.' };
     }
 
-    const pendingResult = await handlePending(text, identity, referenceDate);
+    const agendaText = stripUniVocative(text);
+    const pendingResult = await handlePending(agendaText, identity, referenceDate);
     if (pendingResult) return pendingResult;
 
-    const classification = classifyIntent(text);
+    const classification = classifyIntent(agendaText);
     if (!AGENDA_INTENTS.has(classification.intent)) return { handled: false };
     if (classification.intent === 'agenda_no_time') {
       return { handled: true, text: 'Essa resposta precisa estar ligada a um compromisso que ainda estou montando.' };
@@ -742,9 +784,9 @@ export function createAgendaConversationFlow({
 
     if (classification.intent === 'agenda_financial_conflict') {
       const fields = {
-        originalText: text,
-        title: extractTitle(text),
-        date: resolveAgendaDate(text, referenceDate),
+        originalText: agendaText,
+        title: extractTitle(agendaText),
+        date: resolveAgendaDate(agendaText, referenceDate),
       };
       await startPending(identity, PENDING_TYPES.FINANCIAL_CONFLICT, fields);
       return {
@@ -755,9 +797,9 @@ export function createAgendaConversationFlow({
 
     if (['agenda_reminder_create', 'agenda_schedule_create'].includes(classification.intent)) {
       const fields = {
-        title: classification.signals.includes('agenda_vague_subject') ? null : extractTitle(text),
-        date: resolveAgendaDate(text, referenceDate),
-        time: extractTime(text),
+        title: classification.signals.includes('agenda_vague_subject') ? null : extractTitle(agendaText),
+        date: resolveAgendaDate(agendaText, referenceDate),
+        time: extractTime(agendaText),
         allDay: false,
         itemType: classification.intent === 'agenda_reminder_create' ? 'reminder' : 'appointment',
       };
@@ -774,7 +816,7 @@ export function createAgendaConversationFlow({
     }
 
     if (classification.intent === 'agenda_query') {
-      const bounds = queryBounds(text, referenceDate);
+      const bounds = queryBounds(agendaText, referenceDate);
       const result = await services.listAgendaItems(identity.workspaceId, {
         ...(bounds ?? {}),
         status: 'scheduled',
@@ -784,7 +826,7 @@ export function createAgendaConversationFlow({
       return { handled: true, text: `Você tem: ${result.data.map(formatDateTime).join('; ')}.` };
     }
 
-    const normalizedText = normalizeFinancialText(text);
+    const normalizedText = normalizeFinancialText(agendaText);
     const action = classification.intent === 'agenda_edit'
       ? 'edit'
       : classification.intent === 'agenda_complete'
@@ -793,8 +835,8 @@ export function createAgendaConversationFlow({
           ? 'delete'
           : 'cancel';
     if (action === 'edit') {
-      const subject = extractEditTargetSubject(text);
-      const changes = extractEditChanges(text, referenceDate);
+      const subject = extractEditTargetSubject(agendaText);
+      const changes = extractEditChanges(agendaText, referenceDate);
       if (!subject) {
         await startPending(identity, PENDING_TYPES.EDIT, {
           item: null,
@@ -809,7 +851,7 @@ export function createAgendaConversationFlow({
 
       const candidates = await findCandidates(identity, {
         subject,
-        date: extractEditTargetDate(text, referenceDate),
+        date: extractEditTargetDate(agendaText, referenceDate),
       });
       if (candidates.error) return { handled: true, text: serviceErrorText(candidates.error) };
       if (!candidates.data.length) return { handled: true, text: 'Não encontrei esse compromisso na sua agenda.' };
@@ -838,8 +880,8 @@ export function createAgendaConversationFlow({
       return executeSelected(identity, action, candidates.data[0], changes);
     }
 
-    const subject = extractTitle(text);
-    const date = resolveAgendaDate(text, referenceDate);
+    const subject = extractTitle(agendaText);
+    const date = resolveAgendaDate(agendaText, referenceDate);
     const candidates = await findCandidates(identity, { subject, date });
     if (candidates.error) return { handled: true, text: serviceErrorText(candidates.error) };
     if (!candidates.data.length) return { handled: true, text: 'Não encontrei esse compromisso na sua agenda.' };
