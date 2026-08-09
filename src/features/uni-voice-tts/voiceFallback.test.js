@@ -28,6 +28,7 @@ function createProviderDouble({ supported = true, result = 'success', name = 'pr
     speak: async (text, callbacks = {}) => {
       calls.speak += 1;
       calls.texts.push(text);
+      if (typeof result === 'function') return result({ text, callbacks, calls });
       if (result instanceof Error) throw result;
       callbacks.onPlaying?.();
       callbacks.onEnded?.();
@@ -274,6 +275,29 @@ test('quota com fallback indisponivel devolve erro real e nao finge sucesso', as
     policy: { browserFallbackAllowed: true, forceBrowserTts: false },
   });
   await assert.rejects(provider.speak('Olá'), { code: 'PROVIDER_QUOTA_ERROR' });
+});
+
+test('uma falha de TTS não desativa respostas futuras', async () => {
+  let attempt = 0;
+  const primary = createProviderDouble({
+    result: ({ callbacks }) => {
+      attempt += 1;
+      if (attempt === 1) throw providerError('PROVIDER_ERROR');
+      callbacks.onPlaying?.();
+      callbacks.onEnded?.();
+      return { providerName: 'elevenlabs_tts' };
+    },
+  });
+  const provider = createFallbackVoiceTtsProvider({
+    primaryProvider: primary,
+    browserProvider: createProviderDouble({ supported: false }),
+    policy: { browserFallbackAllowed: false, forceBrowserTts: false },
+  });
+
+  await assert.rejects(provider.speak('Primeira resposta'), { code: 'PROVIDER_ERROR' });
+  const recovered = await provider.speak('Segunda resposta');
+  assert.equal(recovered.providerName, 'elevenlabs_tts');
+  assert.deepEqual(primary.calls.texts, ['Primeira resposta', 'Segunda resposta']);
 });
 
 test('DEV com fallback forcado nao chama ElevenLabs', async () => {

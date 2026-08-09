@@ -3418,7 +3418,7 @@ test('Agenda voice-first usa identidade do workspace autenticado e o pipeline of
   assert.match(body, /conversationId: activeId \?\? 'local-conversation'/);
   assert.match(body, /if \(result\.route === 'financial' && result\.financialText\)/);
   assert.match(body, /runDeterministicFinancialFlow\(result\.financialText, historySnapshot\)/);
-  assert.match(body, /if \(result\.handled && result\.text\) createAssistantResponse\(result\.text\)/);
+  assert.match(body, /if \(result\.handled && result\.text\)[\s\S]*createAssistantResponse\(result\.text, \{ deduplicateNarration: false \}\)/);
 });
 
 test('Sprint 2: conversationalMemoryRef é resetado em switchConversation, junto dos demais refs por conversa', async () => {
@@ -3724,4 +3724,18 @@ test('S8: pendingRestoresRef decrementa em finally do loadMessages (erro de rest
   const slice = page.slice(idx, idx + 2600);
   assert.match(slice, /\.finally\(\(\) => \{\s*\n\s*\/\/ decremento SEMPRE roda \(sucesso ou erro\), rearmando o autoplay\.\s*\n\s*pendingRestoresRef\.current -= 1;/);
   assert.match(slice, /\.catch\(/);
+});
+
+test('Preview R1: respostas e erros da Agenda podem narrar clarificações idênticas em turnos distintos', async () => {
+  const [page, pipeline] = await Promise.all([
+    source('UniChatPage.jsx'),
+    source('useUniResponsePipeline.js'),
+  ]);
+  const agendaBlock = page.slice(
+    page.indexOf('if (hasAgendaConversation) {'),
+    page.indexOf('if (hasPendingConversation) {'),
+  );
+  assert.match(agendaBlock, /createAssistantResponse\(result\.text, \{ deduplicateNarration: false \}\)/);
+  assert.match(agendaBlock, /deduplicateNarration: false/);
+  assert.match(pipeline, /markSpoken\(userId, msg\.id\)/);
 });

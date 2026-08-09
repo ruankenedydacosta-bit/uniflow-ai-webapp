@@ -50,7 +50,12 @@ export function runAssistantResponsePipeline({
   hasNarratedText,
   markNarratedText,
 }) {
-  const { persist = true, autoplay = true, ...messageOptions } = options;
+  const {
+    persist = true,
+    autoplay = true,
+    deduplicateNarration = true,
+    ...messageOptions
+  } = options;
   const msg = buildMessage(text, messageOptions);
   if (!msg) return null;
 
@@ -67,11 +72,11 @@ export function runAssistantResponsePipeline({
     // mesma mensagem de novo) -- inclusive quando a narração é silenciada
     // pelo dedup de conteúdo, para a mensagem nunca virar órfã do efeito.
     markSpoken(userId, msg.id);
-    const textAlreadyNarrated = hasNarratedText
+    const textAlreadyNarrated = deduplicateNarration && hasNarratedText
       ? hasNarratedText(userId, text)
       : false;
     if (!textAlreadyNarrated) {
-      if (markNarratedText) markNarratedText(userId, text);
+      if (deduplicateNarration && markNarratedText) markNarratedText(userId, text);
       speakMessage(msg);
     }
   }

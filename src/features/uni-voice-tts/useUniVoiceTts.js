@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from '../../app/SessionContext.jsx';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient.js';
 import { sanitizeVoiceOutputText, containsSensitiveVoiceData } from '../uni-voice-output/voiceOutputPolicy.js';
@@ -10,6 +10,7 @@ import { MAX_TTS_TEXT_LENGTH } from './voiceTtsConfig.js';
 import { VOICE_TTS_STATUS, VOICE_TTS_ERROR_CODES, getVoiceTtsErrorMessage } from './voiceTtsStatus.js';
 import { createVoiceTtsRequestContext, recordVoiceTtsTelemetry } from './voiceTtsTelemetry.js';
 import { telemetry } from '../observability/index.js';
+import { createVoiceTtsRequestOwnership } from './voiceTtsRequestOwnership.js';
 
 function buildError(code, details = {}) {
   return Object.freeze({
@@ -34,6 +35,10 @@ export function useUniVoiceTts() {
   const { user } = useSession();
   const [status, setStatus] = useState(VOICE_TTS_STATUS.IDLE);
   const [error, setError] = useState(null);
+  const requestOwnershipRef = useRef(null);
+  if (!requestOwnershipRef.current) {
+    requestOwnershipRef.current = createVoiceTtsRequestOwnership();
+  }
 
   const provider = useMemo(() => {
     const runtime = globalThis;
@@ -53,12 +58,16 @@ export function useUniVoiceTts() {
   }, [user?.id]);
 
   // Cleanup ao desmontar: nunca deixa audio tocando nem Blob URL pendurada.
-  useEffect(() => () => provider.stop(), [provider]);
+  useEffect(() => () => {
+    requestOwnershipRef.current.invalidate();
+    provider.stop();
+  }, [provider]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
 
     const stopForPageLifecycle = () => {
+      requestOwnershipRef.current.invalidate();
       provider.stop();
       setStatus(VOICE_TTS_STATUS.STOPPED);
     };
@@ -80,6 +89,8 @@ export function useUniVoiceTts() {
   );
 
   const speak = useCallback(async (text, requestMetadata = {}) => {
+    const requestId = requestOwnershipRef.current.begin();
+    const isCurrentRequest = () => requestOwnershipRef.current.isCurrent(requestId);
     const voiceStartedAt = Date.now();
     const requestContext = createVoiceTtsRequestContext(requestMetadata);
     const recordProviderEvent = (event) => recordVoiceTtsTelemetry({
@@ -90,16 +101,20 @@ export function useUniVoiceTts() {
 
     if (!provider.isSupported()) {
       const err = buildError(VOICE_TTS_ERROR_CODES.UNAVAILABLE);
-      setStatus(VOICE_TTS_STATUS.UNAVAILABLE);
-      setError(err);
+      if (isCurrentRequest()) {
+        setStatus(VOICE_TTS_STATUS.UNAVAILABLE);
+        setError(err);
+      }
       return { error: err };
     }
 
     const sanitized = sanitizeVoiceOutputText(text);
     if (!sanitized) {
       const err = buildError(VOICE_TTS_ERROR_CODES.INVALID_TEXT);
-      setStatus(VOICE_TTS_STATUS.ERROR);
-      setError(err);
+      if (isCurrentRequest()) {
+        setStatus(VOICE_TTS_STATUS.ERROR);
+        setError(err);
+      }
       return { error: err };
     }
     if (sanitized.length > MAX_TTS_TEXT_LENGTH) {
@@ -108,19 +123,25 @@ export function useUniVoiceTts() {
       // deste codigo, que convida a ler na tela em vez de parecer uma
       // falha tecnica generica.
       const err = buildError(VOICE_TTS_ERROR_CODES.TEXT_TOO_LONG);
-      setStatus(VOICE_TTS_STATUS.ERROR);
-      setError(err);
+      if (isCurrentRequest()) {
+        setStatus(VOICE_TTS_STATUS.ERROR);
+        setError(err);
+      }
       return { error: err };
     }
     if (containsSensitiveVoiceData(sanitized)) {
       const err = buildError(VOICE_TTS_ERROR_CODES.INVALID_TEXT);
-      setStatus(VOICE_TTS_STATUS.ERROR);
-      setError(err);
+      if (isCurrentRequest()) {
+        setStatus(VOICE_TTS_STATUS.ERROR);
+        setError(err);
+      }
       return { error: err };
     }
 
-    setStatus(VOICE_TTS_STATUS.LOADING);
-    setError(null);
+    if (isCurrentRequest()) {
+      setStatus(VOICE_TTS_STATUS.LOADING);
+      setError(null);
+    }
 
     try {
       if (
@@ -130,8 +151,12 @@ export function useUniVoiceTts() {
         await preparePlayback();
       }
       await provider.speak(sanitized, {
-        onPlaying: () => setStatus(VOICE_TTS_STATUS.PLAYING),
-        onEnded: () => setStatus(VOICE_TTS_STATUS.STOPPED),
+        onPlaying: () => {
+          if (isCurrentRequest()) setStatus(VOICE_TTS_STATUS.PLAYING);
+        },
+        onEnded: () => {
+          if (isCurrentRequest()) setStatus(VOICE_TTS_STATUS.STOPPED);
+        },
         onProviderEvent: recordProviderEvent,
       });
       void telemetry.metric('voice.latency_ms', {
@@ -146,15 +171,17 @@ export function useUniVoiceTts() {
       return { error: null };
     } catch (providerError) {
       if (providerError?.code === VOICE_TTS_ERROR_CODES.CANCELLED) {
-        setStatus(VOICE_TTS_STATUS.STOPPED);
+        if (isCurrentRequest()) setStatus(VOICE_TTS_STATUS.STOPPED);
         return { error: null };
       }
       const err = buildError(
         providerError?.code ?? VOICE_TTS_ERROR_CODES.PROVIDER_ERROR,
         providerError,
       );
-      setStatus(VOICE_TTS_STATUS.ERROR);
-      setError(err);
+      if (isCurrentRequest()) {
+        setStatus(VOICE_TTS_STATUS.ERROR);
+        setError(err);
+      }
       void telemetry.metric('voice.latency_ms', {
         value: Math.max(0, Date.now() - voiceStartedAt),
         unit: 'ms',
@@ -187,6 +214,7 @@ export function useUniVoiceTts() {
   }, [provider, status]);
 
   const stop = useCallback(() => {
+    requestOwnershipRef.current.invalidate();
     provider.stop();
     setStatus(VOICE_TTS_STATUS.STOPPED);
   }, [provider]);
@@ -194,7 +222,9 @@ export function useUniVoiceTts() {
   // Cancela apenas uma GERACAO em andamento (status LOADING); nunca
   // interrompe uma reproducao ja iniciada -- para isso existe stop().
   const cancel = useCallback(() => {
+    requestOwnershipRef.current.invalidate();
     provider.cancel();
+    setStatus(VOICE_TTS_STATUS.STOPPED);
   }, [provider]);
 
   return {

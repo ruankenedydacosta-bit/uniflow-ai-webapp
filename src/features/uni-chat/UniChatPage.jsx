@@ -3835,11 +3835,16 @@ export default function UniChatPage({ variant = 'full' }) {
           runDeterministicFinancialFlow(result.financialText, historySnapshot);
           return;
         }
-        if (result.handled && result.text) createAssistantResponse(result.text);
+        if (result.handled && result.text) {
+          createAssistantResponse(result.text, { deduplicateNarration: false });
+        }
       }).catch(() => {
         if (!isAgendaRequestCurrent(agendaRequest)) return;
         setIsTyping(false);
-        createAssistantResponse('Não consegui atualizar sua agenda agora. Tente novamente em instantes.');
+        createAssistantResponse(
+          'Não consegui atualizar sua agenda agora. Tente novamente em instantes.',
+          { deduplicateNarration: false },
+        );
       });
       return;
     }

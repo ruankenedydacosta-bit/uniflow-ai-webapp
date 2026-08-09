@@ -315,6 +315,45 @@ test('dedup por conteúdo: duas respostas com o MESMO texto narram uma única ve
   assert.equal(hasAutoSpokenMessage(USER_ID, second.id), true, 'repetida também marcada por id -- o efeito de autoplay nunca a narra depois');
 });
 
+test('clarificações de Agenda podem repetir a fala em turnos distintos sem perder o dedup por id', () => {
+  let nextId = 1;
+  const spoken = [];
+  const buildMessage = (text) => ({ id: `agenda-${nextId++}`, from: 'uni', text });
+  const run = () => runAssistantResponsePipeline({
+    text: 'Não consegui entender o horário. Pode dizer de novo?',
+    options: { deduplicateNarration: false },
+    buildMessage,
+    pushMessage: () => {},
+    persistMessage: () => {},
+    shouldAutoSpeak: () => true,
+    hasSpoken: hasAutoSpokenMessage,
+    markSpoken: markAutoSpokenMessage,
+    speakMessage: (msg) => spoken.push(msg.text),
+    userId: USER_ID,
+    hasNarratedText,
+    markNarratedText,
+  });
+  const first = run();
+  const second = run();
+  assert.deepEqual(spoken, [first.text, second.text]);
+
+  runAssistantResponsePipeline({
+    text: first.text,
+    options: { deduplicateNarration: false },
+    buildMessage: () => first,
+    pushMessage: () => {},
+    persistMessage: () => {},
+    shouldAutoSpeak: () => true,
+    hasSpoken: hasAutoSpokenMessage,
+    markSpoken: markAutoSpokenMessage,
+    speakMessage: (msg) => spoken.push(msg.text),
+    userId: USER_ID,
+    hasNarratedText,
+    markNarratedText,
+  });
+  assert.equal(spoken.length, 2, 'o mesmo messageId continua narrado uma única vez');
+});
+
 test('dedup por conteúdo: textos diferentes narram todos, mesmo no mesmo tick', () => {
   const buildMessage = (text) => ({ id: `msg-${text.length}`, from: 'uni', text });
   const spoken = [];

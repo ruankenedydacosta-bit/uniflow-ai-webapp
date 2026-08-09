@@ -439,7 +439,15 @@ test('texto valido mas longo demais para TTS usa TEXT_TOO_LONG (nao INVALID_TEXT
 });
 
 test('cleanup: hook para o audio no unmount (useEffect com cleanup chamando provider.stop)', () => {
-  assert.match(HOOK_SOURCE, /useEffect\(\(\) => \(\) => provider\.stop\(\), \[provider\]\);/);
+  assert.match(HOOK_SOURCE, /useEffect\(\(\) => \(\) => \{[\s\S]*requestOwnershipRef\.current\.invalidate\(\);[\s\S]*provider\.stop\(\);[\s\S]*\}, \[provider\]\);/);
+});
+
+test('callbacks antigos de TTS não alteram o status de uma solicitação mais nova', () => {
+  assert.match(HOOK_SOURCE, /createVoiceTtsRequestOwnership/);
+  assert.match(HOOK_SOURCE, /const requestId = requestOwnershipRef\.current\.begin\(\)/);
+  assert.match(HOOK_SOURCE, /if \(isCurrentRequest\(\)\) setStatus\(VOICE_TTS_STATUS\.PLAYING\)/);
+  assert.match(HOOK_SOURCE, /if \(isCurrentRequest\(\)\) setStatus\(VOICE_TTS_STATUS\.STOPPED\)/);
+  assert.match(HOOK_SOURCE, /setStatus\(VOICE_TTS_STATUS\.LOADING\);\s*setError\(null\);/);
 });
 
 test('hook prepara reprodução manual e interrompe TTS ao ocultar a página no Safari', () => {

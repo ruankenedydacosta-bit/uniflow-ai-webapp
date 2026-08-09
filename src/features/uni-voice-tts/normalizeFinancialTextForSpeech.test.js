@@ -114,3 +114,35 @@ test('normalizeFinancialTextForSpeech: entrada vazia/nula volta inalterada, nunc
   assert.equal(normalizeFinancialTextForSpeech(null), null);
   assert.equal(normalizeFinancialTextForSpeech(undefined), undefined);
 });
+
+test('normalização TTS converte data e horário estruturados em português natural', () => {
+  assert.equal(
+    normalizeFinancialTextForSpeech('Pronto. Coloquei reunião, dia 10/08 às 10:00 na sua agenda.'),
+    'Pronto. Coloquei reunião, dia dez de agosto, às dez horas na sua agenda.',
+  );
+  assert.equal(
+    normalizeFinancialTextForSpeech('Consulta em 14/08 às 15:30.'),
+    'Consulta em dia catorze de agosto, às quinze horas e trinta minutos.',
+  );
+});
+
+test('normalização TTS converte horários isolados válidos sem alterar o texto visual original', () => {
+  const original = 'Primeiro às 10:30; depois às 22:00.';
+  assert.equal(
+    normalizeFinancialTextForSpeech(original),
+    'Primeiro às dez horas e trinta minutos; depois às vinte e duas horas.',
+  );
+  assert.equal(original, 'Primeiro às 10:30; depois às 22:00.');
+});
+
+test('normalização TTS preserva URLs, dinheiro e números não relacionados', () => {
+  assert.equal(
+    normalizeFinancialTextForSpeech('Abra https://exemplo.com/reuniao/10:30?id=14/08, código 1030, total R$ 10,30.'),
+    'Abra https://exemplo.com/reuniao/10:30?id=14/08, código 1030, total dez reais e trinta centavos.',
+  );
+});
+
+test('normalização TTS não converte datas ou horas inválidas parcialmente', () => {
+  const invalid = 'Datas 32/08 às 10:00 e 10/13 às 25:00; horas 24:30 e 10:60.';
+  assert.equal(normalizeFinancialTextForSpeech(invalid), invalid);
+});
