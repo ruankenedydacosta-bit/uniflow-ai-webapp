@@ -73,9 +73,11 @@ test('esfera central e microfone usam o mesmo controlador persistente', async ()
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
   const chat = await source('../uni-chat/components/ChatInput.jsx');
   const provider = await source('../uni-voice/UniVoiceInputProvider.jsx');
+  const providerRuntime = await source('../uni-voice/UniVoiceInputProviderRuntime.js');
   assert.match(integration, /useSharedUniVoiceInput/);
   assert.match(chat, /useSharedUniVoiceInput/);
-  assert.match(provider, /useUniVoiceInput\(/);
+  assert.match(provider, /UniVoiceInputProviderRuntime/);
+  assert.match(providerRuntime, /useVoiceInput\(\{/);
   assert.doesNotMatch(chat, /useUniVoiceInput\(/);
   assert.doesNotMatch(integration, /useUniVoiceInput\(/);
 });

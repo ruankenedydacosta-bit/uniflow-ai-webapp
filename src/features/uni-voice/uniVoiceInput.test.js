@@ -569,10 +569,14 @@ test('P1-11: cancelamento externo aborta o fetch real da transcrição', async (
 
 test('P1-10/P1-11: captura tem owner imutável e desmontagem cancela a operação ativa', () => {
   const provider = readFileSync(new URL('./UniVoiceInputProvider.jsx', import.meta.url), 'utf8');
-  assert.match(provider, /captureOwnerRef/);
-  assert.match(provider, /handlersRef\.current\.token === owner\.token/);
-  assert.match(provider, /const cancelVoiceInput = voiceInput\.cancel;/);
-  assert.match(provider, /cancelVoiceInput\(\)/);
+  const runtime = readFileSync(new URL('./UniVoiceInputProviderRuntime.js', import.meta.url), 'utf8');
+  const registry = readFileSync(new URL('./voiceHandlerRegistry.js', import.meta.url), 'utf8');
+  assert.match(provider, /UniVoiceInputProviderRuntime/);
+  assert.match(runtime, /const \[handlerRegistry\] = useState/);
+  assert.match(runtime, /handlerRegistry\.updateCancelCapture\(voiceInput\.cancel\)/);
+  assert.match(registry, /captureOwnerToken/);
+  assert.match(registry, /currentRegistration\?\.token !== token/);
+  assert.match(registry, /cancelCapture\(\)/);
 });
 
 test('P1-11/P2: hook passa AbortSignal ao provider e onCaptureEnd é idempotente por captura', () => {

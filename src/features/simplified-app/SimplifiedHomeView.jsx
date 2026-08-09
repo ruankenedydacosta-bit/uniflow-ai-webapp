@@ -5,6 +5,7 @@ import {
   isAppleWebKitRuntime,
   VOICE_CAPTURE_STATES,
   useSharedUniVoiceInput,
+  useStableVoiceInputHandlers,
   useVoiceIntensity,
 } from '../uni-voice/index.js';
 import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
@@ -431,13 +432,14 @@ function SimplifiedHomeView({
     }
   }, [onWelcomeVoiceSettled, requestWelcomeVoice, sessionKey, voiceEnabled]);
 
-  useEffect(() => voiceInput.registerHandlers({
+  const voiceInputHandlers = useMemo(() => ({
     onBeforeStart: onBeforeVoiceStart,
     onFinalTranscript: (transcript) => {
       const cleanTranscript = String(transcript ?? '').trim();
       if (cleanTranscript) onSendTranscript(cleanTranscript, { source: 'voice' });
     },
-  }), [onBeforeVoiceStart, onSendTranscript, voiceInput]);
+  }), [onBeforeVoiceStart, onSendTranscript]);
+  useStableVoiceInputHandlers(voiceInput.registerHandlers, voiceInputHandlers);
 
   useEffect(() => {
     if (!voiceEnabled) return;

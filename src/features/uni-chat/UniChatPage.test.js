@@ -377,7 +377,7 @@ test('entrada por voz concatena, envia a transcrição e usa o workspace ativo',
   assert.match(chatInput, /const next = current \? `\$\{current\} \$\{clean\}` : clean;/);
   assert.match(chatInput, /onSend\(next, \{ source: 'voice' \}\);/);
   assert.match(chatInput, /onBeforeStart: onBeforeVoiceStart/);
-  assert.match(provider, /workspaceId: workspace\?\.id/);
+  assert.match(provider, /workspaceId=\{workspace\?\.id\}/);
 });
 
 test('long press central inicia e encerra a captura no controlador compartilhado', async () => {

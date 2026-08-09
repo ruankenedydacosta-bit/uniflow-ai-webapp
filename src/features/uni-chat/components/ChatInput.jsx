@@ -1,5 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { useSharedUniVoiceInput, VOICE_CAPTURE_STATES } from '../../uni-voice';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useSharedUniVoiceInput,
+  useStableVoiceInputHandlers,
+  VOICE_CAPTURE_STATES,
+} from '../../uni-voice';
 import styles from './ChatInput.module.css';
 
 export default function ChatInput({
@@ -21,7 +25,7 @@ export default function ChatInput({
 
   const voiceInput = useSharedUniVoiceInput();
 
-  useEffect(() => voiceInput.registerHandlers({
+  const voiceHandlers = useMemo(() => ({
     onBeforeStart: onBeforeVoiceStart,
     onFinalTranscript: (transcript) => {
       const clean = (transcript || '').trim();
@@ -31,12 +35,8 @@ export default function ChatInput({
       onChange(next);
       onSend(next, { source: 'voice' });
     },
-  }), [
-    onBeforeVoiceStart,
-    onChange,
-    onSend,
-    voiceInput,
-  ]);
+  }), [onBeforeVoiceStart, onChange, onSend]);
+  useStableVoiceInputHandlers(voiceInput.registerHandlers, voiceHandlers);
 
   const { status } = voiceInput;
 

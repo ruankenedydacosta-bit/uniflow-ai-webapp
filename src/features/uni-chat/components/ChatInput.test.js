@@ -43,3 +43,10 @@ test('transcrição final envia a origem voice ao gateway comum', async () => {
   assert.match(code, /onSend\(next, \{ source: 'voice' \}\);/);
   assert.match(code, /onSend\(value\.trim\(\)\);/);
 });
+
+test('registro de voz usa binding estável; rerender do ChatInput não desmonta o owner lógico', async () => {
+  const code = await source();
+  assert.match(code, /useStableVoiceInputHandlers\(voiceInput\.registerHandlers, voiceHandlers\);/);
+  assert.doesNotMatch(code, /useEffect\(\(\) => voiceInput\.registerHandlers/);
+  assert.doesNotMatch(code, /onChange,[\s\S]*onSend,[\s\S]*voiceInput,[\s\S]*\]\);/);
+});
