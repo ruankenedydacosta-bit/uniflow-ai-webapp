@@ -136,7 +136,7 @@ function detectAgendaIntent(normalizedText) {
 
   // 4. Edição de compromisso ("remarcar reunião", "adiar compromisso")
 if (has([
-  /\b(?:remarcar|reagendar|adiar|passa|antecipar|editar|edita(?:r)?|muda(?:r)?)\b.*\b(?:reuniao|compromisso|consulta|evento|horario|titulo|nome)\b/,
+  /\b(?:remarcar|reagendar|adiar|adia|passa|antecipar|editar|edita(?:r)?|muda(?:r)?)\b.*\b(?:reuniao|compromisso|consulta|evento|horario|titulo|nome)\b/,
   /\bmuda(?:r)?\b[^.!?]+\b(?:para|pras?|as)\s+\d{1,2}(?:[:h]\d{2})?\s*h?\b/,
 ])) {    return { intent: 'agenda_edit', confidence: 0.97, signals: ['agenda_edit_heuristic'] };
   }

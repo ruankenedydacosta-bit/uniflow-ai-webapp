@@ -92,6 +92,11 @@ const AGENDA_CASES = [
     intent: 'agenda_edit',
   },
   {
+    label: 'adiar reunião no imperativo',
+    input: 'Adia minha reunião para sexta',
+    intent: 'agenda_edit',
+  },
+  {
     label: 'muda minha reunião',
     input: 'Muda minha reunião para sexta',
     intent: 'agenda_edit',
