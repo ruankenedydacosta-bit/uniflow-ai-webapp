@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { classifyIntent } from '../uni-intents/index.js';
-import { createAgendaConversationFlow } from './agendaConversationFlow.js';
+import {
+  createAgendaConversationFlow,
+  extractAgendaTime,
+} from './agendaConversationFlow.js';
 
 const IDENTITY = Object.freeze({
   userId: 'user-a',
@@ -161,6 +164,122 @@ test('criação aceita hora por extenso sem a palavra horas', async () => {
   assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
   assert.equal(calls[0].payload.title, 'uma reuniao');
 });
+
+for (const [text, expected] of [
+  ['Agenda amanhã dez horas.', '10:00'],
+  ['Agenda amanhã dez.', '10:00'],
+  ['Agenda sexta quinze horas.', '15:00'],
+  ['Agenda terça duas da tarde.', '14:00'],
+  ['Agenda terça 2 da tarde.', '14:00'],
+  ['Agenda oito da noite.', '20:00'],
+  ['Agenda 8 da noite.', '20:00'],
+  ['Agenda doze da tarde.', '12:00'],
+  ['Agenda doze da noite.', '00:00'],
+  ['Agenda hoje dezenove horas.', '19:00'],
+  ['Agenda dia 20 quatorze horas.', '14:00'],
+  ['Agenda sexta que vem dezesseis horas.', '16:00'],
+  ['Agenda amanhã 10.', '10:00'],
+  ['Agenda amanhã 10h.', '10:00'],
+  ['Agenda amanhã 10:00.', '10:00'],
+  ['Agenda amanhã 10h30.', '10:30'],
+]) {
+  test(`parser direto extrai horário contextual: ${text}`, () => {
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), expected);
+  });
+}
+
+for (const [dateContext, timeExpression, expected] of [
+  ['hoje', 'dezenove horas', '19:00'],
+  ['hoje', '19h', '19:00'],
+  ['amanhã', 'dez', '10:00'],
+  ['amanhã', '10h30', '10:30'],
+  ['sexta', 'quinze horas', '15:00'],
+  ['sexta', '15h', '15:00'],
+  ['sexta que vem', 'dezesseis horas', '16:00'],
+  ['sexta que vem', '16:00', '16:00'],
+  ['dia 20', 'quatorze horas', '14:00'],
+  ['dia 20', '14h', '14:00'],
+]) {
+  test(`matriz contextual ${dateContext} + ${timeExpression}`, () => {
+    assert.equal(
+      extractAgendaTime(`Agenda ${dateContext} ${timeExpression}`, { allowContextual: true }),
+      expected,
+    );
+  });
+}
+
+for (const text of ['Agenda amanhã 24h.', 'Agenda amanhã 10h60.']) {
+  test(`parser direto rejeita horário inválido: ${text}`, () => {
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+  });
+}
+
+test('parser contextual permanece explicitamente desligado fora do contexto de Agenda', () => {
+  assert.equal(extractAgendaTime('Agenda amanhã dez horas.'), null);
+  assert.equal(extractAgendaTime('amanhã 10h'), null);
+  assert.equal(extractAgendaTime('às dez horas'), '10:00');
+  assert.equal(extractAgendaTime('às 8 da noite'), '20:00');
+});
+
+for (const text of [
+  'Trabalhei dez horas extras.',
+  'Fiquei dez horas dirigindo.',
+  'Dormi oito horas.',
+  'Paguei dez reais.',
+  'Tenho dez parcelas.',
+  'Esperei duas horas.',
+  'Passei três horas na reunião.',
+  'Tenho dez reuniões.',
+]) {
+  test(`parser direto rejeita duração, dinheiro ou quantidade: ${text}`, () => {
+    assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
+  });
+}
+
+async function completeVagueCreation(flow, calls, text, expectedDate, expectedHour) {
+  const first = await turn(flow, text);
+  assert.match(first.text, /O que você quer/);
+  const completed = await turn(flow, 'Reunião do projeto.');
+  assert.match(completed.text, /Pronto/);
+  const create = calls.find((call) => call.operation === 'create');
+  assert.match(create.payload.starts_at, new RegExp(`^${expectedDate}T`));
+  assert.equal(new Date(create.payload.starts_at).getHours(), expectedHour);
+  assert.equal(create.payload.title, 'reuniao do projeto');
+}
+
+for (const [text, expectedDate, expectedHour] of [
+  ['Agenda amanhã dez horas.', '2026-08-09', 10],
+  ['Agenda amanhã dez.', '2026-08-09', 10],
+  ['Marca amanhã nove horas.', '2026-08-09', 9],
+  ['Marca amanhã oito da manhã.', '2026-08-09', 8],
+  ['Fala Uni, agenda amanhã dez horas.', '2026-08-09', 10],
+  ['Ei Uni, marca sexta quinze horas.', '2026-08-14', 15],
+]) {
+  test(`criação elíptica preserva data e horário até receber assunto: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    await completeVagueCreation(flow, calls, text, expectedDate, expectedHour);
+  });
+}
+
+for (const [text, expectedDate, expectedHour, expectedTitle] of [
+  ['Agenda reunião amanhã nove horas.', '2026-08-09', 9, 'reuniao'],
+  ['Marca reunião sexta quinze horas.', '2026-08-14', 15, 'reuniao'],
+  ['Marca reunião sexta 15h.', '2026-08-14', 15, 'reuniao'],
+  ['Reunião segunda oito da manhã.', '2026-08-10', 8, 'reuniao'],
+  ['Reunião terça duas da tarde.', '2026-08-11', 14, 'reuniao'],
+  ['Reunião sobre a Uni amanhã dez horas.', '2026-08-09', 10, 'reuniao sobre a uni'],
+]) {
+  test(`criação natural completa usa data, horário e título corretos: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, text);
+
+    assert.match(result.text, /Pronto/);
+    const create = calls.find((call) => call.operation === 'create');
+    assert.match(create.payload.starts_at, new RegExp(`^${expectedDate}T`));
+    assert.equal(new Date(create.payload.starts_at).getHours(), expectedHour);
+    assert.equal(create.payload.title, expectedTitle);
+  });
+}
 
 test('períodos naturais manhã e tarde ajustam a hora sem ambiguidade', async () => {
   const morning = makeHarness();
@@ -522,6 +641,24 @@ test('consulta do fim do mês usa o último dia do mês', async () => {
   assert.match(calls[0].filters.startsFrom, /^2026-08-31T/);
 });
 
+for (const text of [
+  'Agenda de amanhã.',
+  'Agenda de sexta.',
+  'Minha agenda amanhã.',
+  'Quais meus compromissos amanhã?',
+  'Quais meus compromissos amanhã às dez?',
+  'O que tenho sexta às quinze horas?',
+]) {
+  test(`horário não transforma consulta em criação: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, text);
+
+    assert.equal(result.handled, true);
+    assert.equal(calls.some((call) => call.operation === 'list'), true);
+    assert.equal(calls.some((call) => call.operation === 'create'), false);
+  });
+}
+
 test('edição encontra um item e altera somente o horário', async () => {
   const { flow, calls } = makeHarness([
     { id: 'dentista', workspace_id: IDENTITY.workspaceId, title: 'Dentista', starts_at: '2026-08-09T15:00:00.000Z' },
@@ -532,6 +669,63 @@ test('edição encontra um item e altera somente o horário', async () => {
   assert.equal(new Date(update.changes.starts_at).getHours(), 16);
   assert.equal(update.options.expectedUpdatedAt, '2026-08-08T10:00:00.000Z');
 });
+
+for (const [text, expectedDate, expectedHour] of [
+  ['Muda minha reunião para sexta dezesseis horas.', '2026-08-14', 16],
+  ['Adia minha reunião para amanhã dez horas.', '2026-08-09', 10],
+  ['Muda minha reunião amanhã onze horas.', '2026-08-09', 11],
+]) {
+  test(`edição contextual altera data e horário sem corromper título: ${text}`, async () => {
+    const { flow, calls } = makeHarness([
+      { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+    ]);
+
+    const result = await turn(flow, text);
+    assert.match(result.text, /Atualizei/);
+    const update = calls.find((call) => call.operation === 'update');
+    assert.match(update.changes.starts_at, new RegExp(`^${expectedDate}T`));
+    assert.equal(new Date(update.changes.starts_at).getHours(), expectedHour);
+    assert.equal(Object.hasOwn(update.changes, 'title'), false);
+  });
+}
+
+test('edição elíptica preserva mudanças enquanto pergunta qual compromisso', async () => {
+  const { flow, calls } = makeHarness([
+    { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+  ]);
+
+  const first = await turn(flow, 'Remarca para segunda duas da tarde.');
+  assert.match(first.text, /Qual compromisso/);
+  const result = await turn(flow, 'Reunião.');
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.match(update.changes.starts_at, /^2026-08-10T/);
+  assert.equal(new Date(update.changes.starts_at).getHours(), 14);
+  assert.equal(Object.hasOwn(update.changes, 'title'), false);
+});
+
+for (const [command, expectedChanges] of [
+  ['Muda só o horário para onze horas.', { hour: 11 }],
+  ['Muda só a data para amanhã.', { date: '2026-08-09' }],
+  ['Muda o título para alinhamento.', { title: 'alinhamento' }],
+]) {
+  test(`edição somente de campo pergunta o alvo e preserva a alteração: ${command}`, async () => {
+    const { flow, calls } = makeHarness([
+      { id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-12T15:00:00.000Z' },
+    ]);
+
+    const first = await turn(flow, command);
+    assert.match(first.text, /Qual compromisso/);
+    const result = await turn(flow, 'Reunião.');
+    assert.match(result.text, /Atualizei/);
+    const update = calls.find((call) => call.operation === 'update');
+    if (expectedChanges.hour != null) {
+      assert.equal(new Date(update.changes.starts_at).getHours(), expectedChanges.hour);
+    }
+    if (expectedChanges.date) assert.match(update.changes.starts_at, new RegExp(`^${expectedChanges.date}T`));
+    if (expectedChanges.title) assert.equal(update.changes.title, expectedChanges.title);
+  });
+}
 
 test('edição altera o título explicitamente sem perder o restante do item', async () => {
   const { flow, calls } = makeHarness([

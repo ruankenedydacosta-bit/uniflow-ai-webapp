@@ -54,16 +54,45 @@ const SPOKEN_HOUR_PATTERN = [
   'dez', 'onze', 'doze', 'treze', 'catorze', 'quatorze', 'quinze',
   'dezesseis', 'dezassete', 'dezessete', 'dezoito', 'dezenove',
 ].join('|');
+const AGENDA_DATE_CONTEXT_PATTERN = [
+  'hoje',
+  'amanha',
+  'depois\\s+de\\s+amanha',
+  '(?:domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?(?:\\s+que\\s+vem)?',
+  'dia\\s+\\d{1,2}',
+  '\\d{1,2}\\/\\d{1,2}(?:\\/\\d{2,4})?',
+].join('|');
 const SPOKEN_TIME_WITH_CUE = new RegExp(
   `\\b(?:as|das|para)\\s+(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?\\b`,
 );
 const SPOKEN_TIME_WITH_HOURS = new RegExp(
   `^(${SPOKEN_HOUR_PATTERN})\\s+horas?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?$`,
 );
+const CONTEXTUAL_NUMERIC_TIME = new RegExp(
+  `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(\\d{1,2})(?:[:h](\\d{2}))?\\s*(?:horas?|h)?\\b`,
+);
+const CONTEXTUAL_NUMERIC_TIME_WITH_PERIOD = new RegExp(
+  `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(\\d{1,2})(?:[:h](\\d{2}))?\\s*(?:horas?|h)?\\s+(da\\s+manha|da\\s+tarde|da\\s+noite)\\b`,
+);
+const CONTEXTUAL_SPOKEN_TIME = new RegExp(
+  `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?\\b`,
+);
+const SPOKEN_TIME_WITH_PERIOD = new RegExp(
+  `\\b(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?\\s+(da\\s+manha|da\\s+tarde|da\\s+noite)\\b`,
+);
 const SPOKEN_TIME_TITLE = new RegExp(
   `\\b(?:as|das|para)\\s+(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
   'g',
 );
+const CONTEXTUAL_TIME_TITLE = new RegExp(
+  `(\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\b)\\s+(?:(?:\\d{1,2})(?:[:h]\\d{2})?\\s*(?:horas?|h)?|(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?)(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
+  'g',
+);
+const SPOKEN_PERIOD_TIME_TITLE = new RegExp(
+  `\\b(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?\\s+da\\s+(?:manha|tarde|noite)\\b`,
+  'g',
+);
+const NUMERIC_PERIOD_TIME_TITLE = /\b\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\s+da\s+(?:manha|tarde|noite)\b/g;
 
 const WEEKDAYS = Object.freeze([
   'domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado',
@@ -146,30 +175,67 @@ function resolveAgendaDate(text, referenceDate) {
   return resolveRelativeDateExpression(text, referenceDate).resolvedDate;
 }
 
-function extractTime(text) {
+function formatExtractedTime(hoursValue, minutesValue = 0, period = '') {
+  if (hoursValue == null) return null;
+  let hours = Number(hoursValue);
+  const minutes = Number(minutesValue ?? 0);
+  if (!Number.isInteger(hours) || hours < 0 || hours > 23 || minutes > 59) return null;
+  if (/\bnoite\b/.test(period) && hours === 12) hours = 0;
+  else if (/\b(?:tarde|noite)\b/.test(period) && hours < 12) hours += 12;
+  if (/\bmanha\b/.test(period) && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+export function extractAgendaTime(text, { allowContextual = false } = {}) {
   const normalized = normalizeFinancialText(text);
+  const numericWithPeriod = normalized.match(
+    /\b(?:as|das|para)\s+(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?\s+(da\s+manha|da\s+tarde|da\s+noite)\b/,
+  );
+  if (numericWithPeriod) {
+    return formatExtractedTime(numericWithPeriod[1], numericWithPeriod[2], numericWithPeriod[3]);
+  }
+
   const numeric = normalized.match(
     /\b(?:as|das|para)\s+(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?\b/,
   ) ?? normalized.match(/^(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?$/);
-  if (numeric) {
-    const hours = Number(numeric[1]);
-    const minutes = Number(numeric[2] ?? 0);
-    if (hours > 23 || minutes > 59) return null;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-  }
+  if (numeric) return formatExtractedTime(numeric[1], numeric[2]);
 
   const spoken = normalized.match(SPOKEN_TIME_WITH_CUE)
     ?? normalized.match(SPOKEN_TIME_WITH_HOURS);
-  if (!spoken) return null;
+  if (spoken) return formatExtractedTime(parseCount(spoken[1]), 0, spoken[2]);
 
-  let hours = parseCount(spoken[1]);
-  const period = spoken[2] ?? '';
-  if (!Number.isInteger(hours) || hours < 1 || hours > 23) return null;
-  if (/\b(?:tarde|noite)\b/.test(period) && hours < 12) hours += 12;
-  if (/\bmanha\b/.test(period) && hours === 12) hours = 0;
-  const minutes = 0;
-  if (hours > 23 || minutes > 59) return null;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  if (!allowContextual) return null;
+
+  const contextualNumericWithPeriod = normalized.match(CONTEXTUAL_NUMERIC_TIME_WITH_PERIOD);
+  if (contextualNumericWithPeriod) {
+    return formatExtractedTime(
+      contextualNumericWithPeriod[1],
+      contextualNumericWithPeriod[2],
+      contextualNumericWithPeriod[3],
+    );
+  }
+
+  const contextualNumeric = normalized.match(CONTEXTUAL_NUMERIC_TIME);
+  if (contextualNumeric) {
+    return formatExtractedTime(contextualNumeric[1], contextualNumeric[2]);
+  }
+
+  const contextualSpoken = normalized.match(CONTEXTUAL_SPOKEN_TIME)
+    ?? normalized.match(SPOKEN_TIME_WITH_PERIOD);
+  if (contextualSpoken) {
+    return formatExtractedTime(parseCount(contextualSpoken[1]), 0, contextualSpoken[2]);
+  }
+
+  const contextualNumericPeriod = normalized.match(
+    /\b(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?\s+(da\s+manha|da\s+tarde|da\s+noite)\b/,
+  );
+  return contextualNumericPeriod
+    ? formatExtractedTime(
+      contextualNumericPeriod[1],
+      contextualNumericPeriod[2],
+      contextualNumericPeriod[3],
+    )
+    : null;
 }
 
 function extractTitle(text) {
@@ -183,10 +249,14 @@ function extractTitle(text) {
     .replace(/\b(?:ja\s+fiz|conclui|finalizei)\s+(?:aquele|aquela|o|a)?\s*/g, '')
     .replace(/\b(?:pode\s+)?marcar\s+como\s+concluida?\b/g, '')
     .replace(/\bdaqui\s+(?:a\s+|uns?\s+|umas?\s+|cerca\s+de\s+)?[\w\s]+?\s+(?:dias?|semanas?)\b/g, '')
+    .replace(CONTEXTUAL_TIME_TITLE, '$1')
     .replace(/\b(?:hoje|amanha|depois\s+de\s+amanha|fim\s+do\s+mes|final\s+do\s+mes)\b/g, '')
     .replace(/\b(?:(?:de|na|no|para|pra)\s+)?(?:domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?(?:\s+que\s+vem)?\b/g, '')
-    .replace(/\b(?:as|das|para)\s+\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\b/g, '')
+    .replace(/\b(?:(?:de|na|no|para|pra)\s+)?dia\s+\d{1,2}\b/g, '')
+    .replace(/\b(?:as|das|para)\s+\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?(?:\s+da\s+(?:manha|tarde|noite))?\b/g, '')
     .replace(SPOKEN_TIME_TITLE, '')
+    .replace(SPOKEN_PERIOD_TIME_TITLE, '')
+    .replace(NUMERIC_PERIOD_TIME_TITLE, '')
     .replace(/\b(?:aquele|aquela)\s+(?:coisa|negocio|compromisso)\b/g, '')
     .replace(/[.,!?]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -234,6 +304,13 @@ function extractImplicitTitleChange(text) {
 function extractEditTargetSubject(text) {
   const explicitTitle = extractExplicitTitleChange(text);
   if (explicitTitle.target) return explicitTitle.target;
+
+  const normalizedText = normalizeFinancialText(text);
+  if (
+    /^\s*(?:muda(?:r)?|altera(?:r)?|edita(?:r)?)\s+(?:(?:so|apenas)\s+)?(?:o|a)?\s*(?:horario|data|titulo|nome)\b/.test(normalizedText)
+  ) {
+    return null;
+  }
   const implicitTitle = extractImplicitTitleChange(text);
   if (implicitTitle.target) return implicitTitle.target;
 
@@ -252,16 +329,17 @@ function extractEditChanges(text, referenceDate) {
   const explicitTitle = extractExplicitTitleChange(text);
   const implicitTitle = extractImplicitTitleChange(text);
   const destination = normalized.match(/\b(?:para|pra)\s+(.+)$/)?.[1] ?? '';
-  const canUseWholeTextForDate = /\b(?:remarca|reagenda|adia|antecipa)\b/.test(normalized);
+  const canUseWholeTextForDate = /\b(?:muda|altera|remarca|reagenda|adia|passa|antecipa)\b/.test(normalized);
   const dateSource = destination || (canUseWholeTextForDate ? normalized : '');
   const date = dateSource ? resolveAgendaDate(dateSource, referenceDate) : null;
+  const time = extractAgendaTime(text, { allowContextual: true });
 
   return {
     ...(explicitTitle.title || implicitTitle.title
       ? { title: explicitTitle.title ?? implicitTitle.title }
       : {}),
     ...(date ? { date } : {}),
-    ...(extractTime(text) ? { time: extractTime(text) } : {}),
+    ...(time ? { time } : {}),
   };
 }
 
@@ -377,7 +455,7 @@ function selectUniqueCandidate(items, text) {
   ));
   if (exact.length === 1) return exact[0];
 
-  const selectedTime = extractTime(text);
+  const selectedTime = extractAgendaTime(text, { allowContextual: true });
   if (selectedTime) {
     const byTime = items.filter((item) => {
       if (item.is_all_day) return false;
@@ -611,7 +689,7 @@ export function createAgendaConversationFlow({
       const fields = { ...active.fields };
       if (!fields.title) fields.title = extractTitle(text);
       const noTime = /\b(?:sem\s+horario|pode\s+deixar\s+sem\s+horario|compromisso\s+do\s+dia|dia\s+inteiro)\b/.test(normalized);
-      const time = extractTime(text);
+      const time = extractAgendaTime(text, { allowContextual: true });
       if (noTime) {
         fields.allDay = true;
         fields.time = null;
@@ -799,7 +877,7 @@ export function createAgendaConversationFlow({
       const fields = {
         title: classification.signals.includes('agenda_vague_subject') ? null : extractTitle(agendaText),
         date: resolveAgendaDate(agendaText, referenceDate),
-        time: extractTime(agendaText),
+        time: extractAgendaTime(agendaText, { allowContextual: true }),
         allDay: false,
         itemType: classification.intent === 'agenda_reminder_create' ? 'reminder' : 'appointment',
       };

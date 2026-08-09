@@ -116,6 +116,9 @@ function detectAgendaIntent(normalizedText) {
     /\b(?:marcar|agendar|agenda|criar)\s+(?:(?:uma|um|a|as|o|os)\s+)?(?:reuniao|compromisso|evento|consulta|agenda)\b/,
     /\b(?:eu\s+)?(?:tenho|tive|vou\s+ter)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|consulta|evento)\b/,
     /\b(?:reuniao|compromisso|consulta|evento)\b[^.!?]*\b(?:daqui\s+a|daqui|em)\s*\d+\s*(?:dia|dias|semana|semanas|mes|meses|ano|anos)\b/,
+    /^agenda\s+(?!de\b)(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
+    /^marca(?:r)?\s+(?:reuniao\s+)?(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
+    /^(?:uma\s+)?(?:reuniao|compromisso|consulta|evento)\b[^.!?]{0,80}\b(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
     ...buildAgendaSchedulePatterns(),
   ])) {
     return { intent: 'agenda_schedule_create', confidence: 0.97, signals: ['agenda_schedule_heuristic'] };
@@ -125,7 +128,7 @@ function detectAgendaIntent(normalizedText) {
   if (has([
     /\b(?:qual|quais)\b.*\bagenda\b/,
     /\bminha\s+agenda\b/,
-    /\bagenda\s+(?:do|da|de)\s+(?:dia|hoje|amanha|semana|mes|proximo)\b/,
+    /\bagenda\s+(?:do|da|de)\s+(?:dia|hoje|amanha|semana|mes|proximo|domingo|segunda|terca|quarta|quinta|sexta|sabado)\b/,
     /\b(?:proximos?|proximas?)\s+(?:compromissos?|eventos?|reunioes?|lembretes?)\b/,
     /\bcompromissos?\s+(?:de\s+)?(?:hoje|amanha|semana)\b/,
     /\bcompromissos?[^.!?]{0,40}\b(?:de\s+)?(?:hoje|amanha|semana)\b/,
@@ -136,8 +139,9 @@ function detectAgendaIntent(normalizedText) {
 
   // 4. Edição de compromisso ("remarcar reunião", "adiar compromisso")
 if (has([
-  /\b(?:remarcar|reagendar|adiar|adia|passa|antecipar|editar|edita(?:r)?|muda(?:r)?)\b.*\b(?:reuniao|compromisso|consulta|evento|horario|titulo|nome)\b/,
+  /\b(?:remarcar|reagendar|adiar|adia|passa|antecipar|editar|edita(?:r)?|muda(?:r)?)\b.*\b(?:reuniao|compromisso|consulta|evento|horario|data|titulo|nome)\b/,
   /\bmuda(?:r)?\b[^.!?]+\b(?:para|pras?|as)\s+\d{1,2}(?:[:h]\d{2})?\s*h?\b/,
+  /\b(?:remarca(?:r)?|reagenda(?:r)?|adia(?:r)?)\s+(?:para\s+)?(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
 ])) {    return { intent: 'agenda_edit', confidence: 0.97, signals: ['agenda_edit_heuristic'] };
   }
 

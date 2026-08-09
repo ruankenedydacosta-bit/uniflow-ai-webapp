@@ -72,6 +72,21 @@ const AGENDA_CASES = [
     intent: 'agenda_schedule_create',
   },
   {
+    label: 'imperativo elíptico agenda com data e hora falada',
+    input: 'Agenda amanhã dez horas',
+    intent: 'agenda_schedule_create',
+  },
+  {
+    label: 'imperativo elíptico marca com data e hora falada',
+    input: 'Marca amanhã nove horas',
+    intent: 'agenda_schedule_create',
+  },
+  {
+    label: 'substantivo inicial com data e hora falada',
+    input: 'Reunião terça duas da tarde',
+    intent: 'agenda_schedule_create',
+  },
+  {
     label: '"agenda de hoje" é consulta direta',
     input: 'Agenda de hoje',
     intent: 'agenda_query',
@@ -99,6 +114,16 @@ const AGENDA_CASES = [
   {
     label: 'muda minha reunião',
     input: 'Muda minha reunião para sexta',
+    intent: 'agenda_edit',
+  },
+  {
+    label: 'muda reunião com data e hora sem preposição',
+    input: 'Muda minha reunião amanhã onze horas',
+    intent: 'agenda_edit',
+  },
+  {
+    label: 'remarca elíptico com data e hora falada',
+    input: 'Remarca para segunda duas da tarde',
     intent: 'agenda_edit',
   },
   {
