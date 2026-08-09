@@ -25,6 +25,7 @@ const VALID_CATEGORIES = new Set(Object.values(KNOWLEDGE_CATEGORIES));
 const KNOWN_APP_ROUTES = new Set([
   '/', '/welcome', '/login', '/redefinir-senha', '/auth/callback',
   '/apresentacao', '/plano-pessoal', '/app/home', '/app/uni', '/app/registros', '/app/conta',
+  '/app/agenda', '/app/conta/suporte', '/app/conta/voz',
   '/dashboard', '/uni-ai', '/financeiro', '/categorias', '/open-finance', '/objetivos',
   '/futuro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/configuracoes',
 ]);
@@ -103,6 +104,19 @@ test('open-finance é status demo, nunca available', () => {
   const financial = getKnowledgeEntryById('financial-management');
   assert.equal(financial.status, KNOWLEDGE_STATUS.LIMITED);
   assert.match(financial.content, /DEMONSTRAÇÃO VISUAL/);
+});
+
+test('objetivos não são anunciados como disponíveis na interface simplificada', () => {
+  const goals = getKnowledgeEntryById('goals');
+  assert.equal(goals.status, KNOWLEDGE_STATUS.FUTURE);
+  assert.deepEqual(goals.routes, []);
+  assert.match(goals.content, /não estão expostos/);
+});
+
+test('navegação mobile descreve apenas Home, Registros e Conta como barra inferior', () => {
+  const navigation = getKnowledgeEntryById('navigation-mobile');
+  assert.match(navigation.content, /barra inferior tem Home, Registros e Conta/);
+  assert.doesNotMatch(navigation.content, /Home, Financeiro, Uni/);
 });
 
 test('getKnowledgeEntryById retorna null para id inexistente', () => {

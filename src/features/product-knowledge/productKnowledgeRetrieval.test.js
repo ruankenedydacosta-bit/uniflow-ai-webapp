@@ -21,7 +21,41 @@ test('encontra o documento financeiro para "como registro uma movimentação"', 
 
 test('encontra o documento de objetivos para "onde encontro meus objetivos"', () => {
   const { results } = retrieveProductKnowledge('onde encontro meus objetivos');
-  assert.ok(results.some((r) => r.id === 'goals'));
+  const entry = results.find((r) => r.id === 'goals');
+  assert.ok(entry);
+  assert.equal(entry.status, KNOWLEDGE_STATUS.FUTURE);
+  assert.match(entry.content, /não estão expostos/);
+});
+
+for (const question of ['Como faço para agendar uma reunião?', 'Onde fica a Agenda?']) {
+  test(`encontra a Agenda atual para "${question}"`, () => {
+    const { results } = retrieveProductKnowledge(question);
+    const entry = results.find((result) => result.id === 'agenda-and-projects');
+    assert.ok(entry);
+    assert.match(entry.content, /Conta → Agenda/);
+  });
+}
+
+test('explica como registrar movimentação na experiência simplificada', () => {
+  const { results } = retrieveProductKnowledge('Como registrar uma movimentação?');
+  const entry = results.find((result) => result.id === 'financial-management');
+  assert.ok(entry);
+  assert.match(entry.content, /Registros/);
+  assert.match(entry.content, /confirmação explícita/);
+});
+
+test('explica a troca entre Pessoal e Empresa sem cruzar dados', () => {
+  const { results } = retrieveProductKnowledge('Como alterar entre Pessoal e Empresa?');
+  const entry = results.find((result) => result.id === 'workspaces-pf-pj');
+  assert.ok(entry);
+  assert.match(entry.content, /Pessoal\/Empresa/);
+});
+
+test('explica a configuração de voz na rota real de Conta', () => {
+  const { results } = retrieveProductKnowledge('Como configurar a voz da Uni?');
+  const entry = results.find((result) => result.id === 'uni-voice');
+  assert.ok(entry);
+  assert.match(entry.content, /Conta → Voz da Uni/);
 });
 
 test('encontra o documento de voz para "como ouço uma resposta da Uni"', () => {

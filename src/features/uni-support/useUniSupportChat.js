@@ -24,6 +24,19 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
   const lastUnresolvedRef = useRef(null);
   const aiCancelledRef = useRef(false);
   const conversationIdRef = useRef(null);
+  const requestIdRef = useRef(0);
+  const mountedRef = useRef(true);
+  const cancelLlmRef = useRef(uniLlm.cancel);
+
+  useEffect(() => {
+    cancelLlmRef.current = uniLlm.cancel;
+  }, [uniLlm.cancel]);
+
+  useEffect(() => () => {
+    mountedRef.current = false;
+    requestIdRef.current += 1;
+    cancelLlmRef.current();
+  }, []);
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
@@ -50,7 +63,10 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
   }
 
   async function handleUnresolved(text, history) {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
     lastUnresolvedRef.current = { text, history };
+    aiCancelledRef.current = false;
     setIsTyping(true);
     setAiStatus(AI_STATUS.LOADING);
 
@@ -59,9 +75,10 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
       outcome = await uniLlm.generateSupportResponse({ text, messages: history, workspace: workspaceType });
     } catch {
       outcome = null;
-    } finally {
-      setIsTyping(false);
     }
+
+    if (!mountedRef.current || requestId !== requestIdRef.current) return;
+    setIsTyping(false);
 
     const llmText = outcome?.text ?? null;
     setLastKnowledge(outcome?.knowledge ?? null);
@@ -98,7 +115,10 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
   const cancel = useCallback(() => {
     if (aiStatus !== AI_STATUS.LOADING) return;
     aiCancelledRef.current = true;
+    requestIdRef.current += 1;
     uniLlm.cancel();
+    setIsTyping(false);
+    setAiStatus(AI_STATUS.CANCELLED);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiStatus]);
 
@@ -111,6 +131,7 @@ export function useUniSupportChat({ workspaceId, workspaceType } = {}) {
   }, [isTyping]);
 
   const reset = useCallback(() => {
+    requestIdRef.current += 1;
     uniLlm.cancel();
     setMessages([]);
     setConversationId(null);

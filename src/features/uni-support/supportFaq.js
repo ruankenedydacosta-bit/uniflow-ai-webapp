@@ -40,6 +40,14 @@ export const SUPPORT_FAQ_CATEGORIES = Object.freeze([
     ],
   },
   {
+    id: 'agenda',
+    label: 'Agenda',
+    items: [
+      { question: 'Como faço para agendar uma reunião?', knowledgeId: 'agenda-and-projects' },
+      { question: 'Onde fica a Agenda?', knowledgeId: 'agenda-and-projects' },
+    ],
+  },
+  {
     id: 'objetivos',
     label: 'Objetivos',
     items: [
@@ -59,6 +67,7 @@ export const SUPPORT_FAQ_CATEGORIES = Object.freeze([
     label: 'Voz',
     items: [
       { question: 'Como ouço uma resposta da Uni?', knowledgeId: 'uni-voice' },
+      { question: 'Como configurar a voz da Uni?', knowledgeId: 'uni-voice' },
       { question: 'A voz consome crédito toda vez que repito?', knowledgeId: 'uni-voice' },
       { question: 'Como desativo a voz?', knowledgeId: 'uni-voice' },
     ],
@@ -94,8 +103,8 @@ export const SUPPORT_FAQ_CATEGORIES = Object.freeze([
 export const SUPPORT_SUGGESTED_QUESTIONS = Object.freeze([
   'Como registrar uma movimentação?',
   'Como alternar entre Pessoal e Empresa?',
-  'Onde encontro meus objetivos?',
-  'Como ouvir uma resposta?',
+  'Onde fica a Agenda?',
+  'Como configurar a voz da Uni?',
   'A Open Finance já funciona de verdade?',
   'Como excluir uma conversa?',
 ]);

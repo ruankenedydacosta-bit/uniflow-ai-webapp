@@ -27,7 +27,9 @@ test('cancelamento marca AI_STATUS.CANCELLED (nunca ERROR) -- mesma correção a
 test('cancel() só age durante LOADING, marca aiCancelledRef ANTES de chamar uniLlm.cancel()', () => {
   const fnBody = SOURCE.slice(SOURCE.indexOf('const cancel = useCallback'), SOURCE.indexOf('const retry = useCallback'));
   assert.match(fnBody, /if \(aiStatus !== AI_STATUS\.LOADING\) return;/);
-  assert.match(fnBody, /aiCancelledRef\.current = true;\s*\n\s*uniLlm\.cancel\(\);/);
+  assert.match(fnBody, /aiCancelledRef\.current = true;\s*\n\s*requestIdRef\.current \+= 1;\s*\n\s*uniLlm\.cancel\(\);/);
+  assert.match(fnBody, /setIsTyping\(false\);/);
+  assert.match(fnBody, /setAiStatus\(AI_STATUS\.CANCELLED\);/);
 });
 
 test('reset() interrompe qualquer chamada em andamento (uniLlm.cancel) e limpa mensagens/estado', () => {
@@ -50,4 +52,15 @@ test('mensagem final (sucesso ou fallback) sempre é enviada e persistida -- nun
 
 test('lastKnowledge é atualizado a cada resposta -- base para o escalonamento inteligente', () => {
   assert.match(SOURCE, /setLastKnowledge\(outcome\?\.knowledge \?\? null\);/);
+});
+
+test('resposta atrasada não atualiza estado depois de cancelamento ou nova solicitação', () => {
+  assert.match(SOURCE, /const requestId = requestIdRef\.current \+ 1;/);
+  assert.match(SOURCE, /if \(!mountedRef\.current \|\| requestId !== requestIdRef\.current\) return;/);
+  assert.match(SOURCE, /requestIdRef\.current \+= 1;/);
+});
+
+test('desmontagem invalida a solicitação ativa e cancela o transporte', () => {
+  assert.match(SOURCE, /mountedRef\.current = false;/);
+  assert.match(SOURCE, /cancelLlmRef\.current\(\);/);
 });

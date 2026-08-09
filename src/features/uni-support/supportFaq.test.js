@@ -30,10 +30,27 @@ test('nenhuma pergunta da FAQ é duplicada dentro da mesma categoria', () => {
 test('categorias da FAQ cobrem as áreas exigidas pela fase (primeiros passos, conta, PF/PJ, financeiro, voz, demonstração etc.)', () => {
   const ids = SUPPORT_FAQ_CATEGORIES.map((c) => c.id);
   for (const expected of [
-    'primeiros-passos', 'conta-acesso', 'pessoal-empresa', 'financeiro',
+    'primeiros-passos', 'conta-acesso', 'pessoal-empresa', 'financeiro', 'agenda',
     'objetivos', 'chat-uni', 'voz', 'notificacoes', 'privacidade-seguranca', 'demonstracao',
   ]) {
     assert.ok(ids.includes(expected), `categoria ausente: ${expected}`);
+  }
+});
+
+test('FAQ cobre as perguntas críticas da experiência simplificada', () => {
+  const questions = new Set(SUPPORT_FAQ_CATEGORIES.flatMap((category) => (
+    category.items.map((item) => item.question)
+  )));
+
+  for (const expected of [
+    'Como faço para agendar uma reunião?',
+    'Onde fica a Agenda?',
+    'Como registrar uma movimentação?',
+    'Como alternar entre Pessoal e Empresa?',
+    'Onde encontro meus objetivos?',
+    'Como configurar a voz da Uni?',
+  ]) {
+    assert.ok(questions.has(expected), `pergunta ausente: ${expected}`);
   }
 });
 
