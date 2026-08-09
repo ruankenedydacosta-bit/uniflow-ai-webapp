@@ -97,6 +97,7 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { dedupeMessagesForRender, mergeRestoredMessages } from './mergeRestoredMessages.js';
+import { isAgendaRequestContextCurrent } from './agendaRequestLifecycle.js';
 import { classifyIntent } from '../uni-intents/index.js';
 import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration, buildToolCallingAuthorization } from '../uni-engine/index.js';
 import { validateFinancialFacts } from '../uni-engine/financial-runtime/factual-validation/index.js';
@@ -1231,6 +1232,7 @@ export default function UniChatPage({ variant = 'full' }) {
   const pendingActionRef = useRef(null);
   const pendingActionStackRef = useRef(null);
   const activeIdRef = useRef(activeId);
+  const agendaRequestContextRef = useRef(null);
   const convDbIdsRef = useRef({});
   const restoredPendingIdentityRef = useRef(null);
 
@@ -1254,6 +1256,20 @@ export default function UniChatPage({ variant = 'full' }) {
   // publicam a resposta se o token ainda for o atual -- resposta antiga
   // chegando depois de um turno novo nunca sobrescreve a conversa atual.
   const uniTurnTokenRef = useRef(0);
+
+  agendaRequestContextRef.current = {
+    userId: user?.id,
+    workspaceId: effectiveWorkspace?.id,
+    conversationId: activeId ?? 'local-conversation',
+  };
+
+  function isAgendaRequestCurrent(request) {
+    return isAgendaRequestContextCurrent(
+      request,
+      agendaRequestContextRef.current,
+      uniTurnTokenRef.current,
+    );
+  }
 
   useEffect(() => {
     activeIdRef.current = activeId;
@@ -2787,6 +2803,10 @@ export default function UniChatPage({ variant = 'full' }) {
       clearPendingActionStack(oldIdentity);
     }
 
+    // Invalida imediatamente qualquer resposta assíncrona pertencente à
+    // conversa anterior, antes mesmo de o próximo render atualizar os refs.
+    uniTurnTokenRef.current += 1;
+    activeIdRef.current = id;
     setActiveId(id);
     setMessages(conv.messages || []);
     // BLOCO VOZ HIDRATAÇÃO: trocar de conversa RESTAURA conteúdo antigo
@@ -3712,6 +3732,7 @@ export default function UniChatPage({ variant = 'full' }) {
       workspaceId: effectiveWorkspace?.id,
       conversationId: activeId ?? 'local-conversation',
     };
+    const agendaRequest = { ...agendaIdentity, turnToken };
     const declaredIntent = classifyIntent(text).intent;
     const hasPendingAgendaConversation = agendaConversationRef.current.hasPending(agendaIdentity);
     const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation
@@ -3789,6 +3810,7 @@ export default function UniChatPage({ variant = 'full' }) {
         identity: agendaIdentity,
         referenceDate: getLocalIsoDate(),
       }).then((result) => {
+        if (!isAgendaRequestCurrent(agendaRequest)) return;
         setIsTyping(false);
         if (result.route === 'financial' && result.financialText) {
           runDeterministicFinancialFlow(result.financialText, historySnapshot);
@@ -3796,6 +3818,7 @@ export default function UniChatPage({ variant = 'full' }) {
         }
         if (result.handled && result.text) createAssistantResponse(result.text);
       }).catch(() => {
+        if (!isAgendaRequestCurrent(agendaRequest)) return;
         setIsTyping(false);
         createAssistantResponse('Não consegui atualizar sua agenda agora. Tente novamente em instantes.');
       });

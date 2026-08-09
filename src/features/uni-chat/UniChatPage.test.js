@@ -4,6 +4,18 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
+test('P1-09: resultado assíncrono da Agenda valida turno, conversa, usuário e workspace antes de publicar', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const start = page.indexOf('if (hasAgendaConversation) {');
+  const end = page.indexOf('if (hasPendingConversation) {', start);
+  const block = page.slice(start, end);
+
+  assert.match(block, /isAgendaRequestCurrent\(agendaRequest\)/);
+  assert.match(page, /const agendaRequest = \{ \.\.\.agendaIdentity, turnToken \};/);
+  assert.match(page, /isAgendaRequestContextCurrent\([\s\S]*agendaRequestContextRef\.current,[\s\S]*uniTurnTokenRef\.current/);
+  assert.match(block, /if \(!isAgendaRequestCurrent\(agendaRequest\)\) return;/);
+});
+
 // Extrai o corpo de UMA função a partir do índice do seu marcador (ex.:
 // 'function handlePlanConversationInput(text) {'), por contagem de chaves
 // consciente de strings/template literals/comentários -- nunca um recorte

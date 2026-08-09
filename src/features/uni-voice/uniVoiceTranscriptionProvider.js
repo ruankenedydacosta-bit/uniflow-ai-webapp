@@ -45,7 +45,7 @@ export function createUniVoiceTranscriptionProvider({
   runtime = globalThis,
   timeoutMs = UNI_VOICE_TRANSCRIPTION_TIMEOUT_MS,
 } = {}) {
-  async function transcribe({ audio, durationMs, workspaceId } = {}) {
+  async function transcribe({ audio, durationMs, workspaceId, signal } = {}) {
     const validationError = validateVoiceTranscriptionRequest({
       audio,
       durationMs,
@@ -70,6 +70,9 @@ export function createUniVoiceTranscriptionProvider({
     formData.append('duration_ms', String(Math.round(durationMs)));
 
     const controller = new AbortController();
+    const abortFromCaller = () => controller.abort(signal?.reason ?? 'cancelled');
+    if (signal?.aborted) abortFromCaller();
+    else signal?.addEventListener?.('abort', abortFromCaller, { once: true });
     const timeout = runtime.setTimeout?.(() => controller.abort('timeout'), timeoutMs);
     const requestStartedAt = Date.now();
 
@@ -136,7 +139,9 @@ export function createUniVoiceTranscriptionProvider({
       });
       return { text: null, error: { code: 'EMPTY_TRANSCRIPT' } };
     } catch {
-      const code = controller.signal.reason === 'timeout' ? 'TIMEOUT' : 'NETWORK';
+      const code = controller.signal.reason === 'timeout'
+        ? 'TIMEOUT'
+        : signal?.aborted ? 'ABORTED' : 'NETWORK';
       void telemetry.error('edge_function.failure', {
         errorCode: code,
         stage: 'voice_transcription',
@@ -156,6 +161,7 @@ export function createUniVoiceTranscriptionProvider({
         status: controller.signal.aborted ? 'aborted' : 'completed',
       }, { workspaceId });
       runtime.clearTimeout?.(timeout);
+      signal?.removeEventListener?.('abort', abortFromCaller);
     }
   }
 

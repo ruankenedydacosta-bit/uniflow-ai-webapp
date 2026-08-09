@@ -540,6 +540,49 @@ test('timeout de transcrição falha de forma controlada', async () => {
   assert.equal(result.error.code, 'TIMEOUT');
 });
 
+test('P1-11: cancelamento externo aborta o fetch real da transcrição', async () => {
+  const externalController = new AbortController();
+  let requestSignal = null;
+  const provider = createUniVoiceTranscriptionProvider({
+    client: { auth: { getSession: async () => ({ data: { session: { access_token: 'token' } } }) } },
+    url: 'https://project.supabase.co',
+    anonKey: 'anon',
+    fetchImpl: async (_url, { signal }) => new Promise((_resolve, reject) => {
+      requestSignal = signal;
+      signal.addEventListener('abort', () => reject(new Error('aborted')));
+    }),
+  });
+  const resultPromise = provider.transcribe({
+    audio: new Blob(['voice'], { type: 'audio/webm' }),
+    durationMs: 1200,
+    workspaceId: 'workspace',
+    signal: externalController.signal,
+  });
+
+  await Promise.resolve();
+  externalController.abort('cancelled');
+  const result = await resultPromise;
+
+  assert.equal(requestSignal?.aborted, true);
+  assert.equal(result.error.code, 'ABORTED');
+});
+
+test('P1-10/P1-11: captura tem owner imutável e desmontagem cancela a operação ativa', () => {
+  const provider = readFileSync(new URL('./UniVoiceInputProvider.jsx', import.meta.url), 'utf8');
+  assert.match(provider, /captureOwnerRef/);
+  assert.match(provider, /handlersRef\.current\.token === owner\.token/);
+  assert.match(provider, /const cancelVoiceInput = voiceInput\.cancel;/);
+  assert.match(provider, /cancelVoiceInput\(\)/);
+});
+
+test('P1-11/P2: hook passa AbortSignal ao provider e onCaptureEnd é idempotente por captura', () => {
+  const hook = readFileSync(new URL('./useUniVoiceInput.js', import.meta.url), 'utf8');
+  assert.match(hook, /transcriptionAbortRef/);
+  assert.match(hook, /signal: transcriptionController\.signal/);
+  assert.match(hook, /transcriptionAbortRef\.current\?\.abort/);
+  assert.match(hook, /captureEndNotifiedRef/);
+});
+
 test('exceção inesperada do provider sai de PROCESSING por FAIL e não publica transcrição', () => {
   const source = readFileSync(new URL('./useUniVoiceInput.js', import.meta.url), 'utf8');
   const transcribeBlock = source.slice(
@@ -552,7 +595,7 @@ test('exceção inesperada do provider sai de PROCESSING por FAIL e não publica
   assert.match(transcribeBlock, /if \(requestId !== requestIdRef\.current\) return;/);
   assert.match(transcribeBlock, /type: 'FAIL'/);
   assert.match(transcribeBlock, /status: VOICE_CAPTURE_STATES\.ERROR/);
-  assert.match(transcribeBlock, /return;\s*\n\s*}\s*\n\s*if \(requestId !== requestIdRef\.current\) return;/);
+  assert.match(transcribeBlock, /return;\s*\n\s*} finally \{[\s\S]*if \(requestId !== requestIdRef\.current\) return;/);
 });
 
 test('reducer representa permissão, escuta, processamento, conclusão e cancelamento', () => {

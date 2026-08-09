@@ -34,6 +34,8 @@ export function useUniVoiceInput({
   const [state, dispatch] = useReducer(voiceCaptureReducer, initialVoiceCaptureState);
   const adapterRef = useRef(null);
   const requestIdRef = useRef(0);
+  const transcriptionAbortRef = useRef(null);
+  const captureEndNotifiedRef = useRef(true);
   // BUG 3: referencia ao MESMO MediaStream do adapter (nunca um segundo
   // getUserMedia) -- exposta via getActiveStream() para quem quiser
   // visualizar a intensidade da voz (AnalyserNode), puramente informativo.
@@ -60,7 +62,10 @@ export function useUniVoiceInput({
     adapterRef.current?.dispose();
     adapterRef.current = null;
     activeStreamRef.current = null;
-    callbacksRef.current.onCaptureEnd?.();
+    if (!captureEndNotifiedRef.current) {
+      captureEndNotifiedRef.current = true;
+      callbacksRef.current.onCaptureEnd?.();
+    }
   }, []);
 
   const transcribe = useCallback(async ({ audio, durationMs }) => {
@@ -68,6 +73,9 @@ export function useUniVoiceInput({
     const requestId = ++requestIdRef.current;
     dispatch({ type: 'PROCESS' });
     releaseAdapter();
+    transcriptionAbortRef.current?.abort('superseded');
+    const transcriptionController = new AbortController();
+    transcriptionAbortRef.current = transcriptionController;
 
     let result;
     try {
@@ -75,6 +83,7 @@ export function useUniVoiceInput({
         audio,
         durationMs,
         workspaceId,
+        signal: transcriptionController.signal,
       });
     } catch (error) {
       if (requestId !== requestIdRef.current) return;
@@ -97,6 +106,10 @@ export function useUniVoiceInput({
         errorCode: code,
       });
       return;
+    } finally {
+      if (transcriptionAbortRef.current === transcriptionController) {
+        transcriptionAbortRef.current = null;
+      }
     }
     if (requestId !== requestIdRef.current) return;
 
@@ -185,6 +198,7 @@ export function useUniVoiceInput({
     }
 
     callbacksRef.current.onBeforeStart?.();
+    captureEndNotifiedRef.current = false;
     dispatch({ type: 'REQUEST_PERMISSION' });
     adapterRef.current = adapter;
     const started = await adapter.start();
@@ -204,6 +218,8 @@ export function useUniVoiceInput({
 
   const cancel = useCallback(() => {
     requestIdRef.current += 1;
+    transcriptionAbortRef.current?.abort('cancelled');
+    transcriptionAbortRef.current = null;
     if (!adapterRef.current) {
       if (state.status === VOICE_CAPTURE_STATES.PROCESSING) {
         dispatch({ type: 'CANCEL' });
@@ -240,6 +256,8 @@ export function useUniVoiceInput({
       if (!hasCapture && !hasPendingTranscription) return;
 
       requestIdRef.current += 1;
+      transcriptionAbortRef.current?.abort('lifecycle');
+      transcriptionAbortRef.current = null;
       adapterRef.current?.cancel();
       dispatch({ type: 'CANCEL' });
       releaseAdapter();
@@ -259,10 +277,10 @@ export function useUniVoiceInput({
 
   useEffect(() => () => {
     requestIdRef.current += 1;
-    adapterRef.current?.dispose();
-    adapterRef.current = null;
-    callbacksRef.current.onCaptureEnd?.();
-  }, []);
+    transcriptionAbortRef.current?.abort('unmount');
+    transcriptionAbortRef.current = null;
+    releaseAdapter();
+  }, [releaseAdapter]);
 
   const getActiveStream = useCallback(() => activeStreamRef.current, []);
 
