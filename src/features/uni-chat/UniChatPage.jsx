@@ -97,7 +97,10 @@ import { useUniChatFinancialData } from './useUniChatFinancialData';
 import { useUniResponsePipeline } from './useUniResponsePipeline';
 import { reserveMessageIds } from './messageIdRegistry.js';
 import { dedupeMessagesForRender, mergeRestoredMessages } from './mergeRestoredMessages.js';
-import { isAgendaRequestContextCurrent } from './agendaRequestLifecycle.js';
+import {
+  invalidateAgendaRequestContext,
+  isAgendaRequestContextCurrent,
+} from './agendaRequestLifecycle.js';
 import { classifyIntent } from '../uni-intents/index.js';
 import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration, buildToolCallingAuthorization } from '../uni-engine/index.js';
 import { validateFinancialFacts } from '../uni-engine/financial-runtime/factual-validation/index.js';
@@ -1261,7 +1264,19 @@ export default function UniChatPage({ variant = 'full' }) {
     userId: user?.id,
     workspaceId: effectiveWorkspace?.id,
     conversationId: activeId ?? 'local-conversation',
+    mode,
   };
+
+  function invalidateAgendaRequest(changes = {}) {
+    return invalidateAgendaRequestContext(
+      {
+        turnTokenRef: uniTurnTokenRef,
+        activeIdRef,
+        contextRef: agendaRequestContextRef,
+      },
+      changes,
+    );
+  }
 
   function isAgendaRequestCurrent(request) {
     return isAgendaRequestContextCurrent(
@@ -1569,6 +1584,10 @@ export default function UniChatPage({ variant = 'full' }) {
     prevWorkspaceRef.current = workspaceContextType;
     const correctMode = workspaceTypeToMode(workspaceContextType);
     if (correctMode === mode) return;
+    invalidateAgendaRequest({
+      workspaceId: effectiveWorkspace?.id,
+      mode: correctMode,
+    });
     uniVoice.stop();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setVoiceMessageId(null);
@@ -2785,6 +2804,7 @@ export default function UniChatPage({ variant = 'full' }) {
   function switchConversation(id) {
     const conv = conversations.find((c) => c.id === id);
     if (!conv || (isSimplifiedExperience && conv.mode !== SIMPLIFIED_CHAT_MODE)) return;
+    const convMode = conv.mode || mode;
 
     uniVoice.stop();
     setVoiceMessageId(null);
@@ -2805,8 +2825,7 @@ export default function UniChatPage({ variant = 'full' }) {
 
     // Invalida imediatamente qualquer resposta assíncrona pertencente à
     // conversa anterior, antes mesmo de o próximo render atualizar os refs.
-    uniTurnTokenRef.current += 1;
-    activeIdRef.current = id;
+    invalidateAgendaRequest({ conversationId: id, mode: convMode });
     setActiveId(id);
     setMessages(conv.messages || []);
     // BLOCO VOZ HIDRATAÇÃO: trocar de conversa RESTAURA conteúdo antigo
@@ -2815,7 +2834,6 @@ export default function UniChatPage({ variant = 'full' }) {
     // como já narradas.
     markRestoredMessagesAsSpoken(user?.id, conv.messages || []);
     reserveMessageIds(conv.messages || []);
-    const convMode = conv.mode || mode;
     if (!isSimplifiedExperience && convMode !== mode) {
       switchWorkspace(modeToWorkspaceType(convMode));
     }
@@ -3731,6 +3749,7 @@ export default function UniChatPage({ variant = 'full' }) {
       userId: user?.id,
       workspaceId: effectiveWorkspace?.id,
       conversationId: activeId ?? 'local-conversation',
+      mode,
     };
     const agendaRequest = { ...agendaIdentity, turnToken };
     const declaredIntent = classifyIntent(text).intent;
@@ -3882,6 +3901,8 @@ export default function UniChatPage({ variant = 'full' }) {
 
   function handleModeChange(next) {
     if (isSimplifiedExperience || next === mode) return;
+    invalidateAgendaRequest({ mode: next });
+    setIsTyping(false);
     uniVoice.stop();
     setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
@@ -3906,8 +3927,8 @@ export default function UniChatPage({ variant = 'full' }) {
       setMode(next);
       setMessages([]);
       setActiveId(null);
-      setIsTyping(false);
       const conv = createLocalConversation(next);
+      invalidateAgendaRequest({ conversationId: conv.id, mode: next });
       setConversations((prev) => {
         const nextList = [...prev, conv];
         saveHistory(nextList);
@@ -3929,6 +3950,7 @@ export default function UniChatPage({ variant = 'full' }) {
     setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
     const conv = createLocalConversation(mode);
+    invalidateAgendaRequest({ conversationId: conv.id, mode });
     const nextList = [...updated, conv];
     saveHistory(nextList);
     saveActiveId(conv.id);
@@ -3959,6 +3981,11 @@ export default function UniChatPage({ variant = 'full' }) {
   async function handleDeleteConversation(id) {
     const deletingActive = id === activeId;
 
+    if (deletingActive) {
+      invalidateAgendaRequest();
+      setIsTyping(false);
+    }
+
     if (dataService.isOnline()) {
       const current = conversations.find((c) => c.id === id);
       if (current?.source === 'supabase') {
@@ -3971,6 +3998,7 @@ export default function UniChatPage({ variant = 'full' }) {
       uniVoice.stop();
       setVoiceMessageId(null);
       const conv = createLocalConversation(mode);
+      invalidateAgendaRequest({ conversationId: conv.id, mode });
       const nextList = [...withRemoval, conv];
       setConversations(nextList);
       setActiveId(conv.id);

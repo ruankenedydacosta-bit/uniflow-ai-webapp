@@ -16,6 +16,23 @@ test('P1-09: resultado assíncrono da Agenda valida turno, conversa, usuário e 
   assert.match(block, /if \(!isAgendaRequestCurrent\(agendaRequest\)\) return;/);
 });
 
+test('P1-D: transições invalidam Agenda sincronamente e liberam loading antes de qualquer await', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const mode = extractFunctionBody(page, 'function handleModeChange(next) {').body;
+  const newChat = extractFunctionBody(page, 'function handleNewChat() {').body;
+  const deleting = extractFunctionBody(page, 'async function handleDeleteConversation(id) {').body;
+  const switching = extractFunctionBody(page, 'function switchConversation(id) {').body;
+
+  assert.match(mode, /invalidateAgendaRequest\(\{ mode: next \}\);\s*setIsTyping\(false\);/);
+  assert.match(newChat, /invalidateAgendaRequest\(\{ conversationId: conv\.id, mode \}\);/);
+  assert.match(switching, /invalidateAgendaRequest\(\{ conversationId: id, mode: convMode \}\);/);
+  assert.match(deleting, /if \(deletingActive\) \{\s*invalidateAgendaRequest\(\);\s*setIsTyping\(false\);/);
+  assert.ok(
+    deleting.indexOf('invalidateAgendaRequest();') < deleting.indexOf('await dataService.deleteConversation(id);'),
+    'exclusão ativa precisa invalidar a operação antes da chamada remota',
+  );
+});
+
 // Extrai o corpo de UMA função a partir do índice do seu marcador (ex.:
 // 'function handlePlanConversationInput(text) {'), por contagem de chaves
 // consciente de strings/template literals/comentários -- nunca um recorte
