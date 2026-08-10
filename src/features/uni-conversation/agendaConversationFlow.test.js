@@ -1089,6 +1089,138 @@ test('fuzz estrutural de separadores nunca reduz dois endpoints a SINGLE_TIME', 
   assert.equal(combinations, 160);
 });
 
+const FULL_MESSAGE_TEMPORAL_BLOCK_CASES = [
+  ['10h para 11 alunos às 25h', AGENDA_TIME_CLASSIFICATION.INVALID_TIME],
+  ['10h para 11 alunos às 10h60', AGENDA_TIME_CLASSIFICATION.INVALID_TIME],
+  ['10h para 11 alunos às 12h', AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME],
+  ['10h com 11 astronautas às 12h', AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME],
+  ['10h até 11 médicos às 12h', AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME],
+];
+
+for (const [expression, expectedKind] of FULL_MESSAGE_TEMPORAL_BLOCK_CASES) {
+  test(`P1 mensagem inteira: criação bloqueia região posterior em ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã ${expression}.`;
+    const analysis = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(analysis.kind, expectedKind);
+    assert.equal(analysis.blocked, true);
+    assert.equal(analysis.resolvedTime, null);
+    assert.ok(analysis.candidates.length >= 2);
+    assert.match((await turn(flow, text)).text, /entender o horário/i);
+    assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+  });
+}
+
+for (const expression of [
+  '10h para 11 alunos às 25h',
+  '10h com 11 pessoas às 10h60',
+]) {
+  test(`P1 mensagem inteira: edição não produz update parcial em ${expression}`, async () => {
+    const seed = [{
+      id: 'edit-full-message',
+      workspace_id: IDENTITY.workspaceId,
+      title: 'reunião',
+      starts_at: '2026-08-09T13:00:00.000Z',
+      ends_at: '2026-08-09T14:00:00.000Z',
+    }];
+    const { flow, calls } = makeHarness(seed);
+
+    const result = await turn(flow, `Muda minha reunião para amanhã ${expression}.`);
+
+    assert.match(result.text, /entender o horário/i);
+    assert.equal(calls.some((call) => call.operation === 'update'), false);
+  });
+}
+
+test('P1 mensagem inteira: pending AM/PM não resolve quando a resposta contém região posterior inválida', async () => {
+  const { flow, calls } = makeHarness();
+
+  assert.match((await turn(flow, 'Agenda reunião amanhã às dez.')).text, /manhã.*noite/i);
+  const blocked = await turn(flow, '10h para 11 alunos às 25h da manhã.');
+
+  assert.match(blocked.text, /entender o horário/i);
+  assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+  assert.equal(flow.hasPending(IDENTITY), true);
+  assert.match((await turn(flow, 'dez e quinze da manhã')).text, /Pronto/);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 15);
+});
+
+for (const expression of ['10h..11h', '10h:11h', '10h|11h']) {
+  test(`P2 candidatos adjacentes não dependem de enumeração do separador: ${expression}`, async () => {
+    const { flow, calls } = makeHarness();
+    const text = `Agenda reunião amanhã ${expression}.`;
+    const analysis = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(analysis.kind, AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME);
+    assert.equal(analysis.blocked, true);
+    assert.equal(analysis.candidates.filter((candidate) => candidate.time).length, 2);
+    assert.match((await turn(flow, text)).text, /entender o horário/i);
+    assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+  });
+}
+
+test('P2 dois-pontos de HH:MM permanece parte de um único relógio', async () => {
+  const { flow, calls } = makeHarness();
+  const text = 'Agenda reunião amanhã 10:30.';
+  const analysis = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+  assert.equal(analysis.kind, AGENDA_TIME_CLASSIFICATION.SINGLE_TIME);
+  assert.equal(analysis.resolvedTime, '10:30');
+  assert.match((await turn(flow, text)).text, /Pronto/);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 30);
+});
+
+for (const noun of ['astronautas', 'médicos', 'caminhões', 'fornecedores']) {
+  for (const connector of ['para', 'com']) {
+    test(`quantidade arbitrária válida permanece título: ${connector} 11 ${noun}`, async () => {
+      const { flow, calls } = makeHarness();
+      const text = `Agenda reunião amanhã 10h ${connector} 11 ${noun}.`;
+      const analysis = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+      assert.equal(analysis.kind, AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY);
+      assert.equal(analysis.resolvedTime, '10:00');
+      assert.match((await turn(flow, text)).text, /Pronto/);
+      assert.equal(calls[0].payload.title, `reuniao ${connector} 11 ${normalizeFinancialTextForTest(noun)}`);
+    });
+  }
+}
+
+test('propriedades A-D: toda região posterior participa da decisão consolidada', async () => {
+  const nouns = ['astronautas', 'oleiros', 'bibliotecários'];
+  const matrices = [
+    (noun) => `10h para 11 ${noun} às 12h`,
+    (noun) => `10h para 11 ${noun} às 25h`,
+    (noun) => `10h com 11 ${noun} 12h`,
+    (noun) => `10h com 11 ${noun} 10h60`,
+    (noun) => `10h para 11 ${noun} às vinte e cinco horas`,
+    (noun) => `10h para 11 ${noun} às três e trinta da tarde`,
+    (noun) => `10h até 11h com 5 ${noun}`,
+    (noun) => `10h para 5 ${noun} 12h até 13h`,
+  ];
+  let combinations = 0;
+
+  for (const noun of nouns) {
+    for (const buildExpression of matrices) {
+      const { flow, calls } = makeHarness();
+      const text = `Agenda reunião amanhã ${buildExpression(noun)}.`;
+      const analysis = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+      assert.equal(analysis.blocked, true, text);
+      assert.notEqual(analysis.kind, AGENDA_TIME_CLASSIFICATION.SINGLE_TIME, text);
+      assert.notEqual(analysis.kind, AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY, text);
+      assert.equal(analysis.resolvedTime, null, text);
+      assert.match((await turn(flow, text)).text, /entender o horário/i, text);
+      assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false, text);
+      combinations += 1;
+    }
+  }
+
+  assert.equal(combinations, 24);
+});
+
 for (const [expression, expected] of [
   ['00:00', '00:00'],
   ['23:59', '23:59'],

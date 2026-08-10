@@ -447,6 +447,208 @@ function findSeparatedTemporalEndpoints(normalized) {
   return null;
 }
 
+function spansOverlap(left, right) {
+  return Boolean(left && right && left.start < right.end && right.start < left.end);
+}
+
+function discoverClockCandidates(normalized) {
+  const candidates = [];
+  const attemptedMinute = `(?:\\d{1,3}|${NUMBER_PHRASE_PATTERN})`;
+  const attemptedHour = `(?:\\d{1,3}|${SPOKEN_HOUR_PATTERN})`;
+  const attemptedHybrid = `${attemptedHour}\\s*(?:h|horas?)\\s*(?:e\\s+)?${attemptedMinute}(?:\\s+minutos?)?(?:\\s+${DAY_PERIOD_PATTERN})?`;
+  const attemptedExplicitClock = [
+    `\\d{1,3}(?::\\d{0,3}|\\s*h(?:\\s*\\d{0,3})?|\\s+horas?)(?:\\s+${DAY_PERIOD_PATTERN})?`,
+    `(?:${NUMBER_PHRASE_PATTERN})\\s*(?:h|horas?)(?:\\s+${DAY_PERIOD_PATTERN})?`,
+    `(?:\\d{1,3}|${NUMBER_PHRASE_PATTERN})\\s+${DAY_PERIOD_PATTERN}`,
+  ].join('|');
+
+  const collect = (pattern, valueIndex) => {
+    for (const match of normalized.matchAll(pattern)) {
+      const value = match[valueIndex];
+      const span = resultSpan(match);
+      candidates.push({
+        span,
+        time: parseClockAtom(value),
+        source: match[0],
+      });
+    }
+  };
+
+  collect(
+    new RegExp(`\\b(?:(?:as|das|para|umas)\\s+)?(${attemptedHybrid})\\b`, 'g'),
+    1,
+  );
+  collect(
+    new RegExp(`\\b(?:(?:as|das|para|umas)\\s+)?(${attemptedExplicitClock})\\b`, 'g'),
+    1,
+  );
+
+  const colloquial = new RegExp(
+    `\\b(?:(?:as|umas)\\s+)?(${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s+e\\s+(${SPOKEN_MINUTE_PATTERN})(?:\\s+(${DAY_PERIOD_PATTERN}))?\\b(?!\\s+horas?\\b)`,
+    'g',
+  );
+  for (const match of normalized.matchAll(colloquial)) {
+    candidates.push({
+      span: resultSpan(match),
+      time: formatExtractedTime(
+        /^\\d+$/.test(match[1]) ? Number(match[1]) : parseCount(match[1]),
+        match[2] === 'meia' ? 30 : parseCount(match[2]),
+        match[3],
+      ),
+      source: match[0],
+    });
+  }
+
+  const bareWithCue = new RegExp(
+    `\\b(as|das|para|umas)\\s+(${SPOKEN_HOUR_PATTERN}|\\d{1,3})(?:\\s+${DAY_PERIOD_PATTERN})?\\b`,
+    'g',
+  );
+  for (const match of normalized.matchAll(bareWithCue)) {
+    const span = resultSpan(match);
+    if (
+      match[1] === 'para'
+      && isNonTemporalQuantityWord(followingWord(normalized, span.end))
+    ) {
+      continue;
+    }
+    candidates.push({
+      span,
+      time: parseClockAtom(match[2]),
+      source: match[0],
+    });
+  }
+
+  const ordered = candidates.sort((left, right) => (
+    left.span.start - right.span.start
+    || (right.span.end - right.span.start) - (left.span.end - left.span.start)
+  ));
+  const consolidated = [];
+  for (const candidate of ordered) {
+    const overlappingIndex = consolidated.findIndex((current) => (
+      spansOverlap(current.span, candidate.span)
+    ));
+    if (overlappingIndex < 0) {
+      consolidated.push(candidate);
+      continue;
+    }
+    const current = consolidated[overlappingIndex];
+    const currentLength = current.span.end - current.span.start;
+    const candidateLength = candidate.span.end - candidate.span.start;
+    if (candidateLength > currentLength) consolidated[overlappingIndex] = candidate;
+  }
+  const nonOverlapping = consolidated.sort((left, right) => left.span.start - right.span.start);
+  const merged = [];
+  for (const candidate of nonOverlapping) {
+    const previous = merged.at(-1);
+    const between = previous
+      ? normalized.slice(previous.span.end, candidate.span.start)
+      : '';
+    if (
+      previous
+      && /^(?:as|das|para|umas)\s+/.test(previous.source)
+      && !hasExplicitClockMarker(previous.source)
+      && /^\s+e\s+$/.test(between)
+      && hasExplicitClockMarker(candidate.source)
+    ) {
+      const span = { start: previous.span.start, end: candidate.span.end };
+      const source = normalized.slice(span.start, span.end);
+      merged[merged.length - 1] = {
+        span,
+        time: parseClockAtom(source),
+        source,
+      };
+      continue;
+    }
+    merged.push(candidate);
+  }
+  return merged;
+}
+
+function locateResolvedTimeSpan(normalized, allowContextual, time, candidates) {
+  const colloquial = matchColloquialTime(normalized, allowContextual);
+  if (colloquial && formatColloquialTime(colloquial) === time) return resultSpan(colloquial);
+  return candidates.find((candidate) => candidate.time === time)?.span ?? null;
+}
+
+function consolidateTemporalCoverage(normalized, analysis, allowContextual) {
+  const candidates = discoverClockCandidates(normalized);
+  if (analysis.kind === AGENDA_TIME_CLASSIFICATION.INVALID_TIME) {
+    return { ...analysis, candidates };
+  }
+  if ([
+    AGENDA_TIME_CLASSIFICATION.TIME_RANGE,
+    AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME,
+  ].includes(analysis.kind)) {
+    return { ...analysis, candidates };
+  }
+
+  const primarySpan = analysis.time
+    ? analysis.timeSpan
+      ?? analysis.span
+      ?? locateResolvedTimeSpan(normalized, allowContextual, analysis.time, candidates)
+    : null;
+  const invalidCandidates = candidates.filter((candidate) => (
+    !candidate.time && !spansOverlap(primarySpan, candidate.span)
+  ));
+  if (invalidCandidates.length) {
+    const invalidCandidate = invalidCandidates[0].span;
+    return {
+      kind: AGENDA_TIME_CLASSIFICATION.INVALID_TIME,
+      time: null,
+      span: invalidCandidate,
+      timeSpan: null,
+      invalidCandidate,
+      hasMultipleEndpoints: Boolean(
+        analysis.time
+        || candidates.some((candidate) => candidate.time)
+        || analysis.hasMultipleEndpoints
+      ),
+      candidates,
+    };
+  }
+
+  if (!analysis.time) return { ...analysis, candidates };
+
+  let remaining = primarySpan
+    ? candidates.filter((candidate) => !spansOverlap(primarySpan, candidate.span))
+    : [...candidates];
+  if (!primarySpan) {
+    const representedIndex = remaining.findIndex((candidate) => candidate.time === analysis.time);
+    if (representedIndex >= 0) {
+      remaining = [
+        ...remaining.slice(0, representedIndex),
+        ...remaining.slice(representedIndex + 1),
+      ];
+    }
+  }
+  if (!remaining.length) {
+    return {
+      ...analysis,
+      timeSpan: analysis.timeSpan ?? primarySpan,
+      candidates,
+    };
+  }
+
+  const starts = [primarySpan, ...remaining.map((candidate) => candidate.span)]
+    .filter(Boolean)
+    .map((span) => span.start);
+  const ends = [primarySpan, ...remaining.map((candidate) => candidate.span)]
+    .filter(Boolean)
+    .map((span) => span.end);
+  const span = starts.length
+    ? { start: Math.min(...starts), end: Math.max(...ends) }
+    : remaining[0].span;
+  return {
+    kind: AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME,
+    time: null,
+    span,
+    timeSpan: null,
+    invalidCandidate: span,
+    hasMultipleEndpoints: true,
+    candidates,
+  };
+}
+
 function findHybridTime(normalized, allowContextual) {
   const pattern = new RegExp(`\\b(?:(?:as|das|umas)\\s+)?${HYBRID_CLOCK_PATTERN}\\b`, 'g');
   for (const match of normalized.matchAll(pattern)) {
@@ -616,6 +818,15 @@ function finalizeTemporalAnalysis(analysis, normalized) {
       : analysis.span;
   return {
     ...analysis,
+    ...(analysis.candidates
+      ? {
+        candidates: analysis.candidates.map((candidate) => ({
+          span: candidate.span,
+          time: candidate.time,
+          valid: Boolean(candidate.time),
+        })),
+      }
+      : {}),
     resolvedTime: blocked ? null : analysis.time,
     valid: Boolean(analysis.time) && !blocked,
     blocked,
@@ -636,30 +847,35 @@ function finalizeTemporalAnalysis(analysis, normalized) {
 }
 
 function analyzeNormalizedTemporalRegion(normalized, allowContextual) {
-  const structural = classifyStructuralTemporalRegion(normalized, allowContextual);
-  if (structural) {
-    return finalizeTemporalAnalysis(structural, normalized);
+  let analysis = classifyStructuralTemporalRegion(normalized, allowContextual);
+  if (!analysis) {
+    const invalidCandidate = invalidTimeCandidate(normalized, allowContextual);
+    if (invalidCandidate) {
+      analysis = {
+        kind: AGENDA_TIME_CLASSIFICATION.INVALID_TIME,
+        time: null,
+        span: invalidCandidate,
+        timeSpan: null,
+        invalidCandidate,
+      };
+    }
   }
-  const invalidCandidate = invalidTimeCandidate(normalized, allowContextual);
-  if (invalidCandidate) {
-    return finalizeTemporalAnalysis({
-      kind: AGENDA_TIME_CLASSIFICATION.INVALID_TIME,
-      time: null,
-      span: invalidCandidate,
+  if (!analysis) {
+    const time = extractAgendaTimeValue(normalized, allowContextual);
+    analysis = {
+      kind: time
+        ? AGENDA_TIME_CLASSIFICATION.SINGLE_TIME
+        : AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT,
+      time,
+      span: null,
       timeSpan: null,
-      invalidCandidate,
-    }, normalized);
+      invalidCandidate: null,
+    };
   }
-  const time = extractAgendaTimeValue(normalized, allowContextual);
-  return finalizeTemporalAnalysis({
-    kind: time
-      ? AGENDA_TIME_CLASSIFICATION.SINGLE_TIME
-      : AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT,
-    time,
-    span: null,
-    timeSpan: null,
-    invalidCandidate: null,
-  }, normalized);
+  return finalizeTemporalAnalysis(
+    consolidateTemporalCoverage(normalized, analysis, allowContextual),
+    normalized,
+  );
 }
 
 export function classifyAgendaTemporalRegion(text, { allowContextual = false } = {}) {
