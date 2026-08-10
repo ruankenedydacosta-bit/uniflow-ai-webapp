@@ -238,6 +238,8 @@ const EXPLICIT_CLOCK_ATOM_PATTERN = [
   `(?:${SPOKEN_HOUR_PATTERN})\\s*(?:h|horas?)`,
 ].join('|');
 const CLOCK_ENDPOINT_PATTERN = `(?:(?:${EXPLICIT_CLOCK_ATOM_PATTERN})(?:\\s+${DAY_PERIOD_PATTERN})?|(?:\\d{1,2}|${SPOKEN_HOUR_PATTERN})\\s+${DAY_PERIOD_PATTERN})`;
+const BARE_CLOCK_ENDPOINT_PATTERN = `(?:\\d{1,2}|${SPOKEN_HOUR_PATTERN})(?:\\s+${DAY_PERIOD_PATTERN})?`;
+const PAIRED_CLOCK_ENDPOINT_PATTERN = `(?:${CLOCK_ENDPOINT_PATTERN}|${BARE_CLOCK_ENDPOINT_PATTERN})`;
 const HYBRID_CLOCK_PATTERN = `(?:\\d{1,2}|${SPOKEN_HOUR_PATTERN})\\s*(?:h|horas?)\\s*(?:e\\s+)?(?:${SPOKEN_MINUTE_PATTERN}|${SPOKEN_NUMBER_TOKEN_PATTERN})(?:\\s+minutos?)?(?:\\s+${DAY_PERIOD_PATTERN})?`;
 
 function resultSpan(match) {
@@ -281,9 +283,12 @@ function parseClockAtom(value) {
   const spokenWithPeriod = normalized.match(
     new RegExp(`^(${SPOKEN_HOUR_PATTERN})\\s+(${DAY_PERIOD_PATTERN})$`),
   );
-  return spokenWithPeriod
-    ? formatExtractedTime(parseCount(spokenWithPeriod[1]), 0, spokenWithPeriod[2])
-    : null;
+  if (spokenWithPeriod) {
+    return formatExtractedTime(parseCount(spokenWithPeriod[1]), 0, spokenWithPeriod[2]);
+  }
+
+  const bareSpoken = normalized.match(new RegExp(`^(${SPOKEN_HOUR_PATTERN})$`));
+  return bareSpoken ? formatExtractedTime(parseCount(bareSpoken[1]), 0) : null;
 }
 
 function hasHybridTimeContext(normalized, match, allowContextual) {
@@ -304,6 +309,26 @@ function findTimePlusQuantity(normalized) {
   );
   for (const match of normalized.matchAll(pattern)) {
     if (!isNonTemporalQuantityWord(match[5])) continue;
+    const time = parseClockAtom(match[1]);
+    if (!time) continue;
+    return {
+      kind: AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY,
+      time,
+      span: resultSpan(match),
+      timeSpan: { start: match.index, end: match.index + match[1].length },
+      invalidCandidate: null,
+    };
+  }
+  return null;
+}
+
+function findBareTimePlusQuantity(normalized) {
+  const pattern = new RegExp(
+    `\\b(${BARE_CLOCK_ENDPOINT_PATTERN})\\s+(para|com|ate)\\s+(${NUMBER_PHRASE_PATTERN})\\s+(${LEXICAL_WORD_PATTERN})\\b`,
+    'g',
+  );
+  for (const match of normalized.matchAll(pattern)) {
+    if (!isNonTemporalQuantityWord(match[4])) continue;
     const time = parseClockAtom(match[1]);
     if (!time) continue;
     return {
@@ -383,6 +408,45 @@ function findRangeOrMultipleTimes(normalized) {
   return null;
 }
 
+function findSeparatedTemporalEndpoints(normalized) {
+  const pattern = new RegExp(
+    `\\b(${PAIRED_CLOCK_ENDPOINT_PATTERN})(?:\\s*([-–—/,;])\\s*|\\s+(ate(?:\\s+(?:a|as))?|as|a|para|e)\\s+)(${PAIRED_CLOCK_ENDPOINT_PATTERN})\\b`,
+    'g',
+  );
+  for (const match of normalized.matchAll(pattern)) {
+    if (/^vinte\s+e\s+(?:uma|duas|tres)(?:\s*(?:h|horas?))?(?:\s+da\s+(?:manha|tarde|noite))?$/.test(match[0])) {
+      continue;
+    }
+    const firstTime = parseClockAtom(match[1]);
+    const secondTime = parseClockAtom(match[4]);
+    if (!firstTime || !secondTime) continue;
+
+    const normalizedSeparator = (match[2] ?? match[3]).replace(/\s+/g, ' ').trim();
+    const afterMatch = normalized.slice(match.index + match[0].length);
+    if (normalizedSeparator === '/' && /^\/\d/.test(afterMatch)) continue;
+    if (normalizedSeparator === 'e' && !hasExplicitClockMarker(match[4])) {
+      const secondHour = Number(secondTime.slice(0, 2));
+      if (secondHour === 0 || secondHour > 12) continue;
+    }
+
+    const span = resultSpan(match);
+    const beforeMatch = normalized.slice(0, match.index);
+    const isRange = /^(?:ate|ate a|ate as|as|a)$/.test(normalizedSeparator)
+      || /\bentre\s*$/.test(beforeMatch);
+    return {
+      kind: isRange
+        ? AGENDA_TIME_CLASSIFICATION.TIME_RANGE
+        : AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME,
+      time: null,
+      span,
+      timeSpan: null,
+      invalidCandidate: span,
+      hasMultipleEndpoints: true,
+    };
+  }
+  return null;
+}
+
 function findHybridTime(normalized, allowContextual) {
   const pattern = new RegExp(`\\b(?:(?:as|das|umas)\\s+)?${HYBRID_CLOCK_PATTERN}\\b`, 'g');
   for (const match of normalized.matchAll(pattern)) {
@@ -405,6 +469,8 @@ function findHybridTime(normalized, allowContextual) {
 function classifyStructuralTemporalRegion(normalized, allowContextual) {
   return findContextualColloquialQuantity(normalized)
     ?? findTimePlusQuantity(normalized)
+    ?? findBareTimePlusQuantity(normalized)
+    ?? findSeparatedTemporalEndpoints(normalized)
     ?? findRangeOrMultipleTimes(normalized)
     ?? findHybridTime(normalized, allowContextual);
 }
@@ -532,46 +598,72 @@ function invalidTimeCandidate(normalized, allowContextual) {
   return null;
 }
 
-export function classifyAgendaTemporalRegion(text, { allowContextual = false } = {}) {
-  const normalized = normalizeTimeReply(text);
+function detectedDayPeriod(normalized) {
+  return normalized.match(/\b(?:da|de|pela|a)\s+(manha|tarde|noite)\b/)?.[1] ?? null;
+}
+
+function finalizeTemporalAnalysis(analysis, normalized) {
+  const blocked = [
+    AGENDA_TIME_CLASSIFICATION.TIME_RANGE,
+    AGENDA_TIME_CLASSIFICATION.INVALID_TIME,
+    AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME,
+  ].includes(analysis.kind);
+  const spans = analysis.span ? [analysis.span] : [];
+  const titleRemovalSpan = analysis.kind === AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY
+    ? analysis.timeSpan
+    : analysis.kind === AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT
+      ? null
+      : analysis.span;
+  return {
+    ...analysis,
+    resolvedTime: blocked ? null : analysis.time,
+    valid: Boolean(analysis.time) && !blocked,
+    blocked,
+    invalid: blocked,
+    spans,
+    temporalTokenRanges: titleRemovalSpan ? [titleRemovalSpan] : [],
+    titleRemovalSpans: titleRemovalSpan ? [titleRemovalSpan] : [],
+    period: detectedDayPeriod(normalized),
+    hasMultipleEndpoints: analysis.hasMultipleEndpoints ?? [
+      AGENDA_TIME_CLASSIFICATION.TIME_RANGE,
+      AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME,
+    ].includes(analysis.kind),
+    hasQuantity: analysis.kind === AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY,
+    ambiguousPeriod: analysis.time && !blocked
+      ? isPeriodAmbiguous(analysis.time, normalized)
+      : false,
+  };
+}
+
+function analyzeNormalizedTemporalRegion(normalized, allowContextual) {
   const structural = classifyStructuralTemporalRegion(normalized, allowContextual);
   if (structural) {
-    return {
-      ...structural,
-      invalid: [
-        AGENDA_TIME_CLASSIFICATION.TIME_RANGE,
-        AGENDA_TIME_CLASSIFICATION.INVALID_TIME,
-        AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME,
-      ].includes(structural.kind),
-      ambiguousPeriod: structural.time
-        ? isPeriodAmbiguous(structural.time, normalized)
-        : false,
-    };
+    return finalizeTemporalAnalysis(structural, normalized);
   }
   const invalidCandidate = invalidTimeCandidate(normalized, allowContextual);
   if (invalidCandidate) {
-    return {
+    return finalizeTemporalAnalysis({
       kind: AGENDA_TIME_CLASSIFICATION.INVALID_TIME,
       time: null,
       span: invalidCandidate,
       timeSpan: null,
-      invalid: true,
       invalidCandidate,
-      ambiguousPeriod: false,
-    };
+    }, normalized);
   }
   const time = extractAgendaTimeValue(normalized, allowContextual);
-  return {
+  return finalizeTemporalAnalysis({
     kind: time
       ? AGENDA_TIME_CLASSIFICATION.SINGLE_TIME
       : AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT,
     time,
     span: null,
     timeSpan: null,
-    invalid: false,
     invalidCandidate: null,
-    ambiguousPeriod: isPeriodAmbiguous(time, normalized),
-  };
+  }, normalized);
+}
+
+export function classifyAgendaTemporalRegion(text, { allowContextual = false } = {}) {
+  return analyzeNormalizedTemporalRegion(normalizeTimeReply(text), allowContextual);
 }
 
 function analyzeAgendaTime(text, options) {
@@ -654,11 +746,8 @@ function extractAgendaTimeValue(normalized, allowContextual) {
 }
 
 function removeClassifiedTemporalSpan(normalized, classification) {
-  const span = classification?.kind === AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY
-    ? classification.timeSpan
-    : classification?.span;
+  const span = classification?.titleRemovalSpans?.[0] ?? null;
   if (!span) return normalized;
-  if (classification.kind === AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT) return normalized;
   return `${normalized.slice(0, span.start)} ${normalized.slice(span.end)}`;
 }
 
@@ -675,13 +764,8 @@ function removeTemporalMatchesUnlessQuantity(value, pattern) {
 
 function extractTitle(text) {
   const normalizedText = normalizeFinancialText(text);
-  const structural = classifyStructuralTemporalRegion(normalizedText, true);
-  const invalidCandidate = structural ? null : invalidTimeCandidate(normalizedText, true);
-  const classifiedText = structural
-    ? removeClassifiedTemporalSpan(normalizedText, structural)
-    : invalidCandidate
-      ? `${normalizedText.slice(0, invalidCandidate.start)} ${normalizedText.slice(invalidCandidate.end)}`
-      : normalizedText;
+  const temporalAnalysis = analyzeNormalizedTemporalRegion(normalizedText, true);
+  const classifiedText = removeClassifiedTemporalSpan(normalizedText, temporalAnalysis);
   let normalized = classifiedText
     .replace(/\b(?:me\s+)?lembra(?:r)?\s+(?:de|da|do)?\s*/g, '')
     .replace(/\b(?:eu\s+)?tenho\s+que\s+/g, '')
@@ -875,8 +959,15 @@ function applyDayPeriod(time, period) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-function resolvePeriodReply(time, normalized) {
-  const period = normalized.match(/\bda\s+(manha|tarde|noite)\b/)?.[1];
+function periodOnlyValue(normalized) {
+  const match = normalized.match(
+    /^(?:(?:da|de|pela|a)\s+(manha|tarde|noite))$/,
+  );
+  return match?.[1] ?? null;
+}
+
+function resolvePeriodOnlyReply(time, normalized) {
+  const period = periodOnlyValue(normalized);
   return period ? applyDayPeriod(time, period) : null;
 }
 
@@ -1251,7 +1342,7 @@ export function createAgendaConversationFlow({
       let timeAnalysis = analyzeAgendaTime(text, { allowContextual: true });
       const normalizedTimeReply = normalizeTimeReply(text);
       const periodResolvedTime = fields.ambiguousTime
-        ? resolvePeriodReply(fields.ambiguousTime, normalizedTimeReply)
+        ? resolvePeriodOnlyReply(fields.ambiguousTime, normalizedTimeReply)
         : null;
       const confirmedSuggestedTime = fields.suggestedTime && isAffirmativeReply(normalized)
         ? fields.suggestedTime
@@ -1286,6 +1377,12 @@ export function createAgendaConversationFlow({
         }
       }
       if (!fields.date) fields.date = resolveAgendaDate(text, referenceDate);
+
+      if (timeAnalysis.blocked) {
+        fields.time = null;
+        fields.ambiguousTime = null;
+        fields.suggestedTime = null;
+      }
 
       const updated = updatePendingAction(stack, active.id, { fields });
       setStack(identity, updated.stack);
