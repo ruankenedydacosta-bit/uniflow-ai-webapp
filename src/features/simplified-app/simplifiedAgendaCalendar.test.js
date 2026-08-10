@@ -108,6 +108,16 @@ test('formatAgendaItemTime: dia inteiro vira "Dia inteiro", senao hora local "HH
   assert.equal(formatAgendaItemTime({ starts_at: item.starts_at, is_all_day: true }), 'Dia inteiro');
 });
 
+test('formatAgendaItemTime distingue sem horario de 00:00 explicito', () => {
+  const startsAt = new Date(2026, 7, 8, 0, 0, 0, 0).toISOString();
+  assert.equal(formatAgendaItemTime({
+    starts_at: startsAt, is_all_day: false, has_explicit_time: false,
+  }), 'Sem horário');
+  assert.equal(formatAgendaItemTime({
+    starts_at: startsAt, is_all_day: false, has_explicit_time: true,
+  }), '00:00');
+});
+
 test('formatAgendaItemTime: starts_at invalido nunca devolve string crua', () => {
   assert.equal(formatAgendaItemTime({ starts_at: 'inválido', is_all_day: false }), 'Horário não informado');
 });

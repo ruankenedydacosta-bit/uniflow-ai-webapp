@@ -229,3 +229,10 @@ test('AGENDA GUARD: "Gastei duzentos reais" continua sendo gasto', () => {
   assert.equal(looksLikeUnclassifiedFinancialStatement('Gastei duzentos reais de gasolina'), true);
   assert.equal(extractAmount('Gastei duzentos reais de gasolina'), 200);
 });
+
+test('comando explícito Agenda aceita assunto livre antes da data', () => {
+  assert.equal(
+    classifyIntent('Agenda manutenção amanhã à meia-noite.').intent,
+    'agenda_schedule_create',
+  );
+});

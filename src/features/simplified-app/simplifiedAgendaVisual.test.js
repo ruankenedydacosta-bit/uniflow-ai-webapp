@@ -96,6 +96,8 @@ test('form: campos do LOTE presentes (Título*, Data, Horário, Dia inteiro, Obs
   assert.match(form, /Dia inteiro/);
   assert.match(form, /Observações/);
   assert.match(form, /<textarea/);
+  assert.doesNotMatch(form, /timeValue \|\| '09:00'|time: '09:00'/);
+  assert.match(form, /hasExplicitTime: Boolean\(event\.target\.value\)/);
 });
 
 test('form: modal força tema UniFlow escuro, foco inicial e classes responsivas sem alterar o contrato', async () => {

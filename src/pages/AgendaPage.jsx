@@ -9,6 +9,7 @@ import { useAgenda } from '../hooks/useAgenda.js';
 import { formatDate } from '../utils/formatters';
 import AgendaDeleteConfirmModal from './agenda/AgendaDeleteConfirmModal.jsx';
 import AgendaFormModal from './agenda/AgendaFormModal.jsx';
+import { buildAgendaItemPresentation } from './agenda/agendaItemPresentation.js';
 import { AGENDA_ITEM_TYPE_LABELS as ITEM_TYPE_LABELS } from './agenda/agendaFormUtils.js';
 import AgendaStatusConfirmModal from './agenda/AgendaStatusConfirmModal.jsx';
 import styles from './AgendaPage.module.css';
@@ -117,19 +118,6 @@ function formatDayLabel(dateKey) {
 
   const [year, month, day] = dateKey.split('-').map(Number);
   return formatDate(new Date(year, month - 1, day));
-}
-
-function formatTimeLabel(value) {
-  const date = new Date(value);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function formatAgendaItemTime(item) {
-  if (item.is_all_day) return 'Dia inteiro';
-  const startLabel = formatTimeLabel(item.starts_at);
-  if (!item.ends_at) return startLabel;
-  return `${startLabel}–${formatTimeLabel(item.ends_at)}`;
 }
 
 function AgendaPage() {
@@ -312,6 +300,7 @@ function AgendaPage() {
             <div className={styles.dayGroupList}>
               {dayItems.map((item) => {
                 const client = item.client_id ? clientsById.get(item.client_id) : null;
+                const presentation = buildAgendaItemPresentation(item);
 
                 return (
                   <Card key={item.id} variant="default" padding="md" className={styles.agendaItemCard}>
@@ -325,8 +314,14 @@ function AgendaPage() {
                       </Badge>
                     </div>
 
+                    <div className={styles.agendaItemTemporal} aria-label="Data e horário">
+                      <time className={styles.agendaItemTemporalChip} dateTime={presentation.date ?? undefined}>
+                        {presentation.dateLabel}
+                      </time>
+                      <span className={styles.agendaItemTemporalChip}>{presentation.timeLabel}</span>
+                    </div>
+
                     <div className={styles.agendaItemMeta}>
-                      <span>{formatAgendaItemTime(item)}</span>
                       {client ? <span>{client.name}</span> : null}
                       {item.location ? <span>{item.location}</span> : null}
                     </div>

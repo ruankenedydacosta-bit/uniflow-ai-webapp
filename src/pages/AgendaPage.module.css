@@ -77,6 +77,7 @@
   color: var(--uf-color-text-primary);
   font-size: var(--uf-text-body-size);
   line-height: var(--uf-text-body-lh);
+  overflow-wrap: anywhere;
 }
 
 .errorCard {
@@ -174,6 +175,30 @@
   border-top: 1px solid var(--uf-color-border-subtle);
 }
 
+.agendaItemTemporal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.agendaItemTemporalChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  max-width: 100%;
+  padding: var(--uf-space-4) var(--uf-space-12);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-sunken);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-text-body-weight);
+  line-height: var(--uf-text-caption-lh);
+  white-space: nowrap;
+}
+
 .agendaItemActions {
   display: flex;
   justify-content: flex-end;
@@ -204,5 +229,12 @@
   .sectionHeader,
   .agendaItemTop {
     flex-direction: column;
+  }
+
+  .agendaItemCard,
+  .agendaItemTop,
+  .agendaItemMeta,
+  .agendaItemActions {
+    max-width: 100%;
   }
 }

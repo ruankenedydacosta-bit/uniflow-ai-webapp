@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildAgendaCreationPayload,
   getAgendaItemFields,
+  normalizeAgendaTimeSemantics,
   resolveIdempotentAgendaCreation,
 } from './agendaService.js';
 
@@ -93,6 +94,50 @@ test('flag ON inclui client_operation_id no select e payload B.2', () => {
 
   assert.match(getAgendaItemFields(true), /client_operation_id/);
   assert.equal(payload.client_operation_id, OPERATION_A);
+});
+
+test('agendaService centraliza horario explicito, sem horario e dia inteiro', () => {
+  assert.deepEqual(normalizeAgendaTimeSemantics({ is_all_day: false }), {
+    is_all_day: false,
+    has_explicit_time: true,
+  });
+  assert.deepEqual(normalizeAgendaTimeSemantics({
+    is_all_day: false,
+    has_explicit_time: false,
+    ends_at: '2026-08-10T14:00:00.000Z',
+  }), {
+    is_all_day: false,
+    has_explicit_time: false,
+    ends_at: null,
+  });
+  assert.deepEqual(normalizeAgendaTimeSemantics({ is_all_day: true }), {
+    is_all_day: true,
+    has_explicit_time: false,
+    ends_at: null,
+  });
+});
+
+test('agendaService preserva meia-noite explicita e default legado', () => {
+  const midnight = buildAgendaCreationPayload(WORKSPACE_A, basePayload(OPERATION_A, {
+    starts_at: '2026-08-11T00:00:00.000Z',
+    has_explicit_time: true,
+  }), true);
+  const legacy = buildAgendaCreationPayload(WORKSPACE_A, basePayload(), true);
+
+  assert.equal(midnight.has_explicit_time, true);
+  assert.equal(legacy.has_explicit_time, true);
+  assert.match(getAgendaItemFields(false), /has_explicit_time/);
+});
+
+test('update de titulo isolado nao injeta semantica temporal', () => {
+  assert.deepEqual(
+    normalizeAgendaTimeSemantics({ title: 'Novo título' }, { defaultExplicit: false }),
+    {},
+  );
+  assert.deepEqual(
+    normalizeAgendaTimeSemantics({ is_all_day: false }, { defaultExplicit: false }),
+    { is_all_day: false, has_explicit_time: false, ends_at: null },
+  );
 });
 
 test('flag ON exige UUID antes de alcançar o caminho idempotente', async () => {

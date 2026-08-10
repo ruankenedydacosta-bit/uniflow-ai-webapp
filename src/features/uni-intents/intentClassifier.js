@@ -117,6 +117,7 @@ function detectAgendaIntent(normalizedText) {
     /\b(?:eu\s+)?(?:tenho|tive|vou\s+ter)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|consulta|evento)\b/,
     /\b(?:reuniao|compromisso|consulta|evento)\b[^.!?]*\b(?:daqui\s+a|daqui|em)\s*\d+\s*(?:dia|dias|semana|semanas|mes|meses|ano|anos)\b/,
     /^agenda\s+(?!de\b)(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
+    /^agenda\s+(?!de\b)(?=.{1,160}\b(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b).+$/,
     /^marca(?:r)?\s+(?:reuniao\s+)?(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
     /^(?:uma\s+)?(?:reuniao|compromisso|consulta|evento)\b[^.!?]{0,80}\b(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,
     /^(?:uma\s+)?consulta\b[\s\S]{0,120}\b(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,

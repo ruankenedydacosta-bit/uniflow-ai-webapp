@@ -1,3 +1,5 @@
+import { formatAgendaTimeChip } from '../../pages/agenda/agendaItemPresentation.js';
+
 // Logica pura do calendario simples da Agenda visual (sem React/Supabase --
 // testavel via node --test). Mesmo padrao de simplifiedGreeting.js: funcoes
 // deterministicas, entrada -> saida, nunca tocam DOM nem relogio real
@@ -119,8 +121,5 @@ export function groupAgendaItemsByDay(items) {
  * item.is_all_day. Nunca retorna string crua do banco.
  */
 export function formatAgendaItemTime(item) {
-  if (item.is_all_day) return 'Dia inteiro';
-  const date = new Date(item.starts_at);
-  if (Number.isNaN(date.getTime())) return 'Horário não informado';
-  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+  return formatAgendaTimeChip(item) || 'Horário não informado';
 }

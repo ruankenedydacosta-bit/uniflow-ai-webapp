@@ -126,14 +126,15 @@ test('criação relativa preserva assunto e pergunta pelo horário', async () =>
   assert.equal(flow.hasPending(IDENTITY), true);
 });
 
-test('resposta sem horário cria compromisso do dia sem inventar hora', async () => {
+test('resposta sem horário cria compromisso datado sem confundir com dia inteiro', async () => {
   const { flow, calls } = makeHarness();
   await turn(flow, 'Me lembra da reunião daqui 10 dias.');
   const result = await turn(flow, 'Pode deixar sem horário.');
-  assert.match(result.text, /compromisso do dia/);
+  assert.match(result.text, /sem horário/);
   assert.equal(calls[0].operation, 'create');
   assert.equal(calls[0].payload.title, 'reuniao');
-  assert.equal(calls[0].payload.is_all_day, true);
+  assert.equal(calls[0].payload.is_all_day, false);
+  assert.equal(calls[0].payload.has_explicit_time, false);
   assert.match(calls[0].payload.starts_at, /^2026-08-18T/);
   assert.equal(flow.hasPending(IDENTITY), false);
 });
@@ -144,8 +145,63 @@ test('criação com horário salva dentista amanhã às 15h', async () => {
   assert.match(result.text, /Pronto/);
   assert.equal(calls[0].payload.title, 'dentista');
   assert.equal(calls[0].payload.is_all_day, false);
+  assert.equal(calls[0].payload.has_explicit_time, true);
   assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
   assert.match(calls[0].payload.starts_at, /^2026-08-09T/);
+});
+
+test('contrato semântico: reunião empresarial separa título, data e horário', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião empresarial amanhã às 10 horas.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'reuniao empresarial');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.equal(calls[0].payload.has_explicit_time, true);
+  assert.equal(calls[0].payload.is_all_day, false);
+});
+
+test('data sem horário permanece pending até decisão explícita', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião empresarial amanhã.');
+
+  assert.match(result.text, /horário|compromisso do dia/);
+  assert.equal(calls.length, 0);
+  assert.equal(flow.hasPending(IDENTITY), true);
+});
+
+test('pending adiciona 15:30 sem reconstruir o título', async () => {
+  const { flow, calls } = makeHarness();
+  await turn(flow, 'Agenda reunião empresarial amanhã.');
+  const result = await turn(flow, 'sim, coloca às três e meia da tarde');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'reuniao empresarial');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
+  assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 30);
+  assert.equal(calls[0].payload.has_explicit_time, true);
+  assert.equal(calls[0].payload.is_all_day, false);
+});
+
+test('meia-noite é 00:00 explícito e não Sem horário', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda manutenção amanhã à meia-noite.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'manutencao');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 0);
+  assert.equal(calls[0].payload.has_explicit_time, true);
+  assert.equal(calls[0].payload.is_all_day, false);
+});
+
+test('dia inteiro é distinto de compromisso sem horário', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda reunião empresarial amanhã o dia inteiro.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'reuniao empresarial');
+  assert.equal(calls[0].payload.has_explicit_time, false);
+  assert.equal(calls[0].payload.is_all_day, true);
 });
 
 for (const [spokenHour, expectedHour] of [
@@ -2285,8 +2341,61 @@ test('edição encontra um item e altera somente o horário', async () => {
   assert.match(result.text, /Atualizei/);
   const update = calls.find((call) => call.operation === 'update');
   assert.equal(new Date(update.changes.starts_at).getHours(), 16);
+  assert.equal(update.changes.has_explicit_time, true);
+  assert.equal(update.changes.is_all_day, false);
   assert.equal(update.options.expectedUpdatedAt, '2026-08-08T10:00:00.000Z');
 });
+
+test('edição remove horário sem transformar o item em dia inteiro', async () => {
+  const { flow, calls } = makeHarness([
+    {
+      id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião',
+      starts_at: '2026-08-12T15:00:00.000Z', has_explicit_time: true, is_all_day: false,
+    },
+  ]);
+  const first = await turn(flow, 'Muda o horário para sem horário.');
+  assert.match(first.text, /Qual compromisso/);
+  const result = await turn(flow, 'Reunião.');
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.equal(update.changes.has_explicit_time, false);
+  assert.equal(update.changes.is_all_day, false);
+  assert.equal(update.changes.ends_at, null);
+});
+
+test('edição transforma horário normal em dia inteiro', async () => {
+  const { flow, calls } = makeHarness([
+    {
+      id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião',
+      starts_at: '2026-08-12T15:00:00.000Z', has_explicit_time: true, is_all_day: false,
+    },
+  ]);
+  const result = await turn(flow, 'Muda minha reunião para o dia inteiro.');
+  assert.match(result.text, /Atualizei/);
+  const update = calls.find((call) => call.operation === 'update');
+  assert.equal(update.changes.has_explicit_time, false);
+  assert.equal(update.changes.is_all_day, true);
+});
+
+for (const [label, item] of [
+  ['sem horário', { has_explicit_time: false, is_all_day: false }],
+  ['dia inteiro', { has_explicit_time: false, is_all_day: true }],
+]) {
+  test(`edição adiciona horário real a item ${label}`, async () => {
+    const { flow, calls } = makeHarness([
+      {
+        id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião',
+        starts_at: '2026-08-12T00:00:00.000Z', ...item,
+      },
+    ]);
+    const result = await turn(flow, 'Muda minha reunião para 16h.');
+    assert.match(result.text, /Atualizei/);
+    const update = calls.find((call) => call.operation === 'update');
+    assert.equal(new Date(update.changes.starts_at).getHours(), 16);
+    assert.equal(update.changes.has_explicit_time, true);
+    assert.equal(update.changes.is_all_day, false);
+  });
+}
 
 for (const [text, expectedDate, expectedHour] of [
   ['Muda minha reunião para sexta dezesseis horas.', '2026-08-14', 16],

@@ -4,6 +4,7 @@ import Modal from '../../components/ui/Modal/Modal.jsx';
 import {
   buildAgendaItemCreationPayload,
   createAgendaItemEditForm,
+  getFormStartLocalValue,
   getAgendaItemErrorMessage,
   shiftEndsAtOnEdit,
   validateAgendaItemForm,
@@ -42,12 +43,7 @@ function formatDateInputValue(date) {
 
 function createInitialForm(item, defaultDay) {
   if (item) {
-    const editForm = createAgendaItemEditForm(item);
-    return {
-      ...editForm,
-      dateValue: editForm.starts_at ? editForm.starts_at.slice(0, 10) : formatDateInputValue(defaultDay),
-      timeValue: editForm.is_all_day ? '' : (editForm.starts_at?.slice(11, 16) || ''),
-    };
+    return createAgendaItemEditForm(item);
   }
   return {
     item_type: 'appointment',
@@ -56,9 +52,10 @@ function createInitialForm(item, defaultDay) {
     location: '',
     client_id: null,
     ends_at: '',
-    is_all_day: false,
-    dateValue: formatDateInputValue(defaultDay ?? new Date()),
-    timeValue: '09:00',
+    allDay: false,
+    hasExplicitTime: false,
+    date: formatDateInputValue(defaultDay ?? new Date()),
+    time: '',
   };
 }
 
@@ -123,15 +120,12 @@ function SimplifiedAgendaFormModal({
     if (isMutating || submissionLifecycleRef.current.hasActive()) return;
     setLocalError(null);
 
-    const { dateValue, timeValue, ...rest } = form;
-    const startsAtValue = `${dateValue}T${form.is_all_day ? '00:00' : (timeValue || '09:00')}`;
+    const startsAtValue = getFormStartLocalValue(form);
     const payloadForm = {
-      ...rest,
-      starts_at: startsAtValue,
+      ...form,
       ends_at: isEditing
-        ? shiftEndsAtOnEdit(item.starts_at, item.ends_at, rest.ends_at, startsAtValue)
-        : (form.is_all_day ? '' : rest.ends_at),
-      is_all_day: form.is_all_day,
+        ? shiftEndsAtOnEdit(item.starts_at, item.ends_at, form.ends_at, startsAtValue)
+        : (form.allDay || !form.hasExplicitTime ? '' : form.ends_at),
     };
 
     const validationError = validateAgendaItemForm(payloadForm);
@@ -191,8 +185,8 @@ function SimplifiedAgendaFormModal({
     }
   }
 
-  const selectedDayHeading = form.dateValue
-    ? formatDayHeading(new Date(`${form.dateValue}T12:00:00`))
+  const selectedDayHeading = form.date
+    ? formatDayHeading(new Date(`${form.date}T12:00:00`))
     : '';
 
   return (
@@ -250,29 +244,39 @@ function SimplifiedAgendaFormModal({
           <span>Data</span>
           <input
             type="date"
-            value={form.dateValue}
-            onChange={(event) => update({ dateValue: event.target.value })}
+            value={form.date}
+            onChange={(event) => update({ date: event.target.value })}
             aria-required="true"
             aria-label="Data do compromisso"
           />
         </label>
 
-        <label className={`${styles.field} ${form.is_all_day ? styles.fieldDisabled : ''}`}>
+        <label className={`${styles.field} ${form.allDay ? styles.fieldDisabled : ''}`}>
           <span>Horário</span>
           <input
             type="time"
-            value={form.timeValue}
-            onChange={(event) => update({ timeValue: event.target.value })}
+            value={form.time}
+            onChange={(event) => update({
+              time: event.target.value,
+              hasExplicitTime: Boolean(event.target.value),
+              allDay: event.target.value ? false : form.allDay,
+              ends_at: event.target.value ? form.ends_at : '',
+            })}
             aria-label="Horário do compromisso"
-            disabled={form.is_all_day}
+            disabled={form.allDay}
           />
         </label>
 
         <label className={styles.allDayRow}>
           <input
             type="checkbox"
-            checked={Boolean(form.is_all_day)}
-            onChange={(event) => update({ is_all_day: event.target.checked })}
+            checked={Boolean(form.allDay)}
+            onChange={(event) => update({
+              allDay: event.target.checked,
+              hasExplicitTime: false,
+              time: '',
+              ends_at: event.target.checked ? '' : form.ends_at,
+            })}
             aria-label="Dia inteiro"
           />
           <span>Dia inteiro</span>

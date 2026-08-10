@@ -107,9 +107,16 @@ test('titulo e obrigatorio (Input required)', async () => {
   assert.match(contents, /id="agenda-form-title"[\s\S]*?required/);
 });
 
-test('inicio (starts_at) e obrigatorio e usa type="datetime-local"', async () => {
+test('data e obrigatoria e horario e opcional em campos semanticamente separados', async () => {
   const contents = await source('AgendaFormModal.jsx');
-  assert.match(contents, /id="agenda-form-starts-at"[\s\S]*?type="datetime-local"[\s\S]*?required/);
+  assert.match(contents, /id="agenda-form-date"[\s\S]*?type="date"[\s\S]*?required/);
+  const timeBlock = contents.slice(
+    contents.indexOf('id="agenda-form-time"'),
+    contents.indexOf('/>', contents.indexOf('id="agenda-form-time"')),
+  );
+  assert.match(timeBlock, /type="time"/);
+  assert.doesNotMatch(timeBlock, /\brequired\b/);
+  assert.match(timeBlock, /value=\{form\.time\}/);
 });
 
 test('termino (ends_at) nao e obrigatorio e usa type="datetime-local"', async () => {
@@ -129,25 +136,34 @@ test('checkbox "Dia inteiro" existe, acessivel via label/htmlFor', async () => {
     /<label className="uf-flex uf-items-center uf-gap-sm uf-text-caption" htmlFor="agenda-form-all-day">/,
   );
   assert.match(contents, /id="agenda-form-all-day"[\s\S]*?type="checkbox"/);
-  assert.match(contents, /checked=\{form\.is_all_day\}/);
+  assert.match(contents, /checked=\{form\.allDay\}/);
 });
 
-test('checkbox "Dia inteiro" chama handleAllDayChange, que desabilita e limpa ends_at', async () => {
+test('checkbox "Dia inteiro" limpa horario explicito e termino', async () => {
   const contents = await source('AgendaFormModal.jsx');
   assert.match(contents, /onChange=\{\(event\) => handleAllDayChange\(event\.target\.checked\)\}/);
   assert.match(
     contents,
-    /function handleAllDayChange\(checked\) \{\s*\n\s*setForm\(\(current\) => \(\{\s*\n\s*\.\.\.current,\s*\n\s*is_all_day: checked,\s*\n\s*ends_at: checked \? '' : current\.ends_at,/,
+    /function handleAllDayChange\(checked\) \{[\s\S]*?allDay: checked,[\s\S]*?hasExplicitTime: false,[\s\S]*?time: '',[\s\S]*?ends_at: checked \? '' : current\.ends_at,/,
   );
 });
 
-test('ends_at fica desabilitado quando is_all_day esta marcado', async () => {
+test('termino fica desabilitado para dia inteiro ou ausencia de horario', async () => {
   const contents = await source('AgendaFormModal.jsx');
   const endsAtBlock = contents.slice(
     contents.indexOf('id="agenda-form-ends-at"'),
     contents.indexOf('/>', contents.indexOf('id="agenda-form-ends-at"')),
   );
-  assert.match(endsAtBlock, /disabled=\{isMutating \|\| form\.is_all_day\}/);
+  assert.match(endsAtBlock, /disabled=\{isMutating \|\| form\.allDay \|\| !form\.hasExplicitTime\}/);
+});
+
+test('preencher ou limpar horario atualiza somente a semantica temporal', async () => {
+  const contents = await source('AgendaFormModal.jsx');
+  assert.match(
+    contents,
+    /function handleTimeChange\(value\) \{[\s\S]*?time: value,[\s\S]*?hasExplicitTime: Boolean\(value\),[\s\S]*?ends_at: value \? current\.ends_at : '',/,
+  );
+  assert.match(contents, /onChange=\{\(event\) => handleTimeChange\(event\.target\.value\)\}/);
 });
 
 test('select de cliente usa clientsState.activeClients, nunca clientsState.clients, e nao e obrigatorio', async () => {

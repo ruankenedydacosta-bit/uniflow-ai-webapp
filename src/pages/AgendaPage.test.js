@@ -148,17 +148,26 @@ test('status em pt-BR cobrem scheduled/completed/cancelled', async () => {
   assert.match(contents, /cancelled: 'Cancelado'/);
 });
 
-test('is_all_day exibe "Dia inteiro"', async () => {
+test('card delega data/horario ao adaptador semantico sem interpretar o titulo', async () => {
   const contents = await source('AgendaPage.jsx');
-  assert.match(
-    contents,
-    /function formatAgendaItemTime\(item\) \{\s*\n\s*if \(item\.is_all_day\) return 'Dia inteiro';/,
-  );
+  assert.match(contents, /import \{ buildAgendaItemPresentation \} from '\.\/agenda\/agendaItemPresentation\.js';/);
+  assert.match(contents, /const presentation = buildAgendaItemPresentation\(item\);/);
+  assert.doesNotMatch(contents, /item\.title.*(?:hora|time)|(?:hora|time).*item\.title/);
 });
 
-test('item sem ends_at exibe somente a hora inicial', async () => {
+test('card renderiza chips separados de data e horario', async () => {
   const contents = await source('AgendaPage.jsx');
-  assert.match(contents, /if \(!item\.ends_at\) return startLabel;/);
+  assert.match(contents, /className=\{styles\.agendaItemTemporal\}/);
+  assert.match(contents, /\{presentation\.dateLabel\}/);
+  assert.match(contents, /\{presentation\.timeLabel\}/);
+  assert.match(contents, /dateTime=\{presentation\.date \?\? undefined\}/);
+});
+
+test('CSS dos chips e titulo longo evita overflow em larguras moveis', async () => {
+  const contents = await source('AgendaPage.module.css');
+  assert.match(contents, /\.agendaItemTemporal\s*\{[\s\S]*?flex-wrap: wrap;[\s\S]*?max-width: 100%;/);
+  assert.match(contents, /\.agendaItemTop strong\s*\{[\s\S]*?overflow-wrap: anywhere;/);
+  assert.match(contents, /@media \(max-width: 760px\)/);
 });
 
 test('cliente opcional: exibe nome quando encontrado, omite a linha quando ausente, sem mensagem de erro', async () => {

@@ -92,8 +92,20 @@ function AgendaFormModal({
   function handleAllDayChange(checked) {
     setForm((current) => ({
       ...current,
-      is_all_day: checked,
+      allDay: checked,
+      hasExplicitTime: false,
+      time: '',
       ends_at: checked ? '' : current.ends_at,
+    }));
+  }
+
+  function handleTimeChange(value) {
+    setForm((current) => ({
+      ...current,
+      time: value,
+      hasExplicitTime: Boolean(value),
+      allDay: value ? false : current.allDay,
+      ends_at: value ? current.ends_at : '',
     }));
   }
 
@@ -244,7 +256,7 @@ function AgendaFormModal({
 
         <TextareaField
           id="agenda-form-description"
-          label="Descrição (opcional)"
+          label="Observações / descrição (opcional)"
           value={form.description}
           onChange={(event) => updateField('description', event.target.value)}
           disabled={isMutating}
@@ -263,7 +275,7 @@ function AgendaFormModal({
           <input
             id="agenda-form-all-day"
             type="checkbox"
-            checked={form.is_all_day}
+            checked={form.allDay}
             onChange={(event) => handleAllDayChange(event.target.checked)}
             disabled={isMutating}
           />
@@ -271,13 +283,23 @@ function AgendaFormModal({
         </label>
 
         <Input
-          id="agenda-form-starts-at"
-          label="Início"
-          type="datetime-local"
-          value={form.starts_at}
-          onChange={(event) => updateField('starts_at', event.target.value)}
+          id="agenda-form-date"
+          label="Data"
+          type="date"
+          value={form.date}
+          onChange={(event) => updateField('date', event.target.value)}
           required
           disabled={isMutating}
+          fullWidth
+        />
+
+        <Input
+          id="agenda-form-time"
+          label="Horário (opcional)"
+          type="time"
+          value={form.time}
+          onChange={(event) => handleTimeChange(event.target.value)}
+          disabled={isMutating || form.allDay}
           fullWidth
         />
 
@@ -287,7 +309,7 @@ function AgendaFormModal({
           type="datetime-local"
           value={form.ends_at}
           onChange={(event) => updateField('ends_at', event.target.value)}
-          disabled={isMutating || form.is_all_day}
+          disabled={isMutating || form.allDay || !form.hasExplicitTime}
           fullWidth
         />
 

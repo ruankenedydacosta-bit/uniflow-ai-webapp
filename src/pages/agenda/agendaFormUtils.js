@@ -90,9 +90,11 @@ export function createEmptyAgendaItemForm() {
     title: '',
     description: '',
     location: '',
-    starts_at: '',
+    date: '',
+    time: '',
     ends_at: '',
-    is_all_day: false,
+    allDay: false,
+    hasExplicitTime: false,
     client_id: '',
   };
 }
@@ -107,14 +109,18 @@ export function createEmptyAgendaItemForm() {
  * esse mesmo invariante ao carregar.
  */
 export function createAgendaItemEditForm(item) {
+  const allDay = Boolean(item.is_all_day);
+  const hasExplicitTime = !allDay && item.has_explicit_time !== false;
   return {
     item_type: item.item_type ?? '',
     title: item.title ?? '',
     description: item.description ?? '',
     location: item.location ?? '',
-    starts_at: formatDatetimeLocalValue(item.starts_at),
-    ends_at: item.is_all_day ? '' : formatDatetimeLocalValue(item.ends_at),
-    is_all_day: Boolean(item.is_all_day),
+    date: formatLocalDateValue(item.starts_at),
+    time: hasExplicitTime ? formatLocalTimeValue(item.starts_at) : '',
+    ends_at: hasExplicitTime ? formatDatetimeLocalValue(item.ends_at) : '',
+    allDay,
+    hasExplicitTime,
     client_id: item.client_id ?? '',
   };
 }
@@ -140,6 +146,44 @@ export function formatDatetimeLocalValue(timestamptzValue) {
     `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
     `T${pad(date.getHours())}:${pad(date.getMinutes())}`
   );
+}
+
+/** timestamptz -> data local YYYY-MM-DD. */
+export function formatLocalDateValue(timestamptzValue) {
+  return formatDatetimeLocalValue(timestamptzValue).slice(0, 10);
+}
+
+/** timestamptz -> horario local HH:mm. */
+export function formatLocalTimeValue(timestamptzValue) {
+  return formatDatetimeLocalValue(timestamptzValue).slice(11, 16);
+}
+
+export function isValidLocalDateValue(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year
+    && parsed.getMonth() === month - 1
+    && parsed.getDate() === day;
+}
+
+export function isValidLocalTimeValue(value) {
+  const match = /^(\d{2}):(\d{2})$/.exec(value ?? '');
+  return Boolean(match && Number(match[1]) <= 23 && Number(match[2]) <= 59);
+}
+
+/** Data e horario locais sem fuso -> ISO. Sem horario usa meia-noite apenas como ancora tecnica. */
+export function buildLocalStartIso(dateValue, timeValue = null) {
+  if (!isValidLocalDateValue(dateValue)) return null;
+  const resolvedTime = timeValue || '00:00';
+  if (!isValidLocalTimeValue(resolvedTime)) return null;
+  return parseDatetimeLocalValue(`${dateValue}T${resolvedTime}`);
+}
+
+export function getFormStartLocalValue(form) {
+  if (!isValidLocalDateValue(form.date)) return '';
+  const time = form.hasExplicitTime && !form.allDay ? form.time : '00:00';
+  return isValidLocalTimeValue(time) ? `${form.date}T${time}` : '';
 }
 
 /** "YYYY-MM-DDTHH:mm" (valor local do input) -> ISO (UTC). Vazio/invalido -> null. */
@@ -214,16 +258,28 @@ export function validateAgendaItemForm(form) {
     return 'Selecione o tipo do compromisso.';
   }
 
-  if (!isValidDatetimeLocalValue(form.starts_at) || !form.starts_at) {
-    return 'Data e hora de início são obrigatórias.';
+  if (!isValidLocalDateValue(form.date)) {
+    return 'Data do compromisso é obrigatória.';
+  }
+
+  if (form.allDay && (form.hasExplicitTime || form.time)) {
+    return 'Compromisso de dia inteiro não deve possuir horário.';
+  }
+
+  if (form.hasExplicitTime && !isValidLocalTimeValue(form.time)) {
+    return 'Horário do compromisso é inválido.';
+  }
+
+  if (!form.hasExplicitTime && form.time) {
+    return 'Remova o horário ou marque que ele foi informado.';
   }
 
   if (!isValidDatetimeLocalValue(form.ends_at)) {
     return 'Data e hora de término inválidas.';
   }
 
-  if (!form.is_all_day && form.ends_at) {
-    const startsAtIso = parseDatetimeLocalValue(form.starts_at);
+  if (!form.allDay && form.hasExplicitTime && form.ends_at) {
+    const startsAtIso = buildLocalStartIso(form.date, form.time);
     const endsAtIso = parseDatetimeLocalValue(form.ends_at);
     if (startsAtIso && endsAtIso && endsAtIso < startsAtIso) {
       return 'A data e hora de término deve ser igual ou posterior ao início.';
@@ -250,16 +306,16 @@ export function validateAgendaItemForm(form) {
 // Deve ser chamado somente apos validateAgendaItemForm(form) retornar null.
 
 export function buildAgendaItemCreationPayload(form) {
+  const hasExplicitTime = !form.allDay && form.hasExplicitTime;
   return {
     item_type: form.item_type,
     title: form.title.trim(),
     description: form.description?.trim() ? form.description.trim() : null,
     location: form.location?.trim() ? form.location.trim() : null,
-    starts_at: form.is_all_day
-      ? normalizeDatetimeLocalToStartOfDay(form.starts_at)
-      : parseDatetimeLocalValue(form.starts_at),
-    ends_at: form.is_all_day ? null : parseDatetimeLocalValue(form.ends_at),
-    is_all_day: form.is_all_day,
+    starts_at: buildLocalStartIso(form.date, hasExplicitTime ? form.time : null),
+    ends_at: hasExplicitTime ? parseDatetimeLocalValue(form.ends_at) : null,
+    is_all_day: form.allDay,
+    has_explicit_time: hasExplicitTime,
     client_id: form.client_id || null,
   };
 }

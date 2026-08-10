@@ -6,7 +6,10 @@ import {
   buildAgendaItemCreationPayload,
   createAgendaItemEditForm,
   createEmptyAgendaItemForm,
+  buildLocalStartIso,
   formatDatetimeLocalValue,
+  formatLocalDateValue,
+  formatLocalTimeValue,
   getAgendaItemErrorMessage,
   isValidDatetimeLocalValue,
   normalizeDatetimeLocalToStartOfDay,
@@ -17,16 +20,18 @@ import {
 
 // --- valores iniciais --------------------------------------------------------
 
-test('createEmptyAgendaItemForm retorna os 8 campos do formulario, com defaults seguros', () => {
+test('createEmptyAgendaItemForm separa data, horario e semantica temporal', () => {
   const form = createEmptyAgendaItemForm();
   assert.deepEqual(form, {
     item_type: '',
     title: '',
     description: '',
     location: '',
-    starts_at: '',
+    date: '',
+    time: '',
     ends_at: '',
-    is_all_day: false,
+    allDay: false,
+    hasExplicitTime: false,
     client_id: '',
   });
 });
@@ -136,6 +141,7 @@ function makeAgendaItem(overrides = {}) {
     starts_at: '2026-07-22T17:30:00.000Z',
     ends_at: '2026-07-22T18:30:00.000Z',
     is_all_day: false,
+    has_explicit_time: true,
     status: 'scheduled',
     client_id: 'client-1',
     assigned_user_id: null,
@@ -154,9 +160,11 @@ test('createAgendaItemEditForm mapeia um item real, todos os campos preenchidos'
   assert.equal(form.title, 'Reunião com cliente');
   assert.equal(form.description, 'Pauta inicial');
   assert.equal(form.location, 'Escritório');
-  assert.equal(form.starts_at, formatDatetimeLocalValue(item.starts_at));
+  assert.equal(form.date, formatLocalDateValue(item.starts_at));
+  assert.equal(form.time, formatLocalTimeValue(item.starts_at));
   assert.equal(form.ends_at, formatDatetimeLocalValue(item.ends_at));
-  assert.equal(form.is_all_day, false);
+  assert.equal(form.allDay, false);
+  assert.equal(form.hasExplicitTime, true);
   assert.equal(form.client_id, 'client-1');
 });
 
@@ -176,7 +184,9 @@ test('createAgendaItemEditForm: is_all_day true forca ends_at para "" mesmo com 
     makeAgendaItem({ is_all_day: true, ends_at: '2026-07-22T18:30:00.000Z' }),
   );
 
-  assert.equal(form.is_all_day, true);
+  assert.equal(form.allDay, true);
+  assert.equal(form.hasExplicitTime, false);
+  assert.equal(form.time, '');
   assert.equal(form.ends_at, '');
 });
 
@@ -201,9 +211,11 @@ function validForm(overrides = {}) {
     title: 'Reunião com cliente',
     description: '',
     location: '',
-    starts_at: '2026-07-22T14:30',
+    date: '2026-07-22',
+    time: '14:30',
     ends_at: '',
-    is_all_day: false,
+    allDay: false,
+    hasExplicitTime: true,
     client_id: '',
     ...overrides,
   };
@@ -231,10 +243,14 @@ test('validateAgendaItemForm: item_type e obrigatorio e deve estar no enum', () 
   );
 });
 
-test('validateAgendaItemForm: starts_at e obrigatorio', () => {
+test('validateAgendaItemForm: data e obrigatoria sem exigir horario', () => {
   assert.equal(
-    validateAgendaItemForm(validForm({ starts_at: '' })),
-    'Data e hora de início são obrigatórias.',
+    validateAgendaItemForm(validForm({ date: '' })),
+    'Data do compromisso é obrigatória.',
+  );
+  assert.equal(
+    validateAgendaItemForm(validForm({ time: '', hasExplicitTime: false })),
+    null,
   );
 });
 
@@ -248,7 +264,7 @@ test('validateAgendaItemForm: ends_at invalido e rejeitado', () => {
 test('validateAgendaItemForm: ends_at anterior a starts_at e rejeitado', () => {
   assert.equal(
     validateAgendaItemForm(
-      validForm({ starts_at: '2026-07-22T14:30', ends_at: '2026-07-22T10:00' }),
+      validForm({ ends_at: '2026-07-22T10:00' }),
     ),
     'A data e hora de término deve ser igual ou posterior ao início.',
   );
@@ -257,7 +273,7 @@ test('validateAgendaItemForm: ends_at anterior a starts_at e rejeitado', () => {
 test('validateAgendaItemForm: ends_at igual a starts_at e valido', () => {
   assert.equal(
     validateAgendaItemForm(
-      validForm({ starts_at: '2026-07-22T14:30', ends_at: '2026-07-22T14:30' }),
+      validForm({ ends_at: '2026-07-22T14:30' }),
     ),
     null,
   );
@@ -267,9 +283,10 @@ test('validateAgendaItemForm: ends_at nao e validado contra starts_at quando is_
   assert.equal(
     validateAgendaItemForm(
       validForm({
-        starts_at: '2026-07-22T14:30',
+        time: '',
         ends_at: '',
-        is_all_day: true,
+        allDay: true,
+        hasExplicitTime: false,
       }),
     ),
     null,
@@ -298,6 +315,7 @@ test('buildAgendaItemCreationPayload monta o payload normal com todos os campos'
   assert.equal(payload.description, 'Pauta inicial');
   assert.equal(payload.location, 'Escritório');
   assert.equal(payload.is_all_day, false);
+  assert.equal(payload.has_explicit_time, true);
   assert.equal(payload.client_id, 'client-1');
   assert.equal(typeof payload.starts_at, 'string');
   assert.equal(typeof payload.ends_at, 'string');
@@ -312,17 +330,106 @@ test('buildAgendaItemCreationPayload: campos opcionais vazios viram null', () =>
   assert.equal(payload.client_id, null);
 });
 
-test('buildAgendaItemCreationPayload: dia inteiro normaliza starts_at para 00:00 local e sempre envia ends_at null', () => {
+test('buildAgendaItemCreationPayload: dia inteiro usa ancora local e marca horario como nao explicito', () => {
   const payload = buildAgendaItemCreationPayload(
-    validForm({ starts_at: '2026-07-22T14:30', ends_at: '2026-07-22T18:00', is_all_day: true }),
+    validForm({ time: '', ends_at: '2026-07-22T18:00', allDay: true, hasExplicitTime: false }),
   );
 
   assert.equal(payload.ends_at, null);
   assert.equal(payload.is_all_day, true);
+  assert.equal(payload.has_explicit_time, false);
 
   const startsAtDate = new Date(payload.starts_at);
   assert.equal(startsAtDate.getHours(), 0);
   assert.equal(startsAtDate.getMinutes(), 0);
+});
+
+test('buildAgendaItemCreationPayload distingue sem horario de 00:00 explicito', () => {
+  const withoutTime = buildAgendaItemCreationPayload(
+    validForm({ time: '', hasExplicitTime: false }),
+  );
+  const midnight = buildAgendaItemCreationPayload(
+    validForm({ time: '00:00', hasExplicitTime: true }),
+  );
+
+  assert.equal(withoutTime.has_explicit_time, false);
+  assert.equal(midnight.has_explicit_time, true);
+  assert.equal(new Date(withoutTime.starts_at).getHours(), 0);
+  assert.equal(new Date(midnight.starts_at).getHours(), 0);
+});
+
+test('buildLocalStartIso combina data e horario locais sem reinterpretar o titulo', () => {
+  const date = new Date(buildLocalStartIso('2026-08-11', '15:30'));
+  assert.equal(date.getFullYear(), 2026);
+  assert.equal(date.getMonth(), 7);
+  assert.equal(date.getDate(), 11);
+  assert.equal(date.getHours(), 15);
+  assert.equal(date.getMinutes(), 30);
+});
+
+test('createAgendaItemEditForm cobre transicoes horario, sem horario e dia inteiro', () => {
+  const withoutTime = createAgendaItemEditForm(makeAgendaItem({ has_explicit_time: false }));
+  assert.equal(withoutTime.time, '');
+  assert.equal(withoutTime.hasExplicitTime, false);
+  assert.equal(withoutTime.allDay, false);
+
+  const legacy = createAgendaItemEditForm(makeAgendaItem({ has_explicit_time: undefined }));
+  assert.equal(legacy.hasExplicitTime, true);
+  assert.equal(legacy.time, formatLocalTimeValue(makeAgendaItem().starts_at));
+});
+
+test('edicao sem horario -> horario normal preserva titulo e descricao', () => {
+  const form = createAgendaItemEditForm(makeAgendaItem({ has_explicit_time: false }));
+  const payload = buildAgendaItemCreationPayload({
+    ...form,
+    time: '16:45',
+    hasExplicitTime: true,
+  });
+  assert.equal(payload.title, 'Reunião com cliente');
+  assert.equal(payload.description, 'Pauta inicial');
+  assert.equal(payload.has_explicit_time, true);
+  assert.equal(payload.is_all_day, false);
+  assert.equal(new Date(payload.starts_at).getHours(), 16);
+  assert.equal(new Date(payload.starts_at).getMinutes(), 45);
+});
+
+test('edicao com horario -> sem horario limpa somente a semantica temporal', () => {
+  const form = createAgendaItemEditForm(makeAgendaItem());
+  const payload = buildAgendaItemCreationPayload({
+    ...form,
+    time: '',
+    ends_at: '',
+    hasExplicitTime: false,
+  });
+  assert.equal(payload.title, 'Reunião com cliente');
+  assert.equal(payload.description, 'Pauta inicial');
+  assert.equal(payload.has_explicit_time, false);
+  assert.equal(payload.is_all_day, false);
+  assert.equal(payload.ends_at, null);
+});
+
+test('edicao dia inteiro -> horario normal e horario normal -> dia inteiro', () => {
+  const allDayForm = createAgendaItemEditForm(makeAgendaItem({ is_all_day: true }));
+  const scheduled = buildAgendaItemCreationPayload({
+    ...allDayForm,
+    allDay: false,
+    time: '09:15',
+    hasExplicitTime: true,
+  });
+  assert.equal(scheduled.is_all_day, false);
+  assert.equal(scheduled.has_explicit_time, true);
+  assert.equal(new Date(scheduled.starts_at).getHours(), 9);
+
+  const timedForm = createAgendaItemEditForm(makeAgendaItem());
+  const allDay = buildAgendaItemCreationPayload({
+    ...timedForm,
+    allDay: true,
+    time: '',
+    hasExplicitTime: false,
+  });
+  assert.equal(allDay.is_all_day, true);
+  assert.equal(allDay.has_explicit_time, false);
+  assert.equal(allDay.ends_at, null);
 });
 
 test('buildAgendaItemCreationPayload: nunca inclui status, assigned_user_id, workspace_id ou created_by', () => {

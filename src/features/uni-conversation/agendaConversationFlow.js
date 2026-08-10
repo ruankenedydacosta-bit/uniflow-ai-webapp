@@ -247,6 +247,8 @@ function parseClockAtom(value) {
     .replace(/^(?:as|das|umas)\s+/, '')
     .replace(/[.!?]+$/, '')
     .trim();
+  if (/^(?:a\s+)?meia[-\s]noite$/.test(normalized)) return '00:00';
+  if (/^(?:ao\s+)?meio[-\s]dia$/.test(normalized)) return '12:00';
   const hybrid = normalized.match(
     new RegExp(
       `^(${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s*(?:h|horas?)\\s*(?:e\\s+)?(${SPOKEN_MINUTE_PATTERN}|${SPOKEN_NUMBER_TOKEN_PATTERN})(?:\\s+minutos?)?(?:\\s+(${DAY_PERIOD_PATTERN}))?$`,
@@ -496,6 +498,14 @@ function discoverTemporalCandidates(normalized) {
       });
     }
   };
+
+  for (const match of normalized.matchAll(/\b(?:(?:a|ao)\s+)?(?:meia[-\s]noite|meio[-\s]dia)\b/g)) {
+    candidates.push({
+      span: resultSpan(match),
+      time: parseClockAtom(match[0]),
+      source: match[0],
+    });
+  }
 
   collect(
     new RegExp(`\\b(?:(?:as|das|para|umas)\\s+)?(${attemptedHybrid})\\b`, 'g'),
@@ -776,7 +786,7 @@ function hasExplicitClockMarker(normalized) {
 }
 
 function hasExplicitDayPeriod(normalized) {
-  return /\bda\s+(?:manha|tarde|noite)\b/.test(normalized);
+  return /\b(?:da\s+(?:manha|tarde|noite)|meia[-\s]noite|meio[-\s]dia)\b/.test(normalized);
 }
 
 function isPeriodAmbiguous(time, normalized) {
@@ -985,6 +995,9 @@ export function extractAgendaTime(text, { allowContextual = false } = {}) {
 }
 
 function extractAgendaTimeValue(normalized, allowContextual) {
+  const namedClock = normalized.match(/\b(?:(?:a|ao)\s+)?(?:meia[-\s]noite|meio[-\s]dia)\b/);
+  if (namedClock) return parseClockAtom(namedClock[0]);
+
   const colloquial = matchColloquialTime(normalized, allowContextual);
   if (colloquial) return formatColloquialTime(colloquial);
 
@@ -1079,6 +1092,7 @@ function extractTitle(text, temporalAnalysis = null) {
     .replace(/\b(?:pode\s+)?marcar\s+como\s+concluida?\b/g, '')
     .replace(/\bdaqui\s+(?:a\s+|uns?\s+|umas?\s+|cerca\s+de\s+)?[\w\s]+?\s+(?:dias?|semanas?)\b/g, '')
     .replace(/\b(?:hoje|amanha|depois\s+de\s+amanha|fim\s+do\s+mes|final\s+do\s+mes)\b/g, '')
+    .replace(/\b(?:o\s+)?dia\s+inteiro\b/g, '')
     .replace(/\b(?:(?:semana|mes)\s+que\s+vem|proxim[ao]\s+(?:semana|mes))\b/g, '')
     .replace(/\b(?:(?:de|na|no|para|pra)\s+)?(?:domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?(?:\s+que\s+vem)?\b/g, '')
     .replace(/\b(?:(?:de|na|no|para|pra)\s+)?dia\s+\d{1,2}\b/g, '')
@@ -1179,13 +1193,17 @@ function extractEditChanges(text, referenceDate, temporalAnalysis = null) {
   const dateSource = destination || (canUseWholeTextForDate ? normalized : '');
   const date = dateSource ? resolveAgendaDate(dateSource, referenceDate) : null;
   const time = (temporalAnalysis ?? analyzeAgendaTime(text, { allowContextual: true })).time;
+  const allDay = /\b(?:o\s+)?dia\s+inteiro\b/.test(normalized);
+  const removesTime = /\b(?:sem\s+horario|remove(?:r)?\s+(?:o\s+)?horario|tira(?:r)?\s+(?:o\s+)?horario)\b/.test(normalized);
 
   return {
     ...(explicitTitle.title || implicitTitle.title
       ? { title: explicitTitle.title ?? implicitTitle.title }
       : {}),
     ...(date ? { date } : {}),
-    ...(time ? { time } : {}),
+    ...(time ? { time, hasExplicitTime: true, allDay: false } : {}),
+    ...(allDay ? { time: null, hasExplicitTime: false, allDay: true } : {}),
+    ...(removesTime ? { time: null, hasExplicitTime: false, allDay: false } : {}),
   };
 }
 
@@ -1196,7 +1214,7 @@ function extractEditTargetDate(text, referenceDate) {
 }
 
 function hasEditChanges(changes) {
-  return Boolean(changes?.title || changes?.date || changes?.time);
+  return Boolean(changes && Object.keys(changes).length > 0);
 }
 
 function hasExplicitEditChangeCue(text) {
@@ -1214,12 +1232,19 @@ function buildAgendaItemChanges(item, fields) {
   const changes = {};
   if (fields.title) changes.title = fields.title;
 
-  if (fields.date || fields.time) {
+  const changesTimeSemantics = fields.time !== undefined
+    || fields.hasExplicitTime !== undefined
+    || fields.allDay !== undefined;
+  if (fields.date || changesTimeSemantics) {
     const date = fields.date ?? localIsoDate(new Date(item.starts_at));
-    const isAllDay = fields.time ? false : Boolean(item.is_all_day);
-    const time = fields.time ?? (isAllDay ? null : formatItemLocalTime(item));
+    const isAllDay = fields.allDay ?? Boolean(item.is_all_day);
+    const currentHasExplicitTime = !item.is_all_day && item.has_explicit_time !== false;
+    const hasExplicitTime = !isAllDay && (fields.hasExplicitTime ?? currentHasExplicitTime);
+    const time = fields.time ?? (hasExplicitTime ? formatItemLocalTime(item) : null);
     changes.starts_at = toStartIso(date, time, isAllDay);
-    if (fields.time) changes.is_all_day = false;
+    changes.is_all_day = isAllDay;
+    changes.has_explicit_time = hasExplicitTime;
+    if (!hasExplicitTime) changes.ends_at = null;
 
     const previousStart = new Date(item.starts_at).getTime();
     const previousEnd = new Date(item.ends_at).getTime();
@@ -1230,7 +1255,9 @@ function buildAgendaItemChanges(item, fields) {
       && previousEnd >= previousStart
       && Number.isFinite(nextStart)
     ) {
-      changes.ends_at = new Date(nextStart + (previousEnd - previousStart)).toISOString();
+      if (hasExplicitTime) {
+        changes.ends_at = new Date(nextStart + (previousEnd - previousStart)).toISOString();
+      }
     }
   }
 
@@ -1281,6 +1308,8 @@ function ambiguityPrompt(time) {
 
 function configureAmbiguousTime(fields, time, referenceDate, currentDate) {
   fields.time = null;
+  fields.hasExplicitTime = false;
+  fields.timeChoiceResolved = false;
   fields.ambiguousTime = time;
   fields.suggestedTime = null;
   if (fields.date !== referenceDate) return ambiguityPrompt(time);
@@ -1382,7 +1411,8 @@ function formatDateTime(item) {
   const date = new Date(item.starts_at);
   if (Number.isNaN(date.getTime())) return item.title;
   const dateLabel = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(date);
-  if (item.is_all_day) return `${item.title}, dia ${dateLabel}`;
+  if (item.is_all_day) return `${item.title}, dia ${dateLabel}, dia inteiro`;
+  if (item.has_explicit_time === false) return `${item.title}, dia ${dateLabel}, sem horário`;
   const time = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(date);
   return `${item.title}, dia ${dateLabel} às ${time}`;
 }
@@ -1465,6 +1495,7 @@ export function createAgendaConversationFlow({
       date: fields.date ?? null,
       time: fields.time ?? null,
       allDay: Boolean(fields.allDay),
+      hasExplicitTime: Boolean(fields.hasExplicitTime),
     };
   }
 
@@ -1552,6 +1583,7 @@ export function createAgendaConversationFlow({
       starts_at: toStartIso(fields.date, fields.time, fields.allDay),
       ends_at: null,
       is_all_day: Boolean(fields.allDay),
+      has_explicit_time: !fields.allDay && Boolean(fields.hasExplicitTime),
       ...(operation ? { client_operation_id: operation.clientOperationId } : {}),
     }, { idempotencyEnabled });
     if (
@@ -1653,10 +1685,20 @@ export function createAgendaConversationFlow({
       const content = extractAgendaContent(text, timeAnalysis);
       if (!fields.title) fields.title = content.title;
       if (!fields.description && content.description) fields.description = content.description;
-      const noTime = /\b(?:sem\s+horario|pode\s+deixar\s+sem\s+horario|compromisso\s+do\s+dia|dia\s+inteiro)\b/.test(normalized);
+      const noTime = /\b(?:sem\s+horario|pode\s+deixar\s+sem\s+horario)\b/.test(normalized);
+      const allDay = /\b(?:compromisso\s+do\s+dia|(?:o\s+)?dia\s+inteiro)\b/.test(normalized);
       let ambiguityQuestion = null;
-      if (noTime) {
+      if (allDay) {
         fields.allDay = true;
+        fields.hasExplicitTime = false;
+        fields.timeChoiceResolved = true;
+        fields.time = null;
+        fields.ambiguousTime = null;
+        fields.suggestedTime = null;
+      } else if (noTime) {
+        fields.allDay = false;
+        fields.hasExplicitTime = false;
+        fields.timeChoiceResolved = true;
         fields.time = null;
         fields.ambiguousTime = null;
         fields.suggestedTime = null;
@@ -1666,6 +1708,8 @@ export function createAgendaConversationFlow({
         } else {
           fields.time = timeAnalysis.time;
           fields.allDay = false;
+          fields.hasExplicitTime = true;
+          fields.timeChoiceResolved = true;
           fields.repairField = null;
           fields.ambiguousTime = null;
           fields.suggestedTime = null;
@@ -1675,6 +1719,8 @@ export function createAgendaConversationFlow({
 
       if (timeAnalysis.blocked) {
         fields.time = null;
+        fields.hasExplicitTime = false;
+        fields.timeChoiceResolved = false;
         fields.ambiguousTime = null;
         fields.suggestedTime = null;
       }
@@ -1691,7 +1737,7 @@ export function createAgendaConversationFlow({
       if (!fields.title) return { handled: true, text: 'Claro. O que você quer que eu coloque na agenda?' };
       if (!fields.date) return { handled: true, text: `Em qual dia você quer marcar ${fields.title}?` };
       if (ambiguityQuestion) return { handled: true, text: ambiguityQuestion };
-      if (fields.time == null && !fields.allDay) {
+      if (!fields.timeChoiceResolved) {
         if (fields.ambiguousTime) return { handled: true, text: ambiguityPrompt(fields.ambiguousTime) };
         return { handled: true, text: 'Quer colocar um horário ou deixo como compromisso do dia?' };
       }
@@ -1881,13 +1927,20 @@ export function createAgendaConversationFlow({
         description: content.description,
         date: resolveAgendaDate(agendaText, referenceDate),
         time: timeAnalysis.time,
-        allDay: false,
+        allDay: /\b(?:o\s+)?dia\s+inteiro\b/.test(normalizeFinancialText(agendaText)),
+        hasExplicitTime: Boolean(timeAnalysis.time),
+        timeChoiceResolved: Boolean(timeAnalysis.time)
+          || /\b(?:(?:o\s+)?dia\s+inteiro|sem\s+horario)\b/.test(normalizeFinancialText(agendaText)),
         itemType: classification.intent === 'agenda_reminder_create' ? 'reminder' : 'appointment',
       };
+      if (fields.allDay) {
+        fields.time = null;
+        fields.hasExplicitTime = false;
+      }
       const ambiguityQuestion = timeAnalysis.ambiguousPeriod
         ? configureAmbiguousTime(fields, timeAnalysis.time, referenceDate, now())
         : null;
-      if (!fields.title || !fields.date || !fields.time) {
+      if (!fields.title || !fields.date || !fields.timeChoiceResolved) {
         if (timeAnalysis.invalid) fields.repairField = 'time';
         await startPending(identity, PENDING_TYPES.CREATE, fields);
         if (timeAnalysis.invalid) return { handled: true, text: INVALID_TIME_CORRECTION_TEXT };

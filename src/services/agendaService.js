@@ -2,7 +2,7 @@ import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 import { AGENDA_IDEMPOTENCY_ENABLED } from './agendaIdempotencyConfig.js';
 
 const LEGACY_AGENDA_ITEM_FIELDS =
-  'id, workspace_id, item_type, title, description, location, starts_at, ends_at, is_all_day, status, client_id, assigned_user_id, created_by, created_at, updated_at';
+  'id, workspace_id, item_type, title, description, location, starts_at, ends_at, is_all_day, has_explicit_time, status, client_id, assigned_user_id, created_by, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const AGENDA_ITEM_STATUSES = Object.freeze(['completed', 'cancelled']);
@@ -60,6 +60,7 @@ const MUTABLE_AGENDA_ITEM_FIELDS = [
   'starts_at',
   'ends_at',
   'is_all_day',
+  'has_explicit_time',
   'client_id',
   'assigned_user_id',
 ];
@@ -77,12 +78,36 @@ export function buildAgendaCreationPayload(
   item,
   idempotencyEnabled = AGENDA_IDEMPOTENCY_ENABLED,
 ) {
+  const timeSemantics = normalizeAgendaTimeSemantics(item);
   return {
     workspace_id: workspaceId,
     ...pickDefined(item, idempotencyEnabled
       ? [...MUTABLE_AGENDA_ITEM_FIELDS, 'client_operation_id']
       : MUTABLE_AGENDA_ITEM_FIELDS),
+    ...timeSemantics,
     title: item.title.trim(),
+  };
+}
+
+/**
+ * Fonte unica do contrato persistente de horario. Chamadores legados que nao
+ * conhecem a coluna continuam sendo tratados como horario explicito, enquanto
+ * dia inteiro e ausencia declarada de horario nunca deixam um ends_at ativo.
+ */
+export function normalizeAgendaTimeSemantics(item = {}, { defaultExplicit = true } = {}) {
+  const isAllDay = item.is_all_day === true;
+  const hasDeclaredSemantics = item.is_all_day !== undefined || item.has_explicit_time !== undefined;
+  if (!hasDeclaredSemantics && !defaultExplicit) return {};
+
+  const hasExplicitTime = !isAllDay && (
+    item.has_explicit_time !== undefined
+      ? item.has_explicit_time !== false
+      : defaultExplicit
+  );
+  return {
+    ...(item.is_all_day !== undefined ? { is_all_day: isAllDay } : {}),
+    has_explicit_time: hasExplicitTime,
+    ...(!hasExplicitTime ? { ends_at: null } : {}),
   };
 }
 
@@ -104,6 +129,7 @@ function normalizeCreationField(field, value) {
     return Number.isNaN(timestamp.getTime()) ? String(value) : timestamp.toISOString();
   }
   if (field === 'is_all_day') return Boolean(value);
+  if (field === 'has_explicit_time') return value !== false;
   return value ?? null;
 }
 
@@ -290,6 +316,8 @@ export async function updateAgendaItem(
   }
 
   const payload = pickDefined(changes, MUTABLE_AGENDA_ITEM_FIELDS);
+
+  Object.assign(payload, normalizeAgendaTimeSemantics(payload, { defaultExplicit: false }));
 
   if (typeof payload.title === 'string') {
     payload.title = payload.title.trim();
