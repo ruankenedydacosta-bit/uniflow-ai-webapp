@@ -83,6 +83,11 @@ export const AGENDA_TIME_CLASSIFICATION = Object.freeze({
   AMBIGUOUS_MULTI_TIME: 'AMBIGUOUS_MULTI_TIME',
   NON_TEMPORAL_CONTENT: 'NON_TEMPORAL_CONTENT',
 });
+const TEMPORAL_REGION_TYPE = Object.freeze({
+  CLOCK_TIME: 'CLOCK_TIME',
+  DURATION: 'DURATION',
+  INVALID_TIME: 'INVALID_TIME',
+});
 const AGENDA_DATE_CONTEXT_PATTERN = [
   'hoje',
   'amanha',
@@ -114,23 +119,6 @@ const CONTEXTUAL_SPOKEN_TIME = new RegExp(
 const SPOKEN_TIME_WITH_PERIOD = new RegExp(
   `\\b(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?\\s+(da\\s+manha|da\\s+tarde|da\\s+noite)\\b`,
 );
-const SPOKEN_TIME_TITLE = new RegExp(
-  `\\b(?:as|das|para)\\s+(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+da\\s+(?:manha|tarde|noite))?\\b`,
-  'g',
-);
-const CONTEXTUAL_TIME_TITLE = new RegExp(
-  `(\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\b)\\s+(?:(?:\\d{1,2})(?:(?:[:h]\\d{2})|\\s*(?:horas?|h)\\b)|(?:${SPOKEN_HOUR_PATTERN})\\s+horas?\\b|(?:(?:\\d{1,2})|(?:${SPOKEN_HOUR_PATTERN}))\\s+da\\s+(?:manha|tarde|noite)\\b|(?:(?:\\d{1,2})|(?:${SPOKEN_HOUR_PATTERN}))(?=\\s*[.!?]?$))`,
-  'g',
-);
-const SPOKEN_PERIOD_TIME_TITLE = new RegExp(
-  `\\b(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?\\s+da\\s+(?:manha|tarde|noite)\\b`,
-  'g',
-);
-const COLLOQUIAL_TIME_TITLE = new RegExp(
-  `\\b(?:as\\s+|umas\\s+)?(?:${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s+e\\s+(?:${SPOKEN_MINUTE_PATTERN})(?:\\s+da\\s+(?:manha|tarde|noite))?\\b(?!\\s+horas?\\b)`,
-  'g',
-);
-const NUMERIC_PERIOD_TIME_TITLE = /\b(?:(?:as|das|para)\s+)?\d{1,2}(?:[:h]\d{2})?\s*(?:horas?|h)?\s+da\s+(?:manha|tarde|noite)\b/g;
 const INVALID_TIME_CORRECTION_TEXT = 'Não consegui entender o horário. Pode informar novamente, por exemplo “10h30” ou “dez horas”?';
 
 const WEEKDAYS = Object.freeze([
@@ -451,7 +439,42 @@ function spansOverlap(left, right) {
   return Boolean(left && right && left.start < right.end && right.start < left.end);
 }
 
-function discoverClockCandidates(normalized) {
+function hasImmediateDateContext(normalized, start) {
+  return new RegExp(`(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s*$`).test(
+    normalized.slice(0, start),
+  );
+}
+
+function isDurationCandidate(normalized, candidate) {
+  if (!/\bhoras?\b/.test(candidate.source)) return false;
+  if (/^meia\s+horas?\b/.test(candidate.source)) return true;
+  if (/^(?:as|das|umas)\s+/.test(candidate.source)) return false;
+  if (/\bda\s+(?:manha|tarde|noite)\b/.test(candidate.source)) return false;
+  if (hasImmediateDateContext(normalized, candidate.span.start)) return false;
+
+  const before = normalized.slice(0, candidate.span.start);
+  const after = normalized.slice(candidate.span.end);
+  const durationCue = /\b(?:duracao\s+de|durante|por|sobre|discutir|analisar)\s*$/.test(before);
+  const contentAfter = after.match(new RegExp(`^\\s+(?:de\\s+)?(${LEXICAL_WORD_PATTERN})\\b`));
+  return durationCue || Boolean(
+    contentAfter
+    && !/^(?:da|de|do|manha|tarde|noite)$/.test(contentAfter[1]),
+  );
+}
+
+function annotateCandidateSemantics(normalized, candidate) {
+  if (isDurationCandidate(normalized, candidate)) {
+    return { ...candidate, semanticType: TEMPORAL_REGION_TYPE.DURATION };
+  }
+  return {
+    ...candidate,
+    semanticType: candidate.time
+      ? TEMPORAL_REGION_TYPE.CLOCK_TIME
+      : TEMPORAL_REGION_TYPE.INVALID_TIME,
+  };
+}
+
+function discoverTemporalCandidates(normalized) {
   const candidates = [];
   const attemptedMinute = `(?:\\d{1,3}|${NUMBER_PHRASE_PATTERN})`;
   const attemptedHour = `(?:\\d{1,3}|${SPOKEN_HOUR_PATTERN})`;
@@ -482,6 +505,25 @@ function discoverClockCandidates(normalized) {
     new RegExp(`\\b(?:(?:as|das|para|umas)\\s+)?(${attemptedExplicitClock})\\b`, 'g'),
     1,
   );
+  collect(
+    new RegExp(
+      `\\b(?:(?:as|das|umas)\\s+)?(${SPOKEN_HOUR_PATTERN})\\s*(?:h|horas?)(?:\\s+${DAY_PERIOD_PATTERN})?\\b`,
+      'g',
+    ),
+    1,
+  );
+
+  const explicitDuration = new RegExp(
+    `\\b(meia|\\d{1,3}|${NUMBER_PHRASE_PATTERN})\\s+horas?\\b`,
+    'g',
+  );
+  for (const match of normalized.matchAll(explicitDuration)) {
+    candidates.push({
+      span: resultSpan(match),
+      time: parseClockAtom(match[0]),
+      source: match[0],
+    });
+  }
 
   const colloquial = new RegExp(
     `\\b(?:(?:as|umas)\\s+)?(${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s+e\\s+(${SPOKEN_MINUTE_PATTERN})(?:\\s+(${DAY_PERIOD_PATTERN}))?\\b(?!\\s+horas?\\b)`,
@@ -516,6 +558,25 @@ function discoverClockCandidates(normalized) {
       time: parseClockAtom(match[2]),
       source: match[0],
     });
+  }
+
+  if (normalized) {
+    const contextualBare = new RegExp(
+      `\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\s+(${SPOKEN_HOUR_PATTERN}|\\d{1,2})(?:\\s+${DAY_PERIOD_PATTERN})?(?=\\s*[.!?]?$)`,
+      'g',
+    );
+    for (const match of normalized.matchAll(contextualBare)) {
+      const value = match[1];
+      const relativeStart = match[0].lastIndexOf(value);
+      const start = match.index + relativeStart;
+      const periodSuffix = match[0].slice(relativeStart + value.length);
+      const source = `${value}${periodSuffix}`.trim();
+      candidates.push({
+        span: { start, end: match.index + match[0].length },
+        time: parseClockAtom(source),
+        source,
+      });
+    }
   }
 
   const ordered = candidates.sort((left, right) => (
@@ -561,7 +622,7 @@ function discoverClockCandidates(normalized) {
     }
     merged.push(candidate);
   }
-  return merged;
+  return merged.map((candidate) => annotateCandidateSemantics(normalized, candidate));
 }
 
 function locateResolvedTimeSpan(normalized, allowContextual, time, candidates) {
@@ -571,7 +632,10 @@ function locateResolvedTimeSpan(normalized, allowContextual, time, candidates) {
 }
 
 function consolidateTemporalCoverage(normalized, analysis, allowContextual) {
-  const candidates = discoverClockCandidates(normalized);
+  const candidates = discoverTemporalCandidates(normalized);
+  const clockCandidates = candidates.filter((candidate) => (
+    candidate.semanticType !== TEMPORAL_REGION_TYPE.DURATION
+  ));
   if (analysis.kind === AGENDA_TIME_CLASSIFICATION.INVALID_TIME) {
     return { ...analysis, candidates };
   }
@@ -585,10 +649,11 @@ function consolidateTemporalCoverage(normalized, analysis, allowContextual) {
   const primarySpan = analysis.time
     ? analysis.timeSpan
       ?? analysis.span
-      ?? locateResolvedTimeSpan(normalized, allowContextual, analysis.time, candidates)
+      ?? locateResolvedTimeSpan(normalized, allowContextual, analysis.time, clockCandidates)
     : null;
-  const invalidCandidates = candidates.filter((candidate) => (
-    !candidate.time && !spansOverlap(primarySpan, candidate.span)
+  const invalidCandidates = clockCandidates.filter((candidate) => (
+    candidate.semanticType === TEMPORAL_REGION_TYPE.INVALID_TIME
+    && !spansOverlap(primarySpan, candidate.span)
   ));
   if (invalidCandidates.length) {
     const invalidCandidate = invalidCandidates[0].span;
@@ -600,7 +665,7 @@ function consolidateTemporalCoverage(normalized, analysis, allowContextual) {
       invalidCandidate,
       hasMultipleEndpoints: Boolean(
         analysis.time
-        || candidates.some((candidate) => candidate.time)
+        || clockCandidates.some((candidate) => candidate.time)
         || analysis.hasMultipleEndpoints
       ),
       candidates,
@@ -610,8 +675,8 @@ function consolidateTemporalCoverage(normalized, analysis, allowContextual) {
   if (!analysis.time) return { ...analysis, candidates };
 
   let remaining = primarySpan
-    ? candidates.filter((candidate) => !spansOverlap(primarySpan, candidate.span))
-    : [...candidates];
+    ? clockCandidates.filter((candidate) => !spansOverlap(primarySpan, candidate.span))
+    : [...clockCandidates];
   if (!primarySpan) {
     const representedIndex = remaining.findIndex((candidate) => candidate.time === analysis.time);
     if (representedIndex >= 0) {
@@ -804,36 +869,65 @@ function detectedDayPeriod(normalized) {
   return normalized.match(/\b(?:da|de|pela|a)\s+(manha|tarde|noite)\b/)?.[1] ?? null;
 }
 
+function authoritativeTemporalSpans(analysis, normalized) {
+  if (analysis.kind === AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT) return [];
+  const candidateSpans = (analysis.candidates ?? [])
+    .filter((candidate) => candidate.semanticType !== TEMPORAL_REGION_TYPE.DURATION)
+    .map((candidate) => candidate.span)
+    .sort((left, right) => left.start - right.start);
+
+  if (candidateSpans.length > 1) {
+    const onlyTemporalConnectors = candidateSpans.slice(1).every((span, index) => {
+      const gap = normalized.slice(candidateSpans[index].end, span.start).trim();
+      return /^(?:(?:ate|as|a|para|e|de|das|entre)\s*|[-–—/,.;:|\s]*)$/.test(gap);
+    });
+    if (onlyTemporalConnectors) {
+      return [{
+        start: candidateSpans[0].start,
+        end: candidateSpans.at(-1).end,
+      }];
+    }
+    return candidateSpans;
+  }
+
+  const primarySpan = analysis.timeSpan ?? analysis.span ?? candidateSpans[0] ?? null;
+  return primarySpan ? [primarySpan] : [];
+}
+
 function finalizeTemporalAnalysis(analysis, normalized) {
   const blocked = [
     AGENDA_TIME_CLASSIFICATION.TIME_RANGE,
     AGENDA_TIME_CLASSIFICATION.INVALID_TIME,
     AGENDA_TIME_CLASSIFICATION.AMBIGUOUS_MULTI_TIME,
   ].includes(analysis.kind);
-  const spans = analysis.span ? [analysis.span] : [];
-  const titleRemovalSpan = analysis.kind === AGENDA_TIME_CLASSIFICATION.TIME_PLUS_QUANTITY
-    ? analysis.timeSpan
-    : analysis.kind === AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT
-      ? null
-      : analysis.span;
+  const titleRemovalSpans = authoritativeTemporalSpans(analysis, normalized);
+  const spans = titleRemovalSpans;
+  const sanitizedCandidates = (analysis.candidates ?? []).map((candidate) => ({
+    span: candidate.span,
+    time: candidate.time,
+    semanticType: candidate.semanticType,
+    valid: candidate.semanticType !== TEMPORAL_REGION_TYPE.INVALID_TIME,
+  }));
   return {
     ...analysis,
-    ...(analysis.candidates
-      ? {
-        candidates: analysis.candidates.map((candidate) => ({
-          span: candidate.span,
-          time: candidate.time,
-          valid: Boolean(candidate.time),
-        })),
-      }
-      : {}),
+    candidates: sanitizedCandidates,
     resolvedTime: blocked ? null : analysis.time,
     valid: Boolean(analysis.time) && !blocked,
     blocked,
     invalid: blocked,
     spans,
-    temporalTokenRanges: titleRemovalSpan ? [titleRemovalSpan] : [],
-    titleRemovalSpans: titleRemovalSpan ? [titleRemovalSpan] : [],
+    temporalTokenRanges: titleRemovalSpans,
+    temporalSpans: titleRemovalSpans,
+    titleRemovalSpans,
+    clockTimes: sanitizedCandidates.filter((candidate) => (
+      candidate.semanticType === TEMPORAL_REGION_TYPE.CLOCK_TIME
+    )),
+    durations: sanitizedCandidates.filter((candidate) => (
+      candidate.semanticType === TEMPORAL_REGION_TYPE.DURATION
+    )),
+    invalidRegions: sanitizedCandidates.filter((candidate) => (
+      candidate.semanticType === TEMPORAL_REGION_TYPE.INVALID_TIME
+    )),
     period: detectedDayPeriod(normalized),
     hasMultipleEndpoints: analysis.hasMultipleEndpoints ?? [
       AGENDA_TIME_CLASSIFICATION.TIME_RANGE,
@@ -961,28 +1055,20 @@ function extractAgendaTimeValue(normalized, allowContextual) {
     : null;
 }
 
-function removeClassifiedTemporalSpan(normalized, classification) {
-  const span = classification?.titleRemovalSpans?.[0] ?? null;
-  if (!span) return normalized;
-  return `${normalized.slice(0, span.start)} ${normalized.slice(span.end)}`;
+function removeClassifiedTemporalSpans(normalized, classification) {
+  const spans = [...(classification?.titleRemovalSpans ?? [])]
+    .sort((left, right) => right.start - left.start);
+  return spans.reduce((value, span) => (
+    `${value.slice(0, span.start)} ${value.slice(span.end)}`
+  ), normalized);
 }
 
-function removeTemporalMatchesUnlessQuantity(value, pattern) {
-  return value.replace(pattern, (match, ...args) => {
-    const offset = args.at(-2);
-    const source = args.at(-1);
-    return /^para\s+/.test(match)
-      && isNonTemporalQuantityWord(followingWord(source, offset + match.length))
-      ? match
-      : '';
-  });
-}
-
-function extractTitle(text) {
+function extractTitle(text, temporalAnalysis = null) {
   const normalizedText = normalizeFinancialText(text);
-  const temporalAnalysis = analyzeNormalizedTemporalRegion(normalizedText, true);
-  const classifiedText = removeClassifiedTemporalSpan(normalizedText, temporalAnalysis);
-  let normalized = classifiedText
+  const authoritativeAnalysis = temporalAnalysis
+    ?? analyzeNormalizedTemporalRegion(normalizedText, true);
+  const classifiedText = removeClassifiedTemporalSpans(normalizedText, authoritativeAnalysis);
+  const normalized = classifiedText
     .replace(/\b(?:me\s+)?lembra(?:r)?\s+(?:de|da|do)?\s*/g, '')
     .replace(/\b(?:eu\s+)?tenho\s+que\s+/g, '')
     .replace(/\b(?:eu\s+)?tenho\s+(?:uma|um)?\s*/g, '')
@@ -992,20 +1078,10 @@ function extractTitle(text) {
     .replace(/\b(?:ja\s+fiz|conclui|finalizei)\s+(?:aquele|aquela|o|a)?\s*/g, '')
     .replace(/\b(?:pode\s+)?marcar\s+como\s+concluida?\b/g, '')
     .replace(/\bdaqui\s+(?:a\s+|uns?\s+|umas?\s+|cerca\s+de\s+)?[\w\s]+?\s+(?:dias?|semanas?)\b/g, '')
-    .replace(CONTEXTUAL_TIME_TITLE, '$1 ')
     .replace(/\b(?:hoje|amanha|depois\s+de\s+amanha|fim\s+do\s+mes|final\s+do\s+mes)\b/g, '')
     .replace(/\b(?:(?:semana|mes)\s+que\s+vem|proxim[ao]\s+(?:semana|mes))\b/g, '')
     .replace(/\b(?:(?:de|na|no|para|pra)\s+)?(?:domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?(?:\s+que\s+vem)?\b/g, '')
     .replace(/\b(?:(?:de|na|no|para|pra)\s+)?dia\s+\d{1,2}\b/g, '')
-    .replace(NUMERIC_PERIOD_TIME_TITLE, '')
-    .replace(SPOKEN_PERIOD_TIME_TITLE, '')
-    .trim();
-  normalized = removeTemporalMatchesUnlessQuantity(normalized, COLLOQUIAL_TIME_TITLE);
-  normalized = removeTemporalMatchesUnlessQuantity(
-    normalized,
-    /\b(?:as|das|para)\s+\d{1,2}(?:[:h]\d{2})?(?:\s*(?:horas?|h))?\b/g,
-  );
-  normalized = removeTemporalMatchesUnlessQuantity(normalized, SPOKEN_TIME_TITLE)
     .replace(/\b(?:aquele|aquela)\s+(?:coisa|negocio|compromisso)\b/g, '')
     .replace(/[.,!?]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -1018,16 +1094,19 @@ function capitalizeSentence(value) {
   return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : null;
 }
 
-function extractAgendaContent(text) {
+function extractAgendaContent(text, temporalAnalysis = null) {
   const normalized = normalizeFinancialText(text);
   const purpose = normalized.match(
     /\bpara\s+(falar\s+sobre|levar)\s+(.+?)(?=\s+(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2}|as\s+|umas\s+|\d{1,2}(?:[:h]))|[.!?]?$)/,
   );
-  if (!purpose) return { title: extractTitle(text), description: null };
+  if (!purpose) return { title: extractTitle(text, temporalAnalysis), description: null };
 
-  const titleSource = `${normalized.slice(0, purpose.index)} ${normalized.slice(purpose.index + purpose[0].length)}`;
+  const title = extractTitle(text, temporalAnalysis)
+    ?.replace(purpose[0], ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   return {
-    title: extractTitle(titleSource),
+    title: title || null,
     description: capitalizeSentence(`${purpose[1]} ${purpose[2]}`.trim()),
   };
 }
@@ -1091,7 +1170,7 @@ function extractEditTargetSubject(text) {
   return subject && !GENERIC_EDIT_SUBJECTS.has(subject) ? subject : null;
 }
 
-function extractEditChanges(text, referenceDate) {
+function extractEditChanges(text, referenceDate, temporalAnalysis = null) {
   const normalized = normalizeFinancialText(text);
   const explicitTitle = extractExplicitTitleChange(text);
   const implicitTitle = extractImplicitTitleChange(text);
@@ -1099,7 +1178,7 @@ function extractEditChanges(text, referenceDate) {
   const canUseWholeTextForDate = /\b(?:muda|altera|remarca|reagenda|adia|passa|antecipa)\b/.test(normalized);
   const dateSource = destination || (canUseWholeTextForDate ? normalized : '');
   const date = dateSource ? resolveAgendaDate(dateSource, referenceDate) : null;
-  const time = extractAgendaTime(text, { allowContextual: true });
+  const time = (temporalAnalysis ?? analyzeAgendaTime(text, { allowContextual: true })).time;
 
   return {
     ...(explicitTitle.title || implicitTitle.title
@@ -1571,7 +1650,7 @@ export function createAgendaConversationFlow({
           ambiguousPeriod: false,
         };
       }
-      const content = extractAgendaContent(text);
+      const content = extractAgendaContent(text, timeAnalysis);
       if (!fields.title) fields.title = content.title;
       if (!fields.description && content.description) fields.description = content.description;
       const noTime = /\b(?:sem\s+horario|pode\s+deixar\s+sem\s+horario|compromisso\s+do\s+dia|dia\s+inteiro)\b/.test(normalized);
@@ -1698,7 +1777,10 @@ export function createAgendaConversationFlow({
       }
 
       if (hasExplicitEditChangeCue(text)) {
-        changes = { ...changes, ...extractEditChanges(text, referenceDate) };
+        changes = {
+          ...changes,
+          ...extractEditChanges(text, referenceDate, timeAnalysis),
+        };
       }
       if (!hasEditChanges(changes)) {
         const updated = updatePendingAction(stack, active.id, {
@@ -1792,7 +1874,7 @@ export function createAgendaConversationFlow({
 
     if (['agenda_reminder_create', 'agenda_schedule_create'].includes(classification.intent)) {
       const timeAnalysis = analyzeAgendaTime(agendaText, { allowContextual: true });
-      const content = extractAgendaContent(agendaText);
+      const content = extractAgendaContent(agendaText, timeAnalysis);
       const fields = {
         intent: classification.intent,
         title: classification.signals.includes('agenda_vague_subject') ? null : content.title,
@@ -1843,7 +1925,7 @@ export function createAgendaConversationFlow({
       const timeAnalysis = analyzeAgendaTime(agendaText, { allowContextual: true });
       if (timeAnalysis.invalid) return { handled: true, text: INVALID_TIME_CORRECTION_TEXT };
       const subject = extractEditTargetSubject(agendaText);
-      const changes = extractEditChanges(agendaText, referenceDate);
+      const changes = extractEditChanges(agendaText, referenceDate, timeAnalysis);
       if (!subject) {
         await startPending(identity, PENDING_TYPES.EDIT, {
           item: null,
