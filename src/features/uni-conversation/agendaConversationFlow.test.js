@@ -118,17 +118,24 @@ function normalizeFinancialTextForTest(value) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-test('criação relativa preserva assunto e pergunta pelo horário', async () => {
+test('criação relativa sem horário cria diretamente sem confundir com dia inteiro', async () => {
   const { flow, calls } = makeHarness();
   const result = await turn(flow, 'Me lembra da reunião daqui 10 dias.');
-  assert.equal(result.text, 'Quer colocar um horário ou deixo como compromisso do dia?');
-  assert.equal(calls.length, 0);
-  assert.equal(flow.hasPending(IDENTITY), true);
+  assert.match(result.text, /sem horário/);
+  assert.equal(calls[0].operation, 'create');
+  assert.equal(calls[0].payload.title, 'reuniao');
+  assert.equal(calls[0].payload.is_all_day, false);
+  assert.equal(calls[0].payload.has_explicit_time, false);
+  assert.equal(flow.hasPending(IDENTITY), false);
 });
 
-test('resposta sem horário cria compromisso datado sem confundir com dia inteiro', async () => {
+test('pending legítimo aceita Sem horário sem deixar relógio inválido no título', async () => {
   const { flow, calls } = makeHarness();
-  await turn(flow, 'Me lembra da reunião daqui 10 dias.');
+  assert.match(
+    (await turn(flow, 'Me lembra da reunião daqui 10 dias às 10h60.')).text,
+    /entender o horário/i,
+  );
+  assert.equal(calls.length, 0);
   const result = await turn(flow, 'Pode deixar sem horário.');
   assert.match(result.text, /sem horário/);
   assert.equal(calls[0].operation, 'create');
@@ -161,19 +168,30 @@ test('contrato semântico: reunião empresarial separa título, data e horário'
   assert.equal(calls[0].payload.is_all_day, false);
 });
 
-test('data sem horário permanece pending até decisão explícita', async () => {
-  const { flow, calls } = makeHarness();
-  const result = await turn(flow, 'Agenda reunião empresarial amanhã.');
+for (const [text, expectedTitle] of [
+  ['Agenda reunião empresarial amanhã.', 'reuniao empresarial'],
+  ['Agenda consulta amanhã.', 'consulta'],
+  ['Agenda dentista sexta.', 'dentista'],
+  ['Marca reunião empresarial dia 15.', 'reuniao empresarial'],
+  ['Agenda conversa com João amanhã.', 'conversa com joao'],
+]) {
+  test(`data inequívoca sem horário cria diretamente: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    const result = await turn(flow, text);
 
-  assert.match(result.text, /horário|compromisso do dia/);
-  assert.equal(calls.length, 0);
-  assert.equal(flow.hasPending(IDENTITY), true);
-});
+    assert.match(result.text, /Pronto/);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].payload.title, expectedTitle);
+    assert.equal(calls[0].payload.has_explicit_time, false);
+    assert.equal(calls[0].payload.is_all_day, false);
+    assert.equal(flow.hasPending(IDENTITY), false);
+  });
+}
 
-test('pending adiciona 15:30 sem reconstruir o título', async () => {
+test('pending por data ausente aceita horário posterior sem reconstruir o título', async () => {
   const { flow, calls } = makeHarness();
-  await turn(flow, 'Agenda reunião empresarial amanhã.');
-  const result = await turn(flow, 'sim, coloca às três e meia da tarde');
+  assert.match((await turn(flow, 'Agenda reunião empresarial.')).text, /qual dia/i);
+  const result = await turn(flow, 'amanhã às três e meia da tarde');
 
   assert.match(result.text, /Pronto/);
   assert.equal(calls[0].payload.title, 'reuniao empresarial');
@@ -253,6 +271,20 @@ for (const [text, expected] of [
   });
 }
 
+test('NON_TEMPORAL_CONTENT quantitativo não encerra descoberta do relógio posterior', async () => {
+  const { flow, calls } = makeHarness();
+  const text = 'Agenda avaliação às três e meia pontos amanhã às 10h.';
+  const analysis = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+  assert.equal(analysis.kind, AGENDA_TIME_CLASSIFICATION.SINGLE_TIME);
+  assert.equal(analysis.resolvedTime, '10:00');
+  assert.equal(analysis.clockTimes.length, 1);
+  assert.match((await turn(flow, text)).text, /Pronto/);
+  assert.match(calls[0].payload.title, /tres e meia pontos/);
+  assert.doesNotMatch(calls[0].payload.title, /10h|10 horas/);
+  assert.equal(calls[0].payload.has_explicit_time, true);
+});
+
 for (const text of [
   'Comprei meia dúzia de ovos.',
   'Esperei três horas e meia na fila.',
@@ -304,7 +336,7 @@ for (const answer of [
 ]) {
   test(`Preview R1: resposta humana alimenta a mesma pendência: ${answer}`, async () => {
     const { flow, calls } = makeHarness();
-    await turn(flow, 'Marca uma reunião para sexta-feira.');
+    await turn(flow, 'Marca uma reunião para sexta-feira às 25h.');
     const result = await turn(flow, answer);
 
     if (/15h30|da tarde/.test(answer)) {
@@ -321,7 +353,7 @@ for (const answer of ['beleza, 15h30', 'coloca 15h30', 'então, 15h30', 'certo, 
   test(`Preview R1: prefixo conversacional não reinicia a pendência: ${answer}`, async () => {
     const operationId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
     const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
-    await turn(flow, 'Marca uma reunião para sexta-feira.');
+    await turn(flow, 'Marca uma reunião para sexta-feira às 25h.');
     const result = await turn(flow, answer);
 
     assert.match(result.text, /Pronto/);
@@ -449,7 +481,7 @@ test('P1 parse parcial: dez e quarenta preserva :40 ao resolver para noite', asy
 test('P1 parse parcial: resposta conversacional preserva pending, data, título e minutos', async () => {
   const operationId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
   const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
-  await turn(flow, 'Agenda reunião amanhã.');
+  await turn(flow, 'Agenda reunião amanhã às 25h.');
   assert.match((await turn(flow, 'sim, às três e trinta')).text, /3:30 da manhã.*3:30 da tarde/i);
   assert.match((await turn(flow, 'da tarde')).text, /Pronto/);
 
@@ -463,7 +495,7 @@ test('P1 parse parcial: resposta conversacional preserva pending, data, título 
 
 test('P1 parse parcial: "isso, três e meia da tarde" resolve pending como 15:30', async () => {
   const { flow, calls } = makeHarness();
-  await turn(flow, 'Agenda reunião amanhã.');
+  await turn(flow, 'Agenda reunião amanhã às 25h.');
   assert.match((await turn(flow, 'isso, três e meia da tarde')).text, /Pronto/);
   assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
   assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 30);
@@ -702,7 +734,9 @@ for (const expression of [
     const result = await turn(flow, text);
 
     assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
-    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+    assert.equal(calls[0].payload.has_explicit_time, false);
+    assert.equal(calls[0].payload.is_all_day, false);
     assert.doesNotMatch(result.text, /manhã.*(?:tarde|noite)/i);
   });
 }
@@ -729,7 +763,7 @@ test('P2 meia: casos temporais válidos continuam preservados', async () => {
 test('pending aceita "pode ser dez e quinze da noite" sem perder contexto', async () => {
   const operationId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
   const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
-  await turn(flow, 'Agenda reunião amanhã.');
+  await turn(flow, 'Agenda reunião amanhã às 25h.');
   assert.match((await turn(flow, 'pode ser dez e quinze da noite')).text, /Pronto/);
 
   assert.equal(calls[0].payload.title, 'reuniao');
@@ -918,7 +952,9 @@ for (const noun of ['alunos', 'parcelas', 'avaliações', 'unidades']) {
     );
     assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
     assert.doesNotMatch((await turn(flow, text)).text, /manhã.*(?:tarde|noite)/i);
-    assert.equal(calls.some((call) => call.operation === 'create'), false);
+    assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+    assert.equal(calls[0].payload.has_explicit_time, false);
+    assert.equal(calls[0].payload.is_all_day, false);
   });
 }
 
@@ -932,7 +968,9 @@ test('meia seguida de unidade de duração não sofre consumo parcial como horá
   );
   assert.equal(extractAgendaTime(text, { allowContextual: true }), null);
   const result = await turn(flow, text);
-  assert.equal(calls.some((call) => call.operation === 'create'), false);
+  assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+  assert.equal(calls[0].payload.has_explicit_time, false);
+  assert.equal(calls[0].payload.is_all_day, false);
   assert.doesNotMatch(result.text, /manhã.*(?:tarde|noite)/i);
 });
 
@@ -947,6 +985,55 @@ for (const [text, expectedTitle] of [
 
     assert.match((await turn(flow, text)).text, /Pronto/);
     assert.equal(calls[0].payload.title, expectedTitle);
+  });
+}
+
+for (const [text, expectedTitle, expectedTime] of [
+  ['Agenda reunião para 11 alunos amanhã às 10h.', 'reuniao para 11 alunos', '10:00'],
+  ['Agenda reunião para 12 clientes amanhã às 15h.', 'reuniao para 12 clientes', '15:00'],
+  ['Agenda reunião para 15 astronautas sexta às 22h.', 'reuniao para 15 astronautas', '22:00'],
+  ['Agenda consulta para 3 médicos amanhã às 9h.', 'consulta para 3 medicos', '09:00'],
+  ['Agenda manutenção para 4 máquinas dia 20 às 14h.', 'manutencao para 4 maquinas', '14:00'],
+  ['Agenda reunião para 30 fornecedores amanhã às dez horas.', 'reuniao para 30 fornecedores', '10:00'],
+  ['Agenda treinamento para vinte funcionários amanhã às três da tarde.', 'treinamento para vinte funcionarios', '15:00'],
+  ['Agenda inspeção para 7 caminhões amanhã às 10h30.', 'inspecao para 7 caminhoes', '10:30'],
+  ['Agenda reunião com 11 pesquisadores amanhã às 10h.', 'reuniao com 11 pesquisadores', '10:00'],
+  ['Agenda reunião até 11 participantes amanhã às 10h.', 'reuniao ate 11 participantes', '10:00'],
+]) {
+  test(`quantidade antes da data não impede horário posterior: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    const analysis = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(analysis.kind, AGENDA_TIME_CLASSIFICATION.SINGLE_TIME, text);
+    assert.equal(analysis.resolvedTime, expectedTime, text);
+    assert.equal(analysis.clockTimes.length, 1, text);
+    assert.equal(analysis.blocked, false, text);
+    assert.match((await turn(flow, text)).text, /Pronto/, text);
+    assert.equal(calls[0].payload.title, expectedTitle, text);
+    assert.equal(calls[0].payload.has_explicit_time, true, text);
+    assert.equal(calls[0].payload.is_all_day, false, text);
+    assert.equal(
+      `${String(new Date(calls[0].payload.starts_at).getHours()).padStart(2, '0')}:${String(new Date(calls[0].payload.starts_at).getMinutes()).padStart(2, '0')}`,
+      expectedTime,
+      text,
+    );
+  });
+}
+
+for (const text of [
+  'Agenda reunião para 11 alunos amanhã às dez e sessenta.',
+  'Agenda reunião para 11 alunos amanhã 10h–11h.',
+  'Agenda reunião para 11 alunos amanhã às 10h e às 11h.',
+]) {
+  test(`quantidade anterior não converte região temporal bloqueada em Sem horário: ${text}`, async () => {
+    const { flow, calls } = makeHarness();
+    const analysis = classifyAgendaTemporalRegion(text, { allowContextual: true });
+
+    assert.equal(analysis.blocked, true, text);
+    assert.equal(analysis.resolvedTime, null, text);
+    assert.match((await turn(flow, text)).text, /entender o horário/i, text);
+    assert.equal(calls.some((call) => call.operation === 'create'), false, text);
+    assert.equal(flow.hasPending(IDENTITY), true, text);
   });
 }
 
@@ -1387,7 +1474,7 @@ test('pending reanalisa relógio e duração integralmente sem perder a operaç�
   const operationId = '78787878-7878-4787-8787-787878787878';
   const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
 
-  assert.match((await turn(flow, 'Agenda reunião amanhã.')).text, /horário/i);
+  assert.match((await turn(flow, 'Agenda reunião amanhã às 25h.')).text, /horário/i);
   assert.match((await turn(flow, 'às 10h com duração de 2 horas')).text, /Pronto/);
   assert.equal(calls[0].payload.title, 'reuniao');
   assert.equal(calls[0].payload.client_operation_id, operationId);
@@ -1639,10 +1726,10 @@ for (const [text, expectedTitle] of [
     const { flow, calls } = makeHarness();
     const result = await turn(flow, text);
 
-    assert.match(result.text, /horário/);
-    assert.equal(calls.some((call) => call.operation === 'create'), false);
-    await turn(flow, 'às 10 horas');
-    assert.equal(calls.find((call) => call.operation === 'create').payload.title, expectedTitle);
+    assert.match(result.text, /Pronto/);
+    assert.equal(calls.filter((call) => call.operation === 'create').length, 1);
+    assert.equal(calls[0].payload.title, expectedTitle);
+    assert.equal(calls[0].payload.has_explicit_time, false);
   });
 }
 
@@ -1807,7 +1894,7 @@ test('mês que vem permanece sem data inventada e não contamina o título', asy
 
 test('nova consulta de Agenda não é sequestrada por criação pendente', async () => {
   const { flow, calls } = makeHarness();
-  await turn(flow, 'Me lembra da reunião amanhã.');
+  await turn(flow, 'Me lembra da reunião amanhã às dez.');
 
   const result = await turn(flow, 'O que tenho sexta?');
 
@@ -1820,7 +1907,7 @@ test('nova edição de Agenda não é sequestrada por criação pendente', async
   const { flow, calls } = makeHarness([
     { id: 'consultation', workspace_id: IDENTITY.workspaceId, title: 'Consulta', starts_at: '2026-08-14T15:00:00.000Z' },
   ]);
-  await turn(flow, 'Me lembra da reunião amanhã.');
+  await turn(flow, 'Me lembra da reunião amanhã às dez.');
 
   const result = await turn(flow, 'Muda minha consulta para sexta às 16h.');
 
@@ -1995,7 +2082,7 @@ for (const [answer, expectedMinutes] of [
 ]) {
   test(`resposta numérica de horário continua aceita: ${answer}`, async () => {
     const { flow, calls } = makeHarness();
-    await turn(flow, 'Tenho uma reunião amanhã.');
+    await turn(flow, 'Tenho uma reunião amanhã às 25h.');
     const result = await turn(flow, answer);
 
     assert.match(result.text, /Pronto/);
@@ -2127,14 +2214,14 @@ test('reload antes da confirmação restaura UUID ao repetir a intenção penden
     operationStorage,
     createOperationId: () => operationIds.shift(),
   });
-  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã às dez.');
 
   const reloadedHarness = makeHarness([], {
     operationStorage,
     createOperationId: () => operationIds.shift(),
   });
-  await turn(reloadedHarness.flow, 'Me lembra da reunião amanhã.');
-  await turn(reloadedHarness.flow, 'Sem horário.');
+  await turn(reloadedHarness.flow, 'Me lembra da reunião amanhã às dez.');
+  await turn(reloadedHarness.flow, 'da manhã');
 
   assert.equal(
     reloadedHarness.calls[0].payload.client_operation_id,
@@ -2153,7 +2240,7 @@ test('P1-C: nova Agenda divergente após reload não é bloqueada pela operaçã
     operationStorage,
     createOperationId: () => operationIds.shift(),
   });
-  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã às dez.');
 
   const reloadedHarness = makeHarness([], {
     operationStorage,
@@ -2175,7 +2262,7 @@ test('P1-C: Financeiro após reload não apaga retry antigo nem bloqueia nova Ag
     operationStorage,
     createOperationId: () => operationIds.shift(),
   });
-  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã às dez.');
 
   const reloadedHarness = makeHarness([], {
     operationStorage,
@@ -2198,7 +2285,7 @@ test('cancelamento explícito da intenção pendente limpa UUID restaurável', a
     operationStorage,
     createOperationId: () => operationIds.shift(),
   });
-  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã às dez.');
   const canceled = await turn(firstHarness.flow, 'Cancelar.');
   assert.match(canceled.text, /Não alterei/);
 
@@ -2207,7 +2294,6 @@ test('cancelamento explícito da intenção pendente limpa UUID restaurável', a
     createOperationId: () => operationIds.shift(),
   });
   await turn(nextHarness.flow, 'Me lembra da reunião amanhã.');
-  await turn(nextHarness.flow, 'Sem horário.');
 
   assert.equal(
     nextHarness.calls[0].payload.client_operation_id,
@@ -2260,7 +2346,7 @@ test('duas intenções legítimas iguais após sucesso recebem UUIDs diferentes'
   );
 });
 
-test('intenção pendente mantém client_operation_id ao repetir a confirmação após falha', async () => {
+test('intenção sem horário mantém client_operation_id ao repetir após falha', async () => {
   const operationId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   const { flow, calls } = makeHarness([], {
     createOperationId: () => operationId,
@@ -2268,8 +2354,7 @@ test('intenção pendente mantém client_operation_id ao repetir a confirmação
   });
 
   await turn(flow, 'Me lembra da reunião amanhã.');
-  await turn(flow, 'Sem horário.');
-  await turn(flow, 'Sem horário.');
+  await turn(flow, 'Me lembra da reunião amanhã.');
 
   const creates = calls.filter((call) => call.operation === 'create');
   assert.equal(creates.length, 2);
@@ -2281,10 +2366,12 @@ test('objeto vago pergunta o assunto e preserva a data já informada', async () 
   const first = await turn(flow, 'Bota aquele negócio pra sexta.');
   assert.match(first.text, /O que você quer/);
   const second = await turn(flow, 'Reunião do projeto.');
-  assert.match(second.text, /horário/);
-  await turn(flow, 'Sem horário.');
+  assert.match(second.text, /Pronto/);
+  assert.equal(calls.length, 1);
   assert.equal(calls.at(-1).payload.title, 'reuniao do projeto');
   assert.match(calls.at(-1).payload.starts_at, /^2026-08-14T/);
+  assert.equal(calls.at(-1).payload.has_explicit_time, false);
+  assert.equal(calls.at(-1).payload.is_all_day, false);
 });
 
 test('consulta vazia de amanhã responde sem inventar compromissos', async () => {
@@ -2394,6 +2481,45 @@ for (const [label, item] of [
     assert.equal(new Date(update.changes.starts_at).getHours(), 16);
     assert.equal(update.changes.has_explicit_time, true);
     assert.equal(update.changes.is_all_day, false);
+  });
+}
+
+for (const [label, item, instruction, expected] of [
+  [
+    'Sem horário -> Dia inteiro',
+    { starts_at: '2026-08-12T00:00:00.000Z', has_explicit_time: false, is_all_day: false },
+    'Muda minha reunião para o dia inteiro.',
+    { hasExplicitTime: false, allDay: true },
+  ],
+  [
+    'Dia inteiro -> Sem horário',
+    { starts_at: '2026-08-12T00:00:00.000Z', has_explicit_time: false, is_all_day: true },
+    'Muda minha reunião para sem horário.',
+    { hasExplicitTime: false, allDay: false },
+  ],
+  [
+    '00:00 explícito -> Sem horário',
+    { starts_at: '2026-08-12T00:00:00.000Z', has_explicit_time: true, is_all_day: false },
+    'Muda minha reunião para sem horário.',
+    { hasExplicitTime: false, allDay: false },
+  ],
+  [
+    'Sem horário -> 00:00 explícito',
+    { starts_at: '2026-08-12T00:00:00.000Z', has_explicit_time: false, is_all_day: false },
+    'Muda minha reunião para meia-noite.',
+    { hasExplicitTime: true, allDay: false },
+  ],
+]) {
+  test(`transição semântica: ${label}`, async () => {
+    const { flow, calls } = makeHarness([{
+      id: 'meeting', workspace_id: IDENTITY.workspaceId, title: 'Reunião', ...item,
+    }]);
+
+    assert.match((await turn(flow, instruction)).text, /Atualizei/);
+    const update = calls.find((call) => call.operation === 'update');
+    assert.equal(update.changes.has_explicit_time, expected.hasExplicitTime);
+    assert.equal(update.changes.is_all_day, expected.allDay);
+    assert.equal(new Date(update.changes.starts_at).getHours(), 0);
   });
 }
 
@@ -2598,22 +2724,22 @@ test('conflito temporal-financeiro preserva escolha sem escrita e encaminha rasc
   assert.equal(calls.length, 0);
 });
 
-test('escolha por lembrete continua pedindo horário e só grava depois da resposta', async () => {
+test('escolha por lembrete cria diretamente Sem horário após resolver o conflito', async () => {
   const { flow, calls } = makeHarness();
   await turn(flow, 'Amanhã tenho que pagar 300 reais.');
   const choice = await turn(flow, 'Quero um lembrete na Agenda.');
-  assert.match(choice.text, /horário/);
-  assert.equal(calls.length, 0);
-
-  await turn(flow, 'Sem horário.');
+  assert.match(choice.text, /sem horário/i);
+  assert.equal(calls.length, 1);
   assert.equal(calls.at(-1).operation, 'create');
   assert.equal(calls.at(-1).payload.item_type, 'reminder');
   assert.equal(calls.at(-1).payload.title, 'pagar 300 reais');
+  assert.equal(calls.at(-1).payload.has_explicit_time, false);
+  assert.equal(calls.at(-1).payload.is_all_day, false);
 });
 
 test('pendência de Agenda pode ser abandonada antes de uma nova declaração financeira', async () => {
   const { flow, calls } = makeHarness();
-  await turn(flow, 'Me lembra da reunião amanhã.');
+  await turn(flow, 'Me lembra da reunião amanhã às dez.');
   assert.equal(flow.hasPending(IDENTITY), true);
   assert.equal(await flow.abandonPending(IDENTITY), true);
 
@@ -2633,7 +2759,7 @@ test('abandono explícito limpa somente a operação pendente antes de nova inte
     operationStorage,
     createOperationId: () => operationIds.shift(),
   });
-  await turn(firstHarness.flow, 'Me lembra da reunião amanhã.');
+  await turn(firstHarness.flow, 'Me lembra da reunião amanhã às dez.');
   assert.equal(await firstHarness.flow.abandonPending(IDENTITY), true);
 
   const restoredHarness = makeHarness([], {
@@ -2641,7 +2767,6 @@ test('abandono explícito limpa somente a operação pendente antes de nova inte
     createOperationId: () => operationIds.shift(),
   });
   await turn(restoredHarness.flow, 'Me lembra da reunião amanhã.');
-  await turn(restoredHarness.flow, 'Sem horário.');
 
   assert.equal(
     restoredHarness.calls[0].payload.client_operation_id,

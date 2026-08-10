@@ -364,7 +364,9 @@ function findRangeOrMultipleTimes(normalized) {
   ];
   for (const source of rangePatterns) {
     const match = normalized.match(new RegExp(source));
-    if (match) {
+    const firstEndpointIsCalendarDay = match
+      && /\bdia\s+$/.test(normalized.slice(0, match.index));
+    if (match && !firstEndpointIsCalendarDay) {
       const span = resultSpan(match);
       return {
         kind: AGENDA_TIME_CLASSIFICATION.TIME_RANGE,
@@ -404,6 +406,7 @@ function findSeparatedTemporalEndpoints(normalized) {
     'g',
   );
   for (const match of normalized.matchAll(pattern)) {
+    if (/\bdia\s+$/.test(normalized.slice(0, match.index))) continue;
     if (/^vinte\s+e\s+(?:uma|duas|tres)(?:\s*(?:h|horas?))?(?:\s+da\s+(?:manha|tarde|noite))?$/.test(match[0])) {
       continue;
     }
@@ -809,7 +812,11 @@ function invalidTimeCandidate(normalized, allowContextual) {
   );
   if (range) {
     const rangeEnd = range.index + range[0].length;
-    if (!isNonTemporalQuantityWord(followingWord(normalized, rangeEnd))) {
+    const firstEndpointIsCalendarDay = /\bdia\s+$/.test(normalized.slice(0, range.index));
+    if (
+      !firstEndpointIsCalendarDay
+      && !isNonTemporalQuantityWord(followingWord(normalized, rangeEnd))
+    ) {
       return { start: range.index, end: rangeEnd };
     }
   }
@@ -950,10 +957,41 @@ function finalizeTemporalAnalysis(analysis, normalized) {
   };
 }
 
+function maskLeadingNonTemporalQuantities(normalized) {
+  const spans = [];
+  const pattern = new RegExp(
+    `\\b(?:para|com|ate)\\s+${NUMBER_PHRASE_PATTERN}\\s+(${LEXICAL_WORD_PATTERN})\\b`,
+    'g',
+  );
+  for (const match of normalized.matchAll(pattern)) {
+    if (!isNonTemporalQuantityWord(match[1])) continue;
+    const prefix = normalized.slice(0, match.index);
+    if (hasExplicitClockMarker(prefix) || hasExplicitDayPeriod(prefix)) continue;
+    const tail = normalized.slice(match.index + match[0].length);
+    const hasLaterTemporalContext = new RegExp(`\\b(?:${AGENDA_DATE_CONTEXT_PATTERN})\\b`).test(tail)
+      || hasExplicitClockMarker(tail)
+      || hasExplicitDayPeriod(tail);
+    if (hasLaterTemporalContext) spans.push(resultSpan(match));
+  }
+  return spans.reduce((value, span) => (
+    `${value.slice(0, span.start)}${' '.repeat(span.end - span.start)}${value.slice(span.end)}`
+  ), normalized);
+}
+
 function analyzeNormalizedTemporalRegion(normalized, allowContextual) {
-  let analysis = classifyStructuralTemporalRegion(normalized, allowContextual);
+  let searchable = maskLeadingNonTemporalQuantities(normalized);
+  let analysis = classifyStructuralTemporalRegion(searchable, allowContextual);
+  while (
+    analysis?.kind === AGENDA_TIME_CLASSIFICATION.NON_TEMPORAL_CONTENT
+    && analysis.span
+  ) {
+    searchable = `${searchable.slice(0, analysis.span.start)}${' '.repeat(
+      analysis.span.end - analysis.span.start,
+    )}${searchable.slice(analysis.span.end)}`;
+    analysis = classifyStructuralTemporalRegion(searchable, allowContextual);
+  }
   if (!analysis) {
-    const invalidCandidate = invalidTimeCandidate(normalized, allowContextual);
+    const invalidCandidate = invalidTimeCandidate(searchable, allowContextual);
     if (invalidCandidate) {
       analysis = {
         kind: AGENDA_TIME_CLASSIFICATION.INVALID_TIME,
@@ -965,7 +1003,7 @@ function analyzeNormalizedTemporalRegion(normalized, allowContextual) {
     }
   }
   if (!analysis) {
-    const time = extractAgendaTimeValue(normalized, allowContextual);
+    const time = extractAgendaTimeValue(searchable, allowContextual);
     analysis = {
       kind: time
         ? AGENDA_TIME_CLASSIFICATION.SINGLE_TIME
@@ -977,8 +1015,8 @@ function analyzeNormalizedTemporalRegion(normalized, allowContextual) {
     };
   }
   return finalizeTemporalAnalysis(
-    consolidateTemporalCoverage(normalized, analysis, allowContextual),
-    normalized,
+    consolidateTemporalCoverage(searchable, analysis, allowContextual),
+    searchable,
   );
 }
 
@@ -1008,30 +1046,41 @@ function extractAgendaTimeValue(normalized, allowContextual) {
     return formatExtractedTime(numericWithPeriod[1], numericWithPeriod[2], numericWithPeriod[3]);
   }
 
-  let numeric = normalized.match(
-    new RegExp(
-      '\\b(?:as|das|para)\\s+(\\d{1,2})(?:[:h](\\d{2}))?(?:\\s*(?:horas?|h))?\\b',
-    ),
-  ) ?? normalized.match(/^(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?$/);
-  if (
-    numeric
-    && /^para\s+/.test(numeric[0])
-    && isNonTemporalQuantityWord(followingWord(normalized, numeric.index + numeric[0].length))
-  ) {
-    numeric = null;
+  let numeric = null;
+  const numericCandidates = new RegExp(
+    '\\b(?:as|das|para)\\s+(\\d{1,2})(?:[:h](\\d{2}))?(?:\\s*(?:horas?|h))?\\b',
+    'g',
+  );
+  for (const candidate of normalized.matchAll(numericCandidates)) {
+    if (
+      /^para\s+/.test(candidate[0])
+      && isNonTemporalQuantityWord(followingWord(
+        normalized,
+        candidate.index + candidate[0].length,
+      ))
+    ) {
+      continue;
+    }
+    numeric = candidate;
+    break;
   }
+  numeric ??= normalized.match(/^(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?$/);
   if (numeric) return formatExtractedTime(numeric[1], numeric[2]);
 
-  let spoken = normalized.match(SPOKEN_TIME_WITH_CUE)
-    ?? normalized.match(SPOKEN_TIME_WITH_PARA)
-    ?? normalized.match(SPOKEN_TIME_WITH_HOURS);
-  if (
-    spoken
-    && /^para\s+/.test(spoken[0])
-    && isNonTemporalQuantityWord(followingWord(normalized, spoken.index + spoken[0].length))
-  ) {
-    spoken = null;
+  let spoken = normalized.match(SPOKEN_TIME_WITH_CUE);
+  if (!spoken) {
+    for (const candidate of normalized.matchAll(new RegExp(SPOKEN_TIME_WITH_PARA.source, 'g'))) {
+      if (isNonTemporalQuantityWord(followingWord(
+        normalized,
+        candidate.index + candidate[0].length,
+      ))) {
+        continue;
+      }
+      spoken = candidate;
+      break;
+    }
   }
+  spoken ??= normalized.match(SPOKEN_TIME_WITH_HOURS);
   if (spoken) return formatExtractedTime(parseCount(spoken[1]), 0, spoken[2] ?? spoken[3]);
 
   if (!allowContextual) return null;
@@ -1755,11 +1804,14 @@ export function createAgendaConversationFlow({
           date: active.fields.date,
           time: null,
           allDay: false,
+          hasExplicitTime: false,
+          timeChoiceResolved: true,
           itemType: 'reminder',
         };
-        finishPending(identity, active, { choice: 'agenda' });
-        await startPending(identity, PENDING_TYPES.CREATE, fields);
-        return { handled: true, text: 'Quer colocar um horário ou deixo como compromisso do dia?' };
+        const result = await createItem(identity, fields);
+        if (result.error) return { handled: true, text: serviceErrorText(result.error) };
+        finishPending(identity, active, { choice: 'agenda', item: result.data });
+        return { handled: true, text: successText('create', result.data) };
       }
       if (/\b(?:financeir[ao]|operacao|lancamento|despesa|gasto)\b/.test(normalized)) {
         finishPending(identity, active, { choice: 'financial' });
@@ -1929,8 +1981,7 @@ export function createAgendaConversationFlow({
         time: timeAnalysis.time,
         allDay: /\b(?:o\s+)?dia\s+inteiro\b/.test(normalizeFinancialText(agendaText)),
         hasExplicitTime: Boolean(timeAnalysis.time),
-        timeChoiceResolved: Boolean(timeAnalysis.time)
-          || /\b(?:(?:o\s+)?dia\s+inteiro|sem\s+horario)\b/.test(normalizeFinancialText(agendaText)),
+        timeChoiceResolved: !timeAnalysis.blocked,
         itemType: classification.intent === 'agenda_reminder_create' ? 'reminder' : 'appointment',
       };
       if (fields.allDay) {
