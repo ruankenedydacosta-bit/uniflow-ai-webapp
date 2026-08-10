@@ -129,21 +129,117 @@ test('criação relativa sem horário cria diretamente sem confundir com dia int
   assert.equal(flow.hasPending(IDENTITY), false);
 });
 
-test('pending legítimo aceita Sem horário sem deixar relógio inválido no título', async () => {
-  const { flow, calls } = makeHarness();
+test('pending temporal inválido rejeita Sem horário e preserva a operação até correção válida', async () => {
+  const operationId = '10101010-1010-4010-8010-101010101010';
+  const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
   assert.match(
     (await turn(flow, 'Me lembra da reunião daqui 10 dias às 10h60.')).text,
     /entender o horário/i,
   );
   assert.equal(calls.length, 0);
-  const result = await turn(flow, 'Pode deixar sem horário.');
-  assert.match(result.text, /sem horário/);
+  const blocked = await turn(flow, 'Pode deixar sem horário.');
+  assert.match(blocked.text, /precisa ser corrigido/i);
+  assert.equal(calls.length, 0);
+  assert.equal(flow.hasPending(IDENTITY), true);
+
+  const result = await turn(flow, 'às 15h');
+  assert.match(result.text, /Pronto/);
   assert.equal(calls[0].operation, 'create');
   assert.equal(calls[0].payload.title, 'reuniao');
   assert.equal(calls[0].payload.is_all_day, false);
-  assert.equal(calls[0].payload.has_explicit_time, false);
+  assert.equal(calls[0].payload.has_explicit_time, true);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
   assert.match(calls[0].payload.starts_at, /^2026-08-18T/);
+  assert.equal(calls[0].payload.client_operation_id, operationId);
   assert.equal(flow.hasPending(IDENTITY), false);
+});
+
+const TEMPORAL_REPAIR_CASES = [
+  ['INVALID_TIME', 'Agenda reunião amanhã às 25h.'],
+  ['TIME_RANGE', 'Agenda reunião amanhã 10h até 11h.'],
+  ['MULTI_TIME', 'Agenda reunião amanhã às 10h e às 11h.'],
+];
+
+const TEMPORAL_REPAIR_REPLIES = [
+  ['Sem horário', 'Sem horário.', 'repair'],
+  ['Dia inteiro', 'Dia inteiro.', 'repair'],
+  ['horário válido', 'às 15h', 'create'],
+  ['outro inválido', 'às 26h', 'repair'],
+  ['cancelamento', 'Cancela.', 'cancel'],
+];
+
+for (const [classification, initialText] of TEMPORAL_REPAIR_CASES) {
+  for (const [replyLabel, reply, expected] of TEMPORAL_REPAIR_REPLIES) {
+    test(`reparo ${classification} -> ${replyLabel}`, async () => {
+      const { flow, calls } = makeHarness();
+
+      assert.match((await turn(flow, initialText)).text, /entender o horário/i);
+      assert.equal(calls.some((call) => ['create', 'update'].includes(call.operation)), false);
+
+      const result = await turn(flow, reply);
+      const writes = calls.filter((call) => ['create', 'update', 'status', 'delete'].includes(call.operation));
+      if (expected === 'create') {
+        assert.match(result.text, /Pronto/);
+        assert.equal(writes.length, 1);
+        assert.equal(writes[0].operation, 'create');
+        assert.equal(writes[0].payload.title, 'reuniao');
+        assert.equal(writes[0].payload.has_explicit_time, true);
+        assert.equal(writes[0].payload.is_all_day, false);
+        assert.equal(new Date(writes[0].payload.starts_at).getHours(), 15);
+        assert.equal(flow.hasPending(IDENTITY), false);
+      } else if (expected === 'cancel') {
+        assert.match(result.text, /Não alterei/);
+        assert.equal(writes.length, 0);
+        assert.equal(flow.hasPending(IDENTITY), false);
+      } else {
+        assert.match(result.text, /(?:precisa ser corrigido|entender o horário)/i);
+        assert.equal(writes.length, 0);
+        assert.equal(flow.hasPending(IDENTITY), true);
+      }
+    });
+  }
+}
+
+test('reparo temporal aceita correção coloquial válida', async () => {
+  const { flow, calls } = makeHarness();
+
+  assert.match((await turn(flow, 'Agenda reunião amanhã às 25h.')).text, /entender o horário/i);
+  assert.match((await turn(flow, 'três e meia da tarde')).text, /Pronto/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].payload.title, 'reuniao');
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
+  assert.equal(new Date(calls[0].payload.starts_at).getMinutes(), 30);
+});
+
+test('não agenda cancela explicitamente o reparo temporal sem write', async () => {
+  const { flow, calls } = makeHarness();
+
+  assert.match((await turn(flow, 'Agenda reunião amanhã 10h até 11h.')).text, /entender o horário/i);
+  assert.match((await turn(flow, 'Não agenda.')).text, /Não alterei/);
+  assert.equal(calls.some((call) => ['create', 'update', 'status', 'delete'].includes(call.operation)), false);
+  assert.equal(flow.hasPending(IDENTITY), false);
+});
+
+test('quantidade e INVALID_TIME rejeitam Sem horário preservando título, data e UUID até a correção', async () => {
+  const operationId = '20202020-2020-4020-8020-202020202020';
+  const { flow, calls } = makeHarness([], { createOperationId: () => operationId });
+
+  assert.match(
+    (await turn(flow, 'Agenda reunião para 11 alunos amanhã às 25h.')).text,
+    /entender o horário/i,
+  );
+  assert.match((await turn(flow, 'Sem horário.')).text, /precisa ser corrigido/i);
+  assert.equal(calls.length, 0);
+  assert.equal(flow.hasPending(IDENTITY), true);
+
+  assert.match((await turn(flow, 'às 10h')).text, /Pronto/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].payload.title, 'reuniao para 11 alunos');
+  assert.equal(calls[0].payload.client_operation_id, operationId);
+  assert.equal(calls[0].payload.has_explicit_time, true);
+  assert.equal(calls[0].payload.is_all_day, false);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.match(calls[0].payload.starts_at, /^2026-08-09T/);
 });
 
 test('criação com horário salva dentista amanhã às 15h', async () => {

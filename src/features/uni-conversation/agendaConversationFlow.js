@@ -120,6 +120,7 @@ const SPOKEN_TIME_WITH_PERIOD = new RegExp(
   `\\b(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?\\s+(da\\s+manha|da\\s+tarde|da\\s+noite)\\b`,
 );
 const INVALID_TIME_CORRECTION_TEXT = 'Não consegui entender o horário. Pode informar novamente, por exemplo “10h30” ou “dez horas”?';
+const TEMPORAL_REPAIR_REQUIRED_TEXT = 'O horário informado anteriormente precisa ser corrigido. Informe um único horário válido ou cancele a criação.';
 
 const WEEKDAYS = Object.freeze([
   'domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado',
@@ -1704,7 +1705,7 @@ export function createAgendaConversationFlow({
     if (!active) return null;
     const normalized = normalizeFinancialText(text);
 
-    if (/^(?:cancela|cancelar|deixa|deixa pra la|nao quero)[.!]?$/.test(normalized)) {
+    if (/^(?:cancela|cancelar|deixa|deixa pra la|nao quero|nao agenda(?:r)?)[.!]?$/.test(normalized)) {
       if (active.type === PENDING_TYPES.CREATE) {
         await clearCreationOperation(identity, active.fields.clientOperationId);
       }
@@ -1736,8 +1737,15 @@ export function createAgendaConversationFlow({
       if (!fields.description && content.description) fields.description = content.description;
       const noTime = /\b(?:sem\s+horario|pode\s+deixar\s+sem\s+horario)\b/.test(normalized);
       const allDay = /\b(?:compromisso\s+do\s+dia|(?:o\s+)?dia\s+inteiro)\b/.test(normalized);
+      const hasActiveTemporalRepair = fields.repairField === 'time';
       let ambiguityQuestion = null;
-      if (allDay) {
+      if (hasActiveTemporalRepair && (noTime || allDay)) {
+        fields.time = null;
+        fields.hasExplicitTime = false;
+        fields.timeChoiceResolved = false;
+        fields.ambiguousTime = null;
+        fields.suggestedTime = null;
+      } else if (allDay) {
         fields.allDay = true;
         fields.hasExplicitTime = false;
         fields.timeChoiceResolved = true;
@@ -1776,6 +1784,9 @@ export function createAgendaConversationFlow({
 
       const updated = updatePendingAction(stack, active.id, { fields });
       setStack(identity, updated.stack);
+      if (hasActiveTemporalRepair && (noTime || allDay)) {
+        return { handled: true, text: TEMPORAL_REPAIR_REQUIRED_TEXT };
+      }
       if (timeAnalysis.invalid) {
         const repair = updatePendingAction(updated.stack, updated.action.id, {
           fields: { ...fields, repairField: 'time' },
