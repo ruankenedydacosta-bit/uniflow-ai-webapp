@@ -630,7 +630,7 @@
 
 .uniButton {
   position: relative;
-  width: clamp(250px, 69vw, 390px);
+  width: clamp(232px, 64vw, 360px);
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
@@ -967,7 +967,7 @@
   }
 
   .uniButton {
-    width: 238px;
+    width: 224px;
   }
 
   .uniButtonLabel {

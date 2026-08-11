@@ -589,6 +589,13 @@ test('background ou fim da captura libera o gesto de voz preso sem exigir reload
   assert.match(home, /window\.removeEventListener\('pagehide', releasePressedGesture\)/);
 });
 
+test('botão central mantém a captura concentrada no círculo sem ocupar as laterais do scroll', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  assert.match(css, /\.uniButton\s*\{[\s\S]*?width:\s*clamp\(232px, 64vw, 360px\)/);
+  assert.match(css, /@media \(max-width: 359px\)[\s\S]*?\.uniButton\s*\{\s*width:\s*224px/);
+  assert.match(css, /\.uniButton\s*\{[\s\S]*?touch-action:\s*none/);
+});
+
 test('não inicia nova gravação durante o processamento (isInteractionBusy inclui capture busy/typing/executing)', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /const isCaptureBusy = \[\s*VOICE_CAPTURE_STATES\.REQUESTING_PERMISSION,\s*VOICE_CAPTURE_STATES\.PROCESSING,\s*\]\.includes\(voiceInput\.status\);/);
