@@ -22,6 +22,7 @@ export const ACCOUNT_SUBROUTE_IDS = Object.freeze({
   MY_ACCOUNTS: 'my-accounts',
   VOICE: 'voice',
   SUPPORT: 'support',
+  THEME: 'theme',
   ABOUT: 'about',
 });
 
@@ -69,6 +70,11 @@ export const ACCOUNT_SUBROUTES = Object.freeze({
     path: '/app/conta/suporte',
     title: 'Suporte',
     description: 'Em breve você poderá falar com nossa equipe diretamente por aqui.',
+  }),
+  [ACCOUNT_SUBROUTE_IDS.THEME]: Object.freeze({
+    path: '/app/conta/tema',
+    title: 'Tema',
+    description: 'Escolha como a UniFlow aparece neste dispositivo.',
   }),
   // BLOCO FINAL DO MVP (Sobre a UniFlow AI): tela institucional real,
   // primeira versão oficial do MVP (v1.0.0) -- ver appIdentity.js.

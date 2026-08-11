@@ -19,6 +19,10 @@ import {
   requestCapturedPwaInstall,
   resetPwaInstallPromptStoreForTests,
 } from './pwaInstallPromptStore.js';
+import {
+  initializePwaUpdateLifecycle,
+  UPDATE_RELOAD_KEY,
+} from './pwaUpdateLifecycle.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -107,6 +111,53 @@ test('appinstalled remove qualquer prompt pendente', () => {
   assert.ok(getDeferredPwaInstallPrompt());
   runtime.dispatchEvent(new Event('appinstalled'));
   assert.equal(getDeferredPwaInstallPrompt(), null);
+});
+
+test('PWA procura atualização e recarrega uma única vez quando o novo worker assume', async () => {
+  const serviceWorker = new EventTarget();
+  let updateCalls = 0;
+  let reloadCalls = 0;
+  const storage = new Map();
+  serviceWorker.controller = {};
+  serviceWorker.ready = Promise.resolve({ update: () => { updateCalls += 1; } });
+  const runtime = Object.assign(new EventTarget(), {
+    navigator: { serviceWorker },
+    document: Object.assign(new EventTarget(), { visibilityState: 'visible' }),
+    sessionStorage: { setItem: (key, value) => storage.set(key, value) },
+    location: { reload: () => { reloadCalls += 1; } },
+  });
+
+  const cleanup = initializePwaUpdateLifecycle(runtime);
+  await Promise.resolve();
+  await Promise.resolve();
+  serviceWorker.dispatchEvent(new Event('controllerchange'));
+  serviceWorker.dispatchEvent(new Event('controllerchange'));
+
+  assert.equal(updateCalls, 1);
+  assert.equal(reloadCalls, 1);
+  assert.equal(storage.get(UPDATE_RELOAD_KEY), 'true');
+  cleanup();
+});
+
+test('primeira instalação do service worker não força recarga e falhas são seguras', async () => {
+  const serviceWorker = new EventTarget();
+  let reloadCalls = 0;
+  serviceWorker.controller = null;
+  serviceWorker.ready = Promise.reject(new Error('offline'));
+  const runtime = Object.assign(new EventTarget(), {
+    navigator: { serviceWorker },
+    document: Object.assign(new EventTarget(), { visibilityState: 'visible' }),
+    location: { reload: () => { reloadCalls += 1; } },
+  });
+
+  const cleanup = initializePwaUpdateLifecycle(runtime);
+  await Promise.resolve();
+  await Promise.resolve();
+  serviceWorker.dispatchEvent(new Event('controllerchange'));
+
+  assert.equal(reloadCalls, 0);
+  cleanup();
+  assert.doesNotThrow(() => serviceWorker.dispatchEvent(new Event('controllerchange')));
 });
 
 test('UI aparece imediatamente, mesmo sem prompt nativo, e orienta Chrome e iOS', async () => {

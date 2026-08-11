@@ -20,6 +20,7 @@ export function useVisualViewport(runtime) {
     if (!viewport?.addEventListener) return undefined;
 
     let frame = null;
+    const settleTimers = new Set();
     const syncMetrics = () => {
       frame = null;
       const next = readVisualViewport(browserRuntime);
@@ -37,22 +38,45 @@ export function useVisualViewport(runtime) {
         ?? browserRuntime.setTimeout?.(syncMetrics, 0)
         ?? null;
     };
+    const scheduleSettledSync = () => {
+      settleTimers.forEach((timer) => browserRuntime.clearTimeout?.(timer));
+      settleTimers.clear();
+      scheduleSync();
+      [120, 360].forEach((delay) => {
+        const timer = browserRuntime.setTimeout?.(() => {
+          settleTimers.delete(timer);
+          scheduleSync();
+        }, delay);
+        if (timer !== undefined) settleTimers.add(timer);
+      });
+    };
+    const handleVisibilityChange = () => {
+      if (browserRuntime.document?.visibilityState !== 'hidden') scheduleSettledSync();
+    };
 
-    viewport.addEventListener('resize', scheduleSync);
-    viewport.addEventListener('scroll', scheduleSync);
-    browserRuntime.addEventListener?.('orientationchange', scheduleSync);
-    browserRuntime.addEventListener?.('pageshow', scheduleSync);
-    scheduleSync();
+    viewport.addEventListener('resize', scheduleSettledSync);
+    viewport.addEventListener('scroll', scheduleSettledSync);
+    browserRuntime.addEventListener?.('resize', scheduleSettledSync);
+    browserRuntime.addEventListener?.('orientationchange', scheduleSettledSync);
+    browserRuntime.addEventListener?.('pageshow', scheduleSettledSync);
+    browserRuntime.document?.addEventListener?.('focusout', scheduleSettledSync);
+    browserRuntime.document?.addEventListener?.('visibilitychange', handleVisibilityChange);
+    scheduleSettledSync();
 
     return () => {
-      viewport.removeEventListener('resize', scheduleSync);
-      viewport.removeEventListener('scroll', scheduleSync);
-      browserRuntime.removeEventListener?.('orientationchange', scheduleSync);
-      browserRuntime.removeEventListener?.('pageshow', scheduleSync);
+      viewport.removeEventListener('resize', scheduleSettledSync);
+      viewport.removeEventListener('scroll', scheduleSettledSync);
+      browserRuntime.removeEventListener?.('resize', scheduleSettledSync);
+      browserRuntime.removeEventListener?.('orientationchange', scheduleSettledSync);
+      browserRuntime.removeEventListener?.('pageshow', scheduleSettledSync);
+      browserRuntime.document?.removeEventListener?.('focusout', scheduleSettledSync);
+      browserRuntime.document?.removeEventListener?.('visibilitychange', handleVisibilityChange);
       if (frame !== null) {
         if (browserRuntime.cancelAnimationFrame) browserRuntime.cancelAnimationFrame(frame);
         else browserRuntime.clearTimeout?.(frame);
       }
+      settleTimers.forEach((timer) => browserRuntime.clearTimeout?.(timer));
+      settleTimers.clear();
     };
   }, [browserRuntime]);
 

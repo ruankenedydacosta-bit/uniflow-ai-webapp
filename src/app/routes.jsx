@@ -34,6 +34,7 @@ import {
   SimplifiedRecordsPage,
   SimplifiedSecurityPage,
   SimplifiedSupportPage,
+  SimplifiedThemePage,
   SimplifiedUniSupportPage,
   SimplifiedVoicePage,
 } from '../features/simplified-app';
@@ -260,6 +261,13 @@ export const appRoutes = [
     element: <SimplifiedVoicePage />,
   },
   {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].title,
+    simplified: true,
+    element: <SimplifiedThemePage />,
+  },
+  {
     path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path,
     label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].title,
     title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].title,
@@ -281,6 +289,7 @@ export const appRoutes = [
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path
     ))
     .map((subroute) => ({

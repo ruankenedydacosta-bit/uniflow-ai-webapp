@@ -79,9 +79,14 @@ test('shell acompanha visualViewport e remove listeners do teclado no cleanup', 
   assert.match(shell, /const viewportStyle = useVisualViewport\(\);/);
   assert.match(shell, /style=\{viewportStyle\}/);
   assert.match(hook, /visualViewport/);
-  assert.match(hook, /addEventListener\('resize', scheduleSync\)/);
-  assert.match(hook, /removeEventListener\('resize', scheduleSync\)/);
+  assert.match(hook, /addEventListener\('resize', scheduleSettledSync\)/);
+  assert.match(hook, /addEventListener\?\.\('focusout', scheduleSettledSync\)/);
+  assert.match(hook, /addEventListener\?\.\('visibilitychange', handleVisibilityChange\)/);
+  assert.match(hook, /removeEventListener\('resize', scheduleSettledSync\)/);
+  assert.match(hook, /settleTimers\.forEach/);
   assert.match(css, /height: var\(--uf-visual-viewport-height, 100dvh\);/);
+  assert.match(css, /body\[data-simplified-app-mounted="true"\]/);
+  assert.match(shell, /body\.setAttribute\('data-simplified-app-mounted', 'true'\)/);
 });
 
 test('workspace Empresa stale exige ativação do workspace Pessoal', () => {

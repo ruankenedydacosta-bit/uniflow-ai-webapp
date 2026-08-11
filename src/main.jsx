@@ -10,16 +10,21 @@ import {
 } from './features/observability/index.js';
 import { ThemeProvider } from './features/theme';
 import { VoiceProvider } from './features/uni-audio/index.js';
-import { initializePwaInstallCapture } from './features/pwa-install/index.js';
+import {
+  initializePwaInstallCapture,
+  initializePwaUpdateLifecycle,
+} from './features/pwa-install/index.js';
 import './styles/index.css';
 
 const bootstrapStartedAt = globalThis.performance?.now?.() ?? Date.now();
 initializeTelemetry();
 const removeGlobalTelemetryHandlers = installGlobalTelemetryHandlers();
 const removePwaInstallCapture = initializePwaInstallCapture();
+const removePwaUpdateLifecycle = initializePwaUpdateLifecycle();
 import.meta.hot?.dispose(() => {
   removeGlobalTelemetryHandlers();
   removePwaInstallCapture();
+  removePwaUpdateLifecycle();
 });
 
 ReactDOM.createRoot(document.getElementById('root'), {

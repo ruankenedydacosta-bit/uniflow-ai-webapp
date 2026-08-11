@@ -127,6 +127,16 @@ function SimplifiedAppShell({ children }) {
     if (openFrameRef.current) window.cancelAnimationFrame(openFrameRef.current);
   }, [clearCloseTimer]);
 
+  useEffect(() => {
+    const body = document.body;
+    const previousValue = body.getAttribute('data-simplified-app-mounted');
+    body.setAttribute('data-simplified-app-mounted', 'true');
+    return () => {
+      if (previousValue === null) body.removeAttribute('data-simplified-app-mounted');
+      else body.setAttribute('data-simplified-app-mounted', previousValue);
+    };
+  }, []);
+
   return (
     <div
       className={styles.shell}

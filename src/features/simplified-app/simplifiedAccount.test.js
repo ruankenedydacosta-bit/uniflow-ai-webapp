@@ -19,7 +19,7 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // foram removidos TOTALMENTE (nunca só escondidos do menu) -- Notificações
 // já mora exclusivamente no sino da Home; Privacidade e dados fica para uma
 // tarefa futura junto de LGPD/exportação/exclusão de conta.
-test('ACCOUNT_SUBROUTES tem exatamente os 9 paths pedidos, sob /app/conta/ -- notificacoes/privacidade removidos', () => {
+test('ACCOUNT_SUBROUTES tem exatamente os 10 paths pedidos, sob /app/conta/ -- notificacoes/privacidade removidos', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path).sort();
   assert.deepEqual(paths, [
     '/app/conta/editar-perfil',
@@ -30,6 +30,7 @@ test('ACCOUNT_SUBROUTES tem exatamente os 9 paths pedidos, sob /app/conta/ -- no
     '/app/conta/seguranca',
     '/app/conta/sobre',
     '/app/conta/suporte',
+    '/app/conta/tema',
     '/app/conta/voz',
   ]);
   for (const path of paths) {
@@ -44,7 +45,7 @@ test('todo subroute tem título e descrição honesta (nunca vazio, nunca dado f
   }
 });
 
-test('nenhum path duplicado entre os 9 subroutes', () => {
+test('nenhum path duplicado entre os 10 subroutes', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path);
   assert.equal(paths.length, new Set(paths).size);
 });
@@ -62,8 +63,8 @@ test('routes.jsx: /app/conta usa SimplifiedAccountPage, não mais o placeholder 
 
 test('routes.jsx: as rotas internas de Conta são geradas a partir de ACCOUNT_SUBROUTES (fonte única, sem paths hardcoded soltos)', async () => {
   const routes = await source('../../app/routes.jsx');
-  // Todas as 9 subrotas hoje têm tela real (Editar perfil, Segurança, Plano,
-  // Pagamentos, Histórico, Minhas contas, Voz, Suporte, Sobre) -- o loop de
+  // Todas as 10 subrotas hoje têm tela real (Editar perfil, Segurança, Plano,
+  // Pagamentos, Histórico, Minhas contas, Voz, Suporte, Tema, Sobre) -- o loop de
   // placeholders genéricos continua existindo (infraestrutura para futuras
   // subrotas), mas não gera nenhuma rota hoje.
   assert.match(routes, /Object\.values\(ACCOUNT_SUBROUTES\)\s*\n\s*\.filter\(\(subroute\) => \(/);
@@ -76,6 +77,8 @@ test('routes.jsx: as rotas internas de Conta são geradas a partir de ACCOUNT_SU
   assert.match(routes, /<SimplifiedPlanPage \/>/);
   assert.match(routes, /<SimplifiedVoicePage \/>/);
   assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.VOICE\]\.path/);
+  assert.match(routes, /<SimplifiedThemePage \/>/);
+  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.THEME\]\.path/);
   assert.match(routes, /<SimplifiedAboutPage \/>/);
   assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.ABOUT\]\.path/);
   assert.match(routes, /simplified: true,/);
@@ -178,7 +181,7 @@ test('preço exibido vem da constante compartilhada de personal-plan, nunca um v
   assert.doesNotMatch(page, /R\$\s*29,90/);
 });
 
-// ---------- Menu principal: 5 itens, subtítulos dinâmicos e honestos ----------
+// ---------- Menu principal: 6 itens, subtítulos dinâmicos e honestos ----------
 // BLOCO FINAL DO MVP (Sobre a UniFlow AI): "Notificações" (já tem lar
 // oficial no sino da Home) e "Privacidade e dados" (fora de escopo até
 // LGPD/exportação/exclusão de conta) foram removidas TOTALMENTE do menu --
@@ -186,9 +189,9 @@ test('preço exibido vem da constante compartilhada de personal-plan, nunca um v
 // e nunca um placeholder vazio prometendo algo que não existe ainda
 // (privacidade).
 
-test('menu tem exatamente os 5 itens pedidos, na ordem pedida -- Notificações e Privacidade e dados removidas', async () => {
+test('menu tem exatamente os 6 itens pedidos, com Tema entre Suporte e Sobre -- Notificações e Privacidade e dados removidas', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const order = ['PAYMENTS', 'MY_ACCOUNTS', 'VOICE', 'SUPPORT', 'ABOUT'];
+  const order = ['PAYMENTS', 'MY_ACCOUNTS', 'VOICE', 'SUPPORT', 'THEME', 'ABOUT'];
   const indices = order.map((id) => page.indexOf(`ACCOUNT_SUBROUTE_IDS.${id},`));
   assert.ok(indices.every((i) => i > -1), 'algum item do menu está ausente');
   for (let i = 1; i < indices.length; i += 1) {

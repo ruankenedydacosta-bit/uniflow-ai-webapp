@@ -27,6 +27,7 @@ import {
   LogoutIcon,
   MicIcon,
   PhoneIcon,
+  SparkleIcon,
   UniMark,
   AccountIcon,
   ChevronRightIcon,
@@ -147,6 +148,13 @@ function SimplifiedAccountPage() {
       tone: 'blue',
       title: 'Suporte',
       subtitle: 'Fale com nossa equipe',
+    },
+    {
+      id: ACCOUNT_SUBROUTE_IDS.THEME,
+      Icon: SparkleIcon,
+      tone: 'purple',
+      title: 'Tema',
+      subtitle: 'Claro, Escuro, UniFlow ou Sistema',
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.ABOUT,

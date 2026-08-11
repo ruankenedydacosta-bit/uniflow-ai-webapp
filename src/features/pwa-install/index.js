@@ -5,3 +5,4 @@ export {
   resolvePwaInstallEnabled,
 } from './pwaInstallConfig.js';
 export { initializePwaInstallCapture } from './pwaInstallPromptStore.js';
+export { initializePwaUpdateLifecycle } from './pwaUpdateLifecycle.js';
