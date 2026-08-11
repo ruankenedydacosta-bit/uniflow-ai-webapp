@@ -44,8 +44,13 @@ function createProviderDouble({ supported = true, result = 'success', name = 'pr
   };
 }
 
-function createBrowserRuntime({ autoEnd = true, error = null } = {}) {
+function createBrowserRuntime({ autoEnd = true, error = null, initialVoices } = {}) {
   const calls = { cancel: 0, pause: 0, resume: 0, speak: 0, utterances: [] };
+  let voices = initialVoices ?? [
+    { name: 'English', lang: 'en-US' },
+    { name: 'Português Brasil', lang: 'pt-BR' },
+  ];
+  const voiceListeners = new Set();
   class SpeechSynthesisUtterance {
     constructor(text) {
       this.text = text;
@@ -56,10 +61,13 @@ function createBrowserRuntime({ autoEnd = true, error = null } = {}) {
   }
   const speechSynthesis = {
     paused: false,
-    getVoices: () => [
-      { name: 'English', lang: 'en-US' },
-      { name: 'Português Brasil', lang: 'pt-BR' },
-    ],
+    getVoices: () => voices,
+    addEventListener(type, listener) {
+      if (type === 'voiceschanged') voiceListeners.add(listener);
+    },
+    removeEventListener(type, listener) {
+      if (type === 'voiceschanged') voiceListeners.delete(listener);
+    },
     speak(utterance) {
       calls.speak += 1;
       calls.utterances.push(utterance);
@@ -73,7 +81,20 @@ function createBrowserRuntime({ autoEnd = true, error = null } = {}) {
     pause() { calls.pause += 1; this.paused = true; },
     resume() { calls.resume += 1; this.paused = false; },
   };
-  return { runtime: { speechSynthesis, SpeechSynthesisUtterance }, calls };
+  const runtime = {
+    speechSynthesis,
+    SpeechSynthesisUtterance,
+    setTimeout,
+    clearTimeout,
+  };
+  return {
+    runtime,
+    calls,
+    publishVoices(nextVoices) {
+      voices = nextVoices;
+      for (const listener of [...voiceListeners]) listener();
+    },
+  };
 }
 
 test('allowlist de contas de teste e centralizada, normalizada e sem duplicatas', () => {
@@ -97,10 +118,34 @@ test('producao sem flag nunca ativa fallback nem modo forcado', () => {
       browserFallbackAllowed: false,
       forceBrowserTts: false,
       shouldTryPrimaryProvider: true,
+      nativeTtsEnabled: false,
       isDevelopment: false,
       isAuthorizedTestUser: false,
     },
   );
+});
+
+test('flag nativa ativa Web Speech em Preview sem depender de DEV ou allowlist', () => {
+  const policy = resolveVoiceFallbackPolicy({
+    env: { PROD: true, VITE_UNI_VOICE_NATIVE_TTS_ENABLED: 'true' },
+  });
+  assert.equal(policy.nativeTtsEnabled, true);
+  assert.equal(policy.browserFallbackAllowed, true);
+  assert.equal(policy.forceBrowserTts, true);
+  assert.equal(policy.shouldTryPrimaryProvider, false);
+});
+
+test('modo nativo nunca chama o provider ElevenLabs', async () => {
+  const primary = createProviderDouble();
+  const browser = createProviderDouble({ name: 'browser_speech_tts' });
+  const provider = createFallbackVoiceTtsProvider({
+    primaryProvider: primary,
+    browserProvider: browser,
+    policy: { browserFallbackAllowed: true, forceBrowserTts: true },
+  });
+  await provider.speak('Resposta da Uni');
+  assert.equal(primary.calls.speak, 0);
+  assert.equal(browser.calls.speak, 1);
 });
 
 test('conta autorizada exige simultaneamente flag e user id presente na allowlist', () => {
@@ -334,6 +379,38 @@ test('Web Speech seleciona pt-BR, volume audivel e confirma sucesso apenas no on
   assert.equal(calls.utterances[0].lang, 'pt-BR');
   assert.equal(calls.utterances[0].voice.lang, 'pt-BR');
   assert.equal(calls.utterances[0].volume, 1);
+});
+
+test('Web Speech prioriza voz Google pt-BR independentemente da ordem recebida', async () => {
+  const { runtime, calls } = createBrowserRuntime({
+    initialVoices: [
+      { name: 'Sistema Brasil', lang: 'pt-BR' },
+      { name: 'Google português do Brasil', lang: 'pt-BR', voiceURI: 'Google português do Brasil' },
+      { name: 'Sistema Portugal', lang: 'pt-PT' },
+    ],
+  });
+  await createBrowserSpeechTtsProvider({ runtime }).speak('Olá');
+  assert.equal(calls.utterances[0].voice.name, 'Google português do Brasil');
+});
+
+test('Web Speech aguarda voiceschanged quando a lista inicial está vazia', async () => {
+  const browser = createBrowserRuntime({ initialVoices: [] });
+  const speaking = createBrowserSpeechTtsProvider({
+    runtime: browser.runtime,
+    voiceLoadTimeoutMs: 100,
+  }).speak('Olá');
+  browser.publishVoices([{ name: 'Português assíncrono', lang: 'pt-BR' }]);
+  await speaking;
+  assert.equal(browser.calls.utterances[0].voice.name, 'Português assíncrono');
+});
+
+test('Web Speech usa a voz padrão do sistema quando nenhuma voz portuguesa existe', async () => {
+  const { runtime, calls } = createBrowserRuntime({
+    initialVoices: [{ name: 'System Default', lang: 'en-US', default: true }],
+  });
+  await createBrowserSpeechTtsProvider({ runtime }).speak('Olá');
+  assert.equal(calls.utterances[0].voice, null);
+  assert.equal(calls.utterances[0].lang, 'pt-BR');
 });
 
 test('Web Speech indisponivel e falha do navegador sao erros distintos', async () => {

@@ -8,18 +8,56 @@ function browserSpeechError(code, message) {
   });
 }
 
-function resolvePortugueseVoice(speechSynthesis) {
-  const voices = speechSynthesis.getVoices?.() ?? [];
-  return voices.find((voice) => String(voice.lang).toLowerCase() === 'pt-br')
-    ?? voices.find((voice) => String(voice.lang).toLowerCase().startsWith('pt'))
+function resolvePortugueseVoice(voices) {
+  const language = (voice) => String(voice?.lang ?? '').toLowerCase();
+  const identity = (voice) => `${voice?.name ?? ''} ${voice?.voiceURI ?? ''}`.toLowerCase();
+  return voices.find((voice) => language(voice) === 'pt-br' && identity(voice).includes('google'))
+    ?? voices.find((voice) => language(voice) === 'pt-br')
+    ?? voices.find((voice) => language(voice).startsWith('pt'))
     ?? null;
 }
 
-export function createBrowserSpeechTtsProvider({ runtime = globalThis } = {}) {
+export function createBrowserSpeechTtsProvider({ runtime = globalThis, voiceLoadTimeoutMs = 500 } = {}) {
   const speechSynthesis = runtime?.speechSynthesis;
   const Utterance = runtime?.SpeechSynthesisUtterance;
   let activeUtterance = null;
   let activeSettle = null;
+
+  function loadVoices() {
+    const currentVoices = speechSynthesis?.getVoices?.() ?? [];
+    if (currentVoices.length > 0 || !speechSynthesis) return Promise.resolve(currentVoices);
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let removeListener = () => {};
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        runtime.clearTimeout?.(timer);
+        removeListener();
+        resolve(speechSynthesis.getVoices?.() ?? []);
+      };
+      const handleVoicesChanged = () => finish();
+      const timer = runtime.setTimeout?.(finish, voiceLoadTimeoutMs);
+
+      if (speechSynthesis.addEventListener) {
+        speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged, { once: true });
+        removeListener = () => speechSynthesis.removeEventListener?.('voiceschanged', handleVoicesChanged);
+      } else {
+        const previousHandler = speechSynthesis.onvoiceschanged;
+        const handleLegacyVoicesChanged = (event) => {
+          previousHandler?.call(speechSynthesis, event);
+          finish();
+        };
+        speechSynthesis.onvoiceschanged = handleLegacyVoicesChanged;
+        removeListener = () => {
+          if (speechSynthesis.onvoiceschanged === handleLegacyVoicesChanged) {
+            speechSynthesis.onvoiceschanged = previousHandler ?? null;
+          }
+        };
+      }
+    });
+  }
 
   function isSupported() {
     return Boolean(speechSynthesis?.speak && speechSynthesis?.cancel && Utterance);
@@ -76,10 +114,11 @@ export function createBrowserSpeechTtsProvider({ runtime = globalThis } = {}) {
       );
     }
 
+    const voices = await loadVoices();
     const utterance = new Utterance(text);
     utterance.lang = 'pt-BR';
     utterance.volume = 1;
-    const voice = resolvePortugueseVoice(speechSynthesis);
+    const voice = resolvePortugueseVoice(voices);
     if (voice) utterance.voice = voice;
     activeUtterance = utterance;
 
