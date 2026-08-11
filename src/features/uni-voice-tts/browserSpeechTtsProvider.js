@@ -1,10 +1,12 @@
 import { VOICE_TTS_ERROR_CODES } from './voiceTtsStatus.js';
 
-function browserSpeechError(code, message) {
+function browserSpeechError(code, message, diagnostics = null) {
   return Object.assign(new Error(message ?? code), {
     code,
     retryable: false,
     providerStatus: null,
+    nativeError: diagnostics?.nativeError ?? null,
+    diagnostics,
   });
 }
 
@@ -23,8 +25,26 @@ export function createBrowserSpeechTtsProvider({ runtime = globalThis, voiceLoad
   let activeUtterance = null;
   let activeSettle = null;
 
+  function getVoices() {
+    return speechSynthesis?.getVoices?.() ?? [];
+  }
+
+  function buildDiagnostics({ voices = getVoices(), voice = null, nativeError = null } = {}) {
+    return Object.freeze({
+      supported: isSupported(),
+      voicesCount: voices.length,
+      selectedVoiceName: voice?.name ?? null,
+      selectedVoiceLanguage: voice?.lang ?? 'pt-BR',
+      selectedVoiceLocalService: typeof voice?.localService === 'boolean' ? voice.localService : null,
+      speaking: Boolean(speechSynthesis?.speaking),
+      pending: Boolean(speechSynthesis?.pending),
+      paused: Boolean(speechSynthesis?.paused),
+      nativeError,
+    });
+  }
+
   function loadVoices() {
-    const currentVoices = speechSynthesis?.getVoices?.() ?? [];
+    const currentVoices = getVoices();
     if (currentVoices.length > 0 || !speechSynthesis) return Promise.resolve(currentVoices);
 
     return new Promise((resolve) => {
@@ -35,7 +55,7 @@ export function createBrowserSpeechTtsProvider({ runtime = globalThis, voiceLoad
         settled = true;
         runtime.clearTimeout?.(timer);
         removeListener();
-        resolve(speechSynthesis.getVoices?.() ?? []);
+        resolve(getVoices());
       };
       const handleVoicesChanged = () => finish();
       const timer = runtime.setTimeout?.(finish, voiceLoadTimeoutMs);
@@ -105,39 +125,54 @@ export function createBrowserSpeechTtsProvider({ runtime = globalThis, voiceLoad
     if (activeUtterance) speechSynthesis?.resume?.();
   }
 
-  async function speak(text, { onPlaying, onEnded, onError } = {}) {
+  function startSpeaking(text, voices, { onPlaying, onEnded, onError, onDiagnostic } = {}) {
     stop();
     if (!isSupported()) {
       throw browserSpeechError(
         VOICE_TTS_ERROR_CODES.BROWSER_FALLBACK_UNAVAILABLE,
         'browser_speech_unavailable',
+        buildDiagnostics({ voices }),
       );
     }
 
-    const voices = await loadVoices();
     const utterance = new Utterance(text);
     utterance.lang = 'pt-BR';
     utterance.volume = 1;
     const voice = resolvePortugueseVoice(voices);
     if (voice) utterance.voice = voice;
     activeUtterance = utterance;
+    onDiagnostic?.({ stage: 'before_speak', ...buildDiagnostics({ voices, voice }) });
 
     return new Promise((resolve, reject) => {
       activeSettle = { resolve, reject };
-      utterance.onstart = () => onPlaying?.();
+      utterance.onstart = () => {
+        onDiagnostic?.({ stage: 'start', ...buildDiagnostics({ voices, voice }) });
+        onPlaying?.();
+      };
       utterance.onend = () => {
+        onDiagnostic?.({ stage: 'end', ...buildDiagnostics({ voices, voice }) });
         activeSettle = null;
         clearActiveUtterance();
         onEnded?.();
-        resolve({ providerName: 'browser_speech_tts' });
+        resolve({
+          providerName: 'browser_speech_tts',
+          voice: Object.freeze({
+            name: voice?.name ?? null,
+            lang: voice?.lang ?? 'pt-BR',
+            localService: typeof voice?.localService === 'boolean' ? voice.localService : null,
+          }),
+        });
       };
       utterance.onerror = (event) => {
         activeSettle = null;
         clearActiveUtterance();
+        const nativeError = String(event?.error ?? 'browser_speech_failed');
+        const diagnostics = buildDiagnostics({ voices, voice, nativeError });
+        onDiagnostic?.({ stage: 'error', ...diagnostics });
         const code = event?.error === 'not-allowed'
           ? VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED
           : VOICE_TTS_ERROR_CODES.BROWSER_FALLBACK_ERROR;
-        const error = browserSpeechError(code, event?.error ?? 'browser_speech_failed');
+        const error = browserSpeechError(code, nativeError, diagnostics);
         onError?.(error);
         reject(error);
       };
@@ -150,11 +185,28 @@ export function createBrowserSpeechTtsProvider({ runtime = globalThis, voiceLoad
         const error = browserSpeechError(
           VOICE_TTS_ERROR_CODES.BROWSER_FALLBACK_ERROR,
           cause?.message ?? 'browser_speech_failed',
+          buildDiagnostics({ voices, voice, nativeError: cause?.name ?? 'speak_threw' }),
         );
         onError?.(error);
         reject(error);
       }
     });
+  }
+
+  async function speak(text, callbacks = {}) {
+    const voices = await loadVoices();
+    return startSpeaking(text, voices, callbacks);
+  }
+
+  // Chrome mobile exige que speak() aconteca no mesmo stack do clique.
+  // Neste caminho nao existe await antes de speechSynthesis.speak(). Se as
+  // vozes ainda nao carregaram, lang=pt-BR deixa o sistema escolher a voz e
+  // voiceschanged fica disponivel para as proximas falas.
+  function speakFromUserGesture(text, callbacks = {}) {
+    // Limpa qualquer fila nativa residual, inclusive uma fala criada por uma
+    // instancia anterior do provider. O novo speak continua no mesmo stack.
+    speechSynthesis?.cancel?.();
+    return startSpeaking(text, getVoices(), callbacks);
   }
 
   return {
@@ -163,6 +215,7 @@ export function createBrowserSpeechTtsProvider({ runtime = globalThis, voiceLoad
     healthCheck,
     preparePlayback,
     speak,
+    speakFromUserGesture,
     play,
     pause,
     resume,

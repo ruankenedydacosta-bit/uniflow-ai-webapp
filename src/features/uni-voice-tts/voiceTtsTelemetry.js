@@ -65,6 +65,37 @@ export function recordVoiceTtsTelemetry(event, {
   return safeEvent;
 }
 
+export function recordBrowserSpeechDiagnostic(diagnostic, {
+  env = import.meta.env ?? {},
+  logger = console.info,
+} = {}) {
+  const nativePreviewEnabled = String(env.VITE_UNI_VOICE_NATIVE_TTS_ENABLED ?? '').toLowerCase() === 'true';
+  if ((!env.DEV && !nativePreviewEnabled) || typeof logger !== 'function') return null;
+
+  const safeDiagnostic = Object.freeze({
+    stage: typeof diagnostic?.stage === 'string' ? diagnostic.stage : 'unknown',
+    supported: Boolean(diagnostic?.supported),
+    voicesCount: Number.isInteger(diagnostic?.voicesCount) ? diagnostic.voicesCount : 0,
+    selectedVoiceName: typeof diagnostic?.selectedVoiceName === 'string'
+      ? diagnostic.selectedVoiceName.slice(0, 80)
+      : null,
+    selectedVoiceLanguage: typeof diagnostic?.selectedVoiceLanguage === 'string'
+      ? diagnostic.selectedVoiceLanguage.slice(0, 16)
+      : null,
+    selectedVoiceLocalService: typeof diagnostic?.selectedVoiceLocalService === 'boolean'
+      ? diagnostic.selectedVoiceLocalService
+      : null,
+    speaking: Boolean(diagnostic?.speaking),
+    pending: Boolean(diagnostic?.pending),
+    paused: Boolean(diagnostic?.paused),
+    nativeError: typeof diagnostic?.nativeError === 'string'
+      ? diagnostic.nativeError.slice(0, 80)
+      : null,
+  });
+  logger('[Uni Voice Native]', safeDiagnostic);
+  return safeDiagnostic;
+}
+
 export function resetVoiceTtsRequestSequenceForTests() {
   requestSequence = 0;
 }

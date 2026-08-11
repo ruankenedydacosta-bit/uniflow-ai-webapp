@@ -77,6 +77,32 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
     }
   }
 
+  function speakFromUserGesture(text, callbacks) {
+    if (!policy.forceBrowserTts || typeof browserProvider.speakFromUserGesture !== 'function') {
+      return null;
+    }
+
+    stop();
+    activeProvider = browserProvider;
+    callbacks?.onProviderEvent?.({ provider: 'browser', status: 'requested', fallbackUsed: true });
+    const speaking = browserProvider.speakFromUserGesture(text, callbacks);
+    return Promise.resolve(speaking).then(
+      (result) => {
+        callbacks?.onProviderEvent?.({ provider: 'browser', status: 'success', fallbackUsed: true });
+        return result;
+      },
+      (error) => {
+        callbacks?.onProviderEvent?.({
+          provider: 'browser',
+          status: 'error',
+          fallbackUsed: true,
+          errorCode: error?.code ?? null,
+        });
+        throw error;
+      },
+    );
+  }
+
   function play() {
     return activeProvider?.play() ?? false;
   }
@@ -99,6 +125,7 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
     healthCheck,
     preparePlayback,
     speak,
+    speakFromUserGesture,
     play,
     pause,
     resume,

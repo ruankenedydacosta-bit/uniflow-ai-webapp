@@ -19,7 +19,7 @@ function providerError(code) {
 }
 
 function createProviderDouble({ supported = true, result = 'success', name = 'provider' } = {}) {
-  const calls = { speak: 0, stop: 0, pause: 0, resume: 0, cancel: 0, texts: [] };
+  const calls = { speak: 0, directSpeak: 0, stop: 0, pause: 0, resume: 0, cancel: 0, texts: [] };
   return {
     calls,
     providerName: name,
@@ -35,6 +35,15 @@ function createProviderDouble({ supported = true, result = 'success', name = 'pr
       return result && typeof result === 'object'
         ? result
         : { providerName: name };
+    },
+    speakFromUserGesture: (text, callbacks = {}) => {
+      calls.directSpeak += 1;
+      calls.texts.push(text);
+      if (typeof result === 'function') return result({ text, callbacks, calls });
+      if (result instanceof Error) return Promise.reject(result);
+      callbacks.onPlaying?.();
+      callbacks.onEnded?.();
+      return Promise.resolve({ providerName: name });
     },
     play: () => false,
     pause: () => { calls.pause += 1; },
@@ -358,6 +367,39 @@ test('DEV com fallback forcado nao chama ElevenLabs', async () => {
   assert.equal(browser.calls.speak, 1);
 });
 
+test('retry nativo chama speechSynthesis no mesmo stack do gesto e nunca chama ElevenLabs', async () => {
+  let userActivation = true;
+  const primary = createProviderDouble();
+  const browserRuntime = createBrowserRuntime();
+  const originalSpeak = browserRuntime.runtime.speechSynthesis.speak;
+  browserRuntime.runtime.speechSynthesis.speak = (utterance) => {
+    assert.equal(userActivation, true);
+    originalSpeak(utterance);
+  };
+  const browser = createBrowserSpeechTtsProvider({ runtime: browserRuntime.runtime });
+  const provider = createFallbackVoiceTtsProvider({
+    primaryProvider: primary,
+    browserProvider: browser,
+    policy: { browserFallbackAllowed: true, forceBrowserTts: true },
+  });
+
+  const speaking = provider.speakFromUserGesture('Olá');
+  userActivation = false;
+  await speaking;
+  assert.equal(primary.calls.speak, 0);
+});
+
+test('retry nativo fala imediatamente mesmo antes de voiceschanged', async () => {
+  const browser = createBrowserRuntime({ initialVoices: [] });
+  const provider = createBrowserSpeechTtsProvider({ runtime: browser.runtime });
+  const speaking = provider.speakFromUserGesture('Olá');
+  assert.equal(browser.calls.speak, 1);
+  assert.equal(browser.calls.cancel, 1);
+  await speaking;
+  assert.equal(browser.calls.utterances[0].voice, null);
+  assert.equal(browser.calls.utterances[0].lang, 'pt-BR');
+});
+
 test('producao sem autorizacao mantem ElevenLabs e nao usa fallback apos quota', async () => {
   const browser = createProviderDouble({ name: 'browser_speech_tts' });
   const provider = createFallbackVoiceTtsProvider({
@@ -420,6 +462,21 @@ test('Web Speech indisponivel e falha do navegador sao erros distintos', async (
   const { runtime } = createBrowserRuntime({ error: 'synthesis-failed' });
   const failing = createBrowserSpeechTtsProvider({ runtime });
   await assert.rejects(failing.speak('Olá'), { code: 'BROWSER_FALLBACK_ERROR' });
+});
+
+test('Web Speech preserva o erro nativo e o estado seguro do sintetizador', async () => {
+  const { runtime } = createBrowserRuntime({ error: 'not-allowed' });
+  const diagnostics = [];
+  const error = await createBrowserSpeechTtsProvider({ runtime })
+    .speakFromUserGesture('Olá', { onDiagnostic: (event) => diagnostics.push(event) })
+    .catch((caught) => caught);
+  assert.equal(error.code, VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED);
+  assert.equal(error.nativeError, 'not-allowed');
+  assert.equal(error.diagnostics.selectedVoiceLanguage, 'pt-BR');
+  assert.equal(typeof error.diagnostics.speaking, 'boolean');
+  assert.equal(typeof error.diagnostics.pending, 'boolean');
+  assert.equal(typeof error.diagnostics.paused, 'boolean');
+  assert.equal(diagnostics.at(-1).stage, 'error');
 });
 
 test('nova fala cancela a anterior e evita sobreposicao', async () => {

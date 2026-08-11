@@ -8,7 +8,11 @@ import { createFallbackVoiceTtsProvider } from './fallbackVoiceTtsProvider.js';
 import { resolveVoiceFallbackPolicy } from './voiceFallbackPolicy.js';
 import { MAX_TTS_TEXT_LENGTH } from './voiceTtsConfig.js';
 import { VOICE_TTS_STATUS, VOICE_TTS_ERROR_CODES, getVoiceTtsErrorMessage } from './voiceTtsStatus.js';
-import { createVoiceTtsRequestContext, recordVoiceTtsTelemetry } from './voiceTtsTelemetry.js';
+import {
+  createVoiceTtsRequestContext,
+  recordBrowserSpeechDiagnostic,
+  recordVoiceTtsTelemetry,
+} from './voiceTtsTelemetry.js';
 import { telemetry } from '../observability/index.js';
 import { createVoiceTtsRequestOwnership } from './voiceTtsRequestOwnership.js';
 
@@ -141,13 +145,7 @@ export function useUniVoiceTts() {
     }
 
     try {
-      if (
-        (requestMetadata.userInitiated || requestMetadata.source === 'manual_replay')
-        && !requestMetadata.playbackPreparationAttempted
-      ) {
-        await preparePlayback();
-      }
-      await provider.speak(sanitized, {
+      const callbacks = {
         onPlaying: () => {
           if (isCurrentRequest()) setStatus(VOICE_TTS_STATUS.PLAYING);
         },
@@ -155,7 +153,23 @@ export function useUniVoiceTts() {
           if (isCurrentRequest()) setStatus(VOICE_TTS_STATUS.STOPPED);
         },
         onProviderEvent: recordProviderEvent,
-      });
+        onDiagnostic: recordBrowserSpeechDiagnostic,
+      };
+      const userInitiated = Boolean(
+        requestMetadata.userInitiated || requestMetadata.source === 'manual_replay'
+      );
+      const directSpeech = userInitiated
+        ? provider.speakFromUserGesture?.(sanitized, callbacks)
+        : null;
+
+      if (directSpeech) {
+        await directSpeech;
+      } else {
+        if (userInitiated && !requestMetadata.playbackPreparationAttempted) {
+          await preparePlayback();
+        }
+        await provider.speak(sanitized, callbacks);
+      }
       void telemetry.metric('voice.latency_ms', {
         value: Math.max(0, Date.now() - voiceStartedAt),
         unit: 'ms',
