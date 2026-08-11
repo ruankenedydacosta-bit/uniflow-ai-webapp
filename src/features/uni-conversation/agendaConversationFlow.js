@@ -20,6 +20,7 @@ import {
   getOrCreateAgendaOperation,
 } from '../../services/agendaOperationStore.js';
 import { AGENDA_IDEMPOTENCY_ENABLED } from '../../services/agendaIdempotencyConfig.js';
+import { AGENDA_CONTEXTUAL_FOLLOWUP_ENABLED } from './agendaConversationConfig.js';
 
 const AGENDA_INTENTS = new Set([
   'agenda_reminder_create',
@@ -794,8 +795,10 @@ function hasExplicitDayPeriod(normalized) {
 }
 
 function isPeriodAmbiguous(time, normalized) {
-  if (!time || hasExplicitDayPeriod(normalized) || hasExplicitClockMarker(normalized)) return false;
+  if (!time || hasExplicitDayPeriod(normalized)) return false;
   const hours = Number(time.slice(0, 2));
+  const shortClockWithMinutes = /\b(?:as|das|para)\s+[1-9](?:h|:)\s*\d{2}\b/.test(normalized);
+  if (hasExplicitClockMarker(normalized) && !shortClockWithMinutes) return false;
   return hours >= 1 && hours <= 12;
 }
 
@@ -1154,6 +1157,18 @@ function extractTitle(text, temporalAnalysis = null) {
   return normalized || null;
 }
 
+function normalizeCreationTitle(value) {
+  const normalized = String(value ?? '')
+    .replace(/^\s*(?:marque|marcar|agendo|agendar|crie|coloca|coloque)\s+(?:ai\s+)?(?:na\s+agenda\s+)?/, '')
+    .replace(/\b(?:para|pra)\s+mim\b/g, ' ')
+    .replace(/^\s*(?:e\s+)?(?:uma|um|a|o)\s+/, '')
+    .replace(/^\s*e\s+/, '')
+    .replace(/\s+(?:as|a)\s*$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return normalized || null;
+}
+
 function capitalizeSentence(value) {
   return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : null;
 }
@@ -1161,14 +1176,19 @@ function capitalizeSentence(value) {
 function extractAgendaContent(text, temporalAnalysis = null) {
   const normalized = normalizeFinancialText(text);
   const purpose = normalized.match(
-    /\bpara\s+(falar\s+sobre|levar)\s+(.+?)(?=\s+(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2}|as\s+|umas\s+|\d{1,2}(?:[:h]))|[.!?]?$)/,
+    /\bpara\s+(falar\s+sobre|conversar\s+sobre|discutir|tratar\s+de|levar)\s+(.+?)(?=\s+(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2}|as\s+|umas\s+|\d{1,2}(?:[:h]))|[.!?]?$)/,
   );
-  if (!purpose) return { title: extractTitle(text, temporalAnalysis), description: null };
+  if (!purpose) {
+    return {
+      title: normalizeCreationTitle(extractTitle(text, temporalAnalysis)),
+      description: null,
+    };
+  }
 
-  const title = extractTitle(text, temporalAnalysis)
+  const title = normalizeCreationTitle(extractTitle(text, temporalAnalysis)
     ?.replace(purpose[0], ' ')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim());
   return {
     title: title || null,
     description: capitalizeSentence(`${purpose[1]} ${purpose[2]}`.trim()),
@@ -1325,7 +1345,7 @@ function toStartIso(date, time, allDay) {
 function applyDayPeriod(time, period) {
   const [rawHours, minutes] = time.split(':').map(Number);
   let hours = rawHours;
-  if (period === 'manha' && hours === 12) hours = 0;
+  if ((period === 'manha' || period === 'madrugada') && hours === 12) hours = 0;
   if ((period === 'tarde' || period === 'noite') && hours < 12) hours += 12;
   if (period === 'noite' && hours === 12) hours = 0;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -1333,7 +1353,7 @@ function applyDayPeriod(time, period) {
 
 function periodOnlyValue(normalized) {
   const match = normalized.match(
-    /^(?:(?:da|de|pela|a)\s+(manha|tarde|noite))$/,
+    /^(?:(?:da|de|pela|a)\s+(madrugada|manha|tarde|noite))$/,
   );
   return match?.[1] ?? null;
 }
@@ -1352,8 +1372,21 @@ function ambiguityPrompt(time) {
   const hours = Number(time.slice(0, 2));
   const label = clockLabel(time);
   if (hours === 12) return 'Você quer ao meio-dia ou à meia-noite?';
+  const firstPeriod = hours <= 5 ? 'madrugada' : 'manhã';
   const laterPeriod = hours <= 5 ? 'tarde' : 'noite';
-  return `Você quer às ${label} da manhã ou às ${label} da ${laterPeriod}?`;
+  return `Você quer às ${label} da ${firstPeriod} ou às ${label} da ${laterPeriod}?`;
+}
+
+function isObservationDeclined(normalized) {
+  return /^(?:nao|sem\s+observacao|nao\s+precisa|pode\s+salvar|so\s+isso|nenhuma)[.!]?$/.test(normalized);
+}
+
+function extractObservationReply(text) {
+  const normalized = normalizeFinancialText(text);
+  const explicit = normalized.match(/^(?:sim|claro|pode\s+ser)[,;:]?\s+(.+)$/)?.[1]?.trim();
+  if (explicit) return capitalizeSentence(explicit.replace(/[.!?]+$/, '').trim());
+  if (/^(?:sim|claro|pode\s+ser)[.!]?$/.test(normalized)) return null;
+  return capitalizeSentence(normalized.replace(/[.!?]+$/, '').trim()) || null;
 }
 
 function configureAmbiguousTime(fields, time, referenceDate, currentDate) {
@@ -1507,6 +1540,7 @@ export function createAgendaConversationFlow({
   createOperationId = createAgendaClientOperationId,
   idempotencyEnabled = AGENDA_IDEMPOTENCY_ENABLED,
   operationStorage,
+  observationFollowupEnabled = AGENDA_CONTEXTUAL_FOLLOWUP_ENABLED,
   now = () => new Date(),
   operationStore = {
     getOrCreate: getOrCreateAgendaOperation,
@@ -1575,7 +1609,7 @@ export function createAgendaConversationFlow({
     }
     if (active.type === PENDING_TYPES.CREATE) {
       if (!['agenda_reminder_create', 'agenda_schedule_create'].includes(classification.intent)) return true;
-      const candidateTitle = extractTitle(text);
+      const candidateTitle = extractAgendaContent(text).title;
       const candidateDate = resolveAgendaDate(text, referenceDate);
       return Boolean(
         (candidateTitle && active.fields.title && candidateTitle !== active.fields.title)
@@ -1716,6 +1750,28 @@ export function createAgendaConversationFlow({
 
     if (active.type === PENDING_TYPES.CREATE) {
       const fields = { ...active.fields };
+      if (fields.pendingField === 'observation') {
+        if (isObservationDeclined(normalized)) {
+          fields.observationResolved = true;
+        } else {
+          const observation = extractObservationReply(text);
+          if (!observation) {
+            const awaiting = updatePendingAction(stack, active.id, {
+              fields: { ...fields, awaitingObservationText: true },
+            });
+            setStack(identity, awaiting.stack);
+            return { handled: true, text: `Qual observação você quer adicionar a ${fields.title}?` };
+          }
+          fields.description = observation;
+          fields.observationResolved = true;
+        }
+        fields.pendingField = null;
+        fields.awaitingObservationText = false;
+        const result = await createItem(identity, fields);
+        if (result.error) return { handled: true, text: serviceErrorText(result.error) };
+        finishPending(identity, active, result.data);
+        return { handled: true, text: successText('create', result.data) };
+      }
       let timeAnalysis = analyzeAgendaTime(text, { allowContextual: true });
       const normalizedTimeReply = normalizeTimeReply(text);
       const periodResolvedTime = fields.ambiguousTime
@@ -1753,7 +1809,7 @@ export function createAgendaConversationFlow({
         fields.ambiguousTime = null;
         fields.suggestedTime = null;
       } else if (noTime) {
-        fields.allDay = false;
+        fields.allDay = observationFollowupEnabled;
         fields.hasExplicitTime = false;
         fields.timeChoiceResolved = true;
         fields.time = null;
@@ -1800,6 +1856,13 @@ export function createAgendaConversationFlow({
       if (!fields.timeChoiceResolved) {
         if (fields.ambiguousTime) return { handled: true, text: ambiguityPrompt(fields.ambiguousTime) };
         return { handled: true, text: 'Quer colocar um horário ou deixo como compromisso do dia?' };
+      }
+
+      if (observationFollowupEnabled && !fields.description && !fields.observationResolved) {
+        fields.pendingField = 'observation';
+        const followup = updatePendingAction(updated.stack, updated.action.id, { fields });
+        setStack(identity, followup.stack);
+        return { handled: true, text: `Certo. Quer adicionar alguma observação a ${fields.title}?` };
       }
 
       const result = await createItem(identity, fields);
@@ -1999,6 +2062,12 @@ export function createAgendaConversationFlow({
         fields.time = null;
         fields.hasExplicitTime = false;
       }
+      if (observationFollowupEnabled && !fields.hasExplicitTime && !timeAnalysis.blocked) {
+        fields.allDay = true;
+        fields.time = null;
+        fields.hasExplicitTime = false;
+        fields.timeChoiceResolved = true;
+      }
       const ambiguityQuestion = timeAnalysis.ambiguousPeriod
         ? configureAmbiguousTime(fields, timeAnalysis.time, referenceDate, now())
         : null;
@@ -2010,6 +2079,11 @@ export function createAgendaConversationFlow({
         if (!fields.date) return { handled: true, text: `Em qual dia você quer marcar ${fields.title}?` };
         if (ambiguityQuestion) return { handled: true, text: ambiguityQuestion };
         return { handled: true, text: 'Quer colocar um horário ou deixo como compromisso do dia?' };
+      }
+      if (observationFollowupEnabled && !fields.description) {
+        fields.pendingField = 'observation';
+        await startPending(identity, PENDING_TYPES.CREATE, fields);
+        return { handled: true, text: `Certo. Quer adicionar alguma observação a ${fields.title}?` };
       }
       const result = await createItem(identity, fields);
       return result.error

@@ -113,7 +113,7 @@ function detectAgendaIntent(normalizedText) {
   //    "tenho um compromisso amanhã" também contém "compromisso amanhã"
   //    (padrão de consulta).
   if (has([
-    /\b(?:marcar|agendar|agenda|criar)\s+(?:(?:uma|um|a|as|o|os)\s+)?(?:reuniao|compromisso|evento|consulta|agenda)\b/,
+    /\b(?:marcar|marca|marque|agendar|agende|agendo|agenda|criar|crie|colocar|coloque)\s+(?:(?:uma|um|a|as|o|os)\s+)?(?:reuniao|compromisso|evento|consulta|agenda)\b/,
     /\b(?:eu\s+)?(?:tenho|tive|vou\s+ter)\s+(?:uma\s+|um\s+)?(?:reuniao|compromisso|consulta|evento)\b/,
     /\b(?:reuniao|compromisso|consulta|evento)\b[^.!?]*\b(?:daqui\s+a|daqui|em)\s*\d+\s*(?:dia|dias|semana|semanas|mes|meses|ano|anos)\b/,
     /^agenda\s+(?!de\b)(?:hoje|amanha|depois\s+de\s+amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/,

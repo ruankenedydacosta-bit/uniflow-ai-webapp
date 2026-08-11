@@ -236,3 +236,16 @@ test('comando explícito Agenda aceita assunto livre antes da data', () => {
     'agenda_schedule_create',
   );
 });
+
+for (const input of [
+  'Agenda uma reunião amanhã às 10.',
+  'Agende uma reunião amanhã às 10.',
+  'Agendo uma reunião amanhã às 10.',
+  'Marca uma reunião amanhã às 10.',
+  'Marque uma reunião amanhã às 10.',
+  'Crie um compromisso amanhã às 10.',
+]) {
+  test(`variação de criação permanece no domínio Agenda: ${input}`, () => {
+    assert.equal(classifyIntent(input).intent, 'agenda_schedule_create');
+  });
+}
