@@ -80,7 +80,24 @@ test('unreadCount deriva de countUnread(notifications) -- fonte unica de contage
   assert.match(content, /unreadCount: countUnread\(notifications\),/);
 });
 
-test('nao usa Supabase Realtime -- so carregamento inicial + refresh manual', async () => {
+test('sincroniza compromissos vencidos antes de listar o sino', async () => {
+  const content = await source('useNotifications.js');
+  const syncIndex = content.indexOf('await syncDueAgendaNotifications(userId, workspaceId);');
+  const listIndex = content.indexOf('await listNotifications(userId, { workspaceId });');
+  assert.ok(syncIndex >= 0 && listIndex > syncIndex);
+});
+
+test('revalida na virada do minuto e ao retornar ao foreground com cleanup completo', async () => {
+  const content = await source('useNotifications.js');
+  assert.match(content, /getNextAgendaNotificationDelay\(\)/);
+  assert.match(content, /document\.addEventListener\('visibilitychange', handleForeground\)/);
+  assert.match(content, /window\.addEventListener\('focus', handleForeground\)/);
+  assert.match(content, /window\.clearTimeout\(minuteTimerId\)/);
+  assert.match(content, /scheduleGeneration \+= 1/);
+  assert.doesNotMatch(content, /setInterval/);
+});
+
+test('nao usa Supabase Realtime -- sincronizacao e pull permanecem controlados', async () => {
   const content = await source('useNotifications.js');
   assert.doesNotMatch(content, /\.channel\(|\.subscribe\(|realtime/i);
 });

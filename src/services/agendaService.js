@@ -215,6 +215,38 @@ export async function listAgendaItems(
   return createResult(data ?? [], error);
 }
 
+/**
+ * Lista itens agendados que ja chegaram ao horario para o usuario atual.
+ * Quando existe responsavel, somente ele recebe o lembrete; caso contrario,
+ * o lembrete pertence ao criador. O workspace permanece no filtro alem da
+ * protecao fornecida pela RLS.
+ */
+export async function listDueAgendaItemsForUser(workspaceId, userId, { dueAt } = {}) {
+  if (!supabase) {
+    return createUnavailableResult([]);
+  }
+
+  if (!isValidUuid(workspaceId) || !isValidUuid(userId) || !dueAt) {
+    return createValidationResult('Workspace, usuario ou vencimento invalido para lembretes.');
+  }
+
+  const dueAtDate = new Date(dueAt);
+  if (Number.isNaN(dueAtDate.getTime())) {
+    return createValidationResult('Vencimento invalido para lembretes.');
+  }
+
+  const { data, error } = await supabase
+    .from('agenda_items')
+    .select(getAgendaItemFields())
+    .eq('workspace_id', workspaceId)
+    .eq('status', 'scheduled')
+    .lte('starts_at', dueAtDate.toISOString())
+    .or(`assigned_user_id.eq.${userId},and(assigned_user_id.is.null,created_by.eq.${userId})`)
+    .order('starts_at', { ascending: true });
+
+  return createResult(data ?? [], error);
+}
+
 export async function getAgendaItem(workspaceId, itemId) {
   if (!supabase) {
     return createUnavailableResult(null);

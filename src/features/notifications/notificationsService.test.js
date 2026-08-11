@@ -40,6 +40,19 @@ test('listNotifications ordena por created_at desc e respeita limit', async () =
   assert.match(fnBody, /\.limit\(limit\)/);
 });
 
+test('deduplicacao de Agenda usa somente usuario, workspace e tipo agenda', async () => {
+  const content = await source('notificationsService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function listAgendaNotificationItemIds'),
+    content.indexOf('export async function markNotificationAsRead'),
+  );
+  assert.match(fnBody, /\.select\('metadata'\)/);
+  assert.match(fnBody, /\.eq\('user_id', userId\)/);
+  assert.match(fnBody, /\.eq\('workspace_id', workspaceId\)/);
+  assert.match(fnBody, /\.eq\('type', 'agenda'\)/);
+  assert.match(fnBody, /notification\.metadata\?\.agenda_item_id/);
+});
+
 test('markNotificationAsRead so atualiza a notificacao do proprio usuario (id + user_id)', async () => {
   const content = await source('notificationsService.js');
   const fnBody = content.slice(
@@ -79,7 +92,7 @@ test('createNotification sempre insere com o user_id recebido -- nunca cria noti
 test('todas as funcoes retornam cedo quando Supabase nao esta configurado, sem lancar excecao', async () => {
   const content = await source('notificationsService.js');
   const occurrences = content.match(/if \(!supabase\) return createUnavailableResult/g) ?? [];
-  assert.equal(occurrences.length, 4);
+  assert.equal(occurrences.length, 5);
 });
 
 test('retorna { data, error, isConfigured } -- mesmo contrato dos demais services do repositorio', async () => {

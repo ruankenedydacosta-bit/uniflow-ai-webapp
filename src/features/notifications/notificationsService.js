@@ -51,6 +51,28 @@ export async function listNotifications(userId, { workspaceId, limit = 50 } = {}
   return createResult(data ?? [], error);
 }
 
+/**
+ * Retorna compromissos que ja possuem notificacao materializada. O escopo
+ * inclui usuario, workspace e tipo para impedir deduplicacao cruzada.
+ */
+export async function listAgendaNotificationItemIds(userId, workspaceId) {
+  if (!supabase) return createUnavailableResult([]);
+  if (!userId) return createMissingUserResult();
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('metadata')
+    .eq('user_id', userId)
+    .eq('workspace_id', workspaceId)
+    .eq('type', 'agenda');
+
+  const itemIds = (data ?? [])
+    .map((notification) => notification.metadata?.agenda_item_id)
+    .filter((itemId) => typeof itemId === 'string' && itemId);
+
+  return createResult(itemIds, error);
+}
+
 export async function markNotificationAsRead(userId, notificationId) {
   if (!supabase) return createUnavailableResult(null);
   if (!userId) return createMissingUserResult();

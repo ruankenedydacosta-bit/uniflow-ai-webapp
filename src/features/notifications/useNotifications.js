@@ -6,6 +6,10 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
 } from './notificationsService.js';
+import {
+  getNextAgendaNotificationDelay,
+  syncDueAgendaNotifications,
+} from './agendaNotificationSync.js';
 import { countUnread } from './notificationFormatting.js';
 
 const EMPTY_LIST = [];
@@ -38,6 +42,7 @@ export function useNotifications() {
     }
 
     setIsLoading(true);
+    await syncDueAgendaNotifications(userId, workspaceId);
     const result = await listNotifications(userId, { workspaceId });
 
     if (requestId !== requestIdRef.current) return null;
@@ -57,6 +62,46 @@ export function useNotifications() {
     const timeoutId = window.setTimeout(() => refresh(), 0);
     return () => window.clearTimeout(timeoutId);
   }, [refresh]);
+
+  useEffect(() => {
+    if (!userId || !workspaceId) return undefined;
+
+    let minuteTimerId = null;
+    let disposed = false;
+    let scheduleGeneration = 0;
+
+    const scheduleNextMinute = (generation = scheduleGeneration) => {
+      if (disposed || generation !== scheduleGeneration) return;
+      minuteTimerId = window.setTimeout(async () => {
+        try {
+          if (document.visibilityState === 'visible') await refresh();
+        } finally {
+          scheduleNextMinute(generation);
+        }
+      }, getNextAgendaNotificationDelay());
+    };
+
+    const handleForeground = () => {
+      if (document.visibilityState !== 'visible') return;
+      scheduleGeneration += 1;
+      const generation = scheduleGeneration;
+      if (minuteTimerId) window.clearTimeout(minuteTimerId);
+      void refresh()
+        .catch(() => null)
+        .finally(() => scheduleNextMinute(generation));
+    };
+
+    scheduleNextMinute();
+    document.addEventListener('visibilitychange', handleForeground);
+    window.addEventListener('focus', handleForeground);
+    return () => {
+      disposed = true;
+      scheduleGeneration += 1;
+      if (minuteTimerId) window.clearTimeout(minuteTimerId);
+      document.removeEventListener('visibilitychange', handleForeground);
+      window.removeEventListener('focus', handleForeground);
+    };
+  }, [refresh, userId, workspaceId]);
 
   const markAsRead = useCallback(async (notificationId) => {
     if (!isSupabaseConfigured || !userId) return null;
