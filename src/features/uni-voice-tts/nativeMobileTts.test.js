@@ -16,6 +16,12 @@ test('retry manual tenta o caminho sincronico antes de qualquer preparePlayback 
   assert.ok(prepareIndex > directIndex);
 });
 
+test('hook central resolve o provider salvo no perfil para todos os consumidores', () => {
+  assert.match(hookSource, /const \{ user, profile \} = useSession\(\)/);
+  assert.match(hookSource, /resolveVoiceProvider\(profile\?\.voice_provider\)/);
+  assert.match(hookSource, /selectedProvider,/);
+});
+
 test('falha de TTS preserva a resposta textual e oferece retry manual', () => {
   assert.match(messageBubbleSource, /<SafeMarkdown className=\{styles\.text\}>\{resolvedText\}<\/SafeMarkdown>/);
   assert.match(messageBubbleSource, /isErrorVoice\s*\? 'Tentar novamente'/);

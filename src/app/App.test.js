@@ -324,6 +324,15 @@ test('SessionContext persiste conversationStyle e reflete a resposta imediatamen
   assert.match(session, /updateConversationStyle,/);
 });
 
+test('SessionContext persiste provider de voz e estilo de conversa em uma única preferência', async () => {
+  const session = await source('SessionContext.jsx');
+  assert.match(session, /const updateVoicePreferences = useCallback/);
+  assert.match(session, /conversation_style: conversationStyle/);
+  assert.match(session, /voice_provider: voiceProvider/);
+  assert.match(session, /voice_provider: resolveVoiceProvider\(result\.data\.voice_provider\)/);
+  assert.match(session, /updateVoicePreferences,/);
+});
+
 test('apresentação é protegida, standalone e anterior ao fallback final', async () => {
   const app = await source('App.jsx');
   const routes = await source('routes.jsx');

@@ -1,4 +1,5 @@
 import { VOICE_TTS_ERROR_CODES } from './voiceTtsStatus.js';
+import { VOICE_PROVIDER_IDS, isValidVoiceProvider } from './voiceProviderRegistry.js';
 
 const TRUE_VALUE = 'true';
 
@@ -32,17 +33,22 @@ export function parseVoiceTestUserIds(value) {
   );
 }
 
-export function resolveVoiceFallbackPolicy({ env = {}, userId = null } = {}) {
+export function resolveVoiceFallbackPolicy({ env = {}, userId = null, selectedProvider = null } = {}) {
   const isDevelopment = env.DEV === true;
   const nativeTtsEnabled = isEnabled(env.VITE_UNI_VOICE_NATIVE_TTS_ENABLED);
   const fallbackFlagEnabled = isEnabled(env.VITE_UNI_VOICE_DEV_FALLBACK_ENABLED);
   const authorizedUserIds = parseVoiceTestUserIds(env.VITE_UNI_VOICE_TEST_USER_IDS);
   const isAuthorizedTestUser = Boolean(userId && authorizedUserIds.includes(userId));
   const legacyBrowserFallbackAllowed = fallbackFlagEnabled && (isDevelopment || isAuthorizedTestUser);
-  const browserFallbackAllowed = nativeTtsEnabled || legacyBrowserFallbackAllowed;
-  const forceBrowserTts = nativeTtsEnabled || (
-    legacyBrowserFallbackAllowed && isEnabled(env.VITE_UNI_VOICE_FORCE_BROWSER_TTS)
-  );
+  const hasSelectedProvider = isValidVoiceProvider(selectedProvider);
+  const browserFallbackAllowed = hasSelectedProvider
+    ? true
+    : nativeTtsEnabled || legacyBrowserFallbackAllowed;
+  const forceBrowserTts = hasSelectedProvider
+    ? selectedProvider === VOICE_PROVIDER_IDS.NATIVE
+    : nativeTtsEnabled || (
+      legacyBrowserFallbackAllowed && isEnabled(env.VITE_UNI_VOICE_FORCE_BROWSER_TTS)
+    );
 
   return Object.freeze({
     browserFallbackAllowed,
@@ -51,6 +57,7 @@ export function resolveVoiceFallbackPolicy({ env = {}, userId = null } = {}) {
     nativeTtsEnabled,
     isDevelopment,
     isAuthorizedTestUser,
+    selectedProvider: hasSelectedProvider ? selectedProvider : null,
   });
 }
 

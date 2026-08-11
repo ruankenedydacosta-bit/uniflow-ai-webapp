@@ -7,6 +7,8 @@ const CONVERSATION_PROFILE_FIELDS = `${BASE_PROFILE_FIELDS}, conversation_style`
 const PROFILE_PREFERENCE_FIELDS =
   'preferred_name, treatment_preference, custom_treatment, birth_date, locale, text_size, avatar_path';
 const PROFILE_FIELDS = `${CONVERSATION_PROFILE_FIELDS}, ${PROFILE_PREFERENCE_FIELDS}`;
+const VOICE_PROVIDER_FIELD = 'voice_provider';
+const VOICE_PROFILE_FIELDS = `${PROFILE_FIELDS}, ${VOICE_PROVIDER_FIELD}`;
 
 const PROFILE_PREFERENCE_COLUMNS = PROFILE_PREFERENCE_FIELDS.split(', ');
 
@@ -36,6 +38,18 @@ export function isProfilePreferencesColumnMissing(error) {
     && PROFILE_PREFERENCE_COLUMNS.some((column) => message.includes(column))
   ) || (
     PROFILE_PREFERENCE_COLUMNS.some((column) => message.includes(column))
+    && ['does not exist', 'schema cache', 'could not find'].some((part) => message.includes(part))
+  );
+}
+
+export function isVoiceProviderColumnMissing(error) {
+  const code = String(error?.code ?? '');
+  const message = String(error?.message ?? '').toLowerCase();
+  return (
+    ['42703', 'PGRST204'].includes(code)
+    && message.includes(VOICE_PROVIDER_FIELD)
+  ) || (
+    message.includes(VOICE_PROVIDER_FIELD)
     && ['does not exist', 'schema cache', 'could not find'].some((part) => message.includes(part))
   );
 }
@@ -72,15 +86,7 @@ function createMissingUserResult() {
   };
 }
 
-export async function getProfile(userId) {
-  if (!supabase) {
-    return createUnavailableResult();
-  }
-
-  if (!userId) {
-    return createMissingUserResult();
-  }
-
+async function getProfileWithoutVoiceProvider(userId) {
   const profileResult = await supabase
     .from('profiles')
     .select(PROFILE_FIELDS)
@@ -127,6 +133,39 @@ export async function getProfile(userId) {
       error,
       isConfigured: true,
     };
+  }
+
+  return {
+    data: await hydrateProfileAvatar(profileResult.data),
+    error: profileResult.error,
+    isConfigured: true,
+  };
+}
+
+export async function getProfile(userId) {
+  if (!supabase) {
+    return createUnavailableResult();
+  }
+
+  if (!userId) {
+    return createMissingUserResult();
+  }
+
+  const profileResult = await supabase
+    .from('profiles')
+    .select(VOICE_PROFILE_FIELDS)
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (isVoiceProviderColumnMissing(profileResult.error)) {
+    return getProfileWithoutVoiceProvider(userId);
+  }
+
+  if (profileResult.error && (
+    isProfilePreferencesColumnMissing(profileResult.error)
+    || isConversationStyleColumnMissing(profileResult.error)
+  )) {
+    return getProfileWithoutVoiceProvider(userId);
   }
 
   return {
@@ -188,6 +227,7 @@ export async function updateProfile(userId, changes = {}) {
     locale: changes.locale,
     text_size: changes.text_size,
     avatar_path: changes.avatar_path,
+    voice_provider: changes.voice_provider,
   };
   const updatePayload = Object.fromEntries(
     Object.entries(allowedChanges).filter(([, value]) => value !== undefined),
@@ -201,12 +241,28 @@ export async function updateProfile(userId, changes = {}) {
   const updatesPreferences = PROFILE_PREFERENCE_COLUMNS.some(
     (column) => updatePayload[column] !== undefined,
   );
+  const updatesVoiceProvider = updatePayload.voice_provider !== undefined;
   const { data, error } = await supabase
     .from('profiles')
     .update(updatePayload)
     .eq('id', userId)
-    .select(updatesConversationStyle || updatesPreferences ? PROFILE_FIELDS : BASE_PROFILE_FIELDS)
+    .select(
+      updatesConversationStyle || updatesPreferences || updatesVoiceProvider
+        ? VOICE_PROFILE_FIELDS
+        : BASE_PROFILE_FIELDS,
+    )
     .maybeSingle();
+
+  if (updatesVoiceProvider && isVoiceProviderColumnMissing(error)) {
+    return {
+      data: null,
+      error: {
+        code: 'VOICE_PROVIDER_UNAVAILABLE',
+        message: 'A preferência de voz ainda não está disponível neste ambiente.',
+      },
+      isConfigured: true,
+    };
+  }
 
   if (updatesConversationStyle && isConversationStyleColumnMissing(error)) {
     return {

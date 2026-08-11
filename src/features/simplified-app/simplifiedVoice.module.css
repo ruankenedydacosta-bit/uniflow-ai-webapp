@@ -131,6 +131,11 @@
   font-weight: 700;
 }
 
+.optionTitle small[data-tier='elevenlabs'] {
+  background: rgba(124, 58, 237, .2);
+  color: #c4b5fd;
+}
+
 .radioMark {
   width: 22px;
   height: 22px;

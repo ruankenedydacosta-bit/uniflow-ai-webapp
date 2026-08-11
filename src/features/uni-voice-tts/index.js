@@ -2,6 +2,13 @@ export { createElevenLabsTtsProvider } from './elevenLabsTtsProvider.js';
 export { createBrowserSpeechTtsProvider } from './browserSpeechTtsProvider.js';
 export { createFallbackVoiceTtsProvider } from './fallbackVoiceTtsProvider.js';
 export {
+  VOICE_PROVIDER_IDS,
+  VOICE_PROVIDER_OPTIONS,
+  createVoiceProviderRegistry,
+  isValidVoiceProvider,
+  resolveVoiceProvider,
+} from './voiceProviderRegistry.js';
+export {
   parseVoiceTestUserIds,
   resolveVoiceFallbackPolicy,
   shouldUseBrowserFallback,

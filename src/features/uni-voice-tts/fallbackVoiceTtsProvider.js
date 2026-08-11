@@ -1,12 +1,33 @@
 import { shouldUseBrowserFallback } from './voiceFallbackPolicy.js';
+import {
+  VOICE_PROVIDER_IDS,
+  createVoiceProviderRegistry,
+  resolveVoiceProvider,
+} from './voiceProviderRegistry.js';
 
-export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvider, policy }) {
+export function createFallbackVoiceTtsProvider({
+  primaryProvider,
+  browserProvider,
+  policy,
+  selectedProvider = null,
+}) {
   let activeProvider = null;
+  const registry = createVoiceProviderRegistry({
+    native: browserProvider,
+    elevenlabs: primaryProvider,
+  });
+  const selectedProviderId = resolveVoiceProvider(
+    selectedProvider,
+    policy.forceBrowserTts ? VOICE_PROVIDER_IDS.NATIVE : VOICE_PROVIDER_IDS.ELEVENLABS,
+  );
+  const selectedVoiceProvider = registry.get(selectedProviderId);
+  const fallbackProvider = selectedProviderId === VOICE_PROVIDER_IDS.ELEVENLABS
+    ? registry.get(VOICE_PROVIDER_IDS.NATIVE)
+    : null;
 
   function isSupported() {
-    if (policy.forceBrowserTts) return browserProvider.isSupported();
-    return primaryProvider.isSupported()
-      || (policy.browserFallbackAllowed && browserProvider.isSupported());
+    return selectedVoiceProvider.isSupported()
+      || Boolean(policy.browserFallbackAllowed && fallbackProvider?.isSupported());
   }
 
   async function healthCheck() {
@@ -15,8 +36,11 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
       browserProvider.healthCheck(),
     ]);
     return {
-      available: policy.forceBrowserTts ? browser.available : primary.available || (policy.browserFallbackAllowed && browser.available),
+      available: selectedProviderId === VOICE_PROVIDER_IDS.NATIVE
+        ? browser.available
+        : primary.available || (policy.browserFallbackAllowed && browser.available),
       reason: null,
+      selectedProvider: selectedProviderId,
       primary,
       browser,
     };
@@ -29,8 +53,7 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
   }
 
   async function preparePlayback() {
-    if (policy.forceBrowserTts) return browserProvider.preparePlayback?.() ?? browserProvider.isSupported();
-    return primaryProvider.preparePlayback?.() ?? primaryProvider.isSupported();
+    return selectedVoiceProvider.preparePlayback?.() ?? selectedVoiceProvider.isSupported();
   }
 
   async function speak(text, callbacks) {
@@ -38,7 +61,7 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
 
     const notify = (event) => callbacks?.onProviderEvent?.(event);
 
-    if (policy.forceBrowserTts) {
+    if (selectedProviderId === VOICE_PROVIDER_IDS.NATIVE) {
       activeProvider = browserProvider;
       notify({ provider: 'browser', status: 'requested', fallbackUsed: true });
       try {
@@ -63,11 +86,11 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
       return result;
     } catch (error) {
       notify({ provider: 'elevenlabs', status: 'error', fallbackUsed: false });
-      if (!shouldUseBrowserFallback(error, policy) || !browserProvider.isSupported()) throw error;
-      activeProvider = browserProvider;
+      if (!shouldUseBrowserFallback(error, policy) || !fallbackProvider?.isSupported()) throw error;
+      activeProvider = fallbackProvider;
       notify({ provider: 'browser', status: 'requested', fallbackUsed: true });
       try {
-        const result = await browserProvider.speak(text, callbacks);
+        const result = await fallbackProvider.speak(text, callbacks);
         notify({ provider: 'browser', status: 'success', fallbackUsed: true });
         return result;
       } catch (fallbackError) {
@@ -78,7 +101,10 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
   }
 
   function speakFromUserGesture(text, callbacks) {
-    if (!policy.forceBrowserTts || typeof browserProvider.speakFromUserGesture !== 'function') {
+    if (
+      selectedProviderId !== VOICE_PROVIDER_IDS.NATIVE
+      || typeof browserProvider.speakFromUserGesture !== 'function'
+    ) {
       return null;
     }
 
@@ -121,6 +147,7 @@ export function createFallbackVoiceTtsProvider({ primaryProvider, browserProvide
 
   return {
     providerName: 'fallback_voice_tts',
+    selectedProvider: selectedProviderId,
     isSupported,
     healthCheck,
     preparePlayback,

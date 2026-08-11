@@ -269,20 +269,31 @@ test('SimplifiedAccountSubpagePlaceholder tem título, botão voltar (para /app/
   assert.match(placeholder, /<p>\{description\}<\/p>/);
 });
 
-test('Voz da Uni oferece somente simple, normal e detailed e salva pelo SessionContext', async () => {
+test('Voz da Uni oferece providers e estilos de conversa e salva pelo SessionContext', async () => {
   const page = await source('./SimplifiedVoicePage.jsx');
-  assert.match(page, /const \{ profile, updateConversationStyle \} = useSession\(\);/);
+  assert.match(page, /const \{ profile, updateVoicePreferences \} = useSession\(\);/);
+  assert.match(page, /VOICE_PROVIDER_OPTIONS/);
+  assert.match(page, /resolveVoiceProvider\(profile\?\.voice_provider\)/);
+  assert.match(page, /Estilo de voz/);
+  assert.match(page, /name="voice-provider"/);
   assert.match(page, /resolveConversationStyle\(profile\?\.conversation_style\)/);
   assert.match(page, /id: 'simple'/);
   assert.match(page, /id: 'normal'/);
   assert.match(page, /id: 'detailed'/);
-  assert.match(page, /await updateConversationStyle\(selectedStyle\)/);
+  assert.match(page, /await updateVoicePreferences\(\{/);
+  assert.match(page, /conversationStyle: selectedStyle/);
+  assert.match(page, /voiceProvider: selectedVoiceProvider/);
+  assert.ok(
+    page.indexOf('<legend>Estilo de voz</legend>')
+      < page.indexOf('<legend>Estilo de conversa</legend>'),
+  );
   assert.doesNotMatch(page, /supabase|fetch\s*\(|localStorage/);
 });
 
 test('Voz da Uni salva somente quando há alteração e mantém o estado anterior em falha', async () => {
   const page = await source('./SimplifiedVoicePage.jsx');
-  assert.match(page, /const hasChanges = selectedStyle !== activeStyle;/);
+  assert.match(page, /const hasChanges = selectedStyle !== activeStyle/);
+  assert.match(page, /selectedVoiceProvider !== activeVoiceProvider/);
   assert.match(page, /if \(!hasChanges \|\| isSaving\) return;/);
   assert.match(page, /Sua preferência anterior foi mantida\./);
   assert.match(page, /disabled=\{!hasChanges \|\| isSaving\}/);

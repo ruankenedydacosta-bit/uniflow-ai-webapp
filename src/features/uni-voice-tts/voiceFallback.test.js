@@ -7,6 +7,7 @@ import {
   resolveVoiceFallbackPolicy,
   shouldUseBrowserFallback,
 } from './voiceFallbackPolicy.js';
+import { VOICE_PROVIDER_IDS } from './voiceProviderRegistry.js';
 import { VOICE_TTS_ERROR_CODES } from './voiceTtsStatus.js';
 import {
   createVoiceTtsRequestContext,
@@ -130,8 +131,50 @@ test('producao sem flag nunca ativa fallback nem modo forcado', () => {
       nativeTtsEnabled: false,
       isDevelopment: false,
       isAuthorizedTestUser: false,
+      selectedProvider: null,
     },
   );
+});
+
+test('preferência native ignora ElevenLabs e mantém o caminho direto do gesto', async () => {
+  const primary = createProviderDouble();
+  const browser = createProviderDouble({ name: 'browser_speech_tts' });
+  const selectedProvider = VOICE_PROVIDER_IDS.NATIVE;
+  const policy = resolveVoiceFallbackPolicy({ selectedProvider });
+  const provider = createFallbackVoiceTtsProvider({
+    primaryProvider: primary,
+    browserProvider: browser,
+    policy,
+    selectedProvider,
+  });
+
+  await provider.speak('Resposta automática');
+  await provider.speakFromUserGesture('Ouvir novamente');
+
+  assert.equal(provider.selectedProvider, VOICE_PROVIDER_IDS.NATIVE);
+  assert.equal(primary.calls.speak, 0);
+  assert.equal(browser.calls.speak, 1);
+  assert.equal(browser.calls.directSpeak, 1);
+});
+
+test('preferência elevenlabs tenta o provider oficial e usa native uma única vez em quota', async () => {
+  const primary = createProviderDouble({ result: providerError('PROVIDER_QUOTA_ERROR') });
+  const browser = createProviderDouble({ name: 'browser_speech_tts' });
+  const selectedProvider = VOICE_PROVIDER_IDS.ELEVENLABS;
+  const policy = resolveVoiceFallbackPolicy({ selectedProvider });
+  const provider = createFallbackVoiceTtsProvider({
+    primaryProvider: primary,
+    browserProvider: browser,
+    policy,
+    selectedProvider,
+  });
+
+  const result = await provider.speak('Resposta da Uni');
+
+  assert.equal(provider.selectedProvider, VOICE_PROVIDER_IDS.ELEVENLABS);
+  assert.equal(result.providerName, 'browser_speech_tts');
+  assert.equal(primary.calls.speak, 1);
+  assert.equal(browser.calls.speak, 1);
 });
 
 test('flag nativa ativa Web Speech em Preview sem depender de DEV ou allowlist', () => {

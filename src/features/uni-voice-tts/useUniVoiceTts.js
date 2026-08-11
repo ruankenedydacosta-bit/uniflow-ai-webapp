@@ -15,6 +15,7 @@ import {
 } from './voiceTtsTelemetry.js';
 import { telemetry } from '../observability/index.js';
 import { createVoiceTtsRequestOwnership } from './voiceTtsRequestOwnership.js';
+import { resolveVoiceProvider } from './voiceProviderRegistry.js';
 
 function buildError(code, details = {}) {
   return Object.freeze({
@@ -36,7 +37,7 @@ function buildError(code, details = {}) {
  * remocao de markdown/dados sensiveis.
  */
 export function useUniVoiceTts() {
-  const { user } = useSession();
+  const { user, profile } = useSession();
   const [status, setStatus] = useState(VOICE_TTS_STATUS.IDLE);
   const [error, setError] = useState(null);
   const requestOwnershipRef = useRef(createVoiceTtsRequestOwnership());
@@ -51,12 +52,19 @@ export function useUniVoiceTts() {
       runtime,
     });
     const browserProvider = createBrowserSpeechTtsProvider({ runtime });
+    const selectedProvider = resolveVoiceProvider(profile?.voice_provider);
     const policy = resolveVoiceFallbackPolicy({
       env: import.meta.env,
       userId: user?.id ?? null,
+      selectedProvider,
     });
-    return createFallbackVoiceTtsProvider({ primaryProvider, browserProvider, policy });
-  }, [user?.id]);
+    return createFallbackVoiceTtsProvider({
+      primaryProvider,
+      browserProvider,
+      policy,
+      selectedProvider,
+    });
+  }, [profile?.voice_provider, user?.id]);
 
   // Cleanup ao desmontar: nunca deixa audio tocando nem Blob URL pendurada.
   useEffect(() => () => {
@@ -249,5 +257,6 @@ export function useUniVoiceTts() {
     stop,
     cancel,
     healthCheck: provider.healthCheck,
+    selectedProvider: provider.selectedProvider,
   };
 }

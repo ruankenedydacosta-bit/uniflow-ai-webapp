@@ -5,6 +5,11 @@ import {
   CONVERSATION_STYLES,
   resolveConversationStyle,
 } from '../uni-llm/conversationStyle.js';
+import {
+  VOICE_PROVIDER_OPTIONS,
+  isValidVoiceProvider,
+  resolveVoiceProvider,
+} from '../uni-voice-tts/voiceProviderRegistry.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedVoice.module.css';
 
@@ -37,17 +42,26 @@ function BackIcon() {
 
 function SimplifiedVoicePage() {
   const navigate = useNavigate();
-  const { profile, updateConversationStyle } = useSession();
+  const { profile, updateVoicePreferences } = useSession();
   const activeStyle = resolveConversationStyle(profile?.conversation_style);
+  const activeVoiceProvider = resolveVoiceProvider(profile?.voice_provider);
   const [selectedStyle, setSelectedStyle] = useState(activeStyle);
+  const [selectedVoiceProvider, setSelectedVoiceProvider] = useState(activeVoiceProvider);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  const hasChanges = selectedStyle !== activeStyle;
+  const hasChanges = selectedStyle !== activeStyle
+    || selectedVoiceProvider !== activeVoiceProvider;
 
   function handleSelect(style) {
     if (!CONVERSATION_STYLES.includes(style) || isSaving) return;
     setSelectedStyle(style);
+    setFeedback(null);
+  }
+
+  function handleVoiceProviderSelect(providerId) {
+    if (!isValidVoiceProvider(providerId) || isSaving) return;
+    setSelectedVoiceProvider(providerId);
     setFeedback(null);
   }
 
@@ -56,7 +70,10 @@ function SimplifiedVoicePage() {
     setIsSaving(true);
     setFeedback(null);
 
-    const result = await updateConversationStyle(selectedStyle);
+    const result = await updateVoicePreferences({
+      conversationStyle: selectedStyle,
+      voiceProvider: selectedVoiceProvider,
+    });
     setIsSaving(false);
 
     if (result.error) {
@@ -71,7 +88,7 @@ function SimplifiedVoicePage() {
 
     setFeedback({
       type: 'success',
-      message: 'Preferência salva. A Uni já usará este estilo nas próximas respostas.',
+      message: 'Preferências salvas. A Uni já usará esta voz nas próximas respostas.',
     });
   }
 
@@ -91,6 +108,33 @@ function SimplifiedVoicePage() {
           <p>Escolha como a Uni deve desenvolver as respostas.</p>
         </div>
       </header>
+
+      <fieldset className={styles.options} disabled={isSaving}>
+        <legend>Estilo de voz</legend>
+        {VOICE_PROVIDER_OPTIONS.map((option) => (
+          <label
+            key={option.id}
+            className={styles.option}
+            data-selected={selectedVoiceProvider === option.id}
+          >
+            <input
+              type="radio"
+              name="voice-provider"
+              value={option.id}
+              checked={selectedVoiceProvider === option.id}
+              onChange={() => handleVoiceProviderSelect(option.id)}
+            />
+            <span className={styles.optionCopy}>
+              <span className={styles.optionTitle}>
+                <strong>{option.title}</strong>
+                <small data-tier={option.id}>{option.badge}</small>
+              </span>
+              <span>{option.description}</span>
+            </span>
+            <span className={styles.radioMark} aria-hidden="true" />
+          </label>
+        ))}
+      </fieldset>
 
       <fieldset className={styles.options} disabled={isSaving}>
         <legend>Estilo de conversa</legend>
