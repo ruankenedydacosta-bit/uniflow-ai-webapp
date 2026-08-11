@@ -24,7 +24,7 @@ function PwaInstallExperience() {
   const platform = detectPwaInstallPlatform();
   const canOffer = PWA_INSTALL_ENABLED
     && !isStandaloneDisplay()
-    && !readPwaInstallCooldown(globalThis.localStorage)
+    && !readPwaInstallCooldown(globalThis.sessionStorage)
     && (platform === PWA_INSTALL_PLATFORM.IOS_SAFARI || Boolean(deferredPrompt));
 
   useEffect(() => subscribeToPwaInstallPrompt(setDeferredPrompt), []);
@@ -37,7 +37,7 @@ function PwaInstallExperience() {
   }, [canOffer]);
 
   function dismiss() {
-    persistPwaInstallCooldown(globalThis.localStorage);
+    persistPwaInstallCooldown(globalThis.sessionStorage);
     setIsVisible(false);
   }
 
@@ -46,7 +46,7 @@ function PwaInstallExperience() {
     setIsInstalling(true);
     const result = await requestCapturedPwaInstall();
     setIsInstalling(false);
-    if (result.outcome !== 'accepted') persistPwaInstallCooldown(globalThis.localStorage);
+    if (result.outcome !== 'accepted') persistPwaInstallCooldown(globalThis.sessionStorage);
     setIsVisible(false);
   }
 
@@ -60,12 +60,14 @@ function PwaInstallExperience() {
       </button>
       <div className={styles.icon} aria-hidden="true">↓</div>
       <div className={styles.content}>
-        <h2 id="pwa-install-title">Instalar a UniFlow AI</h2>
+        <span className={styles.eyebrow}>Acesso mais rápido</span>
+        <h2 id="pwa-install-title">Leve a UniFlow com você</h2>
         {isIos ? (
-          <p>No Safari, toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>.</p>
+          <p>Instale com segurança pelo Safari: toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>.</p>
         ) : (
-          <p>Tenha acesso mais rápido pela tela inicial do seu dispositivo.</p>
+          <p>Abra sua vida financeira com um toque, direto pela tela inicial do dispositivo.</p>
         )}
+        <small>Instalação segura pelo navegador, sem APK externo.</small>
       </div>
       {isIos ? (
         <button type="button" className={styles.secondaryButton} onClick={dismiss}>Entendi</button>

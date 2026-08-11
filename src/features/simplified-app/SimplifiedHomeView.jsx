@@ -9,6 +9,7 @@ import {
   useVoiceIntensity,
 } from '../uni-voice/index.js';
 import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
+import { PwaInstallExperience } from '../pwa-install/index.js';
 import { UniMark } from './SimplifiedIcons.jsx';
 import {
   isVoiceErrorState,
@@ -833,6 +834,7 @@ function SimplifiedHomeView({
         turnStartToken={turnStartToken}
         interpretingOperationHint={interpretingOperationHint}
       />
+      <PwaInstallExperience />
       <LightWave />
 
       <section className={styles.uniAction} aria-label="Conversar com a Uni">

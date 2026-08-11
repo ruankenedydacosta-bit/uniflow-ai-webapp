@@ -110,7 +110,7 @@ test('appinstalled remove qualquer prompt pendente', () => {
   assert.equal(getDeferredPwaInstallPrompt(), null);
 });
 
-test('UI é tardia, não modal, acessível e traz instrução específica do iOS', async () => {
+test('UI é tardia, não modal, acessível e traz instalação segura para Chrome e iOS', async () => {
   const [component, css] = await Promise.all([
     source('./PwaInstallExperience.jsx'),
     source('./PwaInstallExperience.module.css'),
@@ -118,22 +118,25 @@ test('UI é tardia, não modal, acessível e traz instrução específica do iOS
   assert.ok(PWA_INSTALL_INITIAL_DELAY_MS >= 1_000);
   assert.match(component, /Compartilhar/);
   assert.match(component, /Adicionar à Tela de Início/);
+  assert.match(component, /sem APK externo/);
   assert.match(component, /requestCapturedPwaInstall\(\)/);
   assert.match(component, /readPwaInstallCooldown/);
+  assert.match(component, /globalThis\.sessionStorage/);
   assert.match(component, /isStandaloneDisplay\(\)/);
   assert.match(component, /aria-labelledby="pwa-install-title"/);
   assert.doesNotMatch(component, /role="dialog"|aria-modal/);
-  assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(css, /prefers-reduced-motion: reduce/);
 });
 
-test('shell só oferece instalação na área Conta e captura global fica atrás da flag', async () => {
-  const [shell, main, config] = await Promise.all([
+test('Home oferece instalação dentro do fluxo e a Conta não mantém uma cópia paralela', async () => {
+  const [shell, home, main, config] = await Promise.all([
     source('../simplified-app/SimplifiedAppShell.jsx'),
+    source('../simplified-app/SimplifiedHomeView.jsx'),
     source('../../main.jsx'),
     source('./pwaInstallConfig.js'),
   ]);
-  assert.match(shell, /location\.pathname === SIMPLIFIED_ROUTES\.ACCOUNT \? <PwaInstallExperience \/> : null/);
+  assert.match(home, /<PwaInstallExperience \/>/);
+  assert.doesNotMatch(shell, /PwaInstallExperience/);
   assert.match(main, /initializePwaInstallCapture\(\)/);
   assert.match(config, /PWA_INSTALL_ENABLED = resolvePwaInstallEnabled\(import\.meta\.env\)/);
 });

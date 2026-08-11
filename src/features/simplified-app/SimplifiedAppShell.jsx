@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import NotificationsPanel from '../notifications/NotificationsPanel.jsx';
 import { useNotifications } from '../notifications/useNotifications.js';
-import { PwaInstallExperience } from '../pwa-install/index.js';
 import SimplifiedBottomNavigation from './SimplifiedBottomNavigation.jsx';
 import SimplifiedHeader from './SimplifiedHeader.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
@@ -193,7 +192,6 @@ function SimplifiedAppShell({ children }) {
         >
           {children}
         </main>
-        {location.pathname === SIMPLIFIED_ROUTES.ACCOUNT ? <PwaInstallExperience /> : null}
         <SimplifiedBottomNavigation />
       </div>
     </div>
