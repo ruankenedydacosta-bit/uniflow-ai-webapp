@@ -47,12 +47,13 @@ function SimplifiedAppShell({ children }) {
 
   const openNotifications = useCallback(() => {
     clearCloseTimer();
+    void refresh();
     setIsNotificationsRendered(true);
     openFrameRef.current = window.requestAnimationFrame(() => {
       setIsNotificationsOpen(true);
       openFrameRef.current = null;
     });
-  }, [clearCloseTimer]);
+  }, [clearCloseTimer, refresh]);
 
   const closeNotifications = useCallback(({ restoreFocus = true, immediate = false } = {}) => {
     clearCloseTimer();

@@ -85,7 +85,11 @@ test('cada item mostra tipo, data, titulo, mensagem e indicador de nao-lida (tod
   assert.match(content, /formatNotificationDate\(notification\.created_at\)/);
   assert.match(content, /<strong className=\{styles\.itemTitle\}>\{notification\.title\}<\/strong>/);
   assert.match(content, /notification\.message/);
-  assert.match(content, /unread \? <span className=\{styles\.unreadDot\}/);
+  assert.match(content, /className=\{styles\.itemStatus\}/);
+  assert.match(content, /unread \? <span className=\{styles\.unreadDot\} aria-hidden="true" \/>/);
+  const css = await source('NotificationsPanel.module.css');
+  const dotRule = css.slice(css.indexOf('.unreadDot {'));
+  assert.doesNotMatch(dotRule.slice(0, dotRule.indexOf('}')), /position:\s*absolute/);
 });
 
 test('item da lista e um <button type="button"> com aria-label indicando titulo e estado nao-lida -- acessivel por teclado', async () => {

@@ -64,7 +64,7 @@
   gap: var(--uf-space-4);
   width: 100%;
   padding: var(--uf-space-12) var(--uf-space-12) var(--uf-space-12) 52px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--uf-radius-8);
   background: transparent;
   color: var(--uf-color-text-primary);
@@ -99,7 +99,16 @@
 }
 
 .itemUnread {
-  background: var(--uf-color-ai-subtle);
+  border-color: color-mix(in srgb, var(--uf-color-ai) 30%, transparent);
+  background: color-mix(in srgb, var(--uf-color-ai-subtle) 86%, transparent);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--uf-color-ai) 72%, transparent);
+}
+
+.itemStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--uf-space-6);
+  min-width: 0;
 }
 
 .itemTop {
@@ -122,11 +131,10 @@
 }
 
 .unreadDot {
-  position: absolute;
-  top: var(--uf-space-12);
-  right: var(--uf-space-12);
-  width: var(--uf-space-8);
-  height: var(--uf-space-8);
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
   border-radius: var(--uf-radius-full, 999px);
-  background: var(--uf-color-danger);
+  background: var(--uf-color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--uf-color-success) 16%, transparent);
 }

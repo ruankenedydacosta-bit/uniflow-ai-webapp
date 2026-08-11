@@ -91,9 +91,13 @@ test('revalida na virada do minuto e ao retornar ao foreground com cleanup compl
   const content = await source('useNotifications.js');
   assert.match(content, /getNextAgendaNotificationDelay\(\)/);
   assert.match(content, /document\.addEventListener\('visibilitychange', handleForeground\)/);
+  assert.match(content, /document\.addEventListener\('resume', handleForeground\)/);
   assert.match(content, /window\.addEventListener\('focus', handleForeground\)/);
+  assert.match(content, /window\.addEventListener\('pageshow', handleForeground\)/);
+  assert.match(content, /window\.addEventListener\('online', handleForeground\)/);
   assert.match(content, /window\.clearTimeout\(minuteTimerId\)/);
   assert.match(content, /scheduleGeneration \+= 1/);
+  assert.match(content, /foregroundRefreshPromise/);
   assert.doesNotMatch(content, /setInterval/);
 });
 

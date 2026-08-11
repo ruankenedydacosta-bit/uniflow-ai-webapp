@@ -87,14 +87,16 @@ function NotificationsPanel({
                     {TYPE_ICONS[notification.type] ?? '•'}
                   </span>
                   <span className={styles.itemTop}>
-                    <span className={styles.itemType}>{getNotificationTypeLabel(notification.type)}</span>
+                    <span className={styles.itemStatus}>
+                      {unread ? <span className={styles.unreadDot} aria-hidden="true" /> : null}
+                      <span className={styles.itemType}>{getNotificationTypeLabel(notification.type)}</span>
+                    </span>
                     <span className={styles.itemDate}>{formatNotificationDate(notification.created_at)}</span>
                   </span>
                   <strong className={styles.itemTitle}>{notification.title}</strong>
                   {notification.message ? (
                     <span className={styles.itemMessage}>{notification.message}</span>
                   ) : null}
-                  {unread ? <span className={styles.unreadDot} aria-hidden="true" /> : null}
                 </button>
               </li>
             );

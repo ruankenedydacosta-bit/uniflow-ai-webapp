@@ -69,6 +69,7 @@ export function useNotifications() {
     let minuteTimerId = null;
     let disposed = false;
     let scheduleGeneration = 0;
+    let foregroundRefreshPromise = null;
 
     const scheduleNextMinute = (generation = scheduleGeneration) => {
       if (disposed || generation !== scheduleGeneration) return;
@@ -82,24 +83,33 @@ export function useNotifications() {
     };
 
     const handleForeground = () => {
-      if (document.visibilityState !== 'visible') return;
+      if (document.visibilityState !== 'visible' || foregroundRefreshPromise) return;
       scheduleGeneration += 1;
       const generation = scheduleGeneration;
       if (minuteTimerId) window.clearTimeout(minuteTimerId);
-      void refresh()
+      foregroundRefreshPromise = Promise.resolve(refresh())
         .catch(() => null)
-        .finally(() => scheduleNextMinute(generation));
+        .finally(() => {
+          foregroundRefreshPromise = null;
+          scheduleNextMinute(generation);
+        });
     };
 
     scheduleNextMinute();
     document.addEventListener('visibilitychange', handleForeground);
+    document.addEventListener('resume', handleForeground);
     window.addEventListener('focus', handleForeground);
+    window.addEventListener('pageshow', handleForeground);
+    window.addEventListener('online', handleForeground);
     return () => {
       disposed = true;
       scheduleGeneration += 1;
       if (minuteTimerId) window.clearTimeout(minuteTimerId);
       document.removeEventListener('visibilitychange', handleForeground);
+      document.removeEventListener('resume', handleForeground);
       window.removeEventListener('focus', handleForeground);
+      window.removeEventListener('pageshow', handleForeground);
+      window.removeEventListener('online', handleForeground);
     };
   }, [refresh, userId, workspaceId]);
 

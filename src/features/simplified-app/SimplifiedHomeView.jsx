@@ -620,6 +620,29 @@ function SimplifiedHomeView({
   // navigate aqui). Um único gesto rastreado por vez (pressedGestureRef)
   // evita disparo duplo entre pointerdown/keydown concorrentes.
   const pressedGestureRef = useRef(null);
+
+  // O navegador móvel pode suspender a página sem entregar pointerup ou
+  // lostpointercapture. Libera o gesto local quando a captura termina ou a
+  // página sai de primeiro plano para que o próximo toque nunca exija reload.
+  useEffect(() => {
+    if (!voiceInput.isActive) pressedGestureRef.current = null;
+  }, [voiceInput.isActive]);
+
+  useEffect(() => {
+    const releasePressedGesture = () => {
+      pressedGestureRef.current = null;
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') releasePressedGesture();
+    };
+
+    window.addEventListener('pagehide', releasePressedGesture);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', releasePressedGesture);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
   // HOTFIX P0.1: token monotônico que identifica um NOVO turno de voz --
   // incrementado só quando uma captura de verdade começa (plan.proceed &&
   // plan.startCapture), nunca num gesto rejeitado. CompactResponse usa a

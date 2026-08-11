@@ -581,6 +581,14 @@ test('HOTFIX FINAL: "Cancelar escuta" também libera pressedGestureRef (não é 
   assert.doesNotMatch(home, /onClick=\{voiceInput\.cancel\}/);
 });
 
+test('background ou fim da captura libera o gesto de voz preso sem exigir reload', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /if \(!voiceInput\.isActive\) pressedGestureRef\.current = null;/);
+  assert.match(home, /window\.addEventListener\('pagehide', releasePressedGesture\)/);
+  assert.match(home, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
+  assert.match(home, /window\.removeEventListener\('pagehide', releasePressedGesture\)/);
+});
+
 test('não inicia nova gravação durante o processamento (isInteractionBusy inclui capture busy/typing/executing)', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /const isCaptureBusy = \[\s*VOICE_CAPTURE_STATES\.REQUESTING_PERMISSION,\s*VOICE_CAPTURE_STATES\.PROCESSING,\s*\]\.includes\(voiceInput\.status\);/);
@@ -992,6 +1000,7 @@ test('sino alterna abertura e expõe aria-expanded e aria-controls', async () =>
   const shell = await source('./SimplifiedAppShell.jsx');
   const header = await source('./SimplifiedHeader.jsx');
   assert.match(shell, /function toggleNotifications\(\)/);
+  assert.match(shell, /const openNotifications = useCallback\(\(\) => \{\s*clearCloseTimer\(\);\s*void refresh\(\);/);
   assert.match(header, /aria-expanded=\{isNotificationsOpen\}/);
   assert.match(header, /aria-controls="simplified-notifications-panel"/);
 });
