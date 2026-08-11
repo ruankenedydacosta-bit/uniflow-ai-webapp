@@ -19,7 +19,7 @@ create table public.financial_goals (
   target_date date,
   priority text not null default 'medium',
   status text not null default 'active',
-  linked_account_id uuid references public.financial_accounts(id) on delete set null,
+  linked_account_id uuid references public.accounts(id) on delete set null,
   completed_at timestamptz,
   archived_at timestamptz,
   created_at timestamptz not null default now(),
@@ -43,7 +43,7 @@ create table public.goal_contributions (
   amount numeric not null,
   contribution_date date not null default current_date,
   note text,
-  linked_account_id uuid references public.financial_accounts(id) on delete set null,
+  linked_account_id uuid references public.accounts(id) on delete set null,
   client_operation_id text,
   created_at timestamptz not null default now(),
   constraint goal_contributions_amount_check check (amount > 0)
