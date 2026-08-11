@@ -1089,6 +1089,18 @@ test('LOTE F: a shell trava o viewport escuro e o .mainContent é o único conta
   assert.doesNotMatch(css, /data-theme="?light"?/);
 });
 
+test('chat simplificado permanece na malha da shell e acompanha o teclado sem segundo scroll', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  const shellCss = await source('./simplifiedApp.module.css');
+  const chatCss = await source('../uni-chat/UniChatPage.module.css');
+
+  assert.match(shell, /data-uni-chat=\{isUniChatRoute \? 'true' : undefined\}/);
+  assert.match(shellCss, /top: var\(--uf-visual-viewport-offset-top, 0px\);/);
+  assert.match(shellCss, /\.mainContent\[data-uni-chat="true"\]\s*\{[\s\S]{0,120}overflow: hidden;[\s\S]{0,120}padding-bottom: 0;/);
+  assert.match(chatCss, /\.page\s*\{[\s\S]{0,2600}position: relative;[\s\S]{0,120}height: 100%;/);
+  assert.doesNotMatch(chatCss, /position: fixed;/);
+});
+
 test('CSS de Registros cobre grade responsiva, toque, safe area e movimento reduzido', async () => {
   const css = await source('./simplifiedRecords.module.css');
   assert.match(css, /env\(safe-area-inset-top\)/);

@@ -19,6 +19,7 @@
 // `normalizeFinancialText`, `resolveRelativeDateExpression`,
 // `classifyPendingActionReply`.
 import { normalizeFinancialText, resolveRelativeDateExpression } from '../uni-intents/index.js';
+import { normalizeFinancialInstitutionName } from '../financial-institutions/index.js';
 import { classifyPendingActionReply } from './pendingActionInput.js';
 
 export const PENDING_ACTION_RELATIONS = Object.freeze({
@@ -62,6 +63,16 @@ function findIdentityMatch(items, text) {
 
 function looksLikeQuestionOrNewTopic(text) {
   return QUESTION_MARK.test(text) || INTERROGATIVE_START.test(text);
+}
+
+function looksLikeNewAccountAnswer(text) {
+  const normalized = normalizeFinancialText(text).replace(/[.!]+$/g, '').trim();
+  if (!normalized || normalized.length > 72 || normalized.split(/\s+/).length > 7) return false;
+
+  const institution = normalizeFinancialInstitutionName(text, { hasAccountContext: true });
+  if (institution.canonicalName) return true;
+
+  return /^(?:(?:foi|paguei|recebi|entrou)\s+(?:na|no|pela|pelo)\s+)?(?:conta\s+)?(?:banco|carteira|dinheiro|cart[aã]o)\b/i.test(normalized);
 }
 
 function resolvePendingField(pendingAction) {
@@ -166,6 +177,22 @@ export function classifyPendingActionRelation({
       confidence: 0.8,
       normalizedInput: null,
       reason: 'looks_like_question_or_new_topic',
+      suggestedClarification: null,
+    };
+  }
+
+  // Uma instituição/conta ainda não cadastrada é justamente a resposta que
+  // abre a dependência CREATE_ACCOUNT. Antes, apenas contas já existentes
+  // eram consideradas resposta; "Banco do Brasil" caía como ambíguo e a
+  // pilha nunca recebia a oportunidade de oferecer a criação. A heurística é
+  // deliberadamente estreita: instituição reconhecida ou expressão explícita
+  // de conta, sem aceitar perguntas/frases abertas como nome de conta.
+  if (ACCOUNT_FIELDS.has(field) && looksLikeNewAccountAnswer(text)) {
+    return {
+      relation: PENDING_ACTION_RELATIONS.ANSWERS_PENDING,
+      confidence: 0.85,
+      normalizedInput: text.replace(/[.!]+$/g, '').trim(),
+      reason: 'plausible_new_account_name',
       suggestedClarification: null,
     };
   }

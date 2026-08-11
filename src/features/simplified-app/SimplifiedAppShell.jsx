@@ -37,6 +37,7 @@ function SimplifiedAppShell({ children }) {
   const hasPageHeader = location.pathname === SIMPLIFIED_ROUTES.RECORDS
     || location.pathname === SIMPLIFIED_ROUTES.ACCOUNT
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`);
+  const isUniChatRoute = location.pathname === SIMPLIFIED_ROUTES.UNI;
 
   const clearCloseTimer = useCallback(() => {
     if (closeTimerRef.current) {
@@ -186,7 +187,12 @@ function SimplifiedAppShell({ children }) {
             </div>
           ) : null}
         </div>
-        <main className={styles.mainContent}>{children}</main>
+        <main
+          className={styles.mainContent}
+          data-uni-chat={isUniChatRoute ? 'true' : undefined}
+        >
+          {children}
+        </main>
         {location.pathname === SIMPLIFIED_ROUTES.ACCOUNT ? <PwaInstallExperience /> : null}
         <SimplifiedBottomNavigation />
       </div>

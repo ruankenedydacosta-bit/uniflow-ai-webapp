@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { classifyPendingActionRelation, PENDING_ACTION_RELATIONS } from './classifyPendingActionRelation.js';
+import { resolvePendingActionInput } from './pendingActionInput.js';
 
 const ACCOUNTS = [
   { id: 'acc-nubank', name: 'Nubank', is_active: true },
@@ -43,6 +44,49 @@ test('"Nubank" responde à pendência de conta', () => {
   });
   assert.equal(result.relation, PENDING_ACTION_RELATIONS.ANSWERS_PENDING);
   assert.equal(result.normalizedInput, 'Nubank');
+});
+
+test('conta bancária ainda inexistente responde à pendência para permitir a subação de criação', () => {
+  const result = classifyPendingActionRelation({
+    pendingAction: pendingAccount(),
+    userText: 'Banco do Brasil.',
+    availableAccounts: ACCOUNTS,
+  });
+  assert.equal(result.relation, PENDING_ACTION_RELATIONS.ANSWERS_PENDING);
+  assert.equal(result.normalizedInput, 'Banco do Brasil');
+  assert.equal(result.reason, 'plausible_new_account_name');
+});
+
+test('caso real encadeado: despesa aguarda conta, Banco do Brasil inexiste e segue para criação sem cair na pergunta genérica', () => {
+  const action = {
+    transactionType: 'expense',
+    issues: [{ field: 'account', code: 'account_required' }],
+  };
+  const resolution = resolvePendingActionInput({
+    value: 'Banco do Brasil.',
+    action,
+    accounts: ACCOUNTS,
+    workspaceId: 'workspace-personal',
+    referenceDate: '2026-08-11',
+  });
+  assert.equal(resolution.kind, 'account_not_found');
+
+  const relation = classifyPendingActionRelation({
+    pendingAction: { field: 'account' },
+    userText: 'Banco do Brasil.',
+    availableAccounts: ACCOUNTS,
+  });
+  assert.equal(relation.relation, PENDING_ACTION_RELATIONS.ANSWERS_PENDING);
+  assert.equal(relation.suggestedClarification, null);
+});
+
+test('frase aberta sem pergunta não vira nome de conta por engano', () => {
+  const result = classifyPendingActionRelation({
+    pendingAction: pendingAccount(),
+    userText: 'Estou gastando demais',
+    availableAccounts: ACCOUNTS,
+  });
+  assert.equal(result.relation, PENDING_ACTION_RELATIONS.AMBIGUOUS);
 });
 
 test('"Foi no Nubank" responde à pendência de conta (match por substring, mesmo padrão já usado em pendingActionInput.js)', () => {

@@ -38,26 +38,13 @@
   --uni-shadow-glow: var(--uf-shadow-glow-ai);
   --uni-ease: var(--uf-ease-smooth);
 
-  /* HOTFIX (compositor coberto pela navegação inferior): o ancestral
-     imersivo (.shellSurface, CSS Grid "auto 1fr auto") só declara
-     min-height:100dvh, nunca height:100dvh -- então um .page com
-     height:100dvh (mesmo com max-height:100% aqui) inflava o grid inteiro
-     acima da viewport real, empurrando o compositor e a navegação
-     inferior para fora da área visível (só reaparecia quando o viewport
-     era artificialmente comprimido). position:fixed remove o .page do
-     fluxo do grid por completo e o ancora diretamente às bordas REAIS do
-     viewport, usando as alturas oficiais do cabeçalho/navegação inferior
-     (--simplified-header-height/--simplified-bottom-nav-height, ver
-     simplifiedApp.module.css) -- nunca um número mágico novo. Nenhum
-     ancestral usa transform/filter/perspective, então o viewport
-     continua sendo o containing block real do fixed. max-width + margin
-     auto continuam centralizando horizontalmente, idêntico a antes (o
-     centro do viewport é o mesmo centro de .shellSurface). */
-  position: fixed;
-  top: var(--simplified-header-height, 86px);
-  right: 0;
-  bottom: var(--simplified-bottom-nav-height, 108px);
-  left: 0;
+  /* A shell já reserva cabeçalho, conteúdo e navegação e acompanha o
+     visualViewport. O chat permanece dentro da linha central dessa malha;
+     assim o teclado móvel não cria um segundo sistema de posicionamento,
+     não duplica a navegação e não expõe o fundo do documento. */
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;

@@ -60,6 +60,11 @@
   --uf-gradient-ai: linear-gradient(135deg, #5B8DEF, #846EB0, #5B8DEF);
   min-height: var(--uf-visual-viewport-height, 100dvh);
   height: var(--uf-visual-viewport-height, 100dvh);
+  position: fixed;
+  top: var(--uf-visual-viewport-offset-top, 0px);
+  right: 0;
+  bottom: auto;
+  left: 0;
   /* LOTE F -- um ÚNICO fluxo de scroll: o .mainContent (row 1fr da malha)
      é o container de scroll; a shell trava a altura e o documento body
      nunca rola. O fundo claro global (light/legacy) nunca "bounce" de
@@ -315,6 +320,11 @@
      de ação no fim (safe areas incluídas). */
   padding-bottom: max(16px, env(safe-area-inset-bottom));
   scrollbar-gutter: stable;
+}
+
+.mainContent[data-uni-chat="true"] {
+  overflow: hidden;
+  padding-bottom: 0;
 }
 
 .agendaPage {
