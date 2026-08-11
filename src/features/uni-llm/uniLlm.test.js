@@ -211,6 +211,14 @@ test('nenhuma chave hardcoded no frontend e credencial so na Edge Function', () 
   assert.doesNotMatch(edge, /VITE_/);
 });
 
+test('Edge Function do chat restringe CORS pela allowlist oficial e nunca usa wildcard', () => {
+  const edge = readFileSync(new URL('../../../supabase/functions/uni-chat-llm/index.ts', import.meta.url), 'utf8');
+  assert.match(edge, /Deno\.env\.get\('APP_ALLOWED_ORIGINS'\)/);
+  assert.match(edge, /return jsonResponse\(403, \{ error: 'Origem nao autorizada\.' \}\);/);
+  assert.match(edge, /'Access-Control-Allow-Origin': origin/);
+  assert.doesNotMatch(edge, /'Access-Control-Allow-Origin': '\*'/);
+});
+
 test('integracao UniChatPage preserva determinismo e persistencia', () => {
   const page = readFileSync(new URL('../uni-chat/UniChatPage.jsx', import.meta.url), 'utf8');
   // camada deterministica preservada

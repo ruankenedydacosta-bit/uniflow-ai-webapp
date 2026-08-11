@@ -458,7 +458,20 @@ test('a mensagem final (sucesso ou fallback determinístico) sempre passa pelo p
     page.indexOf('function handleCancelAi'),
   );
   const afterEnabledBlock = fnBody.slice(fnBody.lastIndexOf('aiCancelledRef.current = false;'));
+  assert.match(afterEnabledBlock, /const usedDeterministicFallback = !finalResponseText;/);
   assert.match(afterEnabledBlock, /createAssistantResponse\(finalResponseText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\);/);
+});
+
+test('fallback textual na Home simplificada neutraliza o estado de erro e libera a proxima interacao', async () => {
+  const page = await source('UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function handleUnresolvedMessage'),
+    page.indexOf('function handleCancelAi'),
+  );
+  assert.match(
+    fnBody,
+    /if \(usedDeterministicFallback && isSimplifiedExperience\) \{\s*\n\s*setAiStatus\(AI_STATUS\.UNAVAILABLE\);\s*\n\s*\}/,
+  );
 });
 
 test('handleCancelAi só age durante AI_STATUS.LOADING; marca aiCancelledRef ANTES de chamar uniLlm.cancel() (senao a corrida perderia o cancelamento)', async () => {
@@ -3699,8 +3712,8 @@ test('S4: handleUnresolvedMessage aborta publicação se um novo turno começou 
   assert.ok(idx > -1);
   const slice = page.slice(idx, idx + 400);
   assert.match(slice, /const turnTokenAtStart = uniTurnTokenRef\.current;/);
-  // guard logo antes de createAssistantResponse final
-  assert.match(page, /if \(uniTurnTokenRef\.current !== turnTokenAtStart\) return;\s*\n\s*createAssistantResponse/);
+  // guard antes de qualquer publicação final, inclusive da marcação de fallback
+  assert.match(page, /if \(uniTurnTokenRef\.current !== turnTokenAtStart\) return;\s*\n\s*const usedDeterministicFallback = !finalResponseText;\s*\n\s*createAssistantResponse/);
 });
 
 test('S4: attemptFinancialPlan e attemptSemanticFinancialQuery usam o mesmo token anti-stale', async () => {

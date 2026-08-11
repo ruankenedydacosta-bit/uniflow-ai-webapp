@@ -3063,7 +3063,14 @@ export default function UniChatPage({ variant = 'full' }) {
     // cancelado por um novo sendText). A conversa segue recuperavel: o
     // usuario pode perguntar de novo.
     if (uniTurnTokenRef.current !== turnTokenAtStart) return;
+    const usedDeterministicFallback = !finalResponseText;
     createAssistantResponse(finalResponseText || UNI_DETERMINISTIC_FALLBACK_TEXT);
+    // A Home simplificada sempre preserva uma resposta textual utilizavel.
+    // Quando o backend conversacional estiver indisponivel, o fallback nao
+    // deve deixar o controle principal preso no estado visual de erro.
+    if (usedDeterministicFallback && isSimplifiedExperience) {
+      setAiStatus(AI_STATUS.UNAVAILABLE);
+    }
   }
 
   function handleCancelAi() {

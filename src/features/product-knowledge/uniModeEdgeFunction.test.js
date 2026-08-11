@@ -102,10 +102,12 @@ test('nenhuma chave hardcoded introduzida por esta extensao', () => {
   assert.doesNotMatch(EDGE_SOURCE, /VITE_/);
 });
 
-test('CORS e autenticacao (ELEVEN/OPENAI1/2) preservados -- nenhuma rota nova sem Bearer', () => {
+test('CORS restrito e autenticacao (ELEVEN/OPENAI1/2) preservados -- nenhuma rota nova sem Bearer', () => {
   assert.match(EDGE_SOURCE, /authorization\.startsWith\('Bearer '\)/);
   assert.match(EDGE_SOURCE, /getAuthenticatedUserId\(authorization, supabaseUrl, anonKey\)/);
-  assert.match(EDGE_SOURCE, /'Access-Control-Allow-Origin': '\*'/);
+  assert.match(EDGE_SOURCE, /Deno\.env\.get\('APP_ALLOWED_ORIGINS'\)/);
+  assert.match(EDGE_SOURCE, /'Access-Control-Allow-Origin': origin/);
+  assert.doesNotMatch(EDGE_SOURCE, /'Access-Control-Allow-Origin': '\*'/);
 });
 
 // ── Fase 1 (correção de formatação monetária, Bloco 4.4) ────────────────

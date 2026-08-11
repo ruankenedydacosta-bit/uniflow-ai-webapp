@@ -86,7 +86,7 @@ test('recusa do modelo (message.refusal) e resposta vazia sao tratadas sem lanca
 });
 
 test('JSON invalido no corpo da requisicao do cliente retorna 400 sem lancar excecao nao tratada', () => {
-  assert.match(EDGE_SOURCE, /catch \{\s*return jsonResponse\(400, \{ error: 'Nao foi possivel ler esta solicitacao\.' \}\);/);
+  assert.match(EDGE_SOURCE, /catch \{\s*return respondJson\(400, \{ error: 'Nao foi possivel ler esta solicitacao\.' \}\);/);
 });
 
 test('timeout do provedor e distinguido de erro de rede no log seguro, ambos sem detalhe ao cliente', () => {
