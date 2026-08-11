@@ -460,7 +460,7 @@ test('hook prepara reprodução manual e interrompe TTS ao ocultar a página no 
 });
 
 // ----------------------------------------------------------------------------
-// Edge Function -- autenticacao, NOT_CONFIGURED, sanitizacao, sem allowlist
+// Edge Function -- autenticacao, configuracao, sanitizacao e CORS por origem
 // ----------------------------------------------------------------------------
 
 test('Edge Function exige Authorization Bearer e rejeita usuario nao autenticado (401)', () => {
@@ -476,11 +476,13 @@ test('Edge Function retorna CONFIGURATION_ERROR (503) quando faltar chave OU voi
   );
 });
 
-test('Edge Function NUNCA aplica allowlist/403 -- diferente de generate-uni-premium-voice, disponivel para qualquer usuario autenticado', () => {
-  // O comentario de cabecalho pode CITAR a outra funcao (contexto
-  // arquitetural); o que nao pode existir aqui e a logica de enforcement.
+test('Edge Function limita CORS por APP_ALLOWED_ORIGINS sem criar allowlist de usuários', () => {
+  assert.match(EDGE_SOURCE, /Deno\.env\.get\('APP_ALLOWED_ORIGINS'\)/);
+  assert.match(EDGE_SOURCE, /if \(!isAllowedOrigin\(origin\)\)/);
+  assert.match(EDGE_SOURCE, /'Access-Control-Allow-Origin': origin/);
+  assert.match(EDGE_SOURCE, /jsonResponse\(403, 'ORIGIN_NOT_ALLOWED'/);
   assert.doesNotMatch(EDGE_SOURCE, /allowlist\.has\(|ALLOWED_USER_IDS|readAllowlist/);
-  assert.doesNotMatch(EDGE_SOURCE, /jsonResponse\(403/);
+  assert.doesNotMatch(EDGE_SOURCE, /'Access-Control-Allow-Origin': '\*'/);
 });
 
 test('Edge Function sanitiza o texto e rejeita vazio/muito longo/dados sensiveis', () => {

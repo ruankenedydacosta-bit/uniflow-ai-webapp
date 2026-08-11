@@ -121,7 +121,7 @@ test('cache HIT nunca chama a ElevenLabs -- retorna o audio existente com header
 test('cache MISS chama a ElevenLabs normalmente e salva o resultado (upload + upsert de metadados) em segundo plano', () => {
   assert.match(EDGE_SOURCE, /uploadCacheAudio\(/);
   assert.match(EDGE_SOURCE, /upsertCacheMetadata\(/);
-  assert.match(EDGE_SOURCE, /return audioResponse\(audio, contentType, 'MISS'\);/);
+  assert.match(EDGE_SOURCE, /return audioResponse\(audio, contentType, 'MISS', origin\);/);
 });
 
 test('upload no storage usa x-upsert (idempotente) -- caminho deterministico, concorrencia grava os mesmos bytes com seguranca', () => {
@@ -208,7 +208,10 @@ test('service role key nunca retorna ao cliente -- so usada nos headers server-s
 
 test('resposta de audio serve diretamente da Edge Function (sem signed URL) -- frontend nao muda, so recebe bytes de audio como antes', () => {
   assert.doesNotMatch(EDGE_SOURCE, /createSignedUrl|signedUrl/);
-  assert.match(EDGE_SOURCE, /function audioResponse\(audio: BodyInit, contentType: string, cacheStatus: 'HIT' \| 'MISS'\)/);
+  assert.match(
+    EDGE_SOURCE,
+    /function audioResponse\(\s*audio: BodyInit,\s*contentType: string,\s*cacheStatus: 'HIT' \| 'MISS',\s*origin: string,\s*\)/,
+  );
 });
 
 test('ELEVEN1/ELEVEN2: autenticacao, sanitizacao, limite de caracteres, dados sensiveis e mapeamento de erros continuam intactos', () => {
@@ -220,9 +223,11 @@ test('ELEVEN1/ELEVEN2: autenticacao, sanitizacao, limite de caracteres, dados se
   assert.match(EDGE_SOURCE, /'CONFIGURATION_ERROR'/);
 });
 
-test('Edge Function continua sem allowlist -- disponivel para qualquer usuario autenticado, igual a ELEVEN1', () => {
+test('Edge Function preserva autenticacao por usuario e restringe somente a origem do navegador', () => {
   assert.doesNotMatch(EDGE_SOURCE, /allowlist\.has\(|ALLOWED_USER_IDS|readAllowlist/);
-  assert.doesNotMatch(EDGE_SOURCE, /jsonResponse\(403/);
+  assert.match(EDGE_SOURCE, /Deno\.env\.get\('APP_ALLOWED_ORIGINS'\)/);
+  assert.match(EDGE_SOURCE, /jsonResponse\(403, 'ORIGIN_NOT_ALLOWED'/);
+  assert.doesNotMatch(EDGE_SOURCE, /'Access-Control-Allow-Origin': '\*'/);
 });
 
 // ----------------------------------------------------------------------------
