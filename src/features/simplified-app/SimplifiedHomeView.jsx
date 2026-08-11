@@ -820,6 +820,7 @@ function SimplifiedHomeView({
         ) : null}
       </section>
 
+      <PwaInstallExperience />
       <CompactResponse
         messages={messages}
         isExecuting={isExecuting}
@@ -834,7 +835,6 @@ function SimplifiedHomeView({
         turnStartToken={turnStartToken}
         interpretingOperationHint={interpretingOperationHint}
       />
-      <PwaInstallExperience />
       <LightWave />
 
       <section className={styles.uniAction} aria-label="Conversar com a Uni">

@@ -4,7 +4,6 @@ import test from 'node:test';
 import {
   PWA_INSTALL_COOLDOWN_MS,
   PWA_INSTALL_FLAG_KEY,
-  PWA_INSTALL_INITIAL_DELAY_MS,
   resolvePwaInstallEnabled,
 } from './pwaInstallConfig.js';
 import {
@@ -110,19 +109,22 @@ test('appinstalled remove qualquer prompt pendente', () => {
   assert.equal(getDeferredPwaInstallPrompt(), null);
 });
 
-test('UI é tardia, não modal, acessível e traz instalação segura para Chrome e iOS', async () => {
+test('UI aparece imediatamente, mesmo sem prompt nativo, e orienta Chrome e iOS', async () => {
   const [component, css] = await Promise.all([
     source('./PwaInstallExperience.jsx'),
     source('./PwaInstallExperience.module.css'),
   ]);
-  assert.ok(PWA_INSTALL_INITIAL_DELAY_MS >= 1_000);
   assert.match(component, /Compartilhar/);
   assert.match(component, /Adicionar à Tela de Início/);
+  assert.match(component, /Instalar app/);
   assert.match(component, /sem APK externo/);
   assert.match(component, /requestCapturedPwaInstall\(\)/);
   assert.match(component, /readPwaInstallCooldown/);
   assert.match(component, /globalThis\.sessionStorage/);
   assert.match(component, /isStandaloneDisplay\(\)/);
+  assert.match(component, /platform !== PWA_INSTALL_PLATFORM\.UNSUPPORTED/);
+  assert.doesNotMatch(component, /setTimeout|PWA_INSTALL_INITIAL_DELAY_MS/);
+  assert.doesNotMatch(component, /&& \(platform === PWA_INSTALL_PLATFORM\.IOS_SAFARI \|\| Boolean\(deferredPrompt\)\)/);
   assert.match(component, /aria-labelledby="pwa-install-title"/);
   assert.doesNotMatch(component, /role="dialog"|aria-modal/);
   assert.match(css, /prefers-reduced-motion: reduce/);
@@ -136,6 +138,7 @@ test('Home oferece instalação dentro do fluxo e a Conta não mantém uma cópi
     source('./pwaInstallConfig.js'),
   ]);
   assert.match(home, /<PwaInstallExperience \/>/);
+  assert.ok(home.indexOf('<PwaInstallExperience />') < home.indexOf('<CompactResponse'));
   assert.doesNotMatch(shell, /PwaInstallExperience/);
   assert.match(main, /initializePwaInstallCapture\(\)/);
   assert.match(config, /PWA_INSTALL_ENABLED = resolvePwaInstallEnabled\(import\.meta\.env\)/);
