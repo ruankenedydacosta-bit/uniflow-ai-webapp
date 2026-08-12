@@ -274,9 +274,13 @@ const INTENT_RULES = [
       // handled:false e a frase ia para o chat geral, que respondia "ah,
       // não consigo registrar daqui". "coloquei/botei" são verbos comuns de
       // lancamento coloquial que faltavam nesta lista.
-      /^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|coloquei|botei)\b/,
+      // BUG REAL EM PRODUCAO: "Coloca pra mim aí setenta e cinco reais no
+      // mercado." também caia em 'question' -- só o passado "coloquei"
+      // estava coberto, nunca o imperativo "coloca/bota/poe" (forma de
+      // pedido comum: "coloca aí...", "bota 50 no...", "poe 20 reais em...").
+      /^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|coloquei|botei|coloca|bota|poe)\b/,
       /^(?:custou|saiu|foi)\s+(?:r\$\s*)?[\d.,]+/,
-      /\b(?:paguei|gastei|coloquei|botei)\s+(?:r\$\s*)?[\d.,]+/,
+      /\b(?:paguei|gastei|coloquei|botei|coloca|bota|poe)\s+(?:r\$\s*)?[\d.,]+/,
       // BUG REAL EM PRODUCAO: "Eu fiz uma compra de 200 reais no mercado."
       // não batia em nenhum padrão (nem "comprei", nem "reais de" -- é
       // "reais no mercado") e caía em 'question', indo direto para o chat

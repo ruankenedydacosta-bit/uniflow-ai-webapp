@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
-import { useAccounts } from '../../hooks/index.js';
 import { getSubscription } from '../../services/billingService.js';
 import Avatar from '../../components/ui/Avatar/Avatar.jsx';
 import Badge from '../../components/ui/Badge/Badge.jsx';
@@ -17,7 +16,6 @@ import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRout
 import { APP_VERSION } from './appIdentity.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
-  BankIcon,
   CalendarIcon,
   CardIcon,
   CrownIcon,
@@ -33,8 +31,6 @@ import {
   ChevronRightIcon,
 } from './SimplifiedIcons.jsx';
 import styles from './simplifiedAccount.module.css';
-
-const EMPTY_RECORDS = Object.freeze([]);
 
 /**
  * Correção (Bloco Saldo + Cobrança): esta tela agora busca sua PRÓPRIA
@@ -54,7 +50,6 @@ function SimplifiedAccountPage() {
   const navigate = useNavigate();
   const { user, profile, workspace, signOut } = useSession();
   const workspaceId = workspace?.id;
-  const accountState = useAccounts({ workspaceId, fallbackAccounts: EMPTY_RECORDS, fallbackAccountTypes: EMPTY_RECORDS });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState(null);
@@ -86,7 +81,6 @@ function SimplifiedAccountPage() {
   const phone = typeof profile?.phone === 'string' ? profile.phone.trim() : '';
   const planState = resolvePlanState(subscription);
   const renewsAt = resolveRenewsAt(subscription, planState);
-  const accountsCount = accountState.activeAccounts.length;
 
   function goTo(subrouteId) {
     navigate(ACCOUNT_SUBROUTES[subrouteId].path);
@@ -123,17 +117,6 @@ function SimplifiedAccountPage() {
       tone: 'blue',
       title: 'Pagamento e assinatura',
       subtitle: planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
-    },
-    {
-      id: ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS,
-      Icon: BankIcon,
-      tone: 'green',
-      title: 'Minhas contas',
-      subtitle: accountState.isLoading
-        ? 'Carregando…'
-        : accountsCount > 0
-          ? `${accountsCount} ${accountsCount === 1 ? 'conta cadastrada' : 'contas cadastradas'}`
-          : 'Nenhuma conta cadastrada',
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.VOICE,

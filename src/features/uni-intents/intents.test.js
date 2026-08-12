@@ -87,6 +87,26 @@ test('BUG REAL: "Eu fiz uma compra de 200 reais no mercado." é reconhecida como
   assert.equal(bare.intent, 'register_expense');
   assert.equal(bare.entities.amount, 200);
 });
+// BUG REAL EM PRODUÇÃO: "Coloca pra mim aí setenta e cinco reais no
+// mercado." caía em intent 'question' -- só o passado "coloquei" estava
+// coberto, nunca o imperativo "coloca/bota/poe" (forma de pedido comum:
+// "coloca aí...", "bota 50 no...", "poe 20 reais em..."). A frase inteira
+// ia para o chat geral (resposta só em texto, sem card de confirmação), e a
+// resposta seguinte "confirmar" não tinha nenhuma ação pendente para
+// resolver -- virava consulta.
+test('BUG REAL: "Coloca pra mim aí setenta e cinco reais no mercado." é reconhecida como despesa (imperativo, não só "coloquei")', () => {
+  const coloca = parseFinancialText('Coloca pra mim aí setenta e cinco reais no mercado.');
+  const bota = parseFinancialText('Bota 50 reais de gasolina.');
+  const poe = parseFinancialText('Poe 20 reais no mercado.');
+
+  assert.equal(coloca.intent, 'register_expense');
+  assert.equal(coloca.entities.amount, 75);
+  assert.equal(coloca.ready, true);
+  assert.equal(bota.intent, 'register_expense');
+  assert.equal(bota.entities.amount, 50);
+  assert.equal(poe.intent, 'register_expense');
+  assert.equal(poe.entities.amount, 20);
+});
 // ============================================================================
 // BUG REAL (BUG 2): "Entrou mil reais." e variações. O padrão antigo só
 // aceitava o verbo no singular com valor em algarismo logo após o verbo --

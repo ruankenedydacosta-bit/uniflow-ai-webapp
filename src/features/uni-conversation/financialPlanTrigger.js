@@ -28,7 +28,13 @@ export function isAgendaExpression(text) {
 // como "Entrou mil reais." não era um fresh statement (ver
 // looksLikeFreshFinancialStatement), então com uma pendência ativa ela
 // virava resposta de campo e era proposta como NOME DE CONTA.
-const FINANCIAL_VERB_RE = /\b(gastei|gasto|paguei|pago|recebi|recebo|comprei|compro|transferi|transfiro|ganhei|ganho|investi|invisto|abasteci|coloquei|botei|entrou|caiu|entraram|cairam|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/i;
+// BUG REAL EM PRODUCAO: "Coloca pra mim aí setenta e cinco reais no
+// mercado." (imperativo) nao batia aqui nem em classifyIntent -- so o
+// passado "coloquei" estava coberto, entao a barreira determinística nunca
+// disparava e a frase caia inteira no chat geral (resposta so em texto,
+// sem card, "confirmar" depois virava consulta). "coloca/bota/poe" sao a
+// mesma familia de verbo coloquial de lancamento, so no imperativo.
+const FINANCIAL_VERB_RE = /\b(gastei|gasto|paguei|pago|recebi|recebo|comprei|compro|transferi|transfiro|ganhei|ganho|investi|invisto|abasteci|coloquei|botei|coloca|bota|poe|entrou|caiu|entraram|cairam|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/i;
 const MONEY_MENTION_RE = /r\$\s*\d+(?:[.,]\d+)?|\b\d+(?:[.,]\d+)?\s*reais\b/gi;
 const INSTALLMENT_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]/i;
 const RECURRING_RE = /\btodo\s+m[eê]s\b|\brecorrente\b|\bmensalmente\b|\btodo\s+dia\b|\btoda\s+semana\b/i;

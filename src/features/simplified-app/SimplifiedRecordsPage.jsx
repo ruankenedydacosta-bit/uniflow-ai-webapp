@@ -24,7 +24,6 @@ import {
   getMonthRange,
   summarizeMonth,
 } from './simplifiedRecordsData.js';
-import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedRecords.module.css';
 
@@ -499,8 +498,10 @@ function SimplifiedRecordsPage() {
     setActiveTab('history');
   }
 
+  // CONTA-OPCIONAL: receita/despesa não exigem mais nenhuma conta cadastrada
+  // -- só bloqueia por permissão, nunca por "ainda não tem conta".
   function openNewTransaction() {
-    if (!canManage || !accountState.activeAccounts.length) return;
+    if (!canManage) return;
     setTransactionDialog({ type: 'expense', transactionId: null });
   }
 
@@ -568,20 +569,9 @@ function SimplifiedRecordsPage() {
                     onSelect={selectCategory}
                   />
                   <NewRecordAction
-                    disabled={!canManage || !accountState.activeAccounts.length}
+                    disabled={!canManage}
                     onClick={openNewTransaction}
                   />
-                  {!accountState.activeAccounts.length ? (
-                    <div className={styles.accountNotice}>
-                      Para adicionar seu primeiro registro, crie uma conta no Financeiro.
-                      <button
-                        type="button"
-                        onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path)}
-                      >
-                        Gerenciar contas
-                      </button>
-                    </div>
-                  ) : null}
                   <TransactionList
                     accounts={accountState.accounts}
                     categories={categoryState.categories}
@@ -633,7 +623,7 @@ function SimplifiedRecordsPage() {
                   ) : null}
                   {!transactionState.transactions.length ? (
                     <NewRecordAction
-                      disabled={!canManage || !accountState.activeAccounts.length}
+                      disabled={!canManage}
                       onClick={openNewTransaction}
                     />
                   ) : null}

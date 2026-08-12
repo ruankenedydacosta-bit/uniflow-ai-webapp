@@ -189,9 +189,14 @@ test('preço exibido vem da constante compartilhada de personal-plan, nunca um v
 // e nunca um placeholder vazio prometendo algo que não existe ainda
 // (privacidade).
 
-test('menu tem exatamente os 6 itens pedidos, com Tema entre Suporte e Sobre -- Notificações e Privacidade e dados removidas', async () => {
+// CONTA-OPCIONAL: "Minhas contas" saiu do menu de Conta -- a gestão de
+// contas bancárias deixou de ser um destino de primeira classe agora que
+// receita/despesa não dependem mais de conta. A subrota/tela em si continua
+// existindo (ainda usada por transferência/ajuste de saldo), só não tem mais
+// entrada aqui.
+test('menu tem exatamente os 5 itens pedidos, com Tema entre Suporte e Sobre -- Notificações, Privacidade e Minhas contas removidas', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const order = ['PAYMENTS', 'MY_ACCOUNTS', 'VOICE', 'SUPPORT', 'THEME', 'ABOUT'];
+  const order = ['PAYMENTS', 'VOICE', 'SUPPORT', 'THEME', 'ABOUT'];
   const indices = order.map((id) => page.indexOf(`ACCOUNT_SUBROUTE_IDS.${id},`));
   assert.ok(indices.every((i) => i > -1), 'algum item do menu está ausente');
   for (let i = 1; i < indices.length; i += 1) {
@@ -199,6 +204,7 @@ test('menu tem exatamente os 6 itens pedidos, com Tema entre Suporte e Sobre -- 
   }
   assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.NOTIFICATIONS/);
   assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.PRIVACY/);
+  assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.MY_ACCOUNTS/);
 });
 
 test('NOTIFICATIONS e PRIVACY não existem mais em ACCOUNT_SUBROUTE_IDS/ACCOUNT_SUBROUTES -- remoção total, não só do menu', async () => {
@@ -207,10 +213,10 @@ test('NOTIFICATIONS e PRIVACY não existem mais em ACCOUNT_SUBROUTE_IDS/ACCOUNT_
   assert.doesNotMatch(routesSource, /PRIVACY:/);
 });
 
-test('"Minhas contas" usa a contagem real de useAccounts -- nunca um número fixo', async () => {
+test('useAccounts não é mais importado nesta tela -- "Minhas contas" não faz mais parte do menu de Conta', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /accountState\.activeAccounts\.length/);
-  assert.match(page, /Nenhuma conta cadastrada/);
+  assert.doesNotMatch(page, /useAccounts/);
+  assert.doesNotMatch(page, /accountState/);
 });
 
 test('"Pagamento e assinatura" nunca mostra um cartão inventado (ex.: "Visa final 1234")', async () => {
