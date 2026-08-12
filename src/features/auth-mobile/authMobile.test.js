@@ -90,13 +90,24 @@ test('feature não contém chamadas externas ou SDK social', async () => {
   assert.doesNotMatch(contents, /googleapis|appleid|client_secret|access_token/i);
 });
 
-test('experiência institucional usa somente as duas logos oficiais por import', async () => {
+// IDENTIDADE AUTH V2: as duas marcas passaram de PNG para vetor inline. Os
+// PNGs eram mockups (logo numa parede) com fundo cinza OPACO e slogan em
+// cinza-escuro -- sobre o fundo #020713 da página, a única saída era
+// recortar a imagem, e o recorte comia o slogan e o "TECHNOLOGY MONITORING".
+// O nome acessível de cada marca continua idêntico, agora via aria-label.
+test('experiência institucional desenha as duas marcas em vetor, sem PNG recortado', async () => {
   const contents = await source('./components/AuthBrandExperience.jsx');
-  assert.match(contents, /logo_uniflowai\.png/);
-  assert.match(contents, /smartech_logo_transparente\.png/);
+  // Nenhum import de imagem: a regra é sobre o que o componente CARREGA,
+  // não sobre citar os nomes dos PNGs antigos no comentário histórico.
+  assert.doesNotMatch(contents, /^\s*import\s+.*\.(png|jpe?g|svg|webp)['"]/m);
+  assert.doesNotMatch(contents, /<img\b/);
   assert.doesNotMatch(contents, /icones_quatros_beneficios|onda_luminosa/);
-  assert.match(contents, /alt="UniFlow AI — Conectando você às melhores decisões financeiras\."/);
-  assert.match(contents, /alt="SmartTech"/);
+  assert.match(contents, /aria-label="UniFlow AI — Conectando você às melhores decisões financeiras\."/);
+  assert.match(contents, /aria-label="SmartTech"/);
+  // O slogan e a assinatura da parceria são TEXTO -- nunca mais pixels que
+  // possam ser cortados por overflow.
+  assert.match(contents, /Conectando você às <em>melhores decisões financeiras\.<\/em>/);
+  assert.match(contents, /TECHNOLOGY MONITORING/);
 });
 
 test('login e cadastro compartilham a mesma composição institucional', async () => {
@@ -118,6 +129,12 @@ test('benefícios e onda luminosa são construídos em SVG e CSS', async () => {
   assert.match(contents, /<svg viewBox="0 0 720 150"/);
   assert.match(contents, /<linearGradient/);
   assert.match(contents, /useId\(\)/);
+  // A onda é composta (halo difuso + filetes + feixe principal + núcleo),
+  // não um traço único -- é a soma das camadas que produz o fluxo de luz.
+  ['waveHalo', 'waveStrands', 'wavePrimary', 'waveCore'].forEach((layer) => {
+    assert.match(contents, new RegExp(`styles\\.${layer}`), `camada ${layer} ausente`);
+  });
+  assert.match(contents, /styles\.particleField/);
 });
 
 test('cadastro segue para a apresentação sem redirecionar ao onboarding antigo', async () => {

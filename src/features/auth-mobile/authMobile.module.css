@@ -24,7 +24,7 @@
   position: relative;
   display: block;
   padding:
-    max(var(--uf-space-20), env(safe-area-inset-top))
+    max(var(--uf-space-32), env(safe-area-inset-top))
     max(var(--uf-space-12), env(safe-area-inset-right))
     max(var(--uf-space-32), env(safe-area-inset-bottom))
     max(var(--uf-space-12), env(safe-area-inset-left));
@@ -44,50 +44,196 @@
 }
 
 .brandExperience {
+  position: relative;
+  /* Cria um contexto de empilhamento próprio. Sem isto, o z-index: -1 do
+     campo de partículas escapa deste bloco e as partículas são pintadas
+     ATRÁS do fundo de .authPage -- ficam invisíveis. Com isolation, o -1
+     passa a significar "atrás da marca, mas ainda dentro deste header". */
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.uniflowLogoFrame {
-  width: min(100%, 390px);
-  height: clamp(126px, 38vw, 170px);
+/* --- Campo de partículas -------------------------------------------------
+   Profundidade atrás da marca. Fica ATRÁS de tudo (z-index/-1) e nunca
+   intercepta toque -- é decoração pura. */
+.particleField {
+  position: absolute;
+  inset: -6% -12% 12%;
+  z-index: -1;
   overflow: hidden;
-  filter: drop-shadow(0 0 18px rgba(37, 99, 235, .28));
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #7cc4ff;
+  opacity: .5;
+  box-shadow: 0 0 7px 1px rgba(124, 196, 255, .75);
+  animation: authParticleDrift 9s ease-in-out infinite;
+}
+
+.particle[data-particle='1'] { background: #a78bfa; box-shadow: 0 0 7px 1px rgba(167, 139, 250, .7); }
+.particle[data-particle='2'] { background: #2dd4bf; box-shadow: 0 0 7px 1px rgba(45, 212, 191, .7); }
+.particle[data-particle='3'] { background: #67e8f9; box-shadow: 0 0 8px 1px rgba(103, 232, 249, .7); }
+.particle[data-particle='4'] { background: #34d399; box-shadow: 0 0 7px 1px rgba(52, 211, 153, .6); }
+.particle[data-particle='5'] { background: #8b5cf6; box-shadow: 0 0 7px 1px rgba(139, 92, 246, .6); }
+
+/* Posições/tempos espalhados na mão: um layout pseudo-aleatório fixo lê
+   como "campo de estrelas" e nunca muda de lugar entre renders (um random
+   real faria as partículas saltarem a cada re-render do React). */
+.particle:nth-child(1)  { top: 6%;  left: 8%;  animation-delay: -.2s; }
+.particle:nth-child(2)  { top: 14%; left: 27%; animation-delay: -3.1s; width: 2px; height: 2px; }
+.particle:nth-child(3)  { top: 4%;  left: 46%; animation-delay: -5.4s; }
+.particle:nth-child(4)  { top: 18%; left: 64%; animation-delay: -1.7s; width: 2px; height: 2px; }
+.particle:nth-child(5)  { top: 9%;  left: 83%; animation-delay: -7.2s; }
+.particle:nth-child(6)  { top: 24%; left: 92%; animation-delay: -2.5s; width: 2px; height: 2px; }
+.particle:nth-child(7)  { top: 33%; left: 4%;  animation-delay: -6.1s; }
+.particle:nth-child(8)  { top: 41%; left: 18%; animation-delay: -4.3s; width: 2px; height: 2px; }
+.particle:nth-child(9)  { top: 30%; left: 37%; animation-delay: -8.0s; }
+.particle:nth-child(10) { top: 47%; left: 55%; animation-delay: -1.1s; width: 2px; height: 2px; }
+.particle:nth-child(11) { top: 36%; left: 73%; animation-delay: -5.9s; }
+.particle:nth-child(12) { top: 52%; left: 88%; animation-delay: -3.6s; width: 2px; height: 2px; }
+.particle:nth-child(13) { top: 63%; left: 11%; animation-delay: -7.8s; }
+.particle:nth-child(14) { top: 71%; left: 31%; animation-delay: -.9s; width: 2px; height: 2px; }
+.particle:nth-child(15) { top: 58%; left: 49%; animation-delay: -4.9s; }
+.particle:nth-child(16) { top: 76%; left: 68%; animation-delay: -2.2s; width: 2px; height: 2px; }
+.particle:nth-child(17) { top: 66%; left: 85%; animation-delay: -6.7s; }
+.particle:nth-child(18) { top: 84%; left: 41%; animation-delay: -3.9s; width: 2px; height: 2px; }
+
+@keyframes authParticleDrift {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: .22; }
+  50%      { transform: translate3d(0, -12px, 0); opacity: .72; }
+}
+
+/* --- Lockup UniFlow ------------------------------------------------------
+   Marca + wordmark + slogan como TEXTO (não imagem): nada é recortado, e o
+   slogan fica legível sobre o fundo escuro -- o oposto do PNG anterior,
+   cujo slogan era cinza-escuro sobre fundo cinza. */
+.uniflowLockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(9px, 2.6vw, 15px);
+  /* Trava a largura do conjunto: sem isto o lockup encosta nas bordas em
+     telas estreitas e perde o respiro que a referência tem. */
+  width: min(100%, 400px);
+  margin-inline: auto;
   animation: authBrandReveal 260ms var(--uf-ease-smooth) both;
 }
 
-.uniflowLogoFrame img {
-  width: 100%;
+.uniflowMark {
+  width: clamp(46px, 12.5vw, 64px);
   height: auto;
-  display: block;
+  flex: 0 0 auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 16px rgba(79, 70, 229, .5));
 }
 
+.uniflowCopy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.uniflowWordmark {
+  display: flex;
+  align-items: baseline;
+  gap: .3em;
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(24px, 7.4vw, 36px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .012em;
+  text-shadow: 0 0 26px rgba(125, 170, 255, .34);
+}
+
+.uniflowWordmark span {
+  background: linear-gradient(96deg, #3b82f6, #8b5cf6 55%, #22d3ee);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
+
+.uniflowTagline {
+  margin: 0;
+  color: #dbe4f5;
+  font-size: clamp(9.5px, 2.6vw, 12px);
+  font-weight: 500;
+  line-height: 1.35;
+  /* Equilibra as duas linhas em vez de deixar uma palavra órfã na segunda. */
+  text-wrap: balance;
+}
+
+/* O trecho destacado é o mesmo do material de marca ("melhores decisões
+   financeiras") -- em verde, o tom de crescimento da identidade. */
+.uniflowTagline em {
+  color: #34d399;
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* --- Parceria SmartTech -------------------------------------------------- */
 .partnerBrand {
   display: grid;
   justify-items: center;
-  gap: var(--uf-space-4);
-  margin-top: var(--uf-space-4);
+  gap: var(--uf-space-6);
+  margin-top: clamp(14px, 4vw, 22px);
+}
+
+.partnerLabel {
   color: #8e97aa;
   font-size: var(--uf-text-caption-size);
 }
 
-.partnerLogoFrame {
-  width: min(64vw, 235px);
-  height: 72px;
-  overflow: hidden;
+.partnerLockup {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2.4vw, 14px);
 }
 
-.partnerLogoFrame img {
-  width: 100%;
+.smartechMark {
+  width: clamp(30px, 8.2vw, 40px);
   height: auto;
-  display: block;
-  transform: translateY(-18%);
+  flex: 0 0 auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 12px rgba(45, 212, 191, .45));
+}
+
+.partnerCopy {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+
+.partnerCopy strong {
+  background: linear-gradient(100deg, #5eead4, #22d3ee 60%, #38bdf8);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-size: clamp(16px, 4.6vw, 23px);
+  font-weight: 700;
+  letter-spacing: .06em;
+  line-height: 1;
+}
+
+.partnerCopy small {
+  color: #6fd8cd;
+  font-size: clamp(6px, 1.7vw, 8.5px);
+  font-weight: 600;
+  letter-spacing: .18em;
+  line-height: 1.2;
 }
 
 .benefitsStrip {
   width: 100%;
-  margin-top: var(--uf-space-12);
+  margin-top: clamp(16px, 4.5vw, 26px);
   padding: var(--uf-space-16) var(--uf-space-8);
   overflow: hidden;
   border: 1px solid rgba(105, 127, 172, .26);
@@ -137,9 +283,10 @@
   stroke: #7c7cff;
 }
 
+/* --- Onda luminosa ------------------------------------------------------- */
 .authWave {
   width: calc(100% + var(--uf-space-24));
-  height: clamp(90px, 26vw, 142px);
+  height: clamp(104px, 30vw, 158px);
   margin-top: var(--uf-space-2);
   pointer-events: none;
 }
@@ -152,18 +299,37 @@
 }
 
 .wavePrimary,
-.waveGhost {
+.waveHalo,
+.waveStrands path {
   fill: none;
   stroke-linecap: round;
 }
 
 .wavePrimary {
-  stroke-width: 2.4;
+  stroke-width: 1.9;
 }
 
-.waveGhost {
-  stroke: rgba(87, 111, 255, .26);
-  stroke-width: 16;
+/* Halo largo e difuso: dá o "brilho no ar" ao redor do feixe, sem virar
+   uma faixa opaca -- alfa baixo é o que mantém a onda etérea. */
+.waveHalo {
+  stroke: rgba(96, 132, 255, .12);
+  stroke-width: 26;
+}
+
+/* Filetes finos que acompanham o feixe principal em alturas levemente
+   diferentes -- é a soma deles que cria a leitura de fluxo/velocidade. */
+.waveStrands path {
+  stroke-width: .8;
+}
+
+.waveCore {
+  animation: authWavePulse 3.2s ease-in-out infinite;
+  transform-origin: 360px 82px;
+}
+
+@keyframes authWavePulse {
+  0%, 100% { opacity: .85; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.28); }
 }
 
 .authHeading {
@@ -720,9 +886,20 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .uniflowLogoFrame,
+  .uniflowLockup,
   .authPanel div:has(> input) {
     animation: none;
     transition: none;
+  }
+
+  /* Partículas e pulso da onda são puramente decorativos: quem pediu menos
+     movimento ao SO recebe a cena estática, sem perder nada de conteúdo. */
+  .particle,
+  .waveCore {
+    animation: none;
+  }
+
+  .particle {
+    opacity: .45;
   }
 }
