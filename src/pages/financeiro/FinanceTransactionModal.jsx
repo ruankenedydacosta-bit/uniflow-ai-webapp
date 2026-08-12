@@ -469,26 +469,6 @@ function FinanceTransactionModal({
             }
             fullWidth
           />
-          <Input
-            id="finance-transaction-payment-method"
-            label="Forma de pagamento (opcional)"
-            placeholder="Ex.: Pix, cartão, boleto..."
-            value={form.payment_method}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, payment_method: event.target.value }))
-            }
-            fullWidth
-          />
-          <Input
-            id="finance-transaction-notes"
-            label="Observação (opcional)"
-            placeholder="Detalhes extras sobre este lançamento"
-            value={form.notes}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, notes: event.target.value }))
-            }
-            fullWidth
-          />
 
           {!editingId && form.transaction_type !== 'transfer' ? (
             <Input
@@ -601,6 +581,34 @@ function FinanceTransactionModal({
           </section>
 
           <section className={styles.formBlock} aria-label="Ação">
+          {/* Excluir direto aqui, sem precisar sair da edição e procurar o
+              mesmo lançamento na lista abaixo -- antes só existia lá. */}
+          {editingId && editingTransaction && canDeleteTransaction(editingTransaction) ? (
+            <div className="uf-flex uf-items-center uf-gap-sm uf-flex-wrap">
+              {pendingDeleteId === editingId && editingGroupId ? (
+                <SelectField
+                  id="finance-transaction-edit-delete-scope"
+                  label="Excluir"
+                  value={deleteScope}
+                  onChange={(event) => setDeleteScope(event.target.value)}
+                >
+                  <option value="only">Somente esta parcela</option>
+                  <option value="forward">Esta e as próximas</option>
+                  <option value="all">Todas do grupo</option>
+                </SelectField>
+              ) : null}
+              <DeleteActions
+                isConfirming={pendingDeleteId === editingId}
+                isLoading={transactionState.isMutating}
+                onRequest={() => {
+                  setDeleteScope('only');
+                  setPendingDeleteId(editingId);
+                }}
+                onCancel={() => setPendingDeleteId(null)}
+                onConfirm={() => handleDelete(editingId)}
+              />
+            </div>
+          ) : null}
           <div className="uf-flex uf-items-center uf-justify-end uf-gap-sm uf-flex-wrap">
             {editingId ? (
               <Button variant="ghost" onClick={resetForm} disabled={transactionState.isMutating}>

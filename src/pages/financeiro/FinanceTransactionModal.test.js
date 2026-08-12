@@ -64,13 +64,16 @@ test('Bloco "Dados principais" contém Tipo, Conta, Categoria, Valor e Data', as
   assert.doesNotMatch(slice, /finance-transaction-description/);
 });
 
-test('Bloco "Informações opcionais" contém Descrição, Forma de pagamento, Observação, Parcelas e Recorrência', async () => {
+// Tela simplificada demais (feedback direto do usuário): Forma de pagamento
+// e Observação foram removidas do formulário -- só Descrição sobrevive
+// (é o texto usado como título de cada lançamento na lista de histórico).
+test('Bloco "Informações opcionais" contém Descrição, Parcelas e Recorrência -- Forma de pagamento e Observação foram removidas', async () => {
   const modal = await source('./FinanceTransactionModal.jsx');
   const start = modal.indexOf('aria-label="Informações opcionais"');
   const slice = modal.slice(start, modal.indexOf('aria-label="Ação"', start));
   assert.match(slice, /finance-transaction-description/);
-  assert.match(slice, /finance-transaction-payment-method/);
-  assert.match(slice, /finance-transaction-notes/);
+  assert.doesNotMatch(slice, /finance-transaction-payment-method/);
+  assert.doesNotMatch(slice, /finance-transaction-notes/);
   assert.match(slice, /finance-transaction-installments/);
   assert.match(slice, /Lançamento recorrente/);
 });
@@ -81,6 +84,22 @@ test('Bloco "Ação" contém o botão principal (criar/salvar lançamento)', asy
   const slice = modal.slice(start, modal.indexOf('</section>', start));
   assert.match(slice, /disabled=\{!canSubmit\}/);
   assert.match(slice, /editingId \? 'Salvar lançamento' : 'Criar lançamento'/);
+});
+
+// Feedback direto do usuário: excluir só existia na lista "Lançamentos
+// existentes" mais abaixo -- ao editar um lançamento era preciso sair da
+// edição e procurar a mesma linha na lista. Agora o bloco "Ação" (mesma
+// linha de Cancelar edição/Salvar lançamento) também oferece Excluir,
+// reaproveitando DeleteActions (confirmação em dois passos, nunca
+// window.confirm) e handleDelete -- nenhum mecanismo de exclusão novo.
+test('Bloco "Ação" também oferece Excluir ao editar, reaproveitando DeleteActions/handleDelete -- nunca só na lista', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const start = modal.indexOf('aria-label="Ação"');
+  const slice = modal.slice(start, modal.indexOf('</section>', start));
+  assert.match(slice, /editingId && editingTransaction && canDeleteTransaction\(editingTransaction\)/);
+  assert.match(slice, /<DeleteActions/);
+  assert.match(slice, /isConfirming=\{pendingDeleteId === editingId\}/);
+  assert.match(slice, /onConfirm=\{\(\) => handleDelete\(editingId\)\}/);
 });
 
 // ============================================================================
