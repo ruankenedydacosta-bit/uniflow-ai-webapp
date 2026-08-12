@@ -314,6 +314,40 @@ test('C) start/cancel repetido várias vezes seguidas nunca fica preso em "grava
   }
 });
 
+// ============================================================================
+// HOTFIX FINAL (deadlock "OUVINDO..." travado ao tocar para PARAR, não só
+// ao cancelar) -- CAUSA RAIZ: mediaRecorderAdapter.stop() retorna false em
+// silêncio sempre que o MediaRecorder nativo não está exatamente em
+// "recording" (ex.: já parou sozinho por algum evento nativo não
+// percebido). useUniVoiceInput.stop() repassava esse false sem nenhum
+// dispatch -- o status React ficava travado em LISTENING para sempre,
+// porque um segundo toque no botão repetia exatamente a mesma checagem
+// sempre-falsa. cancel() (que SEMPRE limpa o estado, dispatch CANCEL +
+// releaseAdapter) virou o fallback garantido de stop() quando o stop
+// nativo falha.
+// ============================================================================
+
+test('E) adapter.stop() chamado quando o recorder não está mais "recording" retorna false silenciosamente (precondição real do deadlock)', async () => {
+  const { runtime } = createRuntime();
+  const adapter = createMediaRecorderAdapter({ runtime });
+  await adapter.start();
+  assert.equal(adapter.stop(), true, 'primeira chamada para o recorder realmente "recording"');
+  assert.equal(adapter.stop(), false, 'segunda chamada -- recorder já não está mais "recording", retorna false em silêncio');
+});
+
+test('HOTFIX FINAL: useUniVoiceInput.stop() cai para cancel() quando o adapter falha ao parar -- nunca fica travado em LISTENING', () => {
+  const source = readFileSync(new URL('./useUniVoiceInput.js', import.meta.url), 'utf8');
+  const stopBlock = source.slice(
+    source.indexOf('const stop = useCallback'),
+    source.indexOf('const stop = useCallback') + 400,
+  );
+  assert.match(stopBlock, /const stopped = adapterRef\.current\.stop\(\);/);
+  assert.match(stopBlock, /if \(!stopped\) return cancel\(\);/);
+  // cancel deve estar declarado ANTES de stop (senão o array de
+  // dependências do useCallback de stop quebraria por TDZ).
+  assert.ok(source.indexOf('const cancel = useCallback') < source.indexOf('const stop = useCallback'));
+});
+
 test('D) callback onstop tardio de uma sessão já cancelada nunca produz áudio (a sessão cancelada nunca chega a chamar recorder.start())', async () => {
   const deferred = createDeferred();
   const { runtime, track } = createRuntime({ getUserMedia: () => deferred.promise });

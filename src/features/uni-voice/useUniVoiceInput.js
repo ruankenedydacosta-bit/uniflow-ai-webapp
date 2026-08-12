@@ -211,11 +211,6 @@ export function useUniVoiceInput({
     return requestVoiceMicrophonePermission(browserRuntime);
   }, [runtime]);
 
-  const stop = useCallback(() => {
-    if (!adapterRef.current || state.status !== VOICE_CAPTURE_STATES.LISTENING) return false;
-    return adapterRef.current.stop();
-  }, [state.status]);
-
   const cancel = useCallback(() => {
     requestIdRef.current += 1;
     transcriptionAbortRef.current?.abort('cancelled');
@@ -232,6 +227,25 @@ export function useUniVoiceInput({
     releaseAdapter();
     return true;
   }, [releaseAdapter, state.status]);
+
+  // HOTFIX FINAL (deadlock "OUVINDO..." travado ao tocar para parar):
+  // adapterRef.current.stop() (mediaRecorderAdapter.js) retorna false, em
+  // silêncio, sempre que o MediaRecorder nativo não está exatamente em
+  // "recording" (ex.: já tinha parado sozinho por algum evento nativo não
+  // percebido, ou nunca chegou a iniciar de fato) -- sem nenhum dispatch,
+  // sem nenhum erro. O status React ficava travado em LISTENING para
+  // sempre: como toggle()/handleVoiceClick tratam um segundo toque em
+  // LISTENING como "chamar stop() de novo", e stop() repetia a mesma
+  // checagem sempre-falsa, o botão nunca mais saía desse estado. cancel()
+  // é a única saída deste hook que SEMPRE limpa o estado (dispatch CANCEL +
+  // releaseAdapter), então vira o fallback garantido quando o stop nativo
+  // falha -- o usuário nunca fica preso em "Ouvindo..." sem nenhuma saída.
+  const stop = useCallback(() => {
+    if (!adapterRef.current || state.status !== VOICE_CAPTURE_STATES.LISTENING) return false;
+    const stopped = adapterRef.current.stop();
+    if (!stopped) return cancel();
+    return stopped;
+  }, [cancel, state.status]);
 
   const toggle = useCallback(() => {
     if (state.status === VOICE_CAPTURE_STATES.LISTENING) return stop();

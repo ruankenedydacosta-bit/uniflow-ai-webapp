@@ -637,6 +637,16 @@ test('BLOCO B6: sinônimos de confirmação por voz são aceitos', () => {
   assert.equal(classifyPendingActionReply('isso'), 'confirm');
 });
 
+// BUG REAL EM PRODUCAO: "Sí." (voz, transcrita com acento -- vira "si" após
+// normalizeFinancialText derrubar o acento) não confirmava nada -- "si"
+// nunca esteve na allowlist de sinônimos de "sim", então a Uni pedia para
+// "dizer confirmar" mesmo já tendo sido confirmada.
+test('BUG REAL: "Sí."/"si" (transcrição de voz sem o "m" de "sim") confirma normalmente', () => {
+  assert.equal(classifyPendingActionReply('Sí.'), 'confirm');
+  assert.equal(classifyPendingActionReply('si'), 'confirm');
+  assert.equal(classifyPendingActionReply('Si!'), 'confirm');
+});
+
 test('categoria inexistente retorna categorias disponíveis sem repetir resposta genérica', () => {
   const action = createAction('Gastei 50 reais.');
   const result = resolvePendingActionInput({

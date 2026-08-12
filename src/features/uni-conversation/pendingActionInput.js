@@ -10,7 +10,12 @@ import { normalizeFinancialInstitutionName } from '../financial-institutions/ind
 // padrões -- nunca um "includes" cego que arriscaria confirmar/cancelar a
 // partir de texto ambíguo.
 const CONFIRMATION_PATTERNS = [
-  /^(?:sim|confirmar|confirmo|confirma|confirmado|certo|ok|isso|pode|pode usar|cria)[.!]?$/,
+  // BUG REAL EM PRODUCAO: "Sí." (dito por voz, transcrito com acento --
+  // normalizeFinancialText derruba o acento e vira "si", mas "si" nunca
+  // esteve na lista de sinônimos de "sim") não confirmava nada; a Uni
+  // respondia pedindo para "dizer confirmar" mesmo depois do usuário já
+  // ter confirmado.
+  /^(?:sim|si|confirmar|confirmo|confirma|confirmado|certo|ok|isso|pode|pode usar|cria)[.!]?$/,
   /^(?:pode registrar|pode salvar|pode confirmar|pode continuar)[.!]?$/,
   /^sim,?\s*(?:pode\s+)?confirma(?:r)?[.!]?$/,
   /^confirma(?:r)?\s+isso(?:\s+a[íi])?[.!]?$/,
