@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 /* ---------- Cabeçalho (mesmo padrão de Pagamento e assinatura) ---------- */
@@ -38,10 +38,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 50%;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   cursor: pointer;
 }
 
@@ -59,7 +59,7 @@
   min-width: 0;
   overflow: hidden;
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(20px, 5.6vw, 28px);
   font-weight: 800;
   line-height: 1.2;
@@ -82,10 +82,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 14px;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   cursor: pointer;
 }
 
@@ -108,10 +108,10 @@
 .monthLabel {
   min-width: 0;
   padding: 10px 14px;
-  border: 1px solid rgba(86, 109, 151, .3);
+  border: 1px solid var(--uf-app-border);
   border-radius: 14px;
   background: rgba(10, 22, 46, .6);
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font: inherit;
   font-size: clamp(17px, 4.6vw, 22px);
   font-weight: 800;
@@ -124,10 +124,10 @@
 
 .calendarCard {
   padding: 12px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 20px;
   background:
-    linear-gradient(130deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+    linear-gradient(130deg, var(--uf-app-surface-2), var(--uf-app-surface));
 }
 
 .weekdayRow {
@@ -139,7 +139,7 @@
 
 .weekdayLabel {
   text-align: center;
-  color: #93a3c4;
+  color: var(--uf-app-text-3);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .08em;
@@ -160,7 +160,7 @@
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
-  color: #e7ecf6;
+  color: var(--uf-app-text-2);
   cursor: pointer;
 }
 
@@ -170,17 +170,17 @@
 }
 
 .outsideMonth .dayNumber {
-  color: #51607c;
+  color: var(--uf-app-text-3);
   font-weight: 500;
 }
 
 .hasEvents .dayNumber {
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-weight: 800;
 }
 
 .today .dayNumber {
-  color: #7cc4ff;
+  color: var(--uf-app-primary-text);
 }
 
 .today {
@@ -199,11 +199,11 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #6aa9f5;
+  background: var(--uf-app-primary-text);
 }
 
 .selected .eventDot {
-  background: #cfe2ff;
+  background: var(--uf-app-primary-text);
 }
 
 /* ---------- Painel do dia selecionado ---------- */
@@ -224,7 +224,7 @@
 
 .dayPanelHeader h2 {
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(16px, 4.4vw, 20px);
   font-weight: 800;
   line-height: 1.25;
@@ -240,8 +240,8 @@
   padding: 0 16px;
   border: none;
   border-radius: 14px;
-  background: linear-gradient(100deg, #2563eb, #7c3aed);
-  color: #fff;
+  background: linear-gradient(100deg, var(--uf-app-primary), var(--uf-app-ai));
+  color: var(--uf-app-on-accent);
   font: inherit;
   font-size: 14px;
   font-weight: 720;
@@ -253,7 +253,7 @@
   padding: 14px 16px;
   border-radius: 14px;
   background: rgba(20, 32, 64, .5);
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14.5px;
 }
 
@@ -267,10 +267,10 @@
   align-self: flex-start;
   min-height: 42px;
   padding: 0 18px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 14px;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 14px;
   font-weight: 700;
@@ -293,7 +293,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 14px;
   background:
     linear-gradient(130deg, rgba(14, 31, 62, .55), rgba(4, 13, 33, .6));
@@ -305,7 +305,7 @@
 .itemTime {
   flex: 0 0 auto;
   min-width: 72px;
-  color: #7cc4ff;
+  color: var(--uf-app-primary-text);
   font-size: 12.5px;
   font-weight: 800;
 }
@@ -314,7 +314,7 @@
   min-width: 0;
   flex: 1 1 auto;
   overflow: hidden;
-  color: #e7ecf6;
+  color: var(--uf-app-text-2);
   font-size: 15px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -325,7 +325,7 @@
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
-  color: #7f8db0;
+  color: var(--uf-app-text-3);
 }
 
 .itemChevron svg {
@@ -375,7 +375,7 @@
 }
 
 .field span {
-  color: #9fb0d4;
+  color: var(--uf-app-text-3);
   font-size: 13px;
   font-weight: 700;
 }
@@ -384,10 +384,10 @@
 .field textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid var(--uf-color-border-default);
+  border: 1px solid var(--uf-app-border);
   border-radius: 12px;
-  background: var(--uf-color-bg-sunken);
-  color: var(--uf-color-text-primary);
+  background: var(--uf-app-canvas);
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 15px;
 }
@@ -410,7 +410,7 @@
 
 .fieldRequired span::after {
   content: ' *';
-  color: #f87171;
+  color: var(--uf-app-danger-text);
 }
 
 .allDayRow {
@@ -418,7 +418,7 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #e0e7f5;
+  color: var(--uf-app-text-2);
   font-size: 14.5px;
   font-weight: 600;
 }
@@ -426,12 +426,12 @@
 .allDayRow input {
   width: 18px;
   height: 18px;
-  accent-color: #2563eb;
+  accent-color: var(--uf-app-primary);
 }
 
 .reminderNote {
   margin: 0;
-  color: #7f8db0;
+  color: var(--uf-app-text-3);
   font-size: 12.5px;
 }
 
@@ -439,8 +439,8 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(239, 68, 68, .12);
-  color: #fca5a5;
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
   font-size: 14px;
 }
 

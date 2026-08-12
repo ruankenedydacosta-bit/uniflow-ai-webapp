@@ -11,53 +11,53 @@
      para elas. */
   --simplified-header-height: 102px;
   --simplified-bottom-nav-height: calc(96px + 10px + max(10px, env(safe-area-inset-bottom)));
-  /* LOTE F -- paleta escura UNI escopada a ESTA shell (mesmas chaves
-     --uf-* do Design System, valores do data-theme dark): qualquer
-     componente reutilizado dentro da experiência simplificada (AgendaPage
-     legada, modais, páginas) consome tokens --uf-*. Com o tema do usuário
-     em "light" (padrão do app legado) esses tokens apontavam para cores
-     claras e Vazavam branco por dentro da shell escura. Este bloco fecha
-     o circuito dentro do limite da shell: nenhum vazamento light/legacy
-     aqui, sem tocar theme.css nem migrar componentes. */
-  --uf-color-scheme: dark;
-  --uf-color-scrollbar-thumb: var(--uf-gray-700);
-  --uf-color-scrollbar-thumb-hover: var(--uf-gray-600);
-  --uf-color-bg-canvas: #0B0D12;
-  --uf-color-bg-surface: #14171D;
-  --uf-color-bg-surface-hover: #1B1F27;
-  --uf-color-bg-elevated: #20242C;
-  --uf-color-bg-sunken: #07080C;
-  --uf-color-text-primary: #F4F5F7;
-  --uf-color-text-secondary: #B0B5BF;
-  --uf-color-text-tertiary: #858C98;
-  --uf-color-text-disabled: #626A76;
-  --uf-color-text-inverse: #0B0D12;
-  --uf-color-text-brand: #8BADEF;
-  --uf-color-text-ai: #B39AE0;
-  --uf-color-border-subtle: rgba(255, 255, 255, .06);
-  --uf-color-border-default: rgba(255, 255, 255, .1);
-  --uf-color-border-strong: rgba(255, 255, 255, .17);
-  --uf-color-divider: rgba(255, 255, 255, .07);
-  --uf-color-overlay: rgba(5, 7, 12, .74);
-  --uf-color-primary: #5B8DEF;
-  --uf-color-primary-hover: #76A0F1;
-  --uf-color-primary-active: #4676D4;
-  --uf-color-primary-subtle: rgba(91, 141, 239, .12);
-  --uf-color-ai: #846EB0;
-  --uf-color-ai-hover: #967FC2;
-  --uf-color-ai-active: #705A99;
-  --uf-color-ai-subtle: rgba(132, 110, 176, .12);
-  --uf-focus-ring-color: rgba(91, 141, 239, .62);
-  --uf-shadow-color: 0, 0, 0;
+  /* THEME SYSTEM V2 -- esta shell NAO define mais uma paleta propria.
+     Antes, este bloco fixava valores escuros literais, o que sobrescrevia
+     data-theme dentro de /app/* e deixava o seletor de temas inerte (trocar
+     de tema nao mudava nada na tela). Agora cada token --uf-color-* aqui
+     apenas REPONTA para o token --uf-app-* do tema ativo (theme.css, secao
+     18). O contrato continua valendo para qualquer componente legado
+     reaproveitado dentro da shell -- ele segue lendo --uf-color-*, mas o
+     valor agora acompanha Claro / Escuro / UniFlow / Sistema. */
+  --uf-color-scheme: var(--uf-app-color-scheme, dark);
+  --uf-color-scrollbar-thumb: var(--uf-app-border-strong);
+  --uf-color-scrollbar-thumb-hover: var(--uf-app-text-3);
+  --uf-color-bg-canvas: var(--uf-app-canvas);
+  --uf-color-bg-surface: var(--uf-app-surface);
+  --uf-color-bg-surface-hover: var(--uf-app-surface-2);
+  --uf-color-bg-elevated: var(--uf-app-surface-2);
+  --uf-color-bg-sunken: var(--uf-app-canvas);
+  --uf-color-text-primary: var(--uf-app-text);
+  --uf-color-text-secondary: var(--uf-app-text-2);
+  --uf-color-text-tertiary: var(--uf-app-text-3);
+  --uf-color-text-disabled: var(--uf-app-text-3);
+  --uf-color-text-inverse: var(--uf-app-canvas);
+  --uf-color-text-brand: var(--uf-app-primary-text);
+  --uf-color-text-ai: var(--uf-app-ai-text);
+  --uf-color-border-subtle: var(--uf-app-border);
+  --uf-color-border-default: var(--uf-app-border);
+  --uf-color-border-strong: var(--uf-app-border-strong);
+  --uf-color-divider: var(--uf-app-border);
+  --uf-color-overlay: var(--uf-app-overlay);
+  --uf-color-primary: var(--uf-app-primary);
+  --uf-color-primary-hover: var(--uf-app-primary-text);
+  --uf-color-primary-active: var(--uf-app-primary);
+  --uf-color-primary-subtle: var(--uf-app-primary-subtle);
+  --uf-color-ai: var(--uf-app-ai);
+  --uf-color-ai-hover: var(--uf-app-ai-text);
+  --uf-color-ai-active: var(--uf-app-ai);
+  --uf-color-ai-subtle: var(--uf-app-ai-subtle);
+  --uf-focus-ring-color: var(--uf-app-focus);
+  --uf-shadow-color: var(--uf-app-shadow-rgb);
   --uf-shadow-sm: 0 2px 8px -3px rgba(var(--uf-shadow-color), .36);
   --uf-shadow-md: 0 14px 32px -16px rgba(var(--uf-shadow-color), .5);
   --uf-shadow-lg: 0 28px 60px -24px rgba(var(--uf-shadow-color), .6);
-  --uf-shadow-glow-ai: 0 8px 26px -12px rgba(132, 110, 176, .3);
-  --uf-glass-bg: rgba(18, 22, 30, .76);
-  --uf-glass-bg-strong: rgba(18, 22, 30, .92);
-  --uf-glass-border: var(--uf-color-border-default);
-  --uf-gradient-brand: linear-gradient(100deg, #5B8DEF, #846EB0);
-  --uf-gradient-ai: linear-gradient(135deg, #5B8DEF, #846EB0, #5B8DEF);
+  --uf-shadow-glow-ai: 0 8px 26px -12px var(--uf-app-ai-subtle);
+  --uf-glass-bg: var(--uf-app-glass);
+  --uf-glass-bg-strong: var(--uf-app-glass-strong);
+  --uf-glass-border: var(--uf-app-border);
+  --uf-gradient-brand: linear-gradient(100deg, var(--uf-app-primary), var(--uf-app-ai));
+  --uf-gradient-ai: linear-gradient(135deg, var(--uf-app-primary), var(--uf-app-ai), var(--uf-app-primary));
   min-height: var(--uf-visual-viewport-height, 100dvh);
   height: var(--uf-visual-viewport-height, 100dvh);
   position: fixed;
@@ -71,10 +71,8 @@
      baixo, e o conteúdo não disputa espaço com a navegação inferior. */
   overflow: hidden;
   overscroll-behavior-y: contain;
-  background:
-    radial-gradient(circle at 50% 26%, rgba(37, 99, 235, .13), transparent 32%),
-    #020713;
-  color: #f8fafc;
+  background: var(--uf-app-shell-bg);
+  color: var(--uf-app-text);
   font-size: var(--simplified-user-text-size);
 }
 
@@ -96,9 +94,8 @@
   /* LOTE F -- a malha nunca excede a altura da shell (senão o documento
      voltaria a rolar): tudo o que sobrar fica dentro do .mainContent. */
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(2, 8, 22, .96), rgba(1, 6, 17, .99));
-  box-shadow: 0 0 90px rgba(0, 0, 0, .4);
+  background: var(--uf-app-shell-surface-bg);
+  box-shadow: 0 0 90px rgba(var(--uf-app-shadow-rgb), .4);
 }
 
 .header {
@@ -123,7 +120,7 @@
   display: inline-flex;
   align-items: center;
   gap: 13px;
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 .brandMark {
@@ -145,7 +142,7 @@
 }
 
 .brandLockup strong span {
-  background: linear-gradient(90deg, #7c3aed, #2563eb 52%, #10b981);
+  background: linear-gradient(90deg, var(--uf-app-ai), var(--uf-app-primary) 52%, var(--uf-app-success));
   background-clip: text;
   color: transparent;
 }
@@ -160,7 +157,7 @@
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   cursor: pointer;
 }
 
@@ -173,7 +170,7 @@
 .uniButton:focus-visible,
 .cancelVoice:focus-visible,
 .detailsLink:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 4px;
 }
 
@@ -193,9 +190,9 @@
   right: 8px;
   width: 11px;
   height: 11px;
-  border: 2px solid #020713;
+  border: 2px solid var(--uf-app-canvas);
   border-radius: 50%;
-  background: #10b981;
+  background: var(--uf-app-success);
 }
 
 .notificationCount {
@@ -207,22 +204,22 @@
   display: grid;
   place-items: center;
   padding-inline: 4px;
-  border: 2px solid #020713;
+  border: 2px solid var(--uf-app-canvas);
   border-radius: 999px;
-  background: #10b981;
-  color: #020713;
+  background: var(--uf-app-success);
+  color: var(--uf-app-canvas);
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
 }
 
 .notificationsDropdown {
-  --uf-color-text-primary: #f8fafc;
-  --uf-color-text-secondary: #c3ccdc;
-  --uf-color-text-tertiary: #9aa7bd;
-  --uf-color-primary-subtle: rgba(37, 99, 235, .14);
-  --uf-color-ai-subtle: rgba(124, 58, 237, .16);
-  --uf-color-success: #10b981;
+  --uf-color-text-primary: var(--uf-app-text);
+  --uf-color-text-secondary: var(--uf-app-text-2);
+  --uf-color-text-tertiary: var(--uf-app-text-2);
+  --uf-color-primary-subtle: var(--uf-app-primary-subtle);
+  --uf-color-ai-subtle: var(--uf-app-ai-subtle);
+  --uf-color-success: var(--uf-app-success);
   max-height: 0;
   margin: 0 max(18px, env(safe-area-inset-right));
   padding: 0 18px;
@@ -255,7 +252,7 @@
 }
 
 .notificationsDropdown:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 3px;
 }
 
@@ -273,13 +270,13 @@
 }
 
 .notificationsDropdownHeader h2 {
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: 20px;
 }
 
 .notificationsDropdownHeader p {
   margin-top: 3px;
-  color: #9aa7bd;
+  color: var(--uf-app-text-2);
   font-size: 13px;
 }
 
@@ -290,10 +287,10 @@
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 50%;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 25px;
   line-height: 1;
@@ -301,7 +298,7 @@
 }
 
 .notificationsClose:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 3px;
 }
 
@@ -372,7 +369,7 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  color: #8d97aa;
+  color: var(--uf-app-text-3);
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
@@ -385,13 +382,13 @@
   width: 34px;
   height: 3px;
   border-radius: 99px;
-  background: linear-gradient(90deg, #7c3aed, #22d3ee);
+  background: linear-gradient(90deg, var(--uf-app-ai), var(--uf-app-cyan));
   content: "";
   opacity: 0;
 }
 
 .navigationItemActive {
-  color: #f8fafc;
+  color: var(--uf-app-text);
   background: linear-gradient(180deg, rgba(37, 99, 235, .06), transparent);
 }
 
@@ -417,7 +414,7 @@
 }
 
 .navigationItemActive .navigationIcon {
-  color: #3b82f6;
+  color: var(--uf-app-primary);
   filter: drop-shadow(0 0 7px rgba(34, 211, 238, .55));
 }
 
@@ -428,7 +425,7 @@
   flex-direction: column;
   align-items: center;
   margin-inline: auto;
-  background: #010611;
+  background: var(--uf-app-canvas);
   padding:
     10px
     max(22px, env(safe-area-inset-right))
@@ -443,7 +440,7 @@
 
 .greeting > p:first-child {
   margin: 0 0 6px;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(26px, 7vw, 42px);
   font-weight: 760;
   letter-spacing: 0;
@@ -452,7 +449,7 @@
 
 .greeting h1 {
   margin: 0;
-  background: linear-gradient(90deg, #f8fafc 0 16%, #8b5cf6 28%, #2563eb 57%, #10b981 100%);
+  background: linear-gradient(90deg, var(--uf-app-text) 0 16%, var(--uf-app-ai) 28%, var(--uf-app-primary) 57%, var(--uf-app-success) 100%);
   background-clip: text;
   color: transparent;
   font-size: clamp(38px, 11vw, 66px);
@@ -468,13 +465,13 @@
 .greetingMessage {
   max-width: 560px;
   margin: 8px 0 0;
-  color: #c9cfdb;
+  color: var(--uf-app-text-2);
   font-size: clamp(13px, 3.4vw, 16px);
   line-height: 1.35;
 }
 
 .greetingMessage strong {
-  background: linear-gradient(90deg, #10b981, #2dd4bf);
+  background: linear-gradient(90deg, var(--uf-app-success), var(--uf-app-success-text));
   background-clip: text;
   color: transparent;
   font-weight: 600;
@@ -493,8 +490,8 @@
   border: 1px solid rgba(45, 212, 191, .72);
   border-radius: 24px;
   background: linear-gradient(105deg, rgba(37, 99, 235, .22), rgba(124, 58, 237, .3), rgba(16, 185, 129, .2));
-  box-shadow: 0 0 24px rgba(37, 99, 235, .18);
-  color: #a5f3fc;
+  box-shadow: 0 0 24px var(--uf-app-primary-subtle);
+  color: var(--uf-app-cyan);
   font: inherit;
   font-size: 14px;
   font-weight: 780;
@@ -503,7 +500,7 @@
 }
 
 .voiceActivationButton:hover {
-  border-color: #67e8f9;
+  border-color: var(--uf-app-focus);
   box-shadow: 0 0 30px rgba(34, 211, 238, .24);
 }
 
@@ -518,14 +515,14 @@
 
 .voiceActivation small {
   max-width: 440px;
-  color: #94a3b8;
+  color: var(--uf-app-text-2);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .voiceActivation p {
   margin: 0;
-  color: #fda4af;
+  color: var(--uf-app-danger-text);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -546,14 +543,14 @@
   display: grid;
   gap: 3px;
   margin: 0;
-  color: #d7deea;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   line-height: 1.45;
 }
 
 .transcript span,
 .uniResponse span {
-  color: #67e8f9;
+  color: var(--uf-app-focus);
   font-size: 11px;
   font-weight: 760;
   letter-spacing: .12em;
@@ -570,7 +567,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  color: #aeb8c9;
+  color: var(--uf-app-text-2);
   font-size: 13.5px;
   line-height: 1.4;
   animation: uniProcessingFade 320ms ease;
@@ -581,7 +578,7 @@
   height: 7px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: linear-gradient(105deg, #234cff, #248de3 50%, #12c79c);
+  background: linear-gradient(105deg, var(--uf-app-primary), var(--uf-app-primary) 50%, var(--uf-app-success));
   animation: uniProcessingPulse 1.4s ease-in-out infinite;
 }
 
@@ -601,7 +598,7 @@
   align-items: center;
   justify-content: center;
   justify-self: end;
-  color: #67e8f9;
+  color: var(--uf-app-focus);
   font-size: 13px;
   font-weight: 650;
 }
@@ -667,9 +664,9 @@
   -webkit-user-drag: none;
   background:
     radial-gradient(circle at 50% 34%, rgba(37, 99, 235, .24), transparent 56%),
-    linear-gradient(#02091b, #02091b) padding-box,
-    linear-gradient(135deg, #8b5cf6, #2563eb 48%, #67e8f9 72%, #2dd4bf) border-box;
-  color: #fff;
+    linear-gradient(var(--uf-app-canvas), var(--uf-app-canvas)) padding-box,
+    linear-gradient(135deg, var(--uf-app-ai), var(--uf-app-primary) 48%, var(--uf-app-focus) 72%, var(--uf-app-success-text)) border-box;
+  color: var(--uf-app-on-accent);
   box-shadow:
     0 22px 58px rgba(5, 60, 170, .32),
     0 0 26px rgba(34, 211, 238, .24),
@@ -762,25 +759,25 @@
   box-shadow:
     0 24px 64px rgba(37, 99, 235, .42),
     0 0 38px rgba(34, 211, 238, .32),
-    inset 0 0 55px rgba(124, 58, 237, .18);
+    inset 0 0 55px var(--uf-app-ai-subtle);
   animation: simplifiedListening 1.4s ease-in-out infinite;
 }
 
 .uniButton[data-state="transcribing"] .uniButtonRing,
 .uniButton[data-state="interpreting"] .uniButtonRing,
 .uniButton[data-state="executing"] .uniButtonRing {
-  border-top-color: #67e8f9;
+  border-top-color: var(--uf-app-focus);
   border-right-color: transparent;
   animation: simplifiedSpin 1.6s linear infinite;
 }
 
 .uniButton[data-state="success"] {
-  border-color: #10b981;
+  border-color: var(--uf-app-success);
   box-shadow: 0 0 38px rgba(16, 185, 129, .34);
 }
 
 .uniButton[data-state="error"] {
-  border-color: #ef4444;
+  border-color: var(--uf-app-danger);
   box-shadow: 0 0 30px rgba(239, 68, 68, .22);
 }
 
@@ -792,7 +789,7 @@
   border: 1px solid rgba(103, 232, 249, .4);
   border-radius: 999px;
   background: rgba(3, 12, 29, .9);
-  color: #dbeafe;
+  color: var(--uf-app-primary-text);
   font: inherit;
   font-weight: 650;
   cursor: pointer;
@@ -818,9 +815,9 @@
   justify-self: center;
   border: 6px solid rgba(16, 185, 129, .16);
   border-radius: 50%;
-  background: #2dd4bf;
+  background: var(--uf-app-success-text);
   background-clip: padding-box;
-  box-shadow: 0 0 16px #10b981;
+  box-shadow: 0 0 16px var(--uf-app-success);
 }
 
 .availabilityCard > span:last-child {
@@ -829,12 +826,12 @@
 }
 
 .availabilityCard strong {
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(15px, 4vw, 18px);
 }
 
 .availabilityCard small {
-  color: #9aa6ba;
+  color: var(--uf-app-text-2);
   font-size: clamp(14px, 3.7vw, 17px);
   line-height: 1.35;
 }
@@ -850,7 +847,7 @@
 }
 
 .placeholderEyebrow {
-  color: #67e8f9;
+  color: var(--uf-app-focus);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .24em;
@@ -859,14 +856,14 @@
 
 .placeholderPage h1 {
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(32px, 8vw, 52px);
 }
 
 .placeholderPage p {
   max-width: 420px;
   margin: 0;
-  color: #aeb7c8;
+  color: var(--uf-app-text-2);
   font-size: 18px;
   line-height: 1.5;
 }

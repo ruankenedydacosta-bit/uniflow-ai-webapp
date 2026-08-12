@@ -27,6 +27,7 @@ import {
   SimplifiedAccountPage,
   SimplifiedAccountSubpagePlaceholder,
   SimplifiedEditProfilePage,
+  SimplifiedAppearancePage,
   SimplifiedMyAccountsPage,
   SimplifiedPaymentHistoryPage,
   SimplifiedPaymentsPage,
@@ -260,6 +261,13 @@ export const appRoutes = [
     element: <SimplifiedVoicePage />,
   },
   {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.APPEARANCE].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.APPEARANCE].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.APPEARANCE].title,
+    simplified: true,
+    element: <SimplifiedAppearancePage />,
+  },
+  {
     path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path,
     label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].title,
     title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].title,
@@ -282,6 +290,7 @@ export const appRoutes = [
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.APPEARANCE].path
     ))
     .map((subroute) => ({
       path: subroute.path,

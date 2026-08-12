@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 /* ---------- Cabeçalho ---------- */
@@ -38,10 +38,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 50%;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   cursor: pointer;
 }
 
@@ -59,7 +59,7 @@
   min-width: 0;
   overflow: hidden;
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(22px, 6vw, 30px);
   font-weight: 800;
   line-height: 1.2;
@@ -69,7 +69,7 @@
 
 .subtitle {
   margin: 2px 0 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13.5px;
 }
 
@@ -83,9 +83,9 @@
   border: 2px solid transparent;
   border-radius: 16px;
   background:
-    linear-gradient(#030b1d, #030b1d) padding-box,
-    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
-  color: #f8fafc;
+    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
+    linear-gradient(110deg, var(--uf-app-success), var(--uf-app-cyan) 35%, var(--uf-app-primary) 66%, var(--uf-app-ai)) border-box;
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 15px;
   font-weight: 720;
@@ -103,7 +103,7 @@
   width: 100%;
   height: 100%;
   fill: none;
-  stroke: #2dd4bf;
+  stroke: var(--uf-app-success-text);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2.2;
@@ -124,12 +124,12 @@
   padding: 20px;
   border-radius: 22px;
   border: 1px solid rgba(124, 58, 237, .4);
-  background: linear-gradient(150deg, rgba(124, 58, 237, .16), rgba(4, 13, 33, .94));
+  background: linear-gradient(150deg, var(--uf-app-ai-subtle), var(--uf-app-surface));
 }
 
 .humanChannel {
   border-color: rgba(16, 185, 129, .4);
-  background: linear-gradient(150deg, rgba(16, 185, 129, .16), rgba(4, 13, 33, .94));
+  background: linear-gradient(150deg, rgba(16, 185, 129, .16), var(--uf-app-surface));
 }
 
 .channelTop {
@@ -155,7 +155,7 @@
   place-items: center;
   border-radius: 50%;
   background: rgba(16, 185, 129, .25);
-  color: #2dd4bf;
+  color: var(--uf-app-success-text);
 }
 
 .channelMascotAlt svg {
@@ -176,12 +176,12 @@
   place-items: center;
   border-radius: 50%;
   background: rgba(124, 58, 237, .3);
-  color: #a78bfa;
+  color: var(--uf-app-ai-text);
 }
 
 .channelBubbleAlt {
   background: rgba(16, 185, 129, .3);
-  color: #2dd4bf;
+  color: var(--uf-app-success-text);
 }
 
 .channelBubble svg,
@@ -201,7 +201,7 @@
 
 .channelCard p {
   margin: 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 12.5px;
   line-height: 1.5;
   flex: 1 1 auto;
@@ -224,12 +224,12 @@
 }
 
 .whatsAppButton {
-  background: #16a34a !important;
-  color: #ffffff !important;
+  background: var(--uf-app-success) !important;
+  color: var(--uf-app-on-accent) !important;
 }
 
 .whatsAppButton:hover:not(:disabled) {
-  background: #15803d !important;
+  background: var(--uf-app-success) !important;
 }
 
 /* ---------- Cards genéricos ---------- */
@@ -239,14 +239,14 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 22px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  background: var(--uf-app-card-bg);
 }
 
 .card h2 {
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: 16px;
   font-weight: 750;
 }
@@ -262,7 +262,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: #5e85ff;
+  color: var(--uf-app-primary-text);
   font: inherit;
   font-size: 13.5px;
   font-weight: 650;
@@ -272,9 +272,9 @@
 .emptyState {
   margin: 0;
   padding: 12px 14px;
-  border: 1px dashed rgba(86, 109, 151, .4);
+  border: 1px dashed var(--uf-app-border);
   border-radius: 14px;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -283,8 +283,8 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(239, 68, 68, .12);
-  color: #fca5a5;
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
   font-size: 14px;
 }
 
@@ -304,7 +304,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid rgba(86, 109, 151, .28);
+  border: 1px solid var(--uf-app-border);
   border-radius: 14px;
   background: rgba(4, 13, 33, .35);
 }
@@ -316,14 +316,14 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(37, 99, 235, .18);
-  color: #5e93ff;
+  background: var(--uf-app-primary-subtle);
+  color: var(--uf-app-primary-text);
 }
 
-.tone_resolved { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
-.tone_in_review { background: rgba(245, 158, 11, .18); color: #f59e0b; }
-.tone_open { background: rgba(37, 99, 235, .18); color: #5e93ff; }
-.tone_closed { background: rgba(148, 163, 184, .18); color: #94a3b8; }
+.tone_resolved { background: var(--uf-app-success-subtle); color: var(--uf-app-success-text); }
+.tone_in_review { background: var(--uf-app-warning-subtle); color: var(--uf-app-warning); }
+.tone_open { background: var(--uf-app-primary-subtle); color: var(--uf-app-primary-text); }
+.tone_closed { background: rgba(148, 163, 184, .18); color: var(--uf-app-text-2); }
 
 .requestIcon svg {
   width: 17px;
@@ -351,7 +351,7 @@
 }
 
 .requestInfo small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 12px;
 }
 
@@ -370,8 +370,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(16, 185, 129, .18);
-  color: #22c55e;
+  background: var(--uf-app-success-subtle);
+  color: var(--uf-app-success);
 }
 
 .whatsAppIcon svg {
@@ -391,7 +391,7 @@
 
 .whatsAppInfo p {
   margin: 2px 0 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13px;
 }
 
@@ -410,14 +410,14 @@
 
 .scheduleRow p {
   margin: 2px 0 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13px;
   line-height: 1.5;
 }
 
 .scheduleNote {
   margin: 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -441,9 +441,9 @@
   stroke-width: 2.2;
 }
 
-.toneBlue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
-.tonePurple { background: rgba(124, 58, 237, .18); color: #a78bfa; }
-.toneGreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+.toneBlue { background: var(--uf-app-primary-subtle); color: var(--uf-app-primary-text); }
+.tonePurple { background: var(--uf-app-ai-subtle); color: var(--uf-app-ai-text); }
+.toneGreen { background: var(--uf-app-success-subtle); color: var(--uf-app-success-text); }
 
 /* ---------- Como funciona ---------- */
 
@@ -479,8 +479,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(37, 99, 235, .18);
-  color: #2dd4bf;
+  background: var(--uf-app-primary-subtle);
+  color: var(--uf-app-success-text);
   font-size: 20px;
 }
 
@@ -499,14 +499,14 @@
 }
 
 .step small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 11.5px;
   line-height: 1.4;
 }
 
 .stepArrow {
   flex: 0 0 auto;
-  color: #5b6780;
+  color: var(--uf-app-text-3);
   font-size: 18px;
 }
 
@@ -519,7 +519,7 @@
   padding: 18px 20px;
   border: 1px solid rgba(124, 58, 237, .4);
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, .16), rgba(37, 99, 235, .1));
+  background: linear-gradient(135deg, var(--uf-app-ai-subtle), rgba(37, 99, 235, .1));
 }
 
 .finalMascot {
@@ -542,13 +542,13 @@
 }
 
 .finalText strong {
-  color: #c4b5fd;
+  color: var(--uf-app-ai-text);
   font-size: 15px;
 }
 
 .finalText p {
   margin: 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13px;
 }
 
@@ -556,7 +556,7 @@
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
-  color: #a78bfa;
+  color: var(--uf-app-ai-text);
 }
 
 .finalShield svg {
@@ -574,7 +574,7 @@
 .backButton:focus-visible,
 .talkButton:focus-visible,
 .linkButton:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 

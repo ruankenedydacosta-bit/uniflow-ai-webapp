@@ -3,12 +3,14 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { ThemeContext } from './ThemeContext.js';
 import { THEME_IDS, normalizeThemePreference } from './themeConstants.js';
 import {
   applyThemeToRoot,
+  beginThemeTransition,
   resolveEffectiveTheme,
   resolveSystemTheme,
   subscribeToSystemTheme,
@@ -25,8 +27,20 @@ export function ThemeProvider({ children }) {
     return subscribeToSystemTheme(setSystemTheme);
   }, [selectedTheme]);
 
+  // A primeira aplicação é a pintura inicial da página, não uma TROCA: animar
+  // ali faria o app nascer fazendo cross-fade a partir do tema errado. O
+  // cross-fade só existe a partir da segunda aplicação em diante.
+  const hasPaintedRef = useRef(false);
+
   useLayoutEffect(() => {
-    applyThemeToRoot(globalThis.document?.documentElement, selectedTheme, effectiveTheme);
+    const root = globalThis.document?.documentElement;
+    const cancelTransition = hasPaintedRef.current
+      ? beginThemeTransition(root)
+      : null;
+    hasPaintedRef.current = true;
+
+    applyThemeToRoot(root, selectedTheme, effectiveTheme);
+    return cancelTransition ?? undefined;
   }, [effectiveTheme, selectedTheme]);
 
   const setTheme = useCallback((preference) => {

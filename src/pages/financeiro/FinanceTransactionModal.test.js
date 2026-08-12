@@ -116,8 +116,8 @@ test('CSS de Registros redefine os tokens --uf-* com a paleta escura oficial (nÃ
   const css = await source('../../features/simplified-app/simplifiedRecords.module.css');
   const start = css.indexOf('.transactionDialogDark {');
   const slice = css.slice(start, css.indexOf('}', start));
-  assert.match(slice, /--uf-color-bg-elevated: linear-gradient\(145deg, rgba\(14, 31, 62, \.96\), rgba\(4, 13, 33, \.98\)\);/);
-  assert.match(slice, /--uf-color-text-primary: #f8fafc;/);
+  assert.match(slice, /--uf-color-bg-elevated: linear-gradient\(145deg, var\(--uf-app-surface-2\), var\(--uf-app-surface\)\);/);
+  assert.match(slice, /--uf-color-text-primary: var\(--uf-app-text\);/);
 });
 
 test('CSS de FinanceTransactionModal usa tokens --uf-* (reativo ao tema em qualquer contexto) para os blocos e o tamanho do diÃ¡logo', async () => {

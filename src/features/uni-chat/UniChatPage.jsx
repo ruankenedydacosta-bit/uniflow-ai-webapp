@@ -2706,9 +2706,23 @@ export default function UniChatPage({ variant = 'full' }) {
       });
       saveHistory(updated);
 
-      const queued = pendingSyncRef.current.splice(0);
-      for (const qMsg of queued) {
-        await dataService.saveMessage(dbConvId, qMsg);
+      // BUG REAL (persistência intermitente): um `splice(0)` único aqui
+      // captura só o que já estava na fila NO MOMENTO da leitura -- uma
+      // mensagem empurrada para pendingSyncRef DURANTE os awaits do loop
+      // abaixo (ex.: a resposta da Uni chegando poucos ms depois da
+      // mensagem do usuário, ainda dentro desta promoção) nunca é incluída
+      // neste `queued`, e como `finally` já libera promotionInProgressRef
+      // logo em seguida, essa mensagem stranded só seria salva se uma
+      // PRÓXIMA mensagem qualquer fosse enviada depois -- se ela for a
+      // última mensagem do turno, fica perdida para sempre. Drenar em loop
+      // até a fila ficar realmente vazia fecha essa janela: como não há
+      // nenhum `await` entre a checagem final do `while` e o `finally`,
+      // nada pode inserir na fila nesse intervalo.
+      while (pendingSyncRef.current.length) {
+        const queued = pendingSyncRef.current.splice(0);
+        for (const qMsg of queued) {
+          await dataService.saveMessage(dbConvId, qMsg);
+        }
       }
     } finally {
       promotionInProgressRef.current = false;

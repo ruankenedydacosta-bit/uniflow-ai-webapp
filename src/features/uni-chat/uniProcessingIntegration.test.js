@@ -108,7 +108,9 @@ test('identidade visual usa a paleta oficial (gradiente azul/roxo/verde) -- não
   const css = await source('../simplified-app/simplifiedApp.module.css');
   const idx = css.indexOf('.uniProcessingDot {');
   const slice = css.slice(idx, idx + 200);
-  assert.match(slice, /linear-gradient\(105deg, #234cff, #248de3 50%, #12c79c\)/);
+  // Mesma paleta oficial (azul -> azul claro -> verde), agora pelos tokens
+  // do tema para o indicador não destoar do fundo em Claro/Escuro.
+  assert.match(slice, /linear-gradient\(105deg, var\(--uf-app-primary\), var\(--uf-app-primary\) 50%, var\(--uf-app-success\)\)/);
 });
 
 // ============================================================================

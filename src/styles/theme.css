@@ -705,3 +705,234 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
   --uf-gradient-mesh-2: radial-gradient(circle at 85% 85%, rgba(124,58,237,.22), transparent 55%);
   --uf-gradient-mesh-3: radial-gradient(circle at 45% 45%, rgba(16,185,129,.12), transparent 55%);
 }
+
+
+/* ============================================================================
+   18. CAMADA DE APLICAÇÃO (--uf-app-*) — TOKENS DOS 4 TEMAS
+   ============================================================================
+   Camada semântica consumida pela experiência simplificada (/app/*). Existe
+   porque a shell simplificada nasceu com uma paleta escura FIXA embutida
+   (bloco "LOTE F"), que sobrescrevia data-theme e tornava o seletor de temas
+   inerte: trocar de tema não mudava nada. Aqui cada papel visual ganha um
+   token único, e cada tema declara SEU valor para esse papel.
+
+   Por que --uf-app-* e não reaproveitar --uf-color-*: os tokens --uf-color-*
+   descrevem a superfície (bg/text/primary). Faltava o papel "cor legível de
+   um estado SOBRE a superfície atual" (ex.: verde de receita), que precisa
+   escurecer no Claro e clarear no Escuro. Misturar os dois papéis no mesmo
+   token é justamente o que produz texto ilegível ao trocar de tema.
+
+   FUNDAMENTO PERCEPTIVO (as escolhas abaixo não são estéticas apenas):
+
+   · Claro — canvas #F4F7FC, nunca #FFF puro. Branco pleno em tela emissiva
+     espalha luz na retina (halation/glare) e aumenta fadiga em leitura longa;
+     3–5% de tinta fria reduz o efeito sem perder a sensação de "claro". Texto
+     #0F172A em vez de preto puro pela mesma razão, na direção oposta.
+   · Escuro — canvas #12141A, nunca #000 puro. Preto pleno com texto branco
+     maximiza o contraste de borda e provoca halation (o texto "vibra"),
+     especialmente em astigmatismo. Acentos DESSATURADOS: croma alto sobre
+     fundo escuro gera aberração cromática (o olho não foca os dois extremos
+     do espectro no mesmo plano) e cansa mais rápido.
+   · UniFlow — paleta da marca: azul #2563EB (confiança/estabilidade), roxo
+     #7C3AED (inovação/IA), verde #10B981 (crescimento) sobre azul-noite
+     #030B1D. É o tema de maior carga estética; por isso os textos usam
+     versões CLARAS dos acentos (#5E93FF/#A78BFA/#2DD4BF), nunca o acento
+     puro, que não atingiria contraste legível sobre o canvas profundo.
+
+   Todos os pares texto/fundo desta seção são verificados por teste automático
+   (themeSystem.test.js) contra WCAG 2.1 AA: 4.5:1 para texto normal e 3:1
+   para texto grande e elementos de interface.
+============================================================================ */
+
+/* --- Tema CLARO (também o padrão de :root antes de qualquer data-theme) --- */
+:root,
+[data-theme="light"]{
+  --uf-app-canvas:         #F4F7FC;
+  --uf-app-surface:        #FFFFFF;
+  --uf-app-surface-2:      #F7F9FD;
+  --uf-app-surface-3:      #EEF2F9;
+  --uf-app-border:         rgba(15,23,42,.10);
+  --uf-app-border-strong:  rgba(15,23,42,.18);
+
+  --uf-app-text:           #0F172A;
+  --uf-app-text-2:         #475569;
+  --uf-app-text-3:         #64748B;
+
+  --uf-app-primary:        #1D4ED8;
+  --uf-app-primary-text:   #1D4ED8;
+  --uf-app-ai:             #7C3AED;
+  --uf-app-ai-text:        #6D28D9;
+  --uf-app-success:        #059669;
+  --uf-app-success-text:   #047857;
+  --uf-app-danger:         #DC2626;
+  --uf-app-danger-text:    #B91C1C;
+  --uf-app-warning:        #D97706;
+  --uf-app-warning-text:   #B45309;
+
+  --uf-app-focus:          #1D4ED8;
+  --uf-app-cyan:           #0E7490;
+  --uf-app-on-accent:      #FFFFFF;
+  --uf-app-card-bg:        linear-gradient(145deg, #FFFFFF, #F7F9FD);
+  --uf-app-card-bg-2:      linear-gradient(145deg, #F7F9FD, #EEF2F9);
+
+  --uf-app-color-scheme:   light;
+  --uf-app-overlay:        rgba(15,23,42,.42);
+  --uf-app-primary-subtle: rgba(29,78,216,.10);
+  --uf-app-ai-subtle:      rgba(124,58,237,.10);
+  --uf-app-success-subtle: rgba(5,150,105,.12);
+  --uf-app-danger-subtle:  rgba(220,38,38,.10);
+  --uf-app-warning-subtle: rgba(217,119,6,.12);
+  --uf-app-shadow-rgb:     15, 23, 42;
+  --uf-app-glass:          rgba(255,255,255,.74);
+  --uf-app-glass-strong:   rgba(255,255,255,.92);
+  --uf-app-shell-bg:
+    radial-gradient(circle at 50% 26%, rgba(29,78,216,.06), transparent 34%),
+    #F4F7FC;
+  --uf-app-shell-surface-bg:
+    linear-gradient(180deg, #FFFFFF, #F4F7FC);
+}
+
+/* --- Tema ESCURO --- */
+[data-theme="dark"]{
+  --uf-app-canvas:         #12141A;
+  --uf-app-surface:        #1A1D24;
+  --uf-app-surface-2:      #22262F;
+  --uf-app-surface-3:      #2A2F39;
+  --uf-app-border:         rgba(255,255,255,.10);
+  --uf-app-border-strong:  rgba(255,255,255,.18);
+
+  --uf-app-text:           #F1F3F7;
+  --uf-app-text-2:         #B4BAC6;
+  --uf-app-text-3:         #8A91A0;
+
+  --uf-app-primary:        #5B8DEF;
+  --uf-app-primary-text:   #8FB4F5;
+  --uf-app-ai:             #A78BFA;
+  --uf-app-ai-text:        #C4B5FD;
+  --uf-app-success:        #34D399;
+  --uf-app-success-text:   #6EE7B7;
+  --uf-app-danger:         #F87171;
+  --uf-app-danger-text:    #FCA5A5;
+  --uf-app-warning:        #FBBF24;
+  --uf-app-warning-text:   #FCD34D;
+
+  --uf-app-focus:          #7CC4FF;
+  --uf-app-cyan:           #67E8F9;
+  --uf-app-on-accent:      #0B0D12;
+  --uf-app-card-bg:        linear-gradient(145deg, #1E222A, #16191F);
+  --uf-app-card-bg-2:      linear-gradient(145deg, #22262F, #1A1D24);
+
+  --uf-app-color-scheme:   dark;
+  --uf-app-overlay:        rgba(5,7,12,.74);
+  --uf-app-primary-subtle: rgba(91,141,239,.14);
+  --uf-app-ai-subtle:      rgba(167,139,250,.14);
+  --uf-app-success-subtle: rgba(52,211,153,.14);
+  --uf-app-danger-subtle:  rgba(248,113,113,.14);
+  --uf-app-warning-subtle: rgba(251,191,36,.14);
+  --uf-app-shadow-rgb:     0, 0, 0;
+  --uf-app-glass:          rgba(26,29,36,.78);
+  --uf-app-glass-strong:   rgba(26,29,36,.94);
+  --uf-app-shell-bg:
+    radial-gradient(circle at 50% 26%, rgba(91,141,239,.07), transparent 34%),
+    #12141A;
+  --uf-app-shell-surface-bg:
+    linear-gradient(180deg, #16191F, #101216);
+}
+
+/* --- Tema UNIFLOW (identidade da marca) --- */
+[data-theme="uniflow"]{
+  --uf-app-canvas:         #030B1D;
+  --uf-app-surface:        #0A1935;
+  --uf-app-surface-2:      #0E1F3E;
+  --uf-app-surface-3:      #142B52;
+  --uf-app-border:         rgba(86,109,151,.42);
+  --uf-app-border-strong:  rgba(86,109,151,.62);
+
+  --uf-app-text:           #F8FAFC;
+  --uf-app-text-2:         #A8B2C5;
+  --uf-app-text-3:         #7C8AA8;
+
+  --uf-app-primary:        #2563EB;
+  --uf-app-primary-text:   #5E93FF;
+  --uf-app-ai:             #7C3AED;
+  --uf-app-ai-text:        #A78BFA;
+  --uf-app-success:        #10B981;
+  --uf-app-success-text:   #2DD4BF;
+  --uf-app-danger:         #EF4444;
+  --uf-app-danger-text:    #FCA5A5;
+  --uf-app-warning:        #F59E0B;
+  --uf-app-warning-text:   #FBBF24;
+
+  --uf-app-focus:          #67E8F9;
+  --uf-app-cyan:           #22D3EE;
+  --uf-app-on-accent:      #FFFFFF;
+  --uf-app-card-bg:        linear-gradient(145deg, rgba(14,31,62,.90), rgba(4,13,33,.94));
+  --uf-app-card-bg-2:      linear-gradient(145deg, rgba(20,43,82,.90), rgba(10,25,53,.94));
+
+  --uf-app-color-scheme:   dark;
+  --uf-app-overlay:        rgba(2,4,10,.80);
+  --uf-app-primary-subtle: rgba(37,99,235,.18);
+  --uf-app-ai-subtle:      rgba(124,58,237,.18);
+  --uf-app-success-subtle: rgba(16,185,129,.18);
+  --uf-app-danger-subtle:  rgba(239,68,68,.16);
+  --uf-app-warning-subtle: rgba(245,158,11,.18);
+  --uf-app-shadow-rgb:     2, 6, 20;
+  --uf-app-glass:          rgba(10,25,53,.72);
+  --uf-app-glass-strong:   rgba(10,25,53,.90);
+  /* Malha de gradientes da identidade: azul -> roxo -> verde sobre
+     azul-noite, o mesmo eixo cromatico do material de marca. */
+  --uf-app-shell-bg:
+    radial-gradient(circle at 50% 26%, rgba(37,99,235,.13), transparent 32%),
+    #020713;
+  --uf-app-shell-surface-bg:
+    radial-gradient(circle at 18% 8%, rgba(37,99,235,.16), transparent 46%),
+    radial-gradient(circle at 84% 92%, rgba(124,58,237,.14), transparent 48%),
+    radial-gradient(circle at 50% 55%, rgba(16,185,129,.06), transparent 55%),
+    linear-gradient(180deg, rgba(2,8,22,.96), rgba(1,6,17,.99));
+}
+
+
+/* ============================================================================
+   19. TRANSIÇÃO ENTRE TEMAS — CROSS-FADE CROMÁTICO
+   ============================================================================
+   Trocar de tema muda a luminância de praticamente toda a tela ao mesmo
+   tempo. Sem interpolação isso é um corte seco: um degrau abrupto de brilho
+   que dispara resposta de sobressalto, força reacomodação pupilar e, na
+   prática, faz o usuário duvidar se o app "quebrou". Interpolando as cores
+   por ~320ms o sistema visual lê o evento como UMA transformação contínua do
+   mesmo objeto (continuidade de objeto), e não como uma tela nova aparecendo.
+
+   Por que só durante a troca: manter transição de cor em `*` de forma
+   permanente atrasaria todo hover/foco do app e custaria repaint contínuo. O
+   atributo data-theme-transition é ligado pelo ThemeProvider apenas na janela
+   da troca e removido em seguida.
+
+   Só propriedades de COR são interpoladas — nada de tamanho, posição ou
+   layout. Trocar de tema nunca move um card ou um texto de lugar.
+============================================================================ */
+[data-theme-transition="active"],
+[data-theme-transition="active"] *,
+[data-theme-transition="active"] *::before,
+[data-theme-transition="active"] *::after{
+  transition:
+    background-color var(--uf-theme-transition-duration, 320ms) ease,
+    background-image  var(--uf-theme-transition-duration, 320ms) ease,
+    border-color      var(--uf-theme-transition-duration, 320ms) ease,
+    color             var(--uf-theme-transition-duration, 320ms) ease,
+    fill              var(--uf-theme-transition-duration, 320ms) ease,
+    stroke            var(--uf-theme-transition-duration, 320ms) ease,
+    box-shadow        var(--uf-theme-transition-duration, 320ms) ease
+    !important;
+}
+
+/* Vestibular / enxaqueca fotossensível: quem pediu menos movimento ao SO
+   recebe a troca instantânea, sem interpolação. A funcionalidade é idêntica —
+   só a animação desaparece. */
+@media (prefers-reduced-motion: reduce){
+  [data-theme-transition="active"],
+  [data-theme-transition="active"] *,
+  [data-theme-transition="active"] *::before,
+  [data-theme-transition="active"] *::after{
+    transition: none !important;
+  }
+}

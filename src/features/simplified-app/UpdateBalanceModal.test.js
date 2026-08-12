@@ -181,9 +181,12 @@ test('CSS redefine os tokens --uf-* de fundo/texto/borda em .balanceDialog com a
   const css = await source('./UpdateBalanceModal.module.css');
   const dialogStart = css.indexOf('.balanceDialog {');
   const dialogSlice = css.slice(dialogStart, css.indexOf('}', dialogStart));
-  assert.match(dialogSlice, /--uf-color-bg-elevated: linear-gradient\(145deg, rgba\(14, 31, 62, \.96\), rgba\(4, 13, 33, \.98\)\);/);
-  assert.match(dialogSlice, /--uf-color-text-primary: #f8fafc;/);
-  assert.match(dialogSlice, /--uf-color-border-default: rgba\(86, 109, 151, \.42\);/);
+  // THEME SYSTEM V2: a identidade continua sendo a mesma, mas agora vem do
+  // token do tema ativo em vez de um literal. Fixar o hexadecimal aqui era o
+  // que impedia o diálogo de acompanhar Claro / Escuro / UniFlow.
+  assert.match(dialogSlice, /--uf-color-bg-elevated: linear-gradient\(145deg, var\(--uf-app-surface-2\), var\(--uf-app-surface\)\);/);
+  assert.match(dialogSlice, /--uf-color-text-primary: var\(--uf-app-text\);/);
+  assert.match(dialogSlice, /--uf-color-border-default: var\(--uf-app-border\);/);
 });
 
 test('.darkOverlay força fundo escuro com blur, mesmo se a folha de estilo do Modal compartilhado carregar depois', async () => {

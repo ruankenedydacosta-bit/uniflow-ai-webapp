@@ -19,9 +19,13 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // foram removidos TOTALMENTE (nunca só escondidos do menu) -- Notificações
 // já mora exclusivamente no sino da Home; Privacidade e dados fica para uma
 // tarefa futura junto de LGPD/exportação/exclusão de conta.
-test('ACCOUNT_SUBROUTES tem exatamente os 9 paths pedidos, sob /app/conta/ -- notificacoes/privacidade removidos', () => {
+test('ACCOUNT_SUBROUTES tem exatamente os 10 paths pedidos, sob /app/conta/ -- notificacoes/privacidade removidos', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path).sort();
+  // THEME SYSTEM V2: /aparencia entrou porque os 4 temas só existiam em
+  // /configuracoes (app legado), rota que a experiência simplificada nunca
+  // abre -- na prática o usuário de /app/* não tinha como trocar de tema.
   assert.deepEqual(paths, [
+    '/app/conta/aparencia',
     '/app/conta/editar-perfil',
     '/app/conta/minhas-contas',
     '/app/conta/pagamentos',

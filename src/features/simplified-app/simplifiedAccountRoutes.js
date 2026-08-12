@@ -21,6 +21,7 @@ export const ACCOUNT_SUBROUTE_IDS = Object.freeze({
   PAYMENT_HISTORY: 'payment-history',
   MY_ACCOUNTS: 'my-accounts',
   VOICE: 'voice',
+  APPEARANCE: 'appearance',
   SUPPORT: 'support',
   ABOUT: 'about',
 });
@@ -64,6 +65,15 @@ export const ACCOUNT_SUBROUTES = Object.freeze({
     path: '/app/conta/voz',
     title: 'Voz da Uni',
     description: 'Escolha como a Uni deve desenvolver as respostas.',
+  }),
+  // THEME SYSTEM V2: os 4 temas so existiam em /configuracoes (app legado),
+  // rota que a experiencia simplificada nunca abre -- na pratica o usuario
+  // de /app/* nao tinha como trocar de tema. Esta subrota da a Aparencia um
+  // lar dentro do proprio app.
+  [ACCOUNT_SUBROUTE_IDS.APPEARANCE]: Object.freeze({
+    path: '/app/conta/aparencia',
+    title: 'Aparência',
+    description: 'Escolha o tema do aplicativo.',
   }),
   [ACCOUNT_SUBROUTE_IDS.SUPPORT]: Object.freeze({
     path: '/app/conta/suporte',

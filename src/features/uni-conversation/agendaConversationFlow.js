@@ -100,7 +100,10 @@ const AGENDA_DATE_CONTEXT_PATTERN = [
   '\\d{1,2}\\/\\d{1,2}(?:\\/\\d{2,4})?',
 ].join('|');
 const SPOKEN_TIME_WITH_CUE = new RegExp(
-  `\\b(?:as|das)\\s+(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?\\b`,
+  // BUG REAL: "umas"/"uns" (aproximação coloquial, "por volta de") faltava
+  // aqui -- "umas dez horas" caía em NON_TEMPORAL_CONTENT e o horário
+  // reconhecido na pergunta de confirmação se perdia ao salvar o evento.
+  `\\b(?:as|das|umas?|uns?)\\s+(${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?\\b`,
 );
 const SPOKEN_TIME_WITH_PARA = new RegExp(
   `\\bpara\\s+(${SPOKEN_HOUR_PATTERN})(?:(?:\\s+horas?)(?:\\s+(da\\s+manha|da\\s+tarde|da\\s+noite))?|\\s+(da\\s+manha|da\\s+tarde|da\\s+noite)|(?=\\s*[.!?]?$))`,
@@ -805,8 +808,8 @@ function isPeriodAmbiguous(time, normalized) {
 function invalidTimeCandidate(normalized, allowContextual) {
   const supportedColloquial = matchColloquialTime(normalized, allowContextual);
   const prefix = allowContextual
-    ? `(?:(?:${AGENDA_DATE_CONTEXT_PATTERN})|as|das|para)\\s+`
-    : '(?:as|das|para)\\s+';
+    ? `(?:(?:${AGENDA_DATE_CONTEXT_PATTERN})|as|das|para|umas?|uns?)\\s+`
+    : '(?:as|das|para|umas?|uns?)\\s+';
   const rangePeriod = '(?:da\\s+(?:manha|tarde|noite))';
   const rangeEndpoint = `(?:\\d{1,2}(?:[:h]\\d{0,2})?(?:\\s*horas?)?(?:\\s+${rangePeriod})?|(?:${SPOKEN_HOUR_PATTERN})(?:\\s+horas?)?(?:\\s+${rangePeriod})?)`;
   const range = normalized.match(
@@ -1044,20 +1047,28 @@ function extractAgendaTimeValue(normalized, allowContextual) {
   if (colloquial) return formatColloquialTime(colloquial);
 
   const numericWithPeriod = normalized.match(
-    /\b(?:as|das|para)\s+(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?\s+(da\s+manha|da\s+tarde|da\s+noite)\b/,
+    /\b(?:as|das|para|umas?|uns?)\s+(\d{1,2})(?:[:h](\d{2}))?\s*(?:horas?|h)?\s+(da\s+manha|da\s+tarde|da\s+noite)\b/,
   );
   if (numericWithPeriod) {
     return formatExtractedTime(numericWithPeriod[1], numericWithPeriod[2], numericWithPeriod[3]);
   }
 
   let numeric = null;
+  // BUG REAL: "Agenda uma reunião para amanhã, umas 10 horas." -- "umas" +
+  // hora NUMÉRICA (sem minutos) não batia em nenhum padrão desta função nem
+  // em findHybridTime/findColloquialTime (que exigem minutos), então o
+  // evento era salvo como dia inteiro com "umas 10 horas" preso no título.
   const numericCandidates = new RegExp(
-    '\\b(?:as|das|para)\\s+(\\d{1,2})(?:[:h](\\d{2}))?(?:\\s*(?:horas?|h))?\\b',
+    '\\b(?:as|das|para|umas?|uns?)\\s+(\\d{1,2})(?:[:h](\\d{2}))?(?:\\s*(?:horas?|h))?\\b',
     'g',
   );
   for (const candidate of normalized.matchAll(numericCandidates)) {
+    // "umas"/"uns" têm a mesma ambiguidade que "para": também introduzem
+    // quantidade, não só horário ("umas 10 pessoas" != "umas 10 horas").
+    // Mesma guarda: só descarta como tempo se a palavra seguinte for uma
+    // unidade não-temporal reconhecida (pessoas, vezes, etc.).
     if (
-      /^para\s+/.test(candidate[0])
+      /^(?:para|umas?|uns?)\s+/.test(candidate[0])
       && isNonTemporalQuantityWord(followingWord(
         normalized,
         candidate.index + candidate[0].length,

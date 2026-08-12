@@ -7,7 +7,7 @@
     max(18px, env(safe-area-inset-right))
     34px
     max(18px, env(safe-area-inset-left));
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 .header {
@@ -25,7 +25,7 @@
 
 .header p {
   margin: 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -36,10 +36,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 50%;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   cursor: pointer;
 }
 
@@ -63,7 +63,7 @@
 
 .options legend {
   margin-bottom: 12px;
-  color: #cbd5e1;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   font-weight: 700;
 }
@@ -75,9 +75,9 @@
   align-items: center;
   gap: 16px;
   padding: 17px 18px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 18px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  background: var(--uf-app-card-bg);
   cursor: pointer;
   transition:
     border-color 200ms ease,
@@ -86,7 +86,7 @@
 }
 
 .option[data-selected='true'] {
-  border-color: #22d3ee;
+  border-color: var(--uf-app-cyan);
   background:
     linear-gradient(145deg, rgba(37, 99, 235, .2), rgba(4, 13, 33, .96));
 }
@@ -105,7 +105,7 @@
   min-width: 0;
   display: grid;
   gap: 7px;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -118,15 +118,15 @@
 }
 
 .optionTitle strong {
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: 17px;
 }
 
 .optionTitle small {
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(16, 185, 129, .14);
-  color: #6ee7b7;
+  background: var(--uf-app-success-subtle);
+  color: var(--uf-app-success-text);
   font-size: 11px;
   font-weight: 700;
 }
@@ -141,12 +141,12 @@
   height: 22px;
   display: grid;
   place-items: center;
-  border: 2px solid #64748b;
+  border: 2px solid var(--uf-app-text-3);
   border-radius: 50%;
 }
 
 .option[data-selected='true'] .radioMark {
-  border-color: #22d3ee;
+  border-color: var(--uf-app-cyan);
 }
 
 .option[data-selected='true'] .radioMark::after {
@@ -154,11 +154,11 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #22d3ee;
+  background: var(--uf-app-cyan);
 }
 
 .option:has(input:focus-visible) {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 3px;
 }
 
@@ -168,8 +168,8 @@
   margin-top: 18px;
   border: 0;
   border-radius: 16px;
-  background: linear-gradient(110deg, #2563eb, #7c3aed 55%, #10b981);
-  color: #fff;
+  background: linear-gradient(110deg, var(--uf-app-primary), var(--uf-app-ai) 55%, var(--uf-app-success));
+  color: var(--uf-app-on-accent);
   font: inherit;
   font-weight: 800;
   cursor: pointer;
@@ -182,7 +182,7 @@
 
 .saveButton:focus-visible,
 .backButton:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 3px;
 }
 
@@ -197,12 +197,12 @@
 
 .success {
   background: rgba(16, 185, 129, .13);
-  color: #6ee7b7;
+  color: var(--uf-app-success-text);
 }
 
 .error {
   background: rgba(239, 68, 68, .13);
-  color: #fca5a5;
+  color: var(--uf-app-danger-text);
 }
 
 @media (max-width: 359px) {

@@ -17,6 +17,7 @@ import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRout
 import { APP_VERSION } from './appIdentity.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
+  AppearanceIcon,
   BankIcon,
   CalendarIcon,
   CardIcon,
@@ -140,6 +141,13 @@ function SimplifiedAccountPage() {
       tone: 'blue',
       title: 'Voz da Uni',
       subtitle: 'Configurações de voz',
+    },
+    {
+      id: ACCOUNT_SUBROUTE_IDS.APPEARANCE,
+      Icon: AppearanceIcon,
+      tone: 'purple',
+      title: 'Aparência',
+      subtitle: 'Tema do aplicativo',
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.SUPPORT,

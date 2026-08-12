@@ -1,0 +1,318 @@
+/* Tela de Aparência (/app/conta/aparencia).
+
+   A PÁGINA consome tokens --uf-app-* como qualquer outra tela: ela própria
+   muda de cor junto com o tema, então o usuário vê o resultado da escolha no
+   mesmo instante em que escolhe -- o feedback é a própria tela.
+
+   As AMOSTRAS (.swatch) são a única exceção do projeto que usa cor literal, e
+   por necessidade: cada amostra precisa mostrar um tema que NÃO é o ativo. Se
+   usassem tokens, as quatro ficariam idênticas entre si (todas pintadas com o
+   tema atual) e o preview não informaria nada. Os valores abaixo são cópia
+   exata dos tokens de cada tema em theme.css, seção 18. */
+
+.page {
+  width: min(100%, 720px);
+  min-height: calc(100dvh - 112px);
+  margin-inline: auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    34px
+    max(18px, env(safe-area-inset-left));
+  color: var(--uf-app-text);
+}
+
+.header {
+  min-height: 64px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.header h1 {
+  margin: 1px 0 4px;
+  font-size: clamp(24px, 7vw, 30px);
+  line-height: 1.2;
+}
+
+.header p {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 50%;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.options {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.options legend {
+  margin-bottom: 12px;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  /* 64px de altura mínima: acima do alvo de toque de 44px recomendado, com
+     folga para o dedo não encostar na opção vizinha e trocar o tema errado. */
+  min-height: 64px;
+  padding: 14px 16px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 18px;
+  background: var(--uf-app-card-bg);
+  cursor: pointer;
+  /* Só cor e sombra animam. Nada de tamanho ou posição: a lista precisa ficar
+     imóvel enquanto o usuário compara as opções -- item que se mexe rouba a
+     atenção justamente de quem está tentando decidir. */
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.option:hover {
+  border-color: var(--uf-app-border-strong);
+}
+
+.option[data-selected='true'] {
+  border-color: var(--uf-app-primary);
+  box-shadow: 0 0 0 1px var(--uf-app-primary) inset;
+}
+
+/* O input real fica invisível mas continua no fluxo: leitor de tela e
+   navegação por teclado seguem funcionando, e o foco é desenhado no cartão
+   inteiro (abaixo), não num alvo de 1px. */
+.option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option:focus-within {
+  outline: 3px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.optionCopy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.optionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.optionTitle strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.optionTitle small {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--uf-app-ai-subtle);
+  color: var(--uf-app-ai-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.optionCopy > span:last-child {
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* --- Marca de selecionado --- */
+.check {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--uf-app-border-strong);
+  border-radius: 50%;
+  color: transparent;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.check svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.option[data-selected='true'] .check {
+  border-color: var(--uf-app-primary);
+  background: var(--uf-app-primary);
+  color: var(--uf-app-on-accent);
+}
+
+/* --- Amostras: miniatura da interface em cada tema --- */
+.swatch {
+  --swatch-bar: #E2E8F0;
+  --swatch-canvas: #F4F7FC;
+  --swatch-card: #FFFFFF;
+  --swatch-line-strong: #0F172A;
+  --swatch-line: #64748B;
+  --swatch-accent: #1D4ED8;
+  --swatch-border: rgba(15, 23, 42, .12);
+
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--swatch-border);
+  border-radius: 13px;
+  background: var(--swatch-canvas);
+}
+
+.swatchBar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 9px;
+  background: var(--swatch-bar);
+}
+
+.swatchCard {
+  position: absolute;
+  inset: 14px 7px auto 7px;
+  display: grid;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 6px;
+  background: var(--swatch-card);
+}
+
+.swatchLineStrong,
+.swatchLine {
+  height: 3px;
+  border-radius: 999px;
+}
+
+.swatchLineStrong {
+  width: 76%;
+  background: var(--swatch-line-strong);
+}
+
+.swatchLine {
+  width: 52%;
+  background: var(--swatch-line);
+}
+
+.swatchAccent {
+  position: absolute;
+  inset: auto 7px 7px 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--swatch-accent);
+}
+
+.swatch[data-swatch-theme='dark'] {
+  --swatch-bar: #22262F;
+  --swatch-canvas: #12141A;
+  --swatch-card: #1A1D24;
+  --swatch-line-strong: #F1F3F7;
+  --swatch-line: #8A91A0;
+  --swatch-accent: #5B8DEF;
+  --swatch-border: rgba(255, 255, 255, .14);
+}
+
+.swatch[data-swatch-theme='uniflow'] {
+  --swatch-bar: #0E1F3E;
+  --swatch-canvas: #030B1D;
+  --swatch-card: #0A1935;
+  --swatch-line-strong: #F8FAFC;
+  --swatch-line: #7C8AA8;
+  --swatch-accent: linear-gradient(90deg, #2563EB, #7C3AED 58%, #10B981);
+  --swatch-border: rgba(86, 109, 151, .5);
+}
+
+/* "Sistema" não tem paleta própria -- ele É os outros dois. A amostra mostra
+   isso literalmente: metade clara, metade escura, dividida na diagonal. */
+.swatch[data-swatch-theme='system'] {
+  --swatch-bar: #22262F;
+  --swatch-canvas: #12141A;
+  --swatch-card: #1A1D24;
+  --swatch-line-strong: #F1F3F7;
+  --swatch-line: #8A91A0;
+  --swatch-accent: #5B8DEF;
+  --swatch-border: rgba(120, 130, 150, .34);
+}
+
+.swatch[data-swatch-theme='system']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #F4F7FC;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.systemStatus {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 14px;
+  background: var(--uf-app-primary-subtle);
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+}
+
+.systemStatus strong {
+  color: var(--uf-app-primary-text);
+}
+
+.note {
+  margin: 14px 0 0;
+  color: var(--uf-app-text-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .option,
+  .check {
+    transition: none;
+  }
+}
