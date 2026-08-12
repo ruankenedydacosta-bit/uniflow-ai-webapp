@@ -31,8 +31,10 @@ function createStorage(initialValue = null) {
   };
 }
 
-test('padrão inicial é Claro e catálogo público é imutável', () => {
-  assert.equal(DEFAULT_THEME, THEME_IDS.LIGHT);
+test('padrão inicial é UniFlow (identidade da marca) e catálogo público é imutável', () => {
+  // Todo usuário sem preferência salva entra no tema UniFlow -- nunca Claro.
+  // Só muda se o próprio usuário escolher outro tema em Conta > Tema.
+  assert.equal(DEFAULT_THEME, THEME_IDS.UNIFLOW);
   assert.deepEqual(THEME_OPTIONS.map(({ label }) => label), ['Claro', 'Escuro', 'UniFlow', 'Sistema']);
   assert.ok(Object.isFrozen(THEME_OPTIONS));
   assert.ok(THEME_OPTIONS.every(Object.isFrozen));
@@ -45,10 +47,10 @@ test('todas as preferências válidas são preservadas', () => {
   });
 });
 
-test('valor inválido gera fallback seguro para Claro', () => {
-  assert.equal(normalizeThemePreference('auto'), THEME_IDS.LIGHT);
-  assert.equal(normalizeThemePreference(null), THEME_IDS.LIGHT);
-  assert.equal(readThemePreference(createStorage('invalid-theme')), THEME_IDS.LIGHT);
+test('valor inválido gera fallback seguro para UniFlow', () => {
+  assert.equal(normalizeThemePreference('auto'), THEME_IDS.UNIFLOW);
+  assert.equal(normalizeThemePreference(null), THEME_IDS.UNIFLOW);
+  assert.equal(readThemePreference(createStorage('invalid-theme')), THEME_IDS.UNIFLOW);
 });
 
 test('preferência é lida e persistida somente pela chave visual', () => {
@@ -64,7 +66,7 @@ test('falha de storage não interrompe a aplicação', () => {
     getItem: () => { throw new Error('unavailable'); },
     setItem: () => { throw new Error('unavailable'); },
   };
-  assert.equal(readThemePreference(storage), THEME_IDS.LIGHT);
+  assert.equal(readThemePreference(storage), THEME_IDS.UNIFLOW);
   assert.equal(writeThemePreference(THEME_IDS.DARK, storage), THEME_IDS.DARK);
 });
 

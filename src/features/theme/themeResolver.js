@@ -1,21 +1,24 @@
 import {
-  DEFAULT_THEME,
   SYSTEM_THEME_QUERY,
   THEME_IDS,
   normalizeThemePreference,
 } from './themeConstants.js';
 
+// "Sistema" só pode resolver para Claro ou Escuro (nunca para a identidade
+// UniFlow) -- por isso usa THEME_IDS.LIGHT diretamente aqui, e não
+// DEFAULT_THEME (que é UniFlow, o tema de um usuário sem preferência
+// salva). São fallbacks semanticamente diferentes.
 export function resolveSystemTheme(matchMedia = globalThis.matchMedia) {
-  if (typeof matchMedia !== 'function') return DEFAULT_THEME;
+  if (typeof matchMedia !== 'function') return THEME_IDS.LIGHT;
 
   try {
     return matchMedia(SYSTEM_THEME_QUERY).matches ? THEME_IDS.DARK : THEME_IDS.LIGHT;
   } catch {
-    return DEFAULT_THEME;
+    return THEME_IDS.LIGHT;
   }
 }
 
-export function resolveEffectiveTheme(preference, systemTheme = DEFAULT_THEME) {
+export function resolveEffectiveTheme(preference, systemTheme = THEME_IDS.LIGHT) {
   const normalizedPreference = normalizeThemePreference(preference);
   if (normalizedPreference !== THEME_IDS.SYSTEM) return normalizedPreference;
   return systemTheme === THEME_IDS.DARK ? THEME_IDS.DARK : THEME_IDS.LIGHT;

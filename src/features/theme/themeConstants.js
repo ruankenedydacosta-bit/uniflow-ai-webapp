@@ -5,7 +5,10 @@ export const THEME_IDS = Object.freeze({
   SYSTEM: 'system',
 });
 
-export const DEFAULT_THEME = THEME_IDS.LIGHT;
+// Todo usuário sem preferência salva entra no tema UniFlow (identidade da
+// marca) -- nunca Claro. Só muda se o próprio usuário escolher outro tema
+// em Conta > Tema; a escolha fica salva e vale para as próximas visitas.
+export const DEFAULT_THEME = THEME_IDS.UNIFLOW;
 export const THEME_STORAGE_KEY = 'uniflow.theme.preference';
 export const SYSTEM_THEME_QUERY = '(prefers-color-scheme: dark)';
 
