@@ -927,6 +927,40 @@ test('histórico exibe o sinal correto de um ajuste de saldo positivo (nunca sem
   assert.match(records, /\{isIncome \|\| isPositiveAdjustment \? '\+' : isTransfer \? '' : '-'\}/);
 });
 
+// BLOCO EXCLUIR FACILITADO (correção de UX reportada): arrastar para
+// esquerda revelava Editar/Excluir, mas arrastar de volta para a direita
+// não fechava -- a linha ficava travada. dragX passou a ser sincronizado
+// com isOpen via effect (nunca fica preso no último valor de um gesto
+// anterior) e o cálculo de arraste agora parte de -SWIPE_REVEAL_PX quando
+// a linha já está aberta, permitindo fechar arrastando de volta.
+test('TransactionRow sincroniza dragX com isOpen durante o render (nunca dentro de useEffect, evita cascading render) -- nunca fica visualmente deslocada com o painel de ações fechado', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const start = records.indexOf('function TransactionRow({');
+  const slice = records.slice(start, records.indexOf('function TransactionList({'));
+  assert.match(slice, /if \(isOpen !== prevIsOpen\) \{\s*\n\s*setPrevIsOpen\(isOpen\);\s*\n\s*setDragX\(isOpen \? -SWIPE_REVEAL_PX : 0\);\s*\n\s*\}/);
+});
+
+test('arrastar de volta (linha já aberta) fecha o painel de ações via onClose -- nunca fica travado', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const start = records.indexOf('function TransactionRow({');
+  const slice = records.slice(start, records.indexOf('function TransactionList({'));
+  assert.match(slice, /const baseX = isOpen \? -SWIPE_REVEAL_PX : 0;/);
+  assert.match(slice, /if \(dragX >= -SWIPE_REVEAL_PX \+ SWIPE_ACTIVATE_PX\) \{\s*\n\s*setDragX\(0\);\s*\n\s*onClose\(\);/);
+});
+
+test('tocar a linha (ou o ícone de menu) quando já está aberta fecha o painel, em vez de não fazer nada', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const start = records.indexOf('function TransactionRow({');
+  const slice = records.slice(start, records.indexOf('function TransactionList({'));
+  assert.match(slice, /onClick=\{\(\) => \{ if \(isOpen\) \{ onClose\(\); \} else \{ onEdit\(transaction\); \} \}\}/);
+  assert.match(slice, /if \(isOpen\) \{ onClose\(\); \} else \{ onOpen\(\); \}/);
+});
+
+test('TransactionList passa onClose=\\{closeRow\\} para cada linha (mesma função que fecha via editar/excluir/cancelar)', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  assert.match(records, /onClose=\{closeRow\}/);
+});
+
 test('intervalo mensal usa o primeiro e o último dia reais', () => {
   const referenceDate = new Date(2026, 6, 15);
   assert.deepEqual(getMonthRange(referenceDate), {

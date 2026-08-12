@@ -346,7 +346,7 @@ test('clique duplo nao inicia duas operacoes: submit e handlers secundarios (edi
   );
   assert.match(source, /disabled=\{transactionState\.isMutating \|\| !canManage\}\s*\n\s*title=\{!canManage \? MANAGE_BLOCKED_TITLE : undefined\}\s*\n\s*onClick=\{\(\) => handleEdit\(transaction\)\}/);
   assert.match(source, /disabled=\{transactionState\.isMutating \|\| !canManage\}\s*\n\s*title=\{!canManage \? MANAGE_BLOCKED_TITLE : undefined\}\s*\n\s*onClick=\{\(\) => handleDuplicate\(transaction\)\}/);
-  assert.match(source, /<Button variant="ghost" onClick=\{resetForm\} disabled=\{transactionState\.isMutating\}>/);
+  assert.match(source, /<Button variant="outline" onClick=\{resetForm\} disabled=\{transactionState\.isMutating\}>/);
 });
 
 test('handleDuplicate e handleEdit retornam cedo durante mutacao ou sem permissao (segunda camada, nao depende so do disabled)', async () => {

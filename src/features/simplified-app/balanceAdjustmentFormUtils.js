@@ -16,6 +16,13 @@ export function centsToAmount(cents) {
   return Math.round(Number(cents) || 0) / 100;
 }
 
+// Inverso de centsToAmount -- usado para pré-preencher o campo com o valor
+// atual do card (Saldo/Receita/Despesa) ao abrir a modal, em vez de nascer
+// zerado (o usuário via "R$ 0,00" mesmo já tendo um valor salvo).
+export function amountToCents(amount) {
+  return Math.round((Number(amount) || 0) * 100);
+}
+
 export function formatCentsAsCurrencyInput(cents) {
   return (Math.round(Number(cents) || 0) / 100).toLocaleString('pt-BR', {
     style: 'currency',

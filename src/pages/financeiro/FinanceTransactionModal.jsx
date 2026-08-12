@@ -95,6 +95,15 @@ const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir este lan
 // a identidade escura oficial sem afetar o uso padrão desta modal em
 // FinanceiroPage.jsx (desktop), que continua reativo ao tema --uf-* do
 // site quando as props não são passadas.
+// CONTA-ZERO (Registros simplificado): `hideAccountFields` remove toda a UI
+// de conta do formulário (Conta/Conta de destino, opção "Transferência" no
+// Tipo, aviso "crie uma conta antes de...") -- usado só pelo fluxo pessoal
+// simplificado, que nunca deveria falar em conta. `showExistingList=false`
+// esconde o bloco "Lançamentos existentes" (lista + filtros + CSV de TODO o
+// espaço) -- ele é redundante e desorientador quando esta modal abre só
+// para editar UM lançamento a partir da lista da própria página (ver
+// SimplifiedRecordsPage.jsx). Nenhum dos dois muda o comportamento default
+// (FinanceiroPage.jsx / desktop continuam recebendo os dois blocos).
 function FinanceTransactionModal({
   accountState,
   canDeleteTransaction = () => true,
@@ -104,10 +113,12 @@ function FinanceTransactionModal({
   overlayClassName,
   duplicateFromTransactionId,
   editingTransactionId,
+  hideAccountFields = false,
   initialType = 'expense',
   onChanged,
   onClose,
   open,
+  showExistingList = true,
   transactionState,
 }) {
   const [form, setForm] = useState(() => {
@@ -315,8 +326,12 @@ function FinanceTransactionModal({
   }
 
   // CONTA-OPCIONAL: só transferência e ajuste exigem conta de origem
-  // (destino é exigido separadamente, só para transferência).
-  const accountRequiredForSubmit = form.transaction_type === 'transfer' || form.transaction_type === 'adjustment';
+  // (destino é exigido separadamente, só para transferência). Com
+  // hideAccountFields nenhuma conta é exigida -- transferência nem aparece
+  // como opção de Tipo, e ajuste passou a funcionar sem conta (migration
+  // 037/adjustment_target).
+  const accountRequiredForSubmit = !hideAccountFields
+    && (form.transaction_type === 'transfer' || form.transaction_type === 'adjustment');
   const canSubmit = Boolean(
     canManage &&
     !transactionState.isMutating &&
@@ -366,16 +381,20 @@ function FinanceTransactionModal({
           >
             <option value="income">Entrada</option>
             <option value="expense">Despesa</option>
-            <option value="transfer">Transferência</option>
+            {/* CONTA-ZERO: transferência exige 2 contas por definição --
+                não faz sentido no fluxo pessoal simplificado, que não tem
+                nenhuma UI de conta. */}
+            {hideAccountFields ? null : <option value="transfer">Transferência</option>}
             <option value="adjustment">Ajuste</option>
           </SelectField>
           {/* CONTA-OPCIONAL: entrada/despesa não pedem mais conta -- meses de
               atrito real vinham exatamente daqui. Transferência continua
               exigindo (precisa saber DE QUAL conta o dinheiro sai) e ajuste
-              de saldo também (o delta é calculado contra o saldo atual de
-              UMA conta específica; sem ela a operação não tem como ser
-              calculada). */}
-          {form.transaction_type === 'transfer' || form.transaction_type === 'adjustment' ? (
+              de saldo também continua oferecendo o campo no formulário
+              completo desktop (a conta ali é opcional na RPC, mas mantida
+              aqui como fluxo já existente e não solicitado pelo pedido de
+              remoção). Com hideAccountFields nenhum dos dois aparece. */}
+          {!hideAccountFields && (form.transaction_type === 'transfer' || form.transaction_type === 'adjustment') ? (
             <SelectField
               id="finance-transaction-account"
               label={form.transaction_type === 'transfer' ? 'Conta de origem' : 'Conta'}
@@ -394,7 +413,7 @@ function FinanceTransactionModal({
               ))}
             </SelectField>
           ) : null}
-          {form.transaction_type === 'transfer' ? (
+          {!hideAccountFields && form.transaction_type === 'transfer' ? (
             <SelectField
               id="finance-transaction-destination"
               label="Conta de destino"
@@ -568,7 +587,9 @@ function FinanceTransactionModal({
           ) : null}
 
           {/* CONTA-OPCIONAL: só transferência/ajuste realmente dependem de
-              conta -- entrada/despesa funcionam normalmente sem nenhuma. */}
+              conta -- entrada/despesa funcionam normalmente sem nenhuma.
+              Nunca aparece com hideAccountFields (accountRequiredForSubmit
+              já é sempre false nesse caso). */}
           {!accountState.activeAccounts.length && !editingId && accountRequiredForSubmit ? (
             <FormMessage tone="info">Crie uma conta antes de registrar uma transferência ou ajuste de saldo.</FormMessage>
           ) : null}
@@ -597,21 +618,35 @@ function FinanceTransactionModal({
                   <option value="all">Todas do grupo</option>
                 </SelectField>
               ) : null}
-              <DeleteActions
-                isConfirming={pendingDeleteId === editingId}
-                isLoading={transactionState.isMutating}
-                onRequest={() => {
-                  setDeleteScope('only');
-                  setPendingDeleteId(editingId);
-                }}
-                onCancel={() => setPendingDeleteId(null)}
-                onConfirm={() => handleDelete(editingId)}
-              />
+              {/* Botões explícitos (em vez de DeleteActions/variant="ghost")
+                  -- Excluir precisa ser reconhecível como destrutivo antes
+                  mesmo de confirmar, não só depois. */}
+              {pendingDeleteId === editingId ? (
+                <>
+                  <Button variant="outline" onClick={() => setPendingDeleteId(null)} disabled={transactionState.isMutating}>
+                    Cancelar
+                  </Button>
+                  <Button variant="danger" loading={transactionState.isMutating} onClick={() => handleDelete(editingId)}>
+                    Confirmar exclusão
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="danger"
+                  disabled={transactionState.isMutating}
+                  onClick={() => {
+                    setDeleteScope('only');
+                    setPendingDeleteId(editingId);
+                  }}
+                >
+                  Excluir
+                </Button>
+              )}
             </div>
           ) : null}
           <div className="uf-flex uf-items-center uf-justify-end uf-gap-sm uf-flex-wrap">
             {editingId ? (
-              <Button variant="ghost" onClick={resetForm} disabled={transactionState.isMutating}>
+              <Button variant="outline" onClick={resetForm} disabled={transactionState.isMutating}>
                 Cancelar edição
               </Button>
             ) : null}
@@ -627,6 +662,7 @@ function FinanceTransactionModal({
           </section>
         </form>
 
+        {showExistingList ? (
         <div className={styles.formBlock} aria-label="Lançamentos existentes">
           <div className="uf-flex uf-items-center uf-gap-sm uf-flex-wrap">
             <Input
@@ -864,6 +900,7 @@ function FinanceTransactionModal({
             );
           })}
         </div>
+        ) : null}
       </div>
     </Modal>
   );

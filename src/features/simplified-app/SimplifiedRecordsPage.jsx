@@ -286,6 +286,7 @@ function TransactionRow({
   isConfirmingDelete,
   isOpen,
   onCancelDelete,
+  onClose,
   onConfirmDelete,
   onEdit,
   onOpen,
@@ -293,8 +294,20 @@ function TransactionRow({
   transaction,
 }) {
   const [dragX, setDragX] = useState(0);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const dragStateRef = useRef(null);
   const longPressTimerRef = useRef(null);
+
+  // O painel de ações pode ser fechado de fora (outra linha abriu, edição
+  // cancelada etc.) -- sem isso, dragX ficava travado no último valor do
+  // gesto e a linha continuava aparecendo deslocada mesmo com isOpen=false.
+  // Ajuste durante o render (não em efeito) -- mesmo padrão recomendado
+  // pelo React para "resetar estado quando uma prop muda", evita o
+  // cascading render de um setState dentro de useEffect.
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    setDragX(isOpen ? -SWIPE_REVEAL_PX : 0);
+  }
 
   const isIncome = transaction.transaction_type === 'income';
   const isTransfer = transaction.transaction_type === 'transfer';
@@ -314,6 +327,9 @@ function TransactionRow({
   function handlePointerDown(event) {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     dragStateRef.current = { x: event.clientX, y: event.clientY, locked: null };
+    // Já aberta: não dispara long-press de novo (não há nada a "abrir"),
+    // só o arrastar-de-volta cuida de fechar.
+    if (isOpen) return;
     clearLongPressTimer();
     longPressTimerRef.current = window.setTimeout(() => {
       longPressTimerRef.current = null;
@@ -344,7 +360,10 @@ function TransactionRow({
 
     clearLongPressTimer();
     event.preventDefault();
-    setDragX(Math.max(-SWIPE_REVEAL_PX, Math.min(0, dx)));
+    // Parte do ponto já revelado (-SWIPE_REVEAL_PX) quando a linha já está
+    // aberta -- é isso que permite arrastar de volta pra direita e fechar.
+    const baseX = isOpen ? -SWIPE_REVEAL_PX : 0;
+    setDragX(Math.max(-SWIPE_REVEAL_PX, Math.min(0, baseX + dx)));
   }
 
   function handlePointerUp() {
@@ -352,24 +371,30 @@ function TransactionRow({
     const drag = dragStateRef.current;
     dragStateRef.current = null;
     if (!drag) return; // já virou toque simples (onClick do botão cuida) ou já abriu por long-press.
+    if (drag.locked !== 'x') return;
 
-    if (drag.locked === 'x') {
-      if (dragX <= -SWIPE_ACTIVATE_PX) {
-        setDragX(-SWIPE_REVEAL_PX);
-        onOpen();
-      } else {
+    if (isOpen) {
+      // Arrastou de volta o suficiente pra direita: fecha. Senão, permanece
+      // aberta (o painel nunca fica "meio revelado" parado).
+      if (dragX >= -SWIPE_REVEAL_PX + SWIPE_ACTIVATE_PX) {
         setDragX(0);
+        onClose();
+      } else {
+        setDragX(-SWIPE_REVEAL_PX);
       }
+    } else if (dragX <= -SWIPE_ACTIVATE_PX) {
+      setDragX(-SWIPE_REVEAL_PX);
+      onOpen();
+    } else {
+      setDragX(0);
     }
   }
 
   function handlePointerCancel() {
     clearLongPressTimer();
     dragStateRef.current = null;
-    setDragX(0);
+    setDragX(isOpen ? -SWIPE_REVEAL_PX : 0);
   }
-
-  const revealedX = isOpen ? -SWIPE_REVEAL_PX : dragX;
 
   return (
     <div className={styles.transactionRowWrapper}>
@@ -405,8 +430,8 @@ function TransactionRow({
       <button
         type="button"
         className={styles.transactionRow}
-        style={revealedX ? { transform: `translateX(${revealedX}px)` } : undefined}
-        onClick={() => { if (!isOpen) onEdit(transaction); }}
+        style={dragX ? { transform: `translateX(${dragX}px)` } : undefined}
+        onClick={() => { if (isOpen) { onClose(); } else { onEdit(transaction); } }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -429,7 +454,7 @@ function TransactionRow({
           aria-label="Mais opções"
           onClick={(event) => {
             event.stopPropagation();
-            onOpen();
+            if (isOpen) { onClose(); } else { onOpen(); }
           }}
         >
           ⋮
@@ -510,6 +535,7 @@ function TransactionList({
                 isConfirmingDelete={confirmDeleteId === transaction.id}
                 isOpen={openRowId === transaction.id}
                 onCancelDelete={() => setConfirmDeleteId(null)}
+                onClose={closeRow}
                 onConfirmDelete={() => handleConfirmDelete(transaction)}
                 onEdit={(item) => { closeRow(); onEdit(item); }}
                 onOpen={() => setOpenRowId(transaction.id)}
@@ -818,6 +844,8 @@ function SimplifiedRecordsPage() {
         editingTransactionId={transactionDialog?.transactionId ?? null}
         canManage={canManage}
         canDeleteTransaction={canDeleteTransaction}
+        hideAccountFields
+        showExistingList={false}
         accountState={displayAccountState}
         categoryState={categoryState}
         transactionState={transactionState}

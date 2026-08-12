@@ -77,14 +77,22 @@ test('"Zerar" preenche o valor com 0 sem persistir sozinho -- a confirmação co
   const start = modal.indexOf('function handleZero() {');
   const slice = modal.slice(start, modal.indexOf('\n  }', start));
   assert.match(slice, /setCents\(0\);/);
-  assert.match(slice, /setTouched\(true\);/);
   assert.doesNotMatch(slice, /submitBalanceAdjustment|setStep/);
   assert.match(modal, /<button type="button" className=\{styles\.zeroButton\} onClick=\{handleZero\}>/);
 });
 
-test('"Salvar" fica desabilitado só até o valor ser digitado (touched) -- nunca depende de conta', async () => {
+// UX: o campo nasce preenchido com o valor atual do card (amountToCents),
+// não com "R$ 0,00" -- evita o usuário ver um valor errado antes de mexer.
+test('campo de valor nasce preenchido com currentValue, nunca zerado por padrão', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
-  assert.match(modal, /<Button type="submit" disabled=\{!touched\}>/);
+  assert.match(modal, /import \{\s*amountToCents,/);
+  assert.match(modal, /const \[cents, setCents\] = useState\(\(\) => amountToCents\(currentValue\)\);/);
+});
+
+test('"Salvar" fica desabilitado até o valor realmente mudar (delta zero é rejeitado pela RPC) -- nunca depende de conta', async () => {
+  const modal = await source('./UpdateBalanceModal.jsx');
+  assert.match(modal, /const hasChange = delta !== 0;/);
+  assert.match(modal, /<Button type="submit" disabled=\{!hasChange\}>/);
 });
 
 test('fluxo exige confirmação explícita: enviar o formulário só avança para o resumo, não persiste', async () => {
@@ -94,7 +102,7 @@ test('fluxo exige confirmação explícita: enviar o formulário só avança par
   const reviewSlice = modal.slice(reviewStart, reviewEnd);
   assert.doesNotMatch(reviewSlice, /submitBalanceAdjustment/);
   assert.match(reviewSlice, /setStep\('confirm'\)/);
-  assert.match(reviewSlice, /if \(!touched\) return;/);
+  assert.match(reviewSlice, /if \(!hasChange\) return;/);
 });
 
 test('somente "Confirmar" no resumo chama submitBalanceAdjustment, repassando target e sem accountId', async () => {

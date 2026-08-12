@@ -92,14 +92,23 @@ test('Bloco "Ação" contém o botão principal (criar/salvar lançamento)', asy
 // linha de Cancelar edição/Salvar lançamento) também oferece Excluir,
 // reaproveitando DeleteActions (confirmação em dois passos, nunca
 // window.confirm) e handleDelete -- nenhum mecanismo de exclusão novo.
-test('Bloco "Ação" também oferece Excluir ao editar, reaproveitando DeleteActions/handleDelete -- nunca só na lista', async () => {
+// Botões explícitos (variant="danger"/"outline") em vez de DeleteActions
+// (variant="ghost") -- Excluir precisa ser reconhecível como destrutivo já
+// no primeiro toque, não só depois de confirmar (feedback de usuário: "tem
+// que estar mais nítido o botão excluir, tem que estar vermelho").
+test('Bloco "Ação" também oferece Excluir ao editar, com botão vermelho (danger) e confirmação em duas etapas -- nunca só na lista', async () => {
   const modal = await source('./FinanceTransactionModal.jsx');
   const start = modal.indexOf('aria-label="Ação"');
   const slice = modal.slice(start, modal.indexOf('</section>', start));
   assert.match(slice, /editingId && editingTransaction && canDeleteTransaction\(editingTransaction\)/);
-  assert.match(slice, /<DeleteActions/);
-  assert.match(slice, /isConfirming=\{pendingDeleteId === editingId\}/);
-  assert.match(slice, /onConfirm=\{\(\) => handleDelete\(editingId\)\}/);
+  assert.match(slice, /variant="danger"[\s\S]*?Excluir/);
+  assert.match(slice, /pendingDeleteId === editingId \? \(/);
+  assert.match(slice, /onClick=\{\(\) => handleDelete\(editingId\)\}/);
+});
+
+test('"Cancelar edição" usa contorno neutro (outline), nunca ghost invisível ao lado dos botões coloridos', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  assert.match(modal, /<Button variant="outline" onClick=\{resetForm\} disabled=\{transactionState\.isMutating\}>\s*\n\s*Cancelar edição/);
 });
 
 // ============================================================================
@@ -191,4 +200,42 @@ test('exclusão continua exigindo confirmação via DeleteActions -- nunca windo
   const modal = await source('./FinanceTransactionModal.jsx');
   assert.doesNotMatch(modal, /window\.confirm/);
   assert.match(modal, /isConfirming=\{pendingDeleteId === transaction\.id\}/);
+});
+
+// ============================================================================
+// CONTA-ZERO (Registros simplificado): hideAccountFields/showExistingList --
+// props aditivas, default preserva o comportamento desktop existente.
+// ============================================================================
+
+test('hideAccountFields/showExistingList nascem com defaults que preservam o comportamento desktop (false/true)', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  assert.match(modal, /hideAccountFields = false,/);
+  assert.match(modal, /showExistingList = true,/);
+});
+
+test('hideAccountFields remove Transferência do Tipo, os campos de Conta e a exigência de conta no submit', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  assert.match(modal, /\{hideAccountFields \? null : <option value="transfer">Transferência<\/option>\}/);
+  assert.match(modal, /\{!hideAccountFields && \(form\.transaction_type === 'transfer' \|\| form\.transaction_type === 'adjustment'\) \? \(/);
+  assert.match(modal, /const accountRequiredForSubmit = !hideAccountFields\s*\n\s*&& \(form\.transaction_type === 'transfer' \|\| form\.transaction_type === 'adjustment'\);/);
+});
+
+test('showExistingList=false esconde o bloco "Lançamentos existentes" (lista/filtros/CSV de todo o espaço)', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  assert.match(modal, /\{showExistingList \? \(\s*\n\s*<div className=\{styles\.formBlock\} aria-label="Lançamentos existentes">/);
+});
+
+test('SimplifiedRecordsPage passa hideAccountFields e showExistingList={false} -- nunca fala em conta, nunca mostra a lista redundante', async () => {
+  const records = await source('../../features/simplified-app/SimplifiedRecordsPage.jsx');
+  const start = records.indexOf('<FinanceTransactionModal');
+  const slice = records.slice(start, records.indexOf('/>', start));
+  assert.match(slice, /hideAccountFields\s*\n/);
+  assert.match(slice, /showExistingList=\{false\}/);
+});
+
+test('FinanceiroPage (desktop) não passa hideAccountFields/showExistingList -- continua com o formulário completo', async () => {
+  const financeiroPage = await source('../FinanceiroPage.jsx');
+  const start = financeiroPage.indexOf('<FinanceTransactionModal');
+  const slice = financeiroPage.slice(start, financeiroPage.indexOf('/>', start));
+  assert.doesNotMatch(slice, /hideAccountFields|showExistingList/);
 });

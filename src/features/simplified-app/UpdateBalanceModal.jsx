@@ -5,6 +5,7 @@ import Modal from '../../components/ui/Modal';
 import { submitBalanceAdjustment } from '../../services/balanceAdjustmentService.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import {
+  amountToCents,
   centsToAmount,
   computeBalanceDelta,
   digitsToCents,
@@ -74,8 +75,11 @@ function generateOperationId() {
 function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClose, open }) {
   const copy = TARGET_COPY[target] ?? TARGET_COPY.balance;
   const [step, setStep] = useState('form');
-  const [cents, setCents] = useState(0);
-  const [touched, setTouched] = useState(false);
+  // BLOCO SALDO/RECEITA/DESPESA EDITAVEIS (ajuste de UX): o campo nasce
+  // preenchido com o valor atual do card, não com "R$ 0,00" -- o usuário
+  // via um valor errado na tela mesmo já tendo um saldo salvo. "Zerar"
+  // continua disponível para o caso comum de correção total.
+  const [cents, setCents] = useState(() => amountToCents(currentValue));
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -88,6 +92,9 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
   const newValue = centsToAmount(cents);
   const currentValueNumber = Number(currentValue ?? 0);
   const delta = computeBalanceDelta(currentValueNumber, newValue);
+  // Só pode avançar se o valor realmente mudou -- a RPC rejeita ajuste com
+  // delta zero, então nem faz sentido habilitar o botão sem uma mudança.
+  const hasChange = delta !== 0;
 
   function handleClose() {
     if (isSubmitting) return;
@@ -96,7 +103,6 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
 
   function handleAmountChange(event) {
     setCents(digitsToCents(event.target.value));
-    setTouched(true);
   }
 
   // "Zerar": atalho para o caso comum de correção total (o card deveria
@@ -104,12 +110,11 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
   // exigida no passo seguinte, igual a qualquer outro valor digitado.
   function handleZero() {
     setCents(0);
-    setTouched(true);
   }
 
   function handleReviewSubmit(event) {
     event.preventDefault();
-    if (!touched) return;
+    if (!hasChange) return;
     setError(null);
     setStep('confirm');
   }
@@ -161,7 +166,7 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
                 className={styles.amountInput}
                 inputMode="numeric"
                 autoComplete="off"
-                value={touched ? formatCentsAsCurrencyInput(cents) : 'R$ 0,00'}
+                value={formatCentsAsCurrencyInput(cents)}
                 onChange={handleAmountChange}
                 placeholder="R$ 0,00"
                 required
@@ -185,7 +190,7 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
             <Button type="button" variant="ghost" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={!touched}>
+            <Button type="submit" disabled={!hasChange}>
               {copy.submitLabel}
             </Button>
           </div>
