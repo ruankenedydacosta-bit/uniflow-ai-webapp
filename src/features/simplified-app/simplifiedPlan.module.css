@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 /* ---------- Cabeçalho ---------- */
@@ -38,10 +38,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 50%;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   cursor: pointer;
 }
 
@@ -59,7 +59,7 @@
   min-width: 0;
   overflow: hidden;
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(22px, 6vw, 30px);
   font-weight: 800;
   line-height: 1.2;
@@ -77,9 +77,9 @@
   border: 2px solid transparent;
   border-radius: 16px;
   background:
-    linear-gradient(#030b1d, #030b1d) padding-box,
-    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
-  color: #f8fafc;
+    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
+    linear-gradient(110deg, var(--uf-app-success), var(--uf-app-cyan) 35%, var(--uf-app-primary) 66%, var(--uf-app-ai)) border-box;
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 15px;
   font-weight: 720;
@@ -97,7 +97,7 @@
   width: 100%;
   height: 100%;
   fill: none;
-  stroke: #2dd4bf;
+  stroke: var(--uf-app-success-text);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2.2;
@@ -106,7 +106,7 @@
 .loadingState {
   margin: 0;
   padding: 16px;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14.5px;
 }
 
@@ -114,8 +114,8 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(239, 68, 68, .12);
-  color: #fca5a5;
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
   font-size: 14px;
 }
 
@@ -158,12 +158,12 @@
   flex: 0 0 auto;
   width: 20px;
   height: 20px;
-  color: #2dd4bf;
+  color: var(--uf-app-success-text);
 }
 
-.tone_neutral .statusIcon { color: #94a3b8; }
-.tone_warn .statusIcon { color: #f59e0b; }
-.tone_danger .statusIcon { color: #ef4444; }
+.tone_neutral .statusIcon { color: var(--uf-app-text-2); }
+.tone_warn .statusIcon { color: var(--uf-app-warning); }
+.tone_danger .statusIcon { color: var(--uf-app-danger); }
 
 .statusIcon svg {
   width: 100%;
@@ -180,7 +180,7 @@
   align-items: center;
   gap: 16px;
   padding-top: 4px;
-  border-top: 1px solid rgba(86, 109, 151, .3);
+  border-top: 1px solid var(--uf-app-border);
 }
 
 .planIcon {
@@ -191,7 +191,7 @@
   place-items: center;
   border-radius: 50%;
   background: linear-gradient(145deg, rgba(124, 58, 237, .35), rgba(37, 99, 235, .35));
-  color: #2dd4bf;
+  color: var(--uf-app-success-text);
   box-shadow: 0 0 16px rgba(45, 212, 191, .28);
   margin-top: 12px;
 }
@@ -233,7 +233,7 @@
 }
 
 .planPrice small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 12.5px;
 }
 
@@ -242,7 +242,7 @@
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 14px;
   padding-top: 14px;
-  border-top: 1px solid rgba(86, 109, 151, .3);
+  border-top: 1px solid var(--uf-app-border);
 }
 
 .infoTile {
@@ -255,7 +255,7 @@
   display: inline-flex;
   width: 20px;
   height: 20px;
-  color: #7c8aa8;
+  color: var(--uf-app-text-3);
   margin-bottom: 2px;
 }
 
@@ -270,7 +270,7 @@
 }
 
 .infoTile small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 12.5px;
 }
 
@@ -280,7 +280,7 @@
 
 .hint {
   margin: 0;
-  color: #cbd5e1;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -292,9 +292,9 @@
   align-items: flex-start;
   gap: 14px;
   padding: 20px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 22px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  background: var(--uf-app-card-bg);
 }
 
 .cardIcon {
@@ -316,8 +316,8 @@
   stroke-width: 2.2;
 }
 
-.toneBlue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
-.toneGreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
+.toneBlue { background: var(--uf-app-primary-subtle); color: var(--uf-app-primary-text); }
+.toneGreen { background: var(--uf-app-success-subtle); color: var(--uf-app-success-text); }
 
 .cardText {
   min-width: 0;
@@ -333,14 +333,14 @@
 
 .cardText p {
   margin: 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   line-height: 1.5;
 }
 
 .recommendationCard {
   border-color: rgba(124, 58, 237, .35);
-  background: linear-gradient(145deg, rgba(124, 58, 237, .12), rgba(4, 13, 33, .94));
+  background: linear-gradient(145deg, rgba(124, 58, 237, .12), var(--uf-app-surface));
 }
 
 .helpMascot {
@@ -350,7 +350,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(124, 58, 237, .18);
+  background: var(--uf-app-ai-subtle);
   font-size: 22px;
 }
 
@@ -370,10 +370,10 @@
   justify-content: center;
   gap: 8px;
   padding: 14px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 18px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
-  color: #f8fafc;
+  background: var(--uf-app-card-bg);
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 13.5px;
   font-weight: 650;
@@ -385,7 +385,7 @@
   display: inline-flex;
   width: 22px;
   height: 22px;
-  color: #5e93ff;
+  color: var(--uf-app-primary-text);
 }
 
 .quickLinkIcon svg {
@@ -403,7 +403,7 @@
 .backButton:focus-visible,
 .talkButton:focus-visible,
 .quickLink:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 

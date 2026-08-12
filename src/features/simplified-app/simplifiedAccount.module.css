@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 /* ---------- Cabeçalho (mesmo padrão de Registros: título + Falar com a Uni) ---------- */
@@ -47,7 +47,7 @@
   min-width: 0;
   overflow: hidden;
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(22px, 6vw, 42px);
   line-height: 1;
   text-overflow: ellipsis;
@@ -64,9 +64,9 @@
   border: 2px solid transparent;
   border-radius: 16px;
   background:
-    linear-gradient(#030b1d, #030b1d) padding-box,
-    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
-  color: #f8fafc;
+    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
+    linear-gradient(110deg, var(--uf-app-success), var(--uf-app-cyan) 35%, var(--uf-app-primary) 66%, var(--uf-app-ai)) border-box;
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 16px;
   font-weight: 720;
@@ -84,7 +84,7 @@
   width: 100%;
   height: 100%;
   fill: none;
-  stroke: #2dd4bf;
+  stroke: var(--uf-app-success-text);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2.2;
@@ -97,9 +97,9 @@
   flex-direction: column;
   gap: 20px;
   padding: 20px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 22px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  background: var(--uf-app-card-bg);
 }
 
 .profileTop {
@@ -135,7 +135,7 @@
   align-items: center;
   gap: 6px;
   overflow: hidden;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -146,7 +146,7 @@
   flex: 0 0 auto;
   width: 15px;
   height: 15px;
-  color: #7c8aa8;
+  color: var(--uf-app-text-3);
 }
 
 .inlineIcon svg {
@@ -167,7 +167,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: #5e85ff;
+  color: var(--uf-app-primary-text);
   font: inherit;
   font-size: 14.5px;
   font-weight: 650;
@@ -179,7 +179,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   padding-top: 16px;
-  border-top: 1px solid rgba(86, 109, 151, .3);
+  border-top: 1px solid var(--uf-app-border);
 }
 
 .profileAction {
@@ -190,7 +190,7 @@
   padding: 4px;
   border: 0;
   background: none;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -203,7 +203,7 @@
 
 .profileAction small {
   display: block;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13px;
 }
 
@@ -228,9 +228,9 @@
 
 /* ---------- Tons compartilhados (perfil, plano, menu) ---------- */
 
-.toneBlue { background: rgba(37, 99, 235, .18); color: #5e93ff; }
-.toneGreen { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
-.tonePurple { background: rgba(124, 58, 237, .18); color: #a78bfa; }
+.toneBlue { background: var(--uf-app-primary-subtle); color: var(--uf-app-primary-text); }
+.toneGreen { background: var(--uf-app-success-subtle); color: var(--uf-app-success-text); }
+.tonePurple { background: var(--uf-app-ai-subtle); color: var(--uf-app-ai-text); }
 
 /* ---------- Card do plano ---------- */
 
@@ -244,7 +244,7 @@
   border: 1px solid rgba(45, 212, 191, .4);
   border-radius: 20px;
   background: linear-gradient(135deg, rgba(16, 185, 129, .12), rgba(37, 99, 235, .08));
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -262,7 +262,7 @@
 
 .plan_danger {
   border-color: rgba(239, 68, 68, .45);
-  background: linear-gradient(135deg, rgba(239, 68, 68, .16), rgba(15, 23, 42, .3));
+  background: linear-gradient(135deg, var(--uf-app-danger-subtle), rgba(15, 23, 42, .3));
 }
 
 .planIcon {
@@ -272,7 +272,7 @@
   place-items: center;
   border-radius: 50%;
   background: linear-gradient(145deg, rgba(124, 58, 237, .35), rgba(37, 99, 235, .35));
-  color: #2dd4bf;
+  color: var(--uf-app-success-text);
   box-shadow: 0 0 16px rgba(45, 212, 191, .28);
 }
 
@@ -294,21 +294,21 @@
 }
 
 .planStatusLabel {
-  color: #2dd4bf;
+  color: var(--uf-app-success-text);
   font-size: 15.5px;
   line-height: 1.25;
 }
 
 .plan_neutral .planStatusLabel {
-  color: #cbd5e1;
+  color: var(--uf-app-text-2);
 }
 
 .plan_warn .planStatusLabel {
-  color: #f59e0b;
+  color: var(--uf-app-warning);
 }
 
 .plan_danger .planStatusLabel {
-  color: #f87171;
+  color: var(--uf-app-danger-text);
 }
 
 .planName {
@@ -320,7 +320,7 @@
 }
 
 .planInfo small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13px;
 }
 
@@ -337,7 +337,7 @@
 }
 
 .planPrice small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 12.5px;
 }
 
@@ -345,7 +345,7 @@
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
-  color: #8b96aa;
+  color: var(--uf-app-text-3);
 }
 
 .planChevron svg {
@@ -363,9 +363,9 @@
 .menuCard {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 20px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  background: var(--uf-app-card-bg);
   overflow: hidden;
 }
 
@@ -378,7 +378,7 @@
   border: 0;
   border-bottom: 1px solid rgba(86, 109, 151, .22);
   background: none;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -431,7 +431,7 @@
 
 .menuText small {
   overflow: hidden;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -441,7 +441,7 @@
   flex: 0 0 auto;
   width: 16px;
   height: 16px;
-  color: #8b96aa;
+  color: var(--uf-app-text-3);
 }
 
 .menuChevron svg {
@@ -465,7 +465,7 @@
   border: 1px solid rgba(239, 68, 68, .3);
   border-radius: 20px;
   background: rgba(239, 68, 68, .06);
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -478,8 +478,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(239, 68, 68, .16);
-  color: #ef4444;
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger);
 }
 
 .logoutIcon svg {
@@ -493,15 +493,15 @@
 }
 
 .logoutCard .menuText strong {
-  color: #ef4444;
+  color: var(--uf-app-danger);
 }
 
 .logoutError {
   margin: 0 0 12px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(239, 68, 68, .12);
-  color: #fca5a5;
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
   font-size: 14px;
 }
 
@@ -513,7 +513,7 @@
 .planCard:focus-visible,
 .menuRow:focus-visible,
 .logoutCard:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -528,7 +528,7 @@
     max(18px, env(safe-area-inset-right))
     34px
     max(18px, env(safe-area-inset-left));
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 .subpageHeader {
@@ -544,10 +544,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 50%;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   cursor: pointer;
 }
 
@@ -562,7 +562,7 @@
 }
 
 .backButton:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -570,7 +570,7 @@
   min-width: 0;
   overflow: hidden;
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(24px, 6vw, 34px);
   font-weight: 800;
   text-overflow: ellipsis;
@@ -588,7 +588,7 @@
 .subpageBody p {
   max-width: 420px;
   margin: 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 16px;
   line-height: 1.5;
 }

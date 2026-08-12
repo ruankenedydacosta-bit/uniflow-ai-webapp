@@ -339,6 +339,41 @@ for (const [spokenHour, expectedHour] of [
   });
 }
 
+test('BUG REAL: "umas 10 horas" (aproximação coloquial) cria compromisso com o horário correto, sem virar dia inteiro', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Tenho uma reunião amanhã, umas 10 horas.');
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.title, 'reuniao');
+  assert.equal(calls[0].payload.is_all_day, false);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+});
+
+test('BUG REAL: "uns 15h30" (aproximação coloquial) preserva minutos e horário', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Marca um compromisso amanhã, uns 15h30.');
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.is_all_day, false);
+  const startsAt = new Date(calls[0].payload.starts_at);
+  assert.equal(startsAt.getHours(), 15);
+  assert.equal(startsAt.getMinutes(), 30);
+});
+
+// BUG REAL relatado em produção: "Agenda uma reunião para amanhã, umas 10
+// horas." salvava o compromisso como dia inteiro, com "umas 10 horas" preso
+// no título -- "umas"/"uns" (aproximação coloquial de horário, "por volta
+// de") não era um prefixo reconhecido em nenhum dos pontos de extração
+// (SPOKEN_TIME_WITH_CUE para hora por extenso, extractAgendaTimeValue para
+// hora numérica, invalidTimeCandidate para detecção de horário malformado),
+// então a frase inteira caía em NON_TEMPORAL_CONTENT.
+test('BUG REAL: frase exata relatada em produção -- "Agenda uma reunião para amanhã, umas 10 horas." usa 10:00, não vira dia inteiro', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await turn(flow, 'Agenda uma reunião para amanhã, umas 10 horas.');
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].payload.is_all_day, false);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 10);
+  assert.doesNotMatch(calls[0].payload.title, /\d/, 'o horário não pode vazar para o título');
+});
+
 test('criação aceita hora por extenso sem a palavra horas', async () => {
   const { flow, calls } = makeHarness();
   const result = await turn(flow, 'Agenda uma reunião amanhã às dez.');

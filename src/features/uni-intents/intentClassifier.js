@@ -277,6 +277,12 @@ const INTENT_RULES = [
       /^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|coloquei|botei)\b/,
       /^(?:custou|saiu|foi)\s+(?:r\$\s*)?[\d.,]+/,
       /\b(?:paguei|gastei|coloquei|botei)\s+(?:r\$\s*)?[\d.,]+/,
+      // BUG REAL EM PRODUCAO: "Eu fiz uma compra de 200 reais no mercado."
+      // não batia em nenhum padrão (nem "comprei", nem "reais de" -- é
+      // "reais no mercado") e caía em 'question', indo direto para o chat
+      // geral em vez de perguntar a conta. "fiz/realizei uma compra" é
+      // forma comum de descrever uma compra sem usar o verbo "comprar".
+      /\b(?:fiz|realizei)\s+(?:uma\s+)?compra\b/,
       // Comandos imperativos genéricos ("lance uma despesa de...", "registra
       // R$ 120 de..."), sem "receita/entrada" explicita -- default despesa.
       /^(?:lance|lanca|registra|registre|anota|anote)\b/,

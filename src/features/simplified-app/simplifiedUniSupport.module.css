@@ -83,7 +83,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--uf-gradient-brand, linear-gradient(100deg, #5b8def, #846eb0));
+  background: var(--uf-gradient-brand, linear-gradient(100deg, var(--uf-app-primary-text), var(--uf-app-ai-text)));
   box-shadow: var(--uf-shadow-md, 0 14px 32px -16px rgba(0, 0, 0, .5));
 }
 
@@ -178,7 +178,7 @@
 }
 
 .voiceError {
-  color: #f97066;
+  color: var(--uf-app-danger);
   font-size: 12.5px;
 }
 
@@ -212,7 +212,7 @@
   border: 1px solid rgba(249, 112, 102, .35);
   border-radius: 14px;
   background: rgba(249, 112, 102, .08);
-  color: #fcd3cf;
+  color: var(--uf-app-danger-text);
   font-size: 13px;
   line-height: 1.45;
 }

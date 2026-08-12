@@ -7,25 +7,25 @@
    compartilhado nem FinanceTransactionModal quando usado no Financeiro
    desktop (FinanceiroPage.jsx), que continua reativo ao tema do site. */
 .transactionDialogDark {
-  --uf-color-bg-elevated: linear-gradient(145deg, rgba(14, 31, 62, .96), rgba(4, 13, 33, .98));
-  --uf-color-bg-sunken: rgba(10, 22, 48, .82);
-  --uf-color-bg-surface-hover: rgba(15, 30, 58, .95);
-  --uf-color-border-default: rgba(86, 109, 151, .42);
-  --uf-color-border-subtle: rgba(86, 109, 151, .28);
+  --uf-color-bg-elevated: linear-gradient(145deg, var(--uf-app-surface-2), var(--uf-app-surface));
+  --uf-color-bg-sunken: var(--uf-app-surface);
+  --uf-color-bg-surface-hover: var(--uf-app-surface-2);
+  --uf-color-border-default: var(--uf-app-border);
+  --uf-color-border-subtle: var(--uf-app-border);
   --uf-color-border-strong: rgba(96, 116, 255, .5);
-  --uf-color-text-primary: #f8fafc;
-  --uf-color-text-secondary: #c3ccdc;
-  --uf-color-text-tertiary: #9aa7bd;
-  --uf-color-primary: #2563eb;
-  --uf-color-danger: #ef4444;
-  --uf-color-danger-subtle: rgba(239, 68, 68, .16);
-  --uf-color-info: #22d3ee;
-  --uf-color-info-subtle: rgba(37, 99, 235, .14);
-  --uf-color-success: #10b981;
-  --uf-color-success-subtle: rgba(16, 185, 129, .14);
-  --uf-color-warning: #f59e0b;
+  --uf-color-text-primary: var(--uf-app-text);
+  --uf-color-text-secondary: var(--uf-app-text-2);
+  --uf-color-text-tertiary: var(--uf-app-text-2);
+  --uf-color-primary: var(--uf-app-primary);
+  --uf-color-danger: var(--uf-app-danger);
+  --uf-color-danger-subtle: var(--uf-app-danger-subtle);
+  --uf-color-info: var(--uf-app-cyan);
+  --uf-color-info-subtle: var(--uf-app-primary-subtle);
+  --uf-color-success: var(--uf-app-success);
+  --uf-color-success-subtle: var(--uf-app-success-subtle);
+  --uf-color-warning: var(--uf-app-warning);
   --uf-color-warning-subtle: rgba(245, 158, 11, .14);
-  --uf-focus-ring-color: #67e8f9;
+  --uf-focus-ring-color: var(--uf-app-focus);
 }
 
 .darkOverlay {
@@ -42,7 +42,7 @@
     max(18px, env(safe-area-inset-right))
     34px
     max(18px, env(safe-area-inset-left));
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 .recordsHeader {
@@ -66,7 +66,7 @@
   min-width: 0;
   overflow: hidden;
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(22px, 6vw, 42px);
   letter-spacing: 0;
   line-height: 1;
@@ -95,9 +95,9 @@
   border: 2px solid transparent;
   border-radius: 16px;
   background:
-    linear-gradient(#030b1d, #030b1d) padding-box,
-    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
-  color: #f8fafc;
+    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
+    linear-gradient(110deg, var(--uf-app-success), var(--uf-app-cyan) 35%, var(--uf-app-primary) 66%, var(--uf-app-ai)) border-box;
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 16px;
   font-weight: 720;
@@ -116,7 +116,7 @@
   width: 100%;
   height: 100%;
   fill: none;
-  stroke: #2dd4bf;
+  stroke: var(--uf-app-success-text);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2.2;
@@ -139,7 +139,7 @@
   padding: 5px;
   border: 1px solid rgba(82, 111, 160, .45);
   border-radius: 20px;
-  background: rgba(10, 22, 48, .82);
+  background: var(--uf-app-surface);
 }
 
 .viewTabs button {
@@ -153,7 +153,7 @@
   border: 0;
   border-radius: 15px;
   background: transparent;
-  color: #b7c0d0;
+  color: var(--uf-app-text-2);
   font: inherit;
   font-size: 18px;
   font-weight: 660;
@@ -178,8 +178,8 @@
 }
 
 .viewTabs .activeTab {
-  background: linear-gradient(105deg, #234cff, #248de3 50%, #12c79c);
-  color: #fff;
+  background: linear-gradient(105deg, var(--uf-app-primary), var(--uf-app-primary) 50%, var(--uf-app-success));
+  color: var(--uf-app-on-accent);
   box-shadow: 0 8px 22px rgba(37, 99, 235, .22);
 }
 
@@ -197,7 +197,7 @@
 
 .sectionHeading h2 {
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(22px, 5.8vw, 30px);
   letter-spacing: 0;
 }
@@ -207,7 +207,7 @@
   padding: 0 4px;
   border: 0;
   background: transparent;
-  color: #5e85ff;
+  color: var(--uf-app-primary-text);
   font: inherit;
   font-size: 17px;
   font-weight: 650;
@@ -223,7 +223,7 @@
   gap: 8px;
   border: 0;
   background: transparent;
-  color: #6d82ff;
+  color: var(--uf-app-primary-text);
   font: inherit;
   font-size: 17px;
   font-weight: 700;
@@ -235,7 +235,7 @@
   flex: 0 0 auto;
   width: 20px;
   height: 20px;
-  color: #7c6ff5;
+  color: var(--uf-app-ai);
 }
 
 .monthIcon svg {
@@ -263,10 +263,10 @@
   justify-content: space-between;
   gap: 16px;
   padding: 18px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 22px;
   background:
-    linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+    var(--uf-app-card-bg);
   box-shadow: inset 0 1px rgba(255, 255, 255, .025);
 }
 
@@ -279,7 +279,7 @@
 .summaryCard h3 {
   min-width: 0;
   margin: 0;
-  color: #f1f5f9;
+  color: var(--uf-app-text);
   font-size: 17px;
   font-weight: 650;
 }
@@ -301,7 +301,7 @@
   place-items: center;
   flex: 0 0 auto;
   border-radius: 50%;
-  color: #fff;
+  color: var(--uf-app-on-accent);
 }
 
 .summaryIcon svg {
@@ -315,35 +315,35 @@
 }
 
 .income .summaryIcon {
-  background: linear-gradient(145deg, #16a34a, #10b981);
+  background: linear-gradient(145deg, var(--uf-app-success), var(--uf-app-success));
   box-shadow: 0 0 15px rgba(16, 185, 129, .32);
 }
 
 .income strong {
-  color: #22c96f;
+  color: var(--uf-app-success);
 }
 
 .expense .summaryIcon {
-  background: linear-gradient(145deg, #dc2626, #ef4444);
+  background: linear-gradient(145deg, var(--uf-app-danger), var(--uf-app-danger));
   box-shadow: 0 0 15px rgba(239, 68, 68, .28);
 }
 
 .expense strong {
-  color: #ff475a;
+  color: var(--uf-app-danger);
 }
 
 .balance .summaryIcon {
-  background: linear-gradient(145deg, #2563eb, #3b82f6);
+  background: linear-gradient(145deg, var(--uf-app-primary), var(--uf-app-primary));
   box-shadow: 0 0 15px rgba(59, 130, 246, .3);
 }
 
 .balance strong {
-  color: #3f7fff;
+  color: var(--uf-app-primary);
 }
 
 .balanceButton {
   width: 100%;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   appearance: none;
   cursor: pointer;
   text-align: left;
@@ -387,7 +387,7 @@
   border: 1px solid rgba(86, 109, 151, .46);
   border-radius: 20px;
   background: linear-gradient(145deg, rgba(15, 30, 58, .88), rgba(5, 14, 34, .95));
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font: inherit;
   text-align: center;
   cursor: pointer;
@@ -418,7 +418,7 @@
 }
 
 .categoryCard small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14px;
 }
 
@@ -428,8 +428,8 @@
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--category-color, #60a5fa) 80%, white);
   border-radius: 50%;
-  background: color-mix(in srgb, var(--category-color, #60a5fa) 62%, #07101f);
-  color: #fff;
+  background: color-mix(in srgb, var(--category-color, #60a5fa) 62%, var(--uf-app-canvas));
+  color: var(--uf-app-on-accent);
   box-shadow: 0 0 16px color-mix(in srgb, var(--category-color, #60a5fa) 33%, transparent);
 }
 
@@ -448,14 +448,14 @@
   stroke-width: 2.2;
 }
 
-.toneorange { --category-color: #f97316; }
-.toneblue { --category-color: #2563eb; }
-.tonegreen { --category-color: #16a34a; }
-.tonered { --category-color: #dc2626; }
-.tonepurple { --category-color: #7c3aed; }
-.toneyellow { --category-color: #d4a900; }
-.tonecyan { --category-color: #0ea5a4; }
-.tonegray { --category-color: #64748b; }
+.toneorange { --category-color: var(--uf-app-warning); }
+.toneblue { --category-color: var(--uf-app-primary); }
+.tonegreen { --category-color: var(--uf-app-success); }
+.tonered { --category-color: var(--uf-app-danger); }
+.tonepurple { --category-color: var(--uf-app-ai); }
+.toneyellow { --category-color: var(--uf-app-warning); }
+.tonecyan { --category-color: var(--uf-app-success); }
+.tonegray { --category-color: var(--uf-app-text-3); }
 
 .newRecordAction {
   width: 100%;
@@ -468,8 +468,8 @@
   padding: 14px 24px;
   border: 0;
   border-radius: 20px;
-  background: linear-gradient(105deg, #2245ff, #2d75e9 38%, #24a9c8 68%, #15c99a);
-  color: #fff;
+  background: linear-gradient(105deg, var(--uf-app-primary), var(--uf-app-primary) 38%, var(--uf-app-cyan) 68%, var(--uf-app-success));
+  color: var(--uf-app-on-accent);
   font: inherit;
   text-align: left;
   box-shadow: 0 14px 34px rgba(37, 99, 235, .23);
@@ -515,7 +515,7 @@
   height: 58px;
   display: grid;
   place-items: center;
-  border: 3px solid #fff;
+  border: 3px solid var(--uf-app-surface);
   border-radius: 50%;
   font-size: 42px;
   font-weight: 300;
@@ -533,7 +533,7 @@
   border: 1px solid rgba(96, 165, 250, .3);
   border-radius: 14px;
   background: rgba(9, 24, 50, .82);
-  color: #c7d0df;
+  color: var(--uf-app-text-2);
   font-size: 14px;
 }
 
@@ -542,7 +542,7 @@
   min-height: 48px;
   border: 0;
   background: transparent;
-  color: #67e8f9;
+  color: var(--uf-app-focus);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -566,7 +566,7 @@
   border: 1px solid rgba(79, 102, 143, .42);
   border-radius: 17px;
   background: linear-gradient(105deg, rgba(11, 26, 54, .9), rgba(5, 14, 32, .97));
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -598,7 +598,7 @@
 
 .transactionMain small {
   overflow: hidden;
-  color: #a5afc0;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -610,12 +610,12 @@
   white-space: nowrap;
 }
 
-.positiveAmount { color: #22c96f; }
-.negativeAmount { color: #ff475a; }
-.transferAmount { color: #60a5fa; }
+.positiveAmount { color: var(--uf-app-success); }
+.negativeAmount { color: var(--uf-app-danger); }
+.transferAmount { color: var(--uf-app-primary-text); }
 
 .chevron {
-  color: #8b96aa;
+  color: var(--uf-app-text-3);
   font-size: 34px;
   font-weight: 300;
 }
@@ -635,7 +635,7 @@
   min-width: 0;
   display: grid;
   gap: 6px;
-  color: #aeb8c9;
+  color: var(--uf-app-text-2);
   font-size: 12px;
   font-weight: 650;
 }
@@ -648,8 +648,8 @@
   padding: 0 11px;
   border: 1px solid rgba(83, 109, 151, .48);
   border-radius: 12px;
-  background: #071329;
-  color: #f8fafc;
+  background: var(--uf-app-surface);
+  color: var(--uf-app-text);
   font: inherit;
   /* >=16px evita o zoom automático do Safari iOS ao focar o campo. */
   font-size: 16px;
@@ -665,7 +665,7 @@
   border: 1px solid rgba(103, 232, 249, .4);
   border-radius: 12px;
   background: rgba(11, 35, 66, .9);
-  color: #67e8f9;
+  color: var(--uf-app-focus);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -694,7 +694,7 @@
   border: 1px dashed rgba(80, 105, 149, .45);
   border-radius: 17px;
   background: rgba(5, 15, 34, .65);
-  color: #aeb8c9;
+  color: var(--uf-app-text-2);
   font-size: 16px;
   line-height: 1.45;
   text-align: center;
@@ -707,7 +707,7 @@
 }
 
 .stateCard span {
-  color: #9ba8bb;
+  color: var(--uf-app-text-2);
 }
 
 .loadingState {
@@ -720,7 +720,7 @@
 .loadingState span {
   min-height: 142px;
   border-radius: 20px;
-  background: linear-gradient(105deg, #0a1935 25%, #142b52 42%, #0a1935 62%);
+  background: linear-gradient(105deg, var(--uf-app-surface) 25%, var(--uf-app-surface-3) 42%, var(--uf-app-surface) 62%);
   background-size: 300% 100%;
   animation: recordsLoading 1.3s ease infinite;
 }
@@ -750,7 +750,7 @@
 .loadMore:focus-visible,
 .accountNotice button:focus-visible,
 .stateCard button:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 3px;
 }
 

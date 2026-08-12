@@ -787,7 +787,9 @@ test('MonthPickerModal é portal para document.body e usa role="dialog" acessív
 test('CSS do MonthPickerModal usa identidade escura (sem fundo branco), safe area e dvh', async () => {
   const css = await source('./MonthPickerModal.module.css');
   assert.match(css, /background: rgba\(3, 8, 20, \.68\)/);
-  assert.match(css, /linear-gradient\(145deg, rgba\(14, 31, 62, \.96\), rgba\(4, 13, 33, \.98\)\)/);
+  // Superfície do modal vem do tema (mesma identidade no UniFlow, adaptada
+  // no Claro e no Escuro) em vez de um gradiente escuro fixo.
+  assert.match(css, /linear-gradient\(145deg, var\(--uf-app-surface-2\), var\(--uf-app-surface\)\)/);
   assert.match(css, /env\(safe-area-inset-top\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(css, /100dvh/);
@@ -1083,8 +1085,12 @@ test('LOTE F: a shell trava o viewport escuro e o .mainContent é o único conta
   const shellBlock = css.slice(shellStart, css.indexOf('.shell[data-text-size', shellStart));
   assert.match(shellBlock, /overflow: hidden/);
   assert.match(shellBlock, /overscroll-behavior-y: contain/);
-  assert.match(shellBlock, /--uf-color-bg-canvas:\s*#[0-9a-fA-F]{6};/);
-  assert.match(shellBlock, /--uf-color-text-primary:\s*#[0-9a-fA-F]{6};/);
+  // THEME SYSTEM V2 (regressão): a shell NÃO pode voltar a fixar cor literal
+  // aqui -- era essa declaração local que vencia o data-theme da raiz e
+  // deixava o seletor de temas sem efeito nenhum dentro de /app/*.
+  assert.match(shellBlock, /--uf-color-bg-canvas:\s*var\(--uf-app-canvas\);/);
+  assert.match(shellBlock, /--uf-color-text-primary:\s*var\(--uf-app-text\);/);
+  assert.doesNotMatch(shellBlock, /--uf-color-[\w-]+:\s*#[0-9a-fA-F]{3,8};/);
   const mainIdx = css.indexOf('.mainContent {');
   const mainBlock = css.slice(mainIdx, css.indexOf('}', mainIdx));
   assert.match(mainBlock, /overflow-y: auto;/);

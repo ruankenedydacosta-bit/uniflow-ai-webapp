@@ -11,7 +11,9 @@ test('reaproveita a identidade visual já aprovada (UniMark, mesmos cards/gradie
   const page = await source('./SimplifiedAboutPage.jsx');
   assert.match(page, /import \{[\s\S]*UniMark,?[\s\S]*\} from '\.\/SimplifiedIcons\.jsx';/);
   const css = await source('./simplifiedAbout.module.css');
-  assert.match(css, /background: linear-gradient\(145deg, rgba\(14, 31, 62, \.9\), rgba\(4, 13, 33, \.94\)\);/);
+  // O card mantém exatamente a mesma identidade -- var(--uf-app-card-bg)
+  // resolve para esse mesmo gradiente no tema UniFlow (theme.css, seção 18).
+  assert.match(css, /background: var\(--uf-app-card-bg\);/);
 });
 
 test('versão e nome vêm da fonte única appIdentity.js -- nunca hardcoded duas vezes (drift entre Conta e Sobre)', async () => {

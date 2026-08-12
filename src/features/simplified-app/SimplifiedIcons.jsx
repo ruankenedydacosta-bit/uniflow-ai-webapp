@@ -170,6 +170,17 @@ export function InfoIcon() {
   );
 }
 
+// Aparência/tema: círculo com metade preenchida -- convenção já consolidada
+// para contraste e claro/escuro, reconhecida sem precisar de rótulo.
+export function AppearanceIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="11" />
+      <path d="M16 5v22a11 11 0 0 0 0-22Z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function LogoutIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">

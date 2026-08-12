@@ -73,6 +73,20 @@ test('BUG REAL: "Coloquei duzentos reais de gasolina." é reconhecida como despe
   assert.equal(result.ready, true);
   assert.equal(result.requiresConfirmation, true);
 });
+// BUG REAL EM PRODUÇÃO: "Fala, Uni. Boa noite. Eu fiz uma compra de 200
+// reais no mercado." caía em intent 'question' -- nem "comprei" (verbo
+// conjugado) nem "reais de" (é "reais no mercado") batiam em nenhum padrão,
+// então a frase ia direto para o chat geral em vez de perguntar a conta.
+// "fiz/realizei uma compra" agora é reconhecida como register_expense.
+test('BUG REAL: "Eu fiz uma compra de 200 reais no mercado." é reconhecida como despesa mesmo com saudação antes', () => {
+  const withGreeting = parseFinancialText('Fala, Uni. Boa noite. Eu fiz uma compra de 200 reais no mercado.');
+  const bare = parseFinancialText('Eu fiz uma compra de 200 reais no mercado.');
+
+  assert.equal(withGreeting.intent, 'register_expense');
+  assert.equal(withGreeting.entities.amount, 200);
+  assert.equal(bare.intent, 'register_expense');
+  assert.equal(bare.entities.amount, 200);
+});
 // ============================================================================
 // BUG REAL (BUG 2): "Entrou mil reais." e variações. O padrão antigo só
 // aceitava o verbo no singular com valor em algarismo logo após o verbo --

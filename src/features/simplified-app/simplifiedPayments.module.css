@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 /* ---------- Cabeçalho ---------- */
@@ -38,10 +38,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 50%;
-  background: rgba(14, 31, 62, .7);
-  color: #f8fafc;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
   cursor: pointer;
 }
 
@@ -59,7 +59,7 @@
   min-width: 0;
   overflow: hidden;
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: clamp(20px, 5.6vw, 28px);
   font-weight: 800;
   line-height: 1.2;
@@ -77,9 +77,9 @@
   border: 2px solid transparent;
   border-radius: 16px;
   background:
-    linear-gradient(#030b1d, #030b1d) padding-box,
-    linear-gradient(110deg, #10b981, #22d3ee 35%, #2563eb 66%, #7c3aed) border-box;
-  color: #f8fafc;
+    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
+    linear-gradient(110deg, var(--uf-app-success), var(--uf-app-cyan) 35%, var(--uf-app-primary) 66%, var(--uf-app-ai)) border-box;
+  color: var(--uf-app-text);
   font: inherit;
   font-size: 15px;
   font-weight: 720;
@@ -91,7 +91,7 @@
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
-  color: #a78bfa;
+  color: var(--uf-app-ai-text);
 }
 
 .helpIcon svg {
@@ -107,7 +107,7 @@
 .loadingState {
   margin: 0;
   padding: 16px;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14.5px;
 }
 
@@ -115,8 +115,8 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(239, 68, 68, .12);
-  color: #fca5a5;
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
   font-size: 14px;
 }
 
@@ -127,9 +127,9 @@
   flex-direction: column;
   gap: 18px;
   padding: 20px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 22px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  background: var(--uf-app-card-bg);
 }
 
 .planTop {
@@ -147,7 +147,7 @@
   border-radius: 50%;
   border: 2px solid rgba(124, 58, 237, .5);
   background: linear-gradient(145deg, rgba(124, 58, 237, .25), rgba(37, 99, 235, .25));
-  color: #5e93ff;
+  color: var(--uf-app-primary-text);
 }
 
 .planIcon svg {
@@ -173,7 +173,7 @@
 }
 
 .planInfo small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13px;
 }
 
@@ -189,7 +189,7 @@
 }
 
 .priceRow small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13px;
 }
 
@@ -198,7 +198,7 @@
   flex-direction: column;
   gap: 14px;
   padding-top: 14px;
-  border-top: 1px solid rgba(86, 109, 151, .3);
+  border-top: 1px solid var(--uf-app-border);
 }
 
 .overviewTile {
@@ -209,14 +209,14 @@
 
 .overviewTile p {
   margin: 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13.5px;
   line-height: 1.5;
 }
 
 .overviewTile > div small {
   display: block;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 12.5px;
 }
 
@@ -231,8 +231,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(37, 99, 235, .18);
-  color: #5e93ff;
+  background: var(--uf-app-primary-subtle);
+  color: var(--uf-app-primary-text);
 }
 
 .overviewIcon svg {
@@ -245,10 +245,10 @@
   stroke-width: 2.2;
 }
 
-.tone_ok { background: rgba(16, 185, 129, .18); color: #2dd4bf; }
-.tone_warn { background: rgba(245, 158, 11, .18); color: #f59e0b; }
-.tone_danger { background: rgba(239, 68, 68, .18); color: #ef4444; }
-.tone_neutral { background: rgba(148, 163, 184, .18); color: #94a3b8; }
+.tone_ok { background: var(--uf-app-success-subtle); color: var(--uf-app-success-text); }
+.tone_warn { background: var(--uf-app-warning-subtle); color: var(--uf-app-warning); }
+.tone_danger { background: rgba(239, 68, 68, .18); color: var(--uf-app-danger); }
+.tone_neutral { background: rgba(148, 163, 184, .18); color: var(--uf-app-text-2); }
 
 /* ---------- Cards genéricos ---------- */
 
@@ -257,14 +257,14 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 22px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .9), rgba(4, 13, 33, .94));
+  background: var(--uf-app-card-bg);
 }
 
 .card h2 {
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: 16px;
   font-weight: 750;
 }
@@ -280,7 +280,7 @@
   flex: 0 0 auto;
   width: 20px;
   height: 20px;
-  color: #7c8aa8;
+  color: var(--uf-app-text-3);
 }
 
 .cardHeaderIcon svg {
@@ -296,9 +296,9 @@
 .emptyState {
   margin: 0;
   padding: 12px 14px;
-  border: 1px dashed rgba(86, 109, 151, .4);
+  border: 1px dashed var(--uf-app-border);
   border-radius: 14px;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -308,7 +308,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: #5b6780;
+  color: var(--uf-app-text-3);
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -320,7 +320,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: #5e93ff;
+  color: var(--uf-app-primary-text);
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -354,7 +354,7 @@
 
 .historySummaryRow > span:first-child {
   flex: 1 1 auto;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
 }
 
 .historySummaryStatus {
@@ -367,7 +367,7 @@
 
 .historySummaryValue {
   flex: 0 0 auto;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-weight: 700;
 }
 
@@ -386,8 +386,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(124, 58, 237, .18);
-  color: #a78bfa;
+  background: var(--uf-app-ai-subtle);
+  color: var(--uf-app-ai-text);
 }
 
 .chargeIcon svg {
@@ -409,7 +409,7 @@
 }
 
 .chargeInfo small {
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 12.5px;
 }
 
@@ -417,7 +417,7 @@
   flex: 0 0 auto;
   font-size: 18px;
   font-weight: 750;
-  color: #a78bfa;
+  color: var(--uf-app-ai-text);
 }
 
 /* ---------- Zona crítica (cancelar) ---------- */
@@ -433,8 +433,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(239, 68, 68, .16);
-  color: #ef4444;
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger);
 }
 
 .criticalIcon svg {
@@ -448,13 +448,13 @@
 }
 
 .criticalText strong {
-  color: #fca5a5;
+  color: var(--uf-app-danger-text);
   font-size: 15.5px;
 }
 
 .criticalText p {
   margin: 4px 0 0;
-  color: #a8b2c5;
+  color: var(--uf-app-text-2);
   font-size: 13.5px;
   line-height: 1.5;
 }
@@ -465,7 +465,7 @@
 .helpButton:focus-visible,
 .historyLink:focus-visible,
 .disabledLink:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 

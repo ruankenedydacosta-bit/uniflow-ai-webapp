@@ -174,7 +174,7 @@ export function looksLikeFreshBalanceStatement(text) {
 // verbo futuro e ainda não catalogado apareça. Nesse caso o chamador deve
 // tentar financial_plan (camada neural) antes de qualquer resposta
 // consultiva -- nunca ir direto para handleUnresolvedMessage.
-const LAUNCH_NOUN_RE = /\b(despesa|gasto|receita|entrada|pagamento)\b/i;
+const LAUNCH_NOUN_RE = /\b(despesa|gasto|receita|entrada|pagamento|compra)\b/i;
 
 export function looksLikeUnclassifiedFinancialStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;

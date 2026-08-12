@@ -25,9 +25,9 @@
   padding-bottom: max(20px, calc(env(safe-area-inset-bottom) + 8px));
   border: 1px solid rgba(96, 116, 255, .38);
   border-radius: 22px;
-  background: linear-gradient(145deg, rgba(14, 31, 62, .96), rgba(4, 13, 33, .98));
+  background: linear-gradient(145deg, var(--uf-app-surface-2), var(--uf-app-surface));
   box-shadow: 0 22px 60px rgba(0, 0, 0, .42), inset 0 1px rgba(255, 255, 255, .04);
-  color: #f8fafc;
+  color: var(--uf-app-text);
 }
 
 .dialog:focus-visible {
@@ -43,7 +43,7 @@
 
 .header h2 {
   margin: 0;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: 18px;
   font-weight: 700;
 }
@@ -54,22 +54,22 @@
   height: 40px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 999px;
-  background: rgba(10, 22, 48, .82);
-  color: #c3ccdc;
+  background: var(--uf-app-surface);
+  color: var(--uf-app-text-2);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
 }
 
 .closeButton:hover {
-  color: #f8fafc;
-  background: rgba(15, 30, 58, .95);
+  color: var(--uf-app-text);
+  background: var(--uf-app-surface-2);
 }
 
 .closeButton:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -86,27 +86,27 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 999px;
-  background: rgba(10, 22, 48, .82);
-  color: #e2e8f0;
+  background: var(--uf-app-surface);
+  color: var(--uf-app-text-2);
   font-size: 20px;
   cursor: pointer;
 }
 
 .yearNav:hover {
-  background: rgba(15, 30, 58, .95);
+  background: var(--uf-app-surface-2);
 }
 
 .yearNav:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
 .yearLabel {
   min-width: 64px;
   text-align: center;
-  color: #f8fafc;
+  color: var(--uf-app-text);
   font-size: 18px;
   font-weight: 700;
 }
@@ -120,10 +120,10 @@
 .monthCell {
   min-height: var(--uf-tap-target-min, 44px);
   padding: 12px 4px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 14px;
-  background: rgba(10, 22, 48, .82);
-  color: #e2e8f0;
+  background: var(--uf-app-surface);
+  color: var(--uf-app-text-2);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -132,11 +132,11 @@
 
 .monthCell:hover:not(:disabled) {
   border-color: rgba(96, 116, 255, .5);
-  background: rgba(15, 30, 58, .95);
+  background: var(--uf-app-surface-2);
 }
 
 .monthCell:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -147,8 +147,8 @@
 
 .monthCellSelected {
   border-color: transparent;
-  background: linear-gradient(105deg, #234cff, #248de3 50%, #12c79c);
-  color: #f8fafc;
+  background: linear-gradient(105deg, var(--uf-app-primary), var(--uf-app-primary) 50%, var(--uf-app-success));
+  color: var(--uf-app-text);
   box-shadow: 0 8px 22px rgba(37, 99, 235, .32);
 }
 
@@ -162,22 +162,22 @@
 
 .thisMonthButton {
   padding: 10px 14px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 999px;
-  background: rgba(10, 22, 48, .82);
-  color: #c3ccdc;
+  background: var(--uf-app-surface);
+  color: var(--uf-app-text-2);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .thisMonthButton:hover {
-  color: #f8fafc;
-  background: rgba(15, 30, 58, .95);
+  color: var(--uf-app-text);
+  background: var(--uf-app-surface-2);
 }
 
 .thisMonthButton:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -190,22 +190,22 @@
 .cancelButton {
   min-height: 44px;
   padding: 0 16px;
-  border: 1px solid rgba(86, 109, 151, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 999px;
   background: transparent;
-  color: #c3ccdc;
+  color: var(--uf-app-text-2);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .cancelButton:hover {
-  color: #f8fafc;
+  color: var(--uf-app-text);
   border-color: rgba(96, 116, 255, .5);
 }
 
 .cancelButton:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -214,8 +214,8 @@
   padding: 0 20px;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(105deg, #234cff, #248de3 50%, #12c79c);
-  color: #f8fafc;
+  background: linear-gradient(105deg, var(--uf-app-primary), var(--uf-app-primary) 50%, var(--uf-app-success));
+  color: var(--uf-app-text);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -227,7 +227,7 @@
 }
 
 .applyButton:focus-visible {
-  outline: 3px solid #67e8f9;
+  outline: 3px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
