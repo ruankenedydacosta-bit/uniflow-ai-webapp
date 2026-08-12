@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const TRANSACTION_FIELDS =
-  'id, workspace_id, account_id, destination_account_id, category_id, transaction_type, description, amount, adjustment_delta, transaction_date, competence_date, status, payment_method, notes, is_recurring, recurrence_rule, installment_number, installment_total, source_type, external_provider, external_transaction_id, external_account_id, imported_at, last_synced_at, metadata, created_by, created_at, updated_at';
+  'id, workspace_id, account_id, destination_account_id, category_id, transaction_type, description, amount, adjustment_delta, adjustment_target, transaction_date, competence_date, status, payment_method, notes, is_recurring, recurrence_rule, installment_number, installment_total, source_type, external_provider, external_transaction_id, external_account_id, imported_at, last_synced_at, metadata, created_by, created_at, updated_at';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -314,6 +314,7 @@ export async function createTransaction(workspaceId, transaction = {}) {
       'installment_number',
       'installment_total',
       'adjustment_delta',
+      'adjustment_target',
       'metadata',
     ]),
     description: normalizeTransactionDescription(transaction),
@@ -346,6 +347,7 @@ export function buildTransactionUpdatePayload(changes = {}) {
     'installment_number',
     'installment_total',
     'adjustment_delta',
+    'adjustment_target',
     'metadata',
   ]);
 }

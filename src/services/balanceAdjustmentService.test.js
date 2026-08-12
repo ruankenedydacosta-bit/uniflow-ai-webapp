@@ -23,6 +23,23 @@ test('buildAdjustmentDescription nunca ultrapassa 160 caracteres (limite da RPC)
   assert.ok(description.startsWith('Ajuste manual de saldo — '));
 });
 
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: mesmo mecanismo, agora com um
+// rótulo padrão próprio por card -- nunca "saldo" quando o alvo é receita
+// ou despesa.
+test('buildAdjustmentDescription usa o rótulo do target -- receita e despesa nunca usam o texto de saldo', () => {
+  assert.equal(buildAdjustmentDescription('', 'balance'), 'Ajuste manual de saldo');
+  assert.equal(buildAdjustmentDescription('', 'income'), 'Ajuste manual de receita');
+  assert.equal(buildAdjustmentDescription('', 'expense'), 'Ajuste manual de despesa');
+  assert.equal(
+    buildAdjustmentDescription('Conferência', 'income'),
+    'Ajuste manual de receita — Conferência',
+  );
+});
+
+test('buildAdjustmentDescription sem target explícito continua padrão "saldo" (retrocompatível)', () => {
+  assert.equal(buildAdjustmentDescription(''), 'Ajuste manual de saldo');
+});
+
 // CONTA-OPCIONAL (fase 2): "Atualizar saldo" ajusta o saldo TOTAL do
 // workspace -- accountId nulo/ausente não é mais recusado, o ajuste segue
 // sem conta associada (modo 'none' na RPC, ver confirmedFinancialActionService.js).
@@ -73,6 +90,35 @@ test('submitBalanceAdjustment: saldo menor que o atual calcula delta negativo co
     clientOperationId: '018f4f7a-3d2b-4f6a-8c31-f54e53db32b1',
   });
   assert.equal(result.delta, -150);
+});
+
+test('submitBalanceAdjustment aceita target income/expense sem bloquear o cálculo de delta (mesmo caminho que balance)', async () => {
+  const income = await submitBalanceAdjustment({
+    target: 'income',
+    currentBalance: 1200,
+    newBalance: 1500,
+    note: '',
+    clientOperationId: '018f4f7a-3d2b-4f6a-8c31-f54e53db32b1',
+  });
+  const expense = await submitBalanceAdjustment({
+    target: 'expense',
+    currentBalance: 350,
+    newBalance: 300,
+    note: '',
+    clientOperationId: '018f4f7a-3d2b-4f6a-8c31-f54e53db32b2',
+  });
+  // Sem Supabase configurado, os 2 falham de forma segura -- mas ambos
+  // passam da validação local (delta calculado corretamente), provando que
+  // adjustment_target não bloqueia nenhum dos dois caminhos.
+  assert.equal(income.delta, 300);
+  assert.equal(expense.delta, -50);
+  assert.equal(income.error.code, 'SUPABASE_NOT_CONFIGURED');
+  assert.equal(expense.error.code, 'SUPABASE_NOT_CONFIGURED');
+});
+
+test('payload envia adjustment_target null para target balance (padrão), e o próprio nome do target para income/expense', () => {
+  const source = readFileSync(new URL('./balanceAdjustmentService.js', import.meta.url), 'utf8');
+  assert.match(source, /adjustment_target: target === 'balance' \? null : target,/);
 });
 
 test('service nunca envia user_id/workspace_id do cliente -- reaproveita a mesma RPC atômica já auditada', () => {

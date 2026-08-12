@@ -287,6 +287,34 @@ test('migration 037 permite account_mode none também para adjustment -- só tra
   assert.match(migration, /elsif p_account_mode = 'none' then\s*\n\s*v_account_id := null;/);
 });
 
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: Receita e Despesa do mês ganham o
+// mesmo mecanismo de correção que Saldo já tinha -- adjustment_target marca
+// qual card o ajuste corrige (null/'balance' = saldo, comportamento
+// original; 'income'/'expense' = total de receita/despesa do mês).
+test('migration 038 adiciona adjustment_target com check restrito a balance/income/expense, só em linhas adjustment', () => {
+  const migration = readFileSync(
+    new URL('../../supabase/migrations/20260812180000_038_adjustment_target.sql', import.meta.url),
+    'utf8',
+  );
+  assert.match(migration, /add column if not exists adjustment_target text;/);
+  assert.match(migration, /adjustment_target in \('balance', 'income', 'expense'\)/);
+  assert.match(migration, /transaction_type <> 'adjustment' and adjustment_target is null/);
+});
+
+test('migration 039 adiciona p_adjustment_target como 14o parâmetro (default null, retrocompatível) e valida contra os 3 valores', () => {
+  const migration = readFileSync(
+    new URL('../../supabase/migrations/20260812181500_039_execute_confirmed_financial_action_adjustment_target.sql', import.meta.url),
+    'utf8',
+  );
+  assert.match(migration, /p_adjustment_target text default null/);
+  assert.match(migration, /p_adjustment_target is not null and p_adjustment_target not in \('balance', 'income', 'expense'\)/);
+  assert.match(migration, /p_transaction_type <> 'adjustment' and p_adjustment_target is not null/);
+  const insertStart = migration.indexOf('insert into public.transactions (');
+  const insertSlice = migration.slice(insertStart, migration.indexOf('returning id', insertStart));
+  assert.match(insertSlice, /adjustment_target,/);
+  assert.match(insertSlice, /p_adjustment_target,/);
+});
+
 test('roteiro atômico prepara workspaces distintos sem credencial administrativa', () => {
   const script = readFileSync(
     new URL('../../scripts/supabase/test-atomic-financial-action.js', import.meta.url),

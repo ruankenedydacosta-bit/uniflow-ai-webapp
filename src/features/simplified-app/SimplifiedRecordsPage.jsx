@@ -126,41 +126,32 @@ function MonthSelector({ month, onChange }) {
   );
 }
 
-function MonthlySummary({ onBalanceClick, summary }) {
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: os 3 cards são igualmente
+// tocáveis -- cada um abre a mesma modal de ajuste (UpdateBalanceModal),
+// só muda o `target` repassado por onCardClick.
+function MonthlySummary({ onCardClick, summary }) {
   const cards = [
-    { id: 'income', label: 'Receitas', value: summary.income, Icon: ArrowDownIcon },
-    { id: 'expense', label: 'Despesas', value: summary.expense, Icon: ArrowUpIcon },
-    { id: 'balance', label: 'Saldo', value: summary.balance, Icon: WalletIcon },
+    { id: 'income', label: 'Receitas', value: summary.income, Icon: ArrowDownIcon, action: 'atualizar a receita' },
+    { id: 'expense', label: 'Despesas', value: summary.expense, Icon: ArrowUpIcon, action: 'atualizar a despesa' },
+    { id: 'balance', label: 'Saldo', value: summary.balance, Icon: WalletIcon, action: 'atualizar o saldo' },
   ];
 
   return (
     <div className={styles.summaryCards}>
       {cards.map((card) => (
-        card.id === 'balance' ? (
-          <button
-            key={card.id}
-            type="button"
-            className={`${styles.summaryCard} ${styles[card.id]} ${styles.balanceButton}`}
-            onClick={onBalanceClick}
-            aria-label={`${card.label}: ${formatCurrency(card.value)}. Toque para atualizar o saldo.`}
-          >
-            <div>
-              <span className={styles.summaryIcon} aria-hidden="true"><card.Icon /></span>
-              <h3>{card.label}</h3>
-            </div>
-            <strong aria-hidden="true">{formatCurrency(card.value)}</strong>
-          </button>
-        ) : (
-          <article key={card.id} className={`${styles.summaryCard} ${styles[card.id]}`}>
-            <div>
-              <span className={styles.summaryIcon} aria-hidden="true"><card.Icon /></span>
-              <h3>{card.label}</h3>
-            </div>
-            <strong aria-label={`${card.label}: ${formatCurrency(card.value)}`}>
-              {formatCurrency(card.value)}
-            </strong>
-          </article>
-        )
+        <button
+          key={card.id}
+          type="button"
+          className={`${styles.summaryCard} ${styles[card.id]} ${styles.balanceButton}`}
+          onClick={() => onCardClick(card.id)}
+          aria-label={`${card.label}: ${formatCurrency(card.value)}. Toque para ${card.action}.`}
+        >
+          <div>
+            <span className={styles.summaryIcon} aria-hidden="true"><card.Icon /></span>
+            <h3>{card.label}</h3>
+          </div>
+          <strong aria-hidden="true">{formatCurrency(card.value)}</strong>
+        </button>
       ))}
     </div>
   );
@@ -379,7 +370,9 @@ function SimplifiedRecordsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
-  const [balanceModalOpen, setBalanceModalOpen] = useState(false);
+  // BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: null = fechada; 'balance' |
+  // 'income' | 'expense' = qual card abriu a modal de ajuste.
+  const [summaryModalTarget, setSummaryModalTarget] = useState(null);
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === 'undefined' ? true : navigator.onLine
   ));
@@ -505,9 +498,9 @@ function SimplifiedRecordsPage() {
     setTransactionDialog({ type: 'expense', transactionId: null });
   }
 
-  function openBalanceModal() {
+  function openSummaryModal(target) {
     if (!canManage) return;
-    setBalanceModalOpen(true);
+    setSummaryModalTarget(target);
   }
 
   function updateFilter(key, value) {
@@ -557,7 +550,7 @@ function SimplifiedRecordsPage() {
             <>
               {activeTab === 'summary' ? (
                 <>
-                  <MonthlySummary summary={summary} onBalanceClick={openBalanceModal} />
+                  <MonthlySummary summary={summary} onCardClick={openSummaryModal} />
                   <CategoryGrid
                     categories={categorySummaries}
                     expanded={showAllCategories}
@@ -647,11 +640,18 @@ function SimplifiedRecordsPage() {
       />
 
       <UpdateBalanceModal
-        key={balanceModalOpen ? 'balance-modal-open' : 'balance-modal-closed'}
-        open={balanceModalOpen}
-        onClose={() => setBalanceModalOpen(false)}
+        key={summaryModalTarget ?? 'summary-modal-closed'}
+        target={summaryModalTarget ?? 'balance'}
+        open={Boolean(summaryModalTarget)}
+        onClose={() => setSummaryModalTarget(null)}
         onChanged={refresh}
-        workspaceBalance={balanceState.workspaceBalance}
+        currentValue={
+          summaryModalTarget === 'income'
+            ? summary.income
+            : summaryModalTarget === 'expense'
+              ? summary.expense
+              : balanceState.workspaceBalance
+        }
       />
     </>
   );

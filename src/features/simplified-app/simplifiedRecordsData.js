@@ -69,14 +69,33 @@ export function dateFromMonthInput(value) {
   return new Date(Number(match[1]), Number(match[2]) - 1, 1);
 }
 
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: um ajuste (transaction_type
+// 'adjustment') com adjustment_target 'income'/'expense' corrige o total
+// exibido daquele card SEM alterar nenhum lançamento real -- soma o delta
+// assinado (pode ser negativo, reduzindo o total) aos lançamentos de fato
+// daquele tipo no mês. Ajustes com adjustment_target null/'balance'
+// (o caso original, ainda o mais comum) nunca entram nessa soma -- só
+// afetam o saldo total (workspaceBalance, já calculado no servidor).
+function sumAdjustmentDeltaForTarget(completedTransactions, target) {
+  return completedTransactions
+    .filter(
+      (transaction) =>
+        transaction.transaction_type === 'adjustment'
+        && transaction.adjustment_target === target,
+    )
+    .reduce((total, transaction) => total + Number(transaction.adjustment_delta || 0), 0);
+}
+
 export function summarizeMonth(transactions, workspaceBalance) {
   const completed = transactions.filter((transaction) => transaction.status === 'completed');
   const income = completed
     .filter((transaction) => transaction.transaction_type === 'income')
-    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0)
+    + sumAdjustmentDeltaForTarget(completed, 'income');
   const expense = completed
     .filter((transaction) => transaction.transaction_type === 'expense')
-    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0)
+    + sumAdjustmentDeltaForTarget(completed, 'expense');
 
   return Object.freeze({
     income,

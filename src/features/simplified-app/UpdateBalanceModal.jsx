@@ -15,6 +15,40 @@ import styles from './UpdateBalanceModal.module.css';
 
 const NOTE_MAX_LENGTH = 120;
 
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: os 3 cards do Resumo do mês usam o
+// MESMO mecanismo (lançamento de ajuste que corrige o total sem apagar o
+// histórico real, ver balanceAdjustmentService.js/adjustment_target) --
+// só muda o texto mostrado por card. `target` decide qual.
+const TARGET_COPY = Object.freeze({
+  balance: Object.freeze({
+    title: 'Atualizar saldo',
+    formDescription: 'Informe o saldo total atual.',
+    amountLabel: 'Saldo total',
+    currentLabel: 'Saldo atual',
+    newLabel: 'Novo saldo',
+    submitLabel: 'Salvar saldo',
+    successTitle: 'Saldo atualizado',
+  }),
+  income: Object.freeze({
+    title: 'Atualizar receita',
+    formDescription: 'Informe o total de receita deste mês.',
+    amountLabel: 'Receita do mês',
+    currentLabel: 'Receita atual',
+    newLabel: 'Nova receita',
+    submitLabel: 'Salvar receita',
+    successTitle: 'Receita atualizada',
+  }),
+  expense: Object.freeze({
+    title: 'Atualizar despesa',
+    formDescription: 'Informe o total de despesa deste mês.',
+    amountLabel: 'Despesa do mês',
+    currentLabel: 'Despesa atual',
+    newLabel: 'Nova despesa',
+    submitLabel: 'Salvar despesa',
+    successTitle: 'Despesa atualizada',
+  }),
+});
+
 function generateOperationId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -24,19 +58,21 @@ function generateOperationId() {
   return `op-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-// BLOCO FINAL DO MVP (Saldo manual): "Atualizar saldo", acessível pelo card
-// Saldo em Registros. Reaproveita a RPC atômica execute_confirmed_financial_action
-// (transaction_type = 'adjustment') via balanceAdjustmentService.js -- nenhuma
-// escrita direta em tabela, nenhum novo mecanismo de persistência.
+// BLOCO FINAL DO MVP (Saldo manual) + BLOCO SALDO/RECEITA/DESPESA EDITAVEIS:
+// modal única reaproveitada pelos 3 cards do Resumo do mês. Reaproveita a
+// RPC atômica execute_confirmed_financial_action (transaction_type =
+// 'adjustment') via balanceAdjustmentService.js -- nenhuma escrita direta
+// em tabela, nenhum novo mecanismo de persistência.
 //
 // CONTA-OPCIONAL (fase 2): o ajuste deixou de exigir escolher uma conta --
-// ajusta o SALDO TOTAL do workspace (workspaceBalance, derivado via
-// get_derived_workspace_balance()), nunca o saldo de uma conta específica.
-// O componente é remontado pelo pai (key derivada de `open`, ver
-// SimplifiedRecordsPage.jsx) a cada abertura -- por isso todo o estado abaixo
-// nasce limpo via useState inicial, sem efeito de reset (evita cascading
-// renders e gera um client_operation_id novo por abertura naturalmente).
-function UpdateBalanceModal({ workspaceBalance, onChanged, onClose, open }) {
+// ajusta o total do WORKSPACE (saldo) ou do MÊS (receita/despesa), nunca o
+// saldo de uma conta específica. O componente é remontado pelo pai (key
+// derivada de `open`+`target`, ver SimplifiedRecordsPage.jsx) a cada
+// abertura -- por isso todo o estado abaixo nasce limpo via useState
+// inicial, sem efeito de reset (evita cascading renders e gera um
+// client_operation_id novo por abertura naturalmente).
+function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClose, open }) {
+  const copy = TARGET_COPY[target] ?? TARGET_COPY.balance;
   const [step, setStep] = useState('form');
   const [cents, setCents] = useState(0);
   const [touched, setTouched] = useState(false);
@@ -49,9 +85,9 @@ function UpdateBalanceModal({ workspaceBalance, onChanged, onClose, open }) {
     operationIdRef.current = generateOperationId();
   }
 
-  const newBalance = centsToAmount(cents);
-  const currentBalance = Number(workspaceBalance ?? 0);
-  const delta = computeBalanceDelta(currentBalance, newBalance);
+  const newValue = centsToAmount(cents);
+  const currentValueNumber = Number(currentValue ?? 0);
+  const delta = computeBalanceDelta(currentValueNumber, newValue);
 
   function handleClose() {
     if (isSubmitting) return;
@@ -60,6 +96,14 @@ function UpdateBalanceModal({ workspaceBalance, onChanged, onClose, open }) {
 
   function handleAmountChange(event) {
     setCents(digitsToCents(event.target.value));
+    setTouched(true);
+  }
+
+  // "Zerar": atalho para o caso comum de correção total (o card deveria
+  // mostrar R$ 0,00) -- só preenche o valor, a confirmação continua
+  // exigida no passo seguinte, igual a qualquer outro valor digitado.
+  function handleZero() {
+    setCents(0);
     setTouched(true);
   }
 
@@ -76,8 +120,9 @@ function UpdateBalanceModal({ workspaceBalance, onChanged, onClose, open }) {
     setError(null);
 
     const result = await submitBalanceAdjustment({
-      currentBalance,
-      newBalance,
+      target,
+      currentBalance: currentValueNumber,
+      newBalance: newValue,
       note,
       clientOperationId: operationIdRef.current,
     });
@@ -100,32 +145,37 @@ function UpdateBalanceModal({ workspaceBalance, onChanged, onClose, open }) {
       onClose={handleClose}
       closeOnOverlayClick={!isSubmitting}
       closeOnEsc={!isSubmitting}
-      title="Atualizar saldo"
-      description={step === 'form' ? 'Informe o saldo total atual.' : undefined}
+      title={copy.title}
+      description={step === 'form' ? copy.formDescription : undefined}
       size="sm"
       className={styles.balanceDialog}
       overlayClassName={styles.darkOverlay}
     >
       {step === 'form' ? (
         <form className={styles.form} onSubmit={handleReviewSubmit}>
-          <label className={styles.amountField} htmlFor="update-balance-amount">
-            <span>Saldo total</span>
-            <input
-              id="update-balance-amount"
-              className={styles.amountInput}
-              inputMode="numeric"
-              autoComplete="off"
-              value={touched ? formatCentsAsCurrencyInput(cents) : 'R$ 0,00'}
-              onChange={handleAmountChange}
-              placeholder="R$ 0,00"
-              required
-            />
-          </label>
+          <div className={styles.amountField}>
+            <label htmlFor="update-balance-amount">
+              <span>{copy.amountLabel}</span>
+              <input
+                id="update-balance-amount"
+                className={styles.amountInput}
+                inputMode="numeric"
+                autoComplete="off"
+                value={touched ? formatCentsAsCurrencyInput(cents) : 'R$ 0,00'}
+                onChange={handleAmountChange}
+                placeholder="R$ 0,00"
+                required
+              />
+            </label>
+            <button type="button" className={styles.zeroButton} onClick={handleZero}>
+              Zerar
+            </button>
+          </div>
 
           <Input
             id="update-balance-description"
             label="Descrição (opcional)"
-            placeholder="Ex.: Saldo inicial ou ajuste manual"
+            placeholder="Ex.: Correção manual"
             value={note}
             maxLength={NOTE_MAX_LENGTH}
             onChange={(event) => setNote(event.target.value)}
@@ -136,7 +186,7 @@ function UpdateBalanceModal({ workspaceBalance, onChanged, onClose, open }) {
               Cancelar
             </Button>
             <Button type="submit" disabled={!touched}>
-              Salvar saldo
+              {copy.submitLabel}
             </Button>
           </div>
         </form>
@@ -144,12 +194,12 @@ function UpdateBalanceModal({ workspaceBalance, onChanged, onClose, open }) {
         <div className={styles.confirmContent}>
           <dl className={styles.summaryList}>
             <div>
-              <dt>Saldo atual</dt>
-              <dd>{formatCurrency(currentBalance)}</dd>
+              <dt>{copy.currentLabel}</dt>
+              <dd>{formatCurrency(currentValueNumber)}</dd>
             </div>
             <div>
-              <dt>Novo saldo</dt>
-              <dd>{formatCurrency(newBalance)}</dd>
+              <dt>{copy.newLabel}</dt>
+              <dd>{formatCurrency(newValue)}</dd>
             </div>
             <div className={styles.summaryDelta}>
               <dt>Ajuste registrado</dt>
@@ -181,9 +231,9 @@ function UpdateBalanceModal({ workspaceBalance, onChanged, onClose, open }) {
       ) : (
         <div className={styles.successContent} role="status">
           <span className={styles.successIcon} aria-hidden="true">✓</span>
-          <strong>Saldo atualizado</strong>
+          <strong>{copy.successTitle}</strong>
           <p>
-            {formatCurrency(newBalance)}
+            {formatCurrency(newValue)}
             {' '}({formatSignedCurrency(savedDelta, formatCurrency)})
           </p>
           <div className={styles.actions}>

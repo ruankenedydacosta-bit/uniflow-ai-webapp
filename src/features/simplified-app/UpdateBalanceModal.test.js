@@ -1,16 +1,19 @@
-// BLOCO FINAL DO MVP (Saldo manual) + CONTA-OPCIONAL (fase 2) -- testes
-// estruturais (source-regex) sobre UpdateBalanceModal.jsx, mesmo padrão já
-// usado no projeto para componentes React (sem @testing-library/react
-// disponível -- ver src/features/uni-chat/components/ChatInput.test.js). A
-// lógica pura de máscara/delta já é coberta por
-// balanceAdjustmentFormUtils.test.js e balanceAdjustmentService.test.js.
+// BLOCO FINAL DO MVP (Saldo manual) + CONTA-OPCIONAL (fase 2) + BLOCO
+// SALDO/RECEITA/DESPESA EDITAVEIS -- testes estruturais (source-regex)
+// sobre UpdateBalanceModal.jsx, mesmo padrão já usado no projeto para
+// componentes React (sem @testing-library/react disponível -- ver
+// src/features/uni-chat/components/ChatInput.test.js). A lógica pura de
+// máscara/delta já é coberta por balanceAdjustmentFormUtils.test.js e
+// balanceAdjustmentService.test.js.
 //
 // CONTA-OPCIONAL (fase 2): "Atualizar saldo" deixou de exigir escolher uma
-// conta -- ajusta o saldo TOTAL do workspace (prop workspaceBalance,
-// derivado via get_derived_workspace_balance()), nunca o saldo de uma conta
-// específica. O sub-fluxo "Criar conta"/FinanceAccountModal e o estado
-// vazio "Nenhuma conta disponível" foram removidos inteiramente -- a modal
-// agora está sempre disponível e sempre mostra o formulário direto.
+// conta -- o sub-fluxo "Criar conta"/FinanceAccountModal e o estado vazio
+// "Nenhuma conta disponível" foram removidos inteiramente.
+//
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: a modal deixou de ser exclusiva do
+// card Saldo -- prop `target` ('balance'|'income'|'expense') decide qual
+// card ela ajusta, `currentValue` substitui workspaceBalance como nome
+// genérico. Ganhou também o atalho "Zerar".
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -34,26 +37,57 @@ test('nenhuma referência a conta sobrevive no componente -- nem seletor, nem "C
   assert.doesNotMatch(modal, /getActiveAccountsForAdjustment/);
 });
 
-test('saldo atual vem da prop workspaceBalance (saldo TOTAL do workspace), nunca de uma conta específica', async () => {
+test('modal é genérica: target decide qual card (balance/income/expense) ela ajusta, currentValue é o total atual daquele card', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
-  assert.match(modal, /function UpdateBalanceModal\(\{ workspaceBalance, onChanged, onClose, open \}\)/);
-  assert.match(modal, /const currentBalance = Number\(workspaceBalance \?\? 0\);/);
+  assert.match(modal, /function UpdateBalanceModal\(\{ target = 'balance', currentValue, onChanged, onClose, open \}\)/);
+  assert.match(modal, /const currentValueNumber = Number\(currentValue \?\? 0\);/);
+  assert.match(modal, /const copy = TARGET_COPY\[target\] \?\? TARGET_COPY\.balance;/);
 });
 
-test('SimplifiedRecordsPage passa balanceState.workspaceBalance para a modal, não mais accountState', async () => {
+test('TARGET_COPY define título/rótulos próprios para balance, income e expense -- nenhum texto genérico "saldo" vaza pros outros dois', async () => {
+  const modal = await source('./UpdateBalanceModal.jsx');
+  const start = modal.indexOf('const TARGET_COPY');
+  const slice = modal.slice(start, modal.indexOf('});', start));
+  assert.match(slice, /balance: Object\.freeze\(\{[\s\S]*?title: 'Atualizar saldo',/);
+  assert.match(slice, /income: Object\.freeze\(\{[\s\S]*?title: 'Atualizar receita',/);
+  assert.match(slice, /expense: Object\.freeze\(\{[\s\S]*?title: 'Atualizar despesa',/);
+});
+
+test('SimplifiedRecordsPage abre a modal passando target e currentValue de acordo com o card tocado (income/expense/balance)', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
   const start = records.indexOf('<UpdateBalanceModal');
   const slice = records.slice(start, records.indexOf('/>', start));
-  assert.match(slice, /workspaceBalance=\{balanceState\.workspaceBalance\}/);
+  assert.match(slice, /target=\{summaryModalTarget \?\? 'balance'\}/);
+  assert.match(slice, /summaryModalTarget === 'income'\s*\n\s*\? summary\.income/);
+  assert.match(slice, /: summaryModalTarget === 'expense'\s*\n\s*\? summary\.expense/);
+  assert.match(slice, /: balanceState\.workspaceBalance/);
   assert.doesNotMatch(slice, /accountState=/);
 });
 
-test('"Salvar saldo" fica desabilitado só até o valor ser digitado (touched) -- nunca depende de conta', async () => {
+test('MonthlySummary: os 3 cards (Receitas/Despesas/Saldo) são igualmente tocáveis, cada um abre a modal com o próprio target', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const start = records.indexOf('function MonthlySummary(');
+  const slice = records.slice(start, records.indexOf('function CategoryGrid('));
+  assert.match(slice, /onClick=\{\(\) => onCardClick\(card\.id\)\}/);
+  assert.doesNotMatch(slice, /card\.id === 'balance' \?/);
+});
+
+test('"Zerar" preenche o valor com 0 sem persistir sozinho -- a confirmação continua exigida no passo seguinte', async () => {
+  const modal = await source('./UpdateBalanceModal.jsx');
+  const start = modal.indexOf('function handleZero() {');
+  const slice = modal.slice(start, modal.indexOf('\n  }', start));
+  assert.match(slice, /setCents\(0\);/);
+  assert.match(slice, /setTouched\(true\);/);
+  assert.doesNotMatch(slice, /submitBalanceAdjustment|setStep/);
+  assert.match(modal, /<button type="button" className=\{styles\.zeroButton\} onClick=\{handleZero\}>/);
+});
+
+test('"Salvar" fica desabilitado só até o valor ser digitado (touched) -- nunca depende de conta', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
   assert.match(modal, /<Button type="submit" disabled=\{!touched\}>/);
 });
 
-test('fluxo exige confirmação explícita: "Salvar saldo" só avança para o resumo, não persiste', async () => {
+test('fluxo exige confirmação explícita: enviar o formulário só avança para o resumo, não persiste', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
   const reviewStart = modal.indexOf('function handleReviewSubmit(event) {');
   const reviewEnd = modal.indexOf('\n  }', reviewStart);
@@ -63,12 +97,13 @@ test('fluxo exige confirmação explícita: "Salvar saldo" só avança para o re
   assert.match(reviewSlice, /if \(!touched\) return;/);
 });
 
-test('somente "Confirmar" no resumo chama submitBalanceAdjustment, sem accountId', async () => {
+test('somente "Confirmar" no resumo chama submitBalanceAdjustment, repassando target e sem accountId', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
   const confirmStart = modal.indexOf('async function handleConfirm() {');
   assert.ok(confirmStart > -1);
   const confirmSlice = modal.slice(confirmStart, modal.indexOf('\n  }', confirmStart));
   assert.match(confirmSlice, /submitBalanceAdjustment\(\{/);
+  assert.match(confirmSlice, /target,/);
   assert.doesNotMatch(confirmSlice, /accountId:/);
 });
 
@@ -87,7 +122,7 @@ test('modal nunca pode ser fechada (overlay/ESC) enquanto a persistência está 
   assert.match(modal, /function handleClose\(\) \{\s*if \(isSubmitting\) return;/);
 });
 
-test('erro de persistência nunca altera o saldo -- estado permanece em "confirm" com a mensagem exibida', async () => {
+test('erro de persistência nunca altera o valor -- estado permanece em "confirm" com a mensagem exibida', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
   const confirmStart = modal.indexOf('async function handleConfirm() {');
   const confirmSlice = modal.slice(confirmStart, modal.indexOf('\n  }', confirmStart));
@@ -111,13 +146,13 @@ test('descrição é sempre opcional -- campo nunca tem "required"', async () =>
   assert.doesNotMatch(descriptionSlice, /required/);
 });
 
-test('confirmação mostra saldo atual, novo saldo, ajuste e (se houver) descrição -- nunca uma linha de conta', async () => {
+test('confirmação mostra os rótulos de `copy` (atual/novo/ajuste) e (se houver) descrição -- nunca uma linha de conta', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
   const confirmStart = modal.indexOf("step === 'confirm' ? (");
   const confirmSlice = modal.slice(confirmStart, modal.indexOf("Concluir", confirmStart));
-  assert.match(confirmSlice, /<dt>Saldo atual<\/dt>/);
-  assert.match(confirmSlice, /formatCurrency\(currentBalance\)/);
-  assert.match(confirmSlice, /<dt>Novo saldo<\/dt>/);
+  assert.match(confirmSlice, /<dt>\{copy\.currentLabel\}<\/dt>/);
+  assert.match(confirmSlice, /formatCurrency\(currentValueNumber\)/);
+  assert.match(confirmSlice, /<dt>\{copy\.newLabel\}<\/dt>/);
   assert.match(confirmSlice, /<dt>Ajuste registrado<\/dt>/);
   assert.doesNotMatch(confirmSlice, /<dt>Conta<\/dt>/);
   assert.match(confirmSlice, /note\.trim\(\) \? \(/);
@@ -127,7 +162,7 @@ test('cada abertura da modal gera um novo client_operation_id (idempotência por
   const modal = await source('./UpdateBalanceModal.jsx');
   const records = await source('./SimplifiedRecordsPage.jsx');
   assert.match(modal, /operationIdRef\.current = generateOperationId\(\);/);
-  assert.match(records, /key=\{balanceModalOpen \? 'balance-modal-open' : 'balance-modal-closed'\}/);
+  assert.match(records, /key=\{summaryModalTarget \?\? 'summary-modal-closed'\}/);
 });
 
 test('não adiciona campos fora do especificado: sem categoria, data, tipo ou conta no formulário', async () => {

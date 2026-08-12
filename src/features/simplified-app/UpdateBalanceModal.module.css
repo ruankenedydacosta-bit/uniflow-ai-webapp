@@ -41,8 +41,16 @@
 
 .amountField {
   display: flex;
+  align-items: flex-end;
+  gap: var(--uf-space-8);
+}
+
+.amountField label {
+  display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--uf-space-8);
+  min-width: 0;
   color: var(--uf-color-text-primary);
   font-size: var(--uf-text-caption-size);
   font-weight: var(--uf-font-weight-medium);
@@ -62,6 +70,32 @@
 }
 
 .amountInput:focus-visible {
+  border-color: var(--uf-color-primary);
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+/* "Zerar": atalho pro caso comum de correção total do card -- mesma altura
+   mínima de toque do input ao lado, nunca menor. */
+.zeroButton {
+  min-height: var(--uf-tap-target-min);
+  padding: 0 var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-sunken);
+  color: var(--uf-color-text-secondary);
+  font: inherit;
+  font-weight: var(--uf-font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.zeroButton:hover {
+  color: var(--uf-color-text-primary);
+  border-color: var(--uf-color-border-strong);
+}
+
+.zeroButton:focus-visible {
   border-color: var(--uf-color-primary);
   outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
   outline-offset: var(--uf-focus-ring-offset);

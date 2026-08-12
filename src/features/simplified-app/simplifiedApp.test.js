@@ -859,36 +859,62 @@ test('resumo mensal separa receitas e despesas e preserva saldo derivado oficial
   assert.equal(Object.isFrozen(summary), true);
 });
 
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: um ajuste com adjustment_target
+// 'income'/'expense' corrige o total daquele card somando o delta assinado
+// (pode ser negativo, reduzindo o total) -- sem alterar nenhum lançamento
+// real. Ajuste com adjustment_target null/'balance' (o caso original)
+// nunca entra nessa soma, só afeta o saldo (já calculado no servidor).
+test('resumo mensal soma correções de receita/despesa (adjustment_target) aos totais reais, sem tocar no saldo já calculado', () => {
+  const summary = summarizeMonth([
+    { id: '1', status: 'completed', transaction_type: 'income', amount: 1200 },
+    { id: '2', status: 'completed', transaction_type: 'expense', amount: 350 },
+    // Correção: receita real deveria ser MAIOR (delta positivo).
+    { id: '3', status: 'completed', transaction_type: 'adjustment', adjustment_target: 'income', adjustment_delta: 300 },
+    // Correção: despesa real deveria ser MENOR (delta negativo).
+    { id: '4', status: 'completed', transaction_type: 'adjustment', adjustment_target: 'expense', adjustment_delta: -50 },
+    // Ajuste de saldo comum (target null) nunca entra na soma de receita/despesa.
+    { id: '5', status: 'completed', transaction_type: 'adjustment', adjustment_target: null, adjustment_delta: 999 },
+  ], 2850.5);
+
+  assert.equal(summary.income, 1500);
+  assert.equal(summary.expense, 300);
+  assert.equal(summary.balance, 2850.5);
+});
+
 // ── BLOCO FINAL DO MVP (Saldo manual) ────────────────────────────────────
 
-test('card Saldo abre a modal "Atualizar saldo", passando accountState completo (contas com derived_balance + saveAccount)', async () => {
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: os 3 cards do resumo mensal abrem a
+// MESMA modal (UpdateBalanceModal), passando currentValue/target de acordo
+// com o card tocado -- não é mais exclusiva do Saldo, nem depende de
+// accountState (removido junto com a exigência de conta).
+test('os 3 cards abrem a modal "Atualizar saldo/receita/despesa", passando target e currentValue de acordo com o card tocado', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
   assert.match(records, /import UpdateBalanceModal from '\.\/UpdateBalanceModal\.jsx';/);
   assert.match(records, /<UpdateBalanceModal/);
   assert.match(records, /onChanged=\{refresh\}/);
-  assert.match(records, /accountState=\{displayAccountState\}/);
-  assert.match(records, /onBalanceClick=\{openBalanceModal\}/);
-  assert.match(records, /key=\{balanceModalOpen \? 'balance-modal-open' : 'balance-modal-closed'\}/);
+  assert.match(records, /target=\{summaryModalTarget \?\? 'balance'\}/);
+  assert.match(records, /onCardClick=\{openSummaryModal\}/);
+  assert.match(records, /key=\{summaryModalTarget \?\? 'summary-modal-closed'\}/);
+  assert.doesNotMatch(records, /accountState=\{displayAccountState\}\s*\n\s*\/>/);
 });
 
-// Correção (Bloco Saldo + Cobrança): diferente de "Novo registro", abrir o
-// saldo manual NUNCA exige conta ativa -- a modal mostra o estado vazio com
-// "Criar conta" quando não há nenhuma. Só a permissão de workspace bloqueia.
-test('abrir o saldo manual exige permissão, mas nunca exige conta ativa preexistente (modal mostra o estado vazio)', async () => {
+// Correção (Bloco Saldo + Cobrança), preservada na generalização: abrir
+// qualquer um dos 3 ajustes NUNCA exige conta ativa preexistente -- só a
+// permissão de workspace bloqueia.
+test('abrir o ajuste de saldo/receita/despesa exige permissão, mas nunca exige conta ativa preexistente', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
-  const fnStart = records.indexOf('function openBalanceModal()');
-  assert.ok(fnStart > -1, 'openBalanceModal deve existir');
+  const fnStart = records.indexOf('function openSummaryModal(target)');
+  assert.ok(fnStart > -1, 'openSummaryModal deve existir');
   const fnSlice = records.slice(fnStart, records.indexOf('\n  }', fnStart));
   assert.match(fnSlice, /if \(!canManage\) return;/);
   assert.doesNotMatch(fnSlice, /activeAccounts\.length/);
 });
 
-test('card Saldo vira um botão acessível (nunca um <article> estático) que nunca duplica o valor para leitores de tela', async () => {
+test('os 3 cards (Receitas/Despesas/Saldo) viram botões acessíveis (nunca um <article> estático) que nunca duplicam o valor para leitores de tela', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
-  assert.match(records, /card\.id === 'balance' \? \(/);
-  assert.match(records, /onClick=\{onBalanceClick\}/);
-  assert.match(records, /Toque para atualizar o saldo/);
-  // O <strong> do card Saldo fica aria-hidden -- o valor já está no
+  assert.match(records, /onClick=\{\(\) => onCardClick\(card\.id\)\}/);
+  assert.doesNotMatch(records, /card\.id === 'balance' \? \(/);
+  // O <strong> de cada card fica aria-hidden -- o valor já está no
   // aria-label do <button> pai, evitando leitura duplicada.
   assert.match(records, /<strong aria-hidden="true">\{formatCurrency\(card\.value\)\}<\/strong>/);
 });

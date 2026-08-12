@@ -8,7 +8,17 @@
 // de workspace, idempotência e validação atômica.
 import { executeConfirmedFinancialAction } from './confirmedFinancialActionService.js';
 
-const DEFAULT_DESCRIPTION = 'Ajuste manual de saldo';
+// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: mesmo mecanismo, agora com 3 alvos
+// possíveis -- 'balance' (saldo total do workspace, comportamento
+// original), 'income' e 'expense' (total de Receita/Despesa do MÊS em que
+// a correção é datada, ver adjustment_target/migration 038). O usuário
+// informa o total que o card deveria mostrar; a diferença vira um
+// lançamento de ajuste que corrige o total sem apagar o histórico real.
+const DEFAULT_DESCRIPTION_BY_TARGET = Object.freeze({
+  balance: 'Ajuste manual de saldo',
+  income: 'Ajuste manual de receita',
+  expense: 'Ajuste manual de despesa',
+});
 // A RPC exige description com 2 a 160 caracteres (btrim). Reservamos espaço
 // para o prefixo fixo + separador antes de truncar a nota do usuário.
 const MAX_DESCRIPTION_LENGTH = 160;
@@ -17,23 +27,24 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function buildAdjustmentDescription(note) {
+export function buildAdjustmentDescription(note, target = 'balance') {
+  const defaultDescription = DEFAULT_DESCRIPTION_BY_TARGET[target] ?? DEFAULT_DESCRIPTION_BY_TARGET.balance;
   const trimmedNote = typeof note === 'string' ? note.trim() : '';
-  if (!trimmedNote) return DEFAULT_DESCRIPTION;
+  if (!trimmedNote) return defaultDescription;
 
-  const combined = `${DEFAULT_DESCRIPTION} — ${trimmedNote}`;
+  const combined = `${defaultDescription} — ${trimmedNote}`;
   return combined.length > MAX_DESCRIPTION_LENGTH
     ? combined.slice(0, MAX_DESCRIPTION_LENGTH)
     : combined;
 }
 
-// CONTA-OPCIONAL (fase 2): accountId deixou de ser obrigatorio -- "Atualizar
-// saldo" ajusta o saldo TOTAL do workspace (get_derived_workspace_balance()),
-// nao mais o saldo de uma conta especifica escolhida pelo usuario. Quando
-// accountId nao e informado, o ajuste e criado sem conta associada
-// (account_id null), incluido no saldo total pela mesma RPC.
+// CONTA-OPCIONAL (fase 2): accountId deixou de ser obrigatorio -- o ajuste
+// corrige o total do WORKSPACE (saldo) ou do MÊS (receita/despesa), nunca o
+// saldo de uma conta específica escolhida na tela. Quando accountId não é
+// informado, o ajuste é criado sem conta associada (account_id null).
 export async function submitBalanceAdjustment({
   accountId = null,
+  target = 'balance',
   currentBalance,
   newBalance,
   note,
@@ -45,7 +56,7 @@ export async function submitBalanceAdjustment({
       data: null,
       error: {
         code: 'ADJUSTMENT_DELTA_INVALID',
-        message: 'O novo saldo é igual ao saldo atual — nada para ajustar.',
+        message: 'O novo valor é igual ao valor atual — nada para ajustar.',
       },
     };
   }
@@ -55,10 +66,11 @@ export async function submitBalanceAdjustment({
     status: 'ready',
     payload: {
       transaction_type: 'adjustment',
-      description: buildAdjustmentDescription(note),
+      description: buildAdjustmentDescription(note, target),
       amount: Math.abs(delta),
       transaction_date: todayIso(),
       adjustment_delta: delta,
+      adjustment_target: target === 'balance' ? null : target,
       category_id: null,
       destination_account_id: null,
     },

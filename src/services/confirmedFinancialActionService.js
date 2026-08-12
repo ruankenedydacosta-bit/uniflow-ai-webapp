@@ -82,6 +82,11 @@ export function buildConfirmedFinancialActionRpcPayload(action) {
       p_transaction_date: action.payload.transaction_date,
       p_destination_account_id: action.payload.destination_account_id ?? null,
       p_adjustment_delta: action.payload.adjustment_delta ?? null,
+      // BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: só preenchido em ajustes
+      // (transaction_type 'adjustment'); null/'balance' corrige o saldo
+      // total (comportamento original), 'income'/'expense' corrige
+      // especificamente o total de Receita/Despesa do mês.
+      p_adjustment_target: action.payload.adjustment_target ?? null,
     },
     error: null,
   };
