@@ -48,6 +48,10 @@ function createSafeError(error) {
 export function getConfirmedAccountMode(action) {
   if (action?.accountResolution?.provisioning === 'reactivate') return 'reactivate';
   if (action?.accountResolution?.status === 'will_create') return 'create';
+  // CONTA-OPCIONAL: receita/despesa chegam a 'ready' sem conta quando nenhuma
+  // foi resolvida sem ambiguidade -- a RPC precisa saber disso explicitamente
+  // (modo 'none'), nunca receber mode='existing' com account_id null.
+  if (!action?.account?.id) return 'none';
   return 'existing';
 }
 
@@ -98,7 +102,9 @@ export async function executeConfirmedFinancialAction(action) {
     .rpc('execute_confirmed_financial_action', request.data)
     .single();
 
-  if (error || !data?.transaction_id || !data?.account_id) {
+  // CONTA-OPCIONAL: account_id agora pode ser null de verdade (receita/
+  // despesa sem conta) -- só transaction_id é obrigatório para sucesso.
+  if (error || !data?.transaction_id) {
     return createResult(null, createSafeError(error));
   }
 
@@ -107,15 +113,17 @@ export async function executeConfirmedFinancialAction(action) {
   return {
     ...createResult({
       id: data.transaction_id,
-      account_id: data.account_id,
+      account_id: data.account_id ?? null,
       account_created: Boolean(data.account_created),
       account_reactivated: Boolean(data.account_reactivated),
       idempotent_replay: Boolean(data.idempotent_replay),
     }),
-    account: {
-      ...accountSource,
-      id: data.account_id,
-      is_active: true,
-    },
+    account: data.account_id
+      ? {
+          ...accountSource,
+          id: data.account_id,
+          is_active: true,
+        }
+      : null,
   };
 }

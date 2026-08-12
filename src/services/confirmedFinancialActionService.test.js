@@ -72,6 +72,25 @@ test('payload create envia apenas a conta proposta confirmada', () => {
   assert.equal(data.p_account_type, 'digital_wallet');
 });
 
+test('payload none envia account_id nulo para despesa sem conta resolvida', () => {
+  const action = createAction({
+    account: null,
+    accountResolution: { status: 'missing' },
+    payload: { ...createAction().payload, account_id: null },
+  });
+  const { data } = buildConfirmedFinancialActionRpcPayload(action);
+  assert.equal(getConfirmedAccountMode(action), 'none');
+  assert.equal(data.p_account_mode, 'none');
+  assert.equal(data.p_account_id, null);
+  assert.equal(data.p_account_name, null);
+});
+
+test('service.js não trata account_id nulo como falha da RPC', () => {
+  const source = readFileSync(new URL('./confirmedFinancialActionService.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /error \|\| !data\?\.transaction_id \|\| !data\?\.account_id/);
+  assert.match(source, /if \(error \|\| !data\?\.transaction_id\)/);
+});
+
 test('payload reactivate mantém conta escolhida', () => {
   const action = createAction({
     account: { id: 'archived-id', name: 'Nubank', is_active: false },
@@ -228,6 +247,25 @@ test('auditoria da migration 009 distingue ausência, prontidão e aplicação p
   assert.match(audit, /atomic_financial_action_fix_partial_apply_detected/);
   assert.match(audit, /atomic_financial_action_fix_already_present_run_validation/);
   assert.match(audit, /to_regprocedure\('public\.normalize_financial_account_identity\(text\)'\)/);
+});
+
+test('migration 035 adiciona modo none à RPC e exige conta real em transfer/adjustment', () => {
+  const migration = readFileSync(
+    new URL(
+      '../../supabase/migrations/20260812160000_035_execute_confirmed_financial_action_account_optional.sql',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(migration, /p_account_mode not in \('existing', 'create', 'reactivate', 'none'\)/);
+  assert.match(
+    migration,
+    /p_account_mode = 'none' and p_transaction_type not in \('income', 'expense'\)/,
+  );
+  assert.match(migration, /elsif p_account_mode = 'none' then\s*\n\s*v_account_id := null;/);
+  assert.match(migration, /left join public\.accounts as account/);
+  assert.doesNotMatch(migration, /[^t]\n\s*join public\.accounts as account/);
 });
 
 test('roteiro atômico prepara workspaces distintos sem credencial administrativa', () => {
