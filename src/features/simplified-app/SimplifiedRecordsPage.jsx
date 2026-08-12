@@ -506,10 +506,6 @@ function SimplifiedRecordsPage() {
   }
 
   function openBalanceModal() {
-    // Correção (Bloco Saldo + Cobrança): diferente de "Novo registro", o
-    // saldo manual PODE abrir sem nenhuma conta ativa -- a própria modal
-    // mostra o estado vazio com "Criar conta" como ação principal, nunca
-    // bloqueia silenciosamente o toque no card.
     if (!canManage) return;
     setBalanceModalOpen(true);
   }
@@ -655,7 +651,7 @@ function SimplifiedRecordsPage() {
         open={balanceModalOpen}
         onClose={() => setBalanceModalOpen(false)}
         onChanged={refresh}
-        accountState={displayAccountState}
+        workspaceBalance={balanceState.workspaceBalance}
       />
     </>
   );

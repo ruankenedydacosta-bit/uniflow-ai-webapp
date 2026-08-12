@@ -27,23 +27,18 @@ export function buildAdjustmentDescription(note) {
     : combined;
 }
 
+// CONTA-OPCIONAL (fase 2): accountId deixou de ser obrigatorio -- "Atualizar
+// saldo" ajusta o saldo TOTAL do workspace (get_derived_workspace_balance()),
+// nao mais o saldo de uma conta especifica escolhida pelo usuario. Quando
+// accountId nao e informado, o ajuste e criado sem conta associada
+// (account_id null), incluido no saldo total pela mesma RPC.
 export async function submitBalanceAdjustment({
-  accountId,
+  accountId = null,
   currentBalance,
   newBalance,
   note,
   clientOperationId,
 }) {
-  if (!accountId) {
-    return {
-      data: null,
-      error: {
-        code: 'ACCOUNT_REQUIRED',
-        message: 'Nenhuma conta ativa disponível para aplicar o ajuste.',
-      },
-    };
-  }
-
   const delta = Math.round((Number(newBalance) - Number(currentBalance)) * 100) / 100;
   if (!delta) {
     return {

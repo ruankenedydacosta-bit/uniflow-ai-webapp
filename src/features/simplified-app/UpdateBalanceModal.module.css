@@ -31,26 +31,6 @@
   backdrop-filter: blur(8px) !important;
 }
 
-/* Mesmos tokens de .balanceDialog, aplicados ao FinanceAccountModal quando
-   aberto a partir do sub-fluxo "Criar conta" desta modal -- mantém a
-   identidade escura consistente entre as duas telas empilhadas. */
-.accountDialogDark {
-  --uf-color-bg-elevated: linear-gradient(145deg, var(--uf-app-surface-2), var(--uf-app-surface));
-  --uf-color-bg-sunken: var(--uf-app-surface);
-  --uf-color-bg-surface-hover: var(--uf-app-surface-2);
-  --uf-color-border-default: var(--uf-app-border);
-  --uf-color-border-subtle: var(--uf-app-border);
-  --uf-color-border-strong: rgba(96, 116, 255, .5);
-  --uf-color-text-primary: var(--uf-app-text);
-  --uf-color-text-secondary: var(--uf-app-text-2);
-  --uf-color-text-tertiary: var(--uf-app-text-2);
-  --uf-color-primary: var(--uf-app-primary);
-  --uf-color-danger: var(--uf-app-danger);
-  --uf-color-danger-subtle: var(--uf-app-danger-subtle);
-  --uf-color-info-subtle: var(--uf-app-primary-subtle);
-  --uf-focus-ring-color: var(--uf-app-focus);
-}
-
 .form,
 .confirmContent {
   display: flex;
@@ -93,69 +73,6 @@
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: var(--uf-space-8);
-}
-
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--uf-space-12);
-  padding: var(--uf-space-16);
-  border-radius: var(--uf-radius-12);
-  background: var(--uf-color-info-subtle);
-}
-
-.emptyState p {
-  margin: 0;
-  color: var(--uf-color-text-secondary);
-  font-size: var(--uf-text-caption-size);
-}
-
-.accountField {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-8);
-}
-
-.accountLabelRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--uf-space-8);
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-caption-size);
-  font-weight: var(--uf-font-weight-medium);
-}
-
-.createAccountLink {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--uf-color-primary);
-  font-size: var(--uf-text-micro-size);
-  font-weight: var(--uf-font-weight-medium);
-  cursor: pointer;
-}
-
-.createAccountLink:hover {
-  text-decoration: underline;
-}
-
-.accountSelect {
-  width: 100%;
-  min-height: var(--uf-tap-target-min);
-  padding: 0 var(--uf-space-16);
-  border: 1px solid var(--uf-color-border-default);
-  border-radius: var(--uf-radius-12);
-  background: var(--uf-color-bg-sunken);
-  color: var(--uf-color-text-primary);
-  font: inherit;
-}
-
-.accountSelect:focus-visible {
-  border-color: var(--uf-color-primary);
-  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
-  outline-offset: var(--uf-focus-ring-offset);
 }
 
 .summaryList {

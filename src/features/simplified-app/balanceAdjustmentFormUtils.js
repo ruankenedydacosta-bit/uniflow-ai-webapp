@@ -31,12 +31,3 @@ export function formatSignedCurrency(value, formatCurrency) {
   const amount = Number(value) || 0;
   return amount > 0 ? `+${formatCurrency(amount)}` : formatCurrency(amount);
 }
-
-// Correção (Bloco Saldo + Cobrança): a conta do ajuste NUNCA é escolhida
-// automaticamente (nem "mais antiga", nem "primeira") -- só filtra as
-// contas ativas elegíveis para o seletor; a seleção em si é sempre uma
-// escolha explícita do usuário (ou, com exatamente 1 conta, um valor
-// derivado durante a renderização do modal, nunca persistido "no escuro").
-export function getActiveAccountsForAdjustment(accounts = []) {
-  return (accounts ?? []).filter((account) => account?.is_active !== false);
-}

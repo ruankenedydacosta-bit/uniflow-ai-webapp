@@ -6,7 +6,6 @@ import {
   digitsToCents,
   formatCentsAsCurrencyInput,
   formatSignedCurrency,
-  getActiveAccountsForAdjustment,
 } from './balanceAdjustmentFormUtils.js';
 
 test('digitsToCents extrai apenas dígitos, ignorando "R$", pontos e vírgula', () => {
@@ -48,21 +47,4 @@ test('formatSignedCurrency antepõe "+" apenas para ajuste positivo -- negativo 
   assert.equal(formatSignedCurrency(97.8, fakeFormatCurrency), '+R$ 97.8');
   assert.equal(formatSignedCurrency(-150, fakeFormatCurrency), '-R$ 150');
   assert.equal(formatSignedCurrency(0, fakeFormatCurrency), 'R$ 0');
-});
-
-test('getActiveAccountsForAdjustment retorna lista vazia sem contas ativas', () => {
-  assert.deepEqual(getActiveAccountsForAdjustment([]), []);
-  assert.deepEqual(getActiveAccountsForAdjustment([{ id: 'a', is_active: false }]), []);
-});
-
-test('getActiveAccountsForAdjustment nunca inclui uma conta arquivada -- só filtra, nunca escolhe por si só', () => {
-  const accounts = [
-    { id: 'newer', is_active: true, created_at: '2026-05-01T00:00:00Z' },
-    { id: 'archived', is_active: false, created_at: '2026-01-01T00:00:00Z' },
-    { id: 'older', is_active: true, created_at: '2026-02-01T00:00:00Z' },
-  ];
-  assert.deepEqual(
-    getActiveAccountsForAdjustment(accounts).map((account) => account.id),
-    ['newer', 'older'],
-  );
 });

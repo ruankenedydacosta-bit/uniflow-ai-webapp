@@ -23,16 +23,21 @@ test('buildAdjustmentDescription nunca ultrapassa 160 caracteres (limite da RPC)
   assert.ok(description.startsWith('Ajuste manual de saldo — '));
 });
 
-test('submitBalanceAdjustment recusa sem conta ativa, sem chamar a RPC', async () => {
+// CONTA-OPCIONAL (fase 2): "Atualizar saldo" ajusta o saldo TOTAL do
+// workspace -- accountId nulo/ausente não é mais recusado, o ajuste segue
+// sem conta associada (modo 'none' na RPC, ver confirmedFinancialActionService.js).
+test('submitBalanceAdjustment sem accountId não recusa por falta de conta -- segue para a RPC (modo none)', async () => {
   const result = await submitBalanceAdjustment({
-    accountId: null,
     currentBalance: 100,
     newBalance: 200,
     note: '',
     clientOperationId: '018f4f7a-3d2b-4f6a-8c31-f54e53db32b1',
   });
-  assert.equal(result.error.code, 'ACCOUNT_REQUIRED');
-  assert.equal(result.data, null);
+  assert.notEqual(result.error?.code, 'ACCOUNT_REQUIRED');
+  // Sem Supabase configurado neste ambiente de teste, a chamada real à RPC
+  // falha de forma segura -- prova que o fluxo passou da validação local.
+  assert.equal(result.error.code, 'SUPABASE_NOT_CONFIGURED');
+  assert.equal(result.delta, 100);
 });
 
 test('submitBalanceAdjustment recusa quando o novo saldo é igual ao atual (nada para ajustar)', async () => {

@@ -268,6 +268,25 @@ test('migration 035 adiciona modo none à RPC e exige conta real em transfer/adj
   assert.doesNotMatch(migration, /[^t]\n\s*join public\.accounts as account/);
 });
 
+// CONTA-OPCIONAL (fase 2): "Atualizar saldo" ajusta o saldo TOTAL do
+// workspace, não mais o de uma conta específica -- ajuste (adjustment)
+// ganha a mesma permissão de account_mode 'none' que income/expense já
+// tinham desde a 035. Transferência continua a única exceção (exige
+// origem e destino reais).
+test('migration 037 permite account_mode none também para adjustment -- só transfer continua exigindo conta', () => {
+  const migration = readFileSync(
+    new URL(
+      '../../supabase/migrations/20260812171500_037_adjustment_account_optional.sql',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(migration, /p_account_mode = 'none' and p_transaction_type = 'transfer'/);
+  assert.doesNotMatch(migration, /p_account_mode = 'none' and p_transaction_type not in \('income', 'expense'\)/);
+  assert.match(migration, /elsif p_account_mode = 'none' then\s*\n\s*v_account_id := null;/);
+});
+
 test('roteiro atômico prepara workspaces distintos sem credencial administrativa', () => {
   const script = readFileSync(
     new URL('../../scripts/supabase/test-atomic-financial-action.js', import.meta.url),
