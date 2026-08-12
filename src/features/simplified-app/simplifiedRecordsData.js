@@ -168,7 +168,6 @@ export function buildCategorySummaries(categories, transactions) {
 export function filterRecordTransactions(
   transactions,
   {
-    accountId = 'all',
     categoryId = 'all',
     query = '',
     sort = 'recent',
@@ -182,13 +181,6 @@ export function filterRecordTransactions(
     if (categoryId !== 'all') {
       if (categoryId === 'uncategorized' && transaction.category_id) return false;
       if (categoryId !== 'uncategorized' && transaction.category_id !== categoryId) return false;
-    }
-    if (
-      accountId !== 'all'
-      && transaction.account_id !== accountId
-      && transaction.destination_account_id !== accountId
-    ) {
-      return false;
     }
     return !normalizedQuery || normalizeText(transaction.description).includes(normalizedQuery);
   });

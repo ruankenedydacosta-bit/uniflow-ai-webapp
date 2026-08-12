@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { useAccounts, useCategories, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
@@ -214,7 +214,6 @@ function NewRecordAction({ disabled, onClick }) {
 }
 
 function HistoryFilters({
-  accounts,
   categories,
   filters,
   onChange,
@@ -254,15 +253,6 @@ function HistoryFilters({
         </select>
       </label>
       <label>
-        <span>Conta</span>
-        <select value={filters.accountId} onChange={(event) => onChange('accountId', event.target.value)}>
-          <option value="all">Todas</option>
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>{account.name}</option>
-          ))}
-        </select>
-      </label>
-      <label>
         <span>Ordenar</span>
         <select value={filters.sort} onChange={(event) => onChange('sort', event.target.value)}>
           <option value="recent">Mais recentes</option>
@@ -278,19 +268,215 @@ function HistoryFilters({
   );
 }
 
+// BLOCO EXCLUIR FACILITADO: três formas independentes de chegar em
+// Editar/Excluir sem precisar entrar no lançamento primeiro -- ícone sempre
+// visível (quem não conhece gestos), segurar ~0,5s (mesma ação, sem
+// arrastar) e arrastar pra esquerda (gesto comum em listas). As três
+// revelam o MESMO par de botões (openRowId identifica qual linha está
+// revelada) -- só muda como o usuário chega lá. Toque simples continua
+// abrindo o formulário completo (onEdit), como sempre.
+const LONG_PRESS_MS = 500;
+const SWIPE_REVEAL_PX = 136;
+const SWIPE_ACTIVATE_PX = 40;
+const DIRECTION_LOCK_PX = 8;
+
+function TransactionRow({
+  canDelete,
+  categoryPresentation,
+  isConfirmingDelete,
+  isOpen,
+  onCancelDelete,
+  onConfirmDelete,
+  onEdit,
+  onOpen,
+  onRequestDelete,
+  transaction,
+}) {
+  const [dragX, setDragX] = useState(0);
+  const dragStateRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+
+  const isIncome = transaction.transaction_type === 'income';
+  const isTransfer = transaction.transaction_type === 'transfer';
+  // BLOCO FINAL DO MVP (Saldo manual): "adjustment" pode ser positivo ou
+  // negativo -- ao contrário de income/expense, o sinal correto vem de
+  // adjustment_delta, nunca do tipo sozinho.
+  const isPositiveAdjustment = transaction.transaction_type === 'adjustment'
+    && Number(transaction.adjustment_delta) > 0;
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  function handlePointerDown(event) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    dragStateRef.current = { x: event.clientX, y: event.clientY, locked: null };
+    clearLongPressTimer();
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      dragStateRef.current = null;
+      setDragX(0);
+      onOpen();
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePointerMove(event) {
+    const drag = dragStateRef.current;
+    if (!drag) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+
+    if (!drag.locked) {
+      if (Math.abs(dx) < DIRECTION_LOCK_PX && Math.abs(dy) < DIRECTION_LOCK_PX) return;
+      // Movimento vertical: é rolagem normal da página, nunca arrastar --
+      // solta o gesto por completo (nunca disputa o scroll com o navegador).
+      drag.locked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (drag.locked === 'y') {
+        clearLongPressTimer();
+        dragStateRef.current = null;
+        return;
+      }
+    }
+    if (drag.locked !== 'x') return;
+
+    clearLongPressTimer();
+    event.preventDefault();
+    setDragX(Math.max(-SWIPE_REVEAL_PX, Math.min(0, dx)));
+  }
+
+  function handlePointerUp() {
+    clearLongPressTimer();
+    const drag = dragStateRef.current;
+    dragStateRef.current = null;
+    if (!drag) return; // já virou toque simples (onClick do botão cuida) ou já abriu por long-press.
+
+    if (drag.locked === 'x') {
+      if (dragX <= -SWIPE_ACTIVATE_PX) {
+        setDragX(-SWIPE_REVEAL_PX);
+        onOpen();
+      } else {
+        setDragX(0);
+      }
+    }
+  }
+
+  function handlePointerCancel() {
+    clearLongPressTimer();
+    dragStateRef.current = null;
+    setDragX(0);
+  }
+
+  const revealedX = isOpen ? -SWIPE_REVEAL_PX : dragX;
+
+  return (
+    <div className={styles.transactionRowWrapper}>
+      {isOpen ? (
+        <div className={styles.transactionRowActions}>
+          {isConfirmingDelete ? (
+            <>
+              <button type="button" className={styles.rowActionNeutral} onClick={onCancelDelete}>
+                Cancelar
+              </button>
+              <button type="button" className={styles.rowActionDanger} onClick={onConfirmDelete}>
+                Confirmar
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className={styles.rowActionNeutral} onClick={() => onEdit(transaction)}>
+                Editar
+              </button>
+              <button
+                type="button"
+                className={styles.rowActionDanger}
+                onClick={onRequestDelete}
+                disabled={!canDelete}
+                title={!canDelete ? 'Você não possui permissão para excluir este lançamento.' : undefined}
+              >
+                Excluir
+              </button>
+            </>
+          )}
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className={styles.transactionRow}
+        style={revealedX ? { transform: `translateX(${revealedX}px)` } : undefined}
+        onClick={() => { if (!isOpen) onEdit(transaction); }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        aria-label={`${transaction.description}, ${formatCurrency(transaction.amount)}. Toque para editar, segure ou arraste para mais opções.`}
+      >
+        <span className={`${styles.transactionIcon} ${styles[`tone${categoryPresentation?.tone ?? 'gray'}`]}`}>
+          <RecordsIcon name={categoryPresentation?.icon ?? (isTransfer ? 'account' : 'other')} />
+        </span>
+        <span className={styles.transactionMain}>
+          <strong>{transaction.description || categoryPresentation?.name || 'Outros'}</strong>
+          <small>{formatRelativeTransactionDate(transaction.transaction_date)}</small>
+        </span>
+        <b className={isIncome || isPositiveAdjustment ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
+          {isIncome || isPositiveAdjustment ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
+        </b>
+        <button
+          type="button"
+          className={styles.rowMenuIcon}
+          aria-label="Mais opções"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpen();
+          }}
+        >
+          ⋮
+        </button>
+      </button>
+    </div>
+  );
+}
+
 function TransactionList({
-  accounts,
+  canDeleteTransaction = () => true,
   categories,
   emptyMessage,
+  onDelete,
   onEdit,
   onShowAll,
   showAllAction,
   transactions,
   visibleCount,
 }) {
-  const accountMap = new Map(accounts.map((account) => [account.id, account]));
   const categoryMap = new Map(categories.map((category) => [category.id, category]));
   const visible = transactions.slice(0, visibleCount);
+  const [openRowId, setOpenRowId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  function closeRow() {
+    setOpenRowId(null);
+    setConfirmDeleteId(null);
+  }
+
+  function handleRequestDelete(transaction) {
+    // Lançamento parcelado exige escolher o escopo (só esta / esta e as
+    // próximas / todas) -- essa decisão só existe no formulário completo
+    // (FinanceTransactionModal), nunca aqui. A exclusão rápida só cobre o
+    // caso simples (lançamento avulso).
+    if (transaction.metadata?.installment_group_id) {
+      closeRow();
+      onEdit(transaction);
+      return;
+    }
+    setConfirmDeleteId(transaction.id);
+  }
+
+  async function handleConfirmDelete(transaction) {
+    await onDelete(transaction);
+    closeRow();
+  }
 
   return (
     <section className={styles.recordsSection} aria-labelledby="recent-transactions-title">
@@ -305,44 +491,31 @@ function TransactionList({
       {visible.length ? (
         <div className={styles.transactionList}>
           {visible.map((transaction) => {
-            const isIncome = transaction.transaction_type === 'income';
             const isTransfer = transaction.transaction_type === 'transfer';
-            // BLOCO FINAL DO MVP (Saldo manual): "adjustment" pode ser
-            // positivo ou negativo -- ao contrário de income/expense, o
-            // sinal correto vem de adjustment_delta, nunca do tipo sozinho.
-            const isPositiveAdjustment = transaction.transaction_type === 'adjustment'
-              && Number(transaction.adjustment_delta) > 0;
             const category = categoryMap.get(transaction.category_id);
-            const categoryKey = category?.name ?? (isTransfer ? 'Transferência' : 'Outros');
             const categoryPresentation = buildCategorySummaries(
               category ? [category] : [],
               category ? [transaction] : [],
             )[0];
 
             return (
-              <button
+              <TransactionRow
                 key={transaction.id}
-                type="button"
-                className={styles.transactionRow}
-                onClick={() => onEdit(transaction)}
-                aria-label={`Editar ${transaction.description}, ${formatCurrency(transaction.amount)}`}
-              >
-                <span className={`${styles.transactionIcon} ${styles[`tone${categoryPresentation?.tone ?? 'gray'}`]}`}>
-                  <RecordsIcon name={categoryPresentation?.icon ?? (isTransfer ? 'account' : 'other')} />
-                </span>
-                <span className={styles.transactionMain}>
-                  <strong>{transaction.description || categoryKey}</strong>
-                  <small>
-                    {formatRelativeTransactionDate(transaction.transaction_date)}
-                    {' • '}
-                    {accountMap.get(transaction.account_id)?.name ?? 'Conta não disponível'}
-                  </small>
-                </span>
-                <b className={isIncome || isPositiveAdjustment ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
-                  {isIncome || isPositiveAdjustment ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
-                </b>
-                <span className={styles.chevron} aria-hidden="true">›</span>
-              </button>
+                canDelete={canDeleteTransaction(transaction)}
+                categoryPresentation={
+                  categoryPresentation
+                    ? { ...categoryPresentation, name: category?.name ?? (isTransfer ? 'Transferência' : 'Outros') }
+                    : { name: isTransfer ? 'Transferência' : 'Outros' }
+                }
+                isConfirmingDelete={confirmDeleteId === transaction.id}
+                isOpen={openRowId === transaction.id}
+                onCancelDelete={() => setConfirmDeleteId(null)}
+                onConfirmDelete={() => handleConfirmDelete(transaction)}
+                onEdit={(item) => { closeRow(); onEdit(item); }}
+                onOpen={() => setOpenRowId(transaction.id)}
+                onRequestDelete={() => handleRequestDelete(transaction)}
+                transaction={transaction}
+              />
             );
           })}
         </div>
@@ -357,7 +530,6 @@ const EMPTY_FILTERS = Object.freeze({
   query: '',
   type: 'all',
   categoryId: 'all',
-  accountId: 'all',
   sort: 'recent',
 });
 
@@ -485,6 +657,19 @@ function SimplifiedRecordsPage() {
     workspaceRole.canDelete === true || transaction?.created_by === user?.id
   );
 
+  // BLOCO EXCLUIR FACILITADO: exclusão direta na lista "Últimos lançamentos"
+  // (segurar, arrastar ou o ícone sempre visível -- ver TransactionRow),
+  // sem precisar abrir o formulário completo primeiro. Só cobre o caso
+  // simples (lançamento avulso, sem parcelamento) -- um lançamento com
+  // parcelas exige escolher o escopo (só esta / esta e as próximas / todas),
+  // que continua vivendo exclusivamente no formulário completo
+  // (FinanceTransactionModal, já reaproveitado via onEditFull abaixo).
+  async function handleQuickDelete(transaction) {
+    if (transactionState.isMutating || !canDeleteTransaction(transaction)) return;
+    const result = await transactionState.removeTransaction(transaction.id);
+    if (!result.error) await refresh();
+  }
+
   function selectCategory(categoryId) {
     setFilters({ ...EMPTY_FILTERS, categoryId });
     setVisibleCount(PAGE_SIZE);
@@ -562,13 +747,14 @@ function SimplifiedRecordsPage() {
                     onClick={openNewTransaction}
                   />
                   <TransactionList
-                    accounts={accountState.accounts}
                     categories={categoryState.categories}
                     emptyMessage="Ainda não há registros neste mês."
                     onEdit={(transaction) => setTransactionDialog({
                       type: transaction.transaction_type,
                       transactionId: transaction.id,
                     })}
+                    onDelete={handleQuickDelete}
+                    canDeleteTransaction={canDeleteTransaction}
                     onShowAll={() => setActiveTab('history')}
                     showAllAction
                     transactions={recentTransactions}
@@ -578,7 +764,6 @@ function SimplifiedRecordsPage() {
               ) : (
                 <>
                   <HistoryFilters
-                    accounts={accountState.accounts}
                     categories={categoryState.categories}
                     filters={filters}
                     onChange={updateFilter}
@@ -588,7 +773,6 @@ function SimplifiedRecordsPage() {
                     }}
                   />
                   <TransactionList
-                    accounts={accountState.accounts}
                     categories={categoryState.categories}
                     emptyMessage={transactionState.transactions.length
                       ? 'Nenhum registro corresponde aos filtros.'
@@ -597,6 +781,8 @@ function SimplifiedRecordsPage() {
                       type: transaction.transaction_type,
                       transactionId: transaction.id,
                     })}
+                    onDelete={handleQuickDelete}
+                    canDeleteTransaction={canDeleteTransaction}
                     showAllAction={false}
                     transactions={filteredTransactions}
                     visibleCount={visibleCount}

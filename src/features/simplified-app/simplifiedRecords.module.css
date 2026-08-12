@@ -522,22 +522,6 @@
   line-height: 1;
 }
 
-.accountNotice {
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 12px 16px;
-  border: 1px solid rgba(96, 165, 250, .3);
-  border-radius: 14px;
-  background: rgba(9, 24, 50, .82);
-  color: var(--uf-app-text-2);
-  font-size: 14px;
-}
-
-.accountNotice button,
 .stateCard button {
   min-height: 48px;
   border: 0;
@@ -554,15 +538,62 @@
   margin-top: 12px;
 }
 
+/* BLOCO EXCLUIR FACILITADO: cada linha vira um "cartão" com uma camada de
+   ações (Editar/Excluir) escondida atrás, revelada por 3 gestos
+   independentes (ícone sempre visível, segurar, arrastar) -- ver
+   TransactionRow em SimplifiedRecordsPage.jsx. overflow: hidden garante que
+   a linha em primeiro plano nunca vaze pra fora das bordas arredondadas
+   enquanto arrasta. */
+.transactionRowWrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 17px;
+}
+
+.transactionRowActions {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+.rowActionNeutral,
+.rowActionDanger {
+  width: 68px;
+  border: none;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rowActionNeutral {
+  background: rgba(79, 102, 143, .85);
+}
+
+.rowActionDanger {
+  background: var(--uf-app-danger);
+}
+
+.rowActionDanger:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
 .transactionRow {
+  position: relative;
+  z-index: 1;
   width: 100%;
   min-width: 0;
   min-height: 82px;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto 18px;
+  grid-template-columns: 48px minmax(0, 1fr) auto 40px;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 10px 10px 10px 14px;
   border: 1px solid rgba(79, 102, 143, .42);
   border-radius: 17px;
   background: linear-gradient(105deg, rgba(11, 26, 54, .9), rgba(5, 14, 32, .97));
@@ -570,7 +601,8 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 180ms ease, background 180ms ease;
+  touch-action: pan-y;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
 }
 
 .transactionRow:hover {
@@ -614,15 +646,38 @@
 .negativeAmount { color: var(--uf-app-danger); }
 .transferAmount { color: var(--uf-app-primary-text); }
 
-.chevron {
+/* Terceira forma de chegar em Editar/Excluir: ícone sempre visível (nunca
+   escondido atrás de um gesto), pensado pra quem não segura nem arrasta.
+   40px de largura na coluna + padding do próprio botão cobrem a área de
+   toque mínima recomendada, sem um botão "grande e escancarado" -- só um
+   pouco maior que o glifo. */
+.rowMenuIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
   color: var(--uf-app-text-3);
-  font-size: 34px;
-  font-weight: 300;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rowMenuIcon:hover {
+  background: rgba(96, 165, 250, .16);
+  color: var(--uf-app-text);
+}
+
+.rowMenuIcon:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
 }
 
 .historyFilters {
   display: grid;
-  grid-template-columns: 1.5fr repeat(4, minmax(120px, 1fr));
+  grid-template-columns: 1.5fr repeat(3, minmax(120px, 1fr));
   gap: 10px;
   margin-top: 16px;
   padding: 14px;
@@ -748,7 +803,6 @@
 .historyFilters select:focus-visible,
 .clearFilters:focus-visible,
 .loadMore:focus-visible,
-.accountNotice button:focus-visible,
 .stateCard button:focus-visible {
   outline: 3px solid var(--uf-app-focus);
   outline-offset: 3px;
@@ -893,13 +947,8 @@
     font-size: 14px;
   }
 
-  .accountNotice {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .transactionRow {
-    grid-template-columns: 44px minmax(0, 1fr) 18px;
+    grid-template-columns: 44px minmax(0, 1fr) 40px;
     gap: 10px;
   }
 
@@ -909,7 +958,7 @@
     font-size: 16px;
   }
 
-  .chevron {
+  .rowMenuIcon {
     grid-column: 3;
     grid-row: 1 / span 2;
   }
