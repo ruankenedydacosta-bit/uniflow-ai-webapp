@@ -74,6 +74,19 @@ test('markAllNotificationsAsRead so atualiza nao lidas (read_at nulo) do proprio
   assert.match(fnBody, /\.is\('read_at', null\)/);
 });
 
+// NOTIF2: dispensar uma notificação e uma exclusão real, mas restrita ao
+// próprio usuário e a UMA linha -- nunca ao compromisso/registro de
+// origem (esse nunca é tocado por este service).
+test('deleteNotification so exclui a notificacao do proprio usuario (id + user_id), nunca em lote', async () => {
+  const content = await source('notificationsService.js');
+  const fnStart = content.indexOf('export async function deleteNotification');
+  assert.ok(fnStart > -1, 'deleteNotification deve existir');
+  const fnBody = content.slice(fnStart, content.indexOf('export async function createNotification'));
+  assert.match(fnBody, /\.delete\(\)/);
+  assert.match(fnBody, /\.eq\('id', notificationId\)/);
+  assert.match(fnBody, /\.eq\('user_id', userId\)/);
+});
+
 test('createNotification exige titulo nao-vazio antes de qualquer chamada ao Supabase', async () => {
   const content = await source('notificationsService.js');
   const fnBody = content.slice(content.indexOf('export async function createNotification'));
@@ -92,7 +105,8 @@ test('createNotification sempre insere com o user_id recebido -- nunca cria noti
 test('todas as funcoes retornam cedo quando Supabase nao esta configurado, sem lancar excecao', async () => {
   const content = await source('notificationsService.js');
   const occurrences = content.match(/if \(!supabase\) return createUnavailableResult/g) ?? [];
-  assert.equal(occurrences.length, 5);
+  // NOTIF2: deleteNotification soma mais uma funcao a essa guarda.
+  assert.equal(occurrences.length, 6);
 });
 
 test('retorna { data, error, isConfigured } -- mesmo contrato dos demais services do repositorio', async () => {

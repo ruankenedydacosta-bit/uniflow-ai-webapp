@@ -107,6 +107,25 @@ export async function markAllNotificationsAsRead(userId, { workspaceId } = {}) {
 }
 
 /**
+ * NOTIF2: dispensa (exclui) UMA notificação do próprio usuário. Nunca afeta
+ * o compromisso/registro de origem -- só a linha em notifications some (o
+ * cascade de agenda_item_id cuida do caso "excluí o compromisso" à parte,
+ * direto no banco).
+ */
+export async function deleteNotification(userId, notificationId) {
+  if (!supabase) return createUnavailableResult(null);
+  if (!userId) return createMissingUserResult();
+
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', notificationId)
+    .eq('user_id', userId);
+
+  return createResult(notificationId, error);
+}
+
+/**
  * Cria uma notificação para o PRÓPRIO usuário (RLS garante user_id =
  * auth.uid(), nunca para outra pessoa). Usada tanto por eventos reais e
  * seguros já existentes quanto para validar a interface quando ainda não

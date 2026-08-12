@@ -1106,6 +1106,14 @@ test('sino mostra quantidade real limitada a 9+', async () => {
   assert.match(header, /styles\.notificationCount/);
 });
 
+// NOTIF2: dispensar (X ou arrastar) uma notificação no painel mobile usa a
+// mesma remoção otimista do hook -- sem props extras/estado duplicado.
+test('SimplifiedAppShell repassa dismissNotification do hook como onDismiss do painel', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /dismissNotification,\s*\n\s*\} = useNotifications\(\);/);
+  assert.match(shell, /onDismiss=\{dismissNotification\}/);
+});
+
 test('preferência de tamanho textual é aplicada como atributo no shell', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
   const css = await source('./simplifiedApp.module.css');

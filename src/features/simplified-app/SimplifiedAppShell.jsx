@@ -28,6 +28,7 @@ function SimplifiedAppShell({ children }) {
     refresh,
     markAsRead,
     markAllAsRead,
+    dismissNotification,
   } = useNotifications();
   // ETAPA 4: Conta e suas rotas internas (/app/conta/...) também têm
   // cabeçalho próprio (título + voltar, ou título + Falar com a Uni na
@@ -188,6 +189,7 @@ function SimplifiedAppShell({ children }) {
                 onMarkAsRead={markAsRead}
                 onMarkAllAsRead={markAllAsRead}
                 onRetry={refresh}
+                onDismiss={dismissNotification}
                 onNavigate={(url) => {
                   closeNotifications({ restoreFocus: false, immediate: true });
                   navigate(url);

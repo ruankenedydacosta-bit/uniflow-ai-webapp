@@ -56,10 +56,8 @@ test('itens reais exibem indicador visual por categoria', async () => {
 
 test('clicar num item nao lido chama onMarkAsRead; clicar num ja lido nao chama de novo', async () => {
   const content = await source('NotificationsPanel.jsx');
-  const fnBody = content.slice(
-    content.indexOf('function handleItemActivate'),
-    content.indexOf('return ('),
-  );
+  const fnStart = content.indexOf('function handleItemActivate');
+  const fnBody = content.slice(fnStart, content.indexOf('return (', fnStart));
   assert.match(
     fnBody,
     /if \(isNotificationUnread\(notification\)\) \{\s*\n\s*onMarkAsRead\?\.\(notification\.id\);\s*\n\s*\}/,
@@ -68,10 +66,8 @@ test('clicar num item nao lido chama onMarkAsRead; clicar num ja lido nao chama 
 
 test('so navega quando action_url passa por isSafeInternalUrl -- bloqueia URL externa arbitraria', async () => {
   const content = await source('NotificationsPanel.jsx');
-  const fnBody = content.slice(
-    content.indexOf('function handleItemActivate'),
-    content.indexOf('return ('),
-  );
+  const fnStart = content.indexOf('function handleItemActivate');
+  const fnBody = content.slice(fnStart, content.indexOf('return (', fnStart));
   assert.match(
     fnBody,
     /if \(isSafeInternalUrl\(notification\.action_url\)\) \{\s*\n\s*onNavigate\?\.\(notification\.action_url\);\s*\n\s*\}/,
@@ -96,4 +92,50 @@ test('item da lista e um <button type="button"> com aria-label indicando titulo 
   const content = await source('NotificationsPanel.jsx');
   assert.match(content, /<button\s*\n\s*type="button"\s*\n\s*className=\{`\$\{styles\.item\}/);
   assert.match(content, /aria-label=\{`\$\{notification\.title\}\$\{unread \? ' \(não lida\)' : ''\}`\}/);
+});
+
+// ============================================================================
+// NOTIF2 -- dispensar (excluir) uma notificação nunca afeta o
+// compromisso/registro de origem; botão X sempre visível + arrastar pra
+// qualquer lado com fade gradiente, igual ao gesto nativo de celular.
+// ============================================================================
+
+test('cada item tem um botao de dispensar (X) sempre visivel, que chama onDismiss e nunca navega (stopPropagation)', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /className=\{styles\.itemDismiss\}/);
+  assert.match(content, /aria-label=\{`Dispensar notificação: \$\{notification\.title\}`\}/);
+  const dismissStart = content.indexOf('className={styles.itemDismiss}');
+  const dismissBlock = content.slice(dismissStart - 200, dismissStart + 300);
+  assert.match(dismissBlock, /event\.stopPropagation\(\);/);
+  assert.match(dismissBlock, /commitDismiss\(\);/);
+});
+
+test('arrastar (esquerda ou direita) alem do limiar dispara commitDismiss -- nunca fica travado no meio do gesto', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /const DISMISS_ACTIVATE_PX = 88;/);
+  assert.match(content, /const DISMISS_MAX_PX = 160;/);
+  assert.match(content, /if \(Math\.abs\(dragX\) >= DISMISS_ACTIVATE_PX\) \{\s*\n\s*commitDismiss\(\);\s*\n\s*\} else \{\s*\n\s*setDragX\(0\);\s*\n\s*\}/);
+});
+
+test('commitDismiss chama onDismiss(notification.id) -- so a notificacao some, nunca o compromisso/registro de origem', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  const fnStart = content.indexOf('function commitDismiss()');
+  const fnBody = content.slice(fnStart, content.indexOf('\n  }', fnStart));
+  assert.match(fnBody, /window\.setTimeout\(\(\) => onDismiss\(notification\.id\), 180\);/);
+});
+
+test('opacidade cai gradualmente com a distancia arrastada (fade) -- nunca some abruptamente antes do limiar', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /const opacity = isDismissing \? 0 : 1 - Math\.min\(1, Math\.abs\(dragX\) \/ DISMISS_MAX_PX\);/);
+});
+
+test('movimento vertical solta o gesto (rolagem da lista, nunca disputa com arrastar horizontal)', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /drag\.locked = Math\.abs\(dx\) > Math\.abs\(dy\) \? 'x' : 'y';/);
+  assert.match(content, /if \(drag\.locked === 'y'\) \{\s*\n\s*dragStateRef\.current = null;\s*\n\s*return;\s*\n\s*\}/);
+});
+
+test('NotificationsPanel repassa onDismiss para cada NotificationItem', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /onDismiss=\{\(id\) => onDismiss\?\.\(id\)\}/);
 });

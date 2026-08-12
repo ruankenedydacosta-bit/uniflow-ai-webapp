@@ -15,7 +15,7 @@ function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const {
-    notifications, unreadCount, isLoading, error, refresh, markAsRead, markAllAsRead,
+    notifications, unreadCount, isLoading, error, refresh, markAsRead, markAllAsRead, dismissNotification,
   } = useNotifications();
 
   const badgeLabel = unreadCount > 9 ? '9+' : String(unreadCount);
@@ -49,6 +49,7 @@ function NotificationBell() {
           onMarkAsRead={markAsRead}
           onMarkAllAsRead={markAllAsRead}
           onRetry={refresh}
+          onDismiss={dismissNotification}
           onNavigate={(url) => {
             setIsOpen(false);
             navigate(url);

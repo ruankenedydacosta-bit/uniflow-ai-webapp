@@ -5,6 +5,7 @@ import {
   listNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  deleteNotification,
 } from './notificationsService.js';
 import {
   getNextAgendaNotificationDelay,
@@ -138,6 +139,23 @@ export function useNotifications() {
     return result;
   }, [userId, workspaceId]);
 
+  // NOTIF2: remoção otimista -- some da lista imediatamente (arrastar/X
+  // precisa parecer instantâneo), e só volta se a exclusão falhar de fato
+  // no servidor. Nunca mexe no compromisso/registro de origem -- só a
+  // notificação.
+  const dismissNotification = useCallback(async (notificationId) => {
+    if (!isSupabaseConfigured || !userId) return null;
+
+    const previous = notifications;
+    setNotifications((current) => current.filter((n) => n.id !== notificationId));
+
+    const result = await deleteNotification(userId, notificationId);
+    if (result.error) {
+      setNotifications(previous);
+    }
+    return result;
+  }, [notifications, userId]);
+
   return {
     notifications,
     unreadCount: countUnread(notifications),
@@ -146,5 +164,6 @@ export function useNotifications() {
     refresh,
     markAsRead,
     markAllAsRead,
+    dismissNotification,
   };
 }

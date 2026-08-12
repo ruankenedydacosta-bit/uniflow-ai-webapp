@@ -80,6 +80,31 @@ test('unreadCount deriva de countUnread(notifications) -- fonte unica de contage
   assert.match(content, /unreadCount: countUnread\(notifications\),/);
 });
 
+// NOTIF2: dispensar uma notificação (X ou arrastar) nunca deve parecer
+// travado -- some da lista IMEDIATAMENTE (otimista) e só volta se a
+// exclusão falhar de verdade no servidor.
+test('dismissNotification remove otimisticamente da lista antes da resposta do service, e importa deleteNotification', async () => {
+  const content = await source('useNotifications.js');
+  assert.match(content, /import \{[\s\S]*?deleteNotification,?[\s\S]*?\} from '\.\/notificationsService\.js';/);
+  const fnStart = content.indexOf('const dismissNotification = useCallback');
+  assert.ok(fnStart > -1, 'dismissNotification deve existir');
+  const fnBody = content.slice(fnStart, content.indexOf('return {', fnStart));
+  assert.match(fnBody, /setNotifications\(\(current\) => current\.filter\(\(n\) => n\.id !== notificationId\)\);/);
+  assert.match(fnBody, /const result = await deleteNotification\(userId, notificationId\);/);
+});
+
+test('dismissNotification reverte a remoção otimista se o service retornar erro -- nunca finge sucesso', async () => {
+  const content = await source('useNotifications.js');
+  const fnStart = content.indexOf('const dismissNotification = useCallback');
+  const fnBody = content.slice(fnStart, content.indexOf('return {', fnStart));
+  assert.match(fnBody, /if \(result\.error\) \{\s*\n\s*setNotifications\(previous\);\s*\n\s*\}/);
+});
+
+test('dismissNotification e exposto no retorno do hook', async () => {
+  const content = await source('useNotifications.js');
+  assert.match(content, /dismissNotification,\s*\n\s*\};/);
+});
+
 test('sincroniza compromissos vencidos antes de listar o sino', async () => {
   const content = await source('useNotifications.js');
   const syncIndex = content.indexOf('await syncDueAgendaNotifications(userId, workspaceId);');

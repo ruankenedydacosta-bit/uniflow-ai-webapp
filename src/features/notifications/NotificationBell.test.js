@@ -36,7 +36,7 @@ test('usa useNotifications() diretamente -- fonte unica de lista/contagem, sem d
   assert.match(content, /import \{ useNotifications \} from '\.\/useNotifications\.js';/);
   assert.match(
     content,
-    /const \{\s*\n\s*notifications, unreadCount, isLoading, error, refresh, markAsRead, markAllAsRead,\s*\n\s*\} = useNotifications\(\);/,
+    /const \{\s*\n\s*notifications, unreadCount, isLoading, error, refresh, markAsRead, markAllAsRead, dismissNotification,\s*\n\s*\} = useNotifications\(\);/,
   );
 });
 
