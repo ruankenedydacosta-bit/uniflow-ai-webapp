@@ -469,11 +469,27 @@ test('Edge Function exige Authorization Bearer e rejeita usuario nao autenticado
   assert.match(EDGE_SOURCE, /if \(!userId\) return jsonResponse\(401,/);
 });
 
+// LATENCIA1: o user_id vem do claim "sub" do JWT (decodificado localmente),
+// nunca de um round-trip de rede para /auth/v1/user -- essa chamada extra
+// era sequencial e rodava antes até da busca no cache, somando uma latência
+// de rede inteira ao início de toda resposta de voz. É seguro porque a
+// função roda com verify_jwt = true (padrão do Supabase sem entrada em
+// config.toml): o gateway já validou o token antes de invocar o código.
+test('user_id vem de um decode local do JWT (claim sub), nunca de fetch a /auth/v1/user', () => {
+  assert.doesNotMatch(EDGE_SOURCE, /fetch\(`\$\{supabaseUrl\}\/auth\/v1\/user`/);
+  assert.match(EDGE_SOURCE, /function getAuthenticatedUserId\(authorization: string\): string \| null \{/);
+  assert.match(EDGE_SOURCE, /payload\?\.sub/);
+  assert.match(EDGE_SOURCE, /const userId = getAuthenticatedUserId\(authorization\);/);
+});
+
 test('Edge Function retorna CONFIGURATION_ERROR (503) quando faltar chave OU voice ID, sem chamar a ElevenLabs', () => {
   assert.match(
     EDGE_SOURCE,
-    /if \(!supabaseUrl \|\| !anonKey \|\| !providerKey \|\| !voiceId\) \{[\s\S]*?return jsonResponse\(503, 'CONFIGURATION_ERROR',/,
+    /if \(!supabaseUrl \|\| !providerKey \|\| !voiceId\) \{[\s\S]*?return jsonResponse\(503, 'CONFIGURATION_ERROR',/,
   );
+  // SUPABASE_ANON_KEY não é mais lida por esta função (LATENCIA1: user_id
+  // agora vem do claim "sub" do JWT, decodificado localmente).
+  assert.doesNotMatch(EDGE_SOURCE, /SUPABASE_ANON_KEY/);
 });
 
 test('Edge Function limita CORS por APP_ALLOWED_ORIGINS sem criar allowlist de usuários', () => {

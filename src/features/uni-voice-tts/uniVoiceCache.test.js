@@ -95,7 +95,7 @@ test('voice_id nunca e armazenado em claro na tabela -- so um hash SHA-256 dele'
 });
 
 test('fluxo: autentica -> sanitiza/valida -> calcula cache key -> procura cache -> so entao chama ElevenLabs se for miss', () => {
-  const authCallIdx = EDGE_SOURCE.indexOf('const userId = await getAuthenticatedUserId(');
+  const authCallIdx = EDGE_SOURCE.indexOf('const userId = getAuthenticatedUserId(');
   const sanitizeIdx = EDGE_SOURCE.indexOf('const text = sanitizeText(payload.text);');
   const cacheLookupCallIdx = EDGE_SOURCE.indexOf('const cacheRow = await findCacheRow(');
   const providerCallIdx = EDGE_SOURCE.indexOf('const providerResponse = await fetch(providerUrl');

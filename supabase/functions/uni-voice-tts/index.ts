@@ -148,13 +148,32 @@ function containsSensitiveData(text: string) {
   ].some((pattern) => pattern.test(text));
 }
 
-async function getAuthenticatedUserId(authorization: string, supabaseUrl: string, anonKey: string) {
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { Authorization: authorization, apikey: anonKey },
-  });
-  if (!response.ok) return null;
-  const user = await response.json();
-  return typeof user?.id === 'string' ? user.id : null;
+// LATENCIA1: extrai o user_id direto do JWT (claim "sub"), sem round-trip
+// de rede para /auth/v1/user. Isso é seguro porque esta função roda com
+// verify_jwt = true (padrão do Supabase para função sem entrada em
+// config.toml -- ver comentário no topo do arquivo): a plataforma já
+// validou assinatura/expiração do token no gateway ANTES de invocar este
+// código, então aqui só é preciso LER um claim de um token que a
+// plataforma já garantiu ser autêntico -- nunca reverificar a assinatura.
+// Essa chamada de rede era sequencial e rodava antes até da busca no
+// cache, adicionando uma latência de rede inteira ao início de toda
+// resposta de voz (a real causa da demora reportada antes do áudio
+// começar a tocar), sem nenhum ganho de segurança sobre o que o gateway
+// já garante.
+function getAuthenticatedUserId(authorization: string): string | null {
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+  const payloadSegment = token.split('.')[1];
+  if (!payloadSegment) return null;
+  try {
+    const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    return typeof payload?.sub === 'string' && payload.sub ? payload.sub : null;
+  } catch {
+    return null;
+  }
 }
 
 async function sha256Hex(input: string) {
@@ -294,7 +313,6 @@ Deno.serve(async (request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
   const providerKey = Deno.env.get('ELEVENLABS_API_KEY') ?? '';
   const voiceId = Deno.env.get('ELEVENLABS_VOICE_ID') ?? '';
   // Modelo/formato/timeout tem defaults seguros -- só a chave e o voice ID
@@ -312,12 +330,11 @@ Deno.serve(async (request) => {
   // (sempre gera, nunca cacheia).
   const cacheEnabled = Boolean(serviceRoleKey);
 
-  if (!supabaseUrl || !anonKey || !providerKey || !voiceId) {
+  if (!supabaseUrl || !providerKey || !voiceId) {
     // Diagnóstico claro de QUAL variável está ausente -- nunca o valor,
     // apenas os nomes das secrets não configuradas neste ambiente.
     const missing = [
       !supabaseUrl && 'SUPABASE_URL',
-      !anonKey && 'SUPABASE_ANON_KEY',
       !providerKey && 'ELEVENLABS_API_KEY',
       !voiceId && 'ELEVENLABS_VOICE_ID',
     ].filter(Boolean);
@@ -325,7 +342,7 @@ Deno.serve(async (request) => {
     return jsonResponse(503, 'CONFIGURATION_ERROR', 'A geração de voz não está configurada neste ambiente.', {}, origin);
   }
 
-  const userId = await getAuthenticatedUserId(authorization, supabaseUrl, anonKey);
+  const userId = getAuthenticatedUserId(authorization);
   if (!userId) return jsonResponse(401, 'UNAUTHORIZED', 'Entre novamente para gerar voz.', {}, origin);
 
   let payload: Record<string, unknown>;
