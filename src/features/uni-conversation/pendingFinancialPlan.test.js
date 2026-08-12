@@ -442,12 +442,19 @@ test('BUG REAL: quando a IA já devolve as duas operações separadas (após a r
   assert.equal(mercado.rawOperation.amount, 50);
   assert.equal(gasolina.rawOperation.amount, 200);
   assert.notEqual(mercado.rawOperation.amount, gasolina.rawOperation.amount === 50);
-  // Banco do Brasil não existe na lista de contas do teste -- a operação
-  // da gasolina fica pedindo esclarecimento de conta (nunca inventa uma
-  // conta "Banco do Brasil" nem empresta silenciosamente a conta de outra
-  // operação), enquanto o mercado nunca recebe uma conta que não pediu.
+  // Banco do Brasil não existe na lista de contas do teste -- despesa nunca
+  // mais bloqueia nem pergunta por conta (BLOCO CONTA-OPCIONAL), então a
+  // operação da gasolina fica pronta mesmo assim, mas SEM inventar a conta
+  // "Banco do Brasil" (account fica null, nunca WILL_CREATE) e sem emprestar
+  // silenciosamente a conta de outra operação; o mercado, que também não
+  // recebeu conta nenhuma, segue igualmente com account null -- nenhuma das
+  // duas operações herda campo da outra.
   assert.equal(mercado.action.proposedAccount, null);
-  assert.notEqual(gasolina.status, PLAN_OPERATION_STATUS.READY);
+  assert.equal(mercado.action.account, null);
+  assert.equal(gasolina.status, PLAN_OPERATION_STATUS.READY);
+  assert.equal(gasolina.action.proposedAccount, null);
+  assert.equal(gasolina.action.account, null);
+  assert.equal(gasolina.action.payload.account_id, null);
 });
 
 // ============================================================================
@@ -528,17 +535,20 @@ test('BLOCO F CASO REAL: mercado (R$ 50, Alimentação, Nubank) e gasolina (R$ 2
   assert.equal(gasolinaAfterStep2.rawOperation.amount, 200);
   assert.equal(gasolinaAfterStep2.action.account?.name, 'Banco do Brasil');
   assert.equal(gasolinaAfterStep2.action.category?.name, 'Transporte');
-  // Mercado ainda não tem conta -- pede esclarecimento, NUNCA herda Banco
-  // do Brasil da gasolina.
-  assert.equal(mercadoAfterStep2.status, PLAN_OPERATION_STATUS.NEEDS_CLARIFICATION);
+  // Mercado não tem conta mencionada -- despesa nunca mais bloqueia nem
+  // pergunta por conta (BLOCO CONTA-OPCIONAL), então já fica pronta com
+  // account null, NUNCA herdando o Banco do Brasil da gasolina.
+  assert.equal(mercadoAfterStep2.status, PLAN_OPERATION_STATUS.READY);
   assert.equal(mercadoAfterStep2.rawOperation.amount, 50);
-  assert.notEqual(mercadoAfterStep2.action.issues?.[0]?.field, undefined);
+  assert.equal(mercadoAfterStep2.action.account, null);
 
-  // 3) "O mercado foi no Nubank." -- corrige SOMENTE a operação do
-  // mercado (referência semântica via currentOperationIndex, nunca
-  // proximidade textual cega sobre o plano inteiro).
+  // 3) "Não foi outro banco, foi Nubank." -- uma correção explícita e
+  // voluntária (o mercado já está pronto, não é resposta a uma pergunta
+  // pendente) que afeta SOMENTE a operação do mercado, aplicada por
+  // temporaryId explícito -- nunca proximidade textual cega sobre o plano
+  // inteiro nem vazamento para a operação da gasolina.
   const overrides = parsePlanCorrectionOverrides({
-    text: 'O mercado foi no Nubank',
+    text: 'Não foi outro banco, foi Nubank',
     referenceDate: REFERENCE_DATE,
     accounts: accountsWithBB,
     categories: CATEGORIES,

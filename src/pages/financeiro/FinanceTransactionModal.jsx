@@ -314,10 +314,13 @@ function FinanceTransactionModal({
     resetForm();
   }
 
+  // CONTA-OPCIONAL: só transferência e ajuste exigem conta de origem
+  // (destino é exigido separadamente, só para transferência).
+  const accountRequiredForSubmit = form.transaction_type === 'transfer' || form.transaction_type === 'adjustment';
   const canSubmit = Boolean(
     canManage &&
     !transactionState.isMutating &&
-    form.account_id &&
+    (!accountRequiredForSubmit || form.account_id) &&
     Number(form.amount) > 0 &&
     form.transaction_date &&
     (form.transaction_type !== 'transfer' || form.destination_account_id),
@@ -366,23 +369,31 @@ function FinanceTransactionModal({
             <option value="transfer">Transferência</option>
             <option value="adjustment">Ajuste</option>
           </SelectField>
-          <SelectField
-            id="finance-transaction-account"
-            label="Conta"
-            value={form.account_id}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, account_id: event.target.value }))
-            }
-            required
-          >
-            <option value="">Selecione uma conta</option>
-            {selectableAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-                {account.is_active === false ? ' (arquivada)' : ''}
-              </option>
-            ))}
-          </SelectField>
+          {/* CONTA-OPCIONAL: entrada/despesa não pedem mais conta -- meses de
+              atrito real vinham exatamente daqui. Transferência continua
+              exigindo (precisa saber DE QUAL conta o dinheiro sai) e ajuste
+              de saldo também (o delta é calculado contra o saldo atual de
+              UMA conta específica; sem ela a operação não tem como ser
+              calculada). */}
+          {form.transaction_type === 'transfer' || form.transaction_type === 'adjustment' ? (
+            <SelectField
+              id="finance-transaction-account"
+              label={form.transaction_type === 'transfer' ? 'Conta de origem' : 'Conta'}
+              value={form.account_id}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, account_id: event.target.value }))
+              }
+              required
+            >
+              <option value="">Selecione uma conta</option>
+              {selectableAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                  {account.is_active === false ? ' (arquivada)' : ''}
+                </option>
+              ))}
+            </SelectField>
+          ) : null}
           {form.transaction_type === 'transfer' ? (
             <SelectField
               id="finance-transaction-destination"
@@ -576,8 +587,10 @@ function FinanceTransactionModal({
             </SelectField>
           ) : null}
 
-          {!accountState.activeAccounts.length && !editingId ? (
-            <FormMessage tone="info">Crie uma conta antes do primeiro lançamento.</FormMessage>
+          {/* CONTA-OPCIONAL: só transferência/ajuste realmente dependem de
+              conta -- entrada/despesa funcionam normalmente sem nenhuma. */}
+          {!accountState.activeAccounts.length && !editingId && accountRequiredForSubmit ? (
+            <FormMessage tone="info">Crie uma conta antes de registrar uma transferência ou ajuste de saldo.</FormMessage>
           ) : null}
           <FormMessage>
             {getFinanceErrorMessage(
@@ -758,7 +771,12 @@ function FinanceTransactionModal({
             const isPositiveAdjustment = isAdjustment && Number(transaction.adjustment_delta) > 0;
             const isIncome = transaction.transaction_type === 'income' || isPositiveAdjustment;
             const typeTone = isIncome ? 'income' : transaction.transaction_type === 'transfer' ? 'transfer' : 'expense';
-            const accountName = accountsById.get(transaction.account_id)?.name ?? 'Conta não disponível';
+            // CONTA-OPCIONAL: null aqui é um estado normal (entrada/despesa
+            // sem conta), não um erro -- "Conta não disponível" soava como
+            // uma falha de carregamento.
+            const accountName = transaction.account_id
+              ? accountsById.get(transaction.account_id)?.name ?? 'Conta não disponível'
+              : null;
             const categoryName = categoriesById.get(transaction.category_id)?.name ?? null;
             const detailParts = [
               HISTORY_TYPE_LABELS[transaction.transaction_type] ?? transaction.transaction_type,

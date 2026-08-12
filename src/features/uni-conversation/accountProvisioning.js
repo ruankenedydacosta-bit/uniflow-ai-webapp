@@ -71,13 +71,20 @@ export async function provisionAccountAndTransaction(action, handlers) {
     account = accountResult.data;
   }
 
-  if (!account?.id) {
+  // CONTA-OPCIONAL: receita/despesa não exigem mais conta -- só transferência
+  // (precisa de origem+destino) e ajuste de saldo (o delta é calculado contra
+  // o saldo de UMA conta específica, não tem sentido sem ela) continuam
+  // exigindo. financialIntentAction.js já nunca deixa a ação chegar aqui com
+  // status 'ready' faltando conta nesses dois casos -- esta checagem é a
+  // segunda camada de defesa, não a única.
+  const accountRequired = action?.transactionType === 'transfer' || action?.transactionType === 'adjustment';
+  if (accountRequired && !account?.id) {
     return createError('ACCOUNT_REQUIRED', 'Revise a conta antes de confirmar o lançamento.');
   }
 
   const transactionResult = await saveTransaction({
     ...action.payload,
-    account_id: account.id,
+    account_id: account?.id ?? null,
   });
 
   if (transactionResult?.error || !transactionResult?.data) {

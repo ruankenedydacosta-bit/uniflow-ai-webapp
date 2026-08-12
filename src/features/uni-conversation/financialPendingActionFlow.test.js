@@ -185,91 +185,87 @@ test('distingue cancelamento da subação e de todo o fluxo', () => {
   assert.equal(isCancelEntirePendingFlow('cancelar'), false);
 });
 
-for (const [intent, transactionType] of [
-  ['register_expense', 'expense'],
-  ['register_income', 'income'],
-]) {
-  test(`${transactionType}: cria conta confirmada, retoma e registra a movimentação`, async () => {
-    const parsed = {
-      intent,
-      input: `${transactionType} de 50 na Nubank`,
-      normalizedInput: `${transactionType} de 50 na nubank`,
-      entities: {
-        amount: 50,
-        account: 'Nubank',
-        category: transactionType === 'expense' ? 'Alimentação' : 'Receita',
-        description: transactionType === 'expense' ? 'Almoço' : 'Venda',
-        date: '2026-07-27',
-      },
-    };
-    const categories = [{
-      id: `category-${transactionType}`,
-      name: transactionType === 'expense' ? 'Alimentação' : 'Receita',
-      category_type: transactionType,
-      is_active: true,
-    }];
-    const initialAction = buildFinancialIntentAction({
-      parsed,
-      accounts: [],
-      accountTypes: [{ code: 'checking', is_active: true }],
-      categories,
-      referenceDate: '2026-07-27',
-      overrides: { clientOperationId: `operation-${transactionType}` },
-    });
-    const started = startAccountCreationDependency({
-      identity,
-      financialSnapshot: {
-        parsed,
-        action: initialAction,
-        response: '',
-        memory: null,
-      },
-      proposedAccount: initialAction.proposedAccount,
-    });
-    let accountCreates = 0;
-    const accountCoordinator = createPendingActionCoordinator({
-      create_financial_account: async ({ fields }) => {
-        accountCreates += 1;
-        return {
-          data: {
-            id: `account-${transactionType}`,
-            workspace_id: identity.workspaceId,
-            ...fields.account,
-          },
-        };
-      },
-    });
-    const dependencyOutcome = await accountCoordinator.execute(started.stack);
-    const account = dependencyOutcome.completedAction.result;
-    const resumedAction = buildFinancialIntentAction({
-      parsed,
-      accounts: [account],
-      accountTypes: [{ code: 'checking', is_active: true }],
-      categories,
-      referenceDate: '2026-07-27',
-      overrides: {
-        clientOperationId: initialAction.clientOperationId,
-        accountId: account.id,
-      },
-    });
-    let transactionCreates = 0;
-    const transactionResult = await executeFinancialIntentAction(resumedAction, {
-      executeAtomicAction: async (action) => {
-        transactionCreates += 1;
-        return { data: { id: `transaction-${transactionType}`, ...action.payload }, error: null };
-      },
-    });
-
-    assert.equal(accountCreates, 1);
-    assert.equal(transactionCreates, 1);
-    assert.equal(resumedAction.status, 'ready');
-    assert.equal(resumedAction.payload.account_id, account.id);
-    assert.equal(resumedAction.amount, 50);
-    assert.equal(resumedAction.date, '2026-07-27');
-    assert.equal(resumedAction.transactionType, transactionType);
-    assert.equal(transactionResult.data.id, `transaction-${transactionType}`);
+// CONTA-OPCIONAL: receita/despesa não passam mais por esta dependência de
+// criação de conta -- nunca bloqueiam nem criam conta a partir de um nome
+// mencionado (ver bloco de comentário em financialIntentAction.js). O
+// mecanismo em si (proposta -> confirmação -> criação -> retomada) continua
+// existindo e é coberto aqui via ajuste de saldo, uma das duas operações
+// (junto com transferência) que ainda exigem conta.
+test('adjustment: cria conta confirmada, retoma e registra a movimentação', async () => {
+  const parsed = {
+    intent: 'set_balance',
+    input: 'meu saldo na Nubank e 50',
+    normalizedInput: 'meu saldo na nubank e 50',
+    entities: {
+      amount: 50,
+      account: 'Nubank',
+      category: null,
+      description: null,
+      date: '2026-07-27',
+    },
+  };
+  const initialAction = buildFinancialIntentAction({
+    parsed,
+    accounts: [],
+    accountTypes: [{ code: 'checking', is_active: true }],
+    categories: [],
+    referenceDate: '2026-07-27',
+    overrides: { clientOperationId: 'operation-adjustment' },
   });
-}
+  const started = startAccountCreationDependency({
+    identity,
+    financialSnapshot: {
+      parsed,
+      action: initialAction,
+      response: '',
+      memory: null,
+    },
+    proposedAccount: initialAction.proposedAccount,
+  });
+  let accountCreates = 0;
+  const accountCoordinator = createPendingActionCoordinator({
+    create_financial_account: async ({ fields }) => {
+      accountCreates += 1;
+      return {
+        data: {
+          id: 'account-adjustment',
+          workspace_id: identity.workspaceId,
+          ...fields.account,
+        },
+      };
+    },
+  });
+  const dependencyOutcome = await accountCoordinator.execute(started.stack);
+  const account = dependencyOutcome.completedAction.result;
+  const resumedAction = buildFinancialIntentAction({
+    parsed,
+    accounts: [account],
+    accountTypes: [{ code: 'checking', is_active: true }],
+    categories: [],
+    referenceDate: '2026-07-27',
+    accountBalances: { [account.id]: 0 },
+    overrides: {
+      clientOperationId: initialAction.clientOperationId,
+      accountId: account.id,
+    },
+  });
+  let transactionCreates = 0;
+  const transactionResult = await executeFinancialIntentAction(resumedAction, {
+    executeAtomicAction: async (action) => {
+      transactionCreates += 1;
+      return { data: { id: 'transaction-adjustment', ...action.payload }, error: null };
+    },
+  });
+
+  assert.equal(accountCreates, 1);
+  assert.equal(transactionCreates, 1);
+  assert.equal(resumedAction.status, 'ready');
+  assert.equal(resumedAction.payload.account_id, account.id);
+  assert.equal(resumedAction.amount, 50);
+  assert.equal(resumedAction.date, '2026-07-27');
+  assert.equal(resumedAction.transactionType, 'adjustment');
+  assert.equal(transactionResult.data.id, 'transaction-adjustment');
+});
 
 const proposedCategory = Object.freeze({
   name: 'Pet',

@@ -59,8 +59,16 @@ function hasRequiredTransactionFields(transaction) {
   // que não a preencha. A coluna description no banco continua NOT NULL +
   // não-vazia; normalizeTransactionDescription (abaixo) garante um valor
   // válido antes do insert/update em vez de rejeitar a chamada aqui.
+  //
+  // CONTA-OPCIONAL: account_id só é obrigatório para transferência (precisa
+  // de origem) e ajuste de saldo (o delta muda o saldo de UMA conta
+  // específica). Entrada/despesa passam a poder ser salvas sem conta --
+  // meses de atrito real vinham exatamente da exigência de conta nesses dois
+  // tipos, que é a maioria dos lançamentos do dia a dia.
+  const accountRequired = transaction.transaction_type === 'transfer'
+    || transaction.transaction_type === 'adjustment';
   return Boolean(
-    transaction.account_id &&
+    (!accountRequired || transaction.account_id) &&
       transaction.transaction_type &&
       transaction.amount !== undefined &&
       Number.isFinite(normalizedAmount) &&
@@ -259,7 +267,11 @@ export async function createTransaction(workspaceId, transaction = {}) {
     return createValidationResult('Workspace invalido para criar a transacao.');
   }
 
-  if (!isValidUuid(transaction.account_id)) {
+  // CONTA-OPCIONAL: account_id só precisa ser um UUID valido quando
+  // presente. Ausencia (null/undefined) e' aceita para entrada/despesa;
+  // hasRequiredTransactionFields (abaixo) e' quem decide se o TIPO da
+  // transacao exige conta (transferencia/ajuste continuam exigindo).
+  if (transaction.account_id != null && !isValidUuid(transaction.account_id)) {
     return createValidationResult('Conta de origem invalida.');
   }
   if (
@@ -274,8 +286,12 @@ export async function createTransaction(workspaceId, transaction = {}) {
   }
 
   if (!hasRequiredTransactionFields(transaction)) {
+    const accountRequired = transaction.transaction_type === 'transfer'
+      || transaction.transaction_type === 'adjustment';
     return createValidationResult(
-      'Conta, tipo, valor positivo e data sao obrigatorios.',
+      accountRequired
+        ? 'Conta, tipo, valor positivo e data sao obrigatorios.'
+        : 'Tipo, valor positivo e data sao obrigatorios.',
     );
   }
 

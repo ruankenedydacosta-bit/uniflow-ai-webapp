@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { parseFinancialText } from '../uni-intents/index.js';
 import {
@@ -48,8 +47,15 @@ test('Nubank, nubank e Nu Bank usam a mesma identidade exata normalizada', () =>
   assert.notEqual(normalizeAccountIdentity('Nubank'), normalizeAccountIdentity('Banco Nu'));
 });
 
+// CONTA-OPCIONAL: receita/despesa não bloqueiam mais nem criam conta
+// implicitamente a partir de um nome mencionado -- ver bloco de comentário em
+// financialIntentAction.js. Os testes abaixo continuam cobrindo o mecanismo
+// de resolução de conta (proposta de criação, tipo, conflito, ambiguidade)
+// através de ajuste de saldo, que é uma das duas operações (junto com
+// transferência) que ainda exigem conta -- o mecanismo em si não mudou, só
+// deixou de ser consumido por receita/despesa.
 test('conta inexistente gera proposta com tipo existente', () => {
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Meu saldo no Nubank é 85 reais.');
   assert.equal(action.accountResolution.status, ACCOUNT_RESOLUTION_STATUS.WILL_CREATE);
   assert.equal(action.proposedAccount.name, 'Nubank');
   assert.equal(action.proposedAccount.account_type, 'digital_wallet');
@@ -57,21 +63,21 @@ test('conta inexistente gera proposta com tipo existente', () => {
 });
 
 test('cartão mencionado usa tipo de cartão existente', () => {
-  const action = createAction('Paguei 85 reais no mercado pelo cartão Nubank.');
+  const action = createAction('Meu saldo no cartão Nubank é 85 reais.');
   assert.equal(action.proposedAccount.name, 'Nubank');
   assert.equal(action.proposedAccount.account_type, 'credit_card');
 });
 
 test('conta não é criada antes da confirmação', () => {
   let accountCreates = 0;
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Meu saldo no Nubank é 85 reais.');
   assert.equal(action.status, 'ready');
   assert.equal(accountCreates, 0);
 });
 
 test('confirmação cria conta e depois a transação', async () => {
   const calls = [];
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Meu saldo no Nubank é 85 reais.');
   const result = await executeFinancialIntentAction(action, {
     saveAccount: async (payload) => {
       calls.push(['account', payload]);
@@ -121,7 +127,7 @@ test('coordenador impede criação duplicada por clique repetido', async () => {
 
 test('conta arquivada gera conflito sem selecionar para lançamento', () => {
   const archived = { id: 'archived', name: 'Nubank', is_active: false };
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', [archived]);
+  const action = createAction('Meu saldo no Nubank é 85 reais.', [archived]);
   assert.equal(action.status, 'needs_clarification');
   assert.equal(action.accountResolution.status, ACCOUNT_RESOLUTION_STATUS.ARCHIVED_CONFLICT);
   assert.equal(action.payload, null);
@@ -129,7 +135,7 @@ test('conta arquivada gera conflito sem selecionar para lançamento', () => {
 
 test('conta arquivada nunca executa lançamento sem decisão', async () => {
   let transactionCalls = 0;
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', [
+  const action = createAction('Meu saldo no Nubank é 85 reais.', [
     { id: 'archived', name: 'Nubank', is_active: false },
   ]);
   const result = await executeFinancialIntentAction(action, async () => {
@@ -141,7 +147,7 @@ test('conta arquivada nunca executa lançamento sem decisão', async () => {
 
 test('reativação acontece somente após escolha e confirmação', async () => {
   const archived = { id: 'archived', name: 'Nubank', is_active: false };
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', [archived], {
+  const action = createAction('Meu saldo no Nubank é 85 reais.', [archived], {
     accountId: 'archived',
     accountDecision: 'reactivate',
   });
@@ -157,7 +163,7 @@ test('reativação acontece somente após escolha e confirmação', async () => 
 });
 
 test('várias contas ativas correspondentes exigem escolha', () => {
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', [
+  const action = createAction('Meu saldo no Nubank é 85 reais.', [
     { id: 'one', name: 'Nubank', is_active: true },
     { id: 'two', name: 'Nu Bank', is_active: true },
   ]);
@@ -167,7 +173,7 @@ test('várias contas ativas correspondentes exigem escolha', () => {
 });
 
 test('resolução não altera valor, data ou workspace', () => {
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Meu saldo no Nubank é 85 reais.');
   assert.equal(action.amount, 85);
   assert.equal(action.date, REFERENCE_DATE);
   assert.equal(Object.hasOwn(action.payload, 'workspace_id'), false);
@@ -177,7 +183,7 @@ test('resolução não altera valor, data ou workspace', () => {
 test('modo demo usa callbacks locais sem Supabase', async () => {
   const localAccounts = [];
   const localTransactions = [];
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Meu saldo no Nubank é 85 reais.');
   await provisionAccountAndTransaction(action, {
     saveAccount: async (payload) => {
       const account = { id: 'demo-account', ...payload };
@@ -196,7 +202,7 @@ test('modo demo usa callbacks locais sem Supabase', async () => {
 test('erro ao criar conta impede criação da transação', async () => {
   let transactionCalls = 0;
   const result = await provisionAccountAndTransaction(
-    createAction('Paguei 85 reais no mercado pelo Nubank.'),
+    createAction('Meu saldo no Nubank é 85 reais.'),
     {
       saveAccount: async () => ({ data: null, error: { code: '42501' } }),
       saveTransaction: async () => {
@@ -223,7 +229,28 @@ test('erro ao criar transação recebe mensagem humana', async () => {
 });
 
 test('confirmação financeira continua obrigatória', () => {
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Meu saldo no Nubank é 85 reais.');
   assert.equal(action.status, 'ready');
   assert.equal(action.accountResolution.status, 'will_create');
+});
+
+test('receita/despesa nunca bloqueiam nem criam conta a partir de nome ambíguo/inexistente', () => {
+  const semConta = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  assert.equal(semConta.status, 'ready');
+  assert.equal(semConta.accountResolution.status, ACCOUNT_RESOLUTION_STATUS.MISSING);
+  assert.equal(semConta.proposedAccount, null);
+  assert.equal(semConta.payload.account_id, null);
+
+  const arquivada = createAction('Paguei 85 reais no mercado pelo Nubank.', [
+    { id: 'archived', name: 'Nubank', is_active: false },
+  ]);
+  assert.equal(arquivada.status, 'ready');
+  assert.equal(arquivada.payload.account_id, null);
+
+  const ambigua = createAction('Paguei 85 reais no mercado pelo Nubank.', [
+    { id: 'one', name: 'Nubank', is_active: true },
+    { id: 'two', name: 'Nu Bank', is_active: true },
+  ]);
+  assert.equal(ambigua.status, 'ready');
+  assert.equal(ambigua.payload.account_id, null);
 });

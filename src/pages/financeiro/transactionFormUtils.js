@@ -90,7 +90,10 @@ export function resolveTransactionDescription(form) {
 
 export function buildTransactionMutationPayload(form) {
   const payload = {
-    account_id: form.account_id,
+    // CONTA-OPCIONAL: '' (valor inicial do campo, ou form de um tipo que não
+    // mostra mais "Conta") precisa virar null -- string vazia não é um UUID
+    // válido e seria rejeitada por isValidUuid em transactionService.js.
+    account_id: form.account_id || null,
     destination_account_id:
       form.transaction_type === 'transfer' ? form.destination_account_id : null,
     category_id: form.category_id || null,

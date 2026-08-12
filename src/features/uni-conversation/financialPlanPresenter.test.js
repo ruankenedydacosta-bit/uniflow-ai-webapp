@@ -105,8 +105,19 @@ test('buildOperationClarificationQuestion pergunta especificamente sobre destino
   assert.match(question, /qual conta.*transferência|para qual conta/i);
 });
 
+// Despesa/receita nunca mais bloqueiam nem propõem criar conta (ver
+// financialIntentAction.js, BLOCO CONTA-OPCIONAL) -- a proteção "nunca
+// propõe criar conta silenciosamente num plano multioperação" só continua
+// tendo algo a proteger em transferência, onde a conta ainda é exigida
+// (origem/destino) e uma origem sem correspondência real ainda gera uma
+// proposta de criação (WILL_CREATE) que o plano recusa aceitar em silêncio.
 test('buildOperationClarificationQuestion nunca propõe criar conta silenciosamente num plano multioperação: pede uma conta existente', () => {
-  const plan = buildPlan([rawOperation({ source_account_reference: 'Banco Fantasma' })]);
+  const plan = buildPlan([rawOperation({
+    operation_type: 'transfer',
+    source_account_reference: 'Banco Fantasma',
+    destination_account_reference: 'Caixa',
+    category_reference: null,
+  })]);
   assert.equal(plan.operations[0].status, 'needs_clarification');
   assert.ok(plan.operations[0].action.proposedAccount);
   const question = buildOperationClarificationQuestion(plan.operations[0]);

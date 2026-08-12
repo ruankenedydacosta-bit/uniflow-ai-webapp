@@ -123,24 +123,43 @@ const EXPENSE_CATEGORIES = [
 
 function stepOne() {
   const parsed = parseFinancialText('Cinquenta reais de gasolina.', { referenceDate: REFERENCE_DATE });
-  const action = buildFinancialIntentAction({
+  const readyAction = buildFinancialIntentAction({
     parsed,
     accounts: EXPENSE_ACCOUNTS,
     categories: EXPENSE_CATEGORIES,
     referenceDate: REFERENCE_DATE,
   });
+  // Despesa não bloqueia mais por conta (BLOCO CONTA-OPCIONAL,
+  // financialIntentAction.js) -- readyAction já vem 'ready' com account
+  // null. Os testes abaixo exercitam a MECÂNICA de resolução de uma conta
+  // pendente (resolvePendingActionInput: nome, preposição, normalização de
+  // instituição, desambiguação) -- mecânica que independe de a conta ainda
+  // bloquear ou não. Simulamos aqui uma pendência de conta como pretexto
+  // para exercitar exatamente essa mecânica, isolada do bloqueio (que não
+  // existe mais para despesa/receita).
+  const action = {
+    ...readyAction,
+    status: 'needs_clarification',
+    issues: [{ field: 'account', code: 'account_required' }],
+  };
   return { parsed, action };
 }
 
-test('BUG REAL: "Gastei R$ 50 de gasolina" (e a variação real sem verbo, "Cinquenta reais de gasolina.") pergunta SOMENTE a conta', () => {
+// BLOCO CONTA-OPCIONAL: despesa/receita nunca mais bloqueiam nem perguntam
+// pela conta (financialIntentAction.js) -- "Gastei R$ 50 de gasolina" (e a
+// variação sem verbo) agora fica pronta DIRETO, sem nenhuma pergunta,
+// account fica null e o restante (valor/descrição/categoria via alias)
+// continua resolvido exatamente como antes.
+test('BUG REAL (ATUALIZADO): "Gastei R$ 50 de gasolina" (e a variação real sem verbo, "Cinquenta reais de gasolina.") nunca mais pergunta pela conta -- fica pronta direto', () => {
   for (const phrase of ['Gastei R$ 50 de gasolina.', 'Cinquenta reais de gasolina.']) {
     const parsed = parseFinancialText(phrase, { referenceDate: REFERENCE_DATE });
     const action = buildFinancialIntentAction({
       parsed, accounts: EXPENSE_ACCOUNTS, categories: EXPENSE_CATEGORIES, referenceDate: REFERENCE_DATE,
     });
-    assert.equal(action.status, 'needs_clarification');
-    assert.equal(action.issues.length, 1);
-    assert.equal(action.issues[0].field, 'account');
+    assert.equal(action.status, 'ready');
+    assert.equal(action.issues.length, 0);
+    assert.equal(action.account, null);
+    assert.equal(action.payload.account_id, null);
     assert.equal(action.amount, 50);
     assert.equal(action.description, 'Gasolina');
     assert.equal(action.category?.name, 'Transporte');
@@ -202,7 +221,7 @@ test('BUG REAL: a frase real do relato -- "Isso, cinquenta reais de gasolina no 
 // conta; a pendência de conta continua de pé para o próximo turno.
 // ============================================================================
 
-test('HOTFIX FINAL: correção de valor ("na verdade foram 55") durante pendência de conta atualiza SÓ o valor, preserva descrição/categoria, e mantém "conta" pendente', () => {
+test('HOTFIX FINAL: correção de valor ("na verdade foram 55") durante pendência de conta atualiza SÓ o valor, preserva descrição/categoria, e nunca confunde o número com nome de conta', () => {
   const { parsed, action: pending } = stepOne();
   const resolved = resolvePendingActionInput({
     value: 'na verdade foram 55',
@@ -218,12 +237,16 @@ test('HOTFIX FINAL: correção de valor ("na verdade foram 55") durante pendênc
   });
   assert.equal(updatedAction.amount, 55, 'valor corrigido para 55');
   assert.equal(updatedAction.description, 'Gasolina', 'descrição preservada');
-  assert.equal(updatedAction.status, 'needs_clarification', 'conta continua faltando');
-  assert.equal(updatedAction.issues[0].field, 'account', 'a próxima pergunta continua sendo a conta, nunca reinicia do zero');
+  assert.equal(updatedAction.category?.name, 'Transporte', 'categoria preservada');
+  // Despesa não bloqueia mais por conta -- a correção de valor já deixa a
+  // ação pronta, e o "55" nunca é lido como nome de conta (account
+  // continua null, nunca inventado a partir do número).
+  assert.equal(updatedAction.status, 'ready');
+  assert.equal(updatedAction.account, null);
 });
 
 test('HOTFIX FINAL: "corrige para 80" também é reconhecido como correção de valor durante pendência de conta', () => {
-  const { parsed, action: pending } = stepOne();
+  const { action: pending } = stepOne();
   const resolved = resolvePendingActionInput({
     value: 'corrige para 80',
     action: pending,
@@ -340,23 +363,33 @@ test('receita completa fica pronta para confirmação', () => {
   assert.equal(action.category.id, 'category-income');
 });
 
-test('campo obrigatório ausente pergunta primeiro pela conta', () => {
-  const action = createAction('Gastei 40 reais.');
+// Despesa/receita nunca mais bloqueiam por conta -- "campo obrigatório
+// ausente pergunta primeiro pela conta" só continua tendo algo a proteger
+// em ajuste de saldo, que ainda exige a conta cujo saldo muda (a conta é o
+// ÚNICO requisito de ajuste -- categoria é sempre pulada).
+test('campo obrigatório ausente pergunta primeiro pela conta (ajuste de saldo)', () => {
+  const action = createAction('Meu saldo é 40 reais.');
 
+  assert.equal(action.transactionType, 'adjustment');
   assert.equal(action.status, 'needs_clarification');
   assert.equal(action.issues[0].field, 'account');
   assert.equal(action.issues[0].code, 'account_required');
 });
 
-test('receitas por linguagem natural perguntam pela conta de recebimento, nunca por pagamento', () => {
-  for (const input of ['Recebi mil reais.', 'Entrou mil reais.', 'Ganhei R$ 500.']) {
-    const action = createAction(input);
-    assert.equal(action.transactionType, 'income', `intenção incorreta para: ${input}`);
-    assert.equal(action.issues[0].code, 'account_required');
-    const response = buildClarificationResponse(action);
-    assert.equal(response.text, 'Em qual conta você recebeu esse valor?');
-    assert.doesNotMatch(response.text, /fez esse pagamento/i);
-  }
+// Receita não bloqueia mais por conta na prática (mesma regra de despesa),
+// mas o TEXTO da pergunta específica de receita ("você recebeu", nunca "fez
+// esse pagamento") continua existindo em buildAccountClarificationQuestion
+// -- usado quando a conta bloqueia por outro motivo (ex.: dentro de um
+// plano multioperação) ou em qualquer caminho futuro que volte a perguntar.
+test('receita usa a pergunta "você recebeu esse valor", nunca "fez esse pagamento"', () => {
+  assert.equal(
+    buildAccountClarificationQuestion({ transactionType: 'income' }),
+    'Em qual conta você recebeu esse valor?',
+  );
+  assert.doesNotMatch(
+    buildAccountClarificationQuestion({ transactionType: 'income' }),
+    /fez esse pagamento/i,
+  );
 });
 
 test('despesa, transferência e ajuste de saldo usam perguntas específicas por intenção e campo', () => {
@@ -378,16 +411,24 @@ test('despesa, transferência e ajuste de saldo usam perguntas específicas por 
   );
 });
 
-test('conta inexistente não é substituída silenciosamente', () => {
+// Despesa nunca mais bloqueia por conta -- "não substituída silenciosamente"
+// agora significa: uma conta mencionada mas não encontrada NUNCA é usada
+// nem inventada, o lançamento simplesmente segue sem conta (account null).
+test('conta inexistente não é substituída silenciosamente -- despesa fica pronta sem conta, nunca inventa uma', () => {
   const action = createAction('Paguei 40 de mercado pelo Banco Fantasma.');
 
-  assert.equal(action.status, 'needs_clarification');
-  assert.equal(action.issues[0].code, 'account_not_found');
+  assert.equal(action.status, 'ready');
+  assert.equal(action.account, null);
+  assert.equal(action.payload.account_id, null);
+  assert.equal(action.accountResolution.status, 'missing');
 });
 
-test('conta arquivada é bloqueada para novo lançamento', () => {
-  const action = createAction('Paguei 40 de mercado pela Conta antiga.');
+// A mecânica de bloqueio por conta arquivada (ARCHIVED_CONFLICT) só continua
+// tendo algo a proteger em transferência/ajuste, que ainda exigem conta.
+test('conta arquivada é bloqueada para novo lançamento (ajuste de saldo)', () => {
+  const action = createAction('Meu saldo é 40 reais pela Conta antiga.');
 
+  assert.equal(action.transactionType, 'adjustment');
   assert.equal(action.status, 'needs_clarification');
   assert.equal(action.issues[0].code, 'account_archived');
 });
@@ -614,8 +655,17 @@ test('categoria inexistente retorna categorias disponíveis sem repetir resposta
 
 test('resposta curta resolve conta, categoria, descrição e valor sem inventar campos', () => {
   const baseAction = createAction('Gastei 50 reais.');
+  // Despesa não bloqueia mais por conta -- simula aqui uma pendência de
+  // conta (issues sintético) para exercitar a mecânica de resolução de
+  // conta pendente isoladamente, igual ao que já é feito abaixo para
+  // categoria/descrição/valor.
   assert.deepEqual(
-    resolvePendingActionInput({ value: 'Nubank', action: baseAction, accounts, categories }).overrides,
+    resolvePendingActionInput({
+      value: 'Nubank',
+      action: { ...baseAction, issues: [{ field: 'account' }] },
+      accounts,
+      categories,
+    }).overrides,
     { accountId: 'account-nubank' },
   );
   assert.deepEqual(
@@ -716,11 +766,14 @@ test('resposta de conta pendente aceita nome, instituição e apelido normalizad
     },
   ];
 
+  // Despesa não bloqueia mais por conta -- simula uma pendência de conta
+  // (issues sintético) para exercitar a mecânica de normalização de
+  // nome/instituição/apelido isoladamente.
   for (const value of ['Conta Principal', 'nubank', 'roxinha']) {
     assert.deepEqual(
       resolvePendingActionInput({
         value,
-        action,
+        action: { ...action, issues: [{ field: 'account' }] },
         accounts: workspaceAccounts,
         categories,
         workspaceId,
@@ -734,7 +787,7 @@ test('conta inexistente retorna contas disponíveis sem repetir resposta genéri
   const action = createAction('Gastei 50 reais.');
   const result = resolvePendingActionInput({
     value: 'Banco Fantasma',
-    action,
+    action: { ...action, issues: [{ field: 'account' }] },
     accounts: [
       { id: 'nubank', workspace_id: 'empresa', name: 'Nubank', is_active: true },
       { id: 'bb', workspace_id: 'empresa', name: 'Banco do Brasil', is_active: true },
@@ -750,7 +803,7 @@ test('duas contas semelhantes exigem escolha explícita', () => {
   const action = createAction('Gastei 50 reais.');
   const result = resolvePendingActionInput({
     value: 'Nubank',
-    action,
+    action: { ...action, issues: [{ field: 'account' }] },
     accounts: [
       { id: 'one', workspace_id: 'empresa', name: 'Nubank Empresa', is_active: true },
       { id: 'two', workspace_id: 'empresa', name: 'Nubank Reserva', is_active: true },
@@ -766,7 +819,7 @@ test('resolução de conta nunca atravessa o workspace Empresa para o Pessoal', 
   const action = createAction('Gastei 50 reais.');
   const result = resolvePendingActionInput({
     value: 'Nubank',
-    action,
+    action: { ...action, issues: [{ field: 'account' }] },
     accounts: [
       { id: 'personal', workspace_id: 'pessoal', name: 'Nubank', is_active: true },
       { id: 'business', workspace_id: 'empresa', name: 'Banco do Brasil', is_active: true },
@@ -881,16 +934,21 @@ test('resolveFinancialAccount (via buildFinancialIntentAction) normaliza "No Ban
   assert.equal(action.account?.name, 'Nubank');
 });
 
-test('sem conta Nubank cadastrada, a proposta de criação usa o nome canônico "Nubank", nunca "No Bank"', () => {
+// Despesa nunca mais propõe criar conta (WILL_CREATE colapsa para MISSING
+// em financialIntentAction.js) -- a mecânica de nome canônico na proposta
+// de criação só continua tendo algo a proteger em ajuste de saldo/
+// transferência, que ainda aceitam WILL_CREATE.
+test('sem conta Nubank cadastrada, a proposta de criação usa o nome canônico "Nubank", nunca "No Bank" (ajuste de saldo)', () => {
   const accountsWithoutNubank = accounts.filter((account) => account.id !== 'account-nubank');
   const accountTypes = [{ code: 'checking', name: 'Conta corrente', is_active: true }];
   const action = buildFinancialIntentAction({
-    parsed: parseFinancialText('Paguei 40 reais no mercado pelo No Bank.', { referenceDate: REFERENCE_DATE }),
+    parsed: parseFinancialText('Meu saldo é 40 reais pelo No Bank.', { referenceDate: REFERENCE_DATE }),
     accounts: accountsWithoutNubank,
     accountTypes,
     categories,
     referenceDate: REFERENCE_DATE,
   });
+  assert.equal(action.transactionType, 'adjustment');
   assert.equal(action.accountResolution?.status, 'will_create');
   assert.equal(action.proposedAccount?.name, 'Nubank');
   assert.notEqual(action.proposedAccount?.name, 'No Bank');
@@ -939,59 +997,39 @@ test('nenhum ID é inventado: a conta resolvida sempre é uma conta real da list
 });
 
 // ============================================================================
-// BLOCO UNI 1A -- INTEGRAÇÃO PONTA A PONTA (Parte 7 do bloco): "Gastei R$ 50
-// no mercado" sem conta informada -> Uni pergunta SOMENTE a conta -> resposta
-// curta "Nubank" -> ready com categoria Alimentação já resolvida via alias
-// determinístico (sem IA) -> confirmação -> execução ÚNICA via
-// executeFinancialIntentAction (RPC mockada) -> nenhuma chamada de rede/IA
-// em nenhum momento deste fluxo, mesmo com VITE_UNI_LLM_ENABLED=false
-// (aiInference nunca é passado nem necessário aqui).
+// BLOCO UNI 1A -- INTEGRAÇÃO PONTA A PONTA (Parte 7 do bloco, ATUALIZADO
+// pelo BLOCO CONTA-OPCIONAL): "Gastei R$ 50 no mercado" sem conta informada
+// -> despesa não bloqueia mais por conta, fica pronta DIRETO, com categoria
+// Alimentação já resolvida via alias determinístico (sem IA) -> confirmação
+// -> execução ÚNICA via executeFinancialIntentAction (RPC mockada) ->
+// nenhuma chamada de rede/IA em nenhum momento deste fluxo, mesmo com
+// VITE_UNI_LLM_ENABLED=false (aiInference nunca é passado nem necessário
+// aqui).
 // ============================================================================
 
-test('BLOCO UNI 1A: fluxo completo "Gastei R$ 50 no mercado" -> pergunta conta -> "Nubank" -> ready com Alimentação via alias -> confirmação -> execução única -- sem IA', async () => {
+test('BLOCO UNI 1A: fluxo completo "Gastei R$ 50 no mercado" -> já fica ready sem perguntar conta, com Alimentação via alias -> confirmação -> execução única -- sem IA', async () => {
   const parsed = parseFinancialText('Gastei R$ 50 no mercado.', { referenceDate: REFERENCE_DATE });
-  const firstAction = buildFinancialIntentAction({
+  const action = buildFinancialIntentAction({
     parsed,
     accounts: EXPENSE_ACCOUNTS,
     categories: [{ id: 'cat-alimentacao', name: 'Alimentação', category_type: 'expense', is_active: true }],
     referenceDate: REFERENCE_DATE,
   });
 
-  // 1-2. despesa reconhecida, mas SÓ falta a conta -- categoria já veio
-  // resolvida pelo alias determinístico "mercado" -> Alimentação, sem
-  // nenhuma chamada de IA (aiInference nunca foi passado).
-  assert.equal(firstAction.status, 'needs_clarification');
-  assert.equal(firstAction.issues.length, 1);
-  assert.equal(firstAction.issues[0].field, 'account');
-  assert.equal(firstAction.category?.name, 'Alimentação', 'categoria já deveria estar resolvida via alias, mesmo sem a conta ainda');
-  assert.equal(firstAction.amount, 50);
+  // 1-2. despesa reconhecida e JÁ pronta -- categoria resolvida pelo alias
+  // determinístico "mercado" -> Alimentação, sem nenhuma chamada de IA
+  // (aiInference nunca foi passado), e SEM perguntar a conta (account
+  // fica null, nunca inventado).
+  assert.equal(action.status, 'ready');
+  assert.equal(action.issues.length, 0);
+  assert.equal(action.account, null);
+  assert.equal(action.category?.name, 'Alimentação', 'categoria já deveria estar resolvida via alias');
+  assert.equal(action.category?.id, 'cat-alimentacao');
+  assert.equal(action.amount, 50);
+  assert.equal(action.payload.account_id, null);
+  assert.equal(action.payload.amount, 50);
 
-  // 3. resposta curta "Nubank" preenche exatamente o campo pendente (conta),
-  // preservando valor/descrição/categoria do turno anterior.
-  const resolvedInput = resolvePendingActionInput({
-    value: 'Nubank',
-    action: firstAction,
-    accounts: EXPENSE_ACCOUNTS,
-    categories: [{ id: 'cat-alimentacao', name: 'Alimentação', category_type: 'expense', is_active: true }],
-  });
-  assert.equal(resolvedInput.kind, 'correction');
-
-  const readyAction = buildFinancialIntentAction({
-    parsed,
-    accounts: EXPENSE_ACCOUNTS,
-    categories: [{ id: 'cat-alimentacao', name: 'Alimentação', category_type: 'expense', is_active: true }],
-    referenceDate: REFERENCE_DATE,
-    overrides: resolvedInput.overrides,
-  });
-
-  // 4-5. pronta para confirmação, categoria Alimentação real (com ID),
-  // conta Nubank real, um único payload (uma operação).
-  assert.equal(readyAction.status, 'ready');
-  assert.equal(readyAction.account.name, 'Nubank');
-  assert.equal(readyAction.category.id, 'cat-alimentacao');
-  assert.equal(readyAction.payload.amount, 50);
-
-  // 6-7. execução ÚNICA via a mesma RPC atômica (mockada) -- confirma que
+  // 3-4. execução ÚNICA via a mesma RPC atômica (mockada) -- confirma que
   // chamar duas vezes com o MESMO clientOperationId nunca dispara duas
   // chamadas reais (idempotência já garantida pelo handler mockado abaixo).
   let rpcCallCount = 0;
@@ -999,18 +1037,18 @@ test('BLOCO UNI 1A: fluxo completo "Gastei R$ 50 no mercado" -> pergunta conta -
     rpcCallCount += 1;
     return {
       data: {
-        transaction_id: 'tx-1', account_id: 'account-nubank',
+        transaction_id: 'tx-1', account_id: null,
         account_created: false, account_reactivated: false, idempotent_replay: false,
       },
       error: null,
     };
   };
-  const result = await executeFinancialIntentAction(readyAction, { executeAtomicAction });
+  const result = await executeFinancialIntentAction(action, { executeAtomicAction });
   assert.equal(result.error, null);
   assert.equal(result.data.transaction_id, 'tx-1');
   assert.equal(rpcCallCount, 1, 'execução deveria acontecer exatamente uma vez');
 
-  // 8. nenhuma chamada de IA em nenhum momento: aiInference nunca foi
+  // 5. nenhuma chamada de IA em nenhum momento: aiInference nunca foi
   // passado a resolveFinancialCategory/buildFinancialIntentAction em todo o
   // fluxo -- o teste em si já é a prova (não existe nenhum mock/stub de
   // rede para IA aqui, e o resultado final não depende de nenhum).
@@ -1092,8 +1130,11 @@ test('BUG REAL: a decisão de intenção chega à ação final (buildFinancialIn
     parsed, accounts, categories, referenceDate: REFERENCE_DATE,
     overrides: { intentDecision: 'register_income' },
   });
+  // Receita não bloqueia mais por conta (BLOCO CONTA-OPCIONAL) -- sem
+  // categoria informada para "Tenho R$ 1.000.", a próxima pendência real é
+  // a categoria, nunca a conta.
   assert.equal(asIncome.status, 'needs_clarification');
-  assert.equal(asIncome.issues[0].field, 'account');
+  assert.equal(asIncome.issues[0].field, 'category');
 
   const asBalance = buildFinancialIntentAction({
     parsed, accounts, categories, referenceDate: REFERENCE_DATE,

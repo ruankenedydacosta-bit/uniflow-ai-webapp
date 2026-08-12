@@ -252,7 +252,19 @@ export function buildFinancialIntentAction({
     ACCOUNT_RESOLUTION_STATUS.RESOLVED,
     ACCOUNT_RESOLUTION_STATUS.WILL_CREATE,
   ].includes(accountResult.status);
-  if (!accountIsReady) {
+  // BLOCO CONTA-OPCIONAL: entrada/despesa nunca mais bloqueiam por causa da
+  // conta -- meses de atrito real vinham daqui (resolução de conta por texto
+  // falado/transcrito é inerentemente instável: nome ambíguo, conta
+  // arquivada, homônimo). "Gastei 350 de combustível" agora salva direto com
+  // account_id null; se o usuário citar uma conta reconhecível ("no
+  // Nubank"), ela ainda é usada quando resolve sem ambiguidade -- só deixa
+  // de ser um requisito. Transferência (a seguir) e ajuste de saldo
+  // continuam exigindo conta: uma transferência sem origem/destino ou um
+  // ajuste sem a conta cujo saldo muda não tem significado, então essas
+  // duas operações preservam o comportamento anterior.
+  const accountIsBlocking = !accountIsReady
+    && (transactionType === 'transfer' || isAdjustment);
+  if (accountIsBlocking) {
     const issueCode = accountResult.status === ACCOUNT_RESOLUTION_STATUS.ARCHIVED_CONFLICT
       ? 'account_archived'
       : accountResult.status === ACCOUNT_RESOLUTION_STATUS.AMBIGUOUS
@@ -262,6 +274,17 @@ export function buildFinancialIntentAction({
           : 'account_required';
     issues.push(createIssue('account', issueCode, accountResult.candidates));
   }
+  // Para receita/despesa, só aceitamos o resultado da resolução quando ele
+  // já é uma conta REAL e existente (RESOLVED): nunca dispara criação
+  // implícita de conta a partir de um nome mal ouvido/transcrito (WILL_CREATE
+  // criaria uma conta nova sem confirmação nenhuma, já que essa operação não
+  // bloqueia mais) e nunca carrega um estado de ambiguidade/arquivada que a
+  // execução tentaria resolver sozinha -- nesses casos o lançamento
+  // simplesmente segue sem conta.
+  const accountRequiredForType = transactionType === 'transfer' || isAdjustment;
+  const accountResultForPayload = accountRequiredForType || accountResult.status === ACCOUNT_RESOLUTION_STATUS.RESOLVED
+    ? accountResult
+    : { status: ACCOUNT_RESOLUTION_STATUS.MISSING, candidates: [], explanation: null };
   if (transactionType === 'transfer') {
     const destinationReady = destinationResult?.status === ACCOUNT_RESOLUTION_STATUS.RESOLVED;
     if (!destinationReady) {
@@ -314,7 +337,7 @@ export function buildFinancialIntentAction({
   const payload = issues.length
     ? null
     : {
-        account_id: accountResult.account?.id ?? null,
+        account_id: accountResultForPayload.account?.id ?? null,
         destination_account_id:
           transactionType === 'transfer' ? destinationResult?.account?.id ?? null : null,
         category_id: isAdjustment ? null : categoryResult.category?.id ?? null,
@@ -334,11 +357,11 @@ export function buildFinancialIntentAction({
     amount: Number.isFinite(amount) && amount > 0 ? roundMoney(amount) : null,
     date: isValidDate(date) ? date : null,
     description,
-    account: accountResult.account ?? null,
+    account: accountResultForPayload.account ?? null,
     destinationAccount: transactionType === 'transfer' ? destinationResult?.account ?? null : null,
     clientOperationId: overrides.clientOperationId ?? null,
-    accountResolution: accountResult,
-    proposedAccount: accountResult.proposedAccount ?? null,
+    accountResolution: accountResultForPayload,
+    proposedAccount: accountResultForPayload.proposedAccount ?? null,
     requestedAccountName: overrides.accountName ?? parsed.entities.account ?? null,
     requestedDestinationAccountName: transactionType === 'transfer'
       ? overrides.destinationAccountName ?? parsed.entities.destinationAccount ?? null
