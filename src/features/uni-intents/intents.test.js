@@ -87,6 +87,23 @@ test('BUG REAL: "Eu fiz uma compra de 200 reais no mercado." é reconhecida como
   assert.equal(bare.intent, 'register_expense');
   assert.equal(bare.entities.amount, 200);
 });
+// BUG REAL EM PRODUÇÃO: classifyIntent já reconhecia "fiz/realizei uma
+// compra" como despesa (teste acima), mas a lista de verbos usada só para
+// LIMPAR a descrição (entityExtractor.js) nunca ganhou o mesmo padrão -- a
+// frase inteira ficava colada na descrição ("Fiz Uma Compra" em vez de
+// "Mercado"/nada). Sem nenhum outro sinal, a Uni chegava a PROPOR CRIAR uma
+// categoria chamada literalmente "Fiz Uma Compra" em vez de perguntar a
+// categoria normalmente.
+test('BUG REAL: "Fiz uma compra de 200 reais no mercado." nunca deixa "Fiz" ou "compra" grudados na descrição', () => {
+  const comMercado = parseFinancialText('Fiz uma compra de 200 reais no mercado.');
+  const semMercado = parseFinancialText('Fiz uma compra de vinte reais.');
+
+  assert.equal(comMercado.entities.category, 'Alimentação');
+  assert.doesNotMatch(comMercado.entities.description ?? '', /fiz|compra/i);
+  // Sem nenhum substantivo reconhecível na frase, a descrição fica vazia
+  // (null) -- nunca a frase inteira usada como se fosse um nome de verdade.
+  assert.equal(semMercado.entities.description, null);
+});
 // BUG REAL EM PRODUÇÃO: "Coloca pra mim aí setenta e cinco reais no
 // mercado." caía em intent 'question' -- só o passado "coloquei" estava
 // coberto, nunca o imperativo "coloca/bota/poe" (forma de pedido comum:
@@ -106,6 +123,13 @@ test('BUG REAL: "Coloca pra mim aí setenta e cinco reais no mercado." é reconh
   assert.equal(bota.entities.amount, 50);
   assert.equal(poe.intent, 'register_expense');
   assert.equal(poe.entities.amount, 20);
+  // BUG REAL EM PRODUÇÃO: só a classificação de intenção reconhecia
+  // "coloca/bota/poe" -- a limpeza de descrição (entityExtractor.js) tinha
+  // sua própria lista de verbos, sem os mesmos, e "Bota"/"Poe" ficavam
+  // colados na descrição.
+  assert.doesNotMatch(bota.entities.description ?? '', /^bota\b/i);
+  assert.doesNotMatch(poe.entities.description ?? '', /^poe\b/i);
+  assert.equal(bota.entities.description, 'Gasolina');
 });
 // ============================================================================
 // BUG REAL (BUG 2): "Entrou mil reais." e variações. O padrão antigo só

@@ -437,10 +437,20 @@ function extractDescription(input, intent, account, destinationAccount = null) {
     );
   }
   description = description
+    // BUG REAL EM PRODUCAO: classifyIntent (intentClassifier.js) reconhece
+    // "fiz/realizei uma compra" como despesa, mas essa lista de verbos aqui
+    // (usada só para LIMPAR a descricao) nunca ganhou o mesmo padrão -- a
+    // frase inteira ficava colada na descricao ("Fiz Uma Compra" em vez do
+    // que vinha depois), e sem nenhum outro sinal a Uni chegava a propor
+    // criar uma categoria chamada literalmente "Fiz Uma Compra".
+    .replace(/^(?:eu\s+)?(?:fiz|realizei)\s+(?:uma\s+)?compra\b/iu, '')
     // BUG REAL: "coloquei/botei/foi/lancei/lança/registra/anota" nao eram
     // reconhecidos aqui -- a descricao ficava com o verbo grudado
     // ("Coloquei De Gasolina" em vez de "Gasolina").
-    .replace(/^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|recebi|ganhei|faturei|entrou|caiu|entraram|cairam|custou|saiu|coloquei|botei|foi|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/iu, '')
+    // BUG REAL EM PRODUCAO: mesmo problema para o imperativo "coloca/bota/
+    // poe" ("coloca aí 75 reais no mercado" -- só "coloquei", passado,
+    // estava coberto aqui).
+    .replace(/^(?:eu\s+)?(?:paguei|gastei|comprei|abasteci|recebi|ganhei|faturei|entrou|caiu|entraram|cairam|custou|saiu|coloquei|botei|coloca|bota|poe|foi|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/iu, '')
     .replace(/^(?:quero\s+)?(?:juntar|guardar|economizar)\b/iu, '')
     // Substantivo genérico de lançamento ("uma despesa de", "um gasto de")
     // que sobra apos remover o verbo imperativo -- nao descreve a compra em
