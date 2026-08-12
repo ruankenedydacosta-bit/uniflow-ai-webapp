@@ -3387,6 +3387,24 @@ test('Sprint 1: falha/ausência de texto fraseado preserva o result original (fa
   assert.match(fnBody, /if \(!text\) \{[\s\S]{0,200}return result;/);
 });
 
+// BUG REAL EM PRODUCAO: attemptCategoryInference chamava
+// financialConversation.provideInput({ aiInference }) sem passar o `parsed`
+// recém-calculado. provideInput/correct (useUniConversation.js) lia
+// state.parsed do useReducer, que ainda refletia o turno ANTERIOR (ou null,
+// no primeiro turno) porque esta chamada roda no mesmo tick do
+// interpret() que a originou, antes de qualquer re-render -- o resultado
+// (a categoria já inferida, ou a pergunta certa) era descartado, e a
+// resposta caía no fallback genérico "Preciso de mais detalhes antes de
+// preparar essa ação.".
+test('BUG REAL: attemptCategoryInference passa result.parsed para provideInput -- nunca depende só de state.parsed (corrida com o commit do useReducer)', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const fnBody = page.slice(
+    page.indexOf('async function attemptCategoryInference'),
+    page.indexOf('// Sprint 1 (IA Conversacional)'),
+  );
+  assert.match(fnBody, /financialConversation\.provideInput\(\{ aiInference: inference \}, result\.parsed\);/);
+});
+
 test('Sprint 1: publishConversationResultWithInference encadeia categoria (Fase D) depois fraseio natural, nessa ordem', async () => {
   const page = await source('UniChatPage.jsx');
   const fnBody = page.slice(

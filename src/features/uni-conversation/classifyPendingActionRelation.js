@@ -75,6 +75,23 @@ function looksLikeNewAccountAnswer(text) {
   return /^(?:(?:foi|paguei|recebi|entrou)\s+(?:na|no|pela|pelo)\s+)?(?:conta\s+)?(?:banco|carteira|dinheiro|cart[aã]o)\b/i.test(normalized);
 }
 
+// BUG REAL EM PRODUCAO: "Fiz uma compra de vinte reais no mercado." (resposta
+// à pendência de categoria) não batia em nenhuma categoria conhecida
+// (findIdentityMatch) nem tinha "?"/pronome interrogativo -- caía direto no
+// fallback AMBIGUOUS genérico ("Você quer continuar registrando esse
+// lançamento ou prefere falar sobre outra coisa agora?"), um beco sem saída
+// que nunca dava ao usuário a chance de propor "mercado" como categoria
+// nova. Faltava para categoria o mesmo tratamento que já existe para conta
+// (looksLikeNewAccountAnswer, acima): texto curto e sem sinal de pergunta é
+// tratado como resposta plausível, o que deixa o fluxo chegar a
+// startCategoryDependency (UniChatPage.jsx) e propor criar a categoria --
+// nunca um beco sem saída.
+function looksLikeNewCategoryAnswer(text) {
+  const normalized = normalizeFinancialText(text).replace(/[.!]+$/g, '').trim();
+  if (!normalized || normalized.length > 40 || normalized.split(/\s+/).length > 5) return false;
+  return true;
+}
+
 function resolvePendingField(pendingAction) {
   return pendingAction?.field
     ?? pendingAction?.issues?.[0]?.field
@@ -193,6 +210,20 @@ export function classifyPendingActionRelation({
       confidence: 0.85,
       normalizedInput: text.replace(/[.!]+$/g, '').trim(),
       reason: 'plausible_new_account_name',
+      suggestedClarification: null,
+    };
+  }
+
+  // Mesmo raciocínio acima, para categoria: texto curto sem "?" e sem match
+  // conhecido ainda pode ser um nome de categoria nova legítimo ("Mercado",
+  // "no mercado", "Pet") -- não é motivo para tratar como ambíguo/mudança
+  // de assunto.
+  if (CATEGORY_FIELDS.has(field) && looksLikeNewCategoryAnswer(text)) {
+    return {
+      relation: PENDING_ACTION_RELATIONS.ANSWERS_PENDING,
+      confidence: 0.7,
+      normalizedInput: text.replace(/[.!]+$/g, '').trim(),
+      reason: 'plausible_new_category_name',
       suggestedClarification: null,
     };
   }

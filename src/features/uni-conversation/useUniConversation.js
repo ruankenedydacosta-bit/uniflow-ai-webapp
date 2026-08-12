@@ -159,16 +159,28 @@ export function useUniConversation({
     return { handled: true, parsed: parsedForAction, action, response, memory };
   }, [accounts, buildAction, categories, profileId, referenceDate, resolveParsedMemory, responseOptions]);
 
-  const correct = useCallback((overrides) => {
-    if (!state.parsed) return null;
+  // BUG REAL EM PRODUCAO: quando provideInput/correct é chamado NO MESMO
+  // turno em que interpret() acabou de rodar (ex.: attemptCategoryInference
+  // em UniChatPage.jsx, que faz isso de forma síncrona logo após o
+  // interpret original, antes de qualquer re-render) -- state.parsed ainda
+  // reflete o turno ANTERIOR (ou null, no primeiro turno da conversa), não
+  // o parsed que acabou de ser calculado por interpret(). O parametro
+  // parsedOverride deixa quem já tem o valor fresco (o retorno de
+  // interpret()) passá-lo explicitamente, sem depender do commit do
+  // useReducer. Chamadas normais (resposta a uma pendência de turno
+  // anterior, já com um re-render de por meio) continuam usando
+  // state.parsed via fallback -- nenhum comportamento existente muda.
+  const correct = useCallback((overrides, parsedOverride) => {
+    const parsed = parsedOverride ?? state.parsed;
+    if (!parsed) return null;
     overridesRef.current = { ...overridesRef.current, ...overrides };
-    const action = buildAction(state.parsed, overridesRef.current);
+    const action = buildAction(parsed, overridesRef.current);
     const response = action.status === 'ready'
       ? buildConfirmationResponse(action, responseOptions)
       : buildClarificationResponse(action, responseOptions);
     dispatch({
       type: action.status === 'ready' ? 'AWAIT_CONFIRMATION' : 'NEEDS_CLARIFICATION',
-      parsed: state.parsed,
+      parsed,
       action,
       response: response.text,
       memory: state.memory,
@@ -236,7 +248,7 @@ export function useUniConversation({
     return response;
   }, [responseOptions]);
 
-  const provideInput = useCallback((overrides) => correct(overrides), [correct]);
+  const provideInput = useCallback((overrides, parsedOverride) => correct(overrides, parsedOverride), [correct]);
 
   const restore = useCallback((snapshot) => {
     if (!snapshot?.action || !['ready', 'needs_clarification'].includes(snapshot.action.status)) {

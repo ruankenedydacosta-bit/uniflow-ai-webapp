@@ -642,7 +642,17 @@ export default function UniChatPage({ variant = 'full' }) {
       return result;
     }
 
-    return financialConversation.provideInput({ aiInference: inference });
+    // BUG REAL EM PRODUCAO: este provideInput roda no MESMO turno em que
+    // interpret() acabou de disparar o dispatch de NEEDS_CLARIFICATION --
+    // antes de qualquer re-render, o financialConversation.state ainda
+    // reflete o turno anterior (ou null, no primeiro turno da conversa), o
+    // que fazia correct() abortar com `if (!state.parsed) return null`.
+    // O resultado nulo se propagava até publishConversationResult(null),
+    // que caía no fallback genérico "Preciso de mais detalhes antes de
+    // preparar essa ação." -- descartando a categoria já resolvida
+    // (determinística OU pela IA) sem nenhum motivo real. Passar
+    // result.parsed explicitamente evita depender do commit do useReducer.
+    return financialConversation.provideInput({ aiInference: inference }, result.parsed);
   }
 
   // Sprint 1 (IA Conversacional) -- ponte "fato estruturado -> frase

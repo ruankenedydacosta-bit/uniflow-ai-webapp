@@ -109,6 +109,33 @@ test('"Alimentação" responde à pendência de categoria', () => {
   assert.equal(result.normalizedInput, 'Alimentação');
 });
 
+// BUG REAL EM PRODUCAO: "Fiz uma compra de vinte reais no mercado."
+// respondendo a uma pendência de categoria caía no fallback AMBIGUOUS
+// genérico ("Você quer continuar registrando esse lançamento ou prefere
+// falar sobre outra coisa agora?") em vez de seguir para a proposta de
+// criar a categoria -- só conta tinha esse tratamento (looksLikeNewAccountAnswer).
+test('categoria ainda inexistente responde à pendência para permitir a subação de criação (mesmo padrão já usado para conta)', () => {
+  const result = classifyPendingActionRelation({
+    pendingAction: pendingCategory(),
+    userText: 'Mercado',
+    availableCategories: CATEGORIES,
+  });
+  assert.equal(result.relation, PENDING_ACTION_RELATIONS.ANSWERS_PENDING);
+  assert.equal(result.normalizedInput, 'Mercado');
+  assert.equal(result.reason, 'plausible_new_category_name');
+  assert.equal(result.suggestedClarification, null);
+});
+
+test('caso real: despesa aguarda categoria, "no mercado" não bate em nenhuma categoria conhecida mas segue para criação sem cair na pergunta genérica', () => {
+  const result = classifyPendingActionRelation({
+    pendingAction: pendingCategory(),
+    userText: 'no mercado',
+    availableCategories: CATEGORIES,
+  });
+  assert.equal(result.relation, PENDING_ACTION_RELATIONS.ANSWERS_PENDING);
+  assert.equal(result.suggestedClarification, null);
+});
+
 test('"Foi ontem" responde à pendência de data', () => {
   const result = classifyPendingActionRelation({
     pendingAction: pendingDate(),
