@@ -340,7 +340,7 @@ Regras obrigatorias:
 - "account"/"category" devem ser o texto MENCIONADO pelo usuario (ex.: "Nu", "mercado") -- nunca invente um nome que nao apareceu na frase ou na memoria da conversa fornecida.
 - "period"/"comparisonPeriod" devem ser a EXPRESSAO TEMPORAL como o usuario disse (ex.: "este mes", "mes passado", "julho") -- nunca converta para datas, nunca calcule intervalos.
 - "amount" so quando um valor monetario aparecer explicitamente na frase.
-- Use "needs_clarification" quando a intencao for financeira mas faltar informacao essencial (ex.: qual conta, qual periodo) -- "clarificationQuestion" deve ser curta, natural e especifica (nunca generica como "nao entendi").
+- Use "needs_clarification" quando a intencao for financeira mas faltar informacao essencial (ex.: qual periodo) -- "clarificationQuestion" deve ser curta, natural e especifica (nunca generica como "nao entendi"). CONTA-OPCIONAL: para "create_expense"/"create_income", conta NUNCA e informacao essencial -- nunca use "needs_clarification" so por falta de conta nessas duas intencoes (deixe "account" null quando nao mencionada).
 - Use "not_financial" para conversa social, agradecimentos, duvidas sobre o produto ou qualquer coisa sem relacao com dinheiro.
 - Use "unsupported" para uma acao financeira real que a Uni nao pode fazer (ex.: excluir conta, mudar senha).
 - "suggestedTool" so pode ser um destes nomes, ou null: get_financial_summary, get_expense_breakdown, compare_financial_periods, get_goal_progress, get_account_summary, get_recurring_expenses.
@@ -674,6 +674,7 @@ Responda SOMENTE com um objeto JSON valido, sem nenhum texto antes ou depois, se
 Regras obrigatorias:
 - "temporary_id" e unico dentro do array (ex.: "op_1", "op_2").
 - "source_account_reference"/"destination_account_reference"/"category_reference" sao SEMPRE nomes textuais (iguais aos enviados na lista de contas/categorias disponiveis, ou um nome novo plausivel) -- NUNCA um ID, NUNCA invente um identificador tecnico.
+- CONTA-OPCIONAL: para "expense", "income", "installment_purchase", "recurring_expense" e "recurring_income", a conta (source_account_reference) e SEMPRE OPCIONAL -- nunca use "clarification_required" nem "missing_fields" por causa dela, mesmo que nenhuma conta tenha sido mencionada na frase. Deixe "source_account_reference" null quando o usuario nao mencionar uma conta reconhecivel; a operacao continua indo para "operations" normalmente, com confidence baseada nos demais campos. So pergunte sobre conta quando a operacao for "transfer" (que exige origem E destino) -- nesse caso, e so nesse, conta pode ser motivo de "clarification_required".
 - Use "transfer" apenas quando origem E destino estiverem claros e forem contas diferentes. Se nao tiver certeza de origem ou destino, use decision "clarification_required" e pergunte objetivamente.
 - Use "installment_purchase" quando houver mencao explicita a parcelas -- preencha "installments" com count, installment_amount e total_amount consistentes (total = count * parcela, dentro de poucos centavos de arredondamento). Se so o total ou so a parcela for dito, calcule o outro valor.
 - Se o valor de R$ 350 puder ser tanto o total quanto a parcela, e nao houver como decidir, use "clarification_required" e pergunte se e o valor de cada parcela ou o total.

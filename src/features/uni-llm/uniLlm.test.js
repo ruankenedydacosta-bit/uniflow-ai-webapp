@@ -211,6 +211,29 @@ test('nenhuma chave hardcoded no frontend e credencial so na Edge Function', () 
   assert.doesNotMatch(edge, /VITE_/);
 });
 
+// BUG REAL EM PRODUCAO: o cliente parou de exigir conta em receita/despesa
+// (CONTA-OPCIONAL, financialIntentAction.js), mas o prompt do fallback de IA
+// (financial_plan e financial_intent, usado quando o parser deterministico
+// nao classifica a frase sozinho -- ex.: verbo financeiro no meio da frase,
+// "Passei no mercado e comprei duzentos reais de comida.") nunca foi
+// atualizado: sem instrucao explicita, a IA seguia perguntando a conta por
+// conta propria, contornando a correcao inteira do lado do cliente.
+test('BUG REAL: prompts da Edge Function (financial_plan e financial_intent) nunca pedem conta para despesa/receita', () => {
+  const edge = readFileSync(new URL('../../../supabase/functions/uni-chat-llm/index.ts', import.meta.url), 'utf8');
+  const planBlock = edge.slice(
+    edge.indexOf('const FINANCIAL_PLAN_INSTRUCTIONS'),
+    edge.indexOf('type FinancialPlanNamedOption'),
+  );
+  assert.match(planBlock, /CONTA-OPCIONAL:.*expense.*income.*conta.*OPCIONAL/is);
+  assert.match(planBlock, /nunca use "clarification_required" nem "missing_fields" por causa dela/);
+
+  const intentBlock = edge.slice(
+    edge.indexOf('const FINANCIAL_INTENT_INSTRUCTIONS'),
+    edge.indexOf('type FinancialIntentOption'),
+  );
+  assert.match(intentBlock, /CONTA-OPCIONAL:.*create_expense.*create_income.*conta NUNCA e informacao essencial/is);
+});
+
 test('Edge Function do chat restringe CORS pela allowlist oficial e nunca usa wildcard', () => {
   const edge = readFileSync(new URL('../../../supabase/functions/uni-chat-llm/index.ts', import.meta.url), 'utf8');
   assert.match(edge, /Deno\.env\.get\('APP_ALLOWED_ORIGINS'\)/);
