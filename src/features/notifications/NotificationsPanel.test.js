@@ -48,10 +48,16 @@ test('estado vazio tem ícone, título e orientação útil sem inventar notific
   assert.match(content, /Toda informação importante sobre sua conta aparecerá aqui\./);
 });
 
-test('itens reais exibem indicador visual por categoria', async () => {
+// NOTIF2 (ajuste visual): o ícone de tipo ("□" etc, um quadrado ao lado do
+// nome da categoria) foi removido -- ele duplicava a informação já exibida
+// em texto por .itemType e brigava visualmente com o botão de dispensar
+// (X sobreposto de forma estranha). O tipo continua indicado só por texto.
+test('itens reais exibem o tipo por texto (itemType/getNotificationTypeLabel), sem ícone de tipo separado', async () => {
   const content = await source('NotificationsPanel.jsx');
-  assert.match(content, /const TYPE_ICONS = Object\.freeze/);
-  assert.match(content, /data-type=\{notification\.type\}/);
+  assert.match(content, /className=\{styles\.itemType\}/);
+  assert.doesNotMatch(content, /TYPE_ICONS/);
+  assert.doesNotMatch(content, /styles\.itemIcon/);
+  assert.doesNotMatch(content, /data-type=\{notification\.type\}/);
 });
 
 test('clicar num item nao lido chama onMarkAsRead; clicar num ja lido nao chama de novo', async () => {

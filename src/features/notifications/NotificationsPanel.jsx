@@ -8,15 +8,6 @@ import {
 } from './notificationFormatting.js';
 import styles from './NotificationsPanel.module.css';
 
-const TYPE_ICONS = Object.freeze({
-  financeiro: '↕',
-  metas: '◎',
-  agenda: '□',
-  crm: '◇',
-  sistema: '!',
-  uni: 'U',
-});
-
 // NOTIF2: dispensar uma notificação (nunca o compromisso/registro de
 // origem) -- arrastar pra qualquer lado até o fim some com fade gradiente,
 // igual ao gesto nativo de notificação de celular. DISMISS_MAX_PX é o
@@ -104,9 +95,6 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
         onClick={() => onActivate(notification)}
         aria-label={`${notification.title}${unread ? ' (não lida)' : ''}`}
       >
-        <span className={styles.itemIcon} data-type={notification.type} aria-hidden="true">
-          {TYPE_ICONS[notification.type] ?? '•'}
-        </span>
         <span className={styles.itemTop}>
           <span className={styles.itemStatus}>
             {unread ? <span className={styles.unreadDot} aria-hidden="true" /> : null}
@@ -122,7 +110,10 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
       {/* Dispensa só a notificação -- nunca o compromisso/registro de
           origem (ver notificationsService.js/deleteNotification e a
           migration NOTIF2, que cuida do caso inverso: excluir o
-          compromisso remove a notificação automaticamente via cascade). */}
+          compromisso remove a notificação automaticamente via cascade).
+          Ocupa sozinho o lugar onde antes havia o ícone de tipo (removido
+          -- o tipo já é indicado por texto em .itemType, o quadrado
+          duplicava a informação e brigava visualmente com o X). */}
       <button
         type="button"
         className={styles.itemDismiss}

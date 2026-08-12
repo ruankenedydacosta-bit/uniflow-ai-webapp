@@ -71,7 +71,7 @@
   display: grid;
   gap: var(--uf-space-4);
   width: 100%;
-  padding: var(--uf-space-12) var(--uf-space-12) var(--uf-space-12) 52px;
+  padding: var(--uf-space-12) var(--uf-space-12) var(--uf-space-12) 40px;
   border: 1px solid transparent;
   border-radius: var(--uf-radius-8);
   background: transparent;
@@ -79,21 +79,6 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-}
-
-.itemIcon {
-  position: absolute;
-  top: var(--uf-space-12);
-  left: var(--uf-space-12);
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--uf-radius-full, 999px);
-  background: var(--uf-color-ai-subtle);
-  color: var(--uf-color-primary);
-  font-size: 13px;
-  font-weight: var(--uf-font-weight-semibold);
 }
 
 .item:hover,
@@ -138,26 +123,28 @@
   font-size: var(--uf-text-micro-size);
 }
 
-/* NOTIF2: badge vermelho de dispensar, sobreposto ao canto do ícone de
-   tipo (o "quadradinho" ao lado do nome da categoria) -- sempre visível,
-   nunca só no hover, para funcionar igual em touch. */
+/* NOTIF2: botão de dispensar -- sozinho no lugar onde antes havia o ícone
+   de tipo (removido), centralizado verticalmente com o card inteiro, nunca
+   sobreposto a outro elemento. Sempre visível (nunca só no hover), para
+   funcionar igual em touch. */
 .itemDismiss {
   position: absolute;
-  top: 6px;
-  left: 30px;
+  top: 50%;
+  left: 10px;
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   padding: 0;
-  border: 2px solid var(--uf-color-bg-elevated, var(--uf-app-surface));
+  border: none;
   border-radius: var(--uf-radius-full, 999px);
   background: var(--uf-color-danger);
   color: var(--uf-color-on-primary, #fff);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
   cursor: pointer;
+  transform: translateY(-50%);
 }
 
 .itemDismiss:hover,
