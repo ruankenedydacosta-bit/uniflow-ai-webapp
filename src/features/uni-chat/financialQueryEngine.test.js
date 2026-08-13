@@ -294,18 +294,19 @@ test('saudação + busca financeira usa o restante semântico e encontra a despe
 
 // ── Resolução (Fase 4/6/8) ──────────────────────────────────────────────────
 
-test('saldo por conta responde com o valor real do snapshot e conta nomeada', () => {
+test('consulta antiga de saldo por conta responde com resumo de Entradas/Saídas, sem valor da conta', () => {
   const result = resolveFinancialQuery({
     text: 'quanto tenho na conta Nubank?',
     snapshot: buildSnapshot(),
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /R\$\s*480,50/);
-  assert.match(result.response.text, /Nubank/);
-  assert.match(result.response.highlight, /R\$\s*480,50/);
+  assert.match(result.response.text, /1 entrada/);
+  assert.match(result.response.text, /6 saídas/);
+  assert.doesNotMatch(result.response.text, /480,50|Nubank|saldo|resultado/i);
+  assert.equal(result.response.highlight, null);
 });
 
-test('saldo com contas ambíguas pergunta, nunca escolhe aleatoriamente', () => {
+test('consulta antiga de saldo não expõe contas nem mesmo quando o nome é ambíguo', () => {
   const snapshot = buildSnapshot({
     accounts: [
       { id: 'acc-nubank', name: 'Nubank', current_balance: 500 },
@@ -317,28 +318,28 @@ test('saldo com contas ambíguas pergunta, nunca escolhe aleatoriamente', () => 
     snapshot,
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /Encontrei 2 contas correspondentes/);
-  assert.match(result.response.text, /Qual delas você quer consultar/);
+  assert.match(result.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(result.response.text, /Encontrei 2|Qual delas|saldo/i);
 });
 
-test('conta inexistente é reportada com as contas disponíveis, sem inventar', () => {
+test('consulta antiga de saldo com conta inexistente também usa o resumo público', () => {
   const result = resolveFinancialQuery({
     text: 'quanto tenho na conta Crefisa?',
     snapshot: buildSnapshot(),
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /Não encontrei a conta "Crefisa"/);
-  assert.match(result.response.text, /Nubank/);
-  assert.match(result.response.text, /Itaú/);
+  assert.match(result.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(result.response.text, /Crefisa|Nubank|Itaú|saldo/i);
 });
 
-test('saldo sem conta específica lista as contas e pergunta qual consultar', () => {
+test('saldo sem conta específica entrega resumo público sem listar contas', () => {
   const result = resolveFinancialQuery({
     text: 'quanto tenho nas minhas contas?',
     snapshot: buildSnapshot(),
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /Qual conta você quer consultar/);
+  assert.match(result.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(result.response.text, /Qual conta|saldo/i);
 });
 
 test('última saída responde com descrição, valor, conta e data reais', () => {
@@ -503,15 +504,15 @@ test('referência vaga pede mais informações em vez de chutar', () => {
   assert.match(result.response.text, /Sobre qual movimentação você quer saber/);
 });
 
-test('consulta em espaço empresa mantém a resolução com o mesmo dado', () => {
+test('consulta de saldo no espaço empresa também não expõe balance', () => {
   const result = resolveFinancialQuery({
     text: 'quanto tenho na conta Itaú?',
     snapshot: buildSnapshot(),
     mode: 'empresa',
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /R\$\s*260,00/);
-  assert.match(result.response.text, /Itaú/);
+  assert.match(result.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(result.response.text, /260,00|Itaú|saldo|resultado/i);
 });
 
 test('estilo simple condensa respostas em linha única', () => {
@@ -662,13 +663,16 @@ test('Fase 1: "O total, de todas as contas." nunca é tratada como busca de tran
   assert.deepEqual(result, { handled: false });
 });
 
-test('Fase 1: "O saldo total." nunca é tratada como busca de transação por descrição', () => {
+test('Fase 1: "O saldo total." é redirecionado ao resumo público, nunca a busca de transação', () => {
   const result = resolveFinancialQuery({
     text: 'O saldo total.',
     snapshot: buildSnapshot(),
     referenceDate: REFERENCE_DATE,
   });
-  assert.deepEqual(result, { handled: false });
+  assert.equal(result.handled, true);
+  assert.equal(result.queryType, 'account_balance');
+  assert.match(result.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(result.response.text, /saldo|resultado/i);
 });
 
 test('Fase 1: extractDescriptionKeywords nunca extrai "total"/"todas"/"todos" como palavra de busca', () => {

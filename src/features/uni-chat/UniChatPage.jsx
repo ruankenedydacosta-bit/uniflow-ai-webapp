@@ -178,8 +178,10 @@ import {
 } from './mockData';
 import { SIMPLIFIED_ROUTES, SimplifiedHomeView } from '../simplified-app/index.js';
 import {
+  buildPublicMovementSummaryResponse,
+  enforcePublicFinancialResponsePolicy,
+  isPublicFinancialSummaryRequest,
   isRetiredPublicBalanceRequest,
-  PUBLIC_BALANCE_RETIREMENT_TEXT,
 } from './publicBalanceExperience.js';
 import { useOptionalSimplifiedProduct } from '../simplified-app/useSimplifiedProduct.js';
 import {
@@ -2624,8 +2626,13 @@ export default function UniChatPage({ variant = 'full' }) {
   // oficial (buildMessage) — nenhum caminho de resposta fala por fora.
   const buildGuidedUniMessage = useCallback((text, messageOptions = {}) => {
     const guidedText = applyEngineGuidanceToResponse(text, messageOptions);
-    return buildUniMessage(guidedText, messageOptions);
-  }, [applyEngineGuidanceToResponse]);
+    const publicText = enforcePublicFinancialResponsePolicy({
+      text: guidedText,
+      requestText: lastEngineTurnRef.current?.userMessage?.text ?? '',
+      snapshot: financialContext.snapshot,
+    });
+    return buildUniMessage(publicText, messageOptions);
+  }, [applyEngineGuidanceToResponse, financialContext.snapshot]);
 
   const { createAssistantResponse } = useUniResponsePipeline({
     buildMessage: buildGuidedUniMessage,
@@ -3799,6 +3806,7 @@ export default function UniChatPage({ variant = 'full' }) {
     const declaredIntent = classifyIntent(text).intent;
     const functionalText = stripLeadingConversationalPrefix(text) || text.trim();
     const isRetiredBalanceRequest = isRetiredPublicBalanceRequest(functionalText, declaredIntent);
+    const isPublicFinancialSummary = isPublicFinancialSummaryRequest(functionalText);
     const messageSource = metadata?.source === 'voice' ? 'voice' : 'text';
     setExecutionError(null);
     setAiStatus(AI_STATUS.UNAVAILABLE);
@@ -3832,6 +3840,7 @@ export default function UniChatPage({ variant = 'full' }) {
         looksLikeFreshFinancialStatement(functionalText)
         || looksLikeFreshBalanceStatement(functionalText)
         || isRetiredBalanceRequest
+        || isPublicFinancialSummary
         || ACTION_STATEMENT_INTENTS.has(declaredIntent)
       );
     if (shouldAbandonAgendaForFinancial) {
@@ -3890,10 +3899,17 @@ export default function UniChatPage({ variant = 'full' }) {
     lastEngineComparisonRef.current = null;
     lastCognitivePipelineSnapshotRef.current = null;
     lastFinancialReasoningResultRef.current = null;
-    if (isRetiredBalanceRequest) {
+    if (isRetiredBalanceRequest || isPublicFinancialSummary) {
       if (hasPendingConversation) abandonStalePendingState();
       syncMessageToSupabase(userMsg);
-      createAssistantResponse(PUBLIC_BALANCE_RETIREMENT_TEXT, { deduplicateNarration: false });
+      createAssistantResponse(
+        buildPublicMovementSummaryResponse({
+          snapshot: financialContext.snapshot,
+          text: functionalText,
+          includeRetirementIntro: isRetiredBalanceRequest,
+        }).text,
+        { deduplicateNarration: false },
+      );
       return;
     }
     // FASE 20.1 — Tool Calling: novo turno zera a deduplicação local (o

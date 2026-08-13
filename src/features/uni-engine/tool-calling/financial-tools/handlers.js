@@ -45,37 +45,39 @@ function flowMonth(snapshot, periodKey) {
   return months.find((month) => month.month === periodKey) ?? null;
 }
 
-// 1. get_financial_summary — resumo do período: saldo, receitas, despesas,
-// fluxo líquido. Nunca inventa dados ausentes (balance null sem contas).
+// 1. get_financial_summary — resumo público por Entradas/Saídas. Saldo e
+// resultado permanecem no snapshot interno, mas nunca entram no ToolResult.
 export function buildGetFinancialSummaryHandler(snapshot) {
   const safeSnapshot = snapshot && typeof snapshot === 'object' ? snapshot : {};
   return ({ arguments: args } = {}) => {
     const validation = validateToolArguments(args, SUMMARY_SCHEMA);
     if (!validation.ok) return toolError('get_financial_summary', validation.errors[0]);
-    let income = 0;
-    let expenses = 0;
-    let result = 0;
+    let income;
+    let expenses;
+    let incomeCount;
+    let expenseCount;
     let period = safeSnapshot.currentMonth ?? null;
     if (validation.args.period && validation.args.period !== safeSnapshot.currentMonth) {
       const month = flowMonth(safeSnapshot, validation.args.period);
       if (!month) return toolError('get_financial_summary', 'PERIOD_NOT_AVAILABLE');
       income = month.income ?? 0;
       expenses = month.expense ?? 0;
-      result = month.result ?? 0;
+      incomeCount = month.incomeCount ?? 0;
+      expenseCount = month.expenseCount ?? 0;
       period = month.month;
     } else {
       income = safeSnapshot.income?.monthly ?? 0;
       expenses = safeSnapshot.expenses?.monthly ?? 0;
-      result = safeSnapshot.result?.monthly ?? 0;
+      incomeCount = safeSnapshot.counts?.monthlyIncome ?? 0;
+      expenseCount = safeSnapshot.counts?.monthlyExpense ?? 0;
     }
-    const balance = safeSnapshot.counts?.accounts > 0 ? (safeSnapshot.balance?.total ?? 0) : null;
     const data = {
       period,
       currency: typeof safeSnapshot.currency === 'string' ? safeSnapshot.currency : 'BRL',
-      balance,
       income,
       expenses,
-      result,
+      incomeCount,
+      expenseCount,
       hasData: safeSnapshot.hasData === true,
     };
     return toolOk('get_financial_summary', data, { period });
@@ -92,7 +94,7 @@ export function buildGetExpenseBreakdownHandler(snapshot) {
     const currentMonth = safeSnapshot.expenses?.currentMonth ?? safeSnapshot.currentMonth ?? null;
     let period = currentMonth;
     let total = safeSnapshot.expenses?.monthly ?? 0;
-    let byCategory = [];
+    let byCategory;
     let categoriesAvailable = true;
     if (validation.args.period && validation.args.period !== currentMonth) {
       const month = flowMonth(safeSnapshot, validation.args.period);
@@ -186,7 +188,6 @@ export function buildGetAccountSummaryHandler(snapshot) {
         ? safeSnapshot.balance.byAccount.map((account) => ({
             name: account.name ?? null,
             type: account.type ?? 'other',
-            balance: account.balance ?? 0,
             liquid: account.liquid === true,
             investment: account.investment === true,
             creditCard: account.creditCard === true,
@@ -201,7 +202,6 @@ export function buildGetAccountSummaryHandler(snapshot) {
       byType[account.type] = (byType[account.type] ?? 0) + 1;
     }
     const data = {
-      totalBalance: safeSnapshot.counts?.accounts > 0 ? (safeSnapshot.balance?.total ?? 0) : null,
       accounts,
       counts: { accounts: accounts.length, byType },
       currency: typeof safeSnapshot.currency === 'string' ? safeSnapshot.currency : 'BRL',

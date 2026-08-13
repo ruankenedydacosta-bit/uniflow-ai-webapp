@@ -159,7 +159,30 @@ test('resumo financeiro so contem agregados (sem ids/descricoes)', () => {
   const serialized = JSON.stringify(summary);
   assert.doesNotMatch(serialized, /secret-id/);
   assert.doesNotMatch(serialized, /sigiloso/);
-  assert.equal(summary.balance, 100);
+  assert.equal('balance' in summary, false);
+  assert.equal('monthlyResult' in summary, false);
+  assert.equal(summary.monthlyIncome, 200);
+  assert.equal(summary.monthlyExpense, 50);
+});
+
+test('contexto público da LLM nunca recebe balance ou resultado legado', () => {
+  const financialSummary = buildSanitizedFinancialSummary({
+    hasData: true,
+    balance: 16624,
+    initialBalance: 50000,
+    currentBalance: 16624,
+    monthlyIncome: 2500,
+    monthlyExpense: 1320,
+    monthlyIncomeCount: 3,
+    monthlyExpenseCount: 7,
+    result: 1180,
+  });
+  const prompt = buildSystemPrompt({ workspaceType: 'personal', financialSummary });
+  assert.equal('balance' in financialSummary, false);
+  assert.equal('monthlyResult' in financialSummary, false);
+  assert.doesNotMatch(prompt, /Saldo atual:\s*R\$|Resultado do mes:\s*R\$|16624|50000|1180/);
+  assert.match(prompt, /Entradas do mes: 3 registros, total R\$ 2500/);
+  assert.match(prompt, /Saidas do mes: 7 registros, total R\$ 1320/);
 });
 
 test('guarda: resposta que parece acao financeira estruturada e descartada', async () => {

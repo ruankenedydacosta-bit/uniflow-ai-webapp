@@ -17,11 +17,19 @@
 // usado para a telemetria do orquestrador (log centralizado no call site).
 import { validateComposedResponse } from './composeNaturalFinancialResponse.js';
 import { validateComposedEntities } from './financialEntityGuardrail.js';
+import {
+  containsForbiddenPublicBalanceNarrative,
+  formatPublicMovementSummaryResponse,
+  PUBLIC_BALANCE_RETIREMENT_TEXT,
+} from './publicBalanceExperience.js';
 
 const MAX_ATTEMPTS = 2;
 
 function isGuardrailValid(text, structuredFacts, { allowedEntityNames, universeEntityNames }) {
   if (typeof text !== 'string' || !text.trim()) return { valid: false, reason: 'INVALID_RESPONSE' };
+  if (containsForbiddenPublicBalanceNarrative(text)) {
+    return { valid: false, reason: 'GUARDRAIL_FAILED_PUBLIC_BALANCE' };
+  }
   const numberCheck = validateComposedResponse(text, structuredFacts);
   if (!numberCheck.valid) return { valid: false, reason: 'GUARDRAIL_FAILED_NUMBER' };
   const entityCheck = validateComposedEntities(text, { allowedEntityNames, universeEntityNames });
@@ -54,9 +62,25 @@ export async function composeFinancialResponseWithLlm({
   universeEntityNames = null,
 } = {}) {
   const hasDeterministicFallback = typeof deterministicText === 'string' && deterministicText.trim().length > 0;
+  const safeDeterministicText = hasDeterministicFallback && containsForbiddenPublicBalanceNarrative(deterministicText)
+    ? (
+        structuredFacts
+        && typeof structuredFacts.income === 'number'
+        && typeof structuredFacts.expenses === 'number'
+          ? formatPublicMovementSummaryResponse({
+              range: structuredFacts.period,
+              income: structuredFacts.income,
+              expenses: structuredFacts.expenses,
+              incomeCount: structuredFacts.incomeCount ?? 0,
+              expenseCount: structuredFacts.expenseCount ?? 0,
+              includeRetirementIntro: true,
+            }).text
+          : PUBLIC_BALANCE_RETIREMENT_TEXT
+      )
+    : deterministicText;
   if (typeof composeFinancialResponseViaLlm !== 'function' || !hasDeterministicFallback) {
     return {
-      text: hasDeterministicFallback ? deterministicText : null,
+      text: hasDeterministicFallback ? safeDeterministicText : null,
       composerUsed: false,
       fallbackReason: 'unsupported',
       attempts: 0,
@@ -117,7 +141,7 @@ export async function composeFinancialResponseWithLlm({
   }
 
   return {
-    text: deterministicText, composerUsed: false, fallbackReason, attempts,
+    text: safeDeterministicText, composerUsed: false, fallbackReason, attempts,
     usage: hasUsage ? { promptTokens, completionTokens } : null,
   };
 }

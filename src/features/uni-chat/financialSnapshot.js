@@ -285,6 +285,8 @@ export function aggregateFinancialRange(snapshot, range) {
     range: range ? { start: range.start, end: range.end, label: range.label } : null,
     transactions,
     transactionCount: transactions.length,
+    incomeCount: transactions.filter((tx) => tx.transaction_type === 'income').length,
+    expenseCount: transactions.filter((tx) => tx.transaction_type === 'expense').length,
     income,
     expense,
     result: roundMoney(income - expense),

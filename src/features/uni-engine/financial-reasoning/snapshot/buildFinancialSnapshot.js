@@ -129,7 +129,7 @@ function sumByType(transactions, transactionType) {
     .reduce((sum, tx) => sum + roundMoney(tx.amount), 0);
 }
 
-function normalizeCategoryName(category, categoriesById) {
+function normalizeCategoryName(category) {
   if (!category) return 'Sem categoria';
   const resolved = category.name;
   return typeof resolved === 'string' && resolved.trim() ? resolved.trim() : 'Sem categoria';
@@ -214,6 +214,8 @@ export function buildFinancialReasoningSnapshot({
       expense,
       result: roundMoney(income - expense),
       transactionCount: monthTransactions.length,
+      incomeCount: monthTransactions.filter((tx) => tx.transaction_type === 'income').length,
+      expenseCount: monthTransactions.filter((tx) => tx.transaction_type === 'expense').length,
     });
   }
 
@@ -280,7 +282,7 @@ export function buildFinancialReasoningSnapshot({
         remainingAmount: 0,
         monthlyAmount: roundMoney(tx.amount),
         categoryId: tx.category_id ?? null,
-        categoryName: normalizeCategoryName(categoriesById.get(tx.category_id), categoriesById),
+        categoryName: normalizeCategoryName(categoriesById.get(tx.category_id)),
         accountId: tx.account_id ?? null,
         accountName: accountsById.get(tx.account_id)?.name ?? null,
         status: tx.status ?? 'completed',
@@ -303,7 +305,7 @@ export function buildFinancialReasoningSnapshot({
       description: tx.description ?? null,
       amount: roundMoney(tx.amount),
       transactionType: tx.transaction_type,
-      categoryName: normalizeCategoryName(categoriesById.get(tx.category_id), categoriesById),
+      categoryName: normalizeCategoryName(categoriesById.get(tx.category_id)),
     }));
 
   // Reservas: alvo derivado (despesa média × meses) e reserva corrente
@@ -347,7 +349,7 @@ export function buildFinancialReasoningSnapshot({
     type: tx.transaction_type,
     amount: roundMoney(tx.amount),
     description: tx.description ?? null,
-    categoryName: normalizeCategoryName(categoriesById.get(tx.category_id), categoriesById),
+    categoryName: normalizeCategoryName(categoriesById.get(tx.category_id)),
     accountName: accountsById.get(tx.account_id)?.name ?? null,
   }));
 
@@ -460,6 +462,8 @@ export function buildFinancialReasoningSnapshot({
     counts: {
       accounts: safeAccounts.length,
       transactions: validTransactions.length,
+      monthlyIncome: currentMonthTransactions.filter((tx) => tx.transaction_type === 'income').length,
+      monthlyExpense: currentMonthTransactions.filter((tx) => tx.transaction_type === 'expense').length,
       goals: goalsNormalized.length,
       creditCards: creditCardsNormalized.length,
       installments: installments.length,

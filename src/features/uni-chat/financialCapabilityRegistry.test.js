@@ -63,18 +63,26 @@ test('executeCapability com snapshot ausente devolve null, nunca lança', () => 
   assert.equal(executeCapability('total_balance', null), null);
 });
 
-test('total_balance retorna o saldo real do snapshot', () => {
+test('total_balance mantém alias interno, mas retorna resumo público sem saldo', () => {
   const result = executeCapability('total_balance', buildSnapshot());
   assert.equal(result.ok, true);
-  assert.equal(result.data.totalBalance, 635.5);
-  assert.match(result.text, /635,5/);
+  assert.equal(result.data.income, 3000);
+  assert.equal(result.data.expenses, 165.5);
+  assert.equal(result.data.incomeCount, 1);
+  assert.equal(result.data.expenseCount, 2);
+  assert.equal('totalBalance' in result.data, false);
+  assert.doesNotMatch(result.text, /saldo|resultado/i);
 });
 
-test('financial_summary retorna receitas/despesas/resultado reais do mês corrente', () => {
+test('financial_summary retorna quantidades e totais de Entradas/Saídas do mês corrente', () => {
   const result = executeCapability('financial_summary', buildSnapshot());
   assert.equal(result.data.income, 3000);
   assert.equal(result.data.expenses, 165.5);
-  assert.equal(result.data.result, 2834.5);
+  assert.equal(result.data.incomeCount, 1);
+  assert.equal(result.data.expenseCount, 2);
+  assert.equal('result' in result.data, false);
+  assert.equal('totalBalance' in result.data, false);
+  assert.doesNotMatch(result.text, /saldo|resultado/i);
 });
 
 // Sprint 4 Ciclo 3 (Bloco 4.5): "mês passado" agora É suportado -- a
@@ -85,7 +93,9 @@ test('financial_summary com "mês passado" agora funciona de verdade (Bloco 4.5)
   assert.equal(result.ok, true);
   assert.equal(result.data.income, 0);
   assert.equal(result.data.expenses, 90);
-  assert.equal(result.data.result, -90);
+  assert.equal(result.data.incomeCount, 0);
+  assert.equal(result.data.expenseCount, 1);
+  assert.equal('result' in result.data, false);
   assert.match(result.text, /90,00/);
 });
 

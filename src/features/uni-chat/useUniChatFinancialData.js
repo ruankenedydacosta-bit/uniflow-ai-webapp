@@ -41,6 +41,10 @@ export function buildFinancialContext({
   const monthlyExpense = monthlyTransactions
     .filter((tx) => tx.transaction_type === 'expense')
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const monthlyIncomeCount = monthlyTransactions
+    .filter((tx) => tx.transaction_type === 'income').length;
+  const monthlyExpenseCount = monthlyTransactions
+    .filter((tx) => tx.transaction_type === 'expense').length;
 
   const balance = workspaceBalance != null
     ? Number(workspaceBalance)
@@ -77,6 +81,8 @@ export function buildFinancialContext({
     balance,
     monthlyIncome,
     monthlyExpense,
+    monthlyIncomeCount,
+    monthlyExpenseCount,
     result,
     recentTransactions,
     expensesByCategory,
@@ -103,6 +109,7 @@ export function useUniChatFinancialData({
   categories,
   workspaceBalance,
   accountBalances,
+  referenceDate = null,
 }) {
   return useMemo(
     () => buildFinancialContext({
@@ -111,7 +118,8 @@ export function useUniChatFinancialData({
       categories,
       workspaceBalance,
       accountBalances,
+      referenceDate,
     }),
-    [accounts, transactions, categories, workspaceBalance, accountBalances],
+    [accounts, transactions, categories, workspaceBalance, accountBalances, referenceDate],
   );
 }
