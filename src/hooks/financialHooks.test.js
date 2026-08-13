@@ -307,13 +307,13 @@ test('handleClose retorna cedo durante mutacao (nao fecha)', async () => {
   );
 });
 
-test('Modal do lancamento bloqueia ESC e overlay durante mutacao', async () => {
+test('Modal do lancamento bloqueia ESC e overlay durante mutacao ou confirmacao destrutiva', async () => {
   const source = await readFile(
     new URL('../pages/financeiro/FinanceTransactionModal.jsx', import.meta.url),
     'utf8',
   );
-  assert.match(source, /closeOnOverlayClick=\{!transactionState\.isMutating\}/);
-  assert.match(source, /closeOnEsc=\{!transactionState\.isMutating\}/);
+  assert.match(source, /closeOnOverlayClick=\{!transactionState\.isMutating && !isDeleteConfirmOpen\}/);
+  assert.match(source, /closeOnEsc=\{!transactionState\.isMutating && !isDeleteConfirmOpen\}/);
 });
 
 test('handleSubmit retorna cedo durante mutacao (guarda explicita, nao depende so do disabled visual)', async () => {

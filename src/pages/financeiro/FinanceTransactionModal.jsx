@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
@@ -7,7 +8,6 @@ import { formatCurrency } from '../../utils/formatters';
 import styles from './FinanceTransactionModal.module.css';
 import {
   CrudRow,
-  DeleteActions,
   FormMessage,
   SelectField,
 } from './FinanceCrudPrimitives';
@@ -90,6 +90,114 @@ const HISTORY_TYPE_LABELS = {
 const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar lançamentos deste espaço.';
 const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir este lançamento.';
 
+function DeleteConfirmationDialog({
+  className,
+  deleteScope,
+  error,
+  hasGroup,
+  isLoading,
+  onCancel,
+  onConfirm,
+  onDeleteScopeChange,
+  open,
+  overlayClassName,
+  transaction,
+}) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    dialogRef.current?.querySelector('button:not(:disabled)')?.focus();
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' && !isLoading) {
+        event.preventDefault();
+        onCancel();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = [...(dialogRef.current?.querySelectorAll('button:not(:disabled), select:not(:disabled)') ?? [])];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isLoading, onCancel, open]);
+
+  if (!open || !transaction) return null;
+
+  return createPortal(
+    <div
+      className={cx(styles.deleteConfirmOverlay, overlayClassName)}
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget && !isLoading) onCancel();
+      }}
+    >
+      <div
+        ref={dialogRef}
+        className={cx(styles.deleteConfirmCard, className)}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+      >
+        <span className={styles.deleteConfirmIcon} aria-hidden="true">!</span>
+        <div className={styles.deleteConfirmCopy}>
+          <h2 id={titleId}>Excluir lançamento?</h2>
+          <p id={descriptionId}>Essa ação não poderá ser desfeita.</p>
+          {transaction.description ? <strong>{transaction.description}</strong> : null}
+        </div>
+
+        {hasGroup ? (
+          <SelectField
+            id="finance-transaction-confirm-delete-scope"
+            label="Quais parcelas deseja excluir?"
+            value={deleteScope}
+            onChange={onDeleteScopeChange}
+            disabled={isLoading}
+          >
+            <option value="only">Somente esta parcela</option>
+            <option value="forward">Esta e as próximas</option>
+            <option value="all">Todas do grupo</option>
+          </SelectField>
+        ) : null}
+
+        <FormMessage>
+          {getFinanceErrorMessage(
+            error,
+            'Não foi possível excluir o lançamento. Tente novamente.',
+          )}
+        </FormMessage>
+
+        <div className={styles.deleteConfirmActions}>
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancelar
+          </Button>
+          <Button variant="danger" loading={isLoading} onClick={onConfirm}>
+            Confirmar exclusão
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 // `className`/`overlayClassName` (opcionais): mesmo padrão aditivo já usado
 // em FinanceAccountModal.jsx -- permitem que o Registros simplificado force
 // a identidade escura oficial sem afetar o uso padrão desta modal em
@@ -117,6 +225,7 @@ function FinanceTransactionModal({
   initialType = 'expense',
   onChanged,
   onClose,
+  onDeleted,
   open,
   showExistingList = true,
   transactionState,
@@ -134,6 +243,7 @@ function FinanceTransactionModal({
   });
   const [editingId, setEditingId] = useState(() => editingTransactionId ?? null);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [pendingDeleteSnapshot, setPendingDeleteSnapshot] = useState(null);
   const [deleteScope, setDeleteScope] = useState('only');
   const [editScope, setEditScope] = useState('only');
   const [duplicateNotice, setDuplicateNotice] = useState(() => Boolean(duplicateFromTransactionId));
@@ -195,11 +305,18 @@ function FinanceTransactionModal({
     ? transactionState.transactions.find((t) => t.id === editingId)
     : null;
   const editingGroupId = editingTransaction?.metadata?.installment_group_id ?? null;
+  const pendingDeleteTransaction = pendingDeleteId
+    ? transactionState.transactions.find((transaction) => transaction.id === pendingDeleteId)
+      ?? pendingDeleteSnapshot
+    : null;
+  const pendingDeleteHasGroup = Boolean(pendingDeleteTransaction?.metadata?.installment_group_id);
+  const isDeleteConfirmOpen = Boolean(pendingDeleteId && pendingDeleteTransaction);
 
   function resetForm() {
     setForm(createEmptyTransactionForm(initialType));
     setEditingId(null);
     setPendingDeleteId(null);
+    setPendingDeleteSnapshot(null);
     setDeleteScope('only');
     setEditScope('only');
     setDuplicateNotice(false);
@@ -208,10 +325,36 @@ function FinanceTransactionModal({
 
   function handleClose() {
     if (transactionState.isMutating) return;
+    if (isDeleteConfirmOpen) {
+      setPendingDeleteId(null);
+      setPendingDeleteSnapshot(null);
+      setDeleteScope('only');
+      setBatchError(null);
+      return;
+    }
     transactionState.clearError();
     setBatchError(null);
     resetForm();
     onClose();
+  }
+
+  function handleRequestDelete(transactionId) {
+    const transaction = transactionState.transactions.find((item) => item.id === transactionId);
+    if (!transaction) return;
+    transactionState.clearError();
+    setBatchError(null);
+    setDeleteScope('only');
+    setPendingDeleteId(transactionId);
+    setPendingDeleteSnapshot(transaction);
+  }
+
+  function handleCancelDelete() {
+    if (transactionState.isMutating) return;
+    transactionState.clearError();
+    setBatchError(null);
+    setDeleteScope('only');
+    setPendingDeleteId(null);
+    setPendingDeleteSnapshot(null);
   }
 
   function handleEdit(transaction) {
@@ -322,6 +465,12 @@ function FinanceTransactionModal({
       }
     }
     await onChanged?.();
+    setPendingDeleteId(null);
+    setPendingDeleteSnapshot(null);
+    if (onDeleted) {
+      await onDeleted(transaction);
+      return;
+    }
     resetForm();
   }
 
@@ -342,16 +491,19 @@ function FinanceTransactionModal({
   );
 
   return (
+    <>
     <Modal
       open={open}
       onClose={handleClose}
-      closeOnOverlayClick={!transactionState.isMutating}
-      closeOnEsc={!transactionState.isMutating}
+      closeOnOverlayClick={!transactionState.isMutating && !isDeleteConfirmOpen}
+      closeOnEsc={!transactionState.isMutating && !isDeleteConfirmOpen}
       title="Lançamentos"
       description="Registre entradas, saídas, transferências e ajustes deste espaço."
       size="xl"
       className={cx(styles.transactionDialog, className)}
       overlayClassName={overlayClassName}
+      aria-hidden={isDeleteConfirmOpen}
+      inert={isDeleteConfirmOpen}
       footer={
         <Button variant="ghost" onClick={handleClose} disabled={transactionState.isMutating}>
           Fechar
@@ -602,62 +754,32 @@ function FinanceTransactionModal({
           </section>
 
           <section className={styles.formBlock} aria-label="Ação">
-          {/* Excluir direto aqui, sem precisar sair da edição e procurar o
-              mesmo lançamento na lista abaixo -- antes só existia lá. */}
-          {editingId && editingTransaction && canDeleteTransaction(editingTransaction) ? (
-            <div className="uf-flex uf-items-center uf-gap-sm uf-flex-wrap">
-              {pendingDeleteId === editingId && editingGroupId ? (
-                <SelectField
-                  id="finance-transaction-edit-delete-scope"
-                  label="Excluir"
-                  value={deleteScope}
-                  onChange={(event) => setDeleteScope(event.target.value)}
-                >
-                  <option value="only">Somente esta parcela</option>
-                  <option value="forward">Esta e as próximas</option>
-                  <option value="all">Todas do grupo</option>
-                </SelectField>
-              ) : null}
-              {/* Botões explícitos (em vez de DeleteActions/variant="ghost")
-                  -- Excluir precisa ser reconhecível como destrutivo antes
-                  mesmo de confirmar, não só depois. */}
-              {pendingDeleteId === editingId ? (
-                <>
-                  <Button variant="outline" onClick={() => setPendingDeleteId(null)} disabled={transactionState.isMutating}>
-                    Cancelar
-                  </Button>
-                  <Button variant="danger" loading={transactionState.isMutating} onClick={() => handleDelete(editingId)}>
-                    Confirmar exclusão
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="danger"
-                  disabled={transactionState.isMutating}
-                  onClick={() => {
-                    setDeleteScope('only');
-                    setPendingDeleteId(editingId);
-                  }}
-                >
-                  Excluir
-                </Button>
-              )}
-            </div>
-          ) : null}
-          <div className="uf-flex uf-items-center uf-justify-end uf-gap-sm uf-flex-wrap">
-            {editingId ? (
-              <Button variant="outline" onClick={resetForm} disabled={transactionState.isMutating}>
-                Cancelar edição
+          <div className={styles.actionRow}>
+            {editingId && editingTransaction && canDeleteTransaction(editingTransaction) ? (
+              <Button
+                className={styles.deleteButton}
+                variant="danger"
+                disabled={transactionState.isMutating}
+                onClick={() => handleRequestDelete(editingId)}
+              >
+                Excluir
               </Button>
             ) : null}
-            <Button
-              type="submit"
-              loading={transactionState.isMutating}
-              disabled={!canSubmit}
-              title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
-            >
-              {editingId ? 'Salvar lançamento' : 'Criar lançamento'}
-            </Button>
+            <div className={styles.primaryActions}>
+              {editingId ? (
+                <Button variant="outline" onClick={resetForm} disabled={transactionState.isMutating}>
+                  Cancelar edição
+                </Button>
+              ) : null}
+              <Button
+                type="submit"
+                loading={transactionState.isMutating}
+                disabled={!canSubmit}
+                title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+              >
+                {editingId ? 'Salvar lançamento' : 'Criar lançamento'}
+              </Button>
+            </div>
           </div>
           </section>
         </form>
@@ -809,7 +931,6 @@ function FinanceTransactionModal({
           ) : null}
 
           {listedTransactions.map((transaction) => {
-            const hasGroup = Boolean(transaction.metadata?.installment_group_id);
             const canDeleteThisTransaction = canDeleteTransaction(transaction);
             const isAdjustment = transaction.transaction_type === 'adjustment';
             const isPositiveAdjustment = isAdjustment && Number(transaction.adjustment_delta) > 0;
@@ -867,29 +988,15 @@ function FinanceTransactionModal({
                   >
                     Duplicar
                   </Button>
-                  {pendingDeleteId === transaction.id && hasGroup ? (
-                    <SelectField
-                      id={`finance-transaction-delete-scope-${transaction.id}`}
-                      label="Excluir"
-                      value={deleteScope}
-                      onChange={(event) => setDeleteScope(event.target.value)}
-                    >
-                      <option value="only">Somente esta parcela</option>
-                      <option value="forward">Esta e as próximas</option>
-                      <option value="all">Todas do grupo</option>
-                    </SelectField>
-                  ) : null}
                   {canDeleteThisTransaction ? (
-                    <DeleteActions
-                      isConfirming={pendingDeleteId === transaction.id}
-                      isLoading={transactionState.isMutating}
-                      onRequest={() => {
-                        setDeleteScope('only');
-                        setPendingDeleteId(transaction.id);
-                      }}
-                      onCancel={() => setPendingDeleteId(null)}
-                      onConfirm={() => handleDelete(transaction.id)}
-                    />
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      disabled={transactionState.isMutating}
+                      onClick={() => handleRequestDelete(transaction.id)}
+                    >
+                      Excluir
+                    </Button>
                   ) : (
                     <Button variant="ghost" size="sm" disabled title={DELETE_BLOCKED_TITLE}>
                       Excluir
@@ -903,6 +1010,20 @@ function FinanceTransactionModal({
         ) : null}
       </div>
     </Modal>
+    <DeleteConfirmationDialog
+      open={isDeleteConfirmOpen}
+      className={className}
+      overlayClassName={overlayClassName}
+      transaction={pendingDeleteTransaction}
+      hasGroup={pendingDeleteHasGroup}
+      deleteScope={deleteScope}
+      error={batchError}
+      isLoading={transactionState.isMutating}
+      onCancel={handleCancelDelete}
+      onConfirm={() => handleDelete(pendingDeleteId)}
+      onDeleteScopeChange={(event) => setDeleteScope(event.target.value)}
+    />
+    </>
   );
 }
 

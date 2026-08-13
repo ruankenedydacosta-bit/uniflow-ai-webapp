@@ -96,14 +96,42 @@ test('Bloco "Ação" contém o botão principal (criar/salvar lançamento)', asy
 // (variant="ghost") -- Excluir precisa ser reconhecível como destrutivo já
 // no primeiro toque, não só depois de confirmar (feedback de usuário: "tem
 // que estar mais nítido o botão excluir, tem que estar vermelho").
-test('Bloco "Ação" também oferece Excluir ao editar, com botão vermelho (danger) e confirmação em duas etapas -- nunca só na lista', async () => {
+test('Bloco "Ação" oferece Excluir alinhado e abre a confirmação centralizada -- nunca injeta ações soltas no formulário', async () => {
   const modal = await source('./FinanceTransactionModal.jsx');
   const start = modal.indexOf('aria-label="Ação"');
   const slice = modal.slice(start, modal.indexOf('</section>', start));
   assert.match(slice, /editingId && editingTransaction && canDeleteTransaction\(editingTransaction\)/);
-  assert.match(slice, /variant="danger"[\s\S]*?Excluir/);
-  assert.match(slice, /pendingDeleteId === editingId \? \(/);
-  assert.match(slice, /onClick=\{\(\) => handleDelete\(editingId\)\}/);
+  assert.match(slice, /className=\{styles\.deleteButton\}[\s\S]*?variant="danger"[\s\S]*?Excluir/);
+  assert.match(slice, /onClick=\{\(\) => handleRequestDelete\(editingId\)\}/);
+  assert.doesNotMatch(slice, /Confirmar exclusão/);
+  assert.doesNotMatch(slice, /pendingDeleteId === editingId/);
+});
+
+test('confirmação de exclusão usa alertdialog em portal, overlay com blur e somente ações Cancelar/Confirmar exclusão', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const css = await source('./FinanceTransactionModal.module.css');
+  const start = modal.indexOf('function DeleteConfirmationDialog(');
+  const end = modal.indexOf('// `className`/`overlayClassName`', start);
+  const slice = modal.slice(start, end);
+  assert.match(slice, /createPortal\(/);
+  assert.match(slice, /role="alertdialog"/);
+  assert.match(slice, /aria-modal="true"/);
+  assert.match(slice, /Excluir lançamento\?/);
+  assert.match(slice, /Essa ação não poderá ser desfeita\./);
+  assert.match(slice, />\s*Cancelar\s*</);
+  assert.match(slice, />\s*Confirmar exclusão\s*</);
+  assert.match(css, /\.deleteConfirmOverlay \{[\s\S]*?backdrop-filter: blur\(10px\)/);
+  assert.match(css, /\.deleteConfirmCard \{[\s\S]*?place-items|\.deleteConfirmOverlay \{[\s\S]*?place-items: center/);
+});
+
+test('Cancelar fecha somente a confirmação e preserva a edição; confirmar executa handleDelete real', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const cancelStart = modal.indexOf('function handleCancelDelete()');
+  const cancelSlice = modal.slice(cancelStart, modal.indexOf('async function handleSubmit', cancelStart));
+  assert.match(cancelSlice, /setPendingDeleteId\(null\)/);
+  assert.doesNotMatch(cancelSlice, /removeTransaction|resetForm\(\)|onClose/);
+  assert.match(modal, /onConfirm=\{\(\) => handleDelete\(pendingDeleteId\)\}/);
+  assert.match(modal, /const result = await transactionState\.removeTransaction\(id\)/);
 });
 
 test('"Cancelar edição" usa contorno neutro (outline), nunca ghost invisível ao lado dos botões coloridos', async () => {
@@ -185,7 +213,7 @@ test('indicador visual distingue receita/despesa/transferência/ajuste -- ajuste
   assert.match(css, /\.historyDot_adjustment \{[\s\S]*?--uf-color-warning/);
 });
 
-test('ações Editar/Duplicar/Excluir ficam agrupadas em .historyActions (compactas, nunca 3 textos soltos)', async () => {
+test('ações Editar/Duplicar/Excluir ficam agrupadas em .historyActions e Excluir abre a mesma confirmação central', async () => {
   const modal = await source('./FinanceTransactionModal.jsx');
   const start = modal.indexOf('<div className={styles.historyActions}>');
   assert.ok(start > -1);
@@ -193,13 +221,57 @@ test('ações Editar/Duplicar/Excluir ficam agrupadas em .historyActions (compac
   const fullSlice = modal.slice(start, fullBlockEnd);
   assert.match(fullSlice, />\s*Editar\s*</);
   assert.match(fullSlice, />\s*Duplicar\s*</);
-  assert.match(fullSlice, /<DeleteActions/);
+  assert.match(fullSlice, /variant="danger"[\s\S]*?onClick=\{\(\) => handleRequestDelete\(transaction\.id\)\}/);
 });
 
-test('exclusão continua exigindo confirmação via DeleteActions -- nunca window.confirm', async () => {
+test('exclusão continua exigindo confirmação central -- nunca window.confirm nem DeleteActions inline', async () => {
   const modal = await source('./FinanceTransactionModal.jsx');
   assert.doesNotMatch(modal, /window\.confirm/);
-  assert.match(modal, /isConfirming=\{pendingDeleteId === transaction\.id\}/);
+  assert.doesNotMatch(modal, /<DeleteActions/);
+  assert.match(modal, /const isDeleteConfirmOpen = Boolean\(pendingDeleteId && pendingDeleteTransaction\);/);
+  assert.match(modal, /open=\{isDeleteConfirmOpen\}/);
+  assert.match(modal, /onConfirm=\{\(\) => handleDelete\(pendingDeleteId\)\}/);
+});
+
+test('confirmação preserva snapshot visual enquanto a lista atualiza após a remoção', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  assert.match(modal, /const \[pendingDeleteSnapshot, setPendingDeleteSnapshot\] = useState\(null\);/);
+  assert.match(modal, /transactionState\.transactions\.find\([\s\S]*?\?\? pendingDeleteSnapshot/);
+  assert.match(modal, /setPendingDeleteSnapshot\(transaction\)/);
+  assert.match(modal, /await onChanged\?\.\(\);[\s\S]*?setPendingDeleteSnapshot\(null\);[\s\S]*?await onDeleted\(transaction\)/);
+});
+
+test('Registros fecha a edição após delete, volta ao Histórico e mostra toast por 2 segundos', async () => {
+  const records = await source('../../features/simplified-app/SimplifiedRecordsPage.jsx');
+  const handlerStart = records.indexOf('function handleTransactionDeleted()');
+  const handlerEnd = records.indexOf('function selectCategory', handlerStart);
+  const handler = records.slice(handlerStart, handlerEnd);
+  assert.match(records, /const DELETE_SUCCESS_NOTICE_MS = 2000;/);
+  assert.match(handler, /setTransactionDialog\(null\)/);
+  assert.match(handler, /setActiveTab\('history'\)/);
+  assert.match(handler, /setDeleteSuccessNotice\('Lançamento excluído com sucesso\.'\)/);
+  assert.match(handler, /window\.setTimeout\([\s\S]*?DELETE_SUCCESS_NOTICE_MS/);
+  assert.match(records, /className=\{styles\.deleteSuccessToast\}[\s\S]*?role="status"[\s\S]*?aria-live="polite"/);
+  assert.match(records, /onDeleted=\{handleTransactionDeleted\}/);
+});
+
+test('sucesso da exclusão chama onDeleted e não zera o formulário antes de a tela de Registros assumir', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const start = modal.indexOf('async function handleDelete(transactionId)');
+  const end = modal.indexOf('// CONTA-OPCIONAL', start);
+  const slice = modal.slice(start, end);
+  assert.match(slice, /await onChanged\?\.\(\)/);
+  assert.match(slice, /if \(onDeleted\) \{\s*await onDeleted\(transaction\);\s*return;/);
+  assert.ok(slice.indexOf('await onDeleted(transaction)') < slice.lastIndexOf('resetForm()'));
+});
+
+test('mobile empilha os botões do formulário e mantém o card de confirmação dentro do viewport seguro', async () => {
+  const css = await source('./FinanceTransactionModal.module.css');
+  const mobileStart = css.indexOf('@media (max-width: 767px)');
+  const mobile = css.slice(mobileStart, css.indexOf('@media (prefers-reduced-motion', mobileStart));
+  assert.match(mobile, /\.actionRow,[\s\S]*?flex-direction: column/);
+  assert.match(mobile, /\.deleteButton,[\s\S]*?width: 100%/);
+  assert.match(css, /env\(safe-area-inset-bottom, 0px\)/);
 });
 
 // ============================================================================
