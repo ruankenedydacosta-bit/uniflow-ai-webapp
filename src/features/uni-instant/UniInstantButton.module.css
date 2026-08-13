@@ -15,8 +15,13 @@
   position: relative;
   z-index: 2;
   display: flex;
-  width: var(--uf-space-56);
-  height: var(--uf-space-56);
+  /* ~5% menor que os 56px (--uf-space-56) anteriores -- sem token exato na
+     escala, valor literal. width/height é também a área interativa real
+     (nenhum wrapper decorativo maior recebe pointer events: UniVoiceWaves já
+     é pointer-events:none), então reduzir aqui reduz as duas juntas, mantendo
+     a área de toque mínima de 44px garantida pela regra global de botões. */
+  width: 53px;
+  height: 53px;
   margin-top: calc(var(--uf-space-20) * -1);
   align-items: center;
   justify-content: center;
