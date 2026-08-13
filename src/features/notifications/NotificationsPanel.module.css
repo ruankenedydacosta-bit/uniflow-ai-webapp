@@ -71,7 +71,7 @@
   display: grid;
   gap: var(--uf-space-4);
   width: 100%;
-  padding: var(--uf-space-12) var(--uf-space-12) var(--uf-space-12) 40px;
+  padding: var(--uf-space-12) var(--uf-space-12) var(--uf-space-12) 50px;
   border: 1px solid transparent;
   border-radius: var(--uf-radius-8);
   background: transparent;
@@ -126,30 +126,46 @@
 /* NOTIF2: botão de dispensar -- sozinho no lugar onde antes havia o ícone
    de tipo (removido), centralizado verticalmente com o card inteiro, nunca
    sobreposto a outro elemento. Sempre visível (nunca só no hover), para
-   funcionar igual em touch. */
+   funcionar igual em touch.
+   O min-width/min-height global de 44px (globals.css/theme.css, área mínima
+   de toque) precisa ser neutralizado aqui, senão o círculo estoura o espaço
+   reservado e invade o texto -- a área de toque volta pelo ::after. */
 .itemDismiss {
   position: absolute;
   top: 50%;
   left: 10px;
   z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   padding: 0;
-  border: none;
+  border: 1px solid var(--uf-color-border-strong);
   border-radius: var(--uf-radius-full, 999px);
-  background: var(--uf-color-danger);
-  color: var(--uf-color-on-primary, #fff);
-  font-size: 13px;
+  background: var(--uf-app-surface-2, var(--uf-color-bg-surface));
+  color: var(--uf-color-text-secondary);
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   transform: translateY(-50%);
 }
 
+/* Mantém a área de toque de 44px sem alterar o tamanho visual do círculo. */
+.itemDismiss::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: inherit;
+}
+
 .itemDismiss:hover,
 .itemDismiss:focus-visible {
-  background: color-mix(in srgb, var(--uf-color-danger) 85%, black);
+  background: var(--uf-app-surface-3, var(--uf-color-bg-surface-hover));
+  color: var(--uf-color-text-primary);
 }
 
 .itemDismiss:focus-visible {
