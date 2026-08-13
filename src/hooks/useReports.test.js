@@ -67,7 +67,8 @@ test('useReports nao importa nada de features/future', async () => {
 
 test('useReports ainda chama useReports() sem parametros extras em ReportsPage.jsx (API publica inalterada)', async () => {
   const page = await source('../pages/ReportsPage.jsx');
-  assert.match(page, /const \{ isLoading, error, workspaceBalance, snapshot, hasData, refresh \} = useReports\(\);/);
+  assert.match(page, /useReports\(\);/);
+  assert.doesNotMatch(page, /useReports\([^)]/);
 });
 
 test('useReports continua escutando FINANCIAL_DATA_CHANGED_EVENT para manter dados sincronizados', async () => {

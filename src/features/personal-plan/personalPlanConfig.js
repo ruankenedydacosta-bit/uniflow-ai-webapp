@@ -24,7 +24,7 @@ export const PERSONAL_PLAN_BENEFITS = Object.freeze([
     id: 'uni',
     title: 'Pergunte à Uni',
     lines: Object.freeze([
-      'Consultar saldo.',
+      'Consultar entradas e saídas.',
       'Consultar histórico.',
       'Consultar gastos.',
       'Tudo por voz ou texto.',
@@ -38,12 +38,12 @@ export const PERSONAL_PLAN_BENEFITS = Object.freeze([
   Object.freeze({
     id: 'summary',
     title: 'Resumo mensal',
-    lines: Object.freeze(['Entrou', 'Saiu', 'Saldo']),
+    lines: Object.freeze(['Entradas', 'Saídas', 'Organização']),
   }),
   Object.freeze({
     id: 'accounts',
     title: 'Controle de contas',
-    lines: Object.freeze(['Contas bancárias.', 'Saldo.', 'Organização.']),
+    lines: Object.freeze(['Contas bancárias.', 'Movimentações.', 'Organização.']),
   }),
 ]);
 

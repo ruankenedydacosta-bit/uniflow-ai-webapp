@@ -11,7 +11,7 @@ export default function CognitiveChartTooltip({
 }) {
   if (!point) return null;
 
-  const saldo = point.receita - point.despesa;
+  const result = point.receita - point.despesa;
   const tooltipWidth = 168;
   const tooltipHeight = 124;
   const half = tooltipWidth / 2;
@@ -47,8 +47,8 @@ export default function CognitiveChartTooltip({
       </div>
       <div className={styles.tooltipDivider} />
       <div className={styles.tooltipRow}>
-        <span className={styles.tooltipLabel}>Saldo do dia</span>
-        <span className={styles.tooltipValueSaldo}>{formatBRL(saldo)}</span>
+        <span className={styles.tooltipLabel}>Resultado do dia</span>
+        <span className={styles.tooltipValueSaldo}>{formatBRL(result)}</span>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { extractQueryAmount } from './financialQueryEngine.js';
+import { PUBLIC_BALANCE_RETIREMENT_TEXT } from './publicBalanceExperience.js';
 
 const MONTH_NAMES = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -232,9 +233,7 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
 
   switch (type) {
     case 'balance': {
-      const value = fmtCurrency(ctx.balance);
-      const msg = `O saldo atual ${prefix} é ${value}, considerando todas as contas conectadas.`;
-      return { text: msg, highlight: value };
+      return { text: PUBLIC_BALANCE_RETIREMENT_TEXT, highlight: null };
     }
 
     case 'monthly_expenses': {
@@ -250,7 +249,6 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
     }
 
     case 'monthly_summary': {
-      const balance = fmtCurrency(ctx.balance);
       const income = fmtCurrency(ctx.monthlyIncome);
       const expense = fmtCurrency(ctx.monthlyExpense);
       const result = fmtCurrency(Math.abs(ctx.result));
@@ -261,8 +259,8 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
       const incomeLabel = ctx.monthlyIncome > 0
         ? `entradas de ${income}`
         : 'nenhuma entrada registrada';
-      const msg = `Resumo de ${monthName} para ${subject}:\n• Saldo atual: ${balance}\n• ${incomeLabel}\n• ${expenseLabel}\n• Resultado ${signal} de ${result}`;
-      return { text: msg, highlight: balance };
+      const msg = `Resumo de ${monthName} para ${subject}:\n• ${incomeLabel}\n• ${expenseLabel}\n• Resultado ${signal} de ${result}`;
+      return { text: msg, highlight: result };
     }
 
     case 'recent_transactions': {
@@ -308,13 +306,12 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
         return { text: msg, highlight: null };
       }
       const likely = projections.scenarioProjections?.likely || {};
-      const balance = fmtCurrency(likely.projectedBalance ?? projections.currentBalance);
       const monthly = fmtCurrency(likely.monthlyResult ?? projections.netResult);
       const horizon = projections.selectedHorizon || 6;
       const signal = (likely.monthlyResult ?? projections.netResult) >= 0 ? 'positivo' : 'negativo';
       const monthText = horizon === 1 ? 'mês' : 'meses';
-      const msg = `💰 Projeção para ${horizon} ${monthText} (cenário provável):\n• Saldo projetado: ${balance}\n• Resultado médio mensal: ${monthly}\n• Tendência: ${signal}\n\n⚠️ Esta é uma estimativa baseada no seu histórico de ${projections.monthsWithData || 0} ${projections.monthsWithData === 1 ? 'mês' : 'meses'}. Resultados reais podem variar.`;
-      return { text: msg, highlight: balance };
+      const msg = `Projeção para ${horizon} ${monthText} (cenário provável):\n• Resultado médio mensal: ${monthly}\n• Tendência: ${signal}\n\n⚠️ Esta é uma estimativa baseada no seu histórico de ${projections.monthsWithData || 0} ${projections.monthsWithData === 1 ? 'mês' : 'meses'}. Resultados reais podem variar.`;
+      return { text: msg, highlight: monthly };
     }
 
     case 'goal_feasibility': {
@@ -375,14 +372,12 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
         const msg = `${capitalize(subject)} ainda não tem dados suficientes para avaliar a tendência. Cadastre transações para que eu possa projetar.`;
         return { text: msg, highlight: null };
       }
-      const likely = projections.scenarioProjections?.likely || {};
-      const currentBalance = fmtCurrency(projections.currentBalance);
-      const futureBalance = fmtCurrency(likely.projectedBalance ?? projections.currentBalance);
       const monthlyNet = projections.netResult || 0;
       const signal = monthlyNet >= 0 ? 'positivo' : 'negativo';
-      const direction = monthlyNet >= 0 ? 'melhorar' : 'piorar';
-      const msg = `📈 Tendência para o saldo:\n• Saldo atual: ${currentBalance}\n• Resultado médio mensal: ${fmtCurrency(monthlyNet)} (${signal})\n• Projeção em ${projections.selectedHorizon || 6} meses: ${futureBalance}\n\nSeu saldo tende a ${direction} com base no histórico atual. ⚠️ Esta é uma estimativa.`;
-      return { text: msg, highlight: futureBalance };
+      const direction = monthlyNet >= 0 ? 'favorável' : 'de atenção';
+      const monthly = fmtCurrency(monthlyNet);
+      const msg = `Tendência financeira:\n• Resultado médio mensal: ${monthly} (${signal})\n• Horizonte analisado: ${projections.selectedHorizon || 6} meses\n\nA tendência é ${direction} com base no histórico atual. ⚠️ Esta é uma estimativa.`;
+      return { text: msg, highlight: monthly };
     }
 
     case 'goal_completion': {

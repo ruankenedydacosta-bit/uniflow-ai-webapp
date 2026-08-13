@@ -173,12 +173,12 @@ export default function FutureChart({
           role="img"
           aria-label={
             isComparing
-              ? 'Gráfico comparando a evolução do saldo projetado real e simulado'
-              : 'Gráfico de evolução do saldo projetado em três cenários'
+              ? 'Gráfico comparando a evolução financeira projetada real e simulada'
+              : 'Gráfico de evolução financeira projetada em três cenários'
           }
           style={{ width: '100%', height: 'auto' }}
         >
-          <title>{isComparing ? 'Evolução do saldo: real × simulado' : 'Evolução do saldo projetado'}</title>
+          <title>{isComparing ? 'Evolução financeira: real × simulado' : 'Evolução financeira projetada'}</title>
 
           <line
             x1={MARGIN.left}

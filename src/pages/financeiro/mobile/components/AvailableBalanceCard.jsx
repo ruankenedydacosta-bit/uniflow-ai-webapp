@@ -1,8 +1,7 @@
-function AvailableBalanceCard({ balance, comparison, expense, income }) {
+function AvailableBalanceCard({ comparison, expense, income }) {
   return (
     <section className="financeMobileBalance" aria-labelledby="mobile-balance-title">
-      <span id="mobile-balance-title">Saldo disponível</span>
-      <strong>{balance}</strong>
+      <span id="mobile-balance-title">Movimentações do período</span>
       <small>{comparison}</small>
       <div>
         <p><span>Entradas</span><strong className="financeMobileIncome">{income}</strong></p>

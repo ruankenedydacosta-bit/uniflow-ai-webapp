@@ -23,7 +23,7 @@ export default function FutureSummary({
 }) {
   if (!hasData || !scenarioProjection) return null;
 
-  const { projectedBalance, monthlyResult, hasData: hasProjection } = scenarioProjection;
+  const { monthlyResult, hasData: hasProjection } = scenarioProjection;
 
   if (!hasProjection) return null;
 
@@ -35,12 +35,6 @@ export default function FutureSummary({
         Resumo projetado
       </h3>
       <div className={styles.grid}>
-        <SummaryCard
-          label="Saldo futuro"
-          value={formatCurrency(projectedBalance)}
-          variant={projectedBalance >= 0 ? 'default' : 'glass'}
-          disclaimer="Saldo projetado ao final do período"
-        />
         <SummaryCard
           label="Resultado mensal"
           value={formatCurrency(monthlyResult)}

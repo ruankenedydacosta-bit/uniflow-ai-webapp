@@ -1,5 +1,5 @@
 // ETAPA 4: SimplifiedMyAccountsPage.jsx é um componente React real (hooks,
-// Supabase real via useAccounts/useFinancialBalances, CRUD real via
+// Supabase real via useAccounts, CRUD real via
 // FinanceAccountModal) -- mesmo padrão já usado no projeto para telas sem
 // Testing Library/jsdom instalados: cobertura estrutural por leitura de
 // fonte (readFileSync/regex), igual a simplifiedPayments.test.js e
@@ -51,13 +51,14 @@ test('cabeçalho tem botão voltar, título "Minhas contas" e Falar com a Uni re
 });
 
 // ============================================================================
-// Reaproveitamento real -- useAccounts/useFinancialBalances/useWorkspaceRole,
+// Reaproveitamento real -- useAccounts/useWorkspaceRole,
 // nunca um CRUD paralelo.
 // ============================================================================
 
-test('usa useAccounts, useFinancialBalances e useWorkspaceRole reais (mesmos hooks de Registros/Financeiro)', async () => {
+test('usa useAccounts e useWorkspaceRole reais, sem consultar saldo para apresentação pública', async () => {
   const content = await source('./SimplifiedMyAccountsPage.jsx');
-  assert.match(content, /import \{ useAccounts, useFinancialBalances, useWorkspaceRole \} from '\.\.\/\.\.\/hooks\/index\.js';/);
+  assert.match(content, /import \{ useAccounts, useWorkspaceRole \} from '\.\.\/\.\.\/hooks\/index\.js';/);
+  assert.doesNotMatch(content, /useFinancialBalances/);
 });
 
 test('reaproveita FinanceAccountModal existente (mesmo componente de FinanceiroPage.jsx) -- nenhum CRUD novo', async () => {
@@ -66,10 +67,11 @@ test('reaproveita FinanceAccountModal existente (mesmo componente de FinanceiroP
   assert.match(content, /<FinanceAccountModal/);
 });
 
-test('saldo usa exclusivamente o saldo derivado real (accountBalances/derived_balance), nunca account.current_balance', async () => {
+test('lista pública de contas não exibe saldo derivado, inicial ou legado', async () => {
   const content = await source('./SimplifiedMyAccountsPage.jsx');
-  assert.match(content, /balanceState\.accountBalances\.map\(\(balance\) => \[balance\.account_id, balance\.derived_balance\]\)/);
+  assert.doesNotMatch(content, /accountBalances|derived_balance|initial_balance/);
   assert.doesNotMatch(content, /account\.current_balance/);
+  assert.match(content, /Ver e editar/);
 });
 
 test('dispara e escuta FINANCIAL_DATA_CHANGED_EVENT (mesma sincronização real usada por Registros)', async () => {
@@ -99,18 +101,18 @@ test('estado vazio honesto quando não há contas cadastradas', async () => {
 });
 
 // ============================================================================
-// Gráfico -- só com >= 2 contas reais com saldo, calculado a partir dos
-// saldos reais.
+// A distribuição monetária deixou a experiência pública; cálculos internos
+// permanecem nos hooks/serviços financeiros.
 // ============================================================================
 
-test('gráfico só é calculado com pelo menos 2 contas reais com saldo positivo', async () => {
+test('não monta gráfico público de distribuição monetária', async () => {
   const content = await source('./SimplifiedMyAccountsPage.jsx');
-  assert.match(content, /if \(positive\.length < 2\) return EMPTY_RECORDS;/);
+  assert.doesNotMatch(content, /chartSlices|conicGradient|chartCircle/);
 });
 
-test('percentuais do gráfico vêm da soma real dos saldos (derived_balance), nunca fixos', async () => {
+test('não expõe percentuais ou valores de contas', async () => {
   const content = await source('./SimplifiedMyAccountsPage.jsx');
-  assert.match(content, /percent: \(account\.derived_balance \/ total\) \* 100/);
+  assert.doesNotMatch(content, /formatCurrency|percent:/);
   assert.doesNotMatch(content, /61%|30%|9%/);
 });
 

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
-import { useAccounts, useFinancialBalances, useWorkspaceRole } from '../../hooks/index.js';
+import { useAccounts, useWorkspaceRole } from '../../hooks/index.js';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import FinanceAccountModal from '../../pages/financeiro/FinanceAccountModal.jsx';
 import Badge from '../../components/ui/Badge/Badge.jsx';
@@ -31,18 +31,12 @@ const ACCOUNT_TYPE_LABELS = Object.freeze({
   other: 'Outra conta',
 });
 
-const CHART_COLORS = Object.freeze(['#7c3aed', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#22d3ee']);
-
 function BackIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
       <path d="M20 6 10 16l10 10" />
     </svg>
   );
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value) || 0);
 }
 
 function formatDateTime(value) {
@@ -57,12 +51,8 @@ function formatDateTime(value) {
 }
 
 /**
- * ETAPA 4 -- Minhas contas (auditoria real confirmou): accounts.current_balance
- * é campo legado/cache "sem autoridade contábil" (comentário oficial da
- * migration 20260716_009) -- o saldo real é sempre o derivado via RPC
- * get_derived_account_balances(), o mesmo que useFinancialBalances() expõe
- * e que SimplifiedRecordsPage.jsx já usa para mesclar accounts+saldos.
- * source_type/sync_status/last_synced_at são campos reais, mas nenhuma
+ * ETAPA 4 -- Minhas contas. source_type/sync_status/last_synced_at são
+ * campos reais, mas nenhuma
  * conta criada pelo fluxo real (source_type default 'manual') tem
  * sincronização de verdade -- por isso o status exibido é honesto por
  * conta em vez de sempre "Sincronizado". Adicionar/editar/excluir reaproveita
@@ -79,7 +69,6 @@ function SimplifiedMyAccountsPage() {
     fallbackAccounts: EMPTY_RECORDS,
     fallbackAccountTypes: EMPTY_RECORDS,
   });
-  const balanceState = useFinancialBalances({ workspaceId });
   const workspaceRole = useWorkspaceRole({
     workspaceId,
     ownerUserId: workspace?.owner_user_id,
@@ -88,7 +77,7 @@ function SimplifiedMyAccountsPage() {
 
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
-  const refreshAll = () => Promise.all([accountState.refresh(), balanceState.refresh()]);
+  const refreshAll = () => accountState.refresh();
 
   useEffect(() => {
     function handleDataChanged(event) {
@@ -97,24 +86,14 @@ function SimplifiedMyAccountsPage() {
     }
     window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
     return () => window.removeEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshAll fecha sobre accountState/balanceState atuais a cada render, recriar o listener a cada mudanca e desnecessario
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshAll fecha sobre accountState atual a cada render, recriar o listener a cada mudanca e desnecessario
   }, []);
-
-  const accountsWithBalance = useMemo(() => {
-    const balanceMap = new Map(
-      balanceState.accountBalances.map((balance) => [balance.account_id, balance.derived_balance]),
-    );
-    return accountState.activeAccounts.map((account) => ({
-      ...account,
-      derived_balance: Number(balanceMap.get(account.id) ?? account.initial_balance ?? 0),
-    }));
-  }, [accountState.activeAccounts, balanceState.accountBalances]);
 
   // Honesto: nenhuma conta criada pelo fluxo real tem sincronização de
   // verdade (source_type default 'manual'), mas o campo e real -- se algum
   // dia existir uma conta com sync_status/last_synced_at preenchidos, isso
   // aparece de verdade em vez de um rotulo fixo.
-  const syncedAccounts = accountsWithBalance.filter((account) => (
+  const syncedAccounts = accountState.activeAccounts.filter((account) => (
     account.source_type && account.source_type !== 'manual' && account.last_synced_at
   ));
   const mostRecentSync = syncedAccounts
@@ -122,35 +101,8 @@ function SimplifiedMyAccountsPage() {
     .sort()
     .at(-1);
 
-  const chartSlices = useMemo(() => {
-    const positive = accountsWithBalance.filter((account) => account.derived_balance > 0);
-    if (positive.length < 2) return EMPTY_RECORDS;
-    const total = positive.reduce((sum, account) => sum + account.derived_balance, 0);
-    if (total <= 0) return EMPTY_RECORDS;
-    return positive
-      .map((account, index) => ({
-        id: account.id,
-        name: account.name,
-        value: account.derived_balance,
-        percent: (account.derived_balance / total) * 100,
-        color: CHART_COLORS[index % CHART_COLORS.length],
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [accountsWithBalance]);
-
-  const conicGradient = useMemo(() => {
-    if (!chartSlices.length) return '';
-    let cursor = 0;
-    const stops = chartSlices.map((slice) => {
-      const start = cursor;
-      cursor += slice.percent;
-      return `${slice.color} ${start}% ${cursor}%`;
-    });
-    return `conic-gradient(${stops.join(', ')})`;
-  }, [chartSlices]);
-
-  const isLoading = accountState.isLoading || balanceState.isLoading;
-  const hasAccounts = accountsWithBalance.length > 0;
+  const isLoading = accountState.isLoading;
+  const hasAccounts = accountState.activeAccounts.length > 0;
 
   const heroTitle = hasAccounts
     ? 'A Uni está cuidando das suas contas.'
@@ -199,7 +151,7 @@ function SimplifiedMyAccountsPage() {
                 <small>
                   {syncedAccounts.length > 0
                     ? `Última atualização: ${formatDateTime(mostRecentSync)}`
-                    : 'Você mesmo mantém os saldos atualizados.'}
+                    : 'Você mesmo mantém suas contas organizadas.'}
                 </small>
               </div>
             </div>
@@ -222,7 +174,7 @@ function SimplifiedMyAccountsPage() {
         <>
           <h2 className={styles.sectionTitle}>Suas contas</h2>
           <div className={styles.accountList}>
-            {accountsWithBalance.map((account) => {
+            {accountState.activeAccounts.map((account) => {
               const isSynced = account.source_type && account.source_type !== 'manual' && account.last_synced_at;
               return (
                 <button
@@ -243,45 +195,17 @@ function SimplifiedMyAccountsPage() {
                       </Badge>
                     </div>
                   </div>
-                  <div className={styles.accountBalance}>
-                    <strong className={account.derived_balance < 0 ? styles.negative : styles.positive}>
-                      {formatCurrency(account.derived_balance)}
-                    </strong>
-                    <small>Saldo disponível</small>
-                  </div>
+                  <span className={styles.accountStatus}>Ver e editar</span>
                 </button>
               );
             })}
           </div>
-
-          {chartSlices.length > 0 ? (
-            <section className={styles.chartCard} aria-label="Distribuição do seu dinheiro">
-              <div
-                className={styles.chartCircle}
-                style={{ background: conicGradient }}
-                role="img"
-                aria-label={`Distribuição: ${chartSlices.map((s) => `${s.name} ${s.percent.toFixed(0)}%`).join(', ')}`}
-              />
-              <div className={styles.chartLegend}>
-                <p className={styles.chartTitle}>Seu dinheiro está assim:</p>
-                <div className={styles.chartItems}>
-                  {chartSlices.map((slice) => (
-                    <div key={slice.id} className={styles.chartItem}>
-                      <strong style={{ color: slice.color }}>{slice.percent.toFixed(0)}%</strong>
-                      <span>{slice.name}</span>
-                      <small>{formatCurrency(slice.value)}</small>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          ) : null}
         </>
       ) : (
         <section className={styles.emptyCard} aria-label="Nenhuma conta cadastrada">
           <span className={styles.emptyIcon} aria-hidden="true"><AddBankIcon /></span>
           <strong>Você ainda não tem contas cadastradas.</strong>
-          <p>Adicione sua primeira conta para acompanhar seus saldos e organizar sua vida financeira.</p>
+          <p>Adicione sua primeira conta para organizar suas movimentações financeiras.</p>
         </section>
       )}
 
@@ -299,7 +223,7 @@ function SimplifiedMyAccountsPage() {
         <button type="button" className={styles.actionTile} onClick={() => setIsAccountModalOpen(true)}>
           <span className={`${styles.actionIcon} ${styles.toneGreen}`} aria-hidden="true"><SearchIcon /></span>
           <strong>Ver detalhes das contas</strong>
-          <small>Ver saldos e editar</small>
+          <small>Ver e editar</small>
         </button>
       </div>
 

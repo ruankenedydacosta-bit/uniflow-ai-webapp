@@ -147,13 +147,13 @@ test('legenda e tooltip aceitam labels PF\\/PJ via seriesLabels sem duplicar o c
   assert.match(tooltip, /seriesLabels\.despesa/);
 });
 
-test('tooltip exibe data, entradas/saídas e saldo do dia formatados em BRL', async () => {
+test('tooltip exibe data, entradas/saídas e resultado do dia formatados em BRL', async () => {
   const tooltip = await featureSource('CognitiveChartTooltip.jsx');
   assert.match(tooltip, /point\.label/);
   assert.match(tooltip, /formatBRL\(point\.receita\)/);
   assert.match(tooltip, /formatBRL\(point\.despesa\)/);
-  assert.match(tooltip, /Saldo do dia/);
-  assert.match(tooltip, /formatBRL\(saldo\)/);
+  assert.match(tooltip, /Resultado do dia/);
+  assert.match(tooltip, /formatBRL\(result\)/);
 });
 
 test('eixo vertical exibe formatação monetária (BRL) nos extremos da escala', async () => {

@@ -35,8 +35,8 @@ export function getContextVocabularyGuidance(workspaceType) {
   }
   return {
     subject: 'você',
-    vocabularyHints: ['seu dinheiro', 'seus gastos pessoais', 'seu saldo', 'suas contas'],
-    example: 'Exemplo de tom: "Seu saldo está estável este mês."',
+    vocabularyHints: ['seu dinheiro', 'suas entradas', 'suas saídas', 'suas contas'],
+    example: 'Exemplo de tom: "Suas entradas e saídas estão organizadas este mês."',
   };
 }
 

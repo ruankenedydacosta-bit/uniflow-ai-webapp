@@ -3,7 +3,6 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import { cx } from '../../utils/cx';
-import { formatCurrency } from '../../utils/formatters';
 import {
   CrudRow,
   DeleteActions,
@@ -148,18 +147,6 @@ function FinanceAccountModal({
             </select>
             <small>Escolha a opção que melhor representa esta conta.</small>
           </label>
-          <Input
-            id="finance-account-balance"
-            label="Saldo inicial"
-            helperText="Informe quanto havia na conta antes do primeiro lançamento."
-            type="number"
-            step="0.01"
-            value={form.balance}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, balance: event.target.value }))
-            }
-            fullWidth
-          />
           <FormMessage>
             {getFinanceErrorMessage(
               accountState.error,
@@ -188,7 +175,7 @@ function FinanceAccountModal({
             <CrudRow
               key={account.id}
               title={account.name}
-              detail={`${account.account_type} · ${formatCurrency(account.derived_balance ?? account.initial_balance ?? 0)}`}
+              detail={account.account_type}
             >
               <Button
                 variant="outline"

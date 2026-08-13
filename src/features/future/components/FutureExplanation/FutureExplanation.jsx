@@ -18,7 +18,7 @@ export default function FutureExplanation({
         <Card variant="outline" padding="md" className={styles.card}>
           <strong className={styles.cardTitle}>Fonte dos dados</strong>
           <p className={styles.cardText}>
-            Usamos seu saldo atual, o histórico de entradas e saídas dos últimos meses e suas metas financeiras ativas.
+            Usamos o histórico de entradas e saídas dos últimos meses e suas metas financeiras ativas.
             {hasData ? ` Trabalhamos com dados de ${monthsWithData} ${monthsWithData === 1 ? 'mês' : 'meses'} de histórico.` : ''}
           </p>
         </Card>
@@ -28,7 +28,7 @@ export default function FutureExplanation({
           <p className={styles.cardText}>
             Para cada cenário, calculamos a média mensal de entradas e saídas. Aplicamos ajustes percentuais
             pré-definidos (entradas {hasData ? formatCurrency(avgIncome) : '—'}, saídas {hasData ? formatCurrency(avgExpense) : '—'}) e projetamos
-            o saldo mês a mês até o horizonte escolhido.
+            os cenários mês a mês até o horizonte escolhido.
           </p>
         </Card>
 

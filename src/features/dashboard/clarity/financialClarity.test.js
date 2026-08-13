@@ -16,11 +16,11 @@ const period = {
 
 const projections = {
   scenarioProjections: {
-    likely: { hasData: true, projectedBalance: 1800 },
+    likely: { hasData: true, projectedBalance: 1800, monthlyResult: -500 },
   },
 };
 
-test('snapshot usa saldo derivado recebido e limita a saída cognitiva', () => {
+test('snapshot preserva saldo como insumo interno, mas publica métricas de resultado', () => {
   const snapshot = buildFinancialClaritySnapshot({
     workspaceBalance: 1300,
     transactions: [
@@ -32,7 +32,8 @@ test('snapshot usa saldo derivado recebido e limita a saída cognitiva', () => {
     projections,
   });
 
-  assert.equal(snapshot.primarySummary.metrics[0].value, 'R$ 1.300,00');
+  assert.equal(snapshot.primarySummary.metrics[0].value, '-R$ 500,00');
+  assert.equal(snapshot.primarySummary.metrics.some((metric) => /saldo/i.test(metric.label)), false);
   assert.equal(snapshot.metadata.completedTransactions, 2);
   assert.ok(snapshot.signals.length <= 3);
   assert.equal(Object.isFrozen(snapshot), true);

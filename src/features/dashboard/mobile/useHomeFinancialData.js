@@ -99,17 +99,11 @@ export function useHomeFinancialData() {
     [workspaceBalance, transactions, goals],
   );
 
-  const hasBalance = workspaceBalance != null;
+  const hasDerivedFinancialData = workspaceBalance != null;
   const hasIncome = transactions.some((t) => t.transaction_type === 'income');
   const hasExpense = transactions.some((t) => t.transaction_type === 'expense');
 
   const summary = useMemo(() => [
-    {
-      id: 'balance',
-      label: 'Saldo',
-      value: financeiroData.balance,
-      hasData: hasBalance,
-    },
     {
       id: 'income',
       label: 'Entrada',
@@ -128,7 +122,7 @@ export function useHomeFinancialData() {
       value: '—',
       hasData: false,
     },
-  ], [financeiroData, hasBalance, hasIncome, hasExpense]);
+  ], [financeiroData, hasIncome, hasExpense]);
 
   const recentTransactions = useMemo(
     () => {
@@ -174,7 +168,7 @@ export function useHomeFinancialData() {
     [goals],
   );
 
-  const hasData = transactions.length > 0 || hasBalance || goals.length > 0;
+  const hasData = transactions.length > 0 || hasDerivedFinancialData || goals.length > 0;
 
   return {
     summary,

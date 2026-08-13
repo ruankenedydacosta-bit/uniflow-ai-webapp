@@ -16,7 +16,6 @@ export const homeMobileMock = deepFreeze({
     actionLabel: 'Fazer agora',
   },
   summary: [
-    { id: 'balance', label: 'Saldo', value: 'R$ 4.230', hasData: true },
     { id: 'income', label: 'Entrada', value: 'R$ 6.500', hasData: true },
     { id: 'expense', label: 'Saída', value: 'R$ 2.270', hasData: true },
     { id: 'reserve', label: 'Reserva', value: 'R$ 1.800', hasData: true },

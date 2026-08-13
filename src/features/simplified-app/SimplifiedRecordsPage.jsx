@@ -15,7 +15,6 @@ import {
   MicIcon,
   PieChartIcon,
   UniMark,
-  WalletIcon,
 } from './SimplifiedIcons.jsx';
 import {
   buildCategorySummaries,
@@ -126,14 +125,11 @@ function MonthSelector({ month, onChange }) {
   );
 }
 
-// BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: os 3 cards são igualmente
-// tocáveis -- cada um abre a mesma modal de ajuste (UpdateBalanceModal),
-// só muda o `target` repassado por onCardClick.
 function MonthlySummary({ onCardClick, summary }) {
   const cards = [
     { id: 'income', label: 'Entradas', value: summary.income, Icon: ArrowDownIcon, action: 'atualizar as entradas' },
     { id: 'expense', label: 'Saídas', value: summary.expense, Icon: ArrowUpIcon, action: 'atualizar as saídas' },
-    { id: 'balance', label: 'Saldo', value: summary.balance, Icon: WalletIcon, action: 'atualizar o saldo' },
+    { id: 'agenda', label: 'Agenda', detail: 'Ver compromissos', Icon: CalendarIcon, action: 'abrir a Agenda' },
   ];
 
   return (
@@ -144,13 +140,17 @@ function MonthlySummary({ onCardClick, summary }) {
           type="button"
           className={`${styles.summaryCard} ${styles[card.id]} ${styles.balanceButton}`}
           onClick={() => onCardClick(card.id)}
-          aria-label={`${card.label}: ${formatCurrency(card.value)}. Toque para ${card.action}.`}
+          aria-label={card.id === 'agenda'
+            ? `${card.label}: ${card.detail}. Toque para ${card.action}.`
+            : `${card.label}: ${formatCurrency(card.value)}. Toque para ${card.action}.`}
         >
           <div>
             <span className={styles.summaryIcon} aria-hidden="true"><card.Icon /></span>
             <h3>{card.label}</h3>
           </div>
-          <strong aria-hidden="true">{formatCurrency(card.value)}</strong>
+          <strong aria-hidden="true">
+            {card.id === 'agenda' ? card.detail : formatCurrency(card.value)}
+          </strong>
         </button>
       ))}
     </div>
@@ -568,8 +568,8 @@ function SimplifiedRecordsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
-  // BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: null = fechada; 'balance' |
-  // 'income' | 'expense' = qual card abriu a modal de ajuste.
+  // Somente Entradas/Saídas abrem o ajuste financeiro. O terceiro card
+  // reutiliza a Agenda já existente, sem duplicar calendário ou dados.
   const [summaryModalTarget, setSummaryModalTarget] = useState(null);
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === 'undefined' ? true : navigator.onLine
@@ -709,7 +709,11 @@ function SimplifiedRecordsPage() {
     setTransactionDialog({ type: 'expense', transactionId: null });
   }
 
-  function openSummaryModal(target) {
+  function openSummaryCard(target) {
+    if (target === 'agenda') {
+      navigate(SIMPLIFIED_ROUTES.AGENDA);
+      return;
+    }
     if (!canManage) return;
     setSummaryModalTarget(target);
   }
@@ -761,7 +765,7 @@ function SimplifiedRecordsPage() {
             <>
               {activeTab === 'summary' ? (
                 <>
-                  <MonthlySummary summary={summary} onCardClick={openSummaryModal} />
+                  <MonthlySummary summary={summary} onCardClick={openSummaryCard} />
                   <CategoryGrid
                     categories={categorySummaries}
                     expanded={showAllCategories}
@@ -855,16 +859,14 @@ function SimplifiedRecordsPage() {
 
       <UpdateBalanceModal
         key={summaryModalTarget ?? 'summary-modal-closed'}
-        target={summaryModalTarget ?? 'balance'}
+        target={summaryModalTarget ?? 'income'}
         open={Boolean(summaryModalTarget)}
         onClose={() => setSummaryModalTarget(null)}
         onChanged={refresh}
         currentValue={
           summaryModalTarget === 'income'
             ? summary.income
-            : summaryModalTarget === 'expense'
-              ? summary.expense
-              : balanceState.workspaceBalance
+            : summary.expense
         }
       />
     </>

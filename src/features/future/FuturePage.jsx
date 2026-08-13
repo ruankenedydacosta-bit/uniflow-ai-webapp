@@ -138,7 +138,6 @@ export default function FuturePage() {
           key={simulationResetKey}
           isActive={simulation.isActive}
           hasHistory={hasData}
-          simulatedBalance={simulation.simulatedInputs?.workspaceBalance}
           onChangeOverride={simulation.setOverride}
           onExit={handleExitSimulation}
         />
