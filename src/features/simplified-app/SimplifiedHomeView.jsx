@@ -10,7 +10,7 @@ import {
   useVoiceIntensity,
 } from '../uni-voice/index.js';
 import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
-import { PwaInstallExperience } from '../pwa-install/index.js';
+import { PwaInstallExperience, PwaUpdateCard } from '../pwa-install/index.js';
 import { UniMark } from './SimplifiedIcons.jsx';
 import {
   isVoiceErrorState,
@@ -1094,6 +1094,9 @@ function SimplifiedHomeView({
       </section>
 
       <PwaInstallExperience />
+      <PwaUpdateCard
+        blocked={voiceInput.isActive || isInteractionBusy || pendingConfirmation || voiceActivationPending}
+      />
       <CompactResponse
         messages={messages}
         isExecuting={isExecuting}

@@ -1,4 +1,5 @@
 export { default as PwaInstallExperience } from './PwaInstallExperience.jsx';
+export { default as PwaUpdateCard } from './PwaUpdateCard.jsx';
 export {
   PWA_INSTALL_ENABLED,
   PWA_INSTALL_FLAG_KEY,
@@ -6,3 +7,4 @@ export {
 } from './pwaInstallConfig.js';
 export { initializePwaInstallCapture } from './pwaInstallPromptStore.js';
 export { initializePwaUpdateLifecycle } from './pwaUpdateLifecycle.js';
+export { LOADED_BUILD_ID, LOADED_RELEASED_AT } from './appVersion.js';
