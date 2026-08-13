@@ -33,7 +33,7 @@
   backdrop-filter: blur(8px) !important;
 }
 
-.deleteSuccessToast {
+.transactionSuccessToast {
   position: fixed;
   top: max(14px, env(safe-area-inset-top));
   left: 50%;
@@ -58,7 +58,7 @@
   animation: deleteToastIn 160ms var(--uf-ease-smooth);
 }
 
-.deleteSuccessToast span {
+.transactionSuccessToast span {
   width: 24px;
   height: 24px;
   display: inline-grid;
@@ -1097,7 +1097,7 @@
     animation: none;
   }
 
-  .deleteSuccessToast {
+  .transactionSuccessToast {
     animation: none;
   }
 }
