@@ -172,6 +172,63 @@ test('FASE 5: CSS do botão compacto mantém touch-action: none e bloqueia sele�
   assert.match(slice, /-webkit-user-drag:\s*none;/);
 });
 
+// ============================================================================
+// Correção do bug de gesto travado em dispositivo físico (arrastar a partir
+// do botão central podia deixar a Uni "ouvindo" para sempre): botão ~5%
+// menor, área interativa igual à visual, e uma rede de segurança em
+// usePressAndHold.js que não depende de nenhum evento de pointer específico
+// chegar ao elemento capturado.
+// ============================================================================
+
+test('botão central ~5% menor que os 56px anteriores, sem token exato (documentado no CSS)', async () => {
+  const css = await source('./UniInstantButton.module.css');
+  const idx = css.indexOf('.uniButton {');
+  const slice = css.slice(idx, css.indexOf('margin-top:', idx));
+  assert.match(slice, /width:\s*53px;/);
+  assert.match(slice, /height:\s*53px;/);
+  assert.doesNotMatch(slice, /var\(--uf-space-56\)/);
+});
+
+test('área interativa do botão central é a mesma área visual -- nenhum wrapper decorativo maior recebe pointer events', async () => {
+  const waves = await source('./UniVoiceWaves.module.css');
+  const button = await source('./UniInstantButton.jsx');
+  assert.match(waves, /\.freqField \{[\s\S]*?pointer-events:\s*none;/);
+  assert.match(waves, /\.staticGlow \{[\s\S]*?pointer-events:\s*none;/);
+  // Só o <button> real recebe `bind` (onPointerDown/etc.) -- .uniSlot e
+  // .holdHint (wrapper e dica) nunca capturam o gesto de segurar.
+  assert.match(button, /<button\s*\n\s*\{\.\.\.bind\}/);
+});
+
+test('rede de segurança: usePressAndHold ouve pointerup/pointercancel em window (fase de captura) enquanto o gesto está ativo, além dos handlers no próprio elemento', async () => {
+  const gesture = await source('./usePressAndHold.js');
+  assert.match(gesture, /SAFETY_NET_EVENTS = \['pointerup', 'pointercancel'\]/);
+  assert.match(gesture, /browserRuntime\.addEventListener\(eventName, handleSafetyNetEventRef\.current, true\)/);
+  assert.match(gesture, /browserRuntime\.removeEventListener\(eventName, handleSafetyNetEventRef\.current, true\)/);
+});
+
+test('rede de segurança: existe um timeout de segurança que força saída de "holding" mesmo sem nenhum evento (nunca ouvindo infinitamente)', async () => {
+  const gesture = await source('./usePressAndHold.js');
+  assert.match(gesture, /export const FAILSAFE_TIMEOUT_MS = 10_000;/);
+  assert.match(gesture, /failsafeTimerRef\.current = setTimeout\(\(\) => \{\s*\n\s*finishRef\.current\?\.\(true\);/);
+});
+
+test('rede de segurança nunca ativa para o gesto de teclado (Enter/Espaço não é pointer)', async () => {
+  const gesture = await source('./usePressAndHold.js');
+  const beginBody = gesture.slice(gesture.indexOf('const begin = useCallback'), gesture.indexOf('const finish = useCallback'));
+  const attachIdx = beginBody.indexOf('attachSafetyNet();');
+  const guardIdx = beginBody.indexOf("if (source !== 'pointer') return;");
+  assert.ok(guardIdx > -1 && attachIdx > guardIdx, 'attachSafetyNet() deve vir depois do guard de source !== pointer');
+});
+
+test('não mascara o bug com touch-action:none na área inteira -- fica só no botão de 53px, rolagem da Home continua livre', async () => {
+  const css = await source('./UniInstantButton.module.css');
+  const slotIdx = css.indexOf('.uniSlot {');
+  const slotBlock = css.slice(slotIdx, css.indexOf('}', slotIdx));
+  assert.doesNotMatch(slotBlock, /touch-action/);
+  const globalTouchActionNone = [...css.matchAll(/touch-action:\s*none/g)];
+  assert.equal(globalTouchActionNone.length, 1, 'touch-action: none deve aparecer só uma vez, escopado ao .uniButton');
+});
+
 test('rolagem permanece livre sem lock de body html ou shell', async () => {
   const files = await Promise.all([
     source('./UniInstantResultCard.jsx'),
