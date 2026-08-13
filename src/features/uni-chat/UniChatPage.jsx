@@ -3155,10 +3155,7 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     if (result?.action?.status === 'ready') {
       setPendingAction(result.action);
-      const confirmation = buildConfirmationFromAction(
-        result.action,
-        financialWorkspaceType,
-      );
+      const confirmation = buildConfirmationFromAction(result.action);
       createAssistantResponse(result.response.text, {
         type: 'confirmation',
         confirmation,

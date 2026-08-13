@@ -73,7 +73,7 @@ test('BUG REAL: "Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do Br
   );
 });
 
-test('splitFinancialClauses separa por "e"/"também"/"depois"/"aí"/"além disso"/"mas"/"enquanto"', () => {
+test('splitFinancialClauses separa por "e"/"também"/"depois"/"além disso"/"mas"/"enquanto" ("aí" não é mais um separador -- ver BUG REAL abaixo)', () => {
   assert.deepEqual(
     splitFinancialClauses('Gastei 50 no mercado e a gasolina eu paguei pelo Banco do Brasil'),
     ['Gastei 50 no mercado', 'a gasolina eu paguei pelo Banco do Brasil'],
@@ -157,4 +157,43 @@ test('looksLikeUnclassifiedFinancialStatement NÃO dispara sem nenhum valor mone
 
 test('looksLikeUnclassifiedFinancialStatement NÃO dispara para consulta genérica com valor (ex.: comparação), sem verbo/substantivo de lançamento', () => {
   assert.equal(looksLikeUnclassifiedFinancialStatement('Esse produto custa 200 reais a mais que o outro na loja'), false);
+});
+
+// ============================================================================
+// BUG REAL EM PRODUÇÃO (card de confirmação sumia): "aí" era tratado como
+// conjunção que encadeia duas cláusulas financeiras -- em "Registra pra mim
+// aí duzentos reais de gasolina.", uma frase de UMA operação só, "aí"
+// dividia o texto em "Registra pra mim" (tem verbo) + "duzentos reais de
+// gasolina" (tem valor), e as DUAS cláusulas "com sinal" faziam a frase
+// parecer multioperação. Isso desviava a frase inteira para a camada
+// neural (financial_plan), que responde só em texto -- nunca monta o card
+// estruturado -- mesmo o parser de uma única operação já reconhecendo
+// "registra" perfeitamente se tivesse chance de rodar.
+// ============================================================================
+
+test('BUG REAL: "aí" como muleta de discurso (não conjunção) NÃO faz a frase parecer multioperação', () => {
+  assert.equal(
+    looksLikeComplexFinancialText('Registra pra mim aí duzentos reais de gasolina.'),
+    false,
+  );
+  assert.equal(
+    looksLikeComplexFinancialText('Gastei 50 reais aí no mercado.'),
+    false,
+  );
+  assert.deepEqual(
+    splitFinancialClauses('Registra pra mim aí duzentos reais de gasolina.'),
+    ['Registra pra mim aí duzentos reais de gasolina.'],
+  );
+});
+
+test('remover "aí" do split não afeta a detecção real de multioperação por "e"/"também"/"mas"/"enquanto"/"além disso"', () => {
+  assert.equal(
+    looksLikeComplexFinancialText('Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do Brasil.'),
+    true,
+  );
+  assert.equal(looksLikeComplexFinancialText('Paguei a luz e também paguei a água'), true);
+  assert.equal(
+    looksLikeComplexFinancialText('Gastei R$ 50 no mercado, mas a gasolina eu paguei pelo Banco do Brasil.'),
+    true,
+  );
 });
