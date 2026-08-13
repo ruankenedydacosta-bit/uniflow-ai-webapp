@@ -54,10 +54,11 @@ const RADIAL_VOICE_BARS = buildRadialVoiceBars().map((bar) => (
   />
 ));
 
-function RadialVoiceWaveform({ active, level }) {
+function RadialVoiceWaveform({ active, getStream, getSessionId }) {
   const waveformRef = useRef(null);
   const targetLevelRef = useRef(0);
   const smoothedLevelRef = useRef(0);
+  const { level } = useVoiceIntensity({ getStream, active, getSessionId });
 
   useEffect(() => {
     targetLevelRef.current = active ? normalizeRadialVoiceLevel(level) : 0;
@@ -678,12 +679,6 @@ function SimplifiedHomeView({
   // (voiceInput.getActiveStream()), sem pedir acesso ao microfone de novo.
   // Puramente visual: nunca afeta a captura/transcrição, nunca bloqueia o
   // push-to-talk.
-  const { level: voiceLevel } = useVoiceIntensity({
-    getStream: voiceInput.getActiveStream,
-    active: isListening,
-    getSessionId: voiceInput.getActiveSessionId,
-  });
-
   // BLOCO PUSH-TO-TALK: pressionar e segurar grava, soltar encerra e envia
   // -- nunca navega para /app/uni (Home e Uni compartilham o mesmo
   // UniChatPage por trás; "ficar na Home" é simplesmente NUNCA chamar
@@ -1159,9 +1154,12 @@ function SimplifiedHomeView({
           <span
             className={styles.uniVoiceLevelRing}
             aria-hidden="true"
-            style={isListening ? { '--voice-level': voiceLevel } : undefined}
           />
-          <RadialVoiceWaveform active={isListening} level={voiceLevel} />
+          <RadialVoiceWaveform
+            active={isListening}
+            getStream={voiceInput.getActiveStream}
+            getSessionId={voiceInput.getActiveSessionId}
+          />
           <span className={styles.uniMark}><UniMark /></span>
           <span className={styles.uniButtonLabel}>{stateCopy.button}</span>
         </button>
