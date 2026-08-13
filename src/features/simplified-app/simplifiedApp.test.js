@@ -14,6 +14,12 @@ import {
 import { SIMPLIFIED_UNI_STATES } from './simplifiedHomeState.js';
 import { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
 import { readVisualViewport } from './useVisualViewport.js';
+import {
+  buildRadialVoiceBars,
+  getRadialVoiceAmplitude,
+  RADIAL_VOICE_BAR_COUNT,
+  smoothRadialVoiceLevel,
+} from './radialVoiceWaveform.js';
 import { resolveInitialConversationState } from '../uni-chat/chatHistory.js';
 import {
   buildCategorySummaries,
@@ -728,14 +734,14 @@ test('watchdog de estado: enquanto voiceInput.isActive e nenhum gesto rastreado,
   assert.doesNotMatch(home, /location\.reload\(\)/);
 });
 
-test('botão central ~4-5% menor; touch-action continua none (revertido de uma tentativa de pan-y que travava "Ouvindo..." em hold normal, ver HOTFIX)', async () => {
+test('botão central tem alvo visual ~300px; touch-action continua none (gesto aprovado preservado)', async () => {
   const css = await source('./simplifiedApp.module.css');
   const idx = css.indexOf('.uniButton {');
   const block = css.slice(idx, css.indexOf('background:', idx));
-  assert.match(block, /width:\s*clamp\(222px, 61vw, 344px\)/);
+  assert.match(block, /width:\s*clamp\(218px, 58vw, 300px\)/);
   assert.match(block, /touch-action:\s*none;/);
   assert.doesNotMatch(block, /touch-action:\s*pan-y;/);
-  assert.match(css, /@media \(max-width: 359px\)[\s\S]*?\.uniButton\s*\{\s*width:\s*214px/);
+  assert.match(css, /@media \(max-width: 359px\)[\s\S]*?\.uniButton\s*\{\s*width:\s*210px/);
 });
 
 test('elementos decorativos (::before do botão, anéis) não aumentam a hit-area além do círculo visível', async () => {
@@ -1414,6 +1420,48 @@ test('BUG 3: o anel de intensidade só recebe o nível de voz enquanto isListeni
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /className=\{styles\.uniVoiceLevelRing\}/);
   assert.match(home, /style=\{isListening \? \{ '--voice-level': voiceLevel \} : undefined\}/);
+});
+
+test('waveform radial usa 64 barras determinísticas em 360 graus, sem aleatoriedade', async () => {
+  const bars = buildRadialVoiceBars();
+  const helper = await source('./radialVoiceWaveform.js');
+  assert.equal(bars.length, RADIAL_VOICE_BAR_COUNT);
+  assert.equal(bars[0].angle, 0);
+  assert.ok(bars.at(-1).angle < 360);
+  assert.equal(new Set(bars.map((bar) => bar.angle)).size, RADIAL_VOICE_BAR_COUNT);
+  assert.deepEqual(buildRadialVoiceBars(), bars);
+  assert.doesNotMatch(helper, /Math\.random/);
+});
+
+test('silêncio, fala baixa, normal e alta produzem amplitudes crescentes', () => {
+  const factor = 0.82;
+  const silence = getRadialVoiceAmplitude(0, factor);
+  const low = getRadialVoiceAmplitude(0.2, factor);
+  const normal = getRadialVoiceAmplitude(0.55, factor);
+  const high = getRadialVoiceAmplitude(1, factor);
+  assert.ok(silence >= 3 && silence < low);
+  assert.ok(low < normal);
+  assert.ok(normal < high);
+});
+
+test('smoothing visual sobe rápido e desce suavemente sem alterar a intensidade de captura', () => {
+  const attack = smoothRadialVoiceLevel(0, 1);
+  const release = smoothRadialVoiceLevel(1, 0);
+  assert.ok(attack > 0.5 && attack < 1);
+  assert.ok(release > attack);
+  assert.equal(smoothRadialVoiceLevel(0, -1), 0);
+  assert.ok(smoothRadialVoiceLevel(0, 5) <= 1);
+});
+
+test('waveform é decorativa, só aparece em listening e não captura eventos de ponteiro', async () => {
+  const [home, css] = await Promise.all([
+    source('./SimplifiedHomeView.jsx'),
+    source('./simplifiedApp.module.css'),
+  ]);
+  assert.match(home, /<RadialVoiceWaveform active=\{isListening\} level=\{voiceLevel\} \/>/);
+  assert.match(css, /\.radialVoiceWaveform \{[\s\S]{0,220}pointer-events: none;/);
+  assert.match(css, /\.uniButton\[data-state="listening"\] \.radialVoiceWaveform \{\s*opacity: 1;/);
+  assert.doesNotMatch(css, /\.uniButton\[data-state="transcribing"\] \.radialVoiceWaveform/);
 });
 
 test('BUG 3: a animação de escuta nunca interfere no push-to-talk (pointerdown\\/up\\/cancel continuam intactos)', async () => {

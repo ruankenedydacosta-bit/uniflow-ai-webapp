@@ -32,9 +32,50 @@ import {
   releaseWelcomeVoice,
 } from './welcomeVoiceSession.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import {
+  buildRadialVoiceBars,
+  smoothRadialVoiceLevel,
+} from './radialVoiceWaveform.js';
 import styles from './simplifiedApp.module.css';
 
 const SPEAKING_VOICE_STATUSES = new Set([VOICE_TTS_STATUS.LOADING, VOICE_TTS_STATUS.PLAYING]);
+const RADIAL_VOICE_BARS = buildRadialVoiceBars().map((bar) => (
+  <span
+    key={bar.index}
+    className={styles.radialVoiceBar}
+    data-tone={bar.tone}
+    style={{
+      '--bar-angle': `${bar.angle}deg`,
+      '--bar-factor': bar.factor,
+      '--bar-duration': `${bar.duration}s`,
+      '--bar-delay': `${bar.delay}s`,
+    }}
+  />
+));
+
+function RadialVoiceWaveform({ active, level }) {
+  const waveformRef = useRef(null);
+  const smoothedLevelRef = useRef(0);
+
+  useEffect(() => {
+    const nextLevel = active
+      ? smoothRadialVoiceLevel(smoothedLevelRef.current, level)
+      : 0;
+    smoothedLevelRef.current = nextLevel;
+    waveformRef.current?.style.setProperty('--radial-voice-level', String(nextLevel));
+  }, [active, level]);
+
+  return (
+    <span
+      ref={waveformRef}
+      className={styles.radialVoiceWaveform}
+      data-active={active}
+      aria-hidden="true"
+    >
+      {RADIAL_VOICE_BARS}
+    </span>
+  );
+}
 
 function getVoiceActivationError(errorCode) {
   if (errorCode === 'permission_denied') {
@@ -1094,6 +1135,7 @@ function SimplifiedHomeView({
             aria-hidden="true"
             style={isListening ? { '--voice-level': voiceLevel } : undefined}
           />
+          <RadialVoiceWaveform active={isListening} level={voiceLevel} />
           <span className={styles.uniMark}><UniMark /></span>
           <span className={styles.uniButtonLabel}>{stateCopy.button}</span>
         </button>
