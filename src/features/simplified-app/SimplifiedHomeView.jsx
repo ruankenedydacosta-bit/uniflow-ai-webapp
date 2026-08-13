@@ -34,6 +34,7 @@ import {
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
   buildRadialVoiceBars,
+  normalizeRadialVoiceLevel,
   smoothRadialVoiceLevel,
 } from './radialVoiceWaveform.js';
 import styles from './simplifiedApp.module.css';
@@ -47,7 +48,7 @@ const RADIAL_VOICE_BARS = buildRadialVoiceBars().map((bar) => (
     style={{
       '--bar-angle': `${bar.angle}deg`,
       '--bar-factor': bar.factor,
-      '--bar-duration': `${bar.duration}s`,
+      '--bar-tone-mix': bar.toneMix,
       '--bar-delay': `${bar.delay}s`,
     }}
   />
@@ -55,15 +56,40 @@ const RADIAL_VOICE_BARS = buildRadialVoiceBars().map((bar) => (
 
 function RadialVoiceWaveform({ active, level }) {
   const waveformRef = useRef(null);
+  const targetLevelRef = useRef(0);
   const smoothedLevelRef = useRef(0);
 
   useEffect(() => {
-    const nextLevel = active
-      ? smoothRadialVoiceLevel(smoothedLevelRef.current, level)
-      : 0;
-    smoothedLevelRef.current = nextLevel;
-    waveformRef.current?.style.setProperty('--radial-voice-level', String(nextLevel));
+    targetLevelRef.current = active ? normalizeRadialVoiceLevel(level) : 0;
   }, [active, level]);
+
+  useEffect(() => {
+    const waveform = waveformRef.current;
+    if (!active || !waveform) {
+      smoothedLevelRef.current = 0;
+      waveform?.style.setProperty('--radial-voice-level', '0');
+      return undefined;
+    }
+
+    let animationFrameId = 0;
+    let previousTime = null;
+
+    const renderFrame = (time) => {
+      const deltaMs = previousTime === null ? 1000 / 60 : time - previousTime;
+      previousTime = time;
+      const nextLevel = smoothRadialVoiceLevel(
+        smoothedLevelRef.current,
+        targetLevelRef.current,
+        deltaMs,
+      );
+      smoothedLevelRef.current = nextLevel;
+      waveform.style.setProperty('--radial-voice-level', String(nextLevel));
+      animationFrameId = window.requestAnimationFrame(renderFrame);
+    };
+
+    animationFrameId = window.requestAnimationFrame(renderFrame);
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [active]);
 
   return (
     <span

@@ -17,7 +17,10 @@ import { readVisualViewport } from './useVisualViewport.js';
 import {
   buildRadialVoiceBars,
   getRadialVoiceAmplitude,
+  normalizeRadialVoiceLevel,
+  RADIAL_VOICE_ATTACK_MS,
   RADIAL_VOICE_BAR_COUNT,
+  RADIAL_VOICE_RELEASE_MS,
   smoothRadialVoiceLevel,
 } from './radialVoiceWaveform.js';
 import { resolveInitialConversationState } from '../uni-chat/chatHistory.js';
@@ -1422,35 +1425,57 @@ test('BUG 3: o anel de intensidade só recebe o nível de voz enquanto isListeni
   assert.match(home, /style=\{isListening \? \{ '--voice-level': voiceLevel \} : undefined\}/);
 });
 
-test('waveform radial usa 64 barras determinísticas em 360 graus, sem aleatoriedade', async () => {
+test('waveform radial usa 108 barras determinísticas em 360 graus, sem aleatoriedade', async () => {
   const bars = buildRadialVoiceBars();
   const helper = await source('./radialVoiceWaveform.js');
   assert.equal(bars.length, RADIAL_VOICE_BAR_COUNT);
   assert.equal(bars[0].angle, 0);
   assert.ok(bars.at(-1).angle < 360);
   assert.equal(new Set(bars.map((bar) => bar.angle)).size, RADIAL_VOICE_BAR_COUNT);
+  assert.equal(new Set(bars.map((bar) => bar.delay)).size, RADIAL_VOICE_BAR_COUNT);
+  assert.ok(bars.every((bar) => bar.factor >= 0.72 && bar.factor <= 1));
+  assert.ok(bars.some((bar, index) => index > 0 && bar.factor !== bars[index - 1].factor));
   assert.deepEqual(buildRadialVoiceBars(), bars);
   assert.doesNotMatch(helper, /Math\.random/);
 });
 
 test('silêncio, fala baixa, normal e alta produzem amplitudes crescentes', () => {
-  const factor = 0.82;
-  const silence = getRadialVoiceAmplitude(0, factor);
-  const low = getRadialVoiceAmplitude(0.2, factor);
-  const normal = getRadialVoiceAmplitude(0.55, factor);
-  const high = getRadialVoiceAmplitude(1, factor);
-  assert.ok(silence >= 3 && silence < low);
-  assert.ok(low < normal);
-  assert.ok(normal < high);
+  const silence = getRadialVoiceAmplitude(0, 1);
+  const low = getRadialVoiceAmplitude(0.2, 1);
+  const normal = getRadialVoiceAmplitude(0.55, 1);
+  const high = getRadialVoiceAmplitude(1, 1);
+  assert.ok(silence >= 3 && silence <= 6);
+  assert.ok(low >= 7 && low <= 12);
+  assert.ok(normal >= 14 && normal <= 22);
+  assert.ok(high >= 24 && high <= 32);
+  assert.ok(normalizeRadialVoiceLevel(0.5) > 0.5);
 });
 
-test('smoothing visual sobe rápido e desce suavemente sem alterar a intensidade de captura', () => {
-  const attack = smoothRadialVoiceLevel(0, 1);
-  const release = smoothRadialVoiceLevel(1, 0);
-  assert.ok(attack > 0.5 && attack < 1);
+test('smoothing temporal usa attack de 80ms e release de 240ms sem alterar a captura', () => {
+  let attack = 0;
+  let release = 1;
+  for (let frame = 0; frame < 5; frame += 1) {
+    attack = smoothRadialVoiceLevel(attack, 1, 16);
+    release = smoothRadialVoiceLevel(release, 0, 16);
+  }
+  assert.equal(RADIAL_VOICE_ATTACK_MS, 80);
+  assert.equal(RADIAL_VOICE_RELEASE_MS, 240);
+  assert.ok(attack > 0.6 && attack < 0.7);
   assert.ok(release > attack);
   assert.equal(smoothRadialVoiceLevel(0, -1), 0);
   assert.ok(smoothRadialVoiceLevel(0, 5) <= 1);
+});
+
+test('waveform suaviza em requestAnimationFrame sem setState ou recálculo React por frame', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const component = home.slice(
+    home.indexOf('function RadialVoiceWaveform'),
+    home.indexOf('function getVoiceActivationError'),
+  );
+  assert.match(component, /window\.requestAnimationFrame\(renderFrame\)/);
+  assert.match(component, /window\.cancelAnimationFrame\(animationFrameId\)/);
+  assert.match(component, /waveform\.style\.setProperty\('--radial-voice-level'/);
+  assert.doesNotMatch(component, /setState|useState/);
 });
 
 test('waveform é decorativa, só aparece em listening e não captura eventos de ponteiro', async () => {
@@ -1462,6 +1487,8 @@ test('waveform é decorativa, só aparece em listening e não captura eventos de
   assert.match(css, /\.radialVoiceWaveform \{[\s\S]{0,220}pointer-events: none;/);
   assert.match(css, /\.uniButton\[data-state="listening"\] \.radialVoiceWaveform \{\s*opacity: 1;/);
   assert.doesNotMatch(css, /\.uniButton\[data-state="transcribing"\] \.radialVoiceWaveform/);
+  assert.match(css, /\.radialVoiceBar::before \{[\s\S]{0,180}width: 1\.35px;/);
+  assert.match(css, /animation: radialVoiceFlow 2\.4s ease-in-out var\(--bar-delay\) infinite;/);
 });
 
 test('BUG 3: a animação de escuta nunca interfere no push-to-talk (pointerdown\\/up\\/cancel continuam intactos)', async () => {
