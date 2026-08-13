@@ -652,17 +652,25 @@
   padding: 28px;
   border: 2px solid transparent;
   border-radius: 50%;
-  /* BUG REAL EM DISPOSITIVO FÍSICO: rolar a Home tocando primeiro no botão
-     (comum -- ele ocupa boa parte do centro da tela) deixava a Uni presa em
-     "Ouvindo..." para sempre, porque `touch-action: none` bloqueava
-     QUALQUER rolagem nativa para toques que começam aqui -- o usuário só
-     via a escuta começar e a página nunca rolar. `pan-y` devolve a rolagem
-     vertical nativa (o navegador pode assumir o gesto como scroll e
-     cancelar nosso ponteiro normalmente); a distinção real entre "segurar
-     para falar" e "querendo rolar" agora é feita no JS (activation delay +
-     threshold de movimento em handleVoicePointerDown/Move, ver
-     SimplifiedHomeView.jsx), não mais bloqueando o navegador inteiro. */
-  touch-action: pan-y;
+  /* BUG REAL EM DISPOSITIVO FÍSICO: sem isso, o navegador mobile pode
+     interpretar o toque prolongado como início de um gesto nativo de
+     rolagem/pan e cancelar o ponteiro (pointercancel) mesmo com
+     setPointerCapture já ativo -- setPointerCapture não sobrepõe
+     touch-action. Isso encerrava a gravação sozinha, com o dedo ainda
+     pressionado.
+     HOTFIX (regressão real revertida): uma tentativa de trocar para
+     `pan-y` (para permitir rolagem nativa a partir do próprio botão)
+     reintroduziu exatamente essa classe de bug -- um hold NORMAL (sem
+     nenhum scroll) passou a ficar preso em "Ouvindo..." já no primeiro
+     teste físico. Revertido para `none`, o mesmo valor comprovado usado
+     pelo botão compacto da barra inferior (UniInstantButton.module.css).
+     A distinção real entre "segurar para falar" e "querendo rolar" agora
+     é só o threshold de movimento em JS (handleVoicePointerMove, ver
+     SimplifiedHomeView.jsx) -- cancela a captura, mas não devolve rolagem
+     nativa a partir do círculo do botão (rolar a partir de qualquer ponto
+     fora dele continua livre); nunca mais travar teve prioridade sobre
+     rolar a partir do centro exato do botão. */
+  touch-action: none;
   /* Segurar o dedo por vários segundos sem soltar tende a disparar seleção
      de texto/callout nativo (menu de lupa/copiar do iOS) ou iniciar um drag
      do próprio botão -- qualquer um interrompe o toque e derruba a captura

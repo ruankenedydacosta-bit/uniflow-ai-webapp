@@ -642,19 +642,15 @@ function SimplifiedHomeView({
   //
   // Correção (mesma arquitetura já validada em usePressAndHold.js, o
   // botão compacto):
-  // 1. Ativação com pequeno atraso (VOICE_ACTIVATION_DELAY_MS) -- não
-  //    inicia a captura no pointerdown; só depois de ficar parado por esse
-  //    tempo. Ainda não sabemos se é hold ou scroll até aí.
-  // 2. Threshold de movimento (VOICE_MOVE_CANCEL_PX) -- handleVoicePointerMove
-  //    cancela o gesto assim que ultrapassado, em QUALQUER direção, antes
-  //    ou depois de a captura já ter começado.
-  // 3. touch-action passa de `none` para `pan-y` no CSS -- rolagem vertical
-  //    nativa volta a funcionar; o threshold em JS cobre o intervalo entre
-  //    o toque e o navegador realmente assumir o gesto como scroll.
-  // 4. Rede de segurança em `window` (pointerup/pointercancel, fase de
+  // 1. Threshold de movimento (VOICE_MOVE_CANCEL_PX) -- handleVoicePointerMove
+  //    cancela o gesto assim que ultrapassado, em QUALQUER direção, mesmo
+  //    com a captura já em andamento (beginVoiceCapture continua rodando
+  //    IMEDIATO no pointerdown, exatamente como sempre -- ver nota abaixo
+  //    sobre por que um atraso de ativação foi tentado e revertido).
+  // 2. Rede de segurança em `window` (pointerup/pointercancel, fase de
   //    captura) + um timeout de watchdog por gesto, independentes de qual
   //    elemento o navegador realmente notifica.
-  // 5. Watchdog de estado (useEffect mais abaixo): se voiceInput.isActive
+  // 3. Watchdog de estado (useEffect mais abaixo): se voiceInput.isActive
   //    mas nenhum gesto está sendo rastreado, força voiceInput.cancel() --
   //    última barreira, nunca deveria disparar na prática.
   //
@@ -662,7 +658,30 @@ function SimplifiedHomeView({
   // finishVoiceInteraction(reason). Chamar mais de uma vez para o mesmo
   // gesto nunca quebra nada (a segunda chamada não encontra gesto rastreado
   // e não faz nada).
-  const VOICE_ACTIVATION_DELAY_MS = 160;
+  //
+  // HOTFIX (regressão real em dispositivo físico, revertida): a primeira
+  // versão desta correção tentou (1) um atraso de ativação de 160ms antes
+  // de chamar beginVoiceCapture, e (2) trocar touch-action de `none` para
+  // `pan-y` para a rolagem nativa funcionar a partir do próprio botão.
+  // Resultado real no aparelho: um hold NORMAL (sem nenhum scroll) passou a
+  // ficar preso em "Ouvindo..." já no primeiro teste. Causa mais provável:
+  // `touch-action: none` já existia no código ANTES desta tarefa por um
+  // motivo documentado (ver git blame/comentário original) -- o mesmo bug
+  // físico de WebKit/Chrome mobile onde o navegador, com qualquer valor de
+  // touch-action que permita pan, pode "roubar" o ponteiro de um elemento
+  // com setPointerCapture ativo de forma inconsistente entre aparelhos,
+  // inclusive sem entregar nenhum evento de término de forma confiável. O
+  // botão compacto da barra inferior (usePressAndHold.js/
+  // UniInstantButton.module.css), que já funciona, usa `touch-action: none`
+  // -- nunca `pan-y`. Revertido para o mesmo valor comprovado; a rolagem
+  // vertical iniciada exatamente sobre o círculo do botão continua
+  // bloqueada (mesma limitação que o botão compacto sempre teve), mas isso
+  // é um trade-off aceito em troca de nunca mais travar -- rolar a partir
+  // de qualquer ponto fora do círculo continua livre. beginVoiceCapture()
+  // voltou a rodar IMEDIATO no pointerdown (idêntico ao comportamento
+  // original, testado e nunca travado fora do cenário de scroll), em vez
+  // de atrás de um timer -- elimina de vez a hipótese de uma condição de
+  // corrida nova entre o atraso e o resto do estado do componente.
   const VOICE_MOVE_CANCEL_PX = 10;
   const VOICE_GESTURE_WATCHDOG_MS = 10_000;
 
@@ -674,9 +693,7 @@ function SimplifiedHomeView({
   const clearGestureTimers = useCallback(() => {
     const gesture = gestureRef.current;
     if (!gesture) return;
-    if (gesture.activationTimer) clearTimeout(gesture.activationTimer);
     if (gesture.watchdogTimer) clearTimeout(gesture.watchdogTimer);
-    gesture.activationTimer = null;
     gesture.watchdogTimer = null;
   }, []);
 
@@ -803,9 +820,9 @@ function SimplifiedHomeView({
       buttonRef.current.releasePointerCapture(pointerId);
     }
 
-    // Ainda dentro do atraso de ativação -- nunca chegou a pedir
-    // microfone, nada para parar/cancelar. Isso é o que garante que um
-    // scroll/gesto rápido NUNCA gera mensagem/transcrição para a Uni.
+    // beginVoiceCapture() pode recusar o gesto (plan.proceed === false,
+    // ex.: já ocupado processando outra coisa) -- nesse caso captureStarted
+    // nunca chega a ser true e não há nada para parar/cancelar aqui.
     if (!captureStarted) return;
 
     if (reason === 'released') {
@@ -833,7 +850,6 @@ function SimplifiedHomeView({
       x: event.clientX,
       y: event.clientY,
       captureStarted: false,
-      activationTimer: null,
       watchdogTimer: null,
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -845,23 +861,20 @@ function SimplifiedHomeView({
       finishVoiceInteractionRef.current?.('watchdog-timeout');
     }, VOICE_GESTURE_WATCHDOG_MS);
 
-    const { pointerId } = event;
-    gestureRef.current.activationTimer = setTimeout(() => {
-      const gesture = gestureRef.current;
-      if (!gesture || gesture.pointerId !== pointerId) return;
-      gesture.activationTimer = null;
-      if (!beginVoiceCapture()) {
-        finishVoiceInteraction('activation-failed');
-        return;
-      }
-      gesture.captureStarted = true;
-    }, VOICE_ACTIVATION_DELAY_MS);
+    // beginVoiceCapture roda IMEDIATO, igual ao comportamento original --
+    // ver HOTFIX acima sobre por que o atraso de ativação foi revertido.
+    if (!beginVoiceCapture()) {
+      finishVoiceInteraction('activation-failed');
+      return;
+    }
+    gestureRef.current.captureStarted = true;
   }
 
   // Scroll/drag não é comando de voz: qualquer movimento além do threshold,
   // em QUALQUER direção (cima/baixo/esquerda/direita/diagonal), cancela o
-  // gesto -- antes da captura começar (o timer de ativação nunca chega a
-  // rodar) ou depois (finishVoiceInteraction para a gravação em andamento).
+  // gesto imediatamente (finishVoiceInteraction para a gravação em
+  // andamento) -- rede de defesa em profundidade mesmo com touch-action:
+  // none bloqueando a rolagem nativa a partir do próprio botão.
   function handleVoicePointerMove(event) {
     const gesture = gestureRef.current;
     if (!gesture || event.pointerId !== gesture.pointerId) return;
