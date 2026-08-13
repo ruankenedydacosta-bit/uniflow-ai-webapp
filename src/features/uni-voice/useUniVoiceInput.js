@@ -34,6 +34,8 @@ export function useUniVoiceInput({
 } = {}) {
   const [state, dispatch] = useReducer(voiceCaptureReducer, initialVoiceCaptureState);
   const adapterRef = useRef(null);
+  const sessionSequenceRef = useRef(0);
+  const activeSessionIdRef = useRef(null);
   const requestIdRef = useRef(0);
   const transcriptionAbortRef = useRef(null);
   const captureEndNotifiedRef = useRef(true);
@@ -59,21 +61,28 @@ export function useUniVoiceInput({
     };
   }, [onBeforeStart, onCaptureEnd, onCaptureStart, onFinalTranscript, onUnsupported]);
 
-  const releaseAdapter = useCallback(() => {
+  const releaseAdapter = useCallback((expectedSessionId = null) => {
+    if (
+      expectedSessionId !== null
+      && activeSessionIdRef.current !== expectedSessionId
+    ) return false;
     adapterRef.current?.dispose();
     adapterRef.current = null;
     activeStreamRef.current = null;
+    activeSessionIdRef.current = null;
     if (!captureEndNotifiedRef.current) {
       captureEndNotifiedRef.current = true;
       callbacksRef.current.onCaptureEnd?.();
     }
+    return true;
   }, []);
 
-  const transcribe = useCallback(async ({ audio, durationMs }) => {
+  const transcribe = useCallback(async ({ audio, durationMs, sessionId }) => {
+    if (activeSessionIdRef.current !== sessionId) return;
     const transcriptionStartedAt = Date.now();
     const requestId = ++requestIdRef.current;
     dispatch({ type: 'PROCESS' });
-    releaseAdapter();
+    releaseAdapter(sessionId);
     transcriptionAbortRef.current?.abort('superseded');
     const transcriptionController = new AbortController();
     transcriptionAbortRef.current = transcriptionController;
@@ -82,6 +91,7 @@ export function useUniVoiceInput({
       blobSizeBytes: audio?.size,
       mimeType: audio?.type,
       durationMs,
+      sessionId,
     });
 
     let result;
@@ -90,11 +100,12 @@ export function useUniVoiceInput({
         audio,
         durationMs,
         workspaceId,
+        sessionId,
         signal: transcriptionController.signal,
       });
     } catch (error) {
       if (requestId !== requestIdRef.current) return;
-      recordVoicePipelineDiagnostic('STT_ERROR');
+      recordVoicePipelineDiagnostic('STT_ERROR', { sessionId });
       const code = error?.code ?? 'transcription_failed';
       void telemetry.metric('voice.latency_ms', {
         value: Math.max(0, Date.now() - transcriptionStartedAt),
@@ -121,7 +132,10 @@ export function useUniVoiceInput({
     }
     if (requestId !== requestIdRef.current) return;
 
-    recordVoicePipelineDiagnostic('STT_RESPONSE_RECEIVED');
+    recordVoicePipelineDiagnostic('STT_RESPONSE_RECEIVED', {
+      sessionId,
+      transcriptEmpty: !result?.text,
+    });
     void telemetry.metric('voice.latency_ms', {
       value: Math.max(0, Date.now() - transcriptionStartedAt),
       unit: 'ms',
@@ -130,17 +144,22 @@ export function useUniVoiceInput({
     }, { workspaceId, requestId: String(requestId) });
 
     if (result?.text) {
-      recordVoicePipelineDiagnostic('TRANSCRIPT_NON_EMPTY', { transcriptLength: result.text.length });
+      recordVoicePipelineDiagnostic('TRANSCRIPT_NON_EMPTY', {
+        transcriptLength: result.text.length,
+        sessionId,
+        transcriptEmpty: false,
+      });
       dispatch({ type: 'COMPLETE' });
       const finalTranscriptHandler = callbacksRef.current.onFinalTranscript;
       finalTranscriptHandler?.(result.text);
       recordVoicePipelineDiagnostic('MESSAGE_SENT_TO_UNI', {
         messageDelivered: typeof finalTranscriptHandler === 'function',
+        sessionId,
       });
       return;
     }
 
-    recordVoicePipelineDiagnostic('EMPTY_TRANSCRIPT');
+    recordVoicePipelineDiagnostic('EMPTY_TRANSCRIPT', { sessionId, transcriptEmpty: true });
     const code = result?.error?.code ?? 'transcription_failed';
     void telemetry.error('voice.failure', {
       errorCode: normalizeTelemetryErrorCode(code, 'TRANSCRIPTION_FAILED'),
@@ -161,9 +180,16 @@ export function useUniVoiceInput({
     if (adapterRef.current || isVoiceCaptureActive(state.status) || !workspaceId) return false;
 
     const browserRuntime = runtime ?? (typeof window !== 'undefined' ? window : undefined);
-    const adapter = createMediaRecorderAdapter({
+    const sessionId = ++sessionSequenceRef.current;
+    activeSessionIdRef.current = sessionId;
+    let adapter;
+    const isCurrentSession = () => activeSessionIdRef.current === sessionId
+      && adapterRef.current === adapter;
+    adapter = createMediaRecorderAdapter({
       runtime: browserRuntime,
+      sessionId,
       onStart: () => {
+        if (!isCurrentSession()) return;
         dispatch({ type: 'START_LISTENING' });
         void telemetry.event('voice.lifecycle', {
           status: 'listening',
@@ -173,12 +199,15 @@ export function useUniVoiceInput({
         callbacksRef.current.onCaptureStart?.();
       },
       onStreamReady: (stream) => {
+        if (!isCurrentSession()) return;
         activeStreamRef.current = stream;
       },
       onAudio: (capture) => {
-        void transcribe(capture);
+        if (!isCurrentSession()) return;
+        void transcribe({ ...capture, sessionId });
       },
       onCancel: () => {
+        if (!isCurrentSession()) return;
         dispatch({ type: 'CANCEL' });
         void telemetry.event('voice.lifecycle', {
           status: 'cancelled',
@@ -187,6 +216,7 @@ export function useUniVoiceInput({
         }, { workspaceId });
       },
       onError: ({ code }) => {
+        if (!isCurrentSession()) return;
         void telemetry.error('voice.failure', {
           errorCode: normalizeTelemetryErrorCode(code, 'CAPTURE_FAILED'),
           stage: 'capture',
@@ -198,11 +228,12 @@ export function useUniVoiceInput({
           status: CAPTURE_ERROR_STATES[code] ?? VOICE_CAPTURE_STATES.ERROR,
           errorCode: code,
         });
-        releaseAdapter();
+        releaseAdapter(sessionId);
       },
     });
 
     if (!adapter.supported) {
+      activeSessionIdRef.current = null;
       dispatch({
         type: 'FAIL',
         status: VOICE_CAPTURE_STATES.UNSUPPORTED,
@@ -217,7 +248,7 @@ export function useUniVoiceInput({
     dispatch({ type: 'REQUEST_PERMISSION' });
     adapterRef.current = adapter;
     const started = await adapter.start();
-    if (!started && adapterRef.current === adapter) releaseAdapter();
+    if (!started && adapterRef.current === adapter) releaseAdapter(sessionId);
     return started;
   }, [releaseAdapter, runtime, state.status, transcribe, workspaceId]);
 
@@ -237,9 +268,10 @@ export function useUniVoiceInput({
       }
       return false;
     }
+    const sessionId = activeSessionIdRef.current;
     adapterRef.current.cancel();
     dispatch({ type: 'CANCEL' });
-    releaseAdapter();
+    releaseAdapter(sessionId);
     return true;
   }, [releaseAdapter, state.status]);
 
@@ -256,11 +288,11 @@ export function useUniVoiceInput({
   // releaseAdapter), então vira o fallback garantido quando o stop nativo
   // falha -- o usuário nunca fica preso em "Ouvindo..." sem nenhuma saída.
   const stop = useCallback(() => {
-    if (!adapterRef.current || state.status !== VOICE_CAPTURE_STATES.LISTENING) return false;
-    const stopped = adapterRef.current.stop();
+    if (!adapterRef.current) return false;
+    const stopped = adapterRef.current.stop('released');
     if (!stopped) return cancel();
     return stopped;
-  }, [cancel, state.status]);
+  }, [cancel]);
 
   const toggle = useCallback(() => {
     if (state.status === VOICE_CAPTURE_STATES.LISTENING) return stop();
@@ -312,6 +344,11 @@ export function useUniVoiceInput({
   }, [releaseAdapter]);
 
   const getActiveStream = useCallback(() => activeStreamRef.current, []);
+  const getRecorderState = useCallback(
+    () => adapterRef.current?.getRecorderState?.() ?? 'inactive',
+    [],
+  );
+  const getActiveSessionId = useCallback(() => activeSessionIdRef.current, []);
 
   return {
     ...state,
@@ -325,5 +362,7 @@ export function useUniVoiceInput({
     reset,
     prepareMicrophone,
     getActiveStream,
+    getRecorderState,
+    getActiveSessionId,
   };
 }

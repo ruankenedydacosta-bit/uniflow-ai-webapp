@@ -95,7 +95,9 @@ test('nunca inclui conteúdo de áudio/texto -- só os campos técnicos da allow
   assert.deepEqual(Object.keys(event.detail), [
     'blobSizeBytes', 'mimeType', 'durationMs', 'trackReadyState', 'trackEnabled', 'trackMuted',
     'audioTrackCount', 'streamActive', 'audioContextState', 'recorderState', 'httpStatus',
-    'transcriptLength', 'finishReason', 'messageDelivered',
+    'transcriptLength', 'finishReason', 'messageDelivered', 'sessionId', 'rmsMean', 'peak',
+    'transcriptEmpty', 'stopReason', 'autoGainControl', 'echoCancellation',
+    'noiseSuppression', 'channelCount',
   ]);
   assert.equal(event.detail.transcriptLength, 42);
 });
@@ -120,6 +122,10 @@ test('campos ausentes/inválidos nunca lançam -- viram null em vez de NaN/undef
   assert.equal(event.detail.transcriptLength, null);
   assert.equal(event.detail.finishReason, null);
   assert.equal(event.detail.messageDelivered, null);
+  assert.equal(event.detail.sessionId, null);
+  assert.equal(event.detail.rmsMean, null);
+  assert.equal(event.detail.peak, null);
+  assert.equal(event.detail.transcriptEmpty, null);
 });
 
 test('metadados técnicos do stream, track, AudioContext, recorder e HTTP são preservados', () => {
@@ -136,6 +142,11 @@ test('metadados técnicos do stream, track, AudioContext, recorder e HTTP são p
       httpStatus: 200,
       finishReason: 'released',
       messageDelivered: true,
+      sessionId: 41,
+      rmsMean: 0.014,
+      peak: 0.12,
+      transcriptEmpty: false,
+      autoGainControl: true,
     },
     { env: { DEV: true }, logger: () => {} },
   );
@@ -149,4 +160,9 @@ test('metadados técnicos do stream, track, AudioContext, recorder e HTTP são p
   assert.equal(event.detail.httpStatus, 200);
   assert.equal(event.detail.finishReason, 'released');
   assert.equal(event.detail.messageDelivered, true);
+  assert.equal(event.detail.sessionId, 41);
+  assert.equal(event.detail.rmsMean, 0.014);
+  assert.equal(event.detail.peak, 0.12);
+  assert.equal(event.detail.transcriptEmpty, false);
+  assert.equal(event.detail.autoGainControl, true);
 });

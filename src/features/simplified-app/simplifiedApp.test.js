@@ -529,7 +529,7 @@ test('pointerup encerra e envia (stop), nunca navega para /app/uni', async () =>
   const handlerSlice = home.slice(idx, idx + 200);
   assert.match(handlerSlice, /finishVoiceInteraction\('released'\);/);
   const finishSlice = home.slice(finishIdx, finishIdx + 900);
-  assert.match(finishSlice, /if \(reason === 'released'\) \{\s*if \(voiceInput\.isListening\) \{\s*voiceInput\.stop\(\);/);
+  assert.match(finishSlice, /if \(reason === 'released'\) \{\s*voiceInput\.stop\(\);/);
   assert.doesNotMatch(handlerSlice, /navigate\(/);
   assert.doesNotMatch(finishSlice, /navigate\(/);
 });
@@ -721,7 +721,8 @@ test('background ou fim da captura libera o gesto de voz preso sem exigir reload
 test('watchdog de estado: enquanto voiceInput.isActive e nenhum gesto rastreado, cancela periodicamente -- nunca via reload', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /if \(!voiceInput\.isActive\) return undefined;/);
-  assert.match(home, /if \(pressedGestureRef\.current === null\) voiceInput\.cancel\(\);/);
+  assert.match(home, /const recorderState = voiceInput\.getRecorderState\?\.\(\) \?\? 'inactive';/);
+  assert.match(home, /pressedGestureRef\.current === null[\s\S]*?recorderState !== 'recording'[\s\S]*?voiceInput\.isListening[\s\S]*?voiceInput\.cancel\(\);/);
   assert.match(home, /const interval = setInterval\(\(\) => \{/);
   assert.doesNotMatch(home, /window\.location\.reload/);
   assert.doesNotMatch(home, /location\.reload\(\)/);
@@ -1406,7 +1407,7 @@ test('campo de busca do histórico usa font-size >= 16px -- evita o zoom automá
 test('BUG 3: Home usa useVoiceIntensity com o stream do motor de voz existente, ativo só durante isListening', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /import \{[\s\S]*?useVoiceIntensity[\s\S]*?\} from '\.\.\/uni-voice\/index\.js';/);
-  assert.match(home, /const \{ level: voiceLevel \} = useVoiceIntensity\(\{\s*getStream: voiceInput\.getActiveStream,\s*active: isListening,\s*\}\);/);
+  assert.match(home, /const \{ level: voiceLevel \} = useVoiceIntensity\(\{\s*getStream: voiceInput\.getActiveStream,\s*active: isListening,\s*getSessionId: voiceInput\.getActiveSessionId,\s*\}\);/);
 });
 
 test('BUG 3: o anel de intensidade só recebe o nível de voz enquanto isListening -- nunca fora do estado de escuta', async () => {

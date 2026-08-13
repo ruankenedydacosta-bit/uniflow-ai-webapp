@@ -46,7 +46,7 @@ export function createUniVoiceTranscriptionProvider({
   runtime = globalThis,
   timeoutMs = UNI_VOICE_TRANSCRIPTION_TIMEOUT_MS,
 } = {}) {
-  async function transcribe({ audio, durationMs, workspaceId, signal } = {}) {
+  async function transcribe({ audio, durationMs, workspaceId, sessionId, signal } = {}) {
     const validationError = validateVoiceTranscriptionRequest({
       audio,
       durationMs,
@@ -87,7 +87,11 @@ export function createUniVoiceTranscriptionProvider({
         body: formData,
         signal: controller.signal,
       });
-      recordVoicePipelineDiagnostic('STT_HTTP_RESPONSE', { httpStatus: response.status });
+      recordVoicePipelineDiagnostic('STT_HTTP_RESPONSE', {
+        httpStatus: response.status,
+        sessionId,
+        transcriptEmpty: response.status === 422,
+      });
 
       if (!response.ok) {
         // HOTFIX P0.5: a Edge Function responde 422 ("Fala nao identificada")
