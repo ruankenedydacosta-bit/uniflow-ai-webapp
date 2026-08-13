@@ -79,10 +79,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        cleanupOutdatedCaches: true,
+        cleanupOutdatedCaches: false,
         clientsClaim: false,
         skipWaiting: false,
-        globIgnores: ['**/version.json'],
+        importScripts: ['/legacy-update-bridge.js'],
+        globIgnores: ['**/version.json', '**/legacy-update-bridge.js'],
       },
     }),
   ],

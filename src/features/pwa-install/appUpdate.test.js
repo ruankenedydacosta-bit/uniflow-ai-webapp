@@ -235,6 +235,6 @@ test('card usa Home, bloqueia ações críticas e não interfere em voz ou scrol
   assert.doesNotMatch(card, /position:\s*fixed|role="dialog"|aria-modal/);
   assert.doesNotMatch(css, /position:\s*fixed/);
   assert.match(vite, /registerType: 'prompt'/);
-  assert.match(vite, /globIgnores: \['\*\*\/version\.json'\]/);
+  assert.match(vite, /globIgnores: \['\*\*\/version\.json', '\*\*\/legacy-update-bridge\.js'\]/);
   assert.match(vercel, /no-store, no-cache, must-revalidate/);
 });
