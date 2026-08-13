@@ -6,7 +6,12 @@ import {
   pushPendingAction,
   updatePendingAction,
 } from './pendingActionStack.js';
-import { classifyIntent, normalizeFinancialText, resolveRelativeDateExpression } from '../uni-intents/index.js';
+import {
+  classifyIntent,
+  normalizeFinancialText,
+  resolveRelativeDateExpression,
+  stripLeadingConversationalPrefix,
+} from '../uni-intents/index.js';
 import {
   createAgendaClientOperationId,
   createAgendaItem,
@@ -20,7 +25,6 @@ import {
   getOrCreateAgendaOperation,
 } from '../../services/agendaOperationStore.js';
 import { AGENDA_IDEMPOTENCY_ENABLED } from '../../services/agendaIdempotencyConfig.js';
-import { AGENDA_CONTEXTUAL_FOLLOWUP_ENABLED } from './agendaConversationConfig.js';
 
 const AGENDA_INTENTS = new Set([
   'agenda_reminder_create',
@@ -51,7 +55,7 @@ const NUMBER_WORDS = Object.freeze({
 });
 
 const SPOKEN_HOUR_PATTERN = [
-  'vinte(?:\\s+e\\s+(?:uma|duas|tres))?',
+  'vinte(?:\\s+e\\s+(?:um|uma|dois|duas|tres))?',
   'uma', 'duas', 'tres', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove',
   'dez', 'onze', 'doze', 'treze', 'catorze', 'quatorze', 'quinze',
   'dezesseis', 'dezassete', 'dezessete', 'dezoito', 'dezenove',
@@ -168,9 +172,7 @@ function parseCount(value) {
 }
 
 function stripUniVocative(text) {
-  return normalizeFinancialText(text)
-    .replace(/^\s*(?:(?:fala|ei)\s+uni(?:\s*[,;:!?.-]\s*|\s+)|uni\s*[,;:!?.-]\s*)/, '')
-    .trim();
+  return stripLeadingConversationalPrefix(text);
 }
 
 function resolveAgendaDate(text, referenceDate) {
@@ -387,7 +389,7 @@ function findRangeOrMultipleTimes(normalized) {
     `\\b${endpoint}\\s+para\\s+${endpoint}\\b`,
     `\\b${endpoint}\\s+para\\s+(?:as\\s+)?${NUMBER_PHRASE_PATTERN}(?=\\s*[.!?]?$)`,
     `\\b${endpoint}\\s+e\\s+${endpoint}\\b`,
-    `\\b(?!vinte\\s+e\\s+(?:uma|duas|tres)\\s*(?:h|horas?)\\b)(?:${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s+e\\s+(?:${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s*(?:h|horas?)\\b`,
+    `\\b(?!vinte\\s+e\\s+(?:um|uma|dois|duas|tres)\\s*(?:h|horas?)\\b)(?:${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s+e\\s+(?:${SPOKEN_HOUR_PATTERN}|\\d{1,2})\\s*(?:h|horas?)\\b`,
   ];
   for (const source of ambiguousPatterns) {
     const match = normalized.match(new RegExp(source));
@@ -412,7 +414,7 @@ function findSeparatedTemporalEndpoints(normalized) {
   );
   for (const match of normalized.matchAll(pattern)) {
     if (/\bdia\s+$/.test(normalized.slice(0, match.index))) continue;
-    if (/^vinte\s+e\s+(?:uma|duas|tres)(?:\s*(?:h|horas?))?(?:\s+da\s+(?:manha|tarde|noite))?$/.test(match[0])) {
+    if (/^vinte\s+e\s+(?:um|uma|dois|duas|tres)(?:\s*(?:h|horas?))?(?:\s+da\s+(?:manha|tarde|noite))?$/.test(match[0])) {
       continue;
     }
     const firstTime = parseClockAtom(match[1]);
@@ -1388,18 +1390,6 @@ function ambiguityPrompt(time) {
   return `Você quer às ${label} da ${firstPeriod} ou às ${label} da ${laterPeriod}?`;
 }
 
-function isObservationDeclined(normalized) {
-  return /^(?:nao|sem\s+observacao|nao\s+precisa|pode\s+salvar|so\s+isso|nenhuma)[.!]?$/.test(normalized);
-}
-
-function extractObservationReply(text) {
-  const normalized = normalizeFinancialText(text);
-  const explicit = normalized.match(/^(?:sim|claro|pode\s+ser)[,;:]?\s+(.+)$/)?.[1]?.trim();
-  if (explicit) return capitalizeSentence(explicit.replace(/[.!?]+$/, '').trim());
-  if (/^(?:sim|claro|pode\s+ser)[.!]?$/.test(normalized)) return null;
-  return capitalizeSentence(normalized.replace(/[.!?]+$/, '').trim()) || null;
-}
-
 function configureAmbiguousTime(fields, time, referenceDate, currentDate) {
   fields.time = null;
   fields.hasExplicitTime = false;
@@ -1517,7 +1507,7 @@ function successText(action, item) {
   if (action === 'cancel') return `Tudo certo. Cancelei ${item.title}.`;
   if (action === 'delete') return `Tudo certo. Excluí ${item.title} da sua agenda.`;
   return item.is_all_day
-    ? `Pronto. Coloquei ${item.title} na sua agenda como compromisso do dia.`
+    ? `Pronto. Coloquei ${item.title} na sua agenda como compromisso de dia inteiro.`
     : `Pronto. Coloquei ${formatDateTime(item)} na sua agenda.`;
 }
 
@@ -1551,7 +1541,6 @@ export function createAgendaConversationFlow({
   createOperationId = createAgendaClientOperationId,
   idempotencyEnabled = AGENDA_IDEMPOTENCY_ENABLED,
   operationStorage,
-  observationFollowupEnabled = AGENDA_CONTEXTUAL_FOLLOWUP_ENABLED,
   now = () => new Date(),
   operationStore = {
     getOrCreate: getOrCreateAgendaOperation,
@@ -1761,28 +1750,6 @@ export function createAgendaConversationFlow({
 
     if (active.type === PENDING_TYPES.CREATE) {
       const fields = { ...active.fields };
-      if (fields.pendingField === 'observation') {
-        if (isObservationDeclined(normalized)) {
-          fields.observationResolved = true;
-        } else {
-          const observation = extractObservationReply(text);
-          if (!observation) {
-            const awaiting = updatePendingAction(stack, active.id, {
-              fields: { ...fields, awaitingObservationText: true },
-            });
-            setStack(identity, awaiting.stack);
-            return { handled: true, text: `Qual observação você quer adicionar a ${fields.title}?` };
-          }
-          fields.description = observation;
-          fields.observationResolved = true;
-        }
-        fields.pendingField = null;
-        fields.awaitingObservationText = false;
-        const result = await createItem(identity, fields);
-        if (result.error) return { handled: true, text: serviceErrorText(result.error) };
-        finishPending(identity, active, result.data);
-        return { handled: true, text: successText('create', result.data) };
-      }
       let timeAnalysis = analyzeAgendaTime(text, { allowContextual: true });
       const normalizedTimeReply = normalizeTimeReply(text);
       const periodResolvedTime = fields.ambiguousTime
@@ -1820,7 +1787,7 @@ export function createAgendaConversationFlow({
         fields.ambiguousTime = null;
         fields.suggestedTime = null;
       } else if (noTime) {
-        fields.allDay = observationFollowupEnabled;
+        fields.allDay = true;
         fields.hasExplicitTime = false;
         fields.timeChoiceResolved = true;
         fields.time = null;
@@ -1869,13 +1836,6 @@ export function createAgendaConversationFlow({
         return { handled: true, text: 'Quer colocar um horário ou deixo como compromisso do dia?' };
       }
 
-      if (observationFollowupEnabled && !fields.description && !fields.observationResolved) {
-        fields.pendingField = 'observation';
-        const followup = updatePendingAction(updated.stack, updated.action.id, { fields });
-        setStack(identity, followup.stack);
-        return { handled: true, text: `Certo. Quer adicionar alguma observação a ${fields.title}?` };
-      }
-
       const result = await createItem(identity, fields);
       if (result.error) return { handled: true, text: serviceErrorText(result.error) };
       finishPending(identity, { ...active, id: updated.action.id }, result.data);
@@ -1888,7 +1848,7 @@ export function createAgendaConversationFlow({
           title: active.fields.title,
           date: active.fields.date,
           time: null,
-          allDay: false,
+          allDay: true,
           hasExplicitTime: false,
           timeChoiceResolved: true,
           itemType: 'reminder',
@@ -2073,7 +2033,7 @@ export function createAgendaConversationFlow({
         fields.time = null;
         fields.hasExplicitTime = false;
       }
-      if (observationFollowupEnabled && !fields.hasExplicitTime && !timeAnalysis.blocked) {
+      if (!fields.hasExplicitTime && !timeAnalysis.blocked) {
         fields.allDay = true;
         fields.time = null;
         fields.hasExplicitTime = false;
@@ -2090,11 +2050,6 @@ export function createAgendaConversationFlow({
         if (!fields.date) return { handled: true, text: `Em qual dia você quer marcar ${fields.title}?` };
         if (ambiguityQuestion) return { handled: true, text: ambiguityQuestion };
         return { handled: true, text: 'Quer colocar um horário ou deixo como compromisso do dia?' };
-      }
-      if (observationFollowupEnabled && !fields.description) {
-        fields.pendingField = 'observation';
-        await startPending(identity, PENDING_TYPES.CREATE, fields);
-        return { handled: true, text: `Certo. Quer adicionar alguma observação a ${fields.title}?` };
       }
       const result = await createItem(identity, fields);
       return result.error

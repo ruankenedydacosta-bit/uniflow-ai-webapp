@@ -5,6 +5,8 @@ import {
   classifyIntent,
   AGENDA_INTENT_SET,
   FINANCIAL_INTENTS,
+  isPureCommonConversation,
+  stripLeadingConversationalPrefix,
 } from './intentClassifier.js';
 import { extractAmount } from './entityExtractor.js';
 import {
@@ -249,3 +251,38 @@ for (const input of [
     assert.equal(classifyIntent(input).intent, 'agenda_schedule_create');
   });
 }
+
+for (const input of [
+  'Bom dia.',
+  'Oi, Uni.',
+  'Tudo bem?',
+  'Como você está?',
+  'Obrigado.',
+]) {
+  test(`conversa comum pura não cai no Financeiro: ${input}`, () => {
+    assert.equal(isPureCommonConversation(input), true);
+    assert.equal(classifyIntent(input).intent, 'conversation_common');
+  });
+}
+
+for (const [input, expectedIntent] of [
+  ['Bom dia, Uni. Gastei 50 reais no mercado.', 'register_expense'],
+  ['Oi, Uni. Registra 200 reais de gasolina.', 'register_expense'],
+  ['Bom dia, qual meu saldo?', 'check_balance'],
+  ['Oi, Uni, agenda uma reunião amanhã às 22 horas.', 'agenda_schedule_create'],
+  ['Boa tarde, marca um compromisso amanhã.', 'agenda_schedule_create'],
+  ['Olá, mostra minhas despesas do mercado.', 'question'],
+]) {
+  test(`saudação + intenção funcional preserva a intenção: ${input}`, () => {
+    const result = classifyIntent(input);
+    assert.equal(result.intent, expectedIntent);
+    assert.notEqual(result.intent, 'conversation_common');
+  });
+}
+
+test('prefixo conversacional é removido sem perder o restante semântico', () => {
+  assert.equal(
+    stripLeadingConversationalPrefix('Fala, Uni. Boa noite. Agenda uma reunião amanhã.'),
+    'Agenda uma reunião amanhã.',
+  );
+});

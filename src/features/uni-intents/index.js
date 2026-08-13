@@ -1,7 +1,9 @@
 export {
   FINANCIAL_INTENTS,
   classifyIntent,
+  isPureCommonConversation,
   normalizeFinancialText,
+  stripLeadingConversationalPrefix,
 } from './intentClassifier.js';
 export {
   extractAccount,

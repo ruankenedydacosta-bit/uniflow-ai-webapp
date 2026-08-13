@@ -315,12 +315,61 @@ export function normalizeFinancialText(value) {
     .trim();
 }
 
-export function classifyIntent(input) {
-  const normalizedText = normalizeFinancialText(input);
+const PURE_COMMON_CONVERSATION_PATTERNS = Object.freeze([
+  /^(?:(?:oi|ola|alo|ei)(?:\s*,?\s*uni)?|(?:bom\s+dia|boa\s+tarde|boa\s+noite)(?:\s*,?\s*uni)?|fala\s*,?\s*uni|uni)[.!?]*$/,
+  /^(?:tudo\s+bem|como\s+(?:voce|vc)\s+(?:esta|ta)|como\s+vai)[.!?]*$/,
+  /^(?:obrigad[oa]|valeu)(?:\s*,?\s*uni)?[.!?]*$/,
+]);
 
-  if (!normalizedText) {
+const LEADING_CONVERSATIONAL_PREFIX = /^(?:(?:oi|ola|alo|ei)(?:\s*,?\s*uni)?|(?:bom\s+dia|boa\s+tarde|boa\s+noite)(?:\s*,?\s*uni)?|fala\s*,?\s*uni|uni)(?=$|[\s,;:!?.-])/;
+
+export function isPureCommonConversation(input) {
+  const normalizedText = normalizeFinancialText(input);
+  return PURE_COMMON_CONVERSATION_PATTERNS.some((pattern) => pattern.test(normalizedText));
+}
+
+export function stripLeadingConversationalPrefix(input) {
+  let text = typeof input === 'string' ? input.trim() : '';
+  let normalizedText = normalizeFinancialText(text);
+  let previousText = null;
+
+  // Há transcrições com mais de uma abertura ("Fala, Uni. Boa noite. ...").
+  // Removemos somente segmentos iniciais fechados; uma saudação no meio da
+  // intenção continua sendo conteúdo e nunca decide a rota sozinha.
+  while (normalizedText && normalizedText !== previousText) {
+    previousText = normalizedText;
+    const prefix = normalizedText.match(LEADING_CONVERSATIONAL_PREFIX)?.[0];
+    if (!prefix) break;
+    text = text
+      .slice(prefix.length)
+      .replace(/^[\s,;:!?.-]+/, '')
+      .trim();
+    normalizedText = normalizeFinancialText(text);
+  }
+
+  return text;
+}
+
+export function classifyIntent(input) {
+  const originalNormalizedText = normalizeFinancialText(input);
+
+  if (!originalNormalizedText) {
     return { intent: 'question', confidence: 0, signals: [] };
   }
+
+  const functionalText = stripLeadingConversationalPrefix(originalNormalizedText);
+  if (isPureCommonConversation(originalNormalizedText) || !functionalText) {
+    return {
+      intent: 'conversation_common',
+      confidence: 0.99,
+      signals: ['pure_common_conversation'],
+    };
+  }
+
+  // A saudação é contexto social, não a intenção principal. Quando há
+  // conteúdo funcional depois dela, Agenda/Financeiro classificam a parte
+  // semântica restante; o texto original continua preservado na mensagem.
+  const normalizedText = normalizeFinancialText(functionalText) || originalNormalizedText;
 
   // CAMADA 0 -- agenda/lembrete resolve ANTES de qualquer regra financeira.
   const agendaIntent = detectAgendaIntent(normalizedText);

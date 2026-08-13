@@ -16,6 +16,28 @@ test('P1-09: resultado assíncrono da Agenda valida turno, conversa, usuário e 
   assert.match(block, /if \(!isAgendaRequestCurrent\(agendaRequest\)\) return;/);
 });
 
+test('runtime: saudação pura é respondida antes de qualquer fluxo financeiro', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
+  const commonIdx = body.indexOf("declaredIntent === 'conversation_common'");
+  const financialIdx = body.indexOf('runDeterministicFinancialFlow(functionalText, historySnapshot);');
+
+  assert.ok(commonIdx !== -1, 'gate de conversa comum precisa existir');
+  assert.ok(financialIdx !== -1, 'fluxo financeiro funcional precisa continuar existindo');
+  assert.ok(commonIdx < financialIdx, 'conversa comum precisa ser resolvida antes do financeiro');
+  assert.match(body, /resolveCommonConversationResponse\(text\)/);
+});
+
+test('runtime: saudação funcional é removida apenas da cópia usada pelos domínios', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
+
+  assert.match(body, /const functionalText = stripLeadingConversationalPrefix\(text\) \|\| text\.trim\(\);/);
+  assert.match(body, /const userMsg = buildUserMessage\(text\);/);
+  assert.match(body, /agendaConversationRef\.current\.handle\(\{\s*text: functionalText,/);
+  assert.match(body, /runDeterministicFinancialFlow\(functionalText, historySnapshot\);/);
+});
+
 test('P1-D: transições invalidam Agenda sincronamente e liberam loading antes de qualquer await', async () => {
   const page = await source('./UniChatPage.jsx');
   const mode = extractFunctionBody(page, 'function handleModeChange(next) {').body;
@@ -1052,11 +1074,11 @@ test('BLOCO E: heurística determinística tenta o plano neural ANTES do parser 
   const page = await source('UniChatPage.jsx');
   assert.match(page, /import \{[\s\S]*?looksLikeComplexFinancialText[\s\S]*?\} from '\.\.\/uni-conversation';/);
   const sendTextIdx = page.indexOf('function sendText(text, metadata) {');
-  const runDeterministicIdx = page.indexOf('runDeterministicFinancialFlow(text, historySnapshot);', sendTextIdx);
+  const runDeterministicIdx = page.indexOf('runDeterministicFinancialFlow(functionalText, historySnapshot);', sendTextIdx);
   assert.ok(sendTextIdx > -1 && runDeterministicIdx > -1);
   const slice = page.slice(sendTextIdx, runDeterministicIdx);
-  assert.match(slice, /if \(looksLikeComplexFinancialText\(text\)\) \{/);
-  assert.match(slice, /const handled = await attemptFinancialPlan\(text\);/);
+  assert.match(slice, /if \(looksLikeComplexFinancialText\(functionalText\)\) \{/);
+  assert.match(slice, /const handled = await attemptFinancialPlan\(functionalText\);/);
 });
 
 test('BLOCO E: transferência tenta o plano neural antes do aviso estático de "não suportado"', async () => {
@@ -1205,10 +1227,10 @@ test('BUG REAL: uma frase financeira nova e autossuficiente abandona qualquer pe
   const idx = page.indexOf('if (hasPendingConversation) {');
   assert.ok(idx > -1);
   const slice = page.slice(idx, idx + 1200);
-  assert.match(slice, /looksLikeFreshFinancialStatement\(text\)/);
-  assert.match(slice, /looksLikeFreshBalanceStatement\(text\)/);
+  assert.match(slice, /looksLikeFreshFinancialStatement\(functionalText\)/);
+  assert.match(slice, /looksLikeFreshBalanceStatement\(functionalText\)/);
   assert.match(slice, /abandonStalePendingState\(\);/);
-  assert.match(slice, /\} else \{\s*handlePendingConversationInput\(text, userMsg\);\s*return;\s*\}/);
+  assert.match(slice, /\} else \{\s*handlePendingConversationInput\(functionalText, userMsg\);\s*return;\s*\}/);
 });
 
 test('declarações de saldo também são frases novas autossuficientes (ajuste/pergunta de decisão, nunca resposta a pendência antiga)', async () => {
@@ -1220,7 +1242,7 @@ test('declarações de saldo também são frases novas autossuficientes (ajuste/
   assert.match(trigger, /\|estou\\s\+com\|to\\s\+com/);
   const idx = page.indexOf('if (hasPendingConversation) {');
   assert.ok(idx > -1);
-  assert.match(page.slice(idx, idx + 950), /looksLikeFreshBalanceStatement\(text\)/);
+  assert.match(page.slice(idx, idx + 950), /looksLikeFreshBalanceStatement\(functionalText\)/);
 });
 
 test('CORREÇÃO URGENTE: pendência incompatível é abandonada quando a frase declara uma ação financeira NOVA (regra geral, além das looksLike*)', async () => {

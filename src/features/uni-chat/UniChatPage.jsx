@@ -101,7 +101,10 @@ import {
   invalidateAgendaRequestContext,
   isAgendaRequestContextCurrent,
 } from './agendaRequestLifecycle.js';
-import { classifyIntent } from '../uni-intents/index.js';
+import {
+  classifyIntent,
+  stripLeadingConversationalPrefix,
+} from '../uni-intents/index.js';
 import { createUniEngine, projectFinancialSnapshot, createOperationalMemory, uniMemory, runUniEngineIntegration, buildGuidanceSnapshot, buildObservationSnapshot, buildDecisionReadinessSnapshot, buildCapabilityReadinessSnapshot, buildExecutionReadinessSnapshot, runControlledGuidanceApplication, selectControlledVisibleResponse, buildConversationPlanSnapshot, selectControlledConversationRoute, buildCognitiveOrchestratorSnapshot, runUniEngineGateway, buildEngineResponseContext, compareLegacyWithEngine, buildCognitivePipelineSnapshot, createEmptyCognitivePipelineSnapshot, recordCognitiveTelemetry, resetCognitiveTelemetry, runFinancialReasoningShadow, runFinancialRuntimeShadow, selectFinancialVisibleResponse, assignFinancialRolloutBucket, runFinancialRolloutIntegration, buildToolCallingAuthorization } from '../uni-engine/index.js';
 import { validateFinancialFacts } from '../uni-engine/financial-runtime/factual-validation/index.js';
 import { validateFinancialRuntimeSafety } from '../uni-engine/financial-runtime/eligibility/index.js';
@@ -179,6 +182,7 @@ import {
   SIMPLIFIED_PRODUCT_MODE,
 } from '../simplified-app/simplifiedProductConfig.js';
 import { resolveGreetingName } from './greeting';
+import { resolveCommonConversationResponse } from './commonConversation.js';
 import {
   loadHistory,
   saveHistory,
@@ -3754,6 +3758,8 @@ export default function UniChatPage({ variant = 'full' }) {
   // BLOCO 1 — GATEWAY ÚNICO DE ENTRADA: voz (onFinalTranscript) e texto (onSend) convergem para o mesmo sendText, ponto único que alimenta o runUniEngineGateway em cada turno.
   function sendText(text, metadata) {
     if (!text.trim() || isTyping || isExecutingAction) return;
+    const declaredIntent = classifyIntent(text).intent;
+    const functionalText = stripLeadingConversationalPrefix(text) || text.trim();
     const messageSource = metadata?.source === 'voice' ? 'voice' : 'text';
     setExecutionError(null);
     setAiStatus(AI_STATUS.UNAVAILABLE);
@@ -3763,7 +3769,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // HOTFIX P1: hint da operação real deste turno, derivado do intent já
     // classificado abaixo (reaproveitado, nunca recalculado por regra
     // nova) -- usado só para escolher a mensagem de "interpretando" certa.
-    setInterpretingOperationHint(resolveOperationHintFromIntent(classifyIntent(text).intent));
+    setInterpretingOperationHint(resolveOperationHintFromIntent(declaredIntent));
 
     const userMsg = buildUserMessage(text);
     pushMessage(userMsg);
@@ -3780,13 +3786,12 @@ export default function UniChatPage({ variant = 'full' }) {
       mode,
     };
     const agendaRequest = { ...agendaIdentity, turnToken };
-    const declaredIntent = classifyIntent(text).intent;
     const hasPendingAgendaConversation = agendaConversationRef.current.hasPending(agendaIdentity);
     const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation
       && !declaredIntent.startsWith('agenda_')
       && (
-        looksLikeFreshFinancialStatement(text)
-        || looksLikeFreshBalanceStatement(text)
+        looksLikeFreshFinancialStatement(functionalText)
+        || looksLikeFreshBalanceStatement(functionalText)
         || ACTION_STATEMENT_INTENTS.has(declaredIntent)
       );
     if (shouldAbandonAgendaForFinancial) {
@@ -3849,11 +3854,19 @@ export default function UniChatPage({ variant = 'full' }) {
     // estado do módulo de integração é atualizado por messageId conforme o
     // fluxo avança, nunca no início do turno).
     lastToolCallingProcessedMessageIdRef.current = null;
+    if (declaredIntent === 'conversation_common') {
+      syncMessageToSupabase(userMsg);
+      createAssistantResponse(
+        resolveCommonConversationResponse(text),
+        { deduplicateNarration: false },
+      );
+      return;
+    }
     if (hasAgendaConversation) {
       setIsTyping(true);
       syncMessageToSupabase(userMsg);
       void agendaConversationRef.current.handle({
-        text,
+        text: functionalText,
         identity: agendaIdentity,
         referenceDate: getLocalIsoDate(),
       }).then((result) => {
@@ -3888,13 +3901,13 @@ export default function UniChatPage({ variant = 'full' }) {
       // alimentando a pendência como resposta legítima.
       const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;
       if (
-        looksLikeFreshFinancialStatement(text)
-        || looksLikeFreshBalanceStatement(text)
+        looksLikeFreshFinancialStatement(functionalText)
+        || looksLikeFreshBalanceStatement(functionalText)
         || (ACTION_STATEMENT_INTENTS.has(declaredIntent) && declaredIntent !== pendingActionIntent)
       ) {
         abandonStalePendingState();
       } else {
-        handlePendingConversationInput(text, userMsg);
+        handlePendingConversationInput(functionalText, userMsg);
         return;
       }
     }
@@ -3914,17 +3927,17 @@ export default function UniChatPage({ variant = 'full' }) {
       // operação. Se a IA não devolver um plano válido, cai de volta no
       // fluxo determinístico normal (runDeterministicFinancialFlow), sem
       // perder a mensagem do usuário.
-      if (looksLikeComplexFinancialText(text)) {
+      if (looksLikeComplexFinancialText(functionalText)) {
         void (async () => {
-          const handled = await attemptFinancialPlan(text);
+          const handled = await attemptFinancialPlan(functionalText);
           if (!handled) {
-            runDeterministicFinancialFlow(text, historySnapshot);
+            runDeterministicFinancialFlow(functionalText, historySnapshot);
           }
         })();
         return;
       }
 
-      runDeterministicFinancialFlow(text, historySnapshot);
+      runDeterministicFinancialFlow(functionalText, historySnapshot);
     }, UNI_THINK_MIN_MS);
   }
 
