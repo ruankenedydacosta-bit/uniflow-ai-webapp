@@ -1162,6 +1162,7 @@ test('Entradas/Saídas mantêm a modal; o terceiro card abre a Agenda existente'
   assert.match(records, /import UpdateBalanceModal from '\.\/UpdateBalanceModal\.jsx';/);
   assert.match(records, /<UpdateBalanceModal/);
   assert.match(records, /onChanged=\{refresh\}/);
+  assert.match(records, /onEdited=\{handleTransactionEdited\}/);
   assert.match(records, /target=\{summaryModalTarget \?\? 'income'\}/);
   assert.match(records, /onCardClick=\{openSummaryCard\}/);
   assert.match(records, /navigate\(SIMPLIFIED_ROUTES\.AGENDA\)/);

@@ -241,17 +241,18 @@ test('confirmação preserva snapshot visual enquanto a lista atualiza após a r
   assert.match(modal, /await onChanged\?\.\(\);[\s\S]*?setPendingDeleteSnapshot\(null\);[\s\S]*?await onDeleted\(transaction\)/);
 });
 
-test('Registros fecha a edição após delete, volta ao Histórico e mostra toast por 2 segundos', async () => {
+test('Registros fecha a edição após delete, volta ao Histórico e mantém o toast de exclusão por 2 segundos', async () => {
   const records = await source('../../features/simplified-app/SimplifiedRecordsPage.jsx');
-  const handlerStart = records.indexOf('function handleTransactionDeleted()');
-  const handlerEnd = records.indexOf('function selectCategory', handlerStart);
+  const handlerStart = records.indexOf('function completeTransactionMutation(message)');
+  const handlerEnd = records.indexOf('function handleTransactionDeleted()', handlerStart);
   const handler = records.slice(handlerStart, handlerEnd);
-  assert.match(records, /const DELETE_SUCCESS_NOTICE_MS = 2000;/);
+  assert.match(records, /const TRANSACTION_SUCCESS_NOTICE_MS = 2000;/);
   assert.match(handler, /setTransactionDialog\(null\)/);
   assert.match(handler, /setActiveTab\('history'\)/);
-  assert.match(handler, /setDeleteSuccessNotice\('Lançamento excluído com sucesso\.'\)/);
-  assert.match(handler, /window\.setTimeout\([\s\S]*?DELETE_SUCCESS_NOTICE_MS/);
-  assert.match(records, /className=\{styles\.deleteSuccessToast\}[\s\S]*?role="status"[\s\S]*?aria-live="polite"/);
+  assert.match(handler, /setTransactionSuccessNotice\(message\)/);
+  assert.match(handler, /window\.setTimeout\([\s\S]*?TRANSACTION_SUCCESS_NOTICE_MS/);
+  assert.match(records, /completeTransactionMutation\('Lançamento excluído com sucesso\.'\)/);
+  assert.match(records, /className=\{styles\.transactionSuccessToast\}[\s\S]*?role="status"[\s\S]*?aria-live="polite"/);
   assert.match(records, /onDeleted=\{handleTransactionDeleted\}/);
 });
 
@@ -263,6 +264,52 @@ test('sucesso da exclusão chama onDeleted e não zera o formulário antes de a 
   assert.match(slice, /await onChanged\?\.\(\)/);
   assert.match(slice, /if \(onDeleted\) \{\s*await onDeleted\(transaction\);\s*return;/);
   assert.ok(slice.indexOf('await onDeleted(transaction)') < slice.lastIndexOf('resetForm()'));
+});
+
+test('edição simples atualiza dados, entrega sucesso ao Registros e nunca cai no formulário novo zerado', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const submitStart = modal.indexOf('async function handleSubmit(event)');
+  const submitEnd = modal.indexOf('async function handleDelete(transactionId)', submitStart);
+  const submit = modal.slice(submitStart, submitEnd);
+  assert.match(submit, /saveTransaction\(\s*buildTransactionMutationPayload\(form\),\s*editingId,\s*\)/);
+  assert.match(submit, /if \(!result\.error\) \{\s*await onChanged\?\.\(\);\s*if \(editingId && onEdited\) \{\s*await onEdited\(editingTransaction\);\s*return;\s*\}\s*resetForm\(\);/);
+  assert.ok(submit.indexOf('await onEdited(editingTransaction)') < submit.lastIndexOf('resetForm()'));
+});
+
+test('edição de grupo parcelado também fecha pelo callback sem converter o modal em criação', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const submitStart = modal.indexOf('async function handleSubmit(event)');
+  const installmentCreateStart = modal.indexOf('// Criação de compra parcelada', submitStart);
+  const groupEdit = modal.slice(submitStart, installmentCreateStart);
+  assert.match(groupEdit, /resolveInstallmentScope\(/);
+  assert.match(groupEdit, /await onChanged\?\.\(\);\s*if \(onEdited\) \{\s*await onEdited\(editingTransaction\);\s*return;\s*\}\s*resetForm\(\);/);
+});
+
+test('Registros fecha após edição, volta ao Histórico e mostra toast de edição por 2 segundos', async () => {
+  const records = await source('../../features/simplified-app/SimplifiedRecordsPage.jsx');
+  assert.match(records, /function handleTransactionEdited\(\) \{\s*completeTransactionMutation\('Lançamento editado com sucesso\.'\);\s*\}/);
+  assert.match(records, /onEdited=\{handleTransactionEdited\}/);
+  assert.match(records, /const TRANSACTION_SUCCESS_NOTICE_MS = 2000;/);
+  assert.match(records, /setTransactionDialog\(null\)/);
+  assert.match(records, /setActiveTab\('history'\)/);
+});
+
+test('Número de parcelas continua legítimo na criação, mas é impossível durante edição e no pós-save', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const installmentsStart = modal.indexOf('id="finance-transaction-installments"');
+  const guardStart = modal.lastIndexOf('{!editingId', installmentsStart);
+  assert.ok(guardStart > -1);
+  assert.match(modal.slice(guardStart, installmentsStart + 100), /!editingId && form\.transaction_type !== 'transfer'/);
+  assert.match(modal, /if \(editingId && onEdited\) \{\s*await onEdited\(editingTransaction\);\s*return;/);
+});
+
+test('criação simples e parcelada preservam resetForm e nunca disparam onEdited', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const submitStart = modal.indexOf('async function handleSubmit(event)');
+  const submitEnd = modal.indexOf('async function handleDelete(transactionId)', submitStart);
+  const submit = modal.slice(submitStart, submitEnd);
+  assert.match(submit, /if \(!editingId && isInstallmentPurchase\(form\)\)[\s\S]*?await onChanged\?\.\(\);\s*resetForm\(\);\s*return;/);
+  assert.match(submit, /if \(editingId && onEdited\)/);
 });
 
 test('mobile empilha os botões do formulário e mantém o card de confirmação dentro do viewport seguro', async () => {

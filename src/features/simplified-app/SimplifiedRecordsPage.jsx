@@ -28,7 +28,7 @@ import styles from './simplifiedRecords.module.css';
 
 const PAGE_SIZE = 20;
 const CATEGORY_PREVIEW_SIZE = 8;
-const DELETE_SUCCESS_NOTICE_MS = 2000;
+const TRANSACTION_SUCCESS_NOTICE_MS = 2000;
 const EMPTY_RECORDS = Object.freeze([]);
 
 function RecordsIcon({ name }) {
@@ -569,8 +569,8 @@ function SimplifiedRecordsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
-  const [deleteSuccessNotice, setDeleteSuccessNotice] = useState(null);
-  const deleteNoticeTimerRef = useRef(null);
+  const [transactionSuccessNotice, setTransactionSuccessNotice] = useState(null);
+  const transactionNoticeTimerRef = useRef(null);
   // Somente Entradas/Saídas abrem o ajuste financeiro. O terceiro card
   // reutiliza a Agenda já existente, sem duplicar calendário ou dados.
   const [summaryModalTarget, setSummaryModalTarget] = useState(null);
@@ -643,7 +643,7 @@ function SimplifiedRecordsPage() {
   }, []);
 
   useEffect(() => () => {
-    if (deleteNoticeTimerRef.current) window.clearTimeout(deleteNoticeTimerRef.current);
+    if (transactionNoticeTimerRef.current) window.clearTimeout(transactionNoticeTimerRef.current);
   }, []);
 
   const summary = useMemo(
@@ -703,16 +703,24 @@ function SimplifiedRecordsPage() {
     if (!result.error) await refresh();
   }
 
-  function handleTransactionDeleted() {
+  function completeTransactionMutation(message) {
     setTransactionDialog(null);
     setActiveTab('history');
     setVisibleCount(PAGE_SIZE);
-    setDeleteSuccessNotice('Lançamento excluído com sucesso.');
-    if (deleteNoticeTimerRef.current) window.clearTimeout(deleteNoticeTimerRef.current);
-    deleteNoticeTimerRef.current = window.setTimeout(() => {
-      deleteNoticeTimerRef.current = null;
-      setDeleteSuccessNotice(null);
-    }, DELETE_SUCCESS_NOTICE_MS);
+    setTransactionSuccessNotice(message);
+    if (transactionNoticeTimerRef.current) window.clearTimeout(transactionNoticeTimerRef.current);
+    transactionNoticeTimerRef.current = window.setTimeout(() => {
+      transactionNoticeTimerRef.current = null;
+      setTransactionSuccessNotice(null);
+    }, TRANSACTION_SUCCESS_NOTICE_MS);
+  }
+
+  function handleTransactionDeleted() {
+    completeTransactionMutation('Lançamento excluído com sucesso.');
+  }
+
+  function handleTransactionEdited() {
+    completeTransactionMutation('Lançamento editado com sucesso.');
   }
 
   function selectCategory(categoryId) {
@@ -754,10 +762,10 @@ function SimplifiedRecordsPage() {
 
   return (
     <>
-      {deleteSuccessNotice ? (
-        <div className={styles.deleteSuccessToast} role="status" aria-live="polite">
+      {transactionSuccessNotice ? (
+        <div className={styles.transactionSuccessToast} role="status" aria-live="polite">
           <span aria-hidden="true">✓</span>
-          {deleteSuccessNotice}
+          {transactionSuccessNotice}
         </div>
       ) : null}
       <div className={styles.recordsPage} data-simplified-records>
@@ -870,6 +878,7 @@ function SimplifiedRecordsPage() {
         onClose={() => setTransactionDialog(null)}
         onChanged={refresh}
         onDeleted={handleTransactionDeleted}
+        onEdited={handleTransactionEdited}
         initialType={transactionDialog?.type ?? 'expense'}
         editingTransactionId={transactionDialog?.transactionId ?? null}
         canManage={canManage}

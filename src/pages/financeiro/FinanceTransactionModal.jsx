@@ -226,6 +226,7 @@ function FinanceTransactionModal({
   onChanged,
   onClose,
   onDeleted,
+  onEdited,
   open,
   showExistingList = true,
   transactionState,
@@ -405,6 +406,10 @@ function FinanceTransactionModal({
         }
       }
       await onChanged?.();
+      if (onEdited) {
+        await onEdited(editingTransaction);
+        return;
+      }
       resetForm();
       return;
     }
@@ -444,6 +449,10 @@ function FinanceTransactionModal({
 
     if (!result.error) {
       await onChanged?.();
+      if (editingId && onEdited) {
+        await onEdited(editingTransaction);
+        return;
+      }
       resetForm();
     }
   }
