@@ -132,8 +132,11 @@ export function useUniVoiceInput({
     if (result?.text) {
       recordVoicePipelineDiagnostic('TRANSCRIPT_NON_EMPTY', { transcriptLength: result.text.length });
       dispatch({ type: 'COMPLETE' });
-      recordVoicePipelineDiagnostic('MESSAGE_SENT_TO_UNI');
-      callbacksRef.current.onFinalTranscript?.(result.text);
+      const finalTranscriptHandler = callbacksRef.current.onFinalTranscript;
+      finalTranscriptHandler?.(result.text);
+      recordVoicePipelineDiagnostic('MESSAGE_SENT_TO_UNI', {
+        messageDelivered: typeof finalTranscriptHandler === 'function',
+      });
       return;
     }
 

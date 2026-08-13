@@ -298,6 +298,35 @@ test('HOTFIX CRÍTICO 2: track com readyState "ended" logo após getUserMedia nu
   assert.deepEqual(errors, [{ code: 'no_audio_track' }]);
 });
 
+test('pipeline de voz: track explicitamente disabled nunca inicia o MediaRecorder', async () => {
+  const disabledTrack = {
+    enabled: false,
+    readyState: 'live',
+    stopped: false,
+    stop() { this.stopped = true; },
+  };
+  const disabledStream = {
+    active: true,
+    getTracks: () => [disabledTrack],
+    getAudioTracks: () => [disabledTrack],
+  };
+  const { runtime } = createRuntime({ getUserMedia: async () => disabledStream });
+  let recorderCreated = 0;
+  runtime.MediaRecorder = class extends FakeMediaRecorder {
+    constructor(...args) {
+      super(...args);
+      recorderCreated += 1;
+    }
+  };
+  const errors = [];
+  const adapter = createMediaRecorderAdapter({ runtime, onError: (error) => errors.push(error) });
+
+  assert.equal(await adapter.start(), false);
+  assert.equal(recorderCreated, 0);
+  assert.deepEqual(errors, [{ code: 'no_audio_track' }]);
+  assert.equal(disabledTrack.stopped, true);
+});
+
 test('HOTFIX CRÍTICO 2: track "live" (readyState/muted ausentes, como em runtimes de teste simples) segue funcionando normalmente -- validação nunca reprova por ausência de sinal, só por sinal explícito de morte', async () => {
   const { runtime, track } = createRuntime();
   let started = 0;

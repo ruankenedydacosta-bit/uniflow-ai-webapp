@@ -534,6 +534,18 @@ test('pointerup encerra e envia (stop), nunca navega para /app/uni', async () =>
   assert.doesNotMatch(finishSlice, /navigate\(/);
 });
 
+test('P0 voz: safety net de window preserva pointerup como release e nunca o converte em cancelamento', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const handlerIdx = home.indexOf('const handleWindowVoicePointerEndRef');
+  const handlerSlice = home.slice(handlerIdx, handlerIdx + 500);
+
+  assert.ok(handlerIdx > -1);
+  assert.match(handlerSlice, /event\.type === 'pointerup'\s*\? 'released'/);
+  assert.match(handlerSlice, /event\.type === 'pointercancel'\s*\? 'pointercancel'/);
+  assert.doesNotMatch(handlerSlice, /finishVoiceInteractionRef\.current\?\.\('window-safety-net'\);/);
+  assert.match(home, /window\.addEventListener\('pointerup', handleWindowVoicePointerEndRef\.current, true\);/);
+});
+
 test('pointercancel encerra SEM enviar (cancel), nunca navega', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const cancelIdx = home.indexOf('function handleVoicePointerCancel(event) {');
