@@ -12,6 +12,7 @@ import {
 } from './voiceCaptureReducer.js';
 import { getVoiceInputMessage } from './voiceInputMessages.js';
 import { normalizeTelemetryErrorCode, telemetry } from '../observability/index.js';
+import { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';
 
 const CAPTURE_ERROR_STATES = Object.freeze({
   permission_denied: VOICE_CAPTURE_STATES.PERMISSION_DENIED,
@@ -77,6 +78,12 @@ export function useUniVoiceInput({
     const transcriptionController = new AbortController();
     transcriptionAbortRef.current = transcriptionController;
 
+    recordVoicePipelineDiagnostic('STT_REQUEST_STARTED', {
+      blobSizeBytes: audio?.size,
+      mimeType: audio?.type,
+      durationMs,
+    });
+
     let result;
     try {
       result = await transcriptionProvider.transcribe({
@@ -87,6 +94,7 @@ export function useUniVoiceInput({
       });
     } catch (error) {
       if (requestId !== requestIdRef.current) return;
+      recordVoicePipelineDiagnostic('STT_ERROR');
       const code = error?.code ?? 'transcription_failed';
       void telemetry.metric('voice.latency_ms', {
         value: Math.max(0, Date.now() - transcriptionStartedAt),
@@ -113,6 +121,7 @@ export function useUniVoiceInput({
     }
     if (requestId !== requestIdRef.current) return;
 
+    recordVoicePipelineDiagnostic('STT_RESPONSE_RECEIVED');
     void telemetry.metric('voice.latency_ms', {
       value: Math.max(0, Date.now() - transcriptionStartedAt),
       unit: 'ms',
@@ -121,11 +130,14 @@ export function useUniVoiceInput({
     }, { workspaceId, requestId: String(requestId) });
 
     if (result?.text) {
+      recordVoicePipelineDiagnostic('TRANSCRIPT_NON_EMPTY', { transcriptLength: result.text.length });
       dispatch({ type: 'COMPLETE' });
+      recordVoicePipelineDiagnostic('MESSAGE_SENT_TO_UNI');
       callbacksRef.current.onFinalTranscript?.(result.text);
       return;
     }
 
+    recordVoicePipelineDiagnostic('EMPTY_TRANSCRIPT');
     const code = result?.error?.code ?? 'transcription_failed';
     void telemetry.error('voice.failure', {
       errorCode: normalizeTelemetryErrorCode(code, 'TRANSCRIPTION_FAILED'),

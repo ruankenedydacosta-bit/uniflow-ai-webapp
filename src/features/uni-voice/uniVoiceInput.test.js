@@ -246,6 +246,125 @@ test('cancelamento não envia áudio e libera microfone', async () => {
 });
 
 // ============================================================================
+// HOTFIX CRÍTICO 2 (UI diz "Ouvindo", mas microfone não entrega áudio) --
+// CAUSA RAIZ (uma delas): getUserMedia pode resolver "com sucesso" e ainda
+// assim entregar um stream/track já morto (active:false ou
+// readyState:'ended') -- sem nenhuma validação, o pipeline inteiro seguia
+// adiante (MediaRecorder criado, "Ouvindo..." exibido, onStart disparado)
+// para gravar silêncio garantido, sem NENHUM erro visível ao usuário nem
+// à Uni. Agora start() reprova esse caso ANTES de criar o MediaRecorder,
+// retornando ao estado idle com um erro recuperável (nunca preso em
+// "Ouvindo..."). Tracks/streams sem esses campos (ex.: runtimes de teste
+// simples como o `createRuntime()` usado nos testes acima) NUNCA reprovam
+// -- só reprova quando o runtime AFIRMA explicitamente que está morto.
+// ============================================================================
+
+test('HOTFIX CRÍTICO 2: stream resolvido com active:false nunca inicia o MediaRecorder -- falha com erro recuperável', async () => {
+  const deadTrack = { stopped: false, stop() { this.stopped = true; } };
+  const deadStream = { active: false, getTracks: () => [deadTrack], getAudioTracks: () => [deadTrack] };
+  const { runtime } = createRuntime({ getUserMedia: async () => deadStream });
+  let recorderCreated = 0;
+  runtime.MediaRecorder = class extends FakeMediaRecorder {
+    constructor(...args) {
+      super(...args);
+      recorderCreated += 1;
+    }
+  };
+  const errors = [];
+  const adapter = createMediaRecorderAdapter({ runtime, onError: (e) => errors.push(e) });
+
+  assert.equal(await adapter.start(), false);
+  assert.equal(recorderCreated, 0, 'nunca cria o MediaRecorder para um stream já morto');
+  assert.deepEqual(errors, [{ code: 'no_audio_track' }]);
+  assert.equal(deadTrack.stopped, true, 'libera a track morta mesmo sem nunca ter gravado');
+});
+
+test('HOTFIX CRÍTICO 2: track com readyState "ended" logo após getUserMedia nunca inicia o MediaRecorder', async () => {
+  const endedTrack = { stopped: false, readyState: 'ended', stop() { this.stopped = true; } };
+  const staleStream = { active: true, getTracks: () => [endedTrack], getAudioTracks: () => [endedTrack] };
+  const { runtime } = createRuntime({ getUserMedia: async () => staleStream });
+  let recorderCreated = 0;
+  runtime.MediaRecorder = class extends FakeMediaRecorder {
+    constructor(...args) {
+      super(...args);
+      recorderCreated += 1;
+    }
+  };
+  const errors = [];
+  const adapter = createMediaRecorderAdapter({ runtime, onError: (e) => errors.push(e) });
+
+  assert.equal(await adapter.start(), false);
+  assert.equal(recorderCreated, 0);
+  assert.deepEqual(errors, [{ code: 'no_audio_track' }]);
+});
+
+test('HOTFIX CRÍTICO 2: track "live" (readyState/muted ausentes, como em runtimes de teste simples) segue funcionando normalmente -- validação nunca reprova por ausência de sinal, só por sinal explícito de morte', async () => {
+  const { runtime, track } = createRuntime();
+  let started = 0;
+  const adapter = createMediaRecorderAdapter({ runtime, onStart: () => { started += 1; } });
+  assert.equal(await adapter.start(), true);
+  assert.equal(started, 1);
+  assert.equal(track.stopped, false);
+  adapter.dispose();
+});
+
+test('HOTFIX CRÍTICO 2: track encerrando NO MEIO da gravação (evento "ended") nunca deixa a captura presa -- falha com erro recuperável em vez de silêncio', async () => {
+  let endedListener = null;
+  const track = {
+    stopped: false,
+    stop() { this.stopped = true; },
+    addEventListener(type, listener) { if (type === 'ended') endedListener = listener; },
+    removeEventListener() {},
+  };
+  const stream = { active: true, getTracks: () => [track], getAudioTracks: () => [track] };
+  const { runtime } = createRuntime({ getUserMedia: async () => stream });
+  const errors = [];
+  let sent = false;
+  const adapter = createMediaRecorderAdapter({
+    runtime,
+    onError: (e) => errors.push(e),
+    onAudio: () => { sent = true; },
+  });
+
+  assert.equal(await adapter.start(), true);
+  assert.ok(typeof endedListener === 'function', 'registrou um listener real de "ended" na track');
+
+  endedListener();
+
+  assert.deepEqual(errors, [{ code: 'track_ended' }]);
+  assert.equal(sent, false, 'nunca produz áudio a partir de uma track morta no meio da captura');
+  assert.equal(track.stopped, true);
+});
+
+test('HOTFIX CRÍTICO 2: evento "ended" disparado pelo NOSSO PRÓPRIO track.stop() durante um stop gracioso normal NUNCA é tratado como falha (distingue encerramento intencional de falha real)', async () => {
+  let endedListener = null;
+  const track = {
+    stopped: false,
+    stop() {
+      this.stopped = true;
+      endedListener?.();
+    },
+    addEventListener(type, listener) { if (type === 'ended') endedListener = listener; },
+    removeEventListener() {},
+  };
+  const stream = { active: true, getTracks: () => [track], getAudioTracks: () => [track] };
+  const { runtime } = createRuntime({ getUserMedia: async () => stream });
+  const errors = [];
+  let capture = null;
+  const adapter = createMediaRecorderAdapter({
+    runtime,
+    onError: (e) => errors.push(e),
+    onAudio: (value) => { capture = value; },
+  });
+
+  await adapter.start();
+  assert.equal(adapter.stop(), true);
+
+  assert.deepEqual(errors, [], 'stop gracioso nunca dispara um erro, mesmo com "ended" dependente do nosso próprio track.stop()');
+  assert.ok(capture.audio instanceof Blob);
+});
+
+// ============================================================================
 // HOTFIX FINAL (deadlock "OUVINDO..." travado após start/cancel repetidos)
 // -- CAUSA RAIZ: cancel() só marcava a sessão como cancelada (canceled=true
 // + permissionRequestId incrementado) quando `recorder`/`stream` já
