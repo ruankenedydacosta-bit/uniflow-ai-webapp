@@ -68,8 +68,8 @@ function Reveal({ as: Tag = 'section', className = '', children, ...props }) {
 }
 
 const UNI_CAPABILITIES = [
-  { Icon: ArrowDownIcon, tone: 'green', label: 'Organiza receitas' },
-  { Icon: ArrowUpIcon, tone: 'red', label: 'Organiza despesas' },
+  { Icon: ArrowDownIcon, tone: 'green', label: 'Organiza entradas' },
+  { Icon: ArrowUpIcon, tone: 'red', label: 'Organiza saídas' },
   { Icon: PieChartIcon, tone: 'blue', label: 'Ajuda no planejamento financeiro' },
   { Icon: ChatBubbleIcon, tone: 'purple', label: 'Conversa naturalmente' },
   { Icon: RefreshIcon, tone: 'blue', label: 'Aprende seu contexto' },

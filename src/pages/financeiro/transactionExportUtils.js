@@ -20,7 +20,7 @@ const CSV_HEADER = [
 
 const TRANSACTION_TYPE_LABELS = {
   income: 'Entrada',
-  expense: 'Despesa',
+  expense: 'Saída',
   transfer: 'Transferência',
   adjustment: 'Ajuste',
 };

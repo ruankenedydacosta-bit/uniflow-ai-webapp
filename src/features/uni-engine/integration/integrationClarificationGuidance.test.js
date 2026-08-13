@@ -64,7 +64,7 @@ test('I-34: intenção ambígua nunca decide silenciosamente — pergunta objeti
     engineResult: engineWithAmbiguity('intent'),
     context: { isDev: true },
   });
-  assert.equal(result.finalText, 'Você quer registrar esse valor como receita ou ajustar o saldo?');
+  assert.equal(result.finalText, 'Você quer registrar esse valor como entrada ou ajustar o saldo?');
   assert.equal(result.clarificationGuidance.clarificationKey, 'balance_vs_income');
 });
 

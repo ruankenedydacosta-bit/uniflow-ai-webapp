@@ -117,7 +117,7 @@ function handleFinancialSummary(snapshot, { period } = {}) {
       totalBalance: snapshot.totalBalance,
       transactionCount: agg.transactionCount,
     },
-    text: `Em ${range.label}: receitas de ${formatCurrency(agg.income)}, despesas de ${formatCurrency(agg.expense)}, resultado de ${formatCurrency(agg.result)}.`,
+    text: `Em ${range.label}: entradas de ${formatCurrency(agg.income)}, saídas de ${formatCurrency(agg.expense)}, resultado de ${formatCurrency(agg.result)}.`,
   };
 }
 
@@ -139,16 +139,16 @@ function handleIncomeByAccount(snapshot, { period, account } = {}) {
   if (account) {
     const value = agg.incomeByAccount.get(account);
     if (value == null) {
-      return { ok: true, data: { period: range, account, income: 0 }, text: `Não encontrei receitas na conta ${account} em ${range.label}.` };
+      return { ok: true, data: { period: range, account, income: 0 }, text: `Não encontrei entradas na conta ${account} em ${range.label}.` };
     }
     return { ok: true, data: { period: range, account, income: value }, text: `Você recebeu ${formatCurrency(value)} na conta ${account} em ${range.label}.` };
   }
   const entries = [...agg.incomeByAccount.entries()];
   if (entries.length === 0) {
-    return { ok: true, data: { period: range, entries: [] }, text: `Não encontrei receitas em ${range.label}.` };
+    return { ok: true, data: { period: range, entries: [] }, text: `Não encontrei entradas em ${range.label}.` };
   }
   const text = entries.map(([name, value]) => `${name}: ${formatCurrency(value)}`).join(', ');
-  return { ok: true, data: { period: range, entries }, text: `Receitas por conta em ${range.label}: ${text}.` };
+  return { ok: true, data: { period: range, entries }, text: `Entradas por conta em ${range.label}: ${text}.` };
 }
 
 function handleIncomeByCategory(snapshot, { period, category } = {}) {
@@ -158,16 +158,16 @@ function handleIncomeByCategory(snapshot, { period, category } = {}) {
   if (category) {
     const value = agg.incomeByCategory.get(category);
     if (value == null) {
-      return { ok: true, data: { period: range, category, income: 0 }, text: `Não encontrei receitas em ${category} em ${range.label}.` };
+      return { ok: true, data: { period: range, category, income: 0 }, text: `Não encontrei entradas em ${category} em ${range.label}.` };
     }
     return { ok: true, data: { period: range, category, income: value }, text: `Você recebeu ${formatCurrency(value)} em ${category} em ${range.label}.` };
   }
   const entries = [...agg.incomeByCategory.entries()];
   if (entries.length === 0) {
-    return { ok: true, data: { period: range, entries: [] }, text: `Não encontrei receitas em ${range.label}.` };
+    return { ok: true, data: { period: range, entries: [] }, text: `Não encontrei entradas em ${range.label}.` };
   }
   const text = entries.map(([name, value]) => `${name}: ${formatCurrency(value)}`).join(', ');
-  return { ok: true, data: { period: range, entries }, text: `Receitas por categoria em ${range.label}: ${text}.` };
+  return { ok: true, data: { period: range, entries }, text: `Entradas por categoria em ${range.label}: ${text}.` };
 }
 
 function handleTopExpenses(snapshot, { period, limit, account, category } = {}) {
@@ -187,12 +187,12 @@ function handleTopExpenses(snapshot, { period, limit, account, category } = {}) 
 
   const top = filtered.slice(0, safeLimit);
   if (top.length === 0) {
-    return { ok: true, data: { period: range, items: [] }, text: `Não encontrei despesas em ${range.label}.` };
+    return { ok: true, data: { period: range, items: [] }, text: `Não encontrei saídas em ${range.label}.` };
   }
   const text = top
-    .map((tx) => `${tx.description || 'despesa'}: ${formatCurrency(tx.amount)}`)
+    .map((tx) => `${tx.description || 'saída'}: ${formatCurrency(tx.amount)}`)
     .join('; ');
-  return { ok: true, data: { period: range, items: top }, text: `Suas maiores despesas em ${range.label}: ${text}.` };
+  return { ok: true, data: { period: range, items: top }, text: `Suas maiores saídas em ${range.label}: ${text}.` };
 }
 
 function handleRecentTransactions(snapshot, { limit, period, account, category, transactionType } = {}) {

@@ -26,13 +26,13 @@ test('buildAdjustmentDescription nunca ultrapassa 160 caracteres (limite da RPC)
 // BLOCO SALDO/RECEITA/DESPESA EDITAVEIS: mesmo mecanismo, agora com um
 // rótulo padrão próprio por card -- nunca "saldo" quando o alvo é receita
 // ou despesa.
-test('buildAdjustmentDescription usa o rótulo do target -- receita e despesa nunca usam o texto de saldo', () => {
+test('buildAdjustmentDescription usa o rótulo público do target -- entrada e saída nunca usam o texto de saldo', () => {
   assert.equal(buildAdjustmentDescription('', 'balance'), 'Ajuste manual de saldo');
-  assert.equal(buildAdjustmentDescription('', 'income'), 'Ajuste manual de receita');
-  assert.equal(buildAdjustmentDescription('', 'expense'), 'Ajuste manual de despesa');
+  assert.equal(buildAdjustmentDescription('', 'income'), 'Ajuste manual de entrada');
+  assert.equal(buildAdjustmentDescription('', 'expense'), 'Ajuste manual de saída');
   assert.equal(
     buildAdjustmentDescription('Conferência', 'income'),
-    'Ajuste manual de receita — Conferência',
+    'Ajuste manual de entrada — Conferência',
   );
 });
 

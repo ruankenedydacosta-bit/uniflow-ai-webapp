@@ -267,15 +267,15 @@ function interpretComparison(deltas, percentages) {
   const insights = [];
 
   if (percentages.income !== null) {
-    if (percentages.income > 10) insights.push(`Receita subiu ${percentages.income}%`);
-    else if (percentages.income < -10) insights.push(`Receita caiu ${Math.abs(percentages.income)}%`);
-    else insights.push(`Receita estável (${percentages.income > 0 ? '+' : ''}${percentages.income}%)`);
+    if (percentages.income > 10) insights.push(`Entrada subiu ${percentages.income}%`);
+    else if (percentages.income < -10) insights.push(`Entrada caiu ${Math.abs(percentages.income)}%`);
+    else insights.push(`Entrada estável (${percentages.income > 0 ? '+' : ''}${percentages.income}%)`);
   }
 
   if (percentages.expense !== null) {
-    if (percentages.expense > 10) insights.push(`Despesa subiu ${percentages.expense}%`);
-    else if (percentages.expense < -10) insights.push(`Despesa caiu ${Math.abs(percentages.expense)}%`);
-    else insights.push(`Despesa estável (${percentages.expense > 0 ? '+' : ''}${percentages.expense}%)`);
+    if (percentages.expense > 10) insights.push(`Saída subiu ${percentages.expense}%`);
+    else if (percentages.expense < -10) insights.push(`Saída caiu ${Math.abs(percentages.expense)}%`);
+    else insights.push(`Saída estável (${percentages.expense > 0 ? '+' : ''}${percentages.expense}%)`);
   }
 
   if (percentages.result !== null) {

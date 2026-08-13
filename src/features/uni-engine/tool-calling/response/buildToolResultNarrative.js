@@ -33,7 +33,7 @@ function joinLines(lines, conversationStyle) {
 function buildSummaryText(data, conversationStyle) {
   if (!data || typeof data !== 'object') return null;
   const lines = [
-    `No período de ${data.period ?? 'referência'}, o resultado foi de ${fmtCurrency(data.result)} (receitas de ${fmtCurrency(data.income)} e despesas de ${fmtCurrency(data.expenses)}).`,
+    `No período de ${data.period ?? 'referência'}, o resultado foi de ${fmtCurrency(data.result)} (entradas de ${fmtCurrency(data.income)} e saídas de ${fmtCurrency(data.expenses)}).`,
   ];
   if (data.balance !== null && data.balance !== undefined) {
     lines.push(`Seu saldo atual é de ${fmtCurrency(data.balance)}.`);
@@ -43,7 +43,7 @@ function buildSummaryText(data, conversationStyle) {
 
 function buildBreakdownText(data, conversationStyle) {
   if (!data || typeof data !== 'object') return null;
-  const lines = [`Suas despesas de ${data.period ?? 'referência'} somam ${fmtCurrency(data.total)}.`];
+  const lines = [`Suas saídas de ${data.period ?? 'referência'} somam ${fmtCurrency(data.total)}.`];
   if (data.categoriesAvailable && Array.isArray(data.byCategory) && data.byCategory.length > 0) {
     const top = [...data.byCategory]
       .sort((a, b) => (b.spent ?? 0) - (a.spent ?? 0))
@@ -91,10 +91,10 @@ function buildAccountsText(data, conversationStyle) {
 function buildRecurringText(data, conversationStyle) {
   if (!data || typeof data !== 'object') return null;
   if (!data.patternSufficient || !Array.isArray(data.detected) || data.detected.length === 0) {
-    return 'Não identifiquei despesas recorrentes com padrão suficiente ainda.';
+    return 'Não identifiquei saídas recorrentes com padrão suficiente ainda.';
   }
-  const lines = [`Identifiquei ${data.detected.length} despesa(s) recorrente(s):`];
-  const items = data.detected.slice(0, 5).map((item) => `${item.description ?? 'despesa'} (${fmtCurrency(item.amount)})`);
+  const lines = [`Identifiquei ${data.detected.length} saída(s) recorrente(s):`];
+  const items = data.detected.slice(0, 5).map((item) => `${item.description ?? 'saída'} (${fmtCurrency(item.amount)})`);
   lines.push(items.join('; ') + '.');
   return joinLines(lines, conversationStyle);
 }

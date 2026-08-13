@@ -57,7 +57,7 @@ function ReportsPage() {
         <Card padding="lg" role="status" className={styles.emptyCard}>
           <p className={styles.emptyTitle}>Nenhuma transação encontrada</p>
           <p>
-            Para gerar relatórios, precisamos de receitas e despesas registradas.
+            Para gerar relatórios, precisamos de entradas e saídas registradas.
             Adicione movimentações no Financeiro para começar.
           </p>
         </Card>
@@ -111,7 +111,7 @@ function ReportsPage() {
                 </div>
 
                 <div className={styles.indicatorItem}>
-                  <span>Variação das despesas</span>
+                  <span>Variação das saídas</span>
                   <strong>{formatPercent(snapshot.expenseVariation.percentChange)}</strong>
                   <Badge
                     variant={

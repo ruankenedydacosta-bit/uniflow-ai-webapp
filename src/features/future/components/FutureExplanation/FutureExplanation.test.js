@@ -4,9 +4,9 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-test('informa que a projecao usa o historico de receitas e despesas registradas', async () => {
+test('informa que a projecao usa o historico de entradas e saídas registradas', async () => {
   const content = await source('FutureExplanation.jsx');
-  assert.match(content, /histórico de receitas e despesas/);
+  assert.match(content, /histórico de entradas e saídas/);
 });
 
 test('informa que lancamentos recorrentes ainda nao sao adicionados automaticamente ao futuro', async () => {

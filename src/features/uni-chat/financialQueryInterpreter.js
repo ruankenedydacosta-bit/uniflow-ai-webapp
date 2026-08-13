@@ -163,7 +163,7 @@ export function detectFutureFinancialIntent(text) {
 export function buildFutureSafetyResponse(hasHistory) {
   if (!hasHistory) {
     return 'Eu ainda não tenho histórico suficiente para projetar seu futuro financeiro com segurança. '
-      + 'Registre algumas receitas e despesas para que eu consiga calcular uma tendência real.';
+      + 'Registre algumas entradas e saídas para que eu consiga calcular uma tendência real.';
   }
 
   return 'Consigo analisar sua tendência e os cenários calculados com base no seu histórico, mas ainda não '
@@ -239,13 +239,13 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
 
     case 'monthly_expenses': {
       const value = fmtCurrency(ctx.monthlyExpense);
-      const msg = `Em ${monthName}, ${subject} gastou ${value} em despesas confirmadas.`;
+      const msg = `Em ${monthName}, ${subject} registrou ${value} em saídas confirmadas.`;
       return { text: msg, highlight: value };
     }
 
     case 'monthly_income': {
       const value = fmtCurrency(ctx.monthlyIncome);
-      const msg = `Em ${monthName}, entraram ${value} em receitas${prefix}.`;
+      const msg = `Em ${monthName}, entraram ${value}${prefix}.`;
       return { text: msg, highlight: value };
     }
 
@@ -256,11 +256,11 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
       const result = fmtCurrency(Math.abs(ctx.result));
       const signal = ctx.result >= 0 ? 'positivo' : 'negativo';
       const expenseLabel = ctx.monthlyExpense > 0
-        ? `despesas de ${expense}`
-        : 'nenhuma despesa registrada';
+        ? `saídas de ${expense}`
+        : 'nenhuma saída registrada';
       const incomeLabel = ctx.monthlyIncome > 0
-        ? `receitas de ${income}`
-        : 'nenhuma receita registrada';
+        ? `entradas de ${income}`
+        : 'nenhuma entrada registrada';
       const msg = `Resumo de ${monthName} para ${subject}:\n• Saldo atual: ${balance}\n• ${incomeLabel}\n• ${expenseLabel}\n• Resultado ${signal} de ${result}`;
       return { text: msg, highlight: balance };
     }
@@ -304,7 +304,7 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
     case 'future_projection': {
       const { projections } = options;
       if (!projections || !projections.hasHistory) {
-        const msg = `${capitalize(subject)} ainda não tem dados financeiros suficientes para gerar projeções. Cadastre receitas e despesas para que eu possa estimar o futuro.`;
+        const msg = `${capitalize(subject)} ainda não tem dados financeiros suficientes para gerar projeções. Cadastre entradas e saídas para que eu possa estimar o futuro.`;
         return { text: msg, highlight: null };
       }
       const likely = projections.scenarioProjections?.likely || {};

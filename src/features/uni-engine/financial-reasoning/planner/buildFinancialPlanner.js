@@ -108,7 +108,7 @@ export function buildFinancialPlanner({ snapshot = null, diagnostics = [], infer
   const actionDefinitions = Object.freeze({
     build_reserve: {
       action: 'reserve_policy',
-      condition: 'existe meta de reserva derivada de despesa média',
+      condition: 'existe meta de reserva derivada de saída média',
       why: 'reduz risco de caixa e baixa liquidez',
     },
     increase_savings: {
@@ -118,12 +118,12 @@ export function buildFinancialPlanner({ snapshot = null, diagnostics = [], infer
     },
     diversify_income: {
       action: 'income_restore',
-      condition: 'receita corrente abaixo da anterior',
-      why: 'recuperar receita antes de pressões de despesa',
+      condition: 'entrada corrente abaixo da anterior',
+      why: 'recuperar entradas antes de pressões de saída',
     },
     reduce_expenses: {
       action: 'expense_review',
-      condition: 'despesa acima da média da janela',
+      condition: 'saída acima da média da janela',
       why: 'reduzir pressão sobre caixa',
     },
     protect_cash: {

@@ -61,8 +61,8 @@ function formatMonth(monthKey) {
 function getMetricLabel(metric) {
   const labels = {
     totalBalance: 'saldo total',
-    monthlyIncome: 'receita do mês',
-    monthlyExpense: 'despesa do mês',
+    monthlyIncome: 'entrada do mês',
+    monthlyExpense: 'saída do mês',
     monthlyResult: 'resultado do mês',
     savingsRate: 'taxa de poupança',
     liquidBalance: 'liquidez imediata',
@@ -155,10 +155,10 @@ function buildInsights(executionResult, plan, enrichedContext) {
       if (deltas && percentages) {
         const parts = [];
         if (percentages.income !== null) {
-          parts.push(`receita ${percentages.income > 0 ? 'subiu' : 'caiu'} ${formatPct(Math.abs(percentages.income))}`);
+          parts.push(`entrada ${percentages.income > 0 ? 'subiu' : 'caiu'} ${formatPct(Math.abs(percentages.income))}`);
         }
         if (percentages.expense !== null) {
-          parts.push(`despesa ${percentages.expense > 0 ? 'subiu' : 'caiu'} ${formatPct(Math.abs(percentages.expense))}`);
+          parts.push(`saída ${percentages.expense > 0 ? 'subiu' : 'caiu'} ${formatPct(Math.abs(percentages.expense))}`);
         }
         if (percentages.result !== null) {
           parts.push(`resultado ${percentages.result > 0 ? 'melhorou' : 'piorou'} ${formatPct(Math.abs(percentages.result))}`);
@@ -180,7 +180,7 @@ function buildInsights(executionResult, plan, enrichedContext) {
         insights.push({
           type: 'projection_narrative',
           priority: 'medium',
-          text: `Projeção para ${formatMonth(next.month)}: receita ${formatBRL(next.income)}, despesa ${formatBRL(next.expense)}, resultado ${formatBRL(next.result)}.`,
+          text: `Projeção para ${formatMonth(next.month)}: entrada ${formatBRL(next.income)}, saída ${formatBRL(next.expense)}, resultado ${formatBRL(next.result)}.`,
           source: 'projection',
         });
         if (trends?.result?.direction) {
@@ -306,7 +306,7 @@ function buildInsights(executionResult, plan, enrichedContext) {
       insights.push({
         type: 'health_summary',
         priority: 'medium',
-        text: `Resumo: saldo ${formatBRL(metrics.totalBalance)}, receita ${formatBRL(metrics.monthlyIncome)}, despesa ${formatBRL(metrics.monthlyExpense)}, resultado ${formatBRL(metrics.monthlyResult)}.`,
+        text: `Resumo: saldo ${formatBRL(metrics.totalBalance)}, entrada ${formatBRL(metrics.monthlyIncome)}, saída ${formatBRL(metrics.monthlyExpense)}, resultado ${formatBRL(metrics.monthlyResult)}.`,
         source: 'metrics',
       });
       if (metrics.savingsRate > 0) {
@@ -337,7 +337,7 @@ function buildInsights(executionResult, plan, enrichedContext) {
 function getDiagnosticMessage(diag) {
   const messages = {
     negative_balance: `Saldo negativo: ${formatBRL(diag.value)}.`,
-    cash_risk: `Caixa insuficiente para cobrir despesas do mês (disponível: ${formatBRL(diag.value)}).`,
+    cash_risk: `Caixa insuficiente para cobrir as saídas do mês (disponível: ${formatBRL(diag.value)}).`,
     credit_dependence: `Uso de crédito alto: ${formatPct(diag.value * 100)} do limite.`,
     low_savings_rate: `Taxa de poupança baixa: ${formatPct(diag.value * 100)}.`,
     insufficient_reserve: `Reserva abaixo da meta: cobertura de ${formatPct(diag.value * 100)}.`,

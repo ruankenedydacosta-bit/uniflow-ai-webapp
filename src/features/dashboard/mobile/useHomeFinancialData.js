@@ -112,13 +112,13 @@ export function useHomeFinancialData() {
     },
     {
       id: 'income',
-      label: 'Receita',
+      label: 'Entrada',
       value: financeiroData.income,
       hasData: hasIncome,
     },
     {
       id: 'expense',
-      label: 'Despesa',
+      label: 'Saída',
       value: financeiroData.expense,
       hasData: hasExpense,
     },

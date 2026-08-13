@@ -7,7 +7,7 @@ function NextStepCard({ step, onAction }) {
       <div className="homeMobileNextStepBody">
         <span className="homeMobileActionIcon" aria-hidden="true">✓</span>
         <h2 id="home-mobile-next-step-title">
-          {content.title ?? 'Que tal registrar sua primeira receita?'}
+          {content.title ?? 'Que tal registrar sua primeira entrada?'}
         </h2>
       </div>
       <button type="button" className="homeMobilePrimaryAction" onClick={onAction}>

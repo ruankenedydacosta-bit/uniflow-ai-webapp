@@ -150,7 +150,7 @@ export const AMOUNT_QUESTION = 'Qual foi o valor dessa movimentação?';
 export const TRANSFER_ORIGIN_QUESTION = 'De qual conta o valor foi transferido?';
 export const TRANSFER_DESTINATION_QUESTION = 'Para qual conta o valor foi transferido?';
 export const ADJUSTMENT_ACCOUNT_QUESTION = 'Em qual conta você quer ajustar o saldo?';
-export const BALANCE_VS_INCOME_QUESTION = 'Você quer registrar esse valor como receita ou ajustar o saldo?';
+export const BALANCE_VS_INCOME_QUESTION = 'Você quer registrar esse valor como entrada ou ajustar o saldo?';
 
 export function legacyClarification(overrides = {}) {
   const safe = overrides ?? {};

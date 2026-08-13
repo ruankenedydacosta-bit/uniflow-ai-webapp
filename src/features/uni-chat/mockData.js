@@ -1,12 +1,12 @@
 export const SUGGESTIONS_PESSOAL = [
-  { icon: '💸', label: 'Registrar uma despesa', intent: 'registrar_despesa' },
+  { icon: '💸', label: 'Registrar uma saída', intent: 'registrar_despesa' },
   { icon: '💰', label: 'Ver meu saldo', intent: 'ver_saldo' },
   { icon: '📊', label: 'Quanto gastei este mês?', intent: 'gastos_mes' },
   { icon: '🎯', label: 'Planejar uma meta', intent: 'planejar_meta' },
 ];
 
 export const SUGGESTIONS_EMPRESA = [
-  { icon: '💸', label: 'Registrar uma despesa', intent: 'registrar_despesa' },
+  { icon: '💸', label: 'Registrar uma saída', intent: 'registrar_despesa' },
   { icon: '🏢', label: 'Analisar minha empresa', intent: 'analisar_empresa' },
   { icon: '📊', label: 'Quanto gastei este mês?', intent: 'gastos_mes' },
   { icon: '🎯', label: 'Planejar uma meta', intent: 'planejar_meta' },
@@ -34,7 +34,7 @@ export function generateUniResponse(userText, mode) {
         text: 'Encontrei os detalhes. Pode confirmar o registro abaixo:',
         time: now(),
         confirmation: {
-          title: 'Nova despesa',
+          title: 'Nova saída',
           status: 'pending',
           rows: [
             { label: 'Categoria', value: mode === 'empresa' ? 'Fornecedores' : 'Alimentação' },
@@ -106,7 +106,7 @@ export function generateUniResponse(userText, mode) {
         type: 'text',
         time: now(),
         highlight: 'R$ 12.310,00',
-        text: 'Sua empresa fechou o mês com receita de R$ 12.310,00 e margem estável. Posso montar um resumo completo se quiser.',
+        text: 'Sua empresa fechou o mês com entradas de R$ 12.310,00 e margem estável. Posso montar um resumo completo se quiser.',
       },
     ];
   }

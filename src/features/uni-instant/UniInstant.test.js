@@ -66,7 +66,7 @@ test('consulta financeira gera resposta curta', () => {
 test('acao financeira gera confirmacao', () => {
   const context = resolveUniInstantContext('/dashboard');
   assert.equal(context.type, 'financial_action');
-  assert.match(context.response, /Registrar despesa de R\$ 25,00/);
+  assert.match(context.response, /Registrar saída de R\$ 25,00/);
 });
 
 test('esfera central e microfone usam o mesmo controlador persistente', async () => {

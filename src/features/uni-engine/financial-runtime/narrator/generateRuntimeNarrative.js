@@ -219,8 +219,8 @@ export function generateRuntimeNarrative(executionResult, comparisonResult, inte
   // Adicionar insight de intenção
   const intentLabels = {
     balance_query: 'consulta de saldo',
-    income_query: 'consulta de receitas',
-    expense_query: 'consulta de despesas',
+    income_query: 'consulta de entradas',
+    expense_query: 'consulta de saídas',
     savings_query: 'consulta de poupança',
     net_worth_query: 'consulta de patrimônio',
     cashflow_query: 'consulta de fluxo de caixa',

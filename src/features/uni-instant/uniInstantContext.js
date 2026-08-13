@@ -3,7 +3,7 @@ const CONTEXTS = Object.freeze({
     label: 'Home',
     type: 'financial_action',
     transcript: 'Comprei um arroz de 25 reais no supermercado pelo Nubank.',
-    response: 'Registrar despesa de R$ 25,00 em Mercado, paga pelo Nubank?',
+    response: 'Registrar saída de R$ 25,00 em Mercado, paga pelo Nubank?',
   }),
   '/financeiro': Object.freeze({
     label: 'Financeiro',

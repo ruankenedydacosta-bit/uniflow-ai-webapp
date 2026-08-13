@@ -56,7 +56,7 @@ export default function FutureScenarios({
 
               <div className={styles.scenarioAdjustments}>
                 <div className={styles.adjustmentRow}>
-                  <span>Receita</span>
+                  <span>Entrada</span>
                   <span className={cx(
                     styles.adjustmentValue,
                     config.incomeAdjustment > 0 && styles.positive,
@@ -66,7 +66,7 @@ export default function FutureScenarios({
                   </span>
                 </div>
                 <div className={styles.adjustmentRow}>
-                  <span>Despesas</span>
+                  <span>Saídas</span>
                   <span className={cx(
                     styles.adjustmentValue,
                     config.expenseAdjustment < 0 && styles.positive,

@@ -19,7 +19,7 @@ const COPY_BY_WORKSPACE = {
   [WORKSPACE_TYPES.PERSONAL]: {
     eyebrow: 'Movimentação do período',
     title: 'Entradas e gastos',
-    seriesLabels: { receita: 'Entradas', despesa: 'Gastos' },
+    seriesLabels: { receita: 'Entradas', despesa: 'Saídas' },
     emptyMessage: 'Ainda não há movimentações neste período.',
     emptySupport: 'Registre uma entrada ou gasto para acompanhar a evolução do seu saldo.',
     ctaLabel: 'Registrar movimentação',

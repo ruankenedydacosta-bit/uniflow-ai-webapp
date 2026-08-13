@@ -56,8 +56,8 @@ test('"O que a Uni faz" tem exatamente os 6 itens pedidos', async () => {
   const listStart = page.indexOf('const UNI_CAPABILITIES');
   const listSlice = page.slice(listStart, page.indexOf('];', listStart));
   for (const label of [
-    'Organiza receitas',
-    'Organiza despesas',
+    'Organiza entradas',
+    'Organiza saídas',
     'Ajuda no planejamento financeiro',
     'Conversa naturalmente',
     'Aprende seu contexto',

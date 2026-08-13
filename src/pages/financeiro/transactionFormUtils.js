@@ -70,7 +70,7 @@ export function createTransactionDuplicateForm(transaction) {
 // (TRANSACTION_TYPE_LABELS), reaproveitados aqui como base do fallback.
 const NEUTRAL_DESCRIPTION_BY_TYPE = {
   income: 'Entrada',
-  expense: 'Despesa',
+  expense: 'Saída',
   transfer: 'Transferência entre contas',
   adjustment: 'Ajuste de saldo',
 };

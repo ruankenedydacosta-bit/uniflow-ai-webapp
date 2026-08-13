@@ -56,7 +56,7 @@ export function describePlanOperation(op) {
       ?? 'conta a definir';
     return `• Transferência de ${amountText} de ${originName} para ${destName}`;
   }
-  const label = op.operationType === 'income' ? 'Receita' : 'Despesa';
+  const label = op.operationType === 'income' ? 'Entrada' : 'Saída';
   const categoryName = op.action?.category?.name;
   return `• ${label} de ${amountText}${description}${categoryName ? ` em ${categoryName}` : ''}`;
 }

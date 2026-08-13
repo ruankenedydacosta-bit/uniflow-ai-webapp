@@ -8,7 +8,7 @@ export const SCENARIO_CONFIG = {
   [SCENARIOS.CONSERVATIVE]: {
     id: SCENARIOS.CONSERVATIVE,
     label: 'Conservador',
-    description: 'Receita com pequena redução, despesas com pequena elevação',
+    description: 'Entradas com pequena redução, saídas com pequena elevação',
     incomeAdjustment: -0.08,
     expenseAdjustment: 0.05,
     contributionAdjustment: -0.15,
@@ -24,7 +24,7 @@ export const SCENARIO_CONFIG = {
   [SCENARIOS.ACCELERATED]: {
     id: SCENARIOS.ACCELERATED,
     label: 'Acelerado',
-    description: 'Pequena melhora de receita, pequena redução de despesas',
+    description: 'Pequena melhora nas entradas, pequena redução nas saídas',
     incomeAdjustment: 0.08,
     expenseAdjustment: -0.05,
     contributionAdjustment: 0.15,

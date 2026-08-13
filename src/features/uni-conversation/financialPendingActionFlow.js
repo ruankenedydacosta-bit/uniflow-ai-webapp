@@ -354,7 +354,7 @@ export function buildCategoryCreationConfirmation(action, {
 } = {}) {
   if (action?.type !== FINANCIAL_PENDING_ACTION_TYPES.CREATE_CATEGORY) return null;
   const category = action.fields?.category;
-  const typeLabel = category?.category_type === 'income' ? 'Entrada' : 'Despesa';
+  const typeLabel = category?.category_type === 'income' ? 'Entrada' : 'Saída';
 
   return Object.freeze({
     title: 'Criar categoria para continuar',

@@ -156,7 +156,7 @@ export default function FuturePage() {
           <p className={styles.emptyTitle}>Nenhum dado financeiro encontrado</p>
           <p className={styles.emptyText}>
             Para gerar projeções, precisamos de transações financeiras registradas.
-            Adicione receitas e despesas no Financeiro para começar.
+            Adicione entradas e saídas no Financeiro para começar.
           </p>
         </div>
       ) : (

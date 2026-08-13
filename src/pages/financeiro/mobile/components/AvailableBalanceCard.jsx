@@ -5,8 +5,8 @@ function AvailableBalanceCard({ balance, comparison, expense, income }) {
       <strong>{balance}</strong>
       <small>{comparison}</small>
       <div>
-        <p><span>Receitas</span><strong className="financeMobileIncome">{income}</strong></p>
-        <p><span>Despesas</span><strong className="financeMobileExpense">{expense}</strong></p>
+        <p><span>Entradas</span><strong className="financeMobileIncome">{income}</strong></p>
+        <p><span>Saídas</span><strong className="financeMobileExpense">{expense}</strong></p>
       </div>
     </section>
   );

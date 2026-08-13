@@ -354,3 +354,17 @@ test('card de despesa/receita segue mostrando exatamente Tipo, Categoria, Descri
   });
   assert.deepEqual(card.rows.map((row) => row.label), ['Tipo', 'Categoria', 'Descrição', 'Valor', 'Data']);
 });
+
+test('card financeiro sempre apresenta income/expense como Entrada/Saída, inclusive com label legado recebido', () => {
+  const expense = buildConfirmationFromAction({
+    typeLabel: 'Despesa', transactionType: 'expense', amount: 50, date: '2026-08-13',
+  });
+  const income = buildConfirmationFromAction({
+    typeLabel: 'Receita', transactionType: 'income', amount: 800, date: '2026-08-13',
+  });
+
+  assert.equal(expense.title, 'Nova saída');
+  assert.equal(expense.rows.find((row) => row.key === 'type')?.value, 'Saída');
+  assert.equal(income.title, 'Nova entrada');
+  assert.equal(income.rows.find((row) => row.key === 'type')?.value, 'Entrada');
+});

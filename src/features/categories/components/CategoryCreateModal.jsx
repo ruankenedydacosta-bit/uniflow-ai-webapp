@@ -6,8 +6,8 @@ import { CATEGORY_TYPES, isDuplicateCategoryName } from '../categoryUtils.js';
 import styles from '../CategoriesPage.module.css';
 
 const TYPE_LABELS = {
-  [CATEGORY_TYPES.EXPENSE]: 'Despesa',
-  [CATEGORY_TYPES.INCOME]: 'Receita',
+  [CATEGORY_TYPES.EXPENSE]: 'Saída',
+  [CATEGORY_TYPES.INCOME]: 'Entrada',
 };
 
 /**
@@ -65,7 +65,7 @@ function CategoryCreateModal({
       closeOnOverlayClick={!isMutating}
       closeOnEsc={!isMutating}
       title="Nova categoria"
-      description="Dê um nome simples e escolha se é uma despesa ou uma receita."
+      description="Dê um nome simples e escolha se é uma saída ou uma entrada."
       size="sm"
     >
       <form className={styles.form} onSubmit={handleSubmit}>

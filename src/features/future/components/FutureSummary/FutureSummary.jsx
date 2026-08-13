@@ -45,7 +45,7 @@ export default function FutureSummary({
           label="Resultado mensal"
           value={formatCurrency(monthlyResult)}
           variant={monthlyResult >= 0 ? 'default' : 'glass'}
-          disclaimer={monthlyResult < 0 ? 'Despesas superam receitas' : 'Margem mensal projetada'}
+          disclaimer={monthlyResult < 0 ? 'Saídas superam entradas' : 'Margem mensal projetada'}
         />
         <SummaryCard
           label="Capacidade de poupança"

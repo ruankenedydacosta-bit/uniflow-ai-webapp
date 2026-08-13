@@ -750,7 +750,7 @@ test('resolveTransactionDescription usa o texto digitado (com trim) quando prese
 
 test('resolveTransactionDescription sintetiza um rótulo neutro honesto por tipo quando o campo está vazio', () => {
   assert.equal(resolveTransactionDescription({ description: '', transaction_type: 'income' }), 'Entrada');
-  assert.equal(resolveTransactionDescription({ description: '   ', transaction_type: 'expense' }), 'Despesa');
+  assert.equal(resolveTransactionDescription({ description: '   ', transaction_type: 'expense' }), 'Saída');
   assert.equal(resolveTransactionDescription({ description: '', transaction_type: 'transfer' }), 'Transferência entre contas');
   assert.equal(resolveTransactionDescription({ description: '', transaction_type: 'adjustment' }), 'Ajuste de saldo');
 });
@@ -768,5 +768,5 @@ test('buildTransactionMutationPayload nunca envia descrição vazia -- usa o fal
     payment_method: '',
     notes: '',
   });
-  assert.equal(payload.description, 'Despesa');
+  assert.equal(payload.description, 'Saída');
 });

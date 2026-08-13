@@ -261,6 +261,10 @@ const INTENT_RULES = [
       /^(?:entrou|caiu|entraram|cairam)\b(?=.*?\b(?:r\s*\$|\d+(?:[.,]\d+)?|reais?|mil|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos)\b)/u,
       /^(?:entrou|caiu|entraram|cairam)\s+(?:meu|minha|meus|minhas)\b/,
       /\brecebi\s+(?:r\$\s*)?[\d.,]+/,
+      // Declaração nominal inequívoca de entrada: "Venda de 250 reais".
+      // Mantém "venda" como conceito reconhecido sem renomear o contrato
+      // interno register_income/income.
+      /^vendas?\s+(?:de\s+)?(?=.*?(?:r\s*\$|\d+(?:[.,]\d+)?|reais?|mil)\b)/u,
       // ➝ receita/entrada explícita ("lance uma receita de...", "registra uma)
       /^(?:lance|lanca|registra|registre|anota|anote)\s+(?:uma\s+)?(?:receita|entrada)\b/,
     ],

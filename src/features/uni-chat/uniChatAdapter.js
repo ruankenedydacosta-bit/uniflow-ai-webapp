@@ -49,18 +49,25 @@ function formatSignedCurrency(amount) {
   return `${amount < 0 ? '-' : '+'}${value}`;
 }
 
+function resolvePublicTypeLabel(action) {
+  if (action?.transactionType === 'income') return 'Entrada';
+  if (action?.transactionType === 'expense') return 'Saída';
+  return action?.typeLabel || null;
+}
+
 export function buildConfirmationFromAction(action) {
   if (!action) return null;
 
   const rows = [];
   const isBalanceAdjustment = action.balanceTarget != null && action.transactionType === 'adjustment';
   const isTransfer = action.transactionType === 'transfer';
+  const publicTypeLabel = resolvePublicTypeLabel(action);
 
   // BUG REAL (BUG 5): cada linha tem key estável semântica -- labels se
   // repetem (transferência mostra duas linhas de conta) e key={label}
   // duplicava a chave React ("Conta").
-  if (action.typeLabel) {
-    rows.push({ key: 'type', label: 'Tipo', value: action.typeLabel });
+  if (publicTypeLabel) {
+    rows.push({ key: 'type', label: 'Tipo', value: publicTypeLabel });
   }
   if (action.account?.name) {
     rows.push({
@@ -100,7 +107,7 @@ export function buildConfirmationFromAction(action) {
   return {
     title: isBalanceAdjustment
       ? 'Novo ajuste de saldo'
-      : `Nova ${(action.typeLabel || 'movimentação').toLowerCase()}`,
+      : `Nova ${(publicTypeLabel || 'movimentação').toLowerCase()}`,
     status: 'pending',
     // FASE ESTADOS DE PROCESSAMENTO: campo aditivo (não usado pelos
     // consumidores existentes de `rows`/`title`/`status`) que identifica o

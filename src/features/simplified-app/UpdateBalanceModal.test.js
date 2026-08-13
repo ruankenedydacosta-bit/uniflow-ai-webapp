@@ -49,8 +49,8 @@ test('TARGET_COPY define título/rótulos próprios para balance, income e expen
   const start = modal.indexOf('const TARGET_COPY');
   const slice = modal.slice(start, modal.indexOf('});', start));
   assert.match(slice, /balance: Object\.freeze\(\{[\s\S]*?title: 'Atualizar saldo',/);
-  assert.match(slice, /income: Object\.freeze\(\{[\s\S]*?title: 'Atualizar receita',/);
-  assert.match(slice, /expense: Object\.freeze\(\{[\s\S]*?title: 'Atualizar despesa',/);
+  assert.match(slice, /income: Object\.freeze\(\{[\s\S]*?title: 'Atualizar entradas',/);
+  assert.match(slice, /expense: Object\.freeze\(\{[\s\S]*?title: 'Atualizar saídas',/);
 });
 
 test('SimplifiedRecordsPage abre a modal passando target e currentValue de acordo com o card tocado (income/expense/balance)', async () => {

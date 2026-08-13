@@ -8,8 +8,8 @@ export const MOCK_INSTITUTIONS = [
 ];
 
 export const MOCK_CATEGORIES = [
-  { id: 'receitas', label: 'Receitas' },
-  { id: 'despesas', label: 'Despesas' },
+  { id: 'receitas', label: 'Entradas' },
+  { id: 'despesas', label: 'Saídas' },
   { id: 'contas', label: 'Contas' },
   { id: 'cartoes', label: 'Cartões' },
   { id: 'categorias', label: 'Categorias' },

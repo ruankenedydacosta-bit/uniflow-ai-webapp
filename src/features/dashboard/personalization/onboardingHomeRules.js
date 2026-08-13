@@ -64,7 +64,7 @@ const GOAL_CTA_MAP = {
   },
   empresa: {
     personal: null,
-    business: { title: 'Melhorar finan\u00E7as da empresa', cta: 'Revisar entradas e despesas', href: '/financeiro' },
+    business: { title: 'Melhorar finan\u00E7as da empresa', cta: 'Revisar entradas e saídas', href: '/financeiro' },
   },
   outro: {
     personal: { title: 'Explorar a UniFlow', cta: 'Ir para o Financeiro', href: '/financeiro' },
@@ -119,7 +119,7 @@ export function getActivationSteps({ hasTransactions, hasGoals, hasFutureProject
     {
       key: 'first-transaction',
       title: 'Registrar primeira movimentação',
-      description: 'Adicione sua primeira receita ou despesa para começar a acompanhar.',
+      description: 'Adicione sua primeira entrada ou saída para começar a acompanhar.',
       href: '/financeiro',
       cta: 'Registrar',
       completed: Boolean(hasTransactions),

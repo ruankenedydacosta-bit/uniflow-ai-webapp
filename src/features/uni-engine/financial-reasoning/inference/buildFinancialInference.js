@@ -94,11 +94,11 @@ export function buildFinancialInference({ snapshot = null, diagnostics = [] } = 
       type: 'spends_above_average',
       confidence,
       evidences: [
-        evidence('expense_current', 'Despesa do mês', monthlyExpense),
-        evidence('expense_average', 'Despesa média', avgExpense),
+        evidence('expense_current', 'Saída do mês', monthlyExpense),
+        evidence('expense_average', 'Saída média', avgExpense),
         evidence('spending_ratio', 'Relação de gasto', ratio),
       ],
-      reasoning: `A despesa corrente (${monthlyExpense}) está ${Math.round((ratio - 1) * 100)}% acima da média observada (${avgExpense}).`,
+      reasoning: `A saída corrente (${monthlyExpense}) está ${Math.round((ratio - 1) * 100)}% acima da média observada (${avgExpense}).`,
     }));
   }
 
@@ -110,10 +110,10 @@ export function buildFinancialInference({ snapshot = null, diagnostics = [] } = 
       type: 'maintains_pattern',
       confidence: 0.6,
       evidences: [
-        evidence('expense_average', 'Despesa média', avgExpense),
+        evidence('expense_average', 'Saída média', avgExpense),
         evidence('monthly_result', 'Resultado do mês', monthlyResult),
       ],
-      reasoning: 'Sem desvio relevante de receita ou despesa na janela observada; o padrão permanece estável.',
+      reasoning: 'Sem desvio relevante de entradas ou saídas na janela observada; o padrão permanece estável.',
     }));
   }
 
@@ -150,11 +150,11 @@ export function buildFinancialInference({ snapshot = null, diagnostics = [] } = 
       type: 'positive_trend',
       confidence: 0.7,
       evidences: [
-        evidence('income_current', 'Receita do mês', monthlyIncome),
-        evidence('income_previous', 'Receita anterior', previousIncome),
-        evidence('expense_flat', 'Despesa estável', expenseFlat),
+        evidence('income_current', 'Entrada do mês', monthlyIncome),
+        evidence('income_previous', 'Entrada anterior', previousIncome),
+        evidence('expense_flat', 'Saída estável', expenseFlat),
       ],
-      reasoning: 'Receita corrente acima da anterior com despesa estável sugere tendência positiva na janela observada.',
+      reasoning: 'Entrada corrente acima da anterior com saída estável sugere tendência positiva na janela observada.',
     }));
   }
 
@@ -168,11 +168,11 @@ export function buildFinancialInference({ snapshot = null, diagnostics = [] } = 
       type: 'negative_trend',
       confidence: 0.75,
       evidences: [
-        evidence('income_declining', 'Receita em queda', incomeDeclining),
-        evidence('expenses_rising', 'Despesa em alta', expensesRising),
+        evidence('income_declining', 'Entrada em queda', incomeDeclining),
+        evidence('expenses_rising', 'Saída em alta', expensesRising),
         evidence('reserve_shortfall', 'Déficit de reserva', Number(reserve.shortfall ?? 0)),
       ],
-      reasoning: 'Receita em queda ou despesa em alta na janela observada sugere tendência negativa.',
+      reasoning: 'Entrada em queda ou saída em alta na janela observada sugere tendência negativa.',
     }));
   }
 

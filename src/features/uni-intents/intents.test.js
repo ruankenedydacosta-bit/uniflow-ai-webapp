@@ -71,6 +71,25 @@ test('interpreta recebimento de salario como entrada', () => {
   assert.equal(result.ready, true);
 });
 
+test('vocabulário público Entradas/Saídas preserva todos os aliases e contratos internos', () => {
+  const cases = [
+    ['Gastei 200 reais no mercado', 'register_expense', 200],
+    ['Paguei 100 reais de gasolina', 'register_expense', 100],
+    ['Registra uma despesa de 50 reais', 'register_expense', 50],
+    ['Saiu 300 reais de aluguel', 'register_expense', 300],
+    ['Recebi 1.000 reais de um cliente', 'register_income', 1000],
+    ['Entrou 500 reais hoje', 'register_income', 500],
+    ['Registra uma receita de 800 reais', 'register_income', 800],
+    ['Venda de 250 reais', 'register_income', 250],
+  ];
+
+  for (const [input, expectedIntent, expectedAmount] of cases) {
+    const result = parseFinancialText(input, { referenceDate: '2026-08-13' });
+    assert.equal(result.intent, expectedIntent, input);
+    assert.equal(result.entities.amount, expectedAmount, input);
+  }
+});
+
 // BUG REAL EM PRODUÇÃO: "Coloquei duzentos reais de gasolina." caía em
 // intent 'question' (nenhum verbo reconhecido), o que fazia a frase inteira
 // cair no chat geral em vez do fluxo transacional. "coloquei/botei" foram

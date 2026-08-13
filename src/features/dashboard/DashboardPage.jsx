@@ -188,7 +188,7 @@ function DashboardPage() {
       <section className={styles.attentionSection} aria-labelledby="dashboard-chart-title">
         <div className={styles.sectionHeader}>
           <div>
-            <h3 id="dashboard-chart-title">Receitas e Despesas</h3>
+            <h3 id="dashboard-chart-title">Entradas e Saídas</h3>
             <p>Acompanhe como seu dinheiro está evoluindo.</p>
           </div>
         </div>

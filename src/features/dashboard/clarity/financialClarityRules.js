@@ -51,9 +51,9 @@ export function buildSignalCandidates({
   if (expense > income && expense > 0) {
     signals.push({
       id: 'expenses-above-income',
-      title: 'Despesas acima das receitas',
-      label: 'Despesas acima das receitas',
-      description: 'No período atual, as despesas confirmadas estão acima das receitas confirmadas.',
+      title: 'Saídas acima das entradas',
+      label: 'Saídas acima das entradas',
+      description: 'No período atual, as saídas confirmadas estão acima das entradas confirmadas.',
       status: 'Revisar',
       variant: 'warning',
       tone: 'warning',
@@ -66,9 +66,9 @@ export function buildSignalCandidates({
   if (Number.isFinite(comparisonPercent) && comparisonPercent >= 10) {
     signals.push({
       id: 'expense-growth',
-      title: 'Despesas cresceram no período',
-      label: `Despesas subiram ${comparisonPercent}%`,
-      description: `As despesas confirmadas estão ${comparisonPercent}% acima do período anterior.`,
+      title: 'Saídas cresceram no período',
+      label: `Saídas subiram ${comparisonPercent}%`,
+      description: `As saídas confirmadas estão ${comparisonPercent}% acima do período anterior.`,
       status: 'Comparar',
       variant: 'warning',
       tone: 'warning',
@@ -79,9 +79,9 @@ export function buildSignalCandidates({
   } else if (Number.isFinite(comparisonPercent) && comparisonPercent <= -10) {
     signals.push({
       id: 'expense-reduction',
-      title: 'Despesas diminuíram no período',
-      label: `Despesas caíram ${Math.abs(comparisonPercent)}%`,
-      description: `As despesas confirmadas estão ${Math.abs(comparisonPercent)}% abaixo do período anterior.`,
+      title: 'Saídas diminuíram no período',
+      label: `Saídas caíram ${Math.abs(comparisonPercent)}%`,
+      description: `As saídas confirmadas estão ${Math.abs(comparisonPercent)}% abaixo do período anterior.`,
       status: 'Oportunidade',
       variant: 'success',
       tone: 'success',
@@ -94,9 +94,9 @@ export function buildSignalCandidates({
   if (topCategory?.percent >= 50) {
     signals.push({
       id: 'category-concentration',
-      title: 'Despesa concentrada em uma categoria',
+      title: 'Saída concentrada em uma categoria',
       label: `${topCategory.label}: ${topCategory.percent}%`,
-      description: `${topCategory.label} representa ${topCategory.percent}% das despesas confirmadas do período.`,
+      description: `${topCategory.label} representa ${topCategory.percent}% das saídas confirmadas do período.`,
       status: 'Observar',
       variant: 'secondary',
       tone: 'neutral',

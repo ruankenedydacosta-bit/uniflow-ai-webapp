@@ -71,8 +71,8 @@ export function compareFinancialPipelines({
     };
 
     compareFigure({ key: 'balance', engineValue: engineBalance, legacyValue: legacyBalance, label: 'saldo' });
-    compareFigure({ key: 'income', engineValue: engineIncome, legacyValue: legacyIncome, label: 'receita' });
-    compareFigure({ key: 'expense', engineValue: engineExpense, legacyValue: legacyExpense, label: 'despesa' });
+    compareFigure({ key: 'income', engineValue: engineIncome, legacyValue: legacyIncome, label: 'entrada' });
+    compareFigure({ key: 'expense', engineValue: engineExpense, legacyValue: legacyExpense, label: 'saída' });
   }
 
   // Sinais do motor que o legado ainda não sinalizaria ao usuário.

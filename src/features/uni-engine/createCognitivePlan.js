@@ -40,7 +40,7 @@ export const NEXT_QUESTION_BY_FIELD = Object.freeze({
   },
   intent: {
     field: 'intent',
-    text: 'Isso é uma receita ou um ajuste de saldo?',
+    text: 'Isso é uma entrada ou um ajuste de saldo?',
   },
 });
 

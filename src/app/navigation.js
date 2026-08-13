@@ -55,7 +55,7 @@ export const navigationItems = [
     modes: ALL_MODES,
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.FINANCEIRO),
-    description: 'Receitas, despesas, saldo e fluxo financeiro.',
+    description: 'Entradas, saídas, saldo e fluxo financeiro.',
     group: 'financeiro',
   },
   {
@@ -65,7 +65,7 @@ export const navigationItems = [
     modes: ALL_MODES,
     plans: ALL_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.CATEGORIAS),
-    description: 'Onde cada valor deve ficar: despesas e receitas.',
+    description: 'Onde cada valor deve ficar: saídas e entradas.',
     group: 'financeiro',
   },
   {

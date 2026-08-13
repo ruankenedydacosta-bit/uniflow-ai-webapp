@@ -7,7 +7,7 @@ import { formatBRL } from './cognitiveLiveChart.utils';
  * dentro da área visível do gráfico.
  */
 export default function CognitiveChartTooltip({
-  x, y, point, seriesLabels = { receita: 'Receitas', despesa: 'Despesas' }, containerWidth, containerHeight,
+  x, y, point, seriesLabels = { receita: 'Entradas', despesa: 'Saídas' }, containerWidth, containerHeight,
 }) {
   if (!point) return null;
 

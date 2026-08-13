@@ -374,7 +374,7 @@ test('confirmação da criação de categoria exibe campos obrigatórios e works
   assert.equal(confirmation.title, 'Criar categoria para continuar');
   assert.deepEqual(confirmation.rows.map((row) => row.value), [
     'Pet',
-    'Despesa',
+    'Saída',
     'Pessoal',
   ]);
   assert.equal(confirmation.editable, false);

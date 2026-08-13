@@ -82,7 +82,7 @@ function hasRequiredTransactionFields(transaction) {
 // de transactions.description mesmo se um chamador futuro não usar a UI.
 const NEUTRAL_DESCRIPTION_BY_TYPE = {
   income: 'Entrada',
-  expense: 'Despesa',
+  expense: 'Saída',
   transfer: 'Transferência entre contas',
   adjustment: 'Ajuste de saldo',
 };

@@ -252,7 +252,7 @@ const EMPTY_FINANCIAL_FALLBACK = Object.freeze({
 });
 
 const UNI_DETERMINISTIC_FALLBACK_TEXT =
-  'Entendi. Por enquanto, posso ajudar a registrar movimenta\u00e7\u00f5es financeiras. Tente algo como "registrar uma despesa de R$ 50" ou "qual meu saldo?".';
+  'Entendi. Por enquanto, posso ajudar a registrar movimenta\u00e7\u00f5es financeiras. Tente algo como "registrar uma saída de R$ 50" ou "qual meu saldo?".';
 
 function getLocalIsoDate() {
   const today = new Date();
@@ -844,7 +844,7 @@ export default function UniChatPage({ variant = 'full' }) {
       if (result.status === 'unsupported') {
         if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
         createAssistantResponse(
-          'Ainda não consigo te ajudar com isso especificamente, mas posso mostrar saldo, resumo do período, maiores despesas, receitas ou suas últimas movimentações.',
+          'Ainda não consigo te ajudar com isso especificamente, mas posso mostrar saldo, resumo do período, maiores saídas, entradas ou suas últimas movimentações.',
         );
         return true;
       }
