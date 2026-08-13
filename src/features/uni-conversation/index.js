@@ -101,6 +101,7 @@ export {
   buildPlanSummaryText,
   describePlanOperation,
   findPlanOperationCancelTarget,
+  getSingleReadyPlanAction,
   parsePlanCorrectionOverrides,
 } from './financialPlanPresenter.js';
 export {

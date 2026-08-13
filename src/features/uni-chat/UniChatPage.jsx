@@ -46,6 +46,7 @@ import {
   buildPlanResultText,
   buildPlanSummaryText,
   findPlanOperationCancelTarget,
+  getSingleReadyPlanAction,
   parsePlanCorrectionOverrides,
   isUnsupportedIntentEligibleForPlan,
   looksLikeComplexFinancialText,
@@ -993,6 +994,7 @@ export default function UniChatPage({ variant = 'full' }) {
   // (p_client_operation_id), mas isso evita chamadas duplicadas e updates
   // de estado concorrentes no cliente.
   const confirmingPlanRef = useRef(false);
+  const financialPlanConfirmationMessageIdRef = useRef(null);
 
   function setFinancialPlan(next) {
     financialPlanRef.current = next;
@@ -1013,6 +1015,35 @@ export default function UniChatPage({ variant = 'full' }) {
       && plan.status !== PLAN_STATUS.CANCELLED
       && !isFinancialPlanExpired(plan),
     );
+  }
+
+  function publishFinancialPlanReview(plan) {
+    const action = getSingleReadyPlanAction(plan);
+    if (!action) {
+      resolveFinancialPlanConfirmation('updated');
+      createAssistantResponse(buildPlanSummaryText(plan));
+      return;
+    }
+
+    resolveFinancialPlanConfirmation('updated');
+
+    const message = createAssistantResponse('Revise as informações antes de registrar.', {
+      type: 'confirmation',
+      confirmation: buildConfirmationFromAction(action),
+      clientOperationId: action.clientOperationId,
+    });
+    financialPlanConfirmationMessageIdRef.current = message?.id ?? null;
+  }
+
+  function resolveFinancialPlanConfirmation(status) {
+    const confirmationMessageId = financialPlanConfirmationMessageIdRef.current;
+    if (!confirmationMessageId) return;
+    setMessages((current) => current.map((message) => (
+      message.id === confirmationMessageId
+        ? { ...message, confirmation: { ...message.confirmation, status } }
+        : message
+    )));
+    financialPlanConfirmationMessageIdRef.current = null;
   }
 
   async function attemptFinancialPlan(text) {
@@ -1047,7 +1078,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // S4: turno novo durante a chamada neural anula o plano antigo.
     if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
     setFinancialPlan(newPlan);
-    createAssistantResponse(buildPlanSummaryText(newPlan));
+    publishFinancialPlanReview(newPlan);
     return true;
   }
 
@@ -1102,6 +1133,7 @@ export default function UniChatPage({ variant = 'full' }) {
       notifyFinancialDataChanged('uni-chat');
     }
     if (workingPlan.status === PLAN_STATUS.COMPLETED) {
+      resolveFinancialPlanConfirmation('confirmed');
       setFinancialPlan(null);
     }
   }
@@ -1112,6 +1144,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // O plano cancelado não precisa ser preservado em memória -- ao contrário
     // de uma correção pontual, aqui a conversa financeira encerra por completo.
     setFinancialPlan(null);
+    resolveFinancialPlanConfirmation('canceled');
     createAssistantResponse(buildPlanCancelledText());
   }
 
@@ -1172,7 +1205,7 @@ export default function UniChatPage({ variant = 'full' }) {
       if (overrides) {
         const updated = applyPlanOperationCorrection(plan, current.temporaryId, overrides);
         setFinancialPlan(updated);
-        createAssistantResponse(buildPlanSummaryText(updated));
+        publishFinancialPlanReview(updated);
         return true;
       }
     }
@@ -4076,6 +4109,16 @@ export default function UniChatPage({ variant = 'full' }) {
     const activeStackAction = stack ? getActivePendingAction(stack) : null;
     const accountDependencyActive = isAccountCreationDependency(activeStackAction);
     const categoryDependencyActive = isCategoryCreationDependency(activeStackAction);
+    if (
+      !pendingAction
+      && !accountDependencyActive
+      && !categoryDependencyActive
+      && isPlanReadyForFinalConfirmation(financialPlanRef.current)
+    ) {
+      financialPlanConfirmationMessageIdRef.current = id;
+      await confirmFinancialPlan();
+      return;
+    }
     if (!pendingAction && !accountDependencyActive && !categoryDependencyActive) return;
 
     confirmingRef.current = true;
@@ -4376,6 +4419,14 @@ export default function UniChatPage({ variant = 'full' }) {
 
   function handleCancelAction(id, { cascade = false } = {}) {
     if (confirmingRef.current) return;
+    if (
+      !pendingAction
+      && isPlanReadyForFinalConfirmation(financialPlanRef.current)
+    ) {
+      financialPlanConfirmationMessageIdRef.current = id;
+      cancelFinancialPlanEntirely();
+      return;
+    }
     const stack = pendingActionStackRef.current;
     const activeStackAction = stack ? getActivePendingAction(stack) : null;
     if (isAccountCreationDependency(activeStackAction)) {

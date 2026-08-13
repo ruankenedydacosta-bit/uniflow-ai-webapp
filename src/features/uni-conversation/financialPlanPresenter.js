@@ -110,6 +110,32 @@ export function buildPlanSummaryText(planState) {
   return `${intro}\n${lines}\n\nPosso confirmar e registrar tudo isso?`;
 }
 
+/**
+ * Um plano neural com exatamente uma operação já resolvida representa a
+ * mesma pendência financeira que o fluxo determinístico simples. A UI pode
+ * então reutilizar o card oficial de confirmação em vez de reduzir a ação a
+ * um resumo textual. Planos múltiplos ou ainda ambíguos continuam no resumo
+ * próprio, porque não cabem honestamente em um único card.
+ */
+export function getSingleReadyPlanAction(planState) {
+  if (planState?.status !== PLAN_STATUS.READY_FOR_CONFIRMATION) return null;
+
+  const active = (planState.operations ?? []).filter(
+    (operation) => operation.status !== PLAN_OPERATION_STATUS.CANCELLED,
+  );
+  if (active.length !== 1) return null;
+
+  const [operation] = active;
+  if (
+    operation.capabilityPending
+    || operation.status !== PLAN_OPERATION_STATUS.READY
+    || operation.action?.status !== 'ready'
+  ) {
+    return null;
+  }
+  return operation.action;
+}
+
 export function buildPlanCancelledText() {
   return 'Tudo bem, cancelei essa operação. Nada foi registrado.';
 }

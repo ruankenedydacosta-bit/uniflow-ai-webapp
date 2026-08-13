@@ -672,6 +672,23 @@ test('card de confirmação de lançamento nunca mostra o campo Espaço, e nunca
   assert.match(page, /resolvedInput\.kind !== 'correction'/);
 });
 
+test('plano com uma única ação pronta publica o mesmo card e roteia confirmar/cancelar para a pendência real', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /const action = getSingleReadyPlanAction\(plan\);/);
+  assert.match(page, /confirmation: buildConfirmationFromAction\(action\)/);
+  assert.match(page, /type: 'confirmation'/);
+  assert.match(page, /Revise as informações antes de registrar\./);
+
+  const confirm = extractFunctionBody(page, 'async function handleConfirmAction(id) {').body;
+  assert.match(confirm, /isPlanReadyForFinalConfirmation\(financialPlanRef\.current\)/);
+  assert.match(confirm, /await confirmFinancialPlan\(\);/);
+
+  const cancelStart = page.indexOf('function handleCancelAction(id, { cascade = false } = {}) {');
+  const cancel = page.slice(cancelStart, cancelStart + 900);
+  assert.match(cancel, /isPlanReadyForFinalConfirmation\(financialPlanRef\.current\)/);
+  assert.match(cancel, /cancelFinancialPlanEntirely\(\);/);
+});
+
 test('MessageBubble recebe o estado compartilhado de voz e sabe se É a mensagem ativa (isActiveVoiceMessage)', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /voiceEnabled=\{voicePreference\.enabled\}/);

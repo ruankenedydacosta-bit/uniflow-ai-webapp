@@ -5,6 +5,7 @@ import {
   WEEKDAY_HEADER_LABELS,
   buildMonthGrid,
   buildMonthRange,
+  compareAgendaItemsByRecentActivity,
   formatAgendaItemTime,
   formatDayHeading,
   formatMonthLabel,
@@ -89,7 +90,45 @@ test('groupAgendaItemsByDay: agrupa por dia local a partir de starts_at timestam
   const grouped = groupAgendaItemsByDay(items);
   assert.equal(grouped.get('2026-08-08').length, 2);
   assert.equal(grouped.get('2026-08-09').length, 1);
-  assert.deepEqual(grouped.get('2026-08-08').map((i) => i.title), ['Reunião', 'Consulta']);
+  assert.deepEqual(grouped.get('2026-08-08').map((i) => i.title), ['Consulta', 'Reunião']);
+});
+
+test('atividade recente ordena itens do mesmo dia por updated_at, created_at e id estável', () => {
+  const startsAt = new Date(2026, 7, 8, 10, 0, 0, 0).toISOString();
+  const items = [
+    { id: 'a', title: 'A', starts_at: startsAt, created_at: '2026-08-01T10:00:00Z', updated_at: '2026-08-01T10:00:00Z' },
+    { id: 'b', title: 'B', starts_at: startsAt, created_at: '2026-08-02T10:00:00Z', updated_at: '2026-08-02T10:00:00Z' },
+    { id: 'c', title: 'C', starts_at: startsAt, created_at: '2026-08-03T10:00:00Z', updated_at: '2026-08-03T10:00:00Z' },
+  ];
+
+  assert.deepEqual(
+    groupAgendaItemsByDay(items).get('2026-08-08').map((item) => item.id),
+    ['c', 'b', 'a'],
+  );
+
+  const editedA = items.map((item) => (
+    item.id === 'a' ? { ...item, updated_at: '2026-08-04T10:00:00Z' } : item
+  ));
+  assert.deepEqual(
+    groupAgendaItemsByDay(editedA).get('2026-08-08').map((item) => item.id),
+    ['a', 'c', 'b'],
+  );
+});
+
+test('ordenação por atividade é independente de horário/dia inteiro e estável em reload', () => {
+  const items = [
+    { id: 'timed', starts_at: new Date(2026, 7, 8, 14).toISOString(), is_all_day: false, created_at: '2026-08-01T10:00:00Z', updated_at: '2026-08-01T10:00:00Z' },
+    { id: 'all-day', starts_at: new Date(2026, 7, 8, 0).toISOString(), is_all_day: true, created_at: '2026-08-02T10:00:00Z', updated_at: '2026-08-02T10:00:00Z' },
+  ];
+  const firstRender = groupAgendaItemsByDay(items).get('2026-08-08').map((item) => item.id);
+  const afterReload = groupAgendaItemsByDay(structuredClone(items)).get('2026-08-08').map((item) => item.id);
+  assert.deepEqual(firstRender, ['all-day', 'timed']);
+  assert.deepEqual(afterReload, firstRender);
+
+  assert.ok(compareAgendaItemsByRecentActivity(
+    { id: 'b', updated_at: null, created_at: null },
+    { id: 'a', updated_at: null, created_at: null },
+  ) < 0);
 });
 
 test('groupAgendaItemsByDay: ignora itens com starts_at invalido (nunca inventa dia)', () => {
