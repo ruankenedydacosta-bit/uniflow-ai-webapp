@@ -184,6 +184,7 @@ import {
   isRetiredPublicBalanceRequest,
 } from './publicBalanceExperience.js';
 import { useOptionalSimplifiedProduct } from '../simplified-app/useSimplifiedProduct.js';
+import { useVisualViewportContext } from '../simplified-app/useVisualViewport.js';
 import {
   SIMPLIFIED_CHAT_MODE,
   SIMPLIFIED_PRODUCT_MODE,
@@ -282,6 +283,7 @@ function isLikelyFinancialQuestion(text) {
 }
 
 export default function UniChatPage({ variant = 'full' }) {
+  const { isKeyboardOpen } = useVisualViewportContext();
   const navigate = useNavigate();
   const { access } = useAccess();
   const simplifiedProduct = useOptionalSimplifiedProduct();
@@ -2868,7 +2870,7 @@ export default function UniChatPage({ variant = 'full' }) {
       node.scrollTop = node.scrollHeight;
     });
     return () => window.cancelAnimationFrame(rafId);
-  }, [messages, historyHydrated, messagesMountTick]);
+  }, [messages, historyHydrated, isKeyboardOpen, messagesMountTick]);
 
   function pushMessage(msg) {
     setMessages((prev) => [...prev, msg]);

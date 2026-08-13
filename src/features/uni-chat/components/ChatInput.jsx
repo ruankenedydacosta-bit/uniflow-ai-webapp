@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   useSharedUniVoiceInput,
   useStableVoiceInputHandlers,
@@ -21,6 +21,13 @@ export default function ChatInput({
 
   useEffect(() => {
     valueRef.current = value;
+  }, [value]);
+
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.style.height = 'auto';
+    input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
   }, [value]);
 
   const voiceInput = useSharedUniVoiceInput();
@@ -50,6 +57,13 @@ export default function ChatInput({
 
   function handleSubmit(e) {
     e.preventDefault();
+    if (!value.trim() || disabled) return;
+    onSend(value.trim());
+  }
+
+  function handleInputKeyDown(event) {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
     if (!value.trim() || disabled) return;
     onSend(value.trim());
   }
@@ -103,14 +117,15 @@ export default function ChatInput({
           <MicIcon />
         </button>
 
-        <input
+        <textarea
           ref={inputRef}
           className={styles.input}
-          type="text"
           inputMode="text"
+          rows={1}
           placeholder="Pergunte ou peça algo para a Uni"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleInputKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           aria-label="Pergunte ou peça algo para a Uni"

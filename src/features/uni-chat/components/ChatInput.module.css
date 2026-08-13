@@ -5,6 +5,10 @@
   border-top: 1px solid var(--uni-border-soft);
 }
 
+:global([data-keyboard-open="true"]) .form {
+  padding-bottom: 10px;
+}
+
 .field {
   display: flex;
   align-items: center;
@@ -49,6 +53,10 @@
   font-family: var(--uni-font-body);
   color: var(--uni-text-primary);
   padding: 8px 2px;
+  max-height: 120px;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.4;
 }
 
 .input::placeholder {

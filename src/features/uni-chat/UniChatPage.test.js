@@ -1583,7 +1583,7 @@ test('BUG 4: scroll consome stickToBottom em layout effect -- "Ver conversa comp
   assert.match(scrollBlock, /if \(!stickToBottom\.current\) return;/);
   assert.match(scrollBlock, /scrollRef\.current/);
   assert.match(scrollBlock, /el\.scrollTop = el\.scrollHeight;/);
-  assert.match(scrollBlock, /}, \[messages, historyHydrated, messagesMountTick\]\);/);
+  assert.match(scrollBlock, /}, \[messages, historyHydrated, isKeyboardOpen, messagesMountTick\]\);/);
   // Contrato de aderência: nada de setTimeout arbitrário para rolar.
   assert.doesNotMatch(scrollBlock, /setTimeout\(/);
   // O usuário que rolou para cima (stickToBottom=false) mantém a leitura.

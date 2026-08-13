@@ -6,7 +6,7 @@ import { useNotifications } from '../notifications/useNotifications.js';
 import SimplifiedBottomNavigation from './SimplifiedBottomNavigation.jsx';
 import SimplifiedHeader from './SimplifiedHeader.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
-import { useVisualViewport } from './useVisualViewport.js';
+import { useVisualViewport, VisualViewportContext } from './useVisualViewport.js';
 import styles from './simplifiedApp.module.css';
 
 function SimplifiedAppShell({ children }) {
@@ -19,7 +19,7 @@ function SimplifiedAppShell({ children }) {
   const notificationPanelRef = useRef(null);
   const closeTimerRef = useRef(null);
   const openFrameRef = useRef(null);
-  const viewportStyle = useVisualViewport();
+  const viewportState = useVisualViewport();
   const {
     notifications,
     unreadCount,
@@ -38,6 +38,7 @@ function SimplifiedAppShell({ children }) {
     || location.pathname === SIMPLIFIED_ROUTES.ACCOUNT
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`);
   const isUniChatRoute = location.pathname === SIMPLIFIED_ROUTES.UNI;
+  const isUniChatKeyboardOpen = isUniChatRoute && viewportState.isKeyboardOpen;
 
   const clearCloseTimer = useCallback(() => {
     if (closeTimerRef.current) {
@@ -141,13 +142,14 @@ function SimplifiedAppShell({ children }) {
   return (
     <div
       className={styles.shell}
-      style={viewportStyle}
+      style={viewportState.viewportStyle}
       data-simplified-app-shell
+      data-keyboard-open={isUniChatKeyboardOpen ? 'true' : 'false'}
       data-text-size={profile?.text_size ?? 'standard'}
     >
       <div className={styles.shellSurface}>
         <div className={styles.shellTopRegion}>
-          {hasPageHeader ? null : (
+          {hasPageHeader || isUniChatRoute ? null : (
             <SimplifiedHeader
               notificationButtonRef={notificationButtonRef}
               unreadCount={unreadCount}
@@ -155,7 +157,7 @@ function SimplifiedAppShell({ children }) {
               onNotifications={toggleNotifications}
             />
           )}
-          {isNotificationsRendered && !hasPageHeader ? (
+          {isNotificationsRendered && !hasPageHeader && !isUniChatRoute ? (
             <div
               id="simplified-notifications-panel"
               ref={notificationPanelRef}
@@ -202,9 +204,11 @@ function SimplifiedAppShell({ children }) {
           className={styles.mainContent}
           data-uni-chat={isUniChatRoute ? 'true' : undefined}
         >
-          {children}
+          <VisualViewportContext.Provider value={viewportState}>
+            {children}
+          </VisualViewportContext.Provider>
         </main>
-        <SimplifiedBottomNavigation />
+        <SimplifiedBottomNavigation hidden={isUniChatKeyboardOpen} />
       </div>
     </div>
   );
