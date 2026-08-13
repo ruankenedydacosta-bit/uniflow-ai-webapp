@@ -62,8 +62,23 @@ function clearReloadGuard(storage) {
   }
 }
 
-function waitForControllerChange(serviceWorker, timeoutMs, runtime) {
-  if (!serviceWorker?.addEventListener) return Promise.resolve(false);
+function waitForWorkerActivation({
+  serviceWorker,
+  registration,
+  worker,
+  previousController,
+  previousActive,
+  timeoutMs,
+  runtime,
+}) {
+  const isReady = () => (
+    (serviceWorker?.controller && serviceWorker.controller !== previousController)
+    || (registration?.active && registration.active !== previousActive)
+    || worker?.state === 'activated'
+  );
+  if (isReady()) return Promise.resolve(true);
+  if (!serviceWorker?.addEventListener && !worker?.addEventListener) return Promise.resolve(false);
+
   return new Promise((resolve) => {
     let settled = false;
     const finish = (changed) => {
@@ -71,11 +86,17 @@ function waitForControllerChange(serviceWorker, timeoutMs, runtime) {
       settled = true;
       runtime.clearTimeout?.(timeoutId);
       serviceWorker.removeEventListener?.('controllerchange', onChange);
+      worker?.removeEventListener?.('statechange', onChange);
       resolve(changed);
     };
-    const onChange = () => finish(true);
+    const onChange = () => {
+      if (isReady()) finish(true);
+      else if (worker?.state === 'redundant') finish(false);
+    };
     const timeoutId = runtime.setTimeout?.(() => finish(false), timeoutMs);
-    serviceWorker.addEventListener('controllerchange', onChange, { once: true });
+    serviceWorker?.addEventListener?.('controllerchange', onChange, { once: true });
+    worker?.addEventListener?.('statechange', onChange);
+    onChange();
   });
 }
 
@@ -95,26 +116,37 @@ function withTimeout(promise, timeoutMs, runtime, errorCode) {
   });
 }
 
-function waitForWaitingWorker(registration, timeoutMs, runtime) {
-  if (registration?.waiting) return Promise.resolve(registration.waiting);
+function waitForInstallingWorker(registration, timeoutMs, runtime) {
+  if (registration?.waiting) return Promise.resolve({ kind: 'waiting', worker: registration.waiting });
   const installing = registration?.installing;
-  if (!installing?.addEventListener) return Promise.resolve(null);
+  if (!installing?.addEventListener) {
+    return Promise.resolve(registration?.active
+      ? { kind: 'active', worker: registration.active }
+      : { kind: 'missing', worker: null });
+  }
+
   return new Promise((resolve) => {
     let settled = false;
-    const finish = (worker) => {
+    const finish = (result) => {
       if (settled) return;
       settled = true;
       runtime.clearTimeout?.(timeoutId);
       installing.removeEventListener?.('statechange', onStateChange);
-      resolve(worker);
+      resolve(result);
     };
     const onStateChange = () => {
-      if (registration.waiting) finish(registration.waiting);
-      else if (installing.state === 'installed') finish(installing);
-      else if (installing.state === 'redundant') finish(null);
+      if (registration.waiting) finish({ kind: 'waiting', worker: registration.waiting });
+      else if (installing.state === 'activated' || registration.active === installing) {
+        finish({ kind: 'active', worker: registration.active ?? installing });
+      } else if (installing.state === 'redundant') {
+        finish(registration.active
+          ? { kind: 'active', worker: registration.active }
+          : { kind: 'missing', worker: null });
+      }
     };
-    const timeoutId = runtime.setTimeout?.(() => finish(registration.waiting ?? null), timeoutMs);
+    const timeoutId = runtime.setTimeout?.(() => finish({ kind: 'timeout', worker: null }), timeoutMs);
     installing.addEventListener('statechange', onStateChange);
+    onStateChange();
   });
 }
 
@@ -218,13 +250,14 @@ export function createPwaUpdateManager({
       try {
         const serviceWorker = runtime.navigator?.serviceWorker;
         if (serviceWorker) {
-          const hadController = Boolean(serviceWorker.controller);
           const registration = await withTimeout(
             serviceWorker.ready,
             activationTimeoutMs,
             runtime,
             'SERVICE_WORKER_READY_TIMEOUT',
           );
+          const previousController = serviceWorker.controller ?? null;
+          const previousActive = registration?.active ?? null;
           publish({ serviceWorkerState: registration?.waiting ? 'waiting' : 'checking' }, 'service_worker_update');
           await withTimeout(
             registration?.update?.(),
@@ -232,22 +265,28 @@ export function createPwaUpdateManager({
             runtime,
             'SERVICE_WORKER_UPDATE_TIMEOUT',
           );
-          const waiting = registration?.waiting
-            ?? await waitForWaitingWorker(registration, activationTimeoutMs, runtime);
-          if (!waiting) throw new Error('SERVICE_WORKER_UPDATE_NOT_READY');
+          const workerResult = registration?.waiting
+            ? { kind: 'waiting', worker: registration.waiting }
+            : await waitForInstallingWorker(registration, activationTimeoutMs, runtime);
 
-          if (hadController) {
-            const controllerChanged = waitForControllerChange(
+          if (workerResult.kind === 'waiting') {
+            const activated = waitForWorkerActivation({
               serviceWorker,
-              activationTimeoutMs,
+              registration,
+              worker: workerResult.worker,
+              previousController,
+              previousActive,
+              timeoutMs: activationTimeoutMs,
               runtime,
-            );
-            waiting.postMessage?.({ type: 'SKIP_WAITING' });
-            const changed = await controllerChanged;
-            if (!changed) throw new Error('SERVICE_WORKER_ACTIVATION_TIMEOUT');
-          } else {
-            waiting.postMessage?.({ type: 'SKIP_WAITING' });
+            });
+            workerResult.worker.postMessage?.({ type: 'SKIP_WAITING' });
+            if (!await activated) throw new Error('SERVICE_WORKER_ACTIVATION_TIMEOUT');
+          } else if (workerResult.kind !== 'active') {
+            throw new Error(workerResult.kind === 'timeout'
+              ? 'SERVICE_WORKER_INSTALL_TIMEOUT'
+              : 'SERVICE_WORKER_UPDATE_NOT_READY');
           }
+
           publish({ serviceWorkerState: 'controlling' }, 'service_worker_controlling');
         } else {
           publish({ serviceWorkerState: 'unsupported' }, 'service_worker_unavailable');

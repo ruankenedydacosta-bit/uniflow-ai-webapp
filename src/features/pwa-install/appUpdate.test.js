@@ -101,17 +101,24 @@ test('navegador sem Service Worker recarrega uma vez e duplo clique compartilha 
 
 test('Service Worker waiting recebe SKIP_WAITING e só então ocorre o reload', async () => {
   const serviceWorker = new EventTarget();
-  serviceWorker.controller = {};
+  const oldController = {};
+  serviceWorker.controller = oldController;
   let updateCalls = 0;
   let messages = 0;
-  const waiting = {
+  const waiting = Object.assign(new EventTarget(), {
+    state: 'installed',
     postMessage: (message) => {
       assert.deepEqual(message, { type: 'SKIP_WAITING' });
       messages += 1;
-      queueMicrotask(() => serviceWorker.dispatchEvent(new Event('controllerchange')));
+      queueMicrotask(() => {
+        waiting.state = 'activated';
+        serviceWorker.controller = {};
+        waiting.dispatchEvent(new Event('statechange'));
+        serviceWorker.dispatchEvent(new Event('controllerchange'));
+      });
     },
-  };
-  serviceWorker.ready = Promise.resolve({ waiting, update: async () => { updateCalls += 1; } });
+  });
+  serviceWorker.ready = Promise.resolve({ waiting, active: oldController, update: async () => { updateCalls += 1; } });
   const runtime = createRuntime({ serviceWorker });
   const manager = createPwaUpdateManager({
     runtime,
@@ -128,10 +135,11 @@ test('Service Worker waiting recebe SKIP_WAITING e só então ocorre o reload', 
   assert.equal(manager.getSnapshot().serviceWorkerState, 'controlling');
 });
 
-test('Service Worker sem versão waiting falha seguro e não recarrega assets antigos', async () => {
+test('Service Worker já active/controller sem waiting é válido e recarrega uma vez', async () => {
   const serviceWorker = new EventTarget();
-  serviceWorker.controller = {};
-  serviceWorker.ready = Promise.resolve({ waiting: null, installing: null, update: async () => {} });
+  const active = { state: 'activated' };
+  serviceWorker.controller = active;
+  serviceWorker.ready = Promise.resolve({ waiting: null, installing: null, active, update: async () => {} });
   const runtime = createRuntime({ serviceWorker });
   const manager = createPwaUpdateManager({
     runtime,
@@ -141,9 +149,166 @@ test('Service Worker sem versão waiting falha seguro e não recarrega assets an
   });
   await manager.checkForUpdate();
   const result = await manager.applyUpdate();
+  assert.equal(result.outcome, 'reloading');
+  assert.equal(runtime.reloadCalls, 1);
+  assert.equal(manager.getSnapshot().serviceWorkerState, 'controlling');
+});
+
+test('worker installing pode virar waiting, ativar e recarregar com segurança', async () => {
+  const serviceWorker = new EventTarget();
+  const oldController = {};
+  serviceWorker.controller = oldController;
+  const installing = Object.assign(new EventTarget(), { state: 'installing' });
+  const registration = {
+    active: oldController,
+    installing,
+    waiting: null,
+    update: async () => {
+      setTimeout(() => {
+        installing.state = 'installed';
+        registration.waiting = installing;
+        installing.postMessage = () => queueMicrotask(() => {
+          installing.state = 'activated';
+          registration.active = installing;
+          serviceWorker.controller = installing;
+          installing.dispatchEvent(new Event('statechange'));
+          serviceWorker.dispatchEvent(new Event('controllerchange'));
+        });
+        installing.dispatchEvent(new Event('statechange'));
+      }, 0);
+    },
+  };
+  serviceWorker.ready = Promise.resolve(registration);
+  const runtime = createRuntime({ serviceWorker });
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    fetchImpl: async () => manifestResponse('build-b'),
+    activationTimeoutMs: 100,
+  });
+  await manager.checkForUpdate();
+  const result = await manager.applyUpdate();
+  assert.equal(result.outcome, 'reloading');
+  assert.equal(runtime.reloadCalls, 1);
+});
+
+test('worker installing que ativa automaticamente não exige estado waiting', async () => {
+  const serviceWorker = new EventTarget();
+  const oldController = {};
+  serviceWorker.controller = oldController;
+  const installing = Object.assign(new EventTarget(), { state: 'installing' });
+  const registration = {
+    active: oldController,
+    installing,
+    waiting: null,
+    update: async () => {
+      setTimeout(() => {
+        installing.state = 'activated';
+        registration.installing = null;
+        registration.active = installing;
+        serviceWorker.controller = installing;
+        installing.dispatchEvent(new Event('statechange'));
+        serviceWorker.dispatchEvent(new Event('controllerchange'));
+      }, 0);
+    },
+  };
+  serviceWorker.ready = Promise.resolve(registration);
+  const runtime = createRuntime({ serviceWorker });
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    fetchImpl: async () => manifestResponse('build-b'),
+    activationTimeoutMs: 100,
+  });
+  await manager.checkForUpdate();
+  const result = await manager.applyUpdate();
+  assert.equal(result.outcome, 'reloading');
+  assert.equal(runtime.reloadCalls, 1);
+});
+
+test('controller que mudou durante registration.update não perde a corrida do listener', async () => {
+  const serviceWorker = new EventTarget();
+  const oldController = {};
+  const newController = {};
+  serviceWorker.controller = oldController;
+  let messages = 0;
+  const waiting = Object.assign(new EventTarget(), {
+    state: 'installed',
+    postMessage: () => { messages += 1; },
+  });
+  const registration = {
+    active: oldController,
+    waiting,
+    update: async () => {
+      serviceWorker.controller = newController;
+      registration.active = newController;
+    },
+  };
+  serviceWorker.ready = Promise.resolve(registration);
+  const runtime = createRuntime({ serviceWorker });
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    fetchImpl: async () => manifestResponse('build-b'),
+    activationTimeoutMs: 20,
+  });
+  await manager.checkForUpdate();
+  const result = await manager.applyUpdate();
+  assert.equal(result.outcome, 'reloading');
+  assert.equal(messages, 1);
+  assert.equal(runtime.reloadCalls, 1);
+});
+
+test('falha real de rede em registration.update mostra erro e permite retry', async () => {
+  const serviceWorker = new EventTarget();
+  const active = { state: 'activated' };
+  serviceWorker.controller = active;
+  let shouldFail = true;
+  const registration = {
+    active,
+    waiting: null,
+    installing: null,
+    update: async () => {
+      if (shouldFail) throw new Error('network failed');
+    },
+  };
+  serviceWorker.ready = Promise.resolve(registration);
+  const runtime = createRuntime({ serviceWorker });
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+  await manager.checkForUpdate();
+  const result = await manager.applyUpdate();
   assert.equal(result.outcome, 'error');
   assert.equal(runtime.reloadCalls, 0);
   assert.equal(manager.getSnapshot().status, UPDATE_STATUS.FAILED);
+  assert.equal(runtime.sessionStorage.getItem(UPDATE_RELOAD_GUARD_KEY), null);
+
+  shouldFail = false;
+  const retryResult = await manager.applyUpdate({ retry: true });
+  assert.equal(retryResult.outcome, 'reloading');
+  assert.equal(runtime.reloadCalls, 1);
+});
+
+test('aplicação não limpa sessão funcional ao recarregar o worker ativo', async () => {
+  const serviceWorker = new EventTarget();
+  const active = { state: 'activated' };
+  serviceWorker.controller = active;
+  serviceWorker.ready = Promise.resolve({ active, waiting: null, installing: null, update: async () => {} });
+  const runtime = createRuntime({ serviceWorker });
+  runtime.localStorage = createStorage();
+  runtime.localStorage.setItem('supabase.auth.token', 'preserved');
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+  await manager.checkForUpdate();
+  await manager.applyUpdate();
+  assert.equal(runtime.localStorage.getItem('supabase.auth.token'), 'preserved');
+  assert.equal(runtime.reloadCalls, 1);
 });
 
 test('falha de rede mantém o app utilizável e não recarrega', async () => {
