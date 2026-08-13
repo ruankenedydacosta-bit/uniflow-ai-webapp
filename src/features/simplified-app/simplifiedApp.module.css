@@ -742,9 +742,9 @@
 }
 
 .uniButton[data-state="listening"] .uniVoiceLevelRing {
-  opacity: calc(.1 + var(--voice-level, 0) * .12);
-  transform: scale(1.015);
-  box-shadow: 0 0 calc(8px + var(--voice-level, 0) * 12px) rgba(34, 211, 238, .24);
+  opacity: .1;
+  transform: scale(1.01);
+  box-shadow: 0 0 10px rgba(34, 211, 238, .2);
 }
 
 .uniButton[data-state="transcribing"] .uniVoiceLevelRing,
@@ -758,20 +758,53 @@
 .radialVoiceWaveform {
   position: absolute;
   z-index: 0;
-  inset: -2px;
+  inset: -7px;
   border-radius: 50%;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 180ms ease-out;
+  transition: opacity 160ms ease-out;
   will-change: opacity;
 }
 
-.uniButton[data-state="listening"] .radialVoiceWaveform {
+.radialVoiceWaveform[data-visual-state="active"] {
   opacity: 1;
+}
+
+.radialVoiceWaveform[data-visual-state="releasing"] {
+  opacity: .82;
+}
+
+.listeningHaloInner,
+.listeningHaloOuter {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, scale, opacity;
+}
+
+.listeningHaloInner {
+  inset: -2px;
+  border: 1px solid rgba(103, 232, 249, .38);
+  box-shadow:
+    0 0 18px rgba(34, 211, 238, .2),
+    0 0 30px rgba(37, 99, 235, .12);
+  opacity: var(--radial-halo-inner-opacity, .2);
+  scale: var(--radial-halo-inner-scale, 1);
+  animation: listeningHaloBreath 2.8s ease-in-out infinite;
+}
+
+.listeningHaloOuter {
+  inset: -10px;
+  border: 1px solid rgba(139, 92, 246, .22);
+  box-shadow: 0 0 24px rgba(124, 58, 237, .12);
+  opacity: var(--radial-halo-outer-opacity, .1);
+  scale: var(--radial-halo-outer-scale, 1);
+  animation: listeningHaloEcho 2.8s ease-in-out 140ms infinite;
 }
 
 .radialVoiceBar {
   position: absolute;
+  z-index: 1;
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
@@ -782,29 +815,58 @@
   position: absolute;
   top: 0;
   left: 50%;
-  width: 1.35px;
-  height: calc(
-    4px
-    + var(--radial-voice-level, 0) * var(--bar-factor) * 28px
-  );
+  width: 1.15px;
+  height: var(--bar-height);
   border-radius: 999px;
-  color: color-mix(in srgb, var(--uf-app-primary), var(--uf-app-focus) calc(var(--bar-tone-mix) * 100%));
+  color: color-mix(in srgb, var(--uf-app-primary), var(--uf-app-focus) var(--bar-tone-mix));
   background: currentColor;
   box-shadow: 0 0 5px currentColor;
   content: "";
-  opacity: calc(.54 + var(--bar-factor) * .38);
-  transform: translate(-50%, -100%);
+  opacity: var(--bar-opacity);
+  translate: -50% -100%;
+  scale: 1 var(--radial-bar-scale, .18);
   transform-origin: 50% 100%;
-  animation: radialVoiceFlow 2.4s ease-in-out var(--bar-delay) infinite;
-  will-change: height, transform;
+  animation: radialVoiceFlow var(--bar-duration) ease-in-out var(--bar-delay) infinite;
+  will-change: transform, scale, opacity;
 }
 
 .radialVoiceBar[data-tone="1"]::before {
-  color: color-mix(in srgb, var(--uf-app-focus), var(--uf-app-ai) calc(var(--bar-tone-mix) * 100%));
+  color: color-mix(in srgb, var(--uf-app-focus), var(--uf-app-ai) var(--bar-tone-mix));
 }
 
 .radialVoiceBar[data-tone="2"]::before {
-  color: color-mix(in srgb, var(--uf-app-ai), var(--uf-app-primary) calc(var(--bar-tone-mix) * 100%));
+  color: color-mix(in srgb, var(--uf-app-ai), var(--uf-app-primary) var(--bar-tone-mix));
+}
+
+.listeningParticles {
+  position: absolute;
+  z-index: 1;
+  inset: -7px;
+  border-radius: 50%;
+  animation: listeningParticleOrbit 12s linear infinite;
+  will-change: transform;
+}
+
+.listeningParticle {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform: rotate(var(--particle-angle));
+}
+
+.listeningParticle::before {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(165, 243, 252, .9);
+  box-shadow: 0 0 6px rgba(103, 232, 249, .75);
+  content: "";
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.7);
+  animation: listeningParticleShimmer var(--particle-duration) ease-in-out var(--particle-delay) infinite;
 }
 
 .uniMark {
@@ -938,8 +1000,29 @@
 }
 
 @keyframes radialVoiceFlow {
-  0%, 100% { transform: translate(-50%, -100%) scaleY(.94); }
-  50% { transform: translate(-50%, -100%) scaleY(1.04); }
+  0%, 100% { transform: scaleY(.88); }
+  45% { transform: scaleY(1.12); }
+  72% { transform: scaleY(.96); }
+}
+
+@keyframes listeningHaloBreath {
+  0%, 100% { transform: scale(1.015); }
+  50% { transform: scale(1.045); }
+}
+
+@keyframes listeningHaloEcho {
+  0%, 100% { transform: scale(1.01); }
+  50% { transform: scale(1.035); }
+}
+
+@keyframes listeningParticleOrbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes listeningParticleShimmer {
+  0%, 68%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.65); }
+  78% { opacity: .42; transform: translate(-50%, -50%) scale(1); }
+  88% { opacity: .12; transform: translate(-50%, -50%) scale(.78); }
 }
 
 @keyframes simplifiedSpin {
@@ -1076,7 +1159,11 @@
   .voiceActivationButton,
   .uniVoiceLevelRing,
   .radialVoiceWaveform,
-  .radialVoiceBar::before {
+  .radialVoiceBar::before,
+  .listeningHaloInner,
+  .listeningHaloOuter,
+  .listeningParticles,
+  .listeningParticle::before {
     transition: none;
   }
 
@@ -1087,7 +1174,11 @@
   .uniButton,
   .uniButtonRing,
   .uniVoiceLevelRing,
-  .radialVoiceBar::before {
+  .radialVoiceBar::before,
+  .listeningHaloInner,
+  .listeningHaloOuter,
+  .listeningParticles,
+  .listeningParticle::before {
     animation: none !important;
   }
 
@@ -1106,7 +1197,21 @@
     box-shadow: none;
   }
 
-  .uniButton[data-state="listening"] .radialVoiceWaveform {
+  .radialVoiceWaveform[data-visual-state="active"] {
     opacity: .72;
+  }
+
+  .listeningHaloInner {
+    opacity: .28;
+    transform: scale(1.025);
+  }
+
+  .listeningHaloOuter {
+    opacity: .14;
+    transform: scale(1.04);
+  }
+
+  .listeningParticle {
+    display: none;
   }
 }

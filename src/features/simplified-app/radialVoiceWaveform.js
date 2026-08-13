@@ -1,6 +1,7 @@
 export const RADIAL_VOICE_BAR_COUNT = 108;
 export const RADIAL_VOICE_ATTACK_MS = 80;
 export const RADIAL_VOICE_RELEASE_MS = 240;
+export const RADIAL_VOICE_EXIT_MS = 220;
 
 function clampLevel(value) {
   return Math.min(1, Math.max(0, Number(value) || 0));
@@ -45,6 +46,9 @@ export function buildRadialVoiceBars(count = RADIAL_VOICE_BAR_COUNT) {
       tone: Math.min(2, Math.floor(colorPosition)),
       toneMix: colorPosition % 1,
       delay: -(index / safeCount) * 2.4,
+      duration: 1.45 + (secondary * 0.65),
+      height: 23 + (primary * 5) + (secondary * 3),
+      opacity: 0.48 + (primary * 0.16),
     });
   }));
 }

@@ -20,6 +20,7 @@ import {
   normalizeRadialVoiceLevel,
   RADIAL_VOICE_ATTACK_MS,
   RADIAL_VOICE_BAR_COUNT,
+  RADIAL_VOICE_EXIT_MS,
   RADIAL_VOICE_RELEASE_MS,
   smoothRadialVoiceLevel,
 } from './radialVoiceWaveform.js';
@@ -1424,7 +1425,7 @@ test('waveform isolada usa useVoiceIntensity com o stream existente sem rerender
     home.indexOf('function getVoiceActivationError'),
   );
   const homeComponent = home.slice(home.indexOf('function SimplifiedHomeView'));
-  assert.match(radialComponent, /useVoiceIntensity\(\{ getStream, active, getSessionId \}\)/);
+  assert.match(radialComponent, /useVoiceIntensity\(\{[\s\S]*?getStream,[\s\S]*?active,[\s\S]*?getSessionId,[\s\S]*?onLevel: handleVisualLevel,[\s\S]*?publishState: false,/);
   assert.doesNotMatch(homeComponent, /useVoiceIntensity\(/);
 });
 
@@ -1443,6 +1444,9 @@ test('waveform radial usa 108 barras determinísticas em 360 graus, sem aleatori
   assert.equal(new Set(bars.map((bar) => bar.angle)).size, RADIAL_VOICE_BAR_COUNT);
   assert.equal(new Set(bars.map((bar) => bar.delay)).size, RADIAL_VOICE_BAR_COUNT);
   assert.ok(bars.every((bar) => bar.factor >= 0.72 && bar.factor <= 1));
+  assert.ok(bars.every((bar) => bar.duration >= 1.45 && bar.duration <= 2.1));
+  assert.ok(bars.every((bar) => bar.height >= 23 && bar.height <= 31));
+  assert.ok(bars.every((bar) => bar.opacity >= 0.48 && bar.opacity <= 0.64));
   assert.ok(bars.some((bar, index) => index > 0 && bar.factor !== bars[index - 1].factor));
   assert.deepEqual(buildRadialVoiceBars(), bars);
   assert.doesNotMatch(helper, /Math\.random/);
@@ -1483,8 +1487,11 @@ test('waveform suaviza em requestAnimationFrame sem setState ou recálculo React
   );
   assert.match(component, /window\.requestAnimationFrame\(renderFrame\)/);
   assert.match(component, /window\.cancelAnimationFrame\(animationFrameId\)/);
-  assert.match(component, /waveform\.style\.setProperty\('--radial-voice-level'/);
+  assert.match(component, /applyRadialVoiceVisualLevel\(waveform, nextLevel\)/);
+  assert.match(home, /element\.style\.setProperty\('--radial-voice-level'/);
+  assert.match(component, /publishState: false/);
   assert.doesNotMatch(component, /setState|useState/);
+  assert.doesNotMatch(component, /setInterval/);
 });
 
 test('waveform é decorativa, só aparece em listening e não captura eventos de ponteiro', async () => {
@@ -1494,10 +1501,60 @@ test('waveform é decorativa, só aparece em listening e não captura eventos de
   ]);
   assert.match(home, /<RadialVoiceWaveform\s+active=\{isListening\}\s+getStream=\{voiceInput\.getActiveStream\}\s+getSessionId=\{voiceInput\.getActiveSessionId\}\s+\/>/);
   assert.match(css, /\.radialVoiceWaveform \{[\s\S]{0,220}pointer-events: none;/);
-  assert.match(css, /\.uniButton\[data-state="listening"\] \.radialVoiceWaveform \{\s*opacity: 1;/);
+  assert.match(css, /\.radialVoiceWaveform\[data-visual-state="active"\] \{\s*opacity: 1;/);
   assert.doesNotMatch(css, /\.uniButton\[data-state="transcribing"\] \.radialVoiceWaveform/);
-  assert.match(css, /\.radialVoiceBar::before \{[\s\S]{0,180}width: 1\.35px;/);
-  assert.match(css, /animation: radialVoiceFlow 2\.4s ease-in-out var\(--bar-delay\) infinite;/);
+  assert.match(css, /\.radialVoiceBar::before \{[\s\S]{0,180}width: 1\.15px;/);
+  assert.match(css, /animation: radialVoiceFlow var\(--bar-duration\) ease-in-out var\(--bar-delay\) infinite;/);
+});
+
+test('listening combina dois halos defasados, 108 barras e seis partículas reutilizadas', async () => {
+  const [home, css] = await Promise.all([
+    source('./SimplifiedHomeView.jsx'),
+    source('./simplifiedApp.module.css'),
+  ]);
+  const component = home.slice(
+    home.indexOf('function RadialVoiceWaveform'),
+    home.indexOf('function getVoiceActivationError'),
+  );
+  assert.match(component, /className=\{styles\.listeningHaloInner\}/);
+  assert.match(component, /className=\{styles\.listeningHaloOuter\}/);
+  assert.match(home, /Array\.from\(\{ length: 6 \}/);
+  assert.match(css, /animation: listeningHaloBreath 2\.8s ease-in-out infinite;/);
+  assert.match(css, /animation: listeningHaloEcho 2\.8s ease-in-out 140ms infinite;/);
+  assert.match(css, /animation: listeningParticleOrbit 12s linear infinite;/);
+});
+
+test('silêncio continua vivo e saída de listening desacelera antes do fade final', async () => {
+  const [home, css] = await Promise.all([
+    source('./SimplifiedHomeView.jsx'),
+    source('./simplifiedApp.module.css'),
+  ]);
+  assert.equal(RADIAL_VOICE_EXIT_MS, 220);
+  assert.match(css, /height: var\(--bar-height\);/);
+  assert.match(css, /scale: 1 var\(--radial-bar-scale, \.18\);/);
+  assert.match(home, /'--bar-tone-mix': `\$\{bar\.toneMix \* 100\}%`/);
+  assert.doesNotMatch(css, /calc\([^)]*var\(--radial-voice-level[^)]*\*/);
+  assert.match(css, /@keyframes radialVoiceFlow \{[\s\S]{0,260}scaleY\(\.88\)[\s\S]{0,180}scaleY\(1\.12\)/);
+  assert.match(home, /waveform\.dataset\.visualState = active \? 'active' : 'releasing'/);
+  assert.match(home, /time - releaseStartedAt >= RADIAL_VOICE_EXIT_MS/);
+  assert.match(home, /waveform\.dataset\.visualState = 'idle'/);
+  assert.match(css, /\.radialVoiceWaveform\[data-visual-state="releasing"\] \{\s*opacity: \.82;/);
+});
+
+test('vinte ciclos de attack/release permanecem limitados, suaves e sem acumular estado', () => {
+  let displayed = 0;
+  for (let cycle = 0; cycle < 20; cycle += 1) {
+    for (let frame = 0; frame < 60; frame += 1) {
+      displayed = smoothRadialVoiceLevel(displayed, 1, 16);
+      assert.ok(displayed >= 0 && displayed <= 1);
+    }
+    const peak = displayed;
+    for (let frame = 0; frame < 24; frame += 1) {
+      displayed = smoothRadialVoiceLevel(displayed, 0, 16);
+      assert.ok(displayed >= 0 && displayed <= peak);
+    }
+  }
+  assert.ok(Number.isFinite(displayed));
 });
 
 test('BUG 3: a animação de escuta nunca interfere no push-to-talk (pointerdown\\/up\\/cancel continuam intactos)', async () => {
@@ -1507,10 +1564,11 @@ test('BUG 3: a animação de escuta nunca interfere no push-to-talk (pointerdown
   assert.match(home, /onPointerCancel={handleVoicePointerCancel}/);
 });
 
-test('BUG 3: CSS do anel de intensidade reage a --voice-level só no estado listening, com animação própria em processamento', async () => {
+test('BUG 3: anel legado fica discreto em listening e preserva animação própria em processamento', async () => {
   const css = await source('./simplifiedApp.module.css');
   assert.match(css, /\.uniVoiceLevelRing \{/);
-  assert.match(css, /\.uniButton\[data-state="listening"\] \.uniVoiceLevelRing \{[\s\S]{0,300}var\(--voice-level, 0\)/);
+  assert.match(css, /\.uniButton\[data-state="listening"\] \.uniVoiceLevelRing \{[\s\S]{0,180}opacity: \.1;/);
+  assert.doesNotMatch(css, /var\(--voice-level/);
   assert.match(
     css,
     /\.uniButton\[data-state="transcribing"\] \.uniVoiceLevelRing,\s*\n\.uniButton\[data-state="interpreting"\] \.uniVoiceLevelRing,\s*\n\.uniButton\[data-state="executing"\] \.uniVoiceLevelRing \{/,
@@ -1521,9 +1579,12 @@ test('BUG 3: prefers-reduced-motion desliga a animação do anel de intensidade 
   const css = await source('./simplifiedApp.module.css');
   const idx = css.indexOf('@media (prefers-reduced-motion: reduce) {');
   assert.ok(idx > -1);
-  const slice = css.slice(idx, idx + 500);
+  const slice = css.slice(idx, idx + 1300);
   assert.match(slice, /\.uniVoiceLevelRing/);
   assert.match(slice, /animation: none !important;/);
+  assert.match(slice, /\.listeningHaloInner/);
+  assert.match(slice, /\.listeningHaloOuter/);
+  assert.match(slice, /\.listeningParticle \{\s*display: none;/);
 
   const hook = await source('../uni-voice/useVoiceIntensity.js');
   assert.match(hook, /if \(prefersReducedMotion\(browserRuntime\)\) return undefined;/);
