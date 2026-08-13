@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
+import CategoryCreateModal from '../categories/components/CategoryCreateModal.jsx';
+import { CategoryIcon, PlusIcon } from '../categories/categoryIcons.jsx';
 import { useAccounts, useCategories, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
 import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionModal.jsx';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
@@ -30,27 +32,6 @@ const PAGE_SIZE = 20;
 const CATEGORY_PREVIEW_SIZE = 8;
 const TRANSACTION_SUCCESS_NOTICE_MS = 2000;
 const EMPTY_RECORDS = Object.freeze([]);
-
-function RecordsIcon({ name }) {
-  const paths = {
-    account: <><rect x="5" y="8" width="22" height="17" rx="3" /><path d="M5 13h22M10 20h5" /></>,
-    custom: <><circle cx="16" cy="16" r="10" /><path d="M11 16h10M16 11v10" /></>,
-    education: <><path d="m4 12 12-6 12 6-12 6Z" /><path d="M8 15v7c5 3 11 3 16 0v-7" /></>,
-    food: <><path d="M9 4v9M6 4v5c0 3 6 3 6 0V4M9 13v15" /><path d="M21 4c-4 5-3 11 1 12v12" /></>,
-    health: <><path d="M5 17h6l2-6 5 12 3-6h6" /><path d="M16 28C4 21 3 10 9 6c4-2 7 1 7 1s3-3 7-1c7 4 5 15-7 22Z" /></>,
-    home: <><path d="m4 15 12-10 12 10v13h-8v-8h-8v8H4Z" /></>,
-    leisure: <><circle cx="16" cy="16" r="11" /><path d="M11 14h.1M21 14h.1M11 20c3 3 7 3 10 0" /></>,
-    other: <><circle cx="9" cy="16" r="2" /><circle cx="16" cy="16" r="2" /><circle cx="23" cy="16" r="2" /></>,
-    subscription: <><rect x="4" y="7" width="24" height="18" rx="3" /><path d="M4 13h24M9 20h5" /></>,
-    transport: <><path d="M7 12h18l2 7v7H5v-7Z" /><path d="m9 12 2-5h10l2 5" /><circle cx="9" cy="23" r="2" /><circle cx="23" cy="23" r="2" /></>,
-  };
-
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      {paths[name] ?? paths.custom}
-    </svg>
-  );
-}
 
 function RecordsHeader({ onTalkToUni }) {
   return (
@@ -158,14 +139,23 @@ function MonthlySummary({ onCardClick, summary }) {
   );
 }
 
-function CategoryGrid({ categories, expanded, onExpand, onSelect }) {
-  const visible = expanded ? categories : categories.slice(0, CATEGORY_PREVIEW_SIZE);
+function CategoryGrid({
+  canCreate,
+  categories,
+  createTitle,
+  expanded,
+  onCreate,
+  onExpand,
+  onSelect,
+}) {
+  const collapsedCategoryCount = Math.max(0, CATEGORY_PREVIEW_SIZE - 1);
+  const visible = expanded ? categories : categories.slice(0, collapsedCategoryCount);
 
   return (
     <section className={styles.recordsSection} aria-labelledby="records-categories-title">
       <div className={styles.sectionHeading}>
         <h2 id="records-categories-title">Categorias</h2>
-        {categories.length > CATEGORY_PREVIEW_SIZE ? (
+        {categories.length > collapsedCategoryCount ? (
           <button type="button" onClick={onExpand}>
             {expanded ? 'Ver menos' : 'Ver todas'}
           </button>
@@ -181,15 +171,33 @@ function CategoryGrid({ categories, expanded, onExpand, onSelect }) {
               onClick={() => onSelect(category.id)}
               aria-label={`${category.name}: ${formatCurrency(category.amount)}, ${category.count} registros`}
             >
-              <span className={styles.categoryIcon}><RecordsIcon name={category.icon} /></span>
+              <span className={styles.categoryIcon}>
+                <CategoryIcon category={category} />
+              </span>
               <strong>{category.name}</strong>
               <b>{formatCurrency(category.amount)}</b>
               <small>{category.count} {category.count === 1 ? 'registro' : 'registros'}</small>
             </button>
           ))}
+          <button
+            type="button"
+            className={`${styles.categoryCard} ${styles.createCategoryCard}`}
+            onClick={onCreate}
+            disabled={!canCreate}
+            title={createTitle}
+          >
+            <span className={styles.categoryIcon}><PlusIcon /></span>
+            <strong>Criar categoria</strong>
+            <small>Nome, tipo e ícone</small>
+          </button>
         </div>
       ) : (
-        <div className={styles.inlineEmpty}>Nenhuma categoria disponível neste espaço.</div>
+        <div className={styles.inlineEmpty}>
+          <span>Nenhuma categoria disponível neste espaço.</span>
+          <button type="button" onClick={onCreate} disabled={!canCreate} title={createTitle}>
+            <PlusIcon /> Criar categoria
+          </button>
+        </div>
       )}
     </section>
   );
@@ -440,7 +448,11 @@ function TransactionRow({
         aria-label={`${transaction.description}, ${formatCurrency(transaction.amount)}. Toque para editar, segure ou arraste para mais opções.`}
       >
         <span className={`${styles.transactionIcon} ${styles[`tone${categoryPresentation?.tone ?? 'gray'}`]}`}>
-          <RecordsIcon name={categoryPresentation?.icon ?? (isTransfer ? 'account' : 'other')} />
+          <CategoryIcon category={{
+            name: categoryPresentation?.name,
+            category_type: isTransfer ? 'transfer' : transaction.transaction_type,
+            icon: categoryPresentation?.icon,
+          }} />
         </span>
         <span className={styles.transactionMain}>
           <strong>{transaction.description || categoryPresentation?.name || 'Outros'}</strong>
@@ -569,6 +581,7 @@ function SimplifiedRecordsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
+  const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [transactionSuccessNotice, setTransactionSuccessNotice] = useState(null);
   const transactionNoticeTimerRef = useRef(null);
   // Somente Entradas/Saídas abrem o ajuste financeiro. O terceiro card
@@ -686,6 +699,9 @@ function SimplifiedRecordsPage() {
   const canManage = workspaceRole.canUpdate === true
     && !workspaceRole.isLoading
     && !transactionState.isMutating;
+  const canCreateCategory = workspaceRole.canUpdate === true
+    && !workspaceRole.isLoading
+    && !categoryState.isMutating;
   const canDeleteTransaction = (transaction) => (
     workspaceRole.canDelete === true || transaction?.created_by === user?.id
   );
@@ -715,6 +731,15 @@ function SimplifiedRecordsPage() {
     }, TRANSACTION_SUCCESS_NOTICE_MS);
   }
 
+  function showCategorySuccessNotice() {
+    setTransactionSuccessNotice('Categoria criada com sucesso.');
+    if (transactionNoticeTimerRef.current) window.clearTimeout(transactionNoticeTimerRef.current);
+    transactionNoticeTimerRef.current = window.setTimeout(() => {
+      transactionNoticeTimerRef.current = null;
+      setTransactionSuccessNotice(null);
+    }, TRANSACTION_SUCCESS_NOTICE_MS);
+  }
+
   function handleTransactionDeleted() {
     completeTransactionMutation('Lançamento excluído com sucesso.');
   }
@@ -727,6 +752,33 @@ function SimplifiedRecordsPage() {
     setFilters({ ...EMPTY_FILTERS, categoryId });
     setVisibleCount(PAGE_SIZE);
     setActiveTab('history');
+  }
+
+  function getCreateCategoryTitle() {
+    if (!workspace?.id) return 'Selecione um espaço de trabalho.';
+    if (workspaceRole.isLoading) return 'Carregando permissões...';
+    if (workspaceRole.canUpdate !== true) {
+      return 'Você não tem permissão para criar categorias neste workspace.';
+    }
+    if (categoryState.isMutating) return 'Aguarde a operação atual terminar.';
+    return 'Criar uma nova categoria.';
+  }
+
+  function openCategoryCreate() {
+    if (!canCreateCategory) return;
+    categoryState.clearError?.();
+    setCategoryCreateOpen(true);
+  }
+
+  async function handleCreateCategory(values) {
+    if (!canCreateCategory) return;
+    const result = await categoryState.saveCategory(values);
+    if (!result.error) {
+      await refresh();
+      setShowAllCategories(true);
+      setCategoryCreateOpen(false);
+      showCategorySuccessNotice();
+    }
   }
 
   // CONTA-OPCIONAL: receita/despesa não exigem mais nenhuma conta cadastrada
@@ -800,8 +852,11 @@ function SimplifiedRecordsPage() {
                 <>
                   <MonthlySummary summary={summary} onCardClick={openSummaryCard} />
                   <CategoryGrid
+                    canCreate={canCreateCategory}
                     categories={categorySummaries}
+                    createTitle={getCreateCategoryTitle()}
                     expanded={showAllCategories}
+                    onCreate={openCategoryCreate}
                     onExpand={() => setShowAllCategories((current) => !current)}
                     onSelect={selectCategory}
                   />
@@ -888,6 +943,21 @@ function SimplifiedRecordsPage() {
         accountState={displayAccountState}
         categoryState={categoryState}
         transactionState={transactionState}
+        className={styles.transactionDialogDark}
+        overlayClassName={styles.darkOverlay}
+      />
+
+      <CategoryCreateModal
+        open={categoryCreateOpen}
+        onClose={() => {
+          categoryState.clearError?.();
+          setCategoryCreateOpen(false);
+        }}
+        defaultType="expense"
+        categories={categoryState.categories}
+        onCreate={handleCreateCategory}
+        isMutating={categoryState.isMutating}
+        serverError={categoryCreateOpen && categoryState.error ? categoryState.error.message : ''}
         className={styles.transactionDialogDark}
         overlayClassName={styles.darkOverlay}
       />

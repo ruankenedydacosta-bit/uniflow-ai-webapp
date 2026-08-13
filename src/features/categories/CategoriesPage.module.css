@@ -365,6 +365,79 @@
   color: var(--uf-color-danger);
 }
 
+.iconFieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.iconFieldset legend {
+  margin-bottom: var(--uf-space-8);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--uf-space-8);
+  max-height: 256px;
+  overflow-y: auto;
+  padding: var(--uf-space-4);
+}
+
+.iconOption {
+  min-width: 0;
+  min-height: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--uf-space-4);
+  padding: var(--uf-space-8) var(--uf-space-4);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-elevated);
+  color: var(--uf-color-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  transition: background var(--uf-duration-fast) var(--uf-ease-standard),
+    border-color var(--uf-duration-fast) var(--uf-ease-standard),
+    color var(--uf-duration-fast) var(--uf-ease-standard);
+}
+
+.iconOption svg {
+  width: var(--uf-icon-size-md);
+  height: var(--uf-icon-size-md);
+}
+
+.iconOption span {
+  width: 100%;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconOption:hover {
+  border-color: var(--uf-color-primary);
+  color: var(--uf-color-text-primary);
+}
+
+.iconOptionSelected {
+  border-color: var(--uf-color-primary);
+  background: color-mix(in srgb, var(--uf-color-primary) 18%, transparent);
+  color: var(--uf-color-text-brand);
+}
+
+.iconOption:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
 .formActions {
   display: flex;
   justify-content: flex-end;
@@ -375,7 +448,8 @@
 @media (prefers-reduced-motion: reduce) {
   .segment,
   .tile,
-  .skeletonTile {
+  .skeletonTile,
+  .iconOption {
     transition: none;
     animation: none;
   }

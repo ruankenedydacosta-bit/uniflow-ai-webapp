@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import {
+  CATEGORY_ICON_OPTIONS,
+  getDefaultCategoryIconKey,
+  resolveCategoryIconKey,
+  resolveCategoryTone,
+} from './categoryIconCatalog.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -35,6 +41,69 @@ test('CategoryCreateModal: handleClose (usado pelo X do Modal e pelo Cancelar) r
   const modal = await source('components/CategoryCreateModal.jsx');
   assert.match(modal, /function handleClose\(\) \{\s*if \(isMutating\) return;\s*onClose\?\.\(\);\s*\}/);
   assert.match(modal, /onClose=\{handleClose\}/);
+});
+
+test('catálogo cobre os ícones semânticos financeiros e não repete chaves', () => {
+  const keys = CATEGORY_ICON_OPTIONS.map(({ key }) => key);
+  assert.equal(new Set(keys).size, keys.length);
+  for (const expected of [
+    'food', 'transport', 'home', 'home-income', 'subscription', 'health',
+    'leisure', 'education', 'debt', 'work', 'other-expense', 'other-income',
+    'gift', 'refund', 'yield', 'salary', 'transfer',
+  ]) {
+    assert.ok(keys.includes(expected), `ícone ausente: ${expected}`);
+  }
+});
+
+test('resolução semântica distingue entradas, saídas e categorias próximas', () => {
+  const cases = [
+    ['Alimentação', 'expense', 'food'],
+    ['Transporte', 'expense', 'transport'],
+    ['Moradia', 'expense', 'home'],
+    ['Aluguel recebido', 'income', 'home-income'],
+    ['Assinaturas', 'expense', 'subscription'],
+    ['Saúde', 'expense', 'health'],
+    ['Lazer', 'expense', 'leisure'],
+    ['Educação', 'expense', 'education'],
+    ['Dívidas', 'expense', 'debt'],
+    ['Freelance', 'income', 'work'],
+    ['Outras despesas', 'expense', 'other-expense'],
+    ['Outras entradas', 'income', 'other-income'],
+    ['Presente', 'income', 'gift'],
+    ['Reembolso', 'income', 'refund'],
+    ['Rendimentos', 'income', 'yield'],
+    ['Salário', 'income', 'salary'],
+    ['Transferência', 'transfer', 'transfer'],
+  ];
+  for (const [name, category_type, expected] of cases) {
+    assert.equal(resolveCategoryIconKey({ name, category_type }), expected, name);
+  }
+  assert.equal(resolveCategoryIconKey({ name: 'Pets', category_type: 'expense' }), 'other-expense');
+  assert.equal(resolveCategoryIconKey({ name: 'Pets', category_type: 'income' }), 'other-income');
+  assert.equal(resolveCategoryIconKey({ name: 'Mercado', icon: 'gift', category_type: 'expense' }), 'gift');
+  assert.equal(getDefaultCategoryIconKey('income'), 'other-income');
+  assert.equal(resolveCategoryTone({ icon: 'debt' }), 'red');
+});
+
+test('CategoryCreateModal oferece nome, tipo e ícone e persiste a chave selecionada', async () => {
+  const modal = await source('components/CategoryCreateModal.jsx');
+  assert.match(modal, /aria-label="Ícone da categoria"/);
+  assert.match(modal, /CATEGORY_ICON_OPTIONS\.map/);
+  assert.match(modal, /await onCreate\(\{ name: trimmed, category_type: categoryType, icon \}\)/);
+});
+
+test('serviço de categorias mantém icon no contrato de leitura e no payload persistido', async () => {
+  const service = await source('../../services/categoryService.js');
+  assert.match(service, /parent_category_id, icon, color, is_system/);
+  assert.match(service, /'parent_category_id',\s*'icon',\s*'color',\s*'is_active'/);
+});
+
+test('todos os ícones escolhíveis possuem desenho inline no renderer', async () => {
+  const icons = await source('categoryIcons.jsx');
+  for (const { key } of CATEGORY_ICON_OPTIONS) {
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(icons, new RegExp(`(?:^|\\n)\\s*(?:'${escaped}'|${escaped}):\\s*\\(`));
+  }
 });
 
 // --- CategoriesPage: gate de permissao -------------------------------------
