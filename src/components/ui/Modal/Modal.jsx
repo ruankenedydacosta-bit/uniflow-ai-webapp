@@ -14,6 +14,8 @@ function Modal({
   closeOnOverlayClick = true,
   closeOnEsc = true,
   className,
+  bodyClassName,
+  headerClassName,
   overlayClassName,
   ...props
 }) {
@@ -63,7 +65,7 @@ function Modal({
         aria-describedby={descriptionId}
         {...props}
       >
-        <div className={styles.header}>
+        <div className={cx(styles.header, headerClassName)}>
           <div className={styles.heading}>
             {title ? (
               <h2 id={titleId} className={styles.title}>
@@ -88,7 +90,7 @@ function Modal({
           </button>
         </div>
 
-        <div className={styles.body}>{children}</div>
+        <div className={cx(styles.body, bodyClassName)}>{children}</div>
 
         {footer ? <div className={styles.footer}>{footer}</div> : null}
       </div>
