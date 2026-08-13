@@ -1,4 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';
+
+// HOTFIX CRÍTICO 2: threshold mínimo de RMS para considerar que existe
+// sinal de áudio real chegando ao AnalyserNode (silêncio puro fica bem
+// próximo de 0) -- só usado para o diagnóstico ANALYSER_RECEIVING_SIGNAL
+// (DEV only), nunca para decidir cancelar/continuar a captura.
+const SIGNAL_DETECTION_RMS_THRESHOLD = 0.01;
+const SILENT_TIMEOUT_MS = 2000;
 
 // BUG 3: animação de escuta do botão da Uni -- calcula a intensidade REAL
 // do microfone (RMS/energia) a partir do MESMO MediaStream já capturado
@@ -108,10 +116,26 @@ export function useVoiceIntensity({ getStream, active, runtime } = {}) {
     const buffer = new Uint8Array(analyser.frequencyBinCount);
     const requestFrame = browserRuntime?.requestAnimationFrame ?? ((cb) => setTimeout(cb, 32));
 
+    // HOTFIX CRÍTICO 2: diagnóstico PURAMENTE informativo (DEV only) de que
+    // sinal real de áudio chegou ao AnalyserNode -- nunca decide
+    // cancelar/continuar a captura (isso continua 100% governado pelo
+    // pointer lifecycle em SimplifiedHomeView.jsx). Existe só para provar,
+    // num teste físico, se a "onda parada" é o analyser nunca recebendo
+    // sinal (bug real de captura) ou só um problema puramente visual.
+    let signalDetected = false;
+    const setTimeoutFn = browserRuntime?.setTimeout ?? setTimeout;
+    const silentTimeout = setTimeoutFn(() => {
+      if (!disposed && !signalDetected) recordVoicePipelineDiagnostic('ANALYSER_SILENT_TIMEOUT');
+    }, SILENT_TIMEOUT_MS);
+
     const tick = () => {
       if (disposed) return;
       analyser.getByteTimeDomainData(buffer);
       const rms = computeRmsFromTimeDomainData(buffer);
+      if (!signalDetected && rms > SIGNAL_DETECTION_RMS_THRESHOLD) {
+        signalDetected = true;
+        recordVoicePipelineDiagnostic('ANALYSER_RECEIVING_SIGNAL');
+      }
       smoothedRef.current = smoothLevel(smoothedRef.current, rms);
       setLevel(toVisualLevel(smoothedRef.current));
       rafRef.current = requestFrame(tick);
@@ -129,6 +153,7 @@ export function useVoiceIntensity({ getStream, active, runtime } = {}) {
     }
 
     return () => {
+      (browserRuntime?.clearTimeout ?? clearTimeout)(silentTimeout);
       disposed = true;
       stopAnalysis();
     };

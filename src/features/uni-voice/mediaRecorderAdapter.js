@@ -1,3 +1,5 @@
+import { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';
+
 export const VOICE_AUDIO_MAX_BYTES = 4 * 1024 * 1024;
 export const VOICE_AUDIO_MAX_DURATION_MS = 15_000;
 export const VOICE_AUDIO_MIME_TYPES = Object.freeze([
@@ -23,6 +25,29 @@ function mapCaptureError(error) {
 
 function stopTracks(stream) {
   stream?.getTracks?.().forEach((track) => track.stop());
+}
+
+// HOTFIX CRÍTICO 2: alguns runtimes (visto em campo no Chrome mobile)
+// resolvem getUserMedia com "sucesso" mas entregam um stream/track já
+// inativo (conflito de hardware, permissão revogada entre o preflight e a
+// captura real, etc.) -- gravar esse stream produz um blob tecnicamente
+// válido porém vazio de áudio real, sem NENHUM erro visível. Só reprovamos
+// quando o runtime AFIRMA explicitamente que está morto (`active === false`
+// ou `readyState === 'ended'`); campos ausentes (ex.: runtimes de teste)
+// nunca reprovam -- isso preserva 100% do comportamento anterior sempre
+// que o runtime não expõe esses sinais.
+function getPrimaryAudioTrack(mediaStream) {
+  const tracks = typeof mediaStream?.getAudioTracks === 'function'
+    ? mediaStream.getAudioTracks()
+    : (mediaStream?.getTracks?.() ?? []);
+  return tracks[0] ?? null;
+}
+
+function isStreamUsable(mediaStream, track) {
+  if (!track) return false;
+  if (mediaStream?.active === false) return false;
+  if (track.readyState === 'ended') return false;
+  return true;
 }
 
 async function requestAudioStream(runtime) {
@@ -107,6 +132,7 @@ export function createMediaRecorderAdapter({
 
   let stream = null;
   let recorder = null;
+  let audioTrack = null;
   let chunks = [];
   let startedAt = 0;
   let limitTimer = null;
@@ -117,11 +143,25 @@ export function createMediaRecorderAdapter({
   function clearResources() {
     runtime.clearTimeout?.(limitTimer);
     limitTimer = null;
-    stopTracks(stream);
+    // HOTFIX CRÍTICO 2: remove o listener e ZERA `stream`/`recorder`/
+    // `audioTrack` ANTES de chamar stopTracks() (que executa track.stop(),
+    // o próprio gatilho do evento 'ended' que handleTrackEnded escuta) --
+    // ordem importa aqui. Sem isso, um runtime que dispare 'ended'
+    // sincronamente dentro de track.stop() reentraria em handleTrackEnded
+    // ENQUANTO stream/recorder ainda não tinham sido zerados, passando pelo
+    // guard `!stream || !recorder` como se a captura ainda estivesse ativa
+    // -- transformando um encerramento gracioso (stop/cancel/dispose) num
+    // 'track_ended' falso.
+    const trackToRelease = audioTrack;
+    const streamToRelease = stream;
+    trackToRelease?.removeEventListener?.('ended', handleTrackEnded);
+    trackToRelease?.removeEventListener?.('mute', handleTrackMuted);
     stream = null;
     recorder = null;
+    audioTrack = null;
     chunks = [];
     startedAt = 0;
+    stopTracks(streamToRelease);
   }
 
   function fail(code) {
@@ -129,20 +169,68 @@ export function createMediaRecorderAdapter({
     onError?.({ code });
   }
 
+  // HOTFIX CRÍTICO 2: rede de segurança para a track de áudio encerrar
+  // NO MEIO da captura (dispositivo revoga acesso, outro app assume o
+  // microfone, driver falha) -- sem isso, o MediaRecorder simplesmente para
+  // de receber amostras em silêncio, sem `onerror` nem `onstop`, e a UI
+  // fica presa em "Ouvindo..." indefinidamente. Só age se ainda houver
+  // captura de verdade em andamento (`stream`/`recorder` não nulos e não
+  // `canceled`/`disposed`) -- um `ended` disparado pelo NOSSO PRÓPRIO
+  // `track.stop()` durante um stop/cancel graciosos chega DEPOIS de
+  // `clearResources()` já ter zerado essas variáveis, então é sempre um
+  // no-op nesse caso (distingue encerramento intencional de falha real).
+  function handleTrackEnded() {
+    if (!stream || !recorder || canceled || disposed) return;
+    recordVoicePipelineDiagnostic('TRACK_ENDED', { streamActive: Boolean(stream?.active) });
+    fail('track_ended');
+  }
+
+  function handleTrackMuted() {
+    recordVoicePipelineDiagnostic('TRACK_MUTED', { trackMuted: true });
+  }
+
   async function start() {
     if (stream || recorder || disposed) return false;
     const requestId = ++permissionRequestId;
     canceled = false;
+    recordVoicePipelineDiagnostic('MIC_REQUEST_STARTED');
 
     try {
       const nextStream = await requestAudioStream(runtime);
+      recordVoicePipelineDiagnostic('MIC_PERMISSION_GRANTED');
 
       if (disposed || canceled || requestId !== permissionRequestId) {
         stopTracks(nextStream);
         return false;
       }
 
+      recordVoicePipelineDiagnostic('MIC_STREAM_RECEIVED', { streamActive: Boolean(nextStream?.active) });
+      const nextTrack = getPrimaryAudioTrack(nextStream);
+
+      // HOTFIX CRÍTICO 2: getUserMedia pode resolver "com sucesso" e ainda
+      // assim entregar um stream/track já morto -- ver isStreamUsable().
+      // Sem esta checagem, o pipeline inteiro prosseguia (MediaRecorder
+      // criado, "Ouvindo..." exibido) para gravar silêncio garantido, sem
+      // NENHUM erro visível ao usuário.
+      if (!isStreamUsable(nextStream, nextTrack)) {
+        recordVoicePipelineDiagnostic('TRACK_ENDED', {
+          streamActive: Boolean(nextStream?.active),
+          trackReadyState: nextTrack?.readyState ?? 'absent',
+        });
+        stopTracks(nextStream);
+        fail('no_audio_track');
+        return false;
+      }
+
+      recordVoicePipelineDiagnostic('MIC_AUDIO_TRACK_LIVE', {
+        trackReadyState: nextTrack.readyState,
+        trackMuted: Boolean(nextTrack.muted),
+      });
+
       stream = nextStream;
+      audioTrack = nextTrack;
+      audioTrack.addEventListener?.('ended', handleTrackEnded);
+      audioTrack.addEventListener?.('mute', handleTrackMuted);
       // BUG 3: expoe o MESMO MediaStream ja capturado aqui (nunca um
       // segundo getUserMedia) para quem quiser visualizar a intensidade da
       // voz (ex.: AnalyserNode no botao da Uni) -- puramente informativo,
@@ -157,11 +245,18 @@ export function createMediaRecorderAdapter({
       chunks = [];
 
       recorder.ondataavailable = (event) => {
-        if (!canceled && event?.data?.size > 0) chunks.push(event.data);
+        if (!canceled && event?.data?.size > 0) {
+          chunks.push(event.data);
+          recordVoicePipelineDiagnostic('RECORDER_DATA_AVAILABLE', { blobSizeBytes: event.data.size });
+        }
       };
-      recorder.onerror = () => fail('capture_failed');
+      recorder.onerror = () => {
+        recordVoicePipelineDiagnostic('RECORDER_ERROR');
+        fail('capture_failed');
+      };
       recorder.onstart = () => {
         startedAt = Date.now();
+        recordVoicePipelineDiagnostic('RECORDER_STARTED', { mimeType: recorder?.mimeType || mimeType || '' });
         onStart?.();
         limitTimer = runtime.setTimeout?.(() => {
           canceled = true;
@@ -170,6 +265,7 @@ export function createMediaRecorderAdapter({
         }, maxDurationMs);
       };
       recorder.onstop = () => {
+        recordVoicePipelineDiagnostic('RECORDER_STOPPED');
         if (canceled || disposed) {
           clearResources();
           return;
@@ -180,6 +276,7 @@ export function createMediaRecorderAdapter({
         const audio = new Blob(chunks, { type });
 
         if (!audio.size) {
+          recordVoicePipelineDiagnostic('EMPTY_AUDIO');
           fail('empty_audio');
           return;
         }
@@ -188,13 +285,16 @@ export function createMediaRecorderAdapter({
           return;
         }
 
+        recordVoicePipelineDiagnostic('AUDIO_BLOB_CREATED', { blobSizeBytes: audio.size, mimeType: type, durationMs });
         clearResources();
         onAudio?.({ audio, durationMs, mimeType: type });
       };
 
+      recordVoicePipelineDiagnostic('CAPTURE_STARTED', { mimeType: mimeType || '' });
       recorder.start();
       return true;
     } catch (error) {
+      recordVoicePipelineDiagnostic('MIC_PERMISSION_ERROR');
       if (!canceled && !disposed) fail(mapCaptureError(error));
       return false;
     }
