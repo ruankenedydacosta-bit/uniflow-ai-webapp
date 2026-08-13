@@ -57,7 +57,14 @@ export function toVisualLevel(smoothedValue, gain = LEVEL_GAIN) {
   return Math.min(1, Math.max(0, smoothedValue * gain));
 }
 
-export function useVoiceIntensity({ getStream, getSessionId, active, runtime } = {}) {
+export function useVoiceIntensity({
+  getStream,
+  getSessionId,
+  active,
+  runtime,
+  onLevel,
+  publishState = true,
+} = {}) {
   const browserRuntime = runtime ?? (typeof window !== 'undefined' ? window : undefined);
   const [level, setLevel] = useState(0);
   const audioContextRef = useRef(null);
@@ -84,8 +91,9 @@ export function useVoiceIntensity({ getStream, getSessionId, active, runtime } =
       void audioContext.close().catch(() => {});
     }
     smoothedRef.current = 0;
-    setLevel(0);
-  }, [browserRuntime]);
+    if (publishState) setLevel(0);
+    onLevel?.(0);
+  }, [browserRuntime, onLevel, publishState]);
 
   useEffect(() => {
     if (!active) {
@@ -148,7 +156,9 @@ export function useVoiceIntensity({ getStream, getSessionId, active, runtime } =
         recordVoicePipelineDiagnostic('ANALYSER_RECEIVING_SIGNAL', { sessionId, peak: rms });
       }
       smoothedRef.current = smoothLevel(smoothedRef.current, rms);
-      setLevel(toVisualLevel(smoothedRef.current));
+      const visualLevel = toVisualLevel(smoothedRef.current);
+      if (publishState) setLevel(visualLevel);
+      onLevel?.(visualLevel);
       rafRef.current = requestFrame(tick);
     };
     const startAnalysis = () => {
@@ -175,7 +185,7 @@ export function useVoiceIntensity({ getStream, getSessionId, active, runtime } =
       });
       stopAnalysis();
     };
-  }, [active, browserRuntime, getSessionId, getStream, stopAnalysis]);
+  }, [active, browserRuntime, getSessionId, getStream, onLevel, publishState, stopAnalysis]);
 
   useEffect(() => () => stopAnalysis(), [stopAnalysis]);
 

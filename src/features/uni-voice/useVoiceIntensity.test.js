@@ -82,6 +82,14 @@ test('useVoiceIntensity respeita prefers-reduced-motion desligando a análise em
   assert.match(SOURCE, /if \(prefersReducedMotion\(browserRuntime\)\) return undefined;/);
 });
 
+test('consumidor visual pode receber o mesmo nível por callback sem setState por frame', () => {
+  assert.match(SOURCE, /onLevel,/);
+  assert.match(SOURCE, /publishState = true/);
+  assert.match(SOURCE, /const visualLevel = toVisualLevel\(smoothedRef\.current\);/);
+  assert.match(SOURCE, /if \(publishState\) setLevel\(visualLevel\);/);
+  assert.match(SOURCE, /onLevel\?\.\(visualLevel\);/);
+});
+
 test('Safari retoma AudioContext suspenso antes de iniciar a análise', () => {
   assert.match(SOURCE, /audioContext\.state === 'suspended'/);
   assert.match(SOURCE, /audioContext\.resume\?\.\(\)/);
