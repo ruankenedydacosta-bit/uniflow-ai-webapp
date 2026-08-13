@@ -111,7 +111,7 @@ test('total_expenses (ponte legada) executa via motor determinístico e devolve 
 
 // ── Consulta simples via registro novo (Sprint 4) ───────────────────────
 
-test('total_balance (capacidade nova) executa via registro e devolve o saldo real', () => {
+test('total_balance mantém compatibilidade sem expor saldo publicamente', () => {
   const snapshot = buildSnapshot();
   const result = runFinancialSemanticOrchestrator({
     interpretation: baseInterpretation({ intent: 'total_balance' }),
@@ -120,7 +120,9 @@ test('total_balance (capacidade nova) executa via registro e devolve o saldo rea
   assert.equal(result.status, 'handled');
   assert.equal(result.source, 'semantic');
   assert.equal(result.executionPlan.type, 'capability');
-  assert.match(result.responseDraft, /635,5/);
+  assert.match(result.responseDraft, /1 entrada/);
+  assert.match(result.responseDraft, /2 saídas/);
+  assert.doesNotMatch(result.responseDraft, /635,5|saldo|resultado/i);
 });
 
 test('top_expenses devolve as maiores despesas reais, ordenadas', () => {
@@ -353,5 +355,8 @@ test('todo número na resposta é rastreável ao snapshot real -- nunca aparece 
   });
   assert.equal(result.structuredResult.income, snapshot.monthlyIncome);
   assert.equal(result.structuredResult.expenses, snapshot.monthlyExpense);
-  assert.equal(result.structuredResult.result, snapshot.monthlyResult);
+  assert.equal(result.structuredResult.incomeCount, 1);
+  assert.equal(result.structuredResult.expenseCount, 2);
+  assert.equal('result' in result.structuredResult, false);
+  assert.equal('totalBalance' in result.structuredResult, false);
 });

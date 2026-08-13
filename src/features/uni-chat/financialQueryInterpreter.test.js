@@ -12,6 +12,8 @@ function mockCtx(overrides = {}) {
     balance: 15000,
     monthlyIncome: 8000,
     monthlyExpense: 5000,
+    monthlyIncomeCount: 3,
+    monthlyExpenseCount: 7,
     result: 3000,
     recentTransactions: [],
     expensesByCategory: {},
@@ -25,6 +27,8 @@ function mockCtx(overrides = {}) {
 function mockProjections(overrides = {}) {
   return {
     currentBalance: 15000,
+    avgIncome: 8000,
+    avgExpense: 5000,
     netResult: 3000,
     monthsWithData: 3,
     hasHistory: true,
@@ -50,6 +54,7 @@ test('classifyFinancialQuery: balance', () => {
 test('classifyFinancialQuery: monthly_expenses', () => {
   const result = classifyFinancialQuery('quanto gastei esse mês?');
   assert.equal(result.type, 'monthly_expenses');
+  assert.deepEqual(classifyFinancialQuery('quanto saiu esse mês?'), { type: 'monthly_expenses' });
 });
 
 test('classifyFinancialQuery: monthly_income', () => {
@@ -184,10 +189,12 @@ test('buildQueryResponse future_projection retorna projeção', () => {
   );
   assert.ok(response);
   assert.ok(response.text.includes('Projeção'));
-  assert.ok(response.text.includes('3.000'));
+  assert.ok(response.text.includes('8.000'));
+  assert.ok(response.text.includes('5.000'));
+  assert.doesNotMatch(response.text, /resultado|saldo|positivo|negativo/i);
   assert.equal(response.text.includes('33.000'), false);
   assert.ok(response.text.toLowerCase().includes('estim'));
-  assert.ok(response.highlight);
+  assert.equal(response.highlight, null);
 });
 
 test('buildQueryResponse future_projection sem histórico', () => {
@@ -302,8 +309,9 @@ test('buildQueryResponse balance_trend com dados', () => {
     { projections: mockProjections() },
   );
   assert.ok(response);
-  assert.ok(response.text.includes('favorável'));
-  assert.ok(response.text.includes('3.000'));
+  assert.ok(response.text.includes('8.000'));
+  assert.ok(response.text.includes('5.000'));
+  assert.doesNotMatch(response.text, /resultado|saldo|positivo|negativo/i);
   assert.equal(response.text.includes('15.000'), false);
   assert.equal(response.text.includes('33.000'), false);
 });
@@ -544,9 +552,11 @@ test('buildFutureSafetyResponse nunca contem NaN ou Infinity', () => {
 // 'normal'/'detailed'), o comportamento anterior fica inalterado.
 // ============================================================================
 
-test('buildQueryResponse sem conversationStyle mantem o formato multi-linha de sempre (comportamento inalterado)', () => {
+test('buildQueryResponse sem conversationStyle usa resumo público curto em uma linha', () => {
   const response = buildQueryResponse({ type: 'monthly_summary' }, mockCtx(), 'personal', {});
-  assert.ok(response.text.includes('\n'));
+  assert.doesNotMatch(response.text, /\n|saldo|resultado/i);
+  assert.match(response.text, /3 entradas/);
+  assert.match(response.text, /7 saídas/);
 });
 
 test('conversationStyle "simple" condensa monthly_summary numa unica linha, preservando os valores', () => {
@@ -560,7 +570,7 @@ test('conversationStyle "simple" condensa monthly_summary numa unica linha, pres
   assert.doesNotMatch(response.text, /\n/);
   assert.match(response.text, /8\.000/);
   assert.match(response.text, /5\.000/);
-  assert.match(response.text, /3\.000/);
+  assert.doesNotMatch(response.text, /3\.000|resultado|saldo/i);
 });
 
 test('conversationStyle "simple" condensa goal_feasibility e remove o paragrafo de aviso final, preservando os nomes das metas', () => {
@@ -591,9 +601,9 @@ test('conversationStyle "simple" nao afasta o highlight nem quebra respostas ja 
   assert.doesNotMatch(response.text, /\n/);
 });
 
-test('conversationStyle "normal"/"detailed" nao condensam -- so "simple" muda a apresentacao', () => {
+test('conversationStyle normal/detailed também preserva resumo público curto sem resultado', () => {
   const normal = buildQueryResponse({ type: 'monthly_summary' }, mockCtx(), 'personal', { conversationStyle: 'normal' });
   const detailed = buildQueryResponse({ type: 'monthly_summary' }, mockCtx(), 'personal', { conversationStyle: 'detailed' });
-  assert.ok(normal.text.includes('\n'));
-  assert.ok(detailed.text.includes('\n'));
+  assert.doesNotMatch(normal.text, /\n|saldo|resultado/i);
+  assert.doesNotMatch(detailed.text, /\n|saldo|resultado/i);
 });

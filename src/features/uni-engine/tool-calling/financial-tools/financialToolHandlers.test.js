@@ -116,10 +116,10 @@ test('get_financial_summary - resumo válido', async () => {
   assert.equal(response.ok, true);
   assert.equal(response.tool, 'get_financial_summary');
   assert.equal(response.data.period, '2026-08');
-  assert.equal(response.data.balance, 13300);
   assert.equal(response.data.income, 6000);
   assert.equal(response.data.expenses, 1800);
-  assert.equal(response.data.result, 4200);
+  assert.equal('balance' in response.data, false);
+  assert.equal('result' in response.data, false);
   assert.equal(response.meta.source, 'snapshot');
 });
 
@@ -128,16 +128,17 @@ test('get_financial_summary - snapshot vazio', async () => {
   const outcome = await callTool(dispatcher, registry, 'get_financial_summary');
   const response = outcome.result.data;
   assert.equal(response.ok, true);
-  assert.equal(response.data.balance, null);
   assert.equal(response.data.hasData, false);
   assert.equal(response.data.income, 0);
+  assert.equal('balance' in response.data, false);
 });
 
-test('get_financial_summary - saldo ausente', async () => {
+test('get_financial_summary - saldo nunca integra o payload público', async () => {
   const { dispatcher, registry } = createFinancialDataToolsContext({ snapshot: simpleSnapshot(), config: { enabled: true } });
   const outcome = await callTool(dispatcher, registry, 'get_financial_summary');
   const response = outcome.result.data;
-  assert.equal(response.data.balance, null);
+  assert.equal('balance' in response.data, false);
+  assert.equal('result' in response.data, false);
   assert.ok(!('accounts' in response.data));
 });
 
@@ -320,7 +321,8 @@ test('get_account_summary - contas válidas', async () => {
   const response = outcome.result.data;
   assert.equal(response.ok, true);
   assert.equal(response.data.accounts.length, 4);
-  assert.equal(response.data.totalBalance, 13300);
+  assert.equal('totalBalance' in response.data, false);
+  assert.ok(response.data.accounts.every((account) => !('balance' in account)));
 });
 
 test('get_account_summary - nenhuma conta', async () => {
@@ -329,7 +331,7 @@ test('get_account_summary - nenhuma conta', async () => {
   const response = outcome.result.data;
   assert.equal(response.ok, true);
   assert.equal(response.data.accounts.length, 0);
-  assert.equal(response.data.totalBalance, null);
+  assert.equal('totalBalance' in response.data, false);
 });
 
 test('get_account_summary - dados sensíveis removidos', async () => {

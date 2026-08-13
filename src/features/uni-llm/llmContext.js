@@ -45,10 +45,10 @@ export function buildSanitizedFinancialSummary(financialContext = {}, mode = 'pe
   const summary = {
     hasData: true,
     mode,
-    balance: round(financialContext.balance),
     monthlyIncome: round(financialContext.monthlyIncome),
     monthlyExpense: round(financialContext.monthlyExpense),
-    monthlyResult: round(financialContext.result),
+    monthlyIncomeCount: Number(financialContext.monthlyIncomeCount ?? 0),
+    monthlyExpenseCount: Number(financialContext.monthlyExpenseCount ?? 0),
   };
   if (financialContext.topCategory?.name) {
     summary.topExpenseCategory = {
@@ -93,7 +93,11 @@ export function buildSystemPrompt({
     '- Responda sempre em portugues do Brasil (PT-BR).',
     '- Seja clara, acolhedora e objetiva. Nunca julgue o usuario.',
     '- Distinga explicitamente fatos, estimativas e sugestoes.',
-    '- Use APENAS os dados disponiveis no contexto abaixo. Nunca invente numeros, saldos ou transacoes.',
+    '- Use APENAS os dados disponiveis no contexto abaixo. Nunca invente numeros ou transacoes.',
+    '- Saldo nao e um conceito publico da UniFlow. Nunca informe saldo atual, saldo total,',
+    '  initial balance, current balance, valor restante, patrimonio disponivel ou quanto sobrou.',
+    '- Nunca subtraia Entradas e Saidas para narrar resultado positivo/negativo.',
+    '- Em resumos financeiros, informe somente quantidade e total de Entradas e de Saidas.',
     '- Se um dado nao estiver no contexto, admita que nao sabe e oriente como obte-lo no app.',
     '- Nao garanta aconselhamento financeiro profissional; ofereca caminhos, nao decisoes.',
     `- Respeite o contexto ativo do workspace: ${workspaceType === 'business' ? 'PJ / Empresa' : 'PF / Pessoal'}.`,
@@ -109,7 +113,7 @@ export function buildSystemPrompt({
     '',
     'LINGUAGEM:',
     '- Evite jargao financeiro sem necessidade. Se um termo tecnico (categoria,',
-    '  saldo consolidado, etc.) puder confundir, explique em uma frase simples e',
+    '  conciliacao, etc.) puder confundir, explique em uma frase simples e',
     '  com um exemplo concreto antes ou junto da pergunta.',
     '  Exemplo: "categoria e so o tipo do gasto -- mercado, combustivel, farmacia".',
     '',
@@ -136,10 +140,8 @@ export function buildSystemPrompt({
   }
   if (financialSummary?.hasData) {
     contextLines.push(`- Perfil ativo: ${financialSummary.mode}`);
-    contextLines.push(`- Saldo atual: R$ ${financialSummary.balance}`);
-    contextLines.push(`- Receitas do mes: R$ ${financialSummary.monthlyIncome}`);
-    contextLines.push(`- Despesas do mes: R$ ${financialSummary.monthlyExpense}`);
-    contextLines.push(`- Resultado do mes: R$ ${financialSummary.monthlyResult}`);
+    contextLines.push(`- Entradas do mes: ${financialSummary.monthlyIncomeCount} registros, total R$ ${financialSummary.monthlyIncome}`);
+    contextLines.push(`- Saidas do mes: ${financialSummary.monthlyExpenseCount} registros, total R$ ${financialSummary.monthlyExpense}`);
     if (financialSummary.topExpenseCategory) {
       contextLines.push(
         `- Maior categoria de despesa: ${financialSummary.topExpenseCategory.name} (R$ ${financialSummary.topExpenseCategory.amount})`,

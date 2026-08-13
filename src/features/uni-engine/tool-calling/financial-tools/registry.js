@@ -29,7 +29,7 @@ export const FINANCIAL_READ_TOOL_NAMES = Object.freeze([
 // Metadados públicos (sem handlers) usados em schemas de argumentos.
 export const FINANCIAL_READ_TOOL_META = Object.freeze({
   get_financial_summary: {
-    description: 'Resumo financeiro do período atual: saldo, receitas, despesas e fluxo líquido.',
+    description: 'Resumo público do período: quantidades e totais de Entradas e Saídas, sem saldo.',
     schema: { period: { type: 'period', required: false } },
     reads: true,
     writes: false,

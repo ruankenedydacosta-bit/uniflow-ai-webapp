@@ -1,5 +1,8 @@
 import { extractQueryAmount } from './financialQueryEngine.js';
-import { PUBLIC_BALANCE_RETIREMENT_TEXT } from './publicBalanceExperience.js';
+import {
+  formatPublicMovementSummaryResponse,
+  isPublicFinancialSummaryRequest,
+} from './publicBalanceExperience.js';
 
 const MONTH_NAMES = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -69,6 +72,10 @@ export function classifyFinancialQuery(text) {
 
   // General patterns after specific ones
 
+  if (isPublicFinancialSummaryRequest(text)) {
+    return { type: 'monthly_summary' };
+  }
+
   if (/categoria/.test(n) && /gast/.test(n)) {
     return { type: 'top_category' };
   }
@@ -84,7 +91,7 @@ export function classifyFinancialQuery(text) {
     return { type: 'monthly_income' };
   }
 
-  if (/\bgast/.test(n) && /\b(?:mes|este|esse)\b/.test(n)) {
+  if (/\b(?:gast\w*|saiu|saidas?)\b/.test(n) && /\b(?:mes|este|esse)\b/.test(n)) {
     return { type: 'monthly_expenses' };
   }
 
@@ -230,10 +237,29 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
   const prefix = mode === 'empresa' ? 'da sua empresa' : '';
   const subject = mode === 'empresa' ? 'sua empresa' : 'você';
   const type = queryType?.type || queryType;
+  const monthRange = {
+    start: ctx.snapshot?.currentMonth ? `${ctx.snapshot.currentMonth}-01` : null,
+    end: null,
+    label: 'este mês',
+  };
+  const incomeCount = ctx.monthlyIncomeCount
+    ?? ctx.snapshot?.currentMonthTransactions?.filter((tx) => tx.transaction_type === 'income').length
+    ?? 0;
+  const expenseCount = ctx.monthlyExpenseCount
+    ?? ctx.snapshot?.currentMonthTransactions?.filter((tx) => tx.transaction_type === 'expense').length
+    ?? 0;
+  const movementSummary = (includeRetirementIntro = false) => formatPublicMovementSummaryResponse({
+    range: monthRange,
+    income: ctx.monthlyIncome,
+    expenses: ctx.monthlyExpense,
+    incomeCount,
+    expenseCount,
+    includeRetirementIntro,
+  });
 
   switch (type) {
     case 'balance': {
-      return { text: PUBLIC_BALANCE_RETIREMENT_TEXT, highlight: null };
+      return movementSummary(true);
     }
 
     case 'monthly_expenses': {
@@ -249,18 +275,7 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
     }
 
     case 'monthly_summary': {
-      const income = fmtCurrency(ctx.monthlyIncome);
-      const expense = fmtCurrency(ctx.monthlyExpense);
-      const result = fmtCurrency(Math.abs(ctx.result));
-      const signal = ctx.result >= 0 ? 'positivo' : 'negativo';
-      const expenseLabel = ctx.monthlyExpense > 0
-        ? `saídas de ${expense}`
-        : 'nenhuma saída registrada';
-      const incomeLabel = ctx.monthlyIncome > 0
-        ? `entradas de ${income}`
-        : 'nenhuma entrada registrada';
-      const msg = `Resumo de ${monthName} para ${subject}:\n• ${incomeLabel}\n• ${expenseLabel}\n• Resultado ${signal} de ${result}`;
-      return { text: msg, highlight: result };
+      return movementSummary(false);
     }
 
     case 'recent_transactions': {
@@ -305,13 +320,12 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
         const msg = `${capitalize(subject)} ainda não tem dados financeiros suficientes para gerar projeções. Cadastre entradas e saídas para que eu possa estimar o futuro.`;
         return { text: msg, highlight: null };
       }
-      const likely = projections.scenarioProjections?.likely || {};
-      const monthly = fmtCurrency(likely.monthlyResult ?? projections.netResult);
+      const income = fmtCurrency(projections.avgIncome ?? 0);
+      const expense = fmtCurrency(projections.avgExpense ?? 0);
       const horizon = projections.selectedHorizon || 6;
-      const signal = (likely.monthlyResult ?? projections.netResult) >= 0 ? 'positivo' : 'negativo';
       const monthText = horizon === 1 ? 'mês' : 'meses';
-      const msg = `Projeção para ${horizon} ${monthText} (cenário provável):\n• Resultado médio mensal: ${monthly}\n• Tendência: ${signal}\n\n⚠️ Esta é uma estimativa baseada no seu histórico de ${projections.monthsWithData || 0} ${projections.monthsWithData === 1 ? 'mês' : 'meses'}. Resultados reais podem variar.`;
-      return { text: msg, highlight: monthly };
+      const msg = `Projeção para ${horizon} ${monthText}:\n• Entradas médias mensais: ${income}\n• Saídas médias mensais: ${expense}\n\n⚠️ Esta é uma estimativa baseada no seu histórico de ${projections.monthsWithData || 0} ${projections.monthsWithData === 1 ? 'mês' : 'meses'}. Os valores reais podem variar.`;
+      return { text: msg, highlight: null };
     }
 
     case 'goal_feasibility': {
@@ -372,12 +386,10 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
         const msg = `${capitalize(subject)} ainda não tem dados suficientes para avaliar a tendência. Cadastre transações para que eu possa projetar.`;
         return { text: msg, highlight: null };
       }
-      const monthlyNet = projections.netResult || 0;
-      const signal = monthlyNet >= 0 ? 'positivo' : 'negativo';
-      const direction = monthlyNet >= 0 ? 'favorável' : 'de atenção';
-      const monthly = fmtCurrency(monthlyNet);
-      const msg = `Tendência financeira:\n• Resultado médio mensal: ${monthly} (${signal})\n• Horizonte analisado: ${projections.selectedHorizon || 6} meses\n\nA tendência é ${direction} com base no histórico atual. ⚠️ Esta é uma estimativa.`;
-      return { text: msg, highlight: monthly };
+      const income = fmtCurrency(projections.avgIncome ?? 0);
+      const expense = fmtCurrency(projections.avgExpense ?? 0);
+      const msg = `Movimentações médias mensais:\n• Entradas: ${income}\n• Saídas: ${expense}\n• Horizonte analisado: ${projections.selectedHorizon || 6} meses\n\n⚠️ Esta é uma estimativa baseada no histórico atual.`;
+      return { text: msg, highlight: null };
     }
 
     case 'goal_completion': {

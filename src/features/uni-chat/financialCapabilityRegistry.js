@@ -16,6 +16,7 @@
 // nomeado, semestre, ano) agora funciona.
 import { resolveTemporalRange } from '../uni-intents/index.js';
 import { roundMoney, aggregateFinancialRange, queryTransactionsInRange } from './financialSnapshot.js';
+import { buildPublicMovementSummaryResponse } from './publicBalanceExperience.js';
 
 export const CAPABILITY_OPERATION = Object.freeze({
   READ: 'read',
@@ -94,30 +95,25 @@ function findIdByName(mapById, name) {
 // ── Handlers (Sprint 4) — operam sobre a API de intervalo do snapshot ────
 
 function handleTotalBalance(snapshot) {
+  const response = buildPublicMovementSummaryResponse({
+    snapshot,
+    includeRetirementIntro: true,
+  });
   return {
     ok: true,
-    data: { totalBalance: snapshot.totalBalance, hasData: snapshot.hasData },
-    text: snapshot.hasData
-      ? `Seu saldo total é ${formatCurrency(snapshot.totalBalance)}.`
-      : 'Ainda não encontrei dados financeiros para calcular seu saldo.',
+    data: response.data,
+    text: response.text,
   };
 }
 
 function handleFinancialSummary(snapshot, { period } = {}) {
   const range = resolvePeriodRange(snapshot, period);
   if (!range) return periodNotRecognizedResult('financial_summary');
-  const agg = aggregateFinancialRange(snapshot, range);
+  const response = buildPublicMovementSummaryResponse({ snapshot, range });
   return {
     ok: true,
-    data: {
-      period: range,
-      income: agg.income,
-      expenses: agg.expense,
-      result: agg.result,
-      totalBalance: snapshot.totalBalance,
-      transactionCount: agg.transactionCount,
-    },
-    text: `Em ${range.label}: entradas de ${formatCurrency(agg.income)}, saídas de ${formatCurrency(agg.expense)}, resultado de ${formatCurrency(agg.result)}.`,
+    data: response.data,
+    text: response.text,
   };
 }
 
@@ -252,7 +248,7 @@ export const FINANCIAL_CAPABILITY_REGISTRY = Object.freeze([
     requiresConfirmation: false,
     testedBehaviorally: true,
     priority: 'high',
-    llmDescription: 'Saldo total somando todas as contas ativas (não depende de período).',
+    llmDescription: 'Compatibilidade para perguntas antigas de saldo: responde com quantidades e totais de Entradas e Saídas do mês, sem expor saldo.',
   },
   {
     id: 'financial_summary',
@@ -268,7 +264,7 @@ export const FINANCIAL_CAPABILITY_REGISTRY = Object.freeze([
     requiresConfirmation: false,
     testedBehaviorally: true,
     priority: 'high',
-    llmDescription: 'Resumo do período pedido (qualquer período reconhecido): receitas, despesas e resultado.',
+    llmDescription: 'Resumo do período pedido: quantidades e totais de Entradas e Saídas, sem saldo ou resultado.',
   },
   {
     id: 'total_income',

@@ -20,6 +20,11 @@ import { extractAmount } from '../uni-intents/entityExtractor.js';
 import { resolveRelativeDateExpression } from '../uni-intents/relativeDateResolver.js';
 import { resolveTemporalRange } from '../uni-intents/temporalRangeResolver.js';
 import { normalizeFinancialText, roundMoney } from './financialSnapshot.js';
+import {
+  buildPublicMovementSummaryResponse,
+  isPublicFinancialSummaryRequest,
+  isRetiredPublicBalanceRequest,
+} from './publicBalanceExperience.js';
 
 const MONTH_NAMES = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -380,6 +385,9 @@ export function classifyQueryType(text) {
   if (extractQueryAmount(text) != null) {
     if (DECLARATIVE_STATEMENT_START.test(n) || BALANCE_STATEMENT_START.test(n)) return null;
   }
+
+  if (isRetiredPublicBalanceRequest(text)) return 'account_balance';
+  if (isPublicFinancialSummaryRequest(text)) return 'public_financial_summary';
 
   if (/\bultim[oa]\s+(?:receita|entrada|recebimento)\b/.test(n)) return 'last_income';
   if (/\bultim[oa]\s+valor\b/.test(n) && /\breceb\b/.test(n)) return 'last_income';
@@ -931,6 +939,23 @@ export function resolveFinancialQuery({
 
   let result;
   switch (queryType) {
+    case 'public_financial_summary': {
+      const response = buildPublicMovementSummaryResponse({
+        snapshot,
+        text,
+        includeRetirementIntro: isRetiredPublicBalanceRequest(text),
+      });
+      result = {
+        handled: true,
+        response,
+        queryParams: {
+          kind: 'public_financial_summary',
+          ...response.data.period,
+        },
+      };
+      break;
+    }
+
     case 'last_transaction':
     case 'last_income':
     case 'last_expense':
@@ -983,76 +1008,15 @@ export function resolveFinancialQuery({
       break;
 
     case 'account_balance': {
-      const workspaceLabel = mode === 'empresa' ? 'Espaço Empresa' : 'Espaço Pessoal';
-      const phrase = extractAccountReference(text);
-
-      if (phrase) {
-        const { matches, ambiguous } = findAccountsByPhrase(snapshot, phrase);
-        if (ambiguous) {
-          const names = matches.map((account) => account.name).join(', ');
-          result = {
-            handled: true,
-            response: {
-              text: `Encontrei ${matches.length} contas correspondentes: ${names}. Qual delas você quer consultar?`,
-              highlight: null,
-            },
-          };
-          break;
-        }
-        if (matches.length === 1) {
-          const value = snapshot.accountBalancesById.get(matches[0].id);
-          result = {
-            handled: true,
-            response: {
-              text: `Você tem ${fmtCurrency(value)} na conta ${matches[0].name}.`,
-              highlight: fmtCurrency(value),
-            },
-          };
-          break;
-        }
-        const available = [...snapshot.accountsById.values()].map((account) => account.name);
-        const hint = available.length ? ` Suas contas: ${available.join(', ')}.` : '';
-        const displayPhrase = capitalize(stripLeadingGenericAccountTokens(phrase));
-        result = {
-          handled: true,
-          response: {
-            text: `Não encontrei a conta "${displayPhrase}" no ${workspaceLabel}.${hint}`,
-            highlight: null,
-          },
-        };
-        break;
-      }
-
-      // "nessa conta" / "no banco" genérico → contexto da conversa ou pergunta.
-      if (contextHint?.accountPhrase) {
-        const { matches } = findAccountsByPhrase(snapshot, contextHint.accountPhrase);
-        if (matches.length === 1) {
-          const value = snapshot.accountBalancesById.get(matches[0].id);
-          result = {
-            handled: true,
-            response: {
-              text: `Você tem ${fmtCurrency(value)} na conta ${matches[0].name}.`,
-              highlight: fmtCurrency(value),
-            },
-          };
-          break;
-        }
-      }
-
-      const available = [...snapshot.accountsById.values()].map((account) => account.name);
-      if (!available.length) {
-        result = {
-          handled: true,
-          response: { text: 'Você ainda não tem contas cadastradas.', highlight: null },
-        };
-        break;
-      }
+      const response = buildPublicMovementSummaryResponse({
+        snapshot,
+        text,
+        includeRetirementIntro: true,
+      });
       result = {
         handled: true,
-        response: {
-          text: `Qual conta você quer consultar? Suas contas: ${available.join(', ')}.`,
-          highlight: null,
-        },
+        response,
+        queryParams: { kind: 'public_financial_summary', ...response.data.period },
       };
       break;
     }

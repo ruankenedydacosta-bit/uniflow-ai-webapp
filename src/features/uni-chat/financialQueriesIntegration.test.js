@@ -71,7 +71,8 @@ test('o motor resolve consultas sobre o snapshot do próprio contexto (fluxo rea
     snapshot: ctx.snapshot,
   });
   assert.equal(balance.handled, true);
-  assert.match(balance.response.text, /R\$\s*480,50/);
+  assert.match(balance.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(balance.response.text, /480,50|saldo|resultado/i);
 
   const last = resolveFinancialQuery({
     text: 'qual foi minha última despesa?',

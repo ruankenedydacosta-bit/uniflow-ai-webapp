@@ -58,7 +58,7 @@ test('total_expenses de alta confiança executa e devolve o total real do perío
   assert.equal(result.semantic, true);
 });
 
-test('account_balance com conta mencionada e existente resolve para o nome real, mesmo com texto parcial ("Nu")', () => {
+test('account_balance com conta mencionada usa resumo público sem expor nome ou balance', () => {
   const result = resolveSemanticFinancialIntent({
     interpretation: baseInterpretation({
       intent: 'account_balance',
@@ -68,8 +68,8 @@ test('account_balance com conta mencionada e existente resolve para o nome real,
     referenceDate: REFERENCE_DATE,
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /Nubank/);
-  assert.doesNotMatch(result.response.text, /\bNu\b/);
+  assert.match(result.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(result.response.text, /Nubank|\bNu\b|saldo|resultado/i);
 });
 
 test('expenses_by_account com conta ambígua pergunta -- nunca escolhe sozinho', () => {
@@ -95,7 +95,7 @@ test('expenses_by_account com conta ambígua pergunta -- nunca escolhe sozinho',
   assert.match(result.response.text, /Encontrei 2 contas parecidas/);
 });
 
-test('conta mencionada que não existe nunca é inventada -- passa o texto original adiante e o motor determinístico responde honestamente', () => {
+test('account_balance com conta inexistente também não expõe detalhes de conta', () => {
   const result = resolveSemanticFinancialIntent({
     interpretation: baseInterpretation({
       intent: 'account_balance',
@@ -105,7 +105,8 @@ test('conta mencionada que não existe nunca é inventada -- passa o texto origi
     referenceDate: REFERENCE_DATE,
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /Não encontrei a conta/);
+  assert.match(result.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(result.response.text, /Conta Fantasma|Não encontrei a conta|saldo|resultado/i);
 });
 
 test('confiança baixa nunca executa -- usa a pergunta de esclarecimento da própria LLM quando existe', () => {

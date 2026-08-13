@@ -2,13 +2,13 @@
 // Determina se uma resposta visível do runtime financeiro pode ser aplicada.
 // Reutiliza contratos, validação factual, confiança e determinismo.
 
-import { isSerializableValue } from '../../uniEngineContracts.js';
 import { validateFinancialFacts } from '../factual-validation/validateFinancialFacts.js';
 import { calculateFinancialConfidence } from '../confidence/calculateFinancialConfidence.js';
 import { evaluateFinancialRuntimeVisibleCanary } from '../canary/evaluateFinancialRuntimeVisibleCanary.js';
 import { isIntentVisibleAllowed, isWriteIntent } from '../eligibility/visibleIntents.js';
 import { RUNTIME_SAFETY_KEYS, RUNTIME_TEMPORAL_ENTITIES } from '../types/index.js';
-import { createEmptyFinancialEligibilityResult, validateFinancialEligibilityResult } from './financialEligibilityContracts.js';
+import { createEmptyFinancialEligibilityResult } from './financialEligibilityContracts.js';
+import { containsForbiddenPublicBalanceNarrative } from '../../../uni-chat/publicBalanceExperience.js';
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
@@ -37,6 +37,9 @@ export function validateFinancialRuntimeSafety(runtimeResult) {
   if (safeRuntime.persisted !== false) reasonCodes.push('PERSISTENCE_EFFECT_DETECTED');
   if (safeRuntime.discarded !== true) reasonCodes.push('RESULT_NOT_DISCARDED');
   if (safeRuntime.legacyPreserved !== true) reasonCodes.push('LEGACY_NOT_PRESERVED');
+  if (containsForbiddenPublicBalanceNarrative(safeRuntime.narrative?.text)) {
+    reasonCodes.push('PUBLIC_BALANCE_NARRATIVE_BLOCKED');
+  }
 
   const safety = safeRuntime.safety && typeof safeRuntime.safety === 'object'
     ? safeRuntime.safety

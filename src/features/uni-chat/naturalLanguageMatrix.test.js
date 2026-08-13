@@ -187,17 +187,14 @@ test('Matriz [simples]: "quanto gastei esse mês" é resolvida pelo motor determ
   assert.ok(outcome.response.text.length > 0);
 });
 
-// Achado real (Bloco 4.7): "Qual meu saldo?"/"Quanto eu tenho?" (sem
-// preposição/valor) NÃO são reconhecidas pelo motor determinístico legado
-// (financialQueryEngine.js -- pré-existente, não alterado neste ciclo).
-// Em produção, com os flags desta Sprint desligados, essas frases caem no
-// fallback de chat livre; com o orquestrador semântico ligado, a
-// capacidade real total_balance resolve com segurança -- é essa a
-// cobertura que garantimos aqui.
-test('Matriz [simples]: "qual meu saldo?"/"quanto eu tenho?" -- o motor legado não reconhece (achado documentado), mas a capacidade total_balance resolve com segurança via camada semântica', () => {
+test('Matriz [simples]: aliases antigos de saldo são resolvidos diretamente como Entradas/Saídas', () => {
   const snapshot = buildSnapshot();
-  assert.equal(resolveFinancialQuery({ text: 'Qual meu saldo?', snapshot, referenceDate: REFERENCE_DATE }).handled, false);
-  assert.equal(resolveFinancialQuery({ text: 'Quanto eu tenho?', snapshot, referenceDate: REFERENCE_DATE }).handled, false);
+  for (const text of ['Qual meu saldo?', 'Quanto eu tenho?']) {
+    const outcome = resolveFinancialQuery({ text, snapshot, referenceDate: REFERENCE_DATE });
+    assert.equal(outcome.handled, true);
+    assert.match(outcome.response.text, /Entradas e Saídas/);
+    assert.doesNotMatch(outcome.response.text, /saldo|resultado/i);
+  }
 
   const result = executeCapability('total_balance', snapshot);
   assert.equal(result.ok, true);
@@ -268,11 +265,12 @@ test('Matriz [período]: comparação com o mês passado é suportada pelo motor
 });
 
 // ── 6. Contas ─────────────────────────────────────────────────────────
-test('Matriz [conta]: valores por conta nomeada vêm exclusivamente do snapshot real', () => {
+test('Matriz [conta]: consulta antiga por conta não expõe balance e usa o resumo público', () => {
   const snapshot = buildSnapshot();
   const outcome = resolveFinancialQuery({ text: 'Quanto tenho no Nubank?', snapshot, referenceDate: REFERENCE_DATE });
   assert.equal(outcome.handled, true);
-  assert.match(outcome.response.text, /480,50|480\.50/);
+  assert.match(outcome.response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(outcome.response.text, /480,50|saldo|resultado/i);
 });
 
 // ── 7. Categorias ─────────────────────────────────────────────────────

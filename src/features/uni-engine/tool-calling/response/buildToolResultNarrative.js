@@ -33,11 +33,8 @@ function joinLines(lines, conversationStyle) {
 function buildSummaryText(data, conversationStyle) {
   if (!data || typeof data !== 'object') return null;
   const lines = [
-    `No período de ${data.period ?? 'referência'}, o resultado foi de ${fmtCurrency(data.result)} (entradas de ${fmtCurrency(data.income)} e saídas de ${fmtCurrency(data.expenses)}).`,
+    `Em ${data.period ?? 'referência'}: ${data.incomeCount ?? 0} entrada(s) — ${fmtCurrency(data.income)}. ${data.expenseCount ?? 0} saída(s) — ${fmtCurrency(data.expenses)}.`,
   ];
-  if (data.balance !== null && data.balance !== undefined) {
-    lines.push(`Seu saldo atual é de ${fmtCurrency(data.balance)}.`);
-  }
   return joinLines(lines, conversationStyle);
 }
 
@@ -77,12 +74,9 @@ function buildGoalsText(data, conversationStyle) {
 function buildAccountsText(data, conversationStyle) {
   if (!data || typeof data !== 'object') return null;
   const lines = [];
-  if (data.totalBalance !== null && data.totalBalance !== undefined) {
-    lines.push(`O saldo total das suas contas é de ${fmtCurrency(data.totalBalance)}.`);
-  } else {
+  if (!Array.isArray(data.accounts) || data.accounts.length === 0) {
     lines.push('Você ainda não tem contas cadastradas.');
-  }
-  if (Array.isArray(data.accounts) && data.accounts.length > 0) {
+  } else {
     lines.push(`São ${data.counts?.accounts ?? data.accounts.length} conta(s).`);
   }
   return joinLines(lines, conversationStyle);
