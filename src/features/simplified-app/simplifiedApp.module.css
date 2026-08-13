@@ -641,8 +641,8 @@
 
 .uniButton {
   position: relative;
-  /* ~4-5% menor que os 232-360px anteriores. */
-  width: clamp(222px, 61vw, 344px);
+  /* Esfera levemente menor; a área continua ampla para hold em mobile. */
+  width: clamp(218px, 58vw, 300px);
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
@@ -728,11 +728,8 @@
   pointer-events: none;
 }
 
-/* BUG 3: anel reativo à intensidade real da voz (--voice-level, 0 a 1,
-   definido via inline style a partir do AnalyserNode) -- pulsa mais forte
-   quando a fala está mais alta, quase parado em silêncio. Some fora do
-   estado "listening"; nos estados de processamento usa uma animação
-   contínua própria, não baseada em áudio. */
+/* O anel antigo permanece apenas como glow discreto. O feedback principal
+   de escuta agora é a waveform radial abaixo. */
 .uniVoiceLevelRing {
   position: absolute;
   inset: -6%;
@@ -745,9 +742,9 @@
 }
 
 .uniButton[data-state="listening"] .uniVoiceLevelRing {
-  opacity: calc(.22 + var(--voice-level, 0) * .68);
-  transform: scale(calc(1 + var(--voice-level, 0) * .22));
-  box-shadow: 0 0 calc(16px + var(--voice-level, 0) * 42px) rgba(34, 211, 238, calc(.22 + var(--voice-level, 0) * .48));
+  opacity: calc(.1 + var(--voice-level, 0) * .12);
+  transform: scale(1.015);
+  box-shadow: 0 0 calc(8px + var(--voice-level, 0) * 12px) rgba(34, 211, 238, .24);
 }
 
 .uniButton[data-state="transcribing"] .uniVoiceLevelRing,
@@ -756,6 +753,59 @@
   opacity: .32;
   border-color: rgba(139, 92, 246, .55);
   animation: simplifiedSpin 1.8s linear infinite;
+}
+
+.radialVoiceWaveform {
+  position: absolute;
+  z-index: 0;
+  inset: -2px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.uniButton[data-state="listening"] .radialVoiceWaveform {
+  opacity: 1;
+}
+
+.radialVoiceBar {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: rotate(var(--bar-angle));
+}
+
+.radialVoiceBar::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: calc(
+    3px
+    + var(--bar-factor) * 2px
+    + var(--radial-voice-level, 0) * var(--bar-factor) * 30px
+  );
+  border-radius: 999px;
+  background: var(--uf-app-primary);
+  box-shadow: 0 0 7px rgba(37, 99, 235, .7);
+  content: "";
+  opacity: calc(.5 + var(--bar-factor) * .42);
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
+  transition: height 70ms ease-out;
+  animation: radialVoiceDrift var(--bar-duration) ease-in-out var(--bar-delay) infinite alternate;
+}
+
+.radialVoiceBar[data-tone="1"]::before {
+  background: var(--uf-app-focus);
+  box-shadow: 0 0 7px rgba(34, 211, 238, .68);
+}
+
+.radialVoiceBar[data-tone="2"]::before {
+  background: var(--uf-app-ai);
+  box-shadow: 0 0 7px rgba(139, 92, 246, .68);
 }
 
 .uniMark {
@@ -778,10 +828,9 @@
 
 .uniButton[data-state="listening"] {
   box-shadow:
-    0 24px 64px rgba(37, 99, 235, .42),
-    0 0 38px rgba(34, 211, 238, .32),
+    0 22px 54px rgba(37, 99, 235, .3),
+    0 0 22px rgba(34, 211, 238, .2),
     inset 0 0 55px var(--uf-app-ai-subtle);
-  animation: simplifiedListening 1.4s ease-in-out infinite;
 }
 
 .uniButton[data-state="transcribing"] .uniButtonRing,
@@ -889,9 +938,9 @@
   line-height: 1.5;
 }
 
-@keyframes simplifiedListening {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.018); }
+@keyframes radialVoiceDrift {
+  from { transform: translate(-50%, -100%) scaleY(.92); }
+  to { transform: translate(-50%, -100%) scaleY(1.04); }
 }
 
 @keyframes simplifiedSpin {
@@ -995,7 +1044,7 @@
   }
 
   .uniButton {
-    width: 214px;
+    width: 210px;
   }
 
   .uniButtonLabel {
@@ -1026,7 +1075,9 @@
   .navigationItem,
   .uniButton,
   .voiceActivationButton,
-  .uniVoiceLevelRing {
+  .uniVoiceLevelRing,
+  .radialVoiceWaveform,
+  .radialVoiceBar::before {
     transition: none;
   }
 
@@ -1036,7 +1087,8 @@
 
   .uniButton,
   .uniButtonRing,
-  .uniVoiceLevelRing {
+  .uniVoiceLevelRing,
+  .radialVoiceBar::before {
     animation: none !important;
   }
 
@@ -1053,5 +1105,9 @@
     opacity: .3;
     transform: none;
     box-shadow: none;
+  }
+
+  .uniButton[data-state="listening"] .radialVoiceWaveform {
+    opacity: .72;
   }
 }
