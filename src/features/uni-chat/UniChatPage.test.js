@@ -637,11 +637,15 @@ test('resposta de conta pendente usa o workspace atual e não repete indefinidam
   assert.doesNotMatch(block, /Em qual conta você fez esse pagamento/);
 });
 
-test('resumo de confirmação mostra o espaço PF/PJ e nunca aceita texto livre como execução', async () => {
+test('card de confirmação de lançamento nunca mostra o campo Espaço, e nunca aceita texto livre como execução', async () => {
   const adapter = await source('uniChatAdapter.js');
   const page = await source('UniChatPage.jsx');
-  assert.match(adapter, /label: 'Espaço'/);
-  assert.match(adapter, /workspaceType === 'business' \? 'Empresa' : 'Pessoal'/);
+  // A pedido do usuário: o card (Tipo/Categoria/Descrição/Valor/Data) não
+  // mostra mais qual espaço (Pessoal/Empresa) recebe o lançamento -- o
+  // workspace ativo já está visível no resto da UI, e o campo aqui era
+  // redundante.
+  assert.doesNotMatch(adapter, /label: 'Espaço'/);
+  assert.match(page, /buildConfirmationFromAction\(result\.action\)/);
   assert.match(page, /replyType === 'confirm'/);
   assert.match(page, /resolvedInput\.kind !== 'correction'/);
 });

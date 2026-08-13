@@ -49,7 +49,7 @@ function formatSignedCurrency(amount) {
   return `${amount < 0 ? '-' : '+'}${value}`;
 }
 
-export function buildConfirmationFromAction(action, workspaceType = 'personal') {
+export function buildConfirmationFromAction(action) {
   if (!action) return null;
 
   const rows = [];
@@ -96,11 +96,6 @@ export function buildConfirmationFromAction(action, workspaceType = 'personal') 
   if (action.date) {
     rows.push({ key: 'date', label: 'Data', value: formatDate(action.date) });
   }
-  rows.push({
-    key: 'workspace',
-    label: 'Espaço',
-    value: workspaceType === 'business' ? 'Empresa' : 'Pessoal',
-  });
 
   return {
     title: isBalanceAdjustment

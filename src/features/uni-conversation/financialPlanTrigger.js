@@ -40,10 +40,24 @@ const INSTALLMENT_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]/i;
 const RECURRING_RE = /\btodo\s+m[eê]s\b|\brecorrente\b|\bmensalmente\b|\btodo\s+dia\b|\btoda\s+semana\b/i;
 const TRANSFER_RE = /\btransfer[iêeê]|\btransferência\b/i;
 // Conjunções que tipicamente encadeiam duas cláusulas financeiras distintas
-// na mesma frase -- "e", "também", "depois", "aí", "além disso", "mas",
+// na mesma frase -- "e", "também", "depois", "além disso", "mas",
 // "enquanto". Cada pedaço vira uma cláusula candidata; nunca decide sozinho
 // (uma cláusula sem nenhum sinal financeiro não conta).
-const CLAUSE_SPLIT_RE = /\s+(?:e|tamb[eé]m|depois|a[íi]|al[eé]m disso|mas|enquanto)\s+/i;
+// BUG REAL EM PRODUÇÃO (card de confirmação sumia): "aí" chegou a fazer
+// parte desta lista, mas em português coloquial "aí" é quase sempre uma
+// muleta de discurso ("registra pra mim aí duzentos reais de gasolina"),
+// nunca uma conjunção que encadeia duas operações -- ao contrário de "e"/
+// "também"/"mas", nenhum "BUG REAL" documentado motivou sua inclusão
+// original. Com "aí" no split, essa frase virava DUAS cláusulas
+// ("registra pra mim" + "duzentos reais de gasolina"), cada uma com sinal
+// financeiro próprio (verbo / valor) -- looksLikeComplexFinancialText
+// classificava a frase como multioperação, o parser de uma única operação
+// (que já reconhece "registra") nunca chegava a rodar, e a mensagem ia
+// inteira para a camada neural (financial_plan), que só responde em texto
+// -- nunca monta o card estruturado (ver comentário no topo do arquivo:
+// a camada neural existe só para multioperação/ambiguidade real). Removida
+// -- "aí" nunca decide sozinho um split real de qualquer forma.
+const CLAUSE_SPLIT_RE = /\s+(?:e|tamb[eé]m|depois|al[eé]m disso|mas|enquanto)\s+/i;
 // Sinal de que uma conta/instituição foi mencionada na cláusula, mesmo sem
 // verbo financeiro próprio (ex.: "e a gasolina eu paguei pelo Banco do
 // Brasil" -- "pelo" já é sinal suficiente de conta associada a essa cláusula).

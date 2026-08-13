@@ -291,3 +291,66 @@ test('actionKind é null quando a ação não informa transactionType', () => {
   const card = buildConfirmationFromAction({ typeLabel: 'Movimentação', account: { name: 'Nubank' } });
   assert.equal(card.actionKind, null);
 });
+
+// ============================================================================
+// A pedido do usuário: o card de confirmação de lançamento não mostra mais
+// qual espaço (Pessoal/Empresa) recebe o lançamento -- campo redundante com
+// o resto da UI. buildConfirmationFromAction() não recebe mais workspaceType.
+// ============================================================================
+
+test('card de despesa nunca tem a linha Espaço/workspace', () => {
+  const card = buildConfirmationFromAction({
+    typeLabel: 'Despesa',
+    transactionType: 'expense',
+    category: { name: 'Alimentação' },
+    description: 'Mercado',
+    amount: 200,
+    date: '2026-08-12',
+  });
+  assert.equal(card.rows.some((row) => row.key === 'workspace' || row.label === 'Espaço'), false);
+});
+
+test('card de receita nunca tem a linha Espaço/workspace', () => {
+  const card = buildConfirmationFromAction({
+    typeLabel: 'Receita',
+    transactionType: 'income',
+    category: { name: 'Salário' },
+    description: 'Cliente',
+    amount: 2000,
+    date: '2026-08-12',
+  });
+  assert.equal(card.rows.some((row) => row.key === 'workspace' || row.label === 'Espaço'), false);
+});
+
+test('card de transferência e de ajuste de saldo também nunca têm a linha Espaço/workspace', () => {
+  const transfer = buildConfirmationFromAction({
+    typeLabel: 'Transferência',
+    transactionType: 'transfer',
+    account: { name: 'Nubank' },
+    destinationAccount: { name: 'Inter' },
+    amount: 100,
+    date: '2026-08-12',
+  });
+  const adjustment = buildConfirmationFromAction({
+    typeLabel: 'Ajuste',
+    transactionType: 'adjustment',
+    balanceTarget: 1200,
+    balanceDelta: 200,
+    currentBalance: 1000,
+    account: { name: 'Nubank' },
+  });
+  assert.equal(transfer.rows.some((row) => row.key === 'workspace'), false);
+  assert.equal(adjustment.rows.some((row) => row.key === 'workspace'), false);
+});
+
+test('card de despesa/receita segue mostrando exatamente Tipo, Categoria, Descrição, Valor, Data -- nessa ordem, sem Espaço', () => {
+  const card = buildConfirmationFromAction({
+    typeLabel: 'Despesa',
+    transactionType: 'expense',
+    category: { name: 'Transporte' },
+    description: 'Gasolina',
+    amount: 200,
+    date: '2026-08-12',
+  });
+  assert.deepEqual(card.rows.map((row) => row.label), ['Tipo', 'Categoria', 'Descrição', 'Valor', 'Data']);
+});
