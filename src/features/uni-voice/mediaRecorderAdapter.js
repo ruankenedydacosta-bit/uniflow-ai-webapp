@@ -36,17 +36,17 @@ function stopTracks(stream) {
 // ou `readyState === 'ended'`); campos ausentes (ex.: runtimes de teste)
 // nunca reprovam -- isso preserva 100% do comportamento anterior sempre
 // que o runtime não expõe esses sinais.
-function getPrimaryAudioTrack(mediaStream) {
-  const tracks = typeof mediaStream?.getAudioTracks === 'function'
+function getAudioTracks(mediaStream) {
+  return typeof mediaStream?.getAudioTracks === 'function'
     ? mediaStream.getAudioTracks()
     : (mediaStream?.getTracks?.() ?? []);
-  return tracks[0] ?? null;
 }
 
 function isStreamUsable(mediaStream, track) {
   if (!track) return false;
   if (mediaStream?.active === false) return false;
   if (track.readyState === 'ended') return false;
+  if (track.enabled === false) return false;
   return true;
 }
 
@@ -204,8 +204,12 @@ export function createMediaRecorderAdapter({
         return false;
       }
 
-      recordVoicePipelineDiagnostic('MIC_STREAM_RECEIVED', { streamActive: Boolean(nextStream?.active) });
-      const nextTrack = getPrimaryAudioTrack(nextStream);
+      const audioTracks = getAudioTracks(nextStream);
+      recordVoicePipelineDiagnostic('MIC_STREAM_RECEIVED', {
+        streamActive: Boolean(nextStream?.active),
+        audioTrackCount: audioTracks.length,
+      });
+      const nextTrack = audioTracks[0] ?? null;
 
       // HOTFIX CRÍTICO 2: getUserMedia pode resolver "com sucesso" e ainda
       // assim entregar um stream/track já morto -- ver isStreamUsable().
@@ -216,6 +220,7 @@ export function createMediaRecorderAdapter({
         recordVoicePipelineDiagnostic('TRACK_ENDED', {
           streamActive: Boolean(nextStream?.active),
           trackReadyState: nextTrack?.readyState ?? 'absent',
+          trackEnabled: nextTrack?.enabled,
         });
         stopTracks(nextStream);
         fail('no_audio_track');
@@ -224,6 +229,7 @@ export function createMediaRecorderAdapter({
 
       recordVoicePipelineDiagnostic('MIC_AUDIO_TRACK_LIVE', {
         trackReadyState: nextTrack.readyState,
+        trackEnabled: nextTrack.enabled,
         trackMuted: Boolean(nextTrack.muted),
       });
 
@@ -256,7 +262,10 @@ export function createMediaRecorderAdapter({
       };
       recorder.onstart = () => {
         startedAt = Date.now();
-        recordVoicePipelineDiagnostic('RECORDER_STARTED', { mimeType: recorder?.mimeType || mimeType || '' });
+        recordVoicePipelineDiagnostic('RECORDER_STARTED', {
+          mimeType: recorder?.mimeType || mimeType || '',
+          recorderState: recorder?.state ?? null,
+        });
         onStart?.();
         limitTimer = runtime.setTimeout?.(() => {
           canceled = true;

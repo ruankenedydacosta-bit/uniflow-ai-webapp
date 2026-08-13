@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
 import {
   isAppleWebKitRuntime,
+  recordVoicePipelineDiagnostic,
   VOICE_CAPTURE_STATES,
   useSharedUniVoiceInput,
   useStableVoiceInputHandlers,
@@ -726,7 +727,10 @@ function SimplifiedHomeView({
   const handleWindowVoicePointerEndRef = useRef((event) => {
     const gesture = gestureRef.current;
     if (!gesture || event.pointerId !== gesture.pointerId) return;
-    finishVoiceInteractionRef.current?.('window-safety-net');
+    const reason = event.type === 'pointerup'
+      ? 'released'
+      : event.type === 'pointercancel' ? 'pointercancel' : 'window-safety-net';
+    finishVoiceInteractionRef.current?.(reason);
   });
 
   // HOTFIX CRÍTICO: havia também um timeout de watchdog POR GESTO (10s)
@@ -868,7 +872,6 @@ function SimplifiedHomeView({
     if (import.meta.env.DEV) {
       console.debug(`[voice] ${VOICE_FINISH_REASON_CODES[reason] ?? reason}`);
     }
-
     detachVoiceGestureSafetyNet();
     const { pointerId, captureStarted } = gesture;
     gestureRef.current = null;
@@ -892,6 +895,10 @@ function SimplifiedHomeView({
     } else {
       voiceInput.cancel();
     }
+    recordVoicePipelineDiagnostic(
+      reason === 'released' ? 'CAPTURE_RELEASED' : 'CAPTURE_CANCELLED',
+      { finishReason: reason },
+    );
     if (import.meta.env.DEV) console.debug('[voice] voice_cleanup_complete');
   }
 

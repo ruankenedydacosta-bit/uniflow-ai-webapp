@@ -103,11 +103,13 @@ export function useVoiceIntensity({ getStream, active, runtime } = {}) {
 
     let disposed = false;
     const audioContext = new AudioContextClass();
+    recordVoicePipelineDiagnostic('AUDIO_CONTEXT_CREATED', { audioContextState: audioContext.state });
     const analyser = audioContext.createAnalyser();
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.6;
     const source = audioContext.createMediaStreamSource(stream);
     source.connect(analyser);
+    recordVoicePipelineDiagnostic('ANALYSER_CONNECTED', { audioContextState: audioContext.state });
 
     audioContextRef.current = audioContext;
     analyserRef.current = analyser;
@@ -141,7 +143,9 @@ export function useVoiceIntensity({ getStream, active, runtime } = {}) {
       rafRef.current = requestFrame(tick);
     };
     const startAnalysis = () => {
-      if (!disposed) rafRef.current = requestFrame(tick);
+      if (disposed) return;
+      recordVoicePipelineDiagnostic('AUDIO_CONTEXT_STATE', { audioContextState: audioContext.state });
+      rafRef.current = requestFrame(tick);
     };
     const resumeResult = audioContext.state === 'suspended'
       ? audioContext.resume?.()

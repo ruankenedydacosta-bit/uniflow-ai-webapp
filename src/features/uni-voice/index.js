@@ -32,3 +32,4 @@ export {
 } from './voiceCaptureReducer.js';
 export { getVoiceInputMessage } from './voiceInputMessages.js';
 export { useVoiceIntensity } from './useVoiceIntensity.js';
+export { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';

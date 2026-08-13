@@ -11,6 +11,7 @@ import {
 import { sanitizeVoiceTranscript } from './speechRecognitionAdapter.js';
 import { recordVoiceTranscriptionTelemetry } from './voiceTranscriptionTelemetry.js';
 import { telemetry } from '../observability/index.js';
+import { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';
 
 export const UNI_VOICE_TRANSCRIBE_FUNCTION = 'uni-voice-transcribe';
 export const UNI_VOICE_TRANSCRIPTION_TIMEOUT_MS = 20_000;
@@ -86,6 +87,7 @@ export function createUniVoiceTranscriptionProvider({
         body: formData,
         signal: controller.signal,
       });
+      recordVoicePipelineDiagnostic('STT_HTTP_RESPONSE', { httpStatus: response.status });
 
       if (!response.ok) {
         // HOTFIX P0.5: a Edge Function responde 422 ("Fala nao identificada")

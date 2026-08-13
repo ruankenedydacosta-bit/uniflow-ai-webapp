@@ -93,7 +93,9 @@ test('nunca inclui conteúdo de áudio/texto -- só os campos técnicos da allow
     { env: { DEV: true }, logger: () => {} },
   );
   assert.deepEqual(Object.keys(event.detail), [
-    'blobSizeBytes', 'mimeType', 'durationMs', 'trackReadyState', 'trackMuted', 'streamActive', 'transcriptLength',
+    'blobSizeBytes', 'mimeType', 'durationMs', 'trackReadyState', 'trackEnabled', 'trackMuted',
+    'audioTrackCount', 'streamActive', 'audioContextState', 'recorderState', 'httpStatus',
+    'transcriptLength', 'finishReason', 'messageDelivered',
   ]);
   assert.equal(event.detail.transcriptLength, 42);
 });
@@ -108,18 +110,43 @@ test('campos ausentes/inválidos nunca lançam -- viram null em vez de NaN/undef
   assert.equal(event.detail.mimeType, null);
   assert.equal(event.detail.durationMs, null);
   assert.equal(event.detail.trackReadyState, null);
+  assert.equal(event.detail.trackEnabled, null);
   assert.equal(event.detail.trackMuted, null);
+  assert.equal(event.detail.audioTrackCount, null);
   assert.equal(event.detail.streamActive, null);
+  assert.equal(event.detail.audioContextState, null);
+  assert.equal(event.detail.recorderState, null);
+  assert.equal(event.detail.httpStatus, null);
   assert.equal(event.detail.transcriptLength, null);
+  assert.equal(event.detail.finishReason, null);
+  assert.equal(event.detail.messageDelivered, null);
 });
 
-test('booleans válidos (streamActive/trackMuted) são preservados', () => {
+test('metadados técnicos do stream, track, AudioContext, recorder e HTTP são preservados', () => {
   const event = recordVoicePipelineDiagnostic(
     'MIC_AUDIO_TRACK_LIVE',
-    { streamActive: true, trackMuted: false, trackReadyState: 'live' },
+    {
+      streamActive: true,
+      audioTrackCount: 1,
+      trackEnabled: true,
+      trackMuted: false,
+      trackReadyState: 'live',
+      audioContextState: 'running',
+      recorderState: 'recording',
+      httpStatus: 200,
+      finishReason: 'released',
+      messageDelivered: true,
+    },
     { env: { DEV: true }, logger: () => {} },
   );
   assert.equal(event.detail.streamActive, true);
+  assert.equal(event.detail.audioTrackCount, 1);
+  assert.equal(event.detail.trackEnabled, true);
   assert.equal(event.detail.trackMuted, false);
   assert.equal(event.detail.trackReadyState, 'live');
+  assert.equal(event.detail.audioContextState, 'running');
+  assert.equal(event.detail.recorderState, 'recording');
+  assert.equal(event.detail.httpStatus, 200);
+  assert.equal(event.detail.finishReason, 'released');
+  assert.equal(event.detail.messageDelivered, true);
 });
