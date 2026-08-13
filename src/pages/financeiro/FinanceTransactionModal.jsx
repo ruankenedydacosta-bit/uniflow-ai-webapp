@@ -82,7 +82,7 @@ function todayIso() {
 // existentes".
 const HISTORY_TYPE_LABELS = {
   income: 'Entrada',
-  expense: 'Despesa',
+  expense: 'Saída',
   transfer: 'Transferência',
   adjustment: 'Ajuste',
 };
@@ -348,7 +348,7 @@ function FinanceTransactionModal({
       closeOnOverlayClick={!transactionState.isMutating}
       closeOnEsc={!transactionState.isMutating}
       title="Lançamentos"
-      description="Registre entradas, despesas, transferências e ajustes deste espaço."
+      description="Registre entradas, saídas, transferências e ajustes deste espaço."
       size="xl"
       className={cx(styles.transactionDialog, className)}
       overlayClassName={overlayClassName}
@@ -380,7 +380,7 @@ function FinanceTransactionModal({
             }
           >
             <option value="income">Entrada</option>
-            <option value="expense">Despesa</option>
+            <option value="expense">Saída</option>
             {/* CONTA-ZERO: transferência exige 2 contas por definição --
                 não faz sentido no fluxo pessoal simplificado, que não tem
                 nenhuma UI de conta. */}
@@ -724,7 +724,7 @@ function FinanceTransactionModal({
               >
                 <option value="all">Todos</option>
                 <option value="income">Entradas</option>
-                <option value="expense">Despesas</option>
+                <option value="expense">Saídas</option>
                 <option value="transfer">Transferências</option>
                 <option value="adjustment">Ajustes</option>
               </SelectField>

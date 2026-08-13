@@ -13,7 +13,7 @@ export const PERSONAL_PLAN_BENEFITS = Object.freeze([
   Object.freeze({
     id: 'voice',
     title: 'Registrar por voz',
-    description: 'Fale com a Uni e registre gastos e receitas.',
+    description: 'Fale com a Uni e registre saídas e entradas.',
   }),
   Object.freeze({
     id: 'categories',
@@ -53,4 +53,3 @@ export const PERSONAL_PLAN_TRUST_SEALS = Object.freeze([
   Object.freeze({ id: 'support', label: 'Suporte humano' }),
   Object.freeze({ id: 'simple', label: 'Feito para facilitar sua vida' }),
 ]);
-

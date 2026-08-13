@@ -39,7 +39,7 @@ function buildPrimarySummary({ balance, financialPeriod, goals, projections, wor
     message = balance < 0
       ? 'O saldo derivado está abaixo de zero. Uma revisão dos lançamentos pode ajudar a entender o período.'
       : expense > income && expense > 0
-        ? 'As despesas confirmadas estão acima das receitas confirmadas neste período.'
+        ? 'As saídas confirmadas estão acima das entradas confirmadas neste período.'
         : 'Os dados confirmados permitem acompanhar saldo, movimentações e metas sem estimar valores ausentes.';
   }
 

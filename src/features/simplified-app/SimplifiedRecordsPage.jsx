@@ -131,8 +131,8 @@ function MonthSelector({ month, onChange }) {
 // só muda o `target` repassado por onCardClick.
 function MonthlySummary({ onCardClick, summary }) {
   const cards = [
-    { id: 'income', label: 'Receitas', value: summary.income, Icon: ArrowDownIcon, action: 'atualizar a receita' },
-    { id: 'expense', label: 'Despesas', value: summary.expense, Icon: ArrowUpIcon, action: 'atualizar a despesa' },
+    { id: 'income', label: 'Entradas', value: summary.income, Icon: ArrowDownIcon, action: 'atualizar as entradas' },
+    { id: 'expense', label: 'Saídas', value: summary.expense, Icon: ArrowUpIcon, action: 'atualizar as saídas' },
     { id: 'balance', label: 'Saldo', value: summary.balance, Icon: WalletIcon, action: 'atualizar o saldo' },
   ];
 
@@ -206,7 +206,7 @@ function NewRecordAction({ disabled, onClick }) {
       <span className={styles.newRecordIcon} aria-hidden="true">+</span>
       <span>
         <strong>Novo registro</strong>
-        <small>Adicionar receita ou despesa</small>
+        <small>Adicionar entrada ou saída</small>
       </span>
       <b aria-hidden="true">›</b>
     </button>
@@ -238,8 +238,8 @@ function HistoryFilters({
         <span>Tipo</span>
         <select value={filters.type} onChange={(event) => onChange('type', event.target.value)}>
           <option value="all">Todas</option>
-          <option value="income">Receitas</option>
-          <option value="expense">Despesas</option>
+          <option value="income">Entradas</option>
+          <option value="expense">Saídas</option>
           <option value="transfer">Transferências</option>
         </select>
       </label>

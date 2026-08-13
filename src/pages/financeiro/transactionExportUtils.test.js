@@ -93,7 +93,7 @@ test('transactionToCsvRow nao neutraliza data, tipo, valor formatado, parcela ou
   });
 
   assert.equal(row[0], '2026-07-21');
-  assert.equal(row[1], 'Despesa');
+  assert.equal(row[1], 'Saída');
   assert.equal(row[6], '10.00');
   assert.equal(row[8], '1/3');
   assert.equal(row[9], 'Sim');
@@ -113,7 +113,7 @@ test('vírgulas e aspas em valores neutralizados continuam corretamente escapada
     { accountsById: new Map([['acc-1', { id: 'acc-1', name: 'Carteira' }]]) },
   );
   const lines = csv.split('\r\n');
-  assert.equal(lines[1], '2026-07-21,Despesa,"\'=SOMA(A1,""x"")",Carteira,,,10.00,,,Não,');
+  assert.equal(lines[1], '2026-07-21,Saída,"\'=SOMA(A1,""x"")",Carteira,,,10.00,,,Não,');
 });
 
 test('BOM UTF-8 continua presente na exportacao apos a protecao de CSV injection', () => {
@@ -160,7 +160,7 @@ test('transactionToCsvRow resolve nomes de categoria/conta e formata tipo/valor'
   );
   assert.deepEqual(row, [
     '2026-07-21',
-    'Despesa',
+    'Saída',
     'Mercado',
     'Carteira',
     '',

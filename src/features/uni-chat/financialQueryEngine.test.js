@@ -341,24 +341,24 @@ test('saldo sem conta específica lista as contas e pergunta qual consultar', ()
   assert.match(result.response.text, /Qual conta você quer consultar/);
 });
 
-test('última despesa responde com descrição, valor, conta e data reais', () => {
+test('última saída responde com descrição, valor, conta e data reais', () => {
   const result = resolveFinancialQuery({
     text: 'qual foi minha última despesa?',
     snapshot: buildSnapshot(),
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /Sua última despesa foi Ifood/);
+  assert.match(result.response.text, /Sua última saída foi Ifood/);
   assert.match(result.response.text, /R\$\s*33,33/);
   assert.match(result.response.text, /na conta Nubank/);
   assert.match(result.response.text, /16\/07\/2026/);
 });
 
-test('última receita e última movimentação seguem o mesmo padrão com dados reais', () => {
+test('última entrada e última movimentação seguem o mesmo padrão com dados reais', () => {
   const income = resolveFinancialQuery({
     text: 'qual foi minha última receita?',
     snapshot: buildSnapshot(),
   });
-  assert.match(income.response.text, /Sua última receita foi Salário/);
+  assert.match(income.response.text, /Sua última entrada foi Salário/);
   assert.match(income.response.text, /R\$\s*3\.000,00/);
 
   const last = resolveFinancialQuery({
@@ -372,10 +372,10 @@ test('última receita e última movimentação seguem o mesmo padrão com dados 
 test('sem movimentações, respostas usam frases fixas de ausência', () => {
   const empty = buildSnapshot({ transactions: [] });
   const expense = resolveFinancialQuery({ text: 'qual foi minha última despesa?', snapshot: empty });
-  assert.match(expense.response.text, /Você ainda não tem despesas registradas/);
+  assert.match(expense.response.text, /Você ainda não tem saídas registradas/);
 
   const income = resolveFinancialQuery({ text: 'qual foi minha última receita?', snapshot: empty });
-  assert.match(income.response.text, /Você ainda não tem receitas registradas/);
+  assert.match(income.response.text, /Você ainda não tem entradas registradas/);
 
   const last = resolveFinancialQuery({ text: 'qual foi a última movimentação?', snapshot: empty });
   assert.match(last.response.text, /Você ainda não tem movimentações registradas/);
@@ -408,7 +408,7 @@ test('valores ambíguos geram pergunta com opções e nunca escolhem sozinhos', 
     snapshot: buildSnapshot(),
   });
   assert.equal(result.handled, true);
-  assert.match(result.response.text, /Encontrei 2 gastos de R\$\s*50,00/);
+  assert.match(result.response.text, /Encontrei 2 saídas de R\$\s*50,00/);
   assert.match(result.response.text, /Nubank — Açougue/);
   assert.match(result.response.text, /Itaú — Farmácia/);
   assert.match(result.response.text, /Qual deles você quis dizer/);

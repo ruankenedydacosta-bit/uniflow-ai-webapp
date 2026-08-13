@@ -20,7 +20,7 @@ const EXPLANATION_ITEMS = [
   },
   {
     title: 'A UniFlow organiza',
-    description: 'Contas, receitas, despesas e cartões ficam reunidos em um só lugar.',
+    description: 'Contas, entradas, saídas e cartões ficam reunidos em um só lugar.',
   },
   {
     title: 'A Uni ajuda você',

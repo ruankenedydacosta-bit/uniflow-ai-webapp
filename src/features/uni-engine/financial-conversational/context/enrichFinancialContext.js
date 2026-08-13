@@ -217,9 +217,9 @@ export function getContextualMetrics(enrichedContext, intentType) {
     case 'balance_query':
       return { ...base, focus: 'totalBalance', label: 'Saldo total' };
     case 'income_query':
-      return { ...base, focus: 'monthlyIncome', label: 'Receita do período' };
+      return { ...base, focus: 'monthlyIncome', label: 'Entrada do período' };
     case 'expense_query':
-      return { ...base, focus: 'monthlyExpense', label: 'Despesa do período' };
+      return { ...base, focus: 'monthlyExpense', label: 'Saída do período' };
     case 'cash_flow_query':
       return { ...base, focus: 'monthlyResult', label: 'Fluxo de caixa' };
     case 'savings_rate_query':

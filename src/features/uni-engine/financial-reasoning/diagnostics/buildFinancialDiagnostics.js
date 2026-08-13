@@ -95,11 +95,11 @@ export function buildFinancialDiagnostics(snapshot) {
       priority: ratio < 0.6 ? 'high' : 'medium',
       confidence: 0.7,
       evidences: [
-        evidence('income_current', 'Receita do mês', monthlyIncome),
-        evidence('income_previous', 'Receita anterior', previousIncome),
-        evidence('decline_ratio', 'Relação receitas', ratio),
+        evidence('income_current', 'Entrada do mês', monthlyIncome),
+        evidence('income_previous', 'Entrada anterior', previousIncome),
+        evidence('decline_ratio', 'Relação entre entradas', ratio),
       ],
-      explanation: 'A receita do mês corrente é inferior a 80% da receita do mês anterior.',
+      explanation: 'A entrada do mês corrente é inferior a 80% da entrada do mês anterior.',
     }));
   }
 
@@ -112,11 +112,11 @@ export function buildFinancialDiagnostics(snapshot) {
       priority: ratio > 1.5 ? 'high' : 'medium',
       confidence: 0.65,
       evidences: [
-        evidence('expense_current', 'Despesa do mês', monthlyExpense),
-        evidence('expense_average', 'Despesa média', avgExpense),
-        evidence('growth_ratio', 'Relação despesas', ratio),
+        evidence('expense_current', 'Saída do mês', monthlyExpense),
+        evidence('expense_average', 'Saída média', avgExpense),
+        evidence('growth_ratio', 'Relação entre saídas', ratio),
       ],
-      explanation: 'A despesa do mês corrente supera em mais de 20% a média da janela observada.',
+      explanation: 'A saída do mês corrente supera em mais de 20% a média da janela observada.',
     }));
   }
 
@@ -146,11 +146,11 @@ export function buildFinancialDiagnostics(snapshot) {
         priority: 'medium',
         confidence: 0.6,
         evidences: [
-          evidence('largest_expense', 'Maior despesa', largestExpense),
-          evidence('income_current', 'Receita do mês', monthlyIncome),
-          evidence('proportion', 'Proporção da receita', largestExpense / monthlyIncome),
+          evidence('largest_expense', 'Maior saída', largestExpense),
+          evidence('income_current', 'Entrada do mês', monthlyIncome),
+          evidence('proportion', 'Proporção da entrada', largestExpense / monthlyIncome),
         ],
-        explanation: 'Há despesa individual com valor superior à metade da receita do mês.',
+        explanation: 'Há uma saída individual com valor superior à metade da entrada do mês.',
       }));
     }
   }
@@ -164,9 +164,9 @@ export function buildFinancialDiagnostics(snapshot) {
       confidence: 0.8,
       evidences: [
         evidence('liquid_balance', 'Caixa líquido', liquidBalance),
-        evidence('expense_current', 'Despesa do mês', monthlyExpense),
+        evidence('expense_current', 'Saída do mês', monthlyExpense),
       ],
-      explanation: 'O caixa líquido observado é insuficiente para cobrir a despesa do mês corrente.',
+      explanation: 'O caixa líquido observado é insuficiente para cobrir a saída do mês corrente.',
     }));
   }
 
@@ -216,10 +216,10 @@ export function buildFinancialDiagnostics(snapshot) {
       confidence: 0.75,
       evidences: [
         evidence('liquid_balance', 'Caixa líquido', liquidBalance),
-        evidence('expense_average', 'Despesa média', avgExpense),
+        evidence('expense_average', 'Saída média', avgExpense),
         evidence('coverage_months', 'Meses de cobertura', coverage),
       ],
-      explanation: 'O caixa líquido cobre menos de dois meses de despesa média observada.',
+      explanation: 'O caixa líquido cobre menos de dois meses de saída média observada.',
     }));
   }
 
@@ -235,7 +235,7 @@ export function buildFinancialDiagnostics(snapshot) {
         evidence('reserve_target', 'Reserva alvo', reserveTarget),
         evidence('reserve_shortfall', 'Diferença da reserva', reserveShortfall),
       ],
-      explanation: 'A reserva corrente observada está abaixo da meta derivada de despesa média.',
+      explanation: 'A reserva corrente observada está abaixo da meta derivada de saída média.',
     }));
   }
 

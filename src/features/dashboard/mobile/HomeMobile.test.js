@@ -48,7 +48,7 @@ test('briefing e próximo passo possuem fallback útil', async () => {
 
   assert.match(briefing, /Uni Briefing/);
   assert.match(briefing, /Ainda estou conhecendo sua rotina/);
-  assert.match(nextStep, /Que tal registrar sua primeira receita/);
+  assert.match(nextStep, /Que tal registrar sua primeira entrada/);
 });
 
 test('resumo distingue ausência de dado de zero financeiro', async () => {

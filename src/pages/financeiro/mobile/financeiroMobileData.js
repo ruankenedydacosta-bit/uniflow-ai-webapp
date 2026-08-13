@@ -231,7 +231,7 @@ export function buildFinanceiroMobileData({
     balance: CURRENCY_FORMATTER.format(Number(workspaceBalance ?? 0)),
     comparison: comparisonPercent === null
       ? 'Sem base anterior para comparação'
-      : `${comparisonPercent > 0 ? '+' : ''}${comparisonPercent}% em despesas vs. período anterior`,
+      : `${comparisonPercent > 0 ? '+' : ''}${comparisonPercent}% em saídas vs. período anterior`,
     income: CURRENCY_FORMATTER.format(income),
     expense: CURRENCY_FORMATTER.format(expense),
     accounts: buildAccounts(accounts, accountBalances),
@@ -250,7 +250,7 @@ export function buildFinanceiroMobileData({
       },
       comparisonMeta: {
         message: comparisonPercent === null ? 'Ainda não há base anterior para comparação.' : 'Comparação calculada com o período anterior.',
-        detail: 'Valores baseados exclusivamente em despesas confirmadas.',
+        detail: 'Valores baseados exclusivamente em saídas confirmadas.',
         deltaPercent: comparisonPercent ?? 0,
         currentValue: expense,
         previousValue: previousExpense,

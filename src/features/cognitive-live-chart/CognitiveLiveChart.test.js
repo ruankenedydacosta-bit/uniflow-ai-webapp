@@ -60,7 +60,7 @@ test('Home renderiza compact entre próximo passo e resumo', async () => {
   const summary = source.lastIndexOf('<FinancialSummaryStrip');
   assert.ok(nextStep >= 0 && nextStep < chart && chart < summary);
   assert.match(source, /variant="compact"/);
-  assert.match(source, /Receitas e Despesas/);
+  assert.match(source, /Entradas e Saídas/);
 });
 
 test('Financeiro usa somente um Cognitive Live Chart detailed', async () => {
@@ -140,7 +140,7 @@ test('estado vazio: interação de ponteiro/teclado (tooltip) fica desabilitada,
 test('legenda e tooltip aceitam labels PF\\/PJ via seriesLabels sem duplicar o componente', async () => {
   const chart = await featureSource('CognitiveLiveChart.jsx');
   const tooltip = await featureSource('CognitiveChartTooltip.jsx');
-  assert.match(chart, /seriesLabels = \{ receita: 'Receitas', despesa: 'Despesas' \}/);
+  assert.match(chart, /seriesLabels = \{ receita: 'Entradas', despesa: 'Saídas' \}/);
   assert.match(chart, /\{seriesLabels\.receita\} — linha cheia/);
   assert.match(chart, /\{seriesLabels\.despesa\} — linha tracejada/);
   assert.match(tooltip, /seriesLabels\.receita/);

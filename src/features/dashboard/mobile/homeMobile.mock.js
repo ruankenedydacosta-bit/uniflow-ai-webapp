@@ -17,8 +17,8 @@ export const homeMobileMock = deepFreeze({
   },
   summary: [
     { id: 'balance', label: 'Saldo', value: 'R$ 4.230', hasData: true },
-    { id: 'income', label: 'Receita', value: 'R$ 6.500', hasData: true },
-    { id: 'expense', label: 'Despesa', value: 'R$ 2.270', hasData: true },
+    { id: 'income', label: 'Entrada', value: 'R$ 6.500', hasData: true },
+    { id: 'expense', label: 'Saída', value: 'R$ 2.270', hasData: true },
     { id: 'reserve', label: 'Reserva', value: 'R$ 1.800', hasData: true },
   ],
   goals: [
@@ -32,8 +32,8 @@ export const homeMobileMock = deepFreeze({
     { id: 'saving', icon: '✓', label: 'Há espaço para economizar', tone: 'info' },
   ],
   quickActions: [
-    { id: 'expense', icon: '−', label: 'Nova despesa', path: '/financeiro' },
-    { id: 'income', icon: '+', label: 'Nova receita', path: '/financeiro' },
+    { id: 'expense', icon: '−', label: 'Nova saída', path: '/financeiro' },
+    { id: 'income', icon: '+', label: 'Nova entrada', path: '/financeiro' },
     { id: 'uni', icon: 'U', label: 'Falar com a Uni', path: '/uni-ai' },
     { id: 'finance', icon: '↗', label: 'Ver Financeiro', path: '/financeiro' },
   ],

@@ -1,6 +1,6 @@
 const ACTIONS = [
-  ['income', 'Registrar receita', '+'],
-  ['expense', 'Registrar despesa', '−'],
+  ['income', 'Registrar entrada', '+'],
+  ['expense', 'Registrar saída', '−'],
   ['transfer', 'Fazer transferência', '↔'],
 ];
 

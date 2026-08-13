@@ -167,7 +167,7 @@ export function getQuestionTemplate(key) {
 // Templates seguros de ESCLARECIMENTO por chave. Seleção fechada; nunca
 // transforma hipótese em fato nem decide silenciosamente.
 export const CLARIFICATION_TEMPLATES = Object.freeze({
-  balance_vs_income: 'Você quer registrar esse valor como receita ou ajustar o saldo?',
+  balance_vs_income: 'Você quer registrar esse valor como entrada ou ajustar o saldo?',
   ambiguous_account: 'Encontrei mais de uma conta parecida. Qual delas você quer usar?',
   ambiguous_category: 'Qual categoria você quer usar?',
   amount_missing: 'Qual foi o valor?',

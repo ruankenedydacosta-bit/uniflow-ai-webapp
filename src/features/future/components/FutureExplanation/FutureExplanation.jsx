@@ -18,7 +18,7 @@ export default function FutureExplanation({
         <Card variant="outline" padding="md" className={styles.card}>
           <strong className={styles.cardTitle}>Fonte dos dados</strong>
           <p className={styles.cardText}>
-            Usamos seu saldo atual, o histórico de receitas e despesas dos últimos meses e suas metas financeiras ativas.
+            Usamos seu saldo atual, o histórico de entradas e saídas dos últimos meses e suas metas financeiras ativas.
             {hasData ? ` Trabalhamos com dados de ${monthsWithData} ${monthsWithData === 1 ? 'mês' : 'meses'} de histórico.` : ''}
           </p>
         </Card>
@@ -26,8 +26,8 @@ export default function FutureExplanation({
         <Card variant="outline" padding="md" className={styles.card}>
           <strong className={styles.cardTitle}>Cálculo das projeções</strong>
           <p className={styles.cardText}>
-            Para cada cenário, calculamos a média mensal de receitas e despesas. Aplicamos ajustes percentuais
-            pré-definidos (receita {hasData ? formatCurrency(avgIncome) : '—'}, despesas {hasData ? formatCurrency(avgExpense) : '—'}) e projetamos
+            Para cada cenário, calculamos a média mensal de entradas e saídas. Aplicamos ajustes percentuais
+            pré-definidos (entradas {hasData ? formatCurrency(avgIncome) : '—'}, saídas {hasData ? formatCurrency(avgExpense) : '—'}) e projetamos
             o saldo mês a mês até o horizonte escolhido.
           </p>
         </Card>
@@ -36,7 +36,7 @@ export default function FutureExplanation({
           <strong className={styles.cardTitle}>Análise das metas</strong>
           <p className={styles.cardText}>
             Comparamos a contribuição planejada de cada meta com a capacidade mensal disponível.
-            Se o fluxo mensal após as despesas for suficiente para cobrir a contribuição dentro do prazo,
+            Se o fluxo mensal após as saídas for suficiente para cobrir a contribuição dentro do prazo,
             a meta é considerada viável. Caso contrário, calculamos o aporte necessário ou sinalizamos atenção.
           </p>
         </Card>
@@ -44,7 +44,7 @@ export default function FutureExplanation({
         <Card variant="outline" padding="md" className={styles.card}>
           <strong className={styles.cardTitle}>Premissas</strong>
           <ul className={styles.assumptions}>
-            <li>Receitas e despesas futuras seguem a média do período analisado</li>
+            <li>Entradas e saídas futuras seguem a média do período analisado</li>
             <li>Lançamentos marcados como recorrentes ainda não são adicionados automaticamente aos meses futuros</li>
             <li>Não consideramos inflação, juros ou variações sazonais</li>
             <li>A contribuição das metas é descontada do fluxo mensal disponível</li>

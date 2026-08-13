@@ -62,7 +62,7 @@ export default function FutureSimulationPanel({
       <div className={styles.grid}>
         <Input
           id="future-simulation-income-delta"
-          label="Ajuste na receita mensal"
+          label="Ajuste nas entradas mensais"
           type="number"
           step="0.01"
           value={incomeDraft}
@@ -72,14 +72,14 @@ export default function FutureSimulationPanel({
           helperText={
             hasHistory
               ? 'Ex.: +1500 para simular R$ 1.500 a mais por mês'
-              : 'Indisponível sem histórico de receitas e despesas registradas'
+              : 'Indisponível sem histórico de entradas e saídas registradas'
           }
           fullWidth
         />
 
         <Input
           id="future-simulation-expense-delta"
-          label="Ajuste na despesa mensal"
+          label="Ajuste nas saídas mensais"
           type="number"
           step="0.01"
           value={expenseDraft}
@@ -89,7 +89,7 @@ export default function FutureSimulationPanel({
           helperText={
             hasHistory
               ? 'Ex.: -300 para simular R$ 300 a menos por mês'
-              : 'Indisponível sem histórico de receitas e despesas registradas'
+              : 'Indisponível sem histórico de entradas e saídas registradas'
           }
           fullWidth
         />

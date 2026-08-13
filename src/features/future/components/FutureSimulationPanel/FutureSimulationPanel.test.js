@@ -10,8 +10,8 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 test('painel contem exatamente os tres campos de ajuste (sem metas nesta subfase)', async () => {
   const content = await source('FutureSimulationPanel.jsx');
-  assert.match(content, /Ajuste na receita mensal/);
-  assert.match(content, /Ajuste na despesa mensal/);
+  assert.match(content, /Ajuste nas entradas mensais/);
+  assert.match(content, /Ajuste nas saídas mensais/);
   assert.match(content, /Ajuste no saldo inicial/);
   assert.doesNotMatch(content, /meta|Meta|goal/);
 });
@@ -89,10 +89,10 @@ test('botao de saida muda de rotulo conforme o estado (Fechar vs Sair da simula�
 // Ausência de histórico
 // ============================================================================
 
-test('sem historico, campos de receita e despesa ficam desabilitados com motivo explicado em texto', async () => {
+test('sem historico, campos de entrada e saída ficam desabilitados com motivo explicado em texto', async () => {
   const content = await source('FutureSimulationPanel.jsx');
   assert.match(content, /disabled=\{!hasHistory\}/);
-  assert.match(content, /Indisponível sem histórico de receitas e despesas registradas/);
+  assert.match(content, /Indisponível sem histórico de entradas e saídas registradas/);
 });
 
 test('sem historico, o ajuste de saldo inicial continua habilitado', async () => {

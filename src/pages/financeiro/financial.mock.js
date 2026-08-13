@@ -5,7 +5,7 @@ export const financialMock = {
     clarity: {
       status: 'Rota saudável',
       direction: 'Se mantiver o ritmo atual, sua reserva fica completa em cerca de 4 meses.',
-      changed: 'Despesas variáveis subiram nesta semana, principalmente transporte e assinaturas.',
+      changed: 'Saídas variáveis subiram nesta semana, principalmente transporte e assinaturas.',
       attention: 'Assinaturas e pequenos deslocamentos merecem uma revisão calma antes do fechamento.',
       nextStep: 'Revisar gastos variáveis dos últimos 7 dias e escolher um ajuste simples para esta semana.',
     },
@@ -58,7 +58,7 @@ export const financialMock = {
         },
         {
           key: 'expenses',
-          label: 'Despesas variáveis',
+          label: 'Saídas variáveis',
           summary: 'Gastos variáveis previstos para os próximos dias.',
           insight: 'Os gastos variáveis sobem, mas ainda podem ser ajustados com calma.',
         },
@@ -94,7 +94,7 @@ export const financialMock = {
         tone: 'signalSuccess',
       },
       {
-        label: 'Despesas variáveis subiram',
+        label: 'Saídas variáveis subiram',
         description: 'Transporte e alimentação puxaram a semana.',
         tone: 'signalWarning',
       },
@@ -108,7 +108,7 @@ export const financialMock = {
       {
         id: 'personal-income-salary',
         description: 'Salário',
-        category: 'Receita fixa',
+        category: 'Entrada fixa',
         amount: 8200,
         type: 'entrada',
         date: 'Hoje',
@@ -154,9 +154,9 @@ export const financialMock = {
     clarity: {
       status: 'Caixa em avanço',
       direction: 'Mantendo o ciclo atual, o caixa projetado cresce nos próximos 30 dias.',
-      changed: 'Recebimentos recentes melhoraram o saldo, mas despesas operacionais seguem concentradas.',
+      changed: 'Recebimentos recentes melhoraram o saldo, mas saídas operacionais seguem concentradas.',
       attention: 'Fornecedores e impostos próximos pedem reserva antes de assumir novos compromissos.',
-      nextStep: 'Separar margem para despesas operacionais dos próximos dias antes de ampliar gastos.',
+      nextStep: 'Separar margem para saídas operacionais dos próximos dias antes de ampliar gastos.',
     },
     summary: [
       {
@@ -207,8 +207,8 @@ export const financialMock = {
         },
         {
           key: 'expenses',
-          label: 'Despesas operacionais',
-          summary: 'Despesas previstas que merecem atenção.',
+          label: 'Saídas operacionais',
+          summary: 'Saídas previstas que merecem atenção.',
           insight: 'Operacional e impostos pedem reserva antes de novos compromissos.',
         },
         {

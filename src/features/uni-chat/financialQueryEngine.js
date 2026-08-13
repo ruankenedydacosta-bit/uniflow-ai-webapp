@@ -317,7 +317,7 @@ function buildLastMovementAnswer(tx, snapshot, kindLabel) {
   const { accountName, categoryName, accountRemoved, categoryRemoved } = resolveTransactionLabels(tx, snapshot);
   const description = tx.description
     || categoryName
-    || (tx.transaction_type === 'income' ? 'receita' : 'despesa');
+    || (tx.transaction_type === 'income' ? 'entrada' : 'saída');
   const amount = roundMoney(tx.amount) > 0 ? `de ${fmtCurrency(tx.amount)}` : '';
   const date = tx.transaction_date ? `em ${fmtLongDate(tx.transaction_date)}` : '';
   const account = accountName ? `na conta ${accountName}` : '';
@@ -580,8 +580,8 @@ function findCandidateTransactions(snapshot, criteria) {
 
 function dominantTypeLabel(transactions) {
   const types = new Set(transactions.map((tx) => tx.transaction_type));
-  if (types.size === 1 && types.has('income')) return 'receitas';
-  if (types.size === 1 && types.has('expense')) return 'gastos';
+  if (types.size === 1 && types.has('income')) return 'entradas';
+  if (types.size === 1 && types.has('expense')) return 'saídas';
   return 'movimentações';
 }
 
@@ -744,7 +744,7 @@ function collectContextHint(history, referenceDate) {
 
 function resolveLastMovementQuery(snapshot, queryType) {
   if (!snapshot.transactions.length) {
-    const noun = queryType === 'last_income' ? 'receitas' : queryType === 'last_expense' ? 'despesas' : 'movimentações';
+    const noun = queryType === 'last_income' ? 'entradas' : queryType === 'last_expense' ? 'saídas' : 'movimentações';
     return {
       handled: true,
       response: { text: `Você ainda não tem ${noun} registradas.`, highlight: null },
@@ -755,13 +755,13 @@ function resolveLastMovementQuery(snapshot, queryType) {
     ? snapshot.transactions.find((tx) => tx.transaction_type === type)
     : snapshot.lastTransaction;
   if (!last) {
-    const noun = queryType === 'last_income' ? 'receitas' : 'despesas';
+    const noun = queryType === 'last_income' ? 'entradas' : 'saídas';
     return {
       handled: true,
       response: { text: `Você ainda não tem ${noun} registradas.`, highlight: null },
     };
   }
-  const kindLabel = queryType === 'last_transaction' ? 'movimentação' : queryType === 'last_income' ? 'receita' : 'despesa';
+  const kindLabel = queryType === 'last_transaction' ? 'movimentação' : queryType === 'last_income' ? 'entrada' : 'saída';
   return {
     handled: true,
     response: {

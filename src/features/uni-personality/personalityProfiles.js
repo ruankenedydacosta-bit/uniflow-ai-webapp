@@ -67,7 +67,7 @@ export const PERSONALITY_PROFILES = deepFreeze({
       objectivity: 0.82,
     },
     example:
-      'Seu caixa segue estavel. Notei duas despesas que merecem revisao; posso mostrar o impacto e sugerir um proximo passo simples.',
+      'Seu caixa segue estavel. Notei duas saidas que merecem revisao; posso mostrar o impacto e sugerir um proximo passo simples.',
     avoid: ['Excesso de contexto antes da conclusao.', 'Tom neutro ou mecanico.'],
   },
   direct: {
@@ -83,7 +83,7 @@ export const PERSONALITY_PROFILES = deepFreeze({
       objectivity: 0.96,
     },
     example:
-      'Seu saldo pode ficar pressionado em 12 dias. Priorize a fatura e adie uma despesa ajustavel. Posso ordenar as duas acoes.',
+      'Seu saldo pode ficar pressionado em 12 dias. Priorize a fatura e adie uma saida ajustavel. Posso ordenar as duas acoes.',
     avoid: ['Frieza.', 'Ordens secas.', 'Omitir incerteza para parecer conclusiva.'],
   },
   warm: {

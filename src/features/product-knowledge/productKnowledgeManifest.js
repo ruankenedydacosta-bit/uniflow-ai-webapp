@@ -142,7 +142,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.LIMITED,
     updatedAt: UPDATED_AT,
     content:
-      'Na experiência simplificada, movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni. Registrar receita, despesa, transferência ou ajuste exige os campos obrigatórios e confirmação explícita antes de salvar. Contas podem ser consultadas em Conta → Minhas contas. Cada operação respeita o espaço Pessoal/Empresa ativo. Open Finance continua sendo DEMONSTRAÇÃO VISUAL, sem conexão bancária real.',
+      'Na experiência simplificada, movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni. Registrar entrada, saída, transferência ou ajuste exige os campos obrigatórios e confirmação explícita antes de salvar. Contas podem ser consultadas em Conta → Minhas contas. Cada operação respeita o espaço Pessoal/Empresa ativo. Open Finance continua sendo DEMONSTRAÇÃO VISUAL, sem conexão bancária real.',
   },
   {
     id: 'goals',

@@ -159,7 +159,7 @@ export default function OpenFinanceConnectionAnimation({
         Prévia ilustrativa e ainda não disponível de como a UniFlow vai conectar suas contas: suas
         contas hoje estão espalhadas em instituições diferentes; você autoriza a conexão com
         segurança, sem informar senha; os dados de saldo, transações, contas e cartões chegam
-        automaticamente; a UniFlow organiza tudo em receitas, despesas, contas, cartões e
+        automaticamente; a UniFlow organiza tudo em entradas, saídas, contas, cartões e
         categorias; a Uni analisa esses dados e transforma em orientações; o resultado é menos
         trabalho manual e mais clareza para decidir. Funcionalidade em breve.
       </span>

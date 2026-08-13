@@ -66,7 +66,7 @@ export default function CognitiveLiveChart({
   onPeriodChange,
   onListenAnalysis = () => {},
   onViewDetails = () => {},
-  seriesLabels = { receita: 'Receitas', despesa: 'Despesas' },
+  seriesLabels = { receita: 'Entradas', despesa: 'Saídas' },
   emptyState = null,
   className = '',
 }) {
@@ -404,7 +404,7 @@ export default function CognitiveLiveChart({
           tabIndex={0}
           onKeyDown={handleKeyDown}
         >
-          <title>Receitas e despesas — julho de 2026</title>
+          <title>Entradas e saídas — julho de 2026</title>
           <desc>{chartDescription}</desc>
 
           <defs>

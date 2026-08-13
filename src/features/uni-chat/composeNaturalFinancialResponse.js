@@ -27,14 +27,14 @@ const EMOTIONAL_TAGS = new Set(['emotional_concern', 'emotional_distress']);
 const GLOSSARY = Object.freeze({
   categoria: 'Categoria é o grupo usado para organizar um gasto -- por exemplo, uma compra no mercado entra em Alimentação.',
   saldo: 'Saldo é quanto você tem disponível numa conta ou no total, somando entradas e saídas.',
-  receita: 'Receita é qualquer dinheiro que entra, como salário ou um pagamento recebido.',
-  despesa: 'Despesa é qualquer dinheiro que sai, como uma compra ou conta paga.',
+  receita: 'Entrada é qualquer dinheiro que entra, como salário ou um pagamento recebido.',
+  despesa: 'Saída é qualquer dinheiro que sai, como uma compra ou conta paga.',
   'fluxo de caixa': 'Fluxo de caixa é a diferença entre o que entrou e o que saiu num período.',
   periodo: 'Período é o intervalo de tempo que você quer consultar, como "este mês" ou "julho".',
   conta: 'Conta é onde o dinheiro fica guardado ou de onde ele sai, como um banco ou carteira.',
   comparacao: 'Comparação mostra a diferença entre dois períodos, por exemplo este mês e o mês passado.',
   media: 'Média é a soma de um conjunto de valores dividida pela quantidade de valores.',
-  recorrencia: 'Recorrência é um gasto ou receita que se repete regularmente, como uma assinatura.',
+  recorrencia: 'Recorrência é uma saída ou entrada que se repete regularmente, como uma assinatura.',
   orcamento: 'Orçamento é um limite planejado de gastos para um período.',
 });
 

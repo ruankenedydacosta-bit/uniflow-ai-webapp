@@ -327,7 +327,7 @@ function CRMPage() {
 
         <Card variant="outline" padding="lg" className={styles.lockedCard}>
           <h3>Troque para o espaço empresarial</h3>
-          <p>Este módulo conecta clientes, oportunidades, follow-ups e receita potencial da empresa.</p>
+          <p>Este módulo conecta clientes, oportunidades, follow-ups e entradas potenciais da empresa.</p>
         </Card>
       </div>
     );

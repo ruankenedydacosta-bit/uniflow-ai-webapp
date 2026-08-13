@@ -329,8 +329,8 @@ function calculateHealthScore(metrics, diagnostics) {
 function getMetricLabel(metric) {
   const labels = {
     totalBalance: 'Saldo total',
-    monthlyIncome: 'Receita mensal',
-    monthlyExpense: 'Despesa mensal',
+    monthlyIncome: 'Entrada mensal',
+    monthlyExpense: 'Saída mensal',
     monthlyResult: 'Resultado mensal',
     savingsRate: 'Taxa de poupança',
     liquidBalance: 'Liquidez imediata',

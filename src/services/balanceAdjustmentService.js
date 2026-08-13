@@ -16,8 +16,8 @@ import { executeConfirmedFinancialAction } from './confirmedFinancialActionServi
 // lançamento de ajuste que corrige o total sem apagar o histórico real.
 const DEFAULT_DESCRIPTION_BY_TARGET = Object.freeze({
   balance: 'Ajuste manual de saldo',
-  income: 'Ajuste manual de receita',
-  expense: 'Ajuste manual de despesa',
+  income: 'Ajuste manual de entrada',
+  expense: 'Ajuste manual de saída',
 });
 // A RPC exige description com 2 a 160 caracteres (btrim). Reservamos espaço
 // para o prefixo fixo + separador antes de truncar a nota do usuário.

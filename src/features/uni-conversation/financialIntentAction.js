@@ -18,7 +18,7 @@ const ACTION_INTENTS = Object.freeze({
 
 const TYPE_LABELS = Object.freeze({
   income: 'Entrada',
-  expense: 'Despesa',
+  expense: 'Saída',
   transfer: 'Transferência',
   adjustment: 'Ajuste de saldo',
 });

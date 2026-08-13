@@ -344,7 +344,7 @@ export function summarizePlanForNeuralContext(planState) {
       const raw = op.rawOperation;
       const label = op.operationType === 'transfer'
         ? `transferência de R$ ${raw.amount} de ${raw.sourceAccountReference ?? '?'} para ${raw.destinationAccountReference ?? '?'}`
-        : `${op.operationType === 'income' ? 'receita' : 'despesa'} de R$ ${raw.amount}${raw.description ? ` (${raw.description})` : ''}`;
+        : `${op.operationType === 'income' ? 'entrada' : 'saída'} de R$ ${raw.amount}${raw.description ? ` (${raw.description})` : ''}`;
       return `${op.temporaryId}: ${label}, status ${op.status}`;
     })
     .join('; ');

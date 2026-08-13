@@ -49,13 +49,13 @@ export const previousMonthData = [
 export const uniInsightHighlight = {
   startDay: 13,
   endDay: 19,
-  message: 'Suas despesas começaram a subir nesta semana.',
-  detail: 'Entre os dias 13 e 19, o ritmo de despesas quase dobrou em relação às duas semanas anteriores.',
+  message: 'Suas saídas começaram a subir nesta semana.',
+  detail: 'Entre os dias 13 e 19, o ritmo de saídas quase dobrou em relação às duas semanas anteriores.',
 };
 
 export const comparisonInsight = {
   message: 'Você gastou 12% menos que no mesmo período do mês passado.',
-  detail: 'Considerando despesas acumuladas até o dia 16 de cada mês.',
+  detail: 'Considerando saídas acumuladas até o dia 16 de cada mês.',
   deltaPercent: -12,
   currentValue: 2900,
   previousValue: 3295,

@@ -13,7 +13,7 @@ import { getFinanceErrorMessage } from './financeUiUtils';
 const EMPTY_FORM = { name: '', category_type: 'expense' };
 const CATEGORY_LABELS = {
   income: 'Entrada',
-  expense: 'Despesa',
+  expense: 'Saída',
   transfer: 'Transferência',
 };
 
@@ -108,7 +108,7 @@ function FinanceCategoryModal({
             }
           >
             <option value="income">Entrada</option>
-            <option value="expense">Despesa</option>
+            <option value="expense">Saída</option>
             <option value="transfer">Transferência</option>
           </SelectField>
           <FormMessage>

@@ -13,7 +13,7 @@ export const fallbackAccountTypes = [
 const baseCategories = [
   { id: 'demo-income', name: 'Outras entradas', category_type: 'income', applies_to: 'both' },
   { id: 'demo-salary', name: 'Salário', category_type: 'income', applies_to: 'personal' },
-  { id: 'demo-sales', name: 'Receita de vendas', category_type: 'income', applies_to: 'business' },
+  { id: 'demo-sales', name: 'Entrada de vendas', category_type: 'income', applies_to: 'business' },
   { id: 'demo-food', name: 'Alimentação', category_type: 'expense', applies_to: 'personal' },
   { id: 'demo-transport', name: 'Transporte', category_type: 'expense', applies_to: 'personal' },
   { id: 'demo-subscriptions', name: 'Assinaturas', category_type: 'expense', applies_to: 'both' },

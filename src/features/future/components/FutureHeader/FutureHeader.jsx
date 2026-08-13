@@ -21,7 +21,7 @@ export default function FutureHeader({
         </Badge>
         <h2>Visão de Futuro</h2>
         <p className={styles.subtitle}>
-          Projeções financeiras baseadas no seu histórico real de receitas e despesas
+          Projeções financeiras baseadas no seu histórico real de entradas e saídas
         </p>
       </div>
 

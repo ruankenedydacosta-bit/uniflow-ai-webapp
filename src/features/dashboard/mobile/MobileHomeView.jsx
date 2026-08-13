@@ -24,7 +24,7 @@ import { useTheme } from '../../theme';
 const SKELETON_SECTIONS = Object.freeze([
   ['briefing', 'Carregando briefing da Uni'],
   ['next-step', 'Carregando próximo passo'],
-  ['chart', 'Carregando receitas e despesas'],
+  ['chart', 'Carregando entradas e saídas'],
   ['summary', 'Carregando resumo financeiro'],
   ['recent-transactions', 'Carregando transações recentes'],
   ['goals', 'Carregando objetivos'],
@@ -56,7 +56,7 @@ function MobileHomeView({ data, personalization = null, loading = false, error =
         <NextStepCard step={viewData.nextStep} onAction={() => handleNavigate(viewData.nextStep?.href ?? '/financeiro')} />
         <section className={styles.cognitiveChartSection} aria-labelledby="home-cognitive-chart-title">
           <header className={styles.cognitiveChartHeader}>
-            <h2 id="home-cognitive-chart-title">Receitas e Despesas</h2>
+            <h2 id="home-cognitive-chart-title">Entradas e Saídas</h2>
             <p>Acompanhe como seu dinheiro está evoluindo.</p>
           </header>
           <CognitiveLiveChart
@@ -153,7 +153,7 @@ function MobileHomeView({ data, personalization = null, loading = false, error =
       )}
       <section className={styles.cognitiveChartSection} aria-labelledby="home-cognitive-chart-title">
         <header className={styles.cognitiveChartHeader}>
-          <h2 id="home-cognitive-chart-title">Receitas e Despesas</h2>
+          <h2 id="home-cognitive-chart-title">Entradas e Saídas</h2>
           <p>Acompanhe como seu dinheiro está evoluindo.</p>
         </header>
         <CognitiveLiveChart
@@ -203,7 +203,7 @@ function MobileHomeView({ data, personalization = null, loading = false, error =
         ) : (
           <HomeEmptyState
             title="Nenhuma transação recente"
-            description="Registre sua primeira receita ou despesa para acompanhar seus movimentos."
+            description="Registre sua primeira entrada ou saída para acompanhar seus movimentos."
             actionLabel="Ir para Financeiro"
             onAction={() => handleNavigate('/financeiro')}
             icon="D"

@@ -68,7 +68,7 @@ test('mobile consolida somente lançamentos concluídos do período', () => {
   assert.equal(data.expense, 'R$ 120,00');
   assert.equal(data.transactions.length, 3);
   assert.equal(data.categories[0].label, 'Moradia');
-  assert.equal(data.comparison, '+20% em despesas vs. período anterior');
+  assert.equal(data.comparison, '+20% em saídas vs. período anterior');
   assert.doesNotMatch(JSON.stringify(data), /Pendente|999,00/);
 });
 
@@ -130,9 +130,9 @@ test('IncomeExpenseChart adapta linguagem por workspace (PF/PJ) sem duplicar o g
   const contents = await source('components/IncomeExpenseChart.jsx');
   assert.equal((contents.match(/<CognitiveLiveChart/g) ?? []).length, 1);
   assert.match(contents, /Entradas e saídas/);
-  assert.match(contents, /Entradas e gastos/);
+  assert.match(contents, /Entradas e saídas/);
   assert.match(contents, /Saídas/);
-  assert.match(contents, /Gastos/);
+  assert.doesNotMatch(contents, /Gastos/);
 });
 
 test('CTA do estado vazio reaproveita o fluxo existente de nova transação', async () => {
@@ -175,8 +175,8 @@ test('ações rápidas preservam entrada, saída e transferência', async () => 
     source('components/QuickActionSheet.jsx'),
     source('MobileFinanceiroView.jsx'),
   ]);
-  assert.match(sheet, /Registrar receita/);
-  assert.match(sheet, /Registrar despesa/);
+  assert.match(sheet, /Registrar entrada/);
+  assert.match(sheet, /Registrar saída/);
   assert.match(sheet, /Fazer transferência/);
   assert.match(view, /onNewTransaction\(transactionType\)/);
 });

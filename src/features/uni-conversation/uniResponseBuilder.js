@@ -45,8 +45,8 @@ const ISSUE_MESSAGES = Object.freeze({
   // Ajuste de saldo: pergunta de decisão (receita vs saldo) e validações
   // do delta -- nunca decidimos a intenção pela pessoa.
   ambiguous_balance_or_income: (action) => (action?.amount != null
-    ? `Entendi que você está com ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(action.amount)}. Você quer registrar como receita ou ajustar o saldo para esse valor?`
-    : 'Você quer registrar esse valor como receita ou ajustar o saldo?'),
+    ? `Entendi que você está com ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(action.amount)}. Você quer registrar como entrada ou ajustar o saldo para esse valor?`
+    : 'Você quer registrar esse valor como entrada ou ajustar o saldo?'),
   balance_required: 'Não consegui identificar o saldo atual dessa conta para calcular o ajuste. Tente novamente em instantes.',
   balance_same: 'O saldo dessa conta já é esse valor. Se quiser registrar outro lançamento, é só dizer o que aconteceu.',
 });

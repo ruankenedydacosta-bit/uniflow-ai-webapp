@@ -24,8 +24,8 @@ import CategoryCreateModal from './components/CategoryCreateModal.jsx';
 import styles from './CategoriesPage.module.css';
 
 const TYPE_TABS = [
-  { type: CATEGORY_TYPES.EXPENSE, label: 'Despesas' },
-  { type: CATEGORY_TYPES.INCOME, label: 'Receitas' },
+  { type: CATEGORY_TYPES.EXPENSE, label: 'Saídas' },
+  { type: CATEGORY_TYPES.INCOME, label: 'Entradas' },
 ];
 
 export default function CategoriesPage() {
@@ -66,7 +66,7 @@ export default function CategoriesPage() {
 
   const isBusiness = access.currentWorkspace === 'business';
   const pageSubtitle = isBusiness
-    ? 'Organize as receitas e despesas da sua empresa.'
+    ? 'Organize as entradas e saídas da sua empresa.'
     : 'Organize os gastos e entradas do seu dia a dia.';
   const emptyStateTitle = isBusiness
     ? 'Ainda não há categorias da empresa aqui.'

@@ -519,7 +519,7 @@ test('detectFutureFinancialIntent trata entrada nao-string com seguranca', () =>
 test('buildFutureSafetyResponse sem historico orienta a registrar movimentacoes, sem numero', () => {
   const msg = buildFutureSafetyResponse(false);
   assert.match(msg, /histórico suficiente/);
-  assert.match(msg, /Registre algumas receitas e despesas/);
+  assert.match(msg, /Registre algumas entradas e saídas/);
   assert.doesNotMatch(msg, /R\$\s*[\d.,]+/);
 });
 

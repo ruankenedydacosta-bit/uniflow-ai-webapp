@@ -47,7 +47,7 @@ export const CONTROLLED_QUESTION_POLICY = Object.freeze({
 export const CONTROLLED_QUESTION_TEMPLATES = Object.freeze({
   account: 'Em qual conta foi essa movimentação?',
   category: 'Em qual categoria deseja registrar?',
-  transactionType: 'Isso foi uma receita ou uma despesa?',
+  transactionType: 'Isso foi uma entrada ou uma saída?',
   amount: 'Qual foi o valor?',
   description: 'Como deseja identificar esse registro?',
   ambiguity_account: 'Qual conta você quis dizer?',

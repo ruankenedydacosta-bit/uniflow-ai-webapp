@@ -47,7 +47,7 @@ function EvolutionChart({ monthlySeries }) {
     <div className={styles.chartBlock}>
       <div className={styles.chartHeader}>
         <div>
-          <span>Receitas x despesas</span>
+          <span>Entradas x saídas</span>
           <strong>{formatCurrency(lastMonth.income)}</strong>
         </div>
       </div>
@@ -56,7 +56,7 @@ function EvolutionChart({ monthlySeries }) {
         className={styles.chart}
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         role="img"
-        aria-label="Evolução mensal de receitas e despesas"
+        aria-label="Evolução mensal de entradas e saídas"
       >
         <defs>
           <linearGradient id="reportsIncomeArea" x1="0" x2="0" y1="0" y2="1">
@@ -88,11 +88,11 @@ function EvolutionChart({ monthlySeries }) {
       <div className={styles.chartLegend} aria-label="Legenda do gráfico">
         <span>
           <i className={styles.incomeLegend} aria-hidden="true" />
-          Receitas
+          Entradas
         </span>
         <span>
           <i className={styles.expenseLegend} aria-hidden="true" />
-          Despesas
+          Saídas
         </span>
       </div>
     </div>
