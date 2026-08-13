@@ -1355,6 +1355,15 @@ function toStartIso(date, time, allDay) {
   return parsed.toISOString();
 }
 
+function resolveNextOccurrenceDate(time, referenceDate, currentDate) {
+  if (!time || !parseIsoDate(referenceDate) || !(currentDate instanceof Date)) return null;
+  const candidate = new Date(toStartIso(referenceDate, time, false));
+  if (Number.isNaN(candidate.getTime()) || Number.isNaN(currentDate.getTime())) return null;
+  return candidate.getTime() > currentDate.getTime()
+    ? referenceDate
+    : shiftDate(referenceDate, 1);
+}
+
 function applyDayPeriod(time, period) {
   const [rawHours, minutes] = time.split(':').map(Number);
   let hours = rawHours;
@@ -1807,6 +1816,9 @@ export function createAgendaConversationFlow({
         }
       }
       if (!fields.date) fields.date = resolveAgendaDate(text, referenceDate);
+      if (!fields.date && fields.hasExplicitTime && fields.timeChoiceResolved) {
+        fields.date = resolveNextOccurrenceDate(fields.time, referenceDate, now());
+      }
 
       if (timeAnalysis.blocked) {
         fields.time = null;
@@ -2042,6 +2054,9 @@ export function createAgendaConversationFlow({
       const ambiguityQuestion = timeAnalysis.ambiguousPeriod
         ? configureAmbiguousTime(fields, timeAnalysis.time, referenceDate, now())
         : null;
+      if (!fields.date && fields.hasExplicitTime && fields.timeChoiceResolved) {
+        fields.date = resolveNextOccurrenceDate(fields.time, referenceDate, now());
+      }
       if (!fields.title || !fields.date || !fields.timeChoiceResolved) {
         if (timeAnalysis.invalid) fields.repairField = 'time';
         await startPending(identity, PENDING_TYPES.CREATE, fields);

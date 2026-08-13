@@ -3461,6 +3461,7 @@ test('Agenda voice-first usa o mesmo sendText e abandona pendência antes de uma
   assert.match(body, /metadata\?\.source === 'voice'/);
   assert.match(body, /agendaConversationRef\.current\.handle\(\{/);
   assert.match(body, /const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation/);
+  assert.match(body, /declaredIntent === 'check_balance'/);
   assert.match(body, /void agendaConversationRef\.current\.abandonPending\(agendaIdentity\)\.catch\(\(\) => \{\}\);/);
   const abandonIndex = body.indexOf('agendaConversationRef.current.abandonPending(agendaIdentity)');
   const handleIndex = body.indexOf('agendaConversationRef.current.handle({');

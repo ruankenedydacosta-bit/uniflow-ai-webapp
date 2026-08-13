@@ -3053,6 +3053,42 @@ test('Agenda com horário cria diretamente sem follow-up de descrição', async 
   assert.equal(calls[0].payload.is_all_day, false);
 });
 
+test('horário futuro sem data usa hoje e cria imediatamente', async () => {
+  const now = () => new Date(2026, 7, 8, 11, 0, 0);
+  const { flow, calls } = makeHarness([], { now });
+  const result = await turn(flow, 'Agenda uma reunião para duas da tarde.');
+
+  assert.match(result.text, /Pronto/);
+  assert.doesNotMatch(result.text, /Em qual dia/i);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].payload.starts_at, new Date(2026, 7, 8, 14, 0, 0).toISOString());
+  assert.equal(calls[0].payload.has_explicit_time, true);
+});
+
+test('horário passado sem data usa amanhã e cria imediatamente', async () => {
+  const now = () => new Date(2026, 7, 8, 18, 0, 0);
+  const { flow, calls } = makeHarness([], { now });
+  const result = await turn(flow, 'Agenda uma reunião para duas da tarde.');
+
+  assert.match(result.text, /Pronto/);
+  assert.doesNotMatch(result.text, /Em qual dia/i);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].payload.starts_at, new Date(2026, 7, 9, 14, 0, 0).toISOString());
+  assert.equal(calls[0].payload.has_explicit_time, true);
+});
+
+test('meia-noite sem data usa a próxima ocorrência válida', async () => {
+  const now = () => new Date(2026, 7, 8, 11, 0, 0);
+  const { flow, calls } = makeHarness([], { now });
+  const result = await turn(flow, 'Agenda uma reunião à meia-noite.');
+
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].payload.starts_at, new Date(2026, 7, 9, 0, 0, 0).toISOString());
+  assert.equal(calls[0].payload.has_explicit_time, true);
+  assert.equal(calls[0].payload.is_all_day, false);
+});
+
 test('Agenda sem horário cria diretamente como Dia inteiro', async () => {
   const { flow, calls } = makeHarness();
   const result = await turn(flow, 'Agenda uma reunião amanhã.');

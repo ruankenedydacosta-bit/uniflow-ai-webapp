@@ -3792,6 +3792,7 @@ export default function UniChatPage({ variant = 'full' }) {
       && (
         looksLikeFreshFinancialStatement(functionalText)
         || looksLikeFreshBalanceStatement(functionalText)
+        || declaredIntent === 'check_balance'
         || ACTION_STATEMENT_INTENTS.has(declaredIntent)
       );
     if (shouldAbandonAgendaForFinancial) {
