@@ -621,81 +621,104 @@ function SimplifiedHomeView({
   // navigate aqui). Um único gesto rastreado por vez (pressedGestureRef)
   // evita disparo duplo entre pointerdown/keydown concorrentes.
   //
-  // BUG REAL EM DISPOSITIVO FÍSICO (causa raiz real, não coberta pela
-  // correção anterior -- que só endureceu OUTRO botão, o compacto da barra
-  // inferior): rolar a Home tocando primeiro neste botão (comum -- ele
-  // ocupa boa parte do centro da tela) podia deixar a Uni presa em
-  // "Ouvindo..." para sempre. `handleVoicePointerDown` chamava
-  // beginVoiceCapture() de forma SÍNCRONA E IMEDIATA no próprio pointerdown,
-  // sem nenhuma distinção entre "começar a segurar" e "começar a rolar", e
-  // não existia handler de pointermove -- nenhum código aqui jamais olhava
-  // para onde o dedo se movia depois do toque. Com `touch-action: none`
-  // (necessário para o pointer capture não ser roubado por um gesto nativo
-  // no MEIO da gravação), a página também nunca rolava de verdade para um
-  // toque iniciado no botão -- o usuário só via a escuta começar sem nada
-  // acontecer. Pior: nenhuma rede de segurança fora do próprio elemento
-  // existia -- se o navegador (mesma classe de bug real de WebKit/Chrome
-  // mobile já documentada no botão compacto) deixasse de entregar
-  // pointerup/pointercancel/lostpointercapture especificamente a este
-  // elemento, `pressedGestureRef` nunca era limpo e a escuta ficava presa
-  // para sempre: exatamente "nenhum pointer ativo + listening=true".
+  // Estados do gesto (pressedGestureRef/gestureRef.current):
+  //   null            -- IDLE: nenhum gesto em andamento.
+  //   { captureStarted: false } -- ARMANDO: pointerdown já aconteceu,
+  //     beginVoiceCapture() já foi chamado (roda IMEDIATO, sem atraso
+  //     artificial -- ver HOTFIX 2 abaixo), mas ainda não confirmamos
+  //     sucesso; um movimento além do threshold aqui é tratado como
+  //     scroll/drag e cancela (nunca envia nada à Uni).
+  //   { captureStarted: true } + voiceInput.status ainda não LISTENING --
+  //     pedindo permissão/inicializando o microfone; o botão continua
+  //     habilitado e a captura pode ainda ser cancelada por movimento.
+  //   { captureStarted: true } + voiceInput.isListening === true --
+  //     OUVINDO de verdade; movimento nunca mais cancela aqui (só
+  //     pointerup/pointercancel/lostpointercapture/rede de segurança).
+  //   pointerup -> finishVoiceInteraction('released') -- FINALIZA (stop(),
+  //     nunca cancel()) e envia para o pipeline de transcrição/Uni.
+  //   qualquer outro motivo -> finishVoiceInteraction(reason) -- CANCELA
+  //     (cancel(), descarta o que foi capturado). Nunca a mesma operação
+  //     que "released" -- soltar o dedo depois de falar é SEMPRE submit,
+  //     nunca descarte.
   //
-  // Correção (mesma arquitetura já validada em usePressAndHold.js, o
-  // botão compacto):
-  // 1. Threshold de movimento (VOICE_MOVE_CANCEL_PX) -- handleVoicePointerMove
-  //    cancela o gesto assim que ultrapassado, em QUALQUER direção, mesmo
-  //    com a captura já em andamento (beginVoiceCapture continua rodando
-  //    IMEDIATO no pointerdown, exatamente como sempre -- ver nota abaixo
-  //    sobre por que um atraso de ativação foi tentado e revertido).
+  // HISTÓRICO DE BUGS REAIS EM DISPOSITIVO FÍSICO (3 rodadas):
+  //
+  // 1) Rolar a Home tocando primeiro neste botão deixava a Uni presa em
+  //    "Ouvindo..." para sempre -- não existia handler de pointermove
+  //    (nada olhava para onde o dedo ia depois do toque) nem rede de
+  //    segurança fora do próprio elemento. Corrigido com o threshold de
+  //    movimento (item 1 abaixo) + rede de segurança em window (item 2).
+  //
+  // 2) HOTFIX revertido: a correção do bug 1 tentou também um atraso de
+  //    ativação de 160ms + touch-action `pan-y` (para a rolagem nativa
+  //    funcionar a partir do próprio botão). Resultado real: um hold
+  //    NORMAL (sem scroll) passou a ficar preso em "Ouvindo..." -- `pan-y`
+  //    reintroduziu a mesma classe de bug de WebKit/Chrome mobile que
+  //    `touch-action: none` já existia para evitar (o navegador pode
+  //    "roubar" o ponteiro de um elemento com setPointerCapture ativo de
+  //    forma inconsistente). Revertido para `none` (mesmo valor do botão
+  //    compacto da barra inferior, que funciona) e beginVoiceCapture()
+  //    voltou a rodar imediato no pointerdown, sem timer. Trade-off aceito:
+  //    rolar a partir do círculo exato do botão continua bloqueado; fora
+  //    dele continua livre.
+  //
+  // 3) HOTFIX CRÍTICO (causa raiz real de "solta sozinho" / "Ouvindo mas a
+  //    fala não chega"), duas causas simultâneas:
+  //    a) O threshold de movimento do item 1 estava sendo aplicado durante
+  //       o hold INTEIRO (distância medida a partir do pointerdown, nunca
+  //       reseta) -- um hold de vários segundos acumula deriva natural do
+  //       dedo/mão e ultrapassa o threshold sozinho, cancelando (nunca
+  //       finalizando) uma gravação legítima em andamento. Corrigido:
+  //       handleVoicePointerMove só cancela por movimento enquanto
+  //       `!voiceInput.isListening` -- uma vez confirmado que o microfone
+  //       está de verdade ouvindo, pequenos movimentos nunca mais cancelam.
+  //    b) O `disabled` do botão (na JSX) incluía isInteractionBusy, que
+  //       inclui REQUESTING_PERMISSION -- e REQUESTING_PERMISSION passa a
+  //       valer true no MESMO pointerdown que inicia a captura. Desabilitar
+  //       um <button> que TEM setPointerCapture ativo faz o navegador
+  //       liberar a captura na hora (spec), disparando lostpointercapture
+  //       com o dedo ainda fisicamente pressionado -- ou seja, TODO hold
+  //       desabilitava o próprio botão que o estava capturando. Corrigido
+  //       com `pressedGestureRef.current === null` na condição de disabled
+  //       (nunca desabilita o botão que É o gesto ativo).
+  //    Também removido: um timeout de watchdog POR GESTO de 10s que
+  //    cancelava incondicionalmente após esse tempo, sem checar se o dedo
+  //    ainda estava pressionado -- exatamente o "watchdog agressivo" que
+  //    devia ser evitado (a captura já tem um limite físico real e mais
+  //    generoso, 15s, em mediaRecorderAdapter.js).
+  //
+  // Arquitetura atual (mesma base de usePressAndHold.js, o botão compacto):
+  // 1. Threshold de movimento (VOICE_MOVE_CANCEL_PX) -- só antes de
+  //    voiceInput.isListening ser true (ver bug 3a acima).
   // 2. Rede de segurança em `window` (pointerup/pointercancel, fase de
-  //    captura) + um timeout de watchdog por gesto, independentes de qual
-  //    elemento o navegador realmente notifica.
-  // 3. Watchdog de estado (useEffect mais abaixo): se voiceInput.isActive
-  //    mas nenhum gesto está sendo rastreado, força voiceInput.cancel() --
-  //    última barreira, nunca deveria disparar na prática.
+  //    captura), independente de qual elemento o navegador realmente
+  //    notifica.
+  // 3. Watchdog de ESTADO (useEffect mais abaixo): só age quando
+  //    voiceInput.isActive mas pressedGestureRef já é null (nenhum gesto
+  //    sendo rastreado) -- nunca por tempo decorrido sozinho, nunca conclui
+  //    "não encontrei o pointer" com o dedo ainda potencialmente pressionado.
   //
   // Todo caminho de término passa por UMA única rotina idempotente:
   // finishVoiceInteraction(reason). Chamar mais de uma vez para o mesmo
   // gesto nunca quebra nada (a segunda chamada não encontra gesto rastreado
   // e não faz nada).
-  //
-  // HOTFIX (regressão real em dispositivo físico, revertida): a primeira
-  // versão desta correção tentou (1) um atraso de ativação de 160ms antes
-  // de chamar beginVoiceCapture, e (2) trocar touch-action de `none` para
-  // `pan-y` para a rolagem nativa funcionar a partir do próprio botão.
-  // Resultado real no aparelho: um hold NORMAL (sem nenhum scroll) passou a
-  // ficar preso em "Ouvindo..." já no primeiro teste. Causa mais provável:
-  // `touch-action: none` já existia no código ANTES desta tarefa por um
-  // motivo documentado (ver git blame/comentário original) -- o mesmo bug
-  // físico de WebKit/Chrome mobile onde o navegador, com qualquer valor de
-  // touch-action que permita pan, pode "roubar" o ponteiro de um elemento
-  // com setPointerCapture ativo de forma inconsistente entre aparelhos,
-  // inclusive sem entregar nenhum evento de término de forma confiável. O
-  // botão compacto da barra inferior (usePressAndHold.js/
-  // UniInstantButton.module.css), que já funciona, usa `touch-action: none`
-  // -- nunca `pan-y`. Revertido para o mesmo valor comprovado; a rolagem
-  // vertical iniciada exatamente sobre o círculo do botão continua
-  // bloqueada (mesma limitação que o botão compacto sempre teve), mas isso
-  // é um trade-off aceito em troca de nunca mais travar -- rolar a partir
-  // de qualquer ponto fora do círculo continua livre. beginVoiceCapture()
-  // voltou a rodar IMEDIATO no pointerdown (idêntico ao comportamento
-  // original, testado e nunca travado fora do cenário de scroll), em vez
-  // de atrás de um timer -- elimina de vez a hipótese de uma condição de
-  // corrida nova entre o atraso e o resto do estado do componente.
   const VOICE_MOVE_CANCEL_PX = 10;
-  const VOICE_GESTURE_WATCHDOG_MS = 10_000;
 
   const pressedGestureRef = useRef(null);
   const gestureRef = useRef(null);
   const buttonRef = useRef(null);
   const finishVoiceInteractionRef = useRef(null);
+  // Espelho reativo de `pressedGestureRef.current !== null` -- só existe
+  // porque a JSX (disabled=, ver abaixo) precisa dessa informação DURANTE O
+  // RENDER, e ler `ref.current` no render é proibido (react-hooks/refs).
+  // setPressedGesture() é o ÚNICO ponto que escreve em pressedGestureRef,
+  // sempre mantendo os dois em sincronia.
+  const [hasActiveVoiceGesture, setHasActiveVoiceGesture] = useState(false);
 
-  const clearGestureTimers = useCallback(() => {
-    const gesture = gestureRef.current;
-    if (!gesture) return;
-    if (gesture.watchdogTimer) clearTimeout(gesture.watchdogTimer);
-    gesture.watchdogTimer = null;
-  }, []);
+  function setPressedGesture(value) {
+    pressedGestureRef.current = value;
+    setHasActiveVoiceGesture(value !== null);
+  }
 
   // Ref (nunca recriada por render) para que addEventListener/
   // removeEventListener em `window` sempre recebam a MESMA referência de
@@ -706,15 +729,32 @@ function SimplifiedHomeView({
     finishVoiceInteractionRef.current?.('window-safety-net');
   });
 
+  // HOTFIX CRÍTICO: havia também um timeout de watchdog POR GESTO (10s)
+  // que cancelava incondicionalmente após esse tempo -- exatamente o
+  // "watchdog agressivo" que a especificação pede para evitar: ele não
+  // verifica se o dedo ainda está pressionado, só conclui que "já passou
+  // tempo demais" e cancela, mesmo com o usuário genuinamente segurando
+  // (ex.: teste de 8s ficava perigosamente perto do limite de 10s; um
+  // hold real um pouco mais longo cancelava sozinho). Removido -- a
+  // captura já tem um limite físico real e bem mais generoso
+  // (VOICE_AUDIO_MAX_DURATION_MS = 15s em mediaRecorderAdapter.js, que
+  // para a gravação e devolve erro tratado, não um cancelamento mudo), e
+  // o watchdog de ESTADO abaixo (só age quando pressedGestureRef já está
+  // null, nunca por tempo decorrido sozinho) continua como última
+  // barreira real contra um estado preso de verdade.
   const detachVoiceGestureSafetyNet = useCallback(() => {
-    clearGestureTimers();
     window.removeEventListener('pointerup', handleWindowVoicePointerEndRef.current, true);
     window.removeEventListener('pointercancel', handleWindowVoicePointerEndRef.current, true);
-  }, [clearGestureTimers]);
+  }, []);
 
   // O navegador móvel pode suspender a página sem entregar pointerup ou
   // lostpointercapture. Libera o gesto local quando a captura termina ou a
   // página sai de primeiro plano para que o próximo toque nunca exija reload.
+  // Só limpa o ref (não passa por setPressedGesture/setState) -- é um
+  // fallback defensivo para quando voiceInput já ficou inativo por um
+  // caminho externo (nunca o pointerup/finishVoiceInteraction normal, que
+  // já limpam os dois em sincronia); chamar setState direto no corpo de um
+  // effect nesse caminho é desnecessário aqui e o lint não permite.
   useEffect(() => {
     if (!voiceInput.isActive) pressedGestureRef.current = null;
   }, [voiceInput.isActive]);
@@ -738,7 +778,7 @@ function SimplifiedHomeView({
 
   useEffect(() => {
     const releasePressedGesture = () => {
-      pressedGestureRef.current = null;
+      setPressedGesture(null);
       finishVoiceInteractionRef.current?.('lifecycle');
     };
     const handleVisibilityChange = () => {
@@ -796,25 +836,43 @@ function SimplifiedHomeView({
       onBeforeVoiceStart?.();
       setTurnStartToken((token) => token + 1);
       void voiceInput.start();
+      if (import.meta.env.DEV) console.debug('[voice] voice_capture_started');
     }
     return true;
   }
 
   // Rotina ÚNICA e idempotente de término -- todo caminho (soltar, cancelar,
   // scroll detectado, pointercancel, lostpointercapture, rede de segurança
-  // em window, watchdog, background) passa por aqui. `reason` só afeta se o
+  // em window, background) passa por aqui. `reason` só afeta se o
   // resultado é "enviar" (reason === 'released', e só se de fato havia
   // gravação em andamento) ou "descartar" (qualquer outro motivo). Chamar
   // sem nenhum gesto rastreado (gestureRef.current null) é um no-op seguro
   // -- é o que garante rodar mais de uma vez sem quebrar nada.
+  //
+  // Diagnóstico (DEV apenas, nunca em Production): reason codes claros para
+  // saber por que uma interação terminou, sem log sensível nenhum (só o
+  // motivo, nunca texto/áudio do usuário).
+  const VOICE_FINISH_REASON_CODES = Object.freeze({
+    released: 'voice_finish_pointerup',
+    scroll: 'voice_cancel_scroll',
+    pointercancel: 'voice_cancel_pointercancel',
+    lostpointercapture: 'voice_cancel_lostcapture',
+    'window-safety-net': 'voice_cancel_window_safety_net',
+    lifecycle: 'voice_cancel_lifecycle',
+    'activation-failed': 'voice_cancel_activation_failed',
+  });
+
   function finishVoiceInteraction(reason) {
     const gesture = gestureRef.current;
     if (!gesture) return;
+    if (import.meta.env.DEV) {
+      console.debug(`[voice] ${VOICE_FINISH_REASON_CODES[reason] ?? reason}`);
+    }
 
     detachVoiceGestureSafetyNet();
     const { pointerId, captureStarted } = gesture;
     gestureRef.current = null;
-    pressedGestureRef.current = null;
+    setPressedGesture(null);
 
     if (buttonRef.current?.hasPointerCapture?.(pointerId)) {
       buttonRef.current.releasePointerCapture(pointerId);
@@ -834,6 +892,7 @@ function SimplifiedHomeView({
     } else {
       voiceInput.cancel();
     }
+    if (import.meta.env.DEV) console.debug('[voice] voice_cleanup_complete');
   }
 
   useEffect(() => {
@@ -844,22 +903,19 @@ function SimplifiedHomeView({
     if (event.button !== undefined && event.button !== 0) return;
     if (pressedGestureRef.current !== null) return;
 
-    pressedGestureRef.current = event.pointerId;
+    setPressedGesture(event.pointerId);
     gestureRef.current = {
       pointerId: event.pointerId,
       x: event.clientX,
       y: event.clientY,
       captureStarted: false,
-      watchdogTimer: null,
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
 
     window.addEventListener('pointerup', handleWindowVoicePointerEndRef.current, true);
     window.addEventListener('pointercancel', handleWindowVoicePointerEndRef.current, true);
 
-    gestureRef.current.watchdogTimer = setTimeout(() => {
-      finishVoiceInteractionRef.current?.('watchdog-timeout');
-    }, VOICE_GESTURE_WATCHDOG_MS);
+    if (import.meta.env.DEV) console.debug('[voice] voice_gesture_armed');
 
     // beginVoiceCapture roda IMEDIATO, igual ao comportamento original --
     // ver HOTFIX acima sobre por que o atraso de ativação foi revertido.
@@ -870,14 +926,25 @@ function SimplifiedHomeView({
     gestureRef.current.captureStarted = true;
   }
 
-  // Scroll/drag não é comando de voz: qualquer movimento além do threshold,
-  // em QUALQUER direção (cima/baixo/esquerda/direita/diagonal), cancela o
-  // gesto imediatamente (finishVoiceInteraction para a gravação em
-  // andamento) -- rede de defesa em profundidade mesmo com touch-action:
-  // none bloqueando a rolagem nativa a partir do próprio botão.
+  // Scroll/drag não é comando de voz: ANTES do microfone estar realmente
+  // ativo (voiceInput.isListening), qualquer movimento além do threshold,
+  // em QUALQUER direção, cancela o gesto -- é exatamente esta checagem que
+  // resolveu o bug físico de scroll sobre o botão, preservada aqui.
+  //
+  // HOTFIX CRÍTICO: esse mesmo threshold estava sendo aplicado durante o
+  // hold INTEIRO, não só na janela de ativação -- distância é medida a
+  // partir do ponto do pointerdown e NUNCA reseta, então um hold de
+  // vários segundos (ex.: 3-8s) eventualmente acumula deriva natural do
+  // dedo/mão (segurar um botão grande com o polegar enquanto fala não é
+  // fisicamente perfeito) e ultrapassa 10px sozinho -- cancelando (não
+  // finalizando) uma gravação legítima em andamento, descartando o áudio
+  // já capturado. Uma vez confirmado que o microfone está de verdade
+  // ouvindo, um pequeno movimento nunca mais é motivo de cancelamento
+  // aqui -- só pointerup/pointercancel/lostpointercapture decidem o fim.
   function handleVoicePointerMove(event) {
     const gesture = gestureRef.current;
     if (!gesture || event.pointerId !== gesture.pointerId) return;
+    if (voiceInput.isListening) return;
     const distance = Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y);
     if (distance > VOICE_MOVE_CANCEL_PX) {
       finishVoiceInteraction('scroll');
@@ -902,13 +969,13 @@ function SimplifiedHomeView({
   function handleVoiceKeyDown(event) {
     if (!['Enter', ' '].includes(event.key) || event.repeat || pressedGestureRef.current !== null) return;
     event.preventDefault();
-    if (beginVoiceCapture()) pressedGestureRef.current = 'keyboard';
+    if (beginVoiceCapture()) setPressedGesture('keyboard');
   }
 
   function handleVoiceKeyUp(event) {
     if (!['Enter', ' '].includes(event.key) || pressedGestureRef.current !== 'keyboard') return;
     event.preventDefault();
-    pressedGestureRef.current = null;
+    setPressedGesture(null);
     if (voiceInput.isListening) {
       voiceInput.stop();
     } else {
@@ -924,7 +991,7 @@ function SimplifiedHomeView({
   // cobre o caso de captura iniciada por teclado (sem gestureRef) e é
   // idempotente (chamar cancel() sem nada ativo é um no-op seguro).
   function handleCancelVoiceButtonClick() {
-    pressedGestureRef.current = null;
+    setPressedGesture(null);
     finishVoiceInteraction('cancel-button');
     voiceInput.cancel();
   }
@@ -980,7 +1047,28 @@ function SimplifiedHomeView({
           data-state={interactionState}
           aria-label={isListening ? 'Solte para enviar o áudio' : 'Pressione e segure para falar com a Uni'}
           aria-pressed={isListening}
-          disabled={voiceActivationRequired || voiceActivationPending || (isInteractionBusy && !isListening)}
+          disabled={
+            voiceActivationRequired
+            || voiceActivationPending
+            // HOTFIX CRÍTICO (causa raiz real do "solta sozinho"/"Ouvindo
+            // mas a fala não chega"): desabilitar um <button> que TEM
+            // setPointerCapture ativo faz o navegador liberar a captura na
+            // hora (spec: um controle disabled não pode ser alvo de
+            // pointer events) -- dispara lostpointercapture com o dedo
+            // ainda fisicamente pressionado. isInteractionBusy inclui
+            // REQUESTING_PERMISSION, que passa a valer true no MESMO
+            // pointerdown que inicia a captura (beginVoiceCapture ->
+            // voiceInput.start() -> dispatch REQUEST_PERMISSION) -- ou
+            // seja, TODO hold desabilitava o próprio botão que o estava
+            // capturando, matando a gravação por conta própria antes de
+            // qualquer soltura real. `!hasActiveVoiceGesture` (espelho
+            // reativo de pressedGestureRef.current === null -- ler o ref
+            // direto aqui não é permitido durante o render) garante que
+            // nunca desabilitamos o botão que É o gesto ativo -- continua
+            // desabilitando por outros motivos (digitando, executando)
+            // quando não há nenhum hold em andamento.
+            || (isInteractionBusy && !isListening && !hasActiveVoiceGesture)
+          }
           onPointerDown={handleVoicePointerDown}
           onPointerMove={handleVoicePointerMove}
           onPointerUp={handleVoicePointerUp}

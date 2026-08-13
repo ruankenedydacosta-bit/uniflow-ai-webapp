@@ -182,7 +182,7 @@ test('P0.1: turnStartToken é um token de identidade de turno, incrementado SOME
   assert.match(fnSlice, /if \(!plan\.proceed\) return false;/);
   assert.match(
     fnSlice,
-    /if \(plan\.startCapture\) \{\s*(?:\/\/[^\n]*\n\s*)*onBeforeVoiceStart\?\.\(\);\s*setTurnStartToken\(\(token\) => token \+ 1\);\s*void voiceInput\.start\(\);\s*\}/,
+    /if \(plan\.startCapture\) \{\s*(?:\/\/[^\n]*\n\s*)*onBeforeVoiceStart\?\.\(\);\s*setTurnStartToken\(\(token\) => token \+ 1\);\s*void voiceInput\.start\(\);[\s\S]*?\}/,
   );
 });
 
