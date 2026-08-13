@@ -1,4 +1,6 @@
-export const RADIAL_VOICE_BAR_COUNT = 64;
+export const RADIAL_VOICE_BAR_COUNT = 108;
+export const RADIAL_VOICE_ATTACK_MS = 80;
+export const RADIAL_VOICE_RELEASE_MS = 240;
 
 function clampLevel(value) {
   return Math.min(1, Math.max(0, Number(value) || 0));
@@ -11,12 +13,19 @@ function clampLevel(value) {
 export function smoothRadialVoiceLevel(
   previous,
   target,
-  { attack = 0.62, release = 0.18 } = {},
+  deltaMs = 1000 / 60,
+  { attackMs = RADIAL_VOICE_ATTACK_MS, releaseMs = RADIAL_VOICE_RELEASE_MS } = {},
 ) {
   const from = clampLevel(previous);
   const to = clampLevel(target);
-  const factor = to > from ? attack : release;
+  const timeConstant = to > from ? attackMs : releaseMs;
+  const safeDelta = Math.min(50, Math.max(0, Number(deltaMs) || 0));
+  const factor = 1 - Math.exp(-safeDelta / Math.max(1, timeConstant));
   return from + (to - from) * factor;
+}
+
+export function normalizeRadialVoiceLevel(value) {
+  return Math.pow(clampLevel(value), 0.9);
 }
 
 /**
@@ -28,17 +37,18 @@ export function buildRadialVoiceBars(count = RADIAL_VOICE_BAR_COUNT) {
   return Object.freeze(Array.from({ length: safeCount }, (_, index) => {
     const primary = (Math.sin(index * 1.73) + 1) / 2;
     const secondary = (Math.sin(index * 0.47 + 1.2) + 1) / 2;
+    const colorPosition = (index / safeCount) * 3;
     return Object.freeze({
       index,
       angle: (360 / safeCount) * index,
-      factor: 0.58 + (primary * 0.27) + (secondary * 0.15),
-      tone: index % 3,
-      duration: 1.05 + ((index % 7) * 0.11),
-      delay: -((index % 11) * 0.09),
+      factor: 0.72 + (primary * 0.18) + (secondary * 0.1),
+      tone: Math.min(2, Math.floor(colorPosition)),
+      toneMix: colorPosition % 1,
+      delay: -(index / safeCount) * 2.4,
     });
   }));
 }
 
 export function getRadialVoiceAmplitude(level, factor = 1) {
-  return 3 + (clampLevel(factor) * 2) + (clampLevel(level) * clampLevel(factor) * 30);
+  return 4 + (normalizeRadialVoiceLevel(level) * clampLevel(factor) * 28);
 }

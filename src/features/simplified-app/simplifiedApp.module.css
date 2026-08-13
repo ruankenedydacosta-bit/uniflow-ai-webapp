@@ -763,6 +763,7 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 180ms ease-out;
+  will-change: opacity;
 }
 
 .uniButton[data-state="listening"] .radialVoiceWaveform {
@@ -781,31 +782,29 @@
   position: absolute;
   top: 0;
   left: 50%;
-  width: 2px;
+  width: 1.35px;
   height: calc(
-    3px
-    + var(--bar-factor) * 2px
-    + var(--radial-voice-level, 0) * var(--bar-factor) * 30px
+    4px
+    + var(--radial-voice-level, 0) * var(--bar-factor) * 28px
   );
   border-radius: 999px;
-  background: var(--uf-app-primary);
-  box-shadow: 0 0 7px rgba(37, 99, 235, .7);
+  color: color-mix(in srgb, var(--uf-app-primary), var(--uf-app-focus) calc(var(--bar-tone-mix) * 100%));
+  background: currentColor;
+  box-shadow: 0 0 5px currentColor;
   content: "";
-  opacity: calc(.5 + var(--bar-factor) * .42);
+  opacity: calc(.54 + var(--bar-factor) * .38);
   transform: translate(-50%, -100%);
   transform-origin: 50% 100%;
-  transition: height 70ms ease-out;
-  animation: radialVoiceDrift var(--bar-duration) ease-in-out var(--bar-delay) infinite alternate;
+  animation: radialVoiceFlow 2.4s ease-in-out var(--bar-delay) infinite;
+  will-change: height, transform;
 }
 
 .radialVoiceBar[data-tone="1"]::before {
-  background: var(--uf-app-focus);
-  box-shadow: 0 0 7px rgba(34, 211, 238, .68);
+  color: color-mix(in srgb, var(--uf-app-focus), var(--uf-app-ai) calc(var(--bar-tone-mix) * 100%));
 }
 
 .radialVoiceBar[data-tone="2"]::before {
-  background: var(--uf-app-ai);
-  box-shadow: 0 0 7px rgba(139, 92, 246, .68);
+  color: color-mix(in srgb, var(--uf-app-ai), var(--uf-app-primary) calc(var(--bar-tone-mix) * 100%));
 }
 
 .uniMark {
@@ -938,9 +937,9 @@
   line-height: 1.5;
 }
 
-@keyframes radialVoiceDrift {
-  from { transform: translate(-50%, -100%) scaleY(.92); }
-  to { transform: translate(-50%, -100%) scaleY(1.04); }
+@keyframes radialVoiceFlow {
+  0%, 100% { transform: translate(-50%, -100%) scaleY(.94); }
+  50% { transform: translate(-50%, -100%) scaleY(1.04); }
 }
 
 @keyframes simplifiedSpin {
