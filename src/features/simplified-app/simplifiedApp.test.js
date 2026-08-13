@@ -1413,16 +1413,22 @@ test('campo de busca do histórico usa font-size >= 16px -- evita o zoom automá
 // respeita prefers-reduced-motion; nunca bloqueia o push-to-talk.
 // ============================================================================
 
-test('BUG 3: Home usa useVoiceIntensity com o stream do motor de voz existente, ativo só durante isListening', async () => {
+test('waveform isolada usa useVoiceIntensity com o stream existente sem rerenderizar a Home por nível', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /import \{[\s\S]*?useVoiceIntensity[\s\S]*?\} from '\.\.\/uni-voice\/index\.js';/);
-  assert.match(home, /const \{ level: voiceLevel \} = useVoiceIntensity\(\{\s*getStream: voiceInput\.getActiveStream,\s*active: isListening,\s*getSessionId: voiceInput\.getActiveSessionId,\s*\}\);/);
+  const radialComponent = home.slice(
+    home.indexOf('function RadialVoiceWaveform'),
+    home.indexOf('function getVoiceActivationError'),
+  );
+  const homeComponent = home.slice(home.indexOf('function SimplifiedHomeView'));
+  assert.match(radialComponent, /useVoiceIntensity\(\{ getStream, active, getSessionId \}\)/);
+  assert.doesNotMatch(homeComponent, /useVoiceIntensity\(/);
 });
 
-test('BUG 3: o anel de intensidade só recebe o nível de voz enquanto isListening -- nunca fora do estado de escuta', async () => {
+test('anel antigo permanece um glow discreto e não recebe atualizações de nível na Home', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /className=\{styles\.uniVoiceLevelRing\}/);
-  assert.match(home, /style=\{isListening \? \{ '--voice-level': voiceLevel \} : undefined\}/);
+  assert.doesNotMatch(home, /'--voice-level': voiceLevel/);
 });
 
 test('waveform radial usa 108 barras determinísticas em 360 graus, sem aleatoriedade', async () => {
@@ -1483,7 +1489,7 @@ test('waveform é decorativa, só aparece em listening e não captura eventos de
     source('./SimplifiedHomeView.jsx'),
     source('./simplifiedApp.module.css'),
   ]);
-  assert.match(home, /<RadialVoiceWaveform active=\{isListening\} level=\{voiceLevel\} \/>/);
+  assert.match(home, /<RadialVoiceWaveform\s+active=\{isListening\}\s+getStream=\{voiceInput\.getActiveStream\}\s+getSessionId=\{voiceInput\.getActiveSessionId\}\s+\/>/);
   assert.match(css, /\.radialVoiceWaveform \{[\s\S]{0,220}pointer-events: none;/);
   assert.match(css, /\.uniButton\[data-state="listening"\] \.radialVoiceWaveform \{\s*opacity: 1;/);
   assert.doesNotMatch(css, /\.uniButton\[data-state="transcribing"\] \.radialVoiceWaveform/);
