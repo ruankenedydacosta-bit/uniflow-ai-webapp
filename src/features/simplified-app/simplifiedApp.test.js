@@ -404,23 +404,56 @@ test('Home reutiliza o controlador compartilhado e não cria capturador paralelo
 // PUSH-TO-TALK: pressionar e segurar grava, soltar encerra e envia -- nunca
 // redireciona para /app/uni. Só "Ver conversa completa" (e o link de editar
 // uma confirmação pendente, ação explícita e separada) navega para lá.
+//
+// BUG REAL EM DISPOSITIVO FÍSICO: rolar a Home tocando primeiro neste botão
+// podia deixar a Uni presa em "Ouvindo..." para sempre -- a correção
+// anterior só endureceu o OUTRO botão (o compacto da barra inferior,
+// usePressAndHold.js). Causa raiz real aqui: beginVoiceCapture() era
+// chamado de forma síncrona e imediata no próprio pointerdown, sem nenhuma
+// distinção entre "começar a segurar" e "começar a rolar", e não existia
+// handler de pointermove -- nenhum código olhava para onde o dedo se movia
+// depois do toque. Agora: activation delay (VOICE_ACTIVATION_DELAY_MS) +
+// threshold de movimento (VOICE_MOVE_CANCEL_PX) distinguem hold real de
+// scroll/drag; touch-action passa de none para pan-y no CSS (rolagem
+// vertical nativa volta a funcionar); uma rede de segurança em window
+// (pointerup/pointercancel) + um watchdog por gesto cobrem o caso do
+// navegador nunca entregar o evento terminal ao elemento. Todo caminho de
+// término passa por UMA única rotina idempotente: finishVoiceInteraction.
 // ============================================================================
 
-test('pointerdown inicia a captura via beginVoiceCapture -- nunca navega', async () => {
+test('pointerdown NÃO inicia a captura imediatamente -- só agenda o timer de ativação (distingue hold de scroll) -- nunca navega', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function handleVoicePointerDown(event) {');
-  assert.ok(idx > -1);
-  const slice = home.slice(idx, idx + 400);
-  assert.match(slice, /if \(!beginVoiceCapture\(\)\) return;/);
+  const endIdx = home.indexOf('function handleVoicePointerMove', idx);
+  assert.ok(idx > -1 && endIdx > idx);
+  const slice = home.slice(idx, endIdx);
+  assert.doesNotMatch(slice, /^\s*if \(!beginVoiceCapture\(\)\) return;/m);
   assert.match(slice, /pressedGestureRef\.current = event\.pointerId;/);
+  assert.match(slice, /gestureRef\.current = \{/);
+  assert.match(slice, /captureStarted: false,/);
+  assert.match(slice, /gestureRef\.current\.activationTimer = setTimeout\(\(\) => \{/);
+  assert.match(slice, /if \(!beginVoiceCapture\(\)\) \{/);
+  assert.match(slice, /gesture\.captureStarted = true;/);
+  assert.match(slice, /\}, VOICE_ACTIVATION_DELAY_MS\);/);
   assert.doesNotMatch(slice, /navigate\(/);
 });
 
 test('pointerdown chama setPointerCapture com o pointerId do evento -- garante que pointerup/move continuem chegando neste botão mesmo se o dedo sair da área visual', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function handleVoicePointerDown(event) {');
-  const slice = home.slice(idx, idx + 400);
+  const endIdx = home.indexOf('function handleVoicePointerMove', idx);
+  const slice = home.slice(idx, endIdx);
   assert.match(slice, /event\.currentTarget\.setPointerCapture\?\.\(event\.pointerId\);/);
+});
+
+test('pointerdown arma a rede de segurança em window (pointerup/pointercancel) e um watchdog por gesto -- independentes de qual elemento o navegador notifica', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const idx = home.indexOf('function handleVoicePointerDown(event) {');
+  const endIdx = home.indexOf('function handleVoicePointerMove', idx);
+  const slice = home.slice(idx, endIdx);
+  assert.match(slice, /window\.addEventListener\('pointerup', handleWindowVoicePointerEndRef\.current, true\);/);
+  assert.match(slice, /window\.addEventListener\('pointercancel', handleWindowVoicePointerEndRef\.current, true\);/);
+  assert.match(slice, /gestureRef\.current\.watchdogTimer = setTimeout\(\(\) => \{\s*\n\s*finishVoiceInteractionRef\.current\?\.\('watchdog-timeout'\);\s*\n\s*\}, VOICE_GESTURE_WATCHDOG_MS\);/);
 });
 
 test('BUG REAL: pointerup de um pointerId diferente do que iniciou a gravação é ignorado -- nunca encerra o gesto de outro dedo', async () => {
@@ -436,7 +469,7 @@ test('BUG REAL: segundo dedo (segundo pointerdown enquanto o primeiro ainda est�
   const slice = home.slice(idx, idx + 400);
   // pressedGestureRef já guarda o pointerId do primeiro dedo -- um segundo
   // pointerdown com pointerId diferente cai neste mesmo guard e retorna sem
-  // chamar beginVoiceCapture/setPointerCapture de novo.
+  // rearmar gestureRef/timers/setPointerCapture de novo.
   assert.match(slice, /if \(pressedGestureRef\.current !== null\) return;/);
   const upIdx = home.indexOf('function handleVoicePointerUp(event) {');
   const cancelIdx = home.indexOf('function handleVoicePointerCancel(event) {');
@@ -453,7 +486,7 @@ test('BUG REAL: segundo dedo (segundo pointerdown enquanto o primeiro ainda est�
 test('beginVoiceCapture chama voiceInput.start() e nunca navega, mesmo em erro de permissão anterior', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function beginVoiceCapture() {');
-  const endIdx = home.indexOf('function endVoiceCapture', idx);
+  const endIdx = home.indexOf('function finishVoiceInteraction', idx);
   assert.ok(idx > -1 && endIdx > idx);
   const slice = home.slice(idx, endIdx);
   assert.match(slice, /if \(plan\.resetError\) voiceInput\.reset\(\);/);
@@ -470,7 +503,7 @@ test('beginVoiceCapture chama voiceInput.start() e nunca navega, mesmo em erro d
 test('HOTFIX: beginVoiceCapture interrompe a fala (voiceController.stop()) E inicia a captura no MESMO gesto quando isSpeaking é true', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function beginVoiceCapture() {');
-  const endIdx = home.indexOf('function endVoiceCapture', idx);
+  const endIdx = home.indexOf('function finishVoiceInteraction', idx);
   const slice = home.slice(idx, endIdx);
   assert.match(slice, /const plan = resolveBargeInPlan\(\{/);
   assert.match(slice, /if \(plan\.interruptSpeech\) voiceController\.stop\(\);/);
@@ -478,28 +511,28 @@ test('HOTFIX: beginVoiceCapture interrompe a fala (voiceController.stop()) E ini
   const interruptIdx = slice.indexOf('if (plan.interruptSpeech)');
   const startIdx = slice.indexOf('if (plan.startCapture) {');
   assert.ok(interruptIdx > -1 && startIdx > interruptIdx, 'interromper a fala deve vir ANTES de iniciar a captura, no mesmo gesto');
-  assert.match(slice, /return true;\s*\}\s*$/, 'quando o plano prossegue (mesmo interrompendo a fala), o gesto é tratado como iniciado (true)');
+  assert.match(slice, /return true;\s*\}/, 'quando o plano prossegue (mesmo interrompendo a fala), o gesto é tratado como iniciado (true)');
 });
 
 test('pointerup encerra e envia (stop), nunca navega para /app/uni', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function handleVoicePointerUp(event) {');
-  const endIdx = home.indexOf('function endVoiceCapture', 0);
-  assert.ok(idx > -1 && endIdx > -1);
-  const handlerSlice = home.slice(idx, idx + 400);
-  assert.match(handlerSlice, /endVoiceCapture\(\{ canceled: false \}\);/);
-  const endSlice = home.slice(endIdx, endIdx + 500);
-  assert.match(endSlice, /if \(voiceInput\.isListening\) \{\s*voiceInput\.stop\(\);/);
+  const finishIdx = home.indexOf('function finishVoiceInteraction(reason) {');
+  assert.ok(idx > -1 && finishIdx > -1);
+  const handlerSlice = home.slice(idx, idx + 200);
+  assert.match(handlerSlice, /finishVoiceInteraction\('released'\);/);
+  const finishSlice = home.slice(finishIdx, finishIdx + 900);
+  assert.match(finishSlice, /if \(reason === 'released'\) \{\s*if \(voiceInput\.isListening\) \{\s*voiceInput\.stop\(\);/);
   assert.doesNotMatch(handlerSlice, /navigate\(/);
-  assert.doesNotMatch(endSlice, /navigate\(/);
+  assert.doesNotMatch(finishSlice, /navigate\(/);
 });
 
 test('pointercancel encerra SEM enviar (cancel), nunca navega', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const cancelIdx = home.indexOf('function handleVoicePointerCancel(event) {');
   assert.ok(cancelIdx > -1);
-  const cancelSlice = home.slice(cancelIdx, cancelIdx + 400);
-  assert.match(cancelSlice, /endVoiceCapture\(\{ canceled: true \}\);/);
+  const cancelSlice = home.slice(cancelIdx, cancelIdx + 200);
+  assert.match(cancelSlice, /finishVoiceInteraction\('pointercancel'\);/);
   assert.doesNotMatch(cancelSlice, /navigate\(/);
 });
 
@@ -515,7 +548,7 @@ test('pointercancel encerra SEM enviar (cancel), nunca navega', async () => {
 // correspondente), nunca a posição do ponteiro.
 // ============================================================================
 
-test('BUG REAL: pointerleave NÃO encerra a gravação -- o botão não tem mais esse handler, só pointerup/pointercancel/lostpointercapture decidem o fim', async () => {
+test('BUG REAL: pointerleave NÃO encerra a gravação -- o botão não tem esse handler, só pointerup/pointercancel/lostpointercapture/movimento além do threshold decidem o fim', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.doesNotMatch(home, /handleVoicePointerLeave/);
   assert.doesNotMatch(home, /onPointerLeave=/);
@@ -525,35 +558,73 @@ test('BUG REAL: lostpointercapture cancela a gravação (rede de segurança), se
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function handleVoiceLostPointerCapture(event) {');
   assert.ok(idx > -1, 'handleVoiceLostPointerCapture deve existir como a rede de segurança real');
-  const slice = home.slice(idx, idx + 300);
-  // Mesma guarda usada em pointerup/pointercancel: se pressedGestureRef já
-  // foi zerado (porque NÓS mesmos liberamos a captura ao processar
-  // pointerup/pointercancel primeiro -- o que por spec também dispara
-  // lostpointercapture), este handler não re-executa endVoiceCapture.
+  const slice = home.slice(idx, idx + 200);
+  // finishVoiceInteraction, chamado abaixo, é quem zera pressedGestureRef/
+  // gestureRef -- se já não há gesto rastreado (porque NÓS mesmos liberamos
+  // a captura ao processar pointerup/pointercancel primeiro -- o que por
+  // spec também dispara lostpointercapture), a chamada é um no-op seguro.
   assert.match(slice, /if \(pressedGestureRef\.current !== event\.pointerId\) return;/);
-  assert.match(slice, /pressedGestureRef\.current = null;/);
-  assert.match(slice, /endVoiceCapture\(\{ canceled: true \}\);/);
+  assert.match(slice, /finishVoiceInteraction\('lostpointercapture'\);/);
 });
 
-test('BUG REAL: nenhum handler de pointermove existe no botão principal -- movimento leve do dedo nunca encerra a gravação', async () => {
+// ============================================================================
+// SCROLL NÃO É COMANDO DE VOZ: handleVoicePointerMove cancela o gesto assim
+// que o dedo se move além do threshold, em qualquer direção -- antes da
+// captura começar (o timer de ativação nunca chega a rodar beginVoiceCapture,
+// nenhuma mensagem é gerada) ou depois (finishVoiceInteraction para a
+// gravação em andamento).
+// ============================================================================
+
+test('handleVoicePointerMove existe no botão principal e cancela o gesto ao ultrapassar o threshold de movimento, em qualquer direção', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  const buttonIdx = home.indexOf('<button\n          type="button"\n          className={styles.uniButton}');
+  const buttonIdx = home.indexOf('<button\n          ref={buttonRef}');
   assert.ok(buttonIdx > -1);
-  const buttonSlice = home.slice(buttonIdx, buttonIdx + 700);
-  assert.doesNotMatch(buttonSlice, /onPointerMove=/);
+  const buttonSlice = home.slice(buttonIdx, buttonIdx + 800);
+  assert.match(buttonSlice, /onPointerMove=\{handleVoicePointerMove\}/);
+
+  const idx = home.indexOf('function handleVoicePointerMove(event) {');
+  assert.ok(idx > -1);
+  const slice = home.slice(idx, idx + 400);
+  assert.match(slice, /if \(!gesture \|\| event\.pointerId !== gesture\.pointerId\) return;/);
+  assert.match(slice, /const distance = Math\.hypot\(event\.clientX - gesture\.x, event\.clientY - gesture\.y\);/);
+  assert.match(slice, /if \(distance > VOICE_MOVE_CANCEL_PX\) \{\s*finishVoiceInteraction\('scroll'\);/);
 });
 
-test('endVoiceCapture cancela (sem enviar) quando o botão é solto antes da gravação realmente começar', async () => {
+test('finishVoiceInteraction nunca envia nada (nem stop, nem cancel) se a captura ainda não tinha começado -- garante que scroll/gesto rápido não gera mensagem para a Uni', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  const idx = home.indexOf('function endVoiceCapture({ canceled }) {');
+  const idx = home.indexOf('function finishVoiceInteraction(reason) {');
   assert.ok(idx > -1);
-  const slice = home.slice(idx, idx + 500);
-  assert.match(slice, /if \(canceled\) \{\s*voiceInput\.cancel\(\);\s*return;\s*\}/);
-  assert.match(slice, /if \(voiceInput\.isListening\) \{\s*voiceInput\.stop\(\);\s*return;\s*\}/);
-  // Fora dos dois casos acima (ainda não ouvindo -- ex.: aguardando
-  // permissão), cai no cancelamento -- nunca deixa uma captura seguir
-  // sozinha depois que o usuário já soltou o botão.
-  assert.match(slice, /voiceInput\.cancel\(\);\s*\}/);
+  const slice = home.slice(idx, idx + 900);
+  assert.match(slice, /const \{ pointerId, captureStarted \} = gesture;/);
+  assert.match(slice, /if \(!captureStarted\) return;/);
+  const guardIdx = slice.indexOf('if (!captureStarted) return;');
+  const stopIdx = slice.indexOf("if (reason === 'released')");
+  assert.ok(guardIdx > -1 && stopIdx > guardIdx, 'a saída antecipada de captura-nunca-iniciada precisa vir ANTES de qualquer stop/cancel');
+});
+
+test('finishVoiceInteraction é idempotente -- chamar sem nenhum gesto rastreado (gestureRef.current null) é um no-op seguro', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const idx = home.indexOf('function finishVoiceInteraction(reason) {');
+  const slice = home.slice(idx, idx + 200);
+  assert.match(slice, /const gesture = gestureRef\.current;\s*\n\s*if \(!gesture\) return;/);
+});
+
+test('finishVoiceInteraction cancela (sem enviar) quando a gravação já começou mas o motivo não é "released" (scroll/pointercancel/lostpointercapture/watchdog/etc.)', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const idx = home.indexOf('function finishVoiceInteraction(reason) {');
+  const slice = home.slice(idx, idx + 900);
+  assert.match(slice, /\} else \{\s*voiceInput\.cancel\(\);\s*\}/);
+});
+
+test('finishVoiceInteraction sempre libera a rede de segurança (timers + listeners de window) e o pointer capture, antes de decidir stop/cancel', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const idx = home.indexOf('function finishVoiceInteraction(reason) {');
+  const slice = home.slice(idx, idx + 900);
+  const detachIdx = slice.indexOf('detachVoiceGestureSafetyNet();');
+  const releaseCaptureIdx = slice.indexOf('buttonRef.current.releasePointerCapture(pointerId);');
+  const captureStartedIdx = slice.indexOf('if (!captureStarted) return;');
+  assert.ok(detachIdx > -1 && releaseCaptureIdx > detachIdx && captureStartedIdx > releaseCaptureIdx,
+    'ordem: destravar rede de segurança -> liberar pointer capture -> só então decidir stop/cancel');
 });
 
 test('um único gesto por vez: pointerdown repetido enquanto já pressionado é ignorado (evita gravação/envio duplicado)', async () => {
@@ -569,36 +640,68 @@ test('um único gesto por vez: pointerdown repetido enquanto já pressionado é 
 
 // HOTFIX FINAL (deadlock "OUVINDO..." travado até reload/troca de rota) --
 // CAUSA RAIZ: o botão "Cancelar escuta" chamava voiceInput.cancel DIRETO,
-// nunca passando por pressedGestureRef. Se o usuário ainda estava com o
+// nunca passando pelo gesto rastreado. Se o usuário ainda estava com o
 // ponteiro pressionado no botão principal (pointerdown já disparado) e
 // clicava em "Cancelar escuta" em vez de soltar, a captura era cancelada
-// mas pressedGestureRef.current ficava preso no pointerId antigo -- todo
-// pointerdown seguinte no botão principal era silenciosamente ignorado
-// (`if (pressedGestureRef.current !== null) return;`), exigindo reload/
-// troca de rota para destravar.
-test('HOTFIX FINAL: "Cancelar escuta" também libera pressedGestureRef (não é mais um cancelamento independente do gesto rastreado)', async () => {
+// mas pressedGestureRef/gestureRef ficavam presos no pointerId antigo --
+// todo pointerdown seguinte no botão principal era silenciosamente ignorado,
+// exigindo reload/troca de rota para destravar.
+test('HOTFIX FINAL: "Cancelar escuta" passa pelo gesto rastreado (finishVoiceInteraction) E sempre chama voiceInput.cancel() por cima -- cobre também captura iniciada por teclado', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(
     home,
-    /function handleCancelVoiceButtonClick\(\) \{\s*\n\s*pressedGestureRef\.current = null;\s*\n\s*voiceInput\.cancel\(\);\s*\n\s*\}/,
+    /function handleCancelVoiceButtonClick\(\) \{\s*\n\s*pressedGestureRef\.current = null;\s*\n\s*finishVoiceInteraction\('cancel-button'\);\s*\n\s*voiceInput\.cancel\(\);\s*\n\s*\}/,
   );
   assert.match(home, /onClick=\{handleCancelVoiceButtonClick\}/);
   assert.doesNotMatch(home, /onClick=\{voiceInput\.cancel\}/);
 });
 
-test('background ou fim da captura libera o gesto de voz preso sem exigir reload', async () => {
+test('background ou fim da captura libera o gesto de voz preso sem exigir reload (também passa por finishVoiceInteraction)', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /if \(!voiceInput\.isActive\) pressedGestureRef\.current = null;/);
   assert.match(home, /window\.addEventListener\('pagehide', releasePressedGesture\)/);
   assert.match(home, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
   assert.match(home, /window\.removeEventListener\('pagehide', releasePressedGesture\)/);
+  const idx = home.indexOf('const releasePressedGesture = () => {');
+  const slice = home.slice(idx, idx + 200);
+  assert.match(slice, /finishVoiceInteractionRef\.current\?\.\('lifecycle'\);/);
 });
 
-test('botão central mantém a captura concentrada no círculo sem ocupar as laterais do scroll', async () => {
+// ============================================================================
+// WATCHDOG DE SEGURANÇA (última barreira): se voiceInput.isActive mas
+// nenhum gesto está sendo rastreado, força voiceInput.cancel() -- nunca
+// deveria disparar na prática (a rede de segurança em window e o timeout
+// por gesto já cobrem os casos reais), mas garante que nenhuma combinação
+// de bugs futuros consiga deixar a Uni presa em "Ouvindo..." sem saída.
+// Nunca recarrega a página.
+// ============================================================================
+
+test('watchdog de estado: enquanto voiceInput.isActive e nenhum gesto rastreado, cancela periodicamente -- nunca via reload', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /if \(!voiceInput\.isActive\) return undefined;/);
+  assert.match(home, /if \(pressedGestureRef\.current === null\) voiceInput\.cancel\(\);/);
+  assert.match(home, /const interval = setInterval\(\(\) => \{/);
+  assert.doesNotMatch(home, /window\.location\.reload/);
+  assert.doesNotMatch(home, /location\.reload\(\)/);
+});
+
+test('botão central ~4-5% menor, rolagem vertical nativa habilitada (touch-action: pan-y, nunca none)', async () => {
   const css = await source('./simplifiedApp.module.css');
-  assert.match(css, /\.uniButton\s*\{[\s\S]*?width:\s*clamp\(232px, 64vw, 360px\)/);
-  assert.match(css, /@media \(max-width: 359px\)[\s\S]*?\.uniButton\s*\{\s*width:\s*224px/);
-  assert.match(css, /\.uniButton\s*\{[\s\S]*?touch-action:\s*none/);
+  const idx = css.indexOf('.uniButton {');
+  const block = css.slice(idx, css.indexOf('background:', idx));
+  assert.match(block, /width:\s*clamp\(222px, 61vw, 344px\)/);
+  assert.match(block, /touch-action:\s*pan-y;/);
+  assert.doesNotMatch(block, /touch-action:\s*none;/);
+  assert.match(css, /@media \(max-width: 359px\)[\s\S]*?\.uniButton\s*\{\s*width:\s*214px/);
+});
+
+test('elementos decorativos (::before do botão, anéis) não aumentam a hit-area além do círculo visível', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const beforeIdx = css.indexOf('.uniButton::before {');
+  const beforeSlice = css.slice(beforeIdx, css.indexOf('}', beforeIdx));
+  assert.match(beforeSlice, /pointer-events:\s*none;/);
+  assert.match(css, /\.uniButtonRing\s*\{[\s\S]*?pointer-events:\s*none;/);
+  assert.match(css, /\.uniVoiceLevelRing\s*\{[\s\S]*?pointer-events:\s*none;/);
 });
 
 test('não inicia nova gravação durante o processamento (isInteractionBusy inclui capture busy/typing/executing)', async () => {
@@ -606,17 +709,18 @@ test('não inicia nova gravação durante o processamento (isInteractionBusy inc
   assert.match(home, /const isCaptureBusy = \[\s*VOICE_CAPTURE_STATES\.REQUESTING_PERMISSION,\s*VOICE_CAPTURE_STATES\.PROCESSING,\s*\]\.includes\(voiceInput\.status\);/);
   assert.match(home, /const isInteractionBusy = isTyping \|\| isExecuting \|\| isCaptureBusy;/);
   const beginIdx = home.indexOf('function beginVoiceCapture() {');
-  const beginEndIdx = home.indexOf('function endVoiceCapture', beginIdx);
+  const beginEndIdx = home.indexOf('function finishVoiceInteraction', beginIdx);
   assert.match(home.slice(beginIdx, beginEndIdx), /if \(!plan\.proceed\) return false;/);
 });
 
-test('o botão principal não tem onClick/onTap para abrir o chat -- só pointerdown/up/cancel/lostpointercapture e teclado equivalente', async () => {
+test('o botão principal não tem onClick/onTap para abrir o chat -- só pointerdown/move/up/cancel/lostpointercapture e teclado equivalente', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  const buttonIdx = home.indexOf('<button\n          type="button"\n          className={styles.uniButton}');
+  const buttonIdx = home.indexOf('<button\n          ref={buttonRef}');
   assert.ok(buttonIdx > -1, 'botão principal não encontrado');
-  const buttonSlice = home.slice(buttonIdx, buttonIdx + 700);
+  const buttonSlice = home.slice(buttonIdx, buttonIdx + 800);
   assert.doesNotMatch(buttonSlice, /onClick=/);
   assert.match(buttonSlice, /onPointerDown={handleVoicePointerDown}/);
+  assert.match(buttonSlice, /onPointerMove={handleVoicePointerMove}/);
   assert.match(buttonSlice, /onPointerUp={handleVoicePointerUp}/);
   assert.match(buttonSlice, /onPointerCancel={handleVoicePointerCancel}/);
   assert.match(buttonSlice, /onLostPointerCapture={handleVoiceLostPointerCapture}/);
@@ -1122,12 +1226,13 @@ test('preferência de tamanho textual é aplicada como atributo no shell', async
   assert.match(css, /\.shell\[data-text-size="large"\]/);
 });
 
-test('BUG REAL: .uniButton (botão grande da Uni) tem touch-action: none e bloqueia seleção/callout/drag nativos que poderiam interromper o toque prolongado', async () => {
+test('.uniButton (botão grande da Uni) tem touch-action: pan-y (nunca none -- rolagem precisa continuar funcionando) e bloqueia seleção/callout/drag nativos que poderiam interromper o toque prolongado', async () => {
   const css = await source('./simplifiedApp.module.css');
   const idx = css.indexOf('.uniButton {');
   assert.ok(idx > -1);
   const slice = css.slice(idx, css.indexOf('background:', idx));
-  assert.match(slice, /touch-action:\s*none;/);
+  assert.match(slice, /touch-action:\s*pan-y;/);
+  assert.doesNotMatch(slice, /touch-action:\s*none;/);
   assert.match(slice, /(?<!-webkit-)user-select:\s*none;/);
   assert.match(slice, /-webkit-user-select:\s*none;/);
   assert.match(slice, /-webkit-touch-callout:\s*none;/);
@@ -1302,7 +1407,7 @@ test('BLOCO UNI 2: isSpeaking em SimplifiedHomeView deriva de voiceController.st
 // HOTFIX — Barge-in e captura imediata de voz
 // ============================================================================
 
-test('Requisito 3 — handleVoicePointerUp encerra UMA única gravação: nula o gesto ANTES de chamar endVoiceCapture, e um segundo pointerup com o mesmo pointerId é ignorado', async () => {
+test('Requisito 3 — handleVoicePointerUp encerra UMA única gravação: a guarda de reentrância protege finishVoiceInteraction, que por sua vez nula o gesto ANTES de decidir stop/cancel; um segundo pointerup com o mesmo pointerId é ignorado', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function handleVoicePointerUp(event) {');
   const endIdx = home.indexOf('function handleVoicePointerCancel', idx);
@@ -1310,19 +1415,23 @@ test('Requisito 3 — handleVoicePointerUp encerra UMA única gravação: nula o
   const slice = home.slice(idx, endIdx);
   // Guarda de reentrância: só processa o pointerId que esta função já está
   // rastreando -- um pointerup duplicado (mesmo id) ou de outro ponteiro
-  // nunca chama endVoiceCapture de novo.
+  // nunca chama finishVoiceInteraction de novo (e, mesmo se chamasse,
+  // finishVoiceInteraction em si já é idempotente -- ver teste dedicado).
   assert.match(slice, /if \(pressedGestureRef\.current !== event\.pointerId\) return;/);
   const guardIdx = slice.indexOf('if (pressedGestureRef.current !== event.pointerId) return;');
-  const nullIdx = slice.indexOf('pressedGestureRef.current = null;');
-  const endCaptureIdx = slice.indexOf('endVoiceCapture({ canceled: false });');
-  assert.ok(guardIdx > -1 && nullIdx > guardIdx && endCaptureIdx > nullIdx,
-    'a ordem precisa ser: checar → nular a referência do gesto → só então encerrar a captura');
-  // endVoiceCapture, por sua vez, só chama voiceInput.stop() uma vez
-  // (branch única, sem fallthrough para cancel()).
-  const endCaptureFnIdx = home.indexOf('function endVoiceCapture(');
-  const endCaptureFnEndIdx = home.indexOf('\n  }', endCaptureFnIdx);
-  const endCaptureBody = home.slice(endCaptureFnIdx, endCaptureFnEndIdx);
-  assert.equal((endCaptureBody.match(/voiceInput\.stop\(\)/g) ?? []).length, 1);
+  const finishIdx = slice.indexOf("finishVoiceInteraction('released');");
+  assert.ok(guardIdx > -1 && finishIdx > guardIdx, 'a ordem precisa ser: checar o pointerId → só então encerrar a captura');
+  // finishVoiceInteraction nula gestureRef/pressedGestureRef ANTES de
+  // decidir stop/cancel, e voiceInput.stop() só é chamado por essa ÚNICA
+  // rotina (branch única dentro do reason === 'released', sem fallthrough
+  // para cancel() no mesmo caminho).
+  const finishFnIdx = home.indexOf('function finishVoiceInteraction(reason) {');
+  const finishFnEndIdx = home.indexOf('\n  }', finishFnIdx);
+  const finishBody = home.slice(finishFnIdx, finishFnEndIdx);
+  const nullIdx = finishBody.indexOf('gestureRef.current = null;');
+  const stopIdx = finishBody.indexOf('voiceInput.stop();');
+  assert.ok(nullIdx > -1 && stopIdx > nullIdx, 'gestureRef precisa ser nulado ANTES de qualquer stop/cancel dentro de finishVoiceInteraction');
+  assert.equal((finishBody.match(/voiceInput\.stop\(\)/g) ?? []).length, 1);
 });
 
 test('Requisito 4 — o botão principal só escuta Pointer Events (nunca onTouchStart/onTouchEnd); pointerdown e touchstart nunca podem iniciar duas gravações porque só existe um listener', async () => {
@@ -1358,32 +1467,31 @@ test('Requisito 6 — nenhuma mensagem é publicada duas vezes: onFinalTranscrip
   assert.match(voiceInput, /if \(adapterRef\.current \|\| isVoiceCaptureActive\(state\.status\) \|\| !workspaceId\) return false;/);
 });
 
-test('Repetição sem travamento — os 3 caminhos de soltar (pointerup/pointercancel/lostpointercapture) sempre zeram pressedGestureRef ANTES de encerrar, garantindo que o próximo pointerdown comece limpo', async () => {
+test('Repetição sem travamento — os 3 caminhos de soltar (pointerup/pointercancel/lostpointercapture) todos delegam para finishVoiceInteraction (que sozinho zera pressedGestureRef/gestureRef ANTES de decidir stop/cancel), garantindo que o próximo pointerdown comece limpo', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  for (const marker of [
-    'function handleVoicePointerUp(event) {',
-    'function handleVoicePointerCancel(event) {',
-    'function handleVoiceLostPointerCapture(event) {',
+  for (const [marker, reason] of [
+    ['function handleVoicePointerUp(event) {', 'released'],
+    ['function handleVoicePointerCancel(event) {', 'pointercancel'],
+    ['function handleVoiceLostPointerCapture(event) {', 'lostpointercapture'],
   ]) {
     const idx = home.indexOf(marker);
     assert.ok(idx > -1, `${marker} não encontrado`);
     const endIdx = home.indexOf('\n  }', idx);
     const slice = home.slice(idx, endIdx);
-    const nullIdx = slice.indexOf('pressedGestureRef.current = null;');
-    const endCaptureIdx = slice.indexOf('endVoiceCapture(');
-    assert.ok(nullIdx > -1 && endCaptureIdx > nullIdx,
-      `${marker}: pressedGestureRef precisa ser zerado ANTES de endVoiceCapture, senão o próximo gesto pode ficar preso`);
+    assert.match(slice, new RegExp(`finishVoiceInteraction\\('${reason}'\\);`),
+      `${marker}: precisa delegar para finishVoiceInteraction('${reason}')`);
   }
-  // beginVoiceCapture nunca marca o gesto como em andamento por conta
-  // própria -- é handleVoicePointerDown quem seta pressedGestureRef.current
-  // = event.pointerId DEPOIS de beginVoiceCapture() confirmar (return
-  // true), então uma 5ª, 10ª, Nª repetição sempre parte de pressedGestureRef
-  // === null (nunca acumula um AudioContext/analyser "órfão" de um gesto
-  // anterior mal encerrado).
+  // finishVoiceInteraction nula gestureRef/pressedGestureRef ANTES de
+  // decidir stop/cancel -- ver teste dedicado ("libera a rede de segurança
+  // ... antes de decidir stop/cancel"). handleVoicePointerDown nunca marca
+  // o gesto como "capturando" por conta própria -- só depois do timer de
+  // ativação confirmar (gesture.captureStarted = true), então uma 5ª, 10ª,
+  // Nª repetição sempre parte de pressedGestureRef === null (nunca acumula
+  // um AudioContext/analyser "órfão" de um gesto anterior mal encerrado).
   const downIdx = home.indexOf('function handleVoicePointerDown(event) {');
-  const downEndIdx = home.indexOf('\n  }', downIdx);
+  const downEndIdx = home.indexOf('function handleVoicePointerMove', downIdx);
   const downSlice = home.slice(downIdx, downEndIdx);
   assert.match(downSlice, /if \(pressedGestureRef\.current !== null\) return;/);
-  assert.match(downSlice, /if \(!beginVoiceCapture\(\)\) return;/);
   assert.match(downSlice, /pressedGestureRef\.current = event\.pointerId;/);
+  assert.match(downSlice, /gesture\.captureStarted = true;/);
 });
