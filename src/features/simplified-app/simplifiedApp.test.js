@@ -408,33 +408,39 @@ test('Home reutiliza o controlador compartilhado e não cria capturador paralelo
 // BUG REAL EM DISPOSITIVO FÍSICO: rolar a Home tocando primeiro neste botão
 // podia deixar a Uni presa em "Ouvindo..." para sempre -- a correção
 // anterior só endureceu o OUTRO botão (o compacto da barra inferior,
-// usePressAndHold.js). Causa raiz real aqui: beginVoiceCapture() era
-// chamado de forma síncrona e imediata no próprio pointerdown, sem nenhuma
-// distinção entre "começar a segurar" e "começar a rolar", e não existia
-// handler de pointermove -- nenhum código olhava para onde o dedo se movia
-// depois do toque. Agora: activation delay (VOICE_ACTIVATION_DELAY_MS) +
-// threshold de movimento (VOICE_MOVE_CANCEL_PX) distinguem hold real de
-// scroll/drag; touch-action passa de none para pan-y no CSS (rolagem
-// vertical nativa volta a funcionar); uma rede de segurança em window
-// (pointerup/pointercancel) + um watchdog por gesto cobrem o caso do
-// navegador nunca entregar o evento terminal ao elemento. Todo caminho de
-// término passa por UMA única rotina idempotente: finishVoiceInteraction.
+// usePressAndHold.js). Causa raiz real aqui: não existia handler de
+// pointermove -- nenhum código olhava para onde o dedo se movia depois do
+// toque, e nenhuma rede de segurança fora do próprio elemento existia.
+//
+// HOTFIX (regressão real revertida): a primeira tentativa desta correção
+// somou um activation delay de 160ms + trocou touch-action de `none` para
+// `pan-y`. No aparelho físico, um hold NORMAL (sem nenhum scroll) passou a
+// ficar preso em "Ouvindo..." -- `touch-action: none` já existia por um
+// motivo documentado (mesma classe de bug de WebKit/Chrome mobile), e
+// `pan-y` reintroduziu exatamente esse risco. Revertido: beginVoiceCapture()
+// volta a rodar IMEDIATO no pointerdown (idêntico ao comportamento
+// original), touch-action volta a `none` (mesmo valor comprovado do botão
+// compacto). O que fica da correção: threshold de movimento
+// (VOICE_MOVE_CANCEL_PX) cancela o gesto em qualquer direção assim que
+// ultrapassado; rede de segurança em window (pointerup/pointercancel) +
+// watchdog por gesto cobrem o caso do navegador nunca entregar o evento
+// terminal ao elemento. Todo caminho de término passa por UMA única rotina
+// idempotente: finishVoiceInteraction.
 // ============================================================================
 
-test('pointerdown NÃO inicia a captura imediatamente -- só agenda o timer de ativação (distingue hold de scroll) -- nunca navega', async () => {
+test('pointerdown inicia a captura IMEDIATAMENTE via beginVoiceCapture (idêntico ao comportamento original -- activation delay foi revertido) -- nunca navega', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('function handleVoicePointerDown(event) {');
   const endIdx = home.indexOf('function handleVoicePointerMove', idx);
   assert.ok(idx > -1 && endIdx > idx);
   const slice = home.slice(idx, endIdx);
-  assert.doesNotMatch(slice, /^\s*if \(!beginVoiceCapture\(\)\) return;/m);
+  assert.doesNotMatch(slice, /activationTimer|VOICE_ACTIVATION_DELAY_MS/);
   assert.match(slice, /pressedGestureRef\.current = event\.pointerId;/);
   assert.match(slice, /gestureRef\.current = \{/);
   assert.match(slice, /captureStarted: false,/);
-  assert.match(slice, /gestureRef\.current\.activationTimer = setTimeout\(\(\) => \{/);
   assert.match(slice, /if \(!beginVoiceCapture\(\)\) \{/);
-  assert.match(slice, /gesture\.captureStarted = true;/);
-  assert.match(slice, /\}, VOICE_ACTIVATION_DELAY_MS\);/);
+  assert.match(slice, /finishVoiceInteraction\('activation-failed'\);/);
+  assert.match(slice, /gestureRef\.current\.captureStarted = true;/);
   assert.doesNotMatch(slice, /navigate\(/);
 });
 
@@ -569,10 +575,11 @@ test('BUG REAL: lostpointercapture cancela a gravação (rede de segurança), se
 
 // ============================================================================
 // SCROLL NÃO É COMANDO DE VOZ: handleVoicePointerMove cancela o gesto assim
-// que o dedo se move além do threshold, em qualquer direção -- antes da
-// captura começar (o timer de ativação nunca chega a rodar beginVoiceCapture,
-// nenhuma mensagem é gerada) ou depois (finishVoiceInteraction para a
-// gravação em andamento).
+// que o dedo se move além do threshold, em qualquer direção -- a gravação
+// em andamento é parada/descartada via finishVoiceInteraction (nunca gera
+// mensagem/transcrição para a Uni, ver `if (!captureStarted) return;` para
+// o caso raro em que beginVoiceCapture nem chegou a rodar, ex.: recusado
+// por isInteractionBusy).
 // ============================================================================
 
 test('handleVoicePointerMove existe no botão principal e cancela o gesto ao ultrapassar o threshold de movimento, em qualquer direção', async () => {
@@ -685,13 +692,13 @@ test('watchdog de estado: enquanto voiceInput.isActive e nenhum gesto rastreado,
   assert.doesNotMatch(home, /location\.reload\(\)/);
 });
 
-test('botão central ~4-5% menor, rolagem vertical nativa habilitada (touch-action: pan-y, nunca none)', async () => {
+test('botão central ~4-5% menor; touch-action continua none (revertido de uma tentativa de pan-y que travava "Ouvindo..." em hold normal, ver HOTFIX)', async () => {
   const css = await source('./simplifiedApp.module.css');
   const idx = css.indexOf('.uniButton {');
   const block = css.slice(idx, css.indexOf('background:', idx));
   assert.match(block, /width:\s*clamp\(222px, 61vw, 344px\)/);
-  assert.match(block, /touch-action:\s*pan-y;/);
-  assert.doesNotMatch(block, /touch-action:\s*none;/);
+  assert.match(block, /touch-action:\s*none;/);
+  assert.doesNotMatch(block, /touch-action:\s*pan-y;/);
   assert.match(css, /@media \(max-width: 359px\)[\s\S]*?\.uniButton\s*\{\s*width:\s*214px/);
 });
 
@@ -1226,13 +1233,12 @@ test('preferência de tamanho textual é aplicada como atributo no shell', async
   assert.match(css, /\.shell\[data-text-size="large"\]/);
 });
 
-test('.uniButton (botão grande da Uni) tem touch-action: pan-y (nunca none -- rolagem precisa continuar funcionando) e bloqueia seleção/callout/drag nativos que poderiam interromper o toque prolongado', async () => {
+test('.uniButton (botão grande da Uni) tem touch-action: none e bloqueia seleção/callout/drag nativos que poderiam interromper o toque prolongado', async () => {
   const css = await source('./simplifiedApp.module.css');
   const idx = css.indexOf('.uniButton {');
   assert.ok(idx > -1);
   const slice = css.slice(idx, css.indexOf('background:', idx));
-  assert.match(slice, /touch-action:\s*pan-y;/);
-  assert.doesNotMatch(slice, /touch-action:\s*none;/);
+  assert.match(slice, /touch-action:\s*none;/);
   assert.match(slice, /(?<!-webkit-)user-select:\s*none;/);
   assert.match(slice, /-webkit-user-select:\s*none;/);
   assert.match(slice, /-webkit-touch-callout:\s*none;/);
@@ -1483,15 +1489,15 @@ test('Repetição sem travamento — os 3 caminhos de soltar (pointerup/pointerc
   }
   // finishVoiceInteraction nula gestureRef/pressedGestureRef ANTES de
   // decidir stop/cancel -- ver teste dedicado ("libera a rede de segurança
-  // ... antes de decidir stop/cancel"). handleVoicePointerDown nunca marca
-  // o gesto como "capturando" por conta própria -- só depois do timer de
-  // ativação confirmar (gesture.captureStarted = true), então uma 5ª, 10ª,
-  // Nª repetição sempre parte de pressedGestureRef === null (nunca acumula
-  // um AudioContext/analyser "órfão" de um gesto anterior mal encerrado).
+  // ... antes de decidir stop/cancel"). handleVoicePointerDown só marca
+  // captureStarted = true DEPOIS de beginVoiceCapture() confirmar (return
+  // true), então uma 5ª, 10ª, Nª repetição sempre parte de
+  // pressedGestureRef === null (nunca acumula um AudioContext/analyser
+  // "órfão" de um gesto anterior mal encerrado).
   const downIdx = home.indexOf('function handleVoicePointerDown(event) {');
   const downEndIdx = home.indexOf('function handleVoicePointerMove', downIdx);
   const downSlice = home.slice(downIdx, downEndIdx);
   assert.match(downSlice, /if \(pressedGestureRef\.current !== null\) return;/);
   assert.match(downSlice, /pressedGestureRef\.current = event\.pointerId;/);
-  assert.match(downSlice, /gesture\.captureStarted = true;/);
+  assert.match(downSlice, /gestureRef\.current\.captureStarted = true;/);
 });
