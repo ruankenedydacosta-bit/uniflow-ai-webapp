@@ -113,7 +113,25 @@ export function groupAgendaItemsByDay(items) {
     list.push(item);
     grouped.set(key, list);
   }
+  for (const list of grouped.values()) {
+    list.sort(compareAgendaItemsByRecentActivity);
+  }
   return grouped;
+}
+
+function activityTimestamp(value) {
+  const timestamp = Date.parse(value ?? '');
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+/**
+ * Ordenação visual determinística dentro de cada dia: atividade mais
+ * recente primeiro, sem depender da ordem natural recebida do banco.
+ */
+export function compareAgendaItemsByRecentActivity(a, b) {
+  return activityTimestamp(b?.updated_at) - activityTimestamp(a?.updated_at)
+    || activityTimestamp(b?.created_at) - activityTimestamp(a?.created_at)
+    || String(b?.id ?? '').localeCompare(String(a?.id ?? ''));
 }
 
 /**

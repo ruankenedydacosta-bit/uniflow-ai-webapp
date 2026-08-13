@@ -15,6 +15,7 @@ import {
   buildPlanOperationCancelledText,
   buildPlanResultText,
   findPlanOperationCancelTarget,
+  getSingleReadyPlanAction,
   parsePlanCorrectionOverrides,
 } from './financialPlanPresenter.js';
 
@@ -69,6 +70,28 @@ test('describePlanOperation descreve uma despesa resolvida com valor e categoria
   assert.match(text, /R\$ 80,00/);
   assert.match(text, /Alimentação/);
   assert.doesNotMatch(text, /acc-|cat-|0\.\d+/);
+});
+
+test('plano de uma única ação estruturada expõe a mesma action para o card financeiro oficial', () => {
+  const plan = buildPlan([rawOperation()]);
+  const action = getSingleReadyPlanAction(plan);
+  assert.equal(action?.status, 'ready');
+  assert.equal(action?.transactionType, 'expense');
+  assert.equal(action?.category?.name, 'Alimentação');
+  assert.equal(action?.description, 'Mercado');
+  assert.equal(action?.amount, 80);
+  assert.equal(action?.date, REFERENCE_DATE);
+});
+
+test('plano ambíguo ou com múltiplas operações não finge caber em um único card', () => {
+  const multiple = buildPlan([
+    rawOperation({ temporary_id: 'op_1' }),
+    rawOperation({ temporary_id: 'op_2', amount: 30, description: 'Almoço' }),
+  ]);
+  assert.equal(getSingleReadyPlanAction(multiple), null);
+
+  const unresolved = { ...buildPlan([rawOperation()]), status: PLAN_STATUS.AWAITING_CLARIFICATION };
+  assert.equal(getSingleReadyPlanAction(unresolved), null);
 });
 
 test('describePlanOperation descreve transferência com origem e destino', () => {
