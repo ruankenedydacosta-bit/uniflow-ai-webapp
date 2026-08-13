@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
+  CATEGORY_ICON_GROUPS,
   CATEGORY_ICON_OPTIONS,
+  getCategoryIconSections,
   getDefaultCategoryIconKey,
   resolveCategoryIconKey,
   resolveCategoryTone,
@@ -46,10 +48,24 @@ test('CategoryCreateModal: handleClose (usado pelo X do Modal e pelo Cancelar) r
 test('catálogo cobre os ícones semânticos financeiros e não repete chaves', () => {
   const keys = CATEGORY_ICON_OPTIONS.map(({ key }) => key);
   assert.equal(new Set(keys).size, keys.length);
+  assert.equal(keys.length, 74);
+  assert.deepEqual(
+    new Set(CATEGORY_ICON_OPTIONS.map(({ group }) => group)),
+    new Set(Object.values(CATEGORY_ICON_GROUPS)),
+  );
   for (const expected of [
-    'food', 'transport', 'home', 'home-income', 'subscription', 'health',
-    'leisure', 'education', 'debt', 'work', 'other-expense', 'other-income',
-    'gift', 'refund', 'yield', 'salary', 'transfer',
+    'food', 'groceries', 'restaurant', 'home', 'rent', 'condo', 'water',
+    'energy', 'gas', 'internet', 'phone', 'transport', 'fuel', 'parking',
+    'toll', 'car-maintenance', 'health', 'pharmacy', 'health-plan',
+    'personal-care', 'clothing', 'education', 'school-material', 'leisure',
+    'games', 'travel', 'pets', 'subscription', 'taxes', 'debt', 'loan',
+    'insurance', 'gift', 'shopping', 'electronics', 'home-maintenance',
+    'services', 'other-expense', 'salary', 'work', 'sales', 'commission',
+    'bonus', 'refund', 'home-income', 'yield', 'investment', 'dividends',
+    'retirement', 'benefits', 'pension', 'gift-income', 'transfer',
+    'other-income', 'person', 'people', 'company', 'store', 'briefcase',
+    'star', 'heart', 'calendar', 'box', 'tag', 'wallet', 'coin', 'card',
+    'document', 'chart', 'check', 'tool', 'settings', 'package', 'location',
   ]) {
     assert.ok(keys.includes(expected), `ícone ausente: ${expected}`);
   }
@@ -69,7 +85,7 @@ test('resolução semântica distingue entradas, saídas e categorias próximas'
     ['Freelance', 'income', 'work'],
     ['Outras despesas', 'expense', 'other-expense'],
     ['Outras entradas', 'income', 'other-income'],
-    ['Presente', 'income', 'gift'],
+    ['Presente', 'income', 'gift-income'],
     ['Reembolso', 'income', 'refund'],
     ['Rendimentos', 'income', 'yield'],
     ['Salário', 'income', 'salary'],
@@ -78,18 +94,63 @@ test('resolução semântica distingue entradas, saídas e categorias próximas'
   for (const [name, category_type, expected] of cases) {
     assert.equal(resolveCategoryIconKey({ name, category_type }), expected, name);
   }
-  assert.equal(resolveCategoryIconKey({ name: 'Pets', category_type: 'expense' }), 'other-expense');
-  assert.equal(resolveCategoryIconKey({ name: 'Pets', category_type: 'income' }), 'other-income');
+  assert.equal(resolveCategoryIconKey({ name: 'Pets', category_type: 'expense' }), 'pets');
+  assert.equal(resolveCategoryIconKey({ name: 'Cliente João', category_type: 'income' }), 'other-income');
   assert.equal(resolveCategoryIconKey({ name: 'Mercado', icon: 'gift', category_type: 'expense' }), 'gift');
   assert.equal(getDefaultCategoryIconKey('income'), 'other-income');
   assert.equal(resolveCategoryTone({ icon: 'debt' }), 'red');
 });
 
+test('seletor prioriza o tipo atual sem esconder grupos alternativos', () => {
+  const expenseSections = getCategoryIconSections('expense');
+  const incomeSections = getCategoryIconSections('income');
+  assert.deepEqual(expenseSections.map(({ id }) => id), ['expense', 'generic', 'income']);
+  assert.deepEqual(incomeSections.map(({ id }) => id), ['income', 'generic', 'expense']);
+  assert.equal(expenseSections.flatMap(({ options }) => options).length, CATEGORY_ICON_OPTIONS.length);
+  assert.equal(incomeSections.flatMap(({ options }) => options).length, CATEGORY_ICON_OPTIONS.length);
+  assert.equal(expenseSections[0].label, 'Recomendados para Saída');
+  assert.equal(incomeSections[0].label, 'Recomendados para Entrada');
+});
+
 test('CategoryCreateModal oferece nome, tipo e ícone e persiste a chave selecionada', async () => {
   const modal = await source('components/CategoryCreateModal.jsx');
   assert.match(modal, /aria-label="Ícone da categoria"/);
-  assert.match(modal, /CATEGORY_ICON_OPTIONS\.map/);
+  assert.match(modal, /getCategoryIconSections\(categoryType\)/);
+  assert.match(modal, /section\.options\.map/);
   assert.match(modal, /await onCreate\(\{ name: trimmed, category_type: categoryType, icon \}\)/);
+});
+
+test('CategoryCreateModal preserva escolha livre ao alternar Entrada/Saída', async () => {
+  const modal = await source('components/CategoryCreateModal.jsx');
+  assert.match(modal, /iconWasChosenRef\.current = true;\s*setIcon\(option\.key\)/);
+  assert.match(modal, /if \(!iconWasChosenRef\.current\) \{\s*setIcon\(getDefaultCategoryIconKey\(type\)\)/);
+});
+
+test('modal ampliado mantém ícones roláveis e ações acessíveis no viewport móvel', async () => {
+  const modal = await source('components/CategoryCreateModal.jsx');
+  const css = await source('CategoriesPage.module.css');
+  const baseModal = await source('../../components/ui/Modal/Modal.jsx');
+  assert.match(modal, /size="lg"/);
+  assert.match(modal, /bodyClassName=\{styles\.categoryCreateBody\}/);
+  assert.match(modal, /headerClassName=\{styles\.categoryCreateHeader\}/);
+  assert.match(baseModal, /bodyClassName/);
+  assert.match(baseModal, /headerClassName/);
+  assert.match(css, /\.categoryCreateDialog\s*\{[\s\S]*?width: 94vw;[\s\S]*?height: min\(90dvh, 820px\);[\s\S]*?max-width: 620px;[\s\S]*?max-height: min\(90dvh, 820px\);[\s\S]*?overflow: hidden;/);
+  assert.match(css, /\.iconLibrary\s*\{[\s\S]*?overflow-x: hidden;[\s\S]*?overflow-y: auto;[\s\S]*?overscroll-behavior: contain;/);
+  assert.match(css, /@media \(max-width: 520px\)[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(max-height: 640px\)[\s\S]*?max-height: calc\(100dvh - var\(--uf-space-16\)\)/);
+  assert.match(css, /@media \(max-height: 520px\)[\s\S]*?\.categoryCreateHeader p\s*\{\s*display: none;/);
+  assert.match(css, /env\(safe-area-inset-top, 0px\)/);
+});
+
+test('rótulos aceitam duas linhas e seleção combina borda, glow e check', async () => {
+  const modal = await source('components/CategoryCreateModal.jsx');
+  const css = await source('CategoriesPage.module.css');
+  const labelRule = css.match(/\.iconLabel\s*\{[\s\S]*?\}/)?.[0] ?? '';
+  assert.match(modal, /styles\.iconCheck/);
+  assert.match(labelRule, /-webkit-line-clamp: 2;/);
+  assert.doesNotMatch(labelRule, /white-space:\s*nowrap|text-overflow:\s*ellipsis/);
+  assert.match(css, /\.iconOptionSelected\s*\{[\s\S]*?border-width: 2px;[\s\S]*?box-shadow:/);
 });
 
 test('serviço de categorias mantém icon no contrato de leitura e no payload persistido', async () => {
@@ -102,7 +163,7 @@ test('todos os ícones escolhíveis possuem desenho inline no renderer', async (
   const icons = await source('categoryIcons.jsx');
   for (const { key } of CATEGORY_ICON_OPTIONS) {
     const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    assert.match(icons, new RegExp(`(?:^|\\n)\\s*(?:'${escaped}'|${escaped}):\\s*\\(`));
+    assert.match(icons, new RegExp(`(?:^|\\n)\\s*(?:'${escaped}'|${escaped}):\\s*<svg`));
   }
 });
 

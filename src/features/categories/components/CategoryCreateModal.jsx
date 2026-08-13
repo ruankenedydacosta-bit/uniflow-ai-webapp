@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
+import { cx } from '../../../utils/cx.js';
 import {
-  CATEGORY_ICON_OPTIONS,
+  getCategoryIconSections,
   getDefaultCategoryIconKey,
 } from '../categoryIconCatalog.js';
 import { CategoryIcon } from '../categoryIcons.jsx';
@@ -35,6 +36,11 @@ function CategoryCreateModal({
   const [categoryType, setCategoryType] = useState(defaultType);
   const [icon, setIcon] = useState(() => getDefaultCategoryIconKey(defaultType));
   const [localError, setLocalError] = useState('');
+  const iconWasChosenRef = useRef(false);
+  const iconSections = useMemo(
+    () => getCategoryIconSections(categoryType),
+    [categoryType],
+  );
 
   useEffect(() => {
     if (open) {
@@ -43,6 +49,7 @@ function CategoryCreateModal({
       setCategoryType(defaultType);
       setIcon(getDefaultCategoryIconKey(defaultType));
       setLocalError('');
+      iconWasChosenRef.current = false;
     }
   }, [open, defaultType]);
 
@@ -75,11 +82,13 @@ function CategoryCreateModal({
       closeOnEsc={!isMutating}
       title="Nova categoria"
       description="Dê um nome simples e escolha se é uma saída ou uma entrada."
-      size="sm"
-      className={className}
+      size="lg"
+      className={cx(styles.categoryCreateDialog, className)}
+      bodyClassName={styles.categoryCreateBody}
+      headerClassName={styles.categoryCreateHeader}
       overlayClassName={overlayClassName}
     >
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <form className={cx(styles.form, styles.categoryCreateForm)} onSubmit={handleSubmit}>
         <Input
           id="new-category-name"
           label="Nome da categoria"
@@ -108,7 +117,9 @@ function CategoryCreateModal({
               }
               onClick={() => {
                 setCategoryType(type);
-                setIcon(getDefaultCategoryIconKey(type));
+                if (!iconWasChosenRef.current) {
+                  setIcon(getDefaultCategoryIconKey(type));
+                }
               }}
             >
               {TYPE_LABELS[type]}
@@ -118,22 +129,39 @@ function CategoryCreateModal({
 
         <fieldset className={styles.iconFieldset}>
           <legend>Escolha um ícone</legend>
-          <div className={styles.iconGrid} role="radiogroup" aria-label="Ícone da categoria">
-            {CATEGORY_ICON_OPTIONS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                role="radio"
-                aria-checked={icon === option.key}
-                aria-label={option.label}
-                className={icon === option.key
-                  ? `${styles.iconOption} ${styles.iconOptionSelected}`
-                  : styles.iconOption}
-                onClick={() => setIcon(option.key)}
-              >
-                <CategoryIcon category={{ icon: option.key }} />
-                <span>{option.label}</span>
-              </button>
+          <p className={styles.iconHelper}>Todos os símbolos continuam disponíveis.</p>
+          <div className={styles.iconLibrary} role="radiogroup" aria-label="Ícone da categoria">
+            {iconSections.map((section) => (
+              <section className={styles.iconSection} key={section.id}>
+                <h3>{section.label}</h3>
+                <div className={styles.iconGrid}>
+                  {section.options.map((option) => {
+                    const selected = icon === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        aria-label={option.label}
+                        className={selected
+                          ? `${styles.iconOption} ${styles.iconOptionSelected}`
+                          : styles.iconOption}
+                        onClick={() => {
+                          iconWasChosenRef.current = true;
+                          setIcon(option.key);
+                        }}
+                      >
+                        <span className={styles.iconGlyph}>
+                          <CategoryIcon category={{ icon: option.key }} />
+                          {selected ? <span className={styles.iconCheck} aria-hidden="true">✓</span> : null}
+                        </span>
+                        <span className={styles.iconLabel}>{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             ))}
           </div>
         </fieldset>
