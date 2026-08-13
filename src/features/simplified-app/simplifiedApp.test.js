@@ -13,7 +13,11 @@ import {
 } from './simplifiedProductConfig.js';
 import { SIMPLIFIED_UNI_STATES } from './simplifiedHomeState.js';
 import { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
-import { readVisualViewport } from './useVisualViewport.js';
+import {
+  isTextEntryElement,
+  readVisualViewport,
+  resolveKeyboardVisibility,
+} from './useVisualViewport.js';
 import {
   buildRadialVoiceBars,
   getRadialVoiceAmplitude,
@@ -75,28 +79,86 @@ test('visualViewport calcula teclado e área visível sem valores negativos', ()
   assert.deepEqual(readVisualViewport({
     innerHeight: 844,
     visualViewport: { height: 514, offsetTop: 0 },
-  }), { height: 514, offsetTop: 0, keyboardInset: 330 });
+  }), { height: 514, offsetTop: 0, keyboardInset: 330, layoutHeight: 844 });
   assert.deepEqual(readVisualViewport({
     innerHeight: 844,
     visualViewport: { height: 800, offsetTop: 80 },
-  }), { height: 800, offsetTop: 80, keyboardInset: 0 });
+  }), { height: 800, offsetTop: 80, keyboardInset: 0, layoutHeight: 844 });
+});
+
+test('teclado usa redução real do visualViewport e foco somente como fallback', () => {
+  const keyboardMetrics = readVisualViewport({
+    innerHeight: 514,
+    visualViewport: { height: 514, offsetTop: 0 },
+  }, 844);
+  assert.equal(resolveKeyboardVisibility({
+    metrics: keyboardMetrics,
+    hasVisualViewport: true,
+    activeElement: null,
+  }), true);
+  assert.equal(resolveKeyboardVisibility({
+    metrics: { height: 800, offsetTop: 0, keyboardInset: 44, layoutHeight: 844 },
+    hasVisualViewport: true,
+    activeElement: { tagName: 'TEXTAREA' },
+  }), false);
+  assert.equal(resolveKeyboardVisibility({
+    metrics: { height: 0, offsetTop: 0, keyboardInset: 0, layoutHeight: 0 },
+    hasVisualViewport: false,
+    activeElement: { tagName: 'TEXTAREA', disabled: false, readOnly: false },
+  }), true);
+  assert.equal(isTextEntryElement({ tagName: 'INPUT', type: 'checkbox' }), false);
+});
+
+test('abrir e fechar teclado 20 vezes mantém decisão estável', () => {
+  for (let index = 0; index < 20; index += 1) {
+    assert.equal(resolveKeyboardVisibility({
+      metrics: { height: 514, offsetTop: 0, keyboardInset: 330, layoutHeight: 844 },
+      hasVisualViewport: true,
+    }), true);
+    assert.equal(resolveKeyboardVisibility({
+      metrics: { height: 844, offsetTop: 0, keyboardInset: 0, layoutHeight: 844 },
+      hasVisualViewport: true,
+    }), false);
+  }
 });
 
 test('shell acompanha visualViewport e remove listeners do teclado no cleanup', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
   const hook = await source('./useVisualViewport.js');
   const css = await source('./simplifiedApp.module.css');
-  assert.match(shell, /const viewportStyle = useVisualViewport\(\);/);
-  assert.match(shell, /style=\{viewportStyle\}/);
+  assert.match(shell, /const viewportState = useVisualViewport\(\);/);
+  assert.match(shell, /style=\{viewportState\.viewportStyle\}/);
   assert.match(hook, /visualViewport/);
-  assert.match(hook, /addEventListener\('resize', scheduleSettledSync\)/);
-  assert.match(hook, /addEventListener\?\.\('focusout', scheduleSettledSync\)/);
+  assert.match(hook, /addEventListener\?\.\('resize', scheduleSettledSync\)/);
+  assert.match(hook, /addEventListener\?\.\('focusout', handleFocusChange\)/);
   assert.match(hook, /addEventListener\?\.\('visibilitychange', handleVisibilityChange\)/);
-  assert.match(hook, /removeEventListener\('resize', scheduleSettledSync\)/);
+  assert.match(hook, /removeEventListener\?\.\('resize', scheduleSettledSync\)/);
+  assert.match(hook, /removeEventListener\?\.\('focusout', handleFocusChange\)/);
   assert.match(hook, /settleTimers\.forEach/);
   assert.match(css, /height: var\(--uf-visual-viewport-height, 100dvh\);/);
   assert.match(css, /body\[data-simplified-app-mounted="true"\]/);
   assert.match(shell, /body\.setAttribute\('data-simplified-app-mounted', 'true'\)/);
+});
+
+test('Chat da Uni remove somente o header global e esconde a navegação apenas com teclado real', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  const nav = await source('./SimplifiedBottomNavigation.jsx');
+  const css = await source('./simplifiedApp.module.css');
+  assert.match(shell, /const isUniChatRoute = location\.pathname === SIMPLIFIED_ROUTES\.UNI;/);
+  assert.match(shell, /\{hasPageHeader \|\| isUniChatRoute \? null : \(/);
+  assert.match(shell, /isNotificationsRendered && !hasPageHeader && !isUniChatRoute/);
+  assert.match(shell, /<SimplifiedBottomNavigation hidden=\{isUniChatKeyboardOpen\} \/>/);
+  assert.match(nav, /aria-hidden=\{hidden\}/);
+  assert.match(nav, /inert=\{hidden\}/);
+  assert.match(css, /\.bottomNavigationHidden \{[\s\S]*?max-height: 0;/);
+  assert.match(css, /max-height 160ms ease/);
+});
+
+test('Chat preserva posição antiga e só ancora no fim quando stickToBottom já está ativo', async () => {
+  const page = await source('../uni-chat/UniChatPage.jsx');
+  assert.match(page, /const \{ isKeyboardOpen \} = useVisualViewportContext\(\);/);
+  assert.match(page, /if \(!stickToBottom\.current\) return;/);
+  assert.match(page, /\[messages, historyHydrated, isKeyboardOpen, messagesMountTick\]/);
 });
 
 test('workspace Empresa stale exige ativação do workspace Pessoal', () => {

@@ -50,3 +50,17 @@ test('registro de voz usa binding estável; rerender do ChatInput não desmonta 
   assert.doesNotMatch(code, /useEffect\(\(\) => voiceInput\.registerHandlers/);
   assert.doesNotMatch(code, /onChange,[\s\S]*onSend,[\s\S]*voiceInput,[\s\S]*\]\);/);
 });
+
+test('composer aceita múltiplas linhas sem alterar o envio por Enter', async () => {
+  const code = await source();
+  assert.match(code, /<textarea/);
+  assert.match(code, /rows=\{1\}/);
+  assert.match(code, /event\.key !== 'Enter' \|\| event\.shiftKey \|\| event\.isComposing/);
+  assert.match(code, /input\.style\.height = `\$\{Math\.min\(input\.scrollHeight, 120\)\}px`;/);
+});
+
+test('safe area do composer é preservada e removida somente quando o teclado está aberto', async () => {
+  const css = await readFile(new URL('./ChatInput.module.css', import.meta.url), 'utf8');
+  assert.match(css, /padding-bottom: max\(10px, env\(safe-area-inset-bottom\)\);/);
+  assert.match(css, /data-keyboard-open="true"[\s\S]*?padding-bottom: 10px;/);
+});

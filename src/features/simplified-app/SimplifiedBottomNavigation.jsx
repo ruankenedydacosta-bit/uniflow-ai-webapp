@@ -14,9 +14,14 @@ const ICONS = Object.freeze({
   [SIMPLIFIED_ROUTE_IDS.ACCOUNT]: AccountIcon,
 });
 
-function SimplifiedBottomNavigation() {
+function SimplifiedBottomNavigation({ hidden = false }) {
   return (
-    <nav className={styles.bottomNavigation} aria-label="Navegação principal">
+    <nav
+      className={`${styles.bottomNavigation} ${hidden ? styles.bottomNavigationHidden : ''}`}
+      aria-label="Navegação principal"
+      aria-hidden={hidden}
+      inert={hidden}
+    >
       <div
         className={styles.bottomNavigationInner}
         style={{ '--simplified-navigation-count': SIMPLIFIED_NAVIGATION.length }}
