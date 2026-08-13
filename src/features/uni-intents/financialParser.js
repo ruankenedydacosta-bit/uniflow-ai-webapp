@@ -5,7 +5,11 @@ import {
   createConversationContext,
 } from './conversationContext.js';
 import { extractEntities } from './entityExtractor.js';
-import { classifyIntent, normalizeFinancialText } from './intentClassifier.js';
+import {
+  classifyIntent,
+  normalizeFinancialText,
+  stripLeadingConversationalPrefix,
+} from './intentClassifier.js';
 
 const WRITE_INTENTS = new Set([
   'register_income',
@@ -37,12 +41,13 @@ export function parseFinancialText(input, options = {}) {
   const context = safeOptions.context ?? null;
   const referenceDate = safeOptions.referenceDate ?? null;
   const text = typeof input === 'string' ? input.trim() : '';
-  const classification = classifyIntent(text);
-  const extractedEntities = extractEntities(text, {
+  const analysisText = stripLeadingConversationalPrefix(text) || text;
+  const classification = classifyIntent(analysisText);
+  const extractedEntities = extractEntities(analysisText, {
     intent: classification.intent,
     referenceDate,
   });
-  const categoryResult = resolveCategory(text, classification.intent);
+  const categoryResult = resolveCategory(analysisText, classification.intent);
   const draft = {
     version: '1.0',
     input: text,

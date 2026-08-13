@@ -415,6 +415,7 @@ export function classifyQueryType(text) {
     || /\bquanto\s+(?:gastou|gastamos|gastava)\s+(?:com|em|de|na|no|nas|nos)\b/.test(n)
     || /\bquanto\s+(?:foi|custou|custava|saiu)\s+(?:de|com|em|na|no|nas|nos)\b/.test(n)
     || /\bmeus\s+gastos?\s+com\b/.test(n)
+    || /\b(?:mostra|mostrar|mostre|lista|listar|liste)\b[^.!?]*\b(?:gastos?|despesas?)\b/.test(n)
   ) {
     return 'category_expenses';
   }

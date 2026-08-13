@@ -17,6 +17,7 @@ import {
   resolveFinancialQuery,
 } from './financialQueryEngine.js';
 import { buildFinancialSnapshot } from './financialSnapshot.js';
+import { stripLeadingConversationalPrefix } from '../uni-intents/index.js';
 
 const REFERENCE_DATE = '2026-07-15';
 
@@ -280,6 +281,15 @@ test('CORREÇÃO URGENTE: consultas financeiras reais continuam funcionando (sem
   });
   assert.equal(result.handled, true);
   assert.match(result.response.text, /Salário/);
+});
+
+test('saudação + busca financeira usa o restante semântico e encontra a despesa', () => {
+  const text = stripLeadingConversationalPrefix('Olá, mostra minhas despesas do mercado.');
+  const result = resolveFinancialQuery({ text, snapshot: buildSnapshot() });
+
+  assert.equal(text, 'mostra minhas despesas do mercado.');
+  assert.equal(result.handled, true);
+  assert.match(result.response.text, /mercado|120/i);
 });
 
 // ── Resolução (Fase 4/6/8) ──────────────────────────────────────────────────

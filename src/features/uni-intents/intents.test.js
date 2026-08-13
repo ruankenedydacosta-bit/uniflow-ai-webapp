@@ -29,6 +29,19 @@ test('interpreta pagamento de gasolina como despesa', () => {
   assertEntityShape(result);
 });
 
+for (const [input, expectedAmount, expectedDescription] of [
+  ['Bom dia, Uni. Gastei 50 reais no mercado.', 50, 'Mercado'],
+  ['Oi, Uni. Registra 200 reais de gasolina.', 200, 'Gasolina'],
+]) {
+  test(`saudação não contamina lançamento financeiro: ${input}`, () => {
+    const result = parseFinancialText(input);
+    assert.equal(result.intent, 'register_expense');
+    assert.equal(result.entities.amount, expectedAmount);
+    assert.equal(result.entities.description, expectedDescription);
+    assert.equal(result.ready, true);
+  });
+}
+
 test('interpreta valores monetários em português por extenso', () => {
   assert.equal(parseFinancialText('Gastei cinquenta reais no almoço').entities.amount, 50);
   assert.equal(parseFinancialText('Gastei cento e vinte reais no almoço').entities.amount, 120);
