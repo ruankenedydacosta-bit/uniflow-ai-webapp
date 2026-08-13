@@ -11,14 +11,6 @@ export const financialMock = {
     },
     summary: [
       {
-        label: 'Onde estou hoje',
-        value: 18450,
-        detail: 'Saldo disponível para rotina, reserva e metas',
-        badge: 'Saudável',
-        badgeVariant: 'success',
-        tone: 'success',
-      },
-      {
         label: 'Entradas do mês',
         value: 9200,
         detail: 'Salário e rendas extras confirmadas',
@@ -42,11 +34,6 @@ export const financialMock = {
         badgeVariant: 'success',
         tone: 'success',
       },
-    ],
-    cashflow: [
-      { label: 'Hoje', value: 18450, description: 'saldo atual' },
-      { label: '7 dias', value: 19780, description: 'após entradas previstas' },
-      { label: '30 dias', value: 21300, description: 'projeção se nada mudar' },
     ],
     projectionChart: {
       series: [
@@ -73,12 +60,6 @@ export const financialMock = {
           label: 'Metas',
           summary: 'Valor protegido para reserva e objetivos.',
           insight: 'A rota das metas continua saudável se a contribuição for mantida.',
-        },
-        {
-          key: 'balance',
-          label: 'Saldo projetado',
-          summary: 'Projeção do saldo se o ritmo atual continuar.',
-          insight: 'A reserva segue em avanço para os próximos 30 dias.',
         },
       ],
       points: [
@@ -222,12 +203,6 @@ export const financialMock = {
           label: 'Fornecedores',
           summary: 'Compromissos com fornecedores nos próximos dias.',
           insight: 'Os fornecedores concentram parte importante das saídas futuras.',
-        },
-        {
-          key: 'balance',
-          label: 'Caixa projetado',
-          summary: 'Projeção do caixa se o ritmo atual continuar.',
-          insight: 'O caixa segue saudável nos próximos 30 dias.',
         },
       ],
       points: [

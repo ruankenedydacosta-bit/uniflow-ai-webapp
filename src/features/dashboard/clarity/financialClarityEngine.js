@@ -37,14 +37,14 @@ function buildPrimarySummary({ balance, financialPeriod, goals, projections, wor
     status = balance < 0 || (expense > income && expense > 0) ? 'Acompanhar' : 'Em acompanhamento';
     variant = status === 'Acompanhar' ? 'warning' : 'success';
     message = balance < 0
-      ? 'O saldo derivado está abaixo de zero. Uma revisão dos lançamentos pode ajudar a entender o período.'
+      ? 'As movimentações confirmadas pedem uma revisão para entender melhor o período.'
       : expense > income && expense > 0
         ? 'As saídas confirmadas estão acima das entradas confirmadas neste período.'
-        : 'Os dados confirmados permitem acompanhar saldo, movimentações e metas sem estimar valores ausentes.';
+        : 'Os dados confirmados permitem acompanhar entradas, saídas e metas sem estimar valores ausentes.';
   }
 
   const projectionValue = likelyProjection?.hasData
-    ? formatCurrency(likelyProjection.projectedBalance)
+    ? formatCurrency(likelyProjection.monthlyResult)
     : 'Sem histórico suficiente';
 
   return {
@@ -53,13 +53,12 @@ function buildPrimarySummary({ balance, financialPeriod, goals, projections, wor
     variant,
     message,
     metrics: [
-      { id: 'derived-balance', label: 'Saldo derivado', value: formatCurrency(balance), hasData: true },
       { id: 'period-result', label: 'Resultado do período', value: formatCurrency(income - expense), hasData: hasTransactions },
-      { id: 'likely-projection', label: 'Cenário provável', value: projectionValue, hasData: Boolean(likelyProjection?.hasData) },
+      { id: 'likely-projection', label: 'Resultado mensal provável', value: projectionValue, hasData: Boolean(likelyProjection?.hasData) },
       { id: 'active-goals', label: 'Metas ativas', value: String(activeGoals.length), hasData: activeGoals.length > 0 },
     ],
     forecast: likelyProjection?.hasData
-      ? `Cenário provável: ${projectionValue}`
+      ? `Resultado mensal provável: ${projectionValue}`
       : 'Projeção aguardando histórico',
     signal: hasTransactions
       ? `${financialPeriod?.insight ?? 'Dados confirmados disponíveis.'}`

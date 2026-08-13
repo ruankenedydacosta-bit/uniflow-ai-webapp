@@ -3,7 +3,6 @@ import Badge from '../../../../components/ui/Badge';
 import Button from '../../../../components/ui/Button';
 import Card from '../../../../components/ui/Card';
 import Input from '../../../../components/ui/Input';
-import { formatCurrency } from '../../../../utils/formatters';
 import { parseSimulationDeltaInput } from './futureSimulationPanelUtils.js';
 import styles from './FutureSimulationPanel.module.css';
 
@@ -16,13 +15,11 @@ import styles from './FutureSimulationPanel.module.css';
 export default function FutureSimulationPanel({
   isActive,
   hasHistory,
-  simulatedBalance,
   onChangeOverride,
   onExit,
 }) {
   const [incomeDraft, setIncomeDraft] = useState('');
   const [expenseDraft, setExpenseDraft] = useState('');
-  const [balanceDraft, setBalanceDraft] = useState('');
 
   function handleIncomeChange(event) {
     const raw = event.target.value;
@@ -34,12 +31,6 @@ export default function FutureSimulationPanel({
     const raw = event.target.value;
     setExpenseDraft(raw);
     onChangeOverride('monthlyExpenseDelta', parseSimulationDeltaInput(raw));
-  }
-
-  function handleBalanceChange(event) {
-    const raw = event.target.value;
-    setBalanceDraft(raw);
-    onChangeOverride('initialBalanceDelta', parseSimulationDeltaInput(raw));
   }
 
   return (
@@ -94,17 +85,6 @@ export default function FutureSimulationPanel({
           fullWidth
         />
 
-        <Input
-          id="future-simulation-balance-delta"
-          label="Ajuste no saldo inicial"
-          type="number"
-          step="0.01"
-          value={balanceDraft}
-          onChange={handleBalanceChange}
-          placeholder="0"
-          helperText="Ex.: +5000 para começar com R$ 5.000 a mais"
-          fullWidth
-        />
       </div>
 
       <p className={styles.signHint}>
@@ -113,14 +93,7 @@ export default function FutureSimulationPanel({
 
       {!hasHistory && (
         <p className={styles.historyNotice}>
-          Sem histórico de transações, a projeção base fica limitada — apenas o ajuste de saldo
-          inicial tem efeito na simulação.
-        </p>
-      )}
-
-      {isActive && (
-        <p className={styles.balanceReadout}>
-          Saldo inicial simulado: <strong>{formatCurrency(simulatedBalance)}</strong>
+          Sem histórico de transações, ainda não há base suficiente para simular entradas e saídas.
         </p>
       )}
 

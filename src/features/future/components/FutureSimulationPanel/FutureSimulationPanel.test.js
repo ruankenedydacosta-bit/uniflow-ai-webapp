@@ -5,14 +5,14 @@ import test from 'node:test';
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 // ============================================================================
-// Painel: três campos, textos de ajuste, sem ação de salvar
+// Painel: dois campos públicos, textos de ajuste, sem ação de salvar
 // ============================================================================
 
-test('painel contem exatamente os tres campos de ajuste (sem metas nesta subfase)', async () => {
+test('painel contém somente ajustes de entradas e saídas', async () => {
   const content = await source('FutureSimulationPanel.jsx');
   assert.match(content, /Ajuste nas entradas mensais/);
   assert.match(content, /Ajuste nas saídas mensais/);
-  assert.match(content, /Ajuste no saldo inicial/);
+  assert.doesNotMatch(content, /saldo inicial/i);
   assert.doesNotMatch(content, /meta|Meta|goal/);
 });
 
@@ -20,14 +20,13 @@ test('campos comecam vazios (equivalente a zero) e usam rascunho local, nao dire
   const content = await source('FutureSimulationPanel.jsx');
   assert.match(content, /const \[incomeDraft, setIncomeDraft\] = useState\(''\);/);
   assert.match(content, /const \[expenseDraft, setExpenseDraft\] = useState\(''\);/);
-  assert.match(content, /const \[balanceDraft, setBalanceDraft\] = useState\(''\);/);
+  assert.doesNotMatch(content, /balanceDraft/);
 });
 
 test('textos de ajuda deixam claro que sao deltas (positivo aumenta, negativo reduz, zero nao altera)', async () => {
   const content = await source('FutureSimulationPanel.jsx');
   assert.match(content, /\+1500 para simular R\$ 1\.500 a mais por mês/);
   assert.match(content, /-300 para simular R\$ 300 a menos por mês/);
-  assert.match(content, /\+5000 para começar com R\$ 5\.000 a mais/);
   assert.match(content, /Número positivo aumenta, número negativo reduz, zero não altera/);
 });
 
@@ -45,7 +44,7 @@ test('painel converte o texto digitado via parseSimulationDeltaInput antes de no
   assert.match(content, /import \{ parseSimulationDeltaInput \} from '\.\/futureSimulationPanelUtils\.js';/);
   assert.match(content, /onChangeOverride\('monthlyIncomeDelta', parseSimulationDeltaInput\(raw\)\)/);
   assert.match(content, /onChangeOverride\('monthlyExpenseDelta', parseSimulationDeltaInput\(raw\)\)/);
-  assert.match(content, /onChangeOverride\('initialBalanceDelta', parseSimulationDeltaInput\(raw\)\)/);
+  assert.doesNotMatch(content, /initialBalanceDelta/);
   assert.doesNotMatch(content, /parseFloat/);
 });
 
@@ -95,18 +94,14 @@ test('sem historico, campos de entrada e saída ficam desabilitados com motivo e
   assert.match(content, /Indisponível sem histórico de entradas e saídas registradas/);
 });
 
-test('sem historico, o ajuste de saldo inicial continua habilitado', async () => {
+test('sem histórico, nenhum ajuste público de saldo permanece', async () => {
   const content = await source('FutureSimulationPanel.jsx');
-  const balanceFieldBlock = content.slice(
-    content.indexOf('id="future-simulation-balance-delta"'),
-    content.indexOf('/>', content.indexOf('id="future-simulation-balance-delta"')),
-  );
-  assert.doesNotMatch(balanceFieldBlock, /disabled/);
+  assert.doesNotMatch(content, /future-simulation-balance-delta|initialBalanceDelta/);
 });
 
 test('aviso explicito quando a projecao base fica limitada pela ausencia de historico', async () => {
   const content = await source('FutureSimulationPanel.jsx');
-  assert.match(content, /Sem histórico de transações, a projeção base fica limitada/);
+  assert.match(content, /Sem histórico de transações, ainda não há base suficiente/);
 });
 
 // ============================================================================
@@ -116,7 +111,7 @@ test('aviso explicito quando a projecao base fica limitada pela ausencia de hist
 test('cada campo tem label associado via prop label do componente Input (que gera htmlFor)', async () => {
   const content = await source('FutureSimulationPanel.jsx');
   const inputBlocks = content.match(/<Input[\s\S]*?\/>/g) ?? [];
-  assert.equal(inputBlocks.length, 3);
+  assert.equal(inputBlocks.length, 2);
   for (const block of inputBlocks) {
     assert.match(block, /label="/);
     assert.match(block, /id="/);

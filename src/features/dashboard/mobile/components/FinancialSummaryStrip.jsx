@@ -1,6 +1,5 @@
 const EMPTY_VALUE = 'sem dados ainda';
 const EMPTY_METRICS = Object.freeze([
-  { id: 'balance', label: 'Saldo', hasData: false },
   { id: 'income', label: 'Entrada', hasData: false },
   { id: 'expense', label: 'Saída', hasData: false },
   { id: 'reserve', label: 'Reserva', hasData: false },

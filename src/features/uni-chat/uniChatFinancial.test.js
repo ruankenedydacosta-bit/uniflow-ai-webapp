@@ -118,7 +118,7 @@ test('classifyFinancialQuery retorna null para texto nao reconhecido', () => {
   assert.equal(classifyFinancialQuery('Oi, tudo bem?'), null);
 });
 
-test('buildQueryResponse monta texto de saldo', () => {
+test('buildQueryResponse descontinua saldo público sem retornar valor', () => {
   const ctx = buildFinancialContext({
     accounts: [],
     transactions: [],
@@ -127,9 +127,9 @@ test('buildQueryResponse monta texto de saldo', () => {
   });
 
   const response = buildQueryResponse('balance', ctx, 'pessoal');
-  assert.ok(response.text.includes('R$'));
-  assert.ok(response.text.includes('3.240'));
-  assert.ok(response.highlight.includes('3.240'));
+  assert.ok(response.text.includes('Entradas e Saídas'));
+  assert.equal(response.text.includes('3.240'), false);
+  assert.equal(response.highlight, null);
 });
 
 test('buildQueryResponse monta texto de despesas do mes', () => {
@@ -174,7 +174,7 @@ test('buildQueryResponse monta texto de ultimas transacoes', () => {
   assert.ok(response.text.includes('Almoço'));
 });
 
-test('buildQueryResponse adapta texto para modo empresa', () => {
+test('buildQueryResponse usa a mesma retirada pública em qualquer modo', () => {
   const ctx = buildFinancialContext({
     accounts: [],
     transactions: [],
@@ -183,8 +183,8 @@ test('buildQueryResponse adapta texto para modo empresa', () => {
   });
 
   const response = buildQueryResponse('balance', ctx, 'empresa');
-  assert.ok(response.text.includes('da sua empresa'));
-  assert.ok(response.text.includes('18.430'));
+  assert.ok(response.text.includes('Entradas e Saídas'));
+  assert.equal(response.text.includes('18.430'), false);
 });
 
 test('buildQueryResponse retorna fallback para workspace sem dados', () => {

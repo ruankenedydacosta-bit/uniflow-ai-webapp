@@ -26,7 +26,7 @@ const EMOTIONAL_TAGS = new Set(['emotional_concern', 'emotional_distress']);
 // inventada por uma LLM).
 const GLOSSARY = Object.freeze({
   categoria: 'Categoria é o grupo usado para organizar um gasto -- por exemplo, uma compra no mercado entra em Alimentação.',
-  saldo: 'Saldo é quanto você tem disponível numa conta ou no total, somando entradas e saídas.',
+  saldo: 'A UniFlow organiza suas movimentações por Entradas e Saídas e pode mostrar quanto entrou ou quanto saiu.',
   receita: 'Entrada é qualquer dinheiro que entra, como salário ou um pagamento recebido.',
   despesa: 'Saída é qualquer dinheiro que sai, como uma compra ou conta paga.',
   'fluxo de caixa': 'Fluxo de caixa é a diferença entre o que entrou e o que saiu num período.',

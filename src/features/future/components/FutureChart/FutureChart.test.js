@@ -90,6 +90,6 @@ test('scaleX trata o caso de um unico ponto sem dividir por zero', async () => {
 
 test('aria-label e title do svg mudam em modo comparacao (nao mencionam "tres cenarios")', async () => {
   const content = await source('FutureChart.jsx');
-  assert.match(content, /isComparing\s*\n\s*\? 'Gráfico comparando a evolução do saldo projetado real e simulado'/);
+  assert.match(content, /isComparing\s*\n\s*\? 'Gráfico comparando a evolução financeira projetada real e simulada'/);
   assert.match(content, /<title>\{isComparing \? '[^']+' : '[^']+'\}<\/title>/);
 });

@@ -1094,13 +1094,14 @@ test('resumo mensal soma correções de receita/despesa (adjustment_target) aos 
 // MESMA modal (UpdateBalanceModal), passando currentValue/target de acordo
 // com o card tocado -- não é mais exclusiva do Saldo, nem depende de
 // accountState (removido junto com a exigência de conta).
-test('os 3 cards abrem a modal "Atualizar saldo/receita/despesa", passando target e currentValue de acordo com o card tocado', async () => {
+test('Entradas/Saídas mantêm a modal; o terceiro card abre a Agenda existente', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
   assert.match(records, /import UpdateBalanceModal from '\.\/UpdateBalanceModal\.jsx';/);
   assert.match(records, /<UpdateBalanceModal/);
   assert.match(records, /onChanged=\{refresh\}/);
-  assert.match(records, /target=\{summaryModalTarget \?\? 'balance'\}/);
-  assert.match(records, /onCardClick=\{openSummaryModal\}/);
+  assert.match(records, /target=\{summaryModalTarget \?\? 'income'\}/);
+  assert.match(records, /onCardClick=\{openSummaryCard\}/);
+  assert.match(records, /navigate\(SIMPLIFIED_ROUTES\.AGENDA\)/);
   assert.match(records, /key=\{summaryModalTarget \?\? 'summary-modal-closed'\}/);
   assert.doesNotMatch(records, /accountState=\{displayAccountState\}\s*\n\s*\/>/);
 });
@@ -1108,22 +1109,24 @@ test('os 3 cards abrem a modal "Atualizar saldo/receita/despesa", passando targe
 // Correção (Bloco Saldo + Cobrança), preservada na generalização: abrir
 // qualquer um dos 3 ajustes NUNCA exige conta ativa preexistente -- só a
 // permissão de workspace bloqueia.
-test('abrir o ajuste de saldo/receita/despesa exige permissão, mas nunca exige conta ativa preexistente', async () => {
+test('abrir ajuste de Entrada/Saída exige permissão; Agenda navega sem depender de permissão financeira', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
-  const fnStart = records.indexOf('function openSummaryModal(target)');
-  assert.ok(fnStart > -1, 'openSummaryModal deve existir');
+  const fnStart = records.indexOf('function openSummaryCard(target)');
+  assert.ok(fnStart > -1, 'openSummaryCard deve existir');
   const fnSlice = records.slice(fnStart, records.indexOf('\n  }', fnStart));
+  assert.match(fnSlice, /target === 'agenda'/);
+  assert.match(fnSlice, /navigate\(SIMPLIFIED_ROUTES\.AGENDA\)/);
   assert.match(fnSlice, /if \(!canManage\) return;/);
   assert.doesNotMatch(fnSlice, /activeAccounts\.length/);
 });
 
-test('os 3 cards (Receitas/Despesas/Saldo) viram botões acessíveis (nunca um <article> estático) que nunca duplicam o valor para leitores de tela', async () => {
+test('os 3 cards (Entradas/Saídas/Agenda) são botões acessíveis e Agenda anuncia a ação', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
   assert.match(records, /onClick=\{\(\) => onCardClick\(card\.id\)\}/);
-  assert.doesNotMatch(records, /card\.id === 'balance' \? \(/);
-  // O <strong> de cada card fica aria-hidden -- o valor já está no
-  // aria-label do <button> pai, evitando leitura duplicada.
-  assert.match(records, /<strong aria-hidden="true">\{formatCurrency\(card\.value\)\}<\/strong>/);
+  assert.match(records, /card\.id === 'agenda'/);
+  assert.match(records, /card\.detail/);
+  assert.doesNotMatch(records, /label: 'Saldo'/);
+  assert.match(records, /<strong aria-hidden="true">/);
 });
 
 test('histórico exibe o sinal correto de um ajuste de saldo positivo (nunca sempre vermelho como despesa)', async () => {

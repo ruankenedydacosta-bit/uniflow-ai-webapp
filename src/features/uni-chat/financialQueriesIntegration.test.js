@@ -89,10 +89,11 @@ test('interpretador legado continua funcionando com o contexto enriquecido', () 
   assert.ok(response.text.includes('Nubank'), 'lista legada deve mostrar a conta');
 });
 
-test('saldo legado continua respondendo com o valor do workspace', () => {
+test('consulta legada de saldo orienta Entradas e Saídas sem expor o valor do workspace', () => {
   const ctx = buildCtx();
   const response = buildQueryResponse('balance', ctx, 'pessoal');
-  assert.ok(/R\$\s*740,50/.test(response.text), `saldo legado deve mostrar o total: ${response.text}`);
+  assert.match(response.text, /Entradas e Saídas/);
+  assert.doesNotMatch(response.text, /R\$\s*740,50/);
 });
 
 test('snapshot isola os dados por workspace: outro conjunto não vaza no contexto', () => {

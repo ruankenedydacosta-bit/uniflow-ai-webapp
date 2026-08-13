@@ -53,23 +53,25 @@ test('TARGET_COPY define título/rótulos próprios para balance, income e expen
   assert.match(slice, /expense: Object\.freeze\(\{[\s\S]*?title: 'Atualizar saídas',/);
 });
 
-test('SimplifiedRecordsPage abre a modal passando target e currentValue de acordo com o card tocado (income/expense/balance)', async () => {
+test('SimplifiedRecordsPage abre a modal somente para Entradas/Saídas; Agenda reutiliza a rota existente', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
   const start = records.indexOf('<UpdateBalanceModal');
   const slice = records.slice(start, records.indexOf('/>', start));
-  assert.match(slice, /target=\{summaryModalTarget \?\? 'balance'\}/);
+  assert.match(slice, /target=\{summaryModalTarget \?\? 'income'\}/);
   assert.match(slice, /summaryModalTarget === 'income'\s*\n\s*\? summary\.income/);
-  assert.match(slice, /: summaryModalTarget === 'expense'\s*\n\s*\? summary\.expense/);
-  assert.match(slice, /: balanceState\.workspaceBalance/);
+  assert.match(slice, /: summary\.expense/);
+  assert.doesNotMatch(slice, /balanceState\.workspaceBalance/);
   assert.doesNotMatch(slice, /accountState=/);
+  assert.match(records, /if \(target === 'agenda'\) \{\s*navigate\(SIMPLIFIED_ROUTES\.AGENDA\);/);
 });
 
-test('MonthlySummary: os 3 cards (Receitas/Despesas/Saldo) são igualmente tocáveis, cada um abre a modal com o próprio target', async () => {
+test('MonthlySummary: Entradas, Saídas e Agenda são os três cards; não existe card público de Saldo', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
   const start = records.indexOf('function MonthlySummary(');
   const slice = records.slice(start, records.indexOf('function CategoryGrid('));
   assert.match(slice, /onClick=\{\(\) => onCardClick\(card\.id\)\}/);
-  assert.doesNotMatch(slice, /card\.id === 'balance' \?/);
+  assert.match(slice, /id: 'agenda', label: 'Agenda', detail: 'Ver compromissos'/);
+  assert.doesNotMatch(slice, /label: 'Saldo'/);
 });
 
 test('"Zerar" preenche o valor com 0 sem persistir sozinho -- a confirmação continua exigida no passo seguinte', async () => {

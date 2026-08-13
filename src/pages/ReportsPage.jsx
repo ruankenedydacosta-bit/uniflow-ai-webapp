@@ -4,7 +4,6 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useReports } from '../hooks/useReports.js';
-import { formatCurrency } from '../utils/formatters';
 import EvolutionChart from './relatorios/EvolutionChart.jsx';
 import styles from './ReportsPage.module.css';
 
@@ -18,7 +17,7 @@ function ReportsPage() {
   const { access } = useAccess();
   const workspaceLabel = access.currentWorkspace === WORKSPACE_TYPES.PERSONAL ? 'Pessoal' : 'Empresarial';
 
-  const { isLoading, error, workspaceBalance, snapshot, hasData, refresh } = useReports();
+  const { isLoading, error, snapshot, hasData, refresh } = useReports();
 
   const hasComparison = snapshot.monthlySeries.length >= 2;
 
@@ -70,9 +69,7 @@ function ReportsPage() {
                   <span className={styles.eyebrow}>Últimos {snapshot.averages.monthsWithData} meses</span>
                   <h3>Evolução financeira</h3>
                 </div>
-                <Badge variant="success" size="sm" dot>
-                  Saldo atual: {formatCurrency(workspaceBalance)}
-                </Badge>
+                <Badge variant="success" size="sm" dot>Dados confirmados</Badge>
               </div>
 
               {!hasComparison ? (
@@ -88,28 +85,11 @@ function ReportsPage() {
               <div className={styles.sectionHeader}>
                 <div>
                   <h3>Indicadores compactos</h3>
-                  <p>Quatro sinais para entender a evolução sem virar planilha.</p>
+                  <p>Três sinais para entender a evolução sem virar planilha.</p>
                 </div>
               </div>
 
               <div className={styles.indicatorList}>
-                <div className={styles.indicatorItem}>
-                  <span>Evolução do saldo</span>
-                  <strong>{formatPercent(snapshot.balanceEvolution.percentChange)}</strong>
-                  <Badge
-                    variant={
-                      snapshot.balanceEvolution.percentChange === null
-                        ? 'secondary'
-                        : snapshot.balanceEvolution.percentChange >= 0
-                          ? 'success'
-                          : 'danger'
-                    }
-                    size="sm"
-                  >
-                    {snapshot.balanceEvolution.percentChange === null ? 'Sem comparação' : 'Mês a mês'}
-                  </Badge>
-                </div>
-
                 <div className={styles.indicatorItem}>
                   <span>Variação das saídas</span>
                   <strong>{formatPercent(snapshot.expenseVariation.percentChange)}</strong>

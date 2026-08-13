@@ -263,8 +263,8 @@ function StepVisual({ stepId, active, reducedMotion }) {
       return (
         <div className={styles.summaryCard}>
           <div className={styles.summaryFigure}>
-            <span className={styles.summaryLabel}>Saldo estimado</span>
-            <span className={styles.summaryValue}>R$ 4.320,00</span>
+            <span className={styles.summaryLabel}>Entradas e Saídas</span>
+            <span className={styles.summaryValue}>Organização automática</span>
           </div>
           <svg className={styles.summarySpark} viewBox="0 0 56 28" fill="none" aria-hidden="true">
             <polyline

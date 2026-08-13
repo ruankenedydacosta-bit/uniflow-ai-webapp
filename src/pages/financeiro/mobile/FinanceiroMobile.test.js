@@ -209,7 +209,7 @@ test('primeiro uso orienta a criação da conta sem CTA genérico', async () => 
 
   assert.match(emptyState, /Criar primeira conta/);
   assert.match(emptyState, /primeiro passo/);
-  assert.match(accountModal, /Informe quanto havia na conta/);
+  assert.doesNotMatch(accountModal, /Informe quanto havia na conta|Saldo inicial/);
   assert.match(accountModal, /melhor representa esta conta/);
   assert.match(accountModal, /Cadastre uma conta para começar/);
   assert.doesNotMatch(accountModal, /footer=|Nenhuma conta cadastrada neste espaço/);

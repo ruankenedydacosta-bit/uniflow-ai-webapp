@@ -1,6 +1,6 @@
 export const SUGGESTIONS_PESSOAL = [
   { icon: '💸', label: 'Registrar uma saída', intent: 'registrar_despesa' },
-  { icon: '💰', label: 'Ver meu saldo', intent: 'ver_saldo' },
+  { icon: '📅', label: 'Abrir agenda', intent: 'abrir_agenda' },
   { icon: '📊', label: 'Quanto gastei este mês?', intent: 'gastos_mes' },
   { icon: '🎯', label: 'Planejar uma meta', intent: 'planejar_meta' },
 ];
@@ -47,18 +47,15 @@ export function generateUniResponse(userText, mode) {
     ];
   }
 
-  if (text.includes('saldo')) {
+  if (text.includes('saldo') || /quanto\s+(?:dinheiro\s+)?(?:eu\s+)?tenho/.test(text)) {
     return [
       {
         id: nextId(),
         from: 'uni',
         type: 'text',
         time: now(),
-        highlight: mode === 'empresa' ? 'R$ 18.430,00' : 'R$ 3.240,00',
-        text:
-          mode === 'empresa'
-            ? 'O saldo atual da sua empresa é R$ 18.430,00, considerando as contas conectadas.'
-            : 'Seu saldo disponível hoje é R$ 3.240,00, considerando as contas conectadas.',
+        highlight: null,
+        text: 'A UniFlow agora organiza suas movimentações por Entradas e Saídas. Posso mostrar quanto entrou ou quanto saiu.',
       },
     ];
   }
@@ -117,7 +114,7 @@ export function generateUniResponse(userText, mode) {
       from: 'uni',
       type: 'text',
       time: now(),
-      text: 'Entendi. Posso te ajudar a registrar isso, consultar seu saldo ou planejar uma meta — é só me dizer.',
+      text: 'Entendi. Posso ajudar a registrar uma Entrada ou Saída, abrir sua Agenda ou planejar uma meta.',
     },
   ];
 }

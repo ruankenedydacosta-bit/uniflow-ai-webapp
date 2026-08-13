@@ -64,7 +64,7 @@ function MobileFinanceiroView({
     <div className={styles.financeiro} data-finance-mobile="true">
       <PeriodSelectorBar period={period.label} mode={mode} onModeChange={(value) => { setMode(value); setPeriodOffset(0); }} onPrevious={() => setPeriodOffset((value) => value - 1)} onNext={() => setPeriodOffset((value) => Math.min(0, value + 1))} canGoPrevious canGoNext={periodOffset < 0} />
       <PeriodInsightText>{period.insight}</PeriodInsightText>
-      <AvailableBalanceCard balance={period.balance} comparison={period.comparison} income={period.income} expense={period.expense} />
+      <AvailableBalanceCard comparison={period.comparison} income={period.income} expense={period.expense} />
       <IncomeExpenseChart chart={period.chart} workspace={currentWorkspace} onRegisterMovement={() => onNewTransaction()} />
       <AccountsCarousel accounts={period.accounts} onManage={onManageAccounts} />
       <RecentTransactionsList transactions={period.transactions} accounts={accounts} categories={categories} onDelete={onDeleteTransaction} onDuplicate={onDuplicateTransaction} onEdit={onEditTransaction} onNew={onNewTransaction} />

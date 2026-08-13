@@ -184,7 +184,8 @@ test('buildQueryResponse future_projection retorna projeção', () => {
   );
   assert.ok(response);
   assert.ok(response.text.includes('Projeção'));
-  assert.ok(response.text.includes('33.000'));
+  assert.ok(response.text.includes('3.000'));
+  assert.equal(response.text.includes('33.000'), false);
   assert.ok(response.text.toLowerCase().includes('estim'));
   assert.ok(response.highlight);
 });
@@ -301,9 +302,10 @@ test('buildQueryResponse balance_trend com dados', () => {
     { projections: mockProjections() },
   );
   assert.ok(response);
-  assert.ok(response.text.includes('melhorar'));
-  assert.ok(response.text.includes('15.000'));
-  assert.ok(response.text.includes('33.000'));
+  assert.ok(response.text.includes('favorável'));
+  assert.ok(response.text.includes('3.000'));
+  assert.equal(response.text.includes('15.000'), false);
+  assert.equal(response.text.includes('33.000'), false);
 });
 
 test('buildQueryResponse balance_trend sem histórico', () => {
@@ -432,7 +434,7 @@ test('buildQueryResponse goal_overview usa somente metas reais recebidas', () =>
 
 // ── Isolamento PF/PJ ───────────────────────────────────────────────────────
 
-test('buildQueryResponse respeita modo personal x business', () => {
+test('retirada pública de saldo é consistente entre personal e business', () => {
   const personal = buildQueryResponse(
     { type: 'balance' },
     mockCtx(),
@@ -443,7 +445,8 @@ test('buildQueryResponse respeita modo personal x business', () => {
     mockCtx(),
     'empresa',
   );
-  assert.notEqual(personal.text, business.text);
+  assert.equal(personal.text, business.text);
+  assert.match(personal.text, /Entradas e Saídas/);
 });
 
 // ── Workspace sem dados ────────────────────────────────────────────────────
@@ -555,9 +558,9 @@ test('conversationStyle "simple" condensa monthly_summary numa unica linha, pres
   );
   assert.ok(response);
   assert.doesNotMatch(response.text, /\n/);
-  assert.match(response.text, /15\.000/);
   assert.match(response.text, /8\.000/);
   assert.match(response.text, /5\.000/);
+  assert.match(response.text, /3\.000/);
 });
 
 test('conversationStyle "simple" condensa goal_feasibility e remove o paragrafo de aviso final, preservando os nomes das metas', () => {
@@ -584,7 +587,7 @@ test('conversationStyle "simple" nao afasta o highlight nem quebra respostas ja 
     'personal',
     { conversationStyle: 'simple' },
   );
-  assert.ok(response.highlight);
+  assert.equal(response.highlight, null);
   assert.doesNotMatch(response.text, /\n/);
 });
 

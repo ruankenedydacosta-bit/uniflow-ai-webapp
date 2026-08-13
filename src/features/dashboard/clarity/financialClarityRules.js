@@ -36,9 +36,9 @@ export function buildSignalCandidates({
   if (balance < 0) {
     signals.push({
       id: 'negative-balance',
-      title: 'Saldo abaixo de zero',
-      label: 'Saldo pede atenção',
-      description: 'O saldo derivado está abaixo de zero. Vale revisar os lançamentos confirmados.',
+      title: 'Movimentações pedem atenção',
+      label: 'Revisar movimentações',
+      description: 'A leitura derivada indica que vale revisar os lançamentos confirmados.',
       status: 'Atenção',
       variant: 'warning',
       tone: 'warning',

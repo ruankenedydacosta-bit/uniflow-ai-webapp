@@ -11,7 +11,7 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 test('ReportsPage importa e chama useReports (sem parametros extras)', async () => {
   const page = await source('ReportsPage.jsx');
   assert.match(page, /import \{ useReports \} from '\.\.\/hooks\/useReports\.js';/);
-  assert.match(page, /const \{ isLoading, error, workspaceBalance, snapshot, hasData, refresh \} = useReports\(\);/);
+  assert.match(page, /const \{ isLoading, error, snapshot, hasData, refresh \} = useReports\(\);/);
 });
 
 test('ReportsPage nao importa mais reports.mock.js', async () => {
@@ -74,26 +74,23 @@ test('formatPercent trata null como travessao, nunca fabrica percentual', async 
   assert.match(page, /function formatPercent\(value\) \{\s*\n\s*if \(value === null \|\| value === undefined\) return '—';/);
 });
 
-test('os 4 indicadores usam os campos reais do snapshot (nenhum numero fixo)', async () => {
+test('os 3 indicadores públicos usam campos reais do snapshot (nenhum número fixo)', async () => {
   const page = await source('ReportsPage.jsx');
-  assert.match(page, /snapshot\.balanceEvolution\.percentChange/);
   assert.match(page, /snapshot\.expenseVariation\.percentChange/);
   assert.match(page, /snapshot\.goalsProgress\.averageProgress/);
   assert.match(page, /snapshot\.goalsProgress\.activeGoalsCount/);
   assert.match(page, /snapshot\.attentionSignals\.count/);
 });
 
-test('badge de evolucao do saldo usa secondary quando percentChange e null, senao success/danger', async () => {
+test('relatório não publica evolução de saldo', async () => {
   const page = await source('ReportsPage.jsx');
-  assert.match(
-    page,
-    /snapshot\.balanceEvolution\.percentChange === null\s*\n\s*\? 'secondary'\s*\n\s*: snapshot\.balanceEvolution\.percentChange >= 0\s*\n\s*\? 'success'\s*\n\s*: 'danger'/,
-  );
+  assert.doesNotMatch(page, /balanceEvolution|Evolução do saldo/);
 });
 
-test('saldo atual exibido vem de workspaceBalance real (formatCurrency)', async () => {
+test('relatório preserva o snapshot interno sem exibir workspaceBalance', async () => {
   const page = await source('ReportsPage.jsx');
-  assert.match(page, /formatCurrency\(workspaceBalance\)/);
+  assert.doesNotMatch(page, /workspaceBalance|Saldo atual/);
+  assert.match(page, /<EvolutionChart monthlySeries=\{snapshot\.monthlySeries\} \/>/);
 });
 
 // --- sinais de atencao --------------------------------------------------------

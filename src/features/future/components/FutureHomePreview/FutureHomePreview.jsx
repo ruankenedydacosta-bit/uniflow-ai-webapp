@@ -47,7 +47,6 @@ function FutureHomePreviewContent({ error, hasData, isLoading, projections }) {
   }
 
   const likely = projections.scenarioProjections[SCENARIOS.LIKELY] || {};
-  const projectedBalance = likely.projectedBalance ?? projections.currentBalance;
   const monthlyResult = likely.monthlyResult ?? projections.netResult;
   const goalSummary = projections.goalSummary || {};
   const viableCount = goalSummary.viable || 0;
@@ -61,10 +60,6 @@ function FutureHomePreviewContent({ error, hasData, isLoading, projections }) {
       </div>
 
       <div className={styles.metrics}>
-        <div className={styles.metric}>
-          <span className={styles.metricLabel}>Saldo em 6 meses</span>
-          <strong className={styles.metricValue}>{formatCurrency(projectedBalance)}</strong>
-        </div>
         <div className={styles.metric}>
           <span className={styles.metricLabel}>Resultado médio/mês</span>
           <strong className={styles.metricValue} data-positive={monthlyResult >= 0}>

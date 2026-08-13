@@ -141,14 +141,14 @@ test('saldo derivado usa RPCs sem receber workspace arbitrário', async () => {
   assert.doesNotMatch(source, /workspaceId|p_workspace_id/);
 });
 
-test('modal de conta não trata current_balance como fonte de verdade', async () => {
+test('modal de conta preserva initial_balance internamente sem expor Saldo na UI', async () => {
   const source = await readFile(
     new URL('../pages/financeiro/FinanceAccountModal.jsx', import.meta.url),
     'utf8',
   );
 
-  assert.match(source, /Saldo inicial/);
-  assert.match(source, /derived_balance/);
+  assert.match(source, /initial_balance: balance/);
+  assert.doesNotMatch(source, /Saldo inicial|derived_balance/);
   assert.doesNotMatch(source, /current_balance/);
 });
 

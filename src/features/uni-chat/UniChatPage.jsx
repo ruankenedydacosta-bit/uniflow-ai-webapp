@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { buildUniPrefillFromState } from '../categories/categoryUtils.js';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
@@ -176,7 +176,11 @@ import {
   SUGGESTIONS_PESSOAL,
   SUGGESTIONS_EMPRESA,
 } from './mockData';
-import { SimplifiedHomeView } from '../simplified-app/index.js';
+import { SIMPLIFIED_ROUTES, SimplifiedHomeView } from '../simplified-app/index.js';
+import {
+  isRetiredPublicBalanceRequest,
+  PUBLIC_BALANCE_RETIREMENT_TEXT,
+} from './publicBalanceExperience.js';
 import { useOptionalSimplifiedProduct } from '../simplified-app/useSimplifiedProduct.js';
 import {
   SIMPLIFIED_CHAT_MODE,
@@ -252,7 +256,7 @@ const EMPTY_FINANCIAL_FALLBACK = Object.freeze({
 });
 
 const UNI_DETERMINISTIC_FALLBACK_TEXT =
-  'Entendi. Por enquanto, posso ajudar a registrar movimenta\u00e7\u00f5es financeiras. Tente algo como "registrar uma saída de R$ 50" ou "qual meu saldo?".';
+  'Entendi. Posso ajudar a registrar uma Saída de R$ 50, uma Entrada de R$ 1.000 ou agendar uma reunião amanhã.';
 
 function getLocalIsoDate() {
   const today = new Date();
@@ -276,6 +280,7 @@ function isLikelyFinancialQuestion(text) {
 }
 
 export default function UniChatPage({ variant = 'full' }) {
+  const navigate = useNavigate();
   const { access } = useAccess();
   const simplifiedProduct = useOptionalSimplifiedProduct();
   const {
@@ -844,7 +849,7 @@ export default function UniChatPage({ variant = 'full' }) {
       if (result.status === 'unsupported') {
         if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
         createAssistantResponse(
-          'Ainda não consigo te ajudar com isso especificamente, mas posso mostrar saldo, resumo do período, maiores saídas, entradas ou suas últimas movimentações.',
+          'Ainda não consigo ajudar com isso especificamente, mas posso mostrar entradas, saídas, resumo do período ou suas últimas movimentações.',
         );
         return true;
       }
@@ -3793,6 +3798,7 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!text.trim() || isTyping || isExecutingAction) return;
     const declaredIntent = classifyIntent(text).intent;
     const functionalText = stripLeadingConversationalPrefix(text) || text.trim();
+    const isRetiredBalanceRequest = isRetiredPublicBalanceRequest(functionalText, declaredIntent);
     const messageSource = metadata?.source === 'voice' ? 'voice' : 'text';
     setExecutionError(null);
     setAiStatus(AI_STATUS.UNAVAILABLE);
@@ -3825,7 +3831,7 @@ export default function UniChatPage({ variant = 'full' }) {
       && (
         looksLikeFreshFinancialStatement(functionalText)
         || looksLikeFreshBalanceStatement(functionalText)
-        || declaredIntent === 'check_balance'
+        || isRetiredBalanceRequest
         || ACTION_STATEMENT_INTENTS.has(declaredIntent)
       );
     if (shouldAbandonAgendaForFinancial) {
@@ -3884,6 +3890,12 @@ export default function UniChatPage({ variant = 'full' }) {
     lastEngineComparisonRef.current = null;
     lastCognitivePipelineSnapshotRef.current = null;
     lastFinancialReasoningResultRef.current = null;
+    if (isRetiredBalanceRequest) {
+      if (hasPendingConversation) abandonStalePendingState();
+      syncMessageToSupabase(userMsg);
+      createAssistantResponse(PUBLIC_BALANCE_RETIREMENT_TEXT, { deduplicateNarration: false });
+      return;
+    }
     // FASE 20.1 — Tool Calling: novo turno zera a deduplicação local (o
     // estado do módulo de integração é atualizado por messageId conforme o
     // fluxo avança, nunca no início do turno).
@@ -3976,6 +3988,10 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function handleSuggestionSelect(item) {
+    if (item.intent === 'abrir_agenda') {
+      navigate(SIMPLIFIED_ROUTES.AGENDA);
+      return;
+    }
     sendText(item.label);
   }
 
