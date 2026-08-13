@@ -28,6 +28,7 @@ import styles from './simplifiedRecords.module.css';
 
 const PAGE_SIZE = 20;
 const CATEGORY_PREVIEW_SIZE = 8;
+const DELETE_SUCCESS_NOTICE_MS = 2000;
 const EMPTY_RECORDS = Object.freeze([]);
 
 function RecordsIcon({ name }) {
@@ -568,6 +569,8 @@ function SimplifiedRecordsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
+  const [deleteSuccessNotice, setDeleteSuccessNotice] = useState(null);
+  const deleteNoticeTimerRef = useRef(null);
   // Somente Entradas/Saídas abrem o ajuste financeiro. O terceiro card
   // reutiliza a Agenda já existente, sem duplicar calendário ou dados.
   const [summaryModalTarget, setSummaryModalTarget] = useState(null);
@@ -639,6 +642,10 @@ function SimplifiedRecordsPage() {
     };
   }, []);
 
+  useEffect(() => () => {
+    if (deleteNoticeTimerRef.current) window.clearTimeout(deleteNoticeTimerRef.current);
+  }, []);
+
   const summary = useMemo(
     () => summarizeMonth(transactionState.transactions, balanceState.workspaceBalance),
     [balanceState.workspaceBalance, transactionState.transactions],
@@ -696,6 +703,18 @@ function SimplifiedRecordsPage() {
     if (!result.error) await refresh();
   }
 
+  function handleTransactionDeleted() {
+    setTransactionDialog(null);
+    setActiveTab('history');
+    setVisibleCount(PAGE_SIZE);
+    setDeleteSuccessNotice('Lançamento excluído com sucesso.');
+    if (deleteNoticeTimerRef.current) window.clearTimeout(deleteNoticeTimerRef.current);
+    deleteNoticeTimerRef.current = window.setTimeout(() => {
+      deleteNoticeTimerRef.current = null;
+      setDeleteSuccessNotice(null);
+    }, DELETE_SUCCESS_NOTICE_MS);
+  }
+
   function selectCategory(categoryId) {
     setFilters({ ...EMPTY_FILTERS, categoryId });
     setVisibleCount(PAGE_SIZE);
@@ -735,6 +754,12 @@ function SimplifiedRecordsPage() {
 
   return (
     <>
+      {deleteSuccessNotice ? (
+        <div className={styles.deleteSuccessToast} role="status" aria-live="polite">
+          <span aria-hidden="true">✓</span>
+          {deleteSuccessNotice}
+        </div>
+      ) : null}
       <div className={styles.recordsPage} data-simplified-records>
         <RecordsHeader onTalkToUni={() => navigate(SIMPLIFIED_ROUTES.UNI)} />
         <RecordsTabs activeTab={activeTab} onChange={setActiveTab} />
@@ -844,6 +869,7 @@ function SimplifiedRecordsPage() {
         open={Boolean(transactionDialog)}
         onClose={() => setTransactionDialog(null)}
         onChanged={refresh}
+        onDeleted={handleTransactionDeleted}
         initialType={transactionDialog?.type ?? 'expense'}
         editingTransactionId={transactionDialog?.transactionId ?? null}
         canManage={canManage}
