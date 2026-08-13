@@ -57,7 +57,7 @@ export function toVisualLevel(smoothedValue, gain = LEVEL_GAIN) {
   return Math.min(1, Math.max(0, smoothedValue * gain));
 }
 
-export function useVoiceIntensity({ getStream, active, runtime } = {}) {
+export function useVoiceIntensity({ getStream, getSessionId, active, runtime } = {}) {
   const browserRuntime = runtime ?? (typeof window !== 'undefined' ? window : undefined);
   const [level, setLevel] = useState(0);
   const audioContextRef = useRef(null);
@@ -95,6 +95,7 @@ export function useVoiceIntensity({ getStream, active, runtime } = {}) {
     }
 
     const stream = getStream?.();
+    const sessionId = getSessionId?.() ?? null;
     const AudioContextClass = browserRuntime?.AudioContext ?? browserRuntime?.webkitAudioContext;
     if (!stream || !AudioContextClass) return undefined;
     // Respeita prefers-reduced-motion desligando a análise em si (não só o
@@ -125,18 +126,26 @@ export function useVoiceIntensity({ getStream, active, runtime } = {}) {
     // num teste físico, se a "onda parada" é o analyser nunca recebendo
     // sinal (bug real de captura) ou só um problema puramente visual.
     let signalDetected = false;
+    let sampleCount = 0;
+    let rmsTotal = 0;
+    let peak = 0;
     const setTimeoutFn = browserRuntime?.setTimeout ?? setTimeout;
     const silentTimeout = setTimeoutFn(() => {
-      if (!disposed && !signalDetected) recordVoicePipelineDiagnostic('ANALYSER_SILENT_TIMEOUT');
+      if (!disposed && !signalDetected) {
+        recordVoicePipelineDiagnostic('ANALYSER_SILENT_TIMEOUT', { sessionId });
+      }
     }, SILENT_TIMEOUT_MS);
 
     const tick = () => {
       if (disposed) return;
       analyser.getByteTimeDomainData(buffer);
       const rms = computeRmsFromTimeDomainData(buffer);
+      sampleCount += 1;
+      rmsTotal += rms;
+      peak = Math.max(peak, rms);
       if (!signalDetected && rms > SIGNAL_DETECTION_RMS_THRESHOLD) {
         signalDetected = true;
-        recordVoicePipelineDiagnostic('ANALYSER_RECEIVING_SIGNAL');
+        recordVoicePipelineDiagnostic('ANALYSER_RECEIVING_SIGNAL', { sessionId, peak: rms });
       }
       smoothedRef.current = smoothLevel(smoothedRef.current, rms);
       setLevel(toVisualLevel(smoothedRef.current));
@@ -159,9 +168,14 @@ export function useVoiceIntensity({ getStream, active, runtime } = {}) {
     return () => {
       (browserRuntime?.clearTimeout ?? clearTimeout)(silentTimeout);
       disposed = true;
+      recordVoicePipelineDiagnostic('ANALYSER_LEVEL_SUMMARY', {
+        sessionId,
+        rmsMean: sampleCount ? rmsTotal / sampleCount : 0,
+        peak,
+      });
       stopAnalysis();
     };
-  }, [active, browserRuntime, getStream, stopAnalysis]);
+  }, [active, browserRuntime, getSessionId, getStream, stopAnalysis]);
 
   useEffect(() => () => stopAnalysis(), [stopAnalysis]);
 

@@ -2,6 +2,7 @@ import { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';
 
 export const VOICE_AUDIO_MAX_BYTES = 4 * 1024 * 1024;
 export const VOICE_AUDIO_MAX_DURATION_MS = 15_000;
+export const VOICE_RECORDER_STOP_TIMEOUT_MS = 3_000;
 export const VOICE_AUDIO_MIME_TYPES = Object.freeze([
   'audio/webm;codecs=opus',
   'audio/webm',
@@ -51,13 +52,19 @@ function isStreamUsable(mediaStream, track) {
 }
 
 async function requestAudioStream(runtime) {
+  const hasConstraintDetection = typeof runtime.navigator.mediaDevices.getSupportedConstraints === 'function';
+  const supported = hasConstraintDetection
+    ? runtime.navigator.mediaDevices.getSupportedConstraints()
+    : {};
+  const allows = (name) => !hasConstraintDetection || supported[name] === true;
+  const audio = {};
+  if (allows('channelCount')) audio.channelCount = 1;
+  if (allows('echoCancellation')) audio.echoCancellation = true;
+  if (allows('noiseSuppression')) audio.noiseSuppression = true;
+  if (allows('autoGainControl')) audio.autoGainControl = true;
   try {
     return await runtime.navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        echoCancellation: true,
-        noiseSuppression: true,
-      },
+      audio,
       video: false,
     });
   } catch (error) {
@@ -119,6 +126,9 @@ export function createMediaRecorderAdapter({
   onError,
   onCancel,
   onStreamReady,
+  sessionId = 0,
+  stopTimeoutMs = VOICE_RECORDER_STOP_TIMEOUT_MS,
+  now = () => Date.now(),
 } = {}) {
   if (!isMediaRecorderSupported(runtime)) {
     return {
@@ -127,6 +137,7 @@ export function createMediaRecorderAdapter({
       stop: () => false,
       cancel: () => false,
       dispose: () => {},
+      getRecorderState: () => 'inactive',
     };
   }
 
@@ -136,13 +147,18 @@ export function createMediaRecorderAdapter({
   let chunks = [];
   let startedAt = 0;
   let limitTimer = null;
+  let stopTimer = null;
   let canceled = false;
   let disposed = false;
+  let finalized = false;
+  let stopReason = null;
   let permissionRequestId = 0;
 
   function clearResources() {
     runtime.clearTimeout?.(limitTimer);
+    runtime.clearTimeout?.(stopTimer);
     limitTimer = null;
+    stopTimer = null;
     // HOTFIX CRÍTICO 2: remove o listener e ZERA `stream`/`recorder`/
     // `audioTrack` ANTES de chamar stopTracks() (que executa track.stop(),
     // o próprio gatilho do evento 'ended' que handleTrackEnded escuta) --
@@ -164,9 +180,24 @@ export function createMediaRecorderAdapter({
     stopTracks(streamToRelease);
   }
 
-  function fail(code) {
+  function finalizeSession({ kind, code = null, capture = null, reason = null }) {
+    if (finalized) return false;
+    finalized = true;
     clearResources();
-    onError?.({ code });
+    if (kind === 'audio') onAudio?.(capture);
+    else if (kind === 'cancel') onCancel?.();
+    else if (kind === 'error') onError?.({ code });
+    if (kind !== 'dispose') {
+      recordVoicePipelineDiagnostic('VOICE_SESSION_FINISHED', {
+        sessionId,
+        stopReason: reason ?? code ?? stopReason ?? kind,
+      });
+    }
+    return true;
+  }
+
+  function fail(code) {
+    return finalizeSession({ kind: 'error', code, reason: code });
   }
 
   // HOTFIX CRÍTICO 2: rede de segurança para a track de áudio encerrar
@@ -181,23 +212,24 @@ export function createMediaRecorderAdapter({
   // no-op nesse caso (distingue encerramento intencional de falha real).
   function handleTrackEnded() {
     if (!stream || !recorder || canceled || disposed) return;
-    recordVoicePipelineDiagnostic('TRACK_ENDED', { streamActive: Boolean(stream?.active) });
+    recordVoicePipelineDiagnostic('TRACK_ENDED', { streamActive: Boolean(stream?.active), sessionId });
     fail('track_ended');
   }
 
   function handleTrackMuted() {
-    recordVoicePipelineDiagnostic('TRACK_MUTED', { trackMuted: true });
+    recordVoicePipelineDiagnostic('TRACK_MUTED', { trackMuted: true, sessionId });
   }
 
   async function start() {
     if (stream || recorder || disposed) return false;
     const requestId = ++permissionRequestId;
     canceled = false;
-    recordVoicePipelineDiagnostic('MIC_REQUEST_STARTED');
+    recordVoicePipelineDiagnostic('MIC_REQUEST_STARTED', { sessionId });
+    recordVoicePipelineDiagnostic('VOICE_SESSION_STARTED', { sessionId });
 
     try {
       const nextStream = await requestAudioStream(runtime);
-      recordVoicePipelineDiagnostic('MIC_PERMISSION_GRANTED');
+      recordVoicePipelineDiagnostic('MIC_PERMISSION_GRANTED', { sessionId });
 
       if (disposed || canceled || requestId !== permissionRequestId) {
         stopTracks(nextStream);
@@ -208,6 +240,7 @@ export function createMediaRecorderAdapter({
       recordVoicePipelineDiagnostic('MIC_STREAM_RECEIVED', {
         streamActive: Boolean(nextStream?.active),
         audioTrackCount: audioTracks.length,
+        sessionId,
       });
       const nextTrack = audioTracks[0] ?? null;
 
@@ -221,6 +254,7 @@ export function createMediaRecorderAdapter({
           streamActive: Boolean(nextStream?.active),
           trackReadyState: nextTrack?.readyState ?? 'absent',
           trackEnabled: nextTrack?.enabled,
+          sessionId,
         });
         stopTracks(nextStream);
         fail('no_audio_track');
@@ -231,6 +265,8 @@ export function createMediaRecorderAdapter({
         trackReadyState: nextTrack.readyState,
         trackEnabled: nextTrack.enabled,
         trackMuted: Boolean(nextTrack.muted),
+        sessionId,
+        ...(nextTrack.getSettings?.() ?? {}),
       });
 
       stream = nextStream;
@@ -253,18 +289,19 @@ export function createMediaRecorderAdapter({
       recorder.ondataavailable = (event) => {
         if (!canceled && event?.data?.size > 0) {
           chunks.push(event.data);
-          recordVoicePipelineDiagnostic('RECORDER_DATA_AVAILABLE', { blobSizeBytes: event.data.size });
+          recordVoicePipelineDiagnostic('RECORDER_DATA_AVAILABLE', { blobSizeBytes: event.data.size, sessionId });
         }
       };
       recorder.onerror = () => {
-        recordVoicePipelineDiagnostic('RECORDER_ERROR');
+        recordVoicePipelineDiagnostic('RECORDER_ERROR', { sessionId });
         fail('capture_failed');
       };
       recorder.onstart = () => {
-        startedAt = Date.now();
+        startedAt = now();
         recordVoicePipelineDiagnostic('RECORDER_STARTED', {
           mimeType: recorder?.mimeType || mimeType || '',
           recorderState: recorder?.state ?? null,
+          sessionId,
         });
         onStart?.();
         limitTimer = runtime.setTimeout?.(() => {
@@ -274,18 +311,18 @@ export function createMediaRecorderAdapter({
         }, maxDurationMs);
       };
       recorder.onstop = () => {
-        recordVoicePipelineDiagnostic('RECORDER_STOPPED');
-        if (canceled || disposed) {
+        recordVoicePipelineDiagnostic('RECORDER_STOPPED', { sessionId, stopReason });
+        if (finalized || canceled || disposed) {
           clearResources();
           return;
         }
 
-        const durationMs = Math.max(1, Date.now() - startedAt);
+        const durationMs = Math.max(1, now() - startedAt);
         const type = recorder?.mimeType || mimeType || chunks[0]?.type || 'audio/webm';
         const audio = new Blob(chunks, { type });
 
         if (!audio.size) {
-          recordVoicePipelineDiagnostic('EMPTY_AUDIO');
+          recordVoicePipelineDiagnostic('EMPTY_AUDIO', { sessionId });
           fail('empty_audio');
           return;
         }
@@ -294,24 +331,44 @@ export function createMediaRecorderAdapter({
           return;
         }
 
-        recordVoicePipelineDiagnostic('AUDIO_BLOB_CREATED', { blobSizeBytes: audio.size, mimeType: type, durationMs });
-        clearResources();
-        onAudio?.({ audio, durationMs, mimeType: type });
+        recordVoicePipelineDiagnostic('AUDIO_BLOB_CREATED', {
+          blobSizeBytes: audio.size, mimeType: type, durationMs, sessionId,
+        });
+        finalizeSession({
+          kind: 'audio',
+          capture: { audio, durationMs, mimeType: type },
+          reason: stopReason ?? 'released',
+        });
       };
 
-      recordVoicePipelineDiagnostic('CAPTURE_STARTED', { mimeType: mimeType || '' });
+      recordVoicePipelineDiagnostic('CAPTURE_STARTED', { mimeType: mimeType || '', sessionId });
       recorder.start();
       return true;
     } catch (error) {
-      recordVoicePipelineDiagnostic('MIC_PERMISSION_ERROR');
+      recordVoicePipelineDiagnostic('MIC_PERMISSION_ERROR', { sessionId });
       if (!canceled && !disposed) fail(mapCaptureError(error));
       return false;
     }
   }
 
-  function stop() {
-    if (!recorder || recorder.state !== 'recording' || canceled) return false;
-    recorder.stop();
+  function stop(reason = 'released') {
+    if (!recorder || recorder.state !== 'recording' || canceled || finalized) return false;
+    stopReason = reason;
+    stopTimer = runtime.setTimeout?.(() => {
+      if (finalized) return;
+      recordVoicePipelineDiagnostic('RECORDER_STOP_TIMEOUT', {
+        recorderState: recorder?.state ?? null,
+        sessionId,
+        stopReason,
+      });
+      fail('capture_failed');
+    }, stopTimeoutMs);
+    try {
+      recorder.stop();
+    } catch {
+      fail('capture_failed');
+      return false;
+    }
     return true;
   }
 
@@ -336,13 +393,12 @@ export function createMediaRecorderAdapter({
   // causa raiz, idempotente (uma segunda chamada cai no guard `canceled` e
   // não faz nada).
   function cancel() {
-    if (canceled) return false;
+    if (canceled || finalized) return false;
     canceled = true;
+    stopReason = stopReason ?? 'cancelled';
     permissionRequestId += 1;
     if (recorder?.state === 'recording') recorder.stop();
-    clearResources();
-    onCancel?.();
-    return true;
+    return finalizeSession({ kind: 'cancel', reason: stopReason });
   }
 
   function dispose() {
@@ -351,8 +407,15 @@ export function createMediaRecorderAdapter({
     canceled = true;
     permissionRequestId += 1;
     if (recorder?.state === 'recording') recorder.stop();
-    clearResources();
+    finalizeSession({ kind: 'dispose', reason: 'disposed' });
   }
 
-  return { supported: true, start, stop, cancel, dispose };
+  return {
+    supported: true,
+    start,
+    stop,
+    cancel,
+    dispose,
+    getRecorderState: () => recorder?.state ?? 'inactive',
+  };
 }

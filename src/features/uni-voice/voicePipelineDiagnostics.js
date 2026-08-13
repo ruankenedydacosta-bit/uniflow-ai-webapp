@@ -33,6 +33,7 @@ const PIPELINE_STAGES = new Set([
   'AUDIO_CONTEXT_STATE',
   'ANALYSER_CONNECTED',
   'ANALYSER_RECEIVING_SIGNAL',
+  'ANALYSER_LEVEL_SUMMARY',
   'ANALYSER_SILENT_TIMEOUT',
   'RECORDER_STARTED',
   'RECORDER_DATA_AVAILABLE',
@@ -50,6 +51,9 @@ const PIPELINE_STAGES = new Set([
   'EMPTY_AUDIO',
   'STT_ERROR',
   'EMPTY_TRANSCRIPT',
+  'VOICE_SESSION_STARTED',
+  'VOICE_SESSION_FINISHED',
+  'RECORDER_STOP_TIMEOUT',
 ]);
 
 export function recordVoicePipelineDiagnostic(stage, detail = {}, {
@@ -75,6 +79,15 @@ export function recordVoicePipelineDiagnostic(stage, detail = {}, {
     transcriptLength: Number.isFinite(detail?.transcriptLength) ? Math.round(detail.transcriptLength) : null,
     finishReason: typeof detail?.finishReason === 'string' ? detail.finishReason.slice(0, 40) : null,
     messageDelivered: typeof detail?.messageDelivered === 'boolean' ? detail.messageDelivered : null,
+    sessionId: Number.isFinite(detail?.sessionId) ? Math.max(0, Math.round(detail.sessionId)) : null,
+    rmsMean: Number.isFinite(detail?.rmsMean) ? Math.max(0, Math.min(1, detail.rmsMean)) : null,
+    peak: Number.isFinite(detail?.peak) ? Math.max(0, Math.min(1, detail.peak)) : null,
+    transcriptEmpty: typeof detail?.transcriptEmpty === 'boolean' ? detail.transcriptEmpty : null,
+    stopReason: typeof detail?.stopReason === 'string' ? detail.stopReason.slice(0, 40) : null,
+    autoGainControl: typeof detail?.autoGainControl === 'boolean' ? detail.autoGainControl : null,
+    echoCancellation: typeof detail?.echoCancellation === 'boolean' ? detail.echoCancellation : null,
+    noiseSuppression: typeof detail?.noiseSuppression === 'boolean' ? detail.noiseSuppression : null,
+    channelCount: Number.isFinite(detail?.channelCount) ? Math.max(0, Math.round(detail.channelCount)) : null,
   });
 
   logger(`[Uni Voice Pipeline DEV] ${safeStage}`, safeDetail);

@@ -614,6 +614,7 @@ function SimplifiedHomeView({
   const { level: voiceLevel } = useVoiceIntensity({
     getStream: voiceInput.getActiveStream,
     active: isListening,
+    getSessionId: voiceInput.getActiveSessionId,
   });
 
   // BLOCO PUSH-TO-TALK: pressionar e segurar grava, soltar encerra e envia
@@ -764,17 +765,22 @@ function SimplifiedHomeView({
   }, [voiceInput.isActive]);
 
   // Watchdog de segurança (última barreira, item 5 acima): nunca deveria
-  // disparar na prática -- a rede de segurança em window e o timeout por
-  // gesto já cobrem os casos reais -- mas garante que nenhuma combinação de
-  // bugs futuros consiga deixar a Uni presa em "Ouvindo..." sem saída.
+  // disparar na prática -- a rede de segurança em window e o timeout
+  // específico de `stop/onstop` cobrem os casos reais -- mas garante que
+  // nenhuma combinação de bugs futuros deixe a Uni presa em "Ouvindo...".
   // Nunca recarrega a página; só finaliza o ciclo normalmente. Depende só
-  // de voiceInput.isActive/cancel (não do objeto voiceInput inteiro, que é
-  // recriado a cada render de useUniVoiceInput) para não rearmar o
-  // interval a cada render enquanto ativo.
+  // Só intervém no estado impossível: gesto ausente + recorder fora de
+  // `recording` + UI ainda em LISTENING. Um hold legítimo continua sem
+  // limite artificial por tempo decorrido.
   useEffect(() => {
     if (!voiceInput.isActive) return undefined;
     const interval = setInterval(() => {
-      if (pressedGestureRef.current === null) voiceInput.cancel();
+      const recorderState = voiceInput.getRecorderState?.() ?? 'inactive';
+      if (
+        pressedGestureRef.current === null
+        && recorderState !== 'recording'
+        && voiceInput.isListening
+      ) voiceInput.cancel();
     }, 1500);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -887,11 +893,7 @@ function SimplifiedHomeView({
     if (!captureStarted) return;
 
     if (reason === 'released') {
-      if (voiceInput.isListening) {
-        voiceInput.stop();
-      } else {
-        voiceInput.cancel();
-      }
+      voiceInput.stop();
     } else {
       voiceInput.cancel();
     }

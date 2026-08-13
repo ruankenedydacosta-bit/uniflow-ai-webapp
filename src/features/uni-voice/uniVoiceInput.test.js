@@ -206,6 +206,170 @@ test('preflight sem getUserMedia retorna unsupported de forma controlada', async
   );
 });
 
+test('getUserMedia solicita somente constraints de fala suportadas, incluindo autoGainControl', async () => {
+  let received = null;
+  const { runtime, stream } = createRuntime({
+    getUserMedia: async (constraints) => {
+      received = constraints;
+      return stream;
+    },
+  });
+  runtime.navigator.mediaDevices.getSupportedConstraints = () => ({
+    channelCount: true,
+    echoCancellation: true,
+    noiseSuppression: false,
+    autoGainControl: true,
+  });
+
+  const adapter = createMediaRecorderAdapter({ runtime });
+  assert.equal(await adapter.start(), true);
+  assert.deepEqual(received, {
+    audio: { channelCount: 1, echoCancellation: true, autoGainControl: true },
+    video: false,
+  });
+  adapter.cancel();
+});
+
+for (const [label, blobSize] of [['baixa', 16], ['normal', 512], ['alta', 4096]]) {
+  test(`nível simulado ${label}: nenhum threshold/VAD local descarta blob não vazio`, async () => {
+    const { runtime } = createRuntime();
+    runtime.MediaRecorder = class extends FakeMediaRecorder {
+      stop() {
+        if (this.state !== 'recording') return;
+        this.state = 'inactive';
+        this.ondataavailable?.({ data: new Blob(['x'.repeat(blobSize)], { type: this.mimeType }) });
+        this.onstop?.();
+      }
+    };
+    let capture = null;
+    const adapter = createMediaRecorderAdapter({
+      runtime,
+      onAudio: (value) => { capture = value; },
+    });
+
+    await adapter.start();
+    assert.equal(adapter.stop(), true);
+    assert.equal(capture.audio.size, blobSize);
+  });
+}
+
+test('stop sem onstop nativo encerra a sessão pelo timeout de finalização e libera a track', async () => {
+  const timers = new Map();
+  let timerSequence = 0;
+  const { runtime, track } = createRuntime();
+  runtime.setTimeout = (callback, delay) => {
+    const id = ++timerSequence;
+    timers.set(id, { callback, delay });
+    return id;
+  };
+  runtime.clearTimeout = (id) => timers.delete(id);
+  runtime.MediaRecorder = class extends FakeMediaRecorder {
+    stop() {
+      if (this.state === 'recording') this.state = 'inactive';
+    }
+  };
+  const errors = [];
+  const adapter = createMediaRecorderAdapter({
+    runtime,
+    stopTimeoutMs: 25,
+    onError: (error) => errors.push(error),
+  });
+
+  await adapter.start();
+  assert.equal(adapter.stop(), true);
+  const stopTimeout = [...timers.values()].find((timer) => timer.delay === 25);
+  assert.ok(stopTimeout);
+  stopTimeout.callback();
+
+  assert.deepEqual(errors, [{ code: 'capture_failed' }]);
+  assert.equal(track.stopped, true);
+  assert.equal(adapter.getRecorderState(), 'inactive');
+  assert.equal(timers.size, 0);
+});
+
+test('stress: 20 ciclos start -> hold -> release -> blob encerram recursos e permitem a próxima sessão', async () => {
+  for (let cycle = 1; cycle <= 20; cycle += 1) {
+    const timers = new Set();
+    const track = { stopped: false, stop() { this.stopped = true; } };
+    const stream = {
+      active: true,
+      getTracks: () => [track],
+      getAudioTracks: () => [track],
+    };
+    const runtime = {
+      navigator: { mediaDevices: { getUserMedia: async () => stream } },
+      MediaRecorder: class extends FakeMediaRecorder {
+        stop() {
+          if (this.state !== 'recording') return;
+          this.state = 'inactive';
+          queueMicrotask(() => {
+            this.ondataavailable?.({ data: new Blob([`voice-${cycle}`], { type: this.mimeType }) });
+            this.onstop?.();
+          });
+        }
+      },
+      setTimeout(callback, delay) {
+        const id = setTimeout(callback, delay);
+        timers.add(id);
+        return id;
+      },
+      clearTimeout(id) {
+        clearTimeout(id);
+        timers.delete(id);
+      },
+    };
+    let capture = null;
+    const adapter = createMediaRecorderAdapter({
+      runtime,
+      sessionId: cycle,
+      onAudio: (value) => { capture = value; },
+    });
+
+    assert.equal(await adapter.start(), true, `ciclo ${cycle}: iniciou`);
+    assert.equal(adapter.getRecorderState(), 'recording', `ciclo ${cycle}: recorder ativo`);
+    assert.equal(adapter.stop(), true, `ciclo ${cycle}: release aceito`);
+    assert.equal(track.stopped, false, `ciclo ${cycle}: track permanece viva até dataavailable/onstop`);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.ok(capture?.audio?.size > 0, `ciclo ${cycle}: blob não vazio`);
+    assert.equal(track.stopped, true, `ciclo ${cycle}: track encerrada`);
+    assert.equal(adapter.getRecorderState(), 'inactive', `ciclo ${cycle}: recorder encerrado`);
+    assert.equal(timers.size, 0, `ciclo ${cycle}: timers zerados`);
+    assert.equal(adapter.stop(), false, `ciclo ${cycle}: finish idempotente`);
+  }
+});
+
+for (const durationMs of [1_000, 3_000, 8_000]) {
+  test(`hold ${durationMs / 1000}s permanece válido e preserva a duração real`, async () => {
+    let clock = 10_000;
+    const { runtime } = createRuntime();
+    let capture = null;
+    const adapter = createMediaRecorderAdapter({
+      runtime,
+      now: () => clock,
+      onAudio: (value) => { capture = value; },
+    });
+
+    await adapter.start();
+    clock += durationMs;
+    assert.equal(adapter.stop(), true);
+    assert.equal(capture.durationMs, durationMs);
+    assert.ok(capture.audio.size > 0);
+  });
+}
+
+test('useUniVoiceInput isola callbacks por sessionId e soltura consulta o recorder, não um render atrasado', () => {
+  const source = readFileSync(new URL('./useUniVoiceInput.js', import.meta.url), 'utf8');
+  assert.match(source, /const sessionId = \+\+sessionSequenceRef\.current;/);
+  assert.match(source, /const isCurrentSession = \(\) => activeSessionIdRef\.current === sessionId/);
+  assert.match(source, /if \(!isCurrentSession\(\)\) return;/);
+  assert.match(source, /const stopped = adapterRef\.current\.stop\('released'\);/);
+  assert.doesNotMatch(
+    source.slice(source.indexOf('const stop = useCallback'), source.indexOf('const toggle = useCallback')),
+    /state\.status !== VOICE_CAPTURE_STATES\.LISTENING/,
+  );
+});
+
 test('BUG 3: onStreamReady expõe o MESMO stream já capturado (sem um segundo getUserMedia)', async () => {
   const { runtime, stream } = createRuntime();
   let exposedStream = null;
@@ -489,7 +653,7 @@ test('HOTFIX FINAL: useUniVoiceInput.stop() cai para cancel() quando o adapter f
     source.indexOf('const stop = useCallback'),
     source.indexOf('const stop = useCallback') + 400,
   );
-  assert.match(stopBlock, /const stopped = adapterRef\.current\.stop\(\);/);
+  assert.match(stopBlock, /const stopped = adapterRef\.current\.stop\('released'\);/);
   assert.match(stopBlock, /if \(!stopped\) return cancel\(\);/);
   // cancel deve estar declarado ANTES de stop (senão o array de
   // dependências do useCallback de stop quebraria por TDZ).
