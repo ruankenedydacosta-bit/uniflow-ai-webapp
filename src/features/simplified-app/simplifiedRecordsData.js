@@ -1,3 +1,8 @@
+import {
+  resolveCategoryIconKey,
+  resolveCategoryTone,
+} from '../categories/categoryIconCatalog.js';
+
 const KNOWN_CATEGORY_ORDER = Object.freeze([
   'alimentacao',
   'transporte',
@@ -8,17 +13,6 @@ const KNOWN_CATEGORY_ORDER = Object.freeze([
   'assinaturas',
   'outros',
 ]);
-
-const CATEGORY_PRESENTATION = Object.freeze({
-  alimentacao: Object.freeze({ icon: 'food', tone: 'orange' }),
-  transporte: Object.freeze({ icon: 'transport', tone: 'blue' }),
-  moradia: Object.freeze({ icon: 'home', tone: 'green' }),
-  saude: Object.freeze({ icon: 'health', tone: 'red' }),
-  lazer: Object.freeze({ icon: 'leisure', tone: 'purple' }),
-  educacao: Object.freeze({ icon: 'education', tone: 'yellow' }),
-  assinaturas: Object.freeze({ icon: 'subscription', tone: 'cyan' }),
-  outros: Object.freeze({ icon: 'other', tone: 'gray' }),
-});
 
 function normalizeText(value) {
   return String(value ?? '')
@@ -128,31 +122,32 @@ export function buildCategorySummaries(categories, transactions) {
     .filter((category) => category.is_active !== false)
     .map((category) => {
       const key = normalizeCategoryKey(category.name);
-      const presentation = CATEGORY_PRESENTATION[key] ?? {
-        icon: 'custom',
-        tone: 'blue',
-      };
       const aggregate = totals.get(category.id) ?? { amount: 0, count: 0 };
 
       return Object.freeze({
         id: category.id,
         name: category.name,
+        category_type: category.category_type,
         amount: aggregate.amount,
         count: aggregate.count,
         key,
-        ...presentation,
+        icon: resolveCategoryIconKey(category),
+        tone: resolveCategoryTone(category),
       });
     });
 
   if (totals.has('uncategorized')) {
     const aggregate = totals.get('uncategorized');
+    const uncategorized = { name: 'Outros', category_type: 'expense' };
     visibleCategories.push(Object.freeze({
       id: 'uncategorized',
       name: 'Outros',
+      category_type: 'expense',
       amount: aggregate.amount,
       count: aggregate.count,
       key: 'outros',
-      ...CATEGORY_PRESENTATION.outros,
+      icon: resolveCategoryIconKey(uncategorized),
+      tone: resolveCategoryTone(uncategorized),
     }));
   }
 
@@ -215,4 +210,3 @@ export function formatRelativeTransactionDate(value, referenceDate = new Date())
     month: 'short',
   }).format(transactionDate);
 }
-

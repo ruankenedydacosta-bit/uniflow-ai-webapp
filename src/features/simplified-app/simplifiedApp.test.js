@@ -1249,8 +1249,8 @@ test('intervalo mensal usa o primeiro e o último dia reais', () => {
 
 test('categorias reais conhecidas e customizadas são agregadas sem inventar valores', () => {
   const categories = [
-    { id: 'food', name: 'Alimentação', is_active: true },
-    { id: 'pet', name: 'Pets', is_active: true },
+    { id: 'food', name: 'Alimentação', category_type: 'expense', is_active: true },
+    { id: 'pet', name: 'Pets', category_type: 'expense', icon: 'gift', is_active: true },
   ];
   const summaries = buildCategorySummaries(categories, [
     {
@@ -1274,7 +1274,27 @@ test('categorias reais conhecidas e customizadas são agregadas sem inventar val
   assert.equal(summaries[0].count, 1);
   assert.equal(summaries[1].name, 'Pets');
   assert.equal(summaries[1].amount, 30);
-  assert.equal(summaries[1].icon, 'custom');
+  assert.equal(summaries[1].icon, 'gift');
+  assert.equal(summaries[1].category_type, 'expense');
+});
+
+test('Registros cria categoria pelo mesmo estado persistente usado no modal de lançamentos', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  assert.match(records, /<strong>Criar categoria<\/strong>/);
+  assert.match(records, /const result = await categoryState\.saveCategory\(values\)/);
+  assert.match(records, /await refresh\(\)/);
+  assert.match(records, /setTransactionSuccessNotice\('Categoria criada com sucesso\.'\)/);
+  assert.match(records, /<CategoryCreateModal[\s\S]*categories=\{categoryState\.categories\}[\s\S]*onCreate=\{handleCreateCategory\}/);
+  assert.match(records, /<FinanceTransactionModal[\s\S]*categoryState=\{categoryState\}/);
+});
+
+test('criação de categoria em Registros respeita permissão e não altera o fluxo dos lançamentos', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  assert.match(records, /const canCreateCategory = workspaceRole\.canUpdate === true[\s\S]*&& !categoryState\.isMutating;/);
+  assert.match(records, /function openCategoryCreate\(\) \{\s*if \(!canCreateCategory\) return;/);
+  assert.match(records, /function handleCreateCategory\(values\) \{[\s\S]*if \(!canCreateCategory\) return;/);
+  assert.match(records, /completeTransactionMutation\('Lançamento editado com sucesso\.'\)/);
+  assert.match(records, /completeTransactionMutation\('Lançamento excluído com sucesso\.'\)/);
 });
 
 test('filtros do histórico combinam tipo, categoria, conta, busca e ordem', () => {

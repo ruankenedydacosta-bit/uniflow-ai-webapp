@@ -444,6 +444,24 @@
   transform: translateY(-2px);
 }
 
+.createCategoryCard {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--uf-app-cyan) 70%, var(--uf-app-border));
+  background: color-mix(in srgb, var(--uf-app-primary) 10%, var(--uf-app-card-bg));
+  color: var(--uf-app-focus);
+}
+
+.createCategoryCard b {
+  display: none;
+}
+
+.createCategoryCard:disabled {
+  cursor: not-allowed;
+  filter: saturate(.35);
+  opacity: .58;
+  transform: none;
+}
+
 .categoryCard strong {
   width: 100%;
   font-size: 16px;
@@ -798,6 +816,37 @@
   font-size: 16px;
   line-height: 1.45;
   text-align: center;
+}
+
+.inlineEmpty {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inlineEmpty button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid rgba(103, 232, 249, .45);
+  border-radius: 12px;
+  background: rgba(11, 35, 66, .9);
+  color: var(--uf-app-focus);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inlineEmpty button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.inlineEmpty button:disabled {
+  cursor: not-allowed;
+  opacity: .58;
 }
 
 .stateCard {

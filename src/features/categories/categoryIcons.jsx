@@ -1,5 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { normalizeText } from './categoryUtils.js';
+import { resolveCategoryIconKey } from './categoryIconCatalog.js';
+
+export { resolveCategoryIconKey } from './categoryIconCatalog.js';
 
 // Conjunto de ícones inline (o projeto não usa biblioteca de ícones).
 // Todos herdam currentColor e stroke padrão, para respeitar os temas.
@@ -27,16 +29,37 @@ const ICONS = {
     <svg {...svgProps}><path d="M4 12l1.5-4.5A2 2 0 0 1 7.4 6h9.2a2 2 0 0 1 1.9 1.5L20 12v6h-2v-2H6v2H4z" /><circle cx="7.5" cy="15.5" r="1" /><circle cx="16.5" cy="15.5" r="1" /></svg>
   ),
   health: (
-    <svg {...svgProps}><path d="M12 21s-7-4.5-9-9a5 5 0 0 1 9-2 5 5 0 0 1 9 2c-2 4.5-9 9-9 9z" /></svg>
+    <svg {...svgProps}><path d="M12 21s-7-4.5-9-9a5 5 0 0 1 9-2 5 5 0 0 1 9 2c-2 4.5-9 9-9 9z" /><path d="M12 9v6M9 12h6" /></svg>
   ),
   education: (
     <svg {...svgProps}><path d="M12 4 2 9l10 5 10-5-10-5z" /><path d="M6 11v5c0 1 2.7 2.5 6 2.5S18 17 18 16v-5" /></svg>
   ),
   leisure: (
-    <svg {...svgProps}><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 2.5" /></svg>
+    <svg {...svgProps}><circle cx="12" cy="12" r="8" /><path d="M9 10h.01M15 10h.01M8.5 14c2 2 5 2 7 0" /></svg>
   ),
   subscription: (
-    <svg {...svgProps}><path d="M3 8a9 9 0 0 1 15-3l3 3" /><path d="M21 16a9 9 0 0 1-15 3l-3-3" /><path d="M18 5v3h-3" /><path d="M6 19v-3h3" /></svg>
+    <svg {...svgProps}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 15h4" /><path d="m17 14 1 1-1 1" /></svg>
+  ),
+  'home-income': (
+    <svg {...svgProps}><path d="M3 10.5 12 4l9 6.5" /><path d="M5 9.5V20h14V9.5" /><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5" /></svg>
+  ),
+  debt: (
+    <svg {...svgProps}><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v5h5M12 11v4M12 18h.01" /></svg>
+  ),
+  work: (
+    <svg {...svgProps}><rect x="3" y="7" width="18" height="12" rx="2" /><path d="M9 7V5h6v2M3 12h18M10 12v2h4v-2" /></svg>
+  ),
+  'other-expense': (
+    <svg {...svgProps}><circle cx="12" cy="12" r="9" /><path d="m9 15 6-6M11 9h4v4" /></svg>
+  ),
+  'other-income': (
+    <svg {...svgProps}><circle cx="12" cy="12" r="9" /><path d="m15 9-6 6M9 11v4h4" /></svg>
+  ),
+  gift: (
+    <svg {...svgProps}><rect x="3" y="9" width="18" height="12" rx="1" /><path d="M12 9v12M3 13h18M12 9H7.5a2.5 2.5 0 1 1 2.5-2.5L12 9Zm0 0h4.5A2.5 2.5 0 1 0 14 6.5L12 9Z" /></svg>
+  ),
+  refund: (
+    <svg {...svgProps}><path d="M9 7H5v-4" /><path d="M5 7a8 8 0 1 1-1 8" /><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg>
   ),
   taxes: (
     <svg {...svgProps}><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h3" /></svg>
@@ -66,44 +89,6 @@ const ICONS = {
     <svg {...svgProps}><path d="M4 4h7l9 9-7 7-9-9V4z" /><circle cx="8.5" cy="8.5" r="1.5" /></svg>
   ),
 };
-
-// Palavras-chave -> chave de ícone. Cobre os seeds reais e sinônimos comuns.
-const KEYWORD_TO_ICON = [
-  [['moradia', 'aluguel', 'casa', 'imovel', 'condominio'], 'home'],
-  [['aliment', 'mercado', 'comida', 'restaurante', 'supermercado'], 'food'],
-  [['transporte', 'combustivel', 'gasolina', 'uber', 'onibus', 'carro'], 'transport'],
-  [['saude', 'medico', 'farmacia', 'plano de saude'], 'health'],
-  [['educac', 'escola', 'curso', 'faculdade', 'estudo'], 'education'],
-  [['lazer', 'entretenimento', 'viagem', 'passeio'], 'leisure'],
-  [['assinatura', 'streaming', 'mensalidade'], 'subscription'],
-  [['imposto', 'taxa', 'tributo'], 'taxes'],
-  [['fornecedor'], 'suppliers'],
-  [['operacional', 'operacao'], 'operational'],
-  [['salario', 'folha', 'pagamento', 'holerite'], 'salary'],
-  [['venda', 'receita de venda', 'faturamento'], 'sales'],
-  [['rendimento', 'juros', 'investimento', 'dividendo'], 'yield'],
-  [['transferencia'], 'transfer'],
-  [['entrada', 'outras entradas'], 'wallet'],
-];
-
-/**
- * Resolve a chave de ícone para uma categoria.
- * Prioriza o campo `icon` do banco (se um dia for populado com uma chave
- * conhecida); senão deriva do nome; senão usa fallback por tipo.
- */
-export function resolveCategoryIconKey(category) {
-  const explicit = typeof category?.icon === 'string' ? normalizeText(category.icon) : '';
-  if (explicit && ICONS[explicit]) return explicit;
-
-  const name = normalizeText(category?.name);
-  for (const [keywords, iconKey] of KEYWORD_TO_ICON) {
-    if (keywords.some((keyword) => name.includes(keyword))) {
-      return iconKey;
-    }
-  }
-
-  return category?.category_type === 'income' ? 'wallet' : 'tag';
-}
 
 /** Retorna o elemento SVG do ícone da categoria (decorativo). */
 export function CategoryIcon({ category }) {

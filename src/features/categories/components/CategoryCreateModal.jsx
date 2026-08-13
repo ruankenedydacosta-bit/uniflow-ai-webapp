@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
+import {
+  CATEGORY_ICON_OPTIONS,
+  getDefaultCategoryIconKey,
+} from '../categoryIconCatalog.js';
+import { CategoryIcon } from '../categoryIcons.jsx';
 import { CATEGORY_TYPES, isDuplicateCategoryName } from '../categoryUtils.js';
 import styles from '../CategoriesPage.module.css';
 
@@ -23,9 +28,12 @@ function CategoryCreateModal({
   onCreate,
   isMutating,
   serverError,
+  className,
+  overlayClassName,
 }) {
   const [name, setName] = useState('');
   const [categoryType, setCategoryType] = useState(defaultType);
+  const [icon, setIcon] = useState(() => getDefaultCategoryIconKey(defaultType));
   const [localError, setLocalError] = useState('');
 
   useEffect(() => {
@@ -33,6 +41,7 @@ function CategoryCreateModal({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setName('');
       setCategoryType(defaultType);
+      setIcon(getDefaultCategoryIconKey(defaultType));
       setLocalError('');
     }
   }, [open, defaultType]);
@@ -55,7 +64,7 @@ function CategoryCreateModal({
       return;
     }
     setLocalError('');
-    await onCreate({ name: trimmed, category_type: categoryType });
+    await onCreate({ name: trimmed, category_type: categoryType, icon });
   }
 
   return (
@@ -67,6 +76,8 @@ function CategoryCreateModal({
       title="Nova categoria"
       description="Dê um nome simples e escolha se é uma saída ou uma entrada."
       size="sm"
+      className={className}
+      overlayClassName={overlayClassName}
     >
       <form className={styles.form} onSubmit={handleSubmit}>
         <Input
@@ -95,12 +106,37 @@ function CategoryCreateModal({
                   ? `${styles.segment} ${styles.segmentActive}`
                   : styles.segment
               }
-              onClick={() => setCategoryType(type)}
+              onClick={() => {
+                setCategoryType(type);
+                setIcon(getDefaultCategoryIconKey(type));
+              }}
             >
               {TYPE_LABELS[type]}
             </button>
           ))}
         </div>
+
+        <fieldset className={styles.iconFieldset}>
+          <legend>Escolha um ícone</legend>
+          <div className={styles.iconGrid} role="radiogroup" aria-label="Ícone da categoria">
+            {CATEGORY_ICON_OPTIONS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                role="radio"
+                aria-checked={icon === option.key}
+                aria-label={option.label}
+                className={icon === option.key
+                  ? `${styles.iconOption} ${styles.iconOptionSelected}`
+                  : styles.iconOption}
+                onClick={() => setIcon(option.key)}
+              >
+                <CategoryIcon category={{ icon: option.key }} />
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         {(localError || serverError) ? (
           <p className={styles.formError} role="alert">
