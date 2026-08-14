@@ -252,17 +252,17 @@
 
 .plan_neutral {
   border-color: rgba(148, 163, 184, .35);
-  background: linear-gradient(135deg, rgba(71, 85, 105, .18), rgba(15, 23, 42, .3));
+  background: linear-gradient(135deg, rgba(71, 85, 105, .18), var(--uf-app-state-tail));
 }
 
 .plan_warn {
   border-color: rgba(245, 158, 11, .45);
-  background: linear-gradient(135deg, rgba(245, 158, 11, .16), rgba(15, 23, 42, .3));
+  background: linear-gradient(135deg, rgba(245, 158, 11, .16), var(--uf-app-state-tail));
 }
 
 .plan_danger {
   border-color: rgba(239, 68, 68, .45);
-  background: linear-gradient(135deg, var(--uf-app-danger-subtle), rgba(15, 23, 42, .3));
+  background: linear-gradient(135deg, var(--uf-app-danger-subtle), var(--uf-app-state-tail));
 }
 
 .planIcon {

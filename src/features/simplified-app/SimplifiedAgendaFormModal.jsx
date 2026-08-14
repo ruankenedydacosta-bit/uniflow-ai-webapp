@@ -192,7 +192,6 @@ function SimplifiedAgendaFormModal({
   return (
     <Modal
       open
-      data-theme="uniflow"
       className={styles.formDialog}
       overlayClassName={styles.formOverlay}
       onClose={handleClose}

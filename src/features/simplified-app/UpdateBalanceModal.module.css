@@ -27,7 +27,7 @@
 }
 
 .darkOverlay {
-  background: rgba(3, 8, 20, .68) !important;
+  background: var(--uf-app-overlay-panel) !important;
   backdrop-filter: blur(8px) !important;
 }
 

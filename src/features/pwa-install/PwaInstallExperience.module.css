@@ -134,3 +134,26 @@
 @media (prefers-reduced-motion: reduce) {
   .prompt { animation: none; }
 }
+
+:global([data-theme='light']) .prompt {
+  border-color: color-mix(in srgb, var(--uf-app-primary) 24%, var(--uf-app-border));
+  background:
+    linear-gradient(115deg, var(--uf-app-primary-subtle), var(--uf-app-ai-subtle) 50%, var(--uf-app-success-subtle)),
+    var(--uf-app-glass-strong);
+  box-shadow: var(--uf-app-soft-shadow);
+  color: var(--uf-app-text);
+}
+
+:global([data-theme='light']) .eyebrow,
+:global([data-theme='light']) .content small {
+  color: var(--uf-app-primary-text);
+}
+
+:global([data-theme='light']) .content p,
+:global([data-theme='light']) .closeButton {
+  color: var(--uf-app-text-2);
+}
+
+:global([data-theme='light']) .secondaryButton {
+  color: var(--uf-app-primary-text);
+}

@@ -112,3 +112,7 @@
   padding: var(--uf-space-24);
   border-top: 1px solid var(--uf-color-border-subtle);
 }
+
+:global([data-theme='light']) .overlay {
+  background: var(--uf-app-overlay-panel);
+}

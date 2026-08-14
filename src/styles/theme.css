@@ -775,6 +775,35 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
   --uf-app-card-bg:        linear-gradient(145deg, #FFFFFF, #F7F9FD);
   --uf-app-card-bg-2:      linear-gradient(145deg, #F7F9FD, #EEF2F9);
 
+  /* Papéis de aplicação para superfícies que nasceram azul-noite. O tema
+     Claro precisa de versões próprias; Escuro e UniFlow mantêm abaixo os
+     literais históricos para preservar sua aparência pixel a pixel. */
+  --uf-app-body-bg:        #F4F7FC;
+  --uf-app-panel:          rgba(255,255,255,.94);
+  --uf-app-panel-muted:    rgba(247,249,253,.94);
+  --uf-app-state-tail:     rgba(247,249,253,.94);
+  --uf-app-nav-scrim:      linear-gradient(180deg, transparent, rgba(244,247,252,.98) 24%);
+  --uf-app-nav-surface:    rgba(255,255,255,.96);
+  --uf-app-nav-border:     rgba(29,78,216,.18);
+  --uf-app-card-premium:   linear-gradient(145deg, #FFFFFF, #EEF4FF);
+  --uf-app-card-row:       linear-gradient(105deg, #FFFFFF, #F3F7FD);
+  --uf-app-card-row-hover: #EAF1FC;
+  --uf-app-field-panel:    rgba(247,249,253,.96);
+  --uf-app-empty-panel:    rgba(238,242,249,.78);
+  --uf-app-overlay-panel:  rgba(15,23,42,.46);
+  --uf-app-voice-surface:  #F8FAFF;
+  --uf-app-voice-text:     #0F172A;
+  --uf-app-soft-shadow:    0 14px 38px -24px rgba(15,23,42,.28);
+
+  /* Aliases públicos pedidos pelo contrato de contraste. */
+  --text-primary:   var(--uf-app-text);
+  --text-secondary: var(--uf-app-text-2);
+  --text-muted:     var(--uf-app-text-3);
+  --text-on-accent: var(--uf-app-on-accent);
+  --text-danger:    var(--uf-app-danger-text);
+  --text-success:   var(--uf-app-success-text);
+  --text-link:      var(--uf-app-primary-text);
+
   --uf-app-color-scheme:   light;
   --uf-app-overlay:        rgba(15,23,42,.42);
   --uf-app-primary-subtle: rgba(29,78,216,.10);
@@ -821,6 +850,26 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
   --uf-app-on-accent:      #0B0D12;
   --uf-app-card-bg:        linear-gradient(145deg, #1E222A, #16191F);
   --uf-app-card-bg-2:      linear-gradient(145deg, #22262F, #1A1D24);
+  --uf-app-body-bg:        #020713;
+  --uf-app-panel:          rgba(4,13,33,.92);
+  --uf-app-panel-muted:    rgba(3,12,29,.78);
+  --uf-app-state-tail:     rgba(15,23,42,.3);
+  --uf-app-nav-scrim:      linear-gradient(180deg, transparent, rgba(1,6,17,.98) 24%);
+  --uf-app-nav-surface:    rgba(3,10,26,.96);
+  --uf-app-nav-border:     rgba(37,99,235,.48);
+  --uf-app-card-premium:   linear-gradient(145deg, rgba(15,30,58,.88), rgba(5,14,34,.95));
+  --uf-app-card-row:       linear-gradient(105deg, rgba(11,26,54,.9), rgba(5,14,32,.97));
+  --uf-app-card-row-hover: rgba(14,35,70,.96);
+  --uf-app-field-panel:    rgba(5,16,37,.78);
+  --uf-app-empty-panel:    rgba(5,15,34,.65);
+  --uf-app-overlay-panel:  rgba(3,8,20,.68);
+  --uf-app-voice-surface:  #12141A;
+  --uf-app-voice-text:     var(--uf-app-on-accent);
+  --uf-app-soft-shadow:    0 18px 52px rgba(0,0,0,.34);
+  --text-primary: var(--uf-app-text); --text-secondary: var(--uf-app-text-2);
+  --text-muted: var(--uf-app-text-3); --text-on-accent: var(--uf-app-on-accent);
+  --text-danger: var(--uf-app-danger-text); --text-success: var(--uf-app-success-text);
+  --text-link: var(--uf-app-primary-text);
 
   --uf-app-color-scheme:   dark;
   --uf-app-overlay:        rgba(5,7,12,.74);
@@ -868,6 +917,26 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
   --uf-app-on-accent:      #FFFFFF;
   --uf-app-card-bg:        linear-gradient(145deg, rgba(14,31,62,.90), rgba(4,13,33,.94));
   --uf-app-card-bg-2:      linear-gradient(145deg, rgba(20,43,82,.90), rgba(10,25,53,.94));
+  --uf-app-body-bg:        #020713;
+  --uf-app-panel:          rgba(4,13,33,.92);
+  --uf-app-panel-muted:    rgba(3,12,29,.78);
+  --uf-app-state-tail:     rgba(15,23,42,.3);
+  --uf-app-nav-scrim:      linear-gradient(180deg, transparent, rgba(1,6,17,.98) 24%);
+  --uf-app-nav-surface:    rgba(3,10,26,.96);
+  --uf-app-nav-border:     rgba(37,99,235,.48);
+  --uf-app-card-premium:   linear-gradient(145deg, rgba(15,30,58,.88), rgba(5,14,34,.95));
+  --uf-app-card-row:       linear-gradient(105deg, rgba(11,26,54,.9), rgba(5,14,32,.97));
+  --uf-app-card-row-hover: rgba(14,35,70,.96);
+  --uf-app-field-panel:    rgba(5,16,37,.78);
+  --uf-app-empty-panel:    rgba(5,15,34,.65);
+  --uf-app-overlay-panel:  rgba(3,8,20,.68);
+  --uf-app-voice-surface:  #030C1D;
+  --uf-app-voice-text:     var(--uf-app-on-accent);
+  --uf-app-soft-shadow:    0 18px 52px rgba(0,0,0,.34);
+  --text-primary: var(--uf-app-text); --text-secondary: var(--uf-app-text-2);
+  --text-muted: var(--uf-app-text-3); --text-on-accent: var(--uf-app-on-accent);
+  --text-danger: var(--uf-app-danger-text); --text-success: var(--uf-app-success-text);
+  --text-link: var(--uf-app-primary-text);
 
   --uf-app-color-scheme:   dark;
   --uf-app-overlay:        rgba(2,4,10,.80);

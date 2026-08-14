@@ -305,6 +305,52 @@
   text-align: center;
 }
 
+/* O seletor preserva a miniatura real de cada tema, mas no tema Claro o
+   próprio cartão deixa de ser uma placa azul-noite. Assim Claro, Escuro,
+   UniFlow e Sistema continuam distinguíveis sem comprometer a leitura. */
+:global([data-theme='light']) .uniIdentity {
+  border-color: color-mix(in srgb, var(--uf-app-primary) 24%, var(--uf-app-border));
+  background:
+    radial-gradient(circle at 94% 0, var(--uf-app-success-subtle), transparent 40%),
+    linear-gradient(140deg, var(--uf-app-primary-subtle), var(--uf-app-ai-subtle) 52%, var(--uf-app-surface));
+  box-shadow: var(--uf-app-soft-shadow);
+}
+
+:global([data-theme='light']) .identityCopy strong {
+  color: var(--uf-app-text);
+}
+
+:global([data-theme='light']) .identityCopy small {
+  color: var(--uf-app-text-2);
+}
+
+:global([data-theme='light']) .identityLabel {
+  color: var(--uf-app-primary-text);
+}
+
+:global([data-theme='light']) .option {
+  border-color: var(--uf-app-border);
+  background: var(--uf-app-card-bg);
+  box-shadow: var(--uf-app-soft-shadow);
+}
+
+:global([data-theme='light']) .optionCopy {
+  color: var(--uf-app-text-2);
+}
+
+:global([data-theme='light']) .optionTitle strong {
+  color: var(--uf-app-text);
+}
+
+:global([data-theme='light']) .optionCopy em {
+  color: var(--uf-app-primary-text);
+}
+
+:global([data-theme='light']) .selectionMark {
+  border-color: var(--uf-app-border-strong);
+  color: var(--uf-app-surface);
+}
+
 .backButton:focus-visible {
   outline: 3px solid #67e8f9;
   outline-offset: 3px;
