@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Loader from '../components/ui/Loader';
+import Ga4RouteTracker from '../features/analytics/ga4RouteTracker.jsx';
 import { AccessProvider } from './AccessContext';
 import { SessionProvider, useSession } from './SessionContext';
 import { appRoutes, publicRoutes } from './routes';
@@ -135,12 +136,15 @@ function AppContent() {
     }
 
     return (
-      <Routes>
-        {publicRoutes.map((route) => (
-          <Route key={route.path} path={route.path} element={route.element} />
-        ))}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <>
+        <Ga4RouteTracker />
+        <Routes>
+          {publicRoutes.map((route) => (
+            <Route key={route.path} path={route.path} element={route.element} />
+          ))}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </>
     );
   }
 
@@ -214,16 +218,20 @@ function AppContent() {
 
   if (activeRoute?.standalone) {
     return (
-      <Routes>
-        <Route path={activeRoute.path} element={activeRoute.element} />
-        <Route path="*" element={<Navigate to={PRESENTATION_NEXT_ROUTE} replace />} />
-      </Routes>
+      <>
+        <Ga4RouteTracker />
+        <Routes>
+          <Route path={activeRoute.path} element={activeRoute.element} />
+          <Route path="*" element={<Navigate to={PRESENTATION_NEXT_ROUTE} replace />} />
+        </Routes>
+      </>
     );
   }
 
   if (activeRoute?.simplified) {
     return (
       <SimplifiedAuthenticatedLayout>
+        <Ga4RouteTracker />
         <Routes>
           {appRoutes.filter((route) => route.simplified).map((route) => (
             <Route key={route.path} path={route.path} element={route.element} />
