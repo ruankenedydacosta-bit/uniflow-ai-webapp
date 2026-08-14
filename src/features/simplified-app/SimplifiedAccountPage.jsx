@@ -6,6 +6,8 @@ import Avatar from '../../components/ui/Avatar/Avatar.jsx';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
+import AnalyticsConsentPreferencesModal from '../analytics/AnalyticsConsentPreferencesModal.jsx';
+import { useAnalyticsConsent } from '../analytics/useAnalyticsConsent.js';
 import {
   PERSONAL_PLAN_PRICE_LABEL,
   PERSONAL_PLAN_PRICE_PERIOD,
@@ -51,9 +53,11 @@ function SimplifiedAccountPage() {
   const { user, profile, workspace, signOut } = useSession();
   const workspaceId = workspace?.id;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showAnalyticsPreferences, setShowAnalyticsPreferences] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  const { status: analyticsConsentStatus } = useAnalyticsConsent();
 
   useEffect(() => {
     let isActive = true;
@@ -138,6 +142,18 @@ function SimplifiedAccountPage() {
       tone: 'purple',
       title: 'Tema',
       subtitle: 'Claro, Escuro, UniFlow ou Sistema',
+    },
+    {
+      id: 'analytics-consent',
+      Icon: LockIcon,
+      tone: 'purple',
+      title: 'Privacidade e Analytics',
+      subtitle: analyticsConsentStatus === 'granted'
+        ? 'Analytics aceito'
+        : analyticsConsentStatus === 'denied'
+          ? 'Analytics recusado'
+          : 'Escolher preferência',
+      onSelect: () => setShowAnalyticsPreferences(true),
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.ABOUT,
@@ -226,7 +242,12 @@ function SimplifiedAccountPage() {
 
       <section className={styles.menuCard} aria-label="Configurações da conta">
         {menuItems.map((item) => (
-          <button key={item.id} type="button" className={styles.menuRow} onClick={() => (item.to ? navigate(item.to) : goTo(item.id))}>
+          <button
+            key={item.id}
+            type="button"
+            className={styles.menuRow}
+            onClick={() => (item.onSelect ? item.onSelect() : item.to ? navigate(item.to) : goTo(item.id))}
+          >
             <span className={`${styles.menuIcon} ${styles[`tone${item.tone.charAt(0).toUpperCase()}${item.tone.slice(1)}`]}`} aria-hidden="true">
               <item.Icon />
             </span>
@@ -247,6 +268,11 @@ function SimplifiedAccountPage() {
         </span>
         <span className={styles.menuChevron} aria-hidden="true"><ChevronRightIcon /></span>
       </button>
+
+      <AnalyticsConsentPreferencesModal
+        open={showAnalyticsPreferences}
+        onClose={() => setShowAnalyticsPreferences(false)}
+      />
 
       <Modal
         open={showLogoutConfirm}

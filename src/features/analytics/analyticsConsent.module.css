@@ -1,0 +1,95 @@
+.bannerPosition {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--uf-z-toast);
+  padding:
+    var(--uf-space-16)
+    max(var(--uf-space-16), env(safe-area-inset-right, 0px))
+    max(var(--uf-space-16), env(safe-area-inset-bottom, 0px))
+    max(var(--uf-space-16), env(safe-area-inset-left, 0px));
+  pointer-events: none;
+}
+
+.bannerCard {
+  width: min(100%, 720px);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-20);
+  padding: var(--uf-space-20);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-20);
+  background: var(--uf-color-bg-elevated);
+  color: var(--uf-color-text-primary);
+  box-shadow: var(--uf-shadow-lg);
+  pointer-events: auto;
+}
+
+.bannerCopy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.bannerCopy strong {
+  display: block;
+  margin-bottom: var(--uf-space-4);
+  font-size: var(--uf-text-lg-size);
+  line-height: var(--uf-text-lg-lh);
+}
+
+.bannerCopy p,
+.preferenceContent p {
+  margin: 0;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-sm-size);
+  line-height: 1.55;
+}
+
+.bannerActions {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--uf-space-8);
+}
+
+.preferenceContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-16);
+}
+
+.preferenceContent .currentStatus {
+  padding: var(--uf-space-12) var(--uf-space-14);
+  border: 1px solid var(--uf-color-border-subtle);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-surface);
+  color: var(--uf-color-text-primary);
+  font-weight: var(--uf-font-weight-semibold);
+}
+
+.preferenceContent .storageWarning {
+  padding: var(--uf-space-12) var(--uf-space-14);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-warning-subtle);
+  color: var(--uf-color-warning);
+}
+
+.preferenceActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--uf-space-12);
+}
+
+@media (max-width: 640px) {
+  .bannerCard {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--uf-space-16);
+  }
+
+  .bannerActions,
+  .preferenceActions {
+    grid-template-columns: 1fr;
+  }
+}

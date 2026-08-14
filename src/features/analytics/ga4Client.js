@@ -43,7 +43,20 @@ export function createGa4Client({ runtime = globalThis } = {}) {
     publish();
   };
 
+  const setRuntimeCollectionDisabled = (disabled) => {
+    if (!config.hasValidMeasurementId) return;
+    try {
+      runtime[`ga-disable-${config.measurementId}`] = disabled;
+    } catch {
+      // A revogação nunca interfere na aplicação consumidora.
+    }
+  };
+
   const activateIfAllowed = () => {
+    if (consent === GA4_CONSENT_STATUS.DENIED) {
+      setRuntimeCollectionDisabled(true);
+    }
+
     if (!config.enabled) {
       setLoadStatus(config.requestedEnabled ? 'missing_configuration' : 'disabled');
       return false;
@@ -53,6 +66,8 @@ export function createGa4Client({ runtime = globalThis } = {}) {
       setLoadStatus('blocked');
       return false;
     }
+
+    setRuntimeCollectionDisabled(false);
 
     if (initialized) return true;
     if (!hasDom(runtime)) {

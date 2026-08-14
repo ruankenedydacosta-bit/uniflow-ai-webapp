@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Loader from '../components/ui/Loader';
+import AnalyticsConsentBanner from '../features/analytics/AnalyticsConsentBanner.jsx';
 import Ga4RouteTracker from '../features/analytics/ga4RouteTracker.jsx';
 import { AccessProvider } from './AccessContext';
 import { SessionProvider, useSession } from './SessionContext';
@@ -262,6 +263,7 @@ function App() {
   // dentro dele. Fonte de verdade única: sessão → access (sem estado paralelo).
   return (
     <BrowserRouter>
+      <AnalyticsConsentBanner />
       <SessionProvider>
         <AccessProvider>
           <AppContent />

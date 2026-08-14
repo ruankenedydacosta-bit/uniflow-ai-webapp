@@ -181,7 +181,7 @@ test('preço exibido vem da constante compartilhada de personal-plan, nunca um v
   assert.doesNotMatch(page, /R\$\s*29,90/);
 });
 
-// ---------- Menu principal: 6 itens, subtítulos dinâmicos e honestos ----------
+// ---------- Menu principal: itens funcionais, subtítulos dinâmicos e honestos ----------
 // BLOCO FINAL DO MVP (Sobre a UniFlow AI): "Notificações" (já tem lar
 // oficial no sino da Home) e "Privacidade e dados" (fora de escopo até
 // LGPD/exportação/exclusão de conta) foram removidas TOTALMENTE do menu --
@@ -194,7 +194,7 @@ test('preço exibido vem da constante compartilhada de personal-plan, nunca um v
 // receita/despesa não dependem mais de conta. A subrota/tela em si continua
 // existindo (ainda usada por transferência/ajuste de saldo), só não tem mais
 // entrada aqui.
-test('menu tem exatamente os 5 itens pedidos, com Tema entre Suporte e Sobre -- Notificações, Privacidade e Minhas contas removidas', async () => {
+test('menu preserva os itens existentes e inclui a preferência mínima de Analytics antes de Sobre', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
   const order = ['PAYMENTS', 'VOICE', 'SUPPORT', 'THEME', 'ABOUT'];
   const indices = order.map((id) => page.indexOf(`ACCOUNT_SUBROUTE_IDS.${id},`));
@@ -205,6 +205,9 @@ test('menu tem exatamente os 5 itens pedidos, com Tema entre Suporte e Sobre -- 
   assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.NOTIFICATIONS/);
   assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.PRIVACY/);
   assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.MY_ACCOUNTS/);
+  const analyticsIndex = page.indexOf("id: 'analytics-consent'");
+  assert.ok(analyticsIndex > indices[3] && analyticsIndex < indices[4]);
+  assert.match(page, /title: 'Privacidade e Analytics'/);
 });
 
 test('NOTIFICATIONS e PRIVACY não existem mais em ACCOUNT_SUBROUTE_IDS/ACCOUNT_SUBROUTES -- remoção total, não só do menu', async () => {

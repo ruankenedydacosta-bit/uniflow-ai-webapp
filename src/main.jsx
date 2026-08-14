@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './app/App.jsx';
 import { initializeGa4 } from './features/analytics/ga4Client.js';
+import { initializeAnalyticsConsent } from './features/analytics/analyticsConsentController.js';
 import {
   initializeTelemetry,
   installGlobalTelemetryHandlers,
@@ -19,6 +20,7 @@ import './styles/index.css';
 
 const bootstrapStartedAt = globalThis.performance?.now?.() ?? Date.now();
 initializeGa4();
+initializeAnalyticsConsent();
 initializeTelemetry();
 const removeGlobalTelemetryHandlers = installGlobalTelemetryHandlers();
 const removePwaInstallCapture = initializePwaInstallCapture();
