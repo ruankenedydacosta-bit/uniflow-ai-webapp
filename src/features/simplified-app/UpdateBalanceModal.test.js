@@ -211,10 +211,10 @@ test('CSS redefine os tokens --uf-* de fundo/texto/borda em .balanceDialog com a
   assert.match(dialogSlice, /--uf-color-border-default: var\(--uf-app-border\);/);
 });
 
-test('.darkOverlay força fundo escuro com blur, mesmo se a folha de estilo do Modal compartilhado carregar depois', async () => {
+test('.darkOverlay usa o overlay semântico do tema com blur, mesmo se a folha de estilo do Modal compartilhado carregar depois', async () => {
   const css = await source('./UpdateBalanceModal.module.css');
   const overlayStart = css.indexOf('.darkOverlay {');
   const overlaySlice = css.slice(overlayStart, css.indexOf('}', overlayStart));
-  assert.match(overlaySlice, /background: rgba\(3, 8, 20, \.68\) !important;/);
+  assert.match(overlaySlice, /background: var\(--uf-app-overlay-panel\) !important;/);
   assert.match(overlaySlice, /backdrop-filter: blur\(8px\) !important;/);
 });

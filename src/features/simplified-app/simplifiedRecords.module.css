@@ -29,7 +29,7 @@
 }
 
 .darkOverlay {
-  background: rgba(3, 8, 20, .68) !important;
+  background: var(--uf-app-overlay-panel) !important;
   backdrop-filter: blur(8px) !important;
 }
 
@@ -429,9 +429,10 @@
   justify-content: center;
   gap: 7px;
   padding: 14px 8px;
-  border: 1px solid rgba(86, 109, 151, .46);
+  border: 1px solid var(--uf-app-border);
   border-radius: 20px;
-  background: linear-gradient(145deg, rgba(15, 30, 58, .88), rgba(5, 14, 34, .95));
+  background: var(--uf-app-card-premium);
+  box-shadow: var(--uf-app-soft-shadow);
   color: var(--uf-app-text);
   font: inherit;
   text-align: center;
@@ -440,7 +441,7 @@
 }
 
 .categoryCard:hover {
-  border-color: rgba(103, 232, 249, .65);
+  border-color: var(--uf-app-focus);
   transform: translateY(-2px);
 }
 
@@ -657,9 +658,9 @@
   align-items: center;
   gap: 12px;
   padding: 10px 10px 10px 14px;
-  border: 1px solid rgba(79, 102, 143, .42);
+  border: 1px solid var(--uf-app-border);
   border-radius: 17px;
-  background: linear-gradient(105deg, rgba(11, 26, 54, .9), rgba(5, 14, 32, .97));
+  background: var(--uf-app-card-row);
   color: var(--uf-app-text);
   font: inherit;
   text-align: left;
@@ -669,8 +670,8 @@
 }
 
 .transactionRow:hover {
-  border-color: rgba(96, 165, 250, .66);
-  background: rgba(14, 35, 70, .96);
+  border-color: var(--uf-app-primary-text);
+  background: var(--uf-app-card-row-hover);
 }
 
 .transactionIcon {
@@ -744,9 +745,9 @@
   gap: 10px;
   margin-top: 16px;
   padding: 14px;
-  border: 1px solid rgba(67, 91, 132, .4);
+  border: 1px solid var(--uf-app-border);
   border-radius: 18px;
-  background: rgba(5, 16, 37, .78);
+  background: var(--uf-app-field-panel);
 }
 
 .historyFilters label {
@@ -782,7 +783,7 @@
   min-height: 48px;
   border: 1px solid rgba(103, 232, 249, .4);
   border-radius: 12px;
-  background: rgba(11, 35, 66, .9);
+  background: var(--uf-app-panel-muted);
   color: var(--uf-app-focus);
   font: inherit;
   font-weight: 700;
@@ -811,7 +812,7 @@
   padding: 18px;
   border: 1px dashed rgba(80, 105, 149, .45);
   border-radius: 17px;
-  background: rgba(5, 15, 34, .65);
+  background: var(--uf-app-empty-panel);
   color: var(--uf-app-text-2);
   font-size: 16px;
   line-height: 1.45;
@@ -832,7 +833,7 @@
   padding: 0 16px;
   border: 1px solid rgba(103, 232, 249, .45);
   border-radius: 12px;
-  background: rgba(11, 35, 66, .9);
+  background: var(--uf-app-panel-muted);
   color: var(--uf-app-focus);
   font: inherit;
   font-weight: 700;

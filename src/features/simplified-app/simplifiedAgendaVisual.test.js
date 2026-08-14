@@ -100,17 +100,17 @@ test('form: campos do LOTE presentes (Título*, Data, Horário, Dia inteiro, Obs
   assert.match(form, /hasExplicitTime: Boolean\(event\.target\.value\)/);
 });
 
-test('form: modal força tema UniFlow escuro, foco inicial e classes responsivas sem alterar o contrato', async () => {
+test('form: modal acompanha o tema ativo, preserva foco inicial e classes responsivas', async () => {
   const [form, css] = await Promise.all([
     source(`./${FORM_MODAL}`),
     source('./simplifiedAgenda.module.css'),
   ]);
-  assert.match(form, /data-theme="uniflow"/);
+  assert.doesNotMatch(form, /data-theme="uniflow"/);
   assert.match(form, /className=\{styles\.formDialog\}/);
   assert.match(form, /overlayClassName=\{styles\.formOverlay\}/);
   assert.match(form, /autoFocus/);
   assert.match(css, /\.formDialog\s*\{/);
-  assert.match(css, /color-scheme:\s*dark/);
+  assert.match(css, /color-scheme:\s*var\(--uf-app-color-scheme\)/);
   assert.match(css, /@media \(max-width: 480px\)/);
   assert.match(css, /env\(safe-area-inset-bottom/);
   assert.match(css, /overflow|overscroll-behavior/);

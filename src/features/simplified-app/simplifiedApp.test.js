@@ -1054,9 +1054,9 @@ test('MonthPickerModal é portal para document.body e usa role="dialog" acessív
   assert.match(modal, /aria-labelledby=\{titleId\}/);
 });
 
-test('CSS do MonthPickerModal usa identidade escura (sem fundo branco), safe area e dvh', async () => {
+test('CSS do MonthPickerModal acompanha o tema, preserva overlay, safe area e dvh', async () => {
   const css = await source('./MonthPickerModal.module.css');
-  assert.match(css, /background: rgba\(3, 8, 20, \.68\)/);
+  assert.match(css, /background: var\(--uf-app-overlay-panel\)/);
   // Superfície do modal vem do tema (mesma identidade no UniFlow, adaptada
   // no Claro e no Escuro) em vez de um gradiente escuro fixo.
   assert.match(css, /linear-gradient\(145deg, var\(--uf-app-surface-2\), var\(--uf-app-surface\)\)/);

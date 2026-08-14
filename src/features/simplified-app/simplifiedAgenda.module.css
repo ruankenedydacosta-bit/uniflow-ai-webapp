@@ -110,7 +110,7 @@
   padding: 10px 14px;
   border: 1px solid var(--uf-app-border);
   border-radius: 14px;
-  background: rgba(10, 22, 46, .6);
+  background: var(--uf-app-panel-muted);
   color: var(--uf-app-text);
   font: inherit;
   font-size: clamp(17px, 4.6vw, 22px);
@@ -252,7 +252,7 @@
   margin: 0;
   padding: 14px 16px;
   border-radius: 14px;
-  background: rgba(20, 32, 64, .5);
+  background: var(--uf-app-empty-panel);
   color: var(--uf-app-text-2);
   font-size: 14.5px;
 }
@@ -295,8 +295,8 @@
   padding: 10px 14px;
   border: 1px solid var(--uf-app-border);
   border-radius: 14px;
-  background:
-    linear-gradient(130deg, rgba(14, 31, 62, .55), rgba(4, 13, 33, .6));
+  background: var(--uf-app-card-row);
+  box-shadow: var(--uf-app-soft-shadow);
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -341,11 +341,11 @@
 /* ---------- Formulário simples (modal) ---------- */
 
 .formOverlay {
-  background: color-mix(in srgb, var(--uf-gray-950) 88%, transparent);
+  background: var(--uf-app-overlay-panel);
 }
 
 .formDialog {
-  color-scheme: dark;
+  color-scheme: var(--uf-app-color-scheme);
   border-color: var(--uf-color-border-strong);
   background:
     radial-gradient(circle at 88% 4%, rgba(37, 99, 235, .14), transparent 34%),
