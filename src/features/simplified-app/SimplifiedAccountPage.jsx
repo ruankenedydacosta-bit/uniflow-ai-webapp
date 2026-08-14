@@ -149,9 +149,9 @@ function SimplifiedAccountPage() {
       tone: 'purple',
       title: 'Privacidade e Analytics',
       subtitle: analyticsConsentStatus === 'granted'
-        ? 'Analytics aceito'
+        ? 'Dados de uso permitidos'
         : analyticsConsentStatus === 'denied'
-          ? 'Analytics recusado'
+          ? 'Dados de uso não permitidos'
           : 'Escolher preferência',
       onSelect: () => setShowAnalyticsPreferences(true),
     },

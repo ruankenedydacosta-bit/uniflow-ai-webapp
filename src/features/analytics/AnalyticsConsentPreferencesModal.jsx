@@ -6,8 +6,8 @@ import styles from './analyticsConsent.module.css';
 
 const STATUS_LABELS = Object.freeze({
   [GA4_CONSENT_STATUS.UNKNOWN]: 'Você ainda não escolheu uma preferência.',
-  [GA4_CONSENT_STATUS.GRANTED]: 'Analytics está aceito neste dispositivo.',
-  [GA4_CONSENT_STATUS.DENIED]: 'Analytics está recusado neste dispositivo.',
+  [GA4_CONSENT_STATUS.GRANTED]: 'O uso de dados para melhoria está permitido neste dispositivo.',
+  [GA4_CONSENT_STATUS.DENIED]: 'O uso de dados para melhoria não está permitido neste dispositivo.',
 });
 
 function AnalyticsConsentPreferencesModal({ open, onClose }) {
@@ -17,14 +17,14 @@ function AnalyticsConsentPreferencesModal({ open, onClose }) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Preferências de Analytics"
+      title="Privacidade e melhoria do app"
       description="Você pode mudar sua escolha a qualquer momento."
       size="sm"
     >
       <div className={styles.preferenceContent}>
         <p>
-          O Analytics ajuda a entender o uso do app e melhorar a experiência. A UniFlow não envia
-          dados financeiros, mensagens, áudio, Agenda ou informações pessoais ao Google Analytics.
+          A UniFlow usa dados de uso para entender quais telas e recursos funcionam melhor. Não
+          enviamos ao Analytics seus dados financeiros, mensagens, áudios ou transcrições.
         </p>
         <p className={styles.currentStatus} role="status">
           {STATUS_LABELS[status]}
@@ -42,7 +42,7 @@ function AnalyticsConsentPreferencesModal({ open, onClose }) {
             aria-pressed={status === GA4_CONSENT_STATUS.GRANTED}
             onClick={accept}
           >
-            Aceitar Analytics
+            Permitir
           </Button>
           <Button
             type="button"
@@ -51,7 +51,7 @@ function AnalyticsConsentPreferencesModal({ open, onClose }) {
             aria-pressed={status === GA4_CONSENT_STATUS.DENIED}
             onClick={deny}
           >
-            Recusar Analytics
+            Não permitir
           </Button>
         </div>
       </div>

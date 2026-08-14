@@ -8,10 +8,32 @@ test('banner exige escolha explícita e oferece aceitar/recusar sem fechamento i
   const banner = await source('./AnalyticsConsentBanner.jsx');
 
   assert.match(banner, /status !== GA4_CONSENT_STATUS\.UNKNOWN/);
-  assert.match(banner, /onClick=\{accept\}[\s\S]*?Aceitar Analytics/);
-  assert.match(banner, /onClick=\{deny\}[\s\S]*?Recusar Analytics/);
+  assert.match(banner, /onClick=\{accept\}[\s\S]*?Permitir/);
+  assert.match(banner, /onClick=\{deny\}[\s\S]*?Não permitir/);
+  assert.match(banner, /Privacidade e melhoria do app/);
+  assert.match(banner, /dados financeiros, mensagens, áudios ou transcrições/);
+  assert.doesNotMatch(banner, /Aceitar Analytics|Recusar Analytics/);
   assert.doesNotMatch(banner, /onClose|closeButton|Fechar|dismiss|continuar.*consent/i);
   assert.doesNotMatch(banner, /useSession|supabase|workspace|user\??\.|email/);
+});
+
+test('banner reutiliza o design system com layout compacto, safe-area e movimento reduzido', async () => {
+  const [banner, css] = await Promise.all([
+    source('./AnalyticsConsentBanner.jsx'),
+    source('./analyticsConsent.module.css'),
+  ]);
+
+  assert.match(banner, /import \{ LockIcon \} from '\.\.\/simplified-app\/SimplifiedIcons\.jsx';/);
+  assert.match(banner, /aria-labelledby="analytics-consent-title"/);
+  assert.match(banner, /aria-describedby="analytics-consent-description"/);
+  assert.match(css, /var\(--uf-gradient-hairline\)/);
+  assert.match(css, /var\(--uf-gray-950\)/);
+  assert.match(css, /env\(safe-area-inset-bottom/);
+  assert.match(css, /min-height:\s*var\(--uf-tap-target-min\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /animation:\s*none/);
+  assert.match(css, /body:not\(\[data-simplified-app-mounted='true'\]\)/);
+  assert.match(css, /@media \(max-width: 640px\)/);
 });
 
 test('preferência posterior fica em Conta e reutiliza Modal/Button existentes', async () => {
@@ -23,6 +45,9 @@ test('preferência posterior fica em Conta e reutiliza Modal/Button existentes',
   assert.match(account, /<AnalyticsConsentPreferencesModal/);
   assert.match(modal, /import Button from '\.\.\/\.\.\/components\/ui\/Button\/Button\.jsx';/);
   assert.match(modal, /import Modal from '\.\.\/\.\.\/components\/ui\/Modal\/Modal\.jsx';/);
+  assert.match(modal, /title="Privacidade e melhoria do app"/);
+  assert.match(modal, /onClick=\{accept\}[\s\S]*?Permitir/);
+  assert.match(modal, /onClick=\{deny\}[\s\S]*?Não permitir/);
   assert.match(modal, /aria-pressed=\{status === GA4_CONSENT_STATUS\.GRANTED\}/);
   assert.match(modal, /aria-pressed=\{status === GA4_CONSENT_STATUS\.DENIED\}/);
 });

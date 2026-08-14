@@ -20,7 +20,7 @@ fora do escopo o Advanced Consent Mode e seus cookieless pings/modelagem; em tro
 Google não recebe sinais formais de Consent Mode para este Web App.
 
 A interface de consentimento chama `grantGa4AnalyticsConsent()` somente depois de a
-pessoa escolher **Aceitar Analytics**. A escolha **Recusar Analytics** chama
+pessoa escolher **Permitir**. A escolha **Não permitir** chama
 `denyGa4AnalyticsConsent()` e mantém novos pageviews bloqueados.
 
 A decisão categórica (`granted` ou `denied`) é persistida no Web App com a chave
