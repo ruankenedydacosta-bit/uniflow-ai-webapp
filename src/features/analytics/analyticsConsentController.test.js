@@ -95,6 +95,7 @@ test('primeira visita permanece unknown e não persiste uma decisão automática
   assert.deepEqual(controller.initialize(), {
     status: GA4_CONSENT_STATUS.UNKNOWN,
     persistence: 'not_saved',
+    isConsentHydrated: true,
   });
   assert.deepEqual(storage.writes, []);
   assert.deepEqual(analytics.calls, [['set', GA4_CONSENT_STATUS.UNKNOWN]]);
@@ -238,6 +239,33 @@ test('storage indisponível ou com falha mantém a aplicação funcional e a esc
     assert.deepEqual(controller.getState(), {
       status: GA4_CONSENT_STATUS.GRANTED,
       persistence: 'session_only',
+      isConsentHydrated: true,
+    });
+  }
+});
+
+test('readiness distingue bootstrap pendente de unknown real e decisões restauradas', () => {
+  const cases = [
+    [null, GA4_CONSENT_STATUS.UNKNOWN, 'not_saved'],
+    [GA4_CONSENT_STATUS.GRANTED, GA4_CONSENT_STATUS.GRANTED, 'persisted'],
+    [GA4_CONSENT_STATUS.DENIED, GA4_CONSENT_STATUS.DENIED, 'persisted'],
+  ];
+
+  for (const [persisted, status, persistence] of cases) {
+    const controller = createAnalyticsConsentController({
+      storage: createStorage(persisted),
+      analyticsApi: createAnalyticsSpy().api,
+    });
+
+    assert.deepEqual(controller.getState(), {
+      status: GA4_CONSENT_STATUS.UNKNOWN,
+      persistence: 'unknown',
+      isConsentHydrated: false,
+    });
+    assert.deepEqual(controller.initialize(), {
+      status,
+      persistence,
+      isConsentHydrated: true,
     });
   }
 });

@@ -99,7 +99,10 @@ test('cadastro visualizado é emitido somente pelo modo signup efetivamente rend
   const routes = await source('app/routes.jsx');
 
   assert.match(mobileAuth, /createGa4SignUpViewedLifecycle/);
-  assert.match(mobileAuth, /update\(mode === AUTH_MODES\.SIGN_UP\)/);
+  assert.match(mobileAuth, /useAnalyticsConsent/);
+  assert.match(mobileAuth, /update\(mode === AUTH_MODES\.SIGN_UP, \{/);
+  assert.match(mobileAuth, /consentReady: isConsentHydrated/);
+  assert.match(mobileAuth, /consentStatus: analyticsConsentStatus/);
   assert.doesNotMatch(routes, /trackGa4SignUpViewed|sign_up_viewed/);
 });
 

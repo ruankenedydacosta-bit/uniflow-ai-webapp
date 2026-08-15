@@ -12,6 +12,7 @@ import SocialAuthButtons from '../components/SocialAuthButtons.jsx';
 import { AUTH_MODES, getGoogleAuthFeedback, normalizeAuthMode } from '../authMobileSchema.js';
 import { getPasswordResetRequestFeedback } from '../passwordRecoveryUtils.js';
 import { createGa4SignUpViewedLifecycle } from '../../analytics/ga4ProductEvents.js';
+import { useAnalyticsConsent } from '../../analytics/useAnalyticsConsent.js';
 import styles from '../authMobile.module.css';
 
 const POST_SIGN_UP_DESTINATION = PRESENTATION_ROUTE;
@@ -29,6 +30,10 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
   } = useSession();
   const [mode, setMode] = useState(() => normalizeAuthMode(searchParams.get('mode')));
   const [signUpViewedLifecycle] = useState(() => createGa4SignUpViewedLifecycle());
+  const {
+    isConsentHydrated,
+    status: analyticsConsentStatus,
+  } = useAnalyticsConsent();
   const [isSubmitting, setIsSubmitting] = useState(false);
   // AUTH4: loading dedicado do clique em "Continuar com Google" -- distinto
   // de isSubmitting (formulário por e-mail), para não desabilitar um pelo
@@ -49,8 +54,11 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
   const resetRequestRef = useRef(false);
 
   useEffect(() => {
-    signUpViewedLifecycle.update(mode === AUTH_MODES.SIGN_UP);
-  }, [mode, signUpViewedLifecycle]);
+    signUpViewedLifecycle.update(mode === AUTH_MODES.SIGN_UP, {
+      consentReady: isConsentHydrated,
+      consentStatus: analyticsConsentStatus,
+    });
+  }, [analyticsConsentStatus, isConsentHydrated, mode, signUpViewedLifecycle]);
 
   function changeMode(nextMode) {
     const normalized = normalizeAuthMode(nextMode);

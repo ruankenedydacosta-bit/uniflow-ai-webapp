@@ -1,4 +1,5 @@
 import { emitGa4ProductEvent } from './ga4Client.js';
+import { GA4_CONSENT_STATUS } from './ga4Contracts.js';
 import {
   buildGa4ProductEvent,
   GA4_PRODUCT_EVENT_NAMES,
@@ -151,13 +152,23 @@ export function createGa4SignUpViewedLifecycle({
   let visible = false;
 
   return Object.freeze({
-    update(nextVisible) {
+    update(nextVisible, { consentReady = false, consentStatus } = {}) {
       if (!nextVisible) {
         visible = false;
         return invalidResult('not_visible');
       }
+
+      // A montagem durante o bootstrap não consome a visualização. Assim, uma
+      // decisão persistida pode ser restaurada antes de avaliarmos o evento.
+      if (!consentReady) return invalidResult('consent_pending');
       if (visible) return invalidResult('duplicate');
+
+      // Depois que o bootstrap resolveu, unknown/denied consomem somente esta
+      // visualização. Um aceite posterior não produz replay retroativo.
       visible = true;
+      if (consentStatus !== GA4_CONSENT_STATUS.GRANTED) {
+        return invalidResult('consent_blocked');
+      }
       return trackViewed();
     },
   });

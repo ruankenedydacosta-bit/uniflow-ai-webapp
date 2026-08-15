@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createGa4Client } from './ga4Client.js';
+import { GA4_CONSENT_STATUS } from './ga4Contracts.js';
 import {
   createGa4ProductEventGateway,
   createGa4CheckoutEventLifecycle,
@@ -192,15 +193,103 @@ test('visibilidade de cadastro emite uma vez por entrada real no modo signup', (
     trackViewed: () => { events.push('sign_up_viewed'); return { sent: true }; },
   });
 
-  lifecycle.update(false);
-  lifecycle.update(true);
-  lifecycle.update(true);
-  lifecycle.update(true);
+  const granted = {
+    consentReady: true,
+    consentStatus: GA4_CONSENT_STATUS.GRANTED,
+  };
+
+  lifecycle.update(false, granted);
+  lifecycle.update(true, granted);
+  lifecycle.update(true, granted);
+  lifecycle.update(true, granted);
   assert.deepEqual(events, ['sign_up_viewed']);
 
-  lifecycle.update(false);
-  lifecycle.update(true);
+  lifecycle.update(false, granted);
+  lifecycle.update(true, granted);
   assert.deepEqual(events, ['sign_up_viewed', 'sign_up_viewed']);
+});
+
+test('signup direto com granted persistido aguarda hidratação e emite exatamente uma vez', () => {
+  const events = [];
+  const lifecycle = createGa4SignUpViewedLifecycle({
+    trackViewed: () => { events.push('sign_up_viewed'); return { sent: true }; },
+  });
+
+  assert.equal(lifecycle.update(true, { consentReady: false }).reason, 'consent_pending');
+  assert.deepEqual(events, []);
+  assert.equal(lifecycle.update(true, {
+    consentReady: true,
+    consentStatus: GA4_CONSENT_STATUS.GRANTED,
+  }).sent, true);
+  lifecycle.update(true, {
+    consentReady: true,
+    consentStatus: GA4_CONSENT_STATUS.GRANTED,
+  });
+
+  assert.deepEqual(events, ['sign_up_viewed']);
+});
+
+test('signup emitido após hidratação preserva page_location canônico sem query ou hash', () => {
+  const { runtime } = createRuntime();
+  runtime.location = new URL('https://app.invalid/login?mode=signup#teste');
+  const client = createGa4Client({ runtime });
+  client.initialize(ENABLED_ENV);
+  const lifecycle = createGa4SignUpViewedLifecycle({
+    trackViewed: () => client.trackProductEvent('sign_up_viewed', {}),
+  });
+
+  lifecycle.update(true, { consentReady: false });
+  client.grantConsent();
+  lifecycle.update(true, {
+    consentReady: true,
+    consentStatus: GA4_CONSENT_STATUS.GRANTED,
+  });
+
+  const commands = eventCommands(runtime, 'sign_up_viewed');
+  assert.equal(commands.length, 1);
+  assert.equal(commands[0][2].page_location, 'https://app.invalid/login');
+  assert.doesNotMatch(JSON.stringify(commands[0][2]), /mode=signup|#teste/);
+});
+
+test('denied e unknown reais não emitem nem sofrem replay após aceite na mesma visualização', () => {
+  for (const initialStatus of [GA4_CONSENT_STATUS.DENIED, GA4_CONSENT_STATUS.UNKNOWN]) {
+    const events = [];
+    const lifecycle = createGa4SignUpViewedLifecycle({
+      trackViewed: () => { events.push('sign_up_viewed'); return { sent: true }; },
+    });
+
+    lifecycle.update(true, { consentReady: true, consentStatus: initialStatus });
+    lifecycle.update(true, {
+      consentReady: true,
+      consentStatus: GA4_CONSENT_STATUS.GRANTED,
+    });
+    assert.deepEqual(events, []);
+
+    lifecycle.update(false, {
+      consentReady: true,
+      consentStatus: GA4_CONSENT_STATUS.GRANTED,
+    });
+    lifecycle.update(true, {
+      consentReady: true,
+      consentStatus: GA4_CONSENT_STATUS.GRANTED,
+    });
+    assert.deepEqual(events, ['sign_up_viewed']);
+  }
+});
+
+test('falha de storage resolve unknown com segurança e não produz emissão indevida', () => {
+  const events = [];
+  const lifecycle = createGa4SignUpViewedLifecycle({
+    trackViewed: () => { events.push('sign_up_viewed'); return { sent: true }; },
+  });
+
+  lifecycle.update(true, { consentReady: false });
+  lifecycle.update(true, {
+    consentReady: true,
+    consentStatus: GA4_CONSENT_STATUS.UNKNOWN,
+  });
+
+  assert.deepEqual(events, []);
 });
 
 test('checkout mede entrada e método somente na confirmação, com deduplicação', () => {

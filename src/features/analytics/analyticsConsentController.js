@@ -16,8 +16,8 @@ const DEFAULT_ANALYTICS_API = Object.freeze({
   setConsent: setGa4AnalyticsConsent,
 });
 
-function createState(status, persistence) {
-  return Object.freeze({ status, persistence });
+function createState(status, persistence, isConsentHydrated) {
+  return Object.freeze({ status, persistence, isConsentHydrated });
 }
 
 export function createAnalyticsConsentController({
@@ -25,13 +25,14 @@ export function createAnalyticsConsentController({
   storage = resolveAnalyticsConsentStorage(),
 } = {}) {
   let initialized = false;
-  let state = createState(GA4_CONSENT_STATUS.UNKNOWN, 'unknown');
+  let state = createState(GA4_CONSENT_STATUS.UNKNOWN, 'unknown', false);
   const listeners = new Set();
 
   function publish(nextState) {
     if (
       state.status === nextState.status
       && state.persistence === nextState.persistence
+      && state.isConsentHydrated === nextState.isConsentHydrated
     ) {
       return state;
     }
@@ -67,6 +68,7 @@ export function createAnalyticsConsentController({
       restored.status === GA4_CONSENT_STATUS.UNKNOWN
         ? (restored.storageAvailable ? 'not_saved' : 'unavailable')
         : 'persisted',
+      true,
     ));
   }
 
@@ -91,7 +93,7 @@ export function createAnalyticsConsentController({
       // A decisão local permanece válida mesmo se GA4 estiver indisponível.
     }
 
-    return publish(createState(status, persisted ? 'persisted' : 'session_only'));
+    return publish(createState(status, persisted ? 'persisted' : 'session_only', true));
   }
 
   return Object.freeze({
