@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { trackGa4ConfirmedTransactionCreation } from '../analytics/ga4ProductEvents.js';
+import {
+  GA4_PRODUCT_ORIGINS,
+} from '../analytics/ga4ProductContracts.js';
 import { buildUniPrefillFromState } from '../categories/categoryUtils.js';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
@@ -541,6 +545,15 @@ export default function UniChatPage({ variant = 'full' }) {
     workspaceId: effectiveWorkspace?.id,
     fallbackTransactions: financialFallback.transactions,
   });
+  const saveTransactionForVoice = transactionsState.saveTransaction;
+  const saveVoiceTransaction = useCallback(
+    (values, transactionId = null) => saveTransactionForVoice(
+      values,
+      transactionId,
+      { origin: GA4_PRODUCT_ORIGINS.VOICE },
+    ),
+    [saveTransactionForVoice],
+  );
 
   const balanceState = useFinancialBalances({ workspaceId: effectiveWorkspace?.id });
 
@@ -571,7 +584,7 @@ export default function UniChatPage({ variant = 'full' }) {
     categories: categoryState.categories,
     executeAtomicAction: executeConfirmedFinancialAction,
     saveAccount: accountState.saveAccount,
-    saveTransaction: transactionsState.saveTransaction,
+    saveTransaction: saveVoiceTransaction,
     profileId: personalityProfileId,
     workspaceType: financialWorkspaceType,
     referenceDate: getLocalIsoDate(),
@@ -997,6 +1010,7 @@ export default function UniChatPage({ variant = 'full' }) {
   );
   const [, setFinancialPlanState] = useState(null);
   const financialPlanRef = useRef(null);
+  const financialAnalyticsOriginRef = useRef(GA4_PRODUCT_ORIGINS.MANUAL);
   // BLOCO F: nunca executar o mesmo plano duas vezes em paralelo (ex.: o
   // usuário toca/fala "confirmar" duas vezes rapidamente antes da primeira
   // rodada terminar) -- o RPC já é idempotente por operação
@@ -1075,7 +1089,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // existente, sem quebrar o registro manual.
     if (!plan) return false;
 
-    const newPlan = createPendingFinancialPlan({
+    const createdPlan = createPendingFinancialPlan({
       plan,
       phrase: text,
       accounts: accountState.accounts,
@@ -1084,6 +1098,19 @@ export default function UniChatPage({ variant = 'full' }) {
       referenceDate: getLocalIsoDate(),
       workspaceType: financialWorkspaceType,
     });
+    const analyticsOrigin = financialAnalyticsOriginRef.current === GA4_PRODUCT_ORIGINS.VOICE
+      ? GA4_PRODUCT_ORIGINS.VOICE
+      : GA4_PRODUCT_ORIGINS.MANUAL;
+    const newPlan = {
+      ...createdPlan,
+      analyticsOrigin,
+      operations: createdPlan.operations.map((operation) => ({
+        ...operation,
+        action: operation.action
+          ? { ...operation.action, analyticsOrigin }
+          : operation.action,
+      })),
+    };
     // S4: turno novo durante a chamada neural anula o plano antigo.
     if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
     setFinancialPlan(newPlan);
@@ -1125,6 +1152,12 @@ export default function UniChatPage({ variant = 'full' }) {
           setFinancialPlan(workingPlan);
           break;
         }
+        trackGa4ConfirmedTransactionCreation({
+          confirmed: true,
+          idempotentReplay: result.data.idempotent_replay !== false,
+          transactionType: op.action.transactionType,
+          origin: op.action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
+        });
         workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId);
         setFinancialPlan(workingPlan);
       }
@@ -1227,6 +1260,8 @@ export default function UniChatPage({ variant = 'full' }) {
       // pendente como contexto, ver summarizePlanForNeuralContext), nunca
       // ser tratada como se não tivesse acontecido nada.
       void (async () => {
+        financialAnalyticsOriginRef.current = plan.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL;
+        financialConversation.setAnalyticsOrigin(financialAnalyticsOriginRef.current);
         const handled = await attemptFinancialPlan(text);
         if (!handled) {
           setFinancialPlan(null);
@@ -3933,10 +3968,13 @@ export default function UniChatPage({ variant = 'full' }) {
         text: functionalText,
         identity: agendaIdentity,
         referenceDate: getLocalIsoDate(),
+        origin: messageSource,
       }).then((result) => {
         if (!isAgendaRequestCurrent(agendaRequest)) return;
         setIsTyping(false);
         if (result.route === 'financial' && result.financialText) {
+          financialAnalyticsOriginRef.current = result.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL;
+          financialConversation.setAnalyticsOrigin(financialAnalyticsOriginRef.current);
           runDeterministicFinancialFlow(result.financialText, historySnapshot);
           return;
         }
@@ -3978,6 +4016,10 @@ export default function UniChatPage({ variant = 'full' }) {
 
     setIsTyping(true);
     syncMessageToSupabase(userMsg);
+    financialAnalyticsOriginRef.current = messageSource === 'voice'
+      ? GA4_PRODUCT_ORIGINS.VOICE
+      : GA4_PRODUCT_ORIGINS.MANUAL;
+    financialConversation.setAnalyticsOrigin(financialAnalyticsOriginRef.current);
 
     setTimeout(() => {
       // S4: se outro sendText rodou durante o delay, este turno esta

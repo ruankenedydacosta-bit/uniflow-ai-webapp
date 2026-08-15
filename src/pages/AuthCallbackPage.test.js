@@ -24,7 +24,7 @@ test('erro do provedor (?error / ?error_description) ou erro de sessão volta pa
   assert.match(page, /const oauthError = searchParams\.get\('error'\) \|\| searchParams\.get\('error_description'\);/);
   assert.match(
     page,
-    /if \(oauthError \|\| sessionError\) \{\s*\n\s*return <Navigate to="\/welcome" replace state=\{\{ oauthFailed: true, from: returnTo \}\} \/>;/,
+    /if \(oauthError \|\| sessionError\) \{\s*\n\s*clearPendingGa4GoogleAuth\(\);\s*\n\s*return <Navigate to="\/welcome" replace state=\{\{ oauthFailed: true, from: returnTo \}\} \/>;/,
   );
 });
 

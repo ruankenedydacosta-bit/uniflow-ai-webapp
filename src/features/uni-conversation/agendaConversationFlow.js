@@ -25,6 +25,10 @@ import {
   getOrCreateAgendaOperation,
 } from '../../services/agendaOperationStore.js';
 import { AGENDA_IDEMPOTENCY_ENABLED } from '../../services/agendaIdempotencyConfig.js';
+import { trackGa4ConfirmedCalendarCreation } from '../analytics/ga4ProductEvents.js';
+import {
+  GA4_PRODUCT_ORIGINS,
+} from '../analytics/ga4ProductContracts.js';
 
 const AGENDA_INTENTS = new Set([
   'agenda_reminder_create',
@@ -1685,6 +1689,13 @@ export function createAgendaConversationFlow({
     ) {
       await clearCreationOperation(identity, operation.clientOperationId);
     }
+    trackGa4ConfirmedCalendarCreation({
+      confirmed: !result?.error && Boolean(result?.data),
+      idempotentReplay: result?.idempotentReplay === true,
+      isAllDay: result?.data?.is_all_day === true,
+      hasExplicitTime: result?.data?.has_explicit_time !== false,
+      origin: fields.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
+    });
     return result;
   }
 
@@ -1864,6 +1875,7 @@ export function createAgendaConversationFlow({
           hasExplicitTime: false,
           timeChoiceResolved: true,
           itemType: 'reminder',
+          analyticsOrigin: active.fields.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
         };
         const result = await createItem(identity, fields);
         if (result.error) return { handled: true, text: serviceErrorText(result.error) };
@@ -1876,6 +1888,7 @@ export function createAgendaConversationFlow({
           handled: true,
           route: 'financial',
           financialText: buildFinancialDraft(active.fields.originalText),
+          analyticsOrigin: active.fields.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
           text: '',
         };
       }
@@ -1994,12 +2007,15 @@ export function createAgendaConversationFlow({
     return null;
   }
 
-  async function handleInternal({ text, identity, referenceDate }) {
+  async function handleInternal({ text, identity, referenceDate, origin = 'text' }) {
     if (!identity?.userId || !identity?.workspaceId || !identity?.conversationId) {
       return { handled: true, text: 'Não consegui identificar seu espaço atual. Atualize a página e tente novamente.' };
     }
 
     const agendaText = stripUniVocative(text);
+    const analyticsOrigin = origin === 'voice'
+      ? GA4_PRODUCT_ORIGINS.VOICE
+      : GA4_PRODUCT_ORIGINS.MANUAL;
     const classification = classifyIntent(agendaText);
     const currentStack = getStack(identity);
     const currentPending = currentStack ? getActivePendingAction(currentStack) : null;
@@ -2019,6 +2035,7 @@ export function createAgendaConversationFlow({
         originalText: agendaText,
         title: extractTitle(agendaText),
         date: resolveAgendaDate(agendaText, referenceDate),
+        analyticsOrigin,
       };
       await startPending(identity, PENDING_TYPES.FINANCIAL_CONFLICT, fields);
       return {
@@ -2040,6 +2057,7 @@ export function createAgendaConversationFlow({
         hasExplicitTime: Boolean(timeAnalysis.time),
         timeChoiceResolved: !timeAnalysis.blocked,
         itemType: classification.intent === 'agenda_reminder_create' ? 'reminder' : 'appointment',
+        analyticsOrigin,
       };
       if (fields.allDay) {
         fields.time = null;

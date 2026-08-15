@@ -152,24 +152,29 @@ export async function resolveIdempotentAgendaCreation({
   findExisting,
   insertItem,
 }) {
-  if (!payload.client_operation_id) return insertItem(payload);
+  if (!payload.client_operation_id) {
+    const inserted = await insertItem(payload);
+    return { ...inserted, idempotentReplay: false };
+  }
 
   const existing = await findExisting();
   if (existing.error) return existing;
   if (existing.data) {
     return isCompatibleAgendaCreation(existing.data, payload)
-      ? existing
+      ? { ...existing, idempotentReplay: true }
       : createIdempotencyConflict();
   }
 
   const inserted = await insertItem(payload);
-  if (!inserted.error || inserted.error.code !== '23505') return inserted;
+  if (!inserted.error || inserted.error.code !== '23505') {
+    return { ...inserted, idempotentReplay: false };
+  }
 
   const concurrent = await findExisting();
   if (concurrent.error) return concurrent;
   if (!concurrent.data) return inserted;
   return isCompatibleAgendaCreation(concurrent.data, payload)
-    ? concurrent
+    ? { ...concurrent, idempotentReplay: true }
     : createIdempotencyConflict();
 }
 
@@ -306,7 +311,7 @@ export async function createAgendaItem(
       .insert(payload)
       .select(getAgendaItemFields(false))
       .single();
-    return createResult(data, error);
+    return { ...createResult(data, error), idempotentReplay: false };
   }
 
   const result = await resolveIdempotentAgendaCreation({
@@ -330,7 +335,10 @@ export async function createAgendaItem(
     },
   });
 
-  return createResult(result.data, result.error);
+  return {
+    ...createResult(result.data, result.error),
+    idempotentReplay: result.idempotentReplay === true,
+  };
 }
 
 export async function updateAgendaItem(

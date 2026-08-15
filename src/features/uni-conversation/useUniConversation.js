@@ -22,6 +22,10 @@ import {
   buildConfirmationResponse,
   buildExecutionErrorResponse,
 } from './uniResponseBuilder.js';
+import { trackGa4ConfirmedTransactionCreation } from '../analytics/ga4ProductEvents.js';
+import {
+  GA4_PRODUCT_ORIGINS,
+} from '../analytics/ga4ProductContracts.js';
 
 export function useUniConversation({
   accounts = [],
@@ -44,6 +48,7 @@ export function useUniConversation({
   );
   const contextRef = useRef(createConversationContext());
   const overridesRef = useRef({});
+  const analyticsOriginRef = useRef(GA4_PRODUCT_ORIGINS.MANUAL);
   const confirmationPromiseRef = useRef(null);
   const provisioningCoordinator = useMemo(
     () => createAccountProvisioningCoordinator(executeFinancialIntentAction),
@@ -62,7 +67,7 @@ export function useUniConversation({
       ) {
         return { status: 'unsupported', intent: parsed?.intent ?? 'question', issues: [] };
       }
-      return buildFinancialIntentAction({
+      const action = buildFinancialIntentAction({
         parsed,
         accounts: overrides.accountRecord
           ? [
@@ -82,6 +87,12 @@ export function useUniConversation({
         workspaceType,
         accountBalances,
       });
+      return {
+        ...action,
+        analyticsOrigin: overrides.analyticsOrigin === GA4_PRODUCT_ORIGINS.VOICE
+          ? GA4_PRODUCT_ORIGINS.VOICE
+          : GA4_PRODUCT_ORIGINS.MANUAL,
+      };
     },
     [accountBalances, accountTypes, accounts, allowedWriteIntents, categories, referenceDate, workspaceType],
   );
@@ -89,7 +100,10 @@ export function useUniConversation({
   const interpret = useCallback((content) => {
     dispatch({ type: 'INTERPRET' });
     const clientOperationId = createClientOperationId();
-    overridesRef.current = { clientOperationId };
+    overridesRef.current = {
+      clientOperationId,
+      analyticsOrigin: analyticsOriginRef.current,
+    };
     const parsed = parseFinancialText(content, {
       context: contextRef.current,
       referenceDate,
@@ -102,6 +116,7 @@ export function useUniConversation({
     overridesRef.current = {
       ...memory?.memoryOverrides,
       clientOperationId,
+      analyticsOrigin: overridesRef.current.analyticsOrigin,
     };
     const action = buildAction(parsedForAction, overridesRef.current);
 
@@ -207,6 +222,13 @@ export function useUniConversation({
         return { result, response };
       }
 
+      trackGa4ConfirmedTransactionCreation({
+        confirmed: true,
+        idempotentReplay: result.data.idempotent_replay !== false,
+        transactionType: state.action.transactionType,
+        origin: state.action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
+      });
+
       const completedAction = result.account
         ? {
             ...state.action,
@@ -250,12 +272,19 @@ export function useUniConversation({
 
   const provideInput = useCallback((overrides, parsedOverride) => correct(overrides, parsedOverride), [correct]);
 
+  const setAnalyticsOrigin = useCallback((origin) => {
+    analyticsOriginRef.current = origin === GA4_PRODUCT_ORIGINS.VOICE
+      ? GA4_PRODUCT_ORIGINS.VOICE
+      : GA4_PRODUCT_ORIGINS.MANUAL;
+  }, []);
+
   const restore = useCallback((snapshot) => {
     if (!snapshot?.action || !['ready', 'needs_clarification'].includes(snapshot.action.status)) {
       return false;
     }
     overridesRef.current = {
       clientOperationId: snapshot.action.clientOperationId,
+      analyticsOrigin: snapshot.action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
       amount: snapshot.action.amount,
       accountId: snapshot.action.account?.id ?? snapshot.action.payload?.account_id,
       accountRecord: snapshot.action.account ?? null,
@@ -285,5 +314,15 @@ export function useUniConversation({
     dispatch({ type: 'RESET' });
   }, []);
 
-  return { state, interpret, correct, provideInput, confirm, cancel, restore, reset };
+  return {
+    state,
+    interpret,
+    correct,
+    provideInput,
+    confirm,
+    cancel,
+    restore,
+    reset,
+    setAnalyticsOrigin,
+  };
 }

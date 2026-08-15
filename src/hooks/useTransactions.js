@@ -14,6 +14,12 @@ import {
   removeRecord,
   upsertRecord,
 } from './financialHookUtils.js';
+import {
+  trackGa4ConfirmedTransactionCreation,
+} from '../features/analytics/ga4ProductEvents.js';
+import {
+  GA4_PRODUCT_ORIGINS,
+} from '../features/analytics/ga4ProductContracts.js';
 
 const EMPTY_ARRAY = [];
 
@@ -137,10 +143,10 @@ export function useTransactions({
   }, []);
 
   const saveTransaction = useCallback(
-    (values, transactionId = null) =>
+    (values, transactionId = null, { origin = GA4_PRODUCT_ORIGINS.MANUAL } = {}) =>
       performMutation(
-        () =>
-          !isSupabaseConfigured
+        async () => {
+          const result = !isSupabaseConfigured
             ? createDemoResult(
                 transactionId
                   ? {
@@ -153,7 +159,18 @@ export function useTransactions({
               )
             : transactionId
               ? updateTransaction(workspaceId, transactionId, values)
-              : createTransaction(workspaceId, values),
+              : createTransaction(workspaceId, values);
+
+          trackGa4ConfirmedTransactionCreation({
+            confirmed: !transactionId
+              && isSupabaseConfigured
+              && !result?.error
+              && Boolean(result?.data),
+            transactionType: values?.transaction_type,
+            origin,
+          });
+          return result;
+        },
         (data) => setTransactions((current) => upsertRecord(current, data)),
       ),
     [performMutation, transactions, workspaceId],

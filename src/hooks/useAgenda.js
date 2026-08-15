@@ -8,6 +8,10 @@ import {
 } from '../services/agendaService.js';
 import { isSupabaseConfigured } from '../services/supabaseClient.js';
 import { removeRecord, upsertRecord } from './financialHookUtils.js';
+import { trackGa4ConfirmedCalendarCreation } from '../features/analytics/ga4ProductEvents.js';
+import {
+  GA4_PRODUCT_ORIGINS,
+} from '../features/analytics/ga4ProductContracts.js';
 
 function toSafeTimestamp(value) {
   if (!value) return 0;
@@ -168,7 +172,17 @@ export function useAgenda({
   const createItem = useCallback(
     (item) =>
       performMutation(
-        () => createAgendaItem(workspaceId, item),
+        async () => {
+          const result = await createAgendaItem(workspaceId, item);
+          trackGa4ConfirmedCalendarCreation({
+            confirmed: !result?.error && Boolean(result?.data),
+            idempotentReplay: result?.idempotentReplay === true,
+            isAllDay: result?.data?.is_all_day === true,
+            hasExplicitTime: result?.data?.has_explicit_time !== false,
+            origin: GA4_PRODUCT_ORIGINS.MANUAL,
+          });
+          return result;
+        },
         (data) => {
           if (!data?.id) return;
           setItems((current) => sortAgendaItems(upsertRecord(current, data)));

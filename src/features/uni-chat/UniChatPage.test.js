@@ -1169,9 +1169,8 @@ test('BUG REAL: o cancelamento durante esclarecimento fica de fora quando há de
 
 test('BLOCO E: confirmação do plano persiste uma operação por vez pelo mesmo RPC atômico, nunca em lote', async () => {
   const page = await source('UniChatPage.jsx');
-  const idx = page.indexOf('async function confirmFinancialPlan() {');
-  assert.ok(idx > -1);
-  const slice = page.slice(idx, idx + 1900);
+  const { body: slice, end } = extractFunctionBody(page, 'async function confirmFinancialPlan() {');
+  assert.ok(end > -1);
   assert.match(slice, /getPersistablePlanOperations\(workingPlan\)\s*\.filter\(\(op\) => op\.status === PLAN_OPERATION_STATUS\.READY\)/);
   assert.match(slice, /for \(const op of persistable\) \{/);
   assert.match(
@@ -1185,8 +1184,7 @@ test('BLOCO E: confirmação do plano persiste uma operação por vez pelo mesmo
 test('BLOCO E: capacidades pendentes (parcelamento/recorrência) nunca são persistidas na confirmação do plano', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /getPersistablePlanOperations,\n/);
-  const idx = page.indexOf('async function confirmFinancialPlan() {');
-  const slice = page.slice(idx, idx + 1900);
+  const { body: slice } = extractFunctionBody(page, 'async function confirmFinancialPlan() {');
   // getPersistablePlanOperations já exclui capabilityPending (ver pendingFinancialPlan.js);
   // a chamada real nunca itera plan.operations diretamente.
   assert.doesNotMatch(slice, /for \(const op of workingPlan\.operations\)/);
@@ -1194,8 +1192,7 @@ test('BLOCO E: capacidades pendentes (parcelamento/recorrência) nunca são pers
 
 test('BLOCO E: notifica mudança de dados financeiros só quando algo foi de fato persistido (completed/partial)', async () => {
   const page = await source('UniChatPage.jsx');
-  const idx = page.indexOf('async function confirmFinancialPlan() {');
-  const slice = page.slice(idx, idx + 2300);
+  const { body: slice } = extractFunctionBody(page, 'async function confirmFinancialPlan() {');
   assert.match(slice, /\[PLAN_STATUS\.COMPLETED, PLAN_STATUS\.PARTIAL\]\.includes\(workingPlan\.status\)/);
   assert.match(slice, /notifyFinancialDataChanged\('uni-chat'\)/);
 });

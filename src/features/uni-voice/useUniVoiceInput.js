@@ -13,6 +13,10 @@ import {
 import { getVoiceInputMessage } from './voiceInputMessages.js';
 import { normalizeTelemetryErrorCode, telemetry } from '../observability/index.js';
 import { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';
+import {
+  createGa4VoiceEventLifecycle,
+} from '../analytics/ga4ProductEvents.js';
+import { GA4_VOICE_RESULTS } from '../analytics/ga4ProductContracts.js';
 
 const CAPTURE_ERROR_STATES = Object.freeze({
   permission_denied: VOICE_CAPTURE_STATES.PERMISSION_DENIED,
@@ -39,6 +43,10 @@ export function useUniVoiceInput({
   const requestIdRef = useRef(0);
   const transcriptionAbortRef = useRef(null);
   const captureEndNotifiedRef = useRef(true);
+  const voiceAnalyticsRef = useRef(null);
+  if (voiceAnalyticsRef.current == null) {
+    voiceAnalyticsRef.current = createGa4VoiceEventLifecycle();
+  }
   // BUG 3: referencia ao MESMO MediaStream do adapter (nunca um segundo
   // getUserMedia) -- exposta via getActiveStream() para quem quiser
   // visualizar a intensidade da voz (AnalyserNode), puramente informativo.
@@ -124,6 +132,7 @@ export function useUniVoiceInput({
         status: VOICE_CAPTURE_STATES.ERROR,
         errorCode: code,
       });
+      voiceAnalyticsRef.current.complete(sessionId, GA4_VOICE_RESULTS.ERROR);
       return;
     } finally {
       if (transcriptionAbortRef.current === transcriptionController) {
@@ -150,6 +159,7 @@ export function useUniVoiceInput({
         transcriptEmpty: false,
       });
       dispatch({ type: 'COMPLETE' });
+      voiceAnalyticsRef.current.complete(sessionId, GA4_VOICE_RESULTS.SUCCESS);
       const finalTranscriptHandler = callbacksRef.current.onFinalTranscript;
       finalTranscriptHandler?.(result.text);
       recordVoicePipelineDiagnostic('MESSAGE_SENT_TO_UNI', {
@@ -174,6 +184,7 @@ export function useUniVoiceInput({
         : VOICE_CAPTURE_STATES.ERROR,
       errorCode: code,
     });
+    voiceAnalyticsRef.current.complete(sessionId, GA4_VOICE_RESULTS.ERROR);
   }, [releaseAdapter, transcriptionProvider, workspaceId]);
 
   const start = useCallback(async () => {
@@ -182,6 +193,7 @@ export function useUniVoiceInput({
     const browserRuntime = runtime ?? (typeof window !== 'undefined' ? window : undefined);
     const sessionId = ++sessionSequenceRef.current;
     activeSessionIdRef.current = sessionId;
+    voiceAnalyticsRef.current.begin(sessionId);
     let adapter;
     const isCurrentSession = () => activeSessionIdRef.current === sessionId
       && adapterRef.current === adapter;
@@ -196,6 +208,7 @@ export function useUniVoiceInput({
           stage: 'capture',
           source: 'microphone',
         }, { workspaceId });
+        voiceAnalyticsRef.current.markStarted(sessionId);
         callbacksRef.current.onCaptureStart?.();
       },
       onStreamReady: (stream) => {
@@ -214,6 +227,7 @@ export function useUniVoiceInput({
           stage: 'capture',
           source: 'microphone',
         }, { workspaceId });
+        voiceAnalyticsRef.current.complete(sessionId, GA4_VOICE_RESULTS.CANCELLED);
       },
       onError: ({ code }) => {
         if (!isCurrentSession()) return;
@@ -228,6 +242,7 @@ export function useUniVoiceInput({
           status: CAPTURE_ERROR_STATES[code] ?? VOICE_CAPTURE_STATES.ERROR,
           errorCode: code,
         });
+        voiceAnalyticsRef.current.complete(sessionId, GA4_VOICE_RESULTS.ERROR);
         releaseAdapter(sessionId);
       },
     });
@@ -264,6 +279,7 @@ export function useUniVoiceInput({
     if (!adapterRef.current) {
       if (state.status === VOICE_CAPTURE_STATES.PROCESSING) {
         dispatch({ type: 'CANCEL' });
+        voiceAnalyticsRef.current.completeCurrent(GA4_VOICE_RESULTS.CANCELLED);
         return true;
       }
       return false;
@@ -271,6 +287,7 @@ export function useUniVoiceInput({
     const sessionId = activeSessionIdRef.current;
     adapterRef.current.cancel();
     dispatch({ type: 'CANCEL' });
+    voiceAnalyticsRef.current.complete(sessionId, GA4_VOICE_RESULTS.CANCELLED);
     releaseAdapter(sessionId);
     return true;
   }, [releaseAdapter, state.status]);
@@ -321,6 +338,7 @@ export function useUniVoiceInput({
       transcriptionAbortRef.current = null;
       adapterRef.current?.cancel();
       dispatch({ type: 'CANCEL' });
+      voiceAnalyticsRef.current.completeCurrent(GA4_VOICE_RESULTS.CANCELLED);
       releaseAdapter();
     };
 
@@ -340,6 +358,7 @@ export function useUniVoiceInput({
     requestIdRef.current += 1;
     transcriptionAbortRef.current?.abort('unmount');
     transcriptionAbortRef.current = null;
+    voiceAnalyticsRef.current.completeCurrent(GA4_VOICE_RESULTS.CANCELLED);
     releaseAdapter();
   }, [releaseAdapter]);
 

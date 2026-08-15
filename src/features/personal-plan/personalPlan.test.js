@@ -65,7 +65,8 @@ test('BILLING_PLAN_ID é "pro" (internal id real do backend) -- distinto de PERS
 
 test('CTA abre o modal de método (nunca chama o backend direto no clique do botão principal)', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /onClick={\(\) => setFlowState\('method_modal'\)}/);
+  assert.match(page, /onClick=\{handleBeginCheckout\}/);
+  assert.match(page, /function handleBeginCheckout\(\) \{[\s\S]*?setFlowState\('method_modal'\);[\s\S]*?\}/);
   assert.match(page, /ASSINAR PLANO PESSOAL/);
 });
 

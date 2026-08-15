@@ -16,6 +16,7 @@ import {
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
 import { resolvePersonalWorkspaceId } from './resolvePersonalWorkspaceId.js';
 import { isValidPersistedPixAttempt, isValidPixPayload } from './personalPlanPixAttempt.js';
+import { createGa4CheckoutEventLifecycle } from '../analytics/ga4ProductEvents.js';
 import styles from './PersonalPlan.module.css';
 
 // BUGFIX (modal Pix quebrado ao voltar da apresentação): tempo máximo para
@@ -257,6 +258,7 @@ const {
   // billing-get-subscription -- nunca gerados no frontend.
   const [pixData, setPixData] = useState(null);
   const [pixModalDismissed, setPixModalDismissed] = useState(false);
+  const [checkoutEventLifecycle] = useState(() => createGa4CheckoutEventLifecycle());
 
   useEffect(() => {
     let cancelled = false;
@@ -327,6 +329,7 @@ const {
   }, [flowState, polledSubscription, userId]);
 
   async function handleConfirmSubscription({ cpfCnpj, paymentMethod }) {
+    checkoutEventLifecycle.confirmPaymentMethod(paymentMethod);
     setIsSubmitting(true);
     setSubmitError(null);
 let resolvedWorkspaceId = workspaceId;
@@ -423,6 +426,16 @@ if (!resolvedWorkspaceId) {
 
   function handleGoHome() {
     navigate(SIMPLIFIED_ROUTES.HOME);
+  }
+
+  function handleBeginCheckout() {
+    checkoutEventLifecycle.begin();
+    setFlowState('method_modal');
+  }
+
+  function handleCloseCheckout() {
+    checkoutEventLifecycle.close();
+    setFlowState('idle');
   }
 
   // HOTFIX (botão "Voltar para entrar ou criar conta" voltava sozinho para
@@ -559,7 +572,7 @@ if (!resolvedWorkspaceId) {
             <button
               type="button"
               className={styles.subscribeButton}
-              onClick={() => setFlowState('method_modal')}
+              onClick={handleBeginCheckout}
               disabled={flowState === 'checking'}
             >
               <CrownIcon />
@@ -598,7 +611,7 @@ if (!resolvedWorkspaceId) {
 
       <SubscriptionMethodModal
         open={flowState === 'method_modal'}
-        onClose={() => setFlowState('idle')}
+        onClose={handleCloseCheckout}
         onConfirm={handleConfirmSubscription}
         isSubmitting={isSubmitting}
         submitError={submitError}

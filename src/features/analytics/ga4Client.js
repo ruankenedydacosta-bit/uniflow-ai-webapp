@@ -4,6 +4,7 @@ import {
   buildGa4PageView,
   resolveGa4Config,
 } from './ga4Contracts.js';
+import { buildGa4ProductEvent } from './ga4ProductContracts.js';
 
 const GOOGLE_TAG_BASE_URL = 'https://www.googletagmanager.com/gtag/js';
 
@@ -156,6 +157,22 @@ export function createGa4Client({ runtime = globalThis } = {}) {
     }
   };
 
+  const trackProductEvent = (eventName, params) => {
+    if (!config.enabled || consent !== GA4_CONSENT_STATUS.GRANTED || !initialized) {
+      return Object.freeze({ sent: false, reason: 'blocked' });
+    }
+
+    const event = buildGa4ProductEvent(eventName, params);
+    if (!event) return Object.freeze({ sent: false, reason: 'invalid' });
+
+    try {
+      tagCommand?.('event', event.eventName, event.params);
+      return Object.freeze({ sent: true, reason: 'sent' });
+    } catch {
+      return Object.freeze({ sent: false, reason: 'failed' });
+    }
+  };
+
   function getState() {
     return Object.freeze({
       enabled: config.enabled,
@@ -172,6 +189,7 @@ export function createGa4Client({ runtime = globalThis } = {}) {
     grantConsent: () => setConsent(GA4_CONSENT_STATUS.GRANTED),
     denyConsent: () => setConsent(GA4_CONSENT_STATUS.DENIED),
     trackPageView,
+    trackProductEvent,
     getState,
     getStateVersion: () => stateVersion,
     subscribe(listener) {
@@ -202,6 +220,10 @@ export function denyGa4AnalyticsConsent() {
 
 export function trackGa4PageView(page) {
   return ga4Client.trackPageView(page);
+}
+
+export function emitGa4ProductEvent(eventName, params) {
+  return ga4Client.trackProductEvent(eventName, params);
 }
 
 export function subscribeGa4State(listener) {

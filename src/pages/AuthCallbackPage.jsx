@@ -1,6 +1,7 @@
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../app/SessionContext.jsx';
 import { consumeAuthReturnPath, readAuthReturnPath } from '../app/authReturnPath.js';
+import { clearPendingGa4GoogleAuth } from '../features/analytics/ga4AuthOperation.js';
 
 /**
  * AUTH4 -- rota de retorno do login com Google. O cliente Supabase já
@@ -41,6 +42,7 @@ function AuthCallbackPage() {
   const returnTo = readAuthReturnPath();
 
   if (oauthError || sessionError) {
+    clearPendingGa4GoogleAuth();
     return <Navigate to="/welcome" replace state={{ oauthFailed: true, from: returnTo }} />;
   }
 

@@ -49,6 +49,11 @@ import {
   resolveVoiceProvider,
 } from '../features/uni-voice-tts/voiceProviderRegistry.js';
 import { normalizeTelemetryErrorCode, telemetry } from '../features/observability/index.js';
+import { trackConfirmedGa4GoogleAuth } from '../features/analytics/ga4AuthOperation.js';
+import {
+  GA4_AUTH_METHODS,
+} from '../features/analytics/ga4ProductContracts.js';
+import { trackGa4Login, trackGa4SignUp } from '../features/analytics/ga4ProductEvents.js';
 
 const SessionContext = createContext(null);
 
@@ -691,7 +696,11 @@ function SessionProvider({ children }) {
         }
 
         logAuthDevelopment('Login Supabase concluido.');
-        return synchronizeSession(signInResult.data.session);
+        const synchronizationResult = await synchronizeSession(signInResult.data.session);
+        if (!synchronizationResult?.error && synchronizationResult?.data) {
+          trackGa4Login(GA4_AUTH_METHODS.PASSWORD);
+        }
+        return synchronizationResult;
       } finally {
         authActionRef.current = false;
       }
@@ -710,12 +719,22 @@ function SessionProvider({ children }) {
           fullName,
         });
 
-        if (signUpResult.error || !signUpResult.data?.session) {
+        const confirmedIdentityCreated = Array.isArray(signUpResult.data?.user?.identities)
+          && signUpResult.data.user.identities.length > 0;
+        if (signUpResult.error || !confirmedIdentityCreated) {
           return signUpResult;
         }
 
         logAuthDevelopment('Cadastro Supabase concluido.');
-        return synchronizeSession(signUpResult.data.session);
+        if (!signUpResult.data.session) {
+          trackGa4SignUp(GA4_AUTH_METHODS.PASSWORD);
+          return signUpResult;
+        }
+        const synchronizationResult = await synchronizeSession(signUpResult.data.session);
+        if (!synchronizationResult?.error && synchronizationResult?.data) {
+          trackGa4SignUp(GA4_AUTH_METHODS.PASSWORD);
+        }
+        return synchronizationResult;
       } finally {
         authActionRef.current = false;
       }
@@ -843,21 +862,29 @@ function SessionProvider({ children }) {
       // SIGNED_IN para um usuario diferente (ou sem sessao previa conhecida)
       // continua disparando o bootstrap completo normalmente.
       const isSilentEvent = isSilentAuthEvent(_event, nextSession, latestUserIdRef.current);
+      const shouldTrackGoogleAuth = _event === 'SIGNED_IN'
+        && window.location.pathname === '/auth/callback';
 
       const timeoutId = window.setTimeout(() => {
         pendingSynchronizations.delete(timeoutId);
 
         if (isActive) {
-          synchronizeSession(nextSession, { silent: isSilentEvent }).catch((error) => {
-            if (isActive && isMountedRef.current) {
-              setState((currentState) => ({
-                ...currentState,
-                isLoading: false,
-                error,
-              }));
-              logAuthDevelopment('Falha inesperada ao sincronizar Auth.');
-            }
-          });
+          synchronizeSession(nextSession, { silent: isSilentEvent })
+            .then((result) => {
+              if (shouldTrackGoogleAuth && !result?.error && result?.data) {
+                trackConfirmedGa4GoogleAuth();
+              }
+            })
+            .catch((error) => {
+              if (isActive && isMountedRef.current) {
+                setState((currentState) => ({
+                  ...currentState,
+                  isLoading: false,
+                  error,
+                }));
+                logAuthDevelopment('Falha inesperada ao sincronizar Auth.');
+              }
+            });
         }
       }, 0);
 
