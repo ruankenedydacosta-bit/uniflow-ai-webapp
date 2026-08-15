@@ -115,5 +115,53 @@ test('funil comercial emite somente nos cliques canônicos e não no pageview ou
   assert.match(confirmHandler, /checkoutEventLifecycle\.confirmPaymentMethod\(paymentMethod\)/);
   assert.match(plan, /onClick=\{handleBeginCheckout\}/);
   assert.doesNotMatch(plan, /onChange=\{\(\) =>[^}]*trackGa4|onChange=\{[^}]*confirmPaymentMethod/);
-  assert.doesNotMatch(plan, /pix_generated|add_payment_info|purchase|subscription_activated/);
+  // GA4 genéricos que nunca fazem parte do contrato UniFlow (ecommerce
+  // padrão do GA4, não usado aqui).
+  assert.doesNotMatch(plan, /add_payment_info|purchase/);
+});
+
+// FASE 4B LITE: pix_generated / card_checkout_created / subscription_activated
+// fecham o funil comercial. Cobertura equivalente à do teste acima, agora
+// garantindo que os TRÊS novos eventos só aparecem nos pontos corretos.
+test('Fase 4B Lite: pix_generated/card_checkout_created só disparam após resposta real do backend, nunca na seleção/clique', async () => {
+  const plan = await source('features/personal-plan/PersonalPlanPage.jsx');
+  const confirmHandler = plan.slice(
+    plan.indexOf('async function handleConfirmSubscription'),
+    plan.indexOf('function handleGoHome'),
+  );
+
+  // Nunca no radiogroup de seleção de método nem antes da resposta do backend.
+  assert.doesNotMatch(plan, /onChange=\{\(\) => setPaymentMethod\([^)]*\)\}[^}]*markPixGenerated/);
+  assert.doesNotMatch(
+    confirmHandler.slice(0, confirmHandler.indexOf('const checkoutResult = await createCheckout')),
+    /markPixGenerated|markCardCheckoutCreated/,
+  );
+
+  // card_checkout_created: só depois do branch de erro/checkout_url ausente,
+  // sempre antes do redirect real.
+  const cardBlock = confirmHandler.slice(
+    confirmHandler.indexOf("if (paymentMethod === 'credit_card') {"),
+    confirmHandler.indexOf('window.location.href = checkoutResult.data.checkout_url;'),
+  );
+  assert.match(cardBlock, /if \(checkoutResult\.error \|\| !checkoutResult\.data\?\.checkout_url\) \{[\s\S]*?return;\s*\}/);
+  assert.match(cardBlock, /checkoutEventLifecycle\.markCardCheckoutCreated\(\);\s*$/);
+
+  // pix_generated: só depois do branch de payload inválido/incompleto.
+  const pixBlock = confirmHandler.slice(confirmHandler.indexOf('if (!isValidPixPayload(pix)) {'));
+  assert.match(pixBlock, /if \(!isValidPixPayload\(pix\)\) \{[\s\S]*?return;\s*\}/);
+  assert.match(pixBlock, /checkoutEventLifecycle\.markPixGenerated\(\);/);
+});
+
+test('Fase 4B Lite: subscription_activated nunca dispara na leitura de mount de assinatura já ativa (already_active)', async () => {
+  const plan = await source('features/personal-plan/PersonalPlanPage.jsx');
+  const mountEffect = plan.slice(
+    plan.indexOf('getSubscription({ workspaceId }).then(({ data, error }) => {'),
+    plan.indexOf('const { status: polledSubscription }'),
+  );
+  const alreadyActiveBranch = mountEffect.slice(
+    mountEffect.indexOf("if (data.internal_status === 'active' && !data.cancel_at_period_end) {"),
+    mountEffect.indexOf("} else if (data.internal_status === 'active' && data.cancel_at_period_end)"),
+  );
+  assert.doesNotMatch(alreadyActiveBranch, /markWitnessedActivation|subscription_activated/);
+  assert.match(mountEffect, /already_active/);
 });

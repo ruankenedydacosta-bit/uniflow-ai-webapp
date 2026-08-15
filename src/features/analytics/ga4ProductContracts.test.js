@@ -18,9 +18,12 @@ const VALID_EVENTS = Object.freeze([
   ['calendar_event_created', { origin: 'voice', schedule_kind: 'all_day' }],
   ['begin_checkout', {}],
   ['payment_method_selected', { payment_type: 'pix' }],
+  ['pix_generated', {}],
+  ['card_checkout_created', {}],
+  ['subscription_activated', {}],
 ]);
 
-test('contrato fechado aceita somente os nove eventos e parâmetros categóricos previstos', () => {
+test('contrato fechado aceita somente os doze eventos e parâmetros categóricos previstos', () => {
   for (const [eventName, params] of VALID_EVENTS) {
     assert.deepEqual(buildGa4ProductEvent(eventName, params), { eventName, params });
   }
@@ -86,5 +89,34 @@ test('eventos comerciais sem parâmetros descartam PII e método aceita somente 
   }), {
     eventName: 'payment_method_selected',
     params: { payment_type: 'card' },
+  });
+});
+
+test('pix_generated, card_checkout_created e subscription_activated descartam todo dado financeiro/pessoal (Fase 4B Lite)', () => {
+  const dirtyParams = {
+    qr_code: 'data:image/png;base64,AAAA',
+    pix_copy_paste: '00020126...',
+    cpf: '00000000000',
+    value: 29.9,
+    amount: 2990,
+    currency: 'BRL',
+    payment_id: 'pay_abc123',
+    subscription_id: 'sub_abc123',
+    checkout_id: 'checkout_abc123',
+    checkout_url: 'https://checkout.asaas.com/abc123',
+    provider_id: 'asaas_abc123',
+  };
+
+  assert.deepEqual(buildGa4ProductEvent('pix_generated', dirtyParams), {
+    eventName: 'pix_generated',
+    params: {},
+  });
+  assert.deepEqual(buildGa4ProductEvent('card_checkout_created', dirtyParams), {
+    eventName: 'card_checkout_created',
+    params: {},
+  });
+  assert.deepEqual(buildGa4ProductEvent('subscription_activated', dirtyParams), {
+    eventName: 'subscription_activated',
+    params: {},
   });
 });

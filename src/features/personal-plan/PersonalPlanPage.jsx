@@ -16,7 +16,10 @@ import {
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
 import { resolvePersonalWorkspaceId } from './resolvePersonalWorkspaceId.js';
 import { isValidPersistedPixAttempt, isValidPixPayload } from './personalPlanPixAttempt.js';
-import { createGa4CheckoutEventLifecycle } from '../analytics/ga4ProductEvents.js';
+import {
+  createGa4CheckoutEventLifecycle,
+  createGa4SubscriptionActivationLifecycle,
+} from '../analytics/ga4ProductEvents.js';
 import styles from './PersonalPlan.module.css';
 
 // BUGFIX (modal Pix quebrado ao voltar da apresentação): tempo máximo para
@@ -259,6 +262,12 @@ const {
   const [pixData, setPixData] = useState(null);
   const [pixModalDismissed, setPixModalDismissed] = useState(false);
   const [checkoutEventLifecycle] = useState(() => createGa4CheckoutEventLifecycle());
+  // Fase 4B Lite: instância própria por montagem da página -- a leitura
+  // inicial (already_active/pending restaurado) nunca chama
+  // markWitnessedActivation, só as duas transições reais observadas abaixo.
+  const [subscriptionActivationLifecycle] = useState(
+    () => createGa4SubscriptionActivationLifecycle(),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -321,12 +330,13 @@ const {
       if (polledSubscription.internal_status === 'active') {
         setFlowState('active');
         markPersonalPlanCompleted(userId);
+        subscriptionActivationLifecycle.markWitnessedActivation();
       } else if (['canceled', 'expired'].includes(polledSubscription.internal_status)) {
         setFlowState('idle');
       }
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [flowState, polledSubscription, userId]);
+  }, [flowState, polledSubscription, userId, subscriptionActivationLifecycle]);
 
   async function handleConfirmSubscription({ cpfCnpj, paymentMethod }) {
     checkoutEventLifecycle.confirmPaymentMethod(paymentMethod);
@@ -359,6 +369,11 @@ if (!resolvedWorkspaceId) {
         setIsSubmitting(false);
         return;
       }
+      // Fase 4B Lite: card_checkout_created dispara aqui -- checkout_url real
+      // e válida confirmada, imediatamente antes do redirect. O tracker é
+      // fail-open/síncrono (nunca faz await, nunca lança), então uma falha do
+      // GA4 jamais atrasa ou bloqueia o redirecionamento abaixo.
+      checkoutEventLifecycle.markCardCheckoutCreated();
       window.location.href = checkoutResult.data.checkout_url;
       return;
     }
@@ -408,6 +423,7 @@ if (!resolvedWorkspaceId) {
     if (status === 'active') {
       setFlowState('active');
       markPersonalPlanCompleted(userId);
+      subscriptionActivationLifecycle.markWitnessedActivation();
       return;
     }
     // GUARD FIX: só entra em 'pending' com um payload Pix real e completo
@@ -419,6 +435,10 @@ if (!resolvedWorkspaceId) {
       setSubmitError('Não foi possível gerar o QR Code Pix agora. Tente novamente em instantes.');
       return;
     }
+    // Fase 4B Lite: pix_generated só aqui -- um Pix real e completo acabou
+    // de chegar da Asaas para ESTA tentativa (nunca na restauração via
+    // getSubscription no mount, nem antes da resposta/em erro).
+    checkoutEventLifecycle.markPixGenerated();
     setPixData(pix);
     setPixModalDismissed(false);
     setFlowState('pending');

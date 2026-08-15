@@ -8,6 +8,9 @@ export const GA4_PRODUCT_EVENT_NAMES = Object.freeze({
   CALENDAR_EVENT_CREATED: 'calendar_event_created',
   BEGIN_CHECKOUT: 'begin_checkout',
   PAYMENT_METHOD_SELECTED: 'payment_method_selected',
+  PIX_GENERATED: 'pix_generated',
+  CARD_CHECKOUT_CREATED: 'card_checkout_created',
+  SUBSCRIPTION_ACTIVATED: 'subscription_activated',
 });
 
 export const GA4_AUTH_METHODS = Object.freeze({
@@ -72,6 +75,13 @@ const EVENT_CONTRACTS = Object.freeze({
   [GA4_PRODUCT_EVENT_NAMES.PAYMENT_METHOD_SELECTED]: Object.freeze({
     payment_type: Object.freeze(Object.values(GA4_PAYMENT_TYPES)),
   }),
+  // Fase 4B Lite: os três eventos comerciais abaixo fecham o funil
+  // (pix_generated / card_checkout_created / subscription_activated) e
+  // aceitam ZERO parâmetros personalizados por desenho -- nenhum dado
+  // financeiro/pessoal (QR, copia-e-cola, valor, IDs) pode entrar aqui.
+  [GA4_PRODUCT_EVENT_NAMES.PIX_GENERATED]: Object.freeze({}),
+  [GA4_PRODUCT_EVENT_NAMES.CARD_CHECKOUT_CREATED]: Object.freeze({}),
+  [GA4_PRODUCT_EVENT_NAMES.SUBSCRIPTION_ACTIVATED]: Object.freeze({}),
 });
 
 export function buildGa4ProductEvent(eventName, params = {}) {

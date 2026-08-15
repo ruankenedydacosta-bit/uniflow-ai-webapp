@@ -6,6 +6,7 @@ import {
   createGa4ProductEventGateway,
   createGa4CheckoutEventLifecycle,
   createGa4SignUpViewedLifecycle,
+  createGa4SubscriptionActivationLifecycle,
   createGa4VoiceEventLifecycle,
   trackGa4ConfirmedCalendarCreation,
   trackGa4ConfirmedTransactionCreation,
@@ -334,4 +335,68 @@ test('método inválido e confirmação fora do checkout não emitem', () => {
   lifecycle.confirmPaymentMethod('pix_automatico');
   lifecycle.confirmPaymentMethod('pix');
   assert.deepEqual(methods, ['pix']);
+});
+
+test('pix_generated emite uma vez por tentativa ativa e libera nova emissão numa nova tentativa (Fase 4B Lite)', () => {
+  const events = [];
+  const lifecycle = createGa4CheckoutEventLifecycle({
+    trackBegin: () => ({ sent: true }),
+    trackPaymentMethod: () => ({ sent: true }),
+    trackPixGenerated: () => { events.push('pix_generated'); return { sent: true }; },
+  });
+
+  // Fora de uma sessão de checkout ativa: nunca emite (ex.: confirmar antes
+  // da resposta, ou fora do fluxo).
+  assert.equal(lifecycle.markPixGenerated().reason, 'duplicate');
+  assert.deepEqual(events, []);
+
+  lifecycle.begin();
+  lifecycle.markPixGenerated();
+  lifecycle.markPixGenerated(); // re-render/StrictMode: não duplica
+  lifecycle.markPixGenerated();
+  assert.deepEqual(events, ['pix_generated']);
+
+  // Nova tentativa legítima (fechar e reabrir o checkout) pode emitir de novo.
+  lifecycle.close();
+  lifecycle.begin();
+  lifecycle.markPixGenerated();
+  assert.deepEqual(events, ['pix_generated', 'pix_generated']);
+});
+
+test('card_checkout_created emite uma vez por sessão de checkout ativa (Fase 4B Lite)', () => {
+  const events = [];
+  const lifecycle = createGa4CheckoutEventLifecycle({
+    trackBegin: () => ({ sent: true }),
+    trackPaymentMethod: () => ({ sent: true }),
+    trackCardCheckoutCreated: () => { events.push('card_checkout_created'); return { sent: true }; },
+  });
+
+  assert.equal(lifecycle.markCardCheckoutCreated().reason, 'duplicate');
+  assert.deepEqual(events, []);
+
+  lifecycle.begin();
+  lifecycle.markCardCheckoutCreated();
+  lifecycle.markCardCheckoutCreated();
+  assert.deepEqual(events, ['card_checkout_created']);
+});
+
+test('subscription_activated emite no máximo uma vez por instância e nunca reprocessa após bloqueio (Fase 4B Lite)', () => {
+  const events = [];
+  const lifecycle = createGa4SubscriptionActivationLifecycle({
+    trackActivated: () => { events.push('subscription_activated'); return { sent: true }; },
+  });
+
+  lifecycle.markWitnessedActivation();
+  lifecycle.markWitnessedActivation(); // polling repetido / re-render: sem duplicar
+  lifecycle.markWitnessedActivation();
+  assert.deepEqual(events, ['subscription_activated']);
+
+  // Consentimento bloqueado no momento da transição: a ocorrência é
+  // consumida (nunca envia) e nunca há replay depois, mesmo com uma nova
+  // instância representando o mesmo "momento" de ativação já perdido.
+  const blocked = createGa4SubscriptionActivationLifecycle({
+    trackActivated: () => ({ sent: false, reason: 'blocked' }),
+  });
+  assert.equal(blocked.markWitnessedActivation().sent, false);
+  assert.equal(blocked.markWitnessedActivation().reason, 'duplicate');
 });

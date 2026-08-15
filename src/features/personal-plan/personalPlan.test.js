@@ -204,7 +204,7 @@ test('confirmar assinatura Pix guarda pix (QR Code) vindo da resposta de createS
   const page = await source('./PersonalPlanPage.jsx');
   const idx = page.indexOf('const { status, pix } = subscriptionResult.data');
   assert.ok(idx > -1);
-  const slice = page.slice(idx, idx + 900);
+  const slice = page.slice(idx, idx + 1100);
   assert.match(slice, /setPixData\(pix\);/);
   assert.match(slice, /setFlowState\('pending'\);/);
   // GUARD FIX (modal Pix quebrado): só entra em 'pending' com payload Pix
@@ -443,4 +443,86 @@ test('HOTFIX: botão "Voltar para entrar ou criar conta" é protegido contra dup
 test('HOTFIX: causa raiz documentada -- App.jsx redireciona usuário autenticado saindo de rota pública (/, /welcome, /login) de volta ao funil, nunca deixa /login renderizar para sessão ativa', async () => {
   const app = await source('../../app/App.jsx');
   assert.match(app, /\['\/', '\/welcome', '\/login'\]\.includes\(location\.pathname\)\s*\n\s*&& session\s*\n\s*&& !sessionError/);
+});
+
+// ============================================================================
+// FASE 4B LITE (GA4 -- funil comercial): pix_generated, card_checkout_created
+// e subscription_activated. Cobertura estrutural (mesmo padrão do resto do
+// arquivo): garante que os pontos de disparo exatos existem no código-fonte
+// e que nenhum deles aparece em pontos proibidos (seleção, clique antes da
+// resposta, restauração de mount, leitura de estado já ativo).
+// ============================================================================
+
+test('Fase 4B Lite: PersonalPlanPage importa os lifecycles de GA4 do gateway central da camada Analytics', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  assert.match(page, /import \{\s*\n\s*createGa4CheckoutEventLifecycle,\s*\n\s*createGa4SubscriptionActivationLifecycle,\s*\n\} from '..\/analytics\/ga4ProductEvents\.js';/);
+  // Cobertura repo-wide de chamada direta à tag do Google fica em
+  // ga4ProductIntegration.test.js (evita duplicar/quebrar aquele scanner).
+});
+
+test('Fase 4B Lite: pix_generated dispara somente após payload Pix válido da tentativa atual, nunca na restauração de mount', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+
+  // Ponto correto: logo após confirmar isValidPixPayload(pix) na resposta de
+  // createSubscription, antes de armazenar em estado.
+  const validIdx = page.indexOf('if (!isValidPixPayload(pix)) {');
+  assert.ok(validIdx > -1);
+  const afterValid = page.slice(validIdx, validIdx + 500);
+  assert.match(afterValid, /checkoutEventLifecycle\.markPixGenerated\(\);/);
+  const markIdx = afterValid.indexOf('checkoutEventLifecycle.markPixGenerated();');
+  const setPixIdx = afterValid.indexOf('setPixData(pix);');
+  assert.ok(markIdx > -1 && setPixIdx > markIdx, 'markPixGenerated precisa acontecer antes/junto do armazenamento do pix, nunca depois de um caminho que pode não executar');
+
+  // Nunca no restauro via getSubscription no mount (isValidPersistedPixAttempt).
+  const restoreIdx = page.indexOf('isValidPersistedPixAttempt(data)');
+  const restoreBlockEnd = page.indexOf("} else if (data.internal_status === 'pending') {", restoreIdx);
+  const restoreBlock = page.slice(restoreIdx, restoreBlockEnd);
+  assert.doesNotMatch(restoreBlock, /markPixGenerated/);
+});
+
+test('Fase 4B Lite: card_checkout_created dispara com checkout_url confirmada, antes do redirect, e o redirect nunca depende do tracking', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const idx = page.indexOf("if (paymentMethod === 'credit_card') {");
+  const redirectIdx = page.indexOf('window.location.href = checkoutResult.data.checkout_url;', idx);
+  const body = page.slice(idx, redirectIdx);
+  assert.match(body, /if \(checkoutResult\.error \|\| !checkoutResult\.data\?\.checkout_url\) \{/);
+  assert.match(body, /checkoutEventLifecycle\.markCardCheckoutCreated\(\);/);
+  const errorIdx = body.indexOf('setSubmitError(');
+  const markIdx = body.indexOf('checkoutEventLifecycle.markCardCheckoutCreated();');
+  assert.ok(markIdx > errorIdx, 'markCardCheckoutCreated precisa vir depois do branch de erro (nunca dispara em falha/checkout_url ausente)');
+  assert.ok(redirectIdx > -1 && redirectIdx > idx, 'o redirect precisa continuar existindo logo após o disparo do evento');
+});
+
+test('Fase 4B Lite: subscription_activated dispara somente nas duas transições reais observadas pelo frontend, nunca na leitura inicial de estado já ativo', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+
+  // Transição via polling (pending -> active).
+  const pollingIdx = page.indexOf("if (polledSubscription.internal_status === 'active') {");
+  const pollingBlock = page.slice(pollingIdx, page.indexOf('} else if', pollingIdx));
+  assert.match(pollingBlock, /subscriptionActivationLifecycle\.markWitnessedActivation\(\);/);
+
+  // Transição via resposta direta de createSubscription (status já 'active').
+  const directIdx = page.indexOf("if (status === 'active') {");
+  const directBlock = page.slice(directIdx, page.indexOf('return;', directIdx));
+  assert.match(directBlock, /subscriptionActivationLifecycle\.markWitnessedActivation\(\);/);
+
+  // Leitura inicial de mount (already_active) -- NUNCA deve chamar o lifecycle
+  // (é uma leitura de estado pré-existente, não uma transição presenciada).
+  const mountIdx = page.indexOf("if (data.internal_status === 'active' && !data.cancel_at_period_end) {");
+  const mountBlockEnd = page.indexOf('} else if', mountIdx);
+  const mountBlock = page.slice(mountIdx, mountBlockEnd);
+  assert.doesNotMatch(mountBlock, /markWitnessedActivation/);
+
+  // A instância do lifecycle é criada uma vez por montagem (useState), nunca recriada a cada render.
+  assert.match(page, /const \[subscriptionActivationLifecycle\] = useState\(\s*\n\s*\(\) => createGa4SubscriptionActivationLifecycle\(\),\s*\n\s*\);/);
+});
+
+test('Fase 4B Lite: os três eventos comerciais novos existem no allowlist central e aceitam zero parâmetros', async () => {
+  const contracts = await readFile(new URL('../analytics/ga4ProductContracts.js', import.meta.url), 'utf8');
+  assert.match(contracts, /PIX_GENERATED: 'pix_generated',/);
+  assert.match(contracts, /CARD_CHECKOUT_CREATED: 'card_checkout_created',/);
+  assert.match(contracts, /SUBSCRIPTION_ACTIVATED: 'subscription_activated',/);
+  assert.match(contracts, /\[GA4_PRODUCT_EVENT_NAMES\.PIX_GENERATED\]: Object\.freeze\(\{\}\),/);
+  assert.match(contracts, /\[GA4_PRODUCT_EVENT_NAMES\.CARD_CHECKOUT_CREATED\]: Object\.freeze\(\{\}\),/);
+  assert.match(contracts, /\[GA4_PRODUCT_EVENT_NAMES\.SUBSCRIPTION_ACTIVATED\]: Object\.freeze\(\{\}\),/);
 });
