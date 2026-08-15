@@ -85,7 +85,7 @@ test('resolveSubscriptionPatchForEvent: subscription nula -> null (cobrança avu
   assert.equal(resolveSubscriptionPatchForEvent({ eventType: 'PAYMENT_RECEIVED', subscription: null, now: '2026-01-01T00:00:00Z' }), null);
 });
 
-for (const status of ['pending', 'past_due', 'suspended', 'active']) {
+for (const status of ['pending', 'past_due', 'suspended']) {
   test(`resolveSubscriptionPatchForEvent: PAYMENT_CONFIRMED ativa a partir de "${status}" -- status=active + período recalculado`, () => {
     const patch = resolveSubscriptionPatchForEvent({
       eventType: 'PAYMENT_CONFIRMED',
@@ -104,6 +104,47 @@ for (const status of ['pending', 'past_due', 'suspended', 'active']) {
     assert.deepEqual(patch, { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' });
   });
 }
+
+test('resolveSubscriptionPatchForEvent: PAYMENT_RECEIVED após PAYMENT_CONFIRMED não reaplica ativação nem estende o período', () => {
+  const firstPatch = resolveSubscriptionPatchForEvent({
+    eventType: 'PAYMENT_CONFIRMED',
+    subscription: { status: 'pending' },
+    now: '2026-03-01T00:00:00.000Z',
+  });
+  assert.deepEqual(firstPatch, { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' });
+
+  const duplicateSemanticPatch = resolveSubscriptionPatchForEvent({
+    eventType: 'PAYMENT_RECEIVED',
+    subscription: { status: 'active' },
+    now: '2026-03-02T00:00:00.000Z',
+  });
+  assert.equal(duplicateSemanticPatch, null);
+});
+
+test('resolveSubscriptionPatchForEvent: PAYMENT_CONFIRMED repetido em assinatura ativa é no-op comercial', () => {
+  const patch = resolveSubscriptionPatchForEvent({
+    eventType: 'PAYMENT_CONFIRMED',
+    subscription: { status: 'active' },
+    now: '2026-03-02T00:00:00.000Z',
+  });
+  assert.equal(patch, null);
+});
+
+test('resolveSubscriptionPatchForEvent: PAYMENT_RECEIVED antes de PAYMENT_CONFIRMED termina active sem segunda transição', () => {
+  const receivedFirst = resolveSubscriptionPatchForEvent({
+    eventType: 'PAYMENT_RECEIVED',
+    subscription: { status: 'pending' },
+    now: '2026-03-01T00:00:00.000Z',
+  });
+  assert.deepEqual(receivedFirst, { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' });
+
+  const confirmedLate = resolveSubscriptionPatchForEvent({
+    eventType: 'PAYMENT_CONFIRMED',
+    subscription: { status: 'active' },
+    now: '2026-03-03T00:00:00.000Z',
+  });
+  assert.equal(confirmedLate, null);
+});
 
 for (const status of ['canceled', 'expired']) {
   test(`resolveSubscriptionPatchForEvent: nunca reativa uma assinatura "${status}" (estado terminal, mesmo com PAYMENT_RECEIVED)`, () => {

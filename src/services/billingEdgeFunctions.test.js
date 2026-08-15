@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import {
+  assertBillingWebhookWriteSucceeded,
+  buildWebhookProcessingFailurePatch,
+  buildWebhookProcessingSuccessPatch,
+  isWebhookEventEligibleForProcessing,
+} from '../../supabase/functions/_shared/billingWebhookReliability.ts';
 
 // ============================================================================
 // BILLING2 (Bloco Asaas 2) -- cobertura estrutural (source-regex) das 7
@@ -486,8 +492,95 @@ test('billing-webhook: processa o evento (ativação/inadimplência) de forma id
   assert.doesNotMatch(catchBlock, /jsonResponse\(5\d\d/, 'erro de processamento nunca deveria gerar um status 5xx');
 });
 
-test('billing-webhook: nunca reprocessa um evento cujo processed_at já está preenchido', () => {
-  assert.match(WEBHOOK, /if \(eventRow && !eventRow\.processed_at\) \{/);
+test('billing-webhook: sucesso é terminal; processing_error continua elegível para retry, inclusive em linha legada', () => {
+  assert.equal(isWebhookEventEligibleForProcessing({ processed_at: null, processing_error: null }), true);
+  assert.equal(isWebhookEventEligibleForProcessing({ processed_at: null, processing_error: 'SUBSCRIPTION_PATCH_FAILED' }), true);
+  assert.equal(isWebhookEventEligibleForProcessing({ processed_at: '2026-08-15T10:00:00Z', processing_error: 'LEGACY_FAILURE' }), true);
+  assert.equal(isWebhookEventEligibleForProcessing({ processed_at: '2026-08-15T10:00:00Z', processing_error: null }), false);
+  assert.match(WEBHOOK, /isWebhookEventEligibleForProcessing\(eventRow\)/);
+  assert.match(WEBHOOK, /select: 'id,processed_at,processing_error'/);
+});
+
+test('billing-webhook: SUCCESS preenche processed_at e limpa processing_error; FAILURE registra erro sem concluir evento', () => {
+  assert.deepEqual(buildWebhookProcessingSuccessPatch('2026-08-15T10:00:00Z'), {
+    processed_at: '2026-08-15T10:00:00Z',
+    processing_error: null,
+  });
+  assert.deepEqual(buildWebhookProcessingFailurePatch('SUBSCRIPTION_PATCH_FAILED'), {
+    processed_at: null,
+    processing_error: 'SUBSCRIPTION_PATCH_FAILED',
+  });
+});
+
+test('billing-webhook: retry posterior bem-sucedido conclui o mesmo evento e limpa o erro anterior', () => {
+  const failedState = buildWebhookProcessingFailurePatch('SUBSCRIPTION_PATCH_FAILED');
+  assert.equal(isWebhookEventEligibleForProcessing(failedState), true);
+
+  const recoveredState = buildWebhookProcessingSuccessPatch('2026-08-15T10:05:00Z');
+  assert.deepEqual(recoveredState, {
+    processed_at: '2026-08-15T10:05:00Z',
+    processing_error: null,
+  });
+  assert.equal(isWebhookEventEligibleForProcessing(recoveredState), false);
+});
+
+test('billing-webhook: falhas HTTP das escritas críticas são propagadas como erro categórico e seguro', () => {
+  assert.doesNotThrow(() => assertBillingWebhookWriteSucceeded({ ok: true }, 'billing_payment_upsert'));
+  assert.throws(
+    () => assertBillingWebhookWriteSucceeded({ ok: false }, 'billing_payment_upsert'),
+    /BILLING_WEBHOOK_WRITE_FAILED:billing_payment_upsert/,
+  );
+  assert.throws(
+    () => assertBillingWebhookWriteSucceeded({ ok: false }, 'subscription_patch'),
+    /BILLING_WEBHOOK_WRITE_FAILED:subscription_patch/,
+  );
+});
+
+test('billing-webhook: toda escrita crítica valida response.ok antes de concluir o processamento', () => {
+  for (const operation of [
+    'billing_payment_upsert',
+    'subscription_patch',
+    'billing_customer_patch',
+    'billing_customer_insert',
+    'webhook_event_processing_state',
+  ]) {
+    assert.match(WEBHOOK, new RegExp(`assertBillingWebhookWriteSucceeded\\(response, '${operation}'\\)`));
+  }
+});
+
+test('billing-webhook: transição de assinatura usa guarda otimista e observa se a escrita foi aplicada', () => {
+  const patchIdx = WEBHOOK.indexOf('async function patchSubscription');
+  const patchBlock = WEBHOOK.slice(patchIdx, WEBHOOK.indexOf('// BLOCO ASAAS FINAL: processa UM evento', patchIdx));
+  assert.match(patchBlock, /params\.set\('status', `eq\.\$\{expectedStatus\}`\)/);
+  assert.match(patchBlock, /Prefer: 'return=representation'/);
+  assert.match(patchBlock, /rows\.length === 1\) return true/);
+  assert.match(patchBlock, /rows\.length === 0\) return false/);
+
+  const processIdx = WEBHOOK.indexOf('async function processPaymentEvent');
+  const processBlock = WEBHOOK.slice(processIdx, WEBHOOK.indexOf('async function processCheckoutEvent', processIdx));
+  assert.match(processBlock, /expectedStatus: subscription\.status as string/);
+  assert.match(processBlock, /subscription_transition_applied: transitionApplied/);
+});
+
+test('billing-webhook: falha ao persistir processing_error não bloqueia retry e não derruba o endpoint fail-safe', () => {
+  assert.match(WEBHOOK, /status: 'processing_error_persist_failed'/);
+  const failureLogIdx = WEBHOOK.indexOf("status: 'processing_error_persist_failed'");
+  const successResponseIdx = WEBHOOK.indexOf('return jsonResponse(200,', failureLogIdx);
+  assert.ok(successResponseIdx > failureLogIdx);
+});
+
+test('billing-webhook: falha parcial nunca recebe marca de sucesso antes de todas as escritas críticas', () => {
+  const paymentProcessorIdx = WEBHOOK.indexOf('async function processPaymentEvent');
+  const paymentProcessorEnd = WEBHOOK.indexOf('async function processCheckoutEvent', paymentProcessorIdx);
+  const paymentProcessor = WEBHOOK.slice(paymentProcessorIdx, paymentProcessorEnd);
+  assert.ok(paymentProcessor.indexOf('await upsertBillingPayment') < paymentProcessor.indexOf('await patchSubscription'));
+
+  const handlerIdx = WEBHOOK.indexOf('if (isWebhookEventEligibleForProcessing(eventRow))');
+  const handler = WEBHOOK.slice(handlerIdx);
+  const processPaymentIdx = handler.indexOf('await processPaymentEvent');
+  const processCheckoutIdx = handler.indexOf('await processCheckoutEvent');
+  const markSuccessIdx = handler.indexOf('buildWebhookProcessingSuccessPatch');
+  assert.ok(processPaymentIdx > -1 && processCheckoutIdx > processPaymentIdx && markSuccessIdx > processCheckoutIdx);
 });
 
 test('billing-webhook: evento desconhecido/com campos adicionais é armazenado sem quebrar -- payload bruto inteiro é gravado, nunca validado campo a campo', () => {

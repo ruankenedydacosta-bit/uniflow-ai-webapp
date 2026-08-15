@@ -126,6 +126,11 @@ export function resolveSubscriptionPatchForEvent({
   if (TERMINAL_SUBSCRIPTION_STATUSES.has(subscription.status)) return null;
 
   if (ACTIVATING_EVENT_TYPES.has(eventType)) {
+    // PAYMENT_CONFIRMED e PAYMENT_RECEIVED podem representar a mesma
+    // cobrança. Depois da primeira transição para active, o segundo evento
+    // é um no-op comercial: não estende novamente o período vigente.
+    if (subscription.status === 'active') return null;
+
     // BLOCO ASAAS FINAL: reativa automaticamente de pending/past_due/suspended
     // -- nunca de canceled/expired (guarda acima). current_period_ends_at
     // sempre avança a partir de AGORA (não do período anterior) -- evidência
