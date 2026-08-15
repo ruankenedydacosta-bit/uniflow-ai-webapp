@@ -58,6 +58,42 @@ function parseCanonicalPathname(value) {
   }
 }
 
+function canonicalizeHttpUrl(value) {
+  let candidate = null;
+
+  if (typeof value === 'string') {
+    candidate = value;
+  } else if (typeof value?.href === 'string') {
+    candidate = value.href;
+  } else if (typeof value?.origin === 'string' && typeof value?.pathname === 'string') {
+    candidate = `${value.origin}${value.pathname}`;
+  }
+
+  if (!candidate) return null;
+
+  try {
+    const parsed = new URL(candidate);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
+export function buildGa4SafeEventContext({ location, referrer } = {}) {
+  const pageLocation = canonicalizeHttpUrl(location);
+  if (!pageLocation) return null;
+
+  const context = { page_location: pageLocation };
+  if (referrer == null || referrer === '') return Object.freeze(context);
+
+  const pageReferrer = canonicalizeHttpUrl(referrer);
+  if (!pageReferrer) return null;
+
+  context.page_referrer = pageReferrer;
+  return Object.freeze(context);
+}
+
 export function resolveGa4Config(env = {}) {
   const requestedEnabled = env.VITE_GA4_ENABLED === true
     || env.VITE_GA4_ENABLED === 'true';

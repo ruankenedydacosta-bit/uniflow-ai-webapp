@@ -2,6 +2,7 @@ import {
   GA4_CONSENT_STATUS,
   GA4_SCRIPT_ID,
   buildGa4PageView,
+  buildGa4SafeEventContext,
   resolveGa4Config,
 } from './ga4Contracts.js';
 import { buildGa4ProductEvent } from './ga4ProductContracts.js';
@@ -143,15 +144,26 @@ export function createGa4Client({ runtime = globalThis } = {}) {
     const pageView = buildGa4PageView(pathname, origin);
     if (!pageView) return Object.freeze({ sent: false, reason: 'excluded' });
 
-    const canonicalPathname = new URL(pageView.page_location).pathname;
+    const safeContext = buildGa4SafeEventContext({
+      location: pageView.page_location,
+      referrer: runtime?.document?.referrer,
+    });
+    if (!safeContext) return Object.freeze({ sent: false, reason: 'unsafe_context' });
+
+    const safePageView = Object.freeze({
+      ...pageView,
+      ...safeContext,
+    });
+
+    const canonicalPathname = new URL(safePageView.page_location).pathname;
     if (canonicalPathname === lastPageViewPath) {
       return Object.freeze({ sent: false, reason: 'duplicate' });
     }
 
     try {
-      tagCommand?.('event', 'page_view', pageView);
+      tagCommand?.('event', 'page_view', safePageView);
       lastPageViewPath = canonicalPathname;
-      return Object.freeze({ sent: true, reason: 'sent', pageView });
+      return Object.freeze({ sent: true, reason: 'sent', pageView: safePageView });
     } catch {
       return Object.freeze({ sent: false, reason: 'failed' });
     }
@@ -165,8 +177,19 @@ export function createGa4Client({ runtime = globalThis } = {}) {
     const event = buildGa4ProductEvent(eventName, params);
     if (!event) return Object.freeze({ sent: false, reason: 'invalid' });
 
+    const safeContext = buildGa4SafeEventContext({
+      location: runtime?.location,
+      referrer: runtime?.document?.referrer,
+    });
+    if (!safeContext) return Object.freeze({ sent: false, reason: 'unsafe_context' });
+
+    const safeParams = Object.freeze({
+      ...event.params,
+      ...safeContext,
+    });
+
     try {
-      tagCommand?.('event', event.eventName, event.params);
+      tagCommand?.('event', event.eventName, safeParams);
       return Object.freeze({ sent: true, reason: 'sent' });
     } catch {
       return Object.freeze({ sent: false, reason: 'failed' });

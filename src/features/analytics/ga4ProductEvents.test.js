@@ -103,6 +103,7 @@ test('cliente revalida contrato e nunca envia parâmetro desconhecido ou valor i
   assert.deepEqual(eventCommands(runtime, 'voice_completed')[0][2], {
     result: 'success',
     interaction_mode: 'voice_button',
+    page_location: 'https://app.invalid/app/home',
   });
 });
 
