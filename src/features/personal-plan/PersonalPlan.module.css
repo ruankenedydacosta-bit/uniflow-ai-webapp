@@ -524,103 +524,826 @@
   text-align: center;
 }
 
-/* BLOCO FINAL DO MVP: modal de escolha de método + campo de CPF/CNPJ.
-   O Modal compartilhado (Modal.jsx) renderiza sobre um fundo CLARO
-   (--uf-color-bg-elevated), diferente do fundo escuro desta página --
-   por isso todo texto/borda aqui usa cores explícitas próprias, nunca
-   branco/transparente herdado do resto do módulo. */
+/* REDESIGN CHECKOUT (premium fintech): o Modal compartilhado (Modal.jsx)
+   nasce com superfície CLARA (--uf-color-bg-elevated). Aqui ele é
+   reapresentado em azul-marinho para as DUAS telas de pagamento -- e
+   somente para elas, via className/overlayClassName/headerClassName/
+   bodyClassName. Nenhum outro modal do app é afetado.
+   A dupla classe (.x.x) garante precedência sobre Modal.module.css sem
+   depender da ordem de bundling. Todas as cores são explícitas (nunca
+   herdadas/transparentes) e legíveis sobre a superfície escura. */
+.checkoutOverlay.checkoutOverlay {
+  padding:
+    max(10px, env(safe-area-inset-top, 0px))
+    max(10px, env(safe-area-inset-right, 0px))
+    max(10px, env(safe-area-inset-bottom, 0px))
+    max(10px, env(safe-area-inset-left, 0px));
+  background: rgba(2, 8, 20, .82);
+  backdrop-filter: blur(14px) saturate(130%);
+}
+
+.checkoutDialog.checkoutDialog {
+  max-width: 460px;
+  max-height: calc(100dvh - 20px);
+  border: 1px solid rgba(58, 110, 190, .34);
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(37, 99, 235, .16), transparent 62%),
+    linear-gradient(180deg, #0c1a2e 0%, #070f1f 100%);
+  color: #e8f0fb;
+  box-shadow:
+    0 40px 90px -30px rgba(2, 8, 20, .9),
+    0 0 0 1px rgba(103, 232, 249, .05) inset;
+}
+
+.checkoutHeader.checkoutHeader {
+  align-items: center;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid rgba(58, 110, 190, .2);
+}
+
+.checkoutHeader button {
+  width: 36px;
+  height: 36px;
+  border-color: rgba(58, 110, 190, .34);
+  border-radius: 11px;
+  color: #9cb4d3;
+}
+
+.checkoutHeader button:hover {
+  background: rgba(37, 99, 235, .16);
+  border-color: rgba(103, 232, 249, .45);
+  color: #e8f0fb;
+}
+
+/* O Modal compartilhado desenha o fechar como a letra "x". Aqui ela é
+   substituída visualmente por um glifo ✕ real, sem tocar no componente
+   (o aria-label "Fechar modal" continua vindo do próprio Modal). */
+.checkoutHeader button span {
+  font-size: 0;
+  line-height: 0;
+}
+
+.checkoutHeader button span::before {
+  content: '✕';
+  font-size: 15px;
+  line-height: 1;
+}
+
+.checkoutTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkoutTitleIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(139, 92, 246, .42);
+  border-radius: 13px;
+  background: linear-gradient(160deg, rgba(139, 92, 246, .3), rgba(37, 99, 235, .18));
+  color: #c4b5fd;
+}
+
+.checkoutTitleIcon[data-tone='pix'] {
+  border-color: rgba(45, 212, 191, .45);
+  background: linear-gradient(160deg, rgba(45, 212, 191, .3), rgba(34, 211, 238, .16));
+  color: #5eead4;
+}
+
+.checkoutTitleIcon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.checkoutTitleIcon[data-tone='pix'] svg {
+  stroke-width: 1.7;
+}
+
+.checkoutTitleText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: #f2f7ff;
+  font-size: clamp(16.5px, 4.6vw, 18.5px);
+  font-weight: 700;
+  letter-spacing: -.01em;
+  line-height: 1.2;
+}
+
+.checkoutTitleText small {
+  color: #93aac9;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.checkoutBody.checkoutBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px 4px;
+}
+
+/* ---- Tela 1: card de preço ---- */
+.checkoutPriceCard {
+  padding: 16px 14px 14px;
+  border: 1px solid rgba(58, 110, 190, .26);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(18, 34, 60, .82), rgba(11, 22, 42, .7));
+  text-align: center;
+}
+
+.checkoutPrice {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.checkoutPrice strong {
+  background: linear-gradient(100deg, #a78bfa, #60a5fa 55%, #22d3ee);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-size: clamp(34px, 10vw, 42px);
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.checkoutPrice span {
+  color: #9cb4d3;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.checkoutPriceNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: #8fa8c8;
+  font-size: 13px;
+}
+
+.checkoutPriceNote svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: #4ade80;
+}
+
+.checkoutSectionTitle {
+  margin: 2px 0 -4px;
+  color: #cfe0f5;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+/* ---- Tela 1: cartões de forma de pagamento ---- */
 .methodChoiceGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 10px;
 }
 
 .methodOption {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #111827;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(58, 110, 190, .26);
+  background: rgba(16, 31, 56, .6);
+  color: #e8f0fb;
   font-size: 14px;
+  cursor: pointer;
+  transition:
+    border-color 180ms cubic-bezier(.22, 1, .36, 1),
+    background-color 180ms cubic-bezier(.22, 1, .36, 1),
+    box-shadow 180ms cubic-bezier(.22, 1, .36, 1);
+}
+
+/* O input radio real continua existindo (semântica/teclado/leitores de
+   tela); só o desenho é substituído pelo indicador .methodMark. */
+.methodOption input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .methodOption[data-selected='true'] {
-  border-color: #2563eb;
-  background: #e0f2fe;
-  color: #111827;
+  border-color: rgba(96, 165, 250, .85);
+  background: linear-gradient(180deg, rgba(37, 99, 235, .22), rgba(16, 31, 56, .7));
+  box-shadow:
+    0 0 0 1px rgba(96, 165, 250, .35),
+    0 14px 32px -18px rgba(37, 99, 235, .9);
+}
+
+.methodOption:has(input:focus-visible) {
+  outline: 3px solid rgba(103, 232, 249, .55);
+  outline-offset: 2px;
 }
 
 .methodOption[data-disabled='true'] {
-  border-color: #e2e8f0;
-  background: #f1f5f9;
+  border-color: rgba(58, 110, 190, .16);
+  background: rgba(12, 24, 44, .5);
   color: #64748b;
+  cursor: not-allowed;
+}
+
+.methodIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  border: 1px solid rgba(58, 110, 190, .3);
+  background: rgba(8, 18, 36, .8);
+  color: #9cb4d3;
+}
+
+.methodIcon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.methodIcon[data-tone='pix'] {
+  border-color: rgba(45, 212, 191, .4);
+  background: linear-gradient(160deg, rgba(45, 212, 191, .22), rgba(8, 18, 36, .85));
+  color: #5eead4;
+}
+
+.methodIcon[data-tone='card'] {
+  border-color: rgba(139, 92, 246, .4);
+  background: linear-gradient(160deg, rgba(139, 92, 246, .22), rgba(8, 18, 36, .85));
+  color: #c4b5fd;
+}
+
+.methodText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.methodText strong {
+  color: #f2f7ff;
+  font-size: 15.5px;
+  font-weight: 700;
 }
 
 .methodOption small {
-  color: #64748b;
-  font-size: 11px;
+  color: #93aac9;
+  font-size: 12.5px;
+  line-height: 1.35;
 }
 
+.methodMark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(120, 152, 194, .5);
+  color: transparent;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.methodMark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.methodOption[data-selected='true'] .methodMark {
+  border-color: transparent;
+  background: transparent;
+  color: #22d3ee;
+}
+
+/* ---- Tela 1: campo CPF/CNPJ ---- */
 .cpfField {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  color: #111827;
+  gap: 8px;
+  color: #cfe0f5;
   font-size: 13px;
   font-weight: 600;
 }
 
+.cpfInputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cpfInputIcon {
+  position: absolute;
+  left: 14px;
+  display: inline-flex;
+  color: #7d95b5;
+  pointer-events: none;
+}
+
+.cpfInputIcon svg {
+  width: 19px;
+  height: 19px;
+}
+
 .cpfField input {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 400;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px 12px 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(58, 110, 190, .3);
+  background: rgba(8, 18, 36, .8);
+  color: #f2f7ff;
+  font-size: 16px; /* >=16px evita zoom automático no iOS ao focar */
+  font-weight: 500;
+  letter-spacing: .01em;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .cpfField input::placeholder {
-  color: #94a3b8;
+  color: #5f7899;
+  font-weight: 400;
 }
 
 .cpfField input:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 1px;
-  border-color: #2563eb;
+  outline: none;
+  border-color: rgba(103, 232, 249, .75);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, .22);
 }
 
 .cpfField input[aria-invalid='true'] {
-  border-color: #dc2626;
+  border-color: rgba(248, 113, 113, .75);
 }
 
-.hint {
-  margin: 0;
-  color: #475569;
-  font-size: 13px;
+.cpfHelper {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: #8fa8c8;
+  font-size: 12px;
+  font-weight: 400;
   line-height: 1.4;
 }
 
-.pixQrImage {
-  width: 220px;
-  height: 220px;
-  max-width: 100%;
-  margin: 4px auto;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  background: #fff;
-  padding: 8px;
+.cpfHelper svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #5eead4;
+}
+
+.hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: #93aac9;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hint svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #5eead4;
 }
 
 .methodError {
-  margin-top: 10px;
-  color: #dc2626;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 113, 113, .38);
+  border-radius: 12px;
+  background: rgba(127, 29, 29, .22);
+  color: #fca5a5;
   font-size: 13px;
+  line-height: 1.4;
   text-align: center;
+}
+
+/* ---- Rodapé compartilhado: CTA + cancelar + selo de confiança ----
+   O Modal não expõe `footerClassName`; em vez de alterar o componente
+   compartilhado (usado por dezenas de telas), o rodapé é alcançado pelo
+   próprio conteúdo, via :has() -- padrão já usado em outros módulos do
+   projeto. Afeta exclusivamente o rodapé que contém .checkoutActions. */
+.checkoutDialog.checkoutDialog > :has(> .checkoutActions) {
+  padding: 14px 18px max(18px, env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(58, 110, 190, .2);
+}
+
+.checkoutActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.checkoutCta.checkoutCta {
+  min-height: 54px;
+  border: 0;
+  border-radius: 15px;
+  background: linear-gradient(100deg, #7c3aed, #2563eb 52%, #22d3ee);
+  color: #fff;
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  box-shadow: 0 16px 34px -18px rgba(37, 99, 235, .95);
+}
+
+.checkoutCta.checkoutCta:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.checkoutCta.checkoutCta:disabled {
+  background: rgba(30, 48, 78, .8);
+  color: #64748b;
+  box-shadow: none;
+}
+
+.checkoutCta.checkoutCta[data-copied='true'] {
+  background: linear-gradient(100deg, #059669, #10b981 60%, #34d399);
+  box-shadow: 0 16px 34px -18px rgba(16, 185, 129, .95);
+}
+
+.checkoutCta svg {
+  width: 19px;
+  height: 19px;
+}
+
+.checkoutCancel {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #93aac9;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.checkoutCancel:hover:not(:disabled) {
+  background: rgba(37, 99, 235, .12);
+  color: #e8f0fb;
+}
+
+.checkoutCancel:focus-visible {
+  outline: 3px solid rgba(103, 232, 249, .55);
+  outline-offset: 2px;
+}
+
+.checkoutCancel:disabled {
+  color: #5f7899;
+  cursor: not-allowed;
+}
+
+.checkoutTrustBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  margin: 2px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(58, 110, 190, .2);
+  color: #7d95b5;
+  font-size: 12px;
+  text-align: center;
+}
+
+.checkoutTrustBar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.checkoutTrustBar strong {
+  color: #67e8f9;
+  font-weight: 600;
+}
+
+.checkoutTrustBar svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: #5eead4;
+}
+
+.checkoutTrustDivider {
+  width: 1px;
+  height: 12px;
+  background: rgba(58, 110, 190, .45);
+}
+
+/* ---- Tela 2: card de valor ---- */
+.pixValueCard {
+  padding: 14px;
+  border: 1px solid rgba(58, 110, 190, .26);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(18, 34, 60, .82), rgba(11, 22, 42, .7));
+  text-align: center;
+}
+
+.pixValueLabel {
+  margin: 0;
+  color: #8fa8c8;
+  font-size: 12.5px;
+}
+
+.pixValueAmount {
+  margin: 4px 0 2px;
+  background: linear-gradient(100deg, #a78bfa, #60a5fa 55%, #22d3ee);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-size: clamp(32px, 9.5vw, 40px);
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.pixValueNote {
+  margin: 0;
+  color: #7d95b5;
+  font-size: 12.5px;
+}
+
+/* ---- Tela 2: card de status (reflete o estado real do polling) ---- */
+.pixStatusCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(58, 110, 190, .26);
+  background: rgba(16, 31, 56, .6);
+}
+
+.pixStatusIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+
+.pixStatusIcon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.pixStatusCard[data-tone='waiting'] .pixStatusIcon {
+  border: 1px solid rgba(52, 211, 153, .38);
+  background: rgba(6, 78, 59, .38);
+  color: #34d399;
+}
+
+.pixStatusCard[data-tone='confirmed'] {
+  border-color: rgba(52, 211, 153, .5);
+  background: linear-gradient(180deg, rgba(6, 78, 59, .45), rgba(16, 31, 56, .6));
+}
+
+.pixStatusCard[data-tone='confirmed'] .pixStatusIcon {
+  border: 1px solid rgba(52, 211, 153, .55);
+  background: rgba(6, 78, 59, .5);
+  color: #4ade80;
+}
+
+.pixStatusText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Sobrepõe o .subscriptionStatus global (centralizado, usado na página)
+   somente dentro do card de status do modal Pix. */
+/* Sem `nowrap`: numa tela de 360px o rótulo estouraria o card e seria
+   cortado. Em 375px+ ele cabe em uma linha; em 360px quebra em duas,
+   nunca corta. */
+.pixStatusText .subscriptionStatus {
+  margin: 0;
+  min-height: 0;
+  color: #34d399;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  text-align: left;
+}
+
+.pixStatusText small {
+  color: #93aac9;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.pixStatusBadge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  width: 52px;
+  color: #8fa8c8;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.pixStatusBadge svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: #5eead4;
+}
+
+/* ---- Tela 2: QR Code + copia-e-cola ---- */
+.pixQrCard {
+  padding: 16px 14px;
+  border: 1px solid rgba(58, 110, 190, .26);
+  border-radius: 18px;
+  background: rgba(16, 31, 56, .55);
+  text-align: center;
+}
+
+.pixQrTitle {
+  margin: 0 0 12px;
+  color: #cfe0f5;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Moldura com cantos de mira -- puramente decorativa, nunca cobre o QR
+   (o QR real da Asaas mantém área branca completa e proporção 1:1). */
+/* Quatro cantos de mira desenhados por gradientes (nenhum encosta no QR:
+   ficam no padding externo, então a área branca da Asaas nunca é coberta). */
+.pixQrFrame {
+  --qr-corner: rgba(103, 232, 249, .72);
+  --qr-thickness: 2.5px;
+  --qr-length: 24px;
+  display: inline-flex;
+  padding: 11px;
+  background:
+    linear-gradient(var(--qr-corner), var(--qr-corner)) 0 0 / var(--qr-length) var(--qr-thickness) no-repeat,
+    linear-gradient(var(--qr-corner), var(--qr-corner)) 0 0 / var(--qr-thickness) var(--qr-length) no-repeat,
+    linear-gradient(var(--qr-corner), var(--qr-corner)) 100% 0 / var(--qr-length) var(--qr-thickness) no-repeat,
+    linear-gradient(var(--qr-corner), var(--qr-corner)) 100% 0 / var(--qr-thickness) var(--qr-length) no-repeat,
+    linear-gradient(var(--qr-corner), var(--qr-corner)) 0 100% / var(--qr-length) var(--qr-thickness) no-repeat,
+    linear-gradient(var(--qr-corner), var(--qr-corner)) 0 100% / var(--qr-thickness) var(--qr-length) no-repeat,
+    linear-gradient(var(--qr-corner), var(--qr-corner)) 100% 100% / var(--qr-length) var(--qr-thickness) no-repeat,
+    linear-gradient(var(--qr-corner), var(--qr-corner)) 100% 100% / var(--qr-thickness) var(--qr-length) no-repeat;
+}
+
+.pixQrImage {
+  display: block;
+  width: 200px;
+  height: 200px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+}
+
+.pixSeparator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 10px;
+  color: #7d95b5;
+  font-size: 12px;
+}
+
+.pixSeparator::before,
+.pixSeparator::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: rgba(58, 110, 190, .3);
+}
+
+.pixCopyLabel {
+  margin: 0 0 10px;
+  color: #93aac9;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.pixCopyHint {
+  display: block;
+  margin: 10px 0 0;
+  color: #7d95b5;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* ---- Tela 2: aviso de não fechar a tela ---- */
+.pixNoticeCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid rgba(139, 92, 246, .3);
+  border-radius: 15px;
+  background: linear-gradient(180deg, rgba(76, 29, 149, .26), rgba(16, 31, 56, .55));
+}
+
+.pixNoticeIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #c4b5fd;
+}
+
+.pixNoticeIcon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.pixNoticeText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #b8cbe4;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.pixNoticeText strong {
+  color: #f2f7ff;
+  font-weight: 700;
+}
+
+/* ---- Telas curtas / muito estreitas (PWA em celular pequeno) ---- */
+@media (max-height: 720px) {
+  .pixQrImage {
+    width: 168px;
+    height: 168px;
+  }
+}
+
+@media (max-width: 380px) {
+  .checkoutBody.checkoutBody,
+  .checkoutHeader.checkoutHeader {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .methodOption {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .methodIcon,
+  .checkoutTitleIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .pixStatusBadge {
+    max-width: 66px;
+    font-size: 10.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .methodOption,
+  .methodMark,
+  .cpfField input,
+  .checkoutCancel {
+    transition: none;
+  }
 }
 
 .footer {

@@ -81,9 +81,14 @@ test('modal de método: Pix e cartão de crédito são ambos selecionáveis -- n
   assert.doesNotMatch(page, /value="credit_card" disabled/);
 });
 
-test('modal de método: texto do cartão é "pagamento seguro no Asaas" -- honesto sobre onde o pagamento acontece', async () => {
+// REDESIGN CHECKOUT: a copy do cartão passou a ser "Pagamento processado
+// com segurança pelo Asaas" (card premium com título e subtítulo próprios).
+// A invariante continua a mesma: dizer honestamente que o pagamento
+// acontece NO Asaas, nunca dentro da UniFlow.
+test('modal de método: texto do cartão é honesto sobre onde o pagamento acontece (Asaas)', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /Cartão de crédito <small>— pagamento seguro no Asaas<\/small>/);
+  assert.match(page, /<strong>Cartão de crédito<\/strong>/);
+  assert.match(page, /<small>Pagamento processado com segurança pelo Asaas<\/small>/);
 });
 
 // GUARD FIX: PersonalPlanPage.jsx agora cria o workspace pessoal sob
@@ -152,27 +157,48 @@ test('CPF/CNPJ tem label visível associado ao input (não é só placeholder) -
   assert.match(page, /\{paymentMethod === 'pix' \? \(\s*\n\s*<label className={styles\.cpfField}>\s*\n\s*<span>CPF ou CNPJ/);
 });
 
-// CORREÇÃO PONTUAL: o Modal compartilhado (Modal.jsx) renderiza sobre fundo
-// CLARO (--uf-color-bg-elevated), diferente do fundo escuro do resto desta
-// página -- .methodOption/.cpfField tinham cor branca/transparente herdada
-// do resto do módulo, invisível sobre o modal claro. Corrigido com cores
-// explícitas próprias (nunca branco, nunca `inherit`), garantidas aqui.
-test('modal de método/CPF usa cores explícitas próprias -- nunca branco/transparente herdado do fundo escuro da página', async () => {
+// REDESIGN CHECKOUT: o Modal compartilhado (Modal.jsx) nasce com superfície
+// CLARA (--uf-color-bg-elevated). As duas telas de pagamento agora a
+// reapresentam em azul-marinho por className/overlayClassName/
+// headerClassName/bodyClassName -- SOMENTE elas. A invariante original
+// permanece: nenhuma cor herdada/transparente; todo texto precisa ser
+// explícito e legível sobre a superfície real do modal (agora escura).
+test('modal de método/CPF usa cores explícitas próprias, legíveis sobre a superfície escura do checkout', async () => {
   const css = await source('./PersonalPlan.module.css');
+
+  // A superfície escura é aplicada só ao diálogo do checkout (dupla classe
+  // para vencer Modal.module.css sem depender da ordem do bundle).
+  assert.match(css, /\.checkoutDialog\.checkoutDialog \{/);
+  assert.match(css, /\.checkoutDialog\.checkoutDialog \{[\s\S]*?color:\s*#e8f0fb/);
+
   const methodOptionIdx = css.indexOf('.methodOption {');
   const methodOptionBlock = css.slice(methodOptionIdx, css.indexOf('}', methodOptionIdx));
-  assert.doesNotMatch(methodOptionBlock, /color:\s*#fff/);
   assert.doesNotMatch(methodOptionBlock, /color:\s*inherit/);
-  assert.match(methodOptionBlock, /color:\s*#111827/);
+  assert.doesNotMatch(methodOptionBlock, /color:\s*transparent/);
+  assert.match(methodOptionBlock, /color:\s*#e8f0fb/);
 
   const cpfInputIdx = css.indexOf('.cpfField input {');
   const cpfInputBlock = css.slice(cpfInputIdx, css.indexOf('}', cpfInputIdx));
-  assert.doesNotMatch(cpfInputBlock, /color:\s*#fff/);
-  assert.match(cpfInputBlock, /background:\s*#fff/);
-  assert.match(cpfInputBlock, /border:\s*1px solid #cbd5e1/);
+  assert.doesNotMatch(cpfInputBlock, /color:\s*inherit/);
+  assert.match(cpfInputBlock, /color:\s*#f2f7ff/);
+  // >=16px evita o zoom automático do iOS ao focar o campo na PWA.
+  assert.match(cpfInputBlock, /font-size:\s*16px/);
 
   assert.match(css, /\.cpfField input:focus-visible \{/);
+  assert.match(css, /\.cpfField input\[aria-invalid='true'\] \{/);
   assert.match(css, /\.methodOption\[data-disabled='true'\] \{[\s\S]*?color:\s*#64748b/);
+});
+
+// REDESIGN CHECKOUT: o QR Code oficial da Asaas nunca pode ser deformado
+// nem perder a área branca -- proporção travada em 1:1 e fundo branco.
+test('QR Code Pix mantém proporção 1:1, fundo branco e nunca é esticado', async () => {
+  const css = await source('./PersonalPlan.module.css');
+  const qrIdx = css.indexOf('.pixQrImage {');
+  const qrBlock = css.slice(qrIdx, css.indexOf('}', qrIdx));
+  assert.match(qrBlock, /aspect-ratio:\s*1 \/ 1/);
+  assert.match(qrBlock, /object-fit:\s*contain/);
+  assert.match(qrBlock, /background:\s*#fff/);
+  assert.match(qrBlock, /max-width:\s*100%/);
 });
 
 test('confirmar assinatura chama createCustomer e depois createSubscription (nunca cria assinatura sem cliente)', async () => {
@@ -212,35 +238,61 @@ test('confirmar assinatura Pix guarda pix (QR Code) vindo da resposta de createS
   assert.match(slice, /if \(!isValidPixPayload\(pix\)\) \{/);
 });
 
+// REDESIGN CHECKOUT: o corpo do PixPaymentModal cresceu (cards de valor/
+// status/QR/aviso). As asserções abaixo passam a usar o componente INTEIRO
+// (até o início de PersonalPlanPage) em vez de uma janela fixa de caracteres,
+// que quebrava a cada ajuste de layout sem nenhum ganho de garantia.
+const pixModalSource = (page) => page.slice(
+  page.indexOf('function PixPaymentModal'),
+  page.indexOf('function PersonalPlanPage'),
+);
+
 test('PixPaymentModal mostra QR Code como <img> com data URI base64 -- nunca desenha/gera a imagem', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  const idx = page.indexOf('function PixPaymentModal');
-  const slice = page.slice(idx, idx + 2000);
+  const slice = pixModalSource(page);
   assert.match(slice, /src={`data:image\/png;base64,\$\{pixData\.encoded_image\}`}/);
 });
 
 test('PixPaymentModal tem botão "Copiar código Pix" usando navigator.clipboard com o payload oficial', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  const idx = page.indexOf('function PixPaymentModal');
-  const slice = page.slice(idx, idx + 2000);
+  const slice = pixModalSource(page);
   assert.match(slice, /navigator\.clipboard\.writeText\(pixData\.payload\)/);
   assert.match(slice, /Copiar código Pix/);
+  // O conteúdo copiado continua sendo exatamente o payload oficial da Asaas
+  // -- o estado `copied` é só feedback visual temporário.
+  assert.match(slice, /\{copied \? 'Código Pix copiado' : 'Copiar código Pix'\}/);
 });
 
-test('PixPaymentModal mostra "Aguardando pagamento" e o texto de atualização automática', async () => {
+test('PixPaymentModal mostra "Aguardando pagamento" e o texto de confirmação automática', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  const idx = page.indexOf('function PixPaymentModal');
-  const slice = page.slice(idx, idx + 2000);
+  const slice = pixModalSource(page);
   assert.match(slice, /Aguardando pagamento/);
-  assert.match(slice, /Assim que o Pix for confirmado, esta tela será atualizada automaticamente\./);
+  assert.match(slice, /O pagamento é identificado automaticamente em poucos segundos\./);
+  assert.match(slice, /A confirmação acontece automaticamente\./);
+});
+
+// REDESIGN CHECKOUT: o valor exibido vem da fonte central do plano
+// (personalPlanConfig), nunca de um literal duplicado nesta tela.
+test('valor do plano no checkout/Pix vem da fonte central, nunca hardcoded', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  assert.match(page, /PERSONAL_PLAN_PRICE_LABEL,/);
+  const checkout = page.slice(
+    page.indexOf('function SubscriptionMethodModal'),
+    page.indexOf('function PersonalPlanPage'),
+  );
+  assert.match(checkout, /\{PERSONAL_PLAN_PRICE_LABEL\}/);
+  assert.match(checkout, /\{PERSONAL_PLAN_PRICE_PERIOD\}/);
+  assert.doesNotMatch(checkout, /R\$ 29,90/);
 });
 
 test('PixPaymentModal mostra "Pagamento confirmado" e "Seu Plano Pessoal está ativo." quando isActive', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  const idx = page.indexOf('function PixPaymentModal');
-  const slice = page.slice(idx, idx + 2000);
+  const slice = pixModalSource(page);
   assert.match(slice, /Pagamento confirmado\./);
   assert.match(slice, /Seu Plano Pessoal está ativo\./);
+  // O estado exibido continua derivando SOMENTE de `isActive` (polling real),
+  // nunca de um estado local/simulado dentro do modal.
+  assert.match(slice, /\{isActive \? \(/);
 });
 
 test('PixPaymentModal é renderizado no componente principal, aberto durante pending e durante active com pixData', async () => {

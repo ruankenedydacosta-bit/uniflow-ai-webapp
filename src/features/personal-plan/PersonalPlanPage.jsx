@@ -11,6 +11,8 @@ import PlanBenefitIcon from './PlanBenefitIcon.jsx';
 import PlanBrandHeader from './PlanBrandHeader.jsx';
 import {
   PERSONAL_PLAN_BENEFITS,
+  PERSONAL_PLAN_PRICE_LABEL,
+  PERSONAL_PLAN_PRICE_PERIOD,
   PERSONAL_PLAN_TRUST_SEALS,
 } from './personalPlanConfig.js';
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
@@ -69,6 +71,103 @@ function TrustSealIcon({ type }) {
   return <span aria-hidden="true">♡</span>;
 }
 
+// REDESIGN CHECKOUT: glifos locais do checkout/Pix. Todos decorativos
+// (aria-hidden pelo container), traço/preenchimento herdados via
+// currentColor -- nenhuma dependência nova, nenhum asset externo.
+function PixGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 2.8 21.2 12 12 21.2 2.8 12 12 2.8Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <path d="M8.6 12 12 8.6l3.4 3.4L12 15.4 8.6 12Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CardGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="2.6" y="5.2" width="18.8" height="13.6" rx="2.6" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M2.6 9.6h18.8" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M6.2 14.6h3.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LockGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="4.6" y="10.4" width="14.8" height="9.6" rx="2.4" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M8.2 10.4V7.8a3.8 3.8 0 0 1 7.6 0v2.6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ShieldCheckGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 2.6l7.4 3.2v5.4c0 5.2-2.9 8.6-7.4 11-4.5-2.4-7.4-5.8-7.4-11V5.8L12 2.6Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="m8.8 11.8 2.5 2.5 4.1-4.9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ClockGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 7.4V12l3.1 1.9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckCircleGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="1.7" />
+      <path d="m8.4 12.2 2.6 2.6 4.7-5.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CopyGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="8.6" y="8.6" width="11.8" height="11.8" rx="2.4" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M15.4 8.6V6a2.4 2.4 0 0 0-2.4-2.4H6A2.4 2.4 0 0 0 3.6 6v7a2.4 2.4 0 0 0 2.4 2.4h2.6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UserGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8.4" r="3.8" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M4.8 20c.9-3.7 3.7-5.8 7.2-5.8s6.3 2.1 7.2 5.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ArrowRightGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4.8 12h14.4m0 0-5.2-5.2M19.2 12l-5.2 5.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SparkleGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3.4l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9 1.9-5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function normalizeCpfCnpjInput(value) {
   return value.replace(/\D/g, '').slice(0, 14);
 }
@@ -101,25 +200,61 @@ function SubscriptionMethodModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Assinar Plano Pessoal"
-      description="R$ 29,90/mês. Cancele quando quiser."
+      className={styles.checkoutDialog}
+      overlayClassName={styles.checkoutOverlay}
+      headerClassName={styles.checkoutHeader}
+      bodyClassName={styles.checkoutBody}
+      title={(
+        <span className={styles.checkoutTitle}>
+          <span className={styles.checkoutTitleIcon} aria-hidden="true"><CrownIcon /></span>
+          <span className={styles.checkoutTitleText}>
+            Assinar Plano Pessoal
+            <small>Acesso completo a todos os recursos da UniFlow.</small>
+          </span>
+        </span>
+      )}
       footer={(
-        <>
-          <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
-            Cancelar
-          </Button>
+        <div className={styles.checkoutActions}>
           <Button
             type="button"
             variant="primary"
+            fullWidth
             loading={isSubmitting}
             disabled={!canSubmit}
+            className={styles.checkoutCta}
+            leftIcon={<LockGlyph />}
+            rightIcon={<ArrowRightGlyph />}
             onClick={() => onConfirm({ cpfCnpj: digits, paymentMethod })}
           >
-            Confirmar assinatura
+            {paymentMethod === 'credit_card' ? 'Continuar com cartão' : 'Continuar com Pix'}
           </Button>
-        </>
+          <button
+            type="button"
+            className={styles.checkoutCancel}
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </button>
+          <p className={styles.checkoutTrustBar}>
+            <span><ShieldCheckGlyph /> Pagamento seguro</span>
+            <span aria-hidden="true" className={styles.checkoutTrustDivider} />
+            <span>Processado pelo <strong>Asaas</strong></span>
+          </p>
+        </div>
       )}
     >
+      <div className={styles.checkoutPriceCard}>
+        <p className={styles.checkoutPrice}>
+          <strong>{PERSONAL_PLAN_PRICE_LABEL}</strong>
+          <span>{PERSONAL_PLAN_PRICE_PERIOD}</span>
+        </p>
+        <p className={styles.checkoutPriceNote}>
+          <CheckCircleGlyph /> Cancele quando quiser
+        </p>
+      </div>
+
+      <p className={styles.checkoutSectionTitle}>Escolha a forma de pagamento</p>
       <div className={styles.methodChoiceGroup} role="radiogroup" aria-label="Forma de pagamento">
         <label className={styles.methodOption} data-selected={paymentMethod === 'pix' ? 'true' : 'false'}>
           <input
@@ -129,7 +264,12 @@ function SubscriptionMethodModal({
             checked={paymentMethod === 'pix'}
             onChange={() => setPaymentMethod('pix')}
           />
-          <span>Pix</span>
+          <span className={styles.methodIcon} data-tone="pix" aria-hidden="true"><PixGlyph /></span>
+          <span className={styles.methodText}>
+            <strong>Pix</strong>
+            <small>Aprovação rápida</small>
+          </span>
+          <span className={styles.methodMark} aria-hidden="true"><CheckCircleGlyph /></span>
         </label>
         <label className={styles.methodOption} data-selected={paymentMethod === 'credit_card' ? 'true' : 'false'}>
           <input
@@ -139,24 +279,38 @@ function SubscriptionMethodModal({
             checked={paymentMethod === 'credit_card'}
             onChange={() => setPaymentMethod('credit_card')}
           />
-          <span>Cartão de crédito <small>— pagamento seguro no Asaas</small></span>
+          <span className={styles.methodIcon} data-tone="card" aria-hidden="true"><CardGlyph /></span>
+          <span className={styles.methodText}>
+            <strong>Cartão de crédito</strong>
+            <small>Pagamento processado com segurança pelo Asaas</small>
+          </span>
+          <span className={styles.methodMark} aria-hidden="true"><CheckCircleGlyph /></span>
         </label>
       </div>
+
+      <p className={styles.checkoutSectionTitle}>Dados para emissão da cobrança</p>
       {paymentMethod === 'pix' ? (
         <label className={styles.cpfField}>
-          <span>CPF ou CNPJ (exigido pela Asaas para criar sua cobrança)</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={cpfCnpj}
-            onChange={(event) => setCpfCnpj(event.target.value)}
-            placeholder="Somente números"
-            aria-invalid={cpfCnpj.length > 0 && !isValidCpfCnpjFormat(digits)}
-          />
+          <span>CPF ou CNPJ</span>
+          <span className={styles.cpfInputWrap}>
+            <span className={styles.cpfInputIcon} aria-hidden="true"><UserGlyph /></span>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={cpfCnpj}
+              onChange={(event) => setCpfCnpj(event.target.value)}
+              placeholder="000.000.000-00"
+              aria-invalid={cpfCnpj.length > 0 && !isValidCpfCnpjFormat(digits)}
+            />
+          </span>
+          <small className={styles.cpfHelper}>
+            <LockGlyph /> Necessário para processar sua cobrança com segurança. Não armazenamos seus dados bancários.
+          </small>
         </label>
       ) : (
         <p className={styles.hint}>
+          <LockGlyph />
           Você informará seus dados (CPF, nome e endereço) diretamente na página segura do Asaas.
         </p>
       )}
@@ -179,7 +333,7 @@ function PixPaymentModal({
     try {
       await navigator.clipboard.writeText(pixData.payload);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2500);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard indisponível (permissão/navegador) -- nunca quebra a
       // tela, só não copia; o QR Code continua funcionando normalmente.
@@ -191,40 +345,101 @@ function PixPaymentModal({
       open={open}
       onClose={onClose}
       closeOnOverlayClick={false}
-      title="Pagamento Pix"
-      footer={isActive ? (
-        <Button type="button" variant="primary" fullWidth onClick={onGoHome}>Ir para o início</Button>
-      ) : null}
+      className={styles.checkoutDialog}
+      overlayClassName={styles.checkoutOverlay}
+      headerClassName={styles.checkoutHeader}
+      bodyClassName={styles.checkoutBody}
+      title={(
+        <span className={styles.checkoutTitle}>
+          <span className={styles.checkoutTitleIcon} data-tone="pix" aria-hidden="true"><PixGlyph /></span>
+          <span className={styles.checkoutTitleText}>
+            Pagamento via Pix
+            <small>Plano Pessoal</small>
+          </span>
+        </span>
+      )}
+      footer={(
+        <div className={styles.checkoutActions}>
+          {isActive ? (
+            <Button type="button" variant="primary" fullWidth className={styles.checkoutCta} onClick={onGoHome}>
+              Ir para o início
+            </Button>
+          ) : null}
+          <p className={styles.checkoutTrustBar}>
+            <span><ShieldCheckGlyph /> Pagamento protegido pelo <strong>Asaas</strong></span>
+            <span aria-hidden="true" className={styles.checkoutTrustDivider} />
+            <span><LockGlyph /> Seus dados estão seguros</span>
+          </p>
+        </div>
+      )}
     >
+      <div className={styles.pixValueCard}>
+        <p className={styles.pixValueLabel}>Valor da assinatura</p>
+        <p className={styles.pixValueAmount}>{PERSONAL_PLAN_PRICE_LABEL}</p>
+        <p className={styles.pixValueNote}>Cobrança mensal</p>
+      </div>
+
       {isActive ? (
-        <>
-          <p className={styles.subscriptionStatus} aria-live="polite">Pagamento confirmado.</p>
-          <p className={styles.subscriptionStatus}>Seu Plano Pessoal está ativo.</p>
-        </>
+        <div className={styles.pixStatusCard} data-tone="confirmed">
+          <span className={styles.pixStatusIcon} aria-hidden="true"><CheckCircleGlyph /></span>
+          <span className={styles.pixStatusText}>
+            <strong className={styles.subscriptionStatus} aria-live="polite">Pagamento confirmado.</strong>
+            <small>Seu Plano Pessoal está ativo.</small>
+          </span>
+        </div>
       ) : (
         <>
-          <p className={styles.subscriptionStatus} aria-live="polite">Aguardando pagamento</p>
-          {pixData?.encoded_image ? (
-            <img
-              className={styles.pixQrImage}
-              src={`data:image/png;base64,${pixData.encoded_image}`}
-              alt="QR Code Pix para pagamento do Plano Pessoal"
-            />
-          ) : (
-            <p className={styles.hint}>Gerando QR Code...</p>
-          )}
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={handleCopyPixCode}
-            disabled={!pixData?.payload}
-          >
-            {copied ? 'Código copiado!' : 'Copiar código Pix'}
-          </Button>
-          <p className={styles.hint}>
-            Assim que o Pix for confirmado, esta tela será atualizada automaticamente.
-          </p>
+          <div className={styles.pixStatusCard} data-tone="waiting">
+            <span className={styles.pixStatusIcon} aria-hidden="true"><ClockGlyph /></span>
+            <span className={styles.pixStatusText}>
+              <strong className={styles.subscriptionStatus} aria-live="polite">Aguardando pagamento</strong>
+              <small>O pagamento é identificado automaticamente em poucos segundos.</small>
+            </span>
+            <span className={styles.pixStatusBadge}>
+              <ShieldCheckGlyph /> Ambiente seguro
+            </span>
+          </div>
+
+          <div className={styles.pixQrCard}>
+            <p className={styles.pixQrTitle}>Escaneie o QR Code com o app do seu banco</p>
+            {pixData?.encoded_image ? (
+              <span className={styles.pixQrFrame}>
+                <img
+                  className={styles.pixQrImage}
+                  src={`data:image/png;base64,${pixData.encoded_image}`}
+                  alt="QR Code Pix para pagamento do Plano Pessoal"
+                />
+              </span>
+            ) : (
+              <p className={styles.hint}>Gerando QR Code...</p>
+            )}
+
+            <p className={styles.pixSeparator}><span>ou</span></p>
+            <p className={styles.pixCopyLabel}>Copie o código Pix e cole no seu banco.</p>
+            <Button
+              type="button"
+              variant="primary"
+              fullWidth
+              className={styles.checkoutCta}
+              data-copied={copied ? 'true' : 'false'}
+              leftIcon={copied ? <CheckCircleGlyph /> : <CopyGlyph />}
+              onClick={handleCopyPixCode}
+              disabled={!pixData?.payload}
+            >
+              {copied ? 'Código Pix copiado' : 'Copiar código Pix'}
+            </Button>
+            <p className={styles.pixCopyHint}>
+              Ao copiar, cole o código no seu banco para concluir o pagamento.
+            </p>
+          </div>
+
+          <div className={styles.pixNoticeCard}>
+            <span className={styles.pixNoticeIcon} aria-hidden="true"><SparkleGlyph /></span>
+            <span className={styles.pixNoticeText}>
+              A confirmação acontece automaticamente.
+              <strong>Não feche esta tela até o pagamento ser identificado.</strong>
+            </span>
+          </div>
         </>
       )}
     </Modal>
