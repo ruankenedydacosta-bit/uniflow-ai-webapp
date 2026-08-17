@@ -9,47 +9,50 @@ export const PERSONAL_PLAN_ID = 'personal';
 export const PERSONAL_PLAN_PRICE_LABEL = 'R$ 29,90';
 export const PERSONAL_PLAN_PRICE_PERIOD = '/mês';
 
+// REDESIGN APP-LIKE: lista enxuta de recursos -- um por linha (ícone +
+// título + uma descrição curta). Todos os itens têm a MESMA forma
+// (`description`, nunca `lines`), porque a lista nativa mostra exatamente
+// uma linha de apoio por recurso; blocos com bullets eram o que dava à
+// página o aspecto de landing page de venda.
 export const PERSONAL_PLAN_BENEFITS = Object.freeze([
   Object.freeze({
     id: 'voice',
-    title: 'Registrar por voz',
-    description: 'Fale com a Uni e registre saídas e entradas.',
+    title: 'Registros por voz',
+    description: 'Registre entradas e saídas falando com a Uni.',
   }),
   Object.freeze({
     id: 'categories',
     title: 'Categorias inteligentes',
-    description: 'Organização automática.',
+    description: 'Organização automática dos seus registros.',
   }),
   Object.freeze({
     id: 'uni',
-    title: 'Pergunte à Uni',
-    lines: Object.freeze([
-      'Consultar entradas e saídas.',
-      'Consultar histórico.',
-      'Consultar gastos.',
-      'Tudo por voz ou texto.',
-    ]),
+    title: 'Converse com a Uni',
+    description: 'Consulte suas informações por voz ou texto.',
+  }),
+  Object.freeze({
+    id: 'agenda',
+    title: 'Agenda integrada',
+    description: 'Organize seus compromissos com a Uni.',
+  }),
+  Object.freeze({
+    id: 'summary',
+    title: 'Resumo financeiro',
+    description: 'Veja rapidamente o que entrou e o que saiu.',
   }),
   Object.freeze({
     id: 'history',
     title: 'Histórico completo',
-    description: 'Todos os registros.',
-  }),
-  Object.freeze({
-    id: 'summary',
-    title: 'Resumo mensal',
-    lines: Object.freeze(['Entradas', 'Saídas', 'Organização']),
-  }),
-  Object.freeze({
-    id: 'accounts',
-    title: 'Controle de contas',
-    lines: Object.freeze(['Contas bancárias.', 'Movimentações.', 'Organização.']),
+    description: 'Seus registros organizados em um só lugar.',
   }),
 ]);
 
-export const PERSONAL_PLAN_TRUST_SEALS = Object.freeze([
-  Object.freeze({ id: 'protected', label: 'Dados protegidos' }),
-  Object.freeze({ id: 'technology', label: 'Tecnologia segura' }),
-  Object.freeze({ id: 'support', label: 'Suporte humano' }),
-  Object.freeze({ id: 'simple', label: 'Feito para facilitar sua vida' }),
-]);
+// A demonstração "Você fala. A Uni organiza." é 100% estática: nenhum
+// request, nenhuma chamada à Uni Engine, nenhum dado real do usuário.
+// Fica aqui para nunca ser confundida com um lançamento de verdade.
+export const PERSONAL_PLAN_VOICE_DEMO = Object.freeze({
+  utterance: 'Uni, gastei R$ 80 no mercado.',
+  direction: 'Saída',
+  category: 'Alimentação',
+  amount: 'R$ 80,00',
+});

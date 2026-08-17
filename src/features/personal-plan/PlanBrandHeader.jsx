@@ -1,43 +1,25 @@
-import uniflowLogo from '../../assets/branding/auth/logo_uniflowai.png';
-import smartechLogo from '../../assets/branding/auth/smartech_logo_transparente.png';
 import styles from './PersonalPlan.module.css';
 
-function PartnershipIcon() {
+// REDESIGN APP-LIKE: a parceria deixou de ser um banner no topo e passou a
+// ser uma ASSINATURA INSTITUCIONAL discreta no rodapé (referência
+// aprovada). Além do ganho visual, isso remove do carregamento da página
+// dois PNGs de ~2,5 MB cada (logo_uniflowai.png e
+// smartech_logo_transparente.png), que eram baixados só para desenhar o
+// cabeçalho -- cerca de 5 MB numa tela aberta no celular. As marcas agora
+// são texto com a mesma identidade de cor, sem nenhum asset de rede.
+function PlanBrandSignature() {
   return (
-    <svg viewBox="0 0 72 52" aria-hidden="true">
-      <path d="m8 23 12-11 12 5 7-4 25 21-10 10-9-6-7 6-9-7-6 5L8 29Z" />
-      <path d="m21 13 10 10 9-9M23 42l6-8m9 10 6-8m-15 1 6-8m11 10 5-7" />
-    </svg>
-  );
-}
-
-function PlanBrandHeader() {
-  return (
-    <header className={styles.brandSection} aria-label="UniFlow AI e SmartTech">
-      <p className={styles.partnershipEyebrow}>
-        <span aria-hidden="true" />
-        Parceria que conecta tecnologia e inteligência
-        <span aria-hidden="true" />
+    <div className={styles.brandSignature}>
+      <p className={styles.brandSignatureRow}>
+        <span className={styles.brandUniflow}>UniFlow AI</span>
+        <span className={styles.brandTimes} aria-hidden="true">×</span>
+        <span className={styles.brandSmartech}>Smartech</span>
       </p>
-
-      <div className={styles.brandRow}>
-        <div className={styles.brandFrame}>
-          <img src={uniflowLogo} alt="UniFlow AI" className={styles.uniflowLogo} />
-        </div>
-        <span className={styles.brandDivider} aria-hidden="true" />
-        <span className={styles.partnershipIcon}><PartnershipIcon /></span>
-        <span className={styles.brandDivider} aria-hidden="true" />
-        <div className={styles.brandFrame}>
-          <img
-            src={smartechLogo}
-            alt="SmartTech — Technology Monitoring"
-            className={styles.smartechLogo}
-          />
-        </div>
-      </div>
-    </header>
+      <p className={styles.brandSignatureNote}>
+        Parceria que conecta tecnologia e inteligência.
+      </p>
+    </div>
   );
 }
 
-export default PlanBrandHeader;
-
+export default PlanBrandSignature;

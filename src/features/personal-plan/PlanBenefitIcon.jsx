@@ -8,13 +8,24 @@ function PlanBenefitIcon({ type }) {
     );
   }
 
+  // REDESIGN APP-LIKE: "categorias inteligentes" passa a usar o brilho
+  // (inteligência/automação) em vez da grade, seguindo a referência
+  // aprovada -- mesma biblioteca local, nenhuma dependência nova.
   if (type === 'categories') {
     return (
       <svg viewBox="0 0 48 48" aria-hidden="true">
-        <rect x="7" y="7" width="14" height="14" rx="3" />
-        <rect x="27" y="7" width="14" height="14" rx="3" />
-        <rect x="7" y="27" width="14" height="14" rx="3" />
-        <rect x="27" y="27" width="14" height="14" rx="3" />
+        <path d="M27 6.5 30.6 17 41 20.5 30.6 24 27 34.5 23.4 24 13 20.5 23.4 17 27 6.5Z" />
+        <path d="M13.5 30.5 15.4 36 21 37.9 15.4 39.8 13.5 45.3 11.6 39.8 6 37.9 11.6 36 13.5 30.5Z" />
+      </svg>
+    );
+  }
+
+  if (type === 'agenda') {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="7" y="10" width="34" height="32" rx="4" />
+        <path d="M7 20h34M16 5v9M32 5v9" />
+        <path d="M16 28h.1M24 28h.1M32 28h.1M16 35h.1M24 35h.1" />
       </svg>
     );
   }

@@ -5,7 +5,6 @@ import {
   PERSONAL_PLAN_BENEFITS,
   PERSONAL_PLAN_ID,
   PERSONAL_PLAN_ROUTE,
-  PERSONAL_PLAN_TRUST_SEALS,
 } from './personalPlanConfig.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -22,33 +21,61 @@ test('plano pessoal possui rota e identidade estáveis', () => {
   assert.equal(PERSONAL_PLAN_ID, 'personal');
 });
 
-test('benefícios possuem exatamente os seis itens aprovados', () => {
+// REDESIGN APP-LIKE: os seis recursos passaram a ser uma lista nativa
+// (ícone + título + UMA descrição curta). "Controle de contas" saiu e
+// "Agenda integrada" entrou, conforme a referência aprovada.
+test('recursos possuem exatamente os seis itens aprovados, todos com descrição de uma linha', () => {
   assert.equal(PERSONAL_PLAN_BENEFITS.length, 6);
   assert.deepEqual(
     PERSONAL_PLAN_BENEFITS.map(({ title }) => title),
     [
-      'Registrar por voz',
+      'Registros por voz',
       'Categorias inteligentes',
-      'Pergunte à Uni',
+      'Converse com a Uni',
+      'Agenda integrada',
+      'Resumo financeiro',
       'Histórico completo',
-      'Resumo mensal',
-      'Controle de contas',
     ],
   );
+  // A lista nativa mostra exatamente uma linha de apoio por recurso: nenhum
+  // item pode voltar a ter `lines` (bullets = aspecto de landing page).
+  for (const benefit of PERSONAL_PLAN_BENEFITS) {
+    assert.equal(typeof benefit.description, 'string');
+    assert.ok(benefit.description.trim().length > 0);
+    assert.equal('lines' in benefit, false);
+  }
   assert.equal(Object.isFrozen(PERSONAL_PLAN_BENEFITS), true);
   assert.equal(Object.isFrozen(PERSONAL_PLAN_BENEFITS[0]), true);
 });
 
-test('rodapé possui exatamente os quatro selos aprovados', () => {
-  assert.deepEqual(
-    PERSONAL_PLAN_TRUST_SEALS.map(({ label }) => label),
-    [
-      'Dados protegidos',
-      'Tecnologia segura',
-      'Suporte humano',
-      'Feito para facilitar sua vida',
-    ],
+// REDESIGN APP-LIKE: os quatro selos comerciais gigantes ("Dados
+// protegidos", "Tecnologia segura", "Suporte humano", "Feito para facilitar
+// sua vida") foram removidos junto com PERSONAL_PLAN_TRUST_SEALS. A
+// informação essencial sobreviveu, discreta, num único card de garantia.
+test('selos comerciais foram removidos -- resta um único card discreto de garantia', async () => {
+  const config = await source('./personalPlanConfig.js');
+  const indexSource = await source('./index.js');
+  const page = await source('./PersonalPlanPage.jsx');
+  assert.doesNotMatch(config, /PERSONAL_PLAN_TRUST_SEALS/);
+  assert.doesNotMatch(indexSource, /PERSONAL_PLAN_TRUST_SEALS/);
+  assert.doesNotMatch(page, /PERSONAL_PLAN_TRUST_SEALS|TrustSealIcon/);
+  assert.doesNotMatch(page, /Dados protegidos|Tecnologia segura|Suporte humano|Feito para facilitar sua vida/);
+  assert.match(page, /Cancele quando quiser\./);
+  assert.match(page, /Pagamento seguro processado pelo Asaas\./);
+});
+
+// A demonstração "Você fala. A Uni organiza." é apresentação pura: nunca
+// cria transação, nunca chama a Uni Engine, nunca usa dado real do usuário.
+test('demonstração da Uni é estática -- nenhum request, nenhuma Uni Engine, nenhum dado real', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const demo = page.slice(
+    page.indexOf('<section className={styles.demoCard}'),
+    page.indexOf('<section className={styles.assuranceCard}'),
   );
+  assert.ok(demo.length > 0, 'bloco de demonstração não encontrado');
+  assert.match(demo, /PERSONAL_PLAN_VOICE_DEMO\.utterance/);
+  assert.match(demo, /PERSONAL_PLAN_VOICE_DEMO\.amount/);
+  assert.doesNotMatch(demo, /useState|useEffect|fetch|await|onClick|transactionService|uniEngine|createTransaction/i);
 });
 
 test('startSubscription.js foi removido -- CTA agora chama billingService de verdade', async () => {
@@ -67,7 +94,52 @@ test('CTA abre o modal de método (nunca chama o backend direto no clique do bot
   const page = await source('./PersonalPlanPage.jsx');
   assert.match(page, /onClick=\{handleBeginCheckout\}/);
   assert.match(page, /function handleBeginCheckout\(\) \{[\s\S]*?setFlowState\('method_modal'\);[\s\S]*?\}/);
-  assert.match(page, /ASSINAR PLANO PESSOAL/);
+  // REDESIGN APP-LIKE: o CTA gigante do meio da página deu lugar à barra
+  // fixa inferior ("ASSINAR AGORA"), que chama o MESMO handler.
+  assert.match(page, /ASSINAR AGORA/);
+  assert.doesNotMatch(page, /ASSINAR PLANO PESSOAL/);
+});
+
+// REDESIGN APP-LIKE: a barra fixa é o único CTA de assinatura e só existe
+// para quem realmente pode assinar -- nunca reabre checkout de quem já pagou.
+test('CTA fixo só aparece nos estados em que assinar é possível, e nunca duplica o fluxo de checkout', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  assert.match(page, /const canSubscribe = flowState === 'idle'\s*\n\s*\|\| flowState === 'checking'\s*\n\s*\|\| flowState === 'method_modal';/);
+  assert.match(page, /\{canSubscribe \? \(/);
+  const ctaBar = page.slice(page.indexOf('{canSubscribe ? ('), page.indexOf('<SubscriptionMethodModal'));
+  assert.match(ctaBar, /onClick=\{handleBeginCheckout\}/);
+  assert.match(ctaBar, /disabled=\{flowState === 'checking'\}/);
+  // A barra nunca chama billing direto -- só o handler que abre o modal.
+  assert.doesNotMatch(ctaBar, /createCustomer|createSubscription|createCheckout|getSubscription/);
+});
+
+// A seta do topo é a ÚNICA saída da página. Ela precisa continuar encerrando
+// a sessão antes de navegar (ver HOTFIX mais abaixo): /plano-pessoal é o
+// destino do guard para usuário autenticado sem assinatura, então um
+// navigate(-1) puro devolveria o usuário para esta mesma tela.
+test('topo tem apenas a seta de voltar e o título -- nenhum segundo botão grande de voltar', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const topBar = page.slice(page.indexOf('<header className={styles.topBar}>'), page.indexOf('<div className={styles.content}>'));
+  assert.match(topBar, /className=\{styles\.backButton\}/);
+  assert.match(topBar, /aria-label="Voltar para entrar ou criar conta"/);
+  assert.match(topBar, /Plano Pessoal<\/h1>/);
+  assert.doesNotMatch(page, /backToAuthLink/);
+  // A seta nunca dispara cobrança.
+  assert.doesNotMatch(topBar, /handleBeginCheckout|createCustomer|createSubscription|createCheckout/);
+});
+
+// REDESIGN APP-LIKE: o preço aparece em dois lugares (card do plano e barra
+// fixa) e AMBOS vêm da fonte central -- nunca de um literal duplicado.
+test('preço da apresentação vem da fonte central nos dois pontos em que aparece', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const presentation = page.slice(page.indexOf('<main className={styles.page}>'));
+  assert.match(presentation, /\{priceCurrency\}/);
+  assert.match(presentation, /\{priceAmount\}/);
+  assert.match(presentation, /\{PERSONAL_PLAN_PRICE_LABEL\}/);
+  assert.match(presentation, /\{PERSONAL_PLAN_PRICE_PERIOD\}/);
+  assert.doesNotMatch(presentation, /R\$ ?29,90|>29,90</);
+  // O rótulo central é apenas FATIADO para o desenho, nunca reescrito.
+  assert.match(page, /function splitPriceLabel\(label\)/);
 });
 
 // BLOCO ASAAS CHECKOUT: cartão deixou de ser desabilitado -- agora usa o
@@ -369,23 +441,50 @@ test('canceled/expired volta para "idle" -- pode assinar novamente (nunca fica p
   assert.match(slice, /setFlowState\('idle'\);/);
 });
 
-test('página apresenta preço, hero e rodapé institucional aprovados', async () => {
+// REDESIGN APP-LIKE: a copy de landing page ("PLANO PESSOAL" em caixa alta,
+// "Organize sua vida financeira conversando com a Uni.", "Cancelamento
+// fácil. Sem taxas. Sem burocracia.", "INOVAÇÃO • CONEXÃO • CONFIANÇA •
+// FUTURO") deu lugar à hierarquia de página interna de produto.
+test('página apresenta a hierarquia app-like aprovada, sem a copy de landing page', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /PLANO PESSOAL/);
-  assert.match(page, /Organize sua vida financeira conversando com a/);
-  assert.match(page, /29,90/);
-  assert.match(page, /Cancelamento fácil/);
-  assert.match(page, /Sem taxas\. Sem burocracia\./);
-  assert.match(page, /UNIFLOW AI/);
-  assert.match(page, /INOVAÇÃO • CONEXÃO • CONFIANÇA • FUTURO/);
+  assert.match(page, /Plano <span>Pessoal<\/span>/);
+  assert.match(page, /Tudo da Uni em um só lugar\./);
+  assert.match(page, /ACESSO COMPLETO/);
+  assert.match(page, /Incluído no seu plano/);
+  assert.match(page, /A <span>Uni<\/span> organiza\./);
+
+  assert.doesNotMatch(page, /PLANO PESSOAL/);
+  assert.doesNotMatch(page, /Organize sua vida financeira conversando com a/);
+  assert.doesNotMatch(page, /Cancelamento fácil/);
+  assert.doesNotMatch(page, /Sem taxas\. Sem burocracia\./);
+  assert.doesNotMatch(page, /INOVAÇÃO • CONEXÃO • CONFIANÇA • FUTURO/);
+  assert.doesNotMatch(page, /O QUE VOCÊ GANHA/);
 });
 
-test('logos oficiais são importadas e a referência não é usada como background', async () => {
+// REDESIGN APP-LIKE: a parceria virou assinatura institucional em TEXTO no
+// rodapé. Isso também tirou do carregamento da página dois PNGs de ~2,5 MB
+// (logo_uniflowai.png e smartech_logo_transparente.png) que eram baixados
+// só para desenhar o banner do topo.
+test('parceria é assinatura institucional em texto no rodapé -- nenhum PNG de marca é carregado', async () => {
   const brand = await source('./PlanBrandHeader.jsx');
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(brand, /logo_uniflowai\.png/);
-  assert.match(brand, /smartech_logo_transparente\.png/);
-  assert.doesNotMatch(`${brand}\n${page}`, /plano_de_acesso|backgroundImage|<img[^>]+benefit/i);
+  const combined = `${brand}\n${page}`;
+  // Só declarações reais contam: os comentários acima explicam QUAIS PNGs
+  // saíram, então a checagem exige um `import ... from '...png'` de verdade.
+  assert.doesNotMatch(combined, /import\s+[^;]*from\s+'[^']*\.png'/);
+  // Nenhuma imagem na APRESENTAÇÃO (o único <img> do arquivo é o QR Code
+  // oficial da Asaas, dentro do modal Pix -- checkout congelado, legítimo).
+  const presentation = page.slice(
+    page.indexOf('<main className={styles.page}>'),
+    page.indexOf('<SubscriptionMethodModal'),
+  );
+  assert.doesNotMatch(presentation, /<img|backgroundImage|plano_de_acesso/i);
+  assert.match(brand, /UniFlow AI/);
+  assert.match(brand, /Smartech/);
+  assert.match(brand, /Parceria que conecta tecnologia e inteligência\./);
+  // A assinatura fica no FIM do conteúdo, nunca no topo da página.
+  const signatureIdx = page.indexOf('<PlanBrandSignature />');
+  assert.ok(signatureIdx > page.indexOf('styles.assuranceCard'), 'a assinatura da parceria precisa vir depois da garantia, no fim da página');
 });
 
 test('rota é autenticada e renderizada fora do App Shell', async () => {
@@ -403,7 +502,10 @@ test('apresentação conclui diretamente na nova Etapa 3', async () => {
 
 test('CSS cobre breakpoints, safe areas, foco e redução de movimento', async () => {
   const css = await source('./PersonalPlan.module.css');
-  assert.match(css, /env\(safe-area-inset-top\)/);
+  // env(...) é usado com fallback explícito (`, 0px`) para navegadores sem
+  // safe-area -- a checagem aceita as duas formas.
+  assert.match(css, /env\(safe-area-inset-top(?:,\s*0px)?\)/);
+  assert.match(css, /env\(safe-area-inset-bottom(?:,\s*0px)?\)/);
   assert.match(css, /@media \(max-width: 359px\)/);
   assert.match(css, /@media \(max-width: 430px\)/);
   assert.match(css, /@media \(max-width: 767px\)/);
@@ -414,48 +516,59 @@ test('CSS cobre breakpoints, safe areas, foco e redução de movimento', async (
 });
 
 // ============================================================================
-// REFINAMENTO VISUAL (bloco da parceria UniFlow AI + SmartTech) -- CAUSA
-// RAIZ do corte/sobreposição visto em produção: (1) .brandFrame combinava
-// overflow:hidden com uma logo forçada a width:100%+transform:scale(1.13),
-// então em telas mais largas a imagem escalada excedia a caixa e a borda
-// "comia" parte do símbolo; (2) .brandWave tinha margin-top NEGATIVO
-// (-16px), puxando a onda para cima por cima do rodapé das logos. Corrigido
-// com object-fit:contain (a logo nunca excede a caixa, nunca é cortada,
-// qualquer viewport) e margin vertical sempre >= 0 (só a margem lateral,
-// para a onda "sangrar" até a borda da tela, continua negativa).
+// REDESIGN APP-LIKE: as três garantias abaixo protegiam bugs visuais de
+// elementos que NÃO EXISTEM MAIS -- .brandFrame (moldura das logos de
+// ~2,5 MB, que cortava o símbolo), .brandWave (onda decorativa com
+// margin-top negativo, que subia por cima das logos) e .brandSection (banner
+// de parceria no topo). Removê-los eliminou a classe inteira de bugs, então
+// as garantias foram substituídas por uma que impede a volta desses
+// elementos -- e por garantias do que passou a existir (CTA fixo/safe-area).
 // ============================================================================
 
-test('HOTFIX (logos da parceria cortadas): .brandFrame nunca usa overflow:hidden -- a logo escala com object-fit:contain, nunca é cortada em nenhuma largura de tela', async () => {
+test('elementos de landing page não voltam: banner de parceria no topo, onda decorativa e molduras de logo', async () => {
   const css = await source('./PersonalPlan.module.css');
-  const idx = css.indexOf('.brandFrame {');
-  const block = css.slice(idx, css.indexOf('}', idx) + 1);
-  // real CSS declaration only -- os comentários explicativos no bloco
-  // mencionam "overflow:hidden" como texto (causa raiz antiga), então a
-  // checagem exige o ';' de uma declaração real, nunca casa com o comentário.
-  assert.doesNotMatch(block, /overflow:\s*hidden;/);
-  assert.match(block, /overflow:\s*visible;/);
-  const imgIdx = css.indexOf('.brandFrame img {');
-  const imgBlock = css.slice(imgIdx, css.indexOf('}', imgIdx) + 1);
-  assert.match(imgBlock, /object-fit:\s*contain/);
-  assert.match(imgBlock, /max-width:\s*100%/);
-  assert.match(imgBlock, /max-height:\s*100%/);
+  const page = await source('./PersonalPlanPage.jsx');
+  const brand = await source('./PlanBrandHeader.jsx');
+  const combined = `${css}\n${page}\n${brand}`;
+  for (const gone of ['brandWave', 'waveLine', 'waveGhost', 'brandFrame', 'brandSection', 'partnershipEyebrow', 'benefitsGrid', 'benefitCard', 'trustGrid', 'trustSeal', 'subscribeButton', 'accessBadge', 'pageGlow']) {
+    assert.doesNotMatch(combined, new RegExp(gone), `"${gone}" pertence à antiga landing page e não deve voltar`);
+  }
 });
 
-test('HOTFIX (onda sobrepondo a parceria): .brandWave nunca tem margem vertical NEGATIVA (só a margem lateral, para sangrar até a borda, pode ser negativa) -- a onda nunca mais pode ser puxada para cima, por cima das logos', async () => {
+test('CTA fixo respeita safe-area e reserva espaço para o conteúdo não ficar atrás dele', async () => {
   const css = await source('./PersonalPlan.module.css');
-  const idx = css.indexOf('.brandWave {');
-  const block = css.slice(idx, css.indexOf('}', idx) + 1);
-  const marginMatch = block.match(/margin:\s*(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)/);
-  assert.ok(marginMatch, 'declaração de margin não encontrada em .brandWave');
-  const [, top] = marginMatch;
-  assert.ok(!top.startsWith('-'), `margin-top de .brandWave precisa ser >= 0 (era ${top}) -- negativo reproduz a onda sobrepondo a parceria`);
+
+  const ctaIdx = css.indexOf('.ctaBar {');
+  const ctaBlock = css.slice(ctaIdx, css.indexOf('}', ctaIdx) + 1);
+  assert.match(ctaBlock, /position:\s*fixed/);
+  assert.match(ctaBlock, /bottom:\s*0/);
+  assert.match(ctaBlock, /env\(safe-area-inset-bottom,\s*0px\)/);
+
+  // O conteúdo precisa reservar altura suficiente para o último elemento
+  // (assinatura da parceria) ficar visível acima da barra fixa.
+  const contentIdx = css.indexOf('.content {');
+  const contentBlock = css.slice(contentIdx, css.indexOf('}', contentIdx) + 1);
+  assert.match(contentBlock, /padding-bottom|calc\(124px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(contentBlock, /env\(safe-area-inset-bottom,\s*0px\)/);
 });
 
-test('parceria: .brandSection fica acima da onda no empilhamento (z-index), garantia extra contra sobreposição futura', async () => {
+test('barra de topo é sticky e respeita a safe-area superior (notch)', async () => {
   const css = await source('./PersonalPlan.module.css');
-  const idx = css.indexOf('.brandSection {');
+  const idx = css.indexOf('.topBar {');
   const block = css.slice(idx, css.indexOf('}', idx) + 1);
-  assert.match(block, /z-index:\s*1/);
+  assert.match(block, /position:\s*sticky/);
+  assert.match(block, /top:\s*0/);
+  assert.match(block, /env\(safe-area-inset-top,\s*0px\)/);
+});
+
+test('seta de voltar tem área de toque confortável (>=44px) e estado de foco visível', async () => {
+  const css = await source('./PersonalPlan.module.css');
+  const idx = css.indexOf('.backButton {');
+  const block = css.slice(idx, css.indexOf('}', idx) + 1);
+  assert.match(block, /width:\s*44px/);
+  assert.match(block, /height:\s*44px/);
+  assert.match(css, /\.backButton:focus-visible \{/);
+  assert.match(css, /\.ctaButton:focus-visible \{/);
 });
 
 // ============================================================================

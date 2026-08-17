@@ -8,12 +8,12 @@ import Modal from '../../components/ui/Modal/Modal.jsx';
 import { createCheckout, createCustomer, createSubscription, getSubscription } from '../../services/billingService.js';
 import { useSubscriptionStatusPolling } from './useSubscriptionStatusPolling.js';
 import PlanBenefitIcon from './PlanBenefitIcon.jsx';
-import PlanBrandHeader from './PlanBrandHeader.jsx';
+import PlanBrandSignature from './PlanBrandHeader.jsx';
 import {
   PERSONAL_PLAN_BENEFITS,
   PERSONAL_PLAN_PRICE_LABEL,
   PERSONAL_PLAN_PRICE_PERIOD,
-  PERSONAL_PLAN_TRUST_SEALS,
+  PERSONAL_PLAN_VOICE_DEMO,
 } from './personalPlanConfig.js';
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
 import { resolvePersonalWorkspaceId } from './resolvePersonalWorkspaceId.js';
@@ -55,20 +55,84 @@ function CrownIcon() {
   );
 }
 
-function SecureIcon() {
+// REDESIGN APP-LIKE: monograma "U" da Uni desenhado em vetor (referência
+// aprovada). Substitui os PNGs de marca de ~2,5 MB que a página carregava
+// só para exibir identidade -- aqui é nítido em qualquer densidade de tela
+// e não custa nenhum byte de rede.
+function UniMonogram() {
   return (
-    <svg viewBox="0 0 32 36" aria-hidden="true">
-      <path d="m16 3 11 5v8c0 8-4 13-11 17C9 29 5 24 5 16V8Z" />
-      <path d="m11 17 4 4 7-9" />
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="personal-plan-monogram" x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#a78bfa" />
+          <stop offset=".55" stopColor="#60a5fa" />
+          <stop offset="1" stopColor="#22d3ee" />
+        </linearGradient>
+      </defs>
+      <g
+        stroke="url(#personal-plan-monogram)"
+        strokeWidth="4.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M16 12v24a16 16 0 0 0 32 0V12" />
+        <path d="M26 12v24a6 6 0 0 0 12 0V20" />
+      </g>
+      <circle cx="47.5" cy="13.5" r="4.6" fill="#22d3ee" />
     </svg>
   );
 }
 
-function TrustSealIcon({ type }) {
-  if (type === 'protected') return <span aria-hidden="true">▣</span>;
-  if (type === 'technology') return <span aria-hidden="true">◇</span>;
-  if (type === 'support') return <span aria-hidden="true">✓</span>;
-  return <span aria-hidden="true">♡</span>;
+function BackChevron() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M14.5 5.5 8 12l6.5 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function RowChevron() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="m9.5 5.5 6.5 6.5-6.5 6.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MicGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="9" y="2.6" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M5.4 11.4a6.6 6.6 0 0 0 13.2 0M12 18v3.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DemoWave() {
+  return (
+    <svg viewBox="0 0 180 24" fill="none" aria-hidden="true" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="personal-plan-demo-wave" x1="0" y1="0" x2="1" y2="0">
+          <stop stopColor="#7c3aed" />
+          <stop offset=".5" stopColor="#3b82f6" />
+          <stop offset="1" stopColor="#22d3ee" stopOpacity=".25" />
+        </linearGradient>
+      </defs>
+      <g stroke="url(#personal-plan-demo-wave)" strokeWidth="2.4" strokeLinecap="round">
+        <path d="M3 12h2M11 8v8M19 5v14M27 9v6M35 4v16M43 10v4M51 7v10M59 11v2M67 8v8M75 12h2M83 10v4M91 12h2" />
+      </g>
+    </svg>
+  );
+}
+
+// A fonte central entrega o rótulo pronto ("R$ 29,90"). Aqui ele é apenas
+// FATIADO para o desenho (moeda menor que o valor, como na referência) --
+// nunca reescrito, nunca duplicado. Se o formato mudar, cai no fallback e
+// o rótulo íntegro continua aparecendo.
+function splitPriceLabel(label) {
+  const match = /^(\D+)\s*(.+)$/.exec(String(label).trim());
+  if (!match) return { currency: '', amount: label };
+  return { currency: match[1].trim(), amount: match[2].trim() };
 }
 
 // REDESIGN CHECKOUT: glifos locais do checkout/Pix. Todos decorativos
@@ -695,99 +759,75 @@ if (!resolvedWorkspaceId) {
     navigate('/login');
   }
 
+  const { currency: priceCurrency, amount: priceAmount } = splitPriceLabel(PERSONAL_PLAN_PRICE_LABEL);
+  // A barra fixa de assinatura só existe para quem PODE assinar. Nos estados
+  // em que a assinatura já existe (ativa, pendente, a regularizar), a página
+  // mostra o status real e nenhuma barra -- nunca um CTA que reabriria o
+  // checkout de quem já pagou.
+  const canSubscribe = flowState === 'idle'
+    || flowState === 'checking'
+    || flowState === 'method_modal';
+
   return (
     <main className={styles.page}>
-      <div className={styles.pageGlow} aria-hidden="true" />
-      <PlanBrandHeader />
+      <header className={styles.topBar}>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={handleBackToAuth}
+          disabled={isReturningToAuth}
+          aria-label="Voltar para entrar ou criar conta"
+        >
+          <BackChevron />
+        </button>
+        <h1 className={styles.topTitle}>Plano Pessoal</h1>
+      </header>
 
-      <div className={styles.brandWave} aria-hidden="true">
-        <svg viewBox="0 0 1200 180" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="personal-plan-wave" x1="0" y1="0" x2="1" y2="0">
-              <stop stopColor="#6d28d9" />
-              <stop offset=".45" stopColor="#2563eb" />
-              <stop offset=".54" stopColor="#22d3ee" />
-              <stop offset="1" stopColor="#10b981" />
-            </linearGradient>
-            <filter id="personal-plan-glow" x="-20%" y="-80%" width="140%" height="260%">
-              <feGaussianBlur stdDeviation="7" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
-          <path className={styles.waveGhost} d="M-20 95c160-75 270 57 440-8s230-62 347-5 246 62 453-4" />
-          <path
-            className={styles.waveLine}
-            d="M-20 95c160-75 270 57 440-8s230-62 347-5 246 62 453-4"
-            stroke="url(#personal-plan-wave)"
-            filter="url(#personal-plan-glow)"
-          />
-          <circle cx="600" cy="59" r="4" fill="#67e8f9" filter="url(#personal-plan-glow)" />
-        </svg>
-      </div>
+      <div className={styles.content}>
+        <section className={styles.planCard} aria-labelledby="personal-plan-title">
+          <div className={styles.planHead}>
+            <span className={styles.planMark} aria-hidden="true"><UniMonogram /></span>
+            <div className={styles.planHeadText}>
+              <h2 id="personal-plan-title" className={styles.planName}>
+                Plano <span>Pessoal</span>
+              </h2>
+              <p className={styles.planTagline}>Tudo da Uni em um só lugar.</p>
+            </div>
+          </div>
+          <span className={styles.planRule} aria-hidden="true" />
+          <p className={styles.planPrice}>
+            <span className={styles.planCurrency}>{priceCurrency}</span>
+            <strong>{priceAmount}</strong>
+            <span className={styles.planPeriod}>{PERSONAL_PLAN_PRICE_PERIOD}</span>
+          </p>
+          <p className={styles.planBadge}><CrownIcon /> ACESSO COMPLETO</p>
+        </section>
 
-      <section className={styles.hero} aria-labelledby="personal-plan-title">
-        <h1 id="personal-plan-title">PLANO PESSOAL</h1>
-        <p>Organize sua vida financeira conversando com a <strong>Uni.</strong></p>
-      </section>
-
-      <section className={styles.premiumCard} aria-label="Plano Pessoal completo">
-        <span className={styles.accessBadge}>ACESSO COMPLETO</span>
-
-        <div className={styles.price}>
-          <span className={styles.currency}>R$</span>
-          <strong>29,90</strong>
-          <span className={styles.period}>/mês</span>
-        </div>
-
-        <p className={styles.planTerms}>
-          <span aria-hidden="true"><SecureIcon /></span>
-          <span>Cancelamento fácil.<br />Sem taxas. Sem burocracia.</span>
-        </p>
-
-        <h2 className={styles.benefitsHeading}>
-          <span aria-hidden="true" />
-          O QUE VOCÊ GANHA:
-          <span aria-hidden="true" />
-        </h2>
-
-        <div className={styles.benefitsGrid}>
-          {PERSONAL_PLAN_BENEFITS.map((benefit, index) => (
-            <article
-              key={benefit.id}
-              className={styles.benefitCard}
-              style={{ '--benefit-index': index }}
-            >
-              <span className={styles.benefitIcon}>
-                <PlanBenefitIcon type={benefit.id} />
-              </span>
-              <h3>{benefit.title}</h3>
-              {benefit.description ? <p>{benefit.description}</p> : null}
-              {benefit.lines ? (
-                <ul>
-                  {benefit.lines.map((line) => <li key={line}>{line}</li>)}
-                </ul>
-              ) : null}
-            </article>
-          ))}
-        </div>
-
-        {flowState === 'already_active' ? (
-          <>
-            <p className={styles.subscriptionStatus} aria-live="polite">Seu Plano Pessoal já está ativo.</p>
+        {flowState === 'already_active' || flowState === 'active' ? (
+          <section className={styles.statusCard} data-tone="ok">
+            <p className={styles.subscriptionStatus} aria-live="polite">
+              {flowState === 'active'
+                ? 'Plano Pessoal ativado com sucesso.'
+                : 'Seu Plano Pessoal já está ativo.'}
+            </p>
             <Button type="button" variant="primary" fullWidth onClick={handleGoHome}>Ir para o início</Button>
-          </>
+          </section>
         ) : flowState === 'cancel_scheduled' ? (
-          <p className={styles.subscriptionStatus} aria-live="polite">
-            Seu acesso continua ativo até {initialSubscription?.current_period_ends_at
-              ? new Date(initialSubscription.current_period_ends_at).toLocaleDateString('pt-BR')
-              : 'o fim do período já pago'}.
-          </p>
+          <section className={styles.statusCard} data-tone="warn">
+            <p className={styles.subscriptionStatus} aria-live="polite">
+              Seu acesso continua ativo até {initialSubscription?.current_period_ends_at
+                ? new Date(initialSubscription.current_period_ends_at).toLocaleDateString('pt-BR')
+                : 'o fim do período já pago'}.
+            </p>
+          </section>
         ) : flowState === 'needs_regularization' ? (
-          <p className={styles.subscriptionStatus} role="alert">
-            Há uma pendência no pagamento da sua assinatura. Fale com a Uni para regularizar.
-          </p>
+          <section className={styles.statusCard} data-tone="warn">
+            <p className={styles.subscriptionStatus} role="alert">
+              Há uma pendência no pagamento da sua assinatura. Fale com a Uni para regularizar.
+            </p>
+          </section>
         ) : flowState === 'pending' ? (
-          <>
+          <section className={styles.statusCard} data-tone="pending">
             <p className={styles.subscriptionStatus} aria-live="polite">
               Assinatura criada. Aguardando confirmação do pagamento Pix.
             </p>
@@ -796,53 +836,86 @@ if (!resolvedWorkspaceId) {
                 Ver QR Code Pix
               </Button>
             ) : null}
-          </>
-        ) : flowState === 'active' ? (
-          <>
-            <p className={styles.subscriptionStatus} aria-live="polite">Plano Pessoal ativado com sucesso.</p>
-            <Button type="button" variant="primary" fullWidth onClick={handleGoHome}>Ir para o início</Button>
-          </>
-        ) : (
-          <>
+          </section>
+        ) : null}
+
+        <section aria-labelledby="personal-plan-features">
+          <h3 id="personal-plan-features" className={styles.sectionTitle}>Incluído no seu plano</h3>
+          <ul className={styles.featureList}>
+            {PERSONAL_PLAN_BENEFITS.map((benefit) => (
+              <li key={benefit.id} className={styles.featureRow}>
+                <span className={styles.featureIcon} aria-hidden="true">
+                  <PlanBenefitIcon type={benefit.id} />
+                </span>
+                <span className={styles.featureText}>
+                  <strong>{benefit.title}</strong>
+                  <small>{benefit.description}</small>
+                </span>
+                <span className={styles.featureChevron} aria-hidden="true"><RowChevron /></span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Demonstração puramente visual: nenhum request, nenhuma chamada à
+            Uni Engine, nenhum dado real do usuário -- só ilustra o fluxo. */}
+        <section className={styles.demoCard} aria-label="Exemplo de como a Uni organiza um registro">
+          <div className={styles.demoIntro}>
+            <p className={styles.demoTitle}>
+              Você fala.
+              <br />
+              A <span>Uni</span> organiza.
+            </p>
+            <span className={styles.demoWave} aria-hidden="true"><DemoWave /></span>
+          </div>
+
+          <div className={styles.demoSide}>
+            <p className={styles.demoBubble}>
+              <span className={styles.demoBubbleIcon} aria-hidden="true"><MicGlyph /></span>
+              {PERSONAL_PLAN_VOICE_DEMO.utterance}
+            </p>
+            <div className={styles.demoResult}>
+              <span className={styles.demoResultIcon} aria-hidden="true"><CheckCircleGlyph /></span>
+              <span className={styles.demoResultText}>
+                <span className={styles.demoDirection}>{PERSONAL_PLAN_VOICE_DEMO.direction}</span>
+                <span className={styles.demoCategory}>{PERSONAL_PLAN_VOICE_DEMO.category}</span>
+                <span className={styles.demoAmount}>{PERSONAL_PLAN_VOICE_DEMO.amount}</span>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.assuranceCard}>
+          <span className={styles.assuranceIcon} aria-hidden="true"><ShieldCheckGlyph /></span>
+          <span className={styles.assuranceText}>
+            <strong>Cancele quando quiser.</strong>
+            <small>Pagamento seguro processado pelo Asaas.</small>
+          </span>
+        </section>
+
+        <PlanBrandSignature />
+      </div>
+
+      {canSubscribe ? (
+        <div className={styles.ctaBar}>
+          <span className={styles.ctaHandle} aria-hidden="true" />
+          <div className={styles.ctaBarInner}>
+            <p className={styles.ctaPrice}>
+              <strong>{PERSONAL_PLAN_PRICE_LABEL}</strong>
+              <span>{PERSONAL_PLAN_PRICE_PERIOD}</span>
+            </p>
             <button
               type="button"
-              className={styles.subscribeButton}
+              className={styles.ctaButton}
               onClick={handleBeginCheckout}
               disabled={flowState === 'checking'}
             >
               <CrownIcon />
-              <span>ASSINAR PLANO PESSOAL</span>
-              <span className={styles.buttonArrow} aria-hidden="true">›</span>
+              <span>ASSINAR AGORA</span>
             </button>
-            <button
-              type="button"
-              className={styles.backToAuthLink}
-              onClick={handleBackToAuth}
-              disabled={isReturningToAuth}
-            >
-              <span aria-hidden="true">←</span> Voltar para entrar ou criar conta
-            </button>
-          </>
-        )}
-
-        <p className={styles.paymentSecurity}>
-          <span aria-hidden="true"><SecureIcon /></span>
-          Pagamento 100% seguro via <strong>Asaas</strong>
-        </p>
-      </section>
-
-      <footer className={styles.footer}>
-        <div className={styles.trustGrid}>
-          {PERSONAL_PLAN_TRUST_SEALS.map((seal) => (
-            <div key={seal.id} className={styles.trustSeal}>
-              <TrustSealIcon type={seal.id} />
-              <span>{seal.label}</span>
-            </div>
-          ))}
+          </div>
         </div>
-        <p className={styles.partnershipFooter}>UNIFLOW AI <span>+</span> SMARTTECH</p>
-        <p className={styles.footerValues}>INOVAÇÃO • CONEXÃO • CONFIANÇA • FUTURO</p>
-      </footer>
+      ) : null}
 
       <SubscriptionMethodModal
         open={flowState === 'method_modal'}

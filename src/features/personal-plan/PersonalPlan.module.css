@@ -1,526 +1,680 @@
+/* ===========================================================================
+   PLANO PESSOAL -- APRESENTAÇÃO APP-LIKE (referência aprovada).
+   A tela deixou de ser uma landing page de venda (banner de parceria no
+   topo, preço promocional gigante, seis cards comerciais, selos, onda
+   decorativa) e passou a ser uma página interna de produto: barra de topo
+   com voltar, card do plano, lista nativa de recursos, demonstração da
+   Uni, garantia discreta, assinatura institucional e CTA fixo.
+
+   Escopo: SOMENTE a apresentação. Todo o bloco do checkout/Pix mais abaixo
+   neste arquivo está congelado (redesign já aprovado) e não é tocado aqui.
+   =========================================================================== */
 .page {
   position: relative;
-  min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(37, 99, 235, .1), transparent 60%),
+    #050a14;
+  color: #f2f7ff;
+}
+
+/* ---- Barra de topo: seta + título, nada além disso ---- */
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
   padding:
-    max(22px, env(safe-area-inset-top))
-    max(16px, env(safe-area-inset-right))
-    max(28px, env(safe-area-inset-bottom))
-    max(16px, env(safe-area-inset-left));
-  background:
-    radial-gradient(circle at 50% 18%, rgba(37, 99, 235, .13), transparent 32%),
-    linear-gradient(180deg, #020816 0%, #010611 48%, #020916 100%);
-  color: #f8fafc;
-  isolation: isolate;
+    calc(10px + env(safe-area-inset-top, 0px))
+    max(14px, env(safe-area-inset-left, 0px))
+    10px
+    max(14px, env(safe-area-inset-right, 0px));
+  background: rgba(5, 10, 20, .82);
+  backdrop-filter: blur(16px) saturate(130%);
 }
 
-.page::before {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  background-image:
-    linear-gradient(90deg, transparent 96%, rgba(34, 211, 238, .05) 100%),
-    linear-gradient(0deg, transparent 96%, rgba(37, 99, 235, .04) 100%);
-  background-size: 78px 78px;
-  content: "";
-  mask-image: linear-gradient(to bottom, #000, transparent 34%);
-}
-
-.pageGlow {
-  position: absolute;
-  top: 32%;
-  left: 50%;
-  z-index: -1;
-  width: min(1100px, 100%);
-  height: 680px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(12, 74, 110, .13), transparent 68%);
-  pointer-events: none;
-  transform: translateX(-50%);
-}
-
-.brandSection,
-.hero,
-.premiumCard,
-.footer {
-  width: min(100%, 1080px);
-  margin-inline: auto;
-}
-
-.brandSection {
-  /* Garante que a parceria sempre fica ACIMA da onda no empilhamento,
-     mesmo que algum ajuste futuro de espaçamento aproxime as duas. */
-  position: relative;
-  z-index: 1;
-}
-
-.partnershipEyebrow {
-  display: grid;
-  grid-template-columns: minmax(18px, 1fr) auto minmax(18px, 1fr);
-  align-items: center;
-  gap: 14px;
-  margin: 0 0 10px;
-  color: #9e8cff;
-  font-size: clamp(8px, 2.4vw, 12px);
-  letter-spacing: .36em;
-  line-height: 1.4;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.partnershipEyebrow span {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #2563eb, #2dd4bf);
-}
-
-.partnershipEyebrow span:last-child {
-  transform: scaleX(-1);
-}
-
-.brandRow {
-  /* HOTFIX (parceria cortada/sobreposta pela onda): a régua de altura da
-     seção inteira -- .brandFrame usa max-height:100% para NUNCA extrapolar
-     esta caixa, então aumentar este min-height é o único lugar que precisa
-     mudar para dar mais "respiro" às logos. */
-  min-height: clamp(96px, 22vw, 172px);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 1px clamp(46px, 10vw, 80px) 1px minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(8px, 2.4vw, 24px);
-  animation: planReveal 420ms cubic-bezier(.19, 1, .22, 1) both;
-}
-
-.brandFrame {
-  height: 100%;
-  min-height: 0;
-  display: grid;
-  place-items: center;
-  /* HOTFIX: overflow:hidden + escala fixa era exatamente o que cortava as
-     logos em telas mais largas (a imagem escalada excedia a caixa e a
-     borda visível "comia" parte do símbolo). object-fit:contain garante
-     a logo INTEIRA sempre visível, redimensionada para caber -- nunca
-     cortada, em qualquer proporção de tela. */
-  overflow: visible;
-}
-
-.brandFrame img {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0 14px rgba(37, 99, 235, .25));
-}
-
-.uniflowLogo,
-.smartechLogo {
-  /* Logos um pouco maiores que o container real (o PNG oficial tem
-     margem interna generosa) -- max-height ainda garante que a imagem
-     NUNCA ultrapasse a altura da linha, mesmo escalada. */
-  max-height: 128%;
-}
-
-.brandDivider {
-  width: 1px;
-  height: 52%;
-  background: linear-gradient(transparent, rgba(71, 85, 105, .62), transparent);
-}
-
-.partnershipIcon {
-  color: #22d3ee;
-  animation: partnershipGlow 4400ms ease-in-out infinite;
-}
-
-.partnershipIcon svg {
-  width: 100%;
-  display: block;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.5;
-  filter: drop-shadow(0 0 8px rgba(124, 58, 237, .65));
-}
-
-.brandWave {
-  width: calc(100% + 32px);
-  height: clamp(60px, 12vw, 110px);
-  /* HOTFIX (causa raiz da onda cortando a parceria): margem superior
-     negativa (-16px) puxava a onda para CIMA, sobrepondo o rodapé das
-     logos -- em telas largas, onde .brandFrame respira mais, a curva da
-     onda cruzava direto por cima do símbolo/texto. Agora só a margem
-     lateral (para a onda continuar "sangrando" até a borda da tela) é
-     negativa; o espaçamento vertical é sempre positivo, funcionando como
-     separador real entre a parceria e o resto da página, nunca como
-     elemento sobreposto.
-     */
-  margin: 14px -16px 0;
-  pointer-events: none;
-  position: relative;
-  z-index: 0;
-}
-
-.brandWave svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  overflow: visible;
-}
-
-.waveLine,
-.waveGhost {
-  fill: none;
-  stroke-linecap: round;
-}
-
-.waveLine {
-  stroke-width: 2.2;
-}
-
-.waveGhost {
-  stroke: rgba(37, 99, 235, .24);
-  stroke-width: 17;
-}
-
-.hero {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  margin-top: -10px;
-  margin-bottom: 20px;
-  text-align: center;
-  animation: fadeUpIn 460ms cubic-bezier(.19, 1, .22, 1) 80ms both;
-}
-
-.hero h1 {
-  margin: 0;
-  background: linear-gradient(90deg, #7c3aed, #2563eb 48%, #2dd4bf);
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(35px, 10vw, 66px);
-  font-weight: 820;
-  letter-spacing: .03em;
-  line-height: 1;
-}
-
-.hero p {
-  margin: 0;
-  color: #d5d9e4;
-  font-size: clamp(16px, 4.5vw, 22px);
-  line-height: 1.45;
-}
-
-.hero strong {
-  color: #8b5cf6;
-}
-
-.premiumCard {
-  position: relative;
-  padding: clamp(20px, 4vw, 38px);
-  border: 1px solid rgba(43, 91, 158, .66);
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at 50% 0, rgba(37, 99, 235, .08), transparent 36%),
-    rgba(2, 10, 26, .82);
-  box-shadow:
-    0 30px 80px rgba(0, 0, 0, .26),
-    inset 0 1px 0 rgba(255, 255, 255, .025);
-  backdrop-filter: blur(8px);
-  animation: fadeUpIn 520ms cubic-bezier(.19, 1, .22, 1) 160ms both;
-}
-
-.accessBadge {
-  width: fit-content;
-  min-height: 36px;
-  display: grid;
-  place-items: center;
-  margin: -2px auto 12px;
-  padding: 6px 28px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background:
-    linear-gradient(#061027, #061027) padding-box,
-    linear-gradient(90deg, #7c3aed, #2563eb, #2dd4bf) border-box;
-  color: #8be8f0;
-  font-size: clamp(10px, 3vw, 15px);
-  font-weight: 650;
-  letter-spacing: .24em;
-}
-
-.price {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-  margin: 4px 0 8px;
-  white-space: nowrap;
-}
-
-.price strong {
-  background: linear-gradient(90deg, #7c3aed, #2563eb 50%, #2dd4bf);
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(68px, 19vw, 122px);
-  font-weight: 820;
-  letter-spacing: 0;
-  line-height: .98;
-}
-
-.currency {
-  color: #fff;
-  font-size: clamp(25px, 7vw, 44px);
-}
-
-.period {
-  color: #fff;
-  font-size: clamp(18px, 5vw, 30px);
-}
-
-.planTerms {
-  display: flex;
+.backButton {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin: 0;
-  color: #d6d9e1;
-  font-size: clamp(14px, 3.8vw, 18px);
-  line-height: 1.4;
-  text-align: center;
-}
-
-.planTerms svg,
-.paymentSecurity svg {
-  width: 30px;
-  display: block;
-  fill: none;
-  stroke: #2dd4bf;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
-  filter: drop-shadow(0 0 6px rgba(124, 58, 237, .55));
-}
-
-.benefitsHeading {
-  display: grid;
-  grid-template-columns: minmax(18px, 1fr) auto minmax(18px, 1fr);
-  align-items: center;
-  gap: 12px;
-  margin: 26px 0 18px;
-  color: #45d4e7;
-  font-size: clamp(12px, 3.6vw, 18px);
-  font-weight: 600;
-  letter-spacing: .23em;
-  text-align: center;
-}
-
-.benefitsHeading span {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #2dd4bf);
-}
-
-.benefitsHeading span:last-child {
-  transform: scaleX(-1);
-}
-
-.benefitsGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.benefitCard {
-  min-height: 210px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 22px 16px;
-  border: 1px solid rgba(41, 89, 149, .68);
-  border-radius: 15px;
-  background: linear-gradient(145deg, rgba(8, 20, 45, .94), rgba(3, 13, 31, .9));
-  /* Profundidade sutil: um filete claro no topo, como se a luz do card
-     acima estivesse batendo de leve -- discreto, nunca chamativo. */
-  box-shadow: inset 0 1px 0 rgba(148, 197, 255, .08);
-  text-align: center;
-  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
-  animation: fadeUpIn 460ms cubic-bezier(.19, 1, .22, 1) both;
-  animation-delay: calc(220ms + var(--benefit-index, 0) * 55ms);
-}
-
-.benefitCard:hover {
-  border-color: rgba(45, 212, 191, .68);
-  box-shadow:
-    inset 0 1px 0 rgba(148, 197, 255, .08),
-    0 12px 26px rgba(0, 0, 0, .2);
-  transform: translateY(-2px);
-}
-
-.benefitIcon {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 12px;
-}
-
-.benefitIcon svg {
-  width: 46px;
-  height: 46px;
-  display: block;
-  fill: none;
-  stroke: #2dd4bf;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.5;
-  filter: drop-shadow(0 0 7px rgba(37, 99, 235, .6));
-}
-
-.benefitCard:nth-child(1) .benefitIcon svg,
-.benefitCard:nth-child(2) .benefitIcon svg,
-.benefitCard:nth-child(6) .benefitIcon svg {
-  stroke: #7c3aed;
-}
-
-.benefitCard:nth-child(3) .benefitIcon svg,
-.benefitCard:nth-child(5) .benefitIcon svg {
-  stroke: #22a7f0;
-}
-
-.benefitCard h3 {
-  margin: 0 0 8px;
-  color: #f8fafc;
-  font-size: clamp(16px, 3.2vw, 20px);
-  line-height: 1.25;
-}
-
-.benefitCard p,
-.benefitCard ul {
-  margin: 0;
-  padding: 0;
-  color: #c9cfdb;
-  font-size: clamp(14px, 2.6vw, 17px);
-  line-height: 1.42;
-  list-style: none;
-}
-
-.subscribeButton {
-  width: 100%;
-  min-height: 82px;
-  display: grid;
-  grid-template-columns: 50px minmax(0, 1fr) 40px;
-  align-items: center;
-  gap: 12px;
-  margin-top: 28px;
-  padding: 14px 24px;
-  border: 1px solid rgba(103, 232, 249, .36);
-  border-radius: 15px;
-  background: linear-gradient(105deg, #7027ef 0%, #2563eb 45%, #13bfa8 100%);
-  color: #fff;
-  box-shadow:
-    0 15px 34px rgba(37, 99, 235, .22),
-    inset 0 1px 0 rgba(255, 255, 255, .25);
-  font: inherit;
-  font-size: clamp(18px, 4.7vw, 34px);
-  font-weight: 780;
-  letter-spacing: 0;
-  cursor: pointer;
-  transition: filter 180ms ease, transform 180ms ease, box-shadow 180ms ease;
-}
-
-.subscribeButton:hover {
-  filter: brightness(1.08);
-  box-shadow:
-    0 18px 42px rgba(37, 99, 235, .3),
-    inset 0 1px 0 rgba(255, 255, 255, .28);
-}
-
-.subscribeButton:active {
-  transform: scale(.987);
-}
-
-.subscribeButton:focus-visible {
-  outline: 3px solid #67e8f9;
-  outline-offset: 4px;
-}
-
-.subscribeButton svg {
   width: 44px;
-  display: block;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.6;
-}
-
-.buttonArrow {
-  justify-self: end;
-  font-size: 46px;
-  font-weight: 300;
-  line-height: 1;
-}
-
-.backToAuthLink {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 14px;
-  padding: 10px;
-  border: none;
-  background: transparent;
-  color: #9cb4d3;
-  font: inherit;
-  font-size: clamp(13px, 3.5vw, 16px);
-  font-weight: 500;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(58, 110, 190, .3);
+  border-radius: 50%;
+  background: rgba(16, 28, 48, .6);
+  color: #cfe0f5;
   cursor: pointer;
-  transition: color 160ms ease;
+  transition:
+    background-color 160ms cubic-bezier(.22, 1, .36, 1),
+    border-color 160ms cubic-bezier(.22, 1, .36, 1),
+    transform 160ms cubic-bezier(.22, 1, .36, 1);
 }
 
-.backToAuthLink:disabled {
-  opacity: .6;
+.backButton svg {
+  width: 21px;
+  height: 21px;
+}
+
+.backButton:hover:not(:disabled) {
+  background: rgba(37, 99, 235, .2);
+  border-color: rgba(103, 232, 249, .45);
+  color: #fff;
+}
+
+.backButton:active:not(:disabled) {
+  transform: scale(.94);
+}
+
+.backButton:focus-visible {
+  outline: 3px solid rgba(103, 232, 249, .55);
+  outline-offset: 2px;
+}
+
+.backButton:disabled {
+  opacity: .5;
   cursor: not-allowed;
 }
 
-.backToAuthLink:hover,
-.backToAuthLink:focus-visible {
-  color: #fff;
-}
-
-.backToAuthLink:focus-visible {
-  outline: 2px solid #67e8f9;
-  outline-offset: 3px;
-  border-radius: 8px;
-}
-
-.paymentSecurity {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin: 20px 0 0;
-  color: #9cb4d3;
-  font-size: clamp(13px, 3.5vw, 18px);
+.topTitle {
+  margin: 0;
+  color: #f2f7ff;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.01em;
   text-align: center;
 }
 
-.paymentSecurity svg {
-  width: 27px;
+/* ---- Conteúdo: respira, e nunca fica atrás do CTA fixo ---- */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding:
+    14px
+    max(16px, env(safe-area-inset-left, 0px))
+    calc(124px + env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-right, 0px));
 }
 
-.paymentSecurity strong {
+/* ---- Card do plano (hero) ---- */
+.planCard {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 20px 20px;
+  border: 1px solid rgba(99, 102, 241, .26);
+  border-radius: 22px;
+  background:
+    radial-gradient(130% 130% at 0% 0%, rgba(124, 58, 237, .42), transparent 58%),
+    radial-gradient(120% 130% at 100% 60%, rgba(37, 99, 235, .38), transparent 62%),
+    linear-gradient(160deg, #121d36, #0a1120);
+  text-align: center;
+}
+
+/* Cabeçalho do card: monograma à ESQUERDA, nome + frase à direita
+   (composição da referência aprovada). Preço e selo, abaixo, centralizados. */
+.planHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.planMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 58px;
+  height: 58px;
+}
+
+.planMark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.planHeadText {
+  min-width: 0;
+}
+
+.planName {
+  margin: 0;
+  color: #f7faff;
+  font-size: clamp(24px, 6.8vw, 30px);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.12;
+}
+
+.planName span {
+  background: linear-gradient(100deg, #a78bfa, #60a5fa 55%, #22d3ee);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.planTagline {
+  margin: 5px 0 0;
+  color: #9fb5d2;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.planRule {
+  display: block;
+  width: 108px;
+  height: 1px;
+  margin: 18px auto 16px;
+  background: linear-gradient(90deg, transparent, rgba(103, 232, 249, .6), transparent);
+}
+
+.planPrice {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.planCurrency {
+  color: #cbd9ee;
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 600;
+}
+
+.planPrice strong {
+  background: linear-gradient(100deg, #a78bfa, #60a5fa 52%, #22d3ee);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-size: clamp(40px, 12vw, 52px);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1;
+}
+
+.planPeriod {
+  color: #9fb5d2;
+  font-size: clamp(14px, 4vw, 17px);
+  font-weight: 500;
+}
+
+.planBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 9px 18px;
+  border: 1px solid rgba(139, 92, 246, .55);
+  border-radius: 999px;
+  color: #d7c8ff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.planBadge svg {
+  width: 17px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- Card de status real da assinatura (nunca simulado) ---- */
+.statusCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(58, 110, 190, .28);
+  border-radius: 18px;
+  background: rgba(14, 25, 43, .72);
+}
+
+.statusCard[data-tone='ok'] {
+  border-color: rgba(52, 211, 153, .42);
+  background: linear-gradient(180deg, rgba(6, 78, 59, .3), rgba(14, 25, 43, .72));
+}
+
+.statusCard[data-tone='warn'] {
+  border-color: rgba(251, 191, 36, .38);
+  background: linear-gradient(180deg, rgba(120, 53, 15, .26), rgba(14, 25, 43, .72));
+}
+
+.statusCard[data-tone='pending'] {
+  border-color: rgba(103, 232, 249, .34);
+}
+
+/* ---- Título de seção ---- */
+.sectionTitle {
+  margin: 0 0 12px;
+  padding-left: 2px;
+  color: #e4edfa;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+/* ---- Lista nativa de recursos (uma linha por recurso) ---- */
+.featureList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.featureRow {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 14px;
+  border: 1px solid rgba(58, 110, 190, .17);
+  border-radius: 16px;
+  background: rgba(13, 23, 40, .66);
+}
+
+.featureIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(139, 92, 246, .3);
+  border-radius: 13px;
+  background: rgba(76, 29, 149, .2);
+  color: #b9a4fb;
+}
+
+.featureIcon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.featureText strong {
+  color: #f2f7ff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+.featureText small {
+  color: #8fa8c8;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.featureChevron {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #5f7899;
+}
+
+.featureChevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---- Demonstração da Uni (estática, sem nenhum request) ---- */
+.demoCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 16px;
+  border: 1px solid rgba(58, 110, 190, .2);
+  border-radius: 20px;
+  background: linear-gradient(150deg, rgba(17, 28, 49, .85), rgba(10, 17, 32, .8));
+}
+
+.demoIntro {
+  flex: 1 1 46%;
+  min-width: 0;
+}
+
+/* A frase precisa caber em DUAS linhas ("Você fala." / "A Uni organiza."),
+   como na referência -- daí o teto de tamanho um pouco mais baixo. */
+.demoTitle {
+  margin: 0;
+  color: #e9f1fc;
+  font-size: clamp(16px, 4.3vw, 19px);
+  font-weight: 500;
+  letter-spacing: -.015em;
+  line-height: 1.3;
+}
+
+.demoTitle span {
+  color: #a78bfa;
+  font-weight: 700;
+}
+
+.demoWave {
+  display: block;
+  width: 100%;
+  max-width: 130px;
+  height: 18px;
+  margin-top: 12px;
+}
+
+.demoWave svg {
+  width: 100%;
+  height: 100%;
+}
+
+.demoSide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 54%;
+  min-width: 0;
+}
+
+.demoBubble {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(58, 110, 190, .26);
+  border-radius: 14px;
+  background: rgba(22, 36, 60, .9);
+  color: #dce8f7;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.demoBubbleIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #67e8f9;
+}
+
+.demoBubbleIcon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.demoResult {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid rgba(103, 232, 249, .28);
+  border-radius: 14px;
+  background: rgba(8, 47, 73, .5);
+}
+
+.demoResultIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #22d3ee;
+}
+
+.demoResultIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.demoResultText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.demoDirection {
+  color: #a78bfa;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.demoCategory {
+  color: #f2f7ff;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.demoAmount {
+  color: #5eead4;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---- Garantia discreta (substitui os quatro selos comerciais) ---- */
+.assuranceCard {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 14px;
+  border: 1px solid rgba(58, 110, 190, .2);
+  border-radius: 18px;
+  background: rgba(13, 23, 40, .66);
+}
+
+.assuranceIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(96, 165, 250, .34);
+  border-radius: 13px;
+  background: rgba(30, 58, 138, .3);
+  color: #7dd3fc;
+}
+
+.assuranceIcon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.assuranceText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.assuranceText strong {
+  color: #f2f7ff;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.assuranceText small {
+  color: #8fa8c8;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* ---- Assinatura institucional da parceria (rodapé, discreta) ---- */
+.brandSignature {
+  padding-top: 4px;
+  text-align: center;
+}
+
+.brandSignatureRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.brandUniflow {
+  color: #a78bfa;
+}
+
+.brandTimes {
+  color: #4a5f7d;
+  font-weight: 400;
+}
+
+.brandSmartech {
+  color: #22d3ee;
+}
+
+.brandSignatureNote {
+  margin: 6px 0 0;
+  color: #64799a;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* ---- CTA fixo inferior ---- */
+.ctaBar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  padding:
+    8px
+    max(16px, env(safe-area-inset-right, 0px))
+    max(14px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  border-top: 1px solid rgba(58, 110, 190, .22);
+  background: rgba(6, 11, 21, .93);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+
+.ctaHandle {
+  display: block;
+  width: 38px;
+  height: 4px;
+  margin: 0 auto 10px;
+  border-radius: 999px;
+  background: rgba(120, 152, 194, .35);
+}
+
+.ctaBarInner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.ctaPrice {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.ctaPrice strong {
+  background: linear-gradient(100deg, #a78bfa, #60a5fa 55%, #22d3ee);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-size: clamp(19px, 5.4vw, 23px);
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.ctaPrice span {
+  color: #8fa8c8;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 54px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 15px;
+  background: linear-gradient(100deg, #7c3aed, #2563eb 52%, #22d3ee);
   color: #fff;
-  font-size: 1.12em;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  /* O rótulo nunca quebra em duas linhas -- isso engordaria a barra fixa e
+     descaracterizaria o CTA (a referência tem uma linha só). */
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 14px 30px -16px rgba(37, 99, 235, .95);
+  transition:
+    filter 160ms cubic-bezier(.22, 1, .36, 1),
+    transform 160ms cubic-bezier(.22, 1, .36, 1);
 }
 
+.ctaButton svg {
+  width: 19px;
+  height: 15px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ctaButton:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.ctaButton:active:not(:disabled) {
+  transform: scale(.985);
+}
+
+.ctaButton:focus-visible {
+  outline: 3px solid rgba(103, 232, 249, .6);
+  outline-offset: 3px;
+}
+
+.ctaButton:disabled {
+  background: rgba(30, 48, 78, .85);
+  color: #64748b;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Base compartilhada com o modal Pix (que a sobrescreve no próprio card). */
 .subscriptionStatus {
   min-height: 20px;
-  margin: 6px 0 -8px;
+  margin: 0;
   color: #67e8f9;
-  font-size: 13px;
+  font-size: 13.5px;
+  line-height: 1.4;
   text-align: center;
 }
 
@@ -1346,261 +1500,145 @@
   }
 }
 
-.footer {
-  padding-top: 16px;
-  text-align: center;
-  animation: fadeUpIn 520ms cubic-bezier(.19, 1, .22, 1) 260ms both;
-}
+/* ===========================================================================
+   RESPONSIVIDADE DA APRESENTAÇÃO -- mobile-first (o layout base acima já é o
+   do celular). Os ajustes abaixo só apertam telas menores e abrem espaço em
+   telas grandes; nada aqui toca o bloco do checkout.
+   =========================================================================== */
 
-.trustGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid rgba(41, 89, 149, .5);
-  border-radius: 15px;
-  background: rgba(5, 15, 34, .76);
-}
-
-.trustSeal {
-  min-height: 78px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 14px 10px;
-  color: #d1d7e2;
-  font-size: clamp(11px, 2vw, 15px);
-  line-height: 1.3;
-}
-
-.trustSeal + .trustSeal {
-  border-left: 1px solid rgba(41, 89, 149, .45);
-}
-
-.trustSeal > span:first-child {
-  width: 35px;
-  height: 35px;
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 2px solid #2563eb;
-  border-radius: 11px;
-  color: #8b5cf6;
-  font-size: 21px;
-}
-
-.partnershipFooter {
-  margin: 20px 0 6px;
-  background: linear-gradient(90deg, #7c3aed, #2563eb, #2dd4bf);
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(16px, 4vw, 24px);
-  font-weight: 700;
-  letter-spacing: .24em;
-}
-
-.partnershipFooter span {
-  color: #67e8f9;
-}
-
-.footerValues {
-  margin: 0;
-  color: #f1f5f9;
-  font-size: clamp(9px, 2.7vw, 15px);
-  letter-spacing: .32em;
-}
-
-@keyframes planReveal {
-  from { opacity: 0; transform: translateY(-8px) scale(.99); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Entrada suave e discreta -- fade + pequeno deslocamento vertical, nunca
-   um efeito chamativo. Aplicada com pequeno stagger entre seções e cards
-   (ver .hero, .premiumCard, .footer, .benefitCard abaixo). */
-@keyframes fadeUpIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Glow "respirando" muito lentamente no ícone de conexão entre as marcas
-   -- comunica "parceria viva" sem piscar nem competir com o conteúdo. */
-@keyframes partnershipGlow {
-  0%, 100% { opacity: .82; filter: drop-shadow(0 0 6px rgba(34, 211, 238, .35)); }
-  50% { opacity: 1; filter: drop-shadow(0 0 13px rgba(34, 211, 238, .65)); }
-}
-
+/* A demonstração é lado a lado já no celular (composição da referência):
+   "Você fala. / A Uni organiza." à esquerda, fala + resultado à direita.
+   Só empilha em telas realmente estreitas (regra de 359px mais abaixo). */
 @media (max-width: 767px) {
-  .benefitsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+  .demoCard {
+    gap: 12px;
+    padding: 16px 14px;
   }
 
-  .benefitCard {
-    min-height: 185px;
-    padding: 18px 10px;
-  }
-
-  .trustGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .trustSeal:nth-child(3) {
-    border-left: 0;
-    border-top: 1px solid rgba(41, 89, 149, .45);
-  }
-
-  .trustSeal:nth-child(4) {
-    border-top: 1px solid rgba(41, 89, 149, .45);
+  .demoWave {
+    max-width: 118px;
   }
 }
 
 @media (max-width: 430px) {
-  .page {
-    padding-inline: max(12px, env(safe-area-inset-left));
+  .content {
+    gap: 20px;
   }
 
-  .partnershipEyebrow {
-    gap: 7px;
-    letter-spacing: .2em;
+  .planCard {
+    padding: 20px 16px 18px;
   }
 
-  .brandRow {
-    grid-template-columns: minmax(0, 1fr) 1px 38px 1px minmax(0, 1fr);
-    gap: 5px;
+  .featureRow {
+    padding: 12px;
+    gap: 11px;
   }
 
-  .brandWave {
-    width: calc(100% + 24px);
-    margin-inline: -12px;
-  }
-
-  .premiumCard {
-    padding: 18px 12px;
-    border-radius: 17px;
-  }
-
-  .accessBadge {
-    min-height: 32px;
-    padding-inline: 19px;
-  }
-
-  .price {
-    gap: 5px;
-  }
-
-  .price strong {
-    font-size: clamp(60px, 18.5vw, 80px);
-  }
-
-  .benefitsHeading {
-    gap: 7px;
-    letter-spacing: .13em;
-  }
-
-  .benefitCard h3 {
-    font-size: 15px;
-  }
-
-  .benefitCard p,
-  .benefitCard ul {
-    font-size: 13px;
-  }
-
-  .subscribeButton {
-    grid-template-columns: 34px minmax(0, 1fr) 24px;
-    min-height: 68px;
-    gap: 6px;
-    padding-inline: 12px;
-    font-size: clamp(16px, 4.7vw, 20px);
-  }
-
-  .subscribeButton svg {
-    width: 32px;
-  }
-
-  .buttonArrow {
-    font-size: 35px;
-  }
-
-  .trustSeal {
-    min-height: 70px;
-    gap: 8px;
-    padding: 10px 7px;
-  }
-
-  .trustSeal > span:first-child {
-    width: 29px;
-    height: 29px;
-    font-size: 17px;
+  .ctaButton {
+    letter-spacing: .05em;
   }
 }
 
+/* Telefones estreitos (inclui 360px, a menor largura de referência): a barra
+   fixa aperta preço e rótulo para o CTA continuar em UMA linha, sem perder
+   área de toque. */
+@media (max-width: 400px) {
+  .ctaBarInner {
+    gap: 11px;
+  }
+
+  .ctaPrice strong {
+    font-size: 18.5px;
+  }
+
+  .ctaPrice span {
+    font-size: 11.5px;
+  }
+
+  .ctaButton {
+    padding: 0 14px;
+    font-size: 13.5px;
+    letter-spacing: .035em;
+  }
+}
+
+/* Telas muito estreitas: o CTA vira o elemento dominante da barra e o preço
+   encolhe -- nunca o contrário (o botão precisa manter área de toque). */
 @media (max-width: 359px) {
-  .hero h1 {
-    font-size: 33px;
+  .content {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
   }
 
-  .hero p {
-    font-size: 15px;
+  .featureIcon,
+  .assuranceIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
   }
 
-  .premiumCard {
-    padding-inline: 9px;
+  .featureChevron {
+    display: none;
   }
 
-  .benefitCard {
-    min-height: 174px;
-    padding-inline: 7px;
+  /* Abaixo de 360px as duas colunas da demonstração não convivem sem
+     comprimir a fala -- aqui, e só aqui, ela empilha. */
+  .demoCard {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .benefitIcon,
-  .benefitIcon svg {
-    width: 40px;
-    height: 40px;
+  .demoWave {
+    max-width: 150px;
   }
 
-  .subscribeButton {
-    font-size: 15px;
+  .ctaBarInner {
+    gap: 10px;
   }
 
-  .partnershipFooter {
-    letter-spacing: .15em;
+  .ctaPrice strong {
+    font-size: 18px;
   }
 
-  .footerValues {
-    letter-spacing: .18em;
+  .ctaButton {
+    min-height: 50px;
+    padding: 0 12px;
+    font-size: 13px;
+    letter-spacing: .03em;
+  }
+}
+
+/* Tablet/desktop: a coluna continua com largura de leitura confortável e o
+   CTA deixa de ser uma barra colada na borda inferior da janela. */
+@media (min-width: 768px) {
+  .content {
+    gap: 26px;
+    padding-top: 20px;
+  }
+
+  .topTitle {
+    font-size: 18px;
   }
 }
 
 @media (min-width: 1200px) {
-  .page {
-    padding-top: 34px;
+  .content {
+    max-width: 560px;
   }
 
-  .brandWave {
-    width: calc(100% + 64px);
-    margin-inline: -32px;
+  .ctaBar {
+    padding-bottom: 18px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brandRow,
-  .hero,
-  .premiumCard,
-  .footer,
-  .benefitCard {
-    animation: none;
-  }
-
-  .partnershipIcon {
-    animation: none;
-  }
-
-  .benefitCard,
-  .subscribeButton {
+  .backButton,
+  .ctaButton {
     transition: none;
   }
-}
 
+  .backButton:active:not(:disabled),
+  .ctaButton:active:not(:disabled) {
+    transform: none;
+  }
+}

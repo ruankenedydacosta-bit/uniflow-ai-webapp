@@ -5,7 +5,7 @@ export {
   PERSONAL_PLAN_ID,
   PERSONAL_PLAN_RETURN_ROUTE,
   PERSONAL_PLAN_ROUTE,
-  PERSONAL_PLAN_TRUST_SEALS,
+  PERSONAL_PLAN_VOICE_DEMO,
 } from './personalPlanConfig.js';
 export {
   getPersonalPlanStorageKey,
