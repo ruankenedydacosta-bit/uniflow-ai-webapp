@@ -320,6 +320,69 @@ test('buildCheckoutPayload: nunca envia customerData -- Asaas rejeita customerDa
   assert.equal('customerData' in payload, false);
 });
 
+// ============================================================================
+// CORRECAO NOTIFICACOES (cartao): confirmado nas docs oficiais
+// (docs.asaas.com/docs/how-to-provide-customer-data,
+// docs.asaas.com/reference/create-new-checkout) que o Checkout aceita
+// `customer` (ID de um cliente Asaas ja existente) como alternativa a
+// `customerData` -- mutuamente exclusivos. Quando o chamador ja sabe o
+// asaas_customer_id do workspace (billing_customers, criado com
+// notificationDisabled:true por billing-create-customer), ele passa a ser
+// enviado como `customer`, reutilizando esse cliente em vez de deixar a
+// Asaas criar um novo so para o Checkout.
+// ============================================================================
+
+test('buildCheckoutPayload: com asaasCustomerId, envia customer=<id> e continua sem customerData', () => {
+  const payload = buildCheckoutPayload({
+    workspaceId: 'ws-checkout-1',
+    successUrl: 'https://app.example.com/retorno?status=success',
+    cancelUrl: 'https://app.example.com/retorno?status=cancel',
+    now: '2026-07-30T12:00:00.000Z',
+    asaasCustomerId: 'cus_000005821234',
+  });
+  assert.equal(payload.customer, 'cus_000005821234');
+  assert.equal('customerData' in payload, false);
+});
+
+test('buildCheckoutPayload: sem asaasCustomerId (ausente, null ou vazio), nunca envia customer nem customerData -- comportamento antigo intacto', () => {
+  for (const asaasCustomerId of [undefined, null, '']) {
+    const payload = buildCheckoutPayload({
+      workspaceId: 'ws-checkout-1',
+      successUrl: 'https://app.example.com/retorno?status=success',
+      cancelUrl: 'https://app.example.com/retorno?status=cancel',
+      now: '2026-07-30T12:00:00.000Z',
+      asaasCustomerId,
+    });
+    assert.equal('customer' in payload, false);
+    assert.equal('customerData' in payload, false);
+  }
+});
+
+test('buildCheckoutPayload: customer e customerData nunca coexistem (mutuamente exclusivos, exigência oficial da Asaas)', () => {
+  const withCustomer = buildCheckoutPayload({
+    workspaceId: 'ws-checkout-1',
+    successUrl: 'https://app.example.com/retorno?status=success',
+    cancelUrl: 'https://app.example.com/retorno?status=cancel',
+    now: '2026-07-30T12:00:00.000Z',
+    asaasCustomerId: 'cus_000005821234',
+  });
+  assert.ok('customer' in withCustomer && !('customerData' in withCustomer));
+});
+
+test('buildCheckoutPayload: restante do payload (billingTypes/chargeTypes/items/callback/subscription/externalReference) é idêntico com ou sem asaasCustomerId -- só o vínculo de customer é acrescentado', () => {
+  const base = {
+    workspaceId: 'ws-checkout-1',
+    successUrl: 'https://app.example.com/retorno?status=success',
+    cancelUrl: 'https://app.example.com/retorno?status=cancel',
+    now: '2026-07-30T12:00:00.000Z',
+  };
+  const without = buildCheckoutPayload(base);
+  const withCustomer = buildCheckoutPayload({ ...base, asaasCustomerId: 'cus_000005821234' });
+  const withCustomerRest = { ...withCustomer };
+  delete withCustomerRest.customer;
+  assert.deepEqual(withCustomerRest, without);
+});
+
 test('buildCheckoutPayload: externalReference é o workspace_id -- nunca outro identificador', () => {
   const payload = buildCheckoutPayload({
     workspaceId: 'ws-checkout-42',

@@ -407,11 +407,62 @@ test('billing-create-checkout: checkout anterior abandonado (pending, sem asaas_
 // de customerData, que a UniFlow nunca coletou (fora de escopo). Testado
 // no Sandbox: omitir customerData por completo funciona (201, checkout
 // criado) -- o próprio Checkout hospedado pede os dados do pagador na
-// página dele. Por isso esta função NUNCA lê CPF/perfil/billing_customers
-// -- nada disso é necessário nem enviado à Asaas aqui.
-test('billing-create-checkout: nunca lê CPF/perfil/billing_customers -- o Checkout hospedado coleta os dados do pagador, nunca a UniFlow', () => {
+// página dele. Por isso esta função NUNCA lê CPF/perfil e NUNCA envia
+// customerData -- nada disso é necessário nem enviado à Asaas aqui.
+test('billing-create-checkout: nunca lê CPF/perfil, nunca envia customerData -- o Checkout hospedado coleta os dados do pagador, nunca a UniFlow', () => {
   const codeOnly = CREATE_CHECKOUT.split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
-  assert.doesNotMatch(codeOnly, /cpf_cnpj|cpfCnpj|getProfile|getBillingCustomer|customerData/);
+  assert.doesNotMatch(codeOnly, /cpf_cnpj|cpfCnpj|getProfile|customerData/);
+});
+
+// ============================================================================
+// CORRECAO NOTIFICACOES (cartao): confirmado nas docs oficiais que o
+// Checkout aceita `customer` (ID de cliente Asaas existente) como
+// alternativa a `customerData` -- mutuamente exclusivos
+// (docs.asaas.com/docs/how-to-provide-customer-data). billing-create-checkout
+// passa a REUTILIZAR, quando já existe, o billing_customers do workspace
+// (criado com notificationDisabled:true por billing-create-customer, já em
+// Production) -- nunca cria um customer novo aqui, nunca chama
+// billing-create-customer, nunca lê um id vindo do corpo da requisição.
+// ============================================================================
+
+test('billing-create-checkout: reutiliza billing_customers existente (read-only, MESMO padrão de billing-create-subscription.getBillingCustomer) para obter o asaas_customer_id', () => {
+  assert.match(CREATE_CHECKOUT, /async function getBillingCustomer\(\{/);
+  const idx = CREATE_CHECKOUT.indexOf('async function getBillingCustomer({');
+  const slice = CREATE_CHECKOUT.slice(idx, idx + 500);
+  assert.match(slice, /select: 'asaas_customer_id', workspace_id: `eq\.\$\{workspaceId\}`/);
+  // RLS via Authorization do próprio usuário -- NUNCA service role para
+  // esta leitura (o mesmo padrão já usado por billing-create-subscription).
+  assert.match(slice, /headers: \{ Authorization: authorization, apikey: anonKey \}/);
+  assert.doesNotMatch(slice, /serviceRoleKey/);
+});
+
+test('billing-create-checkout: NUNCA chama billing-create-customer nem cria um customer novo -- só lê billing_customers já existente', () => {
+  assert.doesNotMatch(CREATE_CHECKOUT, /createCustomer/);
+});
+
+test('billing-create-checkout: getBillingCustomer é chamado ANTES de montar o payload, e o resultado alimenta buildCheckoutPayload como asaasCustomerId', () => {
+  const callIdx = CREATE_CHECKOUT.indexOf('const billingCustomer = await getBillingCustomer(');
+  const payloadIdx = CREATE_CHECKOUT.indexOf('buildCheckoutPayload({');
+  assert.ok(callIdx > -1 && payloadIdx > callIdx, 'getBillingCustomer precisa ser resolvido antes de montar o payload do checkout');
+  const payloadSlice = CREATE_CHECKOUT.slice(payloadIdx, CREATE_CHECKOUT.indexOf('});', payloadIdx));
+  assert.match(payloadSlice, /asaasCustomerId,/);
+});
+
+test('billing-create-checkout: asaas_customer_id NUNCA vem do corpo da requisição do frontend -- só da leitura server-side de billing_customers (proteção contra IDOR)', () => {
+  // customer_id já está bloqueado por FORBIDDEN_CLIENT_FIELDS (regressão
+  // coberta em teste separado); aqui a garantia é que o valor realmente
+  // usado no payload do checkout nunca lê `payload?.customer` nem
+  // `payload?.asaas_customer_id`.
+  assert.doesNotMatch(CREATE_CHECKOUT, /payload\?\.\s*customer/);
+  assert.doesNotMatch(CREATE_CHECKOUT, /payload\?\.\s*asaas_customer_id/);
+  assert.match(CREATE_CHECKOUT, /FORBIDDEN_CLIENT_FIELDS = \[[^\]]*'customer_id'[^\]]*\]/);
+});
+
+test('billing-create-checkout: asaasCustomerId nulo/ausente (workspace sem billing_customers) preserva exatamente o comportamento antigo -- nenhuma quebra para quem nunca teve customer', () => {
+  const idx = CREATE_CHECKOUT.indexOf('const asaasCustomerId = typeof billingCustomer?.asaas_customer_id');
+  assert.ok(idx > -1);
+  const slice = CREATE_CHECKOUT.slice(idx, idx + 200);
+  assert.match(slice, /: null;/);
 });
 
 test('billing-create-checkout: nunca devolve CPF ao frontend -- resposta pública é só checkout_id/checkout_url/status/external_reference', () => {

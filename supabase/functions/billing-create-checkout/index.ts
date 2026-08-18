@@ -15,11 +15,31 @@
 // REJEITADO pela Asaas -- ela exige o endereco completo do pagador dentro
 // de customerData, que a UniFlow nunca coletou (fora de escopo). Em vez de
 // inventar um endereco falso ou expandir o formulario de assinatura,
-// customerData e OMITIDO por completo (ver buildCheckoutPayload em
-// _shared/billingSubscriptionRules.ts) -- o proprio Checkout hospedado
-// pede nome/CPF/endereco do pagador na pagina dele. Por isso esta funcao
-// NUNCA le CPF/perfil/billing_customers para montar o payload -- nada
-// disso e enviado a Asaas aqui.
+// customerData continua OMITIDO por completo.
+//
+// CORRECAO NOTIFICACOES (cartao): billing-create-customer (em Production
+// com notificationDisabled:true desde a correcao anterior) e o UNICO ponto
+// que cria clientes Asaas na UniFlow. Esta funcao NUNCA chama
+// billing-create-customer nem cria um cliente novo -- ela apenas
+// REUTILIZA, quando ja existe, o billing_customers do workspace (lido de
+// forma read-only, com o MESMO padrao ja usado por
+// billing-create-subscription.getBillingCustomer: RLS via Authorization do
+// proprio usuario, nunca service role, nunca um id vindo do corpo da
+// requisicao -- customer_id ja e um FORBIDDEN_CLIENT_FIELD abaixo). Quando
+// encontrado, o asaas_customer_id e enviado como `customer` no Checkout
+// (docs.asaas.com/docs/how-to-provide-customer-data confirma que `customer`
+// e `customerData` sao alternativas mutuamente exclusivas -- nunca ambos).
+//
+// LIMITACAO REAL (documentada, nao contornavel sem violar o escopo desta
+// correcao): a Asaas exige cpfCnpj para CRIAR um cliente
+// (docs.asaas.com/reference/create-new-customer) e o formulario de cartao
+// da UniFlow nunca coleta CPF (o Checkout hospedado pede isso na pagina
+// dele) -- por isso um usuario que nunca passou pelo Pix (unico fluxo que
+// hoje chama billing-create-customer) e escolhe cartao PELA PRIMEIRA VEZ
+// ainda cai no caminho antigo (nem `customer` nem `customerData`, Asaas
+// cria seu proprio cliente sem notificationDisabled). Resolver isso
+// exigiria coletar CPF no fluxo de cartao ou criar o cliente sem CPF -- as
+// duas coisas fora do escopo autorizado. Ver relatorio final.
 //
 // Pix (billing-create-subscription) e o cartao (aqui) sao dois arquivos
 // completamente separados -- nenhuma alteracao neste bloco toca o fluxo
@@ -106,6 +126,25 @@ async function hasWorkspaceMembership({
   if (!response.ok) return false;
   const rows = await response.json();
   return Array.isArray(rows) && rows.length === 1;
+}
+
+// CORRECAO NOTIFICACOES (cartao): mesmo padrao EXATO de
+// billing-create-subscription.getBillingCustomer -- read-only, autorizado
+// pelo Authorization do PROPRIO usuario (nunca service role), protegido
+// pela mesma RLS (`billing_customers_select_active_member`, migration 024)
+// que ja restringe a leitura ao workspace do usuario autenticado. Nunca le
+// um id vindo do corpo da requisicao -- elimina qualquer possibilidade de
+// IDOR (um customer de outro workspace jamais pode ser referenciado aqui).
+async function getBillingCustomer({
+  authorization, supabaseUrl, anonKey, workspaceId,
+}: { authorization: string; supabaseUrl: string; anonKey: string; workspaceId: string }) {
+  const params = new URLSearchParams({ select: 'asaas_customer_id', workspace_id: `eq.${workspaceId}`, limit: '1' });
+  const response = await fetch(`${supabaseUrl}/rest/v1/billing_customers?${params}`, {
+    headers: { Authorization: authorization, apikey: anonKey },
+  });
+  if (!response.ok) return null;
+  const rows = await response.json();
+  return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
 
 // Idempotencia: mesmo criterio do Pix (billing-create-subscription) -- so
@@ -235,6 +274,16 @@ Deno.serve(async (request) => {
     }, origin);
   }
 
+  // CORRECAO NOTIFICACOES (cartao): reutiliza o billing_customers do
+  // workspace SE ja existir (ex.: uma tentativa Pix anterior) -- read-only,
+  // RLS-scoped, nunca cria nada aqui. Ausencia e um estado normal (usuario
+  // ainda sem nenhum billing_customers), tratado como null -- ver LIMITACAO
+  // no comentario do topo deste arquivo.
+  const billingCustomer = await getBillingCustomer({ authorization, supabaseUrl, anonKey, workspaceId });
+  const asaasCustomerId = typeof billingCustomer?.asaas_customer_id === 'string'
+    ? billingCustomer.asaas_customer_id
+    : null;
+
   const asaasApiKey = Deno.env.get('ASAAS_API_KEY') ?? '';
   const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
 
@@ -259,6 +308,7 @@ Deno.serve(async (request) => {
       cancelUrl,
       expiredUrl,
       now: new Date().toISOString(),
+      asaasCustomerId,
     });
 
     const created = await client.createCheckout(checkoutPayload) as { id?: string; link?: string; status?: string };

@@ -171,28 +171,40 @@ export function resolveSubscriptionPatchForEvent({
 // customerData. A UniFlow nunca coletou endereco do usuario (fora de
 // escopo) -- em vez de inventar um endereco falso ou expandir o formulario
 // de assinatura para pedir rua/numero/CEP (fora do escopo autorizado deste
-// bloco), `customerData` e OMITIDO por completo: o proprio Checkout
-// hospedado da Asaas pede nome/CPF/endereco do pagador na pagina dele,
-// exatamente como a mensagem "pagamento seguro no Asaas" promete. Testado
-// e confirmado no Sandbox real (POST /v3/checkouts sem customerData ->
-// 201, checkout criado e pagina hospedada abre normalmente).
+// bloco), `customerData` continua nunca sendo enviado.
+//
+// CORRECAO NOTIFICACOES (cartao): confirmado nas docs oficiais
+// (docs.asaas.com/docs/how-to-provide-customer-data e
+// docs.asaas.com/reference/create-new-checkout) que o Checkout aceita `customer`
+// (ID de um cliente Asaas ja existente) como alternativa a `customerData` --
+// os dois campos sao MUTUAMENTE EXCLUSIVOS, nunca enviados juntos. Quando o
+// chamador (billing-create-checkout) ja sabe o asaas_customer_id do
+// workspace (billing_customers, criado com notificationDisabled:true por
+// billing-create-customer), este passa a ser enviado como `customer` --
+// assim o Checkout REUTILIZA esse cliente em vez de deixar a Asaas criar um
+// novo (sem notificationDisabled) so para o cartao. Quando nao ha
+// asaasCustomerId disponivel (usuario ainda sem nenhum billing_customers --
+// ver LIMITACAO no comentario de billing-create-checkout/index.ts), o
+// comportamento permanece EXATAMENTE como antes: nem `customer` nem
+// `customerData`, o proprio Checkout hospedado pede os dados do pagador.
 //
 // `now` e injetavel (nunca `new Date()` direto) para testes com relogio
 // controlado, mesmo padrao das demais funcoes puras deste modulo.
 export function buildCheckoutPayload({
-  workspaceId, successUrl, cancelUrl, expiredUrl, now,
+  workspaceId, successUrl, cancelUrl, expiredUrl, now, asaasCustomerId,
 }: {
   workspaceId: string;
   successUrl: string;
   cancelUrl: string;
   expiredUrl?: string;
   now: string;
+  asaasCustomerId?: string | null;
 }): Record<string, unknown> {
   const nextDueDate = new Date(now).toISOString().slice(0, 10);
   const callback: Record<string, unknown> = { successUrl, cancelUrl };
   if (expiredUrl) callback.expiredUrl = expiredUrl;
 
-  return {
+  const payload: Record<string, unknown> = {
     billingTypes: ['CREDIT_CARD'],
     chargeTypes: ['RECURRENT'],
     minutesToExpire: CHECKOUT_MINUTES_TO_EXPIRE,
@@ -211,6 +223,12 @@ export function buildCheckoutPayload({
       nextDueDate,
     },
   };
+
+  if (asaasCustomerId) {
+    payload.customer = asaasCustomerId;
+  }
+
+  return payload;
 }
 
 // BLOCO ASAAS CHECKOUT: higiene de checkouts abandonados -- NUNCA ativa nada
