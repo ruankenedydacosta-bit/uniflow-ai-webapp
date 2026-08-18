@@ -247,6 +247,16 @@ Deno.serve(async (request) => {
         email,
         mobilePhone,
         externalReference: workspaceId,
+        // CORRECAO NOTIFICACOES: todo customer NOVO criado pela UniFlow deve
+        // nascer com as notificacoes automaticas de cobranca da Asaas
+        // (e-mail/SMS de vencimento, lembrete, etc.) desligadas -- boolean
+        // `true`, nunca string. Fonte oficial:
+        // https://docs.asaas.com/reference/create-new-customer. Nao afeta
+        // nome/CPF/e-mail/telefone -- so este campo e adicionado. Customers
+        // reaproveitados (camadas de idempotencia acima) preservam o
+        // comportamento existente por decisao explicita de escopo -- nao ha
+        // chamada de atualizacao aqui.
+        notificationDisabled: true,
       }) as { id?: string };
       asaasCustomerId = typeof created?.id === 'string' ? created.id : null;
     }
