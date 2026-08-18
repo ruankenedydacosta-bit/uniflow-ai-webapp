@@ -118,6 +118,77 @@ test('billing-create-customer: falha ao persistir localmente após sucesso na As
   assert.match(CREATE_CUSTOMER, /PERSISTENCE_FAILED/);
 });
 
+// ============================================================================
+// CORRECAO NOTIFICACOES: todo customer NOVO criado pela UniFlow na Asaas
+// nasce com `notificationDisabled: true` (boolean, nunca string) -- desliga
+// os e-mails/SMS automáticos de cobrança que a Asaas envia por padrão.
+// Escopo explicitamente reduzido pelo pedido: SOMENTE o ponto de criação é
+// tocado; customers reaproveitados (camada 1: nosso banco; camada 2:
+// externalReference na própria Asaas) preservam o comportamento existente
+// -- nenhuma chamada de atualização (PUT) é adicionada para eles, e nenhuma
+// varredura da conta Asaas é feita.
+// ============================================================================
+
+test('billing-create-customer: customer NOVO nasce com notificationDisabled boolean true (nunca string) -- único campo acrescentado ao payload', () => {
+  const idx = CREATE_CUSTOMER.indexOf('const created = await client.createCustomer({');
+  assert.ok(idx > -1, 'chamada de criação do customer não encontrada');
+  const slice = CREATE_CUSTOMER.slice(idx, CREATE_CUSTOMER.indexOf('}) as { id?: string };', idx));
+
+  assert.match(slice, /notificationDisabled:\s*true,/);
+  // boolean real, nunca string 'true'/'false'.
+  assert.doesNotMatch(slice, /notificationDisabled:\s*['"]/);
+
+  // Os campos existentes continuam TODOS presentes, na mesma chamada --
+  // nada foi substituído ou removido, só acrescentado.
+  for (const existingField of ['name,', 'cpfCnpj,', 'email,', 'mobilePhone,', 'externalReference: workspaceId,']) {
+    assert.ok(slice.includes(existingField), `campo existente "${existingField}" deveria continuar no payload`);
+  }
+});
+
+test('billing-create-customer: notificationDisabled aparece SOMENTE na criação -- nenhum caminho de reuso (banco local ou externalReference na Asaas) é tocado', () => {
+  // Camada 1 (nosso banco): o bloco de reuso (`if (existing) { ... }`) não
+  // pode conter notificationDisabled nem chamar createCustomer.
+  const reusedIdx = CREATE_CUSTOMER.indexOf('if (existing) {');
+  const reusedSlice = CREATE_CUSTOMER.slice(reusedIdx, reusedIdx + 250);
+  assert.doesNotMatch(reusedSlice, /notificationDisabled/);
+  assert.doesNotMatch(reusedSlice, /createCustomer|PUT|updateCustomer/);
+
+  // Camada 2 (externalReference na Asaas): o customer encontrado é usado
+  // como está -- nenhuma atualização é enviada para ele.
+  const foundIdx = CREATE_CUSTOMER.indexOf('const found = await client.findCustomersByExternalReference');
+  const foundSlice = CREATE_CUSTOMER.slice(foundIdx, CREATE_CUSTOMER.indexOf('if (!asaasCustomerId) {', foundIdx));
+  assert.doesNotMatch(foundSlice, /notificationDisabled|updateCustomer|PUT/);
+
+  // O client compartilhado nunca ganhou um método de update de customer
+  // nesta correção -- escopo é só o payload de criação.
+  assert.doesNotMatch(CREATE_CUSTOMER, /client\.updateCustomer|PUT.*\/customers/);
+});
+
+test('billing-create-customer: nenhum outro dado do payload de criação foi alterado (name/cpfCnpj/email/mobilePhone/externalReference intactos)', () => {
+  const idx = CREATE_CUSTOMER.indexOf('const created = await client.createCustomer({');
+  const slice = CREATE_CUSTOMER.slice(idx, CREATE_CUSTOMER.indexOf('}) as { id?: string };', idx));
+  assert.match(slice, /name,\s*\n\s*cpfCnpj,\s*\n\s*email,\s*\n\s*mobilePhone,\s*\n\s*externalReference: workspaceId,/);
+});
+
+test('_shared/asaasClient.ts não ganhou método de atualização de customer -- escopo desta correção é só o payload de criação', () => {
+  const asaasClient = readFileSync(new URL('../../supabase/functions/_shared/asaasClient.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(asaasClient, /updateCustomer|PATCH.*customers|PUT.*customers/i);
+});
+
+// Checkout cartão (Asaas Checkout hospedado): customerData é OMITIDO por
+// desenho -- o customer desse fluxo nasce inteiramente do lado da Asaas
+// (o pagador preenche na página hospedada), fora do alcance desta correção.
+// Documentar/confirmar essa limitação explicitamente, para não presumir
+// cobertura que o código não oferece.
+test('billing-create-checkout: customerData continua OMITIDO (checkout hospedado) -- notificationDisabled não pode ser aplicado a esse fluxo pelo nosso backend', () => {
+  const rules = readFileSync(new URL('../../supabase/functions/_shared/billingSubscriptionRules.ts', import.meta.url), 'utf8');
+  // Só o USO real do campo (como chave de payload), nunca os comentários
+  // que já documentavam essa decisão -- a busca é por `customerData:`.
+  assert.doesNotMatch(rules, /customerData:/);
+  assert.doesNotMatch(CREATE_CHECKOUT, /customerData:/);
+  assert.doesNotMatch(CREATE_CHECKOUT, /notificationDisabled/);
+});
+
 // -- SUBSCRIPTION ---------------------------------------------------------------
 
 test('billing-create-subscription: só aceita plan_id "pro" -- qualquer outro é rejeitado', () => {
