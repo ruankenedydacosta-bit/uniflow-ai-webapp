@@ -180,13 +180,19 @@ test('_shared/asaasClient.ts não ganhou método de atualização de customer --
 // (o pagador preenche na página hospedada), fora do alcance desta correção.
 // Documentar/confirmar essa limitação explicitamente, para não presumir
 // cobertura que o código não oferece.
-test('billing-create-checkout: customerData continua OMITIDO (checkout hospedado) -- notificationDisabled não pode ser aplicado a esse fluxo pelo nosso backend', () => {
+test('billing-create-checkout: customerData continua OMITIDO (checkout hospedado) -- nunca enviado, nem sozinho nem junto de customer', () => {
   const rules = readFileSync(new URL('../../supabase/functions/_shared/billingSubscriptionRules.ts', import.meta.url), 'utf8');
   // Só o USO real do campo (como chave de payload), nunca os comentários
   // que já documentavam essa decisão -- a busca é por `customerData:`.
   assert.doesNotMatch(rules, /customerData:/);
   assert.doesNotMatch(CREATE_CHECKOUT, /customerData:/);
-  assert.doesNotMatch(CREATE_CHECKOUT, /notificationDisabled/);
+  // notificationDisabled é responsabilidade EXCLUSIVA de
+  // billing-create-customer -- billing-create-checkout nunca define esse
+  // campo no código (só o MENCIONA em comentários, explicando por que o
+  // customer reutilizado já nasce assim -- por isso a busca abaixo ignora
+  // linhas de comentário, olhando só código real).
+  const checkoutCodeOnly = CREATE_CHECKOUT.split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+  assert.doesNotMatch(checkoutCodeOnly, /notificationDisabled/);
 });
 
 // -- SUBSCRIPTION ---------------------------------------------------------------
