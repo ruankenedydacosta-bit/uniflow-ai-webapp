@@ -166,15 +166,70 @@ test('modal de método: texto do cartão é honesto sobre onde o pagamento acont
 // GUARD FIX: PersonalPlanPage.jsx agora cria o workspace pessoal sob
 // demanda (createWorkspaceProfile('personal')) quando o usuário ainda não
 // tem um -- resolvedWorkspaceId é workspaceId já existente OU o recém-criado.
-// Cartão continua nunca passando por createCustomer/createSubscription.
-test('confirmar com cartão chama createCheckout (nunca createCustomer/createSubscription) e redireciona na MESMA aba para checkout_url', async () => {
+//
+// CORRECAO NOTIFICACOES (cartao): cartão passou a chamar createCustomer
+// ANTES de createCheckout (garante/reutiliza o customer com
+// notificationDisabled:true antes do Checkout hospedado) -- nunca
+// createSubscription (isso continua exclusivo do Pix).
+test('confirmar com cartão chama createCustomer ANTES de createCheckout (nunca createSubscription) e redireciona na MESMA aba para checkout_url', async () => {
   const page = await source('./PersonalPlanPage.jsx');
   const idx = page.indexOf("if (paymentMethod === 'credit_card') {");
   const endIdx = page.indexOf('let customerResult;', idx);
   const body = page.slice(idx, endIdx);
+  const cardCustomerIdx = body.indexOf('createCustomer(');
+  const checkoutIdx = body.indexOf('await createCheckout(');
+  assert.ok(cardCustomerIdx > -1 && checkoutIdx > cardCustomerIdx, 'createCustomer deve ser chamado ANTES de createCheckout no fluxo de cartão');
   assert.match(body, /await createCheckout\(\{ workspaceId: resolvedWorkspaceId \}\)/);
   assert.match(body, /window\.location\.href = checkoutResult\.data\.checkout_url;/);
-  assert.doesNotMatch(body, /createCustomer\(|createSubscription\(/);
+  assert.doesNotMatch(body, /createSubscription\(/);
+});
+
+test('cartão: createCustomer é AWAITED (sequencial, nunca em paralelo) antes de createCheckout -- se falhar, o Checkout nunca abre', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const idx = page.indexOf("if (paymentMethod === 'credit_card') {");
+  const endIdx = page.indexOf('const checkoutResult = await createCheckout', idx);
+  const body = page.slice(idx, endIdx);
+  assert.match(body, /let cardCustomerResult;/);
+  assert.match(body, /cardCustomerResult = await withTimeout\(\s*\n\s*createCustomer\(\{ workspaceId: resolvedWorkspaceId, cpfCnpj \}\),/);
+  assert.match(body, /if \(cardCustomerResult\.error\) \{[\s\S]*?setIsSubmitting\(false\);[\s\S]*?return;\s*\}/);
+});
+
+test('cartão: erro/timeout ao preparar o customer nunca chama createCheckout nem redireciona', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const idx = page.indexOf("if (paymentMethod === 'credit_card') {");
+  const checkoutIdx = page.indexOf('const checkoutResult = await createCheckout', idx);
+  const body = page.slice(idx, checkoutIdx);
+  assert.doesNotMatch(body, /createCheckout\(|window\.location\.href/);
+  assert.match(body, /\} catch \{[\s\S]*?setSubmitError\([^)]*\);[\s\S]*?setIsSubmitting\(false\);[\s\S]*?return;\s*\}/);
+});
+
+// CORRECAO NOTIFICACOES (cartao) -- PRIVACIDADE: CPF/CNPJ nunca pode vazar
+// para localStorage, console/log ou qualquer construção de URL, mesmo
+// agora que o cartão também o coleta. cpfCnpj/digits só podem existir como
+// estado local do React e como argumento das chamadas de billing
+// (createCustomer) -- nunca em mais lugar nenhum do arquivo.
+test('CPF/CNPJ (cpfCnpj/digits) nunca vai para localStorage, console.log/error ou é usado para montar uma URL', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const suspiciousLines = page
+    .split('\n')
+    .filter((line) => /\bcpfCnpj\b|\bdigits\b/.test(line))
+    .filter((line) => /localStorage|console\.(log|error|warn|info|debug)|new URL\(|location\.href\s*=|`[^`]*\$\{/.test(line));
+  assert.deepEqual(suspiciousLines, []);
+});
+
+// CORRECAO NOTIFICACOES (cartao) -- PRIVACIDADE: nenhum tracker de GA4
+// (checkoutEventLifecycle.*) recebe CPF/CNPJ como parâmetro -- os eventos
+// comerciais (payment_method_selected, card_checkout_created,
+// pix_generated) continuam com o contrato de zero dado financeiro/pessoal
+// já garantido pela camada de analytics (ga4ProductContracts.js), mas essa
+// garantia também é verificada aqui, na origem da chamada.
+test('CPF/CNPJ nunca é passado para nenhum tracker de analytics (checkoutEventLifecycle.*)', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const trackerCalls = [...page.matchAll(/checkoutEventLifecycle\.[a-zA-Z]+\([^)]*\)/g)].map((m) => m[0]);
+  assert.ok(trackerCalls.length > 0, 'deveria haver ao menos uma chamada a checkoutEventLifecycle para esta checagem fazer sentido');
+  for (const call of trackerCalls) {
+    assert.doesNotMatch(call, /cpfCnpj|digits/);
+  }
 });
 
 test('cartão/Pix criam o workspace pessoal sob demanda quando ainda não existe -- nunca bloqueiam a assinatura por falta de workspace', async () => {
@@ -212,21 +267,29 @@ test('erro ao criar o checkout de cartão preserva o modal aberto com mensagem h
   assert.match(slice, /return;/);
 });
 
-test('modal exige CPF/CNPJ em formato válido (11 ou 14 dígitos) antes de habilitar a confirmação -- só para Pix', async () => {
+test('modal exige CPF/CNPJ em formato válido (11 ou 14 dígitos) antes de habilitar a confirmação -- para os DOIS métodos (Pix e cartão)', async () => {
   const page = await source('./PersonalPlanPage.jsx');
   assert.match(page, /function isValidCpfCnpjFormat\(digits\) \{\s*\n\s*return digits\.length === 11 \|\| digits\.length === 14;/);
-  assert.match(page, /const canSubmit = paymentMethod === 'credit_card'\s*\n\s*\? !isSubmitting\s*\n\s*: isValidCpfCnpjFormat\(digits\) && !isSubmitting;/);
+  assert.match(page, /const canSubmit = isValidCpfCnpjFormat\(digits\) && !isSubmitting;/);
+  assert.doesNotMatch(page, /paymentMethod === 'credit_card'\s*\n\s*\? !isSubmitting/);
 });
 
-test('cartão nunca exige CPF no modal -- o Checkout hospedado da Asaas coleta CPF/nome/endereço na própria página dele', async () => {
+// CORRECAO NOTIFICACOES (cartao): CPF/CNPJ passou a ser exigido também no
+// cartão -- billing-create-customer precisa dele para garantir/reutilizar
+// o customer ANTES do Checkout (só assim o Checkout usa
+// `customer: asaas_customer_id`, sem deixar a Asaas criar um cliente sem
+// notificationDisabled). Nome/endereço/dados do cartão continuam
+// exclusivamente na página hospedada da Asaas.
+test('cartão TAMBÉM exige CPF/CNPJ no modal agora -- só nome/endereço/dados do cartão continuam na página segura do Asaas', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /paymentMethod === 'credit_card'\s*\n\s*\? !isSubmitting/);
-  assert.match(page, /Você informará seus dados \(CPF, nome e endereço\) diretamente na página segura do Asaas\./);
+  assert.match(page, /Nome, endereço e dados do cartão serão informados diretamente na página segura do Asaas\./);
+  assert.doesNotMatch(page, /Você informará seus dados \(CPF, nome e endereço\) diretamente na página segura do Asaas\./);
 });
 
-test('CPF/CNPJ tem label visível associado ao input (não é só placeholder) -- só aparece para Pix', async () => {
+test('CPF/CNPJ tem label visível associado ao input (não é só placeholder) -- aparece para os DOIS métodos, nunca condicionado a paymentMethod === \'pix\'', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /\{paymentMethod === 'pix' \? \(\s*\n\s*<label className={styles\.cpfField}>\s*\n\s*<span>CPF ou CNPJ/);
+  assert.match(page, /<label className={styles\.cpfField}>\s*\n\s*<span>CPF ou CNPJ<\/span>/);
+  assert.doesNotMatch(page, /\{paymentMethod === 'pix' \? \(\s*\n\s*<label className={styles\.cpfField}>/);
 });
 
 // REDESIGN CHECKOUT: o Modal compartilhado (Modal.jsx) nasce com superfície
@@ -273,10 +336,16 @@ test('QR Code Pix mantém proporção 1:1, fundo branco e nunca é esticado', as
   assert.match(qrBlock, /max-width:\s*100%/);
 });
 
-test('confirmar assinatura chama createCustomer e depois createSubscription (nunca cria assinatura sem cliente)', async () => {
+// Escopado a partir do comentário BUGFIX que já marca o início do trecho
+// exclusivo do Pix (depois do bloco de cartão, que agora TAMBÉM chama
+// createCustomer, mas nunca createCustomer -- só o Pix chama
+// createSubscription) -- evita ambiguidade entre os dois createCustomer(
+// que agora existem no corpo do handler.
+test('Pix: confirmar assinatura chama createCustomer e depois createSubscription (nunca cria assinatura sem cliente)', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  const idx = page.indexOf('async function handleConfirmSubscription');
+  const idx = page.indexOf('BUGFIX (modal Pix quebrado): timeout explícito');
   const endIdx = page.indexOf('function handleGoHome');
+  assert.ok(idx > -1);
   const body = page.slice(idx, endIdx);
   const customerIdx = body.indexOf('createCustomer(');
   const subscriptionIdx = body.indexOf('createSubscription(');

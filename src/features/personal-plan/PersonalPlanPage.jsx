@@ -251,14 +251,16 @@ function SubscriptionMethodModal({
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [cpfCnpj, setCpfCnpj] = useState('');
   const digits = normalizeCpfCnpjInput(cpfCnpj);
-  // BLOCO ASAAS CHECKOUT: CPF só é exigido pelo Pix (billing-create-customer
-  // precisa dele). O cartão usa o Checkout hospedado da Asaas, que coleta
-  // CPF/nome/endereço do pagador na própria página dele -- nunca solicitado
-  // aqui (Asaas rejeita customerData parcial sem endereço, que a UniFlow
-  // nunca coletou).
-  const canSubmit = paymentMethod === 'credit_card'
-    ? !isSubmitting
-    : isValidCpfCnpjFormat(digits) && !isSubmitting;
+  // CORRECAO NOTIFICACOES (cartao): CPF/CNPJ agora é exigido pelos DOIS
+  // métodos -- billing-create-customer precisa dele tanto para o Pix quanto
+  // para garantir/reutilizar o customer do cartão ANTES do Checkout
+  // hospedado (só assim o Checkout usa `customer: asaas_customer_id`, em
+  // vez de deixar a Asaas criar um cliente novo sem notificationDisabled).
+  // Nome/endereço/dados do cartão continuam exclusivamente na página
+  // hospedada da Asaas (Asaas rejeita customerData parcial sem endereço,
+  // que a UniFlow nunca coletou -- por isso o Checkout nunca envia
+  // customerData, só o `customer` já identificado).
+  const canSubmit = isValidCpfCnpjFormat(digits) && !isSubmitting;
 
   return (
     <Modal
@@ -353,31 +355,30 @@ function SubscriptionMethodModal({
       </div>
 
       <p className={styles.checkoutSectionTitle}>Dados para emissão da cobrança</p>
-      {paymentMethod === 'pix' ? (
-        <label className={styles.cpfField}>
-          <span>CPF ou CNPJ</span>
-          <span className={styles.cpfInputWrap}>
-            <span className={styles.cpfInputIcon} aria-hidden="true"><UserGlyph /></span>
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              value={cpfCnpj}
-              onChange={(event) => setCpfCnpj(event.target.value)}
-              placeholder="000.000.000-00"
-              aria-invalid={cpfCnpj.length > 0 && !isValidCpfCnpjFormat(digits)}
-            />
-          </span>
-          <small className={styles.cpfHelper}>
-            <LockGlyph /> Necessário para processar sua cobrança com segurança. Não armazenamos seus dados bancários.
-          </small>
-        </label>
-      ) : (
+      <label className={styles.cpfField}>
+        <span>CPF ou CNPJ</span>
+        <span className={styles.cpfInputWrap}>
+          <span className={styles.cpfInputIcon} aria-hidden="true"><UserGlyph /></span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={cpfCnpj}
+            onChange={(event) => setCpfCnpj(event.target.value)}
+            placeholder="000.000.000-00"
+            aria-invalid={cpfCnpj.length > 0 && !isValidCpfCnpjFormat(digits)}
+          />
+        </span>
+        <small className={styles.cpfHelper}>
+          <LockGlyph /> Necessário para processar sua cobrança com segurança. Não armazenamos seus dados bancários.
+        </small>
+      </label>
+      {paymentMethod === 'credit_card' ? (
         <p className={styles.hint}>
           <LockGlyph />
-          Você informará seus dados (CPF, nome e endereço) diretamente na página segura do Asaas.
+          Nome, endereço e dados do cartão serão informados diretamente na página segura do Asaas.
         </p>
-      )}
+      ) : null}
       {submitError ? <p className={styles.methodError} role="alert">{submitError}</p> : null}
     </Modal>
   );
@@ -636,12 +637,35 @@ if (!resolvedWorkspaceId) {
 
   resolvedWorkspaceId = workspaceResult.data.id;
 }
-    // BLOCO ASAAS CHECKOUT: cartão nunca passa por createCustomer/
-    // createSubscription -- o Checkout hospedado cria cliente e assinatura
-    // do lado da Asaas. Redireciona na MESMA aba para checkout_url; nunca
-    // considera o plano ativo só por isso (a rota de retorno consulta
-    // billing-get-subscription de verdade).
+    // CORRECAO NOTIFICACOES (cartao): billing-create-customer PRIMEIRO --
+    // garante/reutiliza (nunca duplica) o customer Asaas do workspace, já
+    // nascendo com notificationDisabled:true (mesma Edge Function do Pix,
+    // já em Production). SEMPRE sequencial, nunca em paralelo com
+    // createCheckout: se a criação/reuso do customer falhar, o Checkout
+    // NUNCA abre -- nenhuma cobrança é criada sem um customer identificado.
+    // billing-create-checkout resolve o asaas_customer_id correto pelo
+    // workspace autenticado, do lado do servidor -- o frontend nunca envia
+    // um customer id para o Checkout. Redireciona na MESMA aba para
+    // checkout_url; nunca considera o plano ativo só por isso (a rota de
+    // retorno consulta billing-get-subscription de verdade).
     if (paymentMethod === 'credit_card') {
+      let cardCustomerResult;
+      try {
+        cardCustomerResult = await withTimeout(
+          createCustomer({ workspaceId: resolvedWorkspaceId, cpfCnpj }),
+          PIX_CREATION_TIMEOUT_MS,
+        );
+      } catch {
+        setSubmitError('Não foi possível preparar seu cadastro de pagamento. Tente novamente.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (cardCustomerResult.error) {
+        setSubmitError('Não foi possível preparar seu cadastro de pagamento. Tente novamente.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const checkoutResult = await createCheckout({ workspaceId: resolvedWorkspaceId })
       if (checkoutResult.error || !checkoutResult.data?.checkout_url) {
         setSubmitError('Não foi possível iniciar o pagamento por cartão agora. Tente novamente em instantes.');
