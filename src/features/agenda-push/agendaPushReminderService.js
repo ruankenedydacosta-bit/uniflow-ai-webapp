@@ -38,3 +38,26 @@ export async function getAgendaPushReminderState(agendaItemId) {
 
   return createResult(data ?? null, error);
 }
+
+/**
+ * AGPUSH2: estados de lembrete de VARIOS compromissos de uma vez -- fonte
+ * do indicador ("30 min antes"/"1h antes") exibido nos cards da Agenda.
+ * Uma consulta por lista renderizada, nunca uma por card.
+ *
+ * Somente LEITURA, RLS-scoped (agenda_push_reminders_select_own): traz
+ * apenas as linhas do proprio usuario, e nunca seleciona decision_token
+ * (fora do GRANT de SELECT, migration 043 -- inalterada por esta fase).
+ */
+export async function listAgendaPushReminderStates(agendaItemIds) {
+  if (!supabase) return createUnavailableResult([]);
+
+  const ids = (agendaItemIds ?? []).filter((id) => typeof id === 'string' && id);
+  if (ids.length === 0) return createResult([]);
+
+  const { data, error } = await supabase
+    .from('agenda_push_reminders')
+    .select('id, agenda_item_id, reminder_offset_minutes, reminder_decision_at, reminder_sent_at')
+    .in('agenda_item_id', ids);
+
+  return createResult(data ?? [], error);
+}

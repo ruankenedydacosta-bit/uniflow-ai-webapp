@@ -1,5 +1,138 @@
+/* AGPUSH2 (microinteração): feedback de toque, confirmação e recolhimento
+   do modal "Quando devo te lembrar?".
+
+   Paleta: SOMENTE tokens de marca já existentes -- violeta
+   (--uf-app-ai) -> azul elétrico (--uf-app-primary) -> ciano
+   (--uf-app-cyan). Nenhuma cor nova. */
+
 .choices {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* ---------------------------------------------------------------------
+   FASE 1 -- feedback imediato do toque: o botão "afunda" de leve e ganha
+   um brilho interno muito discreto na identidade UniFlow.
+   --------------------------------------------------------------------- */
+.choiceButton {
+  transition:
+    transform 140ms cubic-bezier(0.33, 0, 0.2, 1),
+    box-shadow 140ms cubic-bezier(0.33, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.choiceButton:active:not(:disabled) {
+  transform: scale(0.97);
+  box-shadow:
+    inset 0 0 12px color-mix(in srgb, var(--uf-app-primary) 22%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--uf-app-ai) 12%, transparent);
+}
+
+/* ---------------------------------------------------------------------
+   Confirmação da escolha ("✓ 30 min antes"), mostrada por um instante
+   antes do modal recolher.
+   --------------------------------------------------------------------- */
+.confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 0 2px;
+  color: var(--uf-app-text);
+  font-size: 15px;
+  font-weight: 700;
+  animation: confirmationIn 160ms cubic-bezier(0.33, 0, 0.2, 1) both;
+}
+
+.checkIcon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--uf-app-cyan);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--uf-app-cyan) 55%, transparent));
+}
+
+@keyframes confirmationIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---------------------------------------------------------------------
+   FASE 2 -- o modal não some: ele se condensa/recolhe para o centro.
+   Sem bounce.
+   --------------------------------------------------------------------- */
+.dialog {
+  transform-origin: center center;
+  transition:
+    transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dialogCollapsing {
+  transform: scale(0.92);
+  opacity: 0;
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+/* "Não precisa": nada é instalado no compromisso, então não há partícula
+   viajando -- a energia se dissolve no próprio modal. */
+.dialogDissolving {
+  position: relative;
+}
+
+.dialogDissolving::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%,
+    color-mix(in srgb, var(--uf-app-cyan) 22%, transparent) 0%,
+    color-mix(in srgb, var(--uf-app-ai) 12%, transparent) 45%,
+    transparent 75%);
+  animation: dissolveFlash 220ms cubic-bezier(0.33, 0, 0.2, 1) both;
+}
+
+@keyframes dissolveFlash {
+  0%   { opacity: 0; }
+  40%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------
+   Obrigatório: ninguém é forçado a ver a animação. Confirmação + fade
+   simples, sem recolhimento, sem blur, sem brilho pulsando.
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .choiceButton,
+  .dialog {
+    transition: opacity 120ms linear;
+  }
+
+  .choiceButton:active:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .confirmation {
+    animation: none;
+  }
+
+  .dialogCollapsing {
+    transform: none;
+    filter: none;
+  }
+
+  .dialogDissolving::after {
+    animation: none;
+    opacity: 0;
+  }
 }

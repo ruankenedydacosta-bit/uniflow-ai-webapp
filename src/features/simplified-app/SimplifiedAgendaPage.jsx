@@ -19,8 +19,21 @@ import {
   WEEKDAY_HEADER_LABELS,
 } from './simplifiedAgendaCalendar.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
-import { ChevronRightIcon } from './SimplifiedIcons.jsx';
+import { BellIcon, ChevronRightIcon } from './SimplifiedIcons.jsx';
+import {
+  cancelReminderAppliedAnimation,
+  playReminderAppliedAnimation,
+} from '../agenda-push/agendaReminderAnimation.js';
+import { resolveReminderIndicator } from '../agenda-push/agendaReminderIndicator.js';
+import { useAgendaReminderStates } from '../agenda-push/useAgendaReminderStates.js';
+import animationStyles from '../agenda-push/agendaReminderAnimation.module.css';
 import styles from './simplifiedAgenda.module.css';
+
+// AGPUSH2: atributo estável usado SÓ pela microinteração para localizar o
+// card de destino da partícula. Não é seletor de estilo e não participa da
+// lógica da Agenda -- se o card não estiver montado, a animação
+// simplesmente não acontece (fallback), nunca um erro.
+export const AGENDA_REMINDER_TARGET_ATTRIBUTE = 'data-agenda-reminder-target';
 
 /**
  * Agenda visual da experiência simplificada (rota /app/agenda, acessada via
@@ -122,7 +135,56 @@ function SimplifiedAgendaPage() {
   }, [workspaceId]);
 
   const groupedItems = useMemo(() => groupAgendaItemsByDay(agenda.items), [agenda.items]);
-  const selectedDayItems = groupedItems.get(selectedDayKey) ?? [];
+  // Memoizado: `?? []` criaria um array novo a cada render, invalidando o
+  // useMemo de visibleItemIds abaixo e refazendo a leitura dos lembretes
+  // sem necessidade.
+  const selectedDayItems = useMemo(
+    () => groupedItems.get(selectedDayKey) ?? [],
+    [groupedItems, selectedDayKey],
+  );
+
+  // AGPUSH2: indicador de lembrete dos cards visíveis -- sempre a partir do
+  // estado REALMENTE persistido (agenda_push_reminders), nunca de "a
+  // animação rodou". É isso que faz o indicador sobreviver a reload e
+  // refletir uma decisão tomada em outro dispositivo.
+  const visibleItemIds = useMemo(
+    () => selectedDayItems.map((item) => item.id),
+    [selectedDayItems],
+  );
+  const { statesByItemId, applyDecision } = useAgendaReminderStates(visibleItemIds);
+
+  // Nenhuma partícula pode sobreviver à saída da tela.
+  useEffect(() => cancelReminderAppliedAnimation, []);
+
+  // AGPUSH2: só chega aqui DEPOIS de a decisão ter sido persistida com
+  // sucesso (o modal nunca chama isto em caso de erro). A ordem importa: o
+  // estado real entra primeiro (o indicador já é verdade), e a animação é
+  // pura consequência visual.
+  function handleReminderApplied({ agendaItemId, offsetMinutes, originRect }) {
+    applyDecision(agendaItemId, offsetMinutes);
+    setReminderPromptItem(null);
+
+    // "Não precisa" não instala nada no compromisso -- nenhuma partícula
+    // viaja até o card (a dissolução acontece no próprio modal).
+    if (offsetMinutes == null || !originRect) return;
+
+    const targetElement = document.querySelector(
+      `[${AGENDA_REMINDER_TARGET_ATTRIBUTE}="${agendaItemId}"]`,
+    );
+    // Card fora da viewport/desmontado: sem partícula e, principalmente,
+    // sem scroll automático e sem navegar a tela sozinho. O indicador já
+    // aparece normalmente quando o card voltar a ser visível.
+    playReminderAppliedAnimation({
+      originRect,
+      targetElement,
+      classNames: {
+        overlay: animationStyles.overlay,
+        particle: animationStyles.particle,
+        cardGlow: animationStyles.cardGlow,
+        cardRing: animationStyles.cardRing,
+      },
+    });
+  }
 
   function selectToday() {
     const today = new Date();
@@ -255,20 +317,32 @@ function SimplifiedAgendaPage() {
           <p className={styles.stateMessage}>Nenhum compromisso neste dia.</p>
         ) : (
           <ul className={styles.dayItems}>
-            {selectedDayItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  className={styles.itemButton}
-                  onClick={() => openEdit(item)}
-                  aria-label={`${item.title}, ${formatAgendaItemTime(item)}`}
-                >
-                  <span className={styles.itemTime} aria-hidden="true">{formatAgendaItemTime(item)}</span>
-                  <span className={styles.itemTitle}>{item.title}</span>
-                  <span className={styles.itemChevron} aria-hidden="true"><ChevronRightIcon /></span>
-                </button>
-              </li>
-            ))}
+            {selectedDayItems.map((item) => {
+              const reminder = resolveReminderIndicator(statesByItemId.get(item.id));
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className={styles.itemButton}
+                    onClick={() => openEdit(item)}
+                    aria-label={`${item.title}, ${formatAgendaItemTime(item)}${reminder ? `, lembrete ${reminder.label}` : ''}`}
+                    {...{ [AGENDA_REMINDER_TARGET_ATTRIBUTE]: item.id }}
+                  >
+                    <span className={styles.itemTime} aria-hidden="true">{formatAgendaItemTime(item)}</span>
+                    <span className={styles.itemMain}>
+                      <span className={styles.itemTitle}>{item.title}</span>
+                      {reminder ? (
+                        <span className={styles.reminderChip} aria-hidden="true">
+                          <span className={styles.reminderChipIcon}><BellIcon /></span>
+                          {reminder.label}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className={styles.itemChevron} aria-hidden="true"><ChevronRightIcon /></span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -297,6 +371,7 @@ function SimplifiedAgendaPage() {
         <AgendaReminderChoiceModal
           item={reminderPromptItem}
           onClose={() => setReminderPromptItem(null)}
+          onReminderApplied={handleReminderApplied}
         />
       ) : null}
     </div>

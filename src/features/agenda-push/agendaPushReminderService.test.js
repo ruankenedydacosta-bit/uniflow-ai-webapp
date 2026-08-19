@@ -46,3 +46,35 @@ test('retorna { data, error, isConfigured } -- mesmo contrato dos demais service
     /function createResult\(data, error = null\) \{\s*\n\s*return \{\s*\n\s*data,\s*\n\s*error,\s*\n\s*isConfigured: isSupabaseConfigured,\s*\n\s*\};/,
   );
 });
+
+// ============================================================================
+// AGPUSH2 -- leitura em lote que alimenta o indicador dos cards.
+// ============================================================================
+
+test('listAgendaPushReminderStates busca todos os compromissos visiveis numa unica consulta (.in), nunca uma por card', async () => {
+  const content = await source();
+  const fnBody = content.slice(content.indexOf('export async function listAgendaPushReminderStates'));
+  assert.match(fnBody, /\.in\('agenda_item_id', ids\)/);
+});
+
+test('a leitura em lote tambem nunca seleciona decision_token', async () => {
+  const content = await source();
+  const fnBody = content.slice(content.indexOf('export async function listAgendaPushReminderStates'));
+  const selectCall = fnBody.slice(fnBody.indexOf(".select('"), fnBody.indexOf("')", fnBody.indexOf(".select('")) + 2);
+  assert.doesNotMatch(selectCall, /decision_token/);
+  assert.match(selectCall, /agenda_item_id/);
+  assert.match(selectCall, /reminder_offset_minutes/);
+});
+
+test('lista vazia (ou so com ids invalidos) nunca chega a consultar o Supabase', async () => {
+  const content = await source();
+  const fnBody = content.slice(content.indexOf('export async function listAgendaPushReminderStates'));
+  assert.match(fnBody, /if \(ids\.length === 0\) return createResult\(\[\]\);/);
+  assert.match(fnBody, /typeof id === 'string' && id/);
+});
+
+test('a leitura em lote e SOMENTE leitura -- nunca escreve na tabela', async () => {
+  const content = await source();
+  const fnBody = content.slice(content.indexOf('export async function listAgendaPushReminderStates'));
+  assert.doesNotMatch(fnBody, /\.update\(|\.insert\(|\.upsert\(|\.delete\(/);
+});

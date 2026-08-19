@@ -310,15 +310,60 @@
   font-weight: 800;
 }
 
-.itemTitle {
+/* AGPUSH2: título + indicador de lembrete empilhados. O card já tinha
+   min-height 54px com uma única linha de 15px, então o chip (11px) cabe
+   dentro da altura existente -- nada é comprimido e o layout não pula. */
+.itemMain {
   min-width: 0;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.itemTitle {
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   color: var(--uf-app-text-2);
   font-size: 15px;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Indicador discreto de que existe lembrete configurado -- chip
+   secundário, nunca um novo componente. Cor: token de marca já existente
+   (--uf-app-primary-text), o mesmo já usado pelo horário do card. */
+.reminderChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--uf-app-primary-text);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reminderChipIcon {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+}
+
+.reminderChipIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
 }
 
 .itemChevron {

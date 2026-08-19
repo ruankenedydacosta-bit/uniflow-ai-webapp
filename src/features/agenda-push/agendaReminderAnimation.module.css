@@ -1,0 +1,129 @@
+/* AGPUSH2 (microinteracao): camada visual da "energia da Uni" que viaja do
+   modal ate o card do compromisso. Todo o movimento e feito via Web
+   Animations API (agendaReminderAnimation.js) -- aqui ficam so a aparencia
+   e a geometria estatica.
+
+   Paleta: SOMENTE tokens de marca ja existentes -- violeta
+   (--uf-app-ai) -> azul eletrico (--uf-app-primary) -> ciano
+   (--uf-app-cyan). Nenhuma cor nova, nenhum hex hardcoded: os tres tokens
+   ja trocam sozinhos entre os temas claro/escuro/uniflow. */
+
+/* Necessario para o navegador INTERPOLAR o angulo do gradiente conico do
+   contorno (sem isso a custom property so trocaria de valor em degraus, e
+   o brilho nao "percorreria" a borda). Ignorado com seguranca por
+   navegadores que nao suportam -- o brilho ainda aparece e some, so nao
+   gira. */
+@property --uf-agenda-ring-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  /* Nunca captura toque: o usuario continua interagindo com a Agenda
+     normalmente enquanto a animacao roda. */
+  pointer-events: none;
+  /* Acima do modal (--uf-z-modal), abaixo de toast/tooltip -- token
+     existente, nunca um z-index numerico solto (regra da utilities.css). */
+  z-index: var(--uf-z-popover);
+  contain: strict;
+}
+
+/* ---------------------------------------------------------------------
+   A particula: UMA unica esfera de energia -- nunca chuva de particulas,
+   nunca explosao. Nucleo claro + halo em degrade da marca.
+   --------------------------------------------------------------------- */
+.particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  /* Centraliza a esfera no ponto da trajetoria (o transform e totalmente
+     controlado pelos keyframes, entao a centralizacao nao pode depender
+     dele). */
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%,
+      #fff 0%,
+      var(--uf-app-cyan) 32%,
+      var(--uf-app-primary) 62%,
+      var(--uf-app-ai) 100%);
+  box-shadow:
+    0 0 6px 1px color-mix(in srgb, var(--uf-app-cyan) 70%, transparent),
+    0 0 16px 4px color-mix(in srgb, var(--uf-app-primary) 45%, transparent),
+    0 0 26px 8px color-mix(in srgb, var(--uf-app-ai) 28%, transparent);
+  will-change: transform, opacity;
+}
+
+/* Rastro MUITO curto: um halo desfocado logo atras do nucleo. Da a
+   sensacao de energia em movimento sem virar um cometa atravessando a
+   tela. */
+.particle::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%,
+    color-mix(in srgb, var(--uf-app-primary) 55%, transparent) 0%,
+    transparent 70%);
+  filter: blur(4px);
+}
+
+/* ---------------------------------------------------------------------
+   FASE 6 -- luz radial interna do card no momento da absorcao.
+   Opacidade baixa de proposito: acende por dentro sem lavar o card de
+   branco e sem prejudicar a legibilidade do texto.
+   --------------------------------------------------------------------- */
+.cardGlow {
+  position: absolute;
+  opacity: 0;
+  background: radial-gradient(circle at 22% 50%,
+    color-mix(in srgb, var(--uf-app-cyan) 26%, transparent) 0%,
+    color-mix(in srgb, var(--uf-app-primary) 18%, transparent) 38%,
+    color-mix(in srgb, var(--uf-app-ai) 10%, transparent) 62%,
+    transparent 85%);
+  will-change: opacity;
+}
+
+/* ---------------------------------------------------------------------
+   FASE 7 -- brilho percorrendo o CONTORNO. Um anel fino real (mask
+   composite recorta o miolo), com gradiente conico girando: a energia da
+   uma volta pela borda, em vez de um box-shadow piscando.
+   O border-radius e injetado por JS a partir do computed style do proprio
+   card -- o contorno nunca desalinha do card real.
+   --------------------------------------------------------------------- */
+.cardRing {
+  position: absolute;
+  opacity: 0;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--uf-agenda-ring-angle),
+    transparent 0deg,
+    color-mix(in srgb, var(--uf-app-ai) 85%, transparent) 34deg,
+    color-mix(in srgb, var(--uf-app-primary) 92%, transparent) 68deg,
+    var(--uf-app-cyan) 96deg,
+    transparent 132deg,
+    transparent 360deg);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  will-change: opacity;
+}
+
+/* Defesa em profundidade: agendaReminderAnimation.js ja retorna cedo em
+   prefers-reduced-motion (nem cria o overlay). Se por qualquer caminho um
+   no chegar a existir, ele nunca se move. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    display: none;
+  }
+}
