@@ -69,6 +69,14 @@ export function createPushService({
     sendTestNotification({ workspaceId } = {}) {
       return invokePushFunction('push-send-test-notification', { workspace_id: workspaceId });
     },
+    // AGPUSH1: caminho autenticado (sessao do proprio usuario) de
+    // agenda-push-decision -- usado pelo modal de escolha dentro do app
+    // (fallback iPhone, ou reabrir a pergunta via deep link). offset deve
+    // ser exatamente '30', '60' ou 'none'; a Edge Function reaplica essa
+    // validacao no servidor, nunca confia so no cliente.
+    sendAgendaReminderDecision({ agendaItemId, offset } = {}) {
+      return invokePushFunction('agenda-push-decision', { agenda_item_id: agendaItemId, offset });
+    },
   };
 }
 
@@ -77,3 +85,4 @@ const defaultPushService = createPushService({
 });
 
 export const sendTestNotification = defaultPushService.sendTestNotification;
+export const sendAgendaReminderDecision = defaultPushService.sendAgendaReminderDecision;

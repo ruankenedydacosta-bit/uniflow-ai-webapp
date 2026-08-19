@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { useAgenda } from '../../hooks/useAgenda.js';
+import { getAgendaItem } from '../../services/agendaService.js';
 import AgendaDeleteConfirmModal from '../../pages/agenda/AgendaDeleteConfirmModal.jsx';
 import { getAgendaItemErrorMessage } from '../../pages/agenda/agendaFormUtils.js';
+import AgendaReminderChoiceModal from './AgendaReminderChoiceModal.jsx';
 import SimplifiedAgendaFormModal from './SimplifiedAgendaFormModal.jsx';
 import {
   buildMonthGrid,
@@ -60,6 +62,7 @@ function ChevronLeftButtonIcon() {
 
 function SimplifiedAgendaPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
 
@@ -77,6 +80,46 @@ function SimplifiedAgendaPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
+  const [reminderPromptItem, setReminderPromptItem] = useState(null);
+
+  // AGPUSH1: deep link vindo de um push de Agenda (?item=<id>, com
+  // reminderPrompt=1 quando a origem e a PERGUNTA "quer que eu te
+  // lembre?") -- localiza o compromisso, leva o calendario ate o dia dele
+  // e, no caso da pergunta, abre a escolha pequena (fallback iPhone/sem
+  // actions). RLS de getAgendaItem ja garante ownership; um item
+  // inexistente ou de outro workspace simplesmente nao abre nada.
+  useEffect(() => {
+    const itemId = searchParams.get('item');
+    if (!itemId || !workspaceId) return undefined;
+
+    let cancelled = false;
+    (async () => {
+      const result = await getAgendaItem(workspaceId, itemId);
+      if (cancelled || !result?.data) return;
+
+      const item = result.data;
+      const startsAt = new Date(item.starts_at);
+      if (!Number.isNaN(startsAt.getTime())) {
+        setView({ year: startsAt.getFullYear(), month: startsAt.getMonth() });
+        setSelectedDayKey(toDateKey(startsAt));
+      }
+
+      if (searchParams.get('reminderPrompt') === '1') {
+        setReminderPromptItem(item);
+      }
+    })();
+
+    setSearchParams((params) => {
+      params.delete('item');
+      params.delete('reminderPrompt');
+      return params;
+    }, { replace: true });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId]);
 
   const groupedItems = useMemo(() => groupAgendaItemsByDay(agenda.items), [agenda.items]);
   const selectedDayItems = groupedItems.get(selectedDayKey) ?? [];
@@ -247,6 +290,13 @@ function SimplifiedAgendaPage() {
           item={deletingItem}
           agenda={agenda}
           onClose={() => setDeletingItem(null)}
+        />
+      ) : null}
+
+      {reminderPromptItem ? (
+        <AgendaReminderChoiceModal
+          item={reminderPromptItem}
+          onClose={() => setReminderPromptItem(null)}
         />
       ) : null}
     </div>

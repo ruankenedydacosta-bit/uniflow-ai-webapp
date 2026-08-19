@@ -24,9 +24,9 @@ function makeService({ fetchImpl, token = 'jwt-token', supabase = fakeSupabase(t
   });
 }
 
-test('pushService expoe exatamente sendTestNotification', () => {
+test('pushService expoe exatamente sendTestNotification e sendAgendaReminderDecision', () => {
   const service = makeService({ fetchImpl: async () => jsonResponse(200, {}) });
-  assert.deepEqual(Object.keys(service), ['sendTestNotification']);
+  assert.deepEqual(Object.keys(service), ['sendTestNotification', 'sendAgendaReminderDecision']);
 });
 
 test('sendTestNotification chama SOMENTE push-send-test-notification', async () => {
@@ -84,4 +84,50 @@ test('nunca envia titulo/corpo/alvo do cliente no corpo da requisicao -- payload
   });
   await service.sendTestNotification({ workspaceId: 'ws-1' });
   assert.deepEqual(Object.keys(sentBody), ['workspace_id']);
+});
+
+// ============================================================================
+// AGPUSH1 -- sendAgendaReminderDecision (caminho autenticado de
+// agenda-push-decision, usado pelo modal de escolha dentro do app).
+// ============================================================================
+
+test('sendAgendaReminderDecision chama SOMENTE agenda-push-decision, com sessao do proprio usuario', async () => {
+  let calledUrl = null;
+  let sentAuth = null;
+  const service = makeService({
+    fetchImpl: async (url, init) => {
+      calledUrl = url;
+      sentAuth = init.headers.Authorization;
+      return jsonResponse(200, { applied: true });
+    },
+  });
+  await service.sendAgendaReminderDecision({ agendaItemId: 'item-1', offset: '30' });
+  assert.equal(calledUrl, 'https://demo.supabase.co/functions/v1/agenda-push-decision');
+  assert.equal(sentAuth, 'Bearer jwt-token');
+});
+
+test('sendAgendaReminderDecision envia exatamente agenda_item_id e offset -- nunca token/user_id/workspace_id', async () => {
+  let sentBody = null;
+  const service = makeService({
+    fetchImpl: async (_url, init) => { sentBody = JSON.parse(init.body); return jsonResponse(200, { applied: true }); },
+  });
+  await service.sendAgendaReminderDecision({ agendaItemId: 'item-1', offset: 'none' });
+  assert.deepEqual(sentBody, { agenda_item_id: 'item-1', offset: 'none' });
+});
+
+test('sendAgendaReminderDecision resolve com { data, error: null } em caso de sucesso -- nunca lanca', async () => {
+  const service = makeService({ fetchImpl: async () => jsonResponse(200, { applied: true }) });
+  const result = await service.sendAgendaReminderDecision({ agendaItemId: 'item-1', offset: '30' });
+  assert.deepEqual(result, { data: { applied: true }, error: null });
+});
+
+test('sendAgendaReminderDecision sem sessao nunca vaza para chamada de rede', async () => {
+  let called = false;
+  const service = makeService({
+    token: null,
+    fetchImpl: async () => { called = true; return jsonResponse(200, {}); },
+  });
+  const result = await service.sendAgendaReminderDecision({ agendaItemId: 'item-1', offset: '30' });
+  assert.equal(called, false);
+  assert.deepEqual(result.error, { code: 'UNAUTHORIZED', message: 'push_auth_required' });
 });
