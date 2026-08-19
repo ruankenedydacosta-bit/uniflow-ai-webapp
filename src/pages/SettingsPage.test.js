@@ -119,19 +119,6 @@ test('Preferências da Uni, Voz e interação e Notificações usam ComingSoonSe
   assert.doesNotMatch(page, /settingsMock\.uniPreferences|settingsMock\.voiceInteraction|settingsMock\.notifications/);
 });
 
-// PUSH1: a fundacao de Web Push substitui SOMENTE o "Em breve" da secao de
-// notificacoes por um card real -- Preferencias da Uni e Voz e interacao
-// continuam ComingSoonSection (teste acima ja garante isso).
-test('MobilePushSettingsCard esta na secao de preferencias, antes do ComingSoonSection de Notificações', async () => {
-  const page = await source('SettingsPage.jsx');
-  assert.match(page, /import MobilePushSettingsCard from '\.\.\/features\/mobile-push\/MobilePushSettingsCard\.jsx';/);
-  const preferencesSection = page.slice(page.indexOf('id={SECTION_IDS.preferencias}'), page.indexOf('id={SECTION_IDS.seguranca}'));
-  assert.match(preferencesSection, /<MobilePushSettingsCard \/>/);
-  const cardIndex = preferencesSection.indexOf('<MobilePushSettingsCard />');
-  const comingSoonIndex = preferencesSection.indexOf('title="Notificações"');
-  assert.ok(cardIndex >= 0 && comingSoonIndex > cardIndex, 'card real deve vir antes do placeholder Em breve');
-});
-
 test('nenhum badge "Ativo" fictício para voz ou preferências inexistentes (o unico "Ativo" real e o de Modo de uso, vindo de access.userMode)', async () => {
   const page = await source('SettingsPage.jsx');
   const ativoOccurrences = page.match(/>\s*Ativo\s*</g) ?? [];

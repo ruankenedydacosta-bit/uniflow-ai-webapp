@@ -1,0 +1,63 @@
+/* Mesmo vocabulario visual de .profileCard (simplifiedAccount.module.css) --
+   esta seção vive na mesma tela (Conta), então usa os mesmos tokens de
+   borda/fundo/raio/texto para parecer parte natural da página, não um
+   componente importado de outro lugar. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 22px;
+  background: var(--uf-app-card-bg);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header h2 {
+  margin: 0 0 4px;
+  color: var(--uf-app-text);
+  font-size: 17px;
+  font-weight: 720;
+  line-height: 1.2;
+}
+
+.header p {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.hint {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.error {
+  margin: 0;
+  color: var(--uf-app-danger-text);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.success {
+  margin: 0;
+  color: var(--uf-app-success-text);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}

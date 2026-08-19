@@ -8,6 +8,7 @@ import Modal from '../../components/ui/Modal/Modal.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
 import AnalyticsConsentPreferencesModal from '../analytics/AnalyticsConsentPreferencesModal.jsx';
 import { useAnalyticsConsent } from '../analytics/useAnalyticsConsent.js';
+import SimplifiedPushNotificationsCard from '../mobile-push/SimplifiedPushNotificationsCard.jsx';
 import {
   PERSONAL_PLAN_PRICE_LABEL,
   PERSONAL_PLAN_PRICE_PERIOD,
@@ -239,6 +240,8 @@ function SimplifiedAccountPage() {
         ) : null}
         <span className={styles.planChevron} aria-hidden="true"><ChevronRightIcon /></span>
       </button>
+
+      <SimplifiedPushNotificationsCard />
 
       <section className={styles.menuCard} aria-label="Configurações da conta">
         {menuItems.map((item) => (

@@ -12,7 +12,6 @@ import { ThemeSelector } from '../features/theme';
 import { useVoicePreference } from '../features/uni-voice-tts';
 import { getPasswordResetRequestFeedback } from '../features/auth-mobile/passwordRecoveryUtils.js';
 import ComingSoonSection from './configuracoes/ComingSoonSection.jsx';
-import MobilePushSettingsCard from '../features/mobile-push/MobilePushSettingsCard.jsx';
 import ProfileEditModal from './configuracoes/ProfileEditModal.jsx';
 import { getProfileDisplayName } from './configuracoes/profileFormUtils.js';
 import { settingsMock } from './configuracoes/settings.mock.js';
@@ -289,12 +288,10 @@ function SettingsPage() {
           message="Configurações de voz e interação ainda não estão disponíveis nesta tela."
         />
 
-        <MobilePushSettingsCard />
-
         <ComingSoonSection
           title="Notificações"
           description="A Uni só deve interromper quando houver valor real."
-          message="Lembretes automáticos da Agenda ainda não estão disponíveis — esta é só a base técnica."
+          message="Preferências de notificações ainda não estão disponíveis."
         />
       </section>
 

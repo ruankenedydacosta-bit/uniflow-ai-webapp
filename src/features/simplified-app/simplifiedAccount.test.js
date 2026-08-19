@@ -216,6 +216,28 @@ test('NOTIFICATIONS e PRIVACY não existem mais em ACCOUNT_SUBROUTE_IDS/ACCOUNT_
   assert.doesNotMatch(routesSource, /PRIVACY:/);
 });
 
+// PUSH1 (ajuste de UX): a ativação de Web Push mora em Conta -- a única tela
+// real alcançável pela navegação (a antiga /configuracoes nunca é
+// renderizada de verdade, App.jsx redireciona qualquer rota não
+// simplificada para /app/home). É uma SEÇÃO própria (não uma subrota nova,
+// nem um item de menuItems que navega para outro lugar) -- fica visível
+// direto nesta tela, entre o card do plano e o menu de configurações.
+test('SimplifiedPushNotificationsCard é importado e renderizado como seção própria em Conta, entre o card do plano e o menu', async () => {
+  const page = await source('./SimplifiedAccountPage.jsx');
+  assert.match(page, /import SimplifiedPushNotificationsCard from '\.\.\/mobile-push\/SimplifiedPushNotificationsCard\.jsx';/);
+  const planCardIndex = page.indexOf('planChevron');
+  const cardIndex = page.indexOf('<SimplifiedPushNotificationsCard />');
+  const menuCardIndex = page.indexOf('styles.menuCard');
+  assert.ok(planCardIndex > -1 && cardIndex > planCardIndex, 'card deve vir depois do card do plano');
+  assert.ok(cardIndex > -1 && menuCardIndex > cardIndex, 'card deve vir antes do menu de configurações');
+});
+
+test('nenhuma rota nova foi criada para Web Push -- ACCOUNT_SUBROUTES continua com exatamente os mesmos 10 paths', async () => {
+  const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path);
+  assert.equal(paths.length, 10);
+  assert.ok(!paths.some((path) => /push|notifica/i.test(path)), 'nenhum path novo relacionado a push/notificações');
+});
+
 test('useAccounts não é mais importado nesta tela -- "Minhas contas" não faz mais parte do menu de Conta', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
   assert.doesNotMatch(page, /useAccounts/);
