@@ -59,10 +59,17 @@ test('actions no payload da pergunta so quando subscription.platform === android
   assert.match(fnBody, /\.\.\.\(isAndroid \? \{/);
 });
 
-test('actions usam identificadores internos estaveis (agenda_remind_30/60/none), nunca o texto do botao como chave', () => {
-  assert.match(SOURCE, /action: 'agenda_remind_30'/);
-  assert.match(SOURCE, /action: 'agenda_remind_60'/);
-  assert.match(SOURCE, /action: 'agenda_remind_none'/);
+test('exatamente DUAS actions (30min/1h), identificadores internos estaveis -- nunca "Nao precisa" como terceiro botao nativo', () => {
+  const fnBody = SOURCE.slice(
+    SOURCE.indexOf('function buildPromptPayload'),
+    SOURCE.indexOf('function buildReminderPayload'),
+  );
+  assert.match(fnBody, /action: 'agenda_remind_30'/);
+  assert.match(fnBody, /action: 'agenda_remind_60'/);
+  assert.doesNotMatch(fnBody, /agenda_remind_none/);
+  const actionsBlock = fnBody.slice(fnBody.indexOf('actions: ['), fnBody.indexOf('],'));
+  const actionCount = (actionsBlock.match(/\{ action:/g) ?? []).length;
+  assert.equal(actionCount, 2, 'ignorar/dispensar a notificacao ja produz o mesmo efeito de "Nao precisa" -- nenhuma decisao registrada, nenhum lembrete, sem reperguntar');
 });
 
 test('decision_token viaja so dentro do payload de push (nunca em texto visivel) e e o mesmo devolvido pelo INSERT da pergunta', () => {
@@ -113,4 +120,46 @@ test('404/410 do push service revoga a subscription -- mesmo padrao de push-send
 
 test('nunca persiste um horario absoluto de lembrete -- reminder_sent_at e o unico timestamp de controle, starts_at sempre vem da RPC (live join)', () => {
   assert.doesNotMatch(SOURCE, /reminder_at\b/);
+});
+
+// ============================================================================
+// AGPUSH1 (diagnostico) -- logging sanitizado do resultado real de envio,
+// para nunca mais depender so do contador `sent` como prova de entrega.
+// ============================================================================
+
+test('logPushAttempt loga somente campos sanitizados -- nunca endpoint/p256dh/auth/decision_token/VAPID', () => {
+  const fnBody = SOURCE.slice(
+    SOURCE.indexOf('function logPushAttempt'),
+    SOURCE.indexOf('// Envia o mesmo payload'),
+  );
+  for (const forbidden of ['endpoint', 'p256dh', 'auth', 'decision_token', 'VAPID', 'decisionToken']) {
+    assert.doesNotMatch(fnBody, new RegExp(forbidden), `campo proibido "${forbidden}" nao pode aparecer no log`);
+  }
+  for (const allowed of ['subscription_id', 'platform', 'payload_type', 'push_service_status', 'outcome']) {
+    assert.match(fnBody, new RegExp(allowed), `campo esperado "${allowed}" ausente do log`);
+  }
+});
+
+test('push_service_status vem do MESMO retorno/erro da lib web-push que ja decide sent/revoked/failed -- nunca uma segunda leitura', () => {
+  const fnBody = SOURCE.slice(
+    SOURCE.indexOf('await Promise.all(subscriptions.map'),
+    SOURCE.indexOf('return { sent, revoked, failed'),
+  );
+  assert.match(fnBody, /const result = await webpush\.sendNotification\(/);
+  assert.match(fnBody, /pushServiceStatus: \(result as \{ statusCode\?: number \}\)\?\.statusCode \?\? null,/);
+  assert.match(fnBody, /const statusCode = \(error as \{ statusCode\?: number \}\)\?\.statusCode \?\? null;/);
+});
+
+test('todo resultado de envio (sent/revoked/failed) e logado -- nunca um caminho silencioso', () => {
+  const fnBody = SOURCE.slice(
+    SOURCE.indexOf('await Promise.all(subscriptions.map'),
+    SOURCE.indexOf('return { sent, revoked, failed'),
+  );
+  const logCalls = fnBody.match(/logPushAttempt\(\{/g) ?? [];
+  assert.equal(logCalls.length, 3, 'sent, revoked e failed devem cada um logar exatamente uma vez');
+});
+
+test('payloadType e repassado a sendToUserSubscriptions tanto pela pergunta quanto pelo lembrete -- log sempre distingue os dois', () => {
+  assert.match(SOURCE, /payloadType: 'prompt',/);
+  assert.match(SOURCE, /payloadType: 'reminder',/);
 });

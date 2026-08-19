@@ -197,14 +197,40 @@ async function revokeSubscription(
   });
 }
 
+// AGPUSH1 (diagnostico): registra o resultado de UMA tentativa de envio --
+// somente campos sanitizados (nunca endpoint/p256dh/auth/decision_token/
+// VAPID). push_service_status vem do proprio retorno/erro da lib web-push
+// (mesmo objeto que ja decide sent/revoked/failed, nunca uma segunda
+// leitura); permite provar de verdade se o push service aceitou o envio,
+// em vez de inferir isso indiretamente pelo contador.
+function logPushAttempt({
+  subscriptionId, platform, payloadType, outcome, pushServiceStatus,
+}: {
+  subscriptionId: string;
+  platform: string | null;
+  payloadType: 'prompt' | 'reminder';
+  outcome: 'sent' | 'revoked' | 'failed';
+  pushServiceStatus: number | null;
+}) {
+  console.log(JSON.stringify({
+    at: 'agenda-push-dispatch',
+    subscription_id: subscriptionId,
+    platform,
+    payload_type: payloadType,
+    outcome,
+    push_service_status: pushServiceStatus,
+  }));
+}
+
 // Envia o mesmo payload para TODAS as subscriptions ativas do usuario
 // (multi-device: Android + iPhone recebem ambos) -- a decisao/estado e do
 // COMPROMISSO (agenda_push_reminders), nunca do dispositivo.
 async function sendToUserSubscriptions(
-  { supabaseUrl, serviceRoleKey, userId, buildPayload }: {
+  { supabaseUrl, serviceRoleKey, userId, payloadType, buildPayload }: {
     supabaseUrl: string;
     serviceRoleKey: string;
     userId: string;
+    payloadType: 'prompt' | 'reminder';
     buildPayload: (subscription: ActiveSubscription) => string;
   },
 ) {
@@ -215,18 +241,31 @@ async function sendToUserSubscriptions(
 
   await Promise.all(subscriptions.map(async (subscription) => {
     try {
-      await webpush.sendNotification(
+      const result = await webpush.sendNotification(
         { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
         buildPayload(subscription),
       );
       sent += 1;
+      logPushAttempt({
+        subscriptionId: subscription.id,
+        platform: subscription.platform,
+        payloadType,
+        outcome: 'sent',
+        pushServiceStatus: (result as { statusCode?: number })?.statusCode ?? null,
+      });
     } catch (error) {
-      const statusCode = (error as { statusCode?: number })?.statusCode;
+      const statusCode = (error as { statusCode?: number })?.statusCode ?? null;
       if (statusCode === 404 || statusCode === 410) {
         await revokeSubscription({ supabaseUrl, serviceRoleKey, subscriptionId: subscription.id });
         revoked += 1;
+        logPushAttempt({
+          subscriptionId: subscription.id, platform: subscription.platform, payloadType, outcome: 'revoked', pushServiceStatus: statusCode,
+        });
       } else {
         failed += 1;
+        logPushAttempt({
+          subscriptionId: subscription.id, platform: subscription.platform, payloadType, outcome: 'failed', pushServiceStatus: statusCode,
+        });
       }
     }
   }));
@@ -237,8 +276,16 @@ async function sendToUserSubscriptions(
 // AGPUSH1: actions so quando a plataforma suporta de forma confiavel
 // (Android/Chrome) -- registradas por push_subscriptions.platform, nunca
 // por sniffing no momento do envio. iOS/Safari nunca recebe `actions`;
-// depende do fallback de deep link (ver AGENDA_REMINDER_ACTIONS abaixo e
-// push-notifications-bridge.js/notificationclick).
+// depende do fallback de deep link (ver push-notifications-bridge.js/
+// notificationclick).
+//
+// Somente DUAS actions (30min/1h) -- "Nao precisa" deixou de ser um
+// terceiro botao: ignorar/dispensar a notificacao ja produz o mesmo
+// resultado (nenhuma decisao registrada -> nenhum lembrete enviado -> a
+// pergunta nunca repete, pela mesma trava de idempotencia de sempre). O
+// fallback sem actions (iPhone/deep link) continua oferecendo as tres
+// opcoes no modal dentro do app -- so a notificacao nativa do Android
+// muda.
 function buildPromptPayload(candidate: PromptCandidate, decisionToken: string, subscription: ActiveSubscription) {
   const time = formatSaoPauloTime(candidate.starts_at);
   const isAndroid = subscription.platform === 'android';
@@ -258,7 +305,6 @@ function buildPromptPayload(candidate: PromptCandidate, decisionToken: string, s
       actions: [
         { action: 'agenda_remind_30', title: '30 min antes' },
         { action: 'agenda_remind_60', title: '1h antes' },
-        { action: 'agenda_remind_none', title: 'Não precisa' },
       ],
     } : {}),
   });
@@ -293,6 +339,7 @@ async function processPrompts(
       supabaseUrl,
       serviceRoleKey,
       userId: candidate.user_id,
+      payloadType: 'prompt',
       buildPayload: (subscription) => buildPromptPayload(candidate, claim.decisionToken, subscription),
     });
     sent += result.sent;
@@ -317,6 +364,7 @@ async function processReminders(
       supabaseUrl,
       serviceRoleKey,
       userId: candidate.user_id,
+      payloadType: 'reminder',
       buildPayload: () => buildReminderPayload(candidate),
     });
     sent += result.sent;

@@ -26,7 +26,7 @@ class FakeClient {
   }
 }
 
-async function loadBridge({ existingClients = [], fetchImpl } = {}) {
+async function loadBridge({ existingClients = [], fetchImpl, maxActions } = {}) {
   const listeners = new Map();
   let shownNotification = null;
   let openedUrl = null;
@@ -52,6 +52,10 @@ async function loadBridge({ existingClients = [], fetchImpl } = {}) {
     },
     URL,
     fetch: fetchMock,
+    // AGPUSH1: so injetada quando o teste explicitamente passa maxActions --
+    // omitida por padrao para provar que, sem a API disponivel, o bridge
+    // nunca inventa um limite (repassa as actions como vieram).
+    ...(typeof maxActions === 'number' ? { Notification: { maxActions } } : {}),
   };
   const code = await readFile(bridgeUrl, 'utf8');
   vm.runInNewContext(code, scope, { filename: bridgeUrl.pathname });
@@ -94,10 +98,14 @@ const PROMPT_PAYLOAD = {
     decision_token: 'token-abc',
     url: '/app/agenda?item=item-1&reminderPrompt=1',
   },
+  // AGPUSH1: exatamente as DUAS actions que o backend realmente envia hoje
+  // (30min/1h) -- "Nao precisa" deixou de ser um terceiro botao nativo;
+  // ignorar/dispensar a notificacao ja produz o mesmo efeito. O mapeamento
+  // agenda_remind_none continua no bridge por robustez (ver teste
+  // dedicado abaixo), mas nao faz mais parte do payload real.
   actions: [
     { action: 'agenda_remind_30', title: '30 min antes' },
     { action: 'agenda_remind_60', title: '1h antes' },
-    { action: 'agenda_remind_none', title: 'Não precisa' },
   ],
 };
 
@@ -115,6 +123,40 @@ test('push sem actions no payload (ex.: iOS) nunca inventa actions -- showNotifi
   await bridge.dispatchPush({ title: 'Uni ✦', body: 'x', url: '/app/agenda', data: { agenda_item_id: 'item-2' } });
   const shown = bridge.getShownNotification();
   assert.equal('actions' in shown.options, false);
+});
+
+// ============================================================================
+// AGPUSH1 (defesa de compatibilidade, NAO a causa raiz investigada) --
+// nunca manda ao browser mais actions do que Notification.maxActions
+// relata suportar, quando essa API estiver disponivel.
+// ============================================================================
+
+test('Notification.maxActions disponivel e MENOR que o payload -- corta para o limite relatado', async () => {
+  const bridge = await loadBridge({ maxActions: 1 });
+  await bridge.dispatchPush(PROMPT_PAYLOAD);
+  const shown = bridge.getShownNotification();
+  assert.deepEqual(shown.options.actions, [PROMPT_PAYLOAD.actions[0]]);
+});
+
+test('Notification.maxActions === 0 -- nenhuma action e enviada, notificacao aparece sem botoes', async () => {
+  const bridge = await loadBridge({ maxActions: 0 });
+  await bridge.dispatchPush(PROMPT_PAYLOAD);
+  const shown = bridge.getShownNotification();
+  assert.equal('actions' in shown.options, false);
+});
+
+test('Notification.maxActions maior ou igual ao payload -- nao corta nada', async () => {
+  const bridge = await loadBridge({ maxActions: 5 });
+  await bridge.dispatchPush(PROMPT_PAYLOAD);
+  const shown = bridge.getShownNotification();
+  assert.deepEqual(shown.options.actions, PROMPT_PAYLOAD.actions);
+});
+
+test('Notification.maxActions indisponivel (API nao suportada) -- nunca inventa um limite, repassa as actions como vieram', async () => {
+  const bridge = await loadBridge();
+  await bridge.dispatchPush(PROMPT_PAYLOAD);
+  const shown = bridge.getShownNotification();
+  assert.deepEqual(shown.options.actions, PROMPT_PAYLOAD.actions);
 });
 
 test('action agenda_remind_30 chama agenda-push-decision com offset 30 e o decision_token do payload -- nunca abre/foca janela', async () => {
@@ -138,7 +180,7 @@ test('action agenda_remind_60 envia offset 60', async () => {
   assert.equal(body.offset, '60');
 });
 
-test('action agenda_remind_none envia offset none', async () => {
+test('action agenda_remind_none envia offset none -- mapeamento mantido no bridge por robustez, mesmo o backend nao enviando mais esse botao nativo', async () => {
   const bridge = await loadBridge();
   await bridge.dispatchNotificationClick({ data: PROMPT_PAYLOAD.data, close: () => {} }, 'agenda_remind_none');
   const body = JSON.parse(bridge.getFetchCalls()[0].options.body);

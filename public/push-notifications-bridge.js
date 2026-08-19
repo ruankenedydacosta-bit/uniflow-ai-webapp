@@ -36,8 +36,19 @@
     // AGPUSH1: actions so chegam no payload quando o backend ja decidiu que
     // a plataforma suporta (push_subscriptions.platform === 'android', ver
     // agenda-push-dispatch/index.ts) -- este arquivo nunca decide isso
-    // sozinho, so repassa o que o payload trouxe.
-    const actions = Array.isArray(payload.actions) ? payload.actions : undefined;
+    // sozinho, so repassa o que o payload trouxe. Defesa adicional de
+    // compatibilidade (nao a causa raiz do problema de entrega, so
+    // robustez): nunca manda ao browser mais actions do que
+    // Notification.maxActions relata suportar. Sem essa API disponivel,
+    // repassa como veio -- nunca inventa um limite. Se o corte zerar as
+    // actions, a notificacao aparece sem botoes e o toque no corpo cai no
+    // deep link (?reminderPrompt=1), que abre o mesmo modal com as tres
+    // escolhas dentro do app.
+    const rawActions = Array.isArray(payload.actions) ? payload.actions : [];
+    const maxActions = (typeof Notification !== 'undefined' && typeof Notification.maxActions === 'number')
+      ? Notification.maxActions
+      : rawActions.length;
+    const actions = rawActions.length > 0 ? rawActions.slice(0, maxActions) : [];
 
     event.waitUntil(
       self.registration.showNotification(title, {
@@ -45,7 +56,7 @@
         icon: '/uniflow-icon-192.png',
         badge: '/uniflow-icon-192.png',
         data: { ...(payload.data ?? {}), url },
-        ...(actions ? { actions } : {}),
+        ...(actions.length > 0 ? { actions } : {}),
       }),
     );
   });
