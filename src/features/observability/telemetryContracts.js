@@ -13,6 +13,7 @@ export const TELEMETRY_EVENT_NAMES = Object.freeze([
   'financial_runtime.evaluated',
   'planning.completed',
   'tts.lifecycle',
+  'tts.playback_lifecycle',
   'tool_calling.evaluated',
   'uni_engine.shadow_module_evaluated',
   'uni_engine.shadow_started',
@@ -78,6 +79,9 @@ export const TELEMETRY_ALLOWED_DATA_FIELDS = Object.freeze({
     'latencyMs',
     'confidenceBand',
     'riskBand',
+    'event',
+    'runtimeBuildId',
+    'cacheHit',
   ]),
   [TELEMETRY_KINDS.ERROR]: Object.freeze([
     'errorCode',

@@ -1,6 +1,32 @@
 import { TTS_FUNCTION_NAME, DEFAULT_TTS_TIMEOUT_MS } from './voiceTtsConfig.js';
 import { VOICE_TTS_ERROR_CODES } from './voiceTtsStatus.js';
-import { telemetry } from '../observability/index.js';
+import { normalizeTelemetryErrorCode, telemetry } from '../observability/index.js';
+import { LOADED_BUILD_ID } from '../pwa-install/appVersion.js';
+
+// PWA-UPDATE3/INCIDENTE IPHONE: diagnostico sanitizado do exato ponto onde
+// o audio.play() do elemento PERSISTENTE (ver ensureAudio) e chamado,
+// resolve ou rejeita -- nunca texto/tokens/audio, so o essencial para
+// separar os casos D (play() chamado mas rejeita)/E/F do relatorio de
+// incidente. runtimeBuildId identifica se o aparelho que reportou o
+// problema ja estava no build mais recente quando isto aconteceu -- a
+// origin/plataforma (ios_safari/pwa/etc.) ja vem de graca no contexto
+// global do telemetry (telemetryRuntime.js), nunca duplicada aqui.
+// Truncado (padrao "short SHA", como `git rev-parse --short HEAD`): o
+// sanitizador de telemetry (telemetryRedaction.js) rejeita qualquer string
+// com 7+ digitos consecutivos (heuristica anti-PII, ex.: telefone/conta) --
+// um SHA completo de 40 caracteres quase sempre contem uma sequencia dessas
+// por acaso, o que faria o proprio runtimeBuildId sumir do evento na
+// maioria dos builds. 7 caracteres ja identifica o deploy de forma unica
+// na pratica e reduz drasticamente essa colisao.
+const SHORT_BUILD_ID = typeof LOADED_BUILD_ID === 'string' ? LOADED_BUILD_ID.slice(0, 7) : null;
+
+function recordPlaybackTelemetry(event, extra = {}) {
+  void telemetry.event('tts.playback_lifecycle', {
+    event,
+    runtimeBuildId: SHORT_BUILD_ID,
+    ...extra,
+  });
+}
 
 // ELEVEN1: unico ponto do frontend que sabe da existencia da Edge Function
 // uni-voice-tts. Nenhum componente React chama fetch diretamente nem
@@ -237,6 +263,7 @@ export function createElevenLabsTtsProvider({
    */
   async function speak(text, { onPlaying, onEnded, onError } = {}) {
     stop();
+    recordPlaybackTelemetry('tts_request_started');
 
     if (!isSupported()) throw providerError(VOICE_TTS_ERROR_CODES.UNAVAILABLE, 'tts_unavailable');
 
@@ -271,9 +298,14 @@ export function createElevenLabsTtsProvider({
     audio = ensureAudio();
     audio.src = objectUrl;
 
+    recordPlaybackTelemetry('audio_blob_received', { cacheHit });
+
     return new Promise((resolve, reject) => {
       activeSettle = { resolve, reject };
-      audio.onplay = () => onPlaying?.();
+      audio.onplay = () => {
+        recordPlaybackTelemetry('audio_play_resolved');
+        onPlaying?.();
+      };
       audio.onended = () => {
         activeSettle = null;
         releaseAudio();
@@ -290,12 +322,21 @@ export function createElevenLabsTtsProvider({
         onError?.(err);
         reject(err);
       };
+      recordPlaybackTelemetry('audio_play_called');
       audio.play().catch((playError) => {
         activeSettle = null;
         releaseAudio();
         const code = playError?.name === 'NotAllowedError'
           ? VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED
           : VOICE_TTS_ERROR_CODES.AUDIO_PLAYBACK_ERROR;
+        recordPlaybackTelemetry('audio_play_rejected', {
+          // Sanitizado: so o nome do erro do navegador (ex.: "NotAllowedError"),
+          // nunca a mensagem/texto/dado do usuario. Campo chamado errorCode
+          // (nao errorName) de proposito -- telemetryRedaction.js rejeita
+          // qualquer chave contendo "name" como heuristica anti-PII, e
+          // errorCode ja e um campo permitido no contrato de EVENT.
+          errorCode: normalizeTelemetryErrorCode(playError?.name, 'UNKNOWN_ERROR'),
+        });
         const err = providerError(code, playError?.message ?? 'tts_playback_failed');
         onError?.(err);
         reject(err);

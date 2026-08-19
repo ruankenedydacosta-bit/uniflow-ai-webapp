@@ -1,6 +1,19 @@
 import { isDifferentBuild, LOADED_BUILD_ID, parseVersionManifest } from './appVersion.js';
+import { getPwaDiagnosticSnapshot, BUILD_COHERENCE } from './pwaBuildDiagnostics.js';
 
 export const UPDATE_RELOAD_GUARD_KEY = 'uniflow.app-update.reload-guard';
+// PWA-UPDATE3: guarda SEPARADA da UPDATE_RELOAD_GUARD_KEY -- aquela evita
+// dois reloads dentro de UMA chamada de applyUpdate(); esta decide se vale
+// a pena DISPARAR applyUpdate() automaticamente (sem clique) para este
+// build. Em localStorage (nao sessionStorage): precisa sobreviver a um
+// relaunch completo do PWA no iOS, ja que "por multiplas verificacoes"
+// pode abranger o app sendo fechado/reaberto entre uma checagem e outra.
+export const AUTO_RECOVERY_GUARD_KEY = 'uniflow.app-update.auto-recovery-guard';
+// PWA-UPDATE3: so dispara recovery automatico depois do update aparecer
+// disponivel em pelo menos 2 checagens CONSECUTIVAS para o MESMO build --
+// nunca na primeira deteccao (podia ser uma corrida com um clique manual
+// ja em andamento) e nunca por acaso num unico blip de rede.
+const AUTO_RECOVERY_THRESHOLD = 2;
 export const UPDATE_STATUS = Object.freeze({
   IDLE: 'idle',
   CHECKING: 'checking',
@@ -59,6 +72,31 @@ function clearReloadGuard(storage) {
     storage?.removeItem(UPDATE_RELOAD_GUARD_KEY);
   } catch {
     // A guarda expira com a sessão; falha de limpeza não afeta dados do usuário.
+  }
+}
+
+// PWA-UPDATE3: mesmo formato/uso da guarda de reload acima, mas em
+// localStorage e com sua PRÓPRIA chave -- nunca lida/escrita pelas
+// funções de reload guard, e vice-versa (são decisões independentes:
+// "já tentei recuperar sozinho este build" vs "já dei o reload desta
+// tentativa de applyUpdate").
+function readAutoRecoveryGuard(storage) {
+  try {
+    const raw = storage?.getItem(AUTO_RECOVERY_GUARD_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.targetBuild === 'string' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeAutoRecoveryGuard(storage, targetBuild) {
+  try {
+    storage?.setItem(AUTO_RECOVERY_GUARD_KEY, JSON.stringify({ targetBuild, attemptedAt: Date.now() }));
+  } catch {
+    // Sem storage disponivel: o recovery automatico simplesmente nao
+    // dispara nesta sessao -- nunca uma excecao propagada.
   }
 }
 
@@ -173,6 +211,20 @@ export function createPwaUpdateManager({
   let updatePromise = null;
   let periodicIntervalId = null;
   const subscribers = new Set();
+  // PWA-UPDATE3: quantas checagens CONSECUTIVAS seguidas ja viram este
+  // MESMO build pendente -- zera assim que o build muda ou fica current.
+  // Vive só em memória de propósito: um relaunch completo do iOS conta
+  // como nova sessão de verificação, nunca soma com contagens antigas
+  // (evita disparar recovery cedo demais só porque o app foi reaberto).
+  let pendingBuildStreak = { buildId: null, count: 0 };
+  // PWA-UPDATE3: "armado" != "disparado". Depois de ARMAdo_THRESHOLD
+  // checagens confirmando o mesmo build pendente, so guardamos a
+  // INTENCAO aqui -- o reload de verdade (dentro de applyUpdate) so
+  // acontece na PROXIMA vez que a pagina for para background
+  // (visibilitychange -> hidden), nunca enquanto o usuario esta olhando
+  // para a tela. Uma recuperacao automatica nunca deve interromper uma
+  // interacao em andamento.
+  let autoRecoveryArmedForBuild = null;
 
   const publish = (patch, event, extra) => {
     state = Object.freeze({ ...state, ...patch });
@@ -203,6 +255,7 @@ export function createPwaUpdateManager({
 
         if (!updateAvailable) {
           clearReloadGuard(runtime.sessionStorage);
+          pendingBuildStreak = { buildId: null, count: 0 };
           publish({
             latestBuildId: manifest.buildId,
             latestRelease: manifest,
@@ -210,6 +263,25 @@ export function createPwaUpdateManager({
             status: UPDATE_STATUS.CURRENT,
             error: null,
           }, guard ? 'updateCompleted' : 'version_current');
+          // PWA-UPDATE3/INVARIANTE: runtime e server ja concordam aqui, mas
+          // isso prova so 2 das 3 identidades do incidente. So DEV-log
+          // (nunca telemetry, nunca visivel a usuario comum) -- confirma a
+          // 3a perna (o Service Worker que REALMENTE controla esta pagina)
+          // sem nunca disparar reload/recovery a partir disto sozinho.
+          if (isDev) {
+            void getPwaDiagnosticSnapshot({ runtimeBuildId: loadedBuildId, serverBuildId: manifest.buildId, runtime })
+              .then((snapshot) => {
+                devDiagnostic(isDev, 'build_coherence_snapshot', state, snapshot);
+                // SW_UNKNOWN e esperado logo apos o load/em navegadores sem
+                // SW -- so RUNTIME_STALE/SW_MISMATCHED sao incoerencia real
+                // (ver BUILD_COHERENCE em pwaBuildDiagnostics.js).
+                const isRealIncoherence = snapshot.coherence === BUILD_COHERENCE.RUNTIME_STALE
+                  || snapshot.coherence === BUILD_COHERENCE.SW_MISMATCHED;
+                if (isRealIncoherence && typeof console?.warn === 'function') {
+                  console.warn('[UniFlow Update] build incoerente (SW diverge do runtime/server):', snapshot);
+                }
+              });
+          }
         } else if (guard?.targetBuild === manifest.buildId) {
           publish({
             latestBuildId: manifest.buildId,
@@ -218,6 +290,7 @@ export function createPwaUpdateManager({
             status: UPDATE_STATUS.FAILED,
             error: 'Não foi possível atualizar agora. Tente novamente.',
           }, 'updateFailed', { reason: 'reload_guard' });
+          registerPendingBuildCheck(manifest.buildId);
         } else {
           publish({
             latestBuildId: manifest.buildId,
@@ -226,6 +299,7 @@ export function createPwaUpdateManager({
             status: UPDATE_STATUS.AVAILABLE,
             error: null,
           }, 'update_available');
+          registerPendingBuildCheck(manifest.buildId);
         }
       } catch (error) {
         publish({
@@ -240,7 +314,44 @@ export function createPwaUpdateManager({
     return checkPromise;
   }
 
-  async function applyUpdate({ retry = false } = {}) {
+  // PWA-UPDATE3: chamado toda vez que uma checagem confirma "ainda no
+  // build antigo". So ARMA a recuperação automática (nunca dispara aqui)
+  // -- ver autoRecoveryArmedForBuild acima para o porquê.
+  function registerPendingBuildCheck(buildId) {
+    if (pendingBuildStreak.buildId === buildId) {
+      pendingBuildStreak = { buildId, count: pendingBuildStreak.count + 1 };
+    } else {
+      pendingBuildStreak = { buildId, count: 1 };
+    }
+
+    if (pendingBuildStreak.count < AUTO_RECOVERY_THRESHOLD) return;
+
+    const guard = readAutoRecoveryGuard(runtime.localStorage);
+    if (guard?.targetBuild === buildId) return; // já tentamos recuperar sozinho este build
+
+    autoRecoveryArmedForBuild = buildId;
+  }
+
+  // PWA-UPDATE3: só executa quando a página REALMENTE saiu de foreground
+  // -- nunca interrompe o usuário. Reaproveita applyUpdate() (mesma
+  // sequência update()->SKIP_WAITING->activation->reload, mesma guarda de
+  // reload único) -- nenhuma segunda implementação de ativação.
+  async function maybeFireArmedAutoRecovery() {
+    if (!autoRecoveryArmedForBuild) return;
+    if (updatePromise) return; // um applyUpdate (manual ou automático) já em andamento
+    const targetBuild = autoRecoveryArmedForBuild;
+    if (state.latestBuildId !== targetBuild || !state.updateAvailable) {
+      autoRecoveryArmedForBuild = null;
+      return;
+    }
+
+    autoRecoveryArmedForBuild = null;
+    writeAutoRecoveryGuard(runtime.localStorage, targetBuild);
+    devDiagnostic(isDev, 'auto_recovery_triggered', state, { targetBuild });
+    await applyUpdate({ auto: true });
+  }
+
+  async function applyUpdate({ retry = false, auto = false } = {}) {
     if (updatePromise) return updatePromise;
     const targetBuild = state.latestBuildId;
     if (!state.updateAvailable || !targetBuild) return Object.freeze({ outcome: 'unavailable' });
@@ -257,7 +368,7 @@ export function createPwaUpdateManager({
         return Object.freeze({ outcome: 'storage-error' });
       }
 
-      publish({ status: UPDATE_STATUS.UPDATING, error: null }, 'updateStarted');
+      publish({ status: UPDATE_STATUS.UPDATING, error: null }, 'updateStarted', { auto });
       try {
         const serviceWorker = runtime.navigator?.serviceWorker;
         if (serviceWorker) {
@@ -320,7 +431,15 @@ export function createPwaUpdateManager({
   }
 
   const handleVisibilityChange = () => {
-    if (runtime.document?.visibilityState === 'visible') void checkForUpdate();
+    if (runtime.document?.visibilityState === 'visible') {
+      void checkForUpdate();
+    } else {
+      // PWA-UPDATE3: o único momento em que uma recuperação automática
+      // (armada por registerPendingBuildCheck) pode de fato executar o
+      // reload -- a página acabou de sair de foreground, então o reload
+      // acontece fora da vista do usuário.
+      void maybeFireArmedAutoRecovery();
+    }
   };
   const handleForeground = () => void checkForUpdate();
   const handlePeriodicCheck = () => {
@@ -361,6 +480,18 @@ export function createPwaUpdateManager({
     applyUpdate,
     start,
     stop,
+    // PWA-UPDATE3: expostos so para diagnostico/teste -- nunca consumidos
+    // por UI voltada ao usuario comum.
+    getPendingBuildStreak: () => pendingBuildStreak,
+    getArmedAutoRecoveryBuild: () => autoRecoveryArmedForBuild,
+    // INVARIANTE DE ATUALIZAÇÃO: prova (nunca infere) as 3 identidades de
+    // build ao mesmo tempo -- usado pelo teste fisico controlado (console
+    // do Safari remoto no iPhone), nunca por uma tela normal.
+    getDiagnosticSnapshot: () => getPwaDiagnosticSnapshot({
+      runtimeBuildId: state.loadedBuildId,
+      serverBuildId: state.latestBuildId,
+      runtime,
+    }),
   });
 }
 
@@ -382,3 +513,4 @@ export function resetPwaUpdateManagerForTests() {
 }
 
 export { clearReloadGuard, readReloadGuard, writeReloadGuard };
+export { readAutoRecoveryGuard, writeAutoRecoveryGuard };

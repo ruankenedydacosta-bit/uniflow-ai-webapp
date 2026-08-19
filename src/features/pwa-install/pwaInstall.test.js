@@ -111,8 +111,25 @@ test('appinstalled remove qualquer prompt pendente', () => {
 
 test('lifecycle PWA reutiliza o store único e nunca força reload em controllerchange', async () => {
   const lifecycle = await source('./pwaUpdateLifecycle.js');
-  assert.match(lifecycle, /getPwaUpdateManager\(\)\.start\(\)/);
+  assert.match(lifecycle, /const manager = getPwaUpdateManager\(\);/);
+  assert.match(lifecycle, /const stop = manager\.start\(\);/);
   assert.doesNotMatch(lifecycle, /controllerchange|location\.reload|UPDATE_RELOAD_KEY/);
+});
+
+test('lifecycle PWA expoe o diagnostico de build (3 identidades) so no console, nunca em nenhuma tela/fluxo do app', async () => {
+  const [lifecycle, home, card] = await Promise.all([
+    source('./pwaUpdateLifecycle.js'),
+    source('../simplified-app/SimplifiedHomeView.jsx'),
+    source('./PwaUpdateCard.jsx'),
+  ]);
+  assert.match(lifecycle, /runtime\.__uniflowPwaDiagnostic = \(\) => manager\.getDiagnosticSnapshot\(\);/);
+  assert.doesNotMatch(home, /__uniflowPwaDiagnostic|getDiagnosticSnapshot/);
+  assert.doesNotMatch(card, /__uniflowPwaDiagnostic|getDiagnosticSnapshot/);
+});
+
+test('lifecycle PWA remove o helper de console e para o manager no cleanup, sem vazar nenhum dos dois', async () => {
+  const lifecycle = await source('./pwaUpdateLifecycle.js');
+  assert.match(lifecycle, /return \(\) => \{\s*\n\s*stop\(\);\s*\n\s*removeConsoleHelper\(\);\s*\n\s*\};/);
 });
 
 test('UI aparece imediatamente, mesmo sem prompt nativo, e orienta Chrome e iOS', async () => {

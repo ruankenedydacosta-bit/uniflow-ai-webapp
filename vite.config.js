@@ -33,6 +33,30 @@ function versionManifestPlugin({ buildId, releasedAt }) {
   }
 }
 
+// PWA-UPDATE3: terceira ponta do diagnostico de versao (runtime/server/SW).
+// runtime vem de globalThis.__UNIFLOW_BUILD_ID__ (define abaixo) e server
+// vem de version.json -- mas nenhum dos dois prova qual build o Service
+// Worker ATIVO esta realmente servindo, porque skipWaiting/clientsClaim
+// sao deliberadamente false (nunca trocamos o controller sem o usuario
+// confirmar) e o SW gerado pelo Workbox nao expõe build id nenhum por
+// padrao. Este bridge (mesmo mecanismo de legacy-update-bridge.js/
+// push-notifications-bridge.js -- importScripts, nunca reescreve o SW
+// gerado) responde a uma mensagem com o buildId do PROPRIO SW que a
+// executa, permitindo provar de verdade um estado misturado (runtime=A,
+// SW=B) em vez de inferir.
+function buildIdBridgePlugin({ buildId }) {
+  return {
+    name: 'uniflow-build-id-bridge',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'build-id-bridge.js',
+        source: `(() => {\n  const UNIFLOW_SW_BUILD_ID = ${JSON.stringify(buildId)};\n  self.addEventListener('message', (event) => {\n    if (event.data?.type !== 'UNIFLOW_GET_BUILD_ID') return;\n    const port = event.ports?.[0];\n    port?.postMessage({ type: 'UNIFLOW_SW_BUILD_ID', buildId: UNIFLOW_SW_BUILD_ID });\n  });\n})();\n`,
+      })
+    },
+  }
+}
+
 const buildId = resolveBuildId()
 const releasedAt = new Date().toISOString()
 
@@ -41,6 +65,7 @@ export default defineConfig({
   plugins: [
     react(),
     versionManifestPlugin({ buildId, releasedAt }),
+    buildIdBridgePlugin({ buildId }),
     VitePWA({
       registerType: 'prompt',
       includeAssets: [
@@ -85,8 +110,8 @@ export default defineConfig({
         // PUSH1: extensao do SW via importScripts (mesmo mecanismo do
         // legacy-update-bridge) -- adiciona push/notificationclick sem
         // tocar em nenhuma das flags acima (update detection preservado).
-        importScripts: ['/legacy-update-bridge.js', '/push-notifications-bridge.js'],
-        globIgnores: ['**/version.json', '**/legacy-update-bridge.js', '**/push-notifications-bridge.js'],
+        importScripts: ['/legacy-update-bridge.js', '/push-notifications-bridge.js', '/build-id-bridge.js'],
+        globIgnores: ['**/version.json', '**/legacy-update-bridge.js', '**/push-notifications-bridge.js', '**/build-id-bridge.js'],
       },
     }),
   ],

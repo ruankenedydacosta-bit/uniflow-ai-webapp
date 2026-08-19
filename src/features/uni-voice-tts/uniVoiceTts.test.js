@@ -218,6 +218,75 @@ test('Requisito 5 — callback tardio do áudio interrompido (onended) nunca dis
 });
 
 // ----------------------------------------------------------------------------
+// INCIDENTE IPHONE (VOZ) -- diagnostico sanitizado do pipeline de audio.
+// 'tts.playback_lifecycle' precisa estar de fato registrado no contrato de
+// telemetry (telemetryContracts.js): o client (telemetryClient.js) descarta
+// silenciosamente qualquer nome/campo fora do allowlist, entao sem isto os
+// 5 pontos de instrumentacao abaixo nunca produziriam log nenhum -- nem
+// erro, nem aviso, so silencio, exatamente o oposto do que o incidente
+// pede ("provar, nao inferir").
+// ----------------------------------------------------------------------------
+
+test('tts.playback_lifecycle esta registrado como EVENT permitido -- senao o telemetryClient descarta o diagnostico de voz em silencio', async () => {
+  const { TELEMETRY_EVENT_NAMES, TELEMETRY_KINDS } = await import('../observability/telemetryContracts.js');
+  const { isTelemetryNameAllowed } = await import('../observability/telemetryContracts.js');
+  assert.ok(TELEMETRY_EVENT_NAMES.includes('tts.playback_lifecycle'));
+  assert.equal(isTelemetryNameAllowed(TELEMETRY_KINDS.EVENT, 'tts.playback_lifecycle'), true);
+});
+
+test('os campos enviados por recordPlaybackTelemetry (event/runtimeBuildId/cacheHit/errorCode) sobrevivem a sanitizacao intactos', async () => {
+  const { TELEMETRY_KINDS } = await import('../observability/telemetryContracts.js');
+  const { sanitizeTelemetryData, isSanitizedTelemetryData } = await import('../observability/telemetryRedaction.js');
+  const payload = {
+    event: 'audio_play_rejected',
+    runtimeBuildId: 'abc1234',
+    cacheHit: false,
+    errorCode: 'NotAllowedError',
+  };
+  const sanitized = sanitizeTelemetryData(TELEMETRY_KINDS.EVENT, payload);
+  assert.deepEqual(sanitized, payload);
+  assert.equal(isSanitizedTelemetryData(TELEMETRY_KINDS.EVENT, sanitized), true);
+});
+
+test('REGRESSAO: um runtimeBuildId com SHA completo (40 chars) frequentemente teria o campo descartado -- por isso o provider trunca para 7 chars antes de enviar', async () => {
+  const { TELEMETRY_KINDS } = await import('../observability/telemetryContracts.js');
+  const { sanitizeTelemetryData } = await import('../observability/telemetryRedaction.js');
+  // SHA real com 7+ digitos consecutivos -- caso que a heuristica anti-PII
+  // (bloquear sequencias longas de digitos, ex.: telefone/conta) rejeita.
+  const fullShaWithDigitRun = 'a1b2c3d4e5f6789012345abcdef67890abcdef1';
+  assert.match(fullShaWithDigitRun, /\d{7,}/);
+  const sanitizedFull = sanitizeTelemetryData(TELEMETRY_KINDS.EVENT, { runtimeBuildId: fullShaWithDigitRun });
+  assert.equal(sanitizedFull.runtimeBuildId, undefined, 'SHA completo com sequencia de digitos some do evento -- prova a necessidade do truncamento');
+
+  const shortSha = fullShaWithDigitRun.slice(0, 7);
+  const sanitizedShort = sanitizeTelemetryData(TELEMETRY_KINDS.EVENT, { runtimeBuildId: shortSha });
+  assert.equal(sanitizedShort.runtimeBuildId, shortSha, 'a versao truncada de 7 chars sobrevive');
+});
+
+test('speak() instrumenta os 5 pontos exigidos pelo incidente: request/blob/play chamado/resolvido/rejeitado', () => {
+  assert.match(PROVIDER_SOURCE, /recordPlaybackTelemetry\('tts_request_started'\)/);
+  assert.match(PROVIDER_SOURCE, /recordPlaybackTelemetry\('audio_blob_received', \{ cacheHit \}\)/);
+  assert.match(PROVIDER_SOURCE, /recordPlaybackTelemetry\('audio_play_called'\)/);
+  assert.match(PROVIDER_SOURCE, /recordPlaybackTelemetry\('audio_play_resolved'\)/);
+  assert.match(PROVIDER_SOURCE, /recordPlaybackTelemetry\('audio_play_rejected', \{/);
+});
+
+test('audio_play_rejected sanitiza o erro via errorCode (nunca errorName -- chave rejeitada pela heuristica anti-PII) e nunca loga error.message', () => {
+  assert.match(PROVIDER_SOURCE, /errorCode: normalizeTelemetryErrorCode\(playError\?\.name, 'UNKNOWN_ERROR'\)/);
+  assert.doesNotMatch(PROVIDER_SOURCE, /errorName:/);
+  const rejectedBlock = PROVIDER_SOURCE.slice(
+    PROVIDER_SOURCE.indexOf("recordPlaybackTelemetry('audio_play_rejected'"),
+    PROVIDER_SOURCE.indexOf('const err = providerError(code,'),
+  );
+  assert.doesNotMatch(rejectedBlock, /playError\?\.message/);
+});
+
+test('recordPlaybackTelemetry envia o build id JA truncado (SHORT_BUILD_ID), nunca o LOADED_BUILD_ID cru', () => {
+  assert.match(PROVIDER_SOURCE, /const SHORT_BUILD_ID = typeof LOADED_BUILD_ID === 'string' \? LOADED_BUILD_ID\.slice\(0, 7\) : null;/);
+  assert.match(PROVIDER_SOURCE, /runtimeBuildId: SHORT_BUILD_ID,/);
+});
+
+// ----------------------------------------------------------------------------
 // Erros HTTP -- lidos do corpo {code,...} da Edge Function quando presente
 // ----------------------------------------------------------------------------
 

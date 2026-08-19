@@ -7,6 +7,8 @@ import {
   UPDATE_RELOAD_GUARD_KEY,
   UPDATE_STATUS,
 } from './pwaUpdateStore.js';
+import { BUILD_COHERENCE } from './pwaBuildDiagnostics.js';
+import { exposePwaDiagnosticConsoleHelper } from './pwaUpdateLifecycle.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -20,11 +22,12 @@ function createStorage() {
   };
 }
 
-function createRuntime({ serviceWorker, storage = createStorage() } = {}) {
+function createRuntime({ serviceWorker, storage = createStorage(), localStorage = createStorage() } = {}) {
   const runtime = new EventTarget();
   runtime.document = Object.assign(new EventTarget(), { visibilityState: 'visible' });
   runtime.navigator = serviceWorker ? { serviceWorker } : {};
   runtime.sessionStorage = storage;
+  runtime.localStorage = localStorage;
   runtime.setTimeout = setTimeout;
   runtime.clearTimeout = clearTimeout;
   runtime.setInterval = setInterval;
@@ -485,7 +488,7 @@ test('card usa Home, bloqueia ações críticas e não interfere em voz ou scrol
   assert.match(vite, /registerType: 'prompt'/);
   assert.match(
     vite,
-    /globIgnores: \['\*\*\/version\.json', '\*\*\/legacy-update-bridge\.js', '\*\*\/push-notifications-bridge\.js'\]/,
+    /globIgnores: \['\*\*\/version\.json', '\*\*\/legacy-update-bridge\.js', '\*\*\/push-notifications-bridge\.js', '\*\*\/build-id-bridge\.js'\],/,
   );
   assert.match(vercel, /no-store, no-cache, must-revalidate/);
 });
@@ -494,13 +497,243 @@ test('card usa Home, bloqueia ações críticas e não interfere em voz ou scrol
 // esta e a regressao que garante que a extensao nunca tocou em nenhuma das
 // flags que fazem o sistema de update (que acabamos de estabilizar) e o
 // legacy-update-bridge funcionarem.
-test('extensao de push (importScripts) preserva intactas as flags de update do Workbox', async () => {
+test('extensao de push + build-id-bridge (importScripts) preserva intactas as flags de update do Workbox', async () => {
   const vite = await source('../../../vite.config.js');
   assert.match(vite, /cleanupOutdatedCaches: false,/);
   assert.match(vite, /clientsClaim: false,/);
   assert.match(vite, /skipWaiting: false,/);
   assert.match(
     vite,
-    /importScripts: \['\/legacy-update-bridge\.js', '\/push-notifications-bridge\.js'\],/,
+    /importScripts: \['\/legacy-update-bridge\.js', '\/push-notifications-bridge\.js', '\/build-id-bridge\.js'\],/,
   );
+  assert.match(
+    vite,
+    /globIgnores: \['\*\*\/version\.json', '\*\*\/legacy-update-bridge\.js', '\*\*\/push-notifications-bridge\.js', '\*\*\/build-id-bridge\.js'\],/,
+  );
+});
+
+// ============================================================================
+// PWA-UPDATE3 -- terceira ponta do diagnostico (SW build id).
+// ============================================================================
+
+test('buildIdBridgePlugin emite build-id-bridge.js com o buildId embutido, sem expor segredo nenhum', async () => {
+  const vite = await source('../../../vite.config.js');
+  assert.match(vite, /function buildIdBridgePlugin\(\{ buildId \}\)/);
+  assert.match(vite, /fileName: 'build-id-bridge\.js',/);
+  assert.match(vite, /UNIFLOW_SW_BUILD_ID = \$\{JSON\.stringify\(buildId\)\}/);
+  assert.match(vite, /buildIdBridgePlugin\(\{ buildId \}\),/);
+});
+
+test('build-id-bridge.js responde a UNIFLOW_GET_BUILD_ID via MessageChannel -- nunca broadcast automatico', async () => {
+  const vite = await source('../../../vite.config.js');
+  const pluginBody = vite.slice(vite.indexOf('function buildIdBridgePlugin'), vite.indexOf('const buildId = resolveBuildId()'));
+  assert.match(pluginBody, /event\.data\?\.type !== 'UNIFLOW_GET_BUILD_ID'/);
+  assert.match(pluginBody, /port\?\.postMessage\(\{ type: 'UNIFLOW_SW_BUILD_ID', buildId: UNIFLOW_SW_BUILD_ID \}\)/);
+});
+
+// ============================================================================
+// PWA-UPDATE3 -- recovery automático: ARMA na deteccao, so DISPARA em
+// background, guardado por build, nunca em cima de um applyUpdate manual.
+// ============================================================================
+
+test('detecta o mesmo build pendente em 2 checagens consecutivas e ARMA o recovery -- mas nao dispara reload em foreground', async () => {
+  const runtime = createRuntime();
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  await manager.checkForUpdate();
+  assert.deepEqual(manager.getPendingBuildStreak(), { buildId: 'build-b', count: 1 });
+  assert.equal(manager.getArmedAutoRecoveryBuild(), null);
+
+  await manager.checkForUpdate();
+  assert.deepEqual(manager.getPendingBuildStreak(), { buildId: 'build-b', count: 2 });
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
+  assert.equal(runtime.reloadCalls, 0, 'app em foreground -- recovery armado nunca pode recarregar sozinho');
+});
+
+test('so dispara o reload de recovery quando a pagina REALMENTE sai de foreground (visibilitychange -> hidden)', async () => {
+  const runtime = createRuntime();
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  await manager.checkForUpdate();
+  await manager.checkForUpdate();
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
+
+  const cleanup = manager.start();
+  runtime.document.visibilityState = 'hidden';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(runtime.reloadCalls, 1);
+  assert.equal(manager.getArmedAutoRecoveryBuild(), null, 'desarma depois de disparar');
+  cleanup();
+});
+
+test('recovery automático escreve sua PRÓPRIA guarda em localStorage -- nunca re-arma o mesmo build ja tentado', async () => {
+  const localStorage = createStorage();
+  const runtime = createRuntime({ localStorage });
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  await manager.checkForUpdate();
+  await manager.checkForUpdate();
+  const cleanup = manager.start();
+  runtime.document.visibilityState = 'hidden';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(runtime.reloadCalls, 1);
+  cleanup();
+
+  const guardRaw = localStorage.getItem('uniflow.app-update.auto-recovery-guard');
+  assert.ok(guardRaw);
+  assert.equal(JSON.parse(guardRaw).targetBuild, 'build-b');
+
+  // Simula uma NOVA sessao (contador em memoria reinicia), mas a guarda em
+  // localStorage sobrevive -- nunca re-arma para o MESMO build ja tentado.
+  const manager2 = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+  await manager2.checkForUpdate();
+  await manager2.checkForUpdate();
+  assert.equal(manager2.getArmedAutoRecoveryBuild(), null, 'guarda ja usada -- nunca re-arma o mesmo build');
+});
+
+test('streak reseta quando o build pendente muda -- nunca soma checagens de builds diferentes', async () => {
+  const runtime = createRuntime();
+  let currentBuild = 'build-b';
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse(currentBuild),
+  });
+
+  await manager.checkForUpdate();
+  currentBuild = 'build-c';
+  await manager.checkForUpdate();
+  assert.deepEqual(manager.getPendingBuildStreak(), { buildId: 'build-c', count: 1 });
+  assert.equal(manager.getArmedAutoRecoveryBuild(), null);
+});
+
+test('streak reseta quando o build fica current -- nunca herda contagem de uma pendencia ja resolvida', async () => {
+  const runtime = createRuntime();
+  let currentIsAvailable = true;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse(currentIsAvailable ? 'build-b' : 'build-a'),
+  });
+
+  await manager.checkForUpdate();
+  await manager.checkForUpdate();
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
+
+  currentIsAvailable = false;
+  await manager.checkForUpdate();
+  assert.deepEqual(manager.getPendingBuildStreak(), { buildId: null, count: 0 });
+});
+
+test('recovery automático nunca dispara se um applyUpdate (manual ou ja em andamento) existir', async () => {
+  const runtime = createRuntime();
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  await manager.checkForUpdate();
+  await manager.checkForUpdate();
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
+
+  // Usuário clica manualmente ANTES da página sair de foreground.
+  void manager.applyUpdate();
+  const cleanup = manager.start();
+  runtime.document.visibilityState = 'hidden';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(runtime.reloadCalls, 1, 'so UM reload -- o manual, nunca um segundo do recovery automático em cima dele');
+  cleanup();
+});
+
+// ============================================================================
+// PWA-UPDATE3/INVARIANTE -- getDiagnosticSnapshot prova (nunca infere) as
+// 3 identidades de build ao mesmo tempo; o console helper e o unico jeito
+// de acessar isso num aparelho fisico real, nunca por uma tela do app.
+// ============================================================================
+
+test('getDiagnosticSnapshot compara loadedBuildId (runtime) com o buildId mais recente confirmado pelo server', async () => {
+  const runtime = createRuntime();
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  await manager.checkForUpdate();
+  const snapshot = await manager.getDiagnosticSnapshot();
+  assert.equal(snapshot.runtimeBuildId, 'build-a');
+  assert.equal(snapshot.serverBuildId, 'build-b');
+  assert.equal(snapshot.coherence, BUILD_COHERENCE.RUNTIME_STALE);
+});
+
+test('getDiagnosticSnapshot: runtime alcança o server, mas sem SW no ambiente de teste -- SW_UNKNOWN, nunca finge COHERENT sem provar a 3a identidade', async () => {
+  const runtime = createRuntime();
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-b',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  await manager.checkForUpdate();
+  const snapshot = await manager.getDiagnosticSnapshot();
+  assert.equal(snapshot.runtimeBuildId, 'build-b');
+  assert.equal(snapshot.serverBuildId, 'build-b');
+  assert.equal(snapshot.coherence, BUILD_COHERENCE.SW_UNKNOWN);
+});
+
+test('exposePwaDiagnosticConsoleHelper liga __uniflowPwaDiagnostic ao getDiagnosticSnapshot do manager, e o cleanup remove -- nunca sobra pendurado', async () => {
+  const runtime = createRuntime();
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-a'),
+  });
+  await manager.checkForUpdate();
+
+  const remove = exposePwaDiagnosticConsoleHelper(manager, runtime);
+  assert.equal(typeof runtime.__uniflowPwaDiagnostic, 'function');
+  const snapshot = await runtime.__uniflowPwaDiagnostic();
+  assert.equal(snapshot.runtimeBuildId, 'build-a');
+  assert.equal(snapshot.serverBuildId, 'build-a');
+
+  remove();
+  assert.equal('__uniflowPwaDiagnostic' in runtime, false);
 });
