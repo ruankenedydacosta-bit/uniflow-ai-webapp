@@ -19,6 +19,11 @@ import {
   runOwnedAgendaPreOperation,
 } from '../../pages/agenda/agendaFormSubmissionLifecycle.js';
 import { formatDayHeading } from './simplifiedAgendaCalendar.js';
+import { BellIcon } from './SimplifiedIcons.jsx';
+import AgendaReminderChoiceModal from './AgendaReminderChoiceModal.jsx';
+import { getAgendaPushReminderState } from '../agenda-push/agendaPushReminderService.js';
+import { prefersReducedMotion } from '../agenda-push/agendaReminderAnimation.js';
+import { resolveReminderIndicator } from '../agenda-push/agendaReminderIndicator.js';
 import styles from './simplifiedAgenda.module.css';
 
 /**
@@ -29,12 +34,22 @@ import styles from './simplifiedAgenda.module.css';
  * useAgenda (createItem/updateItem) -- nenhuma escrita direta em
  * agenda_items, nenhum novo endpoint.
  *
- * Lembrete/notificacao (Sem/Na hora/10min/30min/1h/1 dia) NAO e implementado
- * porque agenda_items NAO tem coluna de lembrete nem agendador de
- * notificacao nessa fase -- lacuna documentada para o Codex/Supabase
- * (censura honesta: preferimos a ausencia do campo a gravar fachada que
- * nunca dispara nada).
+ * AGPUSH3: lembrete por push (30min/1h/Não precisa) agora tem entry point
+ * real, mas SOMENTE ao editar (item.id já existe de verdade). Criar
+ * compromisso continua mostrando o placeholder antigo -- ligar a decisão
+ * de lembrete ao fluxo de criação (idempotência via client_operation_id,
+ * agendaFormSubmissionLifecycle) é lógica sensível que esta tarefa foi
+ * instruída a não tocar; a limitação é intencional, não um esquecimento.
  */
+// AGPUSH3: mesma duração de recolhimento já usada por
+// AgendaReminderChoiceModal.module.css (.dialogCollapsing) -- o modal
+// "Editar compromisso" precisa sair da tela com o mesmo ritmo antes da
+// partícula nascer, nunca um delay arbitrário maior.
+const FORM_COLLAPSE_MS = 180;
+
+function wait(ms) {
+  return new Promise((resolve) => { setTimeout(resolve, ms); });
+}
 function formatDateInputValue(date) {
   if (!date) return '';
   const pad = (value) => String(value).padStart(2, '0');
@@ -69,6 +84,7 @@ function SimplifiedAgendaFormModal({
   workspaceId,
   onClose,
   onRequestDelete,
+  onReminderApplied,
 }) {
   const isEditing = Boolean(item);
   const [form, setForm] = useState(() => createInitialForm(item, defaultDay));
@@ -83,6 +99,58 @@ function SimplifiedAgendaFormModal({
   useEffect(() => () => {
     submissionLifecycleRef.current.invalidate('unmount');
   }, []);
+
+  // AGPUSH3: estado REAL do lembrete deste compromisso -- nunca de estado
+  // temporário da animação. Buscado uma vez ao abrir o Editar compromisso
+  // (mesma leitura RLS-scoped já usada pelo fallback iPhone).
+  const [reminderIndicator, setReminderIndicator] = useState(null);
+  const [showReminderChoice, setShowReminderChoice] = useState(false);
+  const [isClosingForReminder, setIsClosingForReminder] = useState(false);
+
+  useEffect(() => {
+    if (!isEditing) return undefined;
+
+    let cancelled = false;
+    (async () => {
+      const result = await getAgendaPushReminderState(item.id);
+      if (cancelled) return;
+      setReminderIndicator(resolveReminderIndicator(result?.data));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditing, item?.id]);
+
+  // AGPUSH3: chamado pelo AgendaReminderChoiceModal SÓ depois da decisão
+  // real já ter sido persistida (mesmo contrato do fluxo de deep link) --
+  // a animação aqui é sempre consequência, nunca condição da gravação.
+  async function handleReminderApplied({ agendaItemId, offsetMinutes, originRect }) {
+    setReminderIndicator(resolveReminderIndicator({ reminder_offset_minutes: offsetMinutes }));
+    setShowReminderChoice(false);
+
+    // "Não precisa": nada foi instalado no compromisso -- mantém o Editar
+    // compromisso aberto, sem partícula, sem fechar nada. Mesma regra para
+    // a origem ausente (defesa: nunca anima sem geometria real).
+    if (offsetMinutes == null || !originRect) return;
+
+    // O Editar compromisso precisa sair da tela ANTES da partícula nascer
+    // (senão ela nasceria atrás de um modal ainda visível) -- mesmo
+    // recolhimento suave já usado pelo modal de escolha, nunca um delay
+    // maior que isso.
+    if (!prefersReducedMotion()) {
+      setIsClosingForReminder(true);
+      await wait(FORM_COLLAPSE_MS);
+    }
+
+    await handleClose();
+
+    // Só localiza/anima o card REAL depois que o fechamento comitou --
+    // requestAnimationFrame, nunca um delay mágico.
+    requestAnimationFrame(() => {
+      onReminderApplied?.({ agendaItemId, offsetMinutes, originRect });
+    });
+  }
 
   async function clearCreationOperation(operation) {
     if (!operation) return true;
@@ -189,20 +257,22 @@ function SimplifiedAgendaFormModal({
     ? formatDayHeading(new Date(`${form.date}T12:00:00`))
     : '';
 
+  const isBusy = isMutating || isClosingForReminder;
+
   return (
     <Modal
       open
-      className={styles.formDialog}
+      className={[styles.formDialog, isClosingForReminder ? styles.formDialogCollapsing : ''].filter(Boolean).join(' ')}
       overlayClassName={styles.formOverlay}
       onClose={handleClose}
-      closeOnOverlayClick={!isMutating}
-      closeOnEsc={!isMutating}
+      closeOnOverlayClick={!isBusy}
+      closeOnEsc={!isBusy}
       title={isEditing ? 'Editar compromisso' : 'Novo compromisso'}
       description={selectedDayHeading}
       size="md"
       footer={(
         <>
-          <Button type="button" variant="ghost" onClick={handleClose} disabled={isMutating}>
+          <Button type="button" variant="ghost" onClick={handleClose} disabled={isBusy}>
             Cancelar
           </Button>
           {isEditing ? (
@@ -210,7 +280,7 @@ function SimplifiedAgendaFormModal({
               type="button"
               variant="danger"
               onClick={() => { if (onRequestDelete) onRequestDelete(item); }}
-              disabled={isMutating}
+              disabled={isBusy}
             >
               Excluir
             </Button>
@@ -218,7 +288,7 @@ function SimplifiedAgendaFormModal({
           <Button
             type="button"
             loading={isMutating}
-            disabled={isMutating}
+            disabled={isBusy}
             onClick={handleSave}
           >
             {isEditing ? 'Salvar alterações' : 'Salvar'}
@@ -291,13 +361,50 @@ function SimplifiedAgendaFormModal({
           />
         </label>
 
-        <p className={styles.reminderNote} role="note">
-          Lembrete por notificação ainda não está disponível nesta versão.
-        </p>
+        {isEditing ? (
+          <div className={styles.reminderSection}>
+            <span className={styles.reminderSectionLabel}>Lembrete</span>
+            <div className={styles.reminderSectionRow}>
+              <span className={styles.reminderSectionValue}>
+                {reminderIndicator ? (
+                  <>
+                    <span className={styles.reminderSectionIcon}><BellIcon /></span>
+                    {reminderIndicator.label}
+                  </>
+                ) : 'Nenhum lembrete configurado'}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isBusy}
+                onClick={() => setShowReminderChoice(true)}
+              >
+                {reminderIndicator ? 'Alterar' : 'Escolher lembrete'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          // AGPUSH3: criar um compromisso ainda não gera um agenda_item_id
+          // real -- ligar a escolha de lembrete a essa criação exigiria
+          // tocar a lógica de idempotência do fluxo de criação, fora do
+          // escopo desta integração (ver comentário do componente).
+          <p className={styles.reminderNote} role="note">
+            Lembrete por notificação ainda não está disponível nesta versão.
+          </p>
+        )}
       </div>
 
       {localError ? (
         <p className={styles.formError} role="alert">{localError}</p>
+      ) : null}
+
+      {showReminderChoice ? (
+        <AgendaReminderChoiceModal
+          item={item}
+          onClose={() => setShowReminderChoice(false)}
+          onReminderApplied={handleReminderApplied}
+        />
       ) : null}
     </Modal>
   );

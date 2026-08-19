@@ -356,6 +356,7 @@ function SimplifiedAgendaPage() {
           workspaceId={workspaceId}
           onClose={() => { setShowCreateModal(false); setEditingItem(null); }}
           onRequestDelete={(item) => { setShowCreateModal(false); setDeletingItem(item); }}
+          onReminderApplied={handleReminderApplied}
         />
       ) : null}
 

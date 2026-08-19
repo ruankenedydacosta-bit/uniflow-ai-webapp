@@ -106,7 +106,10 @@ test('form: modal acompanha o tema ativo, preserva foco inicial e classes respon
     source('./simplifiedAgenda.module.css'),
   ]);
   assert.doesNotMatch(form, /data-theme="uniflow"/);
-  assert.match(form, /className=\{styles\.formDialog\}/);
+  // AGPUSH3: className passou a ser computado (formDialog +
+  // formDialogCollapsing condicional, ver SimplifiedAgendaFormModal.test.js)
+  // -- ainda inclui styles.formDialog sempre, so nao e mais um literal fixo.
+  assert.match(form, /styles\.formDialog/);
   assert.match(form, /overlayClassName=\{styles\.formOverlay\}/);
   assert.match(form, /autoFocus/);
   assert.match(css, /\.formDialog\s*\{/);
@@ -161,9 +164,15 @@ test('form: mensagem de erro vem de getAgendaItemErrorMessage (nunca error.messa
   assert.match(form, /role="alert"/);
 });
 
-test('form: lembrete de notificação é explicitamente comunicado como indisponível (sem fachada)', async () => {
+test('form: criar compromisso ainda comunica lembrete como indisponível (sem fachada) -- ligar a criação exigiria tocar a lógica de idempotência, fora do escopo do AGPUSH3', async () => {
   const form = await source(`./${FORM_MODAL}`);
   assert.match(form, /Lembrete por notificação ainda não está disponível/);
+});
+
+test('form: editar compromisso tem entry point real de lembrete -- reutiliza AgendaReminderChoiceModal, nunca duplica', async () => {
+  const form = await source(`./${FORM_MODAL}`);
+  assert.match(form, /import AgendaReminderChoiceModal from '\.\/AgendaReminderChoiceModal\.jsx';/);
+  assert.match(form, /<AgendaReminderChoiceModal\s*\n\s*item=\{item\}/);
 });
 
 // ============================================================================

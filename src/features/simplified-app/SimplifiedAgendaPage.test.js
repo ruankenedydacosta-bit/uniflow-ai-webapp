@@ -126,3 +126,25 @@ test('o lembrete tambem entra no aria-label do card (leitor de tela nunca perde 
   const content = await source();
   assert.match(content, /\$\{reminder \? `, lembrete \$\{reminder\.label\}` : ''\}/);
 });
+
+// ============================================================================
+// AGPUSH3 -- entry point real (Editar compromisso) reusa a MESMA
+// handleReminderApplied ja usada pelo deep link/fallback. Uma unica
+// implementacao do "o que fazer quando um lembrete e aplicado", nunca duas
+// logicas de particula desalinhadas.
+// ============================================================================
+
+test('SimplifiedAgendaFormModal (Editar compromisso) recebe a MESMA handleReminderApplied do deep link -- fonte unica da logica de particula', async () => {
+  const content = await source();
+  const occurrences = content.match(/onReminderApplied=\{handleReminderApplied\}/g) ?? [];
+  assert.equal(occurrences.length, 2, 'AgendaReminderChoiceModal (deep link) e SimplifiedAgendaFormModal (editar) devem repassar a mesma funcao');
+});
+
+test('o card e localizado por agenda_item_id (atributo estavel), nunca por titulo -- dois compromissos com o mesmo titulo nunca se confundem', async () => {
+  const content = await source();
+  assert.match(content, /export const AGENDA_REMINDER_TARGET_ATTRIBUTE = 'data-agenda-reminder-target';/);
+  // O atributo e escrito com item.id (uuid real), nunca item.title.
+  const attrUsage = content.slice(content.indexOf('{...{ [AGENDA_REMINDER_TARGET_ATTRIBUTE]'), content.indexOf('}}', content.indexOf('{...{ [AGENDA_REMINDER_TARGET_ATTRIBUTE]')) + 2);
+  assert.match(attrUsage, /item\.id/);
+  assert.doesNotMatch(attrUsage, /item\.title/);
+});
