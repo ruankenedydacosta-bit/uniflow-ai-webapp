@@ -26,6 +26,26 @@ function resolvePlatform(capabilities) {
   return 'desktop';
 }
 
+// PUSH1 (correcao de race): unico ponto que converte um PushSubscription do
+// BROWSER em uma chamada a upsertPushSubscription -- reutilizado pelo
+// self-healing do mount E por enableNotifications(), para nunca duplicar
+// (e nunca desalinhar) a extracao de endpoint/p256dh/auth. Nunca cria uma
+// subscription nova aqui -- so persiste a que jah foi obtida/reutilizada
+// (subscribe() no browser jah devolve a mesma subscription existente
+// quando a applicationServerKey bate, por spec do Push API).
+async function persistBrowserSubscription({
+  userId, workspaceId, subscription, capabilities,
+}) {
+  const json = subscription.toJSON();
+  return upsertPushSubscription(userId, {
+    workspaceId,
+    endpoint: json.endpoint,
+    p256dh: json.keys?.p256dh,
+    auth: json.keys?.auth,
+    platform: resolvePlatform(capabilities),
+  });
+}
+
 /**
  * PUSH1: fundacao de Web Push -- so prova que o pipe funciona (autorizar ->
  * subscription salva -> push de teste -> toque abre a UniFlow). Nao decide
@@ -50,12 +70,19 @@ export function useWebPush() {
   const [error, setError] = useState(null);
   const [lastTestResult, setLastTestResult] = useState(null);
 
-  // PUSH1: no mount, reconcilia com a subscription REAL do navegador --
-  // nunca confia so em Notification.permission (permissao concedida nao
-  // garante que uma subscription ainda exista; o usuario pode te-la
-  // revogado por outro caminho, ex.: configuracoes do proprio navegador).
+  // PUSH1 (correcao de race): no mount, reconcilia com a subscription REAL
+  // do navegador -- nunca confia so em Notification.permission, e (esta e
+  // a correcao) nunca confia so em existir um PushSubscription local no
+  // browser. Uma subscription local pode ser "orfa": criada numa tentativa
+  // anterior (ex.: interrompida, ou vitima do bug historico do upsert) sem
+  // nunca ter sido persistida/estar ativa no Supabase. Declarar ENABLED
+  // sem confirmar isso deixava "Enviar notificação de teste" clicavel
+  // antes de existir qualquer linha em push_subscriptions -- exatamente o
+  // 404 real visto no teste fisico. Agora: acha subscription local ->
+  // AWAIT a persistencia (self-healing, reaproveitando a MESMA
+  // subscription, nunca gerando uma nova) -> só então ENABLED.
   useEffect(() => {
-    if (!capabilities.isSupported || !isPushConfigured) return undefined;
+    if (!capabilities.isSupported || !isPushConfigured || !userId) return undefined;
 
     // PUSH1: setState nunca sincrono dentro do efeito (mesmo padrao de
     // useNotifications.js/refresh) -- toda transicao de estado passa pelo
@@ -68,11 +95,32 @@ export function useWebPush() {
         return;
       }
 
+      if (!cancelled) setStatus(PUSH_STATUS.CHECKING);
+
       try {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
         if (cancelled) return;
-        setStatus(subscription ? PUSH_STATUS.ENABLED : PUSH_STATUS.DEFAULT);
+
+        if (!subscription) {
+          setStatus(PUSH_STATUS.DEFAULT);
+          return;
+        }
+
+        const result = await persistBrowserSubscription({ userId, workspaceId, subscription, capabilities });
+        if (cancelled) return;
+
+        if (result.error) {
+          // PUSH1: self-healing falhou (ex.: offline no exato momento do
+          // mount) -- nunca finge ENABLED. Volta pro estado neutro; o
+          // proprio botao "Ativar notificações" tenta de novo no proximo
+          // toque (subscribe() reaproveita a mesma subscription do browser,
+          // nao cria uma nova).
+          setStatus(PUSH_STATUS.DEFAULT);
+          return;
+        }
+
+        setStatus(PUSH_STATUS.ENABLED);
       } catch {
         if (!cancelled) setStatus(PUSH_STATUS.DEFAULT);
       }
@@ -81,7 +129,7 @@ export function useWebPush() {
     return () => {
       cancelled = true;
     };
-  }, [capabilities.isSupported, capabilities.permission, isPushConfigured]);
+  }, [capabilities, isPushConfigured, userId, workspaceId]);
 
   const enableNotifications = useCallback(async () => {
     if (!capabilities.isSupported || !isPushConfigured || !userId) return null;
@@ -100,19 +148,17 @@ export function useWebPush() {
       }
 
       const registration = await navigator.serviceWorker.ready;
+      // PUSH1: subscribe() com a MESMA applicationServerKey devolve a
+      // subscription EXISTENTE se o browser ja tiver uma (nunca cria uma
+      // segunda) -- por isso o mount effect e este metodo podem chamar
+      // persistBrowserSubscription livremente sem duplicar subscriptions
+      // no push service.
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
-      const json = subscription.toJSON();
 
-      const result = await upsertPushSubscription(userId, {
-        workspaceId,
-        endpoint: json.endpoint,
-        p256dh: json.keys?.p256dh,
-        auth: json.keys?.auth,
-        platform: resolvePlatform(capabilities),
-      });
+      const result = await persistBrowserSubscription({ userId, workspaceId, subscription, capabilities });
 
       if (result.error) {
         setStatus(PUSH_STATUS.ERROR);
