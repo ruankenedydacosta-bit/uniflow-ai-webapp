@@ -13,7 +13,9 @@
      e são atualizados nos MESMOS breakpoints abaixo -- nenhuma outra tela
      consome estas variáveis hoje, então declará-las aqui não muda nada
      para elas. */
-  --simplified-header-height: 102px;
+  /* COMPACT-HEADER1: 68px (era 102px) -- espelha .header min-height (ver
+     abaixo), mesmo neste MESMO breakpoint em todos os 3 lugares. */
+  --simplified-header-height: 68px;
   --simplified-bottom-nav-height: calc(96px + 10px + max(10px, env(safe-area-inset-bottom)));
   /* THEME SYSTEM V2 -- esta shell NAO define mais uma paleta propria.
      Antes, este bloco fixava valores escuros literais, o que sobrescrevia
@@ -102,22 +104,70 @@
   box-shadow: 0 0 90px rgba(var(--uf-app-shadow-rgb), .4);
 }
 
+/* COMPACT-HEADER1: header realmente compacto -- área útil (sem contar
+   safe-area) ~68px, dentro da faixa pedida (64-72px), contra os 102px
+   antigos. `position:fixed` (não sticky: .header é IRMÃO de .mainContent
+   na malha, não descendente -- sticky não teria ancestral com scroll para
+   grudar) sobrepõe o topo do conteúdo; `.mainContent[data-compact-header]`
+   abaixo reserva o espaço estrutural equivalente, então nada pula quando
+   o header aparece/desaparece (ver PARTE 3/CLS). transform+opacity (nunca
+   height) fazem a animação de esconder -- ver `[data-hidden="true"]`. */
 .header {
-  min-height: 102px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  min-height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding:
-    max(14px, env(safe-area-inset-top))
-    max(22px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
     8px
-    max(22px, env(safe-area-inset-left));
+    max(18px, env(safe-area-inset-left));
+  background: var(--uf-app-canvas);
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 210ms cubic-bezier(.22, 1, .36, 1), opacity 210ms ease;
+  will-change: transform;
+}
+
+/* Backdrop MUITO discreto (nunca glassmorphism pesado): só entra onde o
+   navegador suporta blur real, e mantém o navy praticamente opaco. */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .header {
+    background: color-mix(in srgb, var(--uf-app-canvas) 94%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+.header[data-hidden="true"] {
+  transform: translateY(-100%);
+  opacity: 0;
+  /* Escondido nunca pode capturar toque/foco, mesmo durante a transição. */
+  pointer-events: none;
 }
 
 .shellTopRegion {
   position: relative;
   z-index: 15;
   min-width: 0;
+}
+
+/* COMPACT-HEADER1: o header virou position:fixed (fora do fluxo), então
+   deixou de empurrar o painel de notificações para baixo sozinho -- sem
+   isto, o painel nasceria por baixo do header fixo (mesmo espaço
+   reservado que .mainContent[data-compact-header] usa, ver acima). */
+.shellTopRegion[data-compact-header="true"] {
+  padding-top: calc(var(--simplified-header-height) + env(safe-area-inset-top, 0px));
+  transition: padding-top 210ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.shellTopRegion[data-compact-header="true"][data-header-hidden="true"] {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .brandLockup {
@@ -127,19 +177,25 @@
   color: var(--uf-app-text);
 }
 
+/* COMPACT-HEADER1: símbolo 36-42px (era 54-72px) -- legível, mas nunca
+   protagonista da Home. */
 .brandMark {
-  width: clamp(54px, 14vw, 72px);
+  width: clamp(36px, 9vw, 42px);
   display: block;
-  filter: drop-shadow(0 0 12px rgba(37, 99, 235, .28));
+  filter: drop-shadow(0 0 10px rgba(37, 99, 235, .28));
 }
 
-.brandMark svg {
+.brandMark img {
   width: 100%;
+  height: auto;
   display: block;
+  object-fit: contain;
 }
 
+/* COMPACT-HEADER1: wordmark ~24-28px (era 21-30, protagonismo maior) --
+   mesma fonte/tokens globais, só reduz o tamanho local do header. */
 .brandLockup strong {
-  font-size: clamp(21px, 5.4vw, 30px);
+  font-size: clamp(20px, 5vw, 26px);
   font-weight: 700;
   letter-spacing: .02em;
   white-space: nowrap;
@@ -149,6 +205,15 @@
   background: linear-gradient(90deg, var(--uf-app-ai), var(--uf-app-primary) 52%, var(--uf-app-success));
   background-clip: text;
   color: transparent;
+}
+
+/* COMPACT-HEADER1: agrupa as ações da direita -- um segundo ícone futuro
+   (ex.: busca/config) entra aqui como mais um filho flex, sem precisar
+   recalcular a posição do sino nem do brandLockup. */
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .notificationButton {
@@ -326,6 +391,22 @@
 .mainContent[data-uni-chat="true"] {
   overflow: hidden;
   padding-bottom: 0;
+}
+
+/* COMPACT-HEADER1: espaço estrutural reservado para o header fixo (só nas
+   rotas que o renderizam, ver showsCompactHeader em SimplifiedAppShell.jsx
+   -- nunca aplicado em Registros/Conta/Chat da Uni, que têm cabeçalho
+   próprio). Ao esconder o header, o padding-top recolhe JUNTO (mesma
+   duração/easing do transform do header) -- é assim que o espaço é
+   realmente recuperado, não só uma faixa vazia embaixo do header
+   invisível. */
+.mainContent[data-compact-header="true"] {
+  padding-top: calc(var(--simplified-header-height) + env(safe-area-inset-top, 0px));
+  transition: padding-top 210ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.mainContent[data-compact-header="true"][data-header-hidden="true"] {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .agendaPage {
@@ -894,9 +975,11 @@
   filter: drop-shadow(0 0 13px rgba(37, 99, 235, .58));
 }
 
-.uniMark svg {
+.uniMark img {
   width: 100%;
+  height: auto;
   display: block;
+  object-fit: contain;
 }
 
 .uniButtonLabel {
@@ -1053,12 +1136,12 @@
   .shell {
     /* HOTFIX (compositor do chat da Uni): mesmo espelho de .header/
        .bottomNavigationInner logo abaixo, neste MESMO breakpoint. */
-    --simplified-header-height: 86px;
+    --simplified-header-height: 68px;
     --simplified-bottom-nav-height: calc(88px + 10px + max(10px, env(safe-area-inset-bottom)));
   }
 
   .header {
-    min-height: 86px;
+    min-height: 68px;
     padding-inline: max(16px, env(safe-area-inset-left));
   }
 
@@ -1122,11 +1205,11 @@
   .shell {
     /* HOTFIX (compositor do chat da Uni): mesmo espelho de .header
        abaixo, neste MESMO breakpoint. */
-    --simplified-header-height: 78px;
+    --simplified-header-height: 68px;
   }
 
   .header {
-    min-height: 78px;
+    min-height: 68px;
   }
 
   .brandLockup strong {
@@ -1237,5 +1320,13 @@
 
   .listeningParticle {
     display: none;
+  }
+
+  /* COMPACT-HEADER1: só troca a transição do header por instantânea --
+     continua escondendo/reexibindo ao rolar, nunca fica travado visível. */
+  .header,
+  .shellTopRegion[data-compact-header="true"],
+  .mainContent[data-compact-header="true"] {
+    transition: none;
   }
 }

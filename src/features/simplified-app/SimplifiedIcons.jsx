@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import uniflowMarkAsset from '../../assets/branding/uniflow-mark.png';
 
 export function HomeIcon() {
   return (
@@ -420,26 +420,13 @@ export function SparkleIcon() {
   );
 }
 
+// COMPACT-HEADER1: única fonte de verdade do símbolo oficial da UniFlow
+// (identidade aprovada -- U estilizado, azul/roxo à esquerda, verde/ciano
+// à direita). Antes disto, este componente desenhava uma APROXIMAÇÃO em
+// SVG (gradiente diagonal único, proporções diferentes) que nunca
+// correspondia à marca oficial. Reaproveitado em todo lugar que precisa
+// do símbolo (header, botão de voz, About, Conta, Tema, Registros) --
+// nunca uma segunda interpretação da marca.
 export function UniMark() {
-  const gradientId = useId().replace(/:/g, '');
-
-  return (
-    <svg viewBox="0 0 160 170" aria-hidden="true">
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#8b5cf6" />
-          <stop offset=".48" stopColor="#2563eb" />
-          <stop offset="1" stopColor="#2dd4bf" />
-        </linearGradient>
-      </defs>
-      <g fill="none" stroke={`url(#${gradientId})`} strokeLinecap="round">
-        <path strokeWidth="13" d="M24 44v59c0 31 22 53 53 53s53-22 53-53V34" />
-        <path strokeWidth="13" d="M43 55v47c0 21 13 35 34 35s34-14 34-35V47" />
-        <path strokeWidth="13" d="M62 67v34c0 10 6 17 15 17s15-7 15-17V60" />
-      </g>
-      <circle cx="130" cy="60" r="8" fill="#2dd4bf" />
-      <circle cx="130" cy="84" r="7" fill="#22d3ee" />
-      <circle cx="130" cy="106" r="6" fill="#2563eb" />
-    </svg>
-  );
+  return <img src={uniflowMarkAsset} alt="" width="463" height="512" />;
 }

@@ -75,9 +75,11 @@
   filter: drop-shadow(0 0 14px rgba(37, 99, 235, .48));
 }
 
-.uniMark svg {
+.uniMark img {
   width: 100%;
+  height: auto;
   display: block;
+  object-fit: contain;
 }
 
 .identityCopy {

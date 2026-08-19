@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import NotificationsPanel from '../notifications/NotificationsPanel.jsx';
 import { useNotifications } from '../notifications/useNotifications.js';
+import { useCollapsibleHeaderOnScroll } from './collapsibleHeaderScroll.js';
 import SimplifiedBottomNavigation from './SimplifiedBottomNavigation.jsx';
 import SimplifiedHeader from './SimplifiedHeader.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
@@ -19,6 +20,7 @@ function SimplifiedAppShell({ children }) {
   const notificationPanelRef = useRef(null);
   const closeTimerRef = useRef(null);
   const openFrameRef = useRef(null);
+  const mainContentRef = useRef(null);
   const viewportState = useVisualViewport();
   const {
     notifications,
@@ -39,6 +41,15 @@ function SimplifiedAppShell({ children }) {
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`);
   const isUniChatRoute = location.pathname === SIMPLIFIED_ROUTES.UNI;
   const isUniChatKeyboardOpen = isUniChatRoute && viewportState.isKeyboardOpen;
+  // COMPACT-HEADER1: só as rotas que realmente renderizam SimplifiedHeader
+  // (abaixo) ganham o comportamento de esconder/reexibir ao rolar --
+  // Registros/Conta/Chat da Uni têm cabeçalho próprio, nunca afetado por
+  // isto.
+  const showsCompactHeader = !hasPageHeader && !isUniChatRoute;
+  const isHeaderHidden = useCollapsibleHeaderOnScroll({
+    scrollContainerRef: mainContentRef,
+    enabled: showsCompactHeader,
+  });
 
   const clearCloseTimer = useCallback(() => {
     if (closeTimerRef.current) {
@@ -148,13 +159,18 @@ function SimplifiedAppShell({ children }) {
       data-text-size={profile?.text_size ?? 'standard'}
     >
       <div className={styles.shellSurface}>
-        <div className={styles.shellTopRegion}>
+        <div
+          className={styles.shellTopRegion}
+          data-compact-header={showsCompactHeader ? 'true' : undefined}
+          data-header-hidden={showsCompactHeader && isHeaderHidden ? 'true' : undefined}
+        >
           {hasPageHeader || isUniChatRoute ? null : (
             <SimplifiedHeader
               notificationButtonRef={notificationButtonRef}
               unreadCount={unreadCount}
               isNotificationsOpen={isNotificationsOpen}
               onNotifications={toggleNotifications}
+              hidden={isHeaderHidden}
             />
           )}
           {isNotificationsRendered && !hasPageHeader && !isUniChatRoute ? (
@@ -201,8 +217,11 @@ function SimplifiedAppShell({ children }) {
           ) : null}
         </div>
         <main
+          ref={mainContentRef}
           className={styles.mainContent}
           data-uni-chat={isUniChatRoute ? 'true' : undefined}
+          data-compact-header={showsCompactHeader ? 'true' : undefined}
+          data-header-hidden={showsCompactHeader && isHeaderHidden ? 'true' : undefined}
         >
           <VisualViewportContext.Provider value={viewportState}>
             {children}
