@@ -72,6 +72,14 @@ test('exatamente DUAS actions (30min/1h), identificadores internos estaveis -- n
   assert.equal(actionCount, 2, 'ignorar/dispensar a notificacao ja produz o mesmo efeito de "Nao precisa" -- nenhuma decisao registrada, nenhum lembrete, sem reperguntar');
 });
 
+test('payload da pergunta tem tag estavel por compromisso -- reenvio para o MESMO item substitui a notificacao anterior em vez de empilhar', () => {
+  const fnBody = SOURCE.slice(
+    SOURCE.indexOf('function buildPromptPayload'),
+    SOURCE.indexOf('function buildReminderPayload'),
+  );
+  assert.match(fnBody, /tag: `agenda-reminder-prompt-\$\{candidate\.agenda_item_id\}`,/);
+});
+
 test('decision_token viaja so dentro do payload de push (nunca em texto visivel) e e o mesmo devolvido pelo INSERT da pergunta', () => {
   const fnBody = SOURCE.slice(
     SOURCE.indexOf('function buildPromptPayload'),

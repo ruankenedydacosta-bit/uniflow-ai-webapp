@@ -49,6 +49,13 @@
       ? Notification.maxActions
       : rawActions.length;
     const actions = rawActions.length > 0 ? rawActions.slice(0, maxActions) : [];
+    // AGPUSH1: quando o payload traz `tag` (compromisso identificavel), um
+    // reenvio para o MESMO item substitui a notificacao anterior na
+    // bandeja em vez de empilhar -- `renotify` garante que a substituicao
+    // ainda alerta o usuario (sem isso, o browser pode trocar em
+    // silencio). Payloads sem tag (ex.: notificacao de teste) continuam
+    // sem esse comportamento, exatamente como antes.
+    const tag = typeof payload.tag === 'string' && payload.tag ? payload.tag : undefined;
 
     event.waitUntil(
       self.registration.showNotification(title, {
@@ -57,6 +64,7 @@
         badge: '/uniflow-icon-192.png',
         data: { ...(payload.data ?? {}), url },
         ...(actions.length > 0 ? { actions } : {}),
+        ...(tag ? { tag, renotify: true } : {}),
       }),
     );
   });

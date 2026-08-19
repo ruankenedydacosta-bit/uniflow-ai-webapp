@@ -92,6 +92,7 @@ const PROMPT_PAYLOAD = {
   title: 'Uni ✦',
   body: 'Você tem um compromisso amanhã às 09:00.\nQuer que eu te lembre antes?',
   url: '/app/agenda?item=item-1&reminderPrompt=1',
+  tag: 'agenda-reminder-prompt-item-1',
   data: {
     type: 'agenda_reminder_prompt',
     agenda_item_id: 'item-1',
@@ -116,6 +117,22 @@ test('push com actions no payload repassa `actions` para showNotification -- a d
   assert.deepEqual(shown.options.actions, PROMPT_PAYLOAD.actions);
   assert.equal(shown.options.data.agenda_item_id, 'item-1');
   assert.equal(shown.options.data.decision_token, 'token-abc');
+});
+
+test('push com tag repassa tag + renotify:true -- reenvio para o mesmo compromisso substitui a notificacao anterior, alertando de novo', async () => {
+  const bridge = await loadBridge();
+  await bridge.dispatchPush(PROMPT_PAYLOAD);
+  const shown = bridge.getShownNotification();
+  assert.equal(shown.options.tag, 'agenda-reminder-prompt-item-1');
+  assert.equal(shown.options.renotify, true);
+});
+
+test('push sem tag (ex.: notificacao de teste) nunca inventa uma -- showNotification nao recebe tag/renotify', async () => {
+  const bridge = await loadBridge();
+  await bridge.dispatchPush({ title: 'Uni ✦', body: 'x', url: '/app/agenda' });
+  const shown = bridge.getShownNotification();
+  assert.equal('tag' in shown.options, false);
+  assert.equal('renotify' in shown.options, false);
 });
 
 test('push sem actions no payload (ex.: iOS) nunca inventa actions -- showNotification nao recebe a chave', async () => {

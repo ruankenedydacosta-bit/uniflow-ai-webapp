@@ -295,6 +295,12 @@ function buildPromptPayload(candidate: PromptCandidate, decisionToken: string, s
     title: 'Uni ✦',
     body: `Você tem um compromisso amanhã às ${time}.\nQuer que eu te lembre antes?`,
     url,
+    // AGPUSH1 (endurecimento, nao a causa raiz investigada): tag estavel
+    // por compromisso -- um reenvio/teste repetido para o MESMO item
+    // substitui a notificacao anterior na bandeja em vez de empilhar uma
+    // segunda copia. Elimina uma classe inteira de ambiguidade "em qual
+    // notificacao o usuario realmente tocou" quando ha testes repetidos.
+    tag: `agenda-reminder-prompt-${candidate.agenda_item_id}`,
     data: {
       type: 'agenda_reminder_prompt',
       agenda_item_id: candidate.agenda_item_id,
