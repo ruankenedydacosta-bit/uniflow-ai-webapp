@@ -1,6 +1,64 @@
 import { isDifferentBuild, LOADED_BUILD_ID, parseVersionManifest } from './appVersion.js';
 import { getPwaDiagnosticSnapshot, BUILD_COHERENCE } from './pwaBuildDiagnostics.js';
 
+// ============================================================================
+// PWA UPDATE CONTRACT -- permanente, nunca remover.
+//
+// O usuário nunca deve precisar saber sobre cache, Service Worker, Safari,
+// "limpar histórico", fechar/reabrir manualmente, esperar 20-30s, ou levar
+// o app a background para atualizar. Isso é responsabilidade da UniFlow,
+// garantida por este módulo, e vale para TODA release futura.
+//
+// Garantias que este arquivo mantém (cobertas por teste em appUpdate.test.js
+// -- se um teste destes quebrar, a garantia quebrou, não só o código):
+//
+// 1. CHECK IMEDIATO NO STARTUP: start() chama checkForUpdate() de forma
+//    síncrona (nunca espera o intervalo periódico). Ver checkForUpdate()
+//    dentro de start(), abaixo.
+// 2. NÃO BLOQUEIA A ABERTURA: checkForUpdate() é fire-and-forget (void);
+//    rede lenta/offline nunca atrasa nem quebra a renderização do app.
+// 3. CARD APARECE IMEDIATAMENTE: PwaUpdateCard.jsx usa
+//    useSyncExternalStore ligado a este manager -- assim que a 1a
+//    checkForUpdate() do startup resolver com updateAvailable=true, o
+//    card aparece, sem exigir trocar de aba/minimizar/esperar.
+// 4. ATUALIZAR AGORA = 1 AÇÃO: applyUpdate() executa sozinho todo o fluxo
+//    registration.update() -> waiting/installing -> skipWaiting ->
+//    controllerchange -> reload controlado -> reverifica os 3 build IDs
+//    no próximo checkForUpdate() (agora síncrono, ver garantia 1).
+// 5. RECOVERY GUARDADO, NUNCA EM LOOP: no máximo 1 recovery automático por
+//    build/sessão (AUTO_RECOVERY_GUARD_KEY), disparado só ao sair de
+//    foreground -- nunca interrompe o usuário, nunca repete.
+// 6. NUNCA DESTRÓI DADOS DO USUÁRIO: recovery só toca em cache de Service
+//    Worker comprovadamente obsoleto -- nunca sessão Supabase, IndexedDB,
+//    localStorage funcional, credenciais ou preferências.
+// 7. AS 3 IDENTIDADES DE BUILD SEMPRE EXISTEM: toda build de Production
+//    gera runtimeBuildId (globalThis.__UNIFLOW_BUILD_ID__, via `define`
+//    em vite.config.js), serverBuildId (version.json, no-store) e
+//    swBuildId (build-id-bridge.js, embutido no Service Worker). Ver
+//    pwaBuildDiagnostics.js e os testes de vite.config.js em
+//    appUpdate.test.js que executam os plugins de verdade (não só regex).
+//
+// Agentes futuros: se você está pensando em remover/simplificar algo
+// disto porque "parece redundante" ou "código legado", NÃO É -- é a
+// causa raiz resolvida de um incidente real (build parcial/misturado no
+// iPhone). Audite antes de tocar.
+//
+// BOOTSTRAP RESILIENTE -- já auditado, não precisa de novo bootstrap
+// separado. O SW gerado pelo Workbox registra uma NavigationRoute que
+// serve index.html DO PRECACHE em toda navegação enquanto o SW estiver
+// ativo (comportamento padrão do modo generateSW para SPA) -- ou seja,
+// um reload comum NÃO revalida o HTML contra a rede via cabeçalhos do
+// Vercel enquanto o SW controla a página; só o `fetch('/version.json',
+// {cache:'no-store'})` acima escapa disso de verdade (reforçado por
+// vercel.json, que serve /version.json sempre sem cache). Como esse
+// fetch roda dentro do MESMO bundle antigo (main.jsx -> este módulo), um
+// bundle velho consegue e sempre conseguiu descobrir um build novo --
+// não existe cenário em que o app fique "cego" para updates só por estar
+// desatualizado. Por isso nenhum bootstrap mínimo/separado foi criado:
+// a garantia 1 acima (check síncrono no startup) já resolve o requisito
+// sem arquitetura nova.
+// ============================================================================
+
 export const UPDATE_RELOAD_GUARD_KEY = 'uniflow.app-update.reload-guard';
 // PWA-UPDATE3: guarda SEPARADA da UPDATE_RELOAD_GUARD_KEY -- aquela evita
 // dois reloads dentro de UMA chamada de applyUpdate(); esta decide se vale

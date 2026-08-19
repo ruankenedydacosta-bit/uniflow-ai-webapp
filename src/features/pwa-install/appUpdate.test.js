@@ -532,6 +532,105 @@ test('build-id-bridge.js responde a UNIFLOW_GET_BUILD_ID via MessageChannel -- n
 });
 
 // ============================================================================
+// PWA UPDATE CONTRACT -- executa vite.config.js de VERDADE (nao so regex no
+// texto): importa o modulo real, acha os plugins pelo nome e roda o
+// generateBundle() deles com um contexto Rollup falso, conferindo o
+// ARTEFATO emitido. Isto e o que garante que uma futura release nao possa
+// remover uma das 3 identidades de build sem quebrar a suite -- uma
+// mudanca que so alterasse o texto de um jeito que ainda "parece" bater
+// com a regex, mas quebrasse o comportamento real, seria pega aqui.
+// ============================================================================
+
+async function loadViteConfigPlugins() {
+  const mod = await import(new URL('../../../vite.config.js', import.meta.url).href);
+  return mod.default.plugins.flat(Infinity).filter(Boolean);
+}
+
+function createFakeRollupBundleContext() {
+  const emitted = new Map();
+  return {
+    emitFile({ fileName, source: fileSource }) {
+      emitted.set(fileName, fileSource);
+    },
+    emitted,
+  };
+}
+
+test('CONTRATO: versionManifestPlugin realmente emite version.json com buildId/releasedAt validos', async () => {
+  const plugins = await loadViteConfigPlugins();
+  const versionPlugin = plugins.find((plugin) => plugin.name === 'uniflow-version-manifest');
+  assert.ok(versionPlugin, 'plugin uniflow-version-manifest precisa existir -- e uma das 3 identidades de build');
+
+  const ctx = createFakeRollupBundleContext();
+  versionPlugin.generateBundle.call(ctx);
+
+  const raw = ctx.emitted.get('version.json');
+  assert.ok(raw, 'version.json precisa ser emitido de verdade no bundle');
+  const manifest = JSON.parse(raw);
+  assert.equal(typeof manifest.buildId, 'string');
+  assert.ok(manifest.buildId.length > 0, 'buildId nunca pode ser vazio -- e a identidade server das 3');
+  assert.equal(typeof manifest.releasedAt, 'string');
+  assert.doesNotThrow(() => new Date(manifest.releasedAt).toISOString());
+});
+
+test('CONTRATO: buildIdBridgePlugin realmente emite build-id-bridge.js com o MESMO buildId do version.json', async () => {
+  const plugins = await loadViteConfigPlugins();
+  const versionPlugin = plugins.find((plugin) => plugin.name === 'uniflow-version-manifest');
+  const bridgePlugin = plugins.find((plugin) => plugin.name === 'uniflow-build-id-bridge');
+  assert.ok(bridgePlugin, 'plugin uniflow-build-id-bridge precisa existir -- e a identidade SW das 3');
+
+  const ctx = createFakeRollupBundleContext();
+  versionPlugin.generateBundle.call(ctx);
+  bridgePlugin.generateBundle.call(ctx);
+
+  const manifest = JSON.parse(ctx.emitted.get('version.json'));
+  const bridgeSource = ctx.emitted.get('build-id-bridge.js');
+  assert.ok(bridgeSource, 'build-id-bridge.js precisa ser emitido de verdade no bundle');
+  assert.match(bridgeSource, /self\.addEventListener\('message'/);
+  assert.match(bridgeSource, /UNIFLOW_GET_BUILD_ID/);
+
+  const embeddedBuildIdMatch = bridgeSource.match(/UNIFLOW_SW_BUILD_ID = "([^"]*)"/);
+  assert.ok(embeddedBuildIdMatch, 'buildId precisa estar embutido como string literal no SW');
+  assert.equal(
+    embeddedBuildIdMatch[1],
+    manifest.buildId,
+    'as 3 identidades tem que nascer do MESMO buildId -- nunca um build parcial',
+  );
+});
+
+test('CONTRATO: a identidade runtime (globalThis.__UNIFLOW_BUILD_ID__) usa o MESMO buildId do version.json/SW', async () => {
+  const vite = await source('../../../vite.config.js');
+  assert.match(
+    vite,
+    /'globalThis\.__UNIFLOW_BUILD_ID__': JSON\.stringify\(buildId\),/,
+    'runtime precisa vir da MESMA variavel buildId usada pelo version.json e pelo build-id-bridge -- nunca uma 4a fonte divergente',
+  );
+  assert.match(vite, /'globalThis\.__UNIFLOW_RELEASED_AT__': JSON\.stringify\(releasedAt\),/);
+});
+
+test('CONTRATO: start() dispara checkForUpdate() de forma SINCRONA (fire-and-forget), nunca espera o intervalo periodico', async () => {
+  const runtime = createRuntime();
+  let checks = 0;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    // Intervalo periodico bem maior que o tempo do teste -- se o check
+    // inicial dependesse dele, `checks` continuaria 0 aqui.
+    periodicCheckIntervalMs: 60_000,
+    fetchImpl: async () => { checks += 1; return manifestResponse('build-a'); },
+  });
+
+  const cleanup = manager.start();
+  // Nenhum timer avançado -- so uma volta de microtask, equivalente ao
+  // tempo real entre o app abrir e o fetch de version.json comecar.
+  await Promise.resolve();
+  await Promise.resolve();
+  cleanup();
+
+  assert.equal(checks, 1, 'checkForUpdate() precisa disparar no startup, antes de qualquer timer periodico rodar');
+});
+
+// ============================================================================
 // PWA-UPDATE3 -- recovery automático: ARMA na deteccao, so DISPARA em
 // background, guardado por build, nunca em cima de um applyUpdate manual.
 // ============================================================================
