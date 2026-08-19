@@ -68,9 +68,13 @@ test('símbolo do header entre 36-42px, wordmark entre 20-26px (nunca protagonis
   assert.match(css, /\.brandLockup strong \{\s*\n\s*font-size: clamp\(20px, 5vw, 26px\);/);
 });
 
-test('header respeita env(safe-area-inset-top) e padding lateral compatível com o resto da Home (18px)', async () => {
+test('header respeita safe-area (via --uf-header-safe-top, computada uma única vez) e padding lateral compatível com o resto da Home (18px)', async () => {
   const css = await source('./simplifiedApp.module.css');
-  assert.match(css, /padding:\s*\n\s*max\(10px, env\(safe-area-inset-top\)\)\s*\n\s*max\(18px, env\(safe-area-inset-right\)\)\s*\n\s*8px\s*\n\s*max\(18px, env\(safe-area-inset-left\)\);/);
+  assert.match(css, /--uf-header-safe-top: max\(10px, env\(safe-area-inset-top, 0px\)\);/);
+  assert.match(
+    css,
+    /padding:\s*\n\s*var\(--uf-header-safe-top\)\s*\n\s*max\(18px, env\(safe-area-inset-right\)\)\s*\n\s*8px\s*\n\s*max\(18px, env\(safe-area-inset-left\)\);/,
+  );
 });
 
 test('sino mantém área de toque >= 44x44px, mesmo com o header compacto', async () => {
@@ -92,19 +96,24 @@ test('fundo do header preserva o navy/azul profundo (--uf-app-canvas) -- blur op
 });
 
 // ============================================================================
-// COMPACT-HEADER1 -- comportamento ao scroll (PARTE 3): wiring real entre
-// o hook (collapsibleHeaderScroll.js, já testado isoladamente) e a shell.
+// HEADER-SCROLL2 -- comportamento ao scroll CONTÍNUO: wiring real entre o
+// hook (collapsibleHeaderScroll.js, matemática pura já testada isolada) e
+// a shell. Nunca mais um hidden binário por threshold único.
 // ============================================================================
 
-test('SimplifiedAppShell só ativa o hook de scroll nas rotas que renderizam o header compacto', async () => {
+test('SimplifiedAppShell só ativa o hook de scroll nas rotas que renderizam o header compacto, e passa shellRef', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
   assert.match(shell, /import \{ useCollapsibleHeaderOnScroll \} from '\.\/collapsibleHeaderScroll\.js';/);
   assert.match(shell, /const showsCompactHeader = !hasPageHeader && !isUniChatRoute;/);
-  assert.match(shell, /const isHeaderHidden = useCollapsibleHeaderOnScroll\(\{\s*\n\s*scrollContainerRef: mainContentRef,\s*\n\s*enabled: showsCompactHeader,\s*\n\s*\}\);/);
+  assert.match(
+    shell,
+    /const isHeaderHidden = useCollapsibleHeaderOnScroll\(\{\s*\n\s*scrollContainerRef: mainContentRef,\s*\n\s*shellRef,\s*\n\s*enabled: showsCompactHeader,\s*\n\s*\}\);/,
+  );
   assert.match(shell, /<main\s*\n\s*ref=\{mainContentRef\}/);
+  assert.match(shell, /ref=\{shellRef\}\s*\n\s*className=\{styles\.shell\}/);
 });
 
-test('hidden chega ao header via prop -- nunca decidido dentro de SimplifiedHeader (única fonte de verdade é o hook)', async () => {
+test('hidden (efetivamente escondido) chega ao header via prop -- nunca decidido dentro de SimplifiedHeader', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
   const header = await source('./SimplifiedHeader.jsx');
   assert.match(shell, /hidden=\{isHeaderHidden\}/);
@@ -117,62 +126,68 @@ test('header escondido nunca captura toque/foco: aria-hidden, pointer-events:non
   const css = await source('./simplifiedApp.module.css');
   assert.match(header, /<header className=\{styles\.header\} data-hidden=\{hidden \? 'true' : 'false'\} aria-hidden=\{hidden\}>/);
   assert.match(header, /tabIndex=\{hidden \? -1 : undefined\}/);
-  assert.match(css, /\.header\[data-hidden="true"\] \{\s*\n\s*transform: translateY\(-100%\);\s*\n\s*opacity: 0;[\s\S]*?pointer-events: none;/);
+  assert.match(css, /\.header\[data-hidden="true"\] \{\s*\n\s*pointer-events: none;\s*\n\s*\}/);
 });
 
-test('header usa transform+opacity para esconder -- nunca anima height/max-height frame a frame', async () => {
+test('header usa transform3d+opacity+mask CONTÍNUOS (--header-progress) -- nunca height/max-height, nunca transition competindo com o scroll', async () => {
   const css = await source('./simplifiedApp.module.css');
   const headerBlock = css.slice(css.indexOf('.header {'), css.indexOf('.header[data-hidden="true"]'));
-  assert.match(headerBlock, /transform: translateY\(0\);/);
-  assert.match(headerBlock, /transition: transform 210ms cubic-bezier\(\.22, 1, \.36, 1\), opacity 210ms ease;/);
+  assert.match(headerBlock, /transform: translate3d\(0, calc\(var\(--header-progress, 0\) \* -100%\), 0\);/);
+  assert.match(headerBlock, /opacity: calc\(1 - var\(--header-progress, 0\)\);/);
   assert.doesNotMatch(headerBlock, /transition:[^;]*height/);
+  // Nenhuma CSS transition aqui -- o progress é escrito a cada frame de
+  // scroll, uma transition ficaria "correndo atrás" do dedo do usuário.
+  assert.doesNotMatch(headerBlock, /\btransition:/);
 });
 
-test('duração da transição do header fica entre 180-240ms (premium, sem bounce -- easing sem overshoot)', async () => {
-  const css = await source('./simplifiedApp.module.css');
-  const match = css.match(/transition: transform (\d+)ms cubic-bezier\(([\d.]+), (\d+), ([\d.]+), (\d+)\), opacity (\d+)ms/);
-  assert.ok(match, 'transição do header não encontrada');
-  const durationMs = Number(match[1]);
-  assert.ok(durationMs >= 180 && durationMs <= 240, `duração ${durationMs}ms fora da faixa 180-240ms`);
-  // cubic-bezier sem overshoot: y1 e y2 dentro de [0,1] -- nunca > 1 (que produziria bounce).
-  assert.ok(Number(match[3]) <= 1 && Number(match[5]) <= 1);
-});
-
-test('.mainContent e .shellTopRegion reservam o mesmo espaço estrutural do header e recolhem juntos quando ele some -- sem CLS', async () => {
+test('máscara vertical some a parte de baixo do header primeiro, e é imperceptível em repouso (progress=0)', async () => {
   const css = await source('./simplifiedApp.module.css');
   assert.match(
     css,
-    /\.mainContent\[data-compact-header="true"\] \{\s*\n\s*padding-top: calc\(var\(--simplified-header-height\) \+ env\(safe-area-inset-top, 0px\)\);\s*\n\s*transition: padding-top 210ms cubic-bezier\(\.22, 1, \.36, 1\);/,
+    /mask-image: linear-gradient\(to bottom, black calc\(100% - \(var\(--header-progress, 0\) \* 70%\)\), transparent 100%\);/,
+  );
+  assert.match(css, /-webkit-mask-image: linear-gradient\(to bottom, black calc\(100% - \(var\(--header-progress, 0\) \* 70%\)\), transparent 100%\);/);
+});
+
+test('CAUSA DO ESPAÇO VAZIO corrigida: .shellTopRegion NUNCA mais reserva altura do header -- só .mainContent reserva, e acompanha --header-progress continuamente', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  assert.doesNotMatch(
+    css,
+    /\.shellTopRegion\[data-compact-header="true"\]\s*\{/,
+    'shellTopRegion nunca deve voltar a reservar espaço -- essa dupla reserva era a causa do espaço vazio',
   );
   assert.match(
     css,
-    /\.mainContent\[data-compact-header="true"\]\[data-header-hidden="true"\] \{\s*\n\s*padding-top: env\(safe-area-inset-top, 0px\);/,
-  );
-  assert.match(
-    css,
-    /\.shellTopRegion\[data-compact-header="true"\] \{\s*\n\s*padding-top: calc\(var\(--simplified-header-height\) \+ env\(safe-area-inset-top, 0px\)\);/,
+    /\.mainContent\[data-compact-header="true"\] \{\s*\n\s*padding-top: calc\(\s*\n\s*env\(safe-area-inset-top, 0px\)\s*\n\s*\+ \(var\(--uf-header-full-height\) - env\(safe-area-inset-top, 0px\)\) \* \(1 - var\(--header-progress, 0\)\)\s*\n\s*\);\s*\n\s*\}/,
   );
 });
 
-test('data-compact-header/data-header-hidden nunca vazam para Registros/Conta/Chat da Uni (só quando showsCompactHeader)', async () => {
+test('reserva do conteúdo nunca zera de vez -- preserva env(safe-area-inset-top) mesmo com progress=1 (nunca remove a proteção do notch)', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const mainContentBlock = css.slice(css.indexOf('.mainContent[data-compact-header="true"] {'), css.indexOf('.agendaPage {'));
+  assert.match(mainContentBlock, /env\(safe-area-inset-top, 0px\)/);
+});
+
+test('safe-area só é computada uma vez (--uf-header-safe-top), reutilizada por .header e pela reserva de .mainContent -- nunca duplicada', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const declarations = [...css.matchAll(/^\s*--uf-header-safe-top: max\(10px, env\(safe-area-inset-top, 0px\)\);/gm)];
+  assert.equal(declarations.length, 1, '--uf-header-safe-top só deveria ser DECLARADA uma vez');
+  assert.match(css, /--uf-header-full-height: calc\(var\(--simplified-header-height\) - 10px \+ var\(--uf-header-safe-top\)\);/);
+  // .header e a reserva de .mainContent leem via var(), nunca recalculam
+  // max(10px, env(...)) por conta própria.
+  assert.doesNotMatch(css, /padding:\s*\n\s*max\(10px, env\(safe-area-inset-top/);
+});
+
+test('data-compact-header nunca vaza para Registros/Conta/Chat da Uni (só quando showsCompactHeader), e data-header-hidden não existe mais', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
   assert.match(shell, /data-compact-header=\{showsCompactHeader \? 'true' : undefined\}/);
-  assert.match(shell, /data-header-hidden=\{showsCompactHeader && isHeaderHidden \? 'true' : undefined\}/);
+  assert.doesNotMatch(shell, /data-header-hidden/, 'era um estado binário -- substituído pelo --header-progress contínuo, nunca mais um atributo discreto');
 });
 
-test('painel de notificações nasce ABAIXO do header fixo (nunca por baixo dele) via o mesmo espaço reservado', async () => {
+test('painel de notificações (fora de escopo) continua intocado -- sem padding/margin novo, header cobre naturalmente por z-index', async () => {
   const css = await source('./simplifiedApp.module.css');
-  const shellTopRegionBlock = css.slice(
-    css.indexOf('.shellTopRegion['),
-    css.indexOf('.brandLockup {'),
-  );
-  assert.match(shellTopRegionBlock, /padding-top: calc\(var\(--simplified-header-height\)/);
+  assert.match(css, /\.notificationsDropdown \{[\s\S]{0,40}--uf-color-text-primary: var\(--uf-app-text\);/);
+  assert.match(css, /padding: 0 18px;/);
+  assert.match(css, /\.notificationsDropdown\[data-open="true"\] \{[\s\S]*?padding: 18px;/);
 });
 
-test('reduced motion: header/mainContent/shellTopRegion trocam para instantâneo, mas continuam funcionando (nunca travam visíveis)', async () => {
-  const css = await source('./simplifiedApp.module.css');
-  assert.match(
-    css,
-    /\.header,\s*\n\s*\.shellTopRegion\[data-compact-header="true"\],\s*\n\s*\.mainContent\[data-compact-header="true"\] \{\s*\n\s*transition: none;\s*\n\s*\}\s*\n\}/,
-  );
-});

@@ -2,12 +2,14 @@ import { BellIcon, UniMark } from './SimplifiedIcons.jsx';
 import styles from './simplifiedApp.module.css';
 
 /**
- * COMPACT-HEADER1: `hidden` só chega aqui já com histerese aplicada (ver
- * collapsibleHeaderScroll.js, dono de TODA a lógica de threshold/scroll)
+ * HEADER-SCROLL2: `hidden` reflete "efetivamente escondido" (progress
+ * contínuo >= HEADER_EFFECTIVELY_HIDDEN_PROGRESS, ver
+ * collapsibleHeaderScroll.js -- dono de TODA a lógica de scroll/fade)
  * -- este componente só reflete o estado, nunca decide sozinho quando
- * esconder. Quando escondido, o header sai do fluxo de toque/teclado
- * (aria-hidden + tabIndex=-1 no sino) mesmo que a transição CSS ainda não
- * tenha terminado -- nunca deixa um elemento invisível capturando toque.
+ * esconder. O visual (transform/opacity/mask) é sempre contínuo via CSS
+ * (--header-progress), independente deste prop -- `hidden` só controla
+ * interação: aria-hidden + tabIndex=-1 no sino, nunca captura toque
+ * enquanto praticamente invisível.
  */
 function SimplifiedHeader({
   unreadCount = 0,

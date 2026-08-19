@@ -21,6 +21,7 @@ function SimplifiedAppShell({ children }) {
   const closeTimerRef = useRef(null);
   const openFrameRef = useRef(null);
   const mainContentRef = useRef(null);
+  const shellRef = useRef(null);
   const viewportState = useVisualViewport();
   const {
     notifications,
@@ -48,6 +49,7 @@ function SimplifiedAppShell({ children }) {
   const showsCompactHeader = !hasPageHeader && !isUniChatRoute;
   const isHeaderHidden = useCollapsibleHeaderOnScroll({
     scrollContainerRef: mainContentRef,
+    shellRef,
     enabled: showsCompactHeader,
   });
 
@@ -152,6 +154,7 @@ function SimplifiedAppShell({ children }) {
 
   return (
     <div
+      ref={shellRef}
       className={styles.shell}
       style={viewportState.viewportStyle}
       data-simplified-app-shell
@@ -159,11 +162,7 @@ function SimplifiedAppShell({ children }) {
       data-text-size={profile?.text_size ?? 'standard'}
     >
       <div className={styles.shellSurface}>
-        <div
-          className={styles.shellTopRegion}
-          data-compact-header={showsCompactHeader ? 'true' : undefined}
-          data-header-hidden={showsCompactHeader && isHeaderHidden ? 'true' : undefined}
-        >
+        <div className={styles.shellTopRegion}>
           {hasPageHeader || isUniChatRoute ? null : (
             <SimplifiedHeader
               notificationButtonRef={notificationButtonRef}
@@ -221,7 +220,6 @@ function SimplifiedAppShell({ children }) {
           className={styles.mainContent}
           data-uni-chat={isUniChatRoute ? 'true' : undefined}
           data-compact-header={showsCompactHeader ? 'true' : undefined}
-          data-header-hidden={showsCompactHeader && isHeaderHidden ? 'true' : undefined}
         >
           <VisualViewportContext.Provider value={viewportState}>
             {children}
