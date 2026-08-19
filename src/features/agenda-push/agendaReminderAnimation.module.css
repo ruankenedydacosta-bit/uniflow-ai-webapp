@@ -74,40 +74,45 @@
 }
 
 /* ---------------------------------------------------------------------
-   FASE 6 -- luz radial interna do card no momento da absorcao.
-   Opacidade baixa de proposito: acende por dentro sem lavar o card de
-   branco e sem prejudicar a legibilidade do texto.
+   FASE 6 -- luz radial interna do card no momento da absorcao. AGPUSH4:
+   fortalecida moderadamente (26/18/10% -> 34/24/14%) -- ainda deliberada,
+   nunca lava o card de branco nem prejudica a legibilidade do texto.
+   Centro proximo ao ponto de entrada da particula (22% da largura,
+   esquerda), nunca no meio do card -- "a particula foi absorvida aqui".
    --------------------------------------------------------------------- */
 .cardGlow {
   position: absolute;
   opacity: 0;
   background: radial-gradient(circle at 22% 50%,
-    color-mix(in srgb, var(--uf-app-cyan) 26%, transparent) 0%,
-    color-mix(in srgb, var(--uf-app-primary) 18%, transparent) 38%,
-    color-mix(in srgb, var(--uf-app-ai) 10%, transparent) 62%,
+    color-mix(in srgb, var(--uf-app-cyan) 34%, transparent) 0%,
+    color-mix(in srgb, var(--uf-app-primary) 24%, transparent) 38%,
+    color-mix(in srgb, var(--uf-app-ai) 14%, transparent) 62%,
     transparent 85%);
   will-change: opacity;
 }
 
 /* ---------------------------------------------------------------------
-   FASE 7 -- brilho percorrendo o CONTORNO. Um anel fino real (mask
-   composite recorta o miolo), com gradiente conico girando: a energia da
-   uma volta pela borda, em vez de um box-shadow piscando.
+   FASE 7 -- brilho percorrendo o CONTORNO. AGPUSH4 (fortalecimento):
+   - espessura ~2px (era 1.5px, nunca ultrapassa 2.5px);
+   - CAMADA 2 (halo) via `filter: drop-shadow(...)` empilhado -- segue a
+     forma real do anel recortado pelo mask-composite (drop-shadow, ao
+     contrario de box-shadow, respeita o alfa pos-mascara), mesma
+     linguagem de 3 camadas ja usada em .particle;
+   - arco ~210deg (era ~132deg/37% da circunferencia) -- ainda existe uma
+     "cabeca" luminosa clara (o segmento ciano, mais brilhante) seguida de
+     uma cauda que esmaece (violeta), nunca a borda inteira acesa parada;
+   - a ENFASE de cor (ciano brilhante cedo vs. reservado para o fim) vem
+     de .cardRingBrightEarly/.cardRingBrightLate, combinadas com esta
+     classe base pelo motor (agendaReminderAnimation.js).
    O border-radius e injetado por JS a partir do computed style do proprio
-   card -- o contorno nunca desalinha do card real.
+   card -- o contorno nunca desalinha do card real. A borda PERMANENTE do
+   card (.itemButton, simplifiedAgenda.module.css) nunca e alterada -- este
+   e um overlay independente por cima dela.
    --------------------------------------------------------------------- */
 .cardRing {
   position: absolute;
   opacity: 0;
-  padding: 1.5px;
-  background: conic-gradient(
-    from var(--uf-agenda-ring-angle),
-    transparent 0deg,
-    color-mix(in srgb, var(--uf-app-ai) 85%, transparent) 34deg,
-    color-mix(in srgb, var(--uf-app-primary) 92%, transparent) 68deg,
-    var(--uf-app-cyan) 96deg,
-    transparent 132deg,
-    transparent 360deg);
+  padding: 2px;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -116,7 +121,44 @@
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+  filter:
+    drop-shadow(0 0 3px color-mix(in srgb, var(--uf-app-cyan) 60%, transparent))
+    drop-shadow(0 0 7px color-mix(in srgb, var(--uf-app-primary) 45%, transparent))
+    drop-shadow(0 0 12px color-mix(in srgb, var(--uf-app-ai) 30%, transparent));
   will-change: opacity;
+}
+
+/* "Energetic" (30 min antes): o ciano -- a cor mais brilhante da marca
+   aqui -- e alcancado cedo no arco e ocupa um trecho largo. Sensacao de
+   "energia clara, chegando rapido". Arco total: 210deg. */
+.cardRingBrightEarly {
+  background: conic-gradient(
+    from var(--uf-agenda-ring-angle),
+    transparent 0deg,
+    color-mix(in srgb, var(--uf-app-ai) 70%, transparent) 20deg,
+    color-mix(in srgb, var(--uf-app-primary) 90%, transparent) 60deg,
+    var(--uf-app-cyan) 100deg,
+    var(--uf-app-cyan) 160deg,
+    color-mix(in srgb, var(--uf-app-cyan) 55%, transparent) 200deg,
+    transparent 210deg,
+    transparent 360deg);
+}
+
+/* "Calm" (1h antes): violeta/azul dominam a maior parte do arco -- o
+   ciano aparece so num trecho estreito perto do fim, como se so
+   "acendesse" perto da absorcao. Sensacao de "lembrete programado com
+   calma". Arco total: 220deg (levemente maior que energetic). */
+.cardRingBrightLate {
+  background: conic-gradient(
+    from var(--uf-agenda-ring-angle),
+    transparent 0deg,
+    color-mix(in srgb, var(--uf-app-ai) 75%, transparent) 40deg,
+    color-mix(in srgb, var(--uf-app-ai) 85%, transparent) 100deg,
+    color-mix(in srgb, var(--uf-app-primary) 90%, transparent) 150deg,
+    color-mix(in srgb, var(--uf-app-primary) 95%, transparent) 190deg,
+    var(--uf-app-cyan) 215deg,
+    transparent 220deg,
+    transparent 360deg);
 }
 
 /* Defesa em profundidade: agendaReminderAnimation.js ja retorna cedo em

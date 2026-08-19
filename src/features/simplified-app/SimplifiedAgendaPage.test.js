@@ -54,23 +54,31 @@ test('o indicador do card vem do estado PERSISTIDO, nunca de "a animacao rodou"'
 test('o card mostra o chip com sino + rotulo quando ha lembrete, e nada quando nao ha', async () => {
   const content = await source();
   assert.match(content, /import \{ BellIcon, ChevronRightIcon \} from '\.\/SimplifiedIcons\.jsx';/);
-  assert.match(content, /reminder \? \(\s*\n\s*<span className=\{styles\.reminderChip\}/);
+  const reminderBranch = content.slice(content.indexOf('reminder ? ('), content.indexOf('reminder ? (') + 600);
+  assert.match(reminderBranch, /<span key=\{reminder\.label\} className=\{styles\.reminderChip\}/);
   assert.match(content, /<BellIcon \/>/);
   assert.match(content, /\{reminder\.label\}/);
 });
 
-test('o estado real entra ANTES da animacao -- o indicador ja e verdade quando a particula sai', async () => {
+// AGPUSH4: a v1 revelava o indicador IMEDIATAMENTE (applyDecision antes da
+// animacao). O refinamento pediu o oposto -- o estado persistido ja esta
+// salvo (feito antes de chegar aqui), mas a REVELACAO VISUAL do indicador
+// so acontece quando a particula termina de ser absorvida (onAbsorbed),
+// nunca antes. Ver AgendaReminderChoiceModal.jsx para a garantia de que o
+// backend ja foi persistido primeiro.
+test('AGPUSH4: a revelacao visual do indicador e adiada ate a particula ser absorvida -- via onAbsorbed, nunca antes de playReminderAppliedAnimation', async () => {
   const content = await source();
   const handler = content.slice(content.indexOf('function handleReminderApplied'), content.indexOf('function selectToday'));
-  const applyIndex = handler.indexOf('applyDecision(agendaItemId, offsetMinutes)');
-  const playIndex = handler.indexOf('playReminderAppliedAnimation(');
-  assert.ok(applyIndex > -1 && playIndex > applyIndex, 'applyDecision precisa vir antes da animacao');
+  assert.match(handler, /onAbsorbed: \(\) => applyDecision\(agendaItemId, offsetMinutes\),/);
+  const onAbsorbedIndex = handler.indexOf('onAbsorbed:');
+  const playCallIndex = handler.indexOf('playReminderAppliedAnimation(');
+  assert.ok(onAbsorbedIndex > playCallIndex, 'onAbsorbed deve estar DENTRO da chamada a playReminderAppliedAnimation, nunca um applyDecision solto antes dela');
 });
 
-test('"Nao precisa" (offsetMinutes null) nunca dispara particula ate o card', async () => {
+test('"Nao precisa" (offsetMinutes null) aplica o estado na hora (sem particula para esperar) e nunca dispara animacao', async () => {
   const content = await source();
   const handler = content.slice(content.indexOf('function handleReminderApplied'), content.indexOf('function selectToday'));
-  assert.match(handler, /if \(offsetMinutes == null \|\| !originRect\) return;/);
+  assert.match(handler, /if \(offsetMinutes == null \|\| !originRect\) \{\s*\n\s*applyDecision\(agendaItemId, offsetMinutes\);\s*\n\s*return;\s*\n\s*\}/);
 });
 
 test('card fora da tela: NUNCA scroll automatico nem navegacao -- so nao ha particula', async () => {

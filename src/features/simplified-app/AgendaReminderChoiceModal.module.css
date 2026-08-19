@@ -1,9 +1,17 @@
-/* AGPUSH2 (microinteração): feedback de toque, confirmação e recolhimento
-   do modal "Quando devo te lembrar?".
+/* AGPUSH2/AGPUSH4 (microinteração): feedback de toque, confirmação e
+   recolhimento do modal "Quando devo te lembrar?".
 
    Paleta: SOMENTE tokens de marca já existentes -- violeta
    (--uf-app-ai) -> azul elétrico (--uf-app-primary) -> ciano
-   (--uf-app-cyan). Nenhuma cor nova. */
+   (--uf-app-cyan). Nenhuma cor nova.
+
+   AGPUSH4: as durações de confirmação/recolhimento/dissolve vêm de
+   custom properties (--uf-agenda-confirm-ms/--uf-agenda-collapse-ms/
+   --uf-agenda-dissolve-ms), definidas inline pelo componente a partir do
+   perfil de movimento da opção escolhida (agendaReminderMotionProfiles.js)
+   -- "30 min antes" (energetic) e "1h antes" (calm) têm ritmos
+   diferentes, nunca uma duração fixa única. Os fallbacks (180ms/220ms)
+   só valem antes de qualquer escolha existir (estado neutro). */
 
 .choices {
   display: flex;
@@ -13,12 +21,15 @@
 
 /* ---------------------------------------------------------------------
    FASE 1 -- feedback imediato do toque: o botão "afunda" de leve e ganha
-   um brilho interno muito discreto na identidade UniFlow.
+   um brilho interno muito discreto na identidade UniFlow. Compartilhado
+   entre as três opções (a diferença energetic/calm de 150ms/160ms é
+   imperceptível nesta fase -- não vale uma quarta custom property só
+   para isso).
    --------------------------------------------------------------------- */
 .choiceButton {
   transition:
-    transform 140ms cubic-bezier(0.33, 0, 0.2, 1),
-    box-shadow 140ms cubic-bezier(0.33, 0, 0.2, 1);
+    transform 150ms cubic-bezier(0.33, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.33, 0, 0.2, 1);
   will-change: transform;
 }
 
@@ -31,7 +42,10 @@
 
 /* ---------------------------------------------------------------------
    Confirmação da escolha ("✓ 30 min antes"), mostrada por um instante
-   antes do modal recolher.
+   antes do modal recolher. AGPUSH4: a duração da animação de entrada
+   usa a MESMA custom property que o JS espera (`await wait(profile.confirmMs)`)
+   -- nunca mais desalinhadas (bug corrigido: v1 tinha entrada de 160ms
+   cortada por um hold de só 120ms).
    --------------------------------------------------------------------- */
 .confirmation {
   display: flex;
@@ -43,7 +57,7 @@
   color: var(--uf-app-text);
   font-size: 15px;
   font-weight: 700;
-  animation: confirmationIn 160ms cubic-bezier(0.33, 0, 0.2, 1) both;
+  animation: confirmationIn var(--uf-agenda-confirm-ms, 180ms) cubic-bezier(0.33, 0, 0.2, 1) both;
 }
 
 .checkIcon {
@@ -65,14 +79,15 @@
 
 /* ---------------------------------------------------------------------
    FASE 2 -- o modal não some: ele se condensa/recolhe para o centro.
-   Sem bounce.
+   Sem bounce. Duração via --uf-agenda-collapse-ms (mesmo valor que o JS
+   usa em `await wait(profile.modalCollapseMs)`).
    --------------------------------------------------------------------- */
 .dialog {
   transform-origin: center center;
   transition:
-    transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 180ms cubic-bezier(0.4, 0, 0.2, 1),
-    filter 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform var(--uf-agenda-collapse-ms, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
+    opacity var(--uf-agenda-collapse-ms, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
+    filter var(--uf-agenda-collapse-ms, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dialogCollapsing {
@@ -98,7 +113,10 @@
     color-mix(in srgb, var(--uf-app-cyan) 22%, transparent) 0%,
     color-mix(in srgb, var(--uf-app-ai) 12%, transparent) 45%,
     transparent 75%);
-  animation: dissolveFlash 220ms cubic-bezier(0.33, 0, 0.2, 1) both;
+  /* AGPUSH4: --uf-agenda-dissolve-ms e sempre <= --uf-agenda-collapse-ms
+     (garantido no perfil "none" -- ver agendaReminderMotionProfiles.js) --
+     nunca mais um flash cortado pelo fechamento do modal (bug da v1). */
+  animation: dissolveFlash var(--uf-agenda-dissolve-ms, 260ms) cubic-bezier(0.33, 0, 0.2, 1) both;
 }
 
 @keyframes dissolveFlash {

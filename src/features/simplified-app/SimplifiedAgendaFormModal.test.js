@@ -94,7 +94,18 @@ test('prefers-reduced-motion pula o recolhimento do Editar compromisso, mas aind
     content.indexOf('async function handleReminderApplied'),
     content.indexOf('async function clearCreationOperation'),
   );
-  assert.match(handler, /if \(!prefersReducedMotion\(\)\) \{\s*\n\s*setIsClosingForReminder\(true\);/);
+  assert.match(handler, /if \(!prefersReducedMotion\(\)\) \{\s*\n\s*setClosingProfile\(profile\);\s*\n\s*setIsClosingForReminder\(true\);/);
+});
+
+test('AGPUSH4: o recolhimento usa formCollapseMs do PERFIL da variante escolhida -- nunca uma constante fixa unica', async () => {
+  const content = await source();
+  assert.match(content, /import \{ getReminderMotionProfile \} from '\.\.\/agenda-push\/agendaReminderMotionProfiles\.js';/);
+  const handler = content.slice(
+    content.indexOf('async function handleReminderApplied'),
+    content.indexOf('async function clearCreationOperation'),
+  );
+  assert.match(handler, /const profile = getReminderMotionProfile\(variant\);/);
+  assert.match(handler, /await wait\(profile\.formCollapseMs\);/);
 });
 
 test('durante o recolhimento, overlay/Esc/botoes ficam bloqueados -- mesmo padrao do modal de escolha (isBusy)', async () => {
@@ -104,8 +115,8 @@ test('durante o recolhimento, overlay/Esc/botoes ficam bloqueados -- mesmo padra
   assert.match(content, /closeOnEsc=\{!isBusy\}/);
 });
 
-test('handleReminderApplied e passado para baixo -- a pagina (dono do card real) e quem recebe o callback final', async () => {
+test('handleReminderApplied e passado para baixo -- a pagina (dono do card real) e quem recebe o callback final, com variant', async () => {
   const content = await source();
   assert.match(content, /onReminderApplied,\s*\n\}\) \{/);
-  assert.match(content, /onReminderApplied\?\.\(\{ agendaItemId, offsetMinutes, originRect \}\);/);
+  assert.match(content, /onReminderApplied\?\.\(\{\s*\n\s*agendaItemId, variant, offsetMinutes, originRect,\s*\n\s*\}\);/);
 });

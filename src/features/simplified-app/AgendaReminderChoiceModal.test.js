@@ -120,7 +120,17 @@ test('FASE 2: o modal se condensa (scale ~0.92 + opacity 0 + blur), nunca so des
 test('o recolhimento nao usa bounce -- nenhum cubic-bezier com overshoot', async () => {
   const content = await css();
   assert.doesNotMatch(content, /cubic-bezier\([^)]*1\.[1-9]\d*\s*\)/);
-  assert.match(content, /transform 180ms cubic-bezier\(0\.4, 0, 0\.2, 1\)/);
+  assert.match(content, /transform var\(--uf-agenda-collapse-ms, 220ms\) cubic-bezier\(0\.4, 0, 0\.2, 1\)/);
+});
+
+test('AGPUSH4: confirm/collapse/dissolve usam custom properties do PERFIL da opcao -- nunca uma constante fixa unica', async () => {
+  const jsContent = await source();
+  const cssContent = await css();
+  assert.match(jsContent, /import \{\s*\n\s*getReminderMotionProfile,\s*\n\s*REMINDER_MOTION_VARIANTS,\s*\n\s*resolveMotionVariantForOffset,\s*\n\} from '\.\.\/agenda-push\/agendaReminderMotionProfiles\.js';/);
+  assert.match(jsContent, /'--uf-agenda-confirm-ms': `\$\{activeProfile\.confirmMs\}ms`,/);
+  assert.match(jsContent, /'--uf-agenda-collapse-ms': `\$\{activeProfile\.modalCollapseMs\}ms`,/);
+  assert.match(cssContent, /animation: confirmationIn var\(--uf-agenda-confirm-ms, 180ms\)/);
+  assert.match(cssContent, /animation: dissolveFlash var\(--uf-agenda-dissolve-ms, 260ms\)/);
 });
 
 test('reduced motion desliga transform/blur/animacoes do modal', async () => {

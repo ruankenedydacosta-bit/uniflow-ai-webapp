@@ -1,5 +1,5 @@
-// AGPUSH2 (microinteracao): a "energia da Uni" que viaja do modal ate o
-// card do compromisso quando um lembrete e aplicado.
+// AGPUSH2/AGPUSH4 (microinteracao): a "energia da Uni" que viaja do modal
+// ate o card do compromisso quando um lembrete e aplicado.
 //
 // Puramente visual -- NUNCA decide nada, nunca chama backend, nunca e
 // condicao da gravacao. Quem chama so dispara isto DEPOIS que a decisao
@@ -14,6 +14,12 @@
 // compositor resolve na GPU, sem layout thrashing e sem um unico
 // setState por frame.
 //
+// AGPUSH4: os NUMEROS (duracoes/delays) vem sempre de um `profile`
+// (agendaReminderMotionProfiles.js) -- este arquivo nunca hardcoda um
+// valor de tempo, so orquestra as fases usando o que o perfil informa.
+// Isso mantem a assinatura de cada acao (30min "energetic" vs 1h "calm")
+// definida em UM lugar so.
+//
 // Todas as dependencias de ambiente entram por parametro (doc/win/
 // classNames), mesmo padrao de mobilePushCapabilities.js -- e o que torna
 // este modulo testavel de verdade sob `node --test`, sem jsdom. Em
@@ -21,19 +27,6 @@
 // ja lida com CSS) e as classes chegam aqui como strings: este arquivo
 // segue JavaScript puro, sem nenhum import que o runner de teste nao
 // consiga carregar.
-
-// Duracoes em ms. A soma percebida (confirmacao + recolhimento do modal,
-// feitos em CSS pelo proprio modal, + esta trajetoria) fica em ~1s.
-export const REMINDER_ANIMATION_TIMELINE = Object.freeze({
-  travelDuration: 340,
-  absorbDuration: 150,
-  glowDelay: 300,
-  glowDuration: 200,
-  ringDelay: 320,
-  ringDuration: 420,
-  cardScaleDelay: 310,
-  cardScaleDuration: 240,
-});
 
 // Aceleracao inicial suave + desaceleracao ao entrar no card.
 const TRAVEL_EASING = 'cubic-bezier(0.42, 0, 0.18, 1)';
@@ -60,8 +53,12 @@ export function prefersReducedMotion(win = globalThis) {
  *
  * O ponto de chegada nao e o centro geometrico do card: mira a regiao do
  * horario/icone (esquerda), que e onde o indicador de lembrete nasce.
+ *
+ * AGPUSH4: arcFactor/arcCapPx vem do perfil de movimento -- energetic usa
+ * uma curva mais reta, calm uma curva um pouco maior. Ambos os defaults
+ * preservam o comportamento original (curva "MUITO leve").
  */
-export function computeTrajectory(originRect, targetRect) {
+export function computeTrajectory(originRect, targetRect, { arcFactor = 0.12, arcCapPx = 26 } = {}) {
   const from = {
     x: originRect.left + (originRect.width / 2),
     y: originRect.top + (originRect.height / 2),
@@ -75,10 +72,7 @@ export function computeTrajectory(originRect, targetRect) {
   const dy = to.y - from.y;
   const distance = Math.hypot(dx, dy);
 
-  // Curva MUITO leve: desloca o meio do percurso perpendicularmente a
-  // direcao do movimento. Proporcional a distancia, com teto -- nunca vira
-  // um arco exagerado em telas grandes.
-  const arc = Math.min(distance * 0.12, 26);
+  const arc = Math.min(distance * arcFactor, arcCapPx);
   const perpX = distance === 0 ? 0 : -(dy / distance);
   const perpY = distance === 0 ? 0 : (dx / distance);
 
@@ -138,36 +132,80 @@ function settled(animation) {
  * viaja ate o card, e absorvida por ele, o card acende por dentro, um
  * brilho percorre o contorno e o card responde com um micro-scale.
  *
+ * `profile` (agendaReminderMotionProfiles.js) define TODAS as duracoes e
+ * a curva da trajetoria -- a assinatura "energetic" (30min) vs "calm"
+ * (1h) vem inteiramente dai, nunca de um valor local.
+ *
+ * `onAbsorbed`, se informado, e chamado no exato instante em que a
+ * particula termina de ser absorvida pelo card (travel+absorb) -- usado
+ * pelo chamador para so entao revelar visualmente o indicador
+ * ("30 min antes"/"1h antes"), nunca antes. Quando a animacao nao roda
+ * (reduced motion, sem alvo, fora da viewport), `onAbsorbed` e chamado
+ * IMEDIATAMENTE (sincrono, antes de retornar) -- sem particula, nao ha
+ * "absorcao" para esperar, e o indicador nunca deve ficar preso atras de
+ * uma animacao que nunca vai rodar.
+ *
  * Sempre resolve (nunca lanca) com { played, reason } -- o chamador nao
  * precisa tratar erro de animacao.
  */
 export async function playReminderAppliedAnimation({
   originRect,
   targetElement,
+  profile,
   classNames = {},
+  onAbsorbed,
   doc = globalThis.document,
   win = globalThis,
 } = {}) {
   activeCleanup?.();
   activeCleanup = null;
 
-  if (!doc?.body || !originRect) return { played: false, reason: 'unavailable' };
+  const fireAbsorbedNow = () => {
+    try {
+      onAbsorbed?.();
+    } catch {
+      // Callback do chamador nunca pode derrubar o motor de animacao.
+    }
+  };
+
+  if (!doc?.body || !originRect) {
+    fireAbsorbedNow();
+    return { played: false, reason: 'unavailable' };
+  }
 
   // Acessibilidade primeiro: quem pediu menos movimento nunca ve a
   // trajetoria. A decisao ja foi persistida e o indicador ja vai aparecer
   // no card -- so o espetaculo e dispensado.
-  if (prefersReducedMotion(win)) return { played: false, reason: 'reduced-motion' };
+  if (prefersReducedMotion(win)) {
+    fireAbsorbedNow();
+    return { played: false, reason: 'reduced-motion' };
+  }
 
-  if (!targetElement?.getBoundingClientRect) return { played: false, reason: 'no-target' };
+  if (!targetElement?.getBoundingClientRect) {
+    fireAbsorbedNow();
+    return { played: false, reason: 'no-target' };
+  }
 
   const targetRect = targetElement.getBoundingClientRect();
   const viewport = {
     width: win?.innerWidth ?? 0,
     height: win?.innerHeight ?? 0,
   };
-  if (!isUsableTarget(targetRect, viewport)) return { played: false, reason: 'target-offscreen' };
+  if (!isUsableTarget(targetRect, viewport)) {
+    fireAbsorbedNow();
+    return { played: false, reason: 'target-offscreen' };
+  }
 
-  const trajectory = computeTrajectory(originRect, targetRect);
+  const {
+    travelDuration, absorbDuration, glowDelay, glowDuration,
+    ringDelay, ringDuration, cardScaleDelay, cardScaleDuration,
+    trajectoryArcFactor, trajectoryArcCapPx,
+  } = profile;
+
+  const trajectory = computeTrajectory(originRect, targetRect, {
+    arcFactor: trajectoryArcFactor,
+    arcCapPx: trajectoryArcCapPx,
+  });
   const radius = win?.getComputedStyle?.(targetElement)?.borderRadius || '14px';
 
   const cardBox = `top:${targetRect.top}px;left:${targetRect.left}px;width:${targetRect.width}px;height:${targetRect.height}px;border-radius:${radius};`;
@@ -175,7 +213,12 @@ export async function playReminderAppliedAnimation({
   const overlay = createElement(doc, classNames.overlay ?? '');
   const particle = createElement(doc, classNames.particle ?? '');
   const glow = createElement(doc, classNames.cardGlow ?? '', cardBox);
-  const ring = createElement(doc, classNames.cardRing ?? '', cardBox);
+  // AGPUSH4: classe base (espessura/mascara/posicao, compartilhada) +
+  // classe de variante (enfase de cor "bright-early"/"bright-late",
+  // ver agendaReminderMotionProfiles.js/ringColorEmphasis) -- combinadas
+  // aqui, nunca duas implementacoes de contorno.
+  const ringClassName = [classNames.cardRing, classNames.cardRingVariant].filter(Boolean).join(' ');
+  const ring = createElement(doc, ringClassName, cardBox);
 
   overlay.appendChild(glow);
   overlay.appendChild(ring);
@@ -191,8 +234,6 @@ export async function playReminderAppliedAnimation({
   };
   activeCleanup = cleanup;
 
-  const { travelDuration, absorbDuration, glowDelay, glowDuration, ringDelay, ringDuration, cardScaleDelay, cardScaleDuration } = REMINDER_ANIMATION_TIMELINE;
-
   // FASE 3/4 -- a particula nasce no modal e viaja. Uma unica esfera de
   // energia: nada de chuva de particulas, nada de explosao.
   const travel = animate(
@@ -207,7 +248,8 @@ export async function playReminderAppliedAnimation({
   );
 
   // FASE 5 -- absorcao: encolhe ate zero enquanto some, exatamente sobre o
-  // card (nunca "pousa" e fica parada la).
+  // card (nunca "pousa" e fica parada la). E o momento que dispara
+  // onAbsorbed -- a "cabeca" da narrativa que revela o indicador.
   const absorb = animate(
     particle,
     [
@@ -216,6 +258,7 @@ export async function playReminderAppliedAnimation({
     ],
     { duration: absorbDuration, delay: travelDuration, easing: SOFT_EASING, fill: 'forwards' },
   );
+  settled(absorb).then(fireAbsorbedNow);
 
   // FASE 6 -- luz radial interna: "a informacao entrou no compromisso".
   const glowAnimation = animate(

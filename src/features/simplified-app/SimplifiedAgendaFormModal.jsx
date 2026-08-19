@@ -23,6 +23,7 @@ import { BellIcon } from './SimplifiedIcons.jsx';
 import AgendaReminderChoiceModal from './AgendaReminderChoiceModal.jsx';
 import { getAgendaPushReminderState } from '../agenda-push/agendaPushReminderService.js';
 import { prefersReducedMotion } from '../agenda-push/agendaReminderAnimation.js';
+import { getReminderMotionProfile } from '../agenda-push/agendaReminderMotionProfiles.js';
 import { resolveReminderIndicator } from '../agenda-push/agendaReminderIndicator.js';
 import styles from './simplifiedAgenda.module.css';
 
@@ -41,12 +42,6 @@ import styles from './simplifiedAgenda.module.css';
  * agendaFormSubmissionLifecycle) é lógica sensível que esta tarefa foi
  * instruída a não tocar; a limitação é intencional, não um esquecimento.
  */
-// AGPUSH3: mesma duração de recolhimento já usada por
-// AgendaReminderChoiceModal.module.css (.dialogCollapsing) -- o modal
-// "Editar compromisso" precisa sair da tela com o mesmo ritmo antes da
-// partícula nascer, nunca um delay arbitrário maior.
-const FORM_COLLAPSE_MS = 180;
-
 function wait(ms) {
   return new Promise((resolve) => { setTimeout(resolve, ms); });
 }
@@ -106,6 +101,9 @@ function SimplifiedAgendaFormModal({
   const [reminderIndicator, setReminderIndicator] = useState(null);
   const [showReminderChoice, setShowReminderChoice] = useState(false);
   const [isClosingForReminder, setIsClosingForReminder] = useState(false);
+  // AGPUSH4: guarda QUAL perfil está fechando o modal, para o CSS usar o
+  // formCollapseMs certo (energetic/calm têm ritmos diferentes).
+  const [closingProfile, setClosingProfile] = useState(null);
 
   useEffect(() => {
     if (!isEditing) return undefined;
@@ -125,7 +123,9 @@ function SimplifiedAgendaFormModal({
   // AGPUSH3: chamado pelo AgendaReminderChoiceModal SÓ depois da decisão
   // real já ter sido persistida (mesmo contrato do fluxo de deep link) --
   // a animação aqui é sempre consequência, nunca condição da gravação.
-  async function handleReminderApplied({ agendaItemId, offsetMinutes, originRect }) {
+  async function handleReminderApplied({
+    agendaItemId, variant, offsetMinutes, originRect,
+  }) {
     setReminderIndicator(resolveReminderIndicator({ reminder_offset_minutes: offsetMinutes }));
     setShowReminderChoice(false);
 
@@ -134,13 +134,17 @@ function SimplifiedAgendaFormModal({
     // a origem ausente (defesa: nunca anima sem geometria real).
     if (offsetMinutes == null || !originRect) return;
 
+    // AGPUSH4: recolhe no MESMO ritmo (formCollapseMs) do perfil desta
+    // opção -- energetic (30min) sai mais rápido, calm (1h) mais devagar,
+    // nunca um valor fixo desalinhado da escolha real.
+    const profile = getReminderMotionProfile(variant);
+
     // O Editar compromisso precisa sair da tela ANTES da partícula nascer
-    // (senão ela nasceria atrás de um modal ainda visível) -- mesmo
-    // recolhimento suave já usado pelo modal de escolha, nunca um delay
-    // maior que isso.
+    // (senão ela nasceria atrás de um modal ainda visível).
     if (!prefersReducedMotion()) {
+      setClosingProfile(profile);
       setIsClosingForReminder(true);
-      await wait(FORM_COLLAPSE_MS);
+      await wait(profile.formCollapseMs);
     }
 
     await handleClose();
@@ -148,7 +152,9 @@ function SimplifiedAgendaFormModal({
     // Só localiza/anima o card REAL depois que o fechamento comitou --
     // requestAnimationFrame, nunca um delay mágico.
     requestAnimationFrame(() => {
-      onReminderApplied?.({ agendaItemId, offsetMinutes, originRect });
+      onReminderApplied?.({
+        agendaItemId, variant, offsetMinutes, originRect,
+      });
     });
   }
 
@@ -262,6 +268,7 @@ function SimplifiedAgendaFormModal({
   return (
     <Modal
       open
+      style={{ '--uf-agenda-form-collapse-ms': `${(closingProfile ?? getReminderMotionProfile()).formCollapseMs}ms` }}
       className={[styles.formDialog, isClosingForReminder ? styles.formDialogCollapsing : ''].filter(Boolean).join(' ')}
       overlayClassName={styles.formOverlay}
       onClose={handleClose}

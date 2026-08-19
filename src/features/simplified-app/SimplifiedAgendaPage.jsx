@@ -24,10 +24,20 @@ import {
   cancelReminderAppliedAnimation,
   playReminderAppliedAnimation,
 } from '../agenda-push/agendaReminderAnimation.js';
+import { getReminderMotionProfile } from '../agenda-push/agendaReminderMotionProfiles.js';
 import { resolveReminderIndicator } from '../agenda-push/agendaReminderIndicator.js';
 import { useAgendaReminderStates } from '../agenda-push/useAgendaReminderStates.js';
 import animationStyles from '../agenda-push/agendaReminderAnimation.module.css';
 import styles from './simplifiedAgenda.module.css';
+
+// AGPUSH4: enfase de cor do contorno por variante -- "energetic" (30min)
+// chega ao ciano cedo/largo, "calm" (1h) guarda o ciano so perto da
+// absorcao. Combinada pelo motor com a classe base (espessura/mascara/
+// glow, compartilhada -- ver agendaReminderAnimation.module.css).
+const RING_VARIANT_CLASS_NAMES = {
+  energetic: 'cardRingBrightEarly',
+  calm: 'cardRingBrightLate',
+};
 
 // AGPUSH2: atributo estável usado SÓ pela microinteração para localizar o
 // card de destino da partícula. Não é seletor de estilo e não participa da
@@ -160,28 +170,44 @@ function SimplifiedAgendaPage() {
   // sucesso (o modal nunca chama isto em caso de erro). A ordem importa: o
   // estado real entra primeiro (o indicador já é verdade), e a animação é
   // pura consequência visual.
-  function handleReminderApplied({ agendaItemId, offsetMinutes, originRect }) {
-    applyDecision(agendaItemId, offsetMinutes);
+  function handleReminderApplied({
+    agendaItemId, variant, offsetMinutes, originRect,
+  }) {
     setReminderPromptItem(null);
 
     // "Não precisa" não instala nada no compromisso -- nenhuma partícula
-    // viaja até o card (a dissolução acontece no próprio modal).
-    if (offsetMinutes == null || !originRect) return;
+    // viaja até o card (a dissolução acontece no próprio modal). Sem
+    // absorção para esperar, o estado é aplicado na hora.
+    if (offsetMinutes == null || !originRect) {
+      applyDecision(agendaItemId, offsetMinutes);
+      return;
+    }
 
     const targetElement = document.querySelector(
       `[${AGENDA_REMINDER_TARGET_ATTRIBUTE}="${agendaItemId}"]`,
     );
-    // Card fora da viewport/desmontado: sem partícula e, principalmente,
-    // sem scroll automático e sem navegar a tela sozinho. O indicador já
-    // aparece normalmente quando o card voltar a ser visível.
+    const profile = getReminderMotionProfile(variant);
+
+    // AGPUSH4: o estado persistido já está salvo (feito antes de chegar
+    // aqui, ver AgendaReminderChoiceModal) -- só a REVELAÇÃO VISUAL do
+    // indicador é adiada até a partícula terminar de ser absorvida
+    // (onAbsorbed), para a narrativa ficar "partícula entra -> card reage
+    // -> lembrete aparece" em vez de o chip já nascer junto com a
+    // partícula. Quando não há animação de verdade (reduced motion, card
+    // fora da viewport/desmontado), o motor chama onAbsorbed IMEDIATAMENTE
+    // -- o indicador nunca fica preso esperando uma partícula que não vai
+    // rodar.
     playReminderAppliedAnimation({
       originRect,
       targetElement,
+      profile,
+      onAbsorbed: () => applyDecision(agendaItemId, offsetMinutes),
       classNames: {
         overlay: animationStyles.overlay,
         particle: animationStyles.particle,
         cardGlow: animationStyles.cardGlow,
         cardRing: animationStyles.cardRing,
+        cardRingVariant: animationStyles[RING_VARIANT_CLASS_NAMES[variant]],
       },
     });
   }
@@ -332,7 +358,12 @@ function SimplifiedAgendaPage() {
                     <span className={styles.itemMain}>
                       <span className={styles.itemTitle}>{item.title}</span>
                       {reminder ? (
-                        <span className={styles.reminderChip} aria-hidden="true">
+                        // AGPUSH4: key pelo rotulo -- forca um remount (e
+                        // portanto a animacao de entrada em CSS tocar de
+                        // novo) sempre que o valor realmente muda (nasce
+                        // pela 1a vez, ou 30min->1h via "Alterar"), nunca
+                        // em re-renders que nao mudam o lembrete.
+                        <span key={reminder.label} className={styles.reminderChip} aria-hidden="true">
                           <span className={styles.reminderChipIcon}><BellIcon /></span>
                           {reminder.label}
                         </span>
