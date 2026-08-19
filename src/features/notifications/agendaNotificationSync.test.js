@@ -96,6 +96,28 @@ test('metadata agenda_item_id impede notificacao duplicada', async () => {
   assert.equal(harness.notifications.length, 0);
 });
 
+// NOTIF3: prova do bug real de reaparecimento e da correção. listNotifiedItemIds
+// (aqui injetado) e o unico sinal que o sync usa para saber "ja notifiquei este
+// compromisso" -- ele nao sabe nem precisa saber se a notificacao encontrada
+// esta dispensada ou nao. A correcao real esta em
+// notificationsService.js/listAgendaNotificationItemIds nunca filtrar por
+// dismissed_at (ver notificationsService.test.js) -- o que garante que o
+// agenda_item_id de uma notificacao ja dispensada continua chegando aqui,
+// exatamente como neste teste simula.
+test('compromisso cujo agenda_item_id ja retornou de uma notificacao dispensada NAO gera uma segunda notificacao', async () => {
+  const item = agendaItem();
+  // Simula o retorno real de listAgendaNotificationItemIds apos o usuario ja
+  // ter dispensado a notificacao anterior deste compromisso -- o id continua
+  // presente porque a funcao real nunca filtra por dismissed_at.
+  const harness = createHarness([item], [item.id]);
+  const result = await syncDueAgendaNotificationsOnce(USER_ID, WORKSPACE_ID, {
+    now: NOW,
+    ...harness.dependencies,
+  });
+  assert.equal(result.error, null);
+  assert.equal(harness.notifications.length, 0, 'nao pode recriar (N2) uma notificacao ja dispensada');
+});
+
 test('consulta real filtra workspace, usuario, scheduled e starts_at vencido', async () => {
   const content = await readFile(new URL('../../services/agendaService.js', import.meta.url), 'utf8');
   const fnBody = content.slice(

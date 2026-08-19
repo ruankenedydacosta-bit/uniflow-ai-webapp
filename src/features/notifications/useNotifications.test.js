@@ -80,17 +80,17 @@ test('unreadCount deriva de countUnread(notifications) -- fonte unica de contage
   assert.match(content, /unreadCount: countUnread\(notifications\),/);
 });
 
-// NOTIF2: dispensar uma notificação (X ou arrastar) nunca deve parecer
+// NOTIF3: dispensar uma notificação (X ou arrastar) nunca deve parecer
 // travado -- some da lista IMEDIATAMENTE (otimista) e só volta se a
-// exclusão falhar de verdade no servidor.
-test('dismissNotification remove otimisticamente da lista antes da resposta do service, e importa deleteNotification', async () => {
+// persistência (soft-delete) falhar de verdade no servidor.
+test('dismissNotification remove otimisticamente da lista antes da resposta do service, e importa o service de dismiss', async () => {
   const content = await source('useNotifications.js');
-  assert.match(content, /import \{[\s\S]*?deleteNotification,?[\s\S]*?\} from '\.\/notificationsService\.js';/);
+  assert.match(content, /import \{[\s\S]*?dismissNotification as dismissNotificationService,?[\s\S]*?\} from '\.\/notificationsService\.js';/);
   const fnStart = content.indexOf('const dismissNotification = useCallback');
   assert.ok(fnStart > -1, 'dismissNotification deve existir');
   const fnBody = content.slice(fnStart, content.indexOf('return {', fnStart));
   assert.match(fnBody, /setNotifications\(\(current\) => current\.filter\(\(n\) => n\.id !== notificationId\)\);/);
-  assert.match(fnBody, /const result = await deleteNotification\(userId, notificationId\);/);
+  assert.match(fnBody, /const result = await dismissNotificationService\(userId, notificationId\);/);
 });
 
 test('dismissNotification reverte a remoção otimista se o service retornar erro -- nunca finge sucesso', async () => {

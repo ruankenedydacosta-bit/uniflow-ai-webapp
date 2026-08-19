@@ -21,6 +21,16 @@ test('listNotifications sempre filtra por user_id -- isolamento por usuario', as
   assert.match(fnBody, /if \(!userId\) return createMissingUserResult\(\);/);
 });
 
+// NOTIF3: dispensada nunca reaparece na listagem do sino.
+test('listNotifications exclui notificacoes dispensadas (dismissed_at nao nulo)', async () => {
+  const content = await source('notificationsService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function listNotifications'),
+    content.indexOf('export async function markNotificationAsRead'),
+  );
+  assert.match(fnBody, /\.is\('dismissed_at', null\)/);
+});
+
 test('listNotifications com workspaceId retorna global (workspace_id nulo) + do workspace -- isolamento por workspace', async () => {
   const content = await source('notificationsService.js');
   const fnBody = content.slice(
@@ -53,6 +63,18 @@ test('deduplicacao de Agenda usa somente usuario, workspace e tipo agenda', asyn
   assert.match(fnBody, /notification\.metadata\?\.agenda_item_id/);
 });
 
+// NOTIF3: este e o ponto central da correcao do bug de reaparecimento --
+// dispensar uma notificacao de agenda NUNCA pode faze-la "sumir" da
+// deteccao de idempotencia do sync, senao ele recria a mesma notificacao.
+test('deduplicacao de Agenda NAO filtra por dismissed_at -- dispensada continua contando como ja notificada', async () => {
+  const content = await source('notificationsService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function listAgendaNotificationItemIds'),
+    content.indexOf('export async function markNotificationAsRead'),
+  );
+  assert.doesNotMatch(fnBody, /dismissed_at/);
+});
+
 test('markNotificationAsRead so atualiza a notificacao do proprio usuario (id + user_id)', async () => {
   const content = await source('notificationsService.js');
   const fnBody = content.slice(
@@ -74,17 +96,18 @@ test('markAllNotificationsAsRead so atualiza nao lidas (read_at nulo) do proprio
   assert.match(fnBody, /\.is\('read_at', null\)/);
 });
 
-// NOTIF2: dispensar uma notificação e uma exclusão real, mas restrita ao
-// próprio usuário e a UMA linha -- nunca ao compromisso/registro de
-// origem (esse nunca é tocado por este service).
-test('deleteNotification so exclui a notificacao do proprio usuario (id + user_id), nunca em lote', async () => {
+// NOTIF3: dispensar uma notificação e um soft-delete (dismissed_at), nunca
+// uma exclusao fisica -- restrito ao proprio usuario e a UMA linha, nunca ao
+// compromisso/registro de origem (esse nunca e tocado por este service).
+test('dismissNotification so atualiza dismissed_at da notificacao do proprio usuario (id + user_id), nunca DELETE, nunca em lote', async () => {
   const content = await source('notificationsService.js');
-  const fnStart = content.indexOf('export async function deleteNotification');
-  assert.ok(fnStart > -1, 'deleteNotification deve existir');
+  const fnStart = content.indexOf('export async function dismissNotification');
+  assert.ok(fnStart > -1, 'dismissNotification deve existir');
   const fnBody = content.slice(fnStart, content.indexOf('export async function createNotification'));
-  assert.match(fnBody, /\.delete\(\)/);
+  assert.match(fnBody, /\.update\(\{ dismissed_at: new Date\(\)\.toISOString\(\) \}\)/);
   assert.match(fnBody, /\.eq\('id', notificationId\)/);
   assert.match(fnBody, /\.eq\('user_id', userId\)/);
+  assert.doesNotMatch(fnBody, /\.delete\(\)/);
 });
 
 test('createNotification exige titulo nao-vazio antes de qualquer chamada ao Supabase', async () => {
@@ -105,7 +128,7 @@ test('createNotification sempre insere com o user_id recebido -- nunca cria noti
 test('todas as funcoes retornam cedo quando Supabase nao esta configurado, sem lancar excecao', async () => {
   const content = await source('notificationsService.js');
   const occurrences = content.match(/if \(!supabase\) return createUnavailableResult/g) ?? [];
-  // NOTIF2: deleteNotification soma mais uma funcao a essa guarda.
+  // NOTIF2/NOTIF3: dismissNotification soma mais uma funcao a essa guarda.
   assert.equal(occurrences.length, 6);
 });
 

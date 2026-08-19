@@ -27,6 +27,8 @@ function createRuntime({ serviceWorker, storage = createStorage() } = {}) {
   runtime.sessionStorage = storage;
   runtime.setTimeout = setTimeout;
   runtime.clearTimeout = clearTimeout;
+  runtime.setInterval = setInterval;
+  runtime.clearInterval = clearInterval;
   runtime.reloadCalls = 0;
   runtime.location = { reload: () => { runtime.reloadCalls += 1; } };
   return runtime;
@@ -345,6 +347,87 @@ test('foreground, pageshow e reabertura disparam novas verificações leves', as
   await Promise.resolve();
   assert.ok(checks >= 3);
   cleanup();
+});
+
+// PWA-UPDATE2: fecha a lacuna real encontrada na auditoria -- nenhum evento
+// discreto dispara enquanto o app fica continuamente aberto/visível. Sem
+// isso, uma sessão longa nunca revalida /version.json sozinha.
+test('checagem periodica e criada uma unica vez ao iniciar, e reaproveita checkForUpdate', async () => {
+  const runtime = createRuntime();
+  let checks = 0;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 15,
+    fetchImpl: async () => { checks += 1; return manifestResponse('build-a'); },
+  });
+  const cleanup = manager.start();
+  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  cleanup();
+  assert.ok(checks >= 2, `esperava ao menos 2 checagens (inicial + periodica), recebeu ${checks}`);
+});
+
+test('checagem periodica so consulta quando o documento esta visivel -- oculto nao dispara', async () => {
+  const runtime = createRuntime();
+  runtime.document.visibilityState = 'hidden';
+  let checks = 0;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 15,
+    fetchImpl: async () => { checks += 1; return manifestResponse('build-a'); },
+  });
+  const cleanup = manager.start();
+  await Promise.resolve();
+  const checksAfterInitial = checks;
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  cleanup();
+  // A checagem inicial do start() roda independente de visibilidade (mesmo
+  // comportamento anterior), mas nenhuma checagem PERIODICA extra deve ter
+  // ocorrido enquanto oculto.
+  assert.equal(checks, checksAfterInitial, 'nao deveria checar novamente com o documento oculto');
+});
+
+test('intervalo periodico e cancelado no cleanup -- sem timer residual', async () => {
+  const runtime = createRuntime();
+  let checks = 0;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 15,
+    fetchImpl: async () => { checks += 1; return manifestResponse('build-a'); },
+  });
+  const cleanup = manager.start();
+  await Promise.resolve();
+  cleanup();
+  const checksAfterCleanup = checks;
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(checks, checksAfterCleanup, 'timer deveria ter sido limpo, sem checagens apos cleanup');
+});
+
+test('intervalo periodico e focus simultaneos compartilham a mesma requisicao em andamento -- sem corrida', async () => {
+  const runtime = createRuntime();
+  let concurrentFetches = 0;
+  let maxConcurrent = 0;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 10,
+    fetchImpl: async () => {
+      concurrentFetches += 1;
+      maxConcurrent = Math.max(maxConcurrent, concurrentFetches);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      concurrentFetches -= 1;
+      return manifestResponse('build-a');
+    },
+  });
+  const cleanup = manager.start();
+  await Promise.resolve();
+  runtime.dispatchEvent(new Event('focus'));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  cleanup();
+  assert.equal(maxConcurrent, 1, 'nunca deve haver mais de uma checagem de versao em andamento ao mesmo tempo');
 });
 
 test('guarda detecta reload anterior sem sucesso e impede loop automático', async () => {

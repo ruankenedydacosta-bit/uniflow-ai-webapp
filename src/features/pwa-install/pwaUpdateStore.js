@@ -150,17 +150,28 @@ function waitForInstallingWorker(registration, timeoutMs, runtime) {
   });
 }
 
+// PWA-UPDATE2: nenhum dos eventos discretos (pageshow/focus/online/
+// visibilitychange) dispara enquanto o app permanece continuamente aberto e
+// em foreground -- uma sessão longa (comum num app financeiro usado o dia
+// todo) nunca revalida /version.json sozinha, mesmo com uma Production nova
+// publicada no meio do dia. Este intervalo fecha essa lacuna sem polling
+// agressivo -- só quando visível, reaproveitando checkForUpdate (mesma
+// trava de requisição em andamento via checkPromise, nunca duas em paralelo).
+const DEFAULT_PERIODIC_CHECK_INTERVAL_MS = 30 * 60_000;
+
 export function createPwaUpdateManager({
   runtime = globalThis,
   loadedBuildId = LOADED_BUILD_ID,
   fetchImpl = runtime.fetch?.bind(runtime),
   isDev = false,
   activationTimeoutMs = 8_000,
+  periodicCheckIntervalMs = DEFAULT_PERIODIC_CHECK_INTERVAL_MS,
 } = {}) {
   let state = Object.freeze({ ...INITIAL_STATE, loadedBuildId });
   let started = false;
   let checkPromise = null;
   let updatePromise = null;
+  let periodicIntervalId = null;
   const subscribers = new Set();
 
   const publish = (patch, event, extra) => {
@@ -312,6 +323,9 @@ export function createPwaUpdateManager({
     if (runtime.document?.visibilityState === 'visible') void checkForUpdate();
   };
   const handleForeground = () => void checkForUpdate();
+  const handlePeriodicCheck = () => {
+    if (runtime.document?.visibilityState === 'visible') void checkForUpdate();
+  };
 
   function start() {
     if (started) return () => stop();
@@ -320,6 +334,9 @@ export function createPwaUpdateManager({
     runtime.addEventListener?.('focus', handleForeground);
     runtime.addEventListener?.('online', handleForeground);
     runtime.document?.addEventListener?.('visibilitychange', handleVisibilityChange);
+    if (periodicCheckIntervalMs > 0 && typeof runtime.setInterval === 'function') {
+      periodicIntervalId = runtime.setInterval(handlePeriodicCheck, periodicCheckIntervalMs);
+    }
     void checkForUpdate();
     return () => stop();
   }
@@ -331,6 +348,10 @@ export function createPwaUpdateManager({
     runtime.removeEventListener?.('focus', handleForeground);
     runtime.removeEventListener?.('online', handleForeground);
     runtime.document?.removeEventListener?.('visibilitychange', handleVisibilityChange);
+    if (periodicIntervalId !== null) {
+      runtime.clearInterval?.(periodicIntervalId);
+      periodicIntervalId = null;
+    }
   }
 
   return Object.freeze({

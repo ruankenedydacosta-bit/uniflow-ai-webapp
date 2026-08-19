@@ -108,7 +108,7 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
         ) : null}
       </button>
       {/* Dispensa só a notificação -- nunca o compromisso/registro de
-          origem (ver notificationsService.js/deleteNotification e a
+          origem (ver notificationsService.js/dismissNotification e a
           migration NOTIF2, que cuida do caso inverso: excluir o
           compromisso remove a notificação automaticamente via cascade).
           Ocupa sozinho o lugar onde antes havia o ícone de tipo (removido

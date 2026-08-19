@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from '../../services/supabaseClient.js';
 
 const NOTIFICATION_FIELDS =
-  'id, user_id, workspace_id, type, title, message, action_url, metadata, read_at, created_at';
+  'id, user_id, workspace_id, type, title, message, action_url, metadata, read_at, dismissed_at, created_at';
 
 function createResult(data, error = null) {
   return {
@@ -40,6 +40,7 @@ export async function listNotifications(userId, { workspaceId, limit = 50 } = {}
     .from('notifications')
     .select(NOTIFICATION_FIELDS)
     .eq('user_id', userId)
+    .is('dismissed_at', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -54,6 +55,13 @@ export async function listNotifications(userId, { workspaceId, limit = 50 } = {}
 /**
  * Retorna compromissos que ja possuem notificacao materializada. O escopo
  * inclui usuario, workspace e tipo para impedir deduplicacao cruzada.
+ *
+ * NOTIF3: NUNCA filtrar por dismissed_at aqui -- de propósito. Uma
+ * notificação dispensada pelo usuário continua provando que aquele
+ * compromisso JÁ foi notificado; se este filtro ignorasse notificações
+ * dispensadas, agendaNotificationSync.js recriaria a mesma notificação a
+ * cada sincronização (era exatamente esse o bug antes desta correção,
+ * quando dispensar era uma exclusão física e apagava esse rastro).
  */
 export async function listAgendaNotificationItemIds(userId, workspaceId) {
   if (!supabase) return createUnavailableResult([]);
@@ -107,22 +115,26 @@ export async function markAllNotificationsAsRead(userId, { workspaceId } = {}) {
 }
 
 /**
- * NOTIF2: dispensa (exclui) UMA notificação do próprio usuário. Nunca afeta
- * o compromisso/registro de origem -- só a linha em notifications some (o
- * cascade de agenda_item_id cuida do caso "excluí o compromisso" à parte,
- * direto no banco).
+ * NOTIF3: dispensa UMA notificação do próprio usuário -- soft-delete
+ * (dismissed_at), nunca uma exclusão física (ver migration 041). Nunca
+ * afeta o compromisso/registro de origem -- só esta linha some da listagem
+ * (o cascade de agenda_item_id continua cuidando do caso "excluí o
+ * compromisso" à parte, direto no banco). Idempotente: dispensar duas vezes
+ * só reescreve dismissed_at, nunca gera erro.
  */
-export async function deleteNotification(userId, notificationId) {
+export async function dismissNotification(userId, notificationId) {
   if (!supabase) return createUnavailableResult(null);
   if (!userId) return createMissingUserResult();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('notifications')
-    .delete()
+    .update({ dismissed_at: new Date().toISOString() })
     .eq('id', notificationId)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .select(NOTIFICATION_FIELDS)
+    .maybeSingle();
 
-  return createResult(notificationId, error);
+  return createResult(data, error);
 }
 
 /**
