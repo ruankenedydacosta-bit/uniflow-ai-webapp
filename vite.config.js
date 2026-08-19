@@ -82,8 +82,11 @@ export default defineConfig({
         cleanupOutdatedCaches: false,
         clientsClaim: false,
         skipWaiting: false,
-        importScripts: ['/legacy-update-bridge.js'],
-        globIgnores: ['**/version.json', '**/legacy-update-bridge.js'],
+        // PUSH1: extensao do SW via importScripts (mesmo mecanismo do
+        // legacy-update-bridge) -- adiciona push/notificationclick sem
+        // tocar em nenhuma das flags acima (update detection preservado).
+        importScripts: ['/legacy-update-bridge.js', '/push-notifications-bridge.js'],
+        globIgnores: ['**/version.json', '**/legacy-update-bridge.js', '**/push-notifications-bridge.js'],
       },
     }),
   ],

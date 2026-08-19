@@ -483,6 +483,24 @@ test('card usa Home, bloqueia ações críticas e não interfere em voz ou scrol
   assert.doesNotMatch(card, /position:\s*fixed|role="dialog"|aria-modal/);
   assert.doesNotMatch(css, /position:\s*fixed/);
   assert.match(vite, /registerType: 'prompt'/);
-  assert.match(vite, /globIgnores: \['\*\*\/version\.json', '\*\*\/legacy-update-bridge\.js'\]/);
+  assert.match(
+    vite,
+    /globIgnores: \['\*\*\/version\.json', '\*\*\/legacy-update-bridge\.js', '\*\*\/push-notifications-bridge\.js'\]/,
+  );
   assert.match(vercel, /no-store, no-cache, must-revalidate/);
+});
+
+// PUSH1: a fundacao de Web Push estende o SW existente via importScripts --
+// esta e a regressao que garante que a extensao nunca tocou em nenhuma das
+// flags que fazem o sistema de update (que acabamos de estabilizar) e o
+// legacy-update-bridge funcionarem.
+test('extensao de push (importScripts) preserva intactas as flags de update do Workbox', async () => {
+  const vite = await source('../../../vite.config.js');
+  assert.match(vite, /cleanupOutdatedCaches: false,/);
+  assert.match(vite, /clientsClaim: false,/);
+  assert.match(vite, /skipWaiting: false,/);
+  assert.match(
+    vite,
+    /importScripts: \['\/legacy-update-bridge\.js', '\/push-notifications-bridge\.js'\],/,
+  );
 });

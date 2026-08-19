@@ -99,6 +99,9 @@ test('Workbox preserva caches legados e mantém o protocolo moderno por mensagem
   assert.match(vite, /cleanupOutdatedCaches: false/);
   assert.match(vite, /clientsClaim: false/);
   assert.match(vite, /skipWaiting: false/);
-  assert.match(vite, /importScripts: \['\/legacy-update-bridge\.js'\]/);
+  // PUSH1: importScripts ganhou um segundo arquivo (push-notifications-bridge.js)
+  // -- este teste so garante que legacy-update-bridge.js continua presente
+  // no array, nunca removido pela extensao de push.
+  assert.match(vite, /importScripts: \['\/legacy-update-bridge\.js', '\/push-notifications-bridge\.js'\]/);
   assert.match(vite, /'\*\*\/version\.json'/);
 });
