@@ -84,10 +84,10 @@ const FRAGMENT_SHADER = /* glsl */ `
     vec2 organicPoint = vec2(cos(angle), sin(angle)) * (1.3 + radius * 0.9);
     organicPoint += vec2(time * 0.12, -time * 0.1);
     float organic = fbm(organicPoint);
-    float listeningEnergy = uListening * (0.18 + uVoice * 0.82);
+    float listeningEnergy = uListening * (0.24 + uVoice * 0.76);
     float speakingEnergy = uSpeaking * (0.42 + speakingPulse * 0.2);
-    float edgeDisplacement = (organic - 0.5) * (0.022 + listeningEnergy * 0.065);
-    edgeDisplacement += sin(angle * 6.0 - time * 2.2) * listeningEnergy * 0.018;
+    float edgeDisplacement = (organic - 0.5) * (0.022 + listeningEnergy * 0.078);
+    edgeDisplacement += sin(angle * 6.0 - time * 2.2) * listeningEnergy * 0.022;
     float orbRadius = 0.59 + edgeDisplacement + idlePulse * 0.006 + speakingEnergy * 0.012;
 
     float orbMask = 1.0 - smoothstep(orbRadius - 0.012, orbRadius + 0.025, radius);
@@ -103,9 +103,9 @@ const FRAGMENT_SHADER = /* glsl */ `
     color += rim * mix(BRAND_BLUE, BRAND_CYAN, uListening) * (0.34 + listeningEnergy * 0.74);
 
     float listeningWaveA = exp(-abs(radius - (0.68 + uVoice * 0.05)) * 55.0)
-      * uListening * (0.12 + uVoice * 0.72);
+      * uListening * (0.17 + uVoice * 0.76);
     float listeningWaveB = exp(-abs(radius - (0.76 + uVoice * 0.075)) * 48.0)
-      * uListening * (0.05 + uVoice * 0.42);
+      * uListening * (0.08 + uVoice * 0.48);
     float speakingWave = exp(-abs(radius - (0.69 + 0.018 * sin(time * 2.2))) * 52.0)
       * uSpeaking * 0.24;
     color += BRAND_CYAN * listeningWaveA;
@@ -143,7 +143,7 @@ const FRAGMENT_SHADER = /* glsl */ `
 export function UniNeuralOrb({
   className,
   enableVoiceControl = true,
-  voiceSensitivity = 1.5,
+  voiceSensitivity = 1.8,
   isListening = false,
   isSpeaking = false,
   logoSrc = uniflowMarkAsset,
@@ -273,7 +273,7 @@ export function UniNeuralOrb({
         const targetVoice = targetListening ? renderStateRef.current.voiceLevel : 0;
         const deltaMs = lastFrameAt ? Math.min(64, time - lastFrameAt) : 16;
         lastFrameAt = time;
-        currentVoice = smoothUniNeuralValue(currentVoice, targetVoice, deltaMs, targetVoice > currentVoice ? 72 : 220);
+        currentVoice = smoothUniNeuralValue(currentVoice, targetVoice, deltaMs, targetVoice > currentVoice ? 64 : 180);
         currentListening = smoothUniNeuralValue(currentListening, targetListening, deltaMs, 170);
         currentSpeaking = smoothUniNeuralValue(currentSpeaking, targetSpeaking, deltaMs, 260);
 

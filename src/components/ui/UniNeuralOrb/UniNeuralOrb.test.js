@@ -83,6 +83,18 @@ test('shader usa apenas a paleta de marca e diferencia listening de speaking', a
   assert.match(component, /uniform float uVoice;/);
 });
 
+test('escuta tem resposta visual mais perceptível e suavização contínua a 60 fps', async () => {
+  const component = await source('./UniNeuralOrb.jsx');
+  assert.match(component, /voiceSensitivity = 1\.8/);
+  assert.match(component, /float listeningEnergy = uListening \* \(0\.24 \+ uVoice \* 0\.76\);/);
+  assert.match(component, /listeningEnergy \* 0\.078/);
+  assert.match(component, /listeningEnergy \* 0\.022/);
+  assert.match(component, /uListening \* \(0\.17 \+ uVoice \* 0\.76\)/);
+  assert.match(component, /uListening \* \(0\.08 \+ uVoice \* 0\.48\)/);
+  assert.match(component, /targetVoice > currentVoice \? 64 : 180/);
+  assert.match(component, /targetListening \|\| targetSpeaking \? 1000 \/ 60 : 1000 \/ 30/);
+});
+
 test('refinamento preserva o plasma e remove anéis rígidos e HUDs geométricos', async () => {
   const [component, css] = await Promise.all([
     source('./UniNeuralOrb.jsx'),

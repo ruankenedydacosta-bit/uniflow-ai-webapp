@@ -34,6 +34,12 @@ import {
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
+import {
+  createVoicePointerGesture,
+  isVoicePointerEventForGesture,
+  MAX_VOICE_POINTER_CAPTURE_RECOVERIES,
+  recoverVoicePointerCapture,
+} from './voiceHoldLifecycle.js';
 import styles from './simplifiedApp.module.css';
 
 // LOADING significa apenas que a voz está sendo preparada. O rótulo
@@ -736,7 +742,7 @@ function SimplifiedHomeView({
   // função -- só assim removeEventListener realmente remove o listener.
   const handleWindowVoicePointerEndRef = useRef((event) => {
     const gesture = gestureRef.current;
-    if (!gesture || event.pointerId !== gesture.pointerId) return;
+    if (!isVoicePointerEventForGesture(event, gesture)) return;
     const reason = event.type === 'pointerup'
       ? 'released'
       : event.type === 'pointercancel' ? 'pointercancel' : 'window-safety-net';
@@ -761,16 +767,18 @@ function SimplifiedHomeView({
     window.removeEventListener('pointercancel', handleWindowVoicePointerEndRef.current, true);
   }, []);
 
-  // O navegador móvel pode suspender a página sem entregar pointerup ou
-  // lostpointercapture. Libera o gesto local quando a captura termina ou a
-  // página sai de primeiro plano para que o próximo toque nunca exija reload.
-  // Só limpa o ref (não passa por setPressedGesture/setState) -- é um
-  // fallback defensivo para quando voiceInput já ficou inativo por um
-  // caminho externo (nunca o pointerup/finishVoiceInteraction normal, que
-  // já limpam os dois em sincronia); chamar setState direto no corpo de um
-  // effect nesse caminho é desnecessário aqui e o lint não permite.
+  // Se a captura terminar por um caminho externo (track encerrada, permissão
+  // revogada etc.), limpa o gesto INTEIRO no próximo task. Antes só o ref do
+  // pointer era zerado, deixando gestureRef/listeners/estado visual antigos
+  // vivos e permitindo que um evento atrasado encerrasse o próximo toque.
   useEffect(() => {
-    if (!voiceInput.isActive) pressedGestureRef.current = null;
+    if (voiceInput.isActive || !gestureRef.current) return undefined;
+    const timerId = window.setTimeout(() => {
+      if (!voiceInput.isActive && gestureRef.current) {
+        finishVoiceInteractionRef.current?.('capture-ended');
+      }
+    }, 0);
+    return () => window.clearTimeout(timerId);
   }, [voiceInput.isActive]);
 
   // Watchdog de segurança (última barreira, item 5 acima): nunca deveria
@@ -878,6 +886,7 @@ function SimplifiedHomeView({
     lostpointercapture: 'voice_cancel_lostcapture',
     'window-safety-net': 'voice_cancel_window_safety_net',
     lifecycle: 'voice_cancel_lifecycle',
+    'capture-ended': 'voice_cleanup_capture_ended',
     'activation-failed': 'voice_cancel_activation_failed',
   });
 
@@ -922,12 +931,7 @@ function SimplifiedHomeView({
     if (pressedGestureRef.current !== null) return;
 
     setPressedGesture(event.pointerId);
-    gestureRef.current = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      captureStarted: false,
-    };
+    gestureRef.current = createVoicePointerGesture(event);
     event.currentTarget.setPointerCapture?.(event.pointerId);
 
     window.addEventListener('pointerup', handleWindowVoicePointerEndRef.current, true);
@@ -961,7 +965,7 @@ function SimplifiedHomeView({
   // aqui -- só pointerup/pointercancel/lostpointercapture decidem o fim.
   function handleVoicePointerMove(event) {
     const gesture = gestureRef.current;
-    if (!gesture || event.pointerId !== gesture.pointerId) return;
+    if (!isVoicePointerEventForGesture(event, gesture)) return;
     if (voiceInput.isListening) return;
     const distance = Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y);
     if (distance > VOICE_MOVE_CANCEL_PX) {
@@ -970,17 +974,37 @@ function SimplifiedHomeView({
   }
 
   function handleVoicePointerUp(event) {
-    if (pressedGestureRef.current !== event.pointerId) return;
+    if (!isVoicePointerEventForGesture(event, gestureRef.current)) return;
     finishVoiceInteraction('released');
   }
 
   function handleVoicePointerCancel(event) {
-    if (pressedGestureRef.current !== event.pointerId) return;
+    if (!isVoicePointerEventForGesture(event, gestureRef.current)) return;
     finishVoiceInteraction('pointercancel');
   }
 
   function handleVoiceLostPointerCapture(event) {
-    if (pressedGestureRef.current !== event.pointerId) return;
+    const gesture = gestureRef.current;
+    if (!isVoicePointerEventForGesture(event, gesture)) return;
+
+    // Alguns WebViews/PWAs liberam pointer capture ao retomar do background
+    // mesmo com o toque atual ainda pressionado. `lostpointercapture` não é
+    // por si só prova de que o dedo foi solto: tenta recuperar a captura do
+    // gesto atual. Se o pointer realmente terminou, setPointerCapture lança
+    // (ou o readback falha) e o cancelamento seguro continua sendo aplicado.
+    if (
+      gesture.captureRecoveryCount < MAX_VOICE_POINTER_CAPTURE_RECOVERIES
+      && recoverVoicePointerCapture({
+        element: buttonRef.current,
+        pointerId: gesture.pointerId,
+        visibilityState: document.visibilityState,
+      })
+    ) {
+      gesture.captureRecoveryCount += 1;
+      if (import.meta.env.DEV) console.debug('[voice] voice_pointer_capture_recovered');
+      return;
+    }
+
     finishVoiceInteraction('lostpointercapture');
   }
 
