@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext';
 import { resolvePresentationUserId } from '../presentation';
@@ -8,6 +8,11 @@ import { PERSONAL_PLAN_ROUTE } from './personalPlanConfig.js';
 import { useSubscriptionStatusPolling } from './useSubscriptionStatusPolling.js';
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
 import { resolvePersonalWorkspaceId } from './resolvePersonalWorkspaceId.js';
+import { createGa4SubscriptionActivationLifecycle } from '../analytics/ga4ProductEvents.js';
+import {
+  clearPendingGa4SubscriptionActivation,
+  trackConfirmedGa4SubscriptionActivation,
+} from '../analytics/ga4SubscriptionActivationOperation.js';
 import styles from './PersonalPlanReturn.module.css';
 
 // BLOCO ASAAS CHECKOUT: rota de retorno do Asaas Checkout hospedado
@@ -32,6 +37,10 @@ function PersonalPlanReturnPage() {
   const redirectStatus = searchParams.get('status');
 
   const [resolvedState, setResolvedState] = useState(null); // 'active' | 'canceled' | 'expired' | null (ainda processando)
+  const previousPolledStatusRef = useRef(null);
+  const [subscriptionActivationLifecycle] = useState(
+    () => createGa4SubscriptionActivationLifecycle(),
+  );
 
   const { status: polledSubscription, error: pollError, isPolling } = useSubscriptionStatusPolling({
     workspaceId,
@@ -40,16 +49,25 @@ function PersonalPlanReturnPage() {
 
   useEffect(() => {
     if (resolvedState || !polledSubscription?.exists) return undefined;
+    const currentStatus = polledSubscription.internal_status;
+    const previousStatus = previousPolledStatusRef.current;
+    previousPolledStatusRef.current = currentStatus;
     const timeoutId = window.setTimeout(() => {
-      if (polledSubscription.internal_status === 'active') {
+      if (currentStatus === 'active') {
+        trackConfirmedGa4SubscriptionActivation({
+          previousStatus,
+          currentStatus,
+          trackActivated: () => subscriptionActivationLifecycle.markWitnessedActivation(),
+        });
         setResolvedState('active');
         markPersonalPlanCompleted(userId);
-      } else if (['canceled', 'expired'].includes(polledSubscription.internal_status)) {
-        setResolvedState(polledSubscription.internal_status);
+      } else if (['canceled', 'expired'].includes(currentStatus)) {
+        clearPendingGa4SubscriptionActivation();
+        setResolvedState(currentStatus);
       }
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [resolvedState, polledSubscription, userId]);
+  }, [resolvedState, polledSubscription, userId, subscriptionActivationLifecycle]);
 
   // Timeout do polling (limite máximo de tentativas atingido, sem nunca
   // chegar a um estado terminal) -- preserva o último estado conhecido,

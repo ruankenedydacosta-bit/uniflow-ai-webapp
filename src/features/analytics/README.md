@@ -49,4 +49,54 @@ usa `send_page_view: false` e emite somente pageviews manuais para evitar duplic
 O cross-domain já configurado no painel continua responsável pelo linker. O Web App não
 remove nem persiste `_gl`; o parâmetro nunca entra em `page_location` ou eventos.
 
-Eventos de produto não fazem parte desta fase.
+## Contrato de eventos de produto
+
+Todos os eventos passam pelo gateway fechado em `ga4ProductContracts.js`. Parâmetros
+desconhecidos são descartados e valores fora do catálogo invalidam a emissão.
+
+| Evento | Condição canônica | Payload permitido |
+|---|---|---|
+| `login` | sessão por senha sincronizada ou retorno Google confirmado | `method: password\|google` |
+| `sign_up` | identidade nova por e-mail/senha confirmada | `method: password` |
+| `sign_up_viewed` | entrada real no modo de cadastro, após hidratação do consentimento | nenhum |
+| `voice_started` | início real do `MediaRecorder` | `interaction_mode: voice_button` |
+| `voice_completed` | terminal único da interação iniciada | `result: success\|cancelled\|error`, `interaction_mode: voice_button` |
+| `transaction_created` | nova persistência financeira confirmada, sem replay | `direction: entry\|exit`, `origin: manual\|voice` |
+| `calendar_event_created` | nova agenda persistida, sem replay | `origin: manual\|voice`, `schedule_kind: all_day\|timed` |
+| `begin_checkout` | abertura do modal de checkout | nenhum |
+| `payment_method_selected` | confirmação do método no botão “Confirmar assinatura” | `payment_type: pix\|card` |
+| `pix_generated` | payload PIX completo retornado pelo backend | nenhum |
+| `card_checkout_created` | URL válida do checkout hospedado retornada pelo backend | nenhum |
+| `subscription_activated` | frontend observa `pending → active`, inclusive no retorno do cartão | nenhum |
+
+`payment_method_selected` mantém o nome histórico, mas sua semântica oficial é
+**método confirmado para uma tentativa de checkout**, não simples mudança do rádio.
+Criar um segundo evento quebraria a continuidade do funil sem acrescentar informação
+útil ao ponto canônico atual.
+
+## Cadastro Google
+
+O callback OAuth atual não contém prova segura de que a identidade Google acabou de ser
+criada. Por isso, cadastro novo e acesso recorrente via Google emitem somente
+`login {method: "google"}`. `sign_up` mede exclusivamente cadastro novo por e-mail/senha;
+nenhuma heurística de rota, texto de botão ou estado visual deve inferir cadastro Google.
+
+## Retorno do checkout de cartão
+
+Antes do redirecionamento externo, a aplicação grava em `sessionStorage` apenas o estado
+categórico `pending`. No retorno, uma confirmação `active` consome esse marcador antes
+do envio. Isso cobre o caso em que o primeiro polling já chega ativo e impede duplicação
+por polling, reload ou remontagem. Uma leitura inicial `active` sem marcador e sem uma
+transição observada não emite. Cancelamento/expiração confirmados removem o marcador.
+
+O marcador não contém IDs, valores, CPF/CNPJ ou dados do checkout. Falhas de storage ou
+GA4 são fail-open para o produto. Consentimento continua obrigatório e não há replay de
+eventos bloqueados.
+
+## Escopo de ambiente
+
+O emissor continua protegido por `VITE_GA4_ENABLED`, measurement ID válido e
+consentimento. O dashboard deve aplicar `hostName` canônico em todas as consultas:
+eventos acima pertencem ao hostname de produção do app; `cta_click` pertence somente
+aos hostnames públicos da landing. Preview, `localhost` e outros hosts não entram nos
+KPIs executivos.

@@ -371,7 +371,7 @@ test('confirmar assinatura Pix guarda pix (QR Code) vindo da resposta de createS
   const page = await source('./PersonalPlanPage.jsx');
   const idx = page.indexOf('const { status, pix } = subscriptionResult.data');
   assert.ok(idx > -1);
-  const slice = page.slice(idx, idx + 1100);
+  const slice = page.slice(idx, page.indexOf('function handleGoHome', idx));
   assert.match(slice, /setPixData\(pix\);/);
   assert.match(slice, /setFlowState\('pending'\);/);
   // GUARD FIX (modal Pix quebrado): só entra em 'pending' com payload Pix

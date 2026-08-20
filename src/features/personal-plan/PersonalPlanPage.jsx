@@ -22,6 +22,10 @@ import {
   createGa4CheckoutEventLifecycle,
   createGa4SubscriptionActivationLifecycle,
 } from '../analytics/ga4ProductEvents.js';
+import {
+  clearPendingGa4SubscriptionActivation,
+  persistPendingGa4SubscriptionActivation,
+} from '../analytics/ga4SubscriptionActivationOperation.js';
 import styles from './PersonalPlan.module.css';
 
 // BUGFIX (modal Pix quebrado ao voltar da apresentação): tempo máximo para
@@ -676,6 +680,10 @@ if (!resolvedWorkspaceId) {
       // e válida confirmada, imediatamente antes do redirect. O tracker é
       // fail-open/síncrono (nunca faz await, nunca lança), então uma falha do
       // GA4 jamais atrasa ou bloqueia o redirecionamento abaixo.
+      // O marcador session-scoped atravessa o Checkout hospedado e permite que
+      // /plano-pessoal/retorno reconheça uma ativação que já chegou `active`
+      // no primeiro polling. Ele é categórico, fail-open e não altera o fluxo.
+      persistPendingGa4SubscriptionActivation();
       checkoutEventLifecycle.markCardCheckoutCreated();
       window.location.href = checkoutResult.data.checkout_url;
       return;
@@ -724,6 +732,7 @@ if (!resolvedWorkspaceId) {
 
     const { status, pix } = subscriptionResult.data ?? {};
     if (status === 'active') {
+      clearPendingGa4SubscriptionActivation();
       setFlowState('active');
       markPersonalPlanCompleted(userId);
       subscriptionActivationLifecycle.markWitnessedActivation();
@@ -741,6 +750,7 @@ if (!resolvedWorkspaceId) {
     // Fase 4B Lite: pix_generated só aqui -- um Pix real e completo acabou
     // de chegar da Asaas para ESTA tentativa (nunca na restauração via
     // getSubscription no mount, nem antes da resposta/em erro).
+    clearPendingGa4SubscriptionActivation();
     checkoutEventLifecycle.markPixGenerated();
     setPixData(pix);
     setPixModalDismissed(false);

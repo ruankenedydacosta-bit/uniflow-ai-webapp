@@ -144,7 +144,7 @@ test('Fase 4B Lite: pix_generated/card_checkout_created só disparam após respo
     confirmHandler.indexOf('window.location.href = checkoutResult.data.checkout_url;'),
   );
   assert.match(cardBlock, /if \(checkoutResult\.error \|\| !checkoutResult\.data\?\.checkout_url\) \{[\s\S]*?return;\s*\}/);
-  assert.match(cardBlock, /checkoutEventLifecycle\.markCardCheckoutCreated\(\);\s*$/);
+  assert.match(cardBlock, /persistPendingGa4SubscriptionActivation\(\);\s*checkoutEventLifecycle\.markCardCheckoutCreated\(\);\s*$/);
 
   // pix_generated: só depois do branch de payload inválido/incompleto.
   const pixBlock = confirmHandler.slice(confirmHandler.indexOf('if (!isValidPixPayload(pix)) {'));

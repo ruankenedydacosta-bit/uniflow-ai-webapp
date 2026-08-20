@@ -233,7 +233,7 @@ test('eventos de produto recebem page_location canônico sem query, hash ou _gl'
   }
 });
 
-test('todos os nove eventos usam o mesmo contexto URL seguro central', () => {
+test('todos os doze eventos usam o mesmo contexto URL seguro central', () => {
   const eventCases = [
     ['login', { method: 'password' }],
     ['sign_up', { method: 'password' }],
@@ -244,6 +244,9 @@ test('todos os nove eventos usam o mesmo contexto URL seguro central', () => {
     ['calendar_event_created', { origin: 'voice', schedule_kind: 'timed' }],
     ['begin_checkout', {}],
     ['payment_method_selected', { payment_type: 'pix' }],
+    ['pix_generated', {}],
+    ['card_checkout_created', {}],
+    ['subscription_activated', {}],
   ];
   const { runtime } = createRuntime({
     href: 'https://app.invalid/app/home?email=pessoa@example.com&amount=999#transcript',

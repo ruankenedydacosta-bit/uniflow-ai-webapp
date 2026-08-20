@@ -42,16 +42,30 @@ test('polling fica ativo até resolvedState ser definido (active/canceled/expire
 
 test('detecta "active" e marca personalPlanCompleted automaticamente -- mesma lógica de PersonalPlanPage.jsx', async () => {
   const page = await source('./PersonalPlanReturnPage.jsx');
-  const idx = page.indexOf('if (polledSubscription.internal_status ===');
-  const slice = page.slice(idx, idx + 250);
+  const idx = page.indexOf("if (currentStatus === 'active')");
+  const slice = page.slice(idx, idx + 650);
   assert.match(slice, /setResolvedState\('active'\);/);
   assert.match(slice, /markPersonalPlanCompleted\(userId\);/);
 });
 
+test('active no retorno confirma subscription_activated com transição/marker idempotente antes de concluir a UI', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  assert.match(page, /createGa4SubscriptionActivationLifecycle/);
+  assert.match(page, /const previousStatus = previousPolledStatusRef\.current;/);
+  assert.match(page, /trackConfirmedGa4SubscriptionActivation\(\{[\s\S]*?previousStatus,[\s\S]*?currentStatus,[\s\S]*?markWitnessedActivation/);
+
+  const activeBranch = page.slice(
+    page.indexOf("if (currentStatus === 'active')"),
+    page.indexOf("} else if (['canceled', 'expired'].includes(currentStatus))"),
+  );
+  assert.ok(activeBranch.indexOf('trackConfirmedGa4SubscriptionActivation') < activeBranch.indexOf("setResolvedState('active')"));
+});
+
 test('canceled/expired são tratados como estados terminais distintos -- nunca reativados por engano', async () => {
   const page = await source('./PersonalPlanReturnPage.jsx');
-  assert.match(page, /\['canceled', 'expired'\]\.includes\(polledSubscription\.internal_status\)/);
-  assert.match(page, /setResolvedState\(polledSubscription\.internal_status\);/);
+  assert.match(page, /\['canceled', 'expired'\]\.includes\(currentStatus\)/);
+  assert.match(page, /setResolvedState\(currentStatus\);/);
+  assert.match(page, /clearPendingGa4SubscriptionActivation\(\);/);
 });
 
 test('timeout do polling (limite de tentativas) preserva o último estado conhecido -- nunca trava num spinner infinito', async () => {
