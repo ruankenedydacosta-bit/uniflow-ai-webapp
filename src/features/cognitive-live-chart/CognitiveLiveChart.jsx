@@ -99,7 +99,14 @@ export default function CognitiveLiveChart({
     if (!containerRef.current || typeof ResizeObserver === 'undefined') return undefined;
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
-      if (entry) setContainerWidth(entry.contentRect.width);
+      if (!entry) return;
+      // HOME-GRAPH2: só reage quando a largura MUDA de verdade. O
+      // ResizeObserver dispara a cada reflow do container (inclusive
+      // quando só a ALTURA muda -- ex.: a lista de recentes trocando de
+      // aba), e um setState com o mesmo valor ainda re-renderiza o
+      // gráfico inteiro.
+      const nextWidth = entry.contentRect.width;
+      setContainerWidth((current) => (current === nextWidth ? current : nextWidth));
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -241,6 +248,14 @@ export default function CognitiveLiveChart({
   const highlightCorePoint = highlightCoreIndex >= 0 ? despesaPoints[highlightCoreIndex] : null;
 
   const todayX = xScale(todayDay);
+  // HOME-GRAPH2: os rótulos ancorados em `middle` sobre todayX transbordam
+  // a viewBox quando "hoje" está perto de uma das pontas (o texto se
+  // estende metade para cada lado). Trocar a âncora nas bordas mantém o
+  // rótulo inteiro dentro do gráfico em qualquer largura, sem reservar
+  // margem extra permanente só por causa dele.
+  const todayLabelAnchor = todayX >= VIEWBOX_WIDTH - MARGIN.right - 20
+    ? 'end'
+    : todayX <= MARGIN.left + 20 ? 'start' : 'middle';
   const highlightXStart = showUniHighlight ? xScale(insightHighlight.startDay) : null;
   const highlightXEnd = showUniHighlight ? xScale(insightHighlight.endDay) : null;
 
@@ -526,7 +541,7 @@ export default function CognitiveLiveChart({
                 y2={height - MARGIN.bottom}
                 className={styles.todayMarker}
               />
-              <text x={todayX} y={MARGIN.top - 6} className={styles.todayLabel} textAnchor="middle">
+              <text x={todayX} y={MARGIN.top - 6} className={styles.todayLabel} textAnchor={todayLabelAnchor}>
                 {showForecastLine ? 'Hoje' : `Dia ${todayDay}`}
               </text>
 
@@ -597,7 +612,7 @@ export default function CognitiveLiveChart({
             {data[0].label}
           </text>
           {todayDay !== lastDay && !isEmptyView ? (
-            <text x={todayX} y={height - 8} className={styles.axisLabel} textAnchor="middle">
+            <text x={todayX} y={height - 8} className={styles.axisLabel} textAnchor={todayLabelAnchor}>
               {`Dia ${todayDay}`}
             </text>
           ) : null}

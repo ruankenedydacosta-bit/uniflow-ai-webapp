@@ -1,86 +1,126 @@
+import { formatCurrency } from '../../utils/formatters.js';
 import {
-  buildCumulativeSeries,
-  getFinancialPeriod,
-  selectPeriodTransactions,
-  totalByType,
-} from '../../pages/financeiro/mobile/financeiroMobileData.js';
-
-const CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-  maximumFractionDigits: 0,
-});
+  filterRecordTransactions,
+  getMonthRange,
+  summarizeMonth,
+} from './simplifiedRecordsData.js';
 
 /**
- * HOME-GRAPH1: agregação de categorias por tipo (income/expense),
- * generalizando o equivalente privado de financeiroMobileData.js (que só
- * cobre despesa) -- a UniFlow abandonou Entradas/Saídas como conceitos
- * misturáveis na mesma lista, então o usuário alterna entre as duas via
- * `type`, nunca as duas juntas na mesma agregação.
+ * HOME-GRAPH2 -- FONTE ÚNICA DE VERDADE.
  *
- * REGRA DE ZERO: categorias sem nenhum lançamento > 0 no período nunca
- * aparecem -- nunca uma lista cheia de categorias vazias.
+ * A V1 derivava os totais com `totalByType` (financeiroMobileData.js), que
+ * soma APENAS lançamentos `transaction_type` income/expense. Registros usa
+ * `summarizeMonth`, que soma esses lançamentos MAIS o delta dos ajustes
+ * (`transaction_type: 'adjustment'` com `adjustment_target` income/expense).
+ * Quem tivesse usado "Atualizar entradas/saídas" veria Registros e o
+ * gráfico discordarem para sempre -- inclusive depois de recarregar o app,
+ * porque a divergência era de REGRA, não de cache.
+ *
+ * Por isso este módulo não tem mais matemática financeira própria: período,
+ * totais e ordenação vêm todos de simplifiedRecordsData.js, exatamente as
+ * mesmas funções que a tela de Registros chama. Qualquer regra nova
+ * (ajustes, estornos, etc.) passa a valer nos dois lugares de uma vez.
  */
-export function buildCategoryBreakdown(transactions, categories, type) {
-  const totals = new Map();
-  transactions
-    .filter((transaction) => transaction.transaction_type === type)
-    .forEach((transaction) => {
-      const key = transaction.category_id ?? 'uncategorized';
-      totals.set(key, (totals.get(key) ?? 0) + Number(transaction.amount || 0));
-    });
 
-  const categoryById = new Map(categories.map((category) => [category.id, category.name]));
+const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'short',
+});
 
-  return [...totals.entries()]
-    .filter(([, value]) => value > 0)
-    .sort((left, right) => right[1] - left[1])
-    .map(([id, value]) => ({
-      id,
-      name: categoryById.get(id) ?? 'Sem categoria',
-      value,
-      formattedValue: CURRENCY_FORMATTER.format(value),
-    }));
+function dayOfMonth(dateKey) {
+  return Number(String(dateKey).slice(8, 10));
+}
+
+function dateKeyForDay(monthRange, day) {
+  return `${String(monthRange.dateFrom).slice(0, 8)}${String(day).padStart(2, '0')}`;
+}
+
+function labelForDay(monthRange, day) {
+  const [year, month] = String(monthRange.dateFrom).split('-').map(Number);
+  return DAY_LABEL_FORMATTER.format(new Date(year, month - 1, day, 12));
 }
 
 /**
- * HOME-GRAPH1: monta os dados do gráfico financeiro da Home a partir da
- * MESMA fonte real (transactions/categories, vindas de useTransactions/
- * useCategories) já usada por Registros/Financeiro -- nunca um segundo
- * estado/fetch paralelo. Reaproveita getFinancialPeriod/
- * buildCumulativeSeries de financeiroMobileData.js sem alteração.
- *
- * NUNCA calcula ou expõe o total consolidado que a UniFlow abandonou na UI
- * -- só entradas (income) e saídas (expense) agregadas separadamente, e a
- * série acumulada do período para o gráfico. Contas/saldos por conta
- * propositalmente nunca entram aqui -- só workspaceId.
+ * Série acumulada do mês. Cada ponto usa `summarizeMonth` sobre os
+ * lançamentos até aquele dia -- ou seja, a curva e os cards de total saem
+ * da MESMA regra, então o último ponto sempre bate com o total exibido.
  */
+export function buildHomeSeries(transactions, monthRange, effectiveLastDay) {
+  const pointDays = new Set([1, effectiveLastDay]);
+  transactions.forEach((transaction) => {
+    const day = dayOfMonth(transaction.transaction_date);
+    if (day >= 1 && day <= effectiveLastDay) pointDays.add(day);
+  });
+
+  return [...pointDays]
+    .sort((left, right) => left - right)
+    .map((day) => {
+      const pointKey = dateKeyForDay(monthRange, day);
+      const eligible = transactions.filter(
+        (transaction) => transaction.transaction_date <= pointKey,
+      );
+      const totals = summarizeMonth(eligible);
+      return {
+        day,
+        label: labelForDay(monthRange, day),
+        receita: totals.income,
+        despesa: totals.expense,
+      };
+    });
+}
+
+/**
+ * Últimas movimentações de um tipo, na MESMA ordem visual de Registros
+ * (`filterRecordTransactions` já filtra status completed e ordena por
+ * transaction_date desc, desempatando por created_at). Limitado a `limit`
+ * para a Home continuar sendo um resumo, nunca uma segunda tela de lista.
+ */
+export function buildRecentMovements(transactions, categories, type, limit = 2) {
+  const categoryById = new Map(categories.map((category) => [category.id, category.name]));
+
+  return filterRecordTransactions(transactions, { type, sort: 'recent' })
+    .slice(0, limit)
+    .map((transaction) => ({
+      id: transaction.id,
+      description: transaction.description,
+      categoryName: categoryById.get(transaction.category_id) ?? 'Sem categoria',
+      amount: Number(transaction.amount || 0),
+      formattedAmount: formatCurrency(Number(transaction.amount || 0)),
+      dateKey: transaction.transaction_date,
+    }));
+}
+
 export function buildHomeFinancialGraphData({
   transactions = [],
   categories = [],
   now = new Date(),
 } = {}) {
-  const period = getFinancialPeriod({ mode: 'Mês', offset: 0, now });
-  const periodTransactions = selectPeriodTransactions(transactions, period);
-  const income = totalByType(periodTransactions, 'income');
-  const expense = totalByType(periodTransactions, 'expense');
-  const data = buildCumulativeSeries(periodTransactions, period);
-  const lastPoint = data[data.length - 1];
+  const monthRange = getMonthRange(now);
+  const lastDayOfMonth = dayOfMonth(monthRange.dateTo);
+  // Mês corrente => a curva para em hoje; mês passado => mês inteiro.
+  const isCurrentMonth = String(monthRange.dateFrom).slice(0, 7)
+    === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const effectiveLastDay = isCurrentMonth
+    ? Math.min(now.getDate(), lastDayOfMonth)
+    : lastDayOfMonth;
+
+  const totals = summarizeMonth(transactions);
 
   return {
-    period,
-    hasMovements: periodTransactions.length > 0,
-    income,
-    expense,
-    incomeLabel: CURRENCY_FORMATTER.format(income),
-    expenseLabel: CURRENCY_FORMATTER.format(expense),
+    monthRange,
+    periodLabel: monthRange.label,
+    hasMovements: transactions.some((transaction) => transaction.status === 'completed'),
+    income: totals.income,
+    expense: totals.expense,
+    incomeLabel: formatCurrency(totals.income),
+    expenseLabel: formatCurrency(totals.expense),
     chart: {
-      data,
-      todayDay: lastPoint.day,
+      data: buildHomeSeries(transactions, monthRange, effectiveLastDay),
+      todayDay: effectiveLastDay,
     },
-    categories: {
-      expense: buildCategoryBreakdown(periodTransactions, categories, 'expense'),
-      income: buildCategoryBreakdown(periodTransactions, categories, 'income'),
+    recent: {
+      income: buildRecentMovements(transactions, categories, 'income'),
+      expense: buildRecentMovements(transactions, categories, 'expense'),
     },
   };
 }

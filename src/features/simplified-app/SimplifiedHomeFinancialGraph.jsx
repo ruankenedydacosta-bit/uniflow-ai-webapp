@@ -4,8 +4,8 @@ import { useSession } from '../../app/SessionContext.jsx';
 import { useCategories, useTransactions } from '../../hooks';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../services/financialDataEvents.js';
 import { CognitiveLiveChart } from '../cognitive-live-chart/index.js';
-import { getFinancialPeriod } from '../../pages/financeiro/mobile/financeiroMobileData.js';
 import { buildHomeFinancialGraphData } from './homeFinancialGraphData.js';
+import { formatRelativeTransactionDate, getMonthRange } from './simplifiedRecordsData.js';
 import { UniMark } from './SimplifiedIcons.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './SimplifiedHomeFinancialGraph.module.css';
@@ -16,39 +16,60 @@ const EMPTY_STATE = Object.freeze({
 });
 
 /**
- * HOME-GRAPH1: conteúdo de verdade -- só MONTA (nunca só renderiza
- * escondido) quando o wrapper abaixo decide que a seção está perto da
- * viewport, então os hooks de fetch (useTransactions/useCategories) só
- * começam a rodar nesse momento, nunca antes (Home inicial continua
- * rápida).
+ * HOME-GRAPH2: conteúdo real do bloco financeiro da Home.
  *
- * Fonte real: MESMOS hooks que Registros/Financeiro já usam, nunca um
- * segundo estado financeiro. Mesmo evento (FINANCIAL_DATA_CHANGED_EVENT)
- * que Registros escuta -- confirmar uma Entrada/Saída na Uni já dispara
- * este evento (ver confirmedFinancialActionService.js), então o gráfico
- * atualiza sozinho, sem reload/refresh manual.
+ * Busca com EXATAMENTE os mesmos parâmetros de Registros (status
+ * 'completed' no servidor, categorias de contexto 'personal', intervalo do
+ * mês via getMonthRange) -- parâmetros divergentes produzem números
+ * divergentes, que foi parte do bug relatado no teste físico.
  */
 function SimplifiedHomeFinancialGraphContent() {
   const navigate = useNavigate();
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
-  const [categoryView, setCategoryView] = useState('expense');
+  const [recentView, setRecentView] = useState('expense');
 
-  const period = useMemo(() => getFinancialPeriod({ mode: 'Mês', offset: 0 }), []);
+  const month = useMemo(() => getMonthRange(new Date()), []);
   const transactionState = useTransactions({
     workspaceId,
-    dateFrom: period.startKey,
-    dateTo: period.endKey,
+    dateFrom: month.dateFrom,
+    dateTo: month.dateTo,
+    status: 'completed',
   });
-  const categoryState = useCategories({ workspaceId });
+  const categoryState = useCategories({ workspaceId, context: 'personal' });
 
+  // O gráfico fica na Home, mas a confirmação da Uni acontece na ROTA /uni,
+  // onde este componente está DESMONTADO -- o evento chega e não há ninguém
+  // ouvindo. Por isso a atualização tem três gatilhos complementares:
+  // (1) o evento, para quando a confirmação acontece com a Home montada;
+  // (2) o refetch de mount do próprio useTransactions, ao voltar para a Home;
+  // (3) visibilitychange, para quando o app volta do background.
+  //
+  // O handler vive num ref para o listener ser registrado UMA vez: as
+  // funções refresh vêm de objetos novos a cada render, e usá-las como
+  // dependência re-registrava o listener em todo render.
+  const refreshRef = useRef(null);
+  // Sem lista de dependências: reaponta o ref depois de CADA render, então
+  // o listener (registrado uma vez só, abaixo) sempre chama as funções de
+  // refresh atuais -- nunca as capturadas no primeiro render.
   useEffect(() => {
-    const handleDataChanged = () => {
+    refreshRef.current = () => {
       void Promise.all([transactionState.refresh(), categoryState.refresh()]);
     };
+  });
+
+  useEffect(() => {
+    const handleDataChanged = () => refreshRef.current?.();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refreshRef.current?.();
+    };
     window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
-    return () => window.removeEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
-  }, [transactionState, categoryState]);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   const graphData = useMemo(
     () => buildHomeFinancialGraphData({
@@ -58,13 +79,13 @@ function SimplifiedHomeFinancialGraphContent() {
     [transactionState.transactions, categoryState.categories],
   );
 
-  const activeCategories = graphData.categories[categoryView];
+  const activeRecent = graphData.recent[recentView];
   const goToUni = () => navigate(SIMPLIFIED_ROUTES.UNI);
 
   return (
     <section className={styles.card} aria-labelledby="home-financial-graph-title">
       <header className={styles.header}>
-        <span className={styles.eyebrow}>{period.label}</span>
+        <span className={styles.eyebrow}>{graphData.periodLabel}</span>
         <h2 id="home-financial-graph-title">Seu fluxo financeiro</h2>
       </header>
 
@@ -79,57 +100,81 @@ function SimplifiedHomeFinancialGraphContent() {
       />
 
       <div className={styles.totalsRow}>
-        <div className={styles.totalItem}>
-          <span className={styles.totalLabel}>Entradas</span>
+        <div className={styles.totalCard}>
+          <span className={styles.totalHead}>
+            <span className={`${styles.totalDot} ${styles.totalDotIncome}`} aria-hidden="true" />
+            Entradas
+          </span>
           <strong className={styles.totalValueIncome}>{graphData.incomeLabel}</strong>
         </div>
-        <div className={styles.totalItem}>
-          <span className={styles.totalLabel}>Saídas</span>
+        <div className={styles.totalCard}>
+          <span className={styles.totalHead}>
+            <span className={`${styles.totalDot} ${styles.totalDotExpense}`} aria-hidden="true" />
+            Saídas
+          </span>
           <strong className={styles.totalValueExpense}>{graphData.expenseLabel}</strong>
         </div>
       </div>
 
-      {graphData.hasMovements ? (
-        <div className={styles.categoriesBlock}>
-          <div className={styles.categoryToggle} role="tablist" aria-label="Selecionar tipo de categoria">
+      <div className={styles.recentBlock}>
+        <div className={styles.recentHead}>
+          <h3 className={styles.recentTitle}>
+            {recentView === 'expense' ? 'Saídas recentes' : 'Entradas recentes'}
+          </h3>
+          <div className={styles.toggle} role="tablist" aria-label="Selecionar tipo de movimentação">
             <button
               type="button"
               role="tab"
-              aria-selected={categoryView === 'expense'}
-              className={categoryView === 'expense' ? styles.toggleTabActive : styles.toggleTab}
-              onClick={() => setCategoryView('expense')}
+              aria-selected={recentView === 'expense'}
+              className={recentView === 'expense' ? styles.toggleTabActive : styles.toggleTab}
+              onClick={() => setRecentView('expense')}
             >
               Saídas
             </button>
             <button
               type="button"
               role="tab"
-              aria-selected={categoryView === 'income'}
-              className={categoryView === 'income' ? styles.toggleTabActive : styles.toggleTab}
-              onClick={() => setCategoryView('income')}
+              aria-selected={recentView === 'income'}
+              className={recentView === 'income' ? styles.toggleTabActive : styles.toggleTab}
+              onClick={() => setRecentView('income')}
             >
               Entradas
             </button>
           </div>
-
-          {activeCategories.length > 0 ? (
-            <ul className={styles.categoryList}>
-              {activeCategories.map((category) => (
-                <li key={category.id}>
-                  <button type="button" className={styles.categoryRow} onClick={goToUni}>
-                    <span className={styles.categoryName}>{category.name}</span>
-                    <span className={styles.categoryValue}>{category.formattedValue}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={styles.categoriesEmpty}>
-              {categoryView === 'expense' ? 'Nenhuma saída com categoria neste período.' : 'Nenhuma entrada com categoria neste período.'}
-            </p>
-          )}
         </div>
-      ) : null}
+
+        {activeRecent.length > 0 ? (
+          <ul className={styles.recentList}>
+            {activeRecent.map((movement) => (
+              <li key={movement.id}>
+                <button type="button" className={styles.recentRow} onClick={goToUni}>
+                  <span className={styles.recentMain}>
+                    <span className={styles.recentDescription}>{movement.description}</span>
+                    <span className={styles.recentMeta}>
+                      {`${movement.categoryName} • ${formatRelativeTransactionDate(movement.dateKey)}`}
+                    </span>
+                  </span>
+                  <span
+                    className={
+                      recentView === 'expense'
+                        ? styles.recentValueExpense
+                        : styles.recentValueIncome
+                    }
+                  >
+                    {movement.formattedAmount}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.recentEmpty}>
+            {recentView === 'expense'
+              ? 'Nenhuma saída neste período.'
+              : 'Nenhuma entrada neste período.'}
+          </p>
+        )}
+      </div>
 
       <button type="button" className={styles.askUniButton} onClick={goToUni}>
         <span className={styles.askUniMark} aria-hidden="true"><UniMark /></span>
@@ -140,14 +185,11 @@ function SimplifiedHomeFinancialGraphContent() {
 }
 
 /**
- * HOME-GRAPH1: wrapper com lazy mount via IntersectionObserver --
- * rootMargin de 200px dispara o mount um pouco ANTES da seção realmente
- * entrar na viewport (o fetch já está em andamento quando o usuário
- * termina de rolar até ela). Sem IntersectionObserver disponível, monta
- * direto (degrada de forma segura, nunca esconde a seção para sempre).
- * Uma vez montado, nunca desmonta de novo -- a microentrada (opacity+
- * translateY) roda uma única vez, via CSS no próprio mount, nunca a cada
- * pixel de scroll.
+ * HOME-GRAPH1/2: wrapper com lazy mount via IntersectionObserver --
+ * rootMargin de 200px dispara o mount um pouco ANTES da seção entrar na
+ * viewport. Sem IntersectionObserver, monta direto (degrada com segurança).
+ * Uma vez montado, nunca desmonta: a microentrada roda uma única vez, via
+ * CSS no próprio mount, nunca a cada pixel de scroll.
  */
 function SimplifiedHomeFinancialGraph() {
   const containerRef = useRef(null);

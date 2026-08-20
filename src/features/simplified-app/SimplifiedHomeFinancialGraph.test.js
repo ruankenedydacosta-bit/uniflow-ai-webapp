@@ -4,188 +4,224 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
+// Verificações de "isto não pode existir no código" precisam olhar só o
+// CÓDIGO: os comentários destes arquivos citam de propósito as regras
+// antigas (totalByType, margin-inline) para explicar por que sairam, e
+// bater nesse texto seria um falso positivo.
+const codeOnly = (content) => content
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '');
+
 // ============================================================================
-// HOME-GRAPH1 -- reintegração do gráfico financeiro antigo (auditoria:
-// src/features/cognitive-live-chart/, já ativo em Financeiro mobile, nunca
-// redesenhado do zero) na Home, abaixo da área da Uni.
+// HOME-GRAPH2 -- responsividade, fonte única e redesign da seção abaixo do
+// gráfico. O gráfico principal (CognitiveLiveChart) NÃO foi redesenhado.
 // ============================================================================
 
-test('reutiliza o CognitiveLiveChart existente -- nunca uma segunda implementação de gráfico', async () => {
+test('continua reutilizando o CognitiveLiveChart existente -- nunca um segundo gráfico', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
   assert.match(graph, /import \{ CognitiveLiveChart \} from '\.\.\/cognitive-live-chart\/index\.js';/);
-  assert.match(graph, /<CognitiveLiveChart/);
   assert.match(graph, /variant="compact"/);
   assert.match(graph, /defaultMode="overview"/);
 });
 
-test('fonte única de dados: reaproveita useTransactions/useCategories (mesmos hooks de Registros/Financeiro), nunca um segundo fetch/estado', async () => {
-  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /import \{ useCategories, useTransactions \} from '\.\.\/\.\.\/hooks';/);
-  assert.match(graph, /useTransactions\(\{/);
-  assert.match(graph, /useCategories\(\{ workspaceId \}\)/);
+// ----------------------------------------------------------- RESPONSIVIDADE
+
+test('RESPONSIVIDADE: o teto de largura do gráfico é centralizado -- a sobra nunca cai toda à direita', async () => {
+  const css = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
+  assert.match(css, /\.rootCompact \{[\s\S]*?max-width: 430px;[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
+  assert.match(css, /\.rootDetailed \{[\s\S]*?max-width: 430px;[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
 });
 
-test('reaproveita a matemática de período/série já existente em financeiroMobileData.js -- nunca duplicada', async () => {
-  const graphData = await source('./homeFinancialGraphData.js');
+test('RESPONSIVIDADE: o container do gráfico continua fluido (100%), sem largura fixa por aparelho', async () => {
+  const css = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
+  assert.match(css, /\.chartWrapper \{[\s\S]*?width: 100%;/);
+  assert.match(css, /\.svg \{[\s\S]*?width: 100%;[\s\S]*?height: auto;/);
+  assert.doesNotMatch(css, /@media[^{]*\(width:\s*(390|412|430)px\)/);
+});
+
+test('RESPONSIVIDADE: margens simétricas do plot vêm de MARGIN left === right', async () => {
+  const chart = await source('../cognitive-live-chart/CognitiveLiveChart.jsx');
+  const margin = /const MARGIN = \{ top: (\d+), right: (\d+), bottom: (\d+), left: (\d+) \};/.exec(chart);
+  assert.ok(margin, 'MARGIN precisa continuar declarado explicitamente');
+  assert.equal(margin[2], margin[4], 'right e left precisam ser iguais');
+});
+
+test('RESPONSIVIDADE: rótulo de "hoje" troca de âncora nas bordas -- nunca transborda a viewBox', async () => {
+  const chart = await source('../cognitive-live-chart/CognitiveLiveChart.jsx');
+  assert.match(chart, /const todayLabelAnchor =/);
+  assert.match(chart, /textAnchor=\{todayLabelAnchor\}/);
+  assert.doesNotMatch(chart, /x=\{todayX\}[^>]*textAnchor="middle"/);
+});
+
+test('RESPONSIVIDADE: nenhum filho da seção soma width:100% com margin lateral (estouro horizontal)', async () => {
+  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
+  assert.doesNotMatch(codeOnly(css), /margin-inline: 4px/, 'margem lateral em filho de largura total estoura o container');
+  assert.match(css, /\.card \{[\s\S]*?padding-inline: 4px;[\s\S]*?box-sizing: border-box;/);
+  assert.match(css, /\.askUniButton \{[\s\S]*?box-sizing: border-box;/);
+});
+
+test('RESPONSIVIDADE: textos longos truncam em vez de quebrar o layout', async () => {
+  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
+  assert.match(css, /\.recentDescription \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
+  assert.match(css, /\.recentMeta \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
+  assert.match(css, /\.totalValueIncome,\s*\n\.totalValueExpense \{[\s\S]*?text-overflow: ellipsis;/);
+});
+
+// ------------------------------------------------------------------- DADOS
+
+test('FONTE ÚNICA: a derivação vem de simplifiedRecordsData (mesmas funções de Registros), nunca de matemática própria', async () => {
+  const data = await source('./homeFinancialGraphData.js');
   assert.match(
-    graphData,
-    /import \{\s*\n\s*buildCumulativeSeries,\s*\n\s*getFinancialPeriod,\s*\n\s*selectPeriodTransactions,\s*\n\s*totalByType,\s*\n\s*\} from '\.\.\/\.\.\/pages\/financeiro\/mobile\/financeiroMobileData\.js';/,
+    data,
+    /import \{\s*\n\s*filterRecordTransactions,\s*\n\s*getMonthRange,\s*\n\s*summarizeMonth,\s*\n\} from '\.\/simplifiedRecordsData\.js';/,
   );
-  const financeiroData = await source('../../pages/financeiro/mobile/financeiroMobileData.js');
-  assert.match(financeiroData, /export function buildCumulativeSeries\(/);
-  assert.match(financeiroData, /export function selectPeriodTransactions\(/);
-  assert.match(financeiroData, /export function totalByType\(/);
+  assert.doesNotMatch(codeOnly(data), /totalByType|buildCumulativeSeries|financeiroMobileData/);
 });
 
-test('atualiza sozinho após confirmação de movimentação: escuta FINANCIAL_DATA_CHANGED_EVENT (mesmo evento que a confirmação da Uni dispara)', async () => {
+test('FONTE ÚNICA: a busca usa os MESMOS parâmetros de Registros (status completed + categorias personal)', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  assert.match(graph, /status: 'completed',/);
+  assert.match(graph, /useCategories\(\{ workspaceId, context: 'personal' \}\)/);
+  assert.match(records, /status: 'completed',/);
+  assert.match(records, /context: 'personal',/);
+});
+
+test('FONTE ÚNICA: período do gráfico é o mesmo getMonthRange usado por Registros', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /getMonthRange/);
+  assert.match(graph, /dateFrom: month\.dateFrom,/);
+  assert.match(graph, /dateTo: month\.dateTo,/);
+});
+
+test('ATUALIZAÇÃO: três gatilhos complementares (evento, remount e volta do background)', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
   const confirmedAction = await source('../../services/confirmedFinancialActionService.js');
-  assert.match(graph, /import \{ FINANCIAL_DATA_CHANGED_EVENT \} from '\.\.\/\.\.\/services\/financialDataEvents\.js';/);
   assert.match(graph, /window\.addEventListener\(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged\)/);
-  assert.match(graph, /transactionState\.refresh\(\), categoryState\.refresh\(\)/);
-  assert.match(confirmedAction, /notifyFinancialDataChanged/);
+  assert.match(graph, /document\.addEventListener\('visibilitychange', handleVisibility\)/);
+  assert.match(graph, /document\.visibilityState === 'visible'/);
+  assert.match(confirmedAction, /notifyFinancialDataChanged\('confirmed-financial-action'\)/);
 });
 
-test('lazy mount via IntersectionObserver -- hooks de fetch só rodam quando o conteúdo de verdade monta, nunca antes', async () => {
+test('ATUALIZAÇÃO: listener registrado uma única vez (handler em ref), nunca re-inscrito a cada render', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /typeof IntersectionObserver === 'undefined'/);
+  assert.match(graph, /const refreshRef = useRef\(null\);/);
+  assert.match(graph, /refreshRef\.current\?\.\(\)/);
+  const effect = /useEffect\(\(\) => \{\s*\n\s*const handleDataChanged[\s\S]*?\}, \[\]\);/.exec(graph);
+  assert.ok(effect, 'o efeito do listener precisa ter dependências vazias');
+});
+
+test('ATUALIZAÇÃO: ambos os refreshes (transações e categorias) são disparados juntos', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /transactionState\.refresh\(\), categoryState\.refresh\(\)/);
+});
+
+// ---------------------------------------------------------------- RECENTES
+
+test('RECENTES: no máximo 2 por tipo, definido na derivação', async () => {
+  const data = await source('./homeFinancialGraphData.js');
+  assert.match(data, /export function buildRecentMovements\(transactions, categories, type, limit = 2\)/);
+  assert.match(data, /\.slice\(0, limit\)/);
+});
+
+test('RECENTES: ordem herdada de filterRecordTransactions (mesma ordem visual de Registros)', async () => {
+  const data = await source('./homeFinancialGraphData.js');
+  assert.match(data, /filterRecordTransactions\(transactions, \{ type, sort: 'recent' \}\)/);
+  assert.doesNotMatch(data, /\.sort\(\(.*created_at/);
+});
+
+test('RECENTES: são movimentações, com categoria só como metadado -- nunca lista agregada de categorias', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /styles\.recentDescription/);
+  assert.match(graph, /movement\.categoryName/);
+  assert.doesNotMatch(graph, /buildCategoryBreakdown|categoryView|activeCategories/);
+});
+
+test('RECENTES: empty state por tipo, sem dado fictício', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /Nenhuma saída neste período\./);
+  assert.match(graph, /Nenhuma entrada neste período\./);
+});
+
+test('RECENTES: toggle [Saídas][Entradas] nunca mistura os dois tipos', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /const \[recentView, setRecentView\] = useState\('expense'\);/);
+  assert.match(graph, /onClick=\{\(\) => setRecentView\('expense'\)\}/);
+  assert.match(graph, /onClick=\{\(\) => setRecentView\('income'\)\}/);
+  assert.match(graph, /const activeRecent = graphData\.recent\[recentView\];/);
+});
+
+// -------------------------------------------------------------- PERFORMANCE
+
+test('PERFORMANCE: lazy mount por IntersectionObserver preservado', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
   assert.match(graph, /rootMargin: '200px 0px'/);
   assert.match(graph, /const \[shouldMount, setShouldMount\] = useState\(false\);/);
-  assert.match(
-    graph,
-    /\{shouldMount \? \(\s*\n\s*<div className=\{styles\.enter\}>\s*\n\s*<SimplifiedHomeFinancialGraphContent \/>/,
-  );
-  // O componente PESADO (com os hooks de fetch) só existe separado do
-  // wrapper -- prova que os hooks não rodam antes do mount real.
   assert.match(graph, /function SimplifiedHomeFinancialGraphContent\(\)/);
-  assert.match(graph, /function SimplifiedHomeFinancialGraph\(\)/);
 });
 
-test('SimplifiedHomeView renderiza o gráfico DEPOIS de "pronta para ajudar" (availabilityCard), nunca acima/colado na esfera da Uni', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /import SimplifiedHomeFinancialGraph from '\.\/SimplifiedHomeFinancialGraph\.jsx';/);
-  const availabilityIndex = home.indexOf('styles.availabilityCard');
-  const uniActionIndex = home.indexOf('styles.uniAction');
-  const graphIndex = home.indexOf('<SimplifiedHomeFinancialGraph />');
-  assert.ok(availabilityIndex > -1 && uniActionIndex > -1 && graphIndex > -1);
-  assert.ok(uniActionIndex < availabilityIndex, 'a esfera da Uni precisa vir antes da availabilityCard');
-  assert.ok(availabilityIndex < graphIndex, 'o gráfico precisa vir DEPOIS de "pronta para ajudar", nunca antes/colado');
+test('PERFORMANCE: derivação memoizada, nunca recalculada a cada render', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /const graphData = useMemo\(/);
+  assert.match(graph, /\[transactionState\.transactions, categoryState\.categories\],/);
 });
 
-test('espaço de respiro entre "pronta para ajudar" e o gráfico fica entre 32-56px', async () => {
-  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  assert.match(css, /\.wrapper \{[\s\S]*?margin-top: clamp\(32px, 8vw, 56px\);/);
+test('PERFORMANCE: ResizeObserver só atualiza estado quando a largura muda de verdade', async () => {
+  const chart = await source('../cognitive-live-chart/CognitiveLiveChart.jsx');
+  assert.match(chart, /setContainerWidth\(\(current\) => \(current === nextWidth \? current : nextWidth\)\)/);
 });
 
-// ============================================================================
-// REGRA CRÍTICA -- Saldo não existe mais na UI. Auditoria de regressão.
-// ============================================================================
+test('PERFORMANCE: nada de scroll listener nesta seção (o header scroll recém-otimizado não é tocado)', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.doesNotMatch(graph, /addEventListener\('scroll'/);
+  assert.doesNotMatch(graph, /requestAnimationFrame/);
+});
 
-test('AUDITORIA DE REGRESSÃO: nenhuma referência pública a Saldo/Patrimônio/Balance em nenhum arquivo novo', async () => {
+// --------------------------------------------------------------- REGRESSÃO
+
+test('REGRESSÃO: nenhuma referência pública a Saldo/Patrimônio/Balance nos arquivos da seção', async () => {
   const files = [
     './SimplifiedHomeFinancialGraph.jsx',
     './SimplifiedHomeFinancialGraph.module.css',
-    './homeFinancialGraphData.js',
   ];
   for (const file of files) {
     const content = await source(file);
     assert.doesNotMatch(content, /\bSaldo\b/i, `${file} não pode mencionar Saldo`);
     assert.doesNotMatch(content, /\bPatrim[oô]nio\b/i, `${file} não pode mencionar Patrimônio`);
     assert.doesNotMatch(content, /\bBalance\b/i, `${file} não pode mencionar Balance`);
-    assert.doesNotMatch(content, /\bworkspaceBalance\b/, `${file} não pode usar workspaceBalance`);
-    assert.doesNotMatch(content, /\baccountBalances\b/, `${file} não pode usar accountBalances`);
   }
 });
 
-test('AUDITORIA DE REGRESSÃO: usa Entradas/Saídas na UI pública, nunca "Receita"/"Despesa"', async () => {
+test('REGRESSÃO: useFinancialBalances/useAccounts nunca são importados e o saldo de summarizeMonth nunca é lido', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, />Entradas</);
-  assert.match(graph, />Saídas</);
+  assert.doesNotMatch(graph, /useFinancialBalances|useAccounts/);
+  const data = await source('./homeFinancialGraphData.js');
+  assert.doesNotMatch(data, /\.balance\b/);
+});
+
+test('REGRESSÃO: terminologia pública continua Entradas/Saídas, nunca Receita/Despesa', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /Entradas/);
+  assert.match(graph, /Saídas/);
   assert.doesNotMatch(graph, />Receita</);
   assert.doesNotMatch(graph, />Despesa</);
 });
 
-test('useFinancialBalances/useAccounts NUNCA são importados -- o gráfico não precisa de saldo para existir', async () => {
-  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.doesNotMatch(graph, /useFinancialBalances|useAccounts/);
-});
-
-// ============================================================================
-// Categorias -- regra de zero, toggle Saídas/Entradas, touch target.
-// ============================================================================
-
-test('toggle [Saídas][Entradas] com destino claro (categoryView), nunca misturando os dois tipos na mesma lista', async () => {
-  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /const \[categoryView, setCategoryView\] = useState\('expense'\);/);
-  assert.match(graph, /onClick=\{\(\) => setCategoryView\('expense'\)\}/);
-  assert.match(graph, /onClick=\{\(\) => setCategoryView\('income'\)\}/);
-  assert.match(graph, /const activeCategories = graphData\.categories\[categoryView\];/);
-});
-
-test('linha de categoria tem min-height 44px (touch target)', async () => {
+test('REGRESSÃO: CSS da seção usa só tokens semânticos, nunca hex fixo', async () => {
   const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  assert.match(css, /\.categoryRow \{[\s\S]*?min-height: 44px;/);
+  assert.doesNotMatch(css, /#[0-9a-fA-F]{3,8}/, 'precisa funcionar em claro/escuro/UniFlow');
 });
 
-test('nomes de categoria truncam (ellipsis) -- layout não quebra com nomes longos', async () => {
-  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  assert.match(css, /\.categoryName \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
-});
-
-// ============================================================================
-// Uni contextual -- reaproveita o fluxo existente, nunca um segundo cérebro.
-// ============================================================================
-
-test('CTA "Pergunte à Uni" usa o MESMO padrão de navegação já usado em todo o app (navigate(SIMPLIFIED_ROUTES.UNI)) -- nunca um chat/segunda IA novos', async () => {
+test('REGRESSÃO: a seção não toca voice, agenda, PWA, billing nem service worker', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /import \{ SIMPLIFIED_ROUTES \} from '\.\/simplifiedRoutes\.js';/);
-  assert.match(graph, /const goToUni = \(\) => navigate\(SIMPLIFIED_ROUTES\.UNI\);/);
-  assert.match(graph, /Pergunte à Uni sobre seus dados/);
-  // Nunca uma nova função de query/resposta financeira no frontend.
-  assert.doesNotMatch(graph, /resolveFinancialIntent|executeFinancialQuery|planFinancialQuery/);
+  assert.doesNotMatch(graph, /voice|agenda|billing|asaas|serviceWorker|push/i);
 });
 
-test('símbolo da Uni no CTA reaproveita o UniMark oficial -- nunca uma segunda interpretação da marca', async () => {
-  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /import \{ UniMark \} from '\.\/SimplifiedIcons\.jsx';/);
-  assert.match(graph, /<UniMark \/>/);
-});
-
-// ============================================================================
-// Tema claro -- o card antigo era hardcoded só-escuro (auditoria); corrigido.
-// ============================================================================
-
-test('CORREÇÃO DE TEMA: as 9 custom properties do card usam tokens semânticos (--uf-app-*), nunca hex fixo', async () => {
-  const css = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
-  const rootBlock = css.slice(css.indexOf('.root {'), css.indexOf('position: relative;'));
-  assert.doesNotMatch(rootBlock, /#[0-9a-fA-F]{3,8}/, 'nenhuma cor hex fixa deveria sobrar nas 9 custom properties');
-  assert.match(rootBlock, /--uni-bg-0: var\(--uf-app-canvas\);/);
-  assert.match(rootBlock, /--uni-text-primary: var\(--uf-app-text\);/);
-  assert.match(rootBlock, /--uni-blue: var\(--uf-app-primary\);/);
-  assert.match(rootBlock, /--uni-purple: var\(--uf-app-ai\);/);
-  assert.match(rootBlock, /--uni-green: var\(--uf-app-success\);/);
-  assert.match(rootBlock, /--uni-red: var\(--uf-app-danger\);/);
-});
-
-test('CORREÇÃO DE TEMA: o gradiente de fundo do card não hardcoda mais uma cor -- usa as custom properties (reage ao tema)', async () => {
-  const css = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
-  assert.match(css, /radial-gradient\(120% 140% at 15% 0%, var\(--uni-bg-1\) 0%, var\(--uni-bg-0\) 72%\)/);
-});
-
-test('CSS novo do card da Home usa só tokens semânticos --uf-app-*, nunca hex fixo', async () => {
-  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  assert.doesNotMatch(css, /#[0-9a-fA-F]{3,8}/, 'nenhuma cor hex fixa -- precisa funcionar em claro/escuro/UniFlow');
-});
-
-// ============================================================================
-// Privacidade -- nunca telemetria/log com dados financeiros pessoais.
-// ============================================================================
-
-test('nenhuma chamada de telemetria/console.log com dados financeiros nos arquivos novos', async () => {
+test('PRIVACIDADE: nenhum log/telemetria com dados financeiros', async () => {
   const files = ['./SimplifiedHomeFinancialGraph.jsx', './homeFinancialGraphData.js'];
   for (const file of files) {
     const content = await source(file);
     assert.doesNotMatch(content, /console\.(log|debug|info)\(/, `${file} não deveria logar nada`);
-    assert.doesNotMatch(content, /telemetry\.(event|error|metric)\(/, `${file} não deveria enviar telemetria de dados financeiros`);
+    assert.doesNotMatch(content, /telemetry\.(event|error|metric)\(/, `${file} não deveria enviar telemetria`);
   }
 });

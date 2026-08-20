@@ -10,7 +10,7 @@
    conteúdo de verdade entra. */
 .placeholder {
   width: 100%;
-  min-height: 380px;
+  min-height: 420px;
   border-radius: 20px;
   background: var(--uf-app-surface);
   opacity: .4;
@@ -34,18 +34,25 @@
   }
 }
 
+/* HOME-GRAPH2: o ritmo horizontal do bloco inteiro vive AQUI, num único
+   padding no card. Antes cada seção tinha o seu (padding-inline: 4px em
+   umas, margin-inline: 4px no botão) e o botão ainda somava width:100% +
+   margin, estourando 8px para fora do container. Agora nenhum filho tem
+   inset próprio: todos herdam a mesma coluna, então as margens do bloco
+   são simétricas por construção, em qualquer largura. */
 .card {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  padding-inline: 4px;
+  box-sizing: border-box;
 }
 
 .header {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-inline: 4px;
 }
 
 .eyebrow {
@@ -63,34 +70,56 @@
   font-weight: 750;
 }
 
+/* ---------------------------------------------------------------- resumo */
+
 .totalsRow {
   display: flex;
-  gap: 12px;
-  padding-inline: 4px;
+  gap: 10px;
 }
 
-.totalItem {
-  flex: 1;
+.totalCard {
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   padding: 12px 14px;
   border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--uf-app-surface);
+  box-sizing: border-box;
 }
 
-.totalLabel {
+.totalHead {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--uf-app-text-2);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 650;
+}
+
+.totalDot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.totalDotIncome {
+  background: var(--uf-app-success);
+}
+
+.totalDotExpense {
+  background: var(--uf-app-danger);
 }
 
 .totalValueIncome,
 .totalValueExpense {
-  font-size: clamp(16px, 4.4vw, 19px);
+  font-size: clamp(17px, 4.6vw, 20px);
   font-weight: 750;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -104,31 +133,47 @@
   color: var(--uf-app-danger-text, var(--uf-app-danger));
 }
 
-.categoriesBlock {
+/* ------------------------------------------------------------- recentes */
+
+.recentBlock {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-inline: 4px;
 }
 
-.categoryToggle {
+.recentHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.recentTitle {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.toggle {
   display: inline-flex;
-  align-self: flex-start;
   padding: 3px;
   border-radius: 999px;
   background: var(--uf-app-surface);
+  border: 1px solid var(--uf-app-border);
   gap: 2px;
 }
 
 .toggleTab,
 .toggleTabActive {
-  min-height: 36px;
-  padding-inline: 16px;
+  min-height: 32px;
+  padding-inline: 14px;
   border: none;
   border-radius: 999px;
   background: transparent;
   color: var(--uf-app-text-2);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -138,18 +183,18 @@
   color: var(--uf-app-on-accent);
 }
 
-.categoryList {
+.recentList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.categoryRow {
+.recentRow {
   width: 100%;
-  min-height: 44px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -162,29 +207,62 @@
   font: inherit;
   cursor: pointer;
   text-align: left;
+  box-sizing: border-box;
 }
 
-.categoryName {
+.recentMain {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recentDescription {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 650;
 }
 
-.categoryValue {
+/* Categoria + data são METADADO do registro -- discretos, e nunca uma
+   série do gráfico. */
+.recentMeta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--uf-app-text-3, var(--uf-app-text-2));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.recentValueIncome,
+.recentValueExpense {
   flex: 0 0 auto;
   font-size: 14px;
   font-weight: 750;
-  color: var(--uf-app-text-2);
+  font-variant-numeric: tabular-nums;
 }
 
-.categoriesEmpty {
+.recentValueIncome {
+  color: var(--uf-app-success-text, var(--uf-app-success));
+}
+
+.recentValueExpense {
+  color: var(--uf-app-danger-text, var(--uf-app-danger));
+}
+
+.recentEmpty {
   margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--uf-app-border);
+  border-radius: 14px;
   color: var(--uf-app-text-2);
   font-size: 13px;
+  text-align: center;
 }
+
+/* ------------------------------------------------------------- CTA Uni */
 
 .askUniButton {
   width: 100%;
@@ -193,7 +271,6 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-inline: 4px;
   padding-inline: 16px;
   border: 1px solid var(--uf-app-border);
   border-radius: 999px;
@@ -202,12 +279,14 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .askUniMark {
   width: 20px;
   height: 20px;
   display: block;
+  flex: 0 0 auto;
 }
 
 .askUniMark img {

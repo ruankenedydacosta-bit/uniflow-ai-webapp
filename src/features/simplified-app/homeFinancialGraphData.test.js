@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildCategoryBreakdown, buildHomeFinancialGraphData } from './homeFinancialGraphData.js';
+import {
+  buildHomeFinancialGraphData,
+  buildHomeSeries,
+  buildRecentMovements,
+} from './homeFinancialGraphData.js';
+import { getMonthRange, summarizeMonth } from './simplifiedRecordsData.js';
 
-const NOW = new Date(2026, 6, 16, 12); // 16/07/2026
+const NOW = new Date(2026, 7, 19, 12); // 19/08/2026
 
 const CATEGORIES = [
   { id: 'cat-food', name: 'Alimentação' },
@@ -11,7 +16,16 @@ const CATEGORIES = [
 ];
 
 function tx({
-  id, type, amount, categoryId = null, date = '2026-07-10', status = 'completed',
+  id,
+  type,
+  amount,
+  categoryId = null,
+  date = '2026-08-10',
+  status = 'completed',
+  description = 'Lançamento',
+  createdAt = '2026-08-10T10:00:00Z',
+  adjustmentTarget = null,
+  adjustmentDelta = null,
 }) {
   return {
     id,
@@ -20,111 +34,210 @@ function tx({
     category_id: categoryId,
     transaction_date: date,
     status,
+    description,
+    created_at: createdAt,
+    adjustment_target: adjustmentTarget,
+    adjustment_delta: adjustmentDelta,
   };
 }
 
 // ============================================================================
-// buildCategoryBreakdown -- REGRA DE ZERO + separação Entrada/Saída.
+// TESTE DA FONTE DE VERDADE -- o bug real da V1.
+//
+// Registros usa summarizeMonth (lançamentos + delta dos ajustes). A V1 do
+// gráfico usava totalByType (só lançamentos), então quem tivesse usado
+// "Atualizar saídas" via os dois números discordarem PARA SEMPRE, mesmo
+// recarregando -- a divergência era de regra, não de cache.
 // ============================================================================
 
-test('categorias com valor > 0 aparecem, ordenadas do maior para o menor', () => {
+test('FONTE DE VERDADE: totais do gráfico saem exatamente de summarizeMonth (mesma função de Registros)', () => {
   const transactions = [
-    tx({ id: 1, type: 'expense', amount: 430, categoryId: 'cat-food' }),
-    tx({ id: 2, type: 'expense', amount: 180, categoryId: 'cat-transport' }),
+    tx({ id: 1, type: 'expense', amount: 92.8, categoryId: 'cat-food', date: '2026-08-05' }),
+    tx({ id: 2, type: 'expense', amount: 50, categoryId: 'cat-food', date: '2026-08-19' }),
+    tx({ id: 3, type: 'income', amount: 300, categoryId: 'cat-salary', date: '2026-08-10' }),
+    tx({
+      id: 4, type: 'adjustment', amount: 0, date: '2026-08-15', adjustmentTarget: 'expense', adjustmentDelta: 50,
+    }),
   ];
-  const result = buildCategoryBreakdown(transactions, CATEGORIES, 'expense');
-  assert.deepEqual(result.map((c) => c.name), ['Alimentação', 'Transporte']);
-  assert.equal(result[0].value, 430);
+
+  const registros = summarizeMonth(transactions);
+  const home = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+
+  assert.equal(home.expense, registros.expense);
+  assert.equal(home.income, registros.income);
 });
 
-test('REGRA DE ZERO: categoria sem nenhum lançamento nunca aparece na lista', () => {
-  const transactions = [tx({ id: 1, type: 'expense', amount: 430, categoryId: 'cat-food' })];
-  const result = buildCategoryBreakdown(transactions, CATEGORIES, 'expense');
-  assert.equal(result.some((c) => c.name === 'Transporte'), false);
-  assert.equal(result.length, 1);
-});
-
-test('REGRA DE ZERO: lançamento de valor zero nunca faz uma categoria aparecer', () => {
-  const transactions = [tx({ id: 1, type: 'expense', amount: 0, categoryId: 'cat-food' })];
-  const result = buildCategoryBreakdown(transactions, CATEGORIES, 'expense');
-  assert.equal(result.length, 0);
-});
-
-test('Entrada e Saída nunca se misturam na mesma agregação -- tipos totalmente separados', () => {
+test('REGRESSÃO DO BUG FÍSICO: ajuste de saídas entra no total (R$ 192,80), nunca os R$ 143 da V1', () => {
   const transactions = [
-    tx({ id: 1, type: 'expense', amount: 430, categoryId: 'cat-food' }),
-    tx({ id: 2, type: 'income', amount: 3000, categoryId: 'cat-salary' }),
-  ];
-  const expenseResult = buildCategoryBreakdown(transactions, CATEGORIES, 'expense');
-  const incomeResult = buildCategoryBreakdown(transactions, CATEGORIES, 'income');
-  assert.deepEqual(expenseResult.map((c) => c.name), ['Alimentação']);
-  assert.deepEqual(incomeResult.map((c) => c.name), ['Salário']);
-});
-
-test('categoria ausente/removida cai em "Sem categoria", nunca quebra', () => {
-  const transactions = [tx({ id: 1, type: 'expense', amount: 100, categoryId: 'cat-deleted' })];
-  const result = buildCategoryBreakdown(transactions, CATEGORIES, 'expense');
-  assert.equal(result[0].name, 'Sem categoria');
-});
-
-test('formattedValue usa moeda brasileira', () => {
-  const transactions = [tx({ id: 1, type: 'expense', amount: 430, categoryId: 'cat-food' })];
-  const result = buildCategoryBreakdown(transactions, CATEGORIES, 'expense');
-  assert.match(result[0].formattedValue, /R\$\s*430/);
-});
-
-// ============================================================================
-// buildHomeFinancialGraphData -- fonte única, nunca saldo, período do mês.
-// ============================================================================
-
-test('agrega entradas e saídas do período (mês atual), nunca saldo', () => {
-  const transactions = [
-    tx({ id: 1, type: 'income', amount: 3000, categoryId: 'cat-salary', date: '2026-07-05' }),
-    tx({ id: 2, type: 'expense', amount: 430, categoryId: 'cat-food', date: '2026-07-10' }),
+    tx({ id: 1, type: 'expense', amount: 92.8, categoryId: 'cat-food', date: '2026-08-05' }),
+    tx({ id: 2, type: 'expense', amount: 50, categoryId: 'cat-food', date: '2026-08-19' }),
+    tx({
+      id: 3, type: 'adjustment', amount: 0, date: '2026-08-15', adjustmentTarget: 'expense', adjustmentDelta: 50,
+    }),
   ];
   const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
-  assert.equal(result.income, 3000);
-  assert.equal(result.expense, 430);
-  assert.equal(result.hasMovements, true);
-  assert.equal('balance' in result, false, 'o resultado nunca pode conter um campo de saldo');
+  assert.equal(result.expense, 192.8);
+  // Centavos preservados na UI -- nunca arredondar 192,80 para "R$ 193".
+  assert.match(result.expenseLabel, /192,80/);
+});
+
+test('PRECISÃO: valores com centavos nunca são arredondados nos cards', () => {
+  const transactions = [tx({ id: 1, type: 'income', amount: 1234.56, categoryId: 'cat-salary' })];
+  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+  assert.match(result.incomeLabel, /1\.234,56/);
+});
+
+test('ajuste com target "balance" nunca entra em entradas/saídas (mesma regra de Registros)', () => {
+  const transactions = [
+    tx({ id: 1, type: 'expense', amount: 100, categoryId: 'cat-food' }),
+    tx({
+      id: 2, type: 'adjustment', amount: 0, adjustmentTarget: 'balance', adjustmentDelta: 999,
+    }),
+  ];
+  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+  assert.equal(result.expense, 100);
+});
+
+test('nenhum campo de saldo é exposto no resultado', () => {
+  const result = buildHomeFinancialGraphData({ transactions: [], categories: [], now: NOW });
+  assert.equal('balance' in result, false);
   assert.equal('workspaceBalance' in result, false);
 });
 
-test('só considera transações status=completed dentro do período do mês corrente', () => {
-  const transactions = [
-    tx({
-      id: 1, type: 'expense', amount: 999, categoryId: 'cat-food', date: '2026-07-10', status: 'pending',
-    }),
-    tx({ id: 2, type: 'expense', amount: 50, categoryId: 'cat-food', date: '2026-06-10' }),
-  ];
-  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
-  assert.equal(result.expense, 0);
-  assert.equal(result.hasMovements, false);
+// ============================================================================
+// Período -- os totais e a curva pertencem ao MESMO mês exibido.
+// ============================================================================
+
+test('período usa getMonthRange (mesma função de Registros) e rotula o mês corrente', () => {
+  const result = buildHomeFinancialGraphData({ transactions: [], categories: [], now: NOW });
+  assert.equal(result.monthRange.dateFrom, getMonthRange(NOW).dateFrom);
+  assert.equal(result.monthRange.dateTo, getMonthRange(NOW).dateTo);
+  assert.match(result.periodLabel, /agosto de 2026/i);
 });
 
-test('sem transações no período: hasMovements=false e nenhum valor inventado', () => {
+test('curva do mês corrente para no dia de hoje, nunca num dia futuro do mês', () => {
+  const result = buildHomeFinancialGraphData({ transactions: [], categories: [], now: NOW });
+  assert.equal(result.chart.todayDay, 19);
+});
+
+// ============================================================================
+// Série -- último ponto da curva SEMPRE bate com o total exibido.
+// ============================================================================
+
+test('último ponto da série é idêntico aos totais dos cards (curva e cards nunca divergem)', () => {
+  const transactions = [
+    tx({ id: 1, type: 'expense', amount: 92.8, date: '2026-08-05' }),
+    tx({ id: 2, type: 'income', amount: 300, date: '2026-08-10' }),
+    tx({
+      id: 3, type: 'adjustment', amount: 0, date: '2026-08-15', adjustmentTarget: 'expense', adjustmentDelta: 50,
+    }),
+  ];
+  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+  const lastPoint = result.chart.data[result.chart.data.length - 1];
+  assert.equal(lastPoint.despesa, result.expense);
+  assert.equal(lastPoint.receita, result.income);
+});
+
+test('série é acumulada e monotônica, começando no dia 1', () => {
+  const transactions = [
+    tx({ id: 1, type: 'expense', amount: 10, date: '2026-08-03' }),
+    tx({ id: 2, type: 'expense', amount: 10, date: '2026-08-12' }),
+  ];
+  const series = buildHomeSeries(transactions, getMonthRange(NOW), 19);
+  assert.equal(series[0].day, 1);
+  assert.equal(series[series.length - 1].day, 19);
+  for (let index = 1; index < series.length; index += 1) {
+    assert.ok(series[index].despesa >= series[index - 1].despesa);
+  }
+});
+
+// ============================================================================
+// Recentes -- no máximo 2 por tipo, ordem idêntica à de Registros.
+// ============================================================================
+
+test('no máximo 2 saídas recentes, mesmo com muitos lançamentos', () => {
+  const transactions = [1, 2, 3, 4, 5].map((n) => tx({
+    id: n, type: 'expense', amount: n * 10, date: `2026-08-0${n}`, createdAt: `2026-08-0${n}T10:00:00Z`,
+  }));
+  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+  assert.equal(result.recent.expense.length, 2);
+});
+
+test('no máximo 2 entradas recentes', () => {
+  const transactions = [1, 2, 3, 4].map((n) => tx({
+    id: n, type: 'income', amount: n * 10, date: `2026-08-0${n}`, createdAt: `2026-08-0${n}T10:00:00Z`,
+  }));
+  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+  assert.equal(result.recent.income.length, 2);
+});
+
+test('ordem dos recentes é a mais nova primeiro (transaction_date desc)', () => {
+  const transactions = [
+    tx({ id: 'antiga', type: 'expense', amount: 10, date: '2026-08-02' }),
+    tx({ id: 'nova', type: 'expense', amount: 20, date: '2026-08-18' }),
+    tx({ id: 'media', type: 'expense', amount: 15, date: '2026-08-10' }),
+  ];
+  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+  assert.deepEqual(result.recent.expense.map((m) => m.id), ['nova', 'media']);
+});
+
+test('movimentação recém-confirmada vira o PRIMEIRO item da lista', () => {
+  const before = [
+    tx({ id: 'antiga', type: 'expense', amount: 92.8, date: '2026-08-05' }),
+  ];
+  const after = [
+    ...before,
+    tx({
+      id: 'nova-50', type: 'expense', amount: 50, categoryId: 'cat-food', date: '2026-08-19', description: 'Mercado',
+    }),
+  ];
+  const result = buildHomeFinancialGraphData({ transactions: after, categories: CATEGORIES, now: NOW });
+  assert.equal(result.recent.expense[0].id, 'nova-50');
+  assert.equal(result.recent.expense[0].description, 'Mercado');
+  assert.match(result.recent.expense[0].formattedAmount, /50,00/);
+  // ...e o total acompanha na mesma derivação.
+  assert.equal(result.expense, 142.8);
+});
+
+test('entradas e saídas nunca se misturam na lista de recentes', () => {
+  const transactions = [
+    tx({ id: 'e1', type: 'expense', amount: 10, date: '2026-08-18' }),
+    tx({ id: 'i1', type: 'income', amount: 20, date: '2026-08-19' }),
+  ];
+  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+  assert.deepEqual(result.recent.expense.map((m) => m.id), ['e1']);
+  assert.deepEqual(result.recent.income.map((m) => m.id), ['i1']);
+});
+
+test('categoria aparece como METADADO do registro, com fallback seguro', () => {
+  const transactions = [
+    tx({ id: 1, type: 'expense', amount: 10, categoryId: 'cat-food', date: '2026-08-18' }),
+    tx({ id: 2, type: 'expense', amount: 10, categoryId: 'removida', date: '2026-08-17' }),
+  ];
+  const recent = buildRecentMovements(transactions, CATEGORIES, 'expense');
+  assert.equal(recent[0].categoryName, 'Alimentação');
+  assert.equal(recent[1].categoryName, 'Sem categoria');
+});
+
+test('lançamentos não concluídos nunca aparecem nos recentes nem nos totais', () => {
+  const transactions = [
+    tx({ id: 'pendente', type: 'expense', amount: 999, date: '2026-08-19', status: 'pending' }),
+  ];
+  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
+  assert.equal(result.recent.expense.length, 0);
+  assert.equal(result.expense, 0);
+});
+
+// ============================================================================
+// Estado vazio -- nunca dado fictício.
+// ============================================================================
+
+test('sem movimentações: hasMovements=false, listas vazias, nenhum valor inventado', () => {
   const result = buildHomeFinancialGraphData({ transactions: [], categories: CATEGORIES, now: NOW });
   assert.equal(result.hasMovements, false);
   assert.equal(result.income, 0);
   assert.equal(result.expense, 0);
-  assert.deepEqual(result.categories.expense, []);
-  assert.deepEqual(result.categories.income, []);
-});
-
-test('categories separa expense/income prontos para o toggle [Saídas][Entradas]', () => {
-  const transactions = [
-    tx({ id: 1, type: 'income', amount: 3000, categoryId: 'cat-salary', date: '2026-07-05' }),
-    tx({ id: 2, type: 'expense', amount: 430, categoryId: 'cat-food', date: '2026-07-10' }),
-  ];
-  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
-  assert.deepEqual(result.categories.expense.map((c) => c.name), ['Alimentação']);
-  assert.deepEqual(result.categories.income.map((c) => c.name), ['Salário']);
-});
-
-test('chart.data vem da mesma série acumulada usada pelo módulo Financeiro (buildCumulativeSeries)', () => {
-  const transactions = [tx({ id: 1, type: 'income', amount: 500, categoryId: 'cat-salary', date: '2026-07-10' })];
-  const result = buildHomeFinancialGraphData({ transactions, categories: CATEGORIES, now: NOW });
-  assert.ok(Array.isArray(result.chart.data));
-  assert.ok(result.chart.data.length > 0);
-  assert.equal(typeof result.chart.todayDay, 'number');
+  assert.deepEqual(result.recent.expense, []);
+  assert.deepEqual(result.recent.income, []);
+  assert.ok(result.chart.data.length > 0, 'a curva existe (linha-base), mesmo sem dados');
 });

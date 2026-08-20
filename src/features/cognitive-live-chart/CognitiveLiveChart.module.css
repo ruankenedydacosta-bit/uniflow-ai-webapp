@@ -40,12 +40,22 @@
   overflow: hidden;
 }
 
+/* HOME-GRAPH2: o teto de 430px existia sem centralização. Num flex column
+   (align-items: stretch), um item com max-width menor que o container é
+   alinhado ao INÍCIO da linha -- ou seja, colado à esquerda, com toda a
+   sobra caindo do lado direito. Era exatamente o sintoma relatado ("plot
+   deslocado para a esquerda, espaço maior à direita") em qualquer largura
+   acima de 430px CSS: tablet, landscape, dobrável ou Android com tamanho
+   de tela reduzido nas configurações. `margin-inline: auto` divide a sobra
+   igualmente, sem fixar padding para nenhum aparelho específico. */
 .rootCompact {
   max-width: 430px;
+  margin-inline: auto;
 }
 
 .rootDetailed {
   max-width: 430px;
+  margin-inline: auto;
 }
 
 .toolbar {
