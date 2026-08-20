@@ -12,8 +12,13 @@ import styles from './simplifiedDownloadSuccessCard.module.css';
  * chamador (ver downloadedFileShare.js/canOpenDownloadedFile): quando a
  * capacidade real não existe no dispositivo, o botão simplesmente não é
  * renderizado -- nunca um botão morto que não faz nada ao ser tocado.
+ *
+ * Não existe estado de erro aqui, de propósito: o download já aconteceu e
+ * o arquivo ESTÁ salvo. Se abrir/compartilhar falhar, o chamador apenas
+ * para de passar `canOpen` -- sobra a confirmação, nunca uma mensagem de
+ * erro sobre algo que não impediu o usuário de ter o arquivo.
  */
-function SimplifiedDownloadSuccessCard({ filename, canOpen = false, onOpen, openError = null }) {
+function SimplifiedDownloadSuccessCard({ filename, canOpen = false, onOpen }) {
   return (
     <section className={styles.card} role="status" aria-live="polite" data-download-success>
       <span className={styles.mark} aria-hidden="true"><UniMark /></span>
@@ -31,8 +36,6 @@ function SimplifiedDownloadSuccessCard({ filename, canOpen = false, onOpen, open
             Abrir arquivo
           </button>
         ) : null}
-
-        {openError ? <span className={styles.openError} role="alert">{openError}</span> : null}
       </div>
     </section>
   );

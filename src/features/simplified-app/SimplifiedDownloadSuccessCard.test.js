@@ -61,9 +61,19 @@ test('CSS usa só tokens semânticos --uf-app-*, nunca hex fixo -- acompanha Uni
 
 test('botão Abrir arquivo respeita 44px de toque e foco visível', async () => {
   const css = await source('./simplifiedDownloadSuccessCard.module.css');
-  const button = css.slice(css.indexOf('.openButton {'), css.indexOf('.openError'));
+  const button = css.slice(css.indexOf('.openButton {'), css.indexOf('@media (max-width'));
   assert.match(button, /min-height: 44px;/);
   assert.match(button, /:focus-visible/);
+});
+
+// SHARE-TRUTHFUL1: falhar em ABRIR não é um erro para o usuário -- o
+// download já deu certo e o arquivo está salvo. O card nunca acusa erro:
+// o chamador apenas para de passar canOpen e some o botão.
+test('card não tem nenhum estado/slot de erro -- falhar em abrir nunca vira mensagem de erro', async () => {
+  const card = await source('./SimplifiedDownloadSuccessCard.jsx');
+  assert.doesNotMatch(card, /openError|role="alert"/);
+  const css = await source('./simplifiedDownloadSuccessCard.module.css');
+  assert.doesNotMatch(css, /openError/);
 });
 
 // REGRESSÃO (pego em verificação visual, invisível para teste estrutural):

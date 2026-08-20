@@ -130,13 +130,6 @@
   outline-offset: 3px;
 }
 
-.openError {
-  margin-top: 6px;
-  color: var(--uf-app-danger-text);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 @media (max-width: 359px) {
   .card {
     grid-template-columns: 1fr;

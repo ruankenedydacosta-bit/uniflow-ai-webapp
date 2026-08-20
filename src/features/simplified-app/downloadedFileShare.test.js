@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import {
   buildDownloadedFile,
   canOpenDownloadedFile,
   openDownloadedFile,
+  resetDownloadedFileShareCapability,
 } from './downloadedFileShare.js';
 
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -11,6 +12,11 @@ const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
 function makeFile(name = 'uniflow-relatorio-2026-08.xlsx') {
   return buildDownloadedFile(new Blob(['conteudo'], { type: XLSX_TYPE }), name);
 }
+
+// A capacidade "aprendida" é estado de MÓDULO (fato do dispositivo, não do
+// componente) -- sem este reset, um caso que simula falha vazaria para os
+// seguintes.
+beforeEach(() => resetDownloadedFileShareCapability());
 
 // ============================================================================
 // DOWNLOAD-SUCCESS1 -- capacidade real de "Abrir arquivo" (Web Share API
@@ -96,4 +102,69 @@ test('openDownloadedFile nunca lança -- sempre resolve em { ok, reason }', asyn
   const result = await openDownloadedFile(makeFile(), {});
   assert.equal(result.ok, false);
   assert.equal(typeof result.reason, 'string');
+});
+
+// ============================================================================
+// SHARE-TRUTHFUL1 -- o bug relatado: canShare({files}) responde `true` e o
+// share() real falha mesmo assim (WebView sem ponte de compartilhamento,
+// nenhum app capaz de receber o tipo, política do ambiente). Não dá para
+// prever -- então a capacidade é APRENDIDA com a falha real.
+// ============================================================================
+
+test('navegador que MENTE (canShare true, share falha) deixa de ser considerado capaz -- botão nunca mais é oferecido na sessão', async () => {
+  const lying = { canShare: () => true, share: async () => { throw new Error('sem alvo'); } };
+  const file = makeFile();
+
+  // Antes da falha, a promessa do navegador é aceita.
+  assert.equal(canOpenDownloadedFile(file, lying), true);
+
+  assert.deepEqual(await openDownloadedFile(file, lying), { ok: false, reason: 'failed' });
+
+  // Depois da falha real, a promessa não vale mais -- nem para este
+  // arquivo, nem para um download seguinte.
+  assert.equal(canOpenDownloadedFile(file, lying), false);
+  assert.equal(canOpenDownloadedFile(makeFile('outro-relatorio.xlsx'), lying), false);
+});
+
+test('depois de aprendida a incapacidade, openDownloadedFile nem tenta compartilhar de novo', async () => {
+  let attempts = 0;
+  const lying = {
+    canShare: () => true,
+    share: async () => { attempts += 1; throw new Error('sem alvo'); },
+  };
+
+  await openDownloadedFile(makeFile(), lying);
+  assert.equal(attempts, 1);
+
+  const second = await openDownloadedFile(makeFile(), lying);
+  assert.deepEqual(second, { ok: false, reason: 'unsupported' });
+  assert.equal(attempts, 1, 'não insiste em um share que já provou não funcionar');
+});
+
+// Cancelar é escolha do usuário: o dispositivo continua capaz, e o botão
+// deve continuar disponível para ele tentar de novo.
+test('cancelamento do usuário NÃO marca o dispositivo como incapaz', async () => {
+  const abort = Object.assign(new Error('cancelado'), { name: 'AbortError' });
+  const cancelling = { canShare: () => true, share: async () => { throw abort; } };
+  const file = makeFile();
+
+  assert.deepEqual(await openDownloadedFile(file, cancelling), { ok: false, reason: 'cancelled' });
+  assert.equal(canOpenDownloadedFile(file, cancelling), true, 'cancelar não tira a capacidade');
+});
+
+test('share bem-sucedido preserva a capacidade para os próximos downloads', async () => {
+  const working = { canShare: () => true, share: async () => {} };
+  const file = makeFile();
+
+  assert.deepEqual(await openDownloadedFile(file, working), { ok: true, reason: null });
+  assert.equal(canOpenDownloadedFile(file, working), true);
+});
+
+test('a incapacidade aprendida NÃO é persistida -- reabrir o app reavalia (reset devolve ao estado inicial)', async () => {
+  const lying = { canShare: () => true, share: async () => { throw new Error('sem alvo'); } };
+  await openDownloadedFile(makeFile(), lying);
+  assert.equal(canOpenDownloadedFile(makeFile(), lying), false);
+
+  resetDownloadedFileShareCapability();
+  assert.equal(canOpenDownloadedFile(makeFile(), lying), true);
 });

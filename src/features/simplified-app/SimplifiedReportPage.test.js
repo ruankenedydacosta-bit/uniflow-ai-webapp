@@ -216,9 +216,21 @@ test('capacidade de abrir é resolvida contra o arquivo real, uma vez, no sucess
   assert.match(page, /canOpen: canOpenDownloadedFile\(file\)/);
 });
 
-test('cancelar a folha de compartilhamento NÃO vira mensagem de erro -- só falha real', async () => {
+// SHARE-TRUTHFUL1: canShare({files}) pode responder `true` e o share()
+// real falhar mesmo assim. Quando isso acontece, o botão SOME (a tela
+// vira só a confirmação de download) -- nunca uma mensagem de erro sobre
+// algo que não impediu o usuário de ter o arquivo.
+test('cancelar mantém o botão (usuário pode tentar de novo); falha real ESCONDE o botão, sem mensagem de erro', async () => {
   const page = await source('./SimplifiedReportPage.jsx');
-  assert.match(page, /if \(!result\.ok && result\.reason === 'failed'\) \{/);
+  const handler = page.slice(
+    page.indexOf('async function handleOpenFile'),
+    page.indexOf('async function handleDownload'),
+  );
+  assert.match(handler, /if \(result\.reason === 'cancelled'\) return;/);
+  assert.match(handler, /setDownloadResult\(\(current\) => \(current \? \{ \.\.\.current, canOpen: false \} : current\)\);/);
+  // Nenhuma mensagem de erro de "abrir" sobrou em lugar nenhum da tela.
+  assert.doesNotMatch(page, /Não foi possível abrir o arquivo/);
+  assert.doesNotMatch(page, /openError/);
 });
 
 test('trocar de mês limpa o card e o arquivo guardado -- nunca oferece abrir o mês errado', async () => {

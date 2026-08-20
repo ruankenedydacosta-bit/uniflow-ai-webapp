@@ -42,7 +42,6 @@ function SimplifiedReportPage() {
   // arquivo" (Web Share). `canOpen` é resolvido UMA vez, no momento do
   // sucesso, contra este arquivo específico -- ver downloadedFileShare.js.
   const [downloadResult, setDownloadResult] = useState(null);
-  const [openError, setOpenError] = useState(null);
 
   // Trocar de mês invalida o card: ele afirma que "o relatório" foi
   // baixado, e a partir daqui o relatório na tela é outro. Some junto com
@@ -50,24 +49,26 @@ function SimplifiedReportPage() {
   function handleMoveMonth(delta) {
     setDownloadState('idle');
     setDownloadResult(null);
-    setOpenError(null);
     moveMonth(delta);
   }
 
   async function handleOpenFile() {
-    setOpenError(null);
     const result = await openDownloadedFile(downloadResult?.file);
-    // Cancelar a folha de compartilhamento é escolha do usuário, nunca
-    // erro -- só uma falha real vira mensagem.
-    if (!result.ok && result.reason === 'failed') {
-      setOpenError('Não foi possível abrir o arquivo. Ele continua salvo no seu dispositivo.');
-    }
+    if (result.ok) return;
+    // Cancelar a folha de compartilhamento é escolha do usuário -- o botão
+    // continua ali para ele tentar de novo.
+    if (result.reason === 'cancelled') return;
+    // Falha real: o navegador prometeu suporte (canShare disse sim) e não
+    // entregou. Em vez de acusar erro -- o download JÁ deu certo, o arquivo
+    // está salvo --, o botão some e sobra só a confirmação.
+    // downloadedFileShare.js também marca o dispositivo, então nenhum
+    // download seguinte volta a oferecer o botão nesta sessão.
+    setDownloadResult((current) => (current ? { ...current, canOpen: false } : current));
   }
 
   async function handleDownload() {
     setDownloadState('preparing');
     setDownloadResult(null);
-    setOpenError(null);
     try {
       // RELATORIO-SPREADSHEET1: exceljs só é baixado aqui, no toque do
       // usuário -- nunca entra no bundle inicial da Home/Relatório.
@@ -161,7 +162,6 @@ function SimplifiedReportPage() {
           filename={downloadResult.filename}
           canOpen={downloadResult.canOpen}
           onOpen={handleOpenFile}
-          openError={openError}
         />
       ) : null}
 

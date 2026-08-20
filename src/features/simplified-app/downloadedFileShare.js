@@ -35,12 +35,40 @@ export function buildDownloadedFile(blob, filename) {
 }
 
 /**
- * `true` só quando ESTE arquivo específico pode mesmo ser compartilhado.
- * canShare({ files }) é a única checagem confiável: navigator.share existe
- * em navegadores que não aceitam arquivos, e o suporte varia por tipo de
- * arquivo. Nunca lança -- navegador sem a API é só `false`.
+ * SHARE-TRUTHFUL1: alguns navegadores/WebViews respondem `true` em
+ * canShare({ files }) e mesmo assim falham no share() real (nenhum app
+ * capaz de receber o tipo, WebView sem a ponte de compartilhamento,
+ * política do ambiente). Não dá para prever isso: canShare é a única
+ * resposta que o navegador oferece, e às vezes ela mente -- foi
+ * exatamente esse o bug relatado (botão aparecia e o toque só produzia
+ * "Não foi possível abrir o arquivo").
+ *
+ * Por isso a capacidade também é APRENDIDA: quando um share falha de
+ * verdade (nunca por cancelamento do usuário), este dispositivo provou que
+ * não consegue, e o botão deixa de ser oferecido. É fato de DISPOSITIVO,
+ * não de componente -- por isso mora aqui no módulo e não em estado do
+ * React: vale para qualquer download seguinte na mesma sessão.
+ *
+ * Não é persistido de propósito: uma falha pontual (nenhum app instalado
+ * naquele momento) não deve desligar o recurso para sempre -- na próxima
+ * abertura do app a capacidade é avaliada de novo.
+ */
+let sharingProvenUnavailable = false;
+
+/** Só para testes -- devolve o módulo ao estado inicial entre casos. */
+export function resetDownloadedFileShareCapability() {
+  sharingProvenUnavailable = false;
+}
+
+/**
+ * `true` só quando ESTE arquivo específico pode mesmo ser compartilhado E
+ * o dispositivo ainda não provou o contrário. canShare({ files }) é a
+ * melhor checagem prévia disponível: navigator.share existe em navegadores
+ * que não aceitam arquivos, e o suporte varia por tipo de arquivo. Nunca
+ * lança -- navegador sem a API é só `false`.
  */
 export function canOpenDownloadedFile(file, navigatorRef = globalThis.navigator) {
+  if (sharingProvenUnavailable) return false;
   if (!file) return false;
   if (typeof navigatorRef?.share !== 'function') return false;
   if (typeof navigatorRef?.canShare !== 'function') return false;
@@ -70,7 +98,12 @@ export async function openDownloadedFile(file, navigatorRef = globalThis.navigat
     return { ok: true, reason: null };
   } catch (error) {
     // AbortError = usuário cancelou/fechou a folha de compartilhamento.
+    // Não é falha do dispositivo -- a capacidade continua valendo.
     if (error?.name === 'AbortError') return { ok: false, reason: 'cancelled' };
+    // Falha real: o navegador disse que conseguia e não conseguiu. A partir
+    // daqui o botão não é mais oferecido nesta sessão (ver
+    // sharingProvenUnavailable) -- resta só a confirmação de download.
+    sharingProvenUnavailable = true;
     return { ok: false, reason: 'failed' };
   }
 }
