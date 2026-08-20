@@ -276,6 +276,34 @@ test('Home usa a mesma saudação estruturada no texto e no TTS', async () => {
   assert.doesNotMatch(home, /<p>Seja bem-vindo,/);
 });
 
+// ============================================================================
+// UNIUPD1 -- destaque de novidade pendente na Home. A frase institucional
+// original é preservada quando não há nada pendente; nunca duplica
+// mecanismo/estado (useUniUpdates com limit:1, mesmo hook usado por Sobre).
+// ============================================================================
+
+test('Home pede só a novidade mais recente (limit:1) -- nunca carrega o histórico inteiro', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /const \{ pendingUpdate: pendingUniUpdate \} = useUniUpdates\(\{ limit: 1 \}\);/);
+});
+
+test('sem novidade pendente, a frase institucional original continua exatamente igual', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(
+    home,
+    /Estou aqui para ajudar você a tomar as <strong>melhores decisões<\/strong> financeiras\./,
+  );
+});
+
+test('com novidade pendente, mostra "🚀 A Uni evoluiu" e o botão "Ver novidades" navega para o deep link correto', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const bannerStart = home.indexOf('pendingUniUpdate ? (');
+  const bannerSlice = home.slice(bannerStart, bannerStart + 600);
+  assert.match(bannerSlice, /🚀 <strong>A Uni evoluiu<\/strong>/);
+  assert.match(bannerSlice, /Ver novidades/);
+  assert.match(bannerSlice, /navigate\(buildNovidadeUrl\(pendingUniUpdate\.id\)\)/);
+});
+
 test('saudação automática usa o gesto seguinte somente quando o Safari bloqueia o autoplay', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /retryWelcomeOnGestureRef\.current = autoplayBlocked/);
@@ -901,7 +929,12 @@ test('HOTFIX CRÍTICO: hasActiveVoiceGesture (estado reativo) é mantido em sinc
 test('somente "Ver conversa completa" e o link de editar uma confirmação pendente navegam para /app/uni', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const navigateCalls = [...home.matchAll(/navigate\(([^)]*)\)/g)].map((match) => match[1]);
-  assert.deepEqual(navigateCalls, ['SIMPLIFIED_ROUTES.UNI']);
+  // UNIUPD1: o botão "Ver novidades" também chama navigate(), mas para
+  // /app/conta/sobre?novidade=<id> (buildNovidadeUrl) -- nunca para
+  // SIMPLIFIED_ROUTES.UNI. Este teste continua garantindo que SÓ os dois
+  // pontos abaixo apontam para a conversa com a Uni.
+  const uniNavigateCalls = navigateCalls.filter((call) => call === 'SIMPLIFIED_ROUTES.UNI');
+  assert.deepEqual(uniNavigateCalls, ['SIMPLIFIED_ROUTES.UNI']);
   assert.match(home, /onEditAction={\(\) => navigate\(SIMPLIFIED_ROUTES\.UNI\)}/);
   assert.match(home, /<Link className={styles\.detailsLink} to={SIMPLIFIED_ROUTES\.UNI}>Ver conversa completa<\/Link>/);
 });

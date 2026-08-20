@@ -711,6 +711,45 @@
   font-weight: 600;
 }
 
+/* UNIUPD1: destaque de "A Uni evoluiu" na Home -- substitui a frase
+   institucional só enquanto existir uma novidade pendente (ver
+   useUniUpdates.js). */
+.uniUpdateBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 8px;
+}
+
+.uniUpdateBanner .greetingMessage {
+  margin: 0;
+}
+
+.uniUpdateBannerButton {
+  min-height: 40px;
+  padding: 9px 18px;
+  border: 1px solid rgba(45, 212, 191, .72);
+  border-radius: 20px;
+  background: linear-gradient(105deg, rgba(37, 99, 235, .22), rgba(124, 58, 237, .3), rgba(16, 185, 129, .2));
+  box-shadow: 0 0 18px var(--uf-app-primary-subtle);
+  color: var(--uf-app-cyan);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 780;
+  letter-spacing: .02em;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+.uniUpdateBannerButton:hover {
+  border-color: var(--uf-app-focus);
+  box-shadow: 0 0 24px rgba(34, 211, 238, .24);
+}
+
+.uniUpdateBannerButton:active {
+  transform: scale(.98);
+}
+
 .voiceActivation {
   display: grid;
   justify-items: start;

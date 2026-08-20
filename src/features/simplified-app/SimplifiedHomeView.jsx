@@ -39,6 +39,8 @@ import {
   RADIAL_VOICE_EXIT_MS,
   smoothRadialVoiceLevel,
 } from './radialVoiceWaveform.js';
+import { buildNovidadeUrl } from './uniUpdatesData.js';
+import { useUniUpdates } from './useUniUpdates.js';
 import styles from './simplifiedApp.module.css';
 
 const SPEAKING_VOICE_STATUSES = new Set([VOICE_TTS_STATUS.LOADING, VOICE_TTS_STATUS.PLAYING]);
@@ -510,6 +512,9 @@ function SimplifiedHomeView({
 }) {
   const navigate = useNavigate();
   const voiceInput = useSharedUniVoiceInput();
+  // UNIUPD1: limit:1 -- a Home so precisa saber "existe novidade pendente?",
+  // nunca carrega o historico inteiro (isso fica com Sobre a UniFlow AI).
+  const { pendingUpdate: pendingUniUpdate } = useUniUpdates({ limit: 1 });
   const greeting = useMemo(
     () => resolveSimplifiedGreeting(profile, user),
     [profile, user],
@@ -1131,9 +1136,24 @@ function SimplifiedHomeView({
       <section className={styles.greeting} aria-labelledby="simplified-home-title">
         <p>{greeting.visualGreeting.eyebrow}</p>
         <h1 id="simplified-home-title">{greeting.displayName}</h1>
-        <p className={styles.greetingMessage}>
-          Estou aqui para ajudar você a tomar as <strong>melhores decisões</strong> financeiras.
-        </p>
+        {pendingUniUpdate ? (
+          <div className={styles.uniUpdateBanner}>
+            <p className={styles.greetingMessage}>
+              🚀 <strong>A Uni evoluiu</strong>
+            </p>
+            <button
+              type="button"
+              className={styles.uniUpdateBannerButton}
+              onClick={() => navigate(buildNovidadeUrl(pendingUniUpdate.id))}
+            >
+              Ver novidades
+            </button>
+          </div>
+        ) : (
+          <p className={styles.greetingMessage}>
+            Estou aqui para ajudar você a tomar as <strong>melhores decisões</strong> financeiras.
+          </p>
+        )}
         {voiceActivationRequired ? (
           <div className={styles.voiceActivation}>
             <button

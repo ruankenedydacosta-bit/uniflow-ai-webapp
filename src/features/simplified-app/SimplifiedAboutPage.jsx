@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { APP_NAME, APP_TAGLINE, APP_VERSION } from './appIdentity.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
@@ -18,6 +18,8 @@ import {
   SparkleIcon,
   UniMark,
 } from './SimplifiedIcons.jsx';
+import { formatUpdateDate } from './uniUpdatesData.js';
+import { useUniUpdates } from './useUniUpdates.js';
 import styles from './simplifiedAbout.module.css';
 
 function BackIcon() {
@@ -94,6 +96,23 @@ const FUTURE_ITEMS = [
 
 function SimplifiedAboutPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const highlightedUpdateId = searchParams.get('novidade');
+
+  // UNIUPD1: sem limit -- esta é a única tela que precisa do histórico
+  // completo (a Home só pede a mais recente, via limit:1).
+  const { updates: uniUpdates, isLoading: uniUpdatesLoading, markAsSeen } = useUniUpdates();
+
+  // Deep link vindo da notificação/banner da Home (?novidade=<id>): rola até
+  // a entrada correspondente assim que o histórico termina de carregar.
+  // Mesmo padrão de deep link por query param já usado pela Agenda
+  // (?item=<id>).
+  useEffect(() => {
+    if (!highlightedUpdateId || uniUpdatesLoading) return undefined;
+    const node = document.getElementById(`novidade-${highlightedUpdateId}`);
+    node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return undefined;
+  }, [highlightedUpdateId, uniUpdatesLoading]);
 
   return (
     <div className={styles.page} data-simplified-about>
@@ -117,6 +136,50 @@ function SimplifiedAboutPage() {
         <span className={styles.heroVersion}>v{APP_VERSION}</span>
         <p className={styles.heroTagline}>{APP_TAGLINE}</p>
       </section>
+
+      <Reveal className={styles.card} aria-label="Novidades da Uni">
+        <div className={styles.cardHeaderRow}>
+          <span className={styles.cardHeaderIcon} aria-hidden="true"><SparkleIcon /></span>
+          <h2>✨ Novidades da Uni</h2>
+        </div>
+        {uniUpdates.length === 0 ? (
+          <p>Nenhuma novidade publicada ainda.</p>
+        ) : (
+          <ul className={styles.updateList}>
+            {uniUpdates.map((update) => (
+              <li
+                key={update.id}
+                id={`novidade-${update.id}`}
+                className={`${styles.updateItem} ${highlightedUpdateId === update.id ? styles.updateItemHighlighted : ''}`.trim()}
+              >
+                <div className={styles.updateItemHeader}>
+                  <span className={styles.updateIcon} aria-hidden="true">{update.icon}</span>
+                  <strong className={styles.updateVersion}>Versão {update.version}</strong>
+                  <span className={styles.updateDate}>{formatUpdateDate(update.created_at)}</span>
+                </div>
+                <strong className={styles.updateTitle}>{update.title}</strong>
+                {update.description ? (
+                  <p className={styles.updateDescription}>{update.description}</p>
+                ) : null}
+                {Array.isArray(update.features) && update.features.length > 0 ? (
+                  <ul className={styles.updateFeatures}>
+                    {update.features.map((feature) => <li key={feature}>{feature}</li>)}
+                  </ul>
+                ) : null}
+                {!update.seen ? (
+                  <button
+                    type="button"
+                    className={styles.updateCompleteButton}
+                    onClick={() => markAsSeen(update.id)}
+                  >
+                    Atualização concluída
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Reveal>
 
       <Reveal className={styles.card} aria-label="Quem somos">
         <h2>Quem somos</h2>

@@ -138,6 +138,30 @@ export async function dismissNotification(userId, notificationId) {
 }
 
 /**
+ * UNIUPD1: verifica se já existe uma notificação type='uni' para esta
+ * novidade específica (metadata.update_id), antes de criar uma nova --
+ * evita recriar "🔔 Nova atualização da Uni" a cada vez que a Home monta
+ * e detecta a mesma novidade pendente. Mesmo motivo de
+ * listAgendaNotificationItemIds NUNCA filtrar por dismissed_at: uma
+ * notificação dispensada continua provando que aquela novidade já foi
+ * notificada.
+ */
+export async function hasUpdateNotification(userId, updateId) {
+  if (!supabase) return createUnavailableResult(false);
+  if (!userId) return createMissingUserResult();
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('type', 'uni')
+    .eq('metadata->>update_id', updateId)
+    .limit(1);
+
+  return createResult((data ?? []).length > 0, error);
+}
+
+/**
  * Cria uma notificação para o PRÓPRIO usuário (RLS garante user_id =
  * auth.uid(), nunca para outra pessoa). Usada tanto por eventos reais e
  * seguros já existentes quanto para validar a interface quando ainda não

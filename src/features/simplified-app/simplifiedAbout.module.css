@@ -314,6 +314,124 @@
   font-style: italic;
 }
 
+/* ---------- Novidades da Uni (UNIUPD1) ---------- */
+
+.updateList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.updateItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 16px;
+  background: var(--uf-app-surface-2);
+  scroll-margin-top: 88px;
+  transition: border-color 400ms ease, box-shadow 400ms ease;
+}
+
+/* Entrada apontada pelo deep link (?novidade=<id>, vindo do banner da Home
+   ou da notificação) -- destaque temporário, nunca some do histórico. */
+.updateItemHighlighted {
+  border-color: rgba(45, 212, 191, .72);
+  box-shadow: 0 0 0 3px var(--uf-app-primary-subtle);
+}
+
+.updateItemHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.updateIcon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.updateVersion {
+  color: var(--uf-app-text);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.updateDate {
+  margin-left: auto;
+  color: var(--uf-app-text-2);
+  font-size: 12px;
+}
+
+.updateTitle {
+  color: var(--uf-app-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.updateDescription {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.updateFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.updateFeatures li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--uf-app-text-2);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.updateFeatures li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--uf-app-ai), var(--uf-app-primary));
+}
+
+.updateCompleteButton {
+  align-self: flex-start;
+  margin-top: 6px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 18px;
+  background: var(--uf-app-card-bg);
+  color: var(--uf-app-success-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: border-color 200ms ease, transform 200ms ease;
+}
+
+.updateCompleteButton:hover {
+  border-color: var(--uf-app-success-subtle);
+}
+
+.updateCompleteButton:active {
+  transform: scale(.98);
+}
+
 /* ---------- Agradecimento ---------- */
 
 .thanksCard {

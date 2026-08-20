@@ -129,7 +129,22 @@ test('todas as funcoes retornam cedo quando Supabase nao esta configurado, sem l
   const content = await source('notificationsService.js');
   const occurrences = content.match(/if \(!supabase\) return createUnavailableResult/g) ?? [];
   // NOTIF2/NOTIF3: dismissNotification soma mais uma funcao a essa guarda.
-  assert.equal(occurrences.length, 6);
+  // UNIUPD1: hasUpdateNotification soma mais uma.
+  assert.equal(occurrences.length, 7);
+});
+
+// UNIUPD1: dedup da notificacao de nova versao -- nunca recria a mesma
+// notificacao a cada mount da Home que detecta a mesma novidade pendente.
+test('hasUpdateNotification filtra por usuario, tipo uni e metadata.update_id -- NAO filtra por dismissed_at (mesmo motivo da Agenda)', async () => {
+  const content = await source('notificationsService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function hasUpdateNotification'),
+    content.indexOf('export async function createNotification'),
+  );
+  assert.match(fnBody, /\.eq\('user_id', userId\)/);
+  assert.match(fnBody, /\.eq\('type', 'uni'\)/);
+  assert.match(fnBody, /\.eq\('metadata->>update_id', updateId\)/);
+  assert.doesNotMatch(fnBody, /dismissed_at/);
 });
 
 test('retorna { data, error, isConfigured } -- mesmo contrato dos demais services do repositorio', async () => {

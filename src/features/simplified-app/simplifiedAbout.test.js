@@ -154,3 +154,47 @@ test('ícones novos (Rocket/Brain/Handshake/Sparkle) seguem o mesmo estilo -- vi
     assert.doesNotMatch(slice, /fill="|stroke="/);
   }
 });
+
+// ============================================================================
+// UNIUPD1 -- Central de Novidades da Uni, dentro de "Sobre a UniFlow AI"
+// (decisão de produto: nunca uma aba/tela separada).
+// ============================================================================
+
+test('Novidades da Uni existe DENTRO de Sobre a UniFlow AI -- mesma tela, nenhuma rota nova', async () => {
+  const page = await source('./SimplifiedAboutPage.jsx');
+  assert.match(page, /aria-label="Novidades da Uni"/);
+  assert.match(page, /✨ Novidades da Uni/);
+});
+
+test('histórico pede a lista completa (sem limit) -- só a Home usa limit:1', async () => {
+  const page = await source('./SimplifiedAboutPage.jsx');
+  assert.match(page, /const \{ updates: uniUpdates, isLoading: uniUpdatesLoading, markAsSeen \} = useUniUpdates\(\);/);
+  assert.doesNotMatch(page, /useUniUpdates\(\{ limit/);
+});
+
+test('cada entrada mostra ícone, versão, data, título e descrição', async () => {
+  const page = await source('./SimplifiedAboutPage.jsx');
+  const sectionStart = page.indexOf('aria-label="Novidades da Uni"');
+  const sectionSlice = page.slice(sectionStart, page.indexOf('aria-label="Quem somos"'));
+  assert.match(sectionSlice, /update\.icon/);
+  assert.match(sectionSlice, /Versão \{update\.version\}/);
+  assert.match(sectionSlice, /formatUpdateDate\(update\.created_at\)/);
+  assert.match(sectionSlice, /update\.title/);
+  assert.match(sectionSlice, /update\.description/);
+});
+
+test('"Atualização concluída" só aparece para novidades ainda não vistas, e chama markAsSeen', async () => {
+  const page = await source('./SimplifiedAboutPage.jsx');
+  const sectionStart = page.indexOf('aria-label="Novidades da Uni"');
+  const sectionSlice = page.slice(sectionStart, page.indexOf('aria-label="Quem somos"'));
+  assert.match(sectionSlice, /\{!update\.seen \? \(/);
+  assert.match(sectionSlice, /onClick=\{\(\) => markAsSeen\(update\.id\)\}/);
+  assert.match(sectionSlice, /Atualização concluída/);
+});
+
+test('deep link ?novidade=<id> rola até a entrada correspondente (mesmo padrão do ?item= da Agenda)', async () => {
+  const page = await source('./SimplifiedAboutPage.jsx');
+  assert.match(page, /const highlightedUpdateId = searchParams\.get\('novidade'\);/);
+  assert.match(page, /id=\{`novidade-\$\{update\.id\}`\}/);
+  assert.match(page, /node\?\.scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\);/);
+});
