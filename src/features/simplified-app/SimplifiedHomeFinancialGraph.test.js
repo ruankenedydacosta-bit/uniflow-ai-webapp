@@ -32,6 +32,57 @@ test('RESPONSIVIDADE: o teto de largura do gráfico é centralizado -- a sobra n
   assert.match(css, /\.rootDetailed \{[\s\S]*?max-width: 430px;[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
 });
 
+// --------------------------------------------------- LARGURA TOTAL (V2.1)
+//
+// Medido no navegador ANTES da correção, viewport 480: cards de Entradas/
+// Saídas com 428px e o gráfico com 355px -- 40px de vão de cada lado. O
+// teto de 430px travava a largura e, pior, `margin-inline: auto` tirava o
+// stretch do item flex, encolhendo o card até o conteúdo.
+
+test('LARGURA TOTAL: a Home neutraliza o teto e as margens automáticas do componente compartilhado', async () => {
+  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
+  const rule = /\.chart\.chart \{([\s\S]*?)\}/.exec(css);
+  assert.ok(rule, 'a Home precisa de uma regra própria para o gráfico');
+  assert.match(rule[1], /max-width: none;/);
+  assert.match(rule[1], /margin-inline: 0;/);
+  assert.match(rule[1], /width: 100%;/);
+  assert.match(rule[1], /align-self: stretch;/);
+});
+
+test('LARGURA TOTAL: a regra vence .rootCompact por especificidade, sem !important', async () => {
+  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
+  // Classe repetida = especificidade (0,2,0) > .rootCompact (0,1,0), sem
+  // depender da ordem dos arquivos no bundle.
+  assert.match(css, /\.chart\.chart \{/);
+  assert.doesNotMatch(codeOnly(css), /!important/);
+});
+
+test('LARGURA TOTAL: a classe é aplicada só na instância da Home -- dashboard e Financeiro intactos', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /className=\{styles\.chart\}/);
+  // O componente compartilhado continua com o teto original para os outros
+  // consumidores (dashboard mobile usa compact; Financeiro usa detailed).
+  const chartCss = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
+  assert.match(chartCss, /\.rootCompact \{[\s\S]*?max-width: 430px;/);
+  const financeiro = await source('../../pages/financeiro/mobile/components/IncomeExpenseChart.jsx');
+  assert.doesNotMatch(financeiro, /className=\{styles\.chart\}/);
+});
+
+test('LARGURA TOTAL: nenhum breakpoint por aparelho foi criado para resolver a largura', async () => {
+  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
+  assert.doesNotMatch(css, /@media[^{]*\b(390|412|430|480)px/);
+});
+
+test('LARGURA TOTAL: o gráfico compartilha a mesma coluna dos cards -- só o padding do card os separa da borda', async () => {
+  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
+  // Gráfico e .totalsRow são irmãos dentro de .card, que tem o único inset
+  // horizontal (4px). Nenhum dos dois pode ter inset próprio.
+  assert.match(css, /\.card \{[\s\S]*?padding-inline: 4px;/);
+  const totalsRow = /\.totalsRow \{([\s\S]*?)\}/.exec(css);
+  assert.ok(totalsRow);
+  assert.doesNotMatch(totalsRow[1], /margin-inline|max-width|padding-inline/);
+});
+
 test('RESPONSIVIDADE: o container do gráfico continua fluido (100%), sem largura fixa por aparelho', async () => {
   const css = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
   assert.match(css, /\.chartWrapper \{[\s\S]*?width: 100%;/);

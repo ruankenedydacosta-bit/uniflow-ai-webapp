@@ -49,6 +49,28 @@
   box-sizing: border-box;
 }
 
+/* HOME-GRAPH2.1: o gráfico da Home ocupa a MESMA coluna dos cards de
+   Entradas/Saídas -- nada de caixinha estreita centralizada.
+
+   O componente compartilhado traz `max-width: 430px; margin-inline: auto`,
+   que serve às telas legadas (dashboard mobile), mas aqui fazia duas
+   coisas ruins acima de ~470px de viewport: o teto travava a largura E as
+   margens automáticas transformavam o item flex em shrink-to-fit (margem
+   auto desliga o stretch no eixo cruzado), então o card encolhia até o
+   conteúdo e sobrava um vão simétrico dos dois lados -- medido: viewport
+   480 => cards 428px, gráfico 355px, 40px de vão de cada lado.
+
+   A classe é aplicada só na instância da Home (prop `className`), então
+   dashboard e Financeiro continuam exatamente como estavam. Repetida no
+   seletor para vencer `.rootCompact` por especificidade, sem !important e
+   sem depender da ordem dos arquivos no bundle. */
+.chart.chart {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  align-self: stretch;
+}
+
 .header {
   display: flex;
   flex-direction: column;

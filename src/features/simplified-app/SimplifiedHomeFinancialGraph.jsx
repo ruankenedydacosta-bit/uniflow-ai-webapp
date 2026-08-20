@@ -92,6 +92,7 @@ function SimplifiedHomeFinancialGraphContent() {
       <CognitiveLiveChart
         variant="compact"
         defaultMode="overview"
+        className={styles.chart}
         data={graphData.chart.data}
         comparisonData={graphData.chart.data}
         forecastData={graphData.chart.data}
