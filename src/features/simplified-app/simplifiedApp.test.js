@@ -832,13 +832,18 @@ test('botão central tem alvo visual ~300px; touch-action continua none (gesto a
   assert.match(css, /@media \(max-width: 359px\)[\s\S]*?\.uniButton\s*\{\s*width:\s*210px/);
 });
 
-test('elementos decorativos (::before do botão, anéis) não aumentam a hit-area além do círculo visível', async () => {
-  const css = await source('./simplifiedApp.module.css');
-  const beforeIdx = css.indexOf('.uniButton::before {');
-  const beforeSlice = css.slice(beforeIdx, css.indexOf('}', beforeIdx));
-  assert.match(beforeSlice, /pointer-events:\s*none;/);
-  assert.match(css, /\.uniButtonRing\s*\{[\s\S]*?pointer-events:\s*none;/);
-  assert.match(css, /\.uniVoiceLevelRing\s*\{[\s\S]*?pointer-events:\s*none;/);
+test('botão central não adiciona círculo rígido ou pseudo-elemento ao redor do plasma', async () => {
+  const [home, css] = await Promise.all([
+    source('./SimplifiedHomeView.jsx'),
+    source('./simplifiedApp.module.css'),
+  ]);
+  const buttonIdx = css.indexOf('.uniButton {');
+  const buttonSlice = css.slice(buttonIdx, css.indexOf('}', buttonIdx));
+  assert.match(buttonSlice, /border:\s*0;/);
+  assert.match(buttonSlice, /background:\s*transparent;/);
+  assert.match(buttonSlice, /box-shadow:\s*none;/);
+  assert.doesNotMatch(css, /\.uniButton::before\s*\{/);
+  assert.doesNotMatch(home, /styles\.uniButtonRing|styles\.uniVoiceLevelRing/);
 });
 
 test('não inicia nova gravação durante o processamento (isInteractionBusy inclui capture busy/typing/executing)', async () => {

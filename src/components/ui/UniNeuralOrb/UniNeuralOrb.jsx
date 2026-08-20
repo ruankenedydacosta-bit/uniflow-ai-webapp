@@ -79,7 +79,11 @@ const FRAGMENT_SHADER = /* glsl */ `
 
     float idlePulse = 0.5 + 0.5 * sin(time * 1.05);
     float speakingPulse = 0.5 + 0.5 * sin(time * 3.0 + radius * 10.0);
-    float organic = fbm(vec2(angle * 0.72 + time * 0.12, radius * 3.1 - time * 0.1));
+    // Coordenadas periódicas evitam a costura de atan() em -PI/PI, que se
+    // manifestava como um pequeno corte exatamente no lado esquerdo.
+    vec2 organicPoint = vec2(cos(angle), sin(angle)) * (1.3 + radius * 0.9);
+    organicPoint += vec2(time * 0.12, -time * 0.1);
+    float organic = fbm(organicPoint);
     float listeningEnergy = uListening * (0.18 + uVoice * 0.82);
     float speakingEnergy = uSpeaking * (0.42 + speakingPulse * 0.2);
     float edgeDisplacement = (organic - 0.5) * (0.022 + listeningEnergy * 0.065);
@@ -89,7 +93,6 @@ const FRAGMENT_SHADER = /* glsl */ `
     float orbMask = 1.0 - smoothstep(orbRadius - 0.012, orbRadius + 0.025, radius);
     float innerDepth = 1.0 - smoothstep(0.06, orbRadius, radius);
     float rim = exp(-abs(radius - orbRadius) * 42.0);
-    float innerRing = exp(-abs(radius - 0.43) * 34.0);
 
     float flowA = fbm(point * 2.15 + vec2(time * 0.14, -time * 0.1));
     float flowB = fbm(point.yx * 3.05 + vec2(-time * 0.11, time * 0.16));
@@ -98,7 +101,6 @@ const FRAGMENT_SHADER = /* glsl */ `
     color = mix(color, BRAND_CYAN, clamp(flowB * 0.55 + listeningEnergy * 0.28, 0.0, 0.8));
     color *= 0.32 + innerDepth * 0.72;
     color += rim * mix(BRAND_BLUE, BRAND_CYAN, uListening) * (0.34 + listeningEnergy * 0.74);
-    color += innerRing * mix(BRAND_PURPLE, BRAND_BLUE, speakingPulse) * (0.08 + speakingEnergy * 0.2);
 
     float listeningWaveA = exp(-abs(radius - (0.68 + uVoice * 0.05)) * 55.0)
       * uListening * (0.12 + uVoice * 0.72);
@@ -114,7 +116,9 @@ const FRAGMENT_SHADER = /* glsl */ `
     alpha = max(alpha, listeningWaveA * 0.9);
     alpha = max(alpha, listeningWaveB * 0.68);
     alpha = max(alpha, speakingWave * 0.58);
-    alpha *= 1.0 - smoothstep(0.84, 1.02, radius);
+    // Gutter transparente antes da borda física do canvas: nenhum brilho
+    // residual chega ao limite do viewport e vira um corte reto em DPRs altos.
+    alpha *= 1.0 - smoothstep(0.84, 0.94, radius);
 
     gl_FragColor = vec4(color * alpha, alpha);
   }

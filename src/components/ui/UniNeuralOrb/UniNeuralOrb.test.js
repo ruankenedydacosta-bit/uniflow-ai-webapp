@@ -83,6 +83,39 @@ test('shader usa apenas a paleta de marca e diferencia listening de speaking', a
   assert.match(component, /uniform float uVoice;/);
 });
 
+test('refinamento preserva o plasma e remove anéis rígidos e HUDs geométricos', async () => {
+  const [component, css] = await Promise.all([
+    source('./UniNeuralOrb.jsx'),
+    source('./UniNeuralOrb.module.css'),
+  ]);
+  assert.match(component, /float organic = fbm/);
+  assert.match(component, /float rim = exp/);
+  assert.doesNotMatch(component, /innerRing/);
+  assert.doesNotMatch(css, /\.energyBase::before|\.energyBase::after|\.logoCore::before/);
+  assert.doesNotMatch(css, /\bborder:/);
+});
+
+test('plasma termina em gutter transparente antes da borda do canvas em qualquer DPR', async () => {
+  const [component, css] = await Promise.all([
+    source('./UniNeuralOrb.jsx'),
+    source('./UniNeuralOrb.module.css'),
+  ]);
+  assert.match(component, /alpha \*= 1\.0 - smoothstep\(0\.84, 0\.94, radius\);/);
+  assert.doesNotMatch(component, /smoothstep\(0\.84, 1\.02, radius\)/);
+  assert.match(component, /renderer\.setSize\(width, height\)/);
+  assert.match(component, /uResolution\.value\.set\(\s*gl\.canvas\.width,\s*gl\.canvas\.height,/);
+  assert.match(component, /Math\.min\(window\.devicePixelRatio \|\| 1, 1\.5\)/);
+  assert.match(css, /\.root \{[\s\S]*?overflow: visible;[\s\S]*?contain: layout;/);
+  assert.doesNotMatch(css, /contain: layout paint/);
+});
+
+test('ruído orgânico é periódico e não cria costura no lado esquerdo do plasma', async () => {
+  const component = await source('./UniNeuralOrb.jsx');
+  assert.match(component, /vec2 organicPoint = vec2\(cos\(angle\), sin\(angle\)\)/);
+  assert.match(component, /float organic = fbm\(organicPoint\);/);
+  assert.doesNotMatch(component, /fbm\(vec2\(angle/);
+});
+
 test('componente é decorativo e mantém compatibilidade por className', async () => {
   const [component, css] = await Promise.all([
     source('./UniNeuralOrb.jsx'),
