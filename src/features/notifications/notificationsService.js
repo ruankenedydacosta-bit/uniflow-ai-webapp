@@ -140,7 +140,7 @@ export async function dismissNotification(userId, notificationId) {
 /**
  * UNIUPD1: verifica se já existe uma notificação type='uni' para esta
  * novidade específica (metadata.update_id), antes de criar uma nova --
- * evita recriar "🔔 Nova atualização da Uni" a cada vez que a Home monta
+ * evita recriar "🚀 Nova atualização da Uni" a cada vez que a Home monta
  * e detecta a mesma novidade pendente. Mesmo motivo de
  * listAgendaNotificationItemIds NUNCA filtrar por dismissed_at: uma
  * notificação dispensada continua provando que aquela novidade já foi

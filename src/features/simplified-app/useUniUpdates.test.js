@@ -75,7 +75,7 @@ test('notificacao criada usa type uni, titulo/mensagem fixos do UNIUPD1 e action
   assert.match(content, /title: UPDATE_NOTIFICATION_TITLE,/);
   assert.match(content, /message: UPDATE_NOTIFICATION_MESSAGE,/);
   assert.match(content, /actionUrl: buildNovidadeUrl\(pendingUpdate\.id\),/);
-  assert.match(content, /'🔔 Nova atualização da Uni'/);
+  assert.match(content, /'🚀 Nova atualização da Uni'/);
   assert.match(content, /'A Uni recebeu melhorias para deixar sua experiência ainda melhor\.'/);
 });
 

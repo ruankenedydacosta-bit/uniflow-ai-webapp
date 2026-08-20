@@ -7,7 +7,7 @@ import { buildNovidadeUrl, resolvePendingUpdate } from './uniUpdatesData.js';
 
 const EMPTY_LIST = [];
 
-const UPDATE_NOTIFICATION_TITLE = '🔔 Nova atualização da Uni';
+const UPDATE_NOTIFICATION_TITLE = '🚀 Nova atualização da Uni';
 const UPDATE_NOTIFICATION_MESSAGE = 'A Uni recebeu melhorias para deixar sua experiência ainda melhor.';
 
 /**
@@ -18,7 +18,7 @@ const UPDATE_NOTIFICATION_MESSAGE = 'A Uni recebeu melhorias para deixar sua exp
  * histórico completo (sem limit), sem duplicar mecanismo nem estado
  * global entre as duas telas.
  *
- * A notificação companheira ("🔔 Nova atualização da Uni") é garantida
+ * A notificação companheira ("🚀 Nova atualização da Uni") é garantida
  * aqui dentro, não em um listener global novo -- ela dispara quando
  * QUALQUER instância deste hook detecta uma novidade pendente ainda não
  * notificada (dedup real fica no banco via hasUpdateNotification, o guard
