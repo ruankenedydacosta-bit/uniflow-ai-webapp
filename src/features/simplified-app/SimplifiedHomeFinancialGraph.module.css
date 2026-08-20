@@ -1,0 +1,218 @@
+/* HOME-GRAPH1: espaço de respiro pedido (32-56px) entre "A Uni está
+   pronta para ajudar" e o gráfico -- nunca colado. */
+.wrapper {
+  width: 100%;
+  margin-top: clamp(32px, 8vw, 56px);
+}
+
+/* Placeholder antes do IntersectionObserver montar o conteúdo real --
+   altura aproximada do card real, para nunca causar CLS quando o
+   conteúdo de verdade entra. */
+.placeholder {
+  width: 100%;
+  min-height: 380px;
+  border-radius: 20px;
+  background: var(--uf-app-surface);
+  opacity: .4;
+}
+
+/* Microentrada: uma única vez, no mount real do conteúdo -- nunca a cada
+   pixel de scroll (o wrapper acima só monta isto uma vez, nunca
+   desmonta de novo). */
+.enter {
+  animation: homeGraphEnter 300ms ease both;
+}
+
+@keyframes homeGraphEnter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter {
+    animation: none;
+  }
+}
+
+.card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-inline: 4px;
+}
+
+.eyebrow {
+  color: var(--uf-app-text-2);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.header h2 {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: clamp(18px, 4.6vw, 22px);
+  font-weight: 750;
+}
+
+.totalsRow {
+  display: flex;
+  gap: 12px;
+  padding-inline: 4px;
+}
+
+.totalItem {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 14px;
+  background: var(--uf-app-surface);
+}
+
+.totalLabel {
+  color: var(--uf-app-text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.totalValueIncome,
+.totalValueExpense {
+  font-size: clamp(16px, 4.4vw, 19px);
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.totalValueIncome {
+  color: var(--uf-app-success-text, var(--uf-app-success));
+}
+
+.totalValueExpense {
+  color: var(--uf-app-danger-text, var(--uf-app-danger));
+}
+
+.categoriesBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-inline: 4px;
+}
+
+.categoryToggle {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--uf-app-surface);
+  gap: 2px;
+}
+
+.toggleTab,
+.toggleTabActive {
+  min-height: 36px;
+  padding-inline: 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toggleTabActive {
+  background: linear-gradient(135deg, var(--uf-app-primary), var(--uf-app-ai));
+  color: var(--uf-app-on-accent);
+}
+
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.categoryRow {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 14px;
+  background: var(--uf-app-canvas);
+  color: var(--uf-app-text);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.categoryName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.categoryValue {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 750;
+  color: var(--uf-app-text-2);
+}
+
+.categoriesEmpty {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+}
+
+.askUniButton {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-inline: 4px;
+  padding-inline: 16px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 999px;
+  background: var(--uf-app-surface);
+  color: var(--uf-app-text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.askUniMark {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.askUniMark img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}

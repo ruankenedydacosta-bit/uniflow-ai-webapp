@@ -11,6 +11,7 @@ import {
 } from '../uni-voice/index.js';
 import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import { PwaInstallExperience, PwaUpdateCard } from '../pwa-install/index.js';
+import SimplifiedHomeFinancialGraph from './SimplifiedHomeFinancialGraph.jsx';
 import { UniMark } from './SimplifiedIcons.jsx';
 import {
   isVoiceErrorState,
@@ -1238,6 +1239,8 @@ function SimplifiedHomeView({
           <small>{voiceErrorMessage || stateCopy.description}</small>
         </span>
       </div>
+
+      <SimplifiedHomeFinancialGraph />
     </div>
   );
 }

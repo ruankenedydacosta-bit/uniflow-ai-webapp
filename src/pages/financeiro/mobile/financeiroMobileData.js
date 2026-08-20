@@ -104,24 +104,27 @@ export function getFinancialPeriod({ mode = 'Mês', offset = 0, now = new Date()
   };
 }
 
-function isCompleted(transaction) {
+// HOME-GRAPH1: exportadas (sem nenhuma mudança de lógica) para reuso pelo
+// gráfico financeiro da Home -- mesma matemática de período/série
+// acumulada, uma única fonte, nunca duplicada.
+export function isCompleted(transaction) {
   return transaction?.status === 'completed';
 }
 
-function selectPeriodTransactions(transactions, period) {
+export function selectPeriodTransactions(transactions, period) {
   return transactions.filter((transaction) =>
     isCompleted(transaction)
       && transaction.transaction_date >= period.startKey
       && transaction.transaction_date <= period.endKey);
 }
 
-function totalByType(transactions, type) {
+export function totalByType(transactions, type) {
   return transactions
     .filter((transaction) => transaction.transaction_type === type)
     .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
 }
 
-function buildCumulativeSeries(transactions, period) {
+export function buildCumulativeSeries(transactions, period) {
   const maxDay = Math.max(1, differenceInDays(period.start, period.effectiveEnd) + 1);
   const pointDays = new Set([1, maxDay]);
   transactions.forEach((transaction) => {
