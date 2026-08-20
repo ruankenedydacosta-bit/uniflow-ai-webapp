@@ -161,6 +161,39 @@ export async function hasUpdateNotification(userId, updateId) {
   return createResult((data ?? []).length > 0, error);
 }
 
+const DOWNLOAD_READY_TITLE = '📄 Seu relatório está pronto';
+const DOWNLOAD_READY_MESSAGE = 'Preparei seu relatório financeiro e ele já está salvo no seu dispositivo.';
+
+/**
+ * DOWNLOAD-FEEDBACK1: confirmação no Centro de Notificações depois que um
+ * download (XLSX do Relatório ou CSV de Financeiro) é DISPARADO com
+ * sucesso -- nunca antes disso, nunca se a geração falhar (ver
+ * chamadores: SimplifiedReportPage.jsx/FinanceTransactionModal.jsx só
+ * chamam isto DEPOIS de anchor.click() já ter rodado). action_url
+ * propositalmente ausente -- o arquivo está no dispositivo do usuário,
+ * não em uma tela do app para navegar até. Sem verificação de duplicidade
+ * no banco: cada chamada é uma ação de download real e distinta, sempre
+ * merece sua própria confirmação (diferente de UNIUPD1, que dedupe contra
+ * a MESMA novidade sendo notificada de novo).
+ */
+export async function createDownloadReadyNotification(userId, {
+  workspaceId = null,
+  filename,
+  fileType,
+} = {}) {
+  return createNotification(userId, {
+    workspaceId,
+    type: 'uni',
+    title: DOWNLOAD_READY_TITLE,
+    message: DOWNLOAD_READY_MESSAGE,
+    metadata: {
+      filename,
+      file_type: fileType,
+      downloaded_at: new Date().toISOString(),
+    },
+  });
+}
+
 /**
  * Cria uma notificação para o PRÓPRIO usuário (RLS garante user_id =
  * auth.uid(), nunca para outra pessoa). Usada tanto por eventos reais e

@@ -1,6 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useSession } from '../../app/SessionContext.jsx';
 import Button from '../../components/ui/Button';
+import { createDownloadReadyNotification } from '../../features/notifications/notificationsService.js';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import { cx } from '../../utils/cx';
@@ -231,6 +233,7 @@ function FinanceTransactionModal({
   showExistingList = true,
   transactionState,
 }) {
+  const { user, workspace } = useSession();
   const [form, setForm] = useState(() => {
     if (editingTransactionId) {
       const transaction = transactionState.transactions.find((t) => t.id === editingTransactionId);
@@ -284,8 +287,32 @@ function FinanceTransactionModal({
     setPeriodMode('all');
   }
 
+  // DOWNLOAD-FEEDBACK1: geração do CSV é síncrona (nenhum estado de
+  // "preparando" existe aqui) -- um toque duplo rapidíssimo dispararia
+  // dois downloads reais e, sem esta trava, duas notificações para UMA
+  // única intenção do usuário. Trava por tempo (não por ref booleana):
+  // a função inteira roda e termina no mesmo tick, então uma flag
+  // liga/desliga não protegeria contra um segundo clique real logo em
+  // seguida.
+  const lastCsvExportAtRef = useRef(0);
+  const CSV_EXPORT_COOLDOWN_MS = 800;
+
   function handleExportCsv() {
-    downloadTransactionsCsv(listedTransactions, { categoriesById, accountsById });
+    const now = Date.now();
+    if (now - lastCsvExportAtRef.current < CSV_EXPORT_COOLDOWN_MS) return;
+    lastCsvExportAtRef.current = now;
+
+    const filename = downloadTransactionsCsv(listedTransactions, { categoriesById, accountsById });
+    // DOWNLOAD-FEEDBACK1: só depois do download já ter sido DISPARADO
+    // (linha acima) -- nunca antes. Nunca derruba o download em si:
+    // createDownloadReadyNotification nunca lança por contrato.
+    if (user?.id) {
+      void createDownloadReadyNotification(user.id, {
+        workspaceId: workspace?.id,
+        filename,
+        fileType: 'csv',
+      });
+    }
   }
 
   const filteredCategories = useMemo(

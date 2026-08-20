@@ -358,3 +358,37 @@ test('FinanceiroPage (desktop) não passa hideAccountFields/showExistingList -- 
   const slice = financeiroPage.slice(start, financeiroPage.indexOf('/>', start));
   assert.doesNotMatch(slice, /hideAccountFields|showExistingList/);
 });
+
+// ============================================================================
+// DOWNLOAD-FEEDBACK1 -- confirmação no Centro de Notificações depois que a
+// exportação CSV é DISPARADA com sucesso (mesmo mecanismo do XLSX do
+// Relatório, ver SimplifiedReportPage.jsx).
+// ============================================================================
+
+test('notificação de download só é criada DEPOIS de downloadTransactionsCsv (download já disparado), usa o filename retornado por ela -- nunca recalculado à parte', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const handlerStart = modal.indexOf('function handleExportCsv()');
+  const handlerBody = modal.slice(handlerStart, modal.indexOf('}', modal.indexOf('void createDownloadReadyNotification(', handlerStart)) + 1);
+  const dispatchIndex = handlerBody.indexOf('downloadTransactionsCsv(');
+  const notifyIndex = handlerBody.indexOf('createDownloadReadyNotification(');
+  assert.ok(dispatchIndex > -1 && notifyIndex > -1, 'ambas as chamadas devem existir no handler');
+  assert.ok(notifyIndex > dispatchIndex, 'a notificação precisa vir DEPOIS do download já disparado');
+  assert.match(handlerBody, /const filename = downloadTransactionsCsv\(/);
+  assert.match(handlerBody, /filename,\s*\n\s*fileType: 'csv',/);
+});
+
+test('exportação CSV é protegida por cooldown por tempo -- toque duplo rápido nunca dispara dois downloads/duas notificações', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  assert.match(modal, /const lastCsvExportAtRef = useRef\(0\);/);
+  assert.match(modal, /const CSV_EXPORT_COOLDOWN_MS = 800;/);
+  const handlerStart = modal.indexOf('function handleExportCsv()');
+  const handlerBody = modal.slice(handlerStart, handlerStart + 400);
+  assert.match(handlerBody, /if \(now - lastCsvExportAtRef\.current < CSV_EXPORT_COOLDOWN_MS\) return;/);
+});
+
+test('sem usuário autenticado, nunca tenta criar a notificação (guard if (user?.id))', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const handlerStart = modal.indexOf('function handleExportCsv()');
+  const handlerBody = modal.slice(handlerStart, handlerStart + 700);
+  assert.match(handlerBody, /if \(user\?\.id\) \{/);
+});

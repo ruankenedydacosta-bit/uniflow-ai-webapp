@@ -147,6 +147,37 @@ test('hasUpdateNotification filtra por usuario, tipo uni e metadata.update_id --
   assert.doesNotMatch(fnBody, /dismissed_at/);
 });
 
+// DOWNLOAD-FEEDBACK1: confirmação de download (XLSX/CSV) no Centro de
+// Notificações -- reaproveita createNotification, nunca uma segunda
+// arquitetura de escrita em notifications.
+test('createDownloadReadyNotification usa type uni, titulo/mensagem fixos, e metadata com nome do arquivo, tipo e timestamp', async () => {
+  const content = await source('notificationsService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function createDownloadReadyNotification'),
+    content.indexOf('/**\n * Cria uma notificação para o PRÓPRIO usuário'),
+  );
+  assert.match(fnBody, /type: 'uni',/);
+  assert.match(fnBody, /title: DOWNLOAD_READY_TITLE,/);
+  assert.match(fnBody, /message: DOWNLOAD_READY_MESSAGE,/);
+  assert.match(fnBody, /filename,/);
+  assert.match(fnBody, /file_type: fileType,/);
+  assert.match(fnBody, /downloaded_at: new Date\(\)\.toISOString\(\),/);
+  assert.match(content, /const DOWNLOAD_READY_TITLE = '📄 Seu relatório está pronto';/);
+  assert.match(
+    content,
+    /const DOWNLOAD_READY_MESSAGE = 'Preparei seu relatório financeiro e ele já está salvo no seu dispositivo\.';/,
+  );
+});
+
+test('createDownloadReadyNotification nunca define action_url -- o arquivo está no dispositivo, não em uma tela do app', async () => {
+  const content = await source('notificationsService.js');
+  const fnBody = content.slice(
+    content.indexOf('export async function createDownloadReadyNotification'),
+    content.indexOf('/**\n * Cria uma notificação para o PRÓPRIO usuário'),
+  );
+  assert.doesNotMatch(fnBody, /actionUrl/);
+});
+
 test('retorna { data, error, isConfigured } -- mesmo contrato dos demais services do repositorio', async () => {
   const content = await source('notificationsService.js');
   assert.match(

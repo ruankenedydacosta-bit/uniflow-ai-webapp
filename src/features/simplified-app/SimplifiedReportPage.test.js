@@ -147,6 +147,46 @@ test('download usa o `report` MAIS RECENTE (estado vivo do hook) -- nunca um sna
   assert.match(page, /buildMonthlyReportFilename\(report\.period\)/);
 });
 
+// ============================================================================
+// DOWNLOAD-FEEDBACK1 -- confirmação no Centro de Notificações depois que o
+// download do XLSX é DISPARADO com sucesso.
+// ============================================================================
+
+test('notificação de download só é criada DEPOIS de downloadMonthlyReportWorkbookBlob (download já disparado), nunca antes', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  const handlerBody = page.slice(
+    page.indexOf('async function handleDownload'),
+    page.indexOf('return (', page.indexOf('async function handleDownload')),
+  );
+  const dispatchIndex = handlerBody.indexOf('downloadMonthlyReportWorkbookBlob(blob, filename);');
+  const notifyIndex = handlerBody.indexOf('createDownloadReadyNotification(');
+  assert.ok(dispatchIndex > -1 && notifyIndex > -1, 'ambas as chamadas devem existir no handler');
+  assert.ok(notifyIndex > dispatchIndex, 'a notificação precisa vir DEPOIS do download já disparado');
+});
+
+test('notificação usa fileType "xlsx" e o mesmo filename usado no download real -- nunca um nome recalculado à parte', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  assert.match(page, /createDownloadReadyNotification\(user\.id, \{\s*\n\s*workspaceId: workspace\?\.id,\s*\n\s*filename,\s*\n\s*fileType: 'xlsx',\s*\n\s*\}\);/);
+});
+
+test('sem usuário autenticado, nunca tenta criar a notificação (guard if (user?.id))', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  assert.match(page, /if \(user\?\.id\) \{/);
+});
+
+test('falha ao notificar nunca derruba o download nem aciona o estado de erro -- createDownloadReadyNotification nunca lança por contrato', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  const handlerBody = page.slice(
+    page.indexOf('async function handleDownload'),
+    page.indexOf('catch {', page.indexOf('async function handleDownload')),
+  );
+  // A chamada de notificação fica ANTES do catch, mas nunca é awaited
+  // dentro de um novo try isolado que pudesse acionar setDownloadState
+  // ('error') por causa dela -- void descarta a Promise, o catch só cobre
+  // falhas reais de geração/download.
+  assert.match(handlerBody, /void createDownloadReadyNotification\(/);
+});
+
 test('erro de geração mostra mensagem clara, nunca falso sucesso nem loading infinito', async () => {
   const page = await source('./SimplifiedReportPage.jsx');
   assert.match(page, /catch \{\s*\n\s*setDownloadState\('error'\);\s*\n\s*\}/);

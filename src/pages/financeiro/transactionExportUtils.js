@@ -118,7 +118,10 @@ const REVOKE_OBJECT_URL_DELAY_MS = 4000;
 /**
  * Dispara o download do CSV no navegador, reaproveitando o mesmo padrão de
  * `downloadAudioReviewJson` (Blob + link temporário) já usado em
- * `src/pages/dev/uni-audio-library/audioReviewStorage.js`.
+ * `src/pages/dev/uni-audio-library/audioReviewStorage.js`. Retorna o nome
+ * de arquivo REALMENTE usado (explícito ou o default calculado aqui) --
+ * DOWNLOAD-FEEDBACK1 depende disso para a notificação de confirmação
+ * nunca recalcular o nome à parte (e arriscar divergir).
  */
 export function downloadTransactionsCsv(
   transactions,
@@ -128,12 +131,14 @@ export function downloadTransactionsCsv(
   // BOM UTF-8: garante acentuação correta ao abrir o CSV direto no Excel.
   const blob = new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
+  const resolvedFilename = filename ?? buildTransactionsExportFilename();
   const anchor = documentRef.createElement('a');
   anchor.href = url;
-  anchor.download = filename ?? buildTransactionsExportFilename();
+  anchor.download = resolvedFilename;
   anchor.hidden = true;
   documentRef.body.append(anchor);
   anchor.click();
   anchor.remove();
   globalThis.setTimeout(() => URL.revokeObjectURL(url), REVOKE_OBJECT_URL_DELAY_MS);
+  return resolvedFilename;
 }

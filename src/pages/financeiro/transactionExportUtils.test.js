@@ -263,6 +263,29 @@ test('downloadTransactionsCsv usa arquivo local, BOM UTF-8 e remove o link tempo
   assert.deepEqual(calls, ['append', 'click', 'remove']);
 });
 
+// DOWNLOAD-FEEDBACK1: a notificação de confirmação usa o nome de arquivo
+// REALMENTE usado no download -- nunca recalculado à parte, nunca
+// divergente (explícito ou o default calculado aqui dentro).
+test('downloadTransactionsCsv retorna o filename realmente usado -- explícito ou o default calculado internamente', () => {
+  const anchor = { click() {}, remove() {} };
+  const documentRef = { body: { append: () => {} }, createElement: () => anchor };
+  const originalCreateObjectUrl = URL.createObjectURL;
+  const originalRevokeObjectUrl = URL.revokeObjectURL;
+  URL.createObjectURL = () => 'blob:local-export';
+  URL.revokeObjectURL = () => {};
+  try {
+    const withExplicitName = downloadTransactionsCsv([], { documentRef, filename: 'teste.csv' });
+    assert.equal(withExplicitName, 'teste.csv');
+
+    const withDefaultName = downloadTransactionsCsv([], { documentRef });
+    assert.equal(withDefaultName, buildTransactionsExportFilename());
+    assert.equal(anchor.download, withDefaultName);
+  } finally {
+    URL.createObjectURL = originalCreateObjectUrl;
+    URL.revokeObjectURL = originalRevokeObjectUrl;
+  }
+});
+
 test('downloadTransactionsCsv revoga a blob: URL só depois de um atraso -- nunca no mesmo tick do clique (bug do Android/PWA)', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const anchor = { click() {}, remove() {} };

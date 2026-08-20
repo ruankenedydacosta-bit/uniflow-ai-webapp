@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSession } from '../../app/SessionContext.jsx';
+import { createDownloadReadyNotification } from '../notifications/notificationsService.js';
 import { ChevronRightIcon, DownloadIcon } from './SimplifiedIcons.jsx';
 import SimplifiedReportSpreadsheet from './SimplifiedReportSpreadsheet.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
@@ -31,6 +33,7 @@ function BackIcon() {
  */
 function SimplifiedReportPage() {
   const navigate = useNavigate();
+  const { user, workspace } = useSession();
   const { report, moveMonth } = useMonthlyReport();
   const [downloadState, setDownloadState] = useState('idle');
 
@@ -47,8 +50,20 @@ function SimplifiedReportPage() {
       // `report` é o estado MAIS RECENTE (useMonthlyReport já mantém isso
       // vivo) -- nunca um snapshot de quando a tela abriu.
       const blob = await buildMonthlyReportWorkbookBlob(report);
-      downloadMonthlyReportWorkbookBlob(blob, buildMonthlyReportFilename(report.period));
+      const filename = buildMonthlyReportFilename(report.period);
+      downloadMonthlyReportWorkbookBlob(blob, filename);
       setDownloadState('idle');
+      // DOWNLOAD-FEEDBACK1: só depois do download já ter sido DISPARADO
+      // (linha acima) -- nunca antes, nunca se a geração falhar (fora do
+      // try, esse trecho nem roda). Nunca derruba o download em si: a
+      // própria createNotification já nunca lança.
+      if (user?.id) {
+        void createDownloadReadyNotification(user.id, {
+          workspaceId: workspace?.id,
+          filename,
+          fileType: 'xlsx',
+        });
+      }
     } catch {
       setDownloadState('error');
     }
