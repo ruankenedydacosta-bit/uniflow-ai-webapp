@@ -180,3 +180,79 @@ test('acessibilidade: descrição textual do gráfico muda para o cenário vazio
   assert.match(source, /const chartDescription = isEmptyView/);
   assert.match(source, /emptyState\.message\} \$\{emptyState\.support/);
 });
+
+// ============================================================================
+// CHART-PULSE1 -- a "borda branca" ao clicar era o anel de foco padrão do
+// navegador sobre o <svg> (que tem tabIndex={0} e onKeyDown de verdade).
+// Sai no ponteiro, fica no teclado, e o toque ganha uma onda da marca.
+// ============================================================================
+
+test('a borda branca some no CLIQUE/TOQUE -- :focus sem outline', async () => {
+  const css = await featureSource('CognitiveLiveChart.module.css');
+  assert.match(css, /\.svg:focus \{\s*\n\s*outline: none;\s*\n\s*\}/);
+});
+
+// Sem isto, quem navega por teclado ficaria sem saber onde está -- o svg
+// continua focável e continua tendo onKeyDown.
+test('ACESSIBILIDADE: teclado mantém indicador visível (:focus-visible), na cor da marca', async () => {
+  const css = await featureSource('CognitiveLiveChart.module.css');
+  const focusVisible = css.slice(css.indexOf('.svg:focus-visible {'), css.indexOf('.rootPulsing {'));
+  assert.match(focusVisible, /outline: 2px solid var\(--uni-cyan\);/);
+  assert.match(focusVisible, /outline-offset: 3px;/);
+
+  const source = await featureSource('CognitiveLiveChart.jsx');
+  assert.match(source, /tabIndex=\{0\}/, 'o svg continua alcançável por teclado');
+  assert.match(source, /onKeyDown=\{handleKeyDown\}/, 'o svg continua navegável por teclado');
+});
+
+test('onda usa as três cores da marca (roxo -> azul -> ciano) por token, nunca hex fixo', async () => {
+  const css = await featureSource('CognitiveLiveChart.module.css');
+  const keyframes = css.slice(css.indexOf('@keyframes uniChartPulse'), css.indexOf('@media (prefers-reduced-motion: reduce) {\n  .rootPulsing'));
+  assert.match(keyframes, /var\(--uni-purple\)/);
+  assert.match(keyframes, /var\(--uni-blue\)/);
+  assert.match(keyframes, /var\(--uni-cyan\)/);
+  assert.doesNotMatch(keyframes, /#[0-9a-fA-F]{3,8}\b/);
+  assert.match(css, /--uni-cyan: var\(--uf-app-cyan\);/);
+});
+
+test('onda se espalha da borda para FORA (box-shadow crescente) e nunca toca o conteúdo interno', async () => {
+  const css = await featureSource('CognitiveLiveChart.module.css');
+  const keyframes = css.slice(css.indexOf('@keyframes uniChartPulse'), css.indexOf('@media (prefers-reduced-motion: reduce) {\n  .rootPulsing'));
+  // Só box-shadow é animado: nada de transform/scale, que mexeria no
+  // conteúdo interno do gráfico.
+  assert.match(keyframes, /box-shadow:/);
+  assert.doesNotMatch(keyframes, /transform:|scale\(|opacity:/);
+  // O raio/spread cresce do início para o fim -- é o que dá a onda.
+  assert.match(keyframes, /0 0 24px 6px/);
+  assert.match(keyframes, /0 0 66px 30px/);
+});
+
+test('duração dentro da faixa pedida (800ms-1.2s) e igual no CSS e no JS', async () => {
+  const css = await featureSource('CognitiveLiveChart.module.css');
+  const source = await featureSource('CognitiveLiveChart.jsx');
+  const cssMs = Number(/animation: uniChartPulse (\d+)ms/.exec(css)?.[1]);
+  const jsMs = Number(/const PULSE_DURATION_MS = (\d+);/.exec(source)?.[1]);
+  assert.ok(cssMs >= 800 && cssMs <= 1200, `duração do CSS fora da faixa: ${cssMs}ms`);
+  assert.equal(jsMs, cssMs, 'JS e CSS precisam concordar, senão a onda não reinicia no tempo certo');
+});
+
+test('toque dispara a onda e ela REINICIA a cada toque (remove/readiciona no próximo frame)', async () => {
+  const source = await featureSource('CognitiveLiveChart.jsx');
+  const handler = source.slice(source.indexOf('function handleRootPointerDown'), source.indexOf('return (', source.indexOf('function handleRootPointerDown')));
+  assert.match(handler, /setIsPulsing\(false\);/);
+  assert.match(handler, /requestAnimationFrame\(\(\) => setIsPulsing\(true\)\);/);
+  assert.match(source, /onPointerDown=\{handleRootPointerDown\}/);
+});
+
+test('prefers-reduced-motion não recebe onda -- barrado no JS e também no CSS', async () => {
+  const source = await featureSource('CognitiveLiveChart.jsx');
+  const handler = source.slice(source.indexOf('function handleRootPointerDown'), source.indexOf('return (', source.indexOf('function handleRootPointerDown')));
+  assert.match(handler, /if \(reduceMotion\) return;/);
+  const css = await featureSource('CognitiveLiveChart.module.css');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\n\s*\.rootPulsing \{\s*\n\s*animation: none;/);
+});
+
+test('o timeout da onda é limpo no unmount -- nunca setState em componente desmontado', async () => {
+  const source = await featureSource('CognitiveLiveChart.jsx');
+  assert.match(source, /useEffect\(\(\) => \(\) => \{\s*\n\s*if \(pulseTimeoutRef\.current\) clearTimeout\(pulseTimeoutRef\.current\);\s*\n\s*\}, \[\]\);/);
+});

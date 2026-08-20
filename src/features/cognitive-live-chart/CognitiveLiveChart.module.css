@@ -20,6 +20,9 @@
   --uni-text-secondary: var(--uf-app-text-2);
   --uni-blue: var(--uf-app-primary);
   --uni-purple: var(--uf-app-ai);
+  /* CHART-PULSE1: terceira cor da marca (roxo -> azul -> ciano) usada na
+     onda de toque. Token semântico, nunca hex fixo -- acompanha o tema. */
+  --uni-cyan: var(--uf-app-cyan);
   --uni-green: var(--uf-app-success);
   --uni-red: var(--uf-app-danger);
 
@@ -160,6 +163,59 @@
   height: auto;
   display: block;
   overflow: visible;
+}
+
+/* ---------------------------------------------------------------------------
+   CHART-PULSE1 -- feedback de toque no lugar do anel branco do navegador.
+
+   O <svg> tem tabIndex={0} e onKeyDown (é navegável por teclado de
+   verdade), então ao clicar/tocar ele recebia foco e o navegador desenhava
+   seu anel padrão -- a "borda branca" relatada.
+
+   :focus tira o anel no PONTEIRO. :focus-visible devolve um indicador na
+   cor da marca para quem navega por TECLADO -- os navegadores só casam
+   :focus-visible em foco por teclado, nunca por toque/clique. Remover os
+   dois deixaria quem usa teclado sem saber onde está.
+--------------------------------------------------------------------------- */
+.svg:focus {
+  outline: none;
+}
+
+.svg:focus-visible {
+  outline: 2px solid var(--uni-cyan);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* A onda sai da BORDA para fora (box-shadow não é recortado pelo
+   overflow:hidden do próprio .root) e nunca toca o conteúdo interno.
+   Três camadas na sequência da marca -- roxo, azul, ciano -- abrindo e
+   apagando juntas, o que dá a leitura de "nuvem" em vez de anel duro. */
+.rootPulsing {
+  animation: uniChartPulse 900ms cubic-bezier(.22, .61, .36, 1) both;
+}
+
+@keyframes uniChartPulse {
+  from {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--uni-purple) 70%, transparent),
+      0 0 14px 2px color-mix(in srgb, var(--uni-blue) 45%, transparent),
+      0 0 24px 6px color-mix(in srgb, var(--uni-cyan) 28%, transparent);
+  }
+  to {
+    box-shadow:
+      0 0 0 1px transparent,
+      0 0 38px 14px transparent,
+      0 0 66px 30px transparent;
+  }
+}
+
+/* Movimento reduzido: nenhuma onda (o JS também já nem liga a classe) --
+   a regra existe como segunda barreira, nunca depender só do JS. */
+@media (prefers-reduced-motion: reduce) {
+  .rootPulsing {
+    animation: none;
+  }
 }
 
 .svgDimmed .receitaLine,

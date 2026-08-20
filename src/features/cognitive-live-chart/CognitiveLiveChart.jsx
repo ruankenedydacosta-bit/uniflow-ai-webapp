@@ -30,6 +30,10 @@ import {
 } from './cognitiveLiveChart.mock';
 
 const VIEWBOX_WIDTH = 340;
+
+// CHART-PULSE1: precisa bater com a duração da animação uniChartPulse no
+// CSS -- é o tempo até a classe ser removida e a onda poder recomeçar.
+const PULSE_DURATION_MS = 900;
 const MARGIN = { top: 20, right: 14, bottom: 28, left: 14 };
 
 const VARIANT_HEIGHT = {
@@ -87,13 +91,23 @@ export default function CognitiveLiveChart({
   const [focusedIndex, setFocusedIndex] = useState(null);
   const [tooltipScreen, setTooltipScreen] = useState(null);
   const [containerWidth, setContainerWidth] = useState(VIEWBOX_WIDTH);
+  // CHART-PULSE1: feedback de toque -- onda de luz saindo da borda, no
+  // lugar do anel de foco branco do navegador (ver .svg:focus no CSS).
+  const [isPulsing, setIsPulsing] = useState(false);
 
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   const activePointerRef = useRef(null);
+  const pulseTimeoutRef = useRef(null);
   const reduceMotion = useMemo(() => prefersReducedMotion(), []);
   const reactId = useId();
   const uid = `ucl-${reactId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+
+  // CHART-PULSE1: um toque logo antes de desmontar (navegar para outra
+  // rota) deixaria um setState pendente disparando em componente morto.
+  useEffect(() => () => {
+    if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current || typeof ResizeObserver === 'undefined') return undefined;
@@ -343,10 +357,28 @@ export default function CognitiveLiveChart({
       + `${formatBRL(data[data.length - 1].despesa)} até o dia ${todayDay}. `
       + (uniMessage ? `Interpretação da Uni: ${uniMessage}` : 'Sem destaque ativo no momento.');
 
+  // CHART-PULSE1: reinicia a onda a cada toque (remove a classe e devolve
+  // no frame seguinte) -- sem isso, tocar de novo durante a animação não
+  // produz feedback nenhum. Respeita prefers-reduced-motion: quem pediu
+  // menos movimento simplesmente não recebe a onda.
+  function handleRootPointerDown() {
+    if (reduceMotion) return;
+    if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+    setIsPulsing(false);
+    requestAnimationFrame(() => setIsPulsing(true));
+    pulseTimeoutRef.current = setTimeout(() => setIsPulsing(false), PULSE_DURATION_MS);
+  }
+
   return (
     <div
       ref={containerRef}
-      className={`${styles.root} ${isDetailed ? styles.rootDetailed : styles.rootCompact} ${className}`}
+      className={[
+        styles.root,
+        isDetailed ? styles.rootDetailed : styles.rootCompact,
+        isPulsing ? styles.rootPulsing : '',
+        className,
+      ].filter(Boolean).join(' ')}
+      onPointerDown={handleRootPointerDown}
     >
       {isDetailed && !isEmptyView ? (
         <div className={styles.toolbar}>
