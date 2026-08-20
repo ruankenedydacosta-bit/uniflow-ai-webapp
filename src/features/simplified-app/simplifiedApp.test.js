@@ -1723,10 +1723,23 @@ test('HOTFIX P1.4: SimplifiedHomeView não repassa onSpeakMessage/voiceEnabled p
   assert.doesNotMatch(block, /onSpeakMessage=\{onSpeakMessage\}/);
 });
 
-test('BLOCO UNI 2: isSpeaking em SimplifiedHomeView deriva de voiceController.status (LOADING ou PLAYING), nunca da captura', async () => {
+test('HOTFIX: somente PLAYING exibe TOQUE PARA PARAR; LOADING permanece cancelável pelo barge-in', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /const SPEAKING_VOICE_STATUSES = new Set\(\[VOICE_TTS_STATUS\.LOADING, VOICE_TTS_STATUS\.PLAYING\]\);/);
-  assert.match(home, /const isSpeaking = SPEAKING_VOICE_STATUSES\.has\(voiceController\.status\);/);
+  assert.match(home, /const INTERRUPTIBLE_VOICE_STATUSES = new Set\(\[\s*VOICE_TTS_STATUS\.LOADING,\s*VOICE_TTS_STATUS\.PLAYING,\s*\]\);/);
+  assert.match(home, /const isSpeaking = voiceController\.status === VOICE_TTS_STATUS\.PLAYING;/);
+  assert.match(home, /const isVoicePlaybackInterruptible = INTERRUPTIBLE_VOICE_STATUSES\.has\(\s*voiceController\.status,\s*\);/);
+
+  const beginIdx = home.indexOf('function beginVoiceCapture() {');
+  const endIdx = home.indexOf('function finishVoiceInteraction', beginIdx);
+  const beginVoiceCapture = home.slice(beginIdx, endIdx);
+  assert.match(beginVoiceCapture, /isSpeaking: isVoicePlaybackInterruptible,/);
+});
+
+test('rótulos do botão central usam tipografia menor sem alterar o orb', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const labelStart = css.indexOf('.uniButtonLabel {');
+  const labelRule = css.slice(labelStart, css.indexOf('}', labelStart));
+  assert.match(labelRule, /font-size: clamp\(14px, 3\.6vw, 20px\);/);
 });
 
 // ============================================================================

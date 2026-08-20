@@ -1139,7 +1139,7 @@
   top: 73%;
   left: 50%;
   width: 82%;
-  font-size: clamp(17px, 4.5vw, 25px);
+  font-size: clamp(14px, 3.6vw, 20px);
   font-weight: 780;
   letter-spacing: .08em;
   line-height: 1.2;
@@ -1395,7 +1395,7 @@
   }
 
   .uniButtonLabel {
-    font-size: 16px;
+    font-size: 14px;
   }
 }
 

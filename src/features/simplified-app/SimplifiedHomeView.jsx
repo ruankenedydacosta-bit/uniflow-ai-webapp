@@ -36,7 +36,14 @@ import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import styles from './simplifiedApp.module.css';
 
-const SPEAKING_VOICE_STATUSES = new Set([VOICE_TTS_STATUS.LOADING, VOICE_TTS_STATUS.PLAYING]);
+// LOADING significa apenas que a voz está sendo preparada. O rótulo
+// "TOQUE PARA PARAR" só pode aparecer quando existe reprodução real
+// (PLAYING), mas o carregamento continua interrompível pelo mesmo gesto de
+// barge-in para nunca iniciar por cima de uma nova captura.
+const INTERRUPTIBLE_VOICE_STATUSES = new Set([
+  VOICE_TTS_STATUS.LOADING,
+  VOICE_TTS_STATUS.PLAYING,
+]);
 
 function getVoiceActivationError(errorCode) {
   if (errorCode === 'permission_denied') {
@@ -590,10 +597,13 @@ function SimplifiedHomeView({
   const pendingConfirmation = messages.some(
     (message) => message.confirmation?.status === 'pending',
   );
-  // BLOCO UNI 2: reflete a SAÍDA de voz (TTS), nunca a captura -- usado
-  // para mostrar o estado "falando" e, em beginVoiceCapture, para decidir
-  // se o gesto precisa primeiro interromper (barge-in) antes de gravar.
-  const isSpeaking = SPEAKING_VOICE_STATUSES.has(voiceController.status);
+  // Estado visual e estado cancelável são deliberadamente diferentes:
+  // LOADING ainda não é fala audível, então não pode mostrar "TOQUE PARA
+  // PARAR"; porém precisa continuar cancelável antes de abrir o microfone.
+  const isSpeaking = voiceController.status === VOICE_TTS_STATUS.PLAYING;
+  const isVoicePlaybackInterruptible = INTERRUPTIBLE_VOICE_STATUSES.has(
+    voiceController.status,
+  );
   const interactionState = resolveSimplifiedUniState({
     voiceStatus: voiceInput.status,
     isTyping,
@@ -819,7 +829,7 @@ function SimplifiedHomeView({
     // pode chegar depois e mexer no estado da gravação que começa a seguir.
     const plan = resolveBargeInPlan({
       isInteractionBusy,
-      isSpeaking,
+      isSpeaking: isVoicePlaybackInterruptible,
       isVoiceError: isVoiceErrorState(voiceInput.status),
     });
     if (!plan.proceed) return false;
