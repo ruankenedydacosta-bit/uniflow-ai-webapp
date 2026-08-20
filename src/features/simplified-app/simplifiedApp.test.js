@@ -1408,6 +1408,109 @@ test('SimplifiedAppShell repassa dismissNotification do hook como onDismiss do p
   assert.match(shell, /onDismiss=\{dismissNotification\}/);
 });
 
+// ============================================================================
+// NOTIF-UX3 -- Notification Center mobile: auditoria encontrou o painel
+// nascendo em fluxo normal dentro de .shellTopRegion (que só ganha altura
+// quando ele está aberto, já que o header é fixed) -- ou seja, o topo do
+// painel ficava exatamente onde o header fixo já se sobrepõe, "misturando"
+// com a Home. Corrigido com position:absolute ancorado em
+// var(--uf-header-full-height) + backdrop próprio + congelamento de
+// scroll -- ver testes abaixo.
+// ============================================================================
+
+test('painel e backdrop vivem DENTRO de .shellTopRegion (mesmo contexto de empilhamento do header) -- nunca fora dela', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  const topRegionBlock = shell.slice(
+    shell.indexOf('<div className={styles.shellTopRegion}>'),
+    shell.indexOf('<main'),
+  );
+  assert.match(topRegionBlock, /className=\{styles\.notificationsBackdrop\}/);
+  assert.match(topRegionBlock, /className=\{styles\.notificationsDropdown\}/);
+});
+
+test('painel nunca contribui pra altura de .shellTopRegion -- position:absolute, nunca fluxo normal (Home não é empurrada)', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const dropdownRule = /\.notificationsDropdown \{([\s\S]*?)\n\}/.exec(css);
+  assert.match(dropdownRule[1], /position: absolute;/);
+  assert.doesNotMatch(dropdownRule[1], /max-height: 0;/, 'a versão antiga usava max-height:0->X em fluxo normal -- empurrava .mainContent ao abrir');
+});
+
+test('backdrop é puramente visual/bloqueio de toque -- fechar continua decidido pelo listener de pointerdown existente', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /<div\s*\n\s*className=\{styles\.notificationsBackdrop\}\s*\n\s*data-open=\{isNotificationsOpen \? 'true' : 'false'\}\s*\n\s*aria-hidden="true"\s*\n\s*\/>/);
+  // O listener de outside-click já ignora cliques dentro do painel/botão --
+  // um clique no backdrop (que não é nenhum dos dois) cai no ramo "fora",
+  // fechando o painel sem precisar de handler próprio no backdrop.
+  const outsideCheck = /notificationPanelRef\.current\?\.contains\(event\.target\)\s*\n\s*\|\| notificationButtonRef\.current\?\.contains\(event\.target\)/;
+  assert.match(shell, outsideCheck);
+});
+
+test('painel compacto quando vazio: sem min-height forçado, sem forçar 70-80% da tela', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const dropdownRule = /\.notificationsDropdown \{([\s\S]*?)\n\}/.exec(css);
+  assert.doesNotMatch(dropdownRule[1], /min-height/, 'altura precisa vir do conteúdo real, nunca de um piso fixo');
+});
+
+test('lista longa usa max-height em min(70dvh, ...) + scroll interno -- nunca cresce indefinidamente', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const dropdownRule = /\.notificationsDropdown \{([\s\S]*?)\n\}/.exec(css);
+  assert.match(dropdownRule[1], /max-height: min\(\s*\n\s*70dvh,/);
+  assert.match(dropdownRule[1], /overflow-y: auto;/);
+});
+
+test('animação de abertura: opacity 0->1, translateY, scale .98->1, ~190-200ms, sem curva com overshoot (nunca bounce)', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const dropdownRule = /\.notificationsDropdown \{([\s\S]*?)\n\}/.exec(css);
+  assert.match(dropdownRule[1], /opacity: 0;/);
+  assert.match(dropdownRule[1], /transform: translateY\(-8px\) scale\(\.98\);/);
+  assert.match(dropdownRule[1], /transition: opacity 190ms ease, transform 190ms ease;/);
+  assert.doesNotMatch(dropdownRule[1], /cubic-bezier\([^)]*[2-9]\d*\.\d|cubic-bezier\([^)]*-\d/, 'nenhuma curva com overshoot (bounce)');
+});
+
+test('fechamento remove o painel do DOM ~190ms depois (alinhado à duração pedida de 150-200ms)', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /\}, 190\);/);
+});
+
+test('prefers-reduced-motion desliga a transição/transform do painel e do backdrop', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const idx = css.lastIndexOf('@media (prefers-reduced-motion: reduce) {');
+  const slice = css.slice(idx, idx + 1500);
+  assert.match(slice, /\.notificationsBackdrop,\s*\n\s*\.notificationsDropdown \{\s*\n\s*transition: none;\s*\n\s*transform: none;/);
+});
+
+test('SCROLL FREEZE: .mainContent congela (overflow:hidden) enquanto o painel está aberto -- nunca reseta scrollTop', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  const css = await source('./simplifiedApp.module.css');
+  assert.match(shell, /data-notifications-open=\{isNotificationsOpen \? 'true' : undefined\}/);
+  assert.match(css, /\.mainContent\[data-notifications-open="true"\] \{\s*\n\s*overflow: hidden;\s*\n\s*\}/);
+  // Nenhum scrollTo/scrollTop sendo manipulado -- a posição é preservada
+  // só por NUNCA ser alterada, nunca por um "restaurar" explícito.
+  assert.doesNotMatch(shell, /scrollTo\(|\.scrollTop\s*=/);
+});
+
+test('CTA de Web Push: só aparece com status DEFAULT (ainda não perguntado) -- nunca nos estados denied/unsupported/not_configured', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /import \{ PUSH_STATUS, useWebPush \} from '\.\.\/mobile-push\/useWebPush\.js';/);
+  assert.match(shell, /const showPushCta = pushStatus === PUSH_STATUS\.DEFAULT;/);
+  assert.match(shell, /\{showPushCta \? \(/);
+});
+
+test('CTA de Web Push reaproveita enableNotifications() do useWebPush -- nunca uma segunda arquitetura de subscription', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /onClick=\{\(\) => enablePushNotifications\(\)\}/);
+  assert.doesNotMatch(shell, /pushManager\.subscribe|Notification\.requestPermission/, 'nunca reimplementar a inscrição aqui -- só chamar o hook existente');
+});
+
+test('Notification Center nunca mostra Desativar/Teste/Configurar/Permissões -- só o CTA de ativar (quando aplicável) e a lista', async () => {
+  const shell = await source('./SimplifiedAppShell.jsx');
+  const topRegionBlock = shell.slice(
+    shell.indexOf('<div className={styles.shellTopRegion}>'),
+    shell.indexOf('<main'),
+  );
+  assert.doesNotMatch(topRegionBlock, /Desativar|Enviar notificação de teste|disableNotifications|sendTest/);
+});
+
 test('preferência de tamanho textual é aplicada como atributo no shell', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
   const css = await source('./simplifiedApp.module.css');

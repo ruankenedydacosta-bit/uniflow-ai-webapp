@@ -222,14 +222,41 @@ test('NOTIFICATIONS e PRIVACY não existem mais em ACCOUNT_SUBROUTE_IDS/ACCOUNT_
 // simplificada para /app/home). É uma SEÇÃO própria (não uma subrota nova,
 // nem um item de menuItems que navega para outro lugar) -- fica visível
 // direto nesta tela, entre o card do plano e o menu de configurações.
-test('SimplifiedPushNotificationsCard é importado e renderizado como seção própria em Conta, entre o card do plano e o menu', async () => {
+// NOTIF-UX3: o card grande "Notificações no celular" (com badge Ativadas/
+// Desativadas, "Enviar notificação de teste" e "Desativar notificações"
+// visíveis pra qualquer usuário) foi substituído por uma linha compacta,
+// no MESMO padrão visual de Agenda/Pagamento/Voz/Suporte -- deixou de
+// parecer painel de desenvolvimento. SimplifiedPushNotificationsCard.jsx
+// continua existindo (nunca deletado, testes próprios continuam passando,
+// Edge Function de teste intacta) só deixou de ser renderizado em Conta.
+test('linha compacta de notificações substitui o card grande -- mesmo padrão visual de Agenda/Pagamento/Voz/Suporte', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /import SimplifiedPushNotificationsCard from '\.\.\/mobile-push\/SimplifiedPushNotificationsCard\.jsx';/);
-  const planCardIndex = page.indexOf('planChevron');
-  const cardIndex = page.indexOf('<SimplifiedPushNotificationsCard />');
+  assert.doesNotMatch(page, /SimplifiedPushNotificationsCard/);
+  assert.match(page, /import SimplifiedAccountNotificationsRow from '\.\/SimplifiedAccountNotificationsRow\.jsx';/);
   const menuCardIndex = page.indexOf('styles.menuCard');
-  assert.ok(planCardIndex > -1 && cardIndex > planCardIndex, 'card deve vir depois do card do plano');
-  assert.ok(cardIndex > -1 && menuCardIndex > cardIndex, 'card deve vir antes do menu de configurações');
+  const rowIndex = page.indexOf('<SimplifiedAccountNotificationsRow />');
+  assert.ok(menuCardIndex > -1 && rowIndex > menuCardIndex, 'a linha vive DENTRO do menuCard, no mesmo bloco de Agenda/Pagamento/Voz/Suporte');
+});
+
+test('linha de notificações nunca mostra "Enviar notificação de teste" nem "Desativar notificações" para o usuário comum', async () => {
+  const row = await source('./SimplifiedAccountNotificationsRow.jsx');
+  assert.doesNotMatch(row, /Enviar notificação de teste/);
+  assert.doesNotMatch(row, /Desativar notificações/);
+  assert.doesNotMatch(row, /disableNotifications/);
+  assert.doesNotMatch(row, /sendTest/);
+});
+
+test('linha de notificações reaproveita useWebPush() -- nunca uma segunda arquitetura de subscription', async () => {
+  const row = await source('./SimplifiedAccountNotificationsRow.jsx');
+  assert.match(row, /import \{ useWebPush, PUSH_STATUS \} from '\.\.\/mobile-push\/useWebPush\.js';/);
+  assert.match(row, /enableNotifications/);
+});
+
+test('estados da linha: "Ativar notificações" quando não autorizado, "Ativadas neste dispositivo" quando enabled', async () => {
+  const row = await source('./SimplifiedAccountNotificationsRow.jsx');
+  assert.match(row, /'Ativadas neste dispositivo'/);
+  assert.match(row, /'Ativar notificações'/);
+  assert.match(row, /const isEnabled = status === PUSH_STATUS\.ENABLED;/);
 });
 
 test('nenhuma rota nova foi criada para Web Push -- ACCOUNT_SUBROUTES continua com exatamente os mesmos 10 paths', async () => {

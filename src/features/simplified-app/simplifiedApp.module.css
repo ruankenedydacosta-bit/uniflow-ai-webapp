@@ -179,9 +179,18 @@
   pointer-events: none;
 }
 
+/* NOTIF-UX3: 15 -> 22. O sino/painel de notificações vive DENTRO desta
+   região (irmão de .header), então é a comparação ENTRE ELES (25 vs 30,
+   ambos abaixo) que decide se o painel some atrás do cabeçalho -- mas essa
+   comparação só existe DENTRO do contexto de empilhamento desta região.
+   Para a região INTEIRA (com o painel dentro) renderizar acima de
+   .bottomNavigation (20, irmã desta região em .shellSurface), o valor
+   PRÓPRIO daqui precisa superar 20. 22 é o mínimo necessário -- ainda bem
+   abaixo de --uf-z-modal (1400, theme.css), então nenhum modal global
+   pode ficar atrás disto. */
 .shellTopRegion {
   position: relative;
-  z-index: 15;
+  z-index: 22;
   min-width: 0;
 }
 
@@ -297,6 +306,53 @@
   line-height: 1;
 }
 
+/* NOTIF-UX3 -- CAUSA REAL do painel quebrado (auditoria): antes desta
+   fase, o painel nascia em fluxo normal DENTRO de .shellTopRegion, que só
+   tem altura quando o painel está aberto (o header é position:fixed,
+   nunca contribui pra altura da região). Ou seja, o topo do painel ficava
+   exatamente em y=0 da região -- o MESMO lugar onde o header fixo (acima
+   em z-index) já se sobrepõe visualmente. Resultado: o título "Notificações"
+   nascia atrás do header, e a região (agora com altura de verdade) empurrava
+   .mainContent pra baixo -- o painel "misturava" com a Home em vez de
+   flutuar por cima dela.
+   Correção: o painel e seu backdrop viram position:absolute (nunca mais
+   contribuem para a altura de .shellTopRegion -- ela continua sempre 0,
+   como antes de existir notificação nenhuma) e são ancorados por
+   `top: var(--uf-header-full-height)`, a MESMA variável que .mainContent
+   já usa pra reservar espaço do header -- o painel começa exatamente onde
+   o header termina, nunca por baixo dele. */
+.notificationsBackdrop {
+  position: absolute;
+  top: var(--uf-header-full-height);
+  left: 0;
+  right: 0;
+  /* Comprimento explícito (nunca %) -- o pai (.shellTopRegion) tem altura
+     0 por conter só filhos absolutos, então uma altura em % resolveria
+     para 0. var(--uf-visual-viewport-height) já existe em .shell e é
+     herdada até aqui. */
+  height: calc(var(--uf-visual-viewport-height, 100dvh) - var(--uf-header-full-height));
+  z-index: 24;
+  /* Backdrop MUITO leve (nunca a Home "irreconhecível") -- mesma
+     intensidade de blur já usada em .header, só o necessário pra separar
+     visualmente o painel do conteúdo atrás. */
+  background: color-mix(in srgb, var(--uf-app-overlay) 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 190ms ease;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .notificationsBackdrop {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+.notificationsBackdrop[data-open="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .notificationsDropdown {
   --uf-color-text-primary: var(--uf-app-text);
   --uf-color-text-secondary: var(--uf-app-text-2);
@@ -304,35 +360,43 @@
   --uf-color-primary-subtle: var(--uf-app-primary-subtle);
   --uf-color-ai-subtle: var(--uf-app-ai-subtle);
   --uf-color-success: var(--uf-app-success);
-  max-height: 0;
-  margin: 0 max(18px, env(safe-area-inset-right));
-  padding: 0 18px;
-  overflow: hidden;
-  border: 1px solid transparent;
+  position: absolute;
+  top: var(--uf-header-full-height);
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px max(18px, env(safe-area-inset-right)) 0 max(18px, env(safe-area-inset-left));
+  padding: 16px;
+  /* Compacto quando vazio -- nenhum piso de altura imposto aqui, o
+     conteúdo real dita o tamanho; com muitas notificações, para de
+     crescer aqui e a lista interna (.list, NotificationsPanel.module.css)
+     já rola sozinha. */
+  max-height: min(
+    70dvh,
+    calc(var(--uf-visual-viewport-height, 100dvh) - var(--uf-header-full-height) - 20px)
+  );
+  overflow-y: auto;
+  border: 1px solid rgba(96, 116, 255, .38);
   border-radius: 20px;
   background: var(--uf-app-panel);
-  box-shadow: none;
+  box-shadow: var(--uf-app-soft-shadow), inset 0 1px var(--uf-app-border);
   opacity: 0;
-  transform: translateY(-10px);
-  transition:
-    max-height 240ms ease,
-    margin 240ms ease,
-    padding 240ms ease,
-    border-color 220ms ease,
-    box-shadow 220ms ease,
-    opacity 180ms ease,
-    transform 220ms ease;
+  transform: translateY(-8px) scale(.98);
+  transform-origin: top center;
+  pointer-events: none;
+  /* 190-200ms, sem bounce (ease, nunca uma curva com overshoot) -- pedido
+     explicitamente: opacity 0->1, translateY, scale 0.98->1. */
+  transition: opacity 190ms ease, transform 190ms ease;
   backdrop-filter: blur(14px);
 }
 
 .notificationsDropdown[data-open="true"] {
-  max-height: min(560px, calc(100dvh - 160px));
-  margin-bottom: 14px;
-  padding: 18px;
-  border-color: rgba(96, 116, 255, .38);
-  box-shadow: var(--uf-app-soft-shadow), inset 0 1px var(--uf-app-border);
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 
 .notificationsDropdown:focus-visible {
@@ -342,26 +406,15 @@
 
 .notificationsDropdownHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 14px;
-}
-
-.notificationsDropdownHeader h2,
-.notificationsDropdownHeader p {
-  margin: 0;
 }
 
 .notificationsDropdownHeader h2 {
+  margin: 0;
   color: var(--uf-app-text);
   font-size: 20px;
-}
-
-.notificationsDropdownHeader p {
-  margin-top: 3px;
-  color: var(--uf-app-text-2);
-  font-size: 13px;
 }
 
 .notificationsClose {
@@ -386,6 +439,49 @@
   outline-offset: 3px;
 }
 
+/* NOTIF-UX3: CTA discreto de Web Push dentro do Notification Center --
+   só aparece com status DEFAULT (ainda não perguntado); some sozinho
+   assim que enableNotifications() confirma a subscription (o hook
+   re-renderiza com status ENABLED). Nunca Desativar/Teste/Configurar
+   aqui -- isso não existe mais nem em Conta. */
+.notificationsPushCta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 14px;
+  background: var(--uf-app-surface);
+}
+
+.notificationsPushCta p {
+  margin: 0;
+  min-width: 0;
+  color: var(--uf-app-text-2);
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
+.notificationsPushCta button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding-inline: 14px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--uf-app-primary), var(--uf-app-ai));
+  color: var(--uf-app-on-accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notificationsPushCta button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
 .mainContent {
   min-width: 0;
   min-height: 0;
@@ -406,6 +502,16 @@
 .mainContent[data-uni-chat="true"] {
   overflow: hidden;
   padding-bottom: 0;
+}
+
+/* NOTIF-UX3: congela o ÚNICO container de scroll do app (LOTE F) enquanto
+   o Notification Center está aberto -- nunca reseta scrollTop, só bloqueia
+   a rolagem, então a Home reaparece EXATAMENTE onde estava ao fechar.
+   Efeito colateral desejado: sem evento 'scroll' em .mainContent, o header
+   por trás do painel (collapsibleHeaderScroll.js) não recalcula
+   --header-progress enquanto o painel está aberto. */
+.mainContent[data-notifications-open="true"] {
+  overflow: hidden;
 }
 
 /* HEADER-SCROLL2/PERF-FIX1: espaço estrutural reservado para o header
@@ -1295,10 +1401,6 @@
     transition: none;
   }
 
-  .notificationsDropdown {
-    transition: none;
-  }
-
   .uniButton,
   .uniButtonRing,
   .uniVoiceLevelRing,
@@ -1317,6 +1419,12 @@
   .uniProcessingDot {
     animation: none;
     opacity: .85;
+  }
+
+  .notificationsBackdrop,
+  .notificationsDropdown {
+    transition: none;
+    transform: none;
   }
 
   .bottomNavigation {

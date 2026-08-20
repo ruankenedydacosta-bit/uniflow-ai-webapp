@@ -180,10 +180,14 @@ function NotificationsPanel({
           </Button>
         </div>
       ) : notifications.length === 0 ? (
+        // NOTIF-UX3: uma única frase -- a antiga segunda linha ("Toda
+        // informação importante sobre sua conta aparecerá aqui.") repetia
+        // a mesma ideia da primeira, e o painel mobile ainda soma
+        // "Tudo em dia" (unreadSummary, acima) dizendo basicamente o
+        // mesmo. Empty state compacto, sem 3 frases pra uma única ideia.
         <div className={styles.stateMessage} role="status">
           <span className={styles.emptyIcon} aria-hidden="true">✓</span>
           <strong>Nenhuma notificação por enquanto.</strong>
-          <span>Toda informação importante sobre sua conta aparecerá aqui.</span>
         </div>
       ) : (
         <ul className={styles.list} aria-label="Lista de notificações">

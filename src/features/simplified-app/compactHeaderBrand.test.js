@@ -192,10 +192,22 @@ test('data-compact-header nunca vaza para Registros/Conta/Chat da Uni (só quand
   assert.doesNotMatch(shell, /data-header-hidden/, 'era um estado binário -- substituído pelo --header-progress contínuo, nunca mais um atributo discreto');
 });
 
-test('painel de notificações (fora de escopo) continua intocado -- sem padding/margin novo, header cobre naturalmente por z-index', async () => {
+// NOTIF-UX3: o painel, "fora de escopo" nesta fase (header scroll), foi
+// redesenhado na fase seguinte -- "o header cobre naturalmente por
+// z-index" ERA o próprio bug de sobreposição relatado no teste físico
+// (o título "Notificações" nascia visualmente atrás do header). Agora o
+// painel é position:absolute, ancorado em var(--uf-header-full-height) --
+// a MESMA variável que .mainContent já usa pra não ficar atrás do header
+// -- então os dois nunca mais se sobrepõem. Cobertura completa da nova
+// arquitetura em simplifiedApp.test.js.
+test('painel de notificações não fica mais atrás do header -- ancorado na mesma var(--uf-header-full-height) que .mainContent usa', async () => {
   const css = await source('./simplifiedApp.module.css');
-  assert.match(css, /\.notificationsDropdown \{[\s\S]{0,40}--uf-color-text-primary: var\(--uf-app-text\);/);
-  assert.match(css, /padding: 0 18px;/);
-  assert.match(css, /\.notificationsDropdown\[data-open="true"\] \{[\s\S]*?padding: 18px;/);
+  const dropdownRule = /\.notificationsDropdown \{([\s\S]*?)\n\}/.exec(css);
+  assert.ok(dropdownRule, '.notificationsDropdown precisa continuar existindo');
+  assert.match(dropdownRule[1], /position: absolute;/);
+  assert.match(dropdownRule[1], /top: var\(--uf-header-full-height\);/);
+  const backdropRule = /\.notificationsBackdrop \{([\s\S]*?)\n\}/.exec(css);
+  assert.ok(backdropRule, 'backdrop próprio -- Home nunca "empurrada", só coberta visualmente');
+  assert.match(backdropRule[1], /top: var\(--uf-header-full-height\);/);
 });
 

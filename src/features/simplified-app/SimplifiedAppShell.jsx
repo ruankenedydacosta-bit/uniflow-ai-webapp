@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
+import { PUSH_STATUS, useWebPush } from '../mobile-push/useWebPush.js';
 import NotificationsPanel from '../notifications/NotificationsPanel.jsx';
 import { useNotifications } from '../notifications/useNotifications.js';
 import { useCollapsibleHeaderOnScroll } from './collapsibleHeaderScroll.js';
@@ -33,6 +34,17 @@ function SimplifiedAppShell({ children }) {
     markAllAsRead,
     dismissNotification,
   } = useNotifications();
+  // NOTIF-UX3: o Notification Center interno e o Web Push são coisas
+  // diferentes -- o sino abre a lista de notificações independentemente de
+  // push estar autorizado. Este hook só alimenta o CTA discreto "Ativar
+  // notificações" dentro do painel (mesmo enableNotifications() de sempre,
+  // nunca uma segunda arquitetura de subscription); status === DEFAULT é o
+  // único estado em que o toque realmente resolve algo -- denied/
+  // unsupported/not_configured não têm ação útil aqui (o usuário vê o
+  // detalhe em Conta), então o CTA fica ausente nesses casos.
+  const { status: pushStatus, enableNotifications: enablePushNotifications } = useWebPush();
+  const showPushCta = pushStatus === PUSH_STATUS.DEFAULT;
+  const isPushEnabling = pushStatus === PUSH_STATUS.ENABLING;
   // ETAPA 4: Conta e suas rotas internas (/app/conta/...) também têm
   // cabeçalho próprio (título + voltar, ou título + Falar com a Uni na
   // principal) -- mesmo padrão já usado por Registros, nunca o cabeçalho
@@ -80,10 +92,12 @@ function SimplifiedAppShell({ children }) {
     if (immediate) {
       setIsNotificationsRendered(false);
     } else {
+      // NOTIF-UX3: 190ms -- alinhado à duração de fechamento pedida
+      // (150-200ms) para a nova animação opacity+translateY+scale.
       closeTimerRef.current = window.setTimeout(() => {
         setIsNotificationsRendered(false);
         closeTimerRef.current = null;
-      }, 220);
+      }, 190);
     }
     if (restoreFocus) window.setTimeout(() => notificationButtonRef.current?.focus(), 0);
   }, [clearCloseTimer]);
@@ -173,46 +187,69 @@ function SimplifiedAppShell({ children }) {
             />
           )}
           {isNotificationsRendered && !hasPageHeader && !isUniChatRoute ? (
-            <div
-              id="simplified-notifications-panel"
-              ref={notificationPanelRef}
-              className={styles.notificationsDropdown}
-              data-open={isNotificationsOpen ? 'true' : 'false'}
-              role="region"
-              aria-labelledby="simplified-notifications-title"
-              aria-hidden={!isNotificationsOpen}
-              inert={!isNotificationsOpen}
-              tabIndex={-1}
-            >
-              <div className={styles.notificationsDropdownHeader}>
-                <div>
-                  <h2 id="simplified-notifications-title">Notificações</h2>
-                  <p>Informações importantes sobre sua conta.</p>
-                </div>
-                <button
-                  type="button"
-                  className={styles.notificationsClose}
-                  onClick={() => closeNotifications()}
-                  aria-label="Fechar notificações"
-                >
-                  ×
-                </button>
-              </div>
-              <NotificationsPanel
-                notifications={notifications}
-                isLoading={isLoading}
-                error={error}
-                unreadCount={unreadCount}
-                onMarkAsRead={markAsRead}
-                onMarkAllAsRead={markAllAsRead}
-                onRetry={refresh}
-                onDismiss={dismissNotification}
-                onNavigate={(url) => {
-                  closeNotifications({ restoreFocus: false, immediate: true });
-                  navigate(url);
-                }}
+            <>
+              {/* NOTIF-UX3: puramente visual/bloqueio de toque -- fechar
+                  continua sendo decidido pelo listener de pointerdown no
+                  document (abaixo), que já ignora cliques dentro do
+                  painel/botão do sino. pointer-events segue data-open
+                  (nunca o inert do painel) para devolver a interação com a
+                  Home no INSTANTE em que o fechamento começa, sem esperar
+                  a transição de opacidade terminar. */}
+              <div
+                className={styles.notificationsBackdrop}
+                data-open={isNotificationsOpen ? 'true' : 'false'}
+                aria-hidden="true"
               />
-            </div>
+              <div
+                id="simplified-notifications-panel"
+                ref={notificationPanelRef}
+                className={styles.notificationsDropdown}
+                data-open={isNotificationsOpen ? 'true' : 'false'}
+                role="region"
+                aria-labelledby="simplified-notifications-title"
+                aria-hidden={!isNotificationsOpen}
+                inert={!isNotificationsOpen}
+                tabIndex={-1}
+              >
+                <div className={styles.notificationsDropdownHeader}>
+                  <h2 id="simplified-notifications-title">Notificações</h2>
+                  <button
+                    type="button"
+                    className={styles.notificationsClose}
+                    onClick={() => closeNotifications()}
+                    aria-label="Fechar notificações"
+                  >
+                    ×
+                  </button>
+                </div>
+                <NotificationsPanel
+                  notifications={notifications}
+                  isLoading={isLoading}
+                  error={error}
+                  unreadCount={unreadCount}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onRetry={refresh}
+                  onDismiss={dismissNotification}
+                  onNavigate={(url) => {
+                    closeNotifications({ restoreFocus: false, immediate: true });
+                    navigate(url);
+                  }}
+                />
+                {showPushCta ? (
+                  <div className={styles.notificationsPushCta}>
+                    <p>Receba lembretes mesmo com a UniFlow fechada.</p>
+                    <button
+                      type="button"
+                      disabled={isPushEnabling}
+                      onClick={() => enablePushNotifications()}
+                    >
+                      {isPushEnabling ? 'Ativando…' : 'Ativar notificações'}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </>
           ) : null}
         </div>
         <main
@@ -220,6 +257,7 @@ function SimplifiedAppShell({ children }) {
           className={styles.mainContent}
           data-uni-chat={isUniChatRoute ? 'true' : undefined}
           data-compact-header={showsCompactHeader ? 'true' : undefined}
+          data-notifications-open={isNotificationsOpen ? 'true' : undefined}
         >
           <VisualViewportContext.Provider value={viewportState}>
             {children}

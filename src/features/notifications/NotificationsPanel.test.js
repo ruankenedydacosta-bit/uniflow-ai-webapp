@@ -41,11 +41,14 @@ test('"Marcar todas como lidas" só aparece quando há não lidas e fica desabil
   assert.match(content, /onClick=\{\(\) => onMarkAllAsRead\?\.\(\)\}/);
 });
 
-test('estado vazio tem ícone, título e orientação útil sem inventar notificação', async () => {
+test('estado vazio tem ícone e título, compacto -- sem repetir a mesma ideia em várias frases', async () => {
   const content = await source('NotificationsPanel.jsx');
   assert.match(content, /className=\{styles\.emptyIcon\}/);
   assert.match(content, /Nenhuma notificação por enquanto\./);
-  assert.match(content, /Toda informação importante sobre sua conta aparecerá aqui\./);
+  // NOTIF-UX3: a segunda frase (redundante com a primeira, e com
+  // "Tudo em dia" já mostrado acima) foi removida -- empty state de UMA
+  // única linha de mensagem, nunca três dizendo a mesma coisa.
+  assert.doesNotMatch(content, /Toda informação importante sobre sua conta aparecerá aqui\./);
 });
 
 // NOTIF2 (ajuste visual): o ícone de tipo ("□" etc, um quadrado ao lado do

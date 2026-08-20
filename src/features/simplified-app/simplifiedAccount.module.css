@@ -456,6 +456,23 @@
   stroke-width: 2.4;
 }
 
+/* NOTIF-UX3: indicador neutro/desativado por padrão -- fica verde só
+   quando a subscription está confirmada (nunca otimista). Substitui a
+   badge grande "Ativadas/Desativadas" do card antigo por um sinal
+   discreto, coerente com o resto da lista (que não usa badges). */
+.notificationStatusDot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--uf-app-text-3);
+}
+
+.notificationStatusDotOn {
+  background: var(--uf-app-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--uf-app-success) 18%, transparent);
+}
+
 /* ---------- Sair da conta ---------- */
 
 .logoutCard {
