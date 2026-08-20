@@ -18,6 +18,7 @@ import {
   signOut as signOutService,
   updatePassword as updatePasswordService,
 } from '../services/authService';
+import { clearHomeFinancialCacheForUser } from '../features/simplified-app/homeFinancialCache.js';
 import { getProfile, updateProfile } from '../services/profileService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import {
@@ -791,6 +792,12 @@ function SessionProvider({ children }) {
         } catch {
           // sessionStorage pode não estar disponível (modo privado, etc.)
         }
+
+        // HOME-INSTANT1: o cache financeiro da Home guarda valores reais
+        // (entradas/saídas/movimentações). Sem apagar aqui, o próximo
+        // usuário neste aparelho veria os números do anterior pintados na
+        // tela antes do primeiro fetch. Nunca lança -- não bloqueia o logout.
+        clearHomeFinancialCacheForUser(currentUserId);
       }
 
       const result = await signOutService();

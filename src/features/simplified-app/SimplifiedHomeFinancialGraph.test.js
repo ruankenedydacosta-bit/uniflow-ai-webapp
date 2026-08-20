@@ -114,7 +114,10 @@ test('RELATORIO1: o CTA "Pergunte à Uni sobre seus dados" foi substituído pelo
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
   assert.doesNotMatch(graph, /Pergunte à Uni sobre seus dados/);
   assert.match(graph, /import SimplifiedReportCard from '\.\/SimplifiedReportCard\.jsx';/);
-  assert.match(graph, /<SimplifiedReportCard transactionCount=\{transactionState\.transactions\.length\} \/>/);
+  // HOME-INSTANT1: a contagem passou a vir do mesmo `graphData` (cache ou
+  // fresco) em vez de transactionState -- continua sendo a MESMA busca já
+  // feita pelo gráfico, nunca um segundo fetch financeiro só para o card.
+  assert.match(graph, /<SimplifiedReportCard transactionCount=\{graphData\.transactionCount\} \/>/);
 });
 
 test('RESPONSIVIDADE: textos longos truncam em vez de quebrar o layout', async () => {
@@ -217,9 +220,91 @@ test('PERFORMANCE: lazy mount por IntersectionObserver preservado', async () => 
   assert.match(graph, /function SimplifiedHomeFinancialGraphContent\(\)/);
 });
 
+// ============================================================================
+// HOME-INSTANT1 -- abrir o app já com os números na tela (cache local) e,
+// sem cache, skeleton no lugar de espaço vazio ou de "R$ 0,00" piscando.
+// ============================================================================
+
+test('cache é lido de forma SÍNCRONA (useMemo, nunca useEffect) -- os números existem já na primeira renderização', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(
+    graph,
+    /const cachedData = useMemo\(\s*\n\s*\(\) => readHomeFinancialCache\(\{ userId, workspaceId, periodKey \}\),\s*\n\s*\[userId, workspaceId, periodKey\],\s*\n\s*\);/,
+  );
+  // Um useEffect só rodaria DEPOIS da primeira pintura -- exatamente o
+  // atraso que esta feature existe para eliminar.
+  assert.doesNotMatch(graph, /useEffect\(\(\) => \{[\s\S]{0,120}readHomeFinancialCache/);
+});
+
+test('enquanto carrega, o cache manda; quando os dados frescos chegam, eles substituem', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(
+    graph,
+    /const graphData = isLoadingFinancials && cachedData\s*\n\s*\? cachedData\s*\n\s*: pickCacheableHomeFinancialData\(freshGraphData, transactionState\.transactions\.length\);/,
+  );
+});
+
+test('sem cache, mostra skeleton -- nunca espaço vazio nem "R$ 0,00" piscando antes do dado real', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.match(graph, /const showSkeleton = isLoadingFinancials && !cachedData;/);
+  assert.match(graph, /if \(showSkeleton\) return <SimplifiedHomeFinancialGraphSkeleton \/>;/);
+});
+
+test('skeleton reaproveita as classes de layout do card real -- o espaço ocupado é o mesmo, nada salta de lugar', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  const skeleton = graph.slice(
+    graph.indexOf('function SimplifiedHomeFinancialGraphSkeleton'),
+    graph.indexOf('HOME-GRAPH2: conteúdo real'),
+  );
+  for (const layoutClass of ['styles.card', 'styles.header', 'styles.chart', 'styles.totalsRow', 'styles.totalCard', 'styles.recentBlock', 'styles.recentHead']) {
+    assert.ok(skeleton.includes(layoutClass), `skeleton deveria reusar ${layoutClass}`);
+  }
+  assert.match(skeleton, /role="status"/);
+  assert.match(skeleton, /aria-label="Carregando seu fluxo financeiro"/);
+});
+
+// REGRESSÃO (pego em verificação visual, invisível para teste estrutural):
+// .skeletonChart só define altura -- fundo e onda vêm de .skeletonLine. Sem
+// as duas, a área do gráfico virava um vão invisível no meio do card.
+test('a área do gráfico no skeleton tem fundo/onda (skeletonLine), não só altura', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  const skeleton = graph.slice(
+    graph.indexOf('function SimplifiedHomeFinancialGraphSkeleton'),
+    graph.indexOf('HOME-GRAPH2: conteúdo real'),
+  );
+  const chartLine = skeleton.slice(skeleton.indexOf('styles.skeletonChart') - 200, skeleton.indexOf('styles.skeletonChart') + 40);
+  assert.ok(chartLine.includes('styles.skeletonLine'), 'a área do gráfico precisa de skeletonLine junto de skeletonChart');
+  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
+  const chartCss = css.slice(css.indexOf('.skeletonChart {'), css.indexOf('.skeletonTotalHead'));
+  assert.doesNotMatch(chartCss, /background:/, 'o fundo deve vir de .skeletonLine, nunca duplicado aqui');
+});
+
+test('só o último estado REAL é persistido -- nunca um estado ainda carregando', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  const effect = graph.slice(graph.indexOf('if (isLoadingFinancials) return;'), graph.indexOf('const activeRecent'));
+  assert.match(effect, /writeHomeFinancialCache\(\{/);
+  assert.match(effect, /periodKey,/);
+});
+
+test('skeleton usa só tokens semânticos --uf-app-* e respeita movimento reduzido', async () => {
+  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
+  const skeleton = css.slice(css.indexOf('.skeletonLine {'));
+  assert.doesNotMatch(skeleton, /#[0-9a-fA-F]{3,8}\b/);
+  assert.match(skeleton, /var\(--uf-app-surface-2\)/);
+  assert.match(skeleton, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?animation: none;/);
+});
+
+test('SEGURANÇA: o logout apaga o cache financeiro do usuário -- nunca vaza números para a próxima conta no mesmo aparelho', async () => {
+  const session = await source('../../app/SessionContext.jsx');
+  assert.match(session, /import \{ clearHomeFinancialCacheForUser \} from '\.\.\/features\/simplified-app\/homeFinancialCache\.js';/);
+  assert.match(session, /clearHomeFinancialCacheForUser\(currentUserId\);/);
+});
+
 test('PERFORMANCE: derivação memoizada, nunca recalculada a cada render', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /const graphData = useMemo\(/);
+  // HOME-INSTANT1: renomeado para freshGraphData (o dado "fresco" da API,
+  // por oposição ao cacheado) -- a memoização em si continua idêntica.
+  assert.match(graph, /const freshGraphData = useMemo\(/);
   assert.match(graph, /\[transactionState\.transactions, categoryState\.categories\],/);
 });
 

@@ -284,3 +284,99 @@
   text-align: center;
 }
 
+/* ---------------------------------------------------------------------------
+   HOME-INSTANT1 -- skeleton do bloco financeiro.
+
+   Só aparece na primeira abertura de um mês (quando ainda não há cache
+   local). Reaproveita as classes de layout do card real (.card/.totalsRow/
+   .totalCard/.recentBlock), então só as "barras" precisam de estilo
+   próprio -- o espaço ocupado já vem do layout verdadeiro, e nada salta de
+   lugar quando o conteúdo entra.
+
+   Gradiente feito com os tokens de superfície da própria identidade (nunca
+   um cinza neutro), para o carregamento parecer UniFlow e não um
+   placeholder genérico.
+--------------------------------------------------------------------------- */
+.skeletonLine {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--uf-app-surface-2) 0%,
+    var(--uf-app-surface-3) 45%,
+    var(--uf-app-surface-2) 90%
+  );
+  background-size: 220% 100%;
+  animation: homeGraphSkeletonWave 1.5s linear infinite;
+}
+
+@keyframes homeGraphSkeletonWave {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+.skeletonEyebrow {
+  width: 42%;
+  max-width: 150px;
+  height: 12px;
+}
+
+.skeletonTitle {
+  width: 62%;
+  max-width: 230px;
+  height: 20px;
+}
+
+.skeletonChart {
+  min-height: 168px;
+  border-radius: 16px;
+}
+
+.skeletonTotalHead {
+  width: 60%;
+  height: 11px;
+}
+
+.skeletonTotalValue {
+  width: 78%;
+  height: 19px;
+}
+
+.skeletonRecentTitle {
+  width: 130px;
+  height: 15px;
+}
+
+.skeletonToggle {
+  width: 116px;
+  height: 32px;
+  border-radius: 999px;
+}
+
+.skeletonRecentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Mesma altura mínima da linha real de movimentação (.recentRow: 56px). */
+.skeletonRecentRow {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 14px;
+}
+
+.skeletonReportCard {
+  width: 100%;
+  min-height: 64px;
+  border-radius: 18px;
+}
+
+/* Movimento reduzido: o skeleton continua marcando o espaço, só para de
+   pulsar -- nunca some (o vazio seria pior que a onda). */
+@media (prefers-reduced-motion: reduce) {
+  .skeletonLine {
+    animation: none;
+  }
+}
+

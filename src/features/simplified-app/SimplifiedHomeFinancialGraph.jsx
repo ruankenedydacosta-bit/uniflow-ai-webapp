@@ -4,6 +4,11 @@ import { useSession } from '../../app/SessionContext.jsx';
 import { useCategories, useTransactions } from '../../hooks';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../services/financialDataEvents.js';
 import { CognitiveLiveChart } from '../cognitive-live-chart/index.js';
+import {
+  pickCacheableHomeFinancialData,
+  readHomeFinancialCache,
+  writeHomeFinancialCache,
+} from './homeFinancialCache.js';
 import { buildHomeFinancialGraphData } from './homeFinancialGraphData.js';
 import SimplifiedReportCard from './SimplifiedReportCard.jsx';
 import { formatRelativeTransactionDate, getMonthRange } from './simplifiedRecordsData.js';
@@ -16,6 +21,58 @@ const EMPTY_STATE = Object.freeze({
 });
 
 /**
+ * HOME-INSTANT1: skeleton do bloco financeiro -- só aparece na PRIMEIRA
+ * abertura de um mês (quando ainda não existe cache local). Reaproveita as
+ * MESMAS classes de layout do card real (.card, .totalsRow, .totalCard,
+ * .recentBlock...), então o espaço ocupado é idêntico ao do conteúdo que
+ * vai substituí-lo -- nada salta de lugar quando os dados chegam.
+ *
+ * aria-hidden + role="status": o leitor de tela anuncia "carregando" uma
+ * vez, em vez de ler dezenas de blocos vazios.
+ */
+function SimplifiedHomeFinancialGraphSkeleton() {
+  return (
+    <section className={styles.card} role="status" aria-label="Carregando seu fluxo financeiro">
+      <header className={styles.header} aria-hidden="true">
+        <span className={`${styles.skeletonLine} ${styles.skeletonEyebrow}`} />
+        <span className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+      </header>
+
+      {/* skeletonLine é quem traz fundo e onda -- sem ela a área do gráfico
+          fica um vão invisível (pego em verificação visual). */}
+      <div
+        className={`${styles.skeletonLine} ${styles.chart} ${styles.skeletonChart}`}
+        aria-hidden="true"
+      />
+
+      <div className={styles.totalsRow} aria-hidden="true">
+        <div className={styles.totalCard}>
+          <span className={`${styles.skeletonLine} ${styles.skeletonTotalHead}`} />
+          <span className={`${styles.skeletonLine} ${styles.skeletonTotalValue}`} />
+        </div>
+        <div className={styles.totalCard}>
+          <span className={`${styles.skeletonLine} ${styles.skeletonTotalHead}`} />
+          <span className={`${styles.skeletonLine} ${styles.skeletonTotalValue}`} />
+        </div>
+      </div>
+
+      <div className={styles.recentBlock} aria-hidden="true">
+        <div className={styles.recentHead}>
+          <span className={`${styles.skeletonLine} ${styles.skeletonRecentTitle}`} />
+          <span className={`${styles.skeletonLine} ${styles.skeletonToggle}`} />
+        </div>
+        <div className={styles.skeletonRecentList}>
+          <span className={`${styles.skeletonLine} ${styles.skeletonRecentRow}`} />
+          <span className={`${styles.skeletonLine} ${styles.skeletonRecentRow}`} />
+        </div>
+      </div>
+
+      <span className={`${styles.skeletonLine} ${styles.skeletonReportCard}`} aria-hidden="true" />
+    </section>
+  );
+}
+
+/**
  * HOME-GRAPH2: conteúdo real do bloco financeiro da Home.
  *
  * Busca com EXATAMENTE os mesmos parâmetros de Registros (status
@@ -25,11 +82,25 @@ const EMPTY_STATE = Object.freeze({
  */
 function SimplifiedHomeFinancialGraphContent() {
   const navigate = useNavigate();
-  const { workspace } = useSession();
+  const { user, workspace } = useSession();
+  const userId = user?.id;
   const workspaceId = workspace?.id;
   const [recentView, setRecentView] = useState('expense');
 
   const month = useMemo(() => getMonthRange(new Date()), []);
+  const periodKey = String(month.dateFrom).slice(0, 7);
+
+  // HOME-INSTANT1: leitura SÍNCRONA (useMemo, nunca useEffect) -- é isso que
+  // faz os números do último estado existirem já na PRIMEIRA renderização,
+  // em vez de aparecerem só quando a API responde. useMemo em vez de
+  // useState(inicializador) de propósito: no primeiro render a sessão pode
+  // ainda não ter resolvido userId/workspaceId, e aqui o cache é relido
+  // assim que eles chegam -- ainda antes de qualquer fetch terminar.
+  const cachedData = useMemo(
+    () => readHomeFinancialCache({ userId, workspaceId, periodKey }),
+    [userId, workspaceId, periodKey],
+  );
+
   const transactionState = useTransactions({
     workspaceId,
     dateFrom: month.dateFrom,
@@ -71,7 +142,7 @@ function SimplifiedHomeFinancialGraphContent() {
     };
   }, []);
 
-  const graphData = useMemo(
+  const freshGraphData = useMemo(
     () => buildHomeFinancialGraphData({
       transactions: transactionState.transactions,
       categories: categoryState.categories,
@@ -79,8 +150,41 @@ function SimplifiedHomeFinancialGraphContent() {
     [transactionState.transactions, categoryState.categories],
   );
 
+  const isLoadingFinancials = transactionState.isLoading || categoryState.isLoading;
+
+  // Enquanto os dados frescos não chegam, o que já foi visto manda. Sem
+  // cache, buildHomeFinancialGraphData sobre uma lista vazia produziria um
+  // estado "R$ 0,00" -- exatamente a piscada de valores errados que o
+  // carregamento progressivo tem que evitar; nesse caso vai skeleton.
+  const graphData = isLoadingFinancials && cachedData
+    ? cachedData
+    : pickCacheableHomeFinancialData(freshGraphData, transactionState.transactions.length);
+
+  const showSkeleton = isLoadingFinancials && !cachedData;
+
+  // Persiste o último estado REAL (nunca o cache relido, nunca um estado
+  // ainda carregando) para a próxima abertura do app.
+  useEffect(() => {
+    if (isLoadingFinancials) return;
+    writeHomeFinancialCache({
+      userId,
+      workspaceId,
+      periodKey,
+      data: pickCacheableHomeFinancialData(freshGraphData, transactionState.transactions.length),
+    });
+  }, [
+    isLoadingFinancials,
+    freshGraphData,
+    transactionState.transactions.length,
+    userId,
+    workspaceId,
+    periodKey,
+  ]);
+
   const activeRecent = graphData.recent[recentView];
   const goToUni = () => navigate(SIMPLIFIED_ROUTES.UNI);
+
+  if (showSkeleton) return <SimplifiedHomeFinancialGraphSkeleton />;
 
   return (
     <section className={styles.card} aria-labelledby="home-financial-graph-title">
@@ -177,7 +281,10 @@ function SimplifiedHomeFinancialGraphContent() {
         )}
       </div>
 
-      <SimplifiedReportCard transactionCount={transactionState.transactions.length} />
+      {/* Vem do mesmo `graphData` (cache ou fresco) -- assim o relatório
+          também nasce com o número já conhecido, em vez de contar 0 até a
+          consulta financeira responder. */}
+      <SimplifiedReportCard transactionCount={graphData.transactionCount} />
     </section>
   );
 }
