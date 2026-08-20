@@ -145,7 +145,7 @@ function SimplifiedAccountPage() {
       Icon: SparkleIcon,
       tone: 'purple',
       title: 'Tema',
-      subtitle: 'Claro, Escuro, UniFlow ou Sistema',
+      subtitle: 'UniFlow ou Claro',
     },
     {
       id: 'analytics-consent',

@@ -284,6 +284,14 @@ test('"Sobre a UniFlow AI" mostra a versão atual real (currentVersion de useUni
   assert.doesNotMatch(page, /APP_VERSION/);
 });
 
+test('linha "Tema" descreve só os dois temas reais (UniFlow, Claro) -- nunca menciona Escuro/Sistema, removidos do seletor', async () => {
+  const page = await source('./SimplifiedAccountPage.jsx');
+  const themeStart = page.indexOf('ACCOUNT_SUBROUTE_IDS.THEME,');
+  const themeSlice = page.slice(themeStart, page.indexOf('},', themeStart));
+  assert.match(themeSlice, /subtitle: 'UniFlow ou Claro',/);
+  assert.doesNotMatch(themeSlice, /Escuro|Sistema/);
+});
+
 // ---------- Sair da conta ----------
 
 test('logout: não sai direto -- abre modal de confirmação (nunca window.confirm)', async () => {
