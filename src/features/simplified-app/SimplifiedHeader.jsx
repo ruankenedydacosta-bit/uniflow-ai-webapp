@@ -6,7 +6,8 @@ import styles from './simplifiedApp.module.css';
  * contínuo >= HEADER_EFFECTIVELY_HIDDEN_PROGRESS, ver
  * collapsibleHeaderScroll.js -- dono de TODA a lógica de scroll/fade)
  * -- este componente só reflete o estado, nunca decide sozinho quando
- * esconder. O visual (transform/opacity/mask) é sempre contínuo via CSS
+ * esconder. O visual (transform/opacity -- hot path compositor-only, ver
+ * PERF-FIX1) é sempre contínuo via CSS
  * (--header-progress), independente deste prop -- `hidden` só controla
  * interação: aria-hidden + tabIndex=-1 no sino, nunca captura toque
  * enquanto praticamente invisível.

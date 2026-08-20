@@ -16,17 +16,20 @@
   /* COMPACT-HEADER1: 68px (era 102px) -- espelha .header min-height (ver
      abaixo), mesmo neste MESMO breakpoint em todos os 3 lugares. */
   --simplified-header-height: 68px;
-  /* HEADER-SCROLL2: safe-area computada UMA vez aqui -- .header e
-     .mainContent[data-compact-header] leem a MESMA variável via var(),
-     nunca recalculam max(10px, env(safe-area-inset-top)) cada um por
-     conta própria (essa duplicação implícita era parte da causa do
-     espaço vazio auditado -- ver .mainContent[data-compact-header]
-     abaixo para a explicação completa).
-     --uf-header-full-height é a altura REAL do header (com safe-area);
-     --header-progress (0=visível, 1=escondido) é escrita imperativamente
-     pelo hook de scroll via shellRef.current.style.setProperty(...) --
-     nunca setState React por frame -- e herda para todo CSS abaixo que a
-     usa, já que custom properties propagam pela cascata por padrão. */
+  /* HEADER-SCROLL2/PERF-FIX1: safe-area computada UMA vez aqui -- .header
+     e a reserva ESTÁTICA de .mainContent[data-compact-header] leem a
+     MESMA variável via var(), nunca recalculam
+     max(10px, env(safe-area-inset-top)) cada um por conta própria (essa
+     duplicação implícita era parte da causa do espaço vazio de uma fase
+     anterior -- ver .mainContent[data-compact-header] abaixo).
+     --uf-header-full-height é a altura REAL do header (com safe-area) --
+     usada só para a reserva ESTÁTICA de espaço, nunca recalculada por
+     frame. --header-progress (0=visível, 1=escondido) é escrita
+     imperativamente pelo hook de scroll via
+     shellRef.current.style.setProperty(...) -- nunca setState React por
+     frame -- mas só alimenta transform/opacity em .header (hot path
+     compositor-only); nenhuma propriedade de LAYOUT lê esta variável,
+     de propósito (causa raiz do lag de uma fase anterior). */
   --uf-header-safe-top: max(10px, env(safe-area-inset-top, 0px));
   --uf-header-full-height: calc(var(--simplified-header-height) - 10px + var(--uf-header-safe-top));
   --header-progress: 0;
@@ -118,19 +121,24 @@
   box-shadow: 0 0 90px rgba(var(--uf-app-shadow-rgb), .4);
 }
 
-/* HEADER-SCROLL2: header realmente compacto -- área útil (sem contar
-   safe-area) ~68px, dentro da faixa pedida (64-72px), contra os 102px
-   antigos. `position:fixed` (não sticky: .header é IRMÃO de .mainContent
-   na malha, não descendente -- sticky não teria ancestral com scroll para
-   grudar) sobrepõe o topo do conteúdo; `.mainContent[data-compact-header]`
-   abaixo reserva o espaço estrutural equivalente, então nada pula quando
-   o header aparece/desaparece (ver PARTE 3/CLS).
-   Fade CONTÍNUO via --header-progress (0..1, escrito pelo hook a cada
-   frame de scroll, nunca por setState) -- transform/opacity/mask leem a
-   MESMA variável herdada, sem nenhuma transition CSS aqui: o scroll é
-   quem dirige a posição, uma transition competiria com o dedo do usuário
-   (ela só existe durante o snap-settle, feito via tween em JS, nunca CSS,
-   ver collapsibleHeaderScroll.js). */
+/* HEADER-SCROLL2/PERF-FIX1: header realmente compacto -- área útil (sem
+   contar safe-area) ~68px, dentro da faixa pedida (64-72px), contra os
+   102px antigos. `position:fixed` (não sticky: .header é IRMÃO de
+   .mainContent na malha, não descendente -- sticky não teria ancestral
+   com scroll para grudar) SOBREPÕE o conteúdo -- nunca empurra nada.
+   `.mainContent[data-compact-header]` abaixo reserva o espaço ESTÁTICO
+   equivalente (nunca muda com o scroll -- ver o comentário lá para o
+   porquê), então nada pula quando o header aparece/desaparece.
+   HOT PATH DE SCROLL: só transform+opacity, as duas propriedades
+   compositor-only (nunca disparam layout/paint) -- nada mais aqui lê
+   --header-progress. A máscara vertical que existia (fade da parte de
+   baixo) foi removida: media em aparelho físico ela forçava repaint do
+   header a cada frame (mask-image não é reliably compositor-only,
+   sobretudo no WebKit/iOS), e o efeito perceptível de "dissolver" já
+   vem suficiente de opacity+transform sozinhos. Nenhuma transition CSS
+   aqui: o scroll é quem dirige a posição a cada frame (ela só existe
+   durante o snap-settle, feito via tween em JS, nunca CSS, ver
+   collapsibleHeaderScroll.js). */
 .header {
   position: fixed;
   top: 0;
@@ -149,12 +157,6 @@
   background: var(--uf-app-canvas);
   transform: translate3d(0, calc(var(--header-progress, 0) * -100%), 0);
   opacity: calc(1 - var(--header-progress, 0));
-  /* A parte inferior perde definição primeiro -- só perceptível durante a
-     saída: em progress=0 o gradiente cai exatamente na borda (0% de
-     "transparent" começando em 100%), então nada fica desfocado em
-     repouso. */
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - (var(--header-progress, 0) * 70%)), transparent 100%);
-  mask-image: linear-gradient(to bottom, black calc(100% - (var(--header-progress, 0) * 70%)), transparent 100%);
   will-change: transform, opacity;
 }
 
@@ -171,8 +173,8 @@
 /* HEADER-SCROLL2: só a interatividade é binária (nunca captura toque
    quase invisível) -- ver HEADER_EFFECTIVELY_HIDDEN_PROGRESS/
    HEADER_EFFECTIVELY_VISIBLE_PROGRESS (histerese) em
-   collapsibleHeaderScroll.js. O visual em si (transform/opacity/mask
-   acima) é sempre contínuo, nunca ligado a este atributo. */
+   collapsibleHeaderScroll.js. O visual em si (transform/opacity acima)
+   é sempre contínuo, nunca ligado a este atributo. */
 .header[data-hidden="true"] {
   pointer-events: none;
 }
@@ -406,32 +408,30 @@
   padding-bottom: 0;
 }
 
-/* HEADER-SCROLL2: espaço estrutural reservado para o header fixo (só nas
-   rotas que o renderizam, ver showsCompactHeader em SimplifiedAppShell.jsx
-   -- nunca aplicado em Registros/Conta/Chat da Uni, que têm cabeçalho
-   próprio). CAUSA DO ESPAÇO VAZIO AUDITADA: antes, ESTA regra E
-   .shellTopRegion[data-compact-header] reservavam a MESMA altura ao mesmo
-   tempo -- como são grid rows irmãs (.shellTopRegion é a row 1 "auto",
-   .mainContent a row 2 "1fr"), a reserva de .shellTopRegion virava um
-   bloco vazio de verdade ANTES de .mainContent nem começar, somado à
-   reserva própria de .mainContent logo em seguida = a faixa vazia dupla
-   vista no aparelho. Corrigido removendo a reserva de .shellTopRegion
-   inteiramente (o painel de notificações -- fora de escopo, ver NÃO
-   ALTERAR -- continua nascendo em shellTopRegion sem padding próprio; o
-   header fixo, por estar acima em z-index, já cobre naturalmente a parte
-   de cima do painel quando aberto, sem precisar de nenhuma mudança ali).
-   Agora só ESTA regra existe, e o padding-top acompanha --header-progress
-   continuamente (nunca um
-   salto binário): em progress=0 reserva a altura cheia; em progress=1
-   sobra só a safe-area crua (nunca remove a proteção do notch/Dynamic
-   Island, só a parte "útil" do header some). Nenhuma transition CSS --
-   o mesmo --header-progress que move o header também move isto, no MESMO
-   frame, sem correr atrás. */
+/* HEADER-SCROLL2/PERF-FIX1: espaço estrutural reservado para o header
+   fixo (só nas rotas que o renderizam, ver showsCompactHeader em
+   SimplifiedAppShell.jsx -- nunca aplicado em Registros/Conta/Chat da
+   Uni, que têm cabeçalho próprio).
+   CAUSA DO ESPAÇO VAZIO (fase anterior): .shellTopRegion e .mainContent
+   reservavam a MESMA altura ao mesmo tempo -- grid rows irmãs somando
+   duas reservas = faixa vazia dupla. Corrigido removendo a reserva de
+   .shellTopRegion inteiramente (o painel de notificações -- fora de
+   escopo -- continua nascendo em shellTopRegion sem padding próprio; o
+   header fixo, por estar acima em z-index, já cobre naturalmente a
+   parte de cima do painel quando aberto).
+   CAUSA DO LAG (esta fase): a versão anterior desta regra tinha
+   padding-top em calc() dependente de --header-progress, recalculado a
+   CADA frame de scroll -- padding é propriedade de LAYOUT, então isso
+   forçava reflow de .mainContent inteiro (todos os cards/waveform/
+   greeting da Home) a cada frame. Corrigido: a reserva agora é ESTÁTICA
+   (nunca lê --header-progress) -- o header, sendo fixed, simplesmente
+   desliza por CIMA do espaço já reservado (nunca "empurra" nada, nunca
+   recalcula nada). Ao rolar de volta ao topo, o próprio scroll natural
+   revela essa área reservada de novo, e o header (progress=0 garantido
+   perto do topo) já está totalmente visível para preenchê-la -- nunca
+   existe um frame em que a área reservada aparece vazia. */
 .mainContent[data-compact-header="true"] {
-  padding-top: calc(
-    env(safe-area-inset-top, 0px)
-    + (var(--uf-header-full-height) - env(safe-area-inset-top, 0px)) * (1 - var(--header-progress, 0))
-  );
+  padding-top: var(--uf-header-full-height);
 }
 
 .agendaPage {

@@ -26,6 +26,14 @@ export const HEADER_SETTLE_IDLE_MS = 150;
 export const HEADER_SETTLE_HIDE_PROGRESS = 0.85;
 export const HEADER_SETTLE_SHOW_PROGRESS = 0.15;
 const HEADER_SETTLE_DURATION_MS = 180;
+// PERF-FIX1: menor mudança de progress que ainda justifica uma escrita de
+// verdade em --header-progress. 0.005 = 0.5% do percurso do fade (~0.4px
+// de translateY num header de 68-105px) -- imperceptível, mas evita
+// setProperty (e a invalidação de estilo que ele dispara) em frames onde
+// o scroll real mal se moveu. 0 e 1 sempre escrevem, mesmo dentro da
+// tolerância, para garantir que os extremos (header 100% visível/
+// escondido) sejam sempre alcançados de verdade, nunca "quase".
+export const HEADER_PROGRESS_WRITE_TOLERANCE = 0.005;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -66,19 +74,47 @@ export function nextHeaderEffectivelyHidden(previousHidden, progress, {
   return Boolean(previousHidden);
 }
 
+/**
+ * PERF-FIX1: pura -- decide se uma nova escrita em --header-progress vale
+ * a pena. `lastWritten=null` (primeira escrita) sempre escreve; os
+ * extremos (0/1) sempre escrevem, mesmo dentro da tolerância, para
+ * garantir que o header realmente alcança 100% visível/escondido, nunca
+ * "quase". Fora disso, só escreve se a mudança for >= tolerance --
+ * evita setProperty (e a invalidação de estilo que ele dispara em
+ * .header) em frames onde o scroll real mal se moveu.
+ */
+export function shouldWriteHeaderProgress(nextProgress, lastWritten, tolerance = HEADER_PROGRESS_WRITE_TOLERANCE) {
+  if (lastWritten === null || lastWritten === undefined) return true;
+  if (nextProgress === 0 || nextProgress === 1) return true;
+  return Math.abs(nextProgress - lastWritten) >= tolerance;
+}
+
 function easeOutCubic(t) {
   const inverted = 1 - t;
   return 1 - inverted * inverted * inverted;
 }
 
 /**
- * HEADER-SCROLL2: liga a matemática pura acima a um scroll real. Nunca
- * setState React por frame -- o progress contínuo é escrito direto via
- * `shellRef.current.style.setProperty('--header-progress', ...)` (custom
- * property herdada por TODO o CSS do header/mainContent/dropdown que
- * depende dela, ver simplifiedApp.module.css). Só existe UM setState
- * (isEffectivelyHidden) e só dispara nas raras trocas de interatividade,
- * nunca a cada pixel de scroll.
+ * HEADER-SCROLL2/PERF-FIX1: liga a matemática pura acima a um scroll
+ * real. Nunca setState React por frame -- o progress contínuo é escrito
+ * direto via `shellRef.current.style.setProperty('--header-progress',
+ * ...)` (custom property herdada por TODO o CSS que depende dela, ver
+ * simplifiedApp.module.css). Só existe UM setState (isEffectivelyHidden)
+ * e só dispara nas raras trocas de interatividade, nunca a cada pixel de
+ * scroll.
+ *
+ * HOT PATH deliberadamente mínimo: --header-progress só alimenta
+ * transform/opacity em .header (compositor-only, nunca layout/paint) --
+ * NUNCA propriedades de layout (padding/margin/height). A reserva de
+ * espaço do conteúdo (.mainContent) é ESTÁTICA (não depende de
+ * --header-progress) de propósito -- ver simplifiedApp.module.css --
+ * porque uma reserva contínua forçava reflow do layout inteiro da Home a
+ * cada frame de scroll (causa raiz do lag corrigida nesta fase).
+ *
+ * rAF guard (no máximo 1 cálculo pendente por vez) + tolerância de
+ * escrita (HEADER_PROGRESS_WRITE_TOLERANCE, ver applyProgress) eliminam
+ * trabalho redundante: nenhum recálculo de progress por evento além do
+ * necessário, nenhuma escrita no DOM quando a mudança é imperceptível.
  *
  * Snap-settle: se o scroll fica parado (HEADER_SETTLE_IDLE_MS) com o
  * progress "no meio do caminho", um tween curto (JS, não CSS transition
@@ -95,6 +131,7 @@ export function useCollapsibleHeaderOnScroll({
   const [isEffectivelyHidden, setIsEffectivelyHidden] = useState(false);
   const progressRef = useRef(0);
   const effectivelyHiddenRef = useRef(false);
+  const lastWrittenProgressRef = useRef(null);
 
   useEffect(() => {
     if (!enabled) {
@@ -113,7 +150,10 @@ export function useCollapsibleHeaderOnScroll({
 
     const applyProgress = (progress) => {
       progressRef.current = progress;
-      shellNode.style.setProperty('--header-progress', String(progress));
+      if (shouldWriteHeaderProgress(progress, lastWrittenProgressRef.current)) {
+        lastWrittenProgressRef.current = progress;
+        shellNode.style.setProperty('--header-progress', String(progress));
+      }
       const nextHidden = nextHeaderEffectivelyHidden(effectivelyHiddenRef.current, progress);
       if (nextHidden !== effectivelyHiddenRef.current) {
         effectivelyHiddenRef.current = nextHidden;
@@ -185,6 +225,7 @@ export function useCollapsibleHeaderOnScroll({
       if (rafId !== null) runtime.cancelAnimationFrame?.(rafId);
       clearSettleTimer();
       cancelSettleAnimation();
+      lastWrittenProgressRef.current = null;
       shellNode.style?.setProperty?.('--header-progress', '0');
     };
   }, [enabled, scrollContainerRef, shellRef, runtime, fadeDistancePx]);

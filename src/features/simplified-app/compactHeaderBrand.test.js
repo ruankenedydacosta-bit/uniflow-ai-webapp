@@ -129,46 +129,54 @@ test('header escondido nunca captura toque/foco: aria-hidden, pointer-events:non
   assert.match(css, /\.header\[data-hidden="true"\] \{\s*\n\s*pointer-events: none;\s*\n\s*\}/);
 });
 
-test('header usa transform3d+opacity+mask CONTÍNUOS (--header-progress) -- nunca height/max-height, nunca transition competindo com o scroll', async () => {
+test('PERF-FIX1: header usa SÓ transform3d+opacity no hot path -- nunca height/max-height/mask, nunca transition competindo com o scroll', async () => {
   const css = await source('./simplifiedApp.module.css');
   const headerBlock = css.slice(css.indexOf('.header {'), css.indexOf('.header[data-hidden="true"]'));
   assert.match(headerBlock, /transform: translate3d\(0, calc\(var\(--header-progress, 0\) \* -100%\), 0\);/);
   assert.match(headerBlock, /opacity: calc\(1 - var\(--header-progress, 0\)\);/);
+  assert.match(headerBlock, /will-change: transform, opacity;/);
   assert.doesNotMatch(headerBlock, /transition:[^;]*height/);
   // Nenhuma CSS transition aqui -- o progress é escrito a cada frame de
   // scroll, uma transition ficaria "correndo atrás" do dedo do usuário.
   assert.doesNotMatch(headerBlock, /\btransition:/);
 });
 
-test('máscara vertical some a parte de baixo do header primeiro, e é imperceptível em repouso (progress=0)', async () => {
+test('PERF-FIX1: máscara vertical dinâmica foi REMOVIDA do header -- media em aparelho físico ela forçava repaint a cada frame', async () => {
   const css = await source('./simplifiedApp.module.css');
-  assert.match(
-    css,
-    /mask-image: linear-gradient\(to bottom, black calc\(100% - \(var\(--header-progress, 0\) \* 70%\)\), transparent 100%\);/,
-  );
-  assert.match(css, /-webkit-mask-image: linear-gradient\(to bottom, black calc\(100% - \(var\(--header-progress, 0\) \* 70%\)\), transparent 100%\);/);
+  assert.doesNotMatch(css, /mask-image:/, 'mask-image dependente de --header-progress causava repaint por frame -- removida, nunca deve voltar ao hot path sem prova de que é compositor-only');
+  assert.doesNotMatch(css, /-webkit-mask-image:/);
 });
 
-test('CAUSA DO ESPAÇO VAZIO corrigida: .shellTopRegion NUNCA mais reserva altura do header -- só .mainContent reserva, e acompanha --header-progress continuamente', async () => {
+test('CAUSA DO ESPAÇO VAZIO (corrigida em fase anterior) continua corrigida: .shellTopRegion nunca reserva altura do header', async () => {
   const css = await source('./simplifiedApp.module.css');
   assert.doesNotMatch(
     css,
     /\.shellTopRegion\[data-compact-header="true"\]\s*\{/,
     'shellTopRegion nunca deve voltar a reservar espaço -- essa dupla reserva era a causa do espaço vazio',
   );
+});
+
+test('PERF-FIX1: CAUSA DO LAG corrigida -- a reserva de espaço de .mainContent é ESTÁTICA, nunca lê --header-progress (evita reflow por frame)', async () => {
+  const css = await source('./simplifiedApp.module.css');
   assert.match(
     css,
-    /\.mainContent\[data-compact-header="true"\] \{\s*\n\s*padding-top: calc\(\s*\n\s*env\(safe-area-inset-top, 0px\)\s*\n\s*\+ \(var\(--uf-header-full-height\) - env\(safe-area-inset-top, 0px\)\) \* \(1 - var\(--header-progress, 0\)\)\s*\n\s*\);\s*\n\s*\}/,
+    /\.mainContent\[data-compact-header="true"\] \{\s*\n\s*padding-top: var\(--uf-header-full-height\);\s*\n\s*\}/,
+  );
+  const mainContentBlock = css.slice(css.indexOf('.mainContent[data-compact-header="true"] {'), css.indexOf('.agendaPage {'));
+  assert.doesNotMatch(mainContentBlock, /--header-progress/, 'a reserva de espaço nunca pode depender do progress -- isso forçava reflow do layout inteiro da Home a cada frame de scroll');
+});
+
+test('nenhuma propriedade de LAYOUT (padding/margin/height/top) em todo o arquivo depende de --header-progress -- só transform/opacity em .header', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const layoutPropsWithProgress = [...css.matchAll(/^\s*(padding[a-z-]*|margin[a-z-]*|height|min-height|max-height|top|bottom|left|right|width|min-width|max-width)\s*:[^;]*--header-progress/gm)];
+  assert.deepEqual(
+    layoutPropsWithProgress.map((m) => m[0].trim()),
+    [],
+    'nenhuma propriedade de layout pode ler --header-progress -- só transform/opacity (compositor-only) podem',
   );
 });
 
-test('reserva do conteúdo nunca zera de vez -- preserva env(safe-area-inset-top) mesmo com progress=1 (nunca remove a proteção do notch)', async () => {
-  const css = await source('./simplifiedApp.module.css');
-  const mainContentBlock = css.slice(css.indexOf('.mainContent[data-compact-header="true"] {'), css.indexOf('.agendaPage {'));
-  assert.match(mainContentBlock, /env\(safe-area-inset-top, 0px\)/);
-});
-
-test('safe-area só é computada uma vez (--uf-header-safe-top), reutilizada por .header e pela reserva de .mainContent -- nunca duplicada', async () => {
+test('safe-area só é computada uma vez (--uf-header-safe-top), reutilizada por .header e pela reserva ESTÁTICA de .mainContent -- nunca duplicada', async () => {
   const css = await source('./simplifiedApp.module.css');
   const declarations = [...css.matchAll(/^\s*--uf-header-safe-top: max\(10px, env\(safe-area-inset-top, 0px\)\);/gm)];
   assert.equal(declarations.length, 1, '--uf-header-safe-top só deveria ser DECLARADA uma vez');
