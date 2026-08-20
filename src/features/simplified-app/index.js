@@ -15,6 +15,7 @@ export {
 export { default as SimplifiedHomeView } from './SimplifiedHomeView.jsx';
 export { default as SimplifiedRecordsPage } from './SimplifiedRecordsPage.jsx';
 export { default as SimplifiedAgendaPage } from './SimplifiedAgendaPage.jsx';
+export { default as SimplifiedReportPage } from './SimplifiedReportPage.jsx';
 export { default as SimplifiedAccountPage } from './SimplifiedAccountPage.jsx';
 export { default as SimplifiedAccountSubpagePlaceholder } from './SimplifiedAccountSubpagePlaceholder.jsx';
 export { default as SimplifiedEditProfilePage } from './SimplifiedEditProfilePage.jsx';

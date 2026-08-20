@@ -5,8 +5,8 @@ import { useCategories, useTransactions } from '../../hooks';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../services/financialDataEvents.js';
 import { CognitiveLiveChart } from '../cognitive-live-chart/index.js';
 import { buildHomeFinancialGraphData } from './homeFinancialGraphData.js';
+import SimplifiedReportCard from './SimplifiedReportCard.jsx';
 import { formatRelativeTransactionDate, getMonthRange } from './simplifiedRecordsData.js';
-import { UniMark } from './SimplifiedIcons.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './SimplifiedHomeFinancialGraph.module.css';
 
@@ -177,10 +177,7 @@ function SimplifiedHomeFinancialGraphContent() {
         )}
       </div>
 
-      <button type="button" className={styles.askUniButton} onClick={goToUni}>
-        <span className={styles.askUniMark} aria-hidden="true"><UniMark /></span>
-        Pergunte à Uni sobre seus dados
-      </button>
+      <SimplifiedReportCard transactionCount={transactionState.transactions.length} />
     </section>
   );
 }

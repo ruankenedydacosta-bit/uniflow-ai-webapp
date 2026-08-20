@@ -1,0 +1,97 @@
+/* RELATORIO1: card premium mas discreto -- borda + leve wash do gradiente
+   de marca (violeta -> azul -> ciano) como DESTAQUE, nunca como fundo
+   inteiro (isso pareceria propaganda). Mesma largura/box-sizing do CTA
+   que substitui, para nunca reabrir o bug de estouro horizontal já
+   corrigido no gráfico. */
+.reportCard {
+  width: 100%;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 20px;
+  background:
+    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
+    linear-gradient(135deg, var(--uf-app-ai), var(--uf-app-primary), var(--uf-app-success)) border-box;
+  border-color: transparent;
+  color: var(--uf-app-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.reportIcon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--uf-app-ai), var(--uf-app-primary));
+  color: var(--uf-app-on-accent);
+}
+
+.reportIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.reportBody {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reportTitle {
+  overflow: hidden;
+  color: var(--uf-app-text);
+  font-size: 15px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportSubtitle {
+  overflow: hidden;
+  color: var(--uf-app-text-2);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportContext {
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--uf-app-text-3, var(--uf-app-text-2));
+  font-size: 11.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportCta {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--uf-app-surface-2, var(--uf-app-surface));
+  color: var(--uf-app-primary-text, var(--uf-app-primary));
+  font-size: 12.5px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+@media (max-width: 359px) {
+  .reportCta {
+    display: none;
+  }
+}

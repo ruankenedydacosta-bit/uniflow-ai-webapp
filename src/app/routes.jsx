@@ -32,6 +32,7 @@ import {
   SimplifiedPaymentsPage,
   SimplifiedPlanPage,
   SimplifiedRecordsPage,
+  SimplifiedReportPage,
   SimplifiedSecurityPage,
   SimplifiedSupportPage,
   SimplifiedThemePage,
@@ -177,6 +178,15 @@ export const appRoutes = [
     title: 'Agenda',
     simplified: true,
     element: <SimplifiedAgendaPage />,
+  },
+  // RELATORIO1: rota interna sempre registrada, mesmo padrão de Agenda --
+  // fora da barra inferior, alcançada pelo card "Relatório da Uni" na Home.
+  {
+    path: SIMPLIFIED_ROUTES.RELATORIO,
+    label: 'Relatório da Uni',
+    title: 'Relatório da Uni',
+    simplified: true,
+    element: <SimplifiedReportPage />,
   },
   // LOTE D: rota interna da conversa de Suporte da Uni é SEMPRE registrada
   // -- o acesso é via Conta > Suporte (o item "Falar com a Uni"), não pela

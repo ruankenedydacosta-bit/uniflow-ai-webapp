@@ -284,36 +284,3 @@
   text-align: center;
 }
 
-/* ------------------------------------------------------------- CTA Uni */
-
-.askUniButton {
-  width: 100%;
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding-inline: 16px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 999px;
-  background: var(--uf-app-surface);
-  color: var(--uf-app-text);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-
-.askUniMark {
-  width: 20px;
-  height: 20px;
-  display: block;
-  flex: 0 0 auto;
-}
-
-.askUniMark img {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: contain;
-}

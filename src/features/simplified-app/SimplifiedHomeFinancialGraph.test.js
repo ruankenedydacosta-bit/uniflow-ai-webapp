@@ -108,7 +108,13 @@ test('RESPONSIVIDADE: nenhum filho da seção soma width:100% com margin lateral
   const css = await source('./SimplifiedHomeFinancialGraph.module.css');
   assert.doesNotMatch(codeOnly(css), /margin-inline: 4px/, 'margem lateral em filho de largura total estoura o container');
   assert.match(css, /\.card \{[\s\S]*?padding-inline: 4px;[\s\S]*?box-sizing: border-box;/);
-  assert.match(css, /\.askUniButton \{[\s\S]*?box-sizing: border-box;/);
+});
+
+test('RELATORIO1: o CTA "Pergunte à Uni sobre seus dados" foi substituído pelo card do Relatório da Uni', async () => {
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  assert.doesNotMatch(graph, /Pergunte à Uni sobre seus dados/);
+  assert.match(graph, /import SimplifiedReportCard from '\.\/SimplifiedReportCard\.jsx';/);
+  assert.match(graph, /<SimplifiedReportCard transactionCount=\{transactionState\.transactions\.length\} \/>/);
 });
 
 test('RESPONSIVIDADE: textos longos truncam em vez de quebrar o layout', async () => {

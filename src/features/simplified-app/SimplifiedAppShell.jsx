@@ -51,7 +51,10 @@ function SimplifiedAppShell({ children }) {
   // genérico (marca + sino) duplicado por cima.
   const hasPageHeader = location.pathname === SIMPLIFIED_ROUTES.RECORDS
     || location.pathname === SIMPLIFIED_ROUTES.ACCOUNT
-    || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`);
+    || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`)
+    // RELATORIO1: cabeçalho próprio (← Relatório da Uni) -- nunca o
+    // genérico (marca + sino) duplicado por cima.
+    || location.pathname === SIMPLIFIED_ROUTES.RELATORIO;
   const isUniChatRoute = location.pathname === SIMPLIFIED_ROUTES.UNI;
   const isUniChatKeyboardOpen = isUniChatRoute && viewportState.isKeyboardOpen;
   // COMPACT-HEADER1: só as rotas que realmente renderizam SimplifiedHeader

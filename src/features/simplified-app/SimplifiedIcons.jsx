@@ -412,6 +412,15 @@ export function HandshakeIcon() {
   );
 }
 
+export function DocumentIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M9 4h10l6 6v18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+      <path d="M19 4v6h6M11 17h10M11 22h10M11 12h4" />
+    </svg>
+  );
+}
+
 export function SparkleIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">

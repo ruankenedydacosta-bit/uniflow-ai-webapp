@@ -16,6 +16,10 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   SUPPORT_CHAT: `${ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path}/uni`,
   ACCOUNT: '/app/conta',
   UNI: '/app/uni',
+  // RELATORIO1: mesmo padrão de Agenda -- rota interna sempre registrada,
+  // fora da barra inferior fixa (Home | Registros | Conta). Alcançada pelo
+  // card "Relatório da Uni" na Home.
+  RELATORIO: '/app/relatorio',
 });
 
 const BASE_NAVIGATION = Object.freeze([
