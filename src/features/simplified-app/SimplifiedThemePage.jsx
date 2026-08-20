@@ -8,15 +8,9 @@ const THEME_PRESENTATION = Object.freeze({
   [THEME_IDS.LIGHT]: Object.freeze({
     description: 'Visual claro, leve e confortável para ambientes iluminados.',
   }),
-  [THEME_IDS.DARK]: Object.freeze({
-    description: 'Contraste equilibrado para usar a UniFlow com pouca luz.',
-  }),
   [THEME_IDS.UNIFLOW]: Object.freeze({
     description: 'A identidade premium da Uni, com azul, violeta e verde da marca.',
     badge: 'Identidade Uni',
-  }),
-  [THEME_IDS.SYSTEM]: Object.freeze({
-    description: 'Acompanha automaticamente o tema claro ou escuro do aparelho.',
   }),
 });
 
@@ -30,7 +24,7 @@ function BackIcon() {
 
 function SimplifiedThemePage() {
   const navigate = useNavigate();
-  const { effectiveTheme, selectedTheme, setTheme } = useTheme();
+  const { selectedTheme, setTheme } = useTheme();
 
   return (
     <div className={styles.page} data-simplified-theme data-selected-theme={selectedTheme}>
@@ -92,11 +86,6 @@ function SimplifiedThemePage() {
                   {presentation.badge ? <small>{presentation.badge}</small> : null}
                 </span>
                 <span>{presentation.description}</span>
-                {option.id === THEME_IDS.SYSTEM && isSelected ? (
-                  <em role="status">
-                    Usando agora: {effectiveTheme === THEME_IDS.DARK ? 'Escuro' : 'Claro'}
-                  </em>
-                ) : null}
               </span>
               <span className={styles.selectionMark} aria-hidden="true">
                 {isSelected ? <CheckIcon /> : null}

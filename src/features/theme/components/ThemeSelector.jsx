@@ -5,13 +5,11 @@ import styles from './ThemeSelector.module.css';
 
 const THEME_DESCRIPTIONS = Object.freeze({
   [THEME_IDS.LIGHT]: 'Claro suave, superfícies limpas e texto escuro.',
-  [THEME_IDS.DARK]: 'Escuro neutro e confortável para uso prolongado.',
   [THEME_IDS.UNIFLOW]: 'Identidade premium com azul, roxo e verde da marca.',
-  [THEME_IDS.SYSTEM]: 'Acompanha o modo claro ou escuro do aparelho.',
 });
 
 export function ThemeSelector() {
-  const { effectiveTheme, selectedTheme, setTheme } = useTheme();
+  const { selectedTheme, setTheme } = useTheme();
 
   return (
     <Card variant="default" padding="lg" className={styles.card}>
@@ -57,12 +55,6 @@ export function ThemeSelector() {
             );
           })}
         </div>
-
-        {selectedTheme === THEME_IDS.SYSTEM ? (
-          <p className={styles.systemStatus} role="status">
-            Seguindo o sistema: {effectiveTheme === THEME_IDS.DARK ? 'Escuro' : 'Claro'}
-          </p>
-        ) : null}
       </fieldset>
     </Card>
   );

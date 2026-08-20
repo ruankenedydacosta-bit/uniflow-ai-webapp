@@ -8,18 +8,18 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 test('tela simplificada reutiliza exclusivamente o ThemeProvider oficial', async () => {
   const page = await source('./SimplifiedThemePage.jsx');
   assert.match(page, /THEME_IDS, THEME_OPTIONS, useTheme/);
-  assert.match(page, /const \{ effectiveTheme, selectedTheme, setTheme \} = useTheme\(\);/);
+  assert.match(page, /const \{ selectedTheme, setTheme \} = useTheme\(\);/);
   assert.match(page, /onChange=\{\(\) => setTheme\(option\.id\)\}/);
   assert.doesNotMatch(page, /localStorage|sessionStorage|new ThemeProvider|createContext/);
 });
 
-test('oferece exatamente os quatro temas oficiais', () => {
+test('oferece exatamente os dois temas oficiais -- UniFlow primeiro (padrão obrigatório), Claro como alternativa', () => {
   assert.deepEqual(THEME_OPTIONS.map(({ id }) => id), [
-    THEME_IDS.LIGHT,
-    THEME_IDS.DARK,
     THEME_IDS.UNIFLOW,
-    THEME_IDS.SYSTEM,
+    THEME_IDS.LIGHT,
   ]);
+  assert.equal(THEME_IDS.DARK, undefined);
+  assert.equal(THEME_IDS.SYSTEM, undefined);
 });
 
 test('tema UniFlow preserva o id oficial e recebe identidade premium da marca', async () => {
@@ -30,10 +30,9 @@ test('tema UniFlow preserva o id oficial e recebe identidade premium da marca', 
   assert.match(page, /<UniMark \/>/);
 });
 
-test('tema Sistema informa a paleta efetiva sem criar resolvedor paralelo', async () => {
+test('nenhuma lógica de Escuro/Sistema permanece na tela (cards removidos, sem resolvedor paralelo)', async () => {
   const page = await source('./SimplifiedThemePage.jsx');
-  assert.match(page, /effectiveTheme === THEME_IDS\.DARK \? 'Escuro' : 'Claro'/);
-  assert.doesNotMatch(page, /matchMedia|prefers-color-scheme/);
+  assert.doesNotMatch(page, /THEME_IDS\.DARK|THEME_IDS\.SYSTEM|matchMedia|prefers-color-scheme|effectiveTheme/);
 });
 
 test('controles são acessíveis e a escolha é anunciada', async () => {

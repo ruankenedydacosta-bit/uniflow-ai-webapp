@@ -24,8 +24,7 @@
 }
 
 .description,
-.copy span,
-.systemStatus {
+.copy span {
   color: var(--uf-color-text-secondary);
   font-size: var(--uf-text-caption-size);
   line-height: var(--uf-text-caption-lh);
@@ -146,12 +145,6 @@
   color: var(--uf-color-primary);
   font-size: var(--uf-text-micro-size);
   font-weight: var(--uf-font-weight-semibold);
-}
-
-.systemStatus {
-  padding: var(--uf-space-8) var(--uf-space-12);
-  border-radius: var(--uf-radius-8);
-  background: var(--uf-color-primary-subtle);
 }
 
 @media (max-width: 560px) {

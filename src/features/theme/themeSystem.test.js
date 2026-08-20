@@ -3,19 +3,13 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   DEFAULT_THEME,
-  SYSTEM_THEME_QUERY,
   THEME_IDS,
   THEME_OPTIONS,
   THEME_STORAGE_KEY,
   isThemePreference,
   normalizeThemePreference,
 } from './themeConstants.js';
-import {
-  applyThemeToRoot,
-  resolveEffectiveTheme,
-  resolveSystemTheme,
-  subscribeToSystemTheme,
-} from './themeResolver.js';
+import { applyThemeToRoot, resolveEffectiveTheme } from './themeResolver.js';
 import { readThemePreference, writeThemePreference } from './themeStorage.js';
 
 const FEATURE_URL = new URL('.', import.meta.url);
@@ -31,13 +25,15 @@ function createStorage(initialValue = null) {
   };
 }
 
-test('padrão inicial é UniFlow (identidade da marca) e catálogo público é imutável', () => {
+test('padrão inicial é UniFlow (identidade da marca) e catálogo público tem só dois temas (Escuro/Sistema removidos)', () => {
   // Todo usuário sem preferência salva entra no tema UniFlow -- nunca Claro.
-  // Só muda se o próprio usuário escolher outro tema em Conta > Tema.
+  // Só muda se o próprio usuário escolher Claro em Conta > Tema.
   assert.equal(DEFAULT_THEME, THEME_IDS.UNIFLOW);
-  assert.deepEqual(THEME_OPTIONS.map(({ label }) => label), ['Claro', 'Escuro', 'UniFlow', 'Sistema']);
+  assert.deepEqual(THEME_OPTIONS.map(({ label }) => label), ['UniFlow', 'Claro']);
   assert.ok(Object.isFrozen(THEME_OPTIONS));
   assert.ok(THEME_OPTIONS.every(Object.isFrozen));
+  assert.equal(THEME_IDS.DARK, undefined);
+  assert.equal(THEME_IDS.SYSTEM, undefined);
 });
 
 test('todas as preferências válidas são preservadas', () => {
@@ -54,8 +50,8 @@ test('valor inválido gera fallback seguro para UniFlow', () => {
 });
 
 test('preferência é lida e persistida somente pela chave visual', () => {
-  const storage = createStorage(THEME_IDS.DARK);
-  assert.equal(readThemePreference(storage), THEME_IDS.DARK);
+  const storage = createStorage(THEME_IDS.LIGHT);
+  assert.equal(readThemePreference(storage), THEME_IDS.LIGHT);
   assert.equal(writeThemePreference(THEME_IDS.UNIFLOW, storage), THEME_IDS.UNIFLOW);
   assert.equal(storage.value(), THEME_IDS.UNIFLOW);
   assert.equal(THEME_STORAGE_KEY, 'uniflow.theme.preference');
@@ -67,55 +63,46 @@ test('falha de storage não interrompe a aplicação', () => {
     setItem: () => { throw new Error('unavailable'); },
   };
   assert.equal(readThemePreference(storage), THEME_IDS.UNIFLOW);
-  assert.equal(writeThemePreference(THEME_IDS.DARK, storage), THEME_IDS.DARK);
+  assert.equal(writeThemePreference(THEME_IDS.LIGHT, storage), THEME_IDS.LIGHT);
 });
 
-test('Sistema resolve corretamente para claro e escuro', () => {
-  assert.equal(resolveSystemTheme(() => ({ matches: false })), THEME_IDS.LIGHT);
-  assert.equal(resolveSystemTheme(() => ({ matches: true })), THEME_IDS.DARK);
-  assert.equal(resolveEffectiveTheme(THEME_IDS.SYSTEM, THEME_IDS.LIGHT), THEME_IDS.LIGHT);
-  assert.equal(resolveEffectiveTheme(THEME_IDS.SYSTEM, THEME_IDS.DARK), THEME_IDS.DARK);
-  assert.equal(resolveEffectiveTheme(THEME_IDS.UNIFLOW, THEME_IDS.LIGHT), THEME_IDS.UNIFLOW);
+// UNIFLOW-THEME-2TEMAS: usuários existentes com 'dark'/'system' salvo (temas
+// removidos) migram automaticamente para UniFlow -- e a migração é
+// GRAVADA de volta no storage, não só recalculada a cada leitura.
+test('usuário com Escuro ou Sistema salvo migra automaticamente para UniFlow, e a migração é persistida', () => {
+  const darkStorage = createStorage('dark');
+  assert.equal(readThemePreference(darkStorage), THEME_IDS.UNIFLOW);
+  assert.equal(darkStorage.value(), THEME_IDS.UNIFLOW);
+
+  const systemStorage = createStorage('system');
+  assert.equal(readThemePreference(systemStorage), THEME_IDS.UNIFLOW);
+  assert.equal(systemStorage.value(), THEME_IDS.UNIFLOW);
 });
 
-test('mudança do sistema é observada em tempo real e listener é removido', () => {
-  let listener = null;
-  let removedListener = null;
-  const observed = [];
-  const mediaQueryList = {
-    matches: false,
-    addEventListener: (event, nextListener) => {
-      assert.equal(event, 'change');
-      listener = nextListener;
-    },
-    removeEventListener: (event, nextListener) => {
-      assert.equal(event, 'change');
-      removedListener = nextListener;
-    },
-  };
-
-  const cleanup = subscribeToSystemTheme(
-    (theme) => observed.push(theme),
-    (query) => {
-      assert.equal(query, SYSTEM_THEME_QUERY);
-      return mediaQueryList;
-    },
-  );
-
-  listener({ matches: true });
-  listener({ matches: false });
-  cleanup();
-
-  assert.deepEqual(observed, [THEME_IDS.DARK, THEME_IDS.LIGHT]);
-  assert.equal(removedListener, listener);
+test('sem preferência salva (storage vazio), não escreve nada -- só cai no fallback', () => {
+  const storage = createStorage(null);
+  assert.equal(readThemePreference(storage), THEME_IDS.UNIFLOW);
+  assert.equal(storage.value(), undefined);
 });
 
-test('atributos de preferência e tema efetivo são aplicados separadamente', () => {
+test('resolveEffectiveTheme é só normalização -- sem Sistema, o tema efetivo é sempre a própria preferência', () => {
+  assert.equal(resolveEffectiveTheme(THEME_IDS.LIGHT), THEME_IDS.LIGHT);
+  assert.equal(resolveEffectiveTheme(THEME_IDS.UNIFLOW), THEME_IDS.UNIFLOW);
+  assert.equal(resolveEffectiveTheme('dark'), THEME_IDS.UNIFLOW);
+  assert.equal(resolveEffectiveTheme('system'), THEME_IDS.UNIFLOW);
+});
+
+test('nenhuma lógica de Sistema (resolução, listener de matchMedia) permanece no resolver', async () => {
+  const resolver = await readFile(new URL('themeResolver.js', FEATURE_URL), 'utf8');
+  assert.doesNotMatch(resolver, /resolveSystemTheme|subscribeToSystemTheme|matchMedia|prefers-color-scheme/);
+});
+
+test('atributos de preferência e tema efetivo são aplicados (sempre coincidem, sem Sistema)', () => {
   const attributes = new Map();
   const root = { setAttribute: (name, value) => attributes.set(name, value) };
-  applyThemeToRoot(root, THEME_IDS.SYSTEM, THEME_IDS.DARK);
-  assert.equal(attributes.get('data-theme-preference'), THEME_IDS.SYSTEM);
-  assert.equal(attributes.get('data-theme'), THEME_IDS.DARK);
+  applyThemeToRoot(root, THEME_IDS.LIGHT, THEME_IDS.LIGHT);
+  assert.equal(attributes.get('data-theme-preference'), THEME_IDS.LIGHT);
+  assert.equal(attributes.get('data-theme'), THEME_IDS.LIGHT);
 });
 
 test('resolver não modifica entradas recebidas', () => {
@@ -125,22 +112,21 @@ test('resolver não modifica entradas recebidas', () => {
   assert.deepEqual(preference, snapshot);
 });
 
-test('provider mantém selectedTheme e effectiveTheme e aplica antes da pintura', async () => {
+test('provider mantém selectedTheme e effectiveTheme, aplica antes da pintura, e não tem mais estado/efeito de sistema', async () => {
   const source = await readFile(new URL('ThemeProvider.jsx', FEATURE_URL), 'utf8');
   assert.match(source, /useLayoutEffect/);
   assert.match(source, /selectedTheme/);
   assert.match(source, /effectiveTheme/);
-  assert.match(source, /subscribeToSystemTheme/);
-  assert.match(source, /return subscribeToSystemTheme\(setSystemTheme\)/);
+  assert.doesNotMatch(source, /subscribeToSystemTheme|resolveSystemTheme|systemTheme/);
 });
 
-test('ThemeSelector reflete seleção ativa e oferece controles acessíveis', async () => {
+test('ThemeSelector reflete seleção ativa, oferece controles acessíveis, e não tem mais status de Sistema', async () => {
   const source = await readFile(new URL('components/ThemeSelector.jsx', FEATURE_URL), 'utf8');
   assert.match(source, /checked=\{isSelected\}/);
   assert.match(source, /type="radio"/);
   assert.match(source, /aria-label=\{`Usar tema \$\{option\.label\}`\}/);
   assert.match(source, /Selecionado/);
-  assert.match(source, /Seguindo o sistema/);
+  assert.doesNotMatch(source, /Seguindo o sistema|THEME_IDS\.SYSTEM|THEME_IDS\.DARK/);
 });
 
 test('tokens, raiz e Configurações estão conectados sem API externa', async () => {

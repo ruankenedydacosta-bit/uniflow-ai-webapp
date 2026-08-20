@@ -162,22 +162,10 @@
     transform 220ms ease;
 }
 
-.option[data-theme-option='dark'] {
-  --theme-preview-bg: #111318;
-  --theme-preview-surface: #242831;
-  --theme-preview-accent: #5b8def;
-}
-
 .option[data-theme-option='uniflow'] {
   --theme-preview-bg: #02040a;
   --theme-preview-surface: #0f172a;
   --theme-preview-accent: linear-gradient(100deg, #2563eb, #7c3aed 55%, #10b981);
-}
-
-.option[data-theme-option='system'] {
-  --theme-preview-bg: linear-gradient(90deg, #f5f7fb 0 50%, #111318 50% 100%);
-  --theme-preview-surface: linear-gradient(90deg, #ffffff 0 50%, #242831 50% 100%);
-  --theme-preview-accent: linear-gradient(90deg, #2563eb 0 50%, #5b8def 50% 100%);
 }
 
 .option[data-selected='true'] {
@@ -308,8 +296,8 @@
 }
 
 /* O seletor preserva a miniatura real de cada tema, mas no tema Claro o
-   próprio cartão deixa de ser uma placa azul-noite. Assim Claro, Escuro,
-   UniFlow e Sistema continuam distinguíveis sem comprometer a leitura. */
+   próprio cartão deixa de ser uma placa azul-noite. Assim Claro e UniFlow
+   continuam distinguíveis sem comprometer a leitura. */
 :global([data-theme='light']) .uniIdentity {
   border-color: color-mix(in srgb, var(--uf-app-primary) 24%, var(--uf-app-border));
   background:

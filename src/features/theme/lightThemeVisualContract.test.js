@@ -72,8 +72,7 @@ test('Chat Claro preserva contraste da bolha colorida e da resposta da Uni', asy
   assert.doesNotMatch(css, /:global\(\[data-theme='(?:dark|uniflow)'\]\) \.bubble/);
 });
 
-test('Sistema continua resolvendo exclusivamente para Claro ou Escuro', async () => {
+test('tema Sistema foi removido -- resolver nunca mais depende de dispositivo/matchMedia', async () => {
   const resolver = await source('features/theme/themeResolver.js');
-  assert.match(resolver, /systemTheme === THEME_IDS\.DARK \? THEME_IDS\.DARK : THEME_IDS\.LIGHT/);
-  assert.doesNotMatch(resolver, /THEME_IDS\.UNIFLOW[^\n]*systemTheme/);
+  assert.doesNotMatch(resolver, /THEME_IDS\.SYSTEM|systemTheme|matchMedia/);
 });

@@ -1,57 +1,22 @@
-import {
-  SYSTEM_THEME_QUERY,
-  THEME_IDS,
-  normalizeThemePreference,
-} from './themeConstants.js';
+import { normalizeThemePreference } from './themeConstants.js';
 
-// "Sistema" só pode resolver para Claro ou Escuro (nunca para a identidade
-// UniFlow) -- por isso usa THEME_IDS.LIGHT diretamente aqui, e não
-// DEFAULT_THEME (que é UniFlow, o tema de um usuário sem preferência
-// salva). São fallbacks semanticamente diferentes.
-export function resolveSystemTheme(matchMedia = globalThis.matchMedia) {
-  if (typeof matchMedia !== 'function') return THEME_IDS.LIGHT;
-
-  try {
-    return matchMedia(SYSTEM_THEME_QUERY).matches ? THEME_IDS.DARK : THEME_IDS.LIGHT;
-  } catch {
-    return THEME_IDS.LIGHT;
-  }
+// UNIFLOW-THEME-2TEMAS: sem o tema Sistema, a preferência normalizada JÁ É
+// o tema efetivo -- nunca depende do dispositivo do usuário. Assinatura de
+// um único argumento de propósito: nenhuma chamada precisa (nem pode)
+// informar um tema de sistema para resolver contra.
+export function resolveEffectiveTheme(preference) {
+  return normalizeThemePreference(preference);
 }
 
-export function resolveEffectiveTheme(preference, systemTheme = THEME_IDS.LIGHT) {
-  const normalizedPreference = normalizeThemePreference(preference);
-  if (normalizedPreference !== THEME_IDS.SYSTEM) return normalizedPreference;
-  return systemTheme === THEME_IDS.DARK ? THEME_IDS.DARK : THEME_IDS.LIGHT;
-}
-
-export function subscribeToSystemTheme(onChange, matchMedia = globalThis.matchMedia) {
-  if (typeof onChange !== 'function' || typeof matchMedia !== 'function') return () => {};
-
-  let mediaQueryList;
-  try {
-    mediaQueryList = matchMedia(SYSTEM_THEME_QUERY);
-  } catch {
-    return () => {};
-  }
-
-  const handleChange = (event) => {
-    onChange(event.matches ? THEME_IDS.DARK : THEME_IDS.LIGHT);
-  };
-
-  if (typeof mediaQueryList.addEventListener === 'function') {
-    mediaQueryList.addEventListener('change', handleChange);
-    return () => mediaQueryList.removeEventListener('change', handleChange);
-  }
-
-  mediaQueryList.addListener?.(handleChange);
-  return () => mediaQueryList.removeListener?.(handleChange);
-}
-
+// data-theme e data-theme-preference sempre coincidem agora (sem Sistema,
+// não há mais divergência entre "o que o usuário escolheu" e "o que é
+// pintado") -- os dois atributos continuam existindo por estabilidade do
+// contrato DOM (nada além desta função os define).
 export function applyThemeToRoot(root, preference, effectiveTheme) {
   if (!root?.setAttribute) return;
 
   const selectedTheme = normalizeThemePreference(preference);
-  const resolvedTheme = resolveEffectiveTheme(selectedTheme, effectiveTheme);
+  const resolvedTheme = normalizeThemePreference(effectiveTheme ?? selectedTheme);
   root.setAttribute('data-theme', resolvedTheme);
   root.setAttribute('data-theme-preference', selectedTheme);
 }

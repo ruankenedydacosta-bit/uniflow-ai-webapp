@@ -2,7 +2,6 @@ export { ThemeProvider } from './ThemeProvider.jsx';
 export { useTheme } from './useTheme.js';
 export {
   DEFAULT_THEME,
-  SYSTEM_THEME_QUERY,
   THEME_IDS,
   THEME_OPTIONS,
   THEME_STORAGE_KEY,
