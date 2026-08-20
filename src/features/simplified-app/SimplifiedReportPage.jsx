@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { createDownloadReadyNotification } from '../notifications/notificationsService.js';
+import { buildDownloadedFile, canOpenDownloadedFile, openDownloadedFile } from './downloadedFileShare.js';
 import { ChevronRightIcon, DownloadIcon } from './SimplifiedIcons.jsx';
+import SimplifiedDownloadSuccessCard from './SimplifiedDownloadSuccessCard.jsx';
 import SimplifiedReportSpreadsheet from './SimplifiedReportSpreadsheet.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedReport.module.css';
@@ -36,9 +38,36 @@ function SimplifiedReportPage() {
   const { user, workspace } = useSession();
   const { report, moveMonth } = useMonthlyReport();
   const [downloadState, setDownloadState] = useState('idle');
+  // DOWNLOAD-SUCCESS1: o File fica guardado só para alimentar "Abrir
+  // arquivo" (Web Share). `canOpen` é resolvido UMA vez, no momento do
+  // sucesso, contra este arquivo específico -- ver downloadedFileShare.js.
+  const [downloadResult, setDownloadResult] = useState(null);
+  const [openError, setOpenError] = useState(null);
+
+  // Trocar de mês invalida o card: ele afirma que "o relatório" foi
+  // baixado, e a partir daqui o relatório na tela é outro. Some junto com
+  // o arquivo guardado -- nunca oferece abrir o mês errado.
+  function handleMoveMonth(delta) {
+    setDownloadState('idle');
+    setDownloadResult(null);
+    setOpenError(null);
+    moveMonth(delta);
+  }
+
+  async function handleOpenFile() {
+    setOpenError(null);
+    const result = await openDownloadedFile(downloadResult?.file);
+    // Cancelar a folha de compartilhamento é escolha do usuário, nunca
+    // erro -- só uma falha real vira mensagem.
+    if (!result.ok && result.reason === 'failed') {
+      setOpenError('Não foi possível abrir o arquivo. Ele continua salvo no seu dispositivo.');
+    }
+  }
 
   async function handleDownload() {
     setDownloadState('preparing');
+    setDownloadResult(null);
+    setOpenError(null);
     try {
       // RELATORIO-SPREADSHEET1: exceljs só é baixado aqui, no toque do
       // usuário -- nunca entra no bundle inicial da Home/Relatório.
@@ -52,7 +81,12 @@ function SimplifiedReportPage() {
       const blob = await buildMonthlyReportWorkbookBlob(report);
       const filename = buildMonthlyReportFilename(report.period);
       downloadMonthlyReportWorkbookBlob(blob, filename);
-      setDownloadState('idle');
+      // DOWNLOAD-SUCCESS1: feedback próprio da Uni, só DEPOIS do download
+      // já disparado -- o aviso nativo do navegador/Android continua
+      // acontecendo em paralelo e segue sendo o caminho garantido.
+      const file = buildDownloadedFile(blob, filename);
+      setDownloadResult({ file, filename, canOpen: canOpenDownloadedFile(file) });
+      setDownloadState('success');
       // DOWNLOAD-FEEDBACK1: só depois do download já ter sido DISPARADO
       // (linha acima) -- nunca antes, nunca se a geração falhar (fora do
       // try, esse trecho nem roda). Nunca derruba o download em si: a
@@ -84,11 +118,11 @@ function SimplifiedReportPage() {
       </header>
 
       <nav className={styles.monthNav} aria-label="Navegação entre meses">
-        <button type="button" className={styles.monthArrow} onClick={() => moveMonth(-1)} aria-label="Mês anterior">
+        <button type="button" className={styles.monthArrow} onClick={() => handleMoveMonth(-1)} aria-label="Mês anterior">
           <span className={styles.rotatedRight} aria-hidden="true"><ChevronRightIcon /></span>
         </button>
         <span className={styles.monthLabel}>{report.period.label}</span>
-        <button type="button" className={styles.monthArrow} onClick={() => moveMonth(1)} aria-label="Próximo mês">
+        <button type="button" className={styles.monthArrow} onClick={() => handleMoveMonth(1)} aria-label="Próximo mês">
           <ChevronRightIcon />
         </button>
       </nav>
@@ -121,6 +155,15 @@ function SimplifiedReportPage() {
         <span className={styles.downloadIcon} aria-hidden="true"><DownloadIcon /></span>
         {downloadState === 'preparing' ? 'Preparando…' : 'Baixar planilha'}
       </button>
+
+      {downloadState === 'success' && downloadResult ? (
+        <SimplifiedDownloadSuccessCard
+          filename={downloadResult.filename}
+          canOpen={downloadResult.canOpen}
+          onOpen={handleOpenFile}
+          openError={openError}
+        />
+      ) : null}
 
       {downloadState === 'error' ? (
         <p className={styles.downloadError} role="alert">

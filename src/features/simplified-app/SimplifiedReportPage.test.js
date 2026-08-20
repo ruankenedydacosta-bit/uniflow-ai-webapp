@@ -187,6 +187,71 @@ test('falha ao notificar nunca derruba o download nem aciona o estado de erro --
   assert.match(handlerBody, /void createDownloadReadyNotification\(/);
 });
 
+// ============================================================================
+// DOWNLOAD-SUCCESS1 -- feedback visual próprio da Uni na própria tela,
+// depois do download já disparado (o aviso nativo continua em paralelo).
+// ============================================================================
+
+test('card de sucesso só aparece DEPOIS do download disparado -- "success" é setado após downloadMonthlyReportWorkbookBlob, nunca antes', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  const handlerBody = page.slice(
+    page.indexOf('async function handleDownload'),
+    page.indexOf('return (', page.indexOf('async function handleDownload')),
+  );
+  const dispatchIndex = handlerBody.indexOf('downloadMonthlyReportWorkbookBlob(blob, filename);');
+  const successIndex = handlerBody.indexOf("setDownloadState('success')");
+  assert.ok(dispatchIndex > -1 && successIndex > dispatchIndex, 'sucesso só depois do download disparado');
+});
+
+test('falha de geração nunca mostra o card de sucesso -- continua caindo no estado de erro', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  assert.match(page, /catch \{\s*\n\s*setDownloadState\('error'\);\s*\n\s*\}/);
+  assert.match(page, /\{downloadState === 'success' && downloadResult \? \(/);
+});
+
+test('capacidade de abrir é resolvida contra o arquivo real, uma vez, no sucesso -- nunca assumida', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  assert.match(page, /import \{ buildDownloadedFile, canOpenDownloadedFile, openDownloadedFile \} from '\.\/downloadedFileShare\.js';/);
+  assert.match(page, /const file = buildDownloadedFile\(blob, filename\);/);
+  assert.match(page, /canOpen: canOpenDownloadedFile\(file\)/);
+});
+
+test('cancelar a folha de compartilhamento NÃO vira mensagem de erro -- só falha real', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  assert.match(page, /if \(!result\.ok && result\.reason === 'failed'\) \{/);
+});
+
+test('trocar de mês limpa o card e o arquivo guardado -- nunca oferece abrir o mês errado', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  const handler = page.slice(page.indexOf('function handleMoveMonth'), page.indexOf('async function handleOpenFile'));
+  assert.match(handler, /setDownloadResult\(null\);/);
+  assert.match(handler, /moveMonth\(delta\);/);
+  assert.match(page, /onClick=\{\(\) => handleMoveMonth\(-1\)\}/);
+  assert.match(page, /onClick=\{\(\) => handleMoveMonth\(1\)\}/);
+});
+
+test('novo download limpa o resultado anterior antes de começar -- nunca mistura dois arquivos', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  const handlerStart = page.indexOf('async function handleDownload');
+  const beforeTry = page.slice(handlerStart, page.indexOf('try {', handlerStart));
+  assert.match(beforeTry, /setDownloadResult\(null\);/);
+});
+
+test('card fica entre o botão de baixar e a planilha -- dentro da própria tela do Relatório', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  const downloadIndex = page.indexOf('styles.downloadButton');
+  const cardIndex = page.indexOf('<SimplifiedDownloadSuccessCard');
+  const spreadsheetIndex = page.indexOf('<SimplifiedReportSpreadsheet');
+  assert.ok(cardIndex > downloadIndex, 'o card vem depois do botão de baixar');
+  assert.ok(spreadsheetIndex > cardIndex, 'a planilha continua depois do card');
+});
+
+test('NÃO ALTERAR: o download nativo continua exatamente igual -- o card é feedback por cima, nunca substituição', async () => {
+  const workbook = await source('./monthlyReportWorkbook.js');
+  assert.match(workbook, /anchor\.click\(\);/);
+  assert.match(workbook, /globalThis\.setTimeout\(\(\) => URL\.revokeObjectURL\(url\), REVOKE_OBJECT_URL_DELAY_MS\);/);
+});
+
 test('erro de geração mostra mensagem clara, nunca falso sucesso nem loading infinito', async () => {
   const page = await source('./SimplifiedReportPage.jsx');
   assert.match(page, /catch \{\s*\n\s*setDownloadState\('error'\);\s*\n\s*\}/);
