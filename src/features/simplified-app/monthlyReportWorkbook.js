@@ -120,6 +120,19 @@ export function buildMonthlyReportFilename(period) {
   return `uniflow-relatorio-${String(period.dateFrom).slice(0, 7)}.xlsx`;
 }
 
+// BUGFIX (download XLSX no Android/PWA): revogar a blob: URL logo após
+// anchor.click() derrubava o download no Chrome/WebView Android -- o clique
+// programático dispara um handoff ASSÍNCRONO para o gerenciador de
+// downloads do sistema, que só lê os bytes da blob: URL depois desse
+// tick. Revogar antes disso terminar deixa o Android com o nome/tamanho
+// (metadados já resolvidos do próprio Blob), mas 0 bytes de conteúdo --
+// exatamente o sintoma relatado ("reconhece nome/tamanho, mas não salva").
+// No desktop o mesmo atraso é inofensivo (a URL já não é mais necessária
+// bem antes disso). 4s é generoso o suficiente para cobrir esse handoff
+// mesmo em aparelhos mais lentos, sem manter o Blob vivo por mais tempo
+// do que o necessário.
+const REVOKE_OBJECT_URL_DELAY_MS = 4000;
+
 /**
  * Dispara o download no navegador -- mesmo padrão (Blob + link temporário)
  * já usado por downloadTransactionsCsv (transactionExportUtils.js) e
@@ -134,5 +147,5 @@ export function downloadMonthlyReportWorkbookBlob(blob, filename, documentRef = 
   documentRef.body.append(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  globalThis.setTimeout(() => URL.revokeObjectURL(url), REVOKE_OBJECT_URL_DELAY_MS);
 }

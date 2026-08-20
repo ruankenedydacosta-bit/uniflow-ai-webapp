@@ -258,5 +258,27 @@ test('downloadTransactionsCsv usa arquivo local, BOM UTF-8 e remove o link tempo
     URL.revokeObjectURL = originalRevokeObjectUrl;
   }
   assert.equal(anchor.download, 'teste.csv');
-  assert.deepEqual(calls, ['append', 'click', 'remove', 'revoke:blob:local-export']);
+  // BUGFIX (Android/PWA): revoke NUNCA é síncrono ao clique (ver
+  // monthlyReportWorkbook.js -- mesmo bug, mesmo motivo).
+  assert.deepEqual(calls, ['append', 'click', 'remove']);
+});
+
+test('downloadTransactionsCsv revoga a blob: URL só depois de um atraso -- nunca no mesmo tick do clique (bug do Android/PWA)', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const anchor = { click() {}, remove() {} };
+  const documentRef = { body: { append: () => {} }, createElement: () => anchor };
+  const originalCreateObjectUrl = URL.createObjectURL;
+  const originalRevokeObjectUrl = URL.revokeObjectURL;
+  let revoked = false;
+  URL.createObjectURL = () => 'blob:local-export';
+  URL.revokeObjectURL = () => { revoked = true; };
+  try {
+    downloadTransactionsCsv([], { documentRef, filename: 'teste.csv' });
+    assert.equal(revoked, false, 'revogar imediatamente após o clique é o bug -- nunca deve acontecer');
+    t.mock.timers.tick(4000);
+    assert.equal(revoked, true, 'a URL deve ser revogada eventualmente, só não no mesmo tick do clique');
+  } finally {
+    URL.createObjectURL = originalCreateObjectUrl;
+    URL.revokeObjectURL = originalRevokeObjectUrl;
+  }
 });

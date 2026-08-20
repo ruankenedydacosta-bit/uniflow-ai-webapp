@@ -107,6 +107,14 @@ export function buildTransactionsExportFilename(date = new Date()) {
   return `uniflow-lancamentos-${iso}.csv`;
 }
 
+// BUGFIX (download no Android/PWA -- mesmo problema do XLSX do Relatório,
+// ver monthlyReportWorkbook.js): revogar a blob: URL logo após
+// anchor.click() é assíncrono demais para o gerenciador de downloads do
+// Android confirmar antes da URL morrer -- o resultado é um download com
+// nome/tamanho corretos e 0 bytes de conteúdo. Atraso inofensivo no
+// desktop, necessário no mobile.
+const REVOKE_OBJECT_URL_DELAY_MS = 4000;
+
 /**
  * Dispara o download do CSV no navegador, reaproveitando o mesmo padrão de
  * `downloadAudioReviewJson` (Blob + link temporário) já usado em
@@ -127,5 +135,5 @@ export function downloadTransactionsCsv(
   documentRef.body.append(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  globalThis.setTimeout(() => URL.revokeObjectURL(url), REVOKE_OBJECT_URL_DELAY_MS);
 }
