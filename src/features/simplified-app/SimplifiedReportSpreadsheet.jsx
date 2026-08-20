@@ -1,17 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronRightIcon, DownloadIcon } from './SimplifiedIcons.jsx';
 import styles from './simplifiedReportSpreadsheet.module.css';
-import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
-import { useMonthlyReport } from './useMonthlyReport.js';
-
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M20 6 10 16l10 10" />
-    </svg>
-  );
-}
 
 const TRANSACTIONS_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 const AGENDA_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -99,77 +87,18 @@ function AgendaTable({ rows }) {
 }
 
 /**
- * RELATORIO-SPREADSHEET1: Tela 2 -- planilha imersiva (UM workbook visual,
- * duas abas: Movimentações/Agenda), read-only. Mesma fonte/atualização em
- * tempo real da Tela 1 via useMonthlyReport() (compartilhado -- garante
- * que Resumo, planilha e XLSX nunca divergem). Sem bottom nav (ver
- * SimplifiedAppShell.jsx) -- a seta ← já garante o retorno.
+ * RELATORIO-FLATTEN1: componente puro de apresentação -- tabs
+ * (Movimentações/Agenda) + grid real, sem fonte de dados própria (recebe
+ * `report` pronto via prop). Extraído da antiga
+ * SimplifiedReportSpreadsheetPage.jsx (rota /app/relatorio/planilha,
+ * removida nesta fase -- ver routes.jsx) para ser reaproveitado DENTRO da
+ * mesma tela do Relatório da Uni, nunca copiado/colado.
  */
-function SimplifiedReportSpreadsheetPage() {
-  const navigate = useNavigate();
-  const { report, moveMonth } = useMonthlyReport();
+function SimplifiedReportSpreadsheet({ report }) {
   const [activeSheet, setActiveSheet] = useState('transactions');
-  const [downloadState, setDownloadState] = useState('idle');
-
-  async function handleDownload() {
-    setDownloadState('preparing');
-    try {
-      // RELATORIO-SPREADSHEET1: exceljs só é baixado aqui, no toque do
-      // usuário -- nunca entra no bundle inicial da Home/Relatório.
-      const {
-        buildMonthlyReportFilename,
-        buildMonthlyReportWorkbookBlob,
-        downloadMonthlyReportWorkbookBlob,
-      } = await import('./monthlyReportWorkbook.js');
-      // `report` é o estado MAIS RECENTE (useMonthlyReport já mantém isso
-      // vivo) -- nunca um snapshot de quando a tela abriu.
-      const blob = await buildMonthlyReportWorkbookBlob(report);
-      downloadMonthlyReportWorkbookBlob(blob, buildMonthlyReportFilename(report.period));
-      setDownloadState('idle');
-    } catch {
-      setDownloadState('error');
-    }
-  }
 
   return (
-    <div className={styles.page} data-simplified-report-spreadsheet>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backButton}
-          onClick={() => navigate(SIMPLIFIED_ROUTES.RELATORIO)}
-          aria-label="Voltar para o Relatório da Uni"
-        >
-          <BackIcon />
-        </button>
-        <h1>Relatório da Uni</h1>
-        <button
-          type="button"
-          className={styles.downloadButton}
-          onClick={handleDownload}
-          disabled={downloadState === 'preparing'}
-        >
-          <span className={styles.downloadIcon} aria-hidden="true"><DownloadIcon /></span>
-          {downloadState === 'preparing' ? 'Preparando…' : 'Baixar planilha'}
-        </button>
-      </header>
-
-      <nav className={styles.monthNav} aria-label="Navegação entre meses">
-        <button type="button" className={styles.monthArrow} onClick={() => moveMonth(-1)} aria-label="Mês anterior">
-          <span className={styles.rotatedRight} aria-hidden="true"><ChevronRightIcon /></span>
-        </button>
-        <span className={styles.monthLabel}>{report.period.label}</span>
-        <button type="button" className={styles.monthArrow} onClick={() => moveMonth(1)} aria-label="Próximo mês">
-          <ChevronRightIcon />
-        </button>
-      </nav>
-
-      {downloadState === 'error' ? (
-        <p className={styles.downloadError} role="alert">
-          Não foi possível gerar a planilha agora. Tente novamente.
-        </p>
-      ) : null}
-
+    <>
       <div className={styles.tabs} role="tablist" aria-label="Selecionar aba da planilha">
         <button
           type="button"
@@ -198,8 +127,8 @@ function SimplifiedReportSpreadsheetPage() {
           <AgendaTable rows={report.agenda} />
         )}
       </div>
-    </div>
+    </>
   );
 }
 
-export default SimplifiedReportSpreadsheetPage;
+export default SimplifiedReportSpreadsheet;

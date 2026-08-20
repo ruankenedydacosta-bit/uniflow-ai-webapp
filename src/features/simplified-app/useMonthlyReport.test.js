@@ -66,9 +66,14 @@ test('retorna { report, moveMonth } -- contrato mínimo consumido pelas duas tel
   assert.match(hook, /return \{ report, moveMonth \};/);
 });
 
-test('as duas telas usam o MESMO hook -- nunca cópias divergentes', async () => {
-  const summaryPage = await source('./SimplifiedReportPage.jsx');
-  const spreadsheetPage = await source('./SimplifiedReportSpreadsheetPage.jsx');
-  assert.match(summaryPage, /import \{ useMonthlyReport \} from '\.\/useMonthlyReport\.js';/);
-  assert.match(spreadsheetPage, /import \{ useMonthlyReport \} from '\.\/useMonthlyReport\.js';/);
+// RELATORIO-FLATTEN1: resumo e planilha viraram UMA página só
+// (SimplifiedReportPage.jsx) -- SimplifiedReportSpreadsheet.jsx (a
+// planilha, agora componente puro embutido) NÃO chama este hook, recebe
+// `report` pronto por prop. Continua valendo o motivo original de
+// extrair este hook: uma única chamada, nunca duas queries/listeners.
+test('só a página do Relatório chama o hook -- o componente da planilha é puro (recebe `report` por prop)', async () => {
+  const page = await source('./SimplifiedReportPage.jsx');
+  const spreadsheet = await source('./SimplifiedReportSpreadsheet.jsx');
+  assert.match(page, /import \{ useMonthlyReport \} from '\.\/useMonthlyReport\.js';/);
+  assert.doesNotMatch(spreadsheet, /useMonthlyReport/);
 });

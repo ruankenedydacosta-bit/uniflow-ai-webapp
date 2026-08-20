@@ -52,17 +52,17 @@ function SimplifiedAppShell({ children }) {
   const hasPageHeader = location.pathname === SIMPLIFIED_ROUTES.RECORDS
     || location.pathname === SIMPLIFIED_ROUTES.ACCOUNT
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`)
-    // RELATORIO1: cabeçalho próprio (← Relatório da Uni) -- nunca o
+    // RELATORIO1/RELATORIO-FLATTEN1: cabeçalho próprio (← Relatório da
+    // Uni + mês + resumo + planilha, tudo na mesma tela) -- nunca o
     // genérico (marca + sino) duplicado por cima.
-    || location.pathname === SIMPLIFIED_ROUTES.RELATORIO
-    // RELATORIO-SPREADSHEET1: a planilha também tem cabeçalho próprio
-    // (← Relatório da Uni + mês + Baixar planilha).
-    || location.pathname === SIMPLIFIED_ROUTES.RELATORIO_PLANILHA;
-  // RELATORIO-SPREADSHEET1: planilha = experiência imersiva (mesma
-  // referência visual não tem bottom nav) -- só ESTA rota some com a
-  // navegação inferior; em nenhuma outra rota isso muda. A seta ← da
-  // própria tela já garante o retorno.
-  const isSpreadsheetRoute = location.pathname === SIMPLIFIED_ROUTES.RELATORIO_PLANILHA;
+    || location.pathname === SIMPLIFIED_ROUTES.RELATORIO;
+  // RELATORIO-FLATTEN1: Relatório da Uni é experiência imersiva (mesma
+  // referência visual aprovada da planilha, agora a tela inteira) --
+  // nunca bottom nav aqui. Só ESTA rota some com a navegação inferior;
+  // em nenhuma outra rota isso muda. A seta ← da própria tela já garante
+  // o retorno. /app/relatorio/planilha (RELATORIO_PLANILHA) não tem mais
+  // tela própria -- é só um redirect para cá (ver routes.jsx).
+  const isReportRoute = location.pathname === SIMPLIFIED_ROUTES.RELATORIO;
   const isUniChatRoute = location.pathname === SIMPLIFIED_ROUTES.UNI;
   const isUniChatKeyboardOpen = isUniChatRoute && viewportState.isKeyboardOpen;
   // COMPACT-HEADER1: só as rotas que realmente renderizam SimplifiedHeader
@@ -274,7 +274,7 @@ function SimplifiedAppShell({ children }) {
             {children}
           </VisualViewportContext.Provider>
         </main>
-        <SimplifiedBottomNavigation hidden={isUniChatKeyboardOpen || isSpreadsheetRoute} />
+        <SimplifiedBottomNavigation hidden={isUniChatKeyboardOpen || isReportRoute} />
       </div>
     </div>
   );

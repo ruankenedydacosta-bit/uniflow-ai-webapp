@@ -33,7 +33,6 @@ import {
   SimplifiedPlanPage,
   SimplifiedRecordsPage,
   SimplifiedReportPage,
-  SimplifiedReportSpreadsheetPage,
   SimplifiedSecurityPage,
   SimplifiedSupportPage,
   SimplifiedThemePage,
@@ -189,14 +188,14 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedReportPage />,
   },
-  // RELATORIO-SPREADSHEET1: tela imersiva da planilha -- rota própria,
-  // alcançada pelo CTA "Ver relatório" da tela de resumo.
+  // RELATORIO-FLATTEN1: a rota da planilha imersiva foi FUNDIDA em
+  // SIMPLIFIED_ROUTES.RELATORIO (resumo + planilha na mesma tela, ver
+  // SimplifiedReportPage.jsx) -- esta rota deixou de ter tela própria,
+  // mas continua registrada só como redirect, para nunca quebrar um
+  // bookmark/link antigo apontando pra /app/relatorio/planilha.
   {
     path: SIMPLIFIED_ROUTES.RELATORIO_PLANILHA,
-    label: 'Relatório da Uni',
-    title: 'Relatório da Uni',
-    simplified: true,
-    element: <SimplifiedReportSpreadsheetPage />,
+    element: <Navigate to={SIMPLIFIED_ROUTES.RELATORIO} replace />,
   },
   // LOTE D: rota interna da conversa de Suporte da Uni é SEMPRE registrada
   // -- o acesso é via Conta > Suporte (o item "Falar com a Uni"), não pela

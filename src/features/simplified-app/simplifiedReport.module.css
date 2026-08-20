@@ -1,12 +1,21 @@
+/* RELATORIO-FLATTEN1: página imersiva, altura cheia -- a planilha
+   (SimplifiedReportSpreadsheet, flex:1 1 auto lá dentro) preenche o
+   espaço restante depois do cabeçalho/mês/cards/botão, que ficam em
+   altura fixa no topo. Mesmo padrão da antiga tela de planilha
+   (simplifiedReportSpreadsheet.module.css), agora aplicado à página
+   inteira já que as duas telas viraram uma só. */
 .page {
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   padding:
     max(14px, env(safe-area-inset-top))
     max(18px, env(safe-area-inset-right))
-    24px
+    max(14px, env(safe-area-inset-bottom))
     max(18px, env(safe-area-inset-left));
+  box-sizing: border-box;
 }
 
 /* ------------------------------------------------------------- header */
@@ -15,6 +24,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 0 0 auto;
 }
 
 .header h1 {
@@ -54,6 +64,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex: 0 0 auto;
 }
 
 .monthArrow {
@@ -101,6 +112,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  flex: 0 0 auto;
 }
 
 .summaryItem {
@@ -144,66 +156,59 @@
   color: var(--uf-app-danger-text, var(--uf-app-danger));
 }
 
-/* RELATORIO-SPREADSHEET1: a Tela 1 virou só o resumo -- a lista de
-   movimentações/Agenda do mês (e o empty state delas) saiu daqui, foi pra
-   Tela 2 (planilha). O que sobra é só o CTA que leva pra lá. */
-.viewSheetCta {
+/* -------------------------------------------------------- baixar planilha */
+
+/* RELATORIO-FLATTEN1: full-width, logo abaixo dos 4 cards e antes das
+   tabs da planilha -- fácil de encontrar, nunca escondido no header
+   (era lá que vivia na tela imersiva antiga, agora removida). */
+.downloadButton {
   width: 100%;
-  display: flex;
+  min-height: 48px;
+  flex: 0 0 auto;
+  display: inline-flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 20px;
-  background:
-    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
-    linear-gradient(135deg, var(--uf-app-ai), var(--uf-app-primary), var(--uf-app-success)) border-box;
-  border-color: transparent;
-  color: var(--uf-app-text);
+  justify-content: center;
+  gap: 8px;
+  padding-inline: 16px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--uf-app-primary), var(--uf-app-ai));
+  color: var(--uf-app-on-accent);
   font: inherit;
-  text-align: left;
+  font-size: 14px;
+  font-weight: 750;
+  white-space: nowrap;
   cursor: pointer;
   box-sizing: border-box;
 }
 
-.viewSheetIcon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--uf-app-ai), var(--uf-app-primary));
-  color: var(--uf-app-on-accent);
+.downloadButton:disabled {
+  opacity: .65;
+  cursor: default;
 }
 
-.viewSheetIcon svg {
-  width: 20px;
-  height: 20px;
+.downloadIcon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.downloadIcon svg {
+  width: 100%;
+  height: 100%;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.2;
+  stroke-width: 2.4;
 }
 
-.viewSheetBody {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.viewSheetBody strong {
-  font-size: 15px;
-  font-weight: 750;
-}
-
-.viewSheetBody span {
-  overflow: hidden;
-  color: var(--uf-app-text-2);
-  font-size: 12.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.downloadError {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--uf-app-danger-subtle, var(--uf-app-surface-2));
+  color: var(--uf-app-danger-text, var(--uf-app-danger));
+  font-size: 13px;
 }

@@ -147,10 +147,11 @@ test('Chat da Uni remove somente o header global e esconde a navegação apenas 
   assert.match(shell, /const isUniChatRoute = location\.pathname === SIMPLIFIED_ROUTES\.UNI;/);
   assert.match(shell, /\{hasPageHeader \|\| isUniChatRoute \? null : \(/);
   assert.match(shell, /isNotificationsRendered && !hasPageHeader && !isUniChatRoute/);
-  // RELATORIO-SPREADSHEET1: a mesma prop `hidden` também esconde a
-  // navegação na planilha imersiva (isSpreadsheetRoute) -- nunca um
-  // segundo mecanismo, só mais uma condição no mesmo booleano.
-  assert.match(shell, /<SimplifiedBottomNavigation hidden=\{isUniChatKeyboardOpen \|\| isSpreadsheetRoute\} \/>/);
+  // RELATORIO-FLATTEN1: a mesma prop `hidden` também esconde a
+  // navegação no Relatório da Uni (isReportRoute, agora resumo+planilha
+  // na mesma rota) -- nunca um segundo mecanismo, só mais uma condição
+  // no mesmo booleano.
+  assert.match(shell, /<SimplifiedBottomNavigation hidden=\{isUniChatKeyboardOpen \|\| isReportRoute\} \/>/);
   assert.match(nav, /aria-hidden=\{hidden\}/);
   assert.match(nav, /inert=\{hidden\}/);
   assert.match(css, /\.bottomNavigationHidden \{[\s\S]*?max-height: 0;/);

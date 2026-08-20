@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRightIcon, SpreadsheetIcon } from './SimplifiedIcons.jsx';
+import { ChevronRightIcon, DownloadIcon } from './SimplifiedIcons.jsx';
+import SimplifiedReportSpreadsheet from './SimplifiedReportSpreadsheet.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedReport.module.css';
 import { useMonthlyReport } from './useMonthlyReport.js';
@@ -13,18 +15,44 @@ function BackIcon() {
 }
 
 /**
- * RELATORIO-SPREADSHEET1: Tela 1 -- só o resumo do mês (Entradas/Saídas/
- * Movimentações/Compromissos) + o CTA que abre a planilha (Tela 2,
- * SimplifiedReportSpreadsheetPage.jsx). A lista de movimentações e a
- * Agenda do mês, que existiam aqui na V1, saíram -- pertencem à planilha
- * agora; esta tela nunca mais deve parecer uma segunda versão de
- * Registros. Fonte de dados e atualização em tempo real vivem em
- * useMonthlyReport.js (compartilhado com a Tela 2 -- garante que Resumo,
- * planilha e XLSX nunca divergem).
+ * RELATORIO-FLATTEN1: UMA ÚNICA tela -- resumo (4 indicadores) + botão
+ * Baixar planilha + a planilha real (tabs Movimentações/Agenda + grid),
+ * tudo junto. A V3 tinha duas rotas (resumo em /app/relatorio, planilha
+ * imersiva em /app/relatorio/planilha, alcançada só por um CTA "Ver
+ * relatório" intermediário) -- essa segunda rota foi removida (ver
+ * routes.jsx: /app/relatorio/planilha agora só redireciona pra cá, para
+ * nunca quebrar um bookmark antigo).
+ *
+ * Fonte de dados e atualização em tempo real continuam em
+ * useMonthlyReport.js, chamado uma ÚNICA vez aqui -- nunca duas queries
+ * financeiras, duas de Agenda, dois listeners ou dois reportData: a
+ * planilha (SimplifiedReportSpreadsheet.jsx) é um componente de
+ * apresentação puro, recebe `report` já pronto por prop.
  */
 function SimplifiedReportPage() {
   const navigate = useNavigate();
   const { report, moveMonth } = useMonthlyReport();
+  const [downloadState, setDownloadState] = useState('idle');
+
+  async function handleDownload() {
+    setDownloadState('preparing');
+    try {
+      // RELATORIO-SPREADSHEET1: exceljs só é baixado aqui, no toque do
+      // usuário -- nunca entra no bundle inicial da Home/Relatório.
+      const {
+        buildMonthlyReportFilename,
+        buildMonthlyReportWorkbookBlob,
+        downloadMonthlyReportWorkbookBlob,
+      } = await import('./monthlyReportWorkbook.js');
+      // `report` é o estado MAIS RECENTE (useMonthlyReport já mantém isso
+      // vivo) -- nunca um snapshot de quando a tela abriu.
+      const blob = await buildMonthlyReportWorkbookBlob(report);
+      downloadMonthlyReportWorkbookBlob(blob, buildMonthlyReportFilename(report.period));
+      setDownloadState('idle');
+    } catch {
+      setDownloadState('error');
+    }
+  }
 
   return (
     <div className={styles.page} data-simplified-report>
@@ -71,15 +99,21 @@ function SimplifiedReportPage() {
 
       <button
         type="button"
-        className={styles.viewSheetCta}
-        onClick={() => navigate(SIMPLIFIED_ROUTES.RELATORIO_PLANILHA)}
+        className={styles.downloadButton}
+        onClick={handleDownload}
+        disabled={downloadState === 'preparing'}
       >
-        <span className={styles.viewSheetIcon} aria-hidden="true"><SpreadsheetIcon /></span>
-        <span className={styles.viewSheetBody}>
-          <strong>Ver relatório</strong>
-          <span>Veja todos os seus dados organizados em uma planilha.</span>
-        </span>
+        <span className={styles.downloadIcon} aria-hidden="true"><DownloadIcon /></span>
+        {downloadState === 'preparing' ? 'Preparando…' : 'Baixar planilha'}
       </button>
+
+      {downloadState === 'error' ? (
+        <p className={styles.downloadError} role="alert">
+          Não foi possível gerar a planilha agora. Tente novamente.
+        </p>
+      ) : null}
+
+      <SimplifiedReportSpreadsheet report={report} />
     </div>
   );
 }

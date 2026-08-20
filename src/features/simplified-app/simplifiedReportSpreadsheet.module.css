@@ -1,164 +1,15 @@
-/* RELATORIO-SPREADSHEET1: tela imersiva -- sem bottom nav (ver
-   SimplifiedAppShell.jsx), então .page pode ocupar toda a altura
-   disponível de .mainContent. header/nav/tabs ficam em altura fixa no
-   topo; .sheetScroll (a "planilha" de verdade) preenche o resto e rola
-   nos dois eixos por conta própria -- mesmo padrão de qualquer grid de
-   dados com cabeçalho fixo (Google Sheets/Excel Online incluídos). */
-.page {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding:
-    max(14px, env(safe-area-inset-top))
-    max(18px, env(safe-area-inset-right))
-    max(14px, env(safe-area-inset-bottom))
-    max(18px, env(safe-area-inset-left));
-  box-sizing: border-box;
-}
+/* RELATORIO-FLATTEN1: só a planilha em si (tabs + grid) -- header/mês/
+   cards/botão de download vivem na página que a envolve
+   (simplifiedReport.module.css), desde que RELATORIO_PLANILHA (rota
+   separada) foi removida e a planilha passou a ser reaproveitada
+   INLINE dentro do Relatório da Uni.
 
-/* ------------------------------------------------------------- header */
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 0 0 auto;
-}
-
-.header h1 {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  color: var(--uf-app-text);
-  font-size: 17px;
-  font-weight: 750;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.backButton {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 50%;
-  background: var(--uf-app-surface);
-  color: var(--uf-app-text);
-  cursor: pointer;
-}
-
-.backButton svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-
-.downloadButton {
-  flex: 0 0 auto;
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding-inline: 14px;
-  border: none;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--uf-app-primary), var(--uf-app-ai));
-  color: var(--uf-app-on-accent);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 750;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.downloadButton:disabled {
-  opacity: .65;
-  cursor: default;
-}
-
-.downloadIcon {
-  width: 16px;
-  height: 16px;
-  display: block;
-}
-
-.downloadIcon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-
-.downloadError {
-  flex: 0 0 auto;
-  margin: 0;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--uf-app-danger-subtle, var(--uf-app-surface-2));
-  color: var(--uf-app-danger-text, var(--uf-app-danger));
-  font-size: 13px;
-}
-
-/* --------------------------------------------------------- month nav */
-
-.monthNav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex: 0 0 auto;
-}
-
-.monthArrow {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 50%;
-  background: var(--uf-app-surface);
-  color: var(--uf-app-text);
-  cursor: pointer;
-}
-
-.monthArrow svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-
-.rotatedRight {
-  display: block;
-  transform: rotate(180deg);
-}
-
-.monthLabel {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--uf-app-primary-text, var(--uf-app-primary));
-  font-size: 14px;
-  font-weight: 750;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+   .sheetScroll continua uma caixa PRÓPRIA com scroll nos dois eixos
+   (mesmo padrão de qualquer grid de dados com cabeçalho fixo -- Google
+   Sheets/Excel Online incluídos): é o que permite o cabeçalho sticky
+   (relativo a si mesma) e o scroll horizontal funcionarem sem conflito
+   com o gesto vertical -- uma caixa 2D não compete eixo a eixo com o
+   resto da página, que só rola verticalmente por cima/por baixo dela. */
 
 /* ---------------------------------------------------------- sheet tabs */
 
@@ -194,7 +45,7 @@
 
 .sheetScroll {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 200px;
   width: 100%;
   overflow: auto;
   border: 1px solid var(--uf-app-border);
