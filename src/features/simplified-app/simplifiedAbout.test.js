@@ -16,13 +16,16 @@ test('reaproveita a identidade visual já aprovada (UniMark, mesmos cards/gradie
   assert.match(css, /background: var\(--uf-app-card-bg\);/);
 });
 
-test('versão e nome vêm da fonte única appIdentity.js -- nunca hardcoded duas vezes (drift entre Conta e Sobre)', async () => {
+test('nome/tagline vêm de appIdentity.js; versão vem de currentVersion (useUniUpdates) -- nunca um APP_VERSION fixo isolado, nunca drift entre Conta/Sobre/Central de Novidades/notificação', async () => {
   const page = await source('./SimplifiedAboutPage.jsx');
-  assert.match(page, /import \{ APP_NAME, APP_TAGLINE, APP_VERSION \} from '\.\/appIdentity\.js';/);
-  assert.match(page, /v\{APP_VERSION\}/);
+  assert.match(page, /import \{ APP_NAME, APP_TAGLINE \} from '\.\/appIdentity\.js';/);
+  assert.doesNotMatch(page, /APP_VERSION/);
+  assert.match(page, /import \{ formatUpdateDate \} from '\.\/uniUpdatesData\.js';/);
+  assert.match(page, /currentVersion,/);
+  assert.match(page, /v\{currentVersion\}/);
 });
 
-test('appIdentity.js declara v1.0.0 como a primeira versão oficial do MVP', async () => {
+test('appIdentity.js declara v1.0.0 como fallback -- usado só antes da primeira novidade existir ou sem Supabase configurado (resolveCurrentVersion)', async () => {
   const identity = await source('./appIdentity.js');
   assert.match(identity, /export const APP_VERSION = '1\.0\.0';/);
 });
@@ -103,7 +106,7 @@ test('rodapé mostra logo, nome, versão e copyright', async () => {
   const footerSlice = page.slice(footerStart, page.indexOf('</footer>', footerStart));
   assert.match(footerSlice, /footerMark/);
   assert.match(footerSlice, /APP_NAME/);
-  assert.match(footerSlice, /v\{APP_VERSION\}/);
+  assert.match(footerSlice, /v\{currentVersion\}/);
   assert.match(footerSlice, /Todos os direitos reservados\./);
 });
 
@@ -166,9 +169,14 @@ test('Novidades da Uni existe DENTRO de Sobre a UniFlow AI -- mesma tela, nenhum
   assert.match(page, /✨ Novidades da Uni/);
 });
 
-test('histórico pede a lista completa (sem limit) -- só a Home usa limit:1', async () => {
+test('histórico pede a lista completa (sem limit) -- só a Home e Conta usam limit:1', async () => {
   const page = await source('./SimplifiedAboutPage.jsx');
-  assert.match(page, /const \{ updates: uniUpdates, isLoading: uniUpdatesLoading, markAsSeen \} = useUniUpdates\(\);/);
+  const hookStart = page.indexOf('const {\n    updates: uniUpdates,');
+  assert.ok(hookStart > -1, 'destructuring de useUniUpdates() deve existir');
+  const hookSlice = page.slice(hookStart, page.indexOf('= useUniUpdates()', hookStart) + '= useUniUpdates()'.length);
+  assert.match(hookSlice, /currentVersion,/);
+  assert.match(hookSlice, /isLoading: uniUpdatesLoading,/);
+  assert.match(hookSlice, /markAsSeen,/);
   assert.doesNotMatch(page, /useUniUpdates\(\{ limit/);
 });
 

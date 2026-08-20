@@ -3,7 +3,8 @@ import { useSession } from '../../app/SessionContext.jsx';
 import { createNotification, hasUpdateNotification } from '../notifications/notificationsService.js';
 import { isSupabaseConfigured } from '../../services/supabaseClient.js';
 import { listActiveUpdates, listSeenUpdateIds, markUpdateAsSeen } from '../../services/uniUpdatesService.js';
-import { buildNovidadeUrl, resolvePendingUpdate } from './uniUpdatesData.js';
+import { APP_VERSION } from './appIdentity.js';
+import { buildNovidadeUrl, resolveCurrentVersion, resolvePendingUpdate } from './uniUpdatesData.js';
 
 const EMPTY_LIST = [];
 
@@ -72,6 +73,10 @@ export function useUniUpdates({ limit } = {}) {
   }, [refresh]);
 
   const pendingUpdate = resolvePendingUpdate({ updates, seenUpdateIds, userCreatedAt });
+  // UNIUPD2: mesma fonte para Central de Novidades, Sobre a UniFlow AI,
+  // Conta e notificações -- nunca um APP_VERSION fixo divergente. APP_VERSION
+  // só é usado como fallback antes da primeira novidade existir.
+  const currentVersion = resolveCurrentVersion(updates, APP_VERSION);
 
   useEffect(() => {
     if (!pendingUpdate || !userId) return;
@@ -116,6 +121,7 @@ export function useUniUpdates({ limit } = {}) {
   return {
     updates: updatesWithSeen,
     pendingUpdate,
+    currentVersion,
     isLoading,
     error,
     markAsSeen,

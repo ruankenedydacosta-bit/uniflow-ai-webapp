@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { APP_NAME, APP_TAGLINE, APP_VERSION } from './appIdentity.js';
+import { APP_NAME, APP_TAGLINE } from './appIdentity.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
   ArrowDownIcon,
@@ -100,8 +100,15 @@ function SimplifiedAboutPage() {
   const highlightedUpdateId = searchParams.get('novidade');
 
   // UNIUPD1: sem limit -- esta é a única tela que precisa do histórico
-  // completo (a Home só pede a mais recente, via limit:1).
-  const { updates: uniUpdates, isLoading: uniUpdatesLoading, markAsSeen } = useUniUpdates();
+  // completo (a Home só pede a mais recente, via limit:1). UNIUPD2:
+  // currentVersion é a mesma fonte de versão usada por Conta e pela
+  // notificação -- nunca um valor fixo isolado que possa divergir.
+  const {
+    updates: uniUpdates,
+    currentVersion,
+    isLoading: uniUpdatesLoading,
+    markAsSeen,
+  } = useUniUpdates();
 
   // Deep link vindo da notificação/banner da Home (?novidade=<id>): rola até
   // a entrada correspondente assim que o histórico termina de carregar.
@@ -133,7 +140,7 @@ function SimplifiedAboutPage() {
       <section className={styles.hero}>
         <span className={styles.heroMark} aria-hidden="true"><UniMark /></span>
         <strong className={styles.heroName}>{APP_NAME}</strong>
-        <span className={styles.heroVersion}>v{APP_VERSION}</span>
+        <span className={styles.heroVersion}>v{currentVersion}</span>
         <p className={styles.heroTagline}>{APP_TAGLINE}</p>
       </section>
 
@@ -280,7 +287,7 @@ function SimplifiedAboutPage() {
       <footer className={styles.footer}>
         <span className={styles.footerMark} aria-hidden="true"><UniMark /></span>
         <strong>{APP_NAME}</strong>
-        <span>v{APP_VERSION}</span>
+        <span>v{currentVersion}</span>
         <small>© {APP_NAME} — Todos os direitos reservados.</small>
       </footer>
     </div>

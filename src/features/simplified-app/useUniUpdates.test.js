@@ -12,9 +12,12 @@ const source = () => readFile(new URL('useUniUpdates.js', import.meta.url), 'utf
 // uniUpdatesData.test.js via import direto.)
 // ============================================================================
 
-test('reaproveita buildNovidadeUrl de uniUpdatesData.js -- nunca duplica a montagem do link', async () => {
+test('reaproveita buildNovidadeUrl/resolveCurrentVersion de uniUpdatesData.js -- nunca duplica a montagem do link nem a resolução de versão', async () => {
   const content = await source();
-  assert.match(content, /import \{ buildNovidadeUrl, resolvePendingUpdate \} from '\.\/uniUpdatesData\.js';/);
+  assert.match(
+    content,
+    /import \{ buildNovidadeUrl, resolveCurrentVersion, resolvePendingUpdate \} from '\.\/uniUpdatesData\.js';/,
+  );
 });
 
 test('chave exclusivamente pelo user.id da sessao (nunca por workspaceId sozinho)', async () => {
@@ -57,6 +60,13 @@ test('pendingUpdate e calculado via resolvePendingUpdate, com userCreatedAt -- u
     content,
     /const pendingUpdate = resolvePendingUpdate\(\{ updates, seenUpdateIds, userCreatedAt \}\);/,
   );
+});
+
+test('currentVersion vem de resolveCurrentVersion(updates, APP_VERSION) -- fonte única para Sobre/Conta/Home, nunca um APP_VERSION fixo divergente', async () => {
+  const content = await source();
+  assert.match(content, /import \{ APP_VERSION \} from '\.\/appIdentity\.js';/);
+  assert.match(content, /const currentVersion = resolveCurrentVersion\(updates, APP_VERSION\);/);
+  assert.match(content, /return \{\s*\n\s*updates: updatesWithSeen,\s*\n\s*pendingUpdate,\s*\n\s*currentVersion,/);
 });
 
 test('notificacao companheira so dispara uma vez por novidade detectada (guard local) e verifica dedup no banco antes de criar', async () => {

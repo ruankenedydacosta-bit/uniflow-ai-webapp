@@ -67,3 +67,69 @@ export function isUpdateSeen(update, seenUpdateIds = []) {
   if (!update?.id) return false;
   return seenUpdateIds.includes(update.id);
 }
+
+// ============================================================================
+// UNIUPD2 -- versionamento semântico obrigatório. A mesma regra (patch
+// 0-9, depois vira minor; minor 0-9, depois vira major -- odômetro, igual
+// ao pedido: 1.0.9 -> 1.1.0 -> ... -> 1.9.9 -> 2.0.0) é replicada byte a
+// byte na migration 046 (uni_updates_next_version, em SQL) -- esta versão
+// em JS existe só para o front conseguir prever/exibir a próxima versão
+// sem round-trip ao banco; quem DECIDE de fato a versão gravada é sempre
+// o trigger no banco (fonte única real, nunca o cliente).
+// ============================================================================
+
+const SEMVER_SEGMENT_CAP = 9;
+
+/** Converte "MAJOR.MINOR.PATCH" em {major, minor, patch}; null se inválido. */
+export function parseSemver(version) {
+  if (typeof version !== 'string') return null;
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (!match) return null;
+  return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]) };
+}
+
+/** Compara duas versões semver numericamente (nunca como string -- "1.0.10" > "1.0.9" apesar de string comparar ao contrário). */
+export function compareSemver(a, b) {
+  const pa = parseSemver(a);
+  const pb = parseSemver(b);
+  if (!pa || !pb) return 0;
+  if (pa.major !== pb.major) return pa.major - pb.major;
+  if (pa.minor !== pb.minor) return pa.minor - pb.minor;
+  return pa.patch - pb.patch;
+}
+
+/**
+ * Próxima versão obrigatória a partir da atual -- nunca uma escolha livre
+ * (patch/minor/major não é decidido por quem publica). null se a versão
+ * atual for inválida.
+ */
+export function getNextSemver(version) {
+  const parsed = parseSemver(version);
+  if (!parsed) return null;
+  let { major, minor, patch } = parsed;
+
+  if (patch < SEMVER_SEGMENT_CAP) {
+    patch += 1;
+  } else if (minor < SEMVER_SEGMENT_CAP) {
+    minor += 1;
+    patch = 0;
+  } else {
+    major += 1;
+    minor = 0;
+    patch = 0;
+  }
+
+  return `${major}.${minor}.${patch}`;
+}
+
+/**
+ * Versão atual "oficial" do app = versão da novidade mais recente
+ * publicada (updates já vem ordenado created_at desc pelo service) --
+ * mesma fonte para Central de Novidades, Sobre a UniFlow AI, Conta e
+ * notificações. `fallbackVersion` só é usado antes da primeira novidade
+ * existir ou sem Supabase configurado (nunca diverge por si só depois
+ * disso -- a partir da primeira publicação, a fonte é sempre `updates`).
+ */
+export function resolveCurrentVersion(updates = [], fallbackVersion) {
+  return updates[0]?.version ?? fallbackVersion;
+}

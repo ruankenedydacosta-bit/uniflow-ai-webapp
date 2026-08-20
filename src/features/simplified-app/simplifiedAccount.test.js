@@ -276,10 +276,12 @@ test('"Pagamento e assinatura" nunca mostra um cartão inventado (ex.: "Visa fin
   assert.doesNotMatch(page, /Visa final|final 1234|Mastercard final/i);
 });
 
-test('"Sobre a UniFlow AI" mostra uma versão real declarada explicitamente (fonte única appIdentity.js), não um placeholder solto', async () => {
+test('"Sobre a UniFlow AI" mostra a versão atual real (currentVersion de useUniUpdates, mesma fonte da Central de Novidades e da notificação), não um placeholder solto nem um APP_VERSION fixo isolado', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /import \{ APP_VERSION \} from '\.\/appIdentity\.js';/);
-  assert.match(page, /Versão \$\{APP_VERSION\}/);
+  assert.match(page, /import \{ useUniUpdates \} from '\.\/useUniUpdates\.js';/);
+  assert.match(page, /const \{ currentVersion \} = useUniUpdates\(\{ limit: 1 \}\);/);
+  assert.match(page, /Versão \$\{currentVersion\}/);
+  assert.doesNotMatch(page, /APP_VERSION/);
 });
 
 // ---------- Sair da conta ----------

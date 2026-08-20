@@ -16,8 +16,8 @@ import {
 import { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
 import { formatDate, resolvePlanState, resolveRenewsAt } from './subscriptionPresentation.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
-import { APP_VERSION } from './appIdentity.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useUniUpdates } from './useUniUpdates.js';
 import {
   CalendarIcon,
   CardIcon,
@@ -59,6 +59,9 @@ function SimplifiedAccountPage() {
   const [logoutError, setLogoutError] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const { status: analyticsConsentStatus } = useAnalyticsConsent();
+  // UNIUPD2: limit:1 -- só precisa da versão atual (mesma fonte de Sobre a
+  // UniFlow AI e da notificação), nunca o histórico inteiro.
+  const { currentVersion } = useUniUpdates({ limit: 1 });
 
   useEffect(() => {
     let isActive = true;
@@ -161,7 +164,7 @@ function SimplifiedAccountPage() {
       Icon: InfoIcon,
       tone: 'purple',
       title: 'Sobre a UniFlow AI',
-      subtitle: `Versão ${APP_VERSION}`,
+      subtitle: `Versão ${currentVersion}`,
     },
   ];
 
