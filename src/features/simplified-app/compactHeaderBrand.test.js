@@ -31,19 +31,24 @@ test('UniMark é a ÚNICA fonte do símbolo -- importa o asset oficial recortado
   assert.doesNotMatch(icons, /linearGradient|stopColor/);
 });
 
-test('header e botão de voz reutilizam o MESMO UniMark -- nunca uma segunda interpretação da marca', async () => {
+test('header e botão de voz reutilizam o MESMO asset oficial -- nunca uma segunda interpretação da marca', async () => {
   const header = await source('./SimplifiedHeader.jsx');
   const home = await source('./SimplifiedHomeView.jsx');
+  const orb = await source('../../components/ui/UniNeuralOrb/UniNeuralOrb.jsx');
   assert.match(header, /import \{ BellIcon, UniMark \} from '\.\/SimplifiedIcons\.jsx';/);
   assert.match(header, /<UniMark \/>/);
-  assert.match(home, /import \{ UniMark \} from '\.\/SimplifiedIcons\.jsx';/);
-  assert.match(home, /<UniMark \/>/);
+  assert.match(home, /import \{ UniNeuralOrb \} from '\.\.\/\.\.\/components\/ui\/UniNeuralOrb\/index\.js';/);
+  assert.match(home, /<UniNeuralOrb/);
+  assert.match(orb, /import uniflowMarkAsset from '\.\.\/\.\.\/\.\.\/assets\/branding\/uniflow-mark\.png';/);
+  assert.match(orb, /logoSrc = uniflowMarkAsset/);
+  assert.match(orb, /<img className=\{styles\.logo\} src=\{logoSrc\} alt=""/);
 });
 
 test('todo wrapper do UniMark usa object-fit:contain (nunca distorce a proporção 463:512 do asset)', async () => {
   const css = await source('./simplifiedApp.module.css');
+  const orbCss = await source('../../components/ui/UniNeuralOrb/UniNeuralOrb.module.css');
   assert.match(css, /\.brandMark img \{[\s\S]*?object-fit: contain;[\s\S]*?\}/);
-  assert.match(css, /\.uniMark img \{[\s\S]*?object-fit: contain;[\s\S]*?\}/);
+  assert.match(orbCss, /\.logo \{[\s\S]*?object-fit: contain;[\s\S]*?\}/);
 });
 
 // ============================================================================
@@ -210,4 +215,3 @@ test('painel de notificações não fica mais atrás do header -- ancorado na me
   assert.ok(backdropRule, 'backdrop próprio -- Home nunca "empurrada", só coberta visualmente');
   assert.match(backdropRule[1], /top: var\(--uf-header-full-height\);/);
 });
-

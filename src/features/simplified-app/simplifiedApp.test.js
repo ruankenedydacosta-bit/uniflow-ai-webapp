@@ -18,16 +18,6 @@ import {
   readVisualViewport,
   resolveKeyboardVisibility,
 } from './useVisualViewport.js';
-import {
-  buildRadialVoiceBars,
-  getRadialVoiceAmplitude,
-  normalizeRadialVoiceLevel,
-  RADIAL_VOICE_ATTACK_MS,
-  RADIAL_VOICE_BAR_COUNT,
-  RADIAL_VOICE_EXIT_MS,
-  RADIAL_VOICE_RELEASE_MS,
-  smoothRadialVoiceLevel,
-} from './radialVoiceWaveform.js';
 import { resolveInitialConversationState } from '../uni-chat/chatHistory.js';
 import {
   buildCategorySummaries,
@@ -864,7 +854,8 @@ test('o botão principal não tem onClick/onTap para abrir o chat -- só pointer
   const home = await source('./SimplifiedHomeView.jsx');
   const buttonIdx = home.indexOf('<button\n          ref={buttonRef}');
   assert.ok(buttonIdx > -1, 'botão principal não encontrado');
-  const buttonSlice = home.slice(buttonIdx, buttonIdx + 2600);
+  const buttonEndIdx = home.indexOf('</button>', buttonIdx);
+  const buttonSlice = home.slice(buttonIdx, buttonEndIdx);
   assert.doesNotMatch(buttonSlice, /onClick=/);
   assert.match(buttonSlice, /onPointerDown={handleVoicePointerDown}/);
   assert.match(buttonSlice, /onPointerMove={handleVoicePointerMove}/);
@@ -1634,150 +1625,37 @@ test('campo de busca do histórico usa font-size >= 16px -- evita o zoom automá
 });
 
 // ============================================================================
-// BUG 3: animação de escuta do botão da Uni -- intensidade real do
-// microfone via AnalyserNode sobre o MESMO stream do motor de voz
-// existente, nunca um segundo getUserMedia; para ao soltar/cancelar;
-// respeita prefers-reduced-motion; nunca bloqueia o push-to-talk.
+// UNI NEURAL ORB: a Home troca somente a camada visual do botão central.
+// O gesto, o MediaRecorder e o TTS continuam nas fontes já estabilizadas;
+// o OGL observa o mesmo stream por um AnalyserNode puramente visual.
 // ============================================================================
 
-test('waveform isolada usa useVoiceIntensity com o stream existente sem rerenderizar a Home por nível', async () => {
+test('Home integra UniNeuralOrb como única camada visual central', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /import \{[\s\S]*?useVoiceIntensity[\s\S]*?\} from '\.\.\/uni-voice\/index\.js';/);
-  const radialComponent = home.slice(
-    home.indexOf('function RadialVoiceWaveform'),
-    home.indexOf('function getVoiceActivationError'),
-  );
-  const homeComponent = home.slice(home.indexOf('function SimplifiedHomeView'));
-  assert.match(radialComponent, /useVoiceIntensity\(\{[\s\S]*?getStream,[\s\S]*?active,[\s\S]*?getSessionId,[\s\S]*?onLevel: handleVisualLevel,[\s\S]*?publishState: false,/);
-  assert.doesNotMatch(homeComponent, /useVoiceIntensity\(/);
+  assert.match(home, /import \{ UniNeuralOrb \} from '\.\.\/\.\.\/components\/ui\/UniNeuralOrb\/index\.js';/);
+  assert.match(home, /<UniNeuralOrb[\s\S]*?enableVoiceControl=\{voiceEnabled\}[\s\S]*?isListening=\{isListening\}[\s\S]*?isSpeaking=\{isSpeaking\}/);
+  assert.doesNotMatch(home, /<RadialVoiceWaveform/);
+  assert.doesNotMatch(home, /className=\{styles\.uniVoiceLevelRing\}/);
+  assert.doesNotMatch(home, /<span className=\{styles\.uniMark\}>/);
 });
 
-test('anel antigo permanece um glow discreto e não recebe atualizações de nível na Home', async () => {
+test('orbe recebe o mesmo stream e session id do pipeline estabilizado', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /className=\{styles\.uniVoiceLevelRing\}/);
-  assert.doesNotMatch(home, /'--voice-level': voiceLevel/);
+  assert.match(home, /getVoiceStream=\{voiceInput\.getActiveStream\}/);
+  assert.match(home, /getVoiceSessionId=\{voiceInput\.getActiveSessionId\}/);
+  assert.doesNotMatch(home, /getUserMedia|MediaRecorder/);
 });
 
-test('waveform radial usa 108 barras determinísticas em 360 graus, sem aleatoriedade', async () => {
-  const bars = buildRadialVoiceBars();
-  const helper = await source('./radialVoiceWaveform.js');
-  assert.equal(bars.length, RADIAL_VOICE_BAR_COUNT);
-  assert.equal(bars[0].angle, 0);
-  assert.ok(bars.at(-1).angle < 360);
-  assert.equal(new Set(bars.map((bar) => bar.angle)).size, RADIAL_VOICE_BAR_COUNT);
-  assert.equal(new Set(bars.map((bar) => bar.delay)).size, RADIAL_VOICE_BAR_COUNT);
-  assert.ok(bars.every((bar) => bar.factor >= 0.72 && bar.factor <= 1));
-  assert.ok(bars.every((bar) => bar.duration >= 1.45 && bar.duration <= 2.1));
-  assert.ok(bars.every((bar) => bar.height >= 23 && bar.height <= 31));
-  assert.ok(bars.every((bar) => bar.opacity >= 0.48 && bar.opacity <= 0.64));
-  assert.ok(bars.some((bar, index) => index > 0 && bar.factor !== bars[index - 1].factor));
-  assert.deepEqual(buildRadialVoiceBars(), bars);
-  assert.doesNotMatch(helper, /Math\.random/);
-});
-
-test('silêncio, fala baixa, normal e alta produzem amplitudes crescentes', () => {
-  const silence = getRadialVoiceAmplitude(0, 1);
-  const low = getRadialVoiceAmplitude(0.2, 1);
-  const normal = getRadialVoiceAmplitude(0.55, 1);
-  const high = getRadialVoiceAmplitude(1, 1);
-  assert.ok(silence >= 3 && silence <= 6);
-  assert.ok(low >= 7 && low <= 12);
-  assert.ok(normal >= 14 && normal <= 22);
-  assert.ok(high >= 24 && high <= 32);
-  assert.ok(normalizeRadialVoiceLevel(0.5) > 0.5);
-});
-
-test('smoothing temporal usa attack de 80ms e release de 240ms sem alterar a captura', () => {
-  let attack = 0;
-  let release = 1;
-  for (let frame = 0; frame < 5; frame += 1) {
-    attack = smoothRadialVoiceLevel(attack, 1, 16);
-    release = smoothRadialVoiceLevel(release, 0, 16);
-  }
-  assert.equal(RADIAL_VOICE_ATTACK_MS, 80);
-  assert.equal(RADIAL_VOICE_RELEASE_MS, 240);
-  assert.ok(attack > 0.6 && attack < 0.7);
-  assert.ok(release > attack);
-  assert.equal(smoothRadialVoiceLevel(0, -1), 0);
-  assert.ok(smoothRadialVoiceLevel(0, 5) <= 1);
-});
-
-test('waveform suaviza em requestAnimationFrame sem setState ou recálculo React por frame', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  const component = home.slice(
-    home.indexOf('function RadialVoiceWaveform'),
-    home.indexOf('function getVoiceActivationError'),
-  );
-  assert.match(component, /window\.requestAnimationFrame\(renderFrame\)/);
-  assert.match(component, /window\.cancelAnimationFrame\(animationFrameId\)/);
-  assert.match(component, /applyRadialVoiceVisualLevel\(waveform, nextLevel\)/);
-  assert.match(home, /element\.style\.setProperty\('--radial-voice-level'/);
-  assert.match(component, /publishState: false/);
-  assert.doesNotMatch(component, /setState|useState/);
-  assert.doesNotMatch(component, /setInterval/);
-});
-
-test('waveform é decorativa, só aparece em listening e não captura eventos de ponteiro', async () => {
+test('orbe mantém a marca dentro do componente e o rótulo funcional acima do canvas', async () => {
   const [home, css] = await Promise.all([
     source('./SimplifiedHomeView.jsx'),
     source('./simplifiedApp.module.css'),
   ]);
-  assert.match(home, /<RadialVoiceWaveform\s+active=\{isListening\}\s+getStream=\{voiceInput\.getActiveStream\}\s+getSessionId=\{voiceInput\.getActiveSessionId\}\s+\/>/);
-  assert.match(css, /\.radialVoiceWaveform \{[\s\S]{0,220}pointer-events: none;/);
-  assert.match(css, /\.radialVoiceWaveform\[data-visual-state="active"\] \{\s*opacity: 1;/);
-  assert.doesNotMatch(css, /\.uniButton\[data-state="transcribing"\] \.radialVoiceWaveform/);
-  assert.match(css, /\.radialVoiceBar::before \{[\s\S]{0,180}width: 1\.15px;/);
-  assert.match(css, /animation: radialVoiceFlow var\(--bar-duration\) ease-in-out var\(--bar-delay\) infinite;/);
-});
-
-test('listening combina dois halos defasados, 108 barras e seis partículas reutilizadas', async () => {
-  const [home, css] = await Promise.all([
-    source('./SimplifiedHomeView.jsx'),
-    source('./simplifiedApp.module.css'),
-  ]);
-  const component = home.slice(
-    home.indexOf('function RadialVoiceWaveform'),
-    home.indexOf('function getVoiceActivationError'),
-  );
-  assert.match(component, /className=\{styles\.listeningHaloInner\}/);
-  assert.match(component, /className=\{styles\.listeningHaloOuter\}/);
-  assert.match(home, /Array\.from\(\{ length: 6 \}/);
-  assert.match(css, /animation: listeningHaloBreath 2\.8s ease-in-out infinite;/);
-  assert.match(css, /animation: listeningHaloEcho 2\.8s ease-in-out 140ms infinite;/);
-  assert.match(css, /animation: listeningParticleOrbit 12s linear infinite;/);
-});
-
-test('silêncio continua vivo e saída de listening desacelera antes do fade final', async () => {
-  const [home, css] = await Promise.all([
-    source('./SimplifiedHomeView.jsx'),
-    source('./simplifiedApp.module.css'),
-  ]);
-  assert.equal(RADIAL_VOICE_EXIT_MS, 220);
-  assert.match(css, /height: var\(--bar-height\);/);
-  assert.match(css, /scale: 1 var\(--radial-bar-scale, \.18\);/);
-  assert.match(home, /'--bar-tone-mix': `\$\{bar\.toneMix \* 100\}%`/);
-  assert.doesNotMatch(css, /calc\([^)]*var\(--radial-voice-level[^)]*\*/);
-  assert.match(css, /@keyframes radialVoiceFlow \{[\s\S]{0,260}scaleY\(\.88\)[\s\S]{0,180}scaleY\(1\.12\)/);
-  assert.match(home, /waveform\.dataset\.visualState = active \? 'active' : 'releasing'/);
-  assert.match(home, /time - releaseStartedAt >= RADIAL_VOICE_EXIT_MS/);
-  assert.match(home, /waveform\.dataset\.visualState = 'idle'/);
-  assert.match(css, /\.radialVoiceWaveform\[data-visual-state="releasing"\] \{\s*opacity: \.82;/);
-});
-
-test('vinte ciclos de attack/release permanecem limitados, suaves e sem acumular estado', () => {
-  let displayed = 0;
-  for (let cycle = 0; cycle < 20; cycle += 1) {
-    for (let frame = 0; frame < 60; frame += 1) {
-      displayed = smoothRadialVoiceLevel(displayed, 1, 16);
-      assert.ok(displayed >= 0 && displayed <= 1);
-    }
-    const peak = displayed;
-    for (let frame = 0; frame < 24; frame += 1) {
-      displayed = smoothRadialVoiceLevel(displayed, 0, 16);
-      assert.ok(displayed >= 0 && displayed <= peak);
-    }
-  }
-  assert.ok(Number.isFinite(displayed));
+  assert.match(home, /<span className=\{styles\.uniButtonLabel\}>\{stateCopy\.button\}<\/span>/);
+  const labelRule = css.slice(css.indexOf('.uniButtonLabel {'), css.indexOf('}', css.indexOf('.uniButtonLabel {')));
+  assert.match(labelRule, /position: absolute;/);
+  assert.match(labelRule, /z-index: 3;/);
+  assert.match(labelRule, /pointer-events: none;/);
 });
 
 test('BUG 3: a animação de escuta nunca interfere no push-to-talk (pointerdown\\/up\\/cancel continuam intactos)', async () => {
@@ -1787,30 +1665,12 @@ test('BUG 3: a animação de escuta nunca interfere no push-to-talk (pointerdown
   assert.match(home, /onPointerCancel={handleVoicePointerCancel}/);
 });
 
-test('BUG 3: anel legado fica discreto em listening e preserva animação própria em processamento', async () => {
-  const css = await source('./simplifiedApp.module.css');
-  assert.match(css, /\.uniVoiceLevelRing \{/);
-  assert.match(css, /\.uniButton\[data-state="listening"\] \.uniVoiceLevelRing \{[\s\S]{0,180}opacity: \.1;/);
-  assert.doesNotMatch(css, /var\(--voice-level/);
-  assert.match(
-    css,
-    /\.uniButton\[data-state="transcribing"\] \.uniVoiceLevelRing,\s*\n\.uniButton\[data-state="interpreting"\] \.uniVoiceLevelRing,\s*\n\.uniButton\[data-state="executing"\] \.uniVoiceLevelRing \{/,
-  );
-});
-
-test('BUG 3: prefers-reduced-motion desliga a animação do anel de intensidade tanto via CSS quanto no hook', async () => {
-  const css = await source('./simplifiedApp.module.css');
-  const idx = css.indexOf('@media (prefers-reduced-motion: reduce) {');
-  assert.ok(idx > -1);
-  const slice = css.slice(idx, idx + 1300);
-  assert.match(slice, /\.uniVoiceLevelRing/);
-  assert.match(slice, /animation: none !important;/);
-  assert.match(slice, /\.listeningHaloInner/);
-  assert.match(slice, /\.listeningHaloOuter/);
-  assert.match(slice, /\.listeningParticle \{\s*display: none;/);
-
+test('preferência de movimento reduzido continua desligando a análise de voz visual', async () => {
   const hook = await source('../uni-voice/useVoiceIntensity.js');
+  const orbCss = await source('../../components/ui/UniNeuralOrb/UniNeuralOrb.module.css');
   assert.match(hook, /if \(prefersReducedMotion\(browserRuntime\)\) return undefined;/);
+  assert.match(orbCss, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(orbCss, /animation: none;/);
 });
 
 // ============================================================================

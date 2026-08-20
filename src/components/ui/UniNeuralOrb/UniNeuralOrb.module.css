@@ -1,0 +1,156 @@
+.root {
+  position: absolute;
+  z-index: 1;
+  inset: -12%;
+  overflow: visible;
+  border-radius: 50%;
+  pointer-events: none;
+  contain: layout paint;
+  isolation: isolate;
+}
+
+.energyBase,
+.energyBase::before,
+.energyBase::after {
+  position: absolute;
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.energyBase {
+  z-index: -1;
+  inset: 13%;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(59, 130, 246, .32), transparent 46%),
+    radial-gradient(circle at 42% 58%, rgba(139, 92, 246, .28), transparent 58%),
+    rgba(2, 8, 23, .88);
+  box-shadow:
+    0 0 34px rgba(59, 130, 246, .26),
+    0 0 58px rgba(0, 212, 255, .12),
+    inset 0 0 42px rgba(139, 92, 246, .2);
+}
+
+.energyBase::before {
+  inset: -5%;
+  border: 1px solid rgba(0, 212, 255, .24);
+  box-shadow: 0 0 24px rgba(0, 212, 255, .16);
+  animation: uniNeuralAura 4.8s ease-in-out infinite;
+}
+
+.energyBase::after {
+  inset: 8%;
+  border: 1px solid rgba(139, 92, 246, .3);
+  box-shadow: inset 0 0 22px rgba(59, 130, 246, .18);
+  animation: uniNeuralInnerBreath 3.6s ease-in-out infinite;
+}
+
+.canvasHost,
+.canvasHost canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.canvasHost {
+  z-index: 0;
+  overflow: visible;
+  border-radius: inherit;
+  opacity: .98;
+}
+
+.canvasHost canvas {
+  border-radius: inherit;
+}
+
+.logoCore {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 36%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(0, 212, 255, .18);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(59, 130, 246, .16), transparent 58%),
+    rgba(2, 8, 23, .46);
+  box-shadow:
+    0 0 25px rgba(0, 212, 255, .16),
+    inset 0 0 24px rgba(139, 92, 246, .14);
+  transform: translate(-50%, -50%);
+  transition: border-color 260ms ease, box-shadow 260ms ease, transform 260ms ease;
+}
+
+.logoCore::before {
+  position: absolute;
+  inset: -12%;
+  border: 1px solid rgba(59, 130, 246, .24);
+  border-radius: inherit;
+  content: "";
+  opacity: .7;
+}
+
+.logo {
+  width: 58%;
+  height: 64%;
+  display: block;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 7px rgba(59, 130, 246, .72))
+    drop-shadow(0 0 13px rgba(0, 212, 255, .3));
+  transform: translateY(-1%);
+}
+
+.root[data-state="listening"] .energyBase {
+  box-shadow:
+    0 0 42px rgba(59, 130, 246, .34),
+    0 0 72px rgba(0, 212, 255, .2),
+    inset 0 0 48px rgba(139, 92, 246, .24);
+}
+
+.root[data-state="listening"] .logoCore {
+  border-color: rgba(0, 212, 255, .44);
+  box-shadow:
+    0 0 30px rgba(0, 212, 255, .24),
+    inset 0 0 26px rgba(59, 130, 246, .22);
+}
+
+.root[data-state="speaking"] .logoCore {
+  border-color: rgba(139, 92, 246, .38);
+  box-shadow:
+    0 0 28px rgba(139, 92, 246, .24),
+    inset 0 0 24px rgba(59, 130, 246, .18);
+  animation: uniNeuralSpeakingCore 2.4s ease-in-out infinite;
+}
+
+@keyframes uniNeuralAura {
+  0%, 100% { opacity: .58; transform: scale(.985) rotate(0deg); }
+  50% { opacity: .92; transform: scale(1.025) rotate(2deg); }
+}
+
+@keyframes uniNeuralInnerBreath {
+  0%, 100% { opacity: .5; transform: scale(.98); }
+  50% { opacity: .86; transform: scale(1.025); }
+}
+
+@keyframes uniNeuralSpeakingCore {
+  0%, 100% { transform: translate(-50%, -50%) scale(.98); }
+  50% { transform: translate(-50%, -50%) scale(1.025); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .energyBase::before,
+  .energyBase::after,
+  .root[data-state="speaking"] .logoCore {
+    animation: none;
+  }
+
+  .logoCore {
+    transition: none;
+  }
+}

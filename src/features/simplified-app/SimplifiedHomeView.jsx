@@ -7,12 +7,11 @@ import {
   VOICE_CAPTURE_STATES,
   useSharedUniVoiceInput,
   useStableVoiceInputHandlers,
-  useVoiceIntensity,
 } from '../uni-voice/index.js';
+import { UniNeuralOrb } from '../../components/ui/UniNeuralOrb/index.js';
 import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import { PwaInstallExperience, PwaUpdateCard } from '../pwa-install/index.js';
 import SimplifiedHomeFinancialGraph from './SimplifiedHomeFinancialGraph.jsx';
-import { UniMark } from './SimplifiedIcons.jsx';
 import {
   isVoiceErrorState,
   resolveBargeInPlan,
@@ -33,137 +32,11 @@ import {
   releaseWelcomeVoice,
 } from './welcomeVoiceSession.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
-import {
-  buildRadialVoiceBars,
-  normalizeRadialVoiceLevel,
-  RADIAL_VOICE_EXIT_MS,
-  smoothRadialVoiceLevel,
-} from './radialVoiceWaveform.js';
 import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import styles from './simplifiedApp.module.css';
 
 const SPEAKING_VOICE_STATUSES = new Set([VOICE_TTS_STATUS.LOADING, VOICE_TTS_STATUS.PLAYING]);
-const RADIAL_VOICE_BARS = buildRadialVoiceBars().map((bar) => (
-  <span
-    key={bar.index}
-    className={styles.radialVoiceBar}
-    data-tone={bar.tone}
-    style={{
-      '--bar-angle': `${bar.angle}deg`,
-      '--bar-tone-mix': `${bar.toneMix * 100}%`,
-      '--bar-delay': `${bar.delay}s`,
-      '--bar-duration': `${bar.duration}s`,
-      '--bar-height': `${bar.height}px`,
-      '--bar-opacity': bar.opacity,
-    }}
-  />
-));
-
-const LISTENING_PARTICLES = Array.from({ length: 6 }, (_, index) => (
-  <span
-    key={index}
-    className={styles.listeningParticle}
-    style={{
-      '--particle-angle': `${index * 60 + 14}deg`,
-      '--particle-delay': `${index * -0.47}s`,
-      '--particle-duration': `${3.2 + (index % 3) * 0.45}s`,
-    }}
-  />
-));
-
-function applyRadialVoiceVisualLevel(element, level) {
-  const safeLevel = Math.min(1, Math.max(0, Number(level) || 0));
-  element.style.setProperty('--radial-voice-level', String(safeLevel));
-  element.style.setProperty('--radial-bar-scale', String(0.18 + safeLevel * 0.82));
-  element.style.setProperty('--radial-halo-inner-scale', String(1 + safeLevel * 0.035));
-  element.style.setProperty('--radial-halo-outer-scale', String(1 + safeLevel * 0.025));
-  element.style.setProperty('--radial-halo-inner-opacity', String(0.2 + safeLevel * 0.2));
-  element.style.setProperty('--radial-halo-outer-opacity', String(0.1 + safeLevel * 0.12));
-}
-
-function RadialVoiceWaveform({ active, getStream, getSessionId }) {
-  const waveformRef = useRef(null);
-  const targetLevelRef = useRef(0);
-  const smoothedLevelRef = useRef(0);
-  const handleVisualLevel = useCallback((level) => {
-    targetLevelRef.current = active ? normalizeRadialVoiceLevel(level) : 0;
-  }, [active]);
-  useVoiceIntensity({
-    getStream,
-    active,
-    getSessionId,
-    onLevel: handleVisualLevel,
-    publishState: false,
-  });
-
-  useEffect(() => {
-    const waveform = waveformRef.current;
-    if (!waveform) return undefined;
-
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    targetLevelRef.current = active ? targetLevelRef.current : 0;
-    waveform.dataset.visualState = active ? 'active' : 'releasing';
-
-    if (reducedMotion) {
-      smoothedLevelRef.current = 0;
-      applyRadialVoiceVisualLevel(waveform, 0);
-      waveform.dataset.visualState = active ? 'active' : 'idle';
-      return undefined;
-    }
-
-    if (!active && smoothedLevelRef.current <= 0.001) {
-      waveform.dataset.visualState = 'idle';
-      applyRadialVoiceVisualLevel(waveform, 0);
-      return undefined;
-    }
-
-    let animationFrameId = 0;
-    let previousTime = null;
-    let releaseStartedAt = null;
-
-    const renderFrame = (time) => {
-      const deltaMs = previousTime === null ? 1000 / 60 : time - previousTime;
-      previousTime = time;
-      const nextLevel = smoothRadialVoiceLevel(
-        smoothedLevelRef.current,
-        targetLevelRef.current,
-        deltaMs,
-      );
-      smoothedLevelRef.current = nextLevel;
-      applyRadialVoiceVisualLevel(waveform, nextLevel);
-
-      if (!active) {
-        releaseStartedAt ??= time;
-        if (time - releaseStartedAt >= RADIAL_VOICE_EXIT_MS) {
-          smoothedLevelRef.current = 0;
-          applyRadialVoiceVisualLevel(waveform, 0);
-          waveform.dataset.visualState = 'idle';
-          return;
-        }
-      }
-      animationFrameId = window.requestAnimationFrame(renderFrame);
-    };
-
-    animationFrameId = window.requestAnimationFrame(renderFrame);
-    return () => window.cancelAnimationFrame(animationFrameId);
-  }, [active]);
-
-  return (
-    <span
-      ref={waveformRef}
-      className={styles.radialVoiceWaveform}
-      data-active={active}
-      data-visual-state={active ? 'active' : 'idle'}
-      aria-hidden="true"
-    >
-      <span className={styles.listeningHaloInner} />
-      <span className={styles.listeningHaloOuter} />
-      {RADIAL_VOICE_BARS}
-      <span className={styles.listeningParticles}>{LISTENING_PARTICLES}</span>
-    </span>
-  );
-}
 
 function getVoiceActivationError(errorCode) {
   if (errorCode === 'permission_denied') {
@@ -1232,17 +1105,13 @@ function SimplifiedHomeView({
           onContextMenu={(event) => event.preventDefault()}
           data-uni-voice-control
         >
-          <span className={styles.uniButtonRing} aria-hidden="true" />
-          <span
-            className={styles.uniVoiceLevelRing}
-            aria-hidden="true"
+          <UniNeuralOrb
+            enableVoiceControl={voiceEnabled}
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+            getVoiceStream={voiceInput.getActiveStream}
+            getVoiceSessionId={voiceInput.getActiveSessionId}
           />
-          <RadialVoiceWaveform
-            active={isListening}
-            getStream={voiceInput.getActiveStream}
-            getSessionId={voiceInput.getActiveSessionId}
-          />
-          <span className={styles.uniMark}><UniMark /></span>
           <span className={styles.uniButtonLabel}>{stateCopy.button}</span>
         </button>
         {voiceInput.isActive ? (
