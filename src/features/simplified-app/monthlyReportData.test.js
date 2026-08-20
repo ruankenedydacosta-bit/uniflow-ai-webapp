@@ -250,3 +250,48 @@ test('data/hora do item de agenda reaproveita buildAgendaItemPresentation -- nun
   assert.equal(rows[0].timeLabel, '09:00');
   assert.match(rows[0].dateLabel, /20 AGO/i);
 });
+
+// ============================================================================
+// RELATORIO-SPREADSHEET1 -- campos adicionais para a planilha/XLSX (aditivo,
+// nunca substitui os campos já usados pela V1 em card).
+// ============================================================================
+
+test('transação: dateShort é DD/MM/AA, distinto de dateKey (agrupamento) -- célula de planilha', () => {
+  const transactions = [tx({
+    id: 1, type: 'expense', amount: 50, date: '2026-08-19',
+  })];
+  const rows = buildMonthlyReportTransactions(transactions, CATEGORIES);
+  assert.equal(rows[0].dateShort, '19/08/26');
+  assert.equal(rows[0].dateKey, '2026-08-19');
+});
+
+test('transação: signedAmount é numérico com sinal -- nunca uma string "R$ ..." (XLSX precisa de célula numérica real)', () => {
+  const transactions = [
+    tx({ id: 'inc', type: 'income', amount: 100 }),
+    tx({ id: 'exp', type: 'expense', amount: 50 }),
+  ];
+  const rows = buildMonthlyReportTransactions(transactions, CATEGORIES);
+  const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+  assert.equal(typeof byId.inc.signedAmount, 'number');
+  assert.equal(byId.inc.signedAmount, 100);
+  assert.equal(byId.exp.signedAmount, -50);
+});
+
+test('flat report.transactions preserva a MESMA ordem de buildMonthlyReportTransactions -- planilha não reordena', () => {
+  const transactions = [
+    tx({
+      id: 'a', type: 'expense', amount: 10, date: '2026-08-05',
+    }),
+    tx({
+      id: 'b', type: 'expense', amount: 20, date: '2026-08-19',
+    }),
+  ];
+  const report = buildMonthlyReportData({ transactions, categories: CATEGORIES, now: NOW });
+  assert.deepEqual(report.transactions.map((r) => r.id), ['b', 'a']);
+});
+
+test('agenda: dateShort é DD/MM/AA -- célula de planilha, distinto do chip "20 AGO" da V1', () => {
+  const items = [agendaItem({ id: 1, title: 'Reunião', startsAt: new Date(2026, 7, 20, 9, 0).toISOString() })];
+  const rows = buildMonthlyReportAgenda(items);
+  assert.equal(rows[0].dateShort, '20/08/26');
+});

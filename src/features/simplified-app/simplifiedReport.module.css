@@ -144,80 +144,50 @@
   color: var(--uf-app-danger-text, var(--uf-app-danger));
 }
 
-/* -------------------------------------------------------- empty state */
-
-.emptyState {
-  margin: 0;
-  padding: 32px 20px;
-  border: 1px dashed var(--uf-app-border);
-  border-radius: 16px;
-  color: var(--uf-app-text-2);
-  font-size: 14px;
-  text-align: center;
-}
-
-.blockEmpty {
-  margin: 0;
+/* RELATORIO-SPREADSHEET1: a Tela 1 virou só o resumo -- a lista de
+   movimentações/Agenda do mês (e o empty state delas) saiu daqui, foi pra
+   Tela 2 (planilha). O que sobra é só o CTA que leva pra lá. */
+.viewSheetCta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
   padding: 16px;
-  border: 1px dashed var(--uf-app-border);
-  border-radius: 14px;
-  color: var(--uf-app-text-2);
-  font-size: 13px;
-  text-align: center;
-}
-
-/* -------------------------------------------------------------- bloco */
-
-.block {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.blockTitle {
-  margin: 0;
-  color: var(--uf-app-text);
-  font-size: 17px;
-  font-weight: 750;
-}
-
-/* ---------------------------------------------------- movimentações */
-
-.dayGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.dayGroupLabel {
-  color: var(--uf-app-text-2);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .04em;
-}
-
-.transactionList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.transactionRow {
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
   border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: var(--uf-app-surface);
+  border-radius: 20px;
+  background:
+    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
+    linear-gradient(135deg, var(--uf-app-ai), var(--uf-app-primary), var(--uf-app-success)) border-box;
+  border-color: transparent;
+  color: var(--uf-app-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   box-sizing: border-box;
 }
 
-.transactionMain {
+.viewSheetIcon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--uf-app-ai), var(--uf-app-primary));
+  color: var(--uf-app-on-accent);
+}
+
+.viewSheetIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.viewSheetBody {
   min-width: 0;
   flex: 1 1 auto;
   display: flex;
@@ -225,141 +195,15 @@
   gap: 2px;
 }
 
-.transactionDescription {
-  overflow: hidden;
-  color: var(--uf-app-text);
-  font-size: 14px;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.transactionMeta {
-  overflow: hidden;
-  color: var(--uf-app-text-2);
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.transactionType {
-  flex: 0 0 auto;
-  display: none;
-  color: var(--uf-app-text-3, var(--uf-app-text-2));
-  font-size: 11.5px;
-  font-weight: 650;
-}
-
-@media (min-width: 480px) {
-  .transactionType {
-    display: block;
-  }
-}
-
-.transactionValueIncome,
-.transactionValueExpense {
-  flex: 0 0 auto;
-  overflow: hidden;
-  max-width: 40vw;
-  font-size: 14px;
+.viewSheetBody strong {
+  font-size: 15px;
   font-weight: 750;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.transactionValueIncome {
-  color: var(--uf-app-success-text, var(--uf-app-success));
-}
-
-.transactionValueExpense {
-  color: var(--uf-app-danger-text, var(--uf-app-danger));
-}
-
-/* -------------------------------------------------------------- agenda */
-
-.agendaList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.agendaRow {
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: var(--uf-app-surface);
-  box-sizing: border-box;
-}
-
-.agendaDateChip {
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  border-radius: 8px;
-  background: var(--uf-app-primary-subtle, var(--uf-app-surface-2));
-  color: var(--uf-app-primary-text, var(--uf-app-primary));
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: .02em;
-  white-space: nowrap;
-}
-
-.agendaMain {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.agendaTime {
-  color: var(--uf-app-text-2);
-  font-size: 11.5px;
-  font-weight: 650;
-}
-
-.agendaTitle {
+.viewSheetBody span {
   overflow: hidden;
-  color: var(--uf-app-text);
-  font-size: 14px;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.agendaReminder {
-  overflow: hidden;
-  color: var(--uf-app-text-3, var(--uf-app-text-2));
-  font-size: 11.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.agendaStatus {
-  flex: 0 0 auto;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--uf-app-surface-2);
   color: var(--uf-app-text-2);
-  font-size: 11px;
-  font-weight: 650;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.agendaStatus[data-status="completed"] {
-  background: var(--uf-app-success-subtle, var(--uf-app-surface-2));
-  color: var(--uf-app-success-text, var(--uf-app-success));
-}
-
-.agendaStatus[data-status="cancelled"] {
-  background: var(--uf-app-danger-subtle, var(--uf-app-surface-2));
-  color: var(--uf-app-danger-text, var(--uf-app-danger));
 }

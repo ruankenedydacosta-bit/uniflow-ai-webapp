@@ -33,6 +33,7 @@ import {
   SimplifiedPlanPage,
   SimplifiedRecordsPage,
   SimplifiedReportPage,
+  SimplifiedReportSpreadsheetPage,
   SimplifiedSecurityPage,
   SimplifiedSupportPage,
   SimplifiedThemePage,
@@ -187,6 +188,15 @@ export const appRoutes = [
     title: 'Relatório da Uni',
     simplified: true,
     element: <SimplifiedReportPage />,
+  },
+  // RELATORIO-SPREADSHEET1: tela imersiva da planilha -- rota própria,
+  // alcançada pelo CTA "Ver relatório" da tela de resumo.
+  {
+    path: SIMPLIFIED_ROUTES.RELATORIO_PLANILHA,
+    label: 'Relatório da Uni',
+    title: 'Relatório da Uni',
+    simplified: true,
+    element: <SimplifiedReportSpreadsheetPage />,
   },
   // LOTE D: rota interna da conversa de Suporte da Uni é SEMPRE registrada
   // -- o acesso é via Conta > Suporte (o item "Falar com a Uni"), não pela

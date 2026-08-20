@@ -20,6 +20,10 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   // fora da barra inferior fixa (Home | Registros | Conta). Alcançada pelo
   // card "Relatório da Uni" na Home.
   RELATORIO: '/app/relatorio',
+  // RELATORIO-SPREADSHEET1: tela imersiva da planilha (Movimentações/
+  // Agenda como abas do mesmo workbook) -- rota própria, sem bottom nav,
+  // alcançada pelo CTA "Ver relatório" da Tela 1.
+  RELATORIO_PLANILHA: '/app/relatorio/planilha',
 });
 
 const BASE_NAVIGATION = Object.freeze([

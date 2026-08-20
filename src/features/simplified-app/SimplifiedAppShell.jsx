@@ -54,7 +54,15 @@ function SimplifiedAppShell({ children }) {
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`)
     // RELATORIO1: cabeçalho próprio (← Relatório da Uni) -- nunca o
     // genérico (marca + sino) duplicado por cima.
-    || location.pathname === SIMPLIFIED_ROUTES.RELATORIO;
+    || location.pathname === SIMPLIFIED_ROUTES.RELATORIO
+    // RELATORIO-SPREADSHEET1: a planilha também tem cabeçalho próprio
+    // (← Relatório da Uni + mês + Baixar planilha).
+    || location.pathname === SIMPLIFIED_ROUTES.RELATORIO_PLANILHA;
+  // RELATORIO-SPREADSHEET1: planilha = experiência imersiva (mesma
+  // referência visual não tem bottom nav) -- só ESTA rota some com a
+  // navegação inferior; em nenhuma outra rota isso muda. A seta ← da
+  // própria tela já garante o retorno.
+  const isSpreadsheetRoute = location.pathname === SIMPLIFIED_ROUTES.RELATORIO_PLANILHA;
   const isUniChatRoute = location.pathname === SIMPLIFIED_ROUTES.UNI;
   const isUniChatKeyboardOpen = isUniChatRoute && viewportState.isKeyboardOpen;
   // COMPACT-HEADER1: só as rotas que realmente renderizam SimplifiedHeader
@@ -266,7 +274,7 @@ function SimplifiedAppShell({ children }) {
             {children}
           </VisualViewportContext.Provider>
         </main>
-        <SimplifiedBottomNavigation hidden={isUniChatKeyboardOpen} />
+        <SimplifiedBottomNavigation hidden={isUniChatKeyboardOpen || isSpreadsheetRoute} />
       </div>
     </div>
   );

@@ -24,6 +24,9 @@ const STATUS_LABELS = Object.freeze({
 
 const DAY_GROUP_FORMATTER = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long' });
 const TIME_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit', month: '2-digit', year: '2-digit',
+});
 
 function parseDateKey(dateKey) {
   const [year, month, day] = String(dateKey).split('-').map(Number);
@@ -32,6 +35,12 @@ function parseDateKey(dateKey) {
 
 function formatReportDayLabel(dateKey) {
   return DAY_GROUP_FORMATTER.format(parseDateKey(dateKey)).toUpperCase();
+}
+
+/** "19/08/26" -- formato de célula de planilha, distinto do rótulo de
+    agrupamento por dia ("19 DE AGOSTO") usado pela V1 em card. */
+function formatShortDate(date) {
+  return SHORT_DATE_FORMATTER.format(date);
 }
 
 /**
@@ -50,16 +59,24 @@ function buildTransactionRow(transaction, categoryById) {
   const isPositive = isIncome || isPositiveAdjustment;
   const createdAt = new Date(transaction.created_at);
   const amount = Number(transaction.amount || 0);
+  const transactionDate = parseDateKey(transaction.transaction_date);
 
   return {
     id: transaction.id,
     description: (transaction.description || '').trim() || 'Lançamento',
     categoryName: categoryById.get(transaction.category_id) ?? 'Sem categoria',
     dateKey: transaction.transaction_date,
+    // RELATORIO-SPREADSHEET1: "DD/MM/AA" para a célula da planilha/XLSX --
+    // dateKey (YYYY-MM-DD) segue servindo pro agrupamento/ordenação, nunca
+    // exibido cru na UI.
+    dateShort: formatShortDate(transactionDate),
     timeLabel: Number.isNaN(createdAt.getTime()) ? '' : TIME_FORMATTER.format(createdAt),
     typeLabel: isTransfer ? 'Transferência' : isPositive ? 'Entrada' : 'Saída',
     isPositive,
     formattedAmount: `${isPositive ? '+ ' : isTransfer ? '' : '- '}${formatCurrency(amount)}`,
+    // Numérico com sinal -- só para o XLSX (célula numérica real, nunca uma
+    // string "R$ 50,00"). A UI continua usando formattedAmount/isPositive.
+    signedAmount: isTransfer ? amount : isPositive ? amount : -amount,
   };
 }
 
@@ -105,10 +122,14 @@ export function buildMonthlyReportAgenda(agendaItems, reminderStatesByItemId = n
     .map((item) => {
       const presentation = buildAgendaItemPresentation(item);
       const reminder = resolveReminderIndicator(reminderStatesByItemId.get(item.id));
+      const startsAt = new Date(item.starts_at);
       return {
         id: item.id,
         title: item.title,
         dateLabel: presentation.dateLabel,
+        // RELATORIO-SPREADSHEET1: "DD/MM/AA" para a célula da planilha/XLSX
+        // -- dateLabel ("20 AGO") continua existindo pro card da V1.
+        dateShort: Number.isNaN(startsAt.getTime()) ? '' : formatShortDate(startsAt),
         timeLabel: presentation.timeLabel,
         status: item.status,
         statusLabel: STATUS_LABELS[item.status] ?? item.status,
@@ -148,6 +169,12 @@ export function buildMonthlyReportData({
       transactionCount: transactionRows.length,
       agendaCount: agendaRows.length,
     },
+    // RELATORIO-SPREADSHEET1: lista plana (mesma ordem de
+    // buildMonthlyReportTransactions) -- a planilha/XLSX mostra linhas
+    // sequenciais, não agrupadas por dia como o card da V1.
+    // transactionsByDay é preservado (ainda testado/correto) mas não é mais
+    // consumido pela UI nesta fase.
+    transactions: transactionRows,
     transactionsByDay: groupReportTransactionsByDay(transactionRows),
     hasTransactions: transactionRows.length > 0,
     agenda: agendaRows,

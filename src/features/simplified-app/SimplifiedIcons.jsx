@@ -421,6 +421,23 @@ export function DocumentIcon() {
   );
 }
 
+export function SpreadsheetIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="4" y="5" width="24" height="22" rx="2" />
+      <path d="M4 12h24M12 12v15M20 12v15M4 19h24" />
+    </svg>
+  );
+}
+
+export function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M16 4v16M10 14l6 6 6-6M6 24v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2" />
+    </svg>
+  );
+}
+
 export function SparkleIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
