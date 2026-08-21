@@ -132,14 +132,17 @@ test('topo tem apenas a seta de voltar e o título -- nenhum segundo botão gran
 // fixa) e AMBOS vêm da fonte central -- nunca de um literal duplicado.
 test('preço da apresentação vem da fonte central nos dois pontos em que aparece', async () => {
   const page = await source('./PersonalPlanPage.jsx');
+  const promotionCard = await source('./PlanPromotionCard.jsx');
   const presentation = page.slice(page.indexOf('<main className={styles.page}>'));
-  assert.match(presentation, /\{priceCurrency\}/);
-  assert.match(presentation, /\{priceAmount\}/);
+  assert.match(presentation, /<PlanPromotionCard promotionEligibility=\{promotionEligibility\} \/>/);
   assert.match(presentation, /\{PERSONAL_PLAN_PRICE_LABEL\}/);
   assert.match(presentation, /\{PERSONAL_PLAN_PRICE_PERIOD\}/);
   assert.doesNotMatch(presentation, /R\$ ?29,90|>29,90</);
-  // O rótulo central é apenas FATIADO para o desenho, nunca reescrito.
-  assert.match(page, /function splitPriceLabel\(label\)/);
+  assert.match(promotionCard, /PERSONAL_PLAN_PRICE_LABEL/);
+  assert.match(promotionCard, /PERSONAL_PLAN_PRICE_PERIOD/);
+  assert.doesNotMatch(promotionCard, />29,90</);
+  // O card deriva a parte numérica do rótulo central, sem duplicar o preço.
+  assert.match(promotionCard, /PERSONAL_PLAN_PRICE_LABEL\.replace\('R\$ ', ''\)/);
 });
 
 // BLOCO ASAAS CHECKOUT: cartão deixou de ser desabilitado -- agora usa o
@@ -516,13 +519,15 @@ test('canceled/expired volta para "idle" -- pode assinar novamente (nunca fica p
 // FUTURO") deu lugar à hierarquia de página interna de produto.
 test('página apresenta a hierarquia app-like aprovada, sem a copy de landing page', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /Plano <span>Pessoal<\/span>/);
-  assert.match(page, /Tudo da Uni em um só lugar\./);
-  assert.match(page, /ACESSO COMPLETO/);
+  const promotionCard = await source('./PlanPromotionCard.jsx');
+  assert.match(page, /<PlanPromotionCard promotionEligibility=\{promotionEligibility\} \/>/);
+  assert.match(promotionCard, /Plano Pessoal/);
+  assert.match(promotionCard, /Tudo da Uni em um só lugar\./);
+  assert.match(promotionCard, /ACESSO COMPLETO/);
   assert.match(page, /Incluído no seu plano/);
   assert.match(page, /A <span>Uni<\/span> organiza\./);
 
-  assert.doesNotMatch(page, /PLANO PESSOAL/);
+  assert.doesNotMatch(promotionCard, />PLANO PESSOAL</);
   assert.doesNotMatch(page, /Organize sua vida financeira conversando com a/);
   assert.doesNotMatch(page, /Cancelamento fácil/);
   assert.doesNotMatch(page, /Sem taxas\. Sem burocracia\./);

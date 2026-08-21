@@ -8,6 +8,10 @@ export const PERSONAL_PLAN_ID = 'personal';
 // em Conta (SimplifiedAccountPage.jsx), nunca reescrito lá.
 export const PERSONAL_PLAN_PRICE_LABEL = 'R$ 29,90';
 export const PERSONAL_PLAN_PRICE_PERIOD = '/mês';
+export const PERSONAL_PLAN_PROMOTION = Object.freeze({
+  referencePriceLabel: 'R$ 49,90',
+  savingsLabel: 'ECONOMIZE R$ 20,00',
+});
 
 // REDESIGN APP-LIKE: lista enxuta de recursos -- um por linha (ícone +
 // título + uma descrição curta). Todos os itens têm a MESMA forma

@@ -9,6 +9,7 @@ import { createCheckout, createCustomer, createSubscription, getSubscription } f
 import { useSubscriptionStatusPolling } from './useSubscriptionStatusPolling.js';
 import PlanBenefitIcon from './PlanBenefitIcon.jsx';
 import PlanBrandSignature from './PlanBrandHeader.jsx';
+import PlanPromotionCard from './PlanPromotionCard.jsx';
 import {
   PERSONAL_PLAN_BENEFITS,
   PERSONAL_PLAN_PRICE_LABEL,
@@ -59,34 +60,6 @@ function CrownIcon() {
   );
 }
 
-// REDESIGN APP-LIKE: monograma "U" da Uni desenhado em vetor (referência
-// aprovada). Substitui os PNGs de marca de ~2,5 MB que a página carregava
-// só para exibir identidade -- aqui é nítido em qualquer densidade de tela
-// e não custa nenhum byte de rede.
-function UniMonogram() {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="personal-plan-monogram" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#a78bfa" />
-          <stop offset=".55" stopColor="#60a5fa" />
-          <stop offset="1" stopColor="#22d3ee" />
-        </linearGradient>
-      </defs>
-      <g
-        stroke="url(#personal-plan-monogram)"
-        strokeWidth="4.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M16 12v24a16 16 0 0 0 32 0V12" />
-        <path d="M26 12v24a6 6 0 0 0 12 0V20" />
-      </g>
-      <circle cx="47.5" cy="13.5" r="4.6" fill="#22d3ee" />
-    </svg>
-  );
-}
-
 function BackChevron() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -127,16 +100,6 @@ function DemoWave() {
       </g>
     </svg>
   );
-}
-
-// A fonte central entrega o rótulo pronto ("R$ 29,90"). Aqui ele é apenas
-// FATIADO para o desenho (moeda menor que o valor, como na referência) --
-// nunca reescrito, nunca duplicado. Se o formato mudar, cai no fallback e
-// o rótulo íntegro continua aparecendo.
-function splitPriceLabel(label) {
-  const match = /^(\D+)\s*(.+)$/.exec(String(label).trim());
-  if (!match) return { currency: '', amount: label };
-  return { currency: match[1].trim(), amount: match[2].trim() };
 }
 
 // REDESIGN CHECKOUT: glifos locais do checkout/Pix. Todos decorativos
@@ -545,6 +508,9 @@ const {
   // billing-get-subscription -- nunca gerados no frontend.
   const [pixData, setPixData] = useState(null);
   const [pixModalDismissed, setPixModalDismissed] = useState(false);
+  const promotionEligibility = flowState === 'checking'
+    ? null
+    : !['active', 'already_active', 'cancel_scheduled'].includes(flowState);
   const [checkoutEventLifecycle] = useState(() => createGa4CheckoutEventLifecycle());
   // Fase 4B Lite: instância própria por montagem da página -- a leitura
   // inicial (already_active/pending restaurado) nunca chama
@@ -793,7 +759,6 @@ if (!resolvedWorkspaceId) {
     navigate('/login');
   }
 
-  const { currency: priceCurrency, amount: priceAmount } = splitPriceLabel(PERSONAL_PLAN_PRICE_LABEL);
   // A barra fixa de assinatura só existe para quem PODE assinar. Nos estados
   // em que a assinatura já existe (ativa, pendente, a regularizar), a página
   // mostra o status real e nenhuma barra -- nunca um CTA que reabriria o
@@ -817,26 +782,9 @@ if (!resolvedWorkspaceId) {
         <h1 className={styles.topTitle}>Plano Pessoal</h1>
       </header>
 
-      <div className={styles.content}>
-        <section className={styles.planCard} aria-labelledby="personal-plan-title">
-          <div className={styles.planHead}>
-            <span className={styles.planMark} aria-hidden="true"><UniMonogram /></span>
-            <div className={styles.planHeadText}>
-              <h2 id="personal-plan-title" className={styles.planName}>
-                Plano <span>Pessoal</span>
-              </h2>
-              <p className={styles.planTagline}>Tudo da Uni em um só lugar.</p>
-            </div>
-          </div>
-          <span className={styles.planRule} aria-hidden="true" />
-          <p className={styles.planPrice}>
-            <span className={styles.planCurrency}>{priceCurrency}</span>
-            <strong>{priceAmount}</strong>
-            <span className={styles.planPeriod}>{PERSONAL_PLAN_PRICE_PERIOD}</span>
-          </p>
-          <p className={styles.planBadge}><CrownIcon /> ACESSO COMPLETO</p>
-        </section>
+      <PlanPromotionCard promotionEligibility={promotionEligibility} />
 
+      <div className={styles.content}>
         {flowState === 'already_active' || flowState === 'active' ? (
           <section className={styles.statusCard} data-tone="ok">
             <p className={styles.subscriptionStatus} aria-live="polite">

@@ -1,0 +1,515 @@
+.promotionCard {
+  position: relative;
+  width: min(calc(100% - 32px), 1080px);
+  min-height: 540px;
+  overflow: hidden;
+  margin: 0 auto 18px;
+  padding: 34px 40px 28px;
+  border: 1px solid rgba(37, 99, 235, .7);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 2% 0%, rgba(124, 58, 237, .28), transparent 34%),
+    radial-gradient(circle at 96% 22%, rgba(29, 78, 216, .3), transparent 42%),
+    linear-gradient(145deg, rgba(9, 18, 45, .98), rgba(2, 11, 28, .98));
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, .34),
+    inset 0 1px 0 rgba(255, 255, 255, .06);
+  color: #f8fafc;
+  isolation: isolate;
+  animation: fadeUpIn 480ms cubic-bezier(.19, 1, .22, 1) both;
+}
+
+.promotionCard::before {
+  position: absolute;
+  top: -110px;
+  right: -70px;
+  z-index: -2;
+  width: 390px;
+  height: 390px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37, 99, 235, .2), transparent 70%);
+  content: "";
+  pointer-events: none;
+}
+
+.promotionFlowLines {
+  position: absolute;
+  right: -3%;
+  bottom: -22px;
+  left: -3%;
+  z-index: -1;
+  width: 106%;
+  height: 210px;
+  fill: none;
+  stroke: url(#promotion-flow-gradient);
+  stroke-linecap: round;
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.promotionTop {
+  display: grid;
+  grid-template-columns: minmax(240px, .9fr) minmax(420px, 1.3fr);
+  align-items: center;
+  gap: 28px;
+}
+
+.promotionBrand {
+  min-width: 0;
+}
+
+.promotionLogoCrop {
+  width: min(100%, 330px);
+  height: 92px;
+  display: block;
+  overflow: hidden;
+}
+
+.promotionLogoCrop img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform: translateY(-38px);
+}
+
+.promotionBrand p {
+  max-width: 315px;
+  margin: -4px 0 0 82px;
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.promotionBrand strong {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.countdown {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(142px, .75fr) minmax(265px, 1.25fr);
+  align-items: center;
+  column-gap: 18px;
+  padding: 16px 20px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(rgba(5, 13, 34, .94), rgba(5, 13, 34, .94)) padding-box,
+    linear-gradient(90deg, #7c3aed, #2563eb, #10b981) border-box;
+  box-shadow: 0 0 30px rgba(37, 99, 235, .14);
+}
+
+.offerLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #dac9ff;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.offerLabel svg {
+  width: 27px;
+  height: 27px;
+  fill: #ff8b91;
+  filter: drop-shadow(0 0 9px rgba(255, 139, 145, .35));
+}
+
+.countdownDisplay {
+  display: grid;
+  grid-template-columns: 1fr 10px 1fr 10px 1fr;
+  align-items: start;
+  gap: 5px;
+}
+
+.countdownUnit {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.countdownNumber {
+  width: 100%;
+  height: 58px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid rgba(59, 130, 246, .6);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(25, 36, 80, .92), rgba(7, 14, 37, .96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .07),
+    0 0 18px rgba(37, 99, 235, .16);
+}
+
+.countdownDigitWindow {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.countdownDigitIncoming,
+.countdownDigitOutgoing,
+.countdownDigitStable {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #b59cff, #55d9f3);
+  background-clip: text;
+  color: transparent;
+  font-size: 36px;
+  font-weight: 780;
+  line-height: 1;
+}
+
+.countdownDigitIncoming {
+  animation: countdownDigitIn 300ms cubic-bezier(.22, .8, .22, 1) both;
+}
+
+.countdownDigitOutgoing {
+  animation: countdownDigitOut 300ms cubic-bezier(.22, .8, .22, 1) both;
+}
+
+.countdownLabel {
+  color: #d5daea;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.countdownSeparator {
+  padding-top: 15px;
+  color: #dce7ff;
+  font-size: 25px;
+  text-align: center;
+}
+
+.countdown > p {
+  grid-column: 2;
+  margin: 5px 0 0;
+  color: #62d7c2;
+  font-size: 11px;
+  text-align: center;
+}
+
+.promotionPlanTitle {
+  margin-top: 34px;
+  text-align: center;
+}
+
+.promotionPlanTitle h1 {
+  margin: 0;
+  background: linear-gradient(90deg, #fff 25%, #a58cff 53%, #42d6ef 78%);
+  background-clip: text;
+  color: transparent;
+  font-size: 46px;
+  font-weight: 780;
+  line-height: 1.1;
+}
+
+.promotionPlanTitle p {
+  margin: 5px 0 0;
+  color: #b9c5da;
+  font-size: 19px;
+}
+
+.promotionPricing {
+  display: grid;
+  justify-items: center;
+  margin-top: 22px;
+}
+
+.referencePrice {
+  margin: 0 0 2px;
+  color: #8492aa;
+  font-size: 25px;
+}
+
+.referencePrice s {
+  margin-left: 7px;
+  text-decoration-color: #94a3b8;
+  text-decoration-thickness: 2px;
+}
+
+.promotionalPrice {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 9px;
+  white-space: nowrap;
+}
+
+.promotionalCurrency {
+  color: #fff;
+  font-size: 34px;
+  font-weight: 650;
+}
+
+.promotionalPrice strong {
+  background: linear-gradient(90deg, #9c72ff, #458bff 52%, #32d7ec);
+  background-clip: text;
+  color: transparent;
+  font-size: 94px;
+  font-weight: 820;
+  letter-spacing: 0;
+  line-height: .96;
+}
+
+.promotionalPeriod {
+  color: #d8e1f2;
+  font-size: 25px;
+}
+
+.savingsBadge {
+  margin-top: 13px;
+  padding: 7px 16px;
+  border: 1px solid rgba(16, 185, 129, .52);
+  border-radius: 999px;
+  background: rgba(16, 185, 129, .08);
+  color: #71e1c3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.promotionAccessBadge {
+  width: fit-content;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  margin: 21px auto 0;
+  padding: 10px 30px;
+  border: 1px solid #7c3aed;
+  border-radius: 999px;
+  background: rgba(5, 11, 28, .52);
+  color: #dbc8ff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .2em;
+}
+
+.promotionAccessBadge svg {
+  width: 29px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.3;
+}
+
+@keyframes fadeUpIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes countdownDigitIn {
+  from { opacity: 0; transform: translateY(-92%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes countdownDigitOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(92%); }
+}
+
+@media (max-width: 767px) {
+  .promotionCard {
+    min-height: 0;
+    padding: 20px 18px 22px;
+    border-radius: 22px;
+  }
+
+  .promotionTop {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .promotionBrand {
+    display: grid;
+    justify-items: center;
+  }
+
+  .promotionLogoCrop {
+    width: 260px;
+    height: 76px;
+  }
+
+  .promotionLogoCrop img {
+    transform: translateY(-34px);
+  }
+
+  .promotionBrand p {
+    margin: -4px auto 0;
+    text-align: center;
+  }
+
+  .countdown {
+    width: min(100%, 570px);
+    grid-template-columns: minmax(118px, .75fr) minmax(230px, 1.25fr);
+    justify-self: center;
+    padding: 12px 14px 10px;
+  }
+
+  .offerLabel {
+    font-size: 14px;
+  }
+
+  .countdownNumber {
+    height: 50px;
+  }
+
+  .countdownDigitIncoming,
+  .countdownDigitOutgoing,
+  .countdownDigitStable {
+    font-size: 30px;
+  }
+
+  .countdownSeparator {
+    padding-top: 12px;
+  }
+
+  .promotionPlanTitle {
+    margin-top: 24px;
+  }
+
+  .promotionPlanTitle h1 {
+    font-size: 39px;
+  }
+
+  .promotionPlanTitle p {
+    font-size: 16px;
+  }
+
+  .referencePrice {
+    font-size: 21px;
+  }
+
+  .promotionalCurrency {
+    font-size: 28px;
+  }
+
+  .promotionalPrice strong {
+    font-size: 76px;
+  }
+}
+
+@media (max-width: 430px) {
+  .promotionCard {
+    width: calc(100% - 24px);
+    padding-inline: 12px;
+  }
+
+  .promotionLogoCrop {
+    width: 230px;
+    height: 66px;
+  }
+
+  .promotionLogoCrop img {
+    transform: translateY(-31px);
+  }
+
+  .promotionBrand p {
+    max-width: 250px;
+    font-size: 10px;
+  }
+
+  .countdown {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    border-radius: 18px;
+    padding: 12px;
+  }
+
+  .countdownDisplay {
+    grid-template-columns: 1fr 8px 1fr 8px 1fr;
+  }
+
+  .countdown > p {
+    grid-column: 1;
+    margin-top: 1px;
+  }
+
+  .promotionPlanTitle h1 {
+    font-size: 34px;
+  }
+
+  .promotionalPrice {
+    gap: 5px;
+  }
+
+  .promotionalCurrency {
+    font-size: 23px;
+  }
+
+  .promotionalPrice strong {
+    font-size: 64px;
+  }
+
+  .promotionalPeriod {
+    font-size: 18px;
+  }
+
+  .promotionAccessBadge {
+    max-width: 100%;
+    font-size: 12px;
+    letter-spacing: .14em;
+  }
+}
+
+@media (max-width: 359px) {
+  .promotionCard {
+    width: calc(100% - 18px);
+    padding-inline: 9px;
+  }
+
+  .promotionLogoCrop {
+    width: 210px;
+  }
+
+  .countdown {
+    padding-inline: 8px;
+  }
+
+  .countdownNumber {
+    height: 45px;
+  }
+
+  .countdownDigitIncoming,
+  .countdownDigitOutgoing,
+  .countdownDigitStable {
+    font-size: 27px;
+  }
+
+  .countdownLabel {
+    font-size: 8px;
+  }
+
+  .promotionPlanTitle h1 {
+    font-size: 30px;
+  }
+
+  .promotionalPrice strong {
+    font-size: 55px;
+  }
+
+  .promotionalCurrency,
+  .promotionalPeriod {
+    font-size: 17px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promotionCard,
+  .countdownDigitIncoming,
+  .countdownDigitOutgoing {
+    animation: none;
+  }
+}
