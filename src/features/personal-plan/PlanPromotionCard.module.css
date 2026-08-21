@@ -1,149 +1,137 @@
 .promotionCard {
   position: relative;
   width: min(calc(100% - 32px), 1080px);
-  min-height: 540px;
+  min-height: 680px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   overflow: hidden;
   margin: 0 auto 18px;
-  padding: 34px 40px 28px;
-  border: 1px solid rgba(37, 99, 235, .7);
+  padding: clamp(30px, 4vw, 48px) clamp(24px, 5vw, 58px) clamp(32px, 4vw, 48px);
+  border: 1px solid transparent;
   border-radius: 28px;
   background:
-    radial-gradient(circle at 2% 0%, rgba(124, 58, 237, .28), transparent 34%),
-    radial-gradient(circle at 96% 22%, rgba(29, 78, 216, .3), transparent 42%),
-    linear-gradient(145deg, rgba(9, 18, 45, .98), rgba(2, 11, 28, .98));
+    linear-gradient(152deg, rgba(7, 15, 38, .98), rgba(2, 10, 27, .99)) padding-box,
+    linear-gradient(140deg, rgba(162, 91, 255, .88), rgba(37, 99, 235, .72) 55%, rgba(34, 211, 238, .6)) border-box;
   box-shadow:
     0 30px 80px rgba(0, 0, 0, .34),
-    inset 0 1px 0 rgba(255, 255, 255, .06);
+    inset 0 1px 0 rgba(255, 255, 255, .045);
   color: #f8fafc;
   isolation: isolate;
   animation: fadeUpIn 480ms cubic-bezier(.19, 1, .22, 1) both;
 }
 
-.promotionCard::before {
+.promotionCard::before,
+.promotionCard::after {
   position: absolute;
-  top: -110px;
-  right: -70px;
-  z-index: -2;
-  width: 390px;
-  height: 390px;
+  z-index: -3;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(37, 99, 235, .2), transparent 70%);
   content: "";
   pointer-events: none;
 }
 
-.promotionFlowLines {
+.promotionCard::before {
+  top: -180px;
+  left: -170px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(124, 58, 237, .2), transparent 69%);
+}
+
+.promotionCard::after {
+  right: -180px;
+  bottom: -150px;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, rgba(14, 165, 233, .14), transparent 70%);
+}
+
+.promotionBackgroundMark {
   position: absolute;
-  right: -3%;
-  bottom: -22px;
-  left: -3%;
-  z-index: -1;
-  width: 106%;
-  height: 210px;
-  fill: none;
-  stroke: url(#promotion-flow-gradient);
-  stroke-linecap: round;
-  stroke-width: 2;
-  pointer-events: none;
-}
-
-.promotionTop {
-  display: grid;
-  grid-template-columns: minmax(240px, .9fr) minmax(420px, 1.3fr);
-  align-items: center;
-  gap: 28px;
-}
-
-.promotionBrand {
-  min-width: 0;
-}
-
-.promotionLogoCrop {
-  width: min(100%, 330px);
-  height: 92px;
-  display: block;
-  overflow: hidden;
-}
-
-.promotionLogoCrop img {
-  width: 100%;
+  top: 47%;
+  left: 50%;
+  z-index: -2;
+  width: min(75%, 680px);
   height: auto;
-  display: block;
-  transform: translateY(-38px);
-}
-
-.promotionBrand p {
-  max-width: 315px;
-  margin: -4px 0 0 82px;
-  color: #cbd5e1;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.promotionBrand strong {
-  color: #10b981;
-  font-weight: 500;
+  opacity: .055;
+  filter: saturate(.75) brightness(.85);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 82%, transparent 100%);
+  transform: translate(-50%, -34%);
+  pointer-events: none;
+  user-select: none;
 }
 
 .countdown {
-  min-width: 0;
+  --countdown-number-height: clamp(70px, 9.5vw, 112px);
+  width: min(100%, 770px);
   display: grid;
-  grid-template-columns: minmax(142px, .75fr) minmax(265px, 1.25fr);
-  align-items: center;
-  column-gap: 18px;
-  padding: 16px 20px 12px;
+  justify-items: center;
+  gap: 22px;
+  padding: clamp(24px, 3.5vw, 38px) clamp(20px, 4vw, 46px) 20px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 28px;
   background:
-    linear-gradient(rgba(5, 13, 34, .94), rgba(5, 13, 34, .94)) padding-box,
-    linear-gradient(90deg, #7c3aed, #2563eb, #10b981) border-box;
-  box-shadow: 0 0 30px rgba(37, 99, 235, .14);
+    linear-gradient(rgba(4, 13, 34, .91), rgba(4, 13, 34, .91)) padding-box,
+    linear-gradient(115deg, rgba(168, 85, 247, .95), rgba(37, 99, 235, .72) 54%, rgba(34, 211, 238, .86)) border-box;
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .035);
 }
 
 .offerLabel {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  color: #dac9ff;
-  font-size: 17px;
-  font-weight: 700;
+  gap: 14px;
+  background: linear-gradient(90deg, #c18cff, #5f8fff 58%, #22d3ee);
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(17px, 2.4vw, 25px);
+  font-weight: 750;
+  letter-spacing: .22em;
+  line-height: 1;
+  text-align: center;
   white-space: nowrap;
 }
 
 .offerLabel svg {
-  width: 27px;
-  height: 27px;
-  fill: #ff8b91;
-  filter: drop-shadow(0 0 9px rgba(255, 139, 145, .35));
+  width: clamp(25px, 3.4vw, 37px);
+  height: clamp(25px, 3.4vw, 37px);
+  flex: 0 0 auto;
+  fill: #8b5cf6;
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, .42));
 }
 
 .countdownDisplay {
+  width: 100%;
   display: grid;
-  grid-template-columns: 1fr 10px 1fr 10px 1fr;
+  grid-template-columns: minmax(0, 1fr) clamp(10px, 2.2vw, 20px) minmax(0, 1fr) clamp(10px, 2.2vw, 20px) minmax(0, 1fr);
   align-items: start;
-  gap: 5px;
+  gap: clamp(6px, 1.4vw, 14px);
 }
 
 .countdownUnit {
   min-width: 0;
   display: grid;
-  justify-items: center;
-  gap: 6px;
+  justify-items: stretch;
+  gap: 12px;
 }
 
 .countdownNumber {
   width: 100%;
-  height: 58px;
+  height: var(--countdown-number-height);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   overflow: hidden;
-  border: 1px solid rgba(59, 130, 246, .6);
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(25, 36, 80, .92), rgba(7, 14, 37, .96));
+  border: 1px solid transparent;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(18, 29, 67, .94), rgba(5, 13, 36, .98)) padding-box,
+    linear-gradient(145deg, rgba(139, 92, 246, .78), rgba(59, 130, 246, .8), rgba(34, 211, 238, .54)) border-box;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .07),
-    0 0 18px rgba(37, 99, 235, .16);
+    0 0 22px rgba(37, 99, 235, .12);
 }
 
 .countdownDigitWindow {
@@ -161,11 +149,11 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, #b59cff, #55d9f3);
+  background: linear-gradient(180deg, #d4c4ff, #9d72ff 45%, #50c8fa);
   background-clip: text;
   color: transparent;
-  font-size: 36px;
-  font-weight: 780;
+  font-size: clamp(44px, 7.5vw, 78px);
+  font-weight: 820;
   line-height: 1;
 }
 
@@ -178,131 +166,164 @@
 }
 
 .countdownLabel {
-  color: #d5daea;
-  font-size: 10px;
+  color: #e0e6f3;
+  font-size: clamp(10px, 1.6vw, 15px);
   line-height: 1;
+  text-align: center;
 }
 
 .countdownSeparator {
-  padding-top: 15px;
-  color: #dce7ff;
-  font-size: 25px;
+  height: var(--countdown-number-height);
+  display: grid;
+  place-items: center;
+  color: #eef4ff;
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 700;
+  line-height: 1;
   text-align: center;
 }
 
 .countdown > p {
-  grid-column: 2;
-  margin: 5px 0 0;
-  color: #62d7c2;
-  font-size: 11px;
+  width: 100%;
+  margin: -2px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid rgba(148, 163, 184, .17);
+  color: #21d4b3;
+  font-size: clamp(13px, 2vw, 19px);
+  line-height: 1.2;
   text-align: center;
 }
 
 .promotionPlanTitle {
-  margin-top: 34px;
+  width: 100%;
+  margin-top: clamp(38px, 5vw, 60px);
   text-align: center;
 }
 
 .promotionPlanTitle h1 {
   margin: 0;
-  background: linear-gradient(90deg, #fff 25%, #a58cff 53%, #42d6ef 78%);
+  background: linear-gradient(90deg, #a855f7 12%, #5b7cff 52%, #20c9e8 88%);
   background-clip: text;
   color: transparent;
-  font-size: 46px;
-  font-weight: 780;
-  line-height: 1.1;
+  font-size: clamp(44px, 7vw, 74px);
+  font-weight: 800;
+  line-height: 1.05;
 }
 
 .promotionPlanTitle p {
-  margin: 5px 0 0;
-  color: #b9c5da;
-  font-size: 19px;
+  margin: 10px 0 0;
+  color: #aebbd2;
+  font-size: clamp(18px, 2.8vw, 27px);
+  line-height: 1.25;
 }
 
 .promotionPricing {
+  width: 100%;
   display: grid;
   justify-items: center;
-  margin-top: 22px;
+  margin-top: clamp(36px, 5vw, 56px);
+  text-align: center;
 }
 
 .referencePrice {
-  margin: 0 0 2px;
-  color: #8492aa;
-  font-size: 25px;
+  margin: 0 0 12px;
+  color: #71819e;
+  font-size: clamp(22px, 3.3vw, 34px);
+  line-height: 1.1;
 }
 
 .referencePrice s {
-  margin-left: 7px;
-  text-decoration-color: #94a3b8;
+  margin-left: 8px;
+  text-decoration-color: #8090ab;
   text-decoration-thickness: 2px;
 }
 
 .promotionalPrice {
-  display: flex;
+  max-width: 100%;
+  display: inline-flex;
   align-items: baseline;
   justify-content: center;
-  gap: 9px;
+  gap: clamp(6px, 1.4vw, 14px);
   white-space: nowrap;
 }
 
 .promotionalCurrency {
   color: #fff;
-  font-size: 34px;
-  font-weight: 650;
+  font-size: clamp(30px, 5vw, 50px);
+  font-weight: 700;
 }
 
 .promotionalPrice strong {
-  background: linear-gradient(90deg, #9c72ff, #458bff 52%, #32d7ec);
+  background: linear-gradient(90deg, #a855f7, #4f7dff 52%, #18c8e8);
   background-clip: text;
   color: transparent;
-  font-size: 94px;
-  font-weight: 820;
+  font-size: clamp(88px, 15vw, 150px);
+  font-weight: 850;
   letter-spacing: 0;
-  line-height: .96;
+  line-height: .9;
 }
 
 .promotionalPeriod {
-  color: #d8e1f2;
-  font-size: 25px;
+  color: #c5d1e4;
+  font-size: clamp(24px, 4.2vw, 42px);
 }
 
 .savingsBadge {
-  margin-top: 13px;
-  padding: 7px 16px;
-  border: 1px solid rgba(16, 185, 129, .52);
-  border-radius: 999px;
-  background: rgba(16, 185, 129, .08);
-  color: #71e1c3;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.promotionAccessBadge {
-  width: fit-content;
-  min-height: 56px;
-  display: flex;
+  min-height: 50px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 13px;
-  margin: 21px auto 0;
-  padding: 10px 30px;
-  border: 1px solid #7c3aed;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 10px 28px;
+  border: 1px solid rgba(16, 185, 129, .78);
   border-radius: 999px;
-  background: rgba(5, 11, 28, .52);
-  color: #dbc8ff;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: .2em;
+  background: rgba(2, 20, 37, .7);
+  color: #21d4b3;
+  font-size: clamp(14px, 2vw, 19px);
+  font-weight: 750;
 }
 
-.promotionAccessBadge svg {
-  width: 29px;
+.savingsBadge svg {
+  width: 24px;
   height: 24px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.3;
+  stroke-width: 1.8;
+}
+
+.promotionAccessBadge {
+  width: min(82%, 720px);
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 3vw, 32px);
+  margin: clamp(54px, 7vw, 82px) auto 0;
+  padding: 14px 28px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(rgba(6, 12, 31, .84), rgba(6, 12, 31, .84)) padding-box,
+    linear-gradient(110deg, rgba(168, 85, 247, .96), rgba(124, 58, 237, .9), rgba(37, 99, 235, .75)) border-box;
+  color: #d7b8ff;
+  font-size: clamp(18px, 2.7vw, 27px);
+  font-weight: 750;
+  letter-spacing: .23em;
+  text-align: center;
+}
+
+.promotionAccessBadge svg {
+  width: clamp(34px, 4.5vw, 46px);
+  height: auto;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
 }
 
 @keyframes fadeUpIn {
@@ -322,187 +343,199 @@
 
 @media (max-width: 767px) {
   .promotionCard {
+    width: calc(100% - 24px);
     min-height: 0;
-    padding: 20px 18px 22px;
-    border-radius: 22px;
+    padding: 22px 16px 28px;
+    border-radius: 24px;
   }
 
-  .promotionTop {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .promotionBrand {
-    display: grid;
-    justify-items: center;
-  }
-
-  .promotionLogoCrop {
-    width: 260px;
-    height: 76px;
-  }
-
-  .promotionLogoCrop img {
-    transform: translateY(-34px);
-  }
-
-  .promotionBrand p {
-    margin: -4px auto 0;
-    text-align: center;
+  .promotionBackgroundMark {
+    top: 52%;
+    width: 88%;
+    opacity: .05;
   }
 
   .countdown {
-    width: min(100%, 570px);
-    grid-template-columns: minmax(118px, .75fr) minmax(230px, 1.25fr);
-    justify-self: center;
-    padding: 12px 14px 10px;
+    --countdown-number-height: clamp(58px, 18vw, 86px);
+    gap: 17px;
+    padding: 22px 16px 16px;
+    border-radius: 22px;
   }
 
   .offerLabel {
-    font-size: 14px;
+    font-size: clamp(14px, 4vw, 19px);
+    letter-spacing: .16em;
+  }
+
+  .countdownDisplay {
+    grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr) 8px minmax(0, 1fr);
+    gap: clamp(4px, 1.7vw, 8px);
   }
 
   .countdownNumber {
-    height: 50px;
+    border-radius: 13px;
   }
 
   .countdownDigitIncoming,
   .countdownDigitOutgoing,
   .countdownDigitStable {
-    font-size: 30px;
+    font-size: clamp(34px, 12.5vw, 54px);
+  }
+
+  .countdownUnit {
+    gap: 9px;
+  }
+
+  .countdownLabel {
+    font-size: clamp(8px, 2.6vw, 11px);
   }
 
   .countdownSeparator {
-    padding-top: 12px;
+    font-size: clamp(22px, 7vw, 30px);
+  }
+
+  .countdown > p {
+    padding-top: 15px;
+    font-size: 13px;
   }
 
   .promotionPlanTitle {
-    margin-top: 24px;
+    margin-top: 38px;
   }
 
   .promotionPlanTitle h1 {
-    font-size: 39px;
+    font-size: clamp(36px, 11vw, 48px);
   }
 
   .promotionPlanTitle p {
-    font-size: 16px;
+    margin-top: 7px;
+    font-size: clamp(16px, 4.8vw, 20px);
+  }
+
+  .promotionPricing {
+    margin-top: 34px;
   }
 
   .referencePrice {
-    font-size: 21px;
+    margin-bottom: 10px;
+    font-size: clamp(20px, 6vw, 25px);
   }
 
   .promotionalCurrency {
-    font-size: 28px;
+    font-size: clamp(23px, 6.4vw, 29px);
   }
 
   .promotionalPrice strong {
-    font-size: 76px;
+    font-size: clamp(65px, 19vw, 82px);
+  }
+
+  .promotionalPeriod {
+    font-size: clamp(18px, 5.2vw, 23px);
+  }
+
+  .savingsBadge {
+    min-height: 44px;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 8px 20px;
+    font-size: clamp(12px, 3.7vw, 15px);
+  }
+
+  .savingsBadge svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .promotionAccessBadge {
+    width: min(92%, 620px);
+    min-height: 60px;
+    gap: 16px;
+    margin-top: 48px;
+    padding: 12px 20px;
+    font-size: clamp(14px, 4vw, 18px);
+    letter-spacing: .18em;
+  }
+
+  .promotionAccessBadge svg {
+    width: 32px;
   }
 }
 
 @media (max-width: 430px) {
   .promotionCard {
-    width: calc(100% - 24px);
+    width: calc(100% - 20px);
     padding-inline: 12px;
   }
 
-  .promotionLogoCrop {
-    width: 230px;
-    height: 66px;
-  }
-
-  .promotionLogoCrop img {
-    transform: translateY(-31px);
-  }
-
-  .promotionBrand p {
-    max-width: 250px;
-    font-size: 10px;
-  }
-
   .countdown {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    border-radius: 18px;
-    padding: 12px;
-  }
-
-  .countdownDisplay {
-    grid-template-columns: 1fr 8px 1fr 8px 1fr;
-  }
-
-  .countdown > p {
-    grid-column: 1;
-    margin-top: 1px;
-  }
-
-  .promotionPlanTitle h1 {
-    font-size: 34px;
-  }
-
-  .promotionalPrice {
-    gap: 5px;
-  }
-
-  .promotionalCurrency {
-    font-size: 23px;
-  }
-
-  .promotionalPrice strong {
-    font-size: 64px;
-  }
-
-  .promotionalPeriod {
-    font-size: 18px;
-  }
-
-  .promotionAccessBadge {
-    max-width: 100%;
-    font-size: 12px;
-    letter-spacing: .14em;
+    padding-inline: 12px;
   }
 }
 
 @media (max-width: 359px) {
   .promotionCard {
-    width: calc(100% - 18px);
-    padding-inline: 9px;
-  }
-
-  .promotionLogoCrop {
-    width: 210px;
+    width: calc(100% - 16px);
+    padding: 18px 9px 24px;
   }
 
   .countdown {
-    padding-inline: 8px;
+    --countdown-number-height: 54px;
+    gap: 14px;
+    padding: 18px 8px 14px;
   }
 
-  .countdownNumber {
-    height: 45px;
+  .offerLabel {
+    gap: 8px;
+    font-size: 13px;
+    letter-spacing: .12em;
+  }
+
+  .offerLabel svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .countdownDisplay {
+    grid-template-columns: minmax(0, 1fr) 6px minmax(0, 1fr) 6px minmax(0, 1fr);
+    gap: 3px;
   }
 
   .countdownDigitIncoming,
   .countdownDigitOutgoing,
   .countdownDigitStable {
-    font-size: 27px;
+    font-size: 31px;
   }
 
   .countdownLabel {
-    font-size: 8px;
+    font-size: 7px;
   }
 
   .promotionPlanTitle h1 {
-    font-size: 30px;
+    font-size: 33px;
   }
 
-  .promotionalPrice strong {
-    font-size: 55px;
+  .promotionalPrice {
+    gap: 4px;
   }
 
   .promotionalCurrency,
   .promotionalPeriod {
-    font-size: 17px;
+    font-size: 18px;
+  }
+
+  .promotionalPrice strong {
+    font-size: 61px;
+  }
+
+  .savingsBadge {
+    padding-inline: 16px;
+  }
+
+  .promotionAccessBadge {
+    width: 94%;
+    gap: 10px;
+    font-size: 12px;
+    letter-spacing: .14em;
   }
 }
 

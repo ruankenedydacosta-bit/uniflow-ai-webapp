@@ -524,6 +524,9 @@ test('página apresenta a hierarquia app-like aprovada, sem a copy de landing pa
   assert.match(promotionCard, /Plano Pessoal/);
   assert.match(promotionCard, /Tudo da Uni em um só lugar\./);
   assert.match(promotionCard, /ACESSO COMPLETO/);
+  assert.match(promotionCard, /assets\/branding\/uniflow-mark\.png/);
+  assert.match(promotionCard, /promotionBackgroundMark/);
+  assert.doesNotMatch(promotionCard, /logo_uniflowai\.png|promotionBrand|PlanFlowLines/);
   assert.match(page, /Incluído no seu plano/);
   assert.match(page, /A <span>Uni<\/span> organiza\./);
 

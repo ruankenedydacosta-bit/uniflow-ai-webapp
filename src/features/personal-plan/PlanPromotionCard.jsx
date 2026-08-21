@@ -1,4 +1,4 @@
-import uniflowLogo from '../../assets/branding/auth/logo_uniflowai.png';
+import uniflowMark from '../../assets/branding/uniflow-mark.png';
 import PromotionalCountdown from './PromotionalCountdown.jsx';
 import {
   PERSONAL_PLAN_PRICE_LABEL,
@@ -16,19 +16,11 @@ function CrownIcon() {
   );
 }
 
-function PlanFlowLines() {
+function SavingsIcon() {
   return (
-    <svg className={styles.promotionFlowLines} viewBox="0 0 1000 210" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="promotion-flow-gradient" x1="0" y1="0" x2="1" y2="0">
-          <stop stopColor="#7c3aed" stopOpacity=".15" />
-          <stop offset=".48" stopColor="#2563eb" stopOpacity=".6" />
-          <stop offset="1" stopColor="#10b981" stopOpacity=".14" />
-        </linearGradient>
-      </defs>
-      <path d="M-60 150c170-82 276 47 428-9s238-50 356 1 205 56 330-14" />
-      <path d="M-60 174c180-70 278 41 430-5s239-44 354 1 203 47 330-8" />
-      <path d="M-60 126c162-89 273 54 430-12s241-55 358 4 207 63 326-18" />
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 13 13 20l-9-9V4h7l9 9Z" />
+      <circle cx="8.5" cy="8.5" r="1.25" />
     </svg>
   );
 }
@@ -38,24 +30,16 @@ function PlanPromotionCard({ promotionEligibility = true }) {
 
   return (
     <section className={styles.promotionCard} aria-labelledby="personal-plan-title">
-      <PlanFlowLines />
+      <img className={styles.promotionBackgroundMark} src={uniflowMark} alt="" aria-hidden="true" />
 
-      <div className={styles.promotionTop}>
-        <div className={styles.promotionBrand}>
-          <span className={styles.promotionLogoCrop}>
-            <img src={uniflowLogo} alt="UniFlow AI" />
-          </span>
-          <p>Conectando você às <strong>melhores decisões financeiras.</strong></p>
-        </div>
-        <PromotionalCountdown
-          key={promotionEligibility === null
-            ? 'promotion-checking'
-            : promotionEligibility
-              ? 'promotion-eligible'
-              : 'promotion-confirmed'}
-          canStartNewWindow={promotionEligibility === true}
-        />
-      </div>
+      <PromotionalCountdown
+        key={promotionEligibility === null
+          ? 'promotion-checking'
+          : promotionEligibility
+            ? 'promotion-eligible'
+            : 'promotion-confirmed'}
+        canStartNewWindow={promotionEligibility === true}
+      />
 
       <div className={styles.promotionPlanTitle}>
         <h1 id="personal-plan-title">Plano Pessoal</h1>
@@ -71,7 +55,10 @@ function PlanPromotionCard({ promotionEligibility = true }) {
           <strong>{currentPrice}</strong>
           <span className={styles.promotionalPeriod}>{PERSONAL_PLAN_PRICE_PERIOD}</span>
         </div>
-        <span className={styles.savingsBadge}>{PERSONAL_PLAN_PROMOTION.savingsLabel}</span>
+        <span className={styles.savingsBadge}>
+          <SavingsIcon />
+          {PERSONAL_PLAN_PROMOTION.savingsLabel}
+        </span>
       </div>
 
       <div className={styles.promotionAccessBadge}>
