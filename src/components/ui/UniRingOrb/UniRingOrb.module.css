@@ -1,0 +1,171 @@
+.root {
+  --orb-level: 0;
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--orb-size);
+  height: var(--orb-size);
+  pointer-events: none;
+}
+
+.glow,
+.ripple,
+.ring,
+.ringInner,
+.core {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.glow {
+  inset: -40%;
+  opacity: min(1, calc(var(--orb-glow) + var(--orb-level) * .4));
+}
+
+/* O brilho respira no pseudo-elemento para a animação de opacidade não
+   anular a intensidade definida pelo estado em .glow. */
+.glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklch, var(--uf-purple-600) 42%, transparent),
+    color-mix(in oklch, var(--uf-blue-700) 21%, transparent) 55%,
+    transparent
+  );
+  animation: breath 4s ease-in-out infinite;
+}
+
+.ripple {
+  inset: 0;
+  opacity: 0;
+  border: 1px solid;
+  animation: ripple var(--orb-ripple-duration) ease-out infinite;
+}
+
+.rippleBlue {
+  border-color: var(--uf-blue-700);
+}
+
+.ripplePurple {
+  border-color: var(--uf-purple-600);
+}
+
+.rippleGreen {
+  border-color: var(--uf-green-500);
+}
+
+/* Anel desenhado como gradiente cônico recortado por máscara: só a borda
+   de espessura --orb-thickness aparece. */
+.ring,
+.ringInner {
+  --orb-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--orb-thickness) - .5px),
+    #000 calc(100% - var(--orb-thickness))
+  );
+  -webkit-mask: var(--orb-mask);
+  mask: var(--orb-mask);
+}
+
+.ring {
+  inset: 0;
+  scale: calc(1 + var(--orb-level) * .08);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 6%,
+    var(--uf-blue-700) 22%,
+    var(--uf-purple-600) 40%,
+    transparent 54%,
+    var(--uf-purple-600) 66%,
+    var(--uf-green-500) 82%,
+    transparent 96%
+  );
+  animation: spin var(--orb-ring-duration) linear infinite;
+}
+
+.ringInner {
+  inset: 10%;
+  opacity: .55;
+  background: conic-gradient(
+    from 180deg,
+    transparent 0 20%,
+    var(--uf-green-500) 40%,
+    var(--uf-blue-700) 55%,
+    transparent 72%
+  );
+  animation: spin calc(var(--orb-ring-duration) * 1.7) linear infinite reverse;
+}
+
+.core {
+  inset: 18%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mark {
+  width: 78%;
+  height: 78%;
+  overflow: visible;
+}
+
+.stopBlue {
+  stop-color: var(--uf-blue-700);
+}
+
+.stopPurple {
+  stop-color: var(--uf-purple-600);
+}
+
+.stopGreen {
+  stop-color: var(--uf-green-500);
+}
+
+.markOuter,
+.markInner,
+.markDot {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.markOuter {
+  animation: flipForward var(--orb-mark-duration) cubic-bezier(.45, 0, .55, 1) infinite;
+}
+
+.markInner {
+  animation: flipBackward var(--orb-mark-duration) cubic-bezier(.45, 0, .55, 1) calc(var(--orb-mark-duration) * .12) infinite;
+}
+
+.markDot {
+  fill: var(--uf-blue-700);
+  animation: breath var(--orb-mark-duration) ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes breath {
+  0%, 100% { transform: scale(1); opacity: .8; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes ripple {
+  0% { transform: scale(1); opacity: .55; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+@keyframes flipForward {
+  0%, 20% { transform: perspective(60px) rotateY(0deg); }
+  50%, 70% { transform: perspective(60px) rotateY(180deg); }
+  100% { transform: perspective(60px) rotateY(360deg); }
+}
+
+@keyframes flipBackward {
+  0%, 20% { transform: perspective(60px) rotateY(0deg); }
+  50%, 70% { transform: perspective(60px) rotateY(-180deg); }
+  100% { transform: perspective(60px) rotateY(-360deg); }
+}
