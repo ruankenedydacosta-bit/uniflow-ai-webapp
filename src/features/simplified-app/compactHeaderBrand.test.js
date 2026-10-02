@@ -31,17 +31,20 @@ test('UniMark é a ÚNICA fonte do símbolo -- importa o asset oficial recortado
   assert.doesNotMatch(icons, /linearGradient|stopColor/);
 });
 
-test('header e botão de voz reutilizam o MESMO asset oficial -- nunca uma segunda interpretação da marca', async () => {
+// Épico #99: o orb de voz usa o símbolo novo do design (dois U em SVG,
+// para que cada U gire no seu sentido). O cabeçalho continua com o asset
+// oficial até a troca de marca no cabeçalho, ícone e PWA.
+test('header usa o asset oficial; o orb de voz desenha o símbolo novo em SVG', async () => {
   const header = await source('./SimplifiedHeader.jsx');
   const home = await source('./SimplifiedHomeView.jsx');
-  const orb = await source('../../components/ui/UniNeuralOrb/UniNeuralOrb.jsx');
+  const orb = await source('../../components/ui/UniRingOrb/UniRingOrb.jsx');
   assert.match(header, /import \{ BellIcon, UniMark \} from '\.\/SimplifiedIcons\.jsx';/);
   assert.match(header, /<UniMark \/>/);
-  assert.match(home, /import \{ UniNeuralOrb \} from '\.\.\/\.\.\/components\/ui\/UniNeuralOrb\/index\.js';/);
-  assert.match(home, /<UniNeuralOrb/);
-  assert.match(orb, /import uniflowMarkAsset from '\.\.\/\.\.\/\.\.\/assets\/branding\/uniflow-mark\.png';/);
-  assert.match(orb, /logoSrc = uniflowMarkAsset/);
-  assert.match(orb, /<img className=\{styles\.logo\} src=\{logoSrc\} alt=""/);
+  assert.match(home, /import \{ UniRingOrb \} from '\.\.\/\.\.\/components\/ui\/UniRingOrb\/index\.js';/);
+  assert.match(home, /<UniRingOrb/);
+  assert.match(orb, /d="M6 6v16a12 12 0 0 0 24 0V6"/);
+  assert.match(orb, /d="M15 11v10a6 6 0 0 0 12 0v-6"/);
+  assert.doesNotMatch(orb, /\.png'/);
 });
 
 test('todo wrapper do UniMark usa object-fit:contain (nunca distorce a proporção 463:512 do asset)', async () => {

@@ -363,6 +363,31 @@ export function ChatBubbleIcon() {
   );
 }
 
+export function KeyboardIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="3" y="8" width="26" height="17" rx="3" />
+      <path d="M8 13h.01M12 13h.01M16 13h.01M20 13h.01M24 13h.01M8 17h.01M24 17h.01M11 21h10" strokeWidth="2.6" />
+    </svg>
+  );
+}
+
+export function StopIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="9" y="9" width="14" height="14" rx="2.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function CloseIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M8 8l16 16M24 8 8 24" />
+    </svg>
+  );
+}
+
 export function WhatsAppIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
