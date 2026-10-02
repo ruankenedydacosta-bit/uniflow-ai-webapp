@@ -50,3 +50,41 @@ export function resumirAvaliacao(vereditos) {
     return [campo, { acertos, total: aplicaveis.length }];
   }));
 }
+
+const INTENT_DO_INTERPRETADOR = {
+  consulta: 'consulta',
+  agenda: 'agenda',
+  conversa: 'conversa',
+  correcao: 'correcao',
+  nao_entendi: 'nao_entendeu',
+};
+const INTENT_POR_TIPO = { saida: 'lancar_saida', entrada: 'lancar_entrada', transferencia: 'transferir' };
+
+// Converte a saída já validada do uni-interpret (validarInterpretacao) no
+// resultado normalizado da régua. Categoria com confiança abaixo do limiar
+// conta como sugestão: é o que o card mostra pedindo confirmação.
+export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}) {
+  const operacao = validada.operacoes[0] ?? null;
+  const intent = validada.intent === 'lancamento' && operacao
+    ? INTENT_POR_TIPO[operacao.tipo]
+    : INTENT_DO_INTERPRETADOR[validada.intent] ?? validada.intent;
+
+  if (!operacao) {
+    return { intent, valor: null, data: null, categoria: null, modoCategoria: 'perguntou' };
+  }
+
+  let modoCategoria = 'perguntou';
+  if (operacao.categoria) {
+    modoCategoria = operacao.confianca >= limiarConfianca ? 'resolveu' : 'sugeriu';
+  } else if (operacao.novaCategoria) {
+    modoCategoria = 'propos_criar';
+  }
+
+  return {
+    intent,
+    valor: operacao.valor,
+    data: operacao.data,
+    categoria: operacao.categoria?.name ?? operacao.novaCategoria ?? null,
+    modoCategoria,
+  };
+}
