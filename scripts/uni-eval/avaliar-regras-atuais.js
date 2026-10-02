@@ -2,13 +2,19 @@
 // Mede o interpretador determinístico atual contra o conjunto de avaliação
 // (épico #104, F0). Reproduz o caminho de sendText sem a IA: classifyIntent,
 // parseFinancialText e buildFinancialIntentAction com o catálogo de sistema.
+// Consultas são respondidas depois por financialQueryEngine, fora deste
+// caminho: aqui só conta se classifyIntent as reconhece.
 //
 // Uso: npm run uni:eval [-- --erros]
 //   --erros  lista só os casos com algum campo errado.
 
 import { buildFinancialIntentAction } from '../../src/features/uni-conversation/financialIntentAction.js';
 import { parseFinancialText } from '../../src/features/uni-intents/index.js';
-import { AGENDA_INTENT_SET } from '../../src/features/uni-intents/intentClassifier.js';
+import {
+  AGENDA_INTENT_SET,
+  classifyIntent,
+  stripLeadingConversationalPrefix,
+} from '../../src/features/uni-intents/intentClassifier.js';
 import { catalogoDoWorkspace } from '../../src/features/uni-interpret/evalCatalog.js';
 import { CASOS, DATA_REFERENCIA } from '../../src/features/uni-interpret/evalCases.js';
 import { avaliarCaso, resumirAvaliacao } from '../../src/features/uni-interpret/evalScoring.js';
@@ -23,8 +29,14 @@ const INTENT_PARA_GRUPO = {
   conversation_common: 'conversa',
 };
 
-function grupoDoIntent(intent) {
+// Sem nenhuma regra casada, classifyIntent devolve 'question' com signals
+// vazio: isso é "não entendi", e não uma consulta reconhecida.
+function grupoDoIntent(intent, frase) {
   if (AGENDA_INTENT_SET.has(intent)) return 'agenda';
+  if (intent === 'question') {
+    const texto = stripLeadingConversationalPrefix(frase) || frase;
+    if (classifyIntent(texto).signals.length === 0) return 'nao_entendeu';
+  }
   return INTENT_PARA_GRUPO[intent] ?? intent;
 }
 
@@ -46,7 +58,7 @@ function interpretarComRegrasAtuais(caso) {
   });
 
   return {
-    intent: grupoDoIntent(parsed.intent),
+    intent: grupoDoIntent(parsed.intent, caso.frase),
     valor: action.amount ?? parsed.entities.amount ?? null,
     data: action.date ?? null,
     categoria: action.category?.name ?? action.proposedCategory?.name ?? action.proposedCategoryName ?? null,
