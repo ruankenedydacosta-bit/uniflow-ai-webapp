@@ -5,8 +5,9 @@
 // Consultas são respondidas depois por financialQueryEngine, fora deste
 // caminho: aqui só conta se classifyIntent as reconhece.
 //
-// Uso: npm run uni:eval [-- --erros]
-//   --erros  lista só os casos com algum campo errado.
+// Uso: npm run uni:eval -- [--erros] [--conjunto ajuste|reservado|todos]
+//   --erros     lista só os casos com algum campo errado.
+//   --conjunto  ajuste, reservado ou todos (padrão).
 
 import { buildFinancialIntentAction } from '../../src/features/uni-conversation/financialIntentAction.js';
 import { parseFinancialText } from '../../src/features/uni-intents/index.js';
@@ -73,9 +74,19 @@ function marca(veredito) {
 }
 
 const soErros = process.argv.includes('--erros');
+const CONJUNTOS = ['ajuste', 'reservado', 'todos'];
+const indiceConjunto = process.argv.indexOf('--conjunto');
+const conjunto = indiceConjunto >= 0 ? process.argv[indiceConjunto + 1] : 'todos';
+if (!CONJUNTOS.includes(conjunto)) {
+  console.error('Informe --conjunto ajuste|reservado|todos.');
+  process.exit(1);
+}
+const casosDoConjunto = CASOS.filter((caso) => (
+  conjunto === 'todos' || (conjunto === 'reservado') === Boolean(caso.reservado)
+));
 const vereditos = [];
 
-for (const caso of CASOS) {
+for (const caso of casosDoConjunto) {
   const resultado = interpretarComRegrasAtuais(caso);
   const veredito = avaliarCaso(caso, resultado);
   vereditos.push(veredito);
@@ -92,7 +103,8 @@ for (const caso of CASOS) {
   );
 }
 
-console.log('\nintent valor data categoria — acertos por campo');
+console.log(`\nregras atuais — conjunto ${conjunto} (${casosDoConjunto.length} casos)`);
+console.log('intent valor data categoria — acertos por campo');
 for (const [campo, { acertos, total }] of Object.entries(resumirAvaliacao(vereditos))) {
   const pct = total ? Math.round((acertos / total) * 100) : 0;
   console.log(`${campo.padEnd(10)} ${String(acertos).padStart(3)}/${total}  ${pct}%`);

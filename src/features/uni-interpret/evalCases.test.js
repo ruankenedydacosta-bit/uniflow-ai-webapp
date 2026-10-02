@@ -29,6 +29,24 @@ test('categoria esperada existe no catálogo do workspace do caso, com o tipo ce
   }
 });
 
+test('conjunto reservado: marca booleana, ao menos 30 casos e cobre lançamentos e não lançamentos', () => {
+  for (const caso of CASOS.filter((item) => 'reservado' in item)) {
+    assert.equal(typeof caso.reservado, 'boolean', `${caso.id}: reservado não é booleano`);
+  }
+  const reservados = CASOS.filter((caso) => caso.reservado);
+  assert.ok(reservados.length >= 30, `só ${reservados.length} casos reservados`);
+  assert.ok(reservados.some((caso) => INTENTS_DE_LANCAMENTO.has(caso.esperado.intent)));
+  assert.ok(reservados.some((caso) => !INTENTS_DE_LANCAMENTO.has(caso.esperado.intent)));
+  assert.ok(CASOS.length - reservados.length >= 30, 'conjunto de ajuste ficou pequeno demais');
+});
+
+test('data esperada é ISO válida e não fica no futuro em lançamentos', () => {
+  for (const caso of CASOS.filter((item) => item.esperado.data)) {
+    assert.match(caso.esperado.data, /^\d{4}-\d{2}-\d{2}$/, caso.id);
+    assert.ok(caso.esperado.data <= '2026-10-02', `${caso.id}: data no futuro`);
+  }
+});
+
 test('Impostos só existe no catálogo de empresa', () => {
   assert.ok(!catalogoDoWorkspace('personal').some((category) => category.name === 'Impostos'));
   assert.ok(catalogoDoWorkspace('business').some((category) => category.name === 'Impostos'));

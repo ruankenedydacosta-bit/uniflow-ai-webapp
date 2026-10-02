@@ -6,7 +6,9 @@
 // Uso:
 //   npm run uni:eval:modelo -- --provedor anthropic --modelo claude-haiku-4-5
 //   npm run uni:eval:modelo -- --provedor openai --modelo gpt-5.4-mini
-// Opções: --erros (só casos com erro), --temperatura padrao (OpenAI: omite o
+// Opções: --conjunto ajuste|reservado|todos (padrão todos; o reservado só
+//   serve para medir no fim, nunca para ajustar o prompt), --erros (só casos
+//   com erro), --temperatura padrao (OpenAI: omite o
 //   parâmetro, exigido pela família gpt-5.6), --limiar 0.7 (confiança mínima para a
 //   categoria contar como resolvida), --preco-entrada/--preco-saida (US$ por
 //   milhão de tokens, para estimar custo por frase).
@@ -35,11 +37,17 @@ const limiarConfianca = Number(argumento('limiar', '0.7'));
 const precoEntrada = Number(argumento('preco-entrada', 'NaN'));
 const precoSaida = Number(argumento('preco-saida', 'NaN'));
 const soErros = process.argv.includes('--erros');
+const CONJUNTOS = ['ajuste', 'reservado', 'todos'];
+const conjunto = argumento('conjunto', 'todos');
 const temperaturaArgumento = argumento('temperatura', '0');
 const temperatura = temperaturaArgumento === 'padrao' ? null : Number(temperaturaArgumento);
 
 if (!['anthropic', 'openai'].includes(provedor) || !modelo) {
   console.error('Informe --provedor anthropic|openai e --modelo <id>.');
+  process.exit(1);
+}
+if (!CONJUNTOS.includes(conjunto)) {
+  console.error('Informe --conjunto ajuste|reservado|todos.');
   process.exit(1);
 }
 if (provedor === 'openai' && !process.env.OPENAI_API_KEY) {
@@ -73,7 +81,11 @@ const falhas = [];
 let tokensEntrada = 0;
 let tokensSaida = 0;
 
-for (const caso of CASOS) {
+const casosDoConjunto = CASOS.filter((caso) => (
+  conjunto === 'todos' || (conjunto === 'reservado') === Boolean(caso.reservado)
+));
+
+for (const caso of casosDoConjunto) {
   const workspaceType = caso.workspace ?? 'personal';
   const categorias = catalogoDoWorkspace(workspaceType);
   const mensagem = montarMensagemUsuario({
@@ -120,7 +132,7 @@ for (const caso of CASOS) {
 }
 
 const chamadasOk = latencias.length;
-console.log(`\n${provedor} ${modelo} — limiar de confiança ${limiarConfianca}${temperatura === null ? ', temperatura padrão' : ''}`);
+console.log(`\n${provedor} ${modelo} — conjunto ${conjunto} (${casosDoConjunto.length} casos), limiar de confiança ${limiarConfianca}${temperatura === null ? ', temperatura padrão' : ''}`);
 console.log('acertos por campo');
 for (const [campo, { acertos, total }] of Object.entries(resumirAvaliacao(vereditos))) {
   const pct = total ? Math.round((acertos / total) * 100) : 0;
