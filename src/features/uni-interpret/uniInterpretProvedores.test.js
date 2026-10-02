@@ -125,6 +125,21 @@ test('OpenAI: envia json_schema strict com o schema fixo e devolve o JSON', asyn
   assert.equal(chamadas[0].init.headers.Authorization, 'Bearer sk-teste');
 });
 
+// AbortSignal.timeout aborta com uma DOMException 'TimeoutError'; o timer dele
+// não segura o event loop do node --test, então o teste aborta à mão com o
+// mesmo motivo.
+test('OpenAI: o motivo de AbortSignal.timeout vira tempo_esgotado', async () => {
+  const controle = new AbortController();
+  const fetchLento = (url, init) => new Promise((_, rejeitar) => {
+    init.signal.addEventListener('abort', () => rejeitar(init.signal.reason));
+  });
+  setTimeout(() => controle.abort(new DOMException('tempo', 'TimeoutError')), 5);
+  const resultado = await interpretarComOpenAi({
+    fetchImpl: fetchLento, chave: 'sk-teste', sinal: controle.signal, ...ENTRADA,
+  });
+  assert.equal(resultado.motivo, 'tempo_esgotado');
+});
+
 test('OpenAI: temperatura null omite o parâmetro; o padrão continua 0', async () => {
   const padrao = fetchFalso(200, respostaOpenAi());
   await interpretarComOpenAi({ fetchImpl: padrao.fetchImpl, chave: 'sk-teste', ...ENTRADA });
@@ -151,6 +166,7 @@ test('OpenAI: recusa, corte e erros HTTP viram motivos conhecidos', async () => 
     [fetchFalso(429, { error: { code: 'rate_limit_exceeded' } }), 'limite'],
     [fetchFalso(500, {}), 'provedor'],
     [fetchFalso(0, Object.assign(new Error('timeout'), { name: 'AbortError' })), 'tempo_esgotado'],
+    [fetchFalso(0, Object.assign(new Error('timeout'), { name: 'TimeoutError' })), 'tempo_esgotado'],
   ];
   for (const [{ fetchImpl }, motivo] of casos) {
     const resultado = await interpretarComOpenAi({ fetchImpl, chave: 'sk-teste', ...ENTRADA });

@@ -16,8 +16,8 @@ import { interpretarFrase } from '../_shared/uniInterpret/servico.js';
 import { interpretarComOpenAi } from '../_shared/uniInterpret/provedores.js';
 
 const TEMPO_LIMITE_MS = 15000;
-const MAX_CATEGORIAS = 80;
-const MAX_CONTAS = 40;
+const MAX_CATEGORIAS = 200;
+const MAX_CONTAS = 60;
 
 function getAllowedOrigins() {
   return (Deno.env.get('APP_ALLOWED_ORIGINS') ?? '')
@@ -64,21 +64,28 @@ async function lerComoUsuario(path: string, authorization: string, supabaseUrl: 
   return await response.json();
 }
 
+// As três leituras saem juntas (são a latência antes do modelo, no caminho da
+// voz). applies_to é filtrado depois, quando o tipo do workspace já é
+// conhecido. Categorias de sistema vêm primeiro, para o limite nunca cortar
+// as genéricas ("Outras despesas", "Transferência").
 function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, anonKey: string) {
   return async (workspaceId: string) => {
     const ler = (path: string) => lerComoUsuario(path, authorization, supabaseUrl, anonKey);
-    const workspaces = await ler(`workspaces?select=workspace_type&id=eq.${workspaceId}&limit=1`);
-    const workspaceType = workspaces?.[0]?.workspace_type;
-    if (workspaceType !== 'personal' && workspaceType !== 'business') return null;
-
-    const [categorias, contas] = await Promise.all([
+    const [workspaces, todasCategorias, contas] = await Promise.all([
+      ler(`workspaces?select=workspace_type&id=eq.${workspaceId}&limit=1`),
       ler(
-        'categories?select=id,name,category_type&is_active=eq.true'
+        'categories?select=id,name,category_type,applies_to&is_active=eq.true'
           + `&or=(workspace_id.is.null,workspace_id.eq.${workspaceId})`
-          + `&applies_to=in.(${workspaceType},both)&order=name&limit=${MAX_CATEGORIAS}`,
+          + `&order=is_system.desc,name&limit=${MAX_CATEGORIAS}`,
       ),
       ler(`accounts?select=id,name&workspace_id=eq.${workspaceId}&is_active=eq.true&order=name&limit=${MAX_CONTAS}`),
     ]);
+    const workspaceType = workspaces?.[0]?.workspace_type;
+    if (workspaceType !== 'personal' && workspaceType !== 'business') return null;
+
+    const categorias = (todasCategorias as Array<Record<string, string>>)
+      .filter((categoria) => categoria.applies_to === 'both' || categoria.applies_to === workspaceType)
+      .map(({ id, name, category_type }) => ({ id, name, category_type }));
     return { workspaceType, categorias, contas };
   };
 }
@@ -91,6 +98,8 @@ function temperaturaConfigurada() {
   const numero = Number(valor);
   return Number.isFinite(numero) ? numero : null;
 }
+
+class NaoAutenticado extends Error {}
 
 function registrarMetrica(status: number, metrica: Record<string, unknown>) {
   console.log(JSON.stringify({ at: 'uni-interpret', ts: new Date().toISOString(), status, ...metrica }));
@@ -118,9 +127,6 @@ Deno.serve(async (request) => {
     return respondJson(503, { error: 'A interpretação por IA não está configurada neste ambiente.' });
   }
 
-  const userId = await getAuthenticatedUserId(authorization, supabaseUrl, anonKey);
-  if (!userId) return respondJson(401, { error: 'Entre novamente para usar a Uni.' });
-
   let corpo: unknown;
   try {
     corpo = await request.json();
@@ -128,10 +134,19 @@ Deno.serve(async (request) => {
     return respondJson(400, { error: 'Não foi possível ler esta solicitação.' });
   }
 
+  // A checagem do usuário corre junto com a leitura do catálogo; o modelo só
+  // é chamado depois que as duas terminam.
+  const usuario = getAuthenticatedUserId(authorization, supabaseUrl, anonKey).catch(() => null);
+  const carregarContexto = criarCarregadorDeContexto(authorization, supabaseUrl, anonKey);
+
   try {
     const resultado = await interpretarFrase({
       corpo,
-      carregarContexto: criarCarregadorDeContexto(authorization, supabaseUrl, anonKey),
+      carregarContexto: async (workspaceId: string) => {
+        const [userId, contexto] = await Promise.all([usuario, carregarContexto(workspaceId)]);
+        if (!userId) throw new NaoAutenticado();
+        return contexto;
+      },
       chamarModelo: ({ instrucoes, mensagem }: { instrucoes: string; mensagem: string }) =>
         interpretarComOpenAi({
           chave,
@@ -145,6 +160,9 @@ Deno.serve(async (request) => {
     registrarMetrica(resultado.status, resultado.metrica);
     return respondJson(resultado.status, resultado.corpo);
   } catch (erro) {
+    if (erro instanceof NaoAutenticado || (await usuario) === null) {
+      return respondJson(401, { error: 'Entre novamente para usar a Uni.' });
+    }
     registrarMetrica(500, { motivo: 'erro_interno', erro: erro instanceof Error ? erro.message : 'desconhecido' });
     return respondJson(500, { error: 'A Uni não conseguiu interpretar agora.' });
   }

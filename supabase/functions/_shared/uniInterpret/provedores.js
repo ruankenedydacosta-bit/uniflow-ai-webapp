@@ -27,7 +27,9 @@ function falha(motivo, modelo, status = null, codigo = null) {
 }
 
 function motivoDoErro(erro) {
-  if (erro?.name === 'AbortError' || erro?.name === 'APIUserAbortError' || erro?.name === 'APIConnectionTimeoutError') {
+  // fetch com AbortSignal.timeout lança TimeoutError; abort manual, AbortError.
+  const nomes = ['TimeoutError', 'AbortError', 'APIUserAbortError', 'APIConnectionTimeoutError'];
+  if (nomes.includes(erro?.name)) {
     return 'tempo_esgotado';
   }
   return 'rede';

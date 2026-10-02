@@ -130,7 +130,11 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   }
 
   const conta = contasPorApelido.get(bruta.conta) ?? null;
-  const contaDestino = tipo === 'transferencia' ? contasPorApelido.get(bruta.conta_destino) ?? null : null;
+  let contaDestino = tipo === 'transferencia' ? contasPorApelido.get(bruta.conta_destino) ?? null : null;
+  if (contaDestino && contaDestino === conta) {
+    contaDestino = null;
+    ajustes.push('conta_destino_igual');
+  }
 
   const confiancaBruta = Number(bruta.confianca);
   const confianca = Number.isFinite(confiancaBruta) ? Math.min(1, Math.max(0, confiancaBruta)) : 0;
