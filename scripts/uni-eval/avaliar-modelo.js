@@ -6,7 +6,8 @@
 // Uso:
 //   npm run uni:eval:modelo -- --provedor anthropic --modelo claude-haiku-4-5
 //   npm run uni:eval:modelo -- --provedor openai --modelo gpt-5.4-mini
-// Opções: --erros (só casos com erro), --limiar 0.7 (confiança mínima para a
+// Opções: --erros (só casos com erro), --temperatura padrao (OpenAI: omite o
+//   parâmetro, exigido pela família gpt-5.6), --limiar 0.7 (confiança mínima para a
 //   categoria contar como resolvida), --preco-entrada/--preco-saida (US$ por
 //   milhão de tokens, para estimar custo por frase).
 // Chaves: ANTHROPIC_API_KEY (ou perfil do `ant auth login`) e OPENAI_API_KEY,
@@ -34,6 +35,8 @@ const limiarConfianca = Number(argumento('limiar', '0.7'));
 const precoEntrada = Number(argumento('preco-entrada', 'NaN'));
 const precoSaida = Number(argumento('preco-saida', 'NaN'));
 const soErros = process.argv.includes('--erros');
+const temperaturaArgumento = argumento('temperatura', '0');
+const temperatura = temperaturaArgumento === 'padrao' ? null : Number(temperaturaArgumento);
 
 if (!['anthropic', 'openai'].includes(provedor) || !modelo) {
   console.error('Informe --provedor anthropic|openai e --modelo <id>.');
@@ -51,7 +54,7 @@ async function chamar(mensagem) {
   if (provedor === 'anthropic') {
     return interpretarComAnthropic({ cliente: clienteAnthropic, modelo, instrucoes: INSTRUCOES, mensagem, sinal });
   }
-  return interpretarComOpenAi({ chave: process.env.OPENAI_API_KEY, modelo, instrucoes: INSTRUCOES, mensagem, sinal });
+  return interpretarComOpenAi({ chave: process.env.OPENAI_API_KEY, modelo, instrucoes: INSTRUCOES, mensagem, sinal, temperatura });
 }
 
 function marca(veredito) {
@@ -85,7 +88,7 @@ for (const caso of CASOS) {
   const duracao = Math.round(performance.now() - inicio);
 
   if (!chamada.ok) {
-    falhas.push({ caso: caso.id, motivo: chamada.motivo, status: chamada.status });
+    falhas.push({ caso: caso.id, motivo: chamada.motivo, status: chamada.status, codigo: chamada.codigo });
     if (chamada.motivo === 'chave_invalida' || chamada.motivo === 'sem_cota') {
       console.error(`Parando: ${chamada.motivo}.`);
       process.exit(1);
@@ -117,7 +120,7 @@ for (const caso of CASOS) {
 }
 
 const chamadasOk = latencias.length;
-console.log(`\n${provedor} ${modelo} — limiar de confiança ${limiarConfianca}`);
+console.log(`\n${provedor} ${modelo} — limiar de confiança ${limiarConfianca}${temperatura === null ? ', temperatura padrão' : ''}`);
 console.log('acertos por campo');
 for (const [campo, { acertos, total }] of Object.entries(resumirAvaliacao(vereditos))) {
   const pct = total ? Math.round((acertos / total) * 100) : 0;
@@ -134,5 +137,5 @@ if (chamadasOk > 0) {
   }
 }
 if (falhas.length > 0) {
-  console.log(`falhas: ${falhas.map((falhaItem) => `${falhaItem.caso} (${falhaItem.motivo}${falhaItem.status ? ` ${falhaItem.status}` : ''})`).join(', ')}`);
+  console.log(`falhas: ${falhas.map((falhaItem) => `${falhaItem.caso} (${falhaItem.motivo}${falhaItem.status ? ` ${falhaItem.status}` : ''}${falhaItem.codigo ? ` ${falhaItem.codigo}` : ''})`).join(', ')}`);
 }

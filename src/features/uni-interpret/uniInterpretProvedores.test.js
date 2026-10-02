@@ -125,6 +125,22 @@ test('OpenAI: envia json_schema strict com o schema fixo e devolve o JSON', asyn
   assert.equal(chamadas[0].init.headers.Authorization, 'Bearer sk-teste');
 });
 
+test('OpenAI: temperatura null omite o parâmetro; o padrão continua 0', async () => {
+  const padrao = fetchFalso(200, respostaOpenAi());
+  await interpretarComOpenAi({ fetchImpl: padrao.fetchImpl, chave: 'sk-teste', ...ENTRADA });
+  assert.equal(JSON.parse(padrao.chamadas[0].init.body).temperature, 0);
+
+  const omitida = fetchFalso(200, respostaOpenAi());
+  await interpretarComOpenAi({ fetchImpl: omitida.fetchImpl, chave: 'sk-teste', temperatura: null, ...ENTRADA });
+  assert.equal('temperature' in JSON.parse(omitida.chamadas[0].init.body), false);
+});
+
+test('OpenAI: erro 400 traz o código do provedor', async () => {
+  const { fetchImpl } = fetchFalso(400, { error: { code: 'unsupported_value' } });
+  const resultado = await interpretarComOpenAi({ fetchImpl, chave: 'sk-teste', ...ENTRADA });
+  assert.deepEqual([resultado.motivo, resultado.status, resultado.codigo], ['provedor', 400, 'unsupported_value']);
+});
+
 test('OpenAI: recusa, corte e erros HTTP viram motivos conhecidos', async () => {
   const casos = [
     [fetchFalso(200, respostaOpenAi({ refusal: 'não posso' })), 'recusa'],

@@ -22,8 +22,8 @@ function lerJson(texto) {
   }
 }
 
-function falha(motivo, modelo, status = null) {
-  return { ok: false, motivo, status, modelo };
+function falha(motivo, modelo, status = null, codigo = null) {
+  return { ok: false, motivo, status, modelo, codigo };
 }
 
 function motivoDoErro(erro) {
@@ -77,7 +77,11 @@ export async function interpretarComAnthropic({ cliente, modelo, instrucoes, men
 
 // OpenAI Chat Completions com response_format json_schema strict, no mesmo
 // estilo do callOpenAiAdapter do uni-chat-llm (fetch direto, papel developer).
-export async function interpretarComOpenAi({ fetchImpl = globalThis.fetch, chave, modelo, instrucoes, mensagem, sinal }) {
+// temperatura null omite o parâmetro: a família gpt-5.6 só aceita o padrão e
+// responde 400 a qualquer outro valor.
+export async function interpretarComOpenAi({
+  fetchImpl = globalThis.fetch, chave, modelo, instrucoes, mensagem, sinal, temperatura = 0,
+}) {
   let resposta;
   try {
     resposta = await fetchImpl('https://api.openai.com/v1/chat/completions', {
@@ -86,7 +90,7 @@ export async function interpretarComOpenAi({ fetchImpl = globalThis.fetch, chave
       body: JSON.stringify({
         model: modelo,
         max_completion_tokens: MAX_TOKENS_SAIDA,
-        temperature: 0,
+        ...(temperatura === null ? {} : { temperature: temperatura }),
         response_format: {
           type: 'json_schema',
           json_schema: { name: NOME_ESQUEMA, strict: true, schema: ESQUEMA },
@@ -110,7 +114,13 @@ export async function interpretarComOpenAi({ fetchImpl = globalThis.fetch, chave
     } catch { /* corpo de erro sem JSON: trata como limite genérico */ }
     return falha(codigo === 'insufficient_quota' ? 'sem_cota' : 'limite', modelo, 429);
   }
-  if (!resposta.ok) return falha('provedor', modelo, resposta.status);
+  if (!resposta.ok) {
+    let codigo = null;
+    try {
+      codigo = (await resposta.json())?.error?.code ?? null;
+    } catch { /* corpo de erro sem JSON */ }
+    return falha('provedor', modelo, resposta.status, codigo);
+  }
 
   let corpo;
   try {
