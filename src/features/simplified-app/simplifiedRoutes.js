@@ -6,6 +6,7 @@ export const SIMPLIFIED_ROUTE_IDS = Object.freeze({
   AGENDA: 'agenda',
   SUPPORT: 'support',
   ACCOUNT: 'account',
+  VOICE: 'voice',
 });
 
 export const SIMPLIFIED_ROUTES = Object.freeze({
@@ -26,33 +27,45 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   RELATORIO_PLANILHA: '/app/relatorio/planilha',
 });
 
-const BASE_NAVIGATION = Object.freeze([
+// Épico #99 (navegação com a Uni no centro): Hoje | Financeiro | Falar |
+// Agenda | Mais. Os rótulos mudam, as rotas continuam as mesmas. O item
+// central não é rota: abre a tela de voz na Home (ver buildVoiceModeUrl).
+export const VOICE_MODE_SEARCH_PARAM = 'falar';
+
+export function buildVoiceModeUrl() {
+  return `${SIMPLIFIED_ROUTES.HOME}?${VOICE_MODE_SEARCH_PARAM}=1`;
+}
+
+const NAVIGATION = Object.freeze([
   Object.freeze({
     id: SIMPLIFIED_ROUTE_IDS.HOME,
-    label: 'Home',
+    label: 'Hoje',
     path: SIMPLIFIED_ROUTES.HOME,
   }),
   Object.freeze({
     id: SIMPLIFIED_ROUTE_IDS.RECORDS,
-    label: 'Registros',
+    label: 'Financeiro',
     path: SIMPLIFIED_ROUTES.RECORDS,
+  }),
+  Object.freeze({
+    id: SIMPLIFIED_ROUTE_IDS.VOICE,
+    label: 'Falar',
+    path: null,
+  }),
+  Object.freeze({
+    id: SIMPLIFIED_ROUTE_IDS.AGENDA,
+    label: 'Agenda',
+    path: SIMPLIFIED_ROUTES.AGENDA,
+  }),
+  Object.freeze({
+    id: SIMPLIFIED_ROUTE_IDS.ACCOUNT,
+    label: 'Mais',
+    path: SIMPLIFIED_ROUTES.ACCOUNT,
   }),
 ]);
 
-// LOTE D: a base de navegação é FIXA -- Home | Registros | Conta. Agenda e
-// Suporte NÃO aparecem na barra inferior: são alcançados por fluxos
-// internos (/app/agenda via a Uni, /app/conta/suporte/uni via Conta), com
-// as rotas sempre registradas. As flags de habilitação continuam existindo
-// para mudanças programáticas, mas a estrutura fixa é a fonte da verdade
-// do componente de navegação.
-const ACCOUNT_NAVIGATION_ITEM = Object.freeze({
-  id: SIMPLIFIED_ROUTE_IDS.ACCOUNT,
-  label: 'Conta',
-  path: SIMPLIFIED_ROUTES.ACCOUNT,
-});
-
 export function buildSimplifiedNavigation() {
-  return Object.freeze([...BASE_NAVIGATION, ACCOUNT_NAVIGATION_ITEM]);
+  return NAVIGATION;
 }
 
 export function resolveSimplifiedNavigation() {

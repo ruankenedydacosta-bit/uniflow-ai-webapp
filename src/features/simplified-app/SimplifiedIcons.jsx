@@ -363,6 +363,22 @@ export function ChatBubbleIcon() {
   );
 }
 
+export function SunHorizonIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M9 22a7 7 0 0 1 14 0M3 26h26M16 6v4M6.8 12.8l2.8 2.8M25.2 12.8l-2.8 2.8" />
+    </svg>
+  );
+}
+
+export function DotsIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M8 16h.01M16 16h.01M24 16h.01" strokeWidth="3.6" />
+    </svg>
+  );
+}
+
 export function KeyboardIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { useAgenda } from '../../hooks/useAgenda.js';
 import { getAgendaItem } from '../../services/agendaService.js';
@@ -18,7 +18,6 @@ import {
   toDateKey,
   WEEKDAY_HEADER_LABELS,
 } from './simplifiedAgendaCalendar.js';
-import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { BellIcon, ChevronRightIcon } from './SimplifiedIcons.jsx';
 import {
   cancelReminderAppliedAnimation,
@@ -63,14 +62,6 @@ export const AGENDA_REMINDER_TARGET_ATTRIBUTE = 'data-agenda-reminder-target';
  * rota legada /agenda; esta rota simplificada /app/agenda assume o visual
  * de calendário.
  */
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M20 6 10 16l10 10" />
-    </svg>
-  );
-}
-
 function ChevronRightButtonIcon() {
   return <ChevronRightIcon />;
 }
@@ -84,7 +75,6 @@ function ChevronLeftButtonIcon() {
 }
 
 function SimplifiedAgendaPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
@@ -250,14 +240,6 @@ function SimplifiedAgendaPage() {
     <div className={styles.page} data-simplified-agenda>
       <header className={styles.header}>
         <div className={styles.titleGroup}>
-          <button
-            type="button"
-            className={styles.backButton}
-            onClick={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
-            aria-label="Voltar para Conta"
-          >
-            <BackIcon />
-          </button>
           <h1>Agenda</h1>
         </div>
       </header>

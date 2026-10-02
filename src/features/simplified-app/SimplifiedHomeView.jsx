@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
 import {
   isAppleWebKitRuntime,
@@ -8,7 +8,6 @@ import {
   useSharedUniVoiceInput,
   useStableVoiceInputHandlers,
 } from '../uni-voice/index.js';
-import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import { PwaInstallExperience, PwaUpdateCard } from '../pwa-install/index.js';
 import SimplifiedHomeFinancialGraph from './SimplifiedHomeFinancialGraph.jsx';
@@ -31,11 +30,11 @@ import {
   markWelcomeVoiceActivated,
   releaseWelcomeVoice,
 } from './welcomeVoiceSession.js';
-import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.js';
 import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import SimplifiedVoiceMode from './SimplifiedVoiceMode.jsx';
-import { resolveVoiceModeView, VOICE_MODE_ACTIONS } from './voiceModeState.js';
+import { VOICE_MODE_ACTIONS } from './voiceModeState.js';
 import styles from './simplifiedApp.module.css';
 
 // LOADING significa apenas que a voz está sendo preparada. O rótulo
@@ -344,6 +343,8 @@ function SimplifiedHomeView({
   onWelcomeVoiceSettled,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const voiceInput = useSharedUniVoiceInput();
   // UNIUPD1: limit:1 -- a Home so precisa saber "existe novidade pendente?",
   // nunca carrega o historico inteiro (isso fica com Sobre a UniFlow AI).
@@ -595,6 +596,7 @@ function SimplifiedHomeView({
   }, [voiceInput.isActive, voiceInput.cancel]);
 
   const cancelVoiceCaptureRef = useRef(null);
+  const openVoiceModeRef = useRef(null);
   useEffect(() => {
     const cancelOnBackground = () => cancelVoiceCaptureRef.current?.('lifecycle');
     const handleVisibilityChange = () => {
@@ -665,6 +667,31 @@ function SimplifiedHomeView({
     setIsVoiceModeOpen(true);
     beginVoiceCapture();
   }
+
+  // Declarado antes do efeito que lê a ref: efeitos rodam na ordem do código.
+  useEffect(() => {
+    openVoiceModeRef.current = handleOpenVoiceMode;
+  });
+
+  // O orb da barra inferior chega aqui como /app/home?falar=1, de qualquer
+  // aba. O parâmetro é consumido uma vez (replace, sem entrada nova no
+  // histórico). No Safari antes do "Ativar voz e microfone", a tela não abre:
+  // a Home mostra o botão de ativação.
+  // Cada toque no orb é uma navegação com key própria: a ref garante uma
+  // abertura por toque, mesmo com o efeito rodando duas vezes no StrictMode.
+  const wantsVoiceMode = searchParams.has(VOICE_MODE_SEARCH_PARAM);
+  const voiceRequestKey = location.key;
+  const handledVoiceRequestKeyRef = useRef(null);
+  useEffect(() => {
+    if (!wantsVoiceMode || handledVoiceRequestKeyRef.current === voiceRequestKey) return;
+    handledVoiceRequestKeyRef.current = voiceRequestKey;
+    setSearchParams((params) => {
+      const next = new URLSearchParams(params);
+      next.delete(VOICE_MODE_SEARCH_PARAM);
+      return next;
+    }, { replace: true });
+    if (!voiceActivationRequired && !voiceActivationPending) openVoiceModeRef.current?.();
+  }, [setSearchParams, voiceActivationPending, voiceActivationRequired, voiceRequestKey, wantsVoiceMode]);
 
   function handleVoiceModeAction(action) {
     if (action === VOICE_MODE_ACTIONS.START) beginVoiceCapture();
@@ -759,25 +786,6 @@ function SimplifiedHomeView({
       {isVoiceModeOpen ? null : compactResponse}
       <LightWave />
 
-      <section className={styles.uniAction} aria-label="Conversar com a Uni">
-        <button
-          type="button"
-          className={styles.uniButton}
-          data-state={interactionState}
-          aria-label="Falar com a Uni"
-          disabled={voiceActivationRequired || voiceActivationPending}
-          onClick={handleOpenVoiceMode}
-          data-uni-voice-control
-        >
-          <UniRingOrb
-            size={132}
-            state={resolveVoiceModeView(interactionState).orb}
-            getVoiceStream={voiceInput.getActiveStream}
-            getVoiceSessionId={voiceInput.getActiveSessionId}
-          />
-          <span className={styles.uniButtonLabel}>FALAR COM A UNI</span>
-        </button>
-      </section>
 
       <SimplifiedVoiceMode
         open={isVoiceModeOpen}

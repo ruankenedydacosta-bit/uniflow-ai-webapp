@@ -38,7 +38,7 @@ function RecordsHeader({ onTalkToUni }) {
     <header className={styles.recordsHeader}>
       <div className={styles.recordsTitle}>
         <span className={styles.recordsMark}><UniMark /></span>
-        <h1>Registros</h1>
+        <h1>Financeiro</h1>
       </div>
       <button className={styles.talkButton} type="button" onClick={onTalkToUni}>
         <span className={styles.talkIcon} aria-hidden="true"><MicIcon /></span>

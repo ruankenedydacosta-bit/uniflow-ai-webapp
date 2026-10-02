@@ -163,8 +163,8 @@ export const appRoutes = [
   },
   {
     path: SIMPLIFIED_ROUTES.RECORDS,
-    label: 'Registros',
-    title: 'Registros',
+    label: 'Financeiro',
+    title: 'Financeiro',
     simplified: true,
     element: <SimplifiedRecordsPage />,
   },

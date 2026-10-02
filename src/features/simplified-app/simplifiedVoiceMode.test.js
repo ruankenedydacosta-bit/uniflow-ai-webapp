@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { UNI_RING_ORB_STATES } from '../../components/ui/UniRingOrb/uniRingOrbModel.js';
 import { SIMPLIFIED_UNI_STATES } from './simplifiedHomeState.js';
+import { buildVoiceModeUrl, SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.js';
 import {
   resolveVoiceModeView,
   VOICE_MODE_ACTION_LABELS,
@@ -133,4 +134,47 @@ test('cores da tela de voz vêm dos tokens, sem hex solto', async () => {
   assert.match(css, /var\(--uf-app-canvas\)/);
   assert.match(css, /z-index: var\(--uf-z-modal\);/);
   assert.match(css, /env\(safe-area-inset-bottom/);
+});
+
+// ============================================================================
+// Épico #99 (#102) — o orb da barra inferior abre a tela de voz de qualquer aba.
+// ============================================================================
+
+test('o orb da barra leva à Home com ?falar=1', () => {
+  assert.equal(VOICE_MODE_SEARCH_PARAM, 'falar');
+  assert.equal(buildVoiceModeUrl(), `${SIMPLIFIED_ROUTES.HOME}?falar=1`);
+});
+
+test('a Home consome ?falar uma vez, sem nova entrada no histórico, e abre a tela já ouvindo', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /const wantsVoiceMode = searchParams\.has\(VOICE_MODE_SEARCH_PARAM\);/);
+  assert.match(home, /next\.delete\(VOICE_MODE_SEARCH_PARAM\);/);
+  assert.match(home, /\}, \{ replace: true \}\);/);
+  assert.match(home, /openVoiceModeRef\.current = handleOpenVoiceMode;/);
+});
+
+test('cada toque no orb abre a tela uma vez, mesmo com o efeito rodando duas vezes', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /const voiceRequestKey = location\.key;/);
+  assert.match(
+    home,
+    /if \(!wantsVoiceMode \|\| handledVoiceRequestKeyRef\.current === voiceRequestKey\) return;\s*handledVoiceRequestKeyRef\.current = voiceRequestKey;/,
+  );
+  // A ref que abre a tela é preenchida por um efeito declarado ANTES do que
+  // a lê: efeitos rodam na ordem do código.
+  assert.ok(
+    home.indexOf('openVoiceModeRef.current = handleOpenVoiceMode;')
+      < home.indexOf('const wantsVoiceMode = searchParams.has'),
+  );
+});
+
+test('rótulos da barra cabem em cinco colunas de 360px', async () => {
+  const css = await source('./simplifiedApp.module.css');
+  const rule = css.slice(css.indexOf('.navigationItem {'), css.indexOf('}', css.indexOf('.navigationItem {')));
+  assert.match(rule, /font-size: 12px;/);
+  // O orb sobe acima da barra: o recorte só vale com a barra escondida.
+  const nav = css.slice(css.indexOf('.bottomNavigation {'), css.indexOf('}', css.indexOf('.bottomNavigation {')));
+  assert.match(nav, /overflow: visible;/);
+  const hidden = css.slice(css.indexOf('.bottomNavigationHidden {'), css.indexOf('}', css.indexOf('.bottomNavigationHidden {')));
+  assert.match(hidden, /overflow: hidden;/);
 });

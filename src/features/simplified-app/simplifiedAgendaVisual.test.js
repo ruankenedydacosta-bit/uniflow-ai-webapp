@@ -17,11 +17,10 @@ test('rota SIMPLIFIED_ROUTES.AGENDA continua sendo /app/agenda (não duplica con
   assert.equal(SIMPLIFIED_ROUTES.AGENDA, '/app/agenda');
 });
 
-test('SimplifiedAgendaPage renderiza calendário com cabeçalho "Agenda" e voltar para Conta', async () => {
+test('SimplifiedAgendaPage renderiza calendário com cabeçalho "Agenda", sem voltar para Conta (agora é aba)', async () => {
   const page = await source('./SimplifiedAgendaPage.jsx');
   assert.match(page, /<h1>Agenda<\/h1>/);
-  assert.match(page, /aria-label="Voltar para Conta"/);
-  assert.match(page, /navigate\(SIMPLIFIED_ROUTES\.ACCOUNT\)/);
+  assert.doesNotMatch(page, /Voltar para Conta/);
   assert.match(page, /useAgenda\(\{/);
   assert.match(page, /data-simplified-agenda/);
 });

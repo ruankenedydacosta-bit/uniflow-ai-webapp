@@ -46,13 +46,15 @@ import {
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-test('navegação simplificada possui somente Home, Registros e Conta', () => {
+test('navegação simplificada possui Hoje, Financeiro, Falar, Agenda e Mais', () => {
   assert.deepEqual(
     SIMPLIFIED_NAVIGATION.map(({ label, path }) => ({ label, path })),
     [
-      { label: 'Home', path: '/app/home' },
-      { label: 'Registros', path: '/app/registros' },
-      { label: 'Conta', path: '/app/conta' },
+      { label: 'Hoje', path: '/app/home' },
+      { label: 'Financeiro', path: '/app/registros' },
+      { label: 'Falar', path: null },
+      { label: 'Agenda', path: '/app/agenda' },
+      { label: 'Mais', path: '/app/conta' },
     ],
   );
   assert.equal(Object.isFrozen(SIMPLIFIED_NAVIGATION), true);
@@ -344,7 +346,8 @@ test('Safari exige um único CTA que prepara microfone e áudio antes da saudaç
   assert.match(home, /playbackPreparationAttempted: true/);
   assert.match(home, /void attemptWelcomeVoice\(\{/);
   assert.doesNotMatch(home, /await attemptWelcomeVoice\(\{\s*userInitiated: true/);
-  assert.match(home, /disabled=\{\s*voiceActivationRequired\s*\|\| voiceActivationPending\s*\}/);
+  // Antes da ativação, o orb da barra leva à Home, mas a tela de voz não abre.
+  assert.match(home, /if \(!voiceActivationRequired && !voiceActivationPending\) openVoiceModeRef\.current\?\.\(\);/);
   assert.doesNotMatch(home, />\s*Ouvir saudação\s*</);
 });
 
@@ -667,7 +670,7 @@ test('Home expõe estados, acessibilidade e confirmação do fluxo real', async 
   assert.match(home, /ActionConfirmation/);
   assert.match(home, /onConfirmAction/);
   assert.match(home, /aria-live="polite"/);
-  assert.match(home, /aria-label="Falar com a Uni"/);
+  assert.match(home, /<SimplifiedVoiceMode/);
   assert.match(home, /claimWelcomeVoice\(sessionKey\)/);
 });
 
@@ -1345,14 +1348,16 @@ test('campo de busca do histórico usa font-size >= 16px -- evita o zoom automá
 // stream por um AnalyserNode puramente visual.
 // ============================================================================
 
-test('Home integra UniRingOrb como única camada visual central', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /import \{ UniRingOrb \} from '\.\.\/\.\.\/components\/ui\/UniRingOrb\/index\.js';/);
-  assert.match(home, /<UniRingOrb[\s\S]*?state=\{resolveVoiceModeView\(interactionState\)\.orb\}/);
-  assert.doesNotMatch(home, /UniNeuralOrb/);
+test('o orb da barra inferior é o UniRingOrb e a Home não tem mais orb próprio', async () => {
+  const [home, navigation] = await Promise.all([
+    source('./SimplifiedHomeView.jsx'),
+    source('./SimplifiedBottomNavigation.jsx'),
+  ]);
+  assert.match(navigation, /import \{ UniRingOrb \} from '\.\.\/\.\.\/components\/ui\/UniRingOrb\/index\.js';/);
+  assert.match(navigation, /<UniRingOrb size=\{60\} \/>/);
+  assert.doesNotMatch(home, /UniNeuralOrb|<UniRingOrb/);
+  assert.doesNotMatch(home, /className=\{styles\.uniAction\}/);
   assert.doesNotMatch(home, /<RadialVoiceWaveform/);
-  assert.doesNotMatch(home, /className=\{styles\.uniVoiceLevelRing\}/);
-  assert.doesNotMatch(home, /<span className=\{styles\.uniMark\}>/);
 });
 
 test('orbe recebe o mesmo stream e session id do pipeline estabilizado', async () => {
@@ -1362,16 +1367,11 @@ test('orbe recebe o mesmo stream e session id do pipeline estabilizado', async (
   assert.doesNotMatch(home, /getUserMedia|MediaRecorder/);
 });
 
-test('orbe mantém a marca dentro do componente e o rótulo funcional acima do canvas', async () => {
-  const [home, css] = await Promise.all([
-    source('./SimplifiedHomeView.jsx'),
-    source('./simplifiedApp.module.css'),
-  ]);
-  assert.match(home, /<span className=\{styles\.uniButtonLabel\}>FALAR COM A UNI<\/span>/);
-  const labelRule = css.slice(css.indexOf('.uniButtonLabel {'), css.indexOf('}', css.indexOf('.uniButtonLabel {')));
-  assert.match(labelRule, /position: absolute;/);
-  assert.match(labelRule, /z-index: 3;/);
-  assert.match(labelRule, /pointer-events: none;/);
+test('o orb da barra tem nome acessível e rótulo visível "Falar"', async () => {
+  const navigation = await source('./SimplifiedBottomNavigation.jsx');
+  assert.match(navigation, /aria-label="Falar com a Uni"/);
+  assert.match(navigation, /<span aria-hidden="true">\{item\.label\}<\/span>/);
+  assert.match(navigation, /data-uni-voice-control/);
 });
 
 test('preferência de movimento reduzido continua desligando a análise de voz visual e as animações do orb', async () => {
@@ -1447,11 +1447,11 @@ test('rótulos do botão central usam tipografia menor sem alterar o orb', async
   assert.match(labelRule, /font-size: clamp\(14px, 3\.6vw, 20px\);/);
 });
 
-test('Requisito 4 — o botão da Home só escuta click: um toque nunca inicia duas gravações', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  const start = home.indexOf('<section className={styles.uniAction}');
-  const slice = home.slice(start, home.indexOf('</section>', start));
-  assert.match(slice, /onClick=\{handleOpenVoiceMode\}/);
+test('Requisito 4 — o orb da barra só escuta click e só navega para a Home com ?falar=1', async () => {
+  const navigation = await source('./SimplifiedBottomNavigation.jsx');
+  const start = navigation.indexOf('className={styles.navigationVoice}');
+  const slice = navigation.slice(start, navigation.indexOf('</button>', start));
+  assert.match(slice, /onClick=\{\(\) => navigate\(buildVoiceModeUrl\(\)\)\}/);
   assert.doesNotMatch(slice, /onPointerDown|onTouchStart|onTouchEnd|onKeyDown|onMouseDown/);
 });
 

@@ -36,12 +36,12 @@ test('UniMark é a ÚNICA fonte do símbolo -- importa o asset oficial recortado
 // oficial até a troca de marca no cabeçalho, ícone e PWA.
 test('header usa o asset oficial; o orb de voz desenha o símbolo novo em SVG', async () => {
   const header = await source('./SimplifiedHeader.jsx');
-  const home = await source('./SimplifiedHomeView.jsx');
+  const navigation = await source('./SimplifiedBottomNavigation.jsx');
   const orb = await source('../../components/ui/UniRingOrb/UniRingOrb.jsx');
   assert.match(header, /import \{ BellIcon, UniMark \} from '\.\/SimplifiedIcons\.jsx';/);
   assert.match(header, /<UniMark \/>/);
-  assert.match(home, /import \{ UniRingOrb \} from '\.\.\/\.\.\/components\/ui\/UniRingOrb\/index\.js';/);
-  assert.match(home, /<UniRingOrb/);
+  assert.match(navigation, /import \{ UniRingOrb \} from '\.\.\/\.\.\/components\/ui\/UniRingOrb\/index\.js';/);
+  assert.match(navigation, /<UniRingOrb/);
   assert.match(orb, /d="M6 6v16a12 12 0 0 0 24 0V6"/);
   assert.match(orb, /d="M15 11v10a6 6 0 0 0 12 0v-6"/);
   assert.doesNotMatch(orb, /\.png'/);

@@ -13,16 +13,18 @@ import {
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-test('navegação é fixa em Home | Registros | Conta independente de flags', () => {
+test('navegação é fixa em Hoje | Financeiro | Falar | Agenda | Mais independente de flags', () => {
   const flags = resolveSimplifiedFeatureFlags({});
   assert.equal(flags.agendaEnabled, false);
-  assert.deepEqual(SIMPLIFIED_NAVIGATION.map(({ label }) => label), ['Home', 'Registros', 'Conta']);
+  assert.deepEqual(SIMPLIFIED_NAVIGATION.map(({ label }) => label), ['Hoje', 'Financeiro', 'Falar', 'Agenda', 'Mais']);
   assert.deepEqual(
     resolveSimplifiedNavigation().map(({ label, path }) => ({ label, path })),
     [
-      { label: 'Home', path: '/app/home' },
-      { label: 'Registros', path: '/app/registros' },
-      { label: 'Conta', path: '/app/conta' },
+      { label: 'Hoje', path: '/app/home' },
+      { label: 'Financeiro', path: '/app/registros' },
+      { label: 'Falar', path: null },
+      { label: 'Agenda', path: '/app/agenda' },
+      { label: 'Mais', path: '/app/conta' },
     ],
   );
   assert.equal(SIMPLIFIED_FEATURE_FLAG_KEYS.AGENDA, 'VITE_SIMPLIFIED_AGENDA_ENABLED');
@@ -54,9 +56,9 @@ test('Lote D: rota de Agenda é SEMPRE registrada (acesso interno, não barra in
   assert.match(agenda, /AgendaStatusConfirmModal/);
 });
 
-test('LOTE D: Agenda e Suporte não estão na barra inferior (três itens fixos)', async () => {
+test('Épico #99: Agenda entra na barra inferior; Suporte continua fora', async () => {
   const navigation = await source('./SimplifiedBottomNavigation.jsx');
   assert.match(navigation, /CalendarIcon/);
   assert.match(navigation, /--simplified-navigation-count/);
-  assert.deepEqual(SIMPLIFIED_NAVIGATION.map(({ label }) => label), ['Home', 'Registros', 'Conta']);
+  assert.deepEqual(SIMPLIFIED_NAVIGATION.map(({ label }) => label), ['Hoje', 'Financeiro', 'Falar', 'Agenda', 'Mais']);
 });

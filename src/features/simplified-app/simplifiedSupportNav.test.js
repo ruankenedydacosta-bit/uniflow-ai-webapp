@@ -12,15 +12,17 @@ import {
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-test('LOTE D: Suporte sai da barra inferior e a navegação é fixa em três itens', () => {
+test('LOTE D: Suporte continua fora da barra inferior, fixa em cinco itens', () => {
   assert.equal(SIMPLIFIED_FEATURE_FLAG_KEYS.SUPPORT_NAV, 'VITE_SIMPLIFIED_SUPPORT_NAV_ENABLED');
   assert.equal(resolveSimplifiedFeatureFlags({}).supportNavEnabled, false);
   assert.deepEqual(
     resolveSimplifiedNavigation().map(({ label, path }) => ({ label, path })),
     [
-      { label: 'Home', path: '/app/home' },
-      { label: 'Registros', path: '/app/registros' },
-      { label: 'Conta', path: '/app/conta' },
+      { label: 'Hoje', path: '/app/home' },
+      { label: 'Financeiro', path: '/app/registros' },
+      { label: 'Falar', path: null },
+      { label: 'Agenda', path: '/app/agenda' },
+      { label: 'Mais', path: '/app/conta' },
     ],
   );
 });
