@@ -2,9 +2,13 @@
 // obrigado a seguir e a validação de domínio que roda depois dele.
 //
 // JS puro, sem dependência: a Edge Function (Deno) e os testes/avaliação
-// (node --test) importam o mesmo arquivo. O schema obriga o modelo a escolher
-// categoria e conta entre os ids do próprio workspace; a validação confere de
-// novo, porque schema garante formato, não regra de negócio.
+// (node --test) importam o mesmo arquivo.
+//
+// O schema é fixo para todo mundo. Os provedores compilam cada schema novo na
+// primeira chamada; com os ids de cada usuário dentro dele, toda pessoa (e
+// toda categoria nova) pagaria essa latência na voz. Por isso categorias e
+// contas vão no prompt com apelidos curtos (c1, c2, k1...) e a validação
+// traduz o apelido para o registro real, descartando apelido inventado.
 
 export const INTENTS = Object.freeze(['lancamento', 'consulta', 'agenda', 'correcao', 'conversa', 'nao_entendi']);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
@@ -22,48 +26,52 @@ export const MAX_DESCRICAO = 80;
 export const MAX_NOVA_CATEGORIA = 40;
 export const MAX_RESPOSTA = 240;
 
-function idsOuNulo(ids) {
-  return { type: ['string', 'null'], enum: [...ids, null] };
+// Apelidos estáveis: ordem por tipo e nome, a mesma que o prompt mostra.
+export function indexarCatalogo({ categorias = [], contas = [] } = {}) {
+  const categoriasOrdenadas = [...categorias].sort((a, b) =>
+    a.category_type.localeCompare(b.category_type) || a.name.localeCompare(b.name, 'pt-BR'));
+  const contasOrdenadas = [...contas].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  return {
+    categorias: categoriasOrdenadas.map((registro, indice) => ({ apelido: `c${indice + 1}`, registro })),
+    contas: contasOrdenadas.map((registro, indice) => ({ apelido: `k${indice + 1}`, registro })),
+  };
 }
+
+const TEXTO_OU_NULO = { type: ['string', 'null'] };
+
+const ESQUEMA_OPERACAO = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'tipo', 'valor', 'data', 'descricao', 'categoria', 'nova_categoria',
+    'alternativas', 'conta', 'conta_destino', 'confianca',
+  ],
+  properties: {
+    tipo: { type: 'string', enum: [...TIPOS] },
+    valor: { type: ['number', 'null'] },
+    data: { ...TEXTO_OU_NULO, description: 'AAAA-MM-DD' },
+    descricao: { type: 'string' },
+    categoria: { ...TEXTO_OU_NULO, description: 'apelido do catálogo, ex.: c3' },
+    nova_categoria: TEXTO_OU_NULO,
+    alternativas: { type: 'array', items: { type: 'string' } },
+    conta: { ...TEXTO_OU_NULO, description: 'apelido da conta, ex.: k1' },
+    conta_destino: TEXTO_OU_NULO,
+    confianca: { type: 'number' },
+  },
+};
 
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
-export function montarEsquema({ categorias = [], contas = [] } = {}) {
-  const idsCategorias = categorias.map((categoria) => categoria.id);
-  const idsContas = contas.map((conta) => conta.id);
-
-  const operacao = {
-    type: 'object',
-    additionalProperties: false,
-    required: [
-      'tipo', 'valor', 'data', 'descricao', 'categoria_id', 'nova_categoria',
-      'alternativas', 'conta_id', 'conta_destino_id', 'confianca',
-    ],
-    properties: {
-      tipo: { type: 'string', enum: [...TIPOS] },
-      valor: { type: ['number', 'null'] },
-      data: { type: ['string', 'null'], description: 'AAAA-MM-DD' },
-      descricao: { type: 'string' },
-      categoria_id: idsOuNulo(idsCategorias),
-      nova_categoria: { type: ['string', 'null'] },
-      alternativas: { type: 'array', items: { type: 'string', enum: idsCategorias } },
-      conta_id: idsOuNulo(idsContas),
-      conta_destino_id: idsOuNulo(idsContas),
-      confianca: { type: 'number' },
-    },
-  };
-
-  return {
-    type: 'object',
-    additionalProperties: false,
-    required: ['intent', 'operacoes', 'resposta'],
-    properties: {
-      intent: { type: 'string', enum: [...INTENTS] },
-      operacoes: { type: 'array', items: operacao },
-      resposta: { type: 'string' },
-    },
-  };
-}
+export const ESQUEMA = Object.freeze({
+  type: 'object',
+  additionalProperties: false,
+  required: ['intent', 'operacoes', 'resposta'],
+  properties: {
+    intent: { type: 'string', enum: [...INTENTS] },
+    operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
+    resposta: { type: 'string' },
+  },
+});
 
 function textoLimpo(valor, max) {
   if (typeof valor !== 'string') return '';
@@ -83,7 +91,7 @@ function distanciaEmDias(isoA, isoB) {
   return Math.abs(new Date(`${isoA}T12:00:00Z`) - new Date(`${isoB}T12:00:00Z`)) / 86_400_000;
 }
 
-function validarOperacao(bruta, { categoriasPorId, contasPorId, dataReferencia }) {
+function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataReferencia }) {
   const tipo = TIPOS.includes(bruta?.tipo) ? bruta.tipo : null;
   if (!tipo) return null;
 
@@ -102,27 +110,27 @@ function validarOperacao(bruta, { categoriasPorId, contasPorId, dataReferencia }
     }
   }
 
-  const categoriaDoTipo = (id) => {
-    const categoria = categoriasPorId.get(id);
+  const categoriaDoTipo = (apelido) => {
+    const categoria = categoriasPorApelido.get(apelido);
     return categoria && categoria.category_type === categoryType ? categoria : null;
   };
 
-  let categoria = bruta.categoria_id ? categoriaDoTipo(bruta.categoria_id) : null;
-  if (bruta.categoria_id && !categoria) ajustes.push('categoria_incompativel');
+  const categoria = bruta.categoria ? categoriaDoTipo(bruta.categoria) : null;
+  if (bruta.categoria && !categoria) ajustes.push('categoria_descartada');
 
   const novaCategoria = categoria ? null : (textoLimpo(bruta.nova_categoria, MAX_NOVA_CATEGORIA) || null);
 
   const alternativas = [];
-  for (const id of Array.isArray(bruta.alternativas) ? bruta.alternativas : []) {
-    const alternativa = categoriaDoTipo(id);
+  for (const apelido of Array.isArray(bruta.alternativas) ? bruta.alternativas : []) {
+    const alternativa = categoriaDoTipo(apelido);
     if (alternativa && alternativa.id !== categoria?.id && !alternativas.includes(alternativa)) {
       alternativas.push(alternativa);
     }
     if (alternativas.length === MAX_ALTERNATIVAS) break;
   }
 
-  const conta = contasPorId.get(bruta.conta_id) ?? null;
-  const contaDestino = tipo === 'transferencia' ? contasPorId.get(bruta.conta_destino_id) ?? null : null;
+  const conta = contasPorApelido.get(bruta.conta) ?? null;
+  const contaDestino = tipo === 'transferencia' ? contasPorApelido.get(bruta.conta_destino) ?? null : null;
 
   const confiancaBruta = Number(bruta.confianca);
   const confianca = Number.isFinite(confiancaBruta) ? Math.min(1, Math.max(0, confiancaBruta)) : 0;
@@ -159,9 +167,10 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
     return { intent, operacoes: [], resposta };
   }
 
+  const indice = indexarCatalogo({ categorias, contas });
   const contexto = {
-    categoriasPorId: new Map(categorias.map((categoria) => [categoria.id, categoria])),
-    contasPorId: new Map(contas.map((conta) => [conta.id, conta])),
+    categoriasPorApelido: new Map(indice.categorias.map(({ apelido, registro }) => [apelido, registro])),
+    contasPorApelido: new Map(indice.contas.map(({ apelido, registro }) => [apelido, registro])),
     dataReferencia,
   };
   const operacoes = (Array.isArray(bruta.operacoes) ? bruta.operacoes : [])
