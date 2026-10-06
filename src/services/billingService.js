@@ -121,6 +121,11 @@ export function createBillingService({
         tier_id: tierId,
       });
     },
+    // Épico #116: troca de plano. Descer vale na próxima cobrança; subir
+    // devolve o Pix da diferença e o plano novo vale assim que ele é pago.
+    changePlan({ workspaceId, tierId } = {}) {
+      return invokeBillingFunction('billing-change-plan', { workspace_id: workspaceId, tier_id: tierId });
+    },
     cancelSubscription({ workspaceId } = {}) {
       return invokeBillingFunction('billing-cancel-subscription', { workspace_id: workspaceId });
     },
@@ -177,6 +182,7 @@ const defaultBillingService = createBillingService({
 export const createCustomer = defaultBillingService.createCustomer;
 export const createSubscription = defaultBillingService.createSubscription;
 export const createCheckout = defaultBillingService.createCheckout;
+export const changePlan = defaultBillingService.changePlan;
 export const cancelSubscription = defaultBillingService.cancelSubscription;
 export const getSubscription = defaultBillingService.getSubscription;
 export const syncSubscription = defaultBillingService.syncSubscription;

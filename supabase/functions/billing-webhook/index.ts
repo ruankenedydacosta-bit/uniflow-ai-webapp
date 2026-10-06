@@ -42,6 +42,7 @@ import {
   webhookTokenMatches,
 } from '../_shared/billingWebhookReliability.ts';
 import { grantVoiceCycle, selectVoiceCycleGrants } from '../_shared/voiceCycleRules.ts';
+import { isPaidCharge, parseUpgradeReference } from '../_shared/planChangeRules.ts';
 
 const ASAAS_WEBHOOK_TOKEN_HEADER = 'asaas-access-token';
 
@@ -308,6 +309,41 @@ async function patchSubscription({
 // Sempre idempotente: reprocessar o MESMO evento aplica o mesmo patch,
 // nunca duplica efeito (upsert por asaas_payment_id; PATCH de subscriptions
 // é atribuição de valor, não incremento).
+async function applyVoiceUpgrade({
+  supabaseUrl, serviceRoleKey, workspaceId, upgrade, asaasPaymentId,
+}: {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  workspaceId: string;
+  upgrade: { subscriptionId: string; tierId: string };
+  asaasPaymentId: string;
+}) {
+  const params = new URLSearchParams({ select: 'id,workspace_id', id: `eq.${upgrade.subscriptionId}`, limit: '1' });
+  const found = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
+    headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
+  });
+  const rows = found.ok ? await found.json() : [];
+  const subscription = Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+  if (!subscription || subscription.workspace_id !== workspaceId) {
+    console.log(JSON.stringify({ at: 'billing-webhook', status: 'upgrade_subscription_mismatch' }));
+    return;
+  }
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/voice_apply_upgrade`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      p_subscription_id: upgrade.subscriptionId,
+      p_tier_id: upgrade.tierId,
+      p_asaas_payment_id: asaasPaymentId,
+    }),
+  });
+  assertBillingWebhookWriteSucceeded(response, 'voice_apply_upgrade');
+}
+
 // Reconsulta a cobrança na Asaas. 4xx (cobrança removida, id inexistente ou
 // forjado) devolve null e o evento é encerrado sem efeito: responder erro
 // faria a Asaas reenviar para sempre e pausar a fila. Falha de rede ou 5xx
@@ -373,6 +409,15 @@ async function processPaymentEvent({
       workspaceId, asaasPaymentId, asaasSubscriptionId, eventType, payment,
     }),
   });
+
+  // Épico #116: cobrança avulsa da diferença de um upgrade (criada por
+  // billing-change-plan). Paga e confirmada pela API, aplica o nível novo já
+  // no ciclo atual. A assinatura precisa ser do mesmo workspace da cobrança.
+  const upgrade = asaasSubscriptionId ? null : parseUpgradeReference(payment?.externalReference);
+  if (upgrade && isPaidCharge(payment) && isEventConfirmedByRemotePayment(eventType, payment?.status)) {
+    await applyVoiceUpgrade({ supabaseUrl, serviceRoleKey, workspaceId, upgrade, asaasPaymentId });
+    return;
+  }
 
   // BLOCO ASAAS FINAL: só toca em `subscriptions` quando o pagamento
   // realmente pertence a uma assinatura recorrente (payment.subscription

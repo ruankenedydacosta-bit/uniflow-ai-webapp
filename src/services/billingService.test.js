@@ -36,12 +36,13 @@ const METHODS_AND_FUNCTIONS = [
   ['getSubscription', 'billing-get-subscription', { workspaceId: 'ws-1' }],
   ['syncSubscription', 'billing-sync', { workspaceId: 'ws-1' }],
   ['healthCheck', 'billing-health', undefined],
+  ['changePlan', 'billing-change-plan', { workspaceId: 'ws-1', tierId: 'essencial' }],
 ];
 
-test('billingService expõe exatamente os 8 métodos (6 pedidos + healthCheck + listPayments) -- BLOCO FINAL DO MVP adiciona listPayments (histórico real)', () => {
+test('billingService expõe exatamente os 9 métodos (6 pedidos + healthCheck + listPayments + changePlan) -- épico #116 adiciona changePlan (troca de plano)', () => {
   const service = makeService({ fetchImpl: async () => jsonResponse(200, {}) });
   assert.deepEqual(Object.keys(service).sort(), [
-    'cancelSubscription', 'createCheckout', 'createCustomer', 'createSubscription', 'getSubscription', 'healthCheck', 'listPayments', 'syncSubscription',
+    'cancelSubscription', 'changePlan', 'createCheckout', 'createCustomer', 'createSubscription', 'getSubscription', 'healthCheck', 'listPayments', 'syncSubscription',
   ]);
 });
 
