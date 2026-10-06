@@ -236,11 +236,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/uni-voice.md',
     routes: ['/uni-ai'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['ouvir a uni', 'voz', 'áudio', 'reproduzir resposta', 'desativar voz', 'cache de voz', 'créditos de voz'],
+    keywords: ['ouvir a uni', 'voz', 'áudio', 'reproduzir resposta', 'desativar voz', 'cache de voz', 'créditos de voz', 'conversa por voz', 'minutos de voz', 'interromper a uni'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A voz da Uni pode ser usada na Home e na conversa completa. O aplicativo solicita permissão de microfone antes da captura e possui controles para iniciar, parar ou cancelar. A reprodução respeita as permissões do navegador, reaproveita áudio já gerado quando disponível e pode oferecer fallback quando o provedor de voz falhar. As preferências ficam em Conta → Voz da Uni. Áudio e transcrição não devem cruzar usuários nem espaços.',
+      'A voz da Uni pode ser usada na Home e na conversa completa. O aplicativo solicita permissão de microfone antes da captura e possui controles para iniciar, parar ou cancelar. A reprodução respeita as permissões do navegador e reaproveita áudio já gerado quando disponível. As preferências ficam em Conta → Voz da Uni. Áudio e transcrição não devem cruzar usuários nem espaços. Conversa por voz em tempo real: tocar no orb da Uni na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni falando e toca em Encerrar para terminar. Lançamentos continuam exigindo confirmação no card. Cada plano tem minutos de conversa por voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Conta → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
   },
   {
     id: 'plans-and-limitations',
@@ -250,11 +250,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/plans-and-limitations.md',
     routes: [],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['plano', 'free', 'pro', 'business', 'enterprise', 'upgrade', 'assinatura', 'pagamento', 'cobrança'],
-    status: KNOWLEDGE_STATUS.LIMITED,
+    keywords: ['plano', 'essencial', 'uni voz', 'uni voz plus', 'business', 'enterprise', 'upgrade', 'trocar de plano', 'assinatura', 'pagamento', 'cobrança', 'minutos de voz', 'preço'],
+    status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Planos: Free, Pro, Business e Enterprise. Relatórios exige Pro ou superior; CRM/Clientes/Projetos exigem Espaço Empresa E plano Business/Enterprise. O restante do produto está disponível em todos os planos. NÃO existe fluxo de upgrade ou cobrança real no aplicativo nesta fase — não há tela de pagamento/checkout funcional. Se perguntarem como fazer upgrade, responder que essa opção ainda não está disponível na interface e indicar suporte humano.',
+      'Plano Pessoal em três opções, todas com acesso completo e registro por texto sem limite: Essencial R$ 14,90/mês com 20 minutos de conversa por voz, Uni Voz R$ 29,90/mês com 60 minutos, Uni Voz Plus R$ 69,90/mês com 180 minutos. Assinatura pela página do Plano Pessoal, com Pix ou cartão. Os minutos renovam a cada cobrança paga e não acumulam. Trocar de plano em Conta → Seu plano: para um plano mais barato, vale na próxima cobrança; para um mais caro, paga-se a diferença cheia por Pix e os minutos novos entram quando o pagamento é confirmado. Sem minutos, o registro continua pelo texto. Business e Enterprise (CRM, Clientes, Projetos, com Espaço Empresa) ainda não são contratados pela interface: indicar o suporte.',
   },
   {
     id: 'troubleshooting',

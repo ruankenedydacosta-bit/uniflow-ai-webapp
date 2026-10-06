@@ -103,11 +103,12 @@ test('filtro por workspace personal nunca retorna documento exclusivo de empresa
   assert.ok(!results.some((r) => r.id === 'crm-and-clients'));
 });
 
-test('pergunta sobre funcionalidade futura (upgrade de plano) retorna o documento com status não-available', () => {
+// Épico #116: a troca de plano passou a existir (Conta → Seu plano).
+test('pergunta sobre upgrade de plano retorna o documento de planos como disponível', () => {
   const { results } = retrieveProductKnowledge('como faço upgrade do meu plano');
   const entry = results.find((r) => r.id === 'plans-and-limitations');
   assert.ok(entry);
-  assert.notEqual(entry.status, KNOWLEDGE_STATUS.AVAILABLE);
+  assert.equal(entry.status, KNOWLEDGE_STATUS.AVAILABLE);
 });
 
 test('pergunta sobre integração bancária real retorna open finance como demo, não como disponível', () => {

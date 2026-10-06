@@ -11,6 +11,17 @@ botão central da Uni também abre a conversa e solicita a captura.
 
 ## Passo a passo
 
+**Conversa por voz em tempo real**: tocar no orb da Uni na barra inferior abre
+a conversa por voz. Fale normalmente, com pausas: a Uni responde quando você
+termina e você pode interromper a Uni falando. Para registrar, consultar saldo
+ou mexer na agenda, a Uni usa o mesmo caminho do texto, e lançamentos continuam
+exigindo confirmação no card. Toque em Encerrar para terminar. A conversa
+também termina depois de um minuto sem ninguém falar ou quando você sai do app.
+
+Cada plano tem uma cota mensal de minutos de conversa por voz (Essencial 20,
+Uni Voz 60, Uni Voz Plus 180). Os minutos restantes ficam em Conta → Seu plano.
+Quando eles acabam, use o texto, que não tem limite.
+
 1. Tocar em "Ouvir" abaixo de uma resposta da Uni.
 2. O áudio é gerado (ou reaproveitado do cache) e tocado automaticamente após esse toque — **não existe reprodução automática sem essa ação do usuário**.
 3. É possível pausar, retomar ou parar a reprodução a qualquer momento.
