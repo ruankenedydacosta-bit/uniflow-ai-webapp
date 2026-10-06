@@ -7,6 +7,7 @@ import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
 import {
+  formatPlanPrice,
   PERSONAL_PLAN_PRICE_LABEL,
   PERSONAL_PLAN_PRICE_PERIOD,
 } from '../personal-plan/personalPlanConfig.js';
@@ -161,10 +162,10 @@ function SimplifiedPaymentsPage() {
           <div className={styles.planTop}>
             <span className={styles.planIcon} aria-hidden="true"><CrownIcon /></span>
             <div className={styles.planInfo}>
-              <strong>Plano Pessoal</strong>
+              <strong>{subscription?.plan_name ?? 'Plano Pessoal'}</strong>
               <small>Plano mensal</small>
               <span className={styles.priceRow}>
-                <strong>{PERSONAL_PLAN_PRICE_LABEL}</strong>
+                <strong>{formatPlanPrice(subscription?.value) || PERSONAL_PLAN_PRICE_LABEL}</strong>
                 <small>{PERSONAL_PLAN_PRICE_PERIOD}</small>
               </span>
             </div>
@@ -244,7 +245,7 @@ function SimplifiedPaymentsPage() {
               <strong>{formatDate(renewsAt)}</strong>
               {paymentMethodLabel ? <small>{paymentMethodLabel}</small> : null}
             </div>
-            <span className={styles.chargePrice}>{PERSONAL_PLAN_PRICE_LABEL}</span>
+            <span className={styles.chargePrice}>{formatPlanPrice(subscription?.value) || PERSONAL_PLAN_PRICE_LABEL}</span>
           </div>
         ) : cancelEffectiveAt ? (
           <div className={styles.chargeRow}>

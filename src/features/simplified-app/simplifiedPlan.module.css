@@ -453,3 +453,73 @@
     transition: none;
   }
 }
+
+/* ---------- Troca de plano (épico #116) ---------- */
+
+.tierOptions {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tierOption {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--uf-app-border);
+  border-radius: 16px;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
+  cursor: pointer;
+}
+
+.tierOption[data-selected='true'] {
+  border-color: var(--uf-app-primary);
+  background: var(--uf-app-primary-subtle);
+}
+
+.tierOption:focus-within {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.tierOption input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tierOptionText {
+  display: grid;
+  gap: 4px;
+}
+
+.tierOptionText small {
+  color: var(--uf-app-text-2);
+  font-size: 14px;
+}
+
+.upgradePix {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.upgradePix img {
+  border-radius: 12px;
+  background: var(--uf-app-surface);
+}
+
+.upgradePixCode {
+  max-width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}

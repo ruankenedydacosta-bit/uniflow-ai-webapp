@@ -43,7 +43,7 @@ test('index.js exporta SimplifiedPlanPage', async () => {
 
 test('usa billingService.getSubscription/cancelSubscription -- nunca mais getWorkspaceSubscriptionAny', async () => {
   const content = await source('./SimplifiedPlanPage.jsx');
-  assert.match(content, /import \{ cancelSubscription, getSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+  assert.match(content, /import \{ cancelSubscription, changePlan, getSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
   assert.doesNotMatch(content, /import.*workspaceService/);
   assert.doesNotMatch(content, /getWorkspaceSubscriptionAny\(/);
 });
@@ -233,4 +233,39 @@ test('status do plano não depende só de cor (tem ícone + texto)', async () =>
   assert.match(content, /planState\.tone === 'warn' \? <AlertTriangleIcon \/>/);
   assert.match(content, /planState\.tone === 'neutral' \? <InfoIcon \/>/);
   assert.match(content, /<strong>\{planState\.label\}<\/strong>/);
+});
+
+// ============================================================================
+// Épico #116 -- três planos, minutos de voz e troca de plano.
+// ============================================================================
+
+test('plano e preço exibidos são os da assinatura, com o Plano Pessoal padrão como reserva', async () => {
+  const content = await source('./SimplifiedPlanPage.jsx');
+  assert.match(content, /\{subscription\?\.plan_name \?\? 'Plano Pessoal'\}/);
+  assert.match(content, /\{formatPlanPrice\(subscription\?\.value\) \|\| PERSONAL_PLAN_PRICE_LABEL\}/);
+});
+
+test('mostra os minutos de voz restantes só para assinatura ativa', async () => {
+  const content = await source('./SimplifiedPlanPage.jsx');
+  assert.match(content, /getMyVoiceBalance\(\)\.then/);
+  assert.match(content, /const voiceBalanceText = planState\.status === 'active' \? describeVoiceBalance\(voiceBalance\) : null;/);
+  assert.match(content, /aria-label="Conversa por voz"/);
+});
+
+test('"Trocar de plano" abre a troca para assinatura ativa e leva à assinatura nos outros casos', async () => {
+  const content = await source('./SimplifiedPlanPage.jsx');
+  assert.match(content, /onClick=\{handleOpenChangePlan\}/);
+  assert.match(content, /if \(planState\.status !== 'active' \|\| !currentTierId\) \{\s*navigate\(PERSONAL_PLAN_ROUTE\);/);
+  assert.match(content, /changePlan\(\{ workspaceId, tierId: selectedTierId \}\)/);
+});
+
+test('upgrade mostra o Pix da diferença que a Edge Function devolveu', async () => {
+  const content = await source('./SimplifiedPlanPage.jsx');
+  assert.match(content, /if \(data\?\.kind === 'upgrade' && data\.pix\) \{\s*setUpgradePix\(data\.pix\);/);
+  assert.match(content, /src=\{`data:image\/png;base64,\$\{upgradePix\.encoded_image\}`\}/);
+});
+
+test('troca agendada aparece como aviso com a data da renovação', async () => {
+  const content = await source('./SimplifiedPlanPage.jsx');
+  assert.match(content, /`A partir de \$\{formatDate\(renewsAt\)\}, seu plano passa a ser \$\{subscription\.pending_tier_name\}\.`/);
 });

@@ -175,9 +175,10 @@ test('card do plano só mostra preço/renovação quando o estado é realmente "
   assert.match(page, /\{renewsAt \? \(/);
 });
 
-test('preço exibido vem da constante compartilhada de personal-plan, nunca um valor duplicado/hardcoded na tela de Conta', async () => {
+test('preço exibido é o da assinatura (épico #116), com a constante compartilhada de personal-plan como reserva -- nunca um valor hardcoded na tela de Conta', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /import \{\s*\n\s*PERSONAL_PLAN_PRICE_LABEL,\s*\n\s*PERSONAL_PLAN_PRICE_PERIOD,\s*\n\s*\} from '\.\.\/personal-plan\/personalPlanConfig\.js';/);
+  assert.match(page, /import \{\s*\n\s*formatPlanPrice,\s*\n\s*PERSONAL_PLAN_PRICE_LABEL,\s*\n\s*PERSONAL_PLAN_PRICE_PERIOD,\s*\n\s*\} from '\.\.\/personal-plan\/personalPlanConfig\.js';/);
+  assert.match(page, /\{formatPlanPrice\(subscription\?\.value\) \|\| PERSONAL_PLAN_PRICE_LABEL\}/);
   assert.doesNotMatch(page, /R\$\s*29,90/);
 });
 

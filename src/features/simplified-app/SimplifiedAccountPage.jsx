@@ -10,6 +10,7 @@ import AnalyticsConsentPreferencesModal from '../analytics/AnalyticsConsentPrefe
 import { useAnalyticsConsent } from '../analytics/useAnalyticsConsent.js';
 import SimplifiedAccountNotificationsRow from './SimplifiedAccountNotificationsRow.jsx';
 import {
+  formatPlanPrice,
   PERSONAL_PLAN_PRICE_LABEL,
   PERSONAL_PLAN_PRICE_PERIOD,
 } from '../personal-plan/personalPlanConfig.js';
@@ -237,7 +238,7 @@ function SimplifiedAccountPage() {
         </span>
         {planState.tone === 'ok' ? (
           <span className={styles.planPrice}>
-            <strong>{PERSONAL_PLAN_PRICE_LABEL}</strong>
+            <strong>{formatPlanPrice(subscription?.value) || PERSONAL_PLAN_PRICE_LABEL}</strong>
             <small>{PERSONAL_PLAN_PRICE_PERIOD}</small>
           </span>
         ) : null}
