@@ -1,13 +1,17 @@
 // Edge Function: uni-voice-realtime-session
 //
-// PROTÓTIPO da conversa contínua com a Uni (OpenAI Realtime por WebRTC).
+// Conversa por voz em tempo real com a Uni (OpenAI Realtime por WebRTC).
 // Esta função só emite a chave efêmera da sessão: o áudio vai do navegador
 // direto para a OpenAI, sem passar por aqui. A OPENAI_API_KEY nunca sai
 // deste arquivo; o navegador recebe uma chave que vale para uma sessão.
 //
-// Enquanto for protótipo, só quem está em UNI_REALTIME_ALLOWED_USER_IDS
-// abre sessão. Lista vazia fecha a função para todos: a cobrança é por
-// minuto de sessão aberta e ainda não existe cota.
+// A conversa não decide nada sobre dinheiro: tudo que envolve lançamentos,
+// saldo, contas ou agenda vai pela ferramenta enviar_para_uni ao mesmo
+// pipeline do texto, no app (src/features/uni-voice-realtime).
+//
+// Até a cota de minutos existir (#113), só quem está em
+// UNI_REALTIME_ALLOWED_USER_IDS abre sessão. Lista vazia fecha a função para
+// todos: a cobrança é por minuto de sessão aberta.
 
 const OPENAI_CLIENT_SECRETS_URL = 'https://api.openai.com/v1/realtime/client_secrets';
 const DEFAULT_MODEL = 'gpt-realtime-2.1-mini';
@@ -28,7 +32,11 @@ const UNI_REALTIME_INSTRUCTIONS = [
   'Pronuncie à brasileira marcas e bancos usados no Brasil, como Pix, Nubank, Itaú, iFood e Mercado Pago.',
   'Se a pessoa pausar no meio de uma frase, espere ela terminar. Não complete a frase por ela.',
   'Se for interrompida, pare e responda ao que a pessoa acabou de dizer.',
-  'Neste teste você ainda não acessa os lançamentos, saldos nem contas da pessoa. Nunca invente valores. Se pedirem um dado financeiro, diga que nesta versão ainda não consegue consultar.',
+  'Tudo que envolve dinheiro ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, mexer na agenda, e responder a um rascunho (confirmar, corrigir ou cancelar). Passe a frase da pessoa como ela disse, sem resumir nem completar.',
+  'Depois da ferramenta, fale a resposta dela com naturalidade e em poucas palavras. Não acrescente valores, datas, categorias nem contas que não estejam na resposta.',
+  'Se a resposta disser que há um rascunho aguardando confirmação, pergunte se pode confirmar. A pessoa também pode confirmar tocando no card da tela.',
+  'Você não sabe nada sobre as finanças da pessoa além do que a ferramenta devolve. Nunca invente valores.',
+  'Para conversa que não envolve dinheiro nem agenda, responda direto, sem a ferramenta.',
   'Nada de risadas, gritos, voz infantil ou exagero teatral.',
 ].join('\n');
 
@@ -88,12 +96,32 @@ async function sha256Hex(input: string) {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// O nome e os parâmetros precisam bater com
+// src/features/uni-voice-realtime/realtimeToolBridge.js.
+const SEND_TO_UNI_TOOL = {
+  type: 'function',
+  name: 'enviar_para_uni',
+  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra lançamentos, consulta saldo, gastos e contas, cuida da agenda e confirma ou cancela rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
+  parameters: {
+    type: 'object',
+    properties: {
+      frase: {
+        type: 'string',
+        description: 'O que a pessoa disse, com as palavras dela.',
+      },
+    },
+    required: ['frase'],
+  },
+};
+
 function buildSessionConfig({ model, voice, eagerness }: { model: string; voice: string; eagerness: string }) {
   return {
     session: {
       type: 'realtime',
       model,
       instructions: UNI_REALTIME_INSTRUCTIONS,
+      tools: [SEND_TO_UNI_TOOL],
+      tool_choice: 'auto',
       audio: {
         input: {
           noise_reduction: { type: 'near_field' },

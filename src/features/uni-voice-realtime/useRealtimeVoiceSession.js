@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { supabase, supabaseAnonKey, supabaseUrl } from '../../../services/supabaseClient.js';
+import { supabase, supabaseAnonKey, supabaseUrl } from '../../services/supabaseClient.js';
 import {
   createRealtimeSessionState,
   isRealtimeSessionIdle,
   reduceRealtimeEvent,
 } from './realtimeSessionModel.js';
+import { buildRealtimeToolErrorOutput, parseRealtimeToolArguments } from './realtimeToolBridge.js';
 
 const SESSION_FUNCTION_NAME = 'uni-voice-realtime-session';
 const OPENAI_REALTIME_CALLS_URL = 'https://api.openai.com/v1/realtime/calls';
@@ -18,7 +19,7 @@ function reducer(state, action) {
 async function requestClientSecret(eagerness) {
   const { data } = await supabase.auth.getSession();
   const accessToken = data?.session?.access_token;
-  if (!accessToken) throw new Error('Entre no app antes de testar a conversa.');
+  if (!accessToken) throw new RealtimeSessionError('UNAUTHORIZED', 'Entre no app para conversar com a Uni.');
 
   const response = await fetch(`${supabaseUrl}/functions/v1/${SESSION_FUNCTION_NAME}`, {
     method: 'POST',
@@ -31,9 +32,25 @@ async function requestClientSecret(eagerness) {
   });
   const body = await response.json().catch(() => null);
   if (!response.ok || typeof body?.client_secret !== 'string') {
-    throw new Error(body?.error?.message ?? `Não foi possível abrir a conversa (HTTP ${response.status}).`);
+    throw new RealtimeSessionError(
+      body?.error?.code ?? `HTTP_${response.status}`,
+      body?.error?.message ?? 'Não foi possível abrir a conversa agora. Tente de novo em instantes.',
+    );
   }
   return body;
+}
+
+// Erro com código, para a tela decidir o que oferecer (ex.: NOT_ALLOWED leva
+// ao texto).
+export class RealtimeSessionError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+  }
+}
+
+function sendEvent(channel, event) {
+  if (channel?.readyState === 'open') channel.send(JSON.stringify(event));
 }
 
 function closeConnection(connection) {
@@ -52,14 +69,22 @@ class ConnectionCancelled extends Error {}
 // Uma sessão por vez. O áudio da Uni toca pelo próprio WebRTC: só assim o
 // cancelamento de eco do navegador sabe o que sai do alto-falante e não
 // deixa a voz da Uni voltar pelo microfone como se fosse a pessoa.
-export function useRealtimeVoiceSession() {
+//
+// onToolCall({ name, args }) devolve a saída da ferramenta (texto). A Uni
+// fala a resposta assim que a saída volta.
+export function useRealtimeVoiceSession({ onToolCall } = {}) {
   const [state, dispatchAction] = useReducer(reducer, undefined, createRealtimeSessionState);
   const stateRef = useRef(state);
   const connectionRef = useRef(null);
+  const onToolCallRef = useRef(onToolCall);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    onToolCallRef.current = onToolCall;
+  });
 
   const dispatch = useCallback((event) => {
     dispatchAction({ event, at: performance.now() });
@@ -76,6 +101,31 @@ export function useRealtimeVoiceSession() {
     dispatch({ type: 'local.ended', reason });
   }, [dispatch, teardown]);
 
+  const runToolCall = useCallback(async (connection, event) => {
+    dispatch({ type: 'local.tool_started' });
+    let output;
+    try {
+      output = await onToolCallRef.current?.({
+        name: event.name,
+        args: parseRealtimeToolArguments(event.arguments),
+      });
+    } catch {
+      output = null;
+    }
+    if (typeof output !== 'string') {
+      output = buildRealtimeToolErrorOutput('Não consegui consultar agora. Peça para a pessoa tentar de novo ou escrever.');
+    }
+    dispatch({ type: 'local.tool_finished' });
+    if (connectionRef.current !== connection) return;
+    sendEvent(connection.channel, {
+      type: 'conversation.item.create',
+      item: { type: 'function_call_output', call_id: event.call_id, output },
+    });
+    sendEvent(connection.channel, { type: 'response.create' });
+  }, [dispatch]);
+
+  // Chame dentro do toque da pessoa: o iOS só libera microfone e áudio
+  // numa ação do usuário, então os dois são pedidos antes de qualquer rede.
   const start = useCallback(async ({ eagerness } = {}) => {
     if (connectionRef.current) return;
     const connection = {};
@@ -85,21 +135,22 @@ export function useRealtimeVoiceSession() {
       if (connectionRef.current !== connection) throw new ConnectionCancelled();
     };
 
-    try {
-      const session = await requestClientSecret(eagerness);
-      ensureActive();
+    const audio = new Audio();
+    audio.autoplay = true;
+    connection.audio = audio;
 
+    try {
       connection.localStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       ensureActive();
 
+      const session = await requestClientSecret(eagerness);
+      ensureActive();
+
       const peer = new RTCPeerConnection();
       connection.peer = peer;
 
-      const audio = new Audio();
-      audio.autoplay = true;
-      connection.audio = audio;
       peer.ontrack = (event) => {
         audio.srcObject = event.streams[0];
         audio.play().catch(() => {});
@@ -109,7 +160,7 @@ export function useRealtimeVoiceSession() {
         // 'disconnected' pode se recuperar sozinho; 'failed', não.
         if (peer.connectionState === 'failed') {
           teardown();
-          dispatch({ type: 'local.failed', message: 'A conexão com a Uni caiu.' });
+          dispatch({ type: 'local.failed', code: 'CONNECTION_FAILED', message: 'A conexão com a Uni caiu.' });
         }
       };
 
@@ -119,11 +170,15 @@ export function useRealtimeVoiceSession() {
       connection.channel = channel;
       channel.onopen = () => dispatch({ type: 'local.connected' });
       channel.onmessage = (message) => {
+        let event;
         try {
-          dispatch(JSON.parse(message.data));
+          event = JSON.parse(message.data);
         } catch {
           // Evento ilegível não interrompe a conversa.
+          return;
         }
+        dispatch(event);
+        if (event?.type === 'response.function_call_arguments.done') void runToolCall(connection, event);
       };
 
       const offer = await peer.createOffer();
@@ -147,12 +202,16 @@ export function useRealtimeVoiceSession() {
         return;
       }
       teardown();
-      const message = error?.name === 'NotAllowedError'
-        ? 'Libere o microfone no navegador para conversar com a Uni.'
-        : error?.message ?? 'Não foi possível abrir a conversa.';
-      dispatch({ type: 'local.failed', message });
+      const isMicrophoneDenied = error?.name === 'NotAllowedError';
+      dispatch({
+        type: 'local.failed',
+        code: isMicrophoneDenied ? 'MICROPHONE_DENIED' : error?.code ?? 'CONNECTION_FAILED',
+        message: isMicrophoneDenied
+          ? 'Libere o microfone no navegador para conversar com a Uni.'
+          : error?.message ?? 'Não foi possível abrir a conversa.',
+      });
     }
-  }, [dispatch, teardown]);
+  }, [dispatch, runToolCall, teardown]);
 
   const markFalseInterruption = useCallback(() => {
     dispatch({ type: 'local.mark_false_interruption' });

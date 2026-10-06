@@ -49,12 +49,16 @@ const PRIMARY_ICONS = Object.freeze({
   [VOICE_MODE_ACTIONS.START]: MicIcon,
   [VOICE_MODE_ACTIONS.STOP_LISTENING]: StopIcon,
   [VOICE_MODE_ACTIONS.STOP_SPEAKING]: StopIcon,
+  [VOICE_MODE_ACTIONS.END_CONVERSATION]: StopIcon,
   [VOICE_MODE_ACTIONS.NONE]: StopIcon,
 });
 
 function SimplifiedVoiceMode({
   open,
   interactionState,
+  // Na conversa em tempo real, a Home manda a visão pronta
+  // (resolveRealtimeVoiceModeView) no lugar do estado da captura antiga.
+  view: viewOverride = null,
   hint,
   response,
   getVoiceStream,
@@ -67,7 +71,7 @@ function SimplifiedVoiceMode({
   const titleId = useId();
   const primaryButtonRef = useRef(null);
   const onCloseRef = useRef(onClose);
-  const view = resolveVoiceModeView(interactionState);
+  const view = viewOverride ?? resolveVoiceModeView(interactionState);
   const actionCopy = VOICE_MODE_ACTION_LABELS[view.action];
   const PrimaryIcon = PRIMARY_ICONS[view.action];
   const isActionDisabled = view.action === VOICE_MODE_ACTIONS.NONE;

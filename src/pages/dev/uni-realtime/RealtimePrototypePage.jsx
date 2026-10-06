@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import Button from '../../../components/ui/Button';
 import { UniRingOrb, UNI_RING_ORB_STATES } from '../../../components/ui/UniRingOrb';
-import { REALTIME_STATUS, summarizeRealtimeSession } from './realtimeSessionModel.js';
-import { REALTIME_IDLE_LIMIT_MS, useRealtimeVoiceSession } from './useRealtimeVoiceSession.js';
+import { REALTIME_STATUS, summarizeRealtimeSession } from '../../../features/uni-voice-realtime/realtimeSessionModel.js';
+import { REALTIME_IDLE_LIMIT_MS, useRealtimeVoiceSession } from '../../../features/uni-voice-realtime/useRealtimeVoiceSession.js';
 import styles from './RealtimePrototypePage.module.css';
 
 const STATUS_LABELS = Object.freeze({

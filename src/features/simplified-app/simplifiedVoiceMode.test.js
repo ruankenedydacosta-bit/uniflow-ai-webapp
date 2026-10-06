@@ -4,7 +4,9 @@ import test from 'node:test';
 import { UNI_RING_ORB_STATES } from '../../components/ui/UniRingOrb/uniRingOrbModel.js';
 import { SIMPLIFIED_UNI_STATES } from './simplifiedHomeState.js';
 import { buildVoiceModeUrl, SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.js';
+import { REALTIME_STATUS } from '../uni-voice-realtime/realtimeSessionModel.js';
 import {
+  resolveRealtimeVoiceModeView,
   resolveVoiceModeView,
   VOICE_MODE_ACTION_LABELS,
   VOICE_MODE_ACTIONS,
@@ -177,4 +179,64 @@ test('rótulos da barra cabem em cinco colunas de 360px', async () => {
   assert.match(nav, /overflow: visible;/);
   const hidden = css.slice(css.indexOf('.bottomNavigationHidden {'), css.indexOf('}', css.indexOf('.bottomNavigationHidden {')));
   assert.match(hidden, /overflow: hidden;/);
+});
+
+// ============================================================================
+// Épico #116 — conversa por voz em tempo real.
+// ============================================================================
+
+test('todo estado da conversa em tempo real tem visão própria na tela de voz', () => {
+  for (const status of Object.values(REALTIME_STATUS)) {
+    const view = resolveRealtimeVoiceModeView(status);
+    assert.ok(Object.values(UNI_RING_ORB_STATES).includes(view.orb), status);
+    assert.ok(Object.values(VOICE_MODE_TONES).includes(view.tone), status);
+    assert.ok(Object.values(VOICE_MODE_ACTIONS).includes(view.action), status);
+    assert.ok(view.status, status);
+    assert.ok(VOICE_MODE_ACTION_LABELS[view.action], status);
+  }
+  assert.deepEqual(resolveRealtimeVoiceModeView('desconhecido'), resolveRealtimeVoiceModeView(REALTIME_STATUS.IDLE));
+});
+
+test('na conversa em tempo real não existe Enviar: o botão central só encerra', () => {
+  for (const status of [
+    REALTIME_STATUS.CONNECTING,
+    REALTIME_STATUS.LISTENING,
+    REALTIME_STATUS.USER_SPEAKING,
+    REALTIME_STATUS.THINKING,
+    REALTIME_STATUS.SPEAKING,
+  ]) {
+    assert.equal(resolveRealtimeVoiceModeView(status).action, VOICE_MODE_ACTIONS.END_CONVERSATION, status);
+  }
+  assert.equal(VOICE_MODE_ACTION_LABELS[VOICE_MODE_ACTIONS.END_CONVERSATION].label, 'Encerrar');
+  assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.ENDED).action, VOICE_MODE_ACTIONS.START);
+  assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.SPEAKING).orb, UNI_RING_ORB_STATES.SPEAKING);
+});
+
+test('com a flag, a tela de voz abre a conversa em tempo real no mesmo toque e o botão central encerra', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /function handleOpenRealtimeVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*beginRealtimeConversation\(\);\s*\}/);
+  assert.match(home, /if \(realtimeVoiceEnabled\) openVoiceModeRef\.current = handleOpenRealtimeVoiceMode;/);
+  assert.match(home, /action === VOICE_MODE_ACTIONS\.END_CONVERSATION\) stopRealtime\('user'\)/);
+  assert.match(home, /view=\{resolveRealtimeVoiceModeView\(realtime\.state\.status\)\}/);
+});
+
+test('fechar, ir para o chat ou deixar o app em segundo plano encerra a conversa em tempo real', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /function handleCloseRealtimeVoiceMode\(\) \{\s*stopRealtime\('user'\);/);
+  assert.match(home, /function handleLeaveRealtimeVoiceModeToChat\(\) \{\s*stopRealtime\('user'\);/);
+  assert.match(home, /if \(isRealtimeActiveRef\.current\) stopRealtimeRef\.current\?\.\('lifecycle'\);/);
+});
+
+test('com a conversa em tempo real aberta, a voz antiga não narra as respostas', async () => {
+  const chat = await source('../uni-chat/UniChatPage.jsx');
+  assert.match(chat, /const handleAutomaticSpeakMessage = useCallback\(\(message\) => \{\s*if \(realtimeVoiceActiveRef\.current\) return;/);
+  assert.match(chat, /if \(realtimeVoiceActiveRef\.current\) return;\s*void uniVoice\.speak\(/);
+  assert.match(chat, /onRealtimeVoiceActiveChange=\{handleRealtimeVoiceActiveChange\}/);
+});
+
+test('a flag da conversa em tempo real só liga com "true"', async () => {
+  const { resolveSimplifiedFeatureFlags } = await import('./simplifiedFeatureFlags.js');
+  assert.equal(resolveSimplifiedFeatureFlags({ VITE_UNI_REALTIME_VOICE_ENABLED: 'true' }).realtimeVoiceEnabled, true);
+  assert.equal(resolveSimplifiedFeatureFlags({ VITE_UNI_REALTIME_VOICE_ENABLED: '1' }).realtimeVoiceEnabled, false);
+  assert.equal(resolveSimplifiedFeatureFlags({}).realtimeVoiceEnabled, false);
 });

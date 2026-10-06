@@ -46,9 +46,11 @@ export function createRealtimeSessionState() {
     latenciesMs: [],
     interruptions: 0,
     falseInterruptions: 0,
+    toolCallsPending: 0,
     transcript: [],
     usage: { ...EMPTY_USAGE },
     error: null,
+    errorCode: null,
   };
 }
 
@@ -103,6 +105,22 @@ export function reduceRealtimeEvent(state, event, at) {
         endedAt: state.startedAt ? at : null,
         uniSpeaking: false,
         error: event.message ?? 'A conversa caiu.',
+        errorCode: event.code ?? null,
+      };
+    // Enquanto o app executa a ferramenta, a Uni está pensando e a sessão
+    // não conta como ociosa.
+    case 'local.tool_started':
+      return {
+        ...state,
+        status: REALTIME_STATUS.THINKING,
+        lastActivityAt: at,
+        toolCallsPending: state.toolCallsPending + 1,
+      };
+    case 'local.tool_finished':
+      return {
+        ...state,
+        lastActivityAt: at,
+        toolCallsPending: Math.max(0, state.toolCallsPending - 1),
       };
     case 'local.mark_false_interruption':
       if (state.falseInterruptions >= state.interruptions) return state;
@@ -188,7 +206,7 @@ export function summarizeRealtimeSession(state, now) {
 
 // Sessão aberta sem ninguém falando custa sem servir a ninguém.
 export function isRealtimeSessionIdle(state, now, idleLimitMs) {
-  if (state.lastActivityAt === null || state.uniSpeaking) return false;
+  if (state.lastActivityAt === null || state.uniSpeaking || state.toolCallsPending > 0) return false;
   const active = state.status === REALTIME_STATUS.LISTENING || state.status === REALTIME_STATUS.THINKING;
   return active && now - state.lastActivityAt >= idleLimitMs;
 }

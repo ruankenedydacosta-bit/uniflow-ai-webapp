@@ -34,7 +34,9 @@ import { SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.j
 import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import SimplifiedVoiceMode from './SimplifiedVoiceMode.jsx';
-import { VOICE_MODE_ACTIONS } from './voiceModeState.js';
+import { resolveRealtimeVoiceModeView, VOICE_MODE_ACTIONS } from './voiceModeState.js';
+import { SIMPLIFIED_FEATURE_FLAGS } from './simplifiedFeatureFlags.js';
+import { REALTIME_STATUS, useRealtimeUniConversation } from '../uni-voice-realtime/index.js';
 import styles from './simplifiedApp.module.css';
 
 // LOADING significa apenas que a voz está sendo preparada. O rótulo
@@ -341,6 +343,8 @@ function SimplifiedHomeView({
   onConfirmAction,
   onCancelAction,
   onWelcomeVoiceSettled,
+  onRealtimeVoiceActiveChange,
+  realtimeVoiceEnabled = SIMPLIFIED_FEATURE_FLAGS.realtimeVoiceEnabled,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -598,8 +602,21 @@ function SimplifiedHomeView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiceInput.isActive, voiceInput.cancel]);
 
+  // Conversa em tempo real (épico #116): a Uni ouve e fala continuamente, e
+  // o que envolve dinheiro passa pelo mesmo envio do texto.
+  const realtime = useRealtimeUniConversation({
+    messages,
+    isBusy: isTyping || isExecuting,
+    onSendTranscript,
+    onActiveChange: onRealtimeVoiceActiveChange,
+  });
+  const stopRealtime = realtime.stop;
+  const isRealtimeActive = realtime.isActive;
+
   const cancelVoiceCaptureRef = useRef(null);
   const openVoiceModeRef = useRef(null);
+  const isRealtimeActiveRef = useRef(false);
+  const stopRealtimeRef = useRef(null);
   useEffect(() => {
     const cancelOnBackground = () => cancelVoiceCaptureRef.current?.('lifecycle');
     const handleVisibilityChange = () => {
@@ -664,16 +681,47 @@ function SimplifiedHomeView({
 
   useEffect(() => {
     cancelVoiceCaptureRef.current = cancelVoiceCapture;
+    isRealtimeActiveRef.current = isRealtimeActive;
+    stopRealtimeRef.current = stopRealtime;
   });
+
+  // Conversa aberta com o app em segundo plano gasta minutos à toa.
+  useEffect(() => {
+    const endOnBackground = () => {
+      if (isRealtimeActiveRef.current) stopRealtimeRef.current?.('lifecycle');
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') endOnBackground();
+    };
+    window.addEventListener('pagehide', endOnBackground);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', endOnBackground);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Chamado dentro do toque: o iOS só libera microfone e áudio ali.
+  function beginRealtimeConversation() {
+    if (isVoicePlaybackInterruptible) voiceController.stop();
+    onBeforeVoiceStart?.();
+    void realtime.start();
+  }
 
   function handleOpenVoiceMode() {
     setIsVoiceModeOpen(true);
     beginVoiceCapture();
   }
 
+  function handleOpenRealtimeVoiceMode() {
+    setIsVoiceModeOpen(true);
+    beginRealtimeConversation();
+  }
+
   // Declarado antes do efeito que lê a ref: efeitos rodam na ordem do código.
   useEffect(() => {
     openVoiceModeRef.current = handleOpenVoiceMode;
+    if (realtimeVoiceEnabled) openVoiceModeRef.current = handleOpenRealtimeVoiceMode;
   });
 
   // O orb da barra inferior chega aqui como /app/home?falar=1, de qualquer
@@ -695,6 +743,21 @@ function SimplifiedHomeView({
     }, { replace: true });
     if (!voiceActivationRequired && !voiceActivationPending) openVoiceModeRef.current?.();
   }, [setSearchParams, voiceActivationPending, voiceActivationRequired, voiceRequestKey, wantsVoiceMode]);
+
+  function handleRealtimeVoiceModeAction(action) {
+    if (action === VOICE_MODE_ACTIONS.START) beginRealtimeConversation();
+    else if (action === VOICE_MODE_ACTIONS.END_CONVERSATION) stopRealtime('user');
+  }
+
+  function handleCloseRealtimeVoiceMode() {
+    stopRealtime('user');
+    setIsVoiceModeOpen(false);
+  }
+
+  function handleLeaveRealtimeVoiceModeToChat() {
+    stopRealtime('user');
+    handleLeaveVoiceModeToChat();
+  }
 
   function handleVoiceModeAction(action) {
     if (action === VOICE_MODE_ACTIONS.START) beginVoiceCapture();
@@ -731,6 +794,19 @@ function SimplifiedHomeView({
       showDetailsLink={!isVoiceModeOpen}
     />
   );
+
+  const realtimeHint = (() => {
+    const { status, error, errorCode } = realtime.state;
+    if (status === REALTIME_STATUS.ERROR) {
+      return errorCode === 'NOT_ALLOWED' ? `${error} Toque em Escrever para continuar por texto.` : error;
+    }
+    if (status === REALTIME_STATUS.CONNECTING) return 'Se o navegador pedir, permita o uso do microfone.';
+    if (isRealtimeActive) return 'Fale normalmente. Você pode interromper a Uni a qualquer momento.';
+    if (status === REALTIME_STATUS.ENDED && realtime.state.endReason === 'idle') {
+      return 'A conversa foi encerrada porque ninguém falou por um minuto.';
+    }
+    return null;
+  })();
 
   const voiceModeHint = (() => {
     if (voiceErrorMessage) return voiceErrorMessage;
@@ -790,18 +866,33 @@ function SimplifiedHomeView({
       <LightWave />
 
 
-      <SimplifiedVoiceMode
-        open={isVoiceModeOpen}
-        interactionState={interactionState}
-        hint={voiceModeHint}
-        response={isVoiceModeOpen ? compactResponse : null}
-        getVoiceStream={voiceInput.getActiveStream}
-        getVoiceSessionId={voiceInput.getActiveSessionId}
-        onAction={handleVoiceModeAction}
-        onClose={handleCloseVoiceMode}
-        onWrite={handleLeaveVoiceModeToChat}
-        onOpenConversation={handleLeaveVoiceModeToChat}
-      />
+      {realtimeVoiceEnabled ? (
+        <SimplifiedVoiceMode
+          open={isVoiceModeOpen}
+          interactionState={interactionState}
+          view={resolveRealtimeVoiceModeView(realtime.state.status)}
+          hint={realtimeHint}
+          response={isVoiceModeOpen ? compactResponse : null}
+          getVoiceStream={realtime.getLocalStream}
+          onAction={handleRealtimeVoiceModeAction}
+          onClose={handleCloseRealtimeVoiceMode}
+          onWrite={handleLeaveRealtimeVoiceModeToChat}
+          onOpenConversation={handleLeaveRealtimeVoiceModeToChat}
+        />
+      ) : (
+        <SimplifiedVoiceMode
+          open={isVoiceModeOpen}
+          interactionState={interactionState}
+          hint={voiceModeHint}
+          response={isVoiceModeOpen ? compactResponse : null}
+          getVoiceStream={voiceInput.getActiveStream}
+          getVoiceSessionId={voiceInput.getActiveSessionId}
+          onAction={handleVoiceModeAction}
+          onClose={handleCloseVoiceMode}
+          onWrite={handleLeaveVoiceModeToChat}
+          onOpenConversation={handleLeaveVoiceModeToChat}
+        />
+      )}
 
       <SimplifiedHomeFinancialGraph />
     </div>

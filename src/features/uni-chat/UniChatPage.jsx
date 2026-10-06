@@ -465,7 +465,16 @@ export default function UniChatPage({ variant = 'full' }) {
     );
   }, [uniVoice]);
 
+  // Com a conversa em tempo real aberta, quem fala é a Uni da conversa:
+  // a voz antiga não narra as respostas por cima dela (épico #116).
+  const realtimeVoiceActiveRef = useRef(false);
+  const handleRealtimeVoiceActiveChange = useCallback((active) => {
+    realtimeVoiceActiveRef.current = active;
+    if (active) uniVoice.stop();
+  }, [uniVoice]);
+
   const handleAutomaticSpeakMessage = useCallback((message) => {
+    if (realtimeVoiceActiveRef.current) return;
     handleSpeakMessage(message, { source: automaticVoiceSource });
   }, [automaticVoiceSource, handleSpeakMessage]);
 
@@ -480,6 +489,7 @@ export default function UniChatPage({ variant = 'full' }) {
   const speakSideEffectNotice = useCallback((text) => {
     if (!isSimplifiedExperience || !voicePreference.enabled) return;
     if (!text) return;
+    if (realtimeVoiceActiveRef.current) return;
     void uniVoice.speak(buildSpeechText(normalizeFinancialTextForSpeech(text), MAX_TTS_TEXT_LENGTH), {
       messageId: null,
       source: automaticVoiceSource,
@@ -1850,7 +1860,6 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!lastMessage || lastMessage.from !== 'uni' || !lastMessage.text) return;
     if (hasAutoSpokenMessage(user?.id, lastMessage.id)) return;
     markAutoSpokenMessage(user?.id, lastMessage.id);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- autoplay controlado (guardado pelo registro por sessão): sincroniza a voz com a última mensagem real, nunca um loop (o registro já impede reexecução para o mesmo id).
     handleAutomaticSpeakMessage(lastMessage);
   }, [messages, isSimplifiedExperience, voicePreference.enabled, handleAutomaticSpeakMessage, user?.id, historyHydrated]);
 
@@ -4660,6 +4669,7 @@ export default function UniChatPage({ variant = 'full' }) {
         onConfirmAction={handleConfirmAction}
         onCancelAction={handleCancelAction}
         onWelcomeVoiceSettled={handleWelcomeVoiceSettled}
+        onRealtimeVoiceActiveChange={handleRealtimeVoiceActiveChange}
       />
     );
   }

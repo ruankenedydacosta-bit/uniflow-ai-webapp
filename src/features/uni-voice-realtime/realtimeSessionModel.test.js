@@ -135,7 +135,24 @@ test('fim registrado uma vez só e erro não é sobrescrito por fim', () => {
   assert.equal(state.endReason, 'idle');
   assert.equal(state.endedAt, 100);
 
-  state = play([['local.connected', 0], ['local.failed', 50, { message: 'caiu' }], ['local.ended', 60]]);
+  state = play([['local.connected', 0], ['local.failed', 50, { message: 'caiu', code: 'NOT_ALLOWED' }], ['local.ended', 60]]);
   assert.equal(state.status, REALTIME_STATUS.ERROR);
   assert.equal(state.error, 'caiu');
+  assert.equal(state.errorCode, 'NOT_ALLOWED');
+});
+
+test('ferramenta em execução deixa a Uni pensando e impede o encerramento por inatividade', () => {
+  let state = play([['local.connected', 0], ['local.tool_started', 100]]);
+  assert.equal(state.status, REALTIME_STATUS.THINKING);
+  assert.equal(isRealtimeSessionIdle(state, 999999, 60000), false);
+
+  state = reduceRealtimeEvent(state, { type: 'local.tool_finished' }, 5000);
+  assert.equal(state.toolCallsPending, 0);
+  assert.equal(isRealtimeSessionIdle(state, 64999, 60000), false);
+  assert.equal(isRealtimeSessionIdle(state, 65000, 60000), true);
+});
+
+test('fim de ferramenta sem início não deixa contador negativo', () => {
+  const state = play([['local.connected', 0], ['local.tool_finished', 10]]);
+  assert.equal(state.toolCallsPending, 0);
 });
