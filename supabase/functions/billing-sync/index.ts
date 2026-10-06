@@ -34,6 +34,7 @@ import {
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
 import { isGracePeriodExpired } from '../_shared/billingSubscriptionRules.ts';
+import { grantVoiceCycle, selectVoiceCycleGrants } from '../_shared/voiceCycleRules.ts';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -254,10 +255,22 @@ Deno.serve(async (request) => {
       }
     }
 
+    // Webhook perdido não pode deixar o assinante sem minutos: toda cobrança
+    // paga cujo ciclo ainda vale abre o ciclo de voz (idempotente).
+    let voiceCyclesGranted = 0;
+    if (updatedStatus === 'active') {
+      const today = new Date().toISOString().slice(0, 10);
+      for (const grant of selectVoiceCycleGrants(remotePayments, today)) {
+        await grantVoiceCycle({ supabaseUrl, serviceRoleKey, subscriptionId: subscription.id, grant });
+        voiceCyclesGranted += 1;
+      }
+    }
+
     return jsonResponse(200, {
       workspace_id: workspaceId,
       exists: true,
       synced: true,
+      voice_cycles_granted: voiceCyclesGranted,
       internal_status: updatedStatus,
       provider_status: providerStatus,
       payments_reconciled: remotePayments.length,

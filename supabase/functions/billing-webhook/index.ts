@@ -41,6 +41,7 @@ import {
   isWebhookEventEligibleForProcessing,
   webhookTokenMatches,
 } from '../_shared/billingWebhookReliability.ts';
+import { grantVoiceCycle, selectVoiceCycleGrants } from '../_shared/voiceCycleRules.ts';
 
 const ASAAS_WEBHOOK_TOKEN_HEADER = 'asaas-access-token';
 
@@ -391,19 +392,31 @@ async function processPaymentEvent({
     subscription: subscription ? { status: subscription.status as string, cancel_at_period_end: subscription.cancel_at_period_end as boolean } : null,
     now: new Date().toISOString(),
   });
+  let transitionApplied: boolean | null = null;
   if (patch && subscription) {
     // A guarda de status torna a transição observável e atômica: somente a
     // invocação que ainda encontra o status lido aplica o patch. Uma segunda
     // entrega concorrente recebe false e não produz efeito comercial duplo.
-    const transitionApplied = await patchSubscription({
+    transitionApplied = await patchSubscription({
       supabaseUrl,
       serviceRoleKey,
       subscriptionId: subscription.id as string,
       patch,
       expectedStatus: subscription.status as string,
     });
-    return { subscription_transition_applied: transitionApplied };
   }
+
+  // Cobrança paga da assinatura abre o ciclo de minutos de voz. Idempotente
+  // pelo id da cobrança: PAYMENT_CONFIRMED e PAYMENT_RECEIVED da mesma
+  // cobrança abrem um ciclo só.
+  if (subscription) {
+    const today = new Date().toISOString().slice(0, 10);
+    for (const grant of selectVoiceCycleGrants([payment], today)) {
+      await grantVoiceCycle({ supabaseUrl, serviceRoleKey, subscriptionId: subscription.id as string, grant });
+    }
+  }
+
+  if (transitionApplied !== null) return { subscription_transition_applied: transitionApplied };
 }
 
 // BLOCO ASAAS CHECKOUT: eventos de Checkout usados SOMENTE para higiene de
