@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSession } from '../../app/SessionContext.jsx';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
 import {
   isAppleWebKitRuntime,
@@ -615,11 +616,17 @@ function SimplifiedHomeView({
 
   // Conversa em tempo real (épico #116): a Uni ouve e fala continuamente, e
   // o que envolve dinheiro passa pelo mesmo envio do texto.
+  const { updateOwnProfile } = useSession();
+  const saveNamePronunciation = useCallback(
+    (pronunciation) => updateOwnProfile({ name_pronunciation: pronunciation }),
+    [updateOwnProfile],
+  );
   const realtime = useRealtimeUniConversation({
     messages,
     isBusy: isTyping || isExecuting,
     onSendTranscript,
     onActiveChange: onRealtimeVoiceActiveChange,
+    onSaveNamePronunciation: saveNamePronunciation,
   });
   const stopRealtime = realtime.stop;
   const isRealtimeActive = realtime.isActive;

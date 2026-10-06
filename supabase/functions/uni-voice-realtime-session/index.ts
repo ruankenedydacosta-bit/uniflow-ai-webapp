@@ -48,6 +48,7 @@ const UNI_REALTIME_INSTRUCTIONS = [
   'Se a resposta disser que há um rascunho aguardando confirmação, pergunte se pode confirmar. A pessoa também pode confirmar tocando no card da tela.',
   'Você não sabe nada sobre as finanças da pessoa além do que a ferramenta devolve. Nunca invente valores.',
   'Para conversa que não envolve dinheiro nem agenda, responda direto, sem a ferramenta.',
+  'Se a pessoa corrigir como se fala o nome dela, chame salvar_pronuncia_do_nome com a pronúncia certa e, daí em diante, diga o nome só desse jeito.',
   'Nada de risadas, gritos, voz infantil ou exagero teatral.',
 ].join('\n');
 
@@ -125,14 +126,83 @@ const SEND_TO_UNI_TOOL = {
   },
 };
 
-function buildSessionConfig({ model, voice, eagerness }: { model: string; voice: string; eagerness: string }) {
+// O nome e os parâmetros precisam bater com
+// src/features/uni-voice-realtime/realtimeToolBridge.js. Quem grava é o app,
+// no perfil da pessoa; a próxima conversa já nasce com a pronúncia.
+const SAVE_NAME_PRONUNCIATION_TOOL = {
+  type: 'function',
+  name: 'salvar_pronuncia_do_nome',
+  description: 'Guarda como se fala o nome da pessoa, para todas as conversas seguintes. Use quando a pessoa corrigir a pronúncia do nome dela.',
+  parameters: {
+    type: 'object',
+    properties: {
+      pronuncia: {
+        type: 'string',
+        description: 'Como o nome soa, escrito do jeito que se lê em português, com as sílabas separadas por hífen e a sílaba forte em maiúsculas. Ex.: jo-NA-tas.',
+      },
+    },
+    required: ['pronuncia'],
+  },
+};
+
+const MAX_NAME_LENGTH = 60;
+
+// Texto que vem do perfil entra nas instruções: uma linha, sem aspas, curto.
+function sanitizeProfileText(value: unknown) {
+  return typeof value === 'string'
+    ? value.replace(/[\p{Cc}"]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_NAME_LENGTH)
+    : '';
+}
+
+// Mesma regra de resolveUserDisplayName (src/features/simplified-app/simplifiedGreeting.js):
+// o nome preferido ou o primeiro nome.
+function resolveProfileName(profile: Record<string, unknown> | null) {
+  return sanitizeProfileText(profile?.preferred_name)
+    || sanitizeProfileText(profile?.full_name).split(' ')[0]
+    || '';
+}
+
+function buildNameInstructions(profile: Record<string, unknown> | null) {
+  const name = resolveProfileName(profile);
+  if (!name) return '';
+  const pronunciation = sanitizeProfileText(profile?.name_pronunciation);
+  if (!pronunciation) return `O nome da pessoa é ${name}.`;
+  return `O nome da pessoa é ${name} e se pronuncia assim: ${pronunciation}. Sempre que disser o nome, use essa pronúncia.`;
+}
+
+// Sem perfil legível, a conversa abre sem o nome: não vale perder a sessão
+// por isso.
+async function fetchProfileForVoice(supabaseUrl: string, serviceRoleKey: string, userId: string) {
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=preferred_name,full_name,name_pronunciation`,
+      { headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey } },
+    );
+    if (!response.ok) {
+      console.warn('uni_voice_realtime_profile_unavailable', { status: response.status });
+      return null;
+    }
+    const rows = await response.json();
+    return Array.isArray(rows) ? rows[0] ?? null : null;
+  } catch {
+    console.warn('uni_voice_realtime_profile_unavailable', { status: null });
+    return null;
+  }
+}
+
+function buildSessionConfig({ model, voice, eagerness, nameInstructions }: {
+  model: string;
+  voice: string;
+  eagerness: string;
+  nameInstructions: string;
+}) {
   return {
     expires_after: { anchor: 'created_at', seconds: CLIENT_SECRET_TTL_SECONDS },
     session: {
       type: 'realtime',
       model,
-      instructions: UNI_REALTIME_INSTRUCTIONS,
-      tools: [SEND_TO_UNI_TOOL],
+      instructions: nameInstructions ? `${UNI_REALTIME_INSTRUCTIONS}\n${nameInstructions}` : UNI_REALTIME_INSTRUCTIONS,
+      tools: [SEND_TO_UNI_TOOL, SAVE_NAME_PRONUNCIATION_TOOL],
       tool_choice: 'auto',
       audio: {
         input: {
@@ -227,6 +297,8 @@ Deno.serve(async (request) => {
     ? payload.eagerness
     : DEFAULT_EAGERNESS;
 
+  const nameInstructions = buildNameInstructions(await fetchProfileForVoice(supabaseUrl, serviceRoleKey, userId));
+
   // Reserva antes de qualquer chamada paga. O saldo e a assinatura são
   // conferidos pelo banco; o app só fica sabendo o resultado.
   const reserve = await callVoiceRpc(supabaseUrl, serviceRoleKey, 'voice_reserve_block', { p_user_id: userId });
@@ -252,7 +324,7 @@ Deno.serve(async (request) => {
         // Identifica o usuário para a OpenAI sem expor o id: só o hash.
         'OpenAI-Safety-Identifier': await sha256Hex(userId),
       },
-      body: JSON.stringify(buildSessionConfig({ model, voice, eagerness })),
+      body: JSON.stringify(buildSessionConfig({ model, voice, eagerness, nameInstructions })),
       signal: controller.signal,
     });
   } catch {

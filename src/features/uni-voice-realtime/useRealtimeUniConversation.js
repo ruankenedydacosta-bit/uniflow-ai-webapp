@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { REALTIME_STATUS } from './realtimeSessionModel.js';
 import {
+  buildNamePronunciationSavedOutput,
   buildRealtimeToolErrorOutput,
+  readRealtimeNamePronunciation,
   readRealtimeToolPhrase,
   REALTIME_TOOL_NAMES,
   REALTIME_TOOL_TIMEOUT_MS,
@@ -26,6 +28,9 @@ export function isRealtimeConversationActive(status) {
 // ferramenta, a frase vai para onSendTranscript (o mesmo caminho do texto) e
 // a ferramenta só devolve quando o chat termina o turno.
 //
+// onSaveNamePronunciation(pronuncia) grava no perfil como se fala o nome da
+// pessoa; a sessão seguinte já abre com ela.
+//
 // onActiveChange avisa o chat para não falar as respostas com a voz antiga
 // enquanto a conversa está aberta: quem fala é a Uni da conversa.
 export function useRealtimeUniConversation({
@@ -33,19 +38,35 @@ export function useRealtimeUniConversation({
   isBusy,
   onSendTranscript,
   onActiveChange,
+  onSaveNamePronunciation,
 }) {
   const messagesRef = useRef(messages);
   const isBusyRef = useRef(isBusy);
   const sendRef = useRef(onSendTranscript);
+  const saveNamePronunciationRef = useRef(onSaveNamePronunciation);
   const pendingTurnRef = useRef(null);
 
   useEffect(() => {
     messagesRef.current = messages;
     isBusyRef.current = isBusy;
     sendRef.current = onSendTranscript;
+    saveNamePronunciationRef.current = onSaveNamePronunciation;
   });
 
+  const saveNamePronunciation = useCallback(async (args) => {
+    const pronunciation = readRealtimeNamePronunciation(args);
+    if (!pronunciation) {
+      return buildRealtimeToolErrorOutput('Não entendi a pronúncia. Peça para a pessoa falar o nome de novo.');
+    }
+    const result = await saveNamePronunciationRef.current?.(pronunciation);
+    if (!result || result.error) {
+      return buildRealtimeToolErrorOutput('Não consegui guardar a pronúncia. Use do jeito novo nesta conversa e diga que na próxima pode ser preciso corrigir de novo.');
+    }
+    return buildNamePronunciationSavedOutput();
+  }, []);
+
   const handleToolCall = useCallback(({ name, args }) => {
+    if (name === REALTIME_TOOL_NAMES.SAVE_NAME_PRONUNCIATION) return saveNamePronunciation(args);
     if (name !== REALTIME_TOOL_NAMES.SEND_TO_UNI) {
       return Promise.resolve(buildRealtimeToolErrorOutput('Ferramenta desconhecida.'));
     }
@@ -70,7 +91,7 @@ export function useRealtimeUniConversation({
       pendingTurnRef.current = { turn, finish };
       sendRef.current?.(phrase, { source: 'voice' });
     });
-  }, []);
+  }, [saveNamePronunciation]);
 
   useEffect(() => {
     const pending = pendingTurnRef.current;

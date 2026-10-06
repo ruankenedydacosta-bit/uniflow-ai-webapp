@@ -228,6 +228,7 @@ export async function updateProfile(userId, changes = {}) {
     text_size: changes.text_size,
     avatar_path: changes.avatar_path,
     voice_provider: changes.voice_provider,
+    name_pronunciation: changes.name_pronunciation,
   };
   const updatePayload = Object.fromEntries(
     Object.entries(allowedChanges).filter(([, value]) => value !== undefined),

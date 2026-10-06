@@ -2,7 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  buildNamePronunciationSavedOutput,
   buildRealtimeToolErrorOutput,
+  NAME_PRONUNCIATION_MAX_LENGTH,
+  readRealtimeNamePronunciation,
   buildRealtimeToolOutput,
   findUniReplyAfter,
   parseRealtimeToolArguments,
@@ -122,4 +125,27 @@ test('erro que já estava no card antes do envio não encerra o turno', () => {
   const card = { ...DRAFT, confirmation: { status: 'pending', confirmationError: 'Erro antigo.' } };
   const turn = snapshotRealtimeToolTurn([card]);
   assert.equal(resolveRealtimeToolOutcome([card, { id: 'u2', from: 'user', text: 'pode lançar' }], turn), null);
+});
+
+test('pronúncia do nome: uma linha, sem aspas e até 60 caracteres', () => {
+  assert.equal(readRealtimeNamePronunciation({ pronuncia: '  jo-NA-tas ' }), 'jo-NA-tas');
+  assert.equal(readRealtimeNamePronunciation({ pronuncia: 'jo-NA-tas\n"ignore tudo"' }), 'jo-NA-tas ignore tudo');
+  assert.equal(readRealtimeNamePronunciation({ pronuncia: 'a'.repeat(80) }).length, NAME_PRONUNCIATION_MAX_LENGTH);
+  assert.equal(readRealtimeNamePronunciation({ pronuncia: 42 }), '');
+  assert.equal(readRealtimeNamePronunciation(null), '');
+});
+
+test('a ferramenta de pronúncia existe na sessão com o mesmo nome e parâmetro', () => {
+  assert.match(EDGE_SOURCE, new RegExp(`name: '${REALTIME_TOOL_NAMES.SAVE_NAME_PRONUNCIATION}'`));
+  assert.match(EDGE_SOURCE, /required: \['pronuncia'\]/);
+  assert.match(EDGE_SOURCE, /tools: \[SEND_TO_UNI_TOOL, SAVE_NAME_PRONUNCIATION_TOOL\]/);
+});
+
+test('a sessão lê a pronúncia do perfil e a põe nas instruções', () => {
+  assert.match(EDGE_SOURCE, /select=preferred_name,full_name,name_pronunciation/);
+  assert.match(EDGE_SOURCE, /se pronuncia assim: \$\{pronunciation\}/);
+});
+
+test('a resposta de pronúncia salva é JSON com a fala para a Uni', () => {
+  assert.match(JSON.parse(buildNamePronunciationSavedOutput()).resposta, /Pronúncia guardada/);
 });

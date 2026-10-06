@@ -7,7 +7,11 @@
 // supabase/functions/uni-voice-realtime-session/index.ts.
 export const REALTIME_TOOL_NAMES = Object.freeze({
   SEND_TO_UNI: 'enviar_para_uni',
+  SAVE_NAME_PRONUNCIATION: 'salvar_pronuncia_do_nome',
 });
+
+// Mesmo teto da coluna profiles.name_pronunciation.
+export const NAME_PRONUNCIATION_MAX_LENGTH = 60;
 
 // Tempo máximo esperando o chat responder antes de a Uni avisar a pessoa.
 export const REALTIME_TOOL_TIMEOUT_MS = 20000;
@@ -41,6 +45,24 @@ export function findUniReplyAfter(messages, baselineId) {
   const replies = after.slice(userIndex + 1)
     .filter((message) => message?.from === 'uni' && typeof message.text === 'string' && message.text.trim());
   return replies.at(-1) ?? null;
+}
+
+// Pronúncia do nome como o banco aceita: uma linha, sem aspas, até 60
+// caracteres. Vazio quando não há o que gravar.
+export function readRealtimeNamePronunciation(args) {
+  if (typeof args?.pronuncia !== 'string') return '';
+  return args.pronuncia
+    .replace(/[\p{Cc}"]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, NAME_PRONUNCIATION_MAX_LENGTH)
+    .trim();
+}
+
+export function buildNamePronunciationSavedOutput() {
+  return JSON.stringify({
+    resposta: 'Pronúncia guardada. Diga o nome do jeito novo para a pessoa conferir. As próximas conversas já começam com ela.',
+  });
 }
 
 export function buildRealtimeToolOutput(reply) {
