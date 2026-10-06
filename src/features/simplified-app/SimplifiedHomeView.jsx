@@ -49,6 +49,9 @@ import styles from './simplifiedApp.module.css';
 // conta fora do teste, minutos do mês esgotados ou sem assinatura.
 const REALTIME_TEXT_FALLBACK_CODES = new Set(['NOT_ALLOWED', 'VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE']);
 
+// Depois que a conversa termina, o orb e o botão central abrem outra.
+const REALTIME_RESTART_HINT = 'Toque na Uni para começar uma nova conversa.';
+
 const INTERRUPTIBLE_VOICE_STATUSES = new Set([
   VOICE_TTS_STATUS.LOADING,
   VOICE_TTS_STATUS.PLAYING,
@@ -821,16 +824,19 @@ function SimplifiedHomeView({
   const realtimeHint = (() => {
     const { status, error, errorCode } = realtime.state;
     if (status === REALTIME_STATUS.ERROR) {
-      return REALTIME_TEXT_FALLBACK_CODES.has(errorCode) ? `${error} Toque em Escrever.` : error;
+      return REALTIME_TEXT_FALLBACK_CODES.has(errorCode)
+        ? `${error} Toque em Escrever.`
+        : `${error} Toque na Uni para tentar de novo.`;
     }
     if (status === REALTIME_STATUS.CONNECTING) return 'Se o navegador pedir, permita o uso do microfone.';
     if (isRealtimeActive) return 'Fale normalmente. Você pode interromper a Uni a qualquer momento.';
     if (status === REALTIME_STATUS.ENDED && realtime.state.endReason === 'idle') {
-      return 'A conversa foi encerrada porque ninguém falou por um minuto.';
+      return `A conversa foi encerrada porque ninguém falou por um minuto. ${REALTIME_RESTART_HINT}`;
     }
     if (status === REALTIME_STATUS.ENDED && realtime.state.endReason === 'quota') {
       return 'Seus minutos de conversa por voz deste mês acabaram. Continue pelo texto. Toque em Escrever.';
     }
+    if (status === REALTIME_STATUS.ENDED) return REALTIME_RESTART_HINT;
     return null;
   })();
 

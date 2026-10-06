@@ -7,6 +7,7 @@ import {
 } from './realtimeSessionModel.js';
 import { buildRealtimeToolErrorOutput, parseRealtimeToolArguments } from './realtimeToolBridge.js';
 import { buildRealtimeGreetingEvent } from './realtimeGreeting.js';
+import { createConversationEndSound, shouldPlayConversationEndSound } from './conversationEndSound.js';
 import {
   applyVoiceRenewal,
   createVoiceReservation,
@@ -103,10 +104,21 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
   const stateRef = useRef(state);
   const connectionRef = useRef(null);
   const onToolCallRef = useRef(onToolCall);
+  const endSoundRef = useRef(null);
 
   useEffect(() => {
+    const previous = stateRef.current;
     stateRef.current = state;
+    if (shouldPlayConversationEndSound(previous, state)) endSoundRef.current?.play();
   }, [state]);
+
+  // Fecha o contexto de áudio depois que o som de fim tiver tempo de tocar,
+  // mesmo quando sair da tela é o que encerrou a conversa.
+  useEffect(() => () => {
+    const endSound = endSoundRef.current;
+    endSoundRef.current = null;
+    if (endSound) setTimeout(() => endSound.dispose(), 1000);
+  }, []);
 
   useEffect(() => {
     onToolCallRef.current = onToolCall;
@@ -157,6 +169,8 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
     if (connectionRef.current) return;
     const connection = {};
     connectionRef.current = connection;
+    endSoundRef.current ??= createConversationEndSound();
+    endSoundRef.current.prime();
     dispatch({ type: 'local.connecting' });
     const ensureActive = () => {
       if (connectionRef.current !== connection) throw new ConnectionCancelled();

@@ -246,3 +246,10 @@ test('sem minutos ou sem assinatura, a tela de voz manda a pessoa para o texto',
   assert.match(home, /REALTIME_TEXT_FALLBACK_CODES = new Set\(\['NOT_ALLOWED', 'VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE'\]\)/);
   assert.match(home, /endReason === 'quota'\) \{\s*return 'Seus minutos de conversa por voz deste mês acabaram\. Continue pelo texto\. Toque em Escrever\.';/);
 });
+
+test('conversa encerrada diz como começar outra', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /REALTIME_RESTART_HINT = 'Toque na Uni para começar uma nova conversa\.'/);
+  assert.match(home, /if \(status === REALTIME_STATUS\.ENDED\) return REALTIME_RESTART_HINT;/);
+  assert.match(home, /ninguém falou por um minuto\. \$\{REALTIME_RESTART_HINT\}/);
+});
