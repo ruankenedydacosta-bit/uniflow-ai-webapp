@@ -14,6 +14,7 @@ import {
   AsaasTimeoutError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
+import { parseSubscriptionTierRow } from '../_shared/subscriptionTiers.ts';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -80,7 +81,13 @@ async function hasWorkspaceMembership({
 async function getLocalSubscription({
   authorization, supabaseUrl, anonKey, workspaceId,
 }: { authorization: string; supabaseUrl: string; anonKey: string; workspaceId: string }) {
-  const params = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}`, limit: '1' });
+  // A mais recente do workspace, com o nível cobrado e o agendado.
+  const params = new URLSearchParams({
+    select: '*,tier:subscription_tiers!subscriptions_tier_id_fkey(id,name,price_brl,voice_seconds_per_cycle),pending_tier:subscription_tiers!subscriptions_pending_tier_id_fkey(id,name,price_brl,voice_seconds_per_cycle)',
+    workspace_id: `eq.${workspaceId}`,
+    order: 'created_at.desc',
+    limit: '1',
+  });
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     headers: { Authorization: authorization, apikey: anonKey },
   });
@@ -218,12 +225,19 @@ Deno.serve(async (request) => {
     }
   }
 
+  const tier = parseSubscriptionTierRow(local.tier);
+  const pendingTier = parseSubscriptionTierRow(local.pending_tier);
+
   return jsonResponse(200, {
     workspace_id: workspaceId,
     exists: true,
     plan_id: local.plan_id,
-    plan_name: PLAN_LABELS[local.plan_id] ?? local.plan_id,
-    value: 29.9,
+    plan_name: tier?.name ?? PLAN_LABELS[local.plan_id] ?? local.plan_id,
+    value: tier?.priceBrl ?? 29.9,
+    tier_id: tier?.id ?? null,
+    voice_minutes: tier ? Math.round(tier.voiceSecondsPerCycle / 60) : null,
+    pending_tier_id: pendingTier?.id ?? null,
+    pending_tier_name: pendingTier?.name ?? null,
     cycle: 'MONTHLY',
     internal_status: local.status,
     provider_status: providerStatus,

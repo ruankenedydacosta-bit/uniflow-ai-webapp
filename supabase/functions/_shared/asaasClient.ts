@@ -308,6 +308,15 @@ export function createAsaasClient(config: AsaasClientConfig) {
     getSubscription(asaasSubscriptionId: string) {
       return request('getSubscription', `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}`, { method: 'GET' });
     },
+    // Atualiza valor/descricao da assinatura. Com updatePendingPayments, as
+    // cobrancas ainda nao pagas passam a ter o valor novo (troca de plano).
+    // https://docs.asaas.com/reference/update-existing-subscription
+    updateSubscription(asaasSubscriptionId: string, payload: Record<string, unknown>) {
+      return request('updateSubscription', `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
     // Cancela -- interrompe a geracao de NOVAS cobrancas (efeito documentado
     // da Asaas); o direito de acesso interno ate o fim do periodo ja pago e
     // responsabilidade do NOSSO backend (cancel_at_period_end), nunca da

@@ -207,8 +207,10 @@ export function resolveSubscriptionPatchForEvent({
 //
 // `now` e injetavel (nunca `new Date()` direto) para testes com relogio
 // controlado, mesmo padrao das demais funcoes puras deste modulo.
+// tier: nível escolhido (épico #116). Sem ele, o item é o Plano Pessoal de
+// sempre, a R$ 29,90.
 export function buildCheckoutPayload({
-  workspaceId, successUrl, cancelUrl, expiredUrl, now, asaasCustomerId,
+  workspaceId, successUrl, cancelUrl, expiredUrl, now, asaasCustomerId, tier,
 }: {
   workspaceId: string;
   successUrl: string;
@@ -216,6 +218,7 @@ export function buildCheckoutPayload({
   expiredUrl?: string;
   now: string;
   asaasCustomerId?: string | null;
+  tier?: { name: string; priceBrl: number } | null;
 }): Record<string, unknown> {
   const nextDueDate = new Date(now).toISOString().slice(0, 10);
   const callback: Record<string, unknown> = { successUrl, cancelUrl };
@@ -229,10 +232,10 @@ export function buildCheckoutPayload({
     callback,
     items: [
       {
-        name: 'Plano Pessoal',
-        description: 'Assinatura mensal Plano Pessoal - UniFlow AI',
+        name: tier ? tier.name : 'Plano Pessoal',
+        description: `Assinatura mensal ${tier ? tier.name : 'Plano Pessoal'} - UniFlow AI`,
         quantity: 1,
-        value: PLAN_PRICE_BRL,
+        value: tier ? tier.priceBrl : PLAN_PRICE_BRL,
       },
     ],
     subscription: {

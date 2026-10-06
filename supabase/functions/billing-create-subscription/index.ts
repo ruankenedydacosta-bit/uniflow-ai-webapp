@@ -31,6 +31,12 @@ import {
   AsaasValidationError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
+import {
+  buildSubscriptionDescription,
+  fetchActiveSubscriptionTier,
+  resolveRequestedTierId,
+  type SubscriptionTier,
+} from '../_shared/subscriptionTiers.ts';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -40,9 +46,9 @@ const ALLOWED_PLAN_IDS = new Set(['pro']);
 const ALLOWED_PAYMENT_METHODS = new Set(['pix', 'pix_automatico', 'credit_card']);
 // BILLING2: parametros comerciais definidos SOMENTE pelo backend -- nunca
 // aceitos do frontend, mesmo que enviados.
-const PLAN_PRICE = 29.9;
+// Preço e descrição vêm do nível escolhido (subscription_tiers), lido do
+// banco -- nunca do corpo da requisição.
 const PLAN_CYCLE = 'MONTHLY';
-const PLAN_DESCRIPTION = 'Assinatura Plano Pessoal - UniFlow AI';
 const FORBIDDEN_CLIENT_FIELDS = [
   'value', 'price', 'discount', 'cycle', 'next_due_date', 'status',
   'asaas_subscription_id', 'external_reference', 'customer_id',
@@ -138,10 +144,10 @@ async function getNonTerminalSubscription({
 }
 
 async function persistSubscription({
-  supabaseUrl, serviceRoleKey, workspaceId, asaasCustomerId, asaasSubscriptionId, paymentMethod,
+  supabaseUrl, serviceRoleKey, workspaceId, asaasCustomerId, asaasSubscriptionId, paymentMethod, tierId,
 }: {
   supabaseUrl: string; serviceRoleKey: string; workspaceId: string; asaasCustomerId: string;
-  asaasSubscriptionId: string; paymentMethod: string;
+  asaasSubscriptionId: string; paymentMethod: string; tierId: string;
 }) {
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
     method: 'POST',
@@ -161,12 +167,49 @@ async function persistSubscription({
       asaas_customer_id: asaasCustomerId,
       asaas_subscription_id: asaasSubscriptionId,
       payment_method: paymentMethod,
+      tier_id: tierId,
       cancel_at_period_end: false,
     }),
   });
   if (!response.ok) return null;
   const rows = await response.json();
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+}
+
+async function patchSubscriptionTier({
+  supabaseUrl, serviceRoleKey, subscriptionId, tierId,
+}: { supabaseUrl: string; serviceRoleKey: string; subscriptionId: string; tierId: string }) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?id=eq.${subscriptionId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ tier_id: tierId }),
+  });
+  if (!response.ok) throw new Error('BILLING_WRITE_FAILED:subscription_tier');
+}
+
+// Pix ainda não pago e outro plano escolhido: a cobrança pendente passa a
+// ter o preço do plano novo, sem criar outra assinatura.
+async function switchPendingPixTier({
+  client, supabaseUrl, serviceRoleKey, subscription, tier,
+}: {
+  client: ReturnType<typeof createAsaasClient>;
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  subscription: Record<string, unknown>;
+  tier: SubscriptionTier;
+}) {
+  if (subscription.tier_id === tier.id) return;
+  await client.updateSubscription(subscription.asaas_subscription_id as string, {
+    value: tier.priceBrl,
+    description: buildSubscriptionDescription(tier),
+    updatePendingPayments: true,
+  });
+  await patchSubscriptionTier({ supabaseUrl, serviceRoleKey, subscriptionId: subscription.id as string, tierId: tier.id });
 }
 
 function todayIsoDate() {
@@ -267,6 +310,15 @@ Deno.serve(async (request) => {
     return jsonResponse(400, errorBody('INVALID_PLAN', 'plan_id invalido -- so "pro" (Plano Pessoal) e vendido no MVP.'), origin);
   }
 
+  const tierId = resolveRequestedTierId(payload?.tier_id);
+  if (!tierId) {
+    return jsonResponse(400, errorBody('INVALID_TIER', 'tier_id invalido -- use essencial, uni_voz ou uni_voz_plus.'), origin);
+  }
+  const tier = await fetchActiveSubscriptionTier({ supabaseUrl, apiKey: anonKey, authorization, tierId });
+  if (!tier) {
+    return jsonResponse(400, errorBody('INVALID_TIER', 'Este plano nao esta disponivel.'), origin);
+  }
+
   const paymentMethod = payload?.payment_method;
   if (typeof paymentMethod !== 'string' || !ALLOWED_PAYMENT_METHODS.has(paymentMethod)) {
     return jsonResponse(
@@ -300,6 +352,7 @@ const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
           baseUrl: asaasBaseUrl,
           allowProduction: true,
         });
+        await switchPendingPixTier({ client, supabaseUrl, serviceRoleKey, subscription: existingSubscription, tier });
 
         pix = await fetchPixQrCode(
           client,
@@ -362,10 +415,10 @@ const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
       // BILLING2: mapeamento payment_method (nosso) -> billingType (Asaas).
       // pix -> 'PIX'; credit_card -> 'CREDIT_CARD'. Nunca 'BOLETO'.
       billingType: paymentMethod === 'pix' ? 'PIX' : 'CREDIT_CARD',
-      value: PLAN_PRICE,
+      value: tier.priceBrl,
       cycle: PLAN_CYCLE,
       nextDueDate: todayIsoDate(),
-      description: PLAN_DESCRIPTION,
+      description: buildSubscriptionDescription(tier),
       externalReference: workspaceId,
     };
     if (creditCardToken) {
@@ -381,7 +434,7 @@ const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
     const persisted = await persistSubscription({
       supabaseUrl, serviceRoleKey, workspaceId,
       asaasCustomerId: billingCustomer.asaas_customer_id,
-      asaasSubscriptionId, paymentMethod,
+      asaasSubscriptionId, paymentMethod, tierId: tier.id,
     });
     if (!persisted) {
       return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Assinatura criada na Asaas, mas nao foi possivel salvar localmente. Use billing-sync para reconciliar.'), origin);

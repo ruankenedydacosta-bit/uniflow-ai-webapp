@@ -57,3 +57,59 @@ test('nível desconhecido não existe', () => {
   assert.equal(findSubscriptionTier('uni_voz').voiceMinutes, 60);
   assert.equal(findSubscriptionTier('pro'), null);
 });
+
+// ---------------------------------------------------------------------------
+// Edge Functions: o nível escolhido define o preço, sempre lido do banco.
+// ---------------------------------------------------------------------------
+
+test('nível pedido: ausente vira Uni Voz (app antigo); desconhecido é recusado', async () => {
+  const { resolveRequestedTierId } = await import('../../supabase/functions/_shared/subscriptionTiers.ts');
+  assert.equal(resolveRequestedTierId(undefined), 'uni_voz');
+  assert.equal(resolveRequestedTierId(null), 'uni_voz');
+  assert.equal(resolveRequestedTierId('uni_voz_plus'), 'uni_voz_plus');
+  assert.equal(resolveRequestedTierId('pro'), null);
+  assert.equal(resolveRequestedTierId(29.9), null);
+});
+
+test('linha do catálogo só vale com preço positivo e cota numérica', async () => {
+  const { parseSubscriptionTierRow } = await import('../../supabase/functions/_shared/subscriptionTiers.ts');
+  assert.deepEqual(
+    parseSubscriptionTierRow({ id: 'essencial', name: 'Essencial', price_brl: '14.90', voice_seconds_per_cycle: 1200 }),
+    { id: 'essencial', name: 'Essencial', priceBrl: 14.9, voiceSecondsPerCycle: 1200 },
+  );
+  assert.equal(parseSubscriptionTierRow({ id: 'x', name: 'X', price_brl: 0, voice_seconds_per_cycle: 1 }), null);
+  assert.equal(parseSubscriptionTierRow(null), null);
+});
+
+test('checkout de cartão cobra o preço do nível; sem nível, o Plano Pessoal de sempre', async () => {
+  const { buildCheckoutPayload } = await import('../../supabase/functions/_shared/billingSubscriptionRules.ts');
+  const base = { workspaceId: 'w', successUrl: 'https://a/s', cancelUrl: 'https://a/c', now: '2026-10-06T12:00:00Z' };
+  const plus = buildCheckoutPayload({ ...base, tier: { name: 'Uni Voz Plus', priceBrl: 69.9 } });
+  assert.equal(plus.items[0].value, 69.9);
+  assert.equal(plus.items[0].name, 'Uni Voz Plus');
+  const legacy = buildCheckoutPayload(base);
+  assert.equal(legacy.items[0].value, 29.9);
+  assert.equal(legacy.items[0].name, 'Plano Pessoal');
+});
+
+test('serviço do front envia só o nível, nunca o preço', async () => {
+  const { createBillingService } = await import('./billingService.js');
+  const calls = [];
+  const service = createBillingService({
+    supabase: { auth: { getSession: async () => ({ data: { session: { access_token: 't' } } }) } },
+    supabaseUrl: 'https://x.supabase.co',
+    supabaseAnonKey: 'anon',
+    fetchImpl: async (url, init) => {
+      calls.push({ url, body: JSON.parse(init.body) });
+      return { ok: true, status: 200, json: async () => ({}) };
+    },
+  });
+  await service.createCheckout({ workspaceId: 'w', tierId: 'essencial' });
+  await service.createSubscription({ workspaceId: 'w', planId: 'pro', tierId: 'uni_voz_plus', paymentMethod: 'pix' });
+  assert.equal(calls[0].body.tier_id, 'essencial');
+  assert.equal(calls[1].body.tier_id, 'uni_voz_plus');
+  for (const call of calls) {
+    assert.equal('value' in call.body, false);
+    assert.equal('price' in call.body, false);
+  }
+});

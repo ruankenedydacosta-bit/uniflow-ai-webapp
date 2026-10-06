@@ -57,6 +57,7 @@ import {
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
 import { buildCheckoutPayload } from '../_shared/billingSubscriptionRules.ts';
+import { fetchActiveSubscriptionTier, resolveRequestedTierId } from '../_shared/subscriptionTiers.ts';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -165,8 +166,8 @@ async function getNonTerminalSubscription({
 }
 
 async function insertPendingCheckoutSubscription({
-  supabaseUrl, serviceRoleKey, workspaceId, asaasCheckoutId,
-}: { supabaseUrl: string; serviceRoleKey: string; workspaceId: string; asaasCheckoutId: string }) {
+  supabaseUrl, serviceRoleKey, workspaceId, asaasCheckoutId, tierId,
+}: { supabaseUrl: string; serviceRoleKey: string; workspaceId: string; asaasCheckoutId: string; tierId: string }) {
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
     method: 'POST',
     headers: {
@@ -183,6 +184,7 @@ async function insertPendingCheckoutSubscription({
       status: 'pending',
       payment_method: 'credit_card',
       asaas_checkout_id: asaasCheckoutId,
+      tier_id: tierId,
       cancel_at_period_end: false,
     }),
   });
@@ -196,8 +198,8 @@ async function insertPendingCheckoutSubscription({
 // vincular uma assinatura real (asaas_subscription_id ainda nulo) -- so
 // atualiza o novo checkoutId gerado.
 async function updatePendingCheckoutSubscription({
-  supabaseUrl, serviceRoleKey, subscriptionId, asaasCheckoutId,
-}: { supabaseUrl: string; serviceRoleKey: string; subscriptionId: string; asaasCheckoutId: string }) {
+  supabaseUrl, serviceRoleKey, subscriptionId, asaasCheckoutId, tierId,
+}: { supabaseUrl: string; serviceRoleKey: string; subscriptionId: string; asaasCheckoutId: string; tierId: string }) {
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?id=eq.${subscriptionId}`, {
     method: 'PATCH',
     headers: {
@@ -206,7 +208,8 @@ async function updatePendingCheckoutSubscription({
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
     },
-    body: JSON.stringify({ asaas_checkout_id: asaasCheckoutId }),
+    // Uma tentativa nova pode trocar o plano escolhido.
+    body: JSON.stringify({ asaas_checkout_id: asaasCheckoutId, tier_id: tierId }),
   });
   if (!response.ok) return null;
   const rows = await response.json();
@@ -256,9 +259,19 @@ Deno.serve(async (request) => {
     return jsonResponse(400, errorBody('INVALID_WORKSPACE', 'workspace_id invalido.'), origin);
   }
 
+  const tierId = resolveRequestedTierId(payload?.tier_id);
+  if (!tierId) {
+    return jsonResponse(400, errorBody('INVALID_TIER', 'tier_id invalido -- use essencial, uni_voz ou uni_voz_plus.'), origin);
+  }
+
   const isMember = await hasWorkspaceMembership({ authorization, supabaseUrl, anonKey, userId, workspaceId });
   if (!isMember) {
     return jsonResponse(403, errorBody('WORKSPACE_NOT_AUTHORIZED', 'Workspace nao autorizado.'), origin);
+  }
+
+  const tier = await fetchActiveSubscriptionTier({ supabaseUrl, apiKey: anonKey, authorization, tierId });
+  if (!tier) {
+    return jsonResponse(400, errorBody('INVALID_TIER', 'Este plano nao esta disponivel.'), origin);
   }
 
   const existingSubscription = await getNonTerminalSubscription({ authorization, supabaseUrl, anonKey, workspaceId });
@@ -309,6 +322,7 @@ Deno.serve(async (request) => {
       expiredUrl,
       now: new Date().toISOString(),
       asaasCustomerId,
+      tier,
     });
 
     const created = await client.createCheckout(checkoutPayload) as { id?: string; link?: string; status?: string };
@@ -320,10 +334,10 @@ Deno.serve(async (request) => {
 
     const persisted = existingSubscription
       ? await updatePendingCheckoutSubscription({
-          supabaseUrl, serviceRoleKey, subscriptionId: existingSubscription.id, asaasCheckoutId: checkoutId,
+          supabaseUrl, serviceRoleKey, subscriptionId: existingSubscription.id, asaasCheckoutId: checkoutId, tierId: tier.id,
         })
       : await insertPendingCheckoutSubscription({
-          supabaseUrl, serviceRoleKey, workspaceId, asaasCheckoutId: checkoutId,
+          supabaseUrl, serviceRoleKey, workspaceId, asaasCheckoutId: checkoutId, tierId: tier.id,
         });
     if (!persisted) {
       return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Checkout criado na Asaas, mas nao foi possivel salvar localmente.'), origin);

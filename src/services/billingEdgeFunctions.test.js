@@ -202,11 +202,15 @@ test('billing-create-subscription: só aceita plan_id "pro" -- qualquer outro é
   assert.match(CREATE_SUBSCRIPTION, /INVALID_PLAN/);
 });
 
-test('billing-create-subscription: valor é SEMPRE R$ 29,90 e ciclo SEMPRE mensal, definidos só pelo backend', () => {
-  assert.match(CREATE_SUBSCRIPTION, /PLAN_PRICE = 29\.9;/);
+test('billing-create-subscription: valor vem do nível escolhido, lido do banco; ciclo SEMPRE mensal (épico #116)', () => {
+  assert.match(CREATE_SUBSCRIPTION, /const tierId = resolveRequestedTierId\(payload\?\.tier_id\);/);
+  assert.match(CREATE_SUBSCRIPTION, /const tier = await fetchActiveSubscriptionTier\(/);
+  assert.match(CREATE_SUBSCRIPTION, /INVALID_TIER/);
   assert.match(CREATE_SUBSCRIPTION, /PLAN_CYCLE = 'MONTHLY';/);
-  assert.match(CREATE_SUBSCRIPTION, /value: PLAN_PRICE,/);
+  assert.match(CREATE_SUBSCRIPTION, /value: tier\.priceBrl,/);
   assert.match(CREATE_SUBSCRIPTION, /cycle: PLAN_CYCLE,/);
+  assert.match(CREATE_SUBSCRIPTION, /tier_id: tierId,/);
+  assert.doesNotMatch(CREATE_SUBSCRIPTION, /value: 29\.9|PLAN_PRICE = /);
 });
 
 test('billing-create-subscription: boleto nunca é enviado como billingType (só documentado como opção existente da Asaas, nunca usado); payment_method inválido é rejeitado', () => {
@@ -295,7 +299,9 @@ test('billing-create-subscription: falha ao buscar o QR nunca quebra a criação
 
 test('billing-get-subscription: resposta normalizada -- nunca o payload bruto da Asaas', () => {
   assert.doesNotMatch(GET_SUBSCRIPTION, /return jsonResponse\(200, remote/);
-  assert.match(GET_SUBSCRIPTION, /plan_name: PLAN_LABELS\[local\.plan_id\]/);
+  assert.match(GET_SUBSCRIPTION, /plan_name: tier\?\.name \?\? PLAN_LABELS\[local\.plan_id\]/);
+  assert.match(GET_SUBSCRIPTION, /value: tier\?\.priceBrl \?\? 29\.9,/);
+  assert.match(GET_SUBSCRIPTION, /pending_tier_id: pendingTier\?\.id \?\? null,/);
 });
 
 test('billing-get-subscription: assinatura ausente é tratada (exists:false), nunca um erro', () => {

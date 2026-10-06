@@ -96,10 +96,13 @@ export function createBillingService({
         mobile_phone: mobilePhone,
       });
     },
-    createSubscription({ workspaceId, planId, paymentMethod, creditCardToken } = {}) {
+    // tierId: nível escolhido (essencial, uni_voz, uni_voz_plus). O preço é
+    // lido do banco pela Edge Function, nunca enviado daqui.
+    createSubscription({ workspaceId, planId, tierId, paymentMethod, creditCardToken } = {}) {
       return invokeBillingFunction('billing-create-subscription', {
         workspace_id: workspaceId,
         plan_id: planId,
+        tier_id: tierId,
         payment_method: paymentMethod,
         credit_card_token: creditCardToken,
       });
@@ -112,9 +115,10 @@ export function createBillingService({
     // ver comentario em billing-create-checkout/index.ts). Devolve
     // { checkout_id, checkout_url, status, external_reference } -- o
     // chamador so precisa redirecionar para checkout_url.
-    createCheckout({ workspaceId } = {}) {
+    createCheckout({ workspaceId, tierId } = {}) {
       return invokeBillingFunction('billing-create-checkout', {
         workspace_id: workspaceId,
+        tier_id: tierId,
       });
     },
     cancelSubscription({ workspaceId } = {}) {
