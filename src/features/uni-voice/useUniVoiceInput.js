@@ -13,6 +13,7 @@ import {
 import { getVoiceInputMessage } from './voiceInputMessages.js';
 import { normalizeTelemetryErrorCode, telemetry } from '../observability/index.js';
 import { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';
+import { createSilenceMonitor, VOICE_ENDPOINT_EVENTS } from './voiceEndpointing.js';
 import {
   createGa4VoiceEventLifecycle,
 } from '../analytics/ga4ProductEvents.js';
@@ -35,6 +36,9 @@ export function useUniVoiceInput({
   workspaceId,
   runtime,
   transcriptionProvider = uniVoiceTranscriptionProvider,
+  // ENVIO-AUTO: envia sozinho quando a pessoa para de falar. O toque em
+  // "Enviar" continua valendo para quem quiser encerrar antes.
+  autoStopOnSilence = true,
 } = {}) {
   const [state, dispatch] = useReducer(voiceCaptureReducer, initialVoiceCaptureState);
   const adapterRef = useRef(null);
@@ -51,6 +55,8 @@ export function useUniVoiceInput({
   // getUserMedia) -- exposta via getActiveStream() para quem quiser
   // visualizar a intensidade da voz (AnalyserNode), puramente informativo.
   const activeStreamRef = useRef(null);
+  const silenceMonitorRef = useRef(null);
+  const autoEndRef = useRef(null);
   const callbacksRef = useRef({
     onFinalTranscript,
     onBeforeStart,
@@ -74,6 +80,8 @@ export function useUniVoiceInput({
       expectedSessionId !== null
       && activeSessionIdRef.current !== expectedSessionId
     ) return false;
+    silenceMonitorRef.current?.dispose();
+    silenceMonitorRef.current = null;
     adapterRef.current?.dispose();
     adapterRef.current = null;
     activeStreamRef.current = null;
@@ -214,6 +222,14 @@ export function useUniVoiceInput({
       onStreamReady: (stream) => {
         if (!isCurrentSession()) return;
         activeStreamRef.current = stream;
+        if (!autoStopOnSilence) return;
+        silenceMonitorRef.current?.dispose();
+        silenceMonitorRef.current = createSilenceMonitor({
+          stream,
+          runtime: browserRuntime,
+          onEndOfSpeech: () => autoEndRef.current?.(sessionId, VOICE_ENDPOINT_EVENTS.END_OF_SPEECH),
+          onNoSpeech: () => autoEndRef.current?.(sessionId, VOICE_ENDPOINT_EVENTS.NO_SPEECH),
+        });
       },
       onAudio: (capture) => {
         if (!isCurrentSession()) return;
@@ -265,7 +281,7 @@ export function useUniVoiceInput({
     const started = await adapter.start();
     if (!started && adapterRef.current === adapter) releaseAdapter(sessionId);
     return started;
-  }, [releaseAdapter, runtime, state.status, transcribe, workspaceId]);
+  }, [autoStopOnSilence, releaseAdapter, runtime, state.status, transcribe, workspaceId]);
 
   const prepareMicrophone = useCallback(() => {
     const browserRuntime = runtime ?? (typeof window !== 'undefined' ? window : undefined);
@@ -310,6 +326,35 @@ export function useUniVoiceInput({
     if (!stopped) return cancel();
     return stopped;
   }, [cancel]);
+
+  // ENVIO-AUTO: fim de fala detectado -> mesmo caminho do toque em "Enviar".
+  // Nada dito em alguns segundos -> encerra sem enviar áudio para
+  // transcrição (silêncio puro costuma virar texto inventado no STT).
+  const handleAutoEnd = useCallback((sessionId, reason) => {
+    if (activeSessionIdRef.current !== sessionId || !adapterRef.current) return;
+    if (reason === VOICE_ENDPOINT_EVENTS.NO_SPEECH) {
+      void telemetry.error('voice.failure', {
+        errorCode: normalizeTelemetryErrorCode('no_speech', 'CAPTURE_FAILED'),
+        stage: 'capture',
+        source: 'microphone',
+        recoverable: true,
+      }, { workspaceId });
+      dispatch({
+        type: 'FAIL',
+        status: VOICE_CAPTURE_STATES.NO_SPEECH,
+        errorCode: 'no_speech',
+      });
+      voiceAnalyticsRef.current.complete(sessionId, GA4_VOICE_RESULTS.ERROR);
+      releaseAdapter(sessionId);
+      return;
+    }
+    const stopped = adapterRef.current.stop(VOICE_ENDPOINT_EVENTS.END_OF_SPEECH);
+    if (!stopped) cancel();
+  }, [cancel, releaseAdapter, workspaceId]);
+
+  useEffect(() => {
+    autoEndRef.current = handleAutoEnd;
+  }, [handleAutoEnd]);
 
   const toggle = useCallback(() => {
     if (state.status === VOICE_CAPTURE_STATES.LISTENING) return stop();

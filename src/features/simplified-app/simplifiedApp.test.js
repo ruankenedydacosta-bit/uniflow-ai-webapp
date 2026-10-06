@@ -246,7 +246,7 @@ test('saudação usa primeiro nome real sem inferir tratamento', () => {
   assert.equal(greeting.name, 'Ricardo');
   assert.equal(greeting.heading, 'Ricardo');
   assert.equal(greeting.salutation, '');
-  assert.deepEqual(greeting.visualGreeting, { eyebrow: 'Boas-vindas,', name: 'Ricardo' });
+  assert.deepEqual(greeting.visualGreeting, { eyebrow: 'Que bom te ver,', name: 'Ricardo' });
   assert.equal(greeting.hasKnownName, true);
   assert.equal(Object.isFrozen(greeting), true);
 });
@@ -265,7 +265,8 @@ test('saudação respeita tratamento explícito e usa fallback seguro', () => {
 
 test('Home usa a mesma saudação estruturada no texto e no TTS', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /useMemo\(\s*\(\) => resolveSimplifiedGreeting\(profile, user\),\s*\[profile, user\]/);
+  // A abertura (Bom dia, Oi, Olá...) é sorteada uma vez por carga da página.
+  assert.match(home, /useMemo\(\s*\(\) => resolveSimplifiedGreeting\(profile, user, getPageLoadGreetingOpening\(\)\),\s*\[profile, user\]/);
   assert.match(home, /greeting\.visualGreeting\.eyebrow/);
   assert.match(home, /greeting\.displayName/);
   assert.doesNotMatch(home, /<h1[^>]*>\{greeting\.addressedName\}<\/h1>/);
@@ -306,6 +307,10 @@ test('saudação automática usa o gesto seguinte somente quando o Safari bloque
   assert.match(home, /retryWelcomeOnGestureRef\.current = autoplayBlocked/);
   assert.match(home, /attemptWelcomeVoice\(\{ userInitiated: true \}\)/);
   assert.match(home, /window\.addEventListener\('pointerdown', retryAfterUserGesture, true\)/);
+  // Voltar à Home não repete a saudação: sair dela descarta o retry
+  // pendente, e o toque que sai da Home não inicia a fala.
+  assert.match(home, /return \(\) => clearWelcomeVoiceBlocked\(sessionKey\);/);
+  assert.match(home, /closest\('\[data-uni-voice-control\], a\[href\]'\)/);
   assert.match(home, /source: 'greeting',[\s\S]{0,80}\.\.\.requestMetadata/);
   assert.doesNotMatch(home, />\s*Ouvir saudação\s*</);
 });

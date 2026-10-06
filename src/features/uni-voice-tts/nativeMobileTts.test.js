@@ -9,17 +9,10 @@ const messageBubbleSource = fs.readFileSync(
   'utf8',
 );
 
-test('retry manual tenta o caminho sincronico antes de qualquer preparePlayback assíncrono', () => {
-  const directIndex = hookSource.indexOf('provider.speakFromUserGesture?.(sanitized, callbacks)');
-  const prepareIndex = hookSource.indexOf('await preparePlayback()', directIndex);
-  assert.ok(directIndex > 0);
-  assert.ok(prepareIndex > directIndex);
-});
-
-test('hook central resolve o provider salvo no perfil para todos os consumidores', () => {
-  assert.match(hookSource, /const \{ user, profile \} = useSession\(\)/);
-  assert.match(hookSource, /resolveVoiceProvider\(profile\?\.voice_provider\)/);
-  assert.match(hookSource, /selectedProvider,/);
+test('hook central usa só a voz da Uni, sem voz do navegador nem como reserva', () => {
+  assert.match(hookSource, /createElevenLabsTtsProvider\(\{/);
+  assert.doesNotMatch(hookSource, /createBrowserSpeechTtsProvider|createFallbackVoiceTtsProvider|speakFromUserGesture/);
+  assert.doesNotMatch(hookSource, /voice_provider/);
 });
 
 test('falha de TTS preserva a resposta textual e oferece retry manual', () => {

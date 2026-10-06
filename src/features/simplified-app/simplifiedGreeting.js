@@ -6,32 +6,81 @@ function firstName(value) {
   return cleanName(value).split(' ')[0] || '';
 }
 
-const TREATMENT_RULES = Object.freeze({
-  voce: Object.freeze({ label: '', welcome: 'Boas-vindas' }),
-  senhor: Object.freeze({ label: 'senhor', welcome: 'Seja bem-vindo' }),
-  senhora: Object.freeze({ label: 'senhora', welcome: 'Seja bem-vinda' }),
-  senhorita: Object.freeze({ label: 'senhorita', welcome: 'Seja bem-vinda' }),
-  doutor: Object.freeze({ label: 'doutor', welcome: 'Seja bem-vindo' }),
-  doutora: Object.freeze({ label: 'doutora', welcome: 'Seja bem-vinda' }),
-  prefer_not_to_say: Object.freeze({ label: '', welcome: 'Boas-vindas' }),
-  other: Object.freeze({ label: '', welcome: 'Boas-vindas' }),
+// Tratamento escolhido no perfil. Entra só na fala, antes do nome.
+const TREATMENT_LABELS = Object.freeze({
+  voce: '',
+  senhor: 'senhor',
+  senhora: 'senhora',
+  senhorita: 'senhorita',
+  doutor: 'doutor',
+  doutora: 'doutora',
+  prefer_not_to_say: '',
+  other: '',
 });
 
-function resolveTreatment(profile) {
+function resolveTreatmentLabel(profile) {
   const preference = cleanName(profile?.treatment_preference).toLowerCase();
-  const rule = TREATMENT_RULES[preference] ?? TREATMENT_RULES.voce;
   const customTreatment = preference === 'other'
     ? cleanName(profile?.custom_treatment)
     : '';
-  const treatmentLabel = customTreatment && customTreatment.length <= 40
-    ? customTreatment.toLocaleLowerCase('pt-BR')
-    : rule.label;
+  if (customTreatment && customTreatment.length <= 40) {
+    return customTreatment.toLocaleLowerCase('pt-BR');
+  }
+  return TREATMENT_LABELS[preference] ?? '';
+}
 
-  return Object.freeze({
-    preference: Object.hasOwn(TREATMENT_RULES, preference) ? preference : 'voce',
-    treatmentLabel,
-    visualGreeting: rule.welcome,
-  });
+// Aberturas da saudação. A tela mostra só a abertura e o nome; a fala
+// completa a frase como uma secretária que já se coloca à disposição.
+// Nenhuma frase presume o gênero de quem ouve ("pronta" e "comigo" são da Uni).
+export const GREETING_OPENINGS = Object.freeze({
+  PERIODO: 'periodo',
+  OI: 'oi',
+  OLA: 'ola',
+  TUDO_BEM: 'tudo_bem',
+  QUE_BOM: 'que_bom',
+});
+
+const GREETING_OPENING_IDS = Object.freeze(Object.values(GREETING_OPENINGS));
+
+const PERIOD_GREETINGS = Object.freeze({
+  manha: Object.freeze({ opening: 'Bom dia', mark: '!', followUp: 'Vamos deixar o dia em ordem?' }),
+  tarde: Object.freeze({ opening: 'Boa tarde', mark: '!', followUp: 'No que posso ajudar agora?' }),
+  noite: Object.freeze({ opening: 'Boa noite', mark: '!', followUp: 'Quer fechar o dia comigo?' }),
+});
+
+const OPENING_GREETINGS = Object.freeze({
+  [GREETING_OPENINGS.OI]: Object.freeze({ opening: 'Oi', mark: '!', followUp: 'Tudo pronto por aqui.' }),
+  [GREETING_OPENINGS.OLA]: Object.freeze({ opening: 'Olá', mark: '!', followUp: 'No que vamos trabalhar hoje?' }),
+  [GREETING_OPENINGS.TUDO_BEM]: Object.freeze({ opening: 'Tudo bem', mark: '?', followUp: 'Estou aqui pro que precisar.' }),
+  [GREETING_OPENINGS.QUE_BOM]: Object.freeze({ opening: 'Que bom te ver', mark: '!', followUp: '' }),
+});
+
+function greetingForHour(hour) {
+  if (hour >= 5 && hour < 12) return PERIOD_GREETINGS.manha;
+  if (hour >= 12 && hour < 18) return PERIOD_GREETINGS.tarde;
+  return PERIOD_GREETINGS.noite;
+}
+
+function resolveGreetingParts(opening, hour) {
+  if (opening === GREETING_OPENINGS.PERIODO) return greetingForHour(hour);
+  return OPENING_GREETINGS[opening] ?? OPENING_GREETINGS[GREETING_OPENINGS.QUE_BOM];
+}
+
+export function pickGreetingOpening({ random = Math.random, now = new Date() } = {}) {
+  const index = Math.min(
+    GREETING_OPENING_IDS.length - 1,
+    Math.floor(random() * GREETING_OPENING_IDS.length),
+  );
+  return Object.freeze({ opening: GREETING_OPENING_IDS[index], hour: now.getHours() });
+}
+
+// Sorteada uma vez por carga de página: navegar e voltar à Home mantém a
+// mesma saudação, e só um refresh troca.
+let pageLoadGreetingOpening = null;
+
+export function getPageLoadGreetingOpening() {
+  pageLoadGreetingOpening ??= pickGreetingOpening();
+  return pageLoadGreetingOpening;
 }
 
 export function resolveUserDisplayName(profile, user) {
@@ -43,27 +92,37 @@ export function resolveUserDisplayName(profile, user) {
     || 'você';
 }
 
-export function resolveSimplifiedGreeting(profile, user) {
+export function resolveSimplifiedGreeting(
+  profile,
+  user,
+  { opening = GREETING_OPENINGS.QUE_BOM, hour = new Date().getHours() } = {},
+) {
   const displayName = resolveUserDisplayName(profile, user);
-  const treatment = resolveTreatment(profile);
-  const addressedName = treatment.treatmentLabel
-    ? `${treatment.treatmentLabel} ${displayName}`
+  const hasKnownName = displayName !== 'você';
+  const treatmentLabel = resolveTreatmentLabel(profile);
+  const addressedName = treatmentLabel
+    ? `${treatmentLabel} ${displayName}`
     : displayName;
+  const parts = resolveGreetingParts(opening, hour);
   const visualGreeting = Object.freeze({
-    eyebrow: `${treatment.visualGreeting},`,
+    eyebrow: `${parts.opening},`,
     name: displayName,
   });
-  const spokenGreeting = `${treatment.visualGreeting}, ${addressedName}.`;
+  // Sem nome conhecido a fala não chama a pessoa de "você".
+  const salutation = hasKnownName
+    ? `${parts.opening}, ${addressedName}${parts.mark}`
+    : `${parts.opening}${parts.mark}`;
+  const spokenGreeting = parts.followUp ? `${salutation} ${parts.followUp}` : salutation;
 
   return Object.freeze({
     displayName,
-    treatmentLabel: treatment.treatmentLabel,
+    treatmentLabel,
     addressedName,
     visualGreeting,
     spokenGreeting,
     name: displayName,
-    hasKnownName: displayName !== 'você',
-    salutation: treatment.treatmentLabel,
+    hasKnownName,
+    salutation: treatmentLabel,
     heading: addressedName,
     voiceText: spokenGreeting,
   });

@@ -17,7 +17,7 @@ import {
   resolveSimplifiedUniState,
   SIMPLIFIED_UNI_STATES,
 } from './simplifiedHomeState.js';
-import { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
+import { getPageLoadGreetingOpening, resolveSimplifiedGreeting } from './simplifiedGreeting.js';
 import { useUniProcessingMessage } from '../uni-chat/useUniProcessingMessage.js';
 import { useTextAudioSync } from '../uni-chat/useTextAudioSync.js';
 import {
@@ -350,7 +350,7 @@ function SimplifiedHomeView({
   // nunca carrega o historico inteiro (isso fica com Sobre a UniFlow AI).
   const { pendingUpdate: pendingUniUpdate } = useUniUpdates({ limit: 1 });
   const greeting = useMemo(
-    () => resolveSimplifiedGreeting(profile, user),
+    () => resolveSimplifiedGreeting(profile, user, getPageLoadGreetingOpening()),
     [profile, user],
   );
   const sessionKey = buildWelcomeSessionKey(user, session);
@@ -431,7 +431,9 @@ function SimplifiedHomeView({
     if (isAppleVoiceRuntime) return undefined;
     retryWelcomeOnGestureRef.current = getWelcomeVoiceBlocked(sessionKey)?.code
       === VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED;
-    return undefined;
+    // A saudação só toca na primeira visita à Home da carga. Quem sai sem
+    // ouvir (autoplay bloqueado e nenhum toque na Home) não a ouve ao voltar.
+    return () => clearWelcomeVoiceBlocked(sessionKey);
   }, [isAppleVoiceRuntime, sessionKey]);
 
   useEffect(() => {
@@ -446,7 +448,8 @@ function SimplifiedHomeView({
 
     const retryAfterUserGesture = (event) => {
       if (!retryWelcomeOnGestureRef.current || document.visibilityState === 'hidden') return;
-      if (event.target instanceof Element && event.target.closest('[data-uni-voice-control]')) return;
+      // Toque que sai da Home (aba da barra, link) não inicia a saudação.
+      if (event.target instanceof Element && event.target.closest('[data-uni-voice-control], a[href]')) return;
       retryWelcomeOnGestureRef.current = false;
       void attemptWelcomeVoice({ userInitiated: true });
     };

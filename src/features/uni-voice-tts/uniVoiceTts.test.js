@@ -581,15 +581,33 @@ test('Edge Function rejeita campos nao permitidos no payload (user_id/voice_id/m
   assert.match(EDGE_SOURCE, /'user_id' in payload \|\| 'voice_id' in payload \|\| 'model_id' in payload \|\| 'api_key' in payload/);
 });
 
-test('Edge Function nunca loga a chave, e a usa apenas no header xi-api-key da ElevenLabs; resposta de audio nunca e cacheada', () => {
-  assert.doesNotMatch(EDGE_SOURCE, /console\.(log|info|warn|error)\([^)]*providerKey/);
-  // Unica atribuicao (leitura do secret) + unico uso legitimo (header da
-  // ElevenLabs) -- em nenhum lugar o valor de providerKey e interpolado
-  // dentro do corpo/mensagem de uma resposta ao cliente.
-  const providerKeyUsages = EDGE_SOURCE.match(/providerKey/g) ?? [];
-  assert.equal(providerKeyUsages.length, 4, 'providerKey deve aparecer só na leitura do secret, no check de config, no diagnóstico de variável ausente e no header xi-api-key');
+test('Edge Function nunca loga a chave e só a usa nos headers de autenticação do provedor; resposta de audio nunca e cacheada', () => {
+  assert.doesNotMatch(EDGE_SOURCE, /console\.(log|info|warn|error)\([^)]*providerKey\b/);
+  assert.doesNotMatch(EDGE_SOURCE, /jsonResponse\([^)]*providerKey\b/);
+  // TTS-OPENAI: dois provedores, dois usos legitimos -- o Bearer da OpenAI e
+  // o xi-api-key da ElevenLabs. Em nenhum outro lugar o valor da chave e
+  // interpolado (corpo, mensagem ou URL).
+  const interpolations = EDGE_SOURCE.match(/\$\{providerKey\}/g) ?? [];
+  assert.equal(interpolations.length, 1, 'a chave só é interpolada no header Authorization da OpenAI');
+  assert.match(EDGE_SOURCE, /Authorization: `Bearer \$\{providerKey\}`,/);
   assert.match(EDGE_SOURCE, /'xi-api-key': providerKey,/);
   assert.match(EDGE_SOURCE, /'Cache-Control': 'no-store'/);
+});
+
+test('TTS-OPENAI -- provedor padrão é a OpenAI (gpt-4o-mini-tts); ElevenLabs só com UNI_TTS_PROVIDER=elevenlabs explícito', () => {
+  assert.match(EDGE_SOURCE, /const ttsProvider = resolveTtsProvider\(Deno\.env\.get\('UNI_TTS_PROVIDER'\)\);/);
+  assert.match(EDGE_SOURCE, /=== 'elevenlabs' \? 'elevenlabs' : 'openai'/);
+  assert.match(EDGE_SOURCE, /OPENAI_TTS_URL = 'https:\/\/api\.openai\.com\/v1\/audio\/speech'/);
+  assert.match(EDGE_SOURCE, /OPENAI_DEFAULT_MODEL = 'gpt-4o-mini-tts'/);
+  assert.match(EDGE_SOURCE, /Deno\.env\.get\('OPENAI_TTS_VOICE'\) \|\| OPENAI_DEFAULT_VOICE/);
+  assert.match(EDGE_SOURCE, /isOpenAi \? 'OPENAI_API_KEY' : 'ELEVENLABS_API_KEY'/);
+});
+
+test('TTS-OPENAI -- a persona de voz da Uni vai em instructions, e voz/modelo nunca vêm do cliente', () => {
+  assert.match(EDGE_SOURCE, /instructions: UNI_VOICE_INSTRUCTIONS,/);
+  assert.match(EDGE_SOURCE, /português do Brasil/);
+  assert.match(EDGE_SOURCE, /input: text,/);
+  assert.doesNotMatch(EDGE_SOURCE, /payload\.(?:voice|model|instructions)\b/);
 });
 
 test('Edge Function tem modelo/formato/timeout configuraveis com defaults seguros -- so chave e voice ID sao obrigatorios', () => {

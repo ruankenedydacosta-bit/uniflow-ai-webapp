@@ -38,7 +38,7 @@ export function getVoiceInputMessage({ status, interimTranscript = '', profileId
     return 'Aguardando permissão para usar o microfone...';
   }
   if (status === VOICE_CAPTURE_STATES.LISTENING) {
-    return interimTranscript ? `Ouvindo: ${interimTranscript}` : 'Ouvindo... toque novamente para enviar.';
+    return interimTranscript ? `Ouvindo: ${interimTranscript}` : 'Ouvindo... Pode falar. Envio quando você parar.';
   }
   if (status === VOICE_CAPTURE_STATES.PROCESSING) {
     return 'Processando sua fala com segurança...';

@@ -15,19 +15,30 @@ function resolveBuildId() {
 }
 
 function versionManifestPlugin({ buildId, releasedAt }) {
+  const source = `${JSON.stringify({
+    buildId,
+    releasedAt,
+    title: 'UniFlow AI',
+    description: 'Atualização do aplicativo',
+    novidades: [],
+  }, null, 2)}\n`
   return {
     name: 'uniflow-version-manifest',
+    // Em dev o arquivo não existe em disco: sem isto, a checagem de
+    // atualização (pwaUpdateStore) recebe 404 a cada verificação.
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        if (request.url?.split('?')[0] !== '/version.json') return next()
+        response.setHeader('Content-Type', 'application/json')
+        response.setHeader('Cache-Control', 'no-store')
+        response.end(source)
+      })
+    },
     generateBundle() {
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
-        source: `${JSON.stringify({
-          buildId,
-          releasedAt,
-          title: 'UniFlow AI',
-          description: 'Atualização do aplicativo',
-          novidades: [],
-        }, null, 2)}\n`,
+        source,
       })
     },
   }

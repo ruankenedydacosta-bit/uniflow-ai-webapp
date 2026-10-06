@@ -49,7 +49,7 @@ export default function TtsPlayground() {
   return (
     <section className={styles.playground} aria-labelledby="tts-playground-title">
       <div className={styles.header}>
-        <p className={styles.eyebrow}>Fundação de voz (ElevenLabs)</p>
+        <p className={styles.eyebrow}>Fundação de voz premium</p>
         <h2 id="tts-playground-title">Gerar voz (Text-to-Speech)</h2>
         <p className={styles.hint}>
           Área de teste da infraestrutura -- ainda não conectada ao chat principal da Uni.

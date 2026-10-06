@@ -3,13 +3,11 @@ const attemptedWelcomeKeys = new Set();
 // tocando a voz) -- o autoplay de mensagens só é armado quando este
 // conjunto esvazia para a sessão atual (prioridade exclusiva da saudação).
 const pendingWelcomeKeys = new Set();
-// BUGFIX iOS (saudação perdida ao navegar Home -> outra rota -> Home): o
-// erro de autoplay bloqueado (ex.: NotAllowedError no Safari) vivia só em
-// useState local de SimplifiedHomeView -- some ao desmontar. Como
-// claimWelcomeVoice só libera UMA tentativa automática por sessão.
-// Persistir o erro aqui mantém o retry coerente entre montagens nos
-// navegadores que ainda usam a tentativa automática. No iOS, a ativação
-// explícita de voz e microfone evita depender desse autoplay.
+// Erro de autoplay bloqueado (ex.: NotAllowedError) da tentativa automática.
+// Enquanto a Home estiver montada, o próximo toque nela refaz a saudação. A
+// Home limpa o erro ao desmontar: a saudação só toca na primeira visita da
+// carga da página, e voltar à Home depois de navegar não a repete. No iOS, a
+// ativação explícita de voz e microfone evita depender desse autoplay.
 const blockedWelcomeErrors = new Map();
 const activatedWelcomeKeys = new Set();
 
@@ -70,7 +68,7 @@ export function isWelcomeVoiceActivated(key) {
 }
 
 // Guarda o erro de uma tentativa automática para que o próximo gesto válido
-// possa refazê-la mesmo depois de a Home remontar.
+// na Home possa refazê-la.
 export function markWelcomeVoiceBlocked(key, error) {
   if (key) blockedWelcomeErrors.set(key, error ?? null);
 }

@@ -8,15 +8,51 @@
 // ela é chamada tanto por /dev/uni-audio-library quanto pelo chat principal
 // (ELEVEN2).
 //
-// A chave real do provedor (ELEVENLABS_API_KEY) vive APENAS aqui, no
-// ambiente da Edge Function, nunca no bundle Vite/frontend. O mesmo vale
-// para a service role key usada no cache: nunca sai deste arquivo.
+// A chave real do provedor (OPENAI_API_KEY ou ELEVENLABS_API_KEY) vive
+// APENAS aqui, no ambiente da Edge Function, nunca no bundle Vite/frontend.
+// O mesmo vale para a service role key usada no cache: nunca sai deste
+// arquivo.
+//
+// TTS-OPENAI: o provedor padrao passou a ser a OpenAI (gpt-4o-mini-tts).
+// A ElevenLabs continua disponivel como reserva, escolhida so pelo
+// servidor com UNI_TTS_PROVIDER=elevenlabs -- o cliente continua sem saber
+// qual provedor gerou o audio.
+
+const OPENAI_TTS_URL = 'https://api.openai.com/v1/audio/speech';
+const OPENAI_DEFAULT_MODEL = 'gpt-4o-mini-tts';
+const OPENAI_DEFAULT_VOICE = 'marin';
+const OPENAI_OUTPUT_FORMAT = 'mp3';
+// Persona de voz da Uni (docs/00-master/UNI_PERSONALITY_V1.md). Vai no
+// campo `instructions` do gpt-4o-mini-tts e controla sotaque, energia,
+// entonação e ritmo. Mudar este texto invalida o cache sozinho: o hash das
+// instruções entra na chave (computeCacheKey).
+const UNI_VOICE_INSTRUCTIONS = [
+  'Idioma e sotaque: português do Brasil, sotaque neutro de São Paulo. Pronuncie como uma brasileira nativa, nunca como estrangeira falando português.',
+  'Identidade: você é a Uni, secretária pessoal que cuida das finanças de quem fala com você. Animada, atenciosa e com vontade de ajudar, como uma secretária que gosta do que faz e está feliz em atender.',
+  'Energia: alta e natural, com um sorriso aberto que dá para ouvir em todas as frases. Nunca monótona, sonolenta ou robótica, e nunca com voz de locutora ou de atendimento automático.',
+  'Entonação: melodia viva e variada. Comece as frases para cima, dê ênfase às palavras que importam e termine com leveza, sem cair num tom grave e arrastado.',
+  'Ritmo: ágil e de conversa, como ao telefone com alguém de quem você gosta. Pausas curtas e naturais, com um respiro rápido antes de valores em dinheiro e datas.',
+  'Saudações: calorosas e animadas, como quem recebe uma pessoa que estava esperando.',
+  'Notícias ruins, como saldo negativo ou conta atrasada: mantenha o calor, baixe um pouco a energia e fale com firmeza e acolhimento, sem dramatizar e sem julgar.',
+  'Números: leia valores, percentuais e datas por extenso, como uma pessoa leria. Nunca soletre dígitos.',
+  'Nomes próprios: pronuncie à brasileira marcas e bancos usados no Brasil, como Pix, Nubank, Itaú, iFood e Mercado Pago.',
+  'Perguntas: entonação de pergunta clara e simpática, sem pressionar.',
+  'Limites: nada de risadas, gritos, voz infantil ou exagero teatral.',
+].join('\n');
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 const DEFAULT_MODEL_ID = 'eleven_multilingual_v2';
 const DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128';
 const DEFAULT_TIMEOUT_MS = 15000;
 const MAX_TEXT_LENGTH = 600;
+
+type TtsProvider = 'openai' | 'elevenlabs';
+
+// Valor ausente ou desconhecido cai na OpenAI: so um 'elevenlabs' explicito
+// liga a reserva.
+function resolveTtsProvider(value: string | undefined): TtsProvider {
+  return (value ?? '').trim().toLowerCase() === 'elevenlabs' ? 'elevenlabs' : 'openai';
+}
 
 // ELEVEN2.1: cache persistente (Supabase Storage + tabela de metadados).
 const CACHE_BUCKET = 'uni-voice-cache';
@@ -78,7 +114,9 @@ function jsonResponse(
 
 async function readProviderErrorTag(response: Response) {
   const body = await response.json().catch(() => null);
-  const candidate = body?.detail?.status ?? body?.detail?.code ?? body?.status ?? body?.code;
+  // ElevenLabs: { detail: { status } }. OpenAI: { error: { code, type } }.
+  const candidate = body?.detail?.status ?? body?.detail?.code ?? body?.status ?? body?.code
+    ?? body?.error?.code ?? body?.error?.type;
   return typeof candidate === 'string' ? candidate.toLowerCase() : '';
 }
 
@@ -186,9 +224,14 @@ async function sha256Hex(input: string) {
 // qualquer dado invisivel de sessao como caminho. So o hash entra no
 // caminho de storage e na tabela de metadados.
 async function computeCacheKey({
-  userId, voiceId, modelId, outputFormat, text,
-}: { userId: string; voiceId: string; modelId: string; outputFormat: string; text: string }) {
-  return sha256Hex(`${CACHE_ALGO_VERSION}:${userId}:${voiceId}:${modelId}:${outputFormat}:${text}`);
+  userId, voiceId, modelId, outputFormat, voiceInstructions, text,
+}: {
+  userId: string; voiceId: string; modelId: string; outputFormat: string; voiceInstructions: string; text: string;
+}) {
+  // As instruções de voz entram na chave: com outro prompt, a mesma frase
+  // soa diferente e não pode reaproveitar o áudio antigo.
+  const instructionsHash = await sha256Hex(voiceInstructions);
+  return sha256Hex(`${CACHE_ALGO_VERSION}:${userId}:${voiceId}:${modelId}:${outputFormat}:${instructionsHash}:${text}`);
 }
 
 type CacheRow = { storage_path: string; expires_at: string };
@@ -297,6 +340,41 @@ async function upsertCacheMetadata(
   }).catch(() => { /* falha ao registrar cache nunca impede a resposta ja gerada */ });
 }
 
+function buildProviderRequest(
+  { ttsProvider, providerKey, voiceId, modelId, outputFormat, text }:
+  { ttsProvider: TtsProvider; providerKey: string; voiceId: string; modelId: string; outputFormat: string; text: string },
+) {
+  if (ttsProvider === 'openai') {
+    return {
+      providerUrl: OPENAI_TTS_URL,
+      headers: {
+        Authorization: `Bearer ${providerKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: modelId,
+        voice: voiceId,
+        input: text,
+        instructions: UNI_VOICE_INSTRUCTIONS,
+        response_format: outputFormat,
+      }),
+    };
+  }
+  return {
+    providerUrl: `${ELEVENLABS_BASE_URL}/${encodeURIComponent(voiceId)}`
+      + `?output_format=${encodeURIComponent(outputFormat)}`,
+    headers: {
+      'xi-api-key': providerKey,
+      'Content-Type': 'application/json',
+      Accept: 'audio/mpeg',
+    },
+    body: JSON.stringify({
+      text,
+      model_id: modelId,
+    }),
+  };
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get('Origin') ?? '';
   if (!isAllowedOrigin(origin)) {
@@ -313,14 +391,26 @@ Deno.serve(async (request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-  const providerKey = Deno.env.get('ELEVENLABS_API_KEY') ?? '';
-  const voiceId = Deno.env.get('ELEVENLABS_VOICE_ID') ?? '';
-  // Modelo/formato/timeout tem defaults seguros -- só a chave e o voice ID
-  // são estritamente obrigatórios (a voz definitiva da Uni ainda não foi
-  // escolhida; ELEVENLABS_VOICE_ID é provisório/de teste até então).
-  const modelId = Deno.env.get('ELEVENLABS_MODEL_ID') || DEFAULT_MODEL_ID;
-  const outputFormat = Deno.env.get('ELEVENLABS_OUTPUT_FORMAT') || DEFAULT_OUTPUT_FORMAT;
-  const timeoutMs = Number(Deno.env.get('ELEVENLABS_TIMEOUT_MS')) || DEFAULT_TIMEOUT_MS;
+  const ttsProvider = resolveTtsProvider(Deno.env.get('UNI_TTS_PROVIDER'));
+  const isOpenAi = ttsProvider === 'openai';
+  const providerKeyName = isOpenAi ? 'OPENAI_API_KEY' : 'ELEVENLABS_API_KEY';
+  const providerKey = Deno.env.get(providerKeyName) ?? '';
+  // Modelo/voz/formato/timeout tem defaults seguros. Na OpenAI só a chave é
+  // obrigatória; na ElevenLabs também o voice ID (ELEVENLABS_VOICE_ID é
+  // provisório/de teste).
+  const voiceId = isOpenAi
+    ? Deno.env.get('OPENAI_TTS_VOICE') || OPENAI_DEFAULT_VOICE
+    : Deno.env.get('ELEVENLABS_VOICE_ID') ?? '';
+  const modelId = isOpenAi
+    ? Deno.env.get('OPENAI_TTS_MODEL') || OPENAI_DEFAULT_MODEL
+    : Deno.env.get('ELEVENLABS_MODEL_ID') || DEFAULT_MODEL_ID;
+  const outputFormat = isOpenAi
+    ? OPENAI_OUTPUT_FORMAT
+    : Deno.env.get('ELEVENLABS_OUTPUT_FORMAT') || DEFAULT_OUTPUT_FORMAT;
+  // A ElevenLabs não recebe instruções de voz.
+  const voiceInstructions = isOpenAi ? UNI_VOICE_INSTRUCTIONS : '';
+  const timeoutMs = Number(Deno.env.get('UNI_TTS_TIMEOUT_MS') || Deno.env.get('ELEVENLABS_TIMEOUT_MS'))
+    || DEFAULT_TIMEOUT_MS;
   // Injetada automaticamente pelo runtime das Edge Functions -- nunca
   // configurada manualmente como secret customizado.
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -335,7 +425,7 @@ Deno.serve(async (request) => {
     // apenas os nomes das secrets não configuradas neste ambiente.
     const missing = [
       !supabaseUrl && 'SUPABASE_URL',
-      !providerKey && 'ELEVENLABS_API_KEY',
+      !providerKey && providerKeyName,
       !voiceId && 'ELEVENLABS_VOICE_ID',
     ].filter(Boolean);
     console.warn('uni_voice_tts_configuration_error', { missing });
@@ -373,7 +463,7 @@ Deno.serve(async (request) => {
   if (cacheEnabled) {
     try {
       const cacheKey = await computeCacheKey({
-        userId, voiceId, modelId, outputFormat, text,
+        userId, voiceId, modelId, outputFormat, voiceInstructions, text,
       });
       const cacheRow = await findCacheRow({
         supabaseUrl, serviceRoleKey, userId, cacheKey,
@@ -406,19 +496,13 @@ Deno.serve(async (request) => {
   const timeout = setTimeout(() => controller.abort('timeout'), timeoutMs);
 
   try {
-    const providerUrl = `${ELEVENLABS_BASE_URL}/${encodeURIComponent(voiceId)}`
-      + `?output_format=${encodeURIComponent(outputFormat)}`;
+    const { providerUrl, headers, body } = buildProviderRequest({
+      ttsProvider, providerKey, voiceId, modelId, outputFormat, text,
+    });
     const providerResponse = await fetch(providerUrl, {
       method: 'POST',
-      headers: {
-        'xi-api-key': providerKey,
-        'Content-Type': 'application/json',
-        Accept: 'audio/mpeg',
-      },
-      body: JSON.stringify({
-        text,
-        model_id: modelId,
-      }),
+      headers,
+      body,
       signal: controller.signal,
     });
 
@@ -478,7 +562,7 @@ Deno.serve(async (request) => {
     if (cacheEnabled) {
       try {
         const cacheKey = await computeCacheKey({
-          userId, voiceId, modelId, outputFormat, text,
+          userId, voiceId, modelId, outputFormat, voiceInstructions, text,
         });
         const storagePath = `${userId}/${cacheKey}.mp3`;
         const uploaded = await uploadCacheAudio({

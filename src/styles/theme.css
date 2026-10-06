@@ -814,6 +814,18 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
   --uf-app-shadow-rgb:     15, 23, 42;
   --uf-app-glass:          rgba(255,255,255,.74);
   --uf-app-glass-strong:   rgba(255,255,255,.92);
+  /* Marca como linha e brilho (usados pela direção "Uni no centro"). */
+  --uf-app-glow-brand:
+    radial-gradient(closest-side at 35% 55%, rgba(29,78,219,.10), transparent),
+    radial-gradient(closest-side at 70% 45%, rgba(124,58,237,.08), transparent);
+  --uf-app-line-brand:     linear-gradient(90deg, #1D4EDB, #7C3AED 55%, #10B981);
+  --uf-app-rule-fade:
+    linear-gradient(90deg, transparent, rgba(15,23,42,.12) 48px,
+      rgba(15,23,42,.12) calc(100% - 48px), transparent);
+  --uf-app-card-uni:
+    linear-gradient(155deg, rgba(29,78,216,.08), rgba(124,58,237,.05) 45%, transparent 80%),
+    #FFFFFF;
+  --uf-app-card-uni-border: rgba(124,58,237,.22);
   --uf-app-shell-bg:
     radial-gradient(circle at 50% 26%, rgba(29,78,216,.06), transparent 34%),
     #F4F7FC;
@@ -881,6 +893,18 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
   --uf-app-shadow-rgb:     0, 0, 0;
   --uf-app-glass:          rgba(26,29,36,.78);
   --uf-app-glass-strong:   rgba(26,29,36,.94);
+  /* Marca como linha e brilho (usados pela direção "Uni no centro"). */
+  --uf-app-glow-brand:
+    radial-gradient(closest-side at 35% 55%, rgba(91,141,239,.14), transparent),
+    radial-gradient(closest-side at 70% 45%, rgba(167,139,250,.12), transparent);
+  --uf-app-line-brand:     linear-gradient(90deg, #1D4EDB, #7C3AED 55%, #10B981);
+  --uf-app-rule-fade:
+    linear-gradient(90deg, transparent, rgba(255,255,255,.14) 48px,
+      rgba(255,255,255,.14) calc(100% - 48px), transparent);
+  --uf-app-card-uni:
+    linear-gradient(155deg, rgba(91,141,239,.14), rgba(167,139,250,.10) 45%, transparent 80%),
+    #1A1D24;
+  --uf-app-card-uni-border: rgba(167,139,250,.26);
   --uf-app-shell-bg:
     radial-gradient(circle at 50% 26%, rgba(91,141,239,.07), transparent 34%),
     #12141A;
@@ -889,75 +913,86 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
 }
 
 /* --- Tema UNIFLOW (identidade da marca) --- */
+/* Direção "Uni no centro" (projeto de design UniFlow App, base Nocturne):
+   fundo azul-acinzentado quieto, superfícies lisas com borda fina e a marca
+   (azul -> roxo -> verde) como linha e brilho, nunca como preenchimento. */
 [data-theme="uniflow"]{
-  --uf-app-canvas:         #030B1D;
-  --uf-app-surface:        #0A1935;
-  --uf-app-surface-2:      #0E1F3E;
-  --uf-app-surface-3:      #142B52;
-  --uf-app-border:         rgba(86,109,151,.42);
-  --uf-app-border-strong:  rgba(86,109,151,.62);
+  --uf-app-canvas:         #161826;
+  --uf-app-surface:        #1F2130;
+  --uf-app-surface-2:      #252736;
+  --uf-app-surface-3:      #2D3040;
+  --uf-app-border:         rgba(233,233,237,.10);
+  --uf-app-border-strong:  rgba(233,233,237,.18);
 
-  --uf-app-text:           #F8FAFC;
-  --uf-app-text-2:         #A8B2C5;
-  --uf-app-text-3:         #7C8AA8;
+  --uf-app-text:           #E9E9ED;
+  --uf-app-text-2:         #B2B6CA;
+  --uf-app-text-3:         #9397AB;
 
-  --uf-app-primary:        #2563EB;
-  --uf-app-primary-text:   #5E93FF;
+  --uf-app-primary:        #1D4EDB;
+  --uf-app-primary-text:   #7D99EB;
   --uf-app-ai:             #7C3AED;
-  --uf-app-ai-text:        #A78BFA;
+  --uf-app-ai-text:        #B28EF5;
   --uf-app-success:        #10B981;
-  --uf-app-success-text:   #2DD4BF;
+  --uf-app-success-text:   #54CBA7;
   --uf-app-danger:         #EF4444;
   --uf-app-danger-text:    #FCA5A5;
   --uf-app-warning:        #F59E0B;
   --uf-app-warning-text:   #FBBF24;
 
-  --uf-app-focus:          #67E8F9;
+  --uf-app-focus:          #B28EF5;
   --uf-app-cyan:           #22D3EE;
   --uf-app-on-accent:      #FFFFFF;
-  --uf-app-card-bg:        linear-gradient(145deg, rgba(14,31,62,.90), rgba(4,13,33,.94));
-  --uf-app-card-bg-2:      linear-gradient(145deg, rgba(20,43,82,.90), rgba(10,25,53,.94));
-  --uf-app-body-bg:        #020713;
-  --uf-app-panel:          rgba(4,13,33,.92);
-  --uf-app-panel-muted:    rgba(3,12,29,.78);
-  --uf-app-state-tail:     rgba(15,23,42,.3);
-  --uf-app-nav-scrim:      linear-gradient(180deg, transparent, rgba(1,6,17,.98) 24%);
-  --uf-app-nav-surface:    rgba(3,10,26,.96);
-  --uf-app-nav-border:     rgba(37,99,235,.48);
-  --uf-app-card-premium:   linear-gradient(145deg, rgba(15,30,58,.88), rgba(5,14,34,.95));
-  --uf-app-card-row:       linear-gradient(105deg, rgba(11,26,54,.9), rgba(5,14,32,.97));
-  --uf-app-card-row-hover: rgba(14,35,70,.96);
-  --uf-app-field-panel:    rgba(5,16,37,.78);
-  --uf-app-empty-panel:    rgba(5,15,34,.65);
-  --uf-app-overlay-panel:  rgba(3,8,20,.68);
-  --uf-app-voice-surface:  #030C1D;
+  --uf-app-card-bg:        #1F2130;
+  --uf-app-card-bg-2:      #252736;
+  --uf-app-body-bg:        #161826;
+  --uf-app-panel:          rgba(31,33,48,.94);
+  --uf-app-panel-muted:    rgba(22,24,38,.80);
+  --uf-app-state-tail:     rgba(22,24,38,.3);
+  --uf-app-nav-scrim:      linear-gradient(180deg, transparent, #161826 24px);
+  --uf-app-nav-surface:    rgba(22,24,38,.96);
+  --uf-app-nav-border:     rgba(233,233,237,.10);
+  --uf-app-card-premium:
+    linear-gradient(155deg, rgba(29,78,219,.20), rgba(124,58,237,.12) 45%, transparent 80%),
+    #1F2130;
+  --uf-app-card-row:       #1F2130;
+  --uf-app-card-row-hover: #262839;
+  --uf-app-field-panel:    rgba(37,39,54,.80);
+  --uf-app-empty-panel:    rgba(31,33,48,.65);
+  --uf-app-overlay-panel:  rgba(22,24,38,.70);
+  --uf-app-voice-surface:  #161826;
   --uf-app-voice-text:     var(--uf-app-on-accent);
-  --uf-app-soft-shadow:    0 18px 52px rgba(0,0,0,.34);
+  --uf-app-soft-shadow:    0 16px 40px rgba(0,0,0,.45);
   --text-primary: var(--uf-app-text); --text-secondary: var(--uf-app-text-2);
   --text-muted: var(--uf-app-text-3); --text-on-accent: var(--uf-app-on-accent);
   --text-danger: var(--uf-app-danger-text); --text-success: var(--uf-app-success-text);
   --text-link: var(--uf-app-primary-text);
 
   --uf-app-color-scheme:   dark;
-  --uf-app-overlay:        rgba(2,4,10,.80);
-  --uf-app-primary-subtle: rgba(37,99,235,.18);
+  --uf-app-overlay:        rgba(14,15,24,.80);
+  --uf-app-primary-subtle: rgba(29,78,219,.18);
   --uf-app-ai-subtle:      rgba(124,58,237,.18);
-  --uf-app-success-subtle: rgba(16,185,129,.18);
+  --uf-app-success-subtle: rgba(16,185,129,.16);
   --uf-app-danger-subtle:  rgba(239,68,68,.16);
-  --uf-app-warning-subtle: rgba(245,158,11,.18);
-  --uf-app-shadow-rgb:     2, 6, 20;
-  --uf-app-glass:          rgba(10,25,53,.72);
-  --uf-app-glass-strong:   rgba(10,25,53,.90);
-  /* Malha de gradientes da identidade: azul -> roxo -> verde sobre
-     azul-noite, o mesmo eixo cromatico do material de marca. */
-  --uf-app-shell-bg:
-    radial-gradient(circle at 50% 26%, rgba(37,99,235,.13), transparent 32%),
-    #020713;
-  --uf-app-shell-surface-bg:
-    radial-gradient(circle at 18% 8%, rgba(37,99,235,.16), transparent 46%),
-    radial-gradient(circle at 84% 92%, rgba(124,58,237,.14), transparent 48%),
-    radial-gradient(circle at 50% 55%, rgba(16,185,129,.06), transparent 55%),
-    linear-gradient(180deg, rgba(2,8,22,.96), rgba(1,6,17,.99));
+  --uf-app-warning-subtle: rgba(245,158,11,.16);
+  --uf-app-shadow-rgb:     8, 9, 16;
+  --uf-app-glass:          rgba(31,33,48,.72);
+  --uf-app-glass-strong:   rgba(31,33,48,.92);
+
+  /* Marca como linha e brilho. */
+  --uf-app-glow-brand:
+    radial-gradient(closest-side at 35% 55%, rgba(29,78,219,.26), transparent),
+    radial-gradient(closest-side at 70% 45%, rgba(124,58,237,.24), transparent);
+  --uf-app-line-brand:     linear-gradient(90deg, #1D4EDB, #7C3AED 55%, #10B981);
+  --uf-app-rule-fade:
+    linear-gradient(90deg, transparent, rgba(233,233,237,.16) 48px,
+      rgba(233,233,237,.16) calc(100% - 48px), transparent);
+  --uf-app-card-uni:
+    linear-gradient(155deg, rgba(29,78,219,.22), rgba(124,58,237,.14) 45%, transparent 80%),
+    #1F2130;
+  --uf-app-card-uni-border: rgba(124,58,237,.28);
+
+  --uf-app-shell-bg:       #161826;
+  --uf-app-shell-surface-bg: #161826;
 }
 
 

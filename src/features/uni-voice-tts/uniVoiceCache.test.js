@@ -73,9 +73,11 @@ test('migration nao altera nenhuma migration antiga -- e um arquivo novo e indep
 // Edge Function: chave de cache, fluxo HIT/MISS, seguranca, degradacao
 // ----------------------------------------------------------------------------
 
-test('chave de cache e SHA-256 determinístico incluindo texto sanitizado, user_id, voice, modelo, formato e versao do algoritmo', () => {
+test('chave de cache e SHA-256 determinístico incluindo texto sanitizado, user_id, voice, modelo, formato, instruções de voz e versao do algoritmo', () => {
   assert.match(EDGE_SOURCE, /async function computeCacheKey/);
-  assert.match(EDGE_SOURCE, /sha256Hex\(`\$\{CACHE_ALGO_VERSION\}:\$\{userId\}:\$\{voiceId\}:\$\{modelId\}:\$\{outputFormat\}:\$\{text\}`\)/);
+  assert.match(EDGE_SOURCE, /sha256Hex\(`\$\{CACHE_ALGO_VERSION\}:\$\{userId\}:\$\{voiceId\}:\$\{modelId\}:\$\{outputFormat\}:\$\{instructionsHash\}:\$\{text\}`\)/);
+  // Prompt de voz novo nunca reaproveita áudio gerado com o prompt antigo.
+  assert.match(EDGE_SOURCE, /const instructionsHash = await sha256Hex\(voiceInstructions\);/);
   assert.match(EDGE_SOURCE, /const CACHE_ALGO_VERSION = 'v1';/);
 });
 

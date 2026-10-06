@@ -1,21 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSession } from '../../app/SessionContext.jsx';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient.js';
 import { sanitizeVoiceOutputText, containsSensitiveVoiceData } from '../uni-voice-output/voiceOutputPolicy.js';
-import { createBrowserSpeechTtsProvider } from './browserSpeechTtsProvider.js';
 import { createElevenLabsTtsProvider } from './elevenLabsTtsProvider.js';
-import { createFallbackVoiceTtsProvider } from './fallbackVoiceTtsProvider.js';
-import { resolveVoiceFallbackPolicy } from './voiceFallbackPolicy.js';
 import { MAX_TTS_TEXT_LENGTH } from './voiceTtsConfig.js';
 import { VOICE_TTS_STATUS, VOICE_TTS_ERROR_CODES, getVoiceTtsErrorMessage } from './voiceTtsStatus.js';
 import {
   createVoiceTtsRequestContext,
-  recordBrowserSpeechDiagnostic,
   recordVoiceTtsTelemetry,
 } from './voiceTtsTelemetry.js';
 import { telemetry } from '../observability/index.js';
 import { createVoiceTtsRequestOwnership } from './voiceTtsRequestOwnership.js';
-import { resolveVoiceProvider } from './voiceProviderRegistry.js';
 
 function buildError(code, details = {}) {
   return Object.freeze({
@@ -37,34 +31,20 @@ function buildError(code, details = {}) {
  * remocao de markdown/dados sensiveis.
  */
 export function useUniVoiceTts() {
-  const { user, profile } = useSession();
   const [status, setStatus] = useState(VOICE_TTS_STATUS.IDLE);
   const [error, setError] = useState(null);
   const requestOwnershipRef = useRef(createVoiceTtsRequestOwnership());
 
-  const provider = useMemo(() => {
-    const runtime = globalThis;
-    const primaryProvider = createElevenLabsTtsProvider({
-      supabase,
-      supabaseUrl,
-      supabaseAnonKey,
-      enabled: isSupabaseConfigured,
-      runtime,
-    });
-    const browserProvider = createBrowserSpeechTtsProvider({ runtime });
-    const selectedProvider = resolveVoiceProvider(profile?.voice_provider);
-    const policy = resolveVoiceFallbackPolicy({
-      env: import.meta.env,
-      userId: user?.id ?? null,
-      selectedProvider,
-    });
-    return createFallbackVoiceTtsProvider({
-      primaryProvider,
-      browserProvider,
-      policy,
-      selectedProvider,
-    });
-  }, [profile?.voice_provider, user?.id]);
+  // A Uni fala só com a voz dela (Edge Function uni-voice-tts). Sem voz do
+  // navegador, nem como reserva: se a geração falhar, a resposta continua na
+  // tela e o erro aparece no botão de ouvir.
+  const provider = useMemo(() => createElevenLabsTtsProvider({
+    supabase,
+    supabaseUrl,
+    supabaseAnonKey,
+    enabled: isSupabaseConfigured,
+    runtime: globalThis,
+  }), []);
 
   // Cleanup ao desmontar: nunca deixa audio tocando nem Blob URL pendurada.
   useEffect(() => () => {
@@ -161,23 +141,14 @@ export function useUniVoiceTts() {
           if (isCurrentRequest()) setStatus(VOICE_TTS_STATUS.STOPPED);
         },
         onProviderEvent: recordProviderEvent,
-        onDiagnostic: recordBrowserSpeechDiagnostic,
       };
       const userInitiated = Boolean(
         requestMetadata.userInitiated || requestMetadata.source === 'manual_replay'
       );
-      const directSpeech = userInitiated
-        ? provider.speakFromUserGesture?.(sanitized, callbacks)
-        : null;
-
-      if (directSpeech) {
-        await directSpeech;
-      } else {
-        if (userInitiated && !requestMetadata.playbackPreparationAttempted) {
-          await preparePlayback();
-        }
-        await provider.speak(sanitized, callbacks);
+      if (userInitiated && !requestMetadata.playbackPreparationAttempted) {
+        await preparePlayback();
       }
+      await provider.speak(sanitized, callbacks);
       void telemetry.metric('voice.latency_ms', {
         value: Math.max(0, Date.now() - voiceStartedAt),
         unit: 'ms',
@@ -257,6 +228,5 @@ export function useUniVoiceTts() {
     stop,
     cancel,
     healthCheck: provider.healthCheck,
-    selectedProvider: provider.selectedProvider,
   };
 }

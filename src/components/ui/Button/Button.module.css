@@ -139,3 +139,25 @@
     transform: rotate(360deg);
   }
 }
+/* Direção "Uni no centro" (tema UniFlow, app simplificado): a ação primária é
+   contornada, com a marca na borda e no texto, nunca como preenchimento. As
+   telas do desktop e o tema Claro continuam com o botão preenchido. */
+:global([data-theme='uniflow'] body[data-simplified-app-mounted='true']) .primary {
+  background: transparent;
+  color: var(--uf-app-primary-text);
+  border-color: var(--uf-app-primary);
+}
+
+:global([data-theme='uniflow'] body[data-simplified-app-mounted='true']) .primary:hover:not(:disabled) {
+  background: var(--uf-app-primary-subtle);
+}
+
+:global([data-theme='uniflow'] body[data-simplified-app-mounted='true']) .secondary {
+  background: transparent;
+  color: var(--uf-app-ai-text);
+  border-color: var(--uf-app-ai);
+}
+
+:global([data-theme='uniflow'] body[data-simplified-app-mounted='true']) .secondary:hover:not(:disabled) {
+  background: var(--uf-app-ai-subtle);
+}
