@@ -9,9 +9,19 @@
 // saldo, contas ou agenda vai pela ferramenta enviar_para_uni ao mesmo
 // pipeline do texto, no app (src/features/uni-voice-realtime).
 //
-// Até a cota de minutos existir (#113), só quem está em
-// UNI_REALTIME_ALLOWED_USER_IDS abre sessão. Lista vazia fecha a função para
-// todos: a cobrança é por minuto de sessão aberta.
+// Antes de emitir a chave, reserva um bloco de minutos do plano
+// (voice_reserve_block). Sem saldo ou sem assinatura, responde 403 com
+// fallback 'text' e o app abre a conversa por texto. A chave vale 60 s: só
+// abre a conversa dentro da reserva que acabou de ser feita.
+//
+// Enquanto a liberação geral não sai (#113), só quem está em
+// UNI_REALTIME_ALLOWED_USER_IDS abre sessão. Lista vazia fecha a função.
+
+import {
+  mapVoiceReserveError,
+  parseVoiceReservation,
+  type VoiceReservation,
+} from '../_shared/voiceQuotaRules.ts';
 
 const OPENAI_CLIENT_SECRETS_URL = 'https://api.openai.com/v1/realtime/client_secrets';
 const DEFAULT_MODEL = 'gpt-realtime-2.1-mini';
@@ -20,6 +30,7 @@ const TRANSCRIPTION_MODEL = 'gpt-4o-mini-transcribe';
 const EAGERNESS_VALUES = new Set(['low', 'medium', 'high', 'auto']);
 const DEFAULT_EAGERNESS = 'low';
 const DEFAULT_TIMEOUT_MS = 10000;
+const CLIENT_SECRET_TTL_SECONDS = 60;
 
 // Mesma persona de UNI_VOICE_INSTRUCTIONS (uni-voice-tts) e de
 // docs/00-master/UNI_PERSONALITY_V1.md, mais as regras de conversa.
@@ -116,6 +127,7 @@ const SEND_TO_UNI_TOOL = {
 
 function buildSessionConfig({ model, voice, eagerness }: { model: string; voice: string; eagerness: string }) {
   return {
+    expires_after: { anchor: 'created_at', seconds: CLIENT_SECRET_TTL_SECONDS },
     session: {
       type: 'realtime',
       model,
@@ -142,6 +154,28 @@ function buildSessionConfig({ model, voice, eagerness }: { model: string; voice:
   };
 }
 
+async function callVoiceRpc(supabaseUrl: string, serviceRoleKey: string, name: string, args: Record<string, unknown>) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+  const body = await response.json().catch(() => null);
+  return { ok: response.ok, body };
+}
+
+// A OpenAI recusou a sessão depois da reserva: devolve os minutos.
+async function releaseReservation(supabaseUrl: string, serviceRoleKey: string, reservation: VoiceReservation) {
+  const result = await callVoiceRpc(supabaseUrl, serviceRoleKey, 'voice_release_failed', {
+    p_session_id: reservation.sessionId,
+  });
+  if (!result.ok) console.warn('uni_voice_realtime_release_failed');
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get('Origin') ?? '';
   if (!isAllowedOrigin(origin)) {
@@ -159,16 +193,18 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   const providerKey = Deno.env.get('OPENAI_API_KEY') ?? '';
   const model = Deno.env.get('OPENAI_REALTIME_MODEL') || DEFAULT_MODEL;
   const voice = Deno.env.get('OPENAI_REALTIME_VOICE') || DEFAULT_VOICE;
   const timeoutMs = Number(Deno.env.get('UNI_REALTIME_TIMEOUT_MS')) || DEFAULT_TIMEOUT_MS;
   const allowlist = readAllowlist(Deno.env.get('UNI_REALTIME_ALLOWED_USER_IDS'));
 
-  if (!supabaseUrl || !anonKey || !providerKey) {
+  if (!supabaseUrl || !anonKey || !serviceRoleKey || !providerKey) {
     const missing = [
       !supabaseUrl && 'SUPABASE_URL',
       !anonKey && 'SUPABASE_ANON_KEY',
+      !serviceRoleKey && 'SUPABASE_SERVICE_ROLE_KEY',
       !providerKey && 'OPENAI_API_KEY',
     ].filter(Boolean);
     console.warn('uni_voice_realtime_configuration_error', { missing });
@@ -191,6 +227,19 @@ Deno.serve(async (request) => {
     ? payload.eagerness
     : DEFAULT_EAGERNESS;
 
+  // Reserva antes de qualquer chamada paga. O saldo e a assinatura são
+  // conferidos pelo banco; o app só fica sabendo o resultado.
+  const reserve = await callVoiceRpc(supabaseUrl, serviceRoleKey, 'voice_reserve_block', { p_user_id: userId });
+  const reservation = reserve.ok ? parseVoiceReservation(reserve.body) : null;
+  if (!reservation) {
+    const refusal = mapVoiceReserveError(reserve.body);
+    if (refusal.status >= 500) console.warn('uni_voice_realtime_reserve_failed', { code: refusal.code });
+    return jsonResponse(refusal.status, {
+      error: { code: refusal.code, message: refusal.message },
+      fallback: refusal.fallback,
+    }, origin);
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort('timeout'), timeoutMs);
   let providerResponse: Response;
@@ -208,6 +257,7 @@ Deno.serve(async (request) => {
     });
   } catch {
     console.warn('uni_voice_realtime_provider_unreachable', { timeout: controller.signal.aborted });
+    await releaseReservation(supabaseUrl, serviceRoleKey, reservation);
     return errorResponse(502, 'PROVIDER_UNAVAILABLE', 'Não foi possível abrir a conversa agora. Tente de novo em instantes.', origin);
   } finally {
     clearTimeout(timeout);
@@ -222,6 +272,7 @@ Deno.serve(async (request) => {
       code: data?.error?.code ?? null,
       message: data?.error?.message ?? null,
     });
+    await releaseReservation(supabaseUrl, serviceRoleKey, reservation);
     return errorResponse(502, 'PROVIDER_ERROR', 'Não foi possível abrir a conversa agora. Tente de novo em instantes.', origin);
   }
 
@@ -231,5 +282,9 @@ Deno.serve(async (request) => {
     model,
     voice,
     eagerness,
+    voice_session_id: reservation.sessionId,
+    reserved_seconds: reservation.reservedSeconds,
+    reserved_until: reservation.expiresAt,
+    remaining_seconds: reservation.remainingSeconds,
   }, origin);
 });
