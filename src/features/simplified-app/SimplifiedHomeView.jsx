@@ -37,6 +37,7 @@ import SimplifiedVoiceMode from './SimplifiedVoiceMode.jsx';
 import { resolveRealtimeVoiceModeView, VOICE_MODE_ACTIONS } from './voiceModeState.js';
 import { SIMPLIFIED_FEATURE_FLAGS } from './simplifiedFeatureFlags.js';
 import { REALTIME_STATUS, useRealtimeUniConversation } from '../uni-voice-realtime/index.js';
+import { buildRealtimeGreetingInstructions } from '../uni-voice-realtime/realtimeGreeting.js';
 import styles from './simplifiedApp.module.css';
 
 // LOADING significa apenas que a voz está sendo preparada. O rótulo
@@ -338,7 +339,7 @@ function SimplifiedHomeView({
   isExecuting,
   executionError,
   aiStatus,
-  voiceEnabled,
+  voiceEnabled: voicePreferenceEnabled,
   voiceController,
   voiceMessageId,
   interpretingOperationHint,
@@ -354,6 +355,12 @@ function SimplifiedHomeView({
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const voiceInput = useSharedUniVoiceInput();
+  // Saudação falada ao abrir o app. Com a conversa em tempo real (épico
+  // #116), a Home não fala sozinha: a saudação é visual, e a Uni fala
+  // primeiro quando a pessoa toca no orb, com a mesma voz da conversa. Sem
+  // saudação falada, também não há o botão "Ativar voz e microfone": o
+  // microfone é pedido no toque que abre a conversa.
+  const voiceEnabled = voicePreferenceEnabled && !realtimeVoiceEnabled;
   // UNIUPD1: limit:1 -- a Home so precisa saber "existe novidade pendente?",
   // nunca carrega o historico inteiro (isso fica com Sobre a UniFlow AI).
   const { pendingUpdate: pendingUniUpdate } = useUniUpdates({ limit: 1 });
@@ -709,7 +716,12 @@ function SimplifiedHomeView({
   function beginRealtimeConversation() {
     if (isVoicePlaybackInterruptible) voiceController.stop();
     onBeforeVoiceStart?.();
-    void realtime.start();
+    void realtime.start({
+      greetingInstructions: buildRealtimeGreetingInstructions({
+        suggestedGreeting: greeting.spokenGreeting,
+        hasPendingDraft: pendingConfirmation,
+      }),
+    });
   }
 
   function handleOpenVoiceMode() {
@@ -842,6 +854,12 @@ function SimplifiedHomeView({
               Ver novidades
             </button>
           </div>
+        ) : realtimeVoiceEnabled ? (
+          // A saudação é visual: a Home diz como começar a conversa, e a Uni
+          // fala quando a pessoa toca nela.
+          <p className={styles.greetingMessage}>
+            Toque na <strong>Uni</strong>, no centro da barra abaixo, para conversar por voz.
+          </p>
         ) : (
           <p className={styles.greetingMessage}>
             Estou aqui para ajudar você a tomar as <strong>melhores decisões</strong> financeiras.

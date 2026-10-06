@@ -6,6 +6,7 @@ import {
   reduceRealtimeEvent,
 } from './realtimeSessionModel.js';
 import { buildRealtimeToolErrorOutput, parseRealtimeToolArguments } from './realtimeToolBridge.js';
+import { buildRealtimeGreetingEvent } from './realtimeGreeting.js';
 import {
   applyVoiceRenewal,
   createVoiceReservation,
@@ -151,7 +152,8 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
 
   // Chame dentro do toque da pessoa: o iOS só libera microfone e áudio
   // numa ação do usuário, então os dois são pedidos antes de qualquer rede.
-  const start = useCallback(async ({ eagerness } = {}) => {
+  // greetingInstructions: a Uni fala primeiro, assim que a conversa abre.
+  const start = useCallback(async ({ eagerness, greetingInstructions } = {}) => {
     if (connectionRef.current) return;
     const connection = {};
     connectionRef.current = connection;
@@ -198,7 +200,10 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
 
       const channel = peer.createDataChannel('oai-events');
       connection.channel = channel;
-      channel.onopen = () => dispatch({ type: 'local.connected' });
+      channel.onopen = () => {
+        dispatch({ type: 'local.connected' });
+        if (greetingInstructions) sendEvent(channel, buildRealtimeGreetingEvent(greetingInstructions));
+      };
       channel.onmessage = (message) => {
         let event;
         try {
