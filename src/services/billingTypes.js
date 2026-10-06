@@ -46,3 +46,26 @@ export const OVERDUE_TOLERANCE_DAYS = 3;
 // "Plano Pessoal" reaproveita a linha 'pro' ja existente em `plans` -- nunca
 // cria uma linha nova nem altera o check constraint de `plans.id`.
 export const BILLING_PLAN_ID = 'pro';
+
+// Níveis do Plano Pessoal (épico #116): mesmo plan_id 'pro', preço e cota de
+// voz diferentes. Espelho de public.subscription_tiers (migration 049) para a
+// página de venda não esperar consulta; subscriptionTiersMigration.test.js
+// confere os valores contra o SQL.
+export const SUBSCRIPTION_TIER_IDS = Object.freeze({
+  ESSENCIAL: 'essencial',
+  UNI_VOZ: 'uni_voz',
+  UNI_VOZ_PLUS: 'uni_voz_plus',
+});
+
+export const SUBSCRIPTION_TIERS = Object.freeze([
+  Object.freeze({ id: SUBSCRIPTION_TIER_IDS.ESSENCIAL, name: 'Essencial', priceBrl: 14.9, voiceMinutes: 20 }),
+  Object.freeze({ id: SUBSCRIPTION_TIER_IDS.UNI_VOZ, name: 'Uni Voz', priceBrl: 29.9, voiceMinutes: 60 }),
+  Object.freeze({ id: SUBSCRIPTION_TIER_IDS.UNI_VOZ_PLUS, name: 'Uni Voz Plus', priceBrl: 69.9, voiceMinutes: 180 }),
+]);
+
+// Nível de quem já assinava antes dos três planos, e o padrão do banco.
+export const DEFAULT_SUBSCRIPTION_TIER_ID = SUBSCRIPTION_TIER_IDS.UNI_VOZ;
+
+export function findSubscriptionTier(tierId) {
+  return SUBSCRIPTION_TIERS.find((tier) => tier.id === tierId) ?? null;
+}
