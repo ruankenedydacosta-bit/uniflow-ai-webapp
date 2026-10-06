@@ -43,6 +43,10 @@ import styles from './simplifiedApp.module.css';
 // "TOQUE PARA PARAR" só pode aparecer quando existe reprodução real
 // (PLAYING), mas o carregamento continua interrompível pelo mesmo gesto de
 // barge-in para nunca iniciar por cima de uma nova captura.
+// Recusas da conversa em tempo real que mandam a pessoa para o texto:
+// conta fora do teste, minutos do mês esgotados ou sem assinatura.
+const REALTIME_TEXT_FALLBACK_CODES = new Set(['NOT_ALLOWED', 'VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE']);
+
 const INTERRUPTIBLE_VOICE_STATUSES = new Set([
   VOICE_TTS_STATUS.LOADING,
   VOICE_TTS_STATUS.PLAYING,
@@ -798,12 +802,15 @@ function SimplifiedHomeView({
   const realtimeHint = (() => {
     const { status, error, errorCode } = realtime.state;
     if (status === REALTIME_STATUS.ERROR) {
-      return errorCode === 'NOT_ALLOWED' ? `${error} Toque em Escrever para continuar por texto.` : error;
+      return REALTIME_TEXT_FALLBACK_CODES.has(errorCode) ? `${error} Toque em Escrever.` : error;
     }
     if (status === REALTIME_STATUS.CONNECTING) return 'Se o navegador pedir, permita o uso do microfone.';
     if (isRealtimeActive) return 'Fale normalmente. Você pode interromper a Uni a qualquer momento.';
     if (status === REALTIME_STATUS.ENDED && realtime.state.endReason === 'idle') {
       return 'A conversa foi encerrada porque ninguém falou por um minuto.';
+    }
+    if (status === REALTIME_STATUS.ENDED && realtime.state.endReason === 'quota') {
+      return 'Seus minutos de conversa por voz deste mês acabaram. Continue pelo texto. Toque em Escrever.';
     }
     return null;
   })();

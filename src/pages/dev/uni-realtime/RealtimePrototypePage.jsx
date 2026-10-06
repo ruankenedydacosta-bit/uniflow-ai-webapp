@@ -34,6 +34,7 @@ const EAGERNESS_OPTIONS = Object.freeze([
 const END_REASONS = Object.freeze({
   user: 'Você encerrou a conversa.',
   idle: `A conversa foi encerrada depois de ${REALTIME_IDLE_LIMIT_MS / 1000} segundos sem ninguém falar.`,
+  quota: 'Os minutos de conversa por voz deste mês acabaram.',
 });
 
 function formatSeconds(ms) {

@@ -240,3 +240,9 @@ test('a flag da conversa em tempo real só liga com "true"', async () => {
   assert.equal(resolveSimplifiedFeatureFlags({ VITE_UNI_REALTIME_VOICE_ENABLED: '1' }).realtimeVoiceEnabled, false);
   assert.equal(resolveSimplifiedFeatureFlags({}).realtimeVoiceEnabled, false);
 });
+
+test('sem minutos ou sem assinatura, a tela de voz manda a pessoa para o texto', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /REALTIME_TEXT_FALLBACK_CODES = new Set\(\['NOT_ALLOWED', 'VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE'\]\)/);
+  assert.match(home, /endReason === 'quota'\) \{\s*return 'Seus minutos de conversa por voz deste mês acabaram\. Continue pelo texto\. Toque em Escrever\.';/);
+});

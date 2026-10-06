@@ -6,6 +6,12 @@ import {
   reduceRealtimeEvent,
 } from './realtimeSessionModel.js';
 import { buildRealtimeToolErrorOutput, parseRealtimeToolArguments } from './realtimeToolBridge.js';
+import {
+  applyVoiceRenewal,
+  createVoiceReservation,
+  resolveVoiceReservationAction,
+  VOICE_RESERVATION_ACTIONS,
+} from './voiceReservation.js';
 
 const SESSION_FUNCTION_NAME = 'uni-voice-realtime-session';
 const OPENAI_REALTIME_CALLS_URL = 'https://api.openai.com/v1/realtime/calls';
@@ -37,7 +43,25 @@ async function requestClientSecret(eagerness) {
       body?.error?.message ?? 'Não foi possível abrir a conversa agora. Tente de novo em instantes.',
     );
   }
-  return body;
+  return { ...body, accessToken };
+}
+
+// Devolve ao banco a reserva de minutos da conversa. keepalive mantém a
+// chamada viva mesmo quando a aba está fechando (pagehide); o tempo cobrado
+// é calculado pelo banco.
+function closeVoiceReservation(reservation) {
+  if (!reservation || reservation.closed || !reservation.accessToken) return;
+  reservation.closed = true;
+  fetch(`${supabaseUrl}/rest/v1/rpc/voice_close`, {
+    method: 'POST',
+    keepalive: true,
+    headers: {
+      Authorization: `Bearer ${reservation.accessToken}`,
+      apikey: supabaseAnonKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_session_id: reservation.sessionId }),
+  }).catch(() => {});
 }
 
 // Erro com código, para a tela decidir o que oferecer (ex.: NOT_ALLOWED leva
@@ -54,6 +78,7 @@ function sendEvent(channel, event) {
 }
 
 function closeConnection(connection) {
+  closeVoiceReservation(connection.reservation);
   connection.channel?.close();
   connection.peer?.close();
   connection.localStream?.getTracks().forEach((track) => track.stop());
@@ -146,6 +171,11 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
       ensureActive();
 
       const session = await requestClientSecret(eagerness);
+      connection.reservation = createVoiceReservation({
+        sessionId: session.voice_session_id,
+        reservedUntil: session.reserved_until,
+        accessToken: session.accessToken,
+      });
       ensureActive();
 
       const peer = new RTCPeerConnection();
@@ -217,17 +247,41 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
     dispatch({ type: 'local.mark_false_interruption' });
   }, [dispatch]);
 
-  // Relógio da tela e encerramento por inatividade.
+  // Renova o bloco de minutos perto do fim. Sem saldo, marca a reserva como
+  // esgotada e a conversa termina no fim do bloco atual.
+  const renewReservation = useCallback(async (connection) => {
+    const reservation = connection.reservation;
+    reservation.renewing = true;
+    let row = null;
+    try {
+      const { data, error } = await supabase.rpc('voice_renew_block', { p_session_id: reservation.sessionId });
+      if (!error) row = Array.isArray(data) ? data[0] : data;
+    } catch {
+      row = null;
+    }
+    if (connectionRef.current !== connection) return;
+    connection.reservation = { ...applyVoiceRenewal(reservation, row), closed: reservation.closed };
+  }, []);
+
+  // Relógio da tela, reserva de minutos e encerramento por inatividade.
   const [now, tick] = useReducer(() => performance.now(), 0, () => performance.now());
   useEffect(() => {
     const timer = setInterval(() => {
       tick();
-      if (connectionRef.current && isRealtimeSessionIdle(stateRef.current, performance.now(), REALTIME_IDLE_LIMIT_MS)) {
+      const connection = connectionRef.current;
+      if (!connection) return;
+      const reservationAction = resolveVoiceReservationAction(connection.reservation, Date.now());
+      if (reservationAction === VOICE_RESERVATION_ACTIONS.STOP) {
+        stop('quota');
+        return;
+      }
+      if (reservationAction === VOICE_RESERVATION_ACTIONS.RENEW) void renewReservation(connection);
+      if (isRealtimeSessionIdle(stateRef.current, performance.now(), REALTIME_IDLE_LIMIT_MS)) {
         stop('idle');
       }
     }, TICK_MS);
     return () => clearInterval(timer);
-  }, [stop]);
+  }, [renewReservation, stop]);
 
   useEffect(() => teardown, [teardown]);
 
