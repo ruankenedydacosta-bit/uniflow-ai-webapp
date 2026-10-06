@@ -570,9 +570,23 @@ test('billing-webhook: método diferente de POST é rejeitado', () => {
   assert.match(WEBHOOK, /METHOD_NOT_ALLOWED/);
 });
 
-test('billing-webhook: token ausente ou inválido é rejeitado (401) -- comparação exata, nunca aceita vazio', () => {
-  assert.match(WEBHOOK, /if \(!receivedToken \|\| receivedToken !== expectedToken\) \{/);
+test('billing-webhook: token ausente ou inválido é rejeitado (401) -- comparação em tempo constante, nunca aceita vazio', () => {
+  assert.match(WEBHOOK, /if \(!\(await webhookTokenMatches\(receivedToken, expectedToken\)\)\) \{/);
+  assert.doesNotMatch(WEBHOOK, /receivedToken !== expectedToken/);
   assert.match(WEBHOOK, /WEBHOOK_AUTH_REQUIRED/);
+});
+
+test('billing-webhook: status, cliente e assinatura vêm da cobrança reconsultada na API, nunca do corpo do evento', () => {
+  assert.match(WEBHOOK, /const payment = await fetchRemotePayment\(eventPaymentId\);/);
+  assert.match(WEBHOOK, /client\.getPayment\(asaasPaymentId\)/);
+  assert.match(WEBHOOK, /const asaasCustomerId = typeof payment\?\.customer === 'string'/);
+  assert.match(WEBHOOK, /const asaasSubscriptionId = typeof payment\?\.subscription === 'string'/);
+  assert.match(WEBHOOK, /if \(!isEventConfirmedByRemotePayment\(eventType, payment\?\.status\)\) \{/);
+});
+
+test('billing-webhook: 4xx da reconsulta encerra o evento sem erro (a Asaas não reenvia para sempre); rede e 5xx sobem para processing_error', () => {
+  assert.match(WEBHOOK, /error instanceof AsaasApiError && error\.providerStatus >= 400 && error\.providerStatus < 500\) return null;/);
+  assert.match(WEBHOOK, /status: 'payment_not_found'/);
 });
 
 test('billing-webhook: header oficial confirmado é "asaas-access-token" (docs.asaas.com/docs/about-webhooks), nunca Bearer', () => {

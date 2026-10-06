@@ -71,6 +71,23 @@ export const PROCESSABLE_PAYMENT_EVENT_TYPES = new Set([
 
 const TERMINAL_SUBSCRIPTION_STATUSES = new Set(['canceled', 'expired']);
 
+// O corpo do webhook é gatilho, não fonte de verdade: um evento que muda a
+// assinatura só vale se a cobrança, reconsultada na API, estiver no status
+// que o evento diz. Um PAYMENT_CONFIRMED forjado com o id de uma cobrança
+// pendente não ativa nada.
+const REMOTE_STATUSES_BY_EVENT_TYPE: Record<string, Set<string>> = {
+  PAYMENT_CONFIRMED: new Set(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']),
+  PAYMENT_RECEIVED: new Set(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']),
+  PAYMENT_OVERDUE: new Set(['OVERDUE']),
+};
+
+export function isEventConfirmedByRemotePayment(eventType: string, remoteStatus: unknown): boolean {
+  const expected = REMOTE_STATUSES_BY_EVENT_TYPE[eventType];
+  // Eventos que não mudam a assinatura não precisam de confirmação.
+  if (!expected) return true;
+  return typeof remoteStatus === 'string' && expected.has(remoteStatus.toUpperCase());
+}
+
 export function mapAsaasPaymentStatus(eventType: string, rawPaymentStatus: unknown): string {
   if (CHARGEBACK_EVENT_TYPES.has(eventType)) return 'chargeback';
   const key = typeof rawPaymentStatus === 'string' ? rawPaymentStatus.toUpperCase() : '';

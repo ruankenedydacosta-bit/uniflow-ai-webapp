@@ -315,6 +315,11 @@ export function createAsaasClient(config: AsaasClientConfig) {
     cancelSubscription(asaasSubscriptionId: string) {
       return request('cancelSubscription', `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}`, { method: 'DELETE' });
     },
+    // Reconsulta de uma cobrança: o webhook decide pelo que a API devolve,
+    // nunca pelo corpo do evento. https://docs.asaas.com/reference/retrieve-a-single-payment
+    getPayment(asaasPaymentId: string) {
+      return request('getPayment', `/payments/${encodeURIComponent(asaasPaymentId)}`, { method: 'GET' });
+    },
     listSubscriptionPayments(asaasSubscriptionId: string) {
       return request('listSubscriptionPayments', `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}/payments`, { method: 'GET' });
     },

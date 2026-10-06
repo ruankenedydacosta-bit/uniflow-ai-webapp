@@ -28,6 +28,23 @@ export function buildWebhookProcessingFailurePatch(processingError: string) {
   };
 }
 
+// Compara o token recebido com o esperado em tempo constante. Comparar as
+// strings direto sai no primeiro byte diferente e vaza o tamanho do segredo;
+// o SHA-256 dos dois lados dá dois buffers de 32 bytes sempre.
+export async function webhookTokenMatches(received: string, expected: string): Promise<boolean> {
+  if (!received || !expected) return false;
+  const encoder = new TextEncoder();
+  const [receivedDigest, expectedDigest] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(received)),
+    crypto.subtle.digest('SHA-256', encoder.encode(expected)),
+  ]);
+  const left = new Uint8Array(receivedDigest);
+  const right = new Uint8Array(expectedDigest);
+  let difference = 0;
+  for (let index = 0; index < left.length; index += 1) difference |= left[index] ^ right[index];
+  return difference === 0;
+}
+
 export function assertBillingWebhookWriteSucceeded(
   response: { ok: boolean },
   operation: string,

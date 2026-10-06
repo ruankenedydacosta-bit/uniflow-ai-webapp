@@ -25,9 +25,10 @@
 //   deduplicacao ("Each event sent by Webhooks has its own ID, which
 //   remains the same if it is the same event.").
 
-import { createAsaasClient } from '../_shared/asaasClient.ts';
+import { AsaasApiError, createAsaasClient } from '../_shared/asaasClient.ts';
 import {
   buildBillingPaymentRow,
+  isEventConfirmedByRemotePayment,
   PROCESSABLE_CHECKOUT_EVENT_TYPES,
   PROCESSABLE_PAYMENT_EVENT_TYPES,
   resolveCheckoutHygienePatch,
@@ -38,6 +39,7 @@ import {
   buildWebhookProcessingFailurePatch,
   buildWebhookProcessingSuccessPatch,
   isWebhookEventEligibleForProcessing,
+  webhookTokenMatches,
 } from '../_shared/billingWebhookReliability.ts';
 
 const ASAAS_WEBHOOK_TOKEN_HEADER = 'asaas-access-token';
@@ -305,16 +307,44 @@ async function patchSubscription({
 // Sempre idempotente: reprocessar o MESMO evento aplica o mesmo patch,
 // nunca duplica efeito (upsert por asaas_payment_id; PATCH de subscriptions
 // é atribuição de valor, não incremento).
+// Reconsulta a cobrança na Asaas. 4xx (cobrança removida, id inexistente ou
+// forjado) devolve null e o evento é encerrado sem efeito: responder erro
+// faria a Asaas reenviar para sempre e pausar a fila. Falha de rede ou 5xx
+// sobe como erro e fica em processing_error.
+async function fetchRemotePayment(asaasPaymentId: string): Promise<Record<string, unknown> | null> {
+  const client = createAsaasClient({
+    apiKey: Deno.env.get('ASAAS_API_KEY') ?? '',
+    baseUrl: Deno.env.get('ASAAS_BASE_URL') ?? '',
+    allowProduction: true,
+  });
+  try {
+    return await client.getPayment(asaasPaymentId) as Record<string, unknown>;
+  } catch (error) {
+    if (error instanceof AsaasApiError && error.providerStatus >= 400 && error.providerStatus < 500) return null;
+    throw error;
+  }
+}
+
 async function processPaymentEvent({
   supabaseUrl, serviceRoleKey, eventType, payload,
 }: { supabaseUrl: string; serviceRoleKey: string; eventType: string; payload: Record<string, unknown> }) {
   if (!PROCESSABLE_PAYMENT_EVENT_TYPES.has(eventType)) return;
 
-  const payment = (payload?.payment ?? {}) as Record<string, unknown>;
-  const asaasPaymentId = typeof payment?.id === 'string' ? payment.id : null;
+  const eventPayment = (payload?.payment ?? {}) as Record<string, unknown>;
+  const eventPaymentId = typeof eventPayment?.id === 'string' ? eventPayment.id : null;
+  if (!eventPaymentId) return;
+
+  // O corpo é gatilho, não fonte de verdade: status, cliente, assinatura,
+  // valor e datas vêm da cobrança reconsultada na API.
+  const payment = await fetchRemotePayment(eventPaymentId);
+  if (!payment) {
+    console.log(JSON.stringify({ at: 'billing-webhook', status: 'payment_not_found', eventType }));
+    return;
+  }
+  const asaasPaymentId = typeof payment?.id === 'string' ? payment.id : eventPaymentId;
   const asaasCustomerId = typeof payment?.customer === 'string' ? payment.customer : null;
   const asaasSubscriptionId = typeof payment?.subscription === 'string' ? payment.subscription : null;
-  if (!asaasPaymentId || !asaasCustomerId) return;
+  if (!asaasCustomerId) return;
 
   let workspaceId = await findBillingCustomerWorkspace({ supabaseUrl, serviceRoleKey, asaasCustomerId });
   let linkedSubscription: Record<string, unknown> | null = null;
@@ -348,6 +378,11 @@ async function processPaymentEvent({
   // presente) -- uma cobrança avulsa (ex.: billing-create-test-payment)
   // nunca ativa/atualiza nenhuma assinatura.
   if (!asaasSubscriptionId) return;
+
+  if (!isEventConfirmedByRemotePayment(eventType, payment?.status)) {
+    console.log(JSON.stringify({ at: 'billing-webhook', status: 'event_not_confirmed_by_api', eventType }));
+    return;
+  }
 
   const subscription = linkedSubscription
     ?? await findSubscriptionByAsaasId({ supabaseUrl, serviceRoleKey, asaasSubscriptionId });
@@ -410,7 +445,7 @@ Deno.serve(async (request) => {
   if (!expectedToken) {
     return jsonResponse(503, errorBody('SERVICE_UNAVAILABLE', 'Webhook nao configurado.'));
   }
-  if (!receivedToken || receivedToken !== expectedToken) {
+  if (!(await webhookTokenMatches(receivedToken, expectedToken))) {
     return jsonResponse(401, errorBody('WEBHOOK_AUTH_REQUIRED', 'Token de webhook ausente ou invalido.'));
   }
 
