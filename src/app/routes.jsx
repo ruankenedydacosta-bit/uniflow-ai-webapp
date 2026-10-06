@@ -49,6 +49,10 @@ const UniAudioLibraryPage = import.meta.env.DEV
   ? lazy(() => import('../pages/dev/uni-audio-library'))
   : null;
 
+const UniRealtimePrototypePage = import.meta.env.DEV
+  ? lazy(() => import('../pages/dev/uni-realtime'))
+  : null;
+
 export const publicRoutes = [
   {
     path: '/',
@@ -107,6 +111,16 @@ export const publicRoutes = [
           element: (
             <Suspense fallback={null}>
               <UniAudioLibraryPage />
+            </Suspense>
+          ),
+        },
+        {
+          path: '/dev/uni-realtime',
+          label: 'Conversa contínua com a Uni',
+          title: 'Conversa contínua com a Uni',
+          element: (
+            <Suspense fallback={null}>
+              <UniRealtimePrototypePage />
             </Suspense>
           ),
         },
