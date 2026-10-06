@@ -4,14 +4,40 @@ export const PERSONAL_PLAN_ROUTE = '/plano-pessoal';
 // routes.jsx/App.jsx/PersonalPlanPage.jsx/PersonalPlanReturnPage.jsx.
 export const PERSONAL_PLAN_RETURN_ROUTE = `${PERSONAL_PLAN_ROUTE}/retorno`;
 export const PERSONAL_PLAN_ID = 'personal';
+import {
+  DEFAULT_SUBSCRIPTION_TIER_ID,
+  findSubscriptionTier,
+  SUBSCRIPTION_TIERS,
+} from '../../services/billingTypes.js';
+
+// Preço em reais no formato da tela: 29.9 -> 'R$ 29,90'.
+export function formatPlanPrice(valueBrl) {
+  const value = Number(valueBrl);
+  if (!Number.isFinite(value)) return '';
+  return `R$ ${value.toFixed(2).replace('.', ',')}`;
+}
+
+// Épico #116: três níveis do Plano Pessoal, com cota de conversa por voz.
+// Preço e minutos vêm de SUBSCRIPTION_TIERS (espelho de subscription_tiers).
+export const PERSONAL_PLAN_TIERS = Object.freeze(SUBSCRIPTION_TIERS.map((tier) => Object.freeze({
+  ...tier,
+  priceLabel: formatPlanPrice(tier.priceBrl),
+  voiceMinutesLabel: `${tier.voiceMinutes} minutos de conversa por voz por mês`,
+})));
+
+export const DEFAULT_PERSONAL_PLAN_TIER_ID = DEFAULT_SUBSCRIPTION_TIER_ID;
+
+export function findPersonalPlanTier(tierId) {
+  const tier = findSubscriptionTier(tierId) ? tierId : DEFAULT_PERSONAL_PLAN_TIER_ID;
+  return PERSONAL_PLAN_TIERS.find((item) => item.id === tier);
+}
+
 // ETAPA 4: fonte única do preço exibido -- reaproveitado pelo card do plano
-// em Conta (SimplifiedAccountPage.jsx), nunca reescrito lá.
-export const PERSONAL_PLAN_PRICE_LABEL = 'R$ 29,90';
+// em Conta (SimplifiedAccountPage.jsx), nunca reescrito lá. É o preço do
+// nível padrão (Uni Voz, R$ 29,90); telas de quem já assina mostram o valor
+// da própria assinatura quando ele existe.
+export const PERSONAL_PLAN_PRICE_LABEL = findPersonalPlanTier(DEFAULT_PERSONAL_PLAN_TIER_ID).priceLabel;
 export const PERSONAL_PLAN_PRICE_PERIOD = '/mês';
-export const PERSONAL_PLAN_PROMOTION = Object.freeze({
-  referencePriceLabel: 'R$ 49,90',
-  savingsLabel: 'ECONOMIZE R$ 20,00',
-});
 
 // REDESIGN APP-LIKE: lista enxuta de recursos -- um por linha (ícone +
 // título + uma descrição curta). Todos os itens têm a MESMA forma

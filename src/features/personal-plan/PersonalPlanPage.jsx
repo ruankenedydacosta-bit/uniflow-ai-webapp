@@ -11,8 +11,10 @@ import PlanBenefitIcon from './PlanBenefitIcon.jsx';
 import PlanBrandSignature from './PlanBrandHeader.jsx';
 import PlanPromotionCard from './PlanPromotionCard.jsx';
 import {
+  DEFAULT_PERSONAL_PLAN_TIER_ID,
+  findPersonalPlanTier,
+  formatPlanPrice,
   PERSONAL_PLAN_BENEFITS,
-  PERSONAL_PLAN_PRICE_LABEL,
   PERSONAL_PLAN_PRICE_PERIOD,
   PERSONAL_PLAN_VOICE_DEMO,
 } from './personalPlanConfig.js';
@@ -213,7 +215,7 @@ function isValidCpfCnpjFormat(digits) {
 // billing-create-checkout). Boleto nunca aparece (fora do MVP, decisão
 // comercial).
 function SubscriptionMethodModal({
-  open, onClose, onConfirm, isSubmitting, submitError,
+  open, onClose, onConfirm, isSubmitting, submitError, tier,
 }) {
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [cpfCnpj, setCpfCnpj] = useState('');
@@ -241,8 +243,8 @@ function SubscriptionMethodModal({
         <span className={styles.checkoutTitle}>
           <span className={styles.checkoutTitleIcon} aria-hidden="true"><CrownIcon /></span>
           <span className={styles.checkoutTitleText}>
-            Assinar Plano Pessoal
-            <small>Acesso completo a todos os recursos da UniFlow.</small>
+            Assinar {tier.name}
+            <small>{tier.voiceMinutesLabel}</small>
           </span>
         </span>
       )}
@@ -279,7 +281,7 @@ function SubscriptionMethodModal({
     >
       <div className={styles.checkoutPriceCard}>
         <p className={styles.checkoutPrice}>
-          <strong>{PERSONAL_PLAN_PRICE_LABEL}</strong>
+          <strong>{tier.priceLabel}</strong>
           <span>{PERSONAL_PLAN_PRICE_PERIOD}</span>
         </p>
         <p className={styles.checkoutPriceNote}>
@@ -356,7 +358,7 @@ function SubscriptionMethodModal({
 // o polling já ligado no componente pai (useSubscriptionStatusPolling);
 // este modal só exibe o que já foi buscado, nunca chama billing* sozinho.
 function PixPaymentModal({
-  open, onClose, pixData, isActive, onGoHome,
+  open, onClose, pixData, isActive, onGoHome, tier,
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -407,7 +409,8 @@ function PixPaymentModal({
     >
       <div className={styles.pixValueCard}>
         <p className={styles.pixValueLabel}>Valor da assinatura</p>
-        <p className={styles.pixValueAmount}>{PERSONAL_PLAN_PRICE_LABEL}</p>
+        {/* O valor da cobrança vem da Asaas; sem ele, o do plano escolhido. */}
+        <p className={styles.pixValueAmount}>{formatPlanPrice(pixData?.value) || tier.priceLabel}</p>
         <p className={styles.pixValueNote}>Cobrança mensal</p>
       </div>
 
@@ -508,9 +511,10 @@ const {
   // billing-get-subscription -- nunca gerados no frontend.
   const [pixData, setPixData] = useState(null);
   const [pixModalDismissed, setPixModalDismissed] = useState(false);
-  const promotionEligibility = flowState === 'checking'
-    ? null
-    : !['active', 'already_active', 'cancel_scheduled'].includes(flowState);
+  // Épico #116: nível escolhido entre os três planos. O mesmo valor define o
+  // preço na tela e o tier_id enviado ao checkout.
+  const [selectedTierId, setSelectedTierId] = useState(DEFAULT_PERSONAL_PLAN_TIER_ID);
+  const selectedTier = findPersonalPlanTier(selectedTierId);
   const [checkoutEventLifecycle] = useState(() => createGa4CheckoutEventLifecycle());
   // Fase 4B Lite: instância própria por montagem da página -- a leitura
   // inicial (already_active/pending restaurado) nunca chama
@@ -636,7 +640,7 @@ if (!resolvedWorkspaceId) {
         return;
       }
 
-      const checkoutResult = await createCheckout({ workspaceId: resolvedWorkspaceId })
+      const checkoutResult = await createCheckout({ workspaceId: resolvedWorkspaceId, tierId: selectedTier.id })
       if (checkoutResult.error || !checkoutResult.data?.checkout_url) {
         setSubmitError('Não foi possível iniciar o pagamento por cartão agora. Tente novamente em instantes.');
         setIsSubmitting(false);
@@ -677,6 +681,7 @@ if (!resolvedWorkspaceId) {
         createSubscription({
           workspaceId: resolvedWorkspaceId,
           planId: BILLING_PLAN_ID,
+          tierId: selectedTier.id,
           paymentMethod: 'pix',
         }),
         PIX_CREATION_TIMEOUT_MS,
@@ -782,7 +787,11 @@ if (!resolvedWorkspaceId) {
         <h1 className={styles.topTitle}>Plano Pessoal</h1>
       </header>
 
-      <PlanPromotionCard promotionEligibility={promotionEligibility} />
+      <PlanPromotionCard
+        selectedTierId={selectedTier.id}
+        onSelectTier={setSelectedTierId}
+        disabled={!canSubscribe || isSubmitting}
+      />
 
       <div className={styles.content}>
         {flowState === 'already_active' || flowState === 'active' ? (
@@ -883,7 +892,7 @@ if (!resolvedWorkspaceId) {
           <span className={styles.ctaHandle} aria-hidden="true" />
           <div className={styles.ctaBarInner}>
             <p className={styles.ctaPrice}>
-              <strong>{PERSONAL_PLAN_PRICE_LABEL}</strong>
+              <strong>{selectedTier.priceLabel}</strong>
               <span>{PERSONAL_PLAN_PRICE_PERIOD}</span>
             </p>
             <button
@@ -905,6 +914,7 @@ if (!resolvedWorkspaceId) {
         onConfirm={handleConfirmSubscription}
         isSubmitting={isSubmitting}
         submitError={submitError}
+        tier={selectedTier}
       />
 
       <PixPaymentModal
@@ -913,6 +923,7 @@ if (!resolvedWorkspaceId) {
         pixData={pixData}
         isActive={flowState === 'active'}
         onGoHome={handleGoHome}
+        tier={selectedTier}
       />
     </main>
   );

@@ -1,10 +1,5 @@
 import uniflowMark from '../../assets/branding/uniflow-mark.png';
-import PromotionalCountdown from './PromotionalCountdown.jsx';
-import {
-  PERSONAL_PLAN_PRICE_LABEL,
-  PERSONAL_PLAN_PRICE_PERIOD,
-  PERSONAL_PLAN_PROMOTION,
-} from './personalPlanConfig.js';
+import { PERSONAL_PLAN_PRICE_PERIOD, PERSONAL_PLAN_TIERS } from './personalPlanConfig.js';
 import styles from './PlanPromotionCard.module.css';
 
 function CrownIcon() {
@@ -16,50 +11,39 @@ function CrownIcon() {
   );
 }
 
-function SavingsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M20 13 13 20l-9-9V4h7l9 9Z" />
-      <circle cx="8.5" cy="8.5" r="1.25" />
-    </svg>
-  );
-}
-
-function PlanPromotionCard({ promotionEligibility = true }) {
-  const currentPrice = PERSONAL_PLAN_PRICE_LABEL.replace('R$ ', '');
-
+// Épico #116: a pessoa escolhe o nível do Plano Pessoal aqui. O preço exibido
+// e o enviado ao checkout saem do mesmo nível escolhido.
+function PlanPromotionCard({ selectedTierId, onSelectTier, disabled = false }) {
   return (
     <section className={styles.promotionCard} aria-labelledby="personal-plan-title">
       <img className={styles.promotionBackgroundMark} src={uniflowMark} alt="" aria-hidden="true" />
-
-      <PromotionalCountdown
-        key={promotionEligibility === null
-          ? 'promotion-checking'
-          : promotionEligibility
-            ? 'promotion-eligible'
-            : 'promotion-confirmed'}
-        canStartNewWindow={promotionEligibility === true}
-      />
 
       <div className={styles.promotionPlanTitle}>
         <h1 id="personal-plan-title">Plano Pessoal</h1>
         <p>Tudo da Uni em um só lugar.</p>
       </div>
 
-      <div className={styles.promotionPricing}>
-        <p className={styles.referencePrice}>
-          De <s>{PERSONAL_PLAN_PROMOTION.referencePriceLabel}</s>
-        </p>
-        <div className={styles.promotionalPrice}>
-          <span className={styles.promotionalCurrency}>R$</span>
-          <strong>{currentPrice}</strong>
-          <span className={styles.promotionalPeriod}>{PERSONAL_PLAN_PRICE_PERIOD}</span>
-        </div>
-        <span className={styles.savingsBadge}>
-          <SavingsIcon />
-          {PERSONAL_PLAN_PROMOTION.savingsLabel}
-        </span>
-      </div>
+      <fieldset className={styles.tierPicker} disabled={disabled}>
+        <legend>Escolha quantos minutos de conversa por voz você quer por mês</legend>
+        {PERSONAL_PLAN_TIERS.map((tier) => (
+          <label key={tier.id} className={styles.tierOption} data-selected={selectedTierId === tier.id}>
+            <input
+              type="radio"
+              name="personal-plan-tier"
+              value={tier.id}
+              checked={selectedTierId === tier.id}
+              onChange={() => onSelectTier(tier.id)}
+            />
+            <span className={styles.tierName}>{tier.name}</span>
+            <span className={styles.tierPrice}>
+              <strong>{tier.priceLabel}</strong>
+              <small>{PERSONAL_PLAN_PRICE_PERIOD}</small>
+            </span>
+            <span className={styles.tierMinutes}>{tier.voiceMinutesLabel}</span>
+          </label>
+        ))}
+        <p className={styles.tierNote}>Registrar por texto não tem limite em nenhum plano.</p>
+      </fieldset>
 
       <div className={styles.promotionAccessBadge}>
         <CrownIcon />

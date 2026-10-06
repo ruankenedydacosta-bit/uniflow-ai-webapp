@@ -130,19 +130,47 @@ test('topo tem apenas a seta de voltar e o título -- nenhum segundo botão gran
 
 // REDESIGN APP-LIKE: o preço aparece em dois lugares (card do plano e barra
 // fixa) e AMBOS vêm da fonte central -- nunca de um literal duplicado.
-test('preço da apresentação vem da fonte central nos dois pontos em que aparece', async () => {
+// Épico #116: três planos. O card lista os níveis da fonte central e a barra
+// fixa mostra o preço do nível escolhido -- nunca um literal duplicado.
+test('preço da apresentação vem do plano escolhido, da fonte central, nos dois pontos em que aparece', async () => {
   const page = await source('./PersonalPlanPage.jsx');
   const promotionCard = await source('./PlanPromotionCard.jsx');
   const presentation = page.slice(page.indexOf('<main className={styles.page}>'));
-  assert.match(presentation, /<PlanPromotionCard promotionEligibility=\{promotionEligibility\} \/>/);
-  assert.match(presentation, /\{PERSONAL_PLAN_PRICE_LABEL\}/);
+  assert.match(presentation, /<PlanPromotionCard\s*\n\s*selectedTierId=\{selectedTier\.id\}\s*\n\s*onSelectTier=\{setSelectedTierId\}/);
+  assert.match(presentation, /\{selectedTier\.priceLabel\}/);
   assert.match(presentation, /\{PERSONAL_PLAN_PRICE_PERIOD\}/);
-  assert.doesNotMatch(presentation, /R\$ ?29,90|>29,90</);
-  assert.match(promotionCard, /PERSONAL_PLAN_PRICE_LABEL/);
+  assert.doesNotMatch(presentation, /R\$ ?\d+,\d{2}/);
+  assert.match(promotionCard, /PERSONAL_PLAN_TIERS\.map/);
+  assert.match(promotionCard, /\{tier\.priceLabel\}/);
   assert.match(promotionCard, /PERSONAL_PLAN_PRICE_PERIOD/);
-  assert.doesNotMatch(promotionCard, />29,90</);
-  // O card deriva a parte numérica do rótulo central, sem duplicar o preço.
-  assert.match(promotionCard, /PERSONAL_PLAN_PRICE_LABEL\.replace\('R\$ ', ''\)/);
+  assert.doesNotMatch(promotionCard, /R\$ ?\d+,\d{2}/);
+});
+
+test('sem promoção: nem preço riscado, nem economia, nem contagem regressiva', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  const promotionCard = await source('./PlanPromotionCard.jsx');
+  const config = await source('./personalPlanConfig.js');
+  assert.doesNotMatch(`${page}${promotionCard}${config}`, /PERSONAL_PLAN_PROMOTION|PromotionalCountdown|ECONOMIZE|49,90|<s>/);
+});
+
+test('o plano escolhido é o que vai para o checkout de cartão e para o Pix', async () => {
+  const page = await source('./PersonalPlanPage.jsx');
+  assert.match(page, /createCheckout\(\{ workspaceId: resolvedWorkspaceId, tierId: selectedTier\.id \}\)/);
+  assert.match(page, /tierId: selectedTier\.id,\s*\n\s*paymentMethod: 'pix',/);
+});
+
+test('três planos com preço e minutos da fonte central; o padrão é o Uni Voz', async () => {
+  const { DEFAULT_PERSONAL_PLAN_TIER_ID, PERSONAL_PLAN_TIERS, PERSONAL_PLAN_PRICE_LABEL, formatPlanPrice, findPersonalPlanTier } = await import('./personalPlanConfig.js');
+  assert.deepEqual(PERSONAL_PLAN_TIERS.map((tier) => [tier.id, tier.priceLabel, tier.voiceMinutes]), [
+    ['essencial', 'R$ 14,90', 20],
+    ['uni_voz', 'R$ 29,90', 60],
+    ['uni_voz_plus', 'R$ 69,90', 180],
+  ]);
+  assert.equal(DEFAULT_PERSONAL_PLAN_TIER_ID, 'uni_voz');
+  assert.equal(PERSONAL_PLAN_PRICE_LABEL, 'R$ 29,90');
+  assert.equal(formatPlanPrice(69.9), 'R$ 69,90');
+  assert.equal(formatPlanPrice(undefined), '');
+  assert.equal(findPersonalPlanTier('desconhecido').id, 'uni_voz');
 });
 
 // BLOCO ASAAS CHECKOUT: cartão deixou de ser desabilitado -- agora usa o
@@ -182,7 +210,7 @@ test('confirmar com cartão chama createCustomer ANTES de createCheckout (nunca 
   const cardCustomerIdx = body.indexOf('createCustomer(');
   const checkoutIdx = body.indexOf('await createCheckout(');
   assert.ok(cardCustomerIdx > -1 && checkoutIdx > cardCustomerIdx, 'createCustomer deve ser chamado ANTES de createCheckout no fluxo de cartão');
-  assert.match(body, /await createCheckout\(\{ workspaceId: resolvedWorkspaceId \}\)/);
+  assert.match(body, /await createCheckout\(\{ workspaceId: resolvedWorkspaceId, tierId: selectedTier\.id \}\)/);
   assert.match(body, /window\.location\.href = checkoutResult\.data\.checkout_url;/);
   assert.doesNotMatch(body, /createSubscription\(/);
 });
@@ -417,16 +445,16 @@ test('PixPaymentModal mostra "Aguardando pagamento" e o texto de confirmação a
 
 // REDESIGN CHECKOUT: o valor exibido vem da fonte central do plano
 // (personalPlanConfig), nunca de um literal duplicado nesta tela.
-test('valor do plano no checkout/Pix vem da fonte central, nunca hardcoded', async () => {
+test('valor do plano no checkout/Pix vem do plano escolhido (ou da cobrança da Asaas), nunca hardcoded', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /PERSONAL_PLAN_PRICE_LABEL,/);
   const checkout = page.slice(
     page.indexOf('function SubscriptionMethodModal'),
     page.indexOf('function PersonalPlanPage'),
   );
-  assert.match(checkout, /\{PERSONAL_PLAN_PRICE_LABEL\}/);
+  assert.match(checkout, /\{tier\.priceLabel\}/);
+  assert.match(checkout, /\{formatPlanPrice\(pixData\?\.value\) \|\| tier\.priceLabel\}/);
   assert.match(checkout, /\{PERSONAL_PLAN_PRICE_PERIOD\}/);
-  assert.doesNotMatch(checkout, /R\$ 29,90/);
+  assert.doesNotMatch(checkout, /R\$ \d+,\d{2}/);
 });
 
 test('PixPaymentModal mostra "Pagamento confirmado" e "Seu Plano Pessoal está ativo." quando isActive', async () => {
@@ -520,7 +548,7 @@ test('canceled/expired volta para "idle" -- pode assinar novamente (nunca fica p
 test('página apresenta a hierarquia app-like aprovada, sem a copy de landing page', async () => {
   const page = await source('./PersonalPlanPage.jsx');
   const promotionCard = await source('./PlanPromotionCard.jsx');
-  assert.match(page, /<PlanPromotionCard promotionEligibility=\{promotionEligibility\} \/>/);
+  assert.match(page, /<PlanPromotionCard\s*\n\s*selectedTierId=/);
   assert.match(promotionCard, /Plano Pessoal/);
   assert.match(promotionCard, /Tudo da Uni em um só lugar\./);
   assert.match(promotionCard, /ACESSO COMPLETO/);

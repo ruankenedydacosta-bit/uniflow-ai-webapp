@@ -254,8 +254,8 @@ test('Plano Pessoal concluído é persistido por usuário (mesmo padrão do pres
   const promotionCard = await source('../features/personal-plan/PlanPromotionCard.jsx');
   const config = await source('../features/personal-plan/personalPlanConfig.js');
   assert.match(page, /markPersonalPlanCompleted\(userId\)/);
-  assert.match(promotionCard, /PERSONAL_PLAN_PRICE_LABEL/);
-  assert.match(config, /R\$ 29,90/);
+  assert.match(promotionCard, /PERSONAL_PLAN_TIERS/);
+  assert.match(config, /export const PERSONAL_PLAN_PRICE_LABEL = /);
 });
 
 test('guard do Plano Pessoal independe do workspace Business/PF-PJ -- workspace stale não altera o fluxo Pessoal (usa sempre o workspace pessoal resolvido)', async () => {

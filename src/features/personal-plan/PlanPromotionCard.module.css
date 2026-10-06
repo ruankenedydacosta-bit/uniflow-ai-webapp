@@ -62,138 +62,6 @@
   user-select: none;
 }
 
-.countdown {
-  --countdown-number-height: clamp(70px, 9.5vw, 112px);
-  width: min(100%, 770px);
-  display: grid;
-  justify-items: center;
-  gap: 22px;
-  padding: clamp(24px, 3.5vw, 38px) clamp(20px, 4vw, 46px) 20px;
-  border: 1px solid transparent;
-  border-radius: 28px;
-  background:
-    linear-gradient(rgba(4, 13, 34, .91), rgba(4, 13, 34, .91)) padding-box,
-    linear-gradient(115deg, rgba(168, 85, 247, .95), rgba(37, 99, 235, .72) 54%, rgba(34, 211, 238, .86)) border-box;
-  box-shadow:
-    0 18px 45px rgba(0, 0, 0, .18),
-    inset 0 1px 0 rgba(255, 255, 255, .035);
-}
-
-.offerLabel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: linear-gradient(90deg, #c18cff, #5f8fff 58%, #22d3ee);
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(17px, 2.4vw, 25px);
-  font-weight: 750;
-  letter-spacing: .22em;
-  line-height: 1;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.offerLabel svg {
-  width: clamp(25px, 3.4vw, 37px);
-  height: clamp(25px, 3.4vw, 37px);
-  flex: 0 0 auto;
-  fill: #8b5cf6;
-  filter: drop-shadow(0 0 10px rgba(139, 92, 246, .42));
-}
-
-.countdownDisplay {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(10px, 2.2vw, 20px) minmax(0, 1fr) clamp(10px, 2.2vw, 20px) minmax(0, 1fr);
-  align-items: start;
-  gap: clamp(6px, 1.4vw, 14px);
-}
-
-.countdownUnit {
-  min-width: 0;
-  display: grid;
-  justify-items: stretch;
-  gap: 12px;
-}
-
-.countdownNumber {
-  width: 100%;
-  height: var(--countdown-number-height);
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  overflow: hidden;
-  border: 1px solid transparent;
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(18, 29, 67, .94), rgba(5, 13, 36, .98)) padding-box,
-    linear-gradient(145deg, rgba(139, 92, 246, .78), rgba(59, 130, 246, .8), rgba(34, 211, 238, .54)) border-box;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .07),
-    0 0 22px rgba(37, 99, 235, .12);
-}
-
-.countdownDigitWindow {
-  position: relative;
-  min-width: 0;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-
-.countdownDigitIncoming,
-.countdownDigitOutgoing,
-.countdownDigitStable {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(180deg, #d4c4ff, #9d72ff 45%, #50c8fa);
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(44px, 7.5vw, 78px);
-  font-weight: 820;
-  line-height: 1;
-}
-
-.countdownDigitIncoming {
-  animation: countdownDigitIn 300ms cubic-bezier(.22, .8, .22, 1) both;
-}
-
-.countdownDigitOutgoing {
-  animation: countdownDigitOut 300ms cubic-bezier(.22, .8, .22, 1) both;
-}
-
-.countdownLabel {
-  color: #e0e6f3;
-  font-size: clamp(10px, 1.6vw, 15px);
-  line-height: 1;
-  text-align: center;
-}
-
-.countdownSeparator {
-  height: var(--countdown-number-height);
-  display: grid;
-  place-items: center;
-  color: #eef4ff;
-  font-size: clamp(26px, 4vw, 42px);
-  font-weight: 700;
-  line-height: 1;
-  text-align: center;
-}
-
-.countdown > p {
-  width: 100%;
-  margin: -2px 0 0;
-  padding-top: 18px;
-  border-top: 1px solid rgba(148, 163, 184, .17);
-  color: #21d4b3;
-  font-size: clamp(13px, 2vw, 19px);
-  line-height: 1.2;
-  text-align: center;
-}
-
 .promotionPlanTitle {
   width: 100%;
   margin-top: clamp(38px, 5vw, 60px);
@@ -217,81 +85,86 @@
   line-height: 1.25;
 }
 
-.promotionPricing {
-  width: 100%;
+.tierPicker {
+  width: min(100%, 720px);
   display: grid;
-  justify-items: center;
-  margin-top: clamp(36px, 5vw, 56px);
+  gap: 12px;
+  margin: clamp(30px, 4vw, 44px) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.tierPicker legend {
+  margin: 0 0 14px;
+  padding: 0;
+  color: #c5d1e4;
+  font-size: clamp(16px, 2.2vw, 19px);
   text-align: center;
 }
 
-.referencePrice {
-  margin: 0 0 12px;
-  color: #71819e;
-  font-size: clamp(22px, 3.3vw, 34px);
-  line-height: 1.1;
+.tierOption {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  padding: 16px 20px;
+  border: 1px solid rgba(128, 144, 171, .35);
+  border-radius: 18px;
+  background: rgba(4, 13, 34, .72);
+  cursor: pointer;
 }
 
-.referencePrice s {
-  margin-left: 8px;
-  text-decoration-color: #8090ab;
-  text-decoration-thickness: 2px;
+.tierOption[data-selected='true'] {
+  border-color: rgba(168, 85, 247, .95);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, .6);
 }
 
-.promotionalPrice {
-  max-width: 100%;
-  display: inline-flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: clamp(6px, 1.4vw, 14px);
-  white-space: nowrap;
+.tierOption input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.promotionalCurrency {
+.tierOption:focus-within {
+  outline: 2px solid #5b7cff;
+  outline-offset: 2px;
+}
+
+.tierName {
   color: #fff;
-  font-size: clamp(30px, 5vw, 50px);
-  font-weight: 700;
-}
-
-.promotionalPrice strong {
-  background: linear-gradient(90deg, #a855f7, #4f7dff 52%, #18c8e8);
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(88px, 15vw, 150px);
-  font-weight: 850;
-  letter-spacing: 0;
-  line-height: .9;
-}
-
-.promotionalPeriod {
-  color: #c5d1e4;
-  font-size: clamp(24px, 4.2vw, 42px);
-}
-
-.savingsBadge {
-  min-height: 50px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin-top: 24px;
-  padding: 10px 28px;
-  border: 1px solid rgba(16, 185, 129, .78);
-  border-radius: 999px;
-  background: rgba(2, 20, 37, .7);
-  color: #21d4b3;
-  font-size: clamp(14px, 2vw, 19px);
+  font-size: clamp(18px, 2.4vw, 22px);
   font-weight: 750;
 }
 
-.savingsBadge svg {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
+.tierPrice {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.tierPrice strong {
+  color: #fff;
+  font-size: clamp(20px, 2.8vw, 26px);
+  font-weight: 800;
+}
+
+.tierPrice small {
+  color: #aebbd2;
+  font-size: 15px;
+}
+
+.tierMinutes {
+  grid-column: 1 / -1;
+  color: #aebbd2;
+  font-size: 15px;
+}
+
+.tierNote {
+  margin: 4px 0 0;
+  color: #aebbd2;
+  font-size: 14px;
+  text-align: center;
 }
 
 .promotionAccessBadge {
@@ -301,7 +174,7 @@
   align-items: center;
   justify-content: center;
   gap: clamp(18px, 3vw, 32px);
-  margin: clamp(54px, 7vw, 82px) auto 0;
+  margin: clamp(32px, 5vw, 48px) auto 0;
   padding: 14px 28px;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -331,16 +204,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes countdownDigitIn {
-  from { opacity: 0; transform: translateY(-92%); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes countdownDigitOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(92%); }
-}
-
 @media (max-width: 767px) {
   .promotionCard {
     width: calc(100% - 24px);
@@ -355,50 +218,6 @@
     opacity: .05;
   }
 
-  .countdown {
-    --countdown-number-height: clamp(58px, 18vw, 86px);
-    gap: 17px;
-    padding: 22px 16px 16px;
-    border-radius: 22px;
-  }
-
-  .offerLabel {
-    font-size: clamp(14px, 4vw, 19px);
-    letter-spacing: .16em;
-  }
-
-  .countdownDisplay {
-    grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr) 8px minmax(0, 1fr);
-    gap: clamp(4px, 1.7vw, 8px);
-  }
-
-  .countdownNumber {
-    border-radius: 13px;
-  }
-
-  .countdownDigitIncoming,
-  .countdownDigitOutgoing,
-  .countdownDigitStable {
-    font-size: clamp(34px, 12.5vw, 54px);
-  }
-
-  .countdownUnit {
-    gap: 9px;
-  }
-
-  .countdownLabel {
-    font-size: clamp(8px, 2.6vw, 11px);
-  }
-
-  .countdownSeparator {
-    font-size: clamp(22px, 7vw, 30px);
-  }
-
-  .countdown > p {
-    padding-top: 15px;
-    font-size: 13px;
-  }
-
   .promotionPlanTitle {
     margin-top: 38px;
   }
@@ -410,40 +229,6 @@
   .promotionPlanTitle p {
     margin-top: 7px;
     font-size: clamp(16px, 4.8vw, 20px);
-  }
-
-  .promotionPricing {
-    margin-top: 34px;
-  }
-
-  .referencePrice {
-    margin-bottom: 10px;
-    font-size: clamp(20px, 6vw, 25px);
-  }
-
-  .promotionalCurrency {
-    font-size: clamp(23px, 6.4vw, 29px);
-  }
-
-  .promotionalPrice strong {
-    font-size: clamp(65px, 19vw, 82px);
-  }
-
-  .promotionalPeriod {
-    font-size: clamp(18px, 5.2vw, 23px);
-  }
-
-  .savingsBadge {
-    min-height: 44px;
-    gap: 10px;
-    margin-top: 20px;
-    padding: 8px 20px;
-    font-size: clamp(12px, 3.7vw, 15px);
-  }
-
-  .savingsBadge svg {
-    width: 20px;
-    height: 20px;
   }
 
   .promotionAccessBadge {
@@ -467,9 +252,6 @@
     padding-inline: 12px;
   }
 
-  .countdown {
-    padding-inline: 12px;
-  }
 }
 
 @media (max-width: 359px) {
@@ -478,57 +260,8 @@
     padding: 18px 9px 24px;
   }
 
-  .countdown {
-    --countdown-number-height: 54px;
-    gap: 14px;
-    padding: 18px 8px 14px;
-  }
-
-  .offerLabel {
-    gap: 8px;
-    font-size: 13px;
-    letter-spacing: .12em;
-  }
-
-  .offerLabel svg {
-    width: 22px;
-    height: 22px;
-  }
-
-  .countdownDisplay {
-    grid-template-columns: minmax(0, 1fr) 6px minmax(0, 1fr) 6px minmax(0, 1fr);
-    gap: 3px;
-  }
-
-  .countdownDigitIncoming,
-  .countdownDigitOutgoing,
-  .countdownDigitStable {
-    font-size: 31px;
-  }
-
-  .countdownLabel {
-    font-size: 7px;
-  }
-
   .promotionPlanTitle h1 {
     font-size: 33px;
-  }
-
-  .promotionalPrice {
-    gap: 4px;
-  }
-
-  .promotionalCurrency,
-  .promotionalPeriod {
-    font-size: 18px;
-  }
-
-  .promotionalPrice strong {
-    font-size: 61px;
-  }
-
-  .savingsBadge {
-    padding-inline: 16px;
   }
 
   .promotionAccessBadge {
@@ -540,9 +273,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .promotionCard,
-  .countdownDigitIncoming,
-  .countdownDigitOutgoing {
+  .promotionCard {
     animation: none;
   }
 }
