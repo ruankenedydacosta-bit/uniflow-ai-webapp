@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import './voiceFallback.test.js';
+import './voiceTtsTelemetry.test.js';
 import { createElevenLabsTtsProvider } from './elevenLabsTtsProvider.js';
 import { VOICE_TTS_ERROR_CODES, getVoiceTtsErrorMessage } from './voiceTtsStatus.js';
 import { MAX_TTS_TEXT_LENGTH, TTS_FUNCTION_NAME } from './voiceTtsConfig.js';

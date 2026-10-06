@@ -1,6 +1,5 @@
 export const VOICE_OUTPUT_MODES = Object.freeze({
   OFF: 'off',
-  BROWSER: 'browser',
   PREMIUM: 'elevenlabs_demo',
 });
 

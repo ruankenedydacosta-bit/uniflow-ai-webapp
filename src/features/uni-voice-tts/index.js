@@ -1,6 +1,4 @@
 export { createElevenLabsTtsProvider } from './elevenLabsTtsProvider.js';
-export { createBrowserSpeechTtsProvider } from './browserSpeechTtsProvider.js';
-export { createFallbackVoiceTtsProvider } from './fallbackVoiceTtsProvider.js';
 export {
   VOICE_PROVIDER_IDS,
   VOICE_PROVIDER_OPTIONS,
@@ -8,11 +6,6 @@ export {
   isValidVoiceProvider,
   resolveVoiceProvider,
 } from './voiceProviderRegistry.js';
-export {
-  parseVoiceTestUserIds,
-  resolveVoiceFallbackPolicy,
-  shouldUseBrowserFallback,
-} from './voiceFallbackPolicy.js';
 export { buildSpeechText } from './speechText.js';
 export { normalizeFinancialTextForSpeech } from './normalizeFinancialTextForSpeech.js';
 export { useUniVoiceTts } from './useUniVoiceTts.js';

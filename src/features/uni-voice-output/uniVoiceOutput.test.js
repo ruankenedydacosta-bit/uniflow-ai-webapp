@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { createBrowserVoiceProvider } from './browserVoiceProvider.js';
 import { createPremiumVoiceProvider } from './premiumVoiceProvider.js';
 import {
   createPremiumSessionGuard,
@@ -17,26 +16,6 @@ const EDGE_SOURCE = readFileSync(
 );
 const HOOK_SOURCE = readFileSync(new URL('./useUniVoiceOutput.js', import.meta.url), 'utf8');
 const PROVIDER_SOURCE = readFileSync(new URL('./premiumVoiceProvider.js', import.meta.url), 'utf8');
-
-function createBrowserRuntime() {
-  const calls = { cancel: 0, speak: 0, utterance: null };
-  class Utterance {
-    constructor(text) {
-      this.text = text;
-    }
-  }
-  const speechSynthesis = {
-    cancel() { calls.cancel += 1; },
-    getVoices: () => [{ name: 'Luciana', lang: 'pt-BR' }],
-    speak(utterance) {
-      calls.speak += 1;
-      calls.utterance = utterance;
-      utterance.onstart?.();
-      utterance.onend?.();
-    },
-  };
-  return { runtime: { SpeechSynthesisUtterance: Utterance, speechSynthesis }, calls };
-}
 
 function createPremiumRuntime() {
   const calls = { created: 0, revoked: 0, paused: 0 };
@@ -64,38 +43,6 @@ function createPremiumRuntime() {
     calls,
   };
 }
-
-test('voz padrão usa SpeechSynthesis com pt-BR', async () => {
-  const { runtime, calls } = createBrowserRuntime();
-  await createBrowserVoiceProvider(runtime).speak('Orientação pronta.');
-  assert.equal(calls.speak, 1);
-  assert.equal(calls.utterance.lang, 'pt-BR');
-  assert.equal(calls.utterance.voice.name, 'Luciana');
-});
-
-test('stop encerra a reprodução padrão', () => {
-  const { runtime, calls } = createBrowserRuntime();
-  createBrowserVoiceProvider(runtime).stop();
-  assert.equal(calls.cancel, 1);
-});
-
-test('stop conclui a Promise ativa como cancelada', async () => {
-  class Utterance {}
-  const runtime = {
-    SpeechSynthesisUtterance: Utterance,
-    speechSynthesis: { cancel() {}, getVoices: () => [{ name: 'Luciana', lang: 'pt-BR' }], speak() {} },
-  };
-  const provider = createBrowserVoiceProvider(runtime);
-  const playback = provider.speak('Orientação');
-  provider.stop();
-  await assert.rejects(playback, { code: 'CANCELED' });
-});
-
-test('navegador sem SpeechSynthesis é tratado', async () => {
-  const provider = createBrowserVoiceProvider({});
-  assert.equal(provider.isSupported(), false);
-  await assert.rejects(provider.speak('Texto'), { code: 'UNSUPPORTED' });
-});
 
 test('premium exige sessão autenticada no cliente', async () => {
   const { runtime } = createPremiumRuntime();
@@ -158,8 +105,8 @@ test('limite de dez gerações por sessão é respeitado', () => {
   assert.equal(guard.begin().reason, 'QUOTA_REACHED');
 });
 
-test('falha premium possui caminho explícito para fallback padrão', () => {
-  assert.match(HOOK_SOURCE, /speakBrowser\(fallbackText, \{ fallback: true \}\)/);
+test('falha premium não cai na voz do navegador', () => {
+  assert.doesNotMatch(HOOK_SOURCE, /speakBrowser|providers\.browser|speechSynthesis/);
 });
 
 test('áudio e texto não são persistidos', () => {

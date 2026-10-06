@@ -8,7 +8,6 @@ export const VOICE_OUTPUT_STATES = Object.freeze({
   UNAUTHORIZED: 'unauthorized',
   UNSUPPORTED: 'unsupported',
   PROVIDER_ERROR: 'provider_error',
-  FALLBACK_ACTIVE: 'fallback_active',
 });
 
 export const INITIAL_VOICE_OUTPUT_STATE = Object.freeze({

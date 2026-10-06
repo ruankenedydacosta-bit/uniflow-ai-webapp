@@ -1,4 +1,3 @@
-export { createBrowserVoiceProvider, selectPortugueseVoice } from './browserVoiceProvider.js';
 export { createPremiumVoiceProvider } from './premiumVoiceProvider.js';
 export { createVoiceOutputProviders, getVoiceOutputProvider } from './voiceOutputProvider.js';
 export {

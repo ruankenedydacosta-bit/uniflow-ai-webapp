@@ -37,14 +37,12 @@ export function useUniVoiceOutput({ personalityProfileId = 'balanced' } = {}) {
   }), []);
 
   const stop = useCallback(() => {
-    providers.browser.stop();
     providers.elevenlabs_demo.stop();
     guardRef.current.finish();
     dispatch({ type: 'STOP' });
   }, [providers]);
 
   useEffect(() => () => {
-    providers.browser.stop();
     providers.elevenlabs_demo.stop();
     guardRef.current.finish();
   }, [providers]);
@@ -55,46 +53,7 @@ export function useUniVoiceOutput({ personalityProfileId = 'balanced' } = {}) {
     setModeState(safeMode);
   }, [stop]);
 
-  const speakBrowser = useCallback(async (text, { fallback = false } = {}) => {
-    const prepared = prepareVoiceOutputText(text);
-    if (prepared.error) {
-      dispatch({ type: 'FAIL', status: VOICE_OUTPUT_STATES.PROVIDER_ERROR, error: prepared.error });
-      return { data: null, error: prepared.error };
-    }
-    if (!providers.browser.isSupported()) {
-      const error = { code: 'UNSUPPORTED', message: 'A voz padrão não está disponível neste navegador.' };
-      dispatch({ type: 'FAIL', status: VOICE_OUTPUT_STATES.UNSUPPORTED, error });
-      return { data: null, error };
-    }
-
-    dispatch({
-      type: fallback ? 'FAIL' : 'PREPARE',
-      status: VOICE_OUTPUT_STATES.FALLBACK_ACTIVE,
-      providerName: providers.browser.providerName,
-    });
-    if (fallback) {
-      dispatch({ type: 'FAIL', status: VOICE_OUTPUT_STATES.FALLBACK_ACTIVE, error: null });
-    }
-
-    try {
-      const data = await providers.browser.speak(prepared.data, {
-        preset: resolveVoicePreset(personalityProfileId),
-        onPlaying: () => dispatch({ type: 'PLAY', providerName: providers.browser.providerName }),
-      });
-      dispatch({ type: 'RESET' });
-      return { data, error: null };
-    } catch (providerError) {
-      if (providerError?.code === 'CANCELED') {
-        dispatch({ type: 'STOP' });
-        return { data: { stopped: true }, error: null };
-      }
-      const error = { code: 'BROWSER_VOICE_FAILED', message: 'Não consegui reproduzir a voz padrão agora.' };
-      dispatch({ type: 'FAIL', status: VOICE_OUTPUT_STATES.PROVIDER_ERROR, error });
-      return { data: null, error };
-    }
-  }, [personalityProfileId, providers]);
-
-  const speakPremium = useCallback(async (text, { fallbackText = text } = {}) => {
+  const speakPremium = useCallback(async (text) => {
     const prepared = prepareVoiceOutputText(text, { premium: true });
     if (prepared.error) {
       dispatch({ type: 'FAIL', status: VOICE_OUTPUT_STATES.PROVIDER_ERROR, error: prepared.error });
@@ -142,17 +101,13 @@ export function useUniVoiceOutput({ personalityProfileId = 'balanced' } = {}) {
       }
       const status = statusFromError(providerError);
       const error = { code: providerError?.code ?? 'PROVIDER_ERROR', message: getVoiceOutputMessage(status) };
+      // Sem voz do navegador como reserva: a falha fica visível.
       dispatch({ type: 'FAIL', status, error });
-
-      if (status === VOICE_OUTPUT_STATES.PROVIDER_ERROR) {
-        const fallback = await speakBrowser(fallbackText, { fallback: true });
-        return { ...fallback, fallbackActive: !fallback.error };
-      }
       return { data: null, error };
     } finally {
       guardRef.current.finish();
     }
-  }, [personalityProfileId, providers, speakBrowser]);
+  }, [personalityProfileId, providers]);
 
   return {
     mode,
@@ -162,7 +117,6 @@ export function useUniVoiceOutput({ personalityProfileId = 'balanced' } = {}) {
     isBusy: [VOICE_OUTPUT_STATES.PREPARING, VOICE_OUTPUT_STATES.GENERATING].includes(state.status),
     premiumSupported: providers.elevenlabs_demo.isSupported(),
     setMode,
-    speakBrowser,
     speakPremium,
     stop,
   };

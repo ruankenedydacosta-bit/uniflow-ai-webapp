@@ -8,7 +8,6 @@ export const VOICE_OUTPUT_MESSAGES = Object.freeze({
   unauthorized: 'A voz premium está disponível apenas no modo de apresentação.',
   unsupported: 'A reprodução de voz não está disponível neste ambiente.',
   provider_error: 'Não consegui gerar a voz natural agora. Você pode continuar pela voz padrão.',
-  fallback_active: 'Não consegui gerar a voz natural agora. Vou continuar pela voz padrão.',
 });
 
 export function getVoiceOutputMessage(status, errorMessage = '') {
