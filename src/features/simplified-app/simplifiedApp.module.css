@@ -859,7 +859,7 @@
   height: 7px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: linear-gradient(105deg, var(--uf-app-brand-blue), var(--uf-app-brand-violet) 50%, var(--uf-app-brand-green));
+  background: linear-gradient(105deg, var(--uf-app-primary), var(--uf-app-primary) 50%, var(--uf-app-success));
   animation: uniProcessingPulse 1.4s ease-in-out infinite;
 }
 
