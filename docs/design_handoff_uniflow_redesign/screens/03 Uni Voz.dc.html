@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-883d8cb7-9a1a-4d06-95ff-4dabf234a03d/styles.css">
+<script src="_ds/nocturne-883d8cb7-9a1a-4d06-95ff-4dabf234a03d/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>body{margin:0;background:#161826;color:#e9e9ed}a{color:var(--color-accent)}a:hover{color:var(--color-accent-300)}@keyframes uniBar{0%,100%{transform:scaleY(.2)}50%{transform:scaleY(1)}}</style>
+</helmet>
+<div style="width:390px;height:844px;border-radius:40px;overflow:hidden;box-shadow:var(--shadow-lg);background:radial-gradient(70% 40% at 30% 28%,color-mix(in oklch,#1D4EDB 30%,transparent),transparent),radial-gradient(70% 40% at 72% 34%,color-mix(in oklch,#7C3AED 30%,transparent),transparent),radial-gradient(80% 30% at 50% 100%,color-mix(in oklch,#10B981 12%,transparent),transparent),var(--color-bg);display:flex;flex-direction:column;position:relative;color:var(--color-text);font-family:var(--font-body)"><div style="display:flex;align-items:center;justify-content:space-between;padding:18px 16px 0 22px"><span style="font-size:13px;color:var(--color-neutral-400)">Pessoal</span><button class="btn btn-icon" aria-label="Fechar" style="color:var(--color-neutral-300)"><i class="ph ph-x" style="font-size:20px"></i></button></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:22px;padding-top:28px">
+  <div style="display:flex;align-items:center;gap:8px;height:20px;font-size:13px;letter-spacing:.04em;color:{{ statusColor }}"><span style="width:6px;height:6px;border-radius:999px;background:{{ statusDot }};box-shadow:0 0 8px {{ statusDot }}"></span>{{ statusLabel }}</div>
+  <div onClick="{{ advance }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;width:260px;height:200px"><dc-import name="Uni Orb" size="{{ orbSize }}" mode="{{ voiceMode }}" hint-size="180px,180px"></dc-import></div>
+  <div style="min-height:64px;max-width:320px;text-align:center;font-size:22px;font-weight:500;line-height:1.35;letter-spacing:-.01em;color:var(--color-neutral-100)">“{{ transcript }}{{ caret }}”</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;padding:8px 22px 0">
+  <sc-if value="{{ isListening }}" hint-placeholder-val="{{ true }}"><div style="display:flex;justify-content:center;padding-top:20px">{{ wave }}</div></sc-if>
+  <sc-if value="{{ isResult }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:15px;line-height:1.5;color:var(--color-neutral-200);text-align:center">Registrei como rascunho. Confira os dados antes de confirmar.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:var(--radius-lg);background:color-mix(in oklch,var(--color-surface) 85%,transparent);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px color-mix(in oklch,#10B981 30%,transparent),var(--shadow-md)">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--color-neutral-400)">Saída · rascunho</span><span style="font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--color-neutral-600);color:var(--color-neutral-400)">Alimentação</span></div>
+        <div style="font-size:28px;font-weight:500;letter-spacing:-.015em;font-variant-numeric:tabular-nums">R$ 42,00</div>
+        <div style="display:grid;grid-template-columns:70px 1fr;row-gap:4px;font-size:13px"><span style="color:var(--color-neutral-500)">Local</span><span>Padaria Pão Nosso</span><span style="color:var(--color-neutral-500)">Conta</span><span>Nubank · débito</span></div>
+        <div style="display:flex;gap:8px;margin-top:2px"><button class="btn btn-primary" style="flex:1;border-color:#10B981;color:color-mix(in oklch,#10B981 70%,var(--color-neutral-100))"><i class="ph ph-check" style="font-size:14px"></i>Confirmar</button><button class="btn btn-secondary">Editar</button><button class="btn btn-ghost">Cancelar</button></div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 36px 30px"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><button class="btn btn-icon" aria-label="Escrever" style="width:48px;height:48px;border-radius:999px;color:var(--color-neutral-300);border:1px solid color-mix(in oklch,var(--color-neutral-100) 12%,transparent)"><i class="ph ph-keyboard" style="font-size:20px"></i></button><span style="font-size:11px;color:var(--color-neutral-500)">Escrever</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><button class="btn btn-icon" aria-label="Parar" style="width:60px;height:60px;border-radius:999px;color:color-mix(in oklch,#7C3AED 55%,var(--color-neutral-100));border:1px solid #7C3AED;box-shadow:0 0 18px color-mix(in oklch,#7C3AED 40%,transparent)"><i class="ph-fill ph-stop" style="font-size:20px"></i></button><span style="font-size:11px;color:var(--color-neutral-400)">Parar</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><button class="btn btn-icon" aria-label="Conversa" style="width:48px;height:48px;border-radius:999px;color:var(--color-neutral-300);border:1px solid color-mix(in oklch,var(--color-neutral-100) 12%,transparent)"><i class="ph ph-chat-circle-text" style="font-size:20px"></i></button><span style="font-size:11px;color:var(--color-neutral-500)">Conversa</span></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;animations&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { t: 0 };
+  full = 'gastei 42 na padaria agora';
+  componentDidMount() { this.timer = setInterval(() => { if (this.props.animations === false) return; this.setState(s => ({ t: (s.t + 1) % 95 })); }, 120); }
+  componentWillUnmount() { clearInterval(this.timer); }
+  phase(t) { return t < 32 ? 0 : t < 46 ? 1 : 2; }
+  wave() {
+    const e = React.createElement;
+    const anim = this.props.animations !== false;
+    const bars = Array.from({ length: 34 }, (_, i) => {
+      const r = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+      const env = Math.sin((i / 33) * Math.PI);
+      const c = i < 12 ? '#1D4EDB' : i < 23 ? '#7C3AED' : '#10B981';
+      return e('span', { key: i, style: { width: 3, height: 10 + env * 38, borderRadius: 2, background: 'linear-gradient(to top, ' + c + ', color-mix(in oklch, ' + c + ' 50%, var(--color-neutral-100)))', transformOrigin: 'center', transform: anim ? undefined : 'scaleY(.4)', animation: anim ? 'uniBar ' + (0.55 + r * 0.6) + 's ease-in-out ' + (r * -1) + 's infinite' : 'none' } });
+    });
+    return e('div', { style: { display: 'flex', alignItems: 'center', gap: 4, height: 52 } }, bars);
+  }
+  renderVals() {
+    const t = this.state.t, p = this.phase(t);
+    const n = p === 0 ? Math.min(this.full.length, Math.max(0, Math.floor((t - 3) * 1.2))) : this.full.length;
+    return {
+      voiceMode: ['ouvindo', 'pensando', 'falando'][p],
+      orbSize: p === 2 ? 120 : 180,
+      wave: this.wave(),
+      statusColor: ['color-mix(in oklch,#1D4EDB 55%,var(--color-neutral-100))', 'color-mix(in oklch,#7C3AED 55%,var(--color-neutral-100))', 'color-mix(in oklch,#10B981 70%,var(--color-neutral-100))'][p],
+      statusDot: ['#1D4EDB', '#7C3AED', '#10B981'][p],
+      statusLabel: ['Ouvindo', 'Entendendo', 'Rascunho pronto'][p],
+      transcript: this.full.slice(0, n),
+      caret: p === 0 ? '|' : '',
+      isListening: p === 0,
+      isResult: p === 2,
+      advance: () => this.setState({ t: [32, 46, 0][p] })
+    };
+  }
+}
+</script>
+</body>
+</html>
