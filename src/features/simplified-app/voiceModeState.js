@@ -151,3 +151,25 @@ const REALTIME_VIEW_BY_STATUS = Object.freeze({
 export function resolveRealtimeVoiceModeView(realtimeStatus) {
   return REALTIME_VIEW_BY_STATUS[realtimeStatus] ?? REALTIME_VIEW_BY_STATUS[REALTIME_STATUS.IDLE];
 }
+
+// Cada conversa por voz começa vazia: o card da tela de voz não mostra a
+// troca da conversa anterior. A exceção é o rascunho esperando confirmação,
+// que a Uni cita na saudação e precisa continuar na tela, junto com o pedido
+// que o gerou.
+export function snapshotVoiceConversationStart(messages) {
+  const list = Array.isArray(messages) ? messages : [];
+  const pendingIndex = list.findLastIndex((message) => message?.confirmation?.status === 'pending');
+  const keptIds = new Set();
+  if (pendingIndex >= 0) {
+    keptIds.add(list[pendingIndex].id);
+    const request = list[pendingIndex - 1];
+    if (request?.from === 'user') keptIds.add(request.id);
+  }
+  return new Set(list.map((message) => message?.id).filter((id) => id != null && !keptIds.has(id)));
+}
+
+export function selectVoiceConversationMessages(messages, previousIds) {
+  const list = Array.isArray(messages) ? messages : [];
+  if (!previousIds?.size) return list;
+  return list.filter((message) => !previousIds.has(message?.id));
+}

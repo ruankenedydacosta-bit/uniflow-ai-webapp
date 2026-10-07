@@ -35,7 +35,12 @@ import { SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.j
 import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import SimplifiedVoiceMode from './SimplifiedVoiceMode.jsx';
-import { resolveRealtimeVoiceModeView, VOICE_MODE_ACTIONS } from './voiceModeState.js';
+import {
+  resolveRealtimeVoiceModeView,
+  selectVoiceConversationMessages,
+  snapshotVoiceConversationStart,
+  VOICE_MODE_ACTIONS,
+} from './voiceModeState.js';
 import { SIMPLIFIED_FEATURE_FLAGS } from './simplifiedFeatureFlags.js';
 import { REALTIME_STATUS, useRealtimeUniConversation } from '../uni-voice-realtime/index.js';
 import { buildRealtimeGreetingInstructions } from '../uni-voice-realtime/realtimeGreeting.js';
@@ -603,6 +608,9 @@ function SimplifiedHomeView({
   // comum, então os bugs de "solta sozinho" do segurar para falar não se
   // aplicam aqui.
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
+  // Mensagens que já existiam quando a conversa por voz começou: a tela de
+  // voz não as mostra (ver snapshotVoiceConversationStart).
+  const [voiceConversationPreviousIds, setVoiceConversationPreviousIds] = useState(null);
 
   // Watchdog de ESTADO (última barreira): a UI diz "ouvindo", mas o gravador
   // já parou por fora (track encerrada, permissão revogada). Nunca age por
@@ -726,6 +734,7 @@ function SimplifiedHomeView({
   function beginRealtimeConversation() {
     if (isVoicePlaybackInterruptible) voiceController.stop();
     onBeforeVoiceStart?.();
+    setVoiceConversationPreviousIds(snapshotVoiceConversationStart(messages));
     void realtime.start({
       greetingInstructions: buildRealtimeGreetingInstructions({
         suggestedGreeting: greeting.spokenGreeting,
@@ -735,6 +744,7 @@ function SimplifiedHomeView({
   }
 
   function handleOpenVoiceMode() {
+    setVoiceConversationPreviousIds(snapshotVoiceConversationStart(messages));
     setIsVoiceModeOpen(true);
     beginVoiceCapture();
   }
@@ -803,9 +813,12 @@ function SimplifiedHomeView({
     navigate(SIMPLIFIED_ROUTES.UNI);
   }
 
+  const compactResponseMessages = isVoiceModeOpen
+    ? selectVoiceConversationMessages(messages, voiceConversationPreviousIds)
+    : messages;
   const compactResponse = (
     <CompactResponse
-      messages={messages}
+      messages={compactResponseMessages}
       isExecuting={isExecuting}
       executionError={executionError}
       onConfirmAction={onConfirmAction}

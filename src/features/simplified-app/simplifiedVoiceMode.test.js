@@ -8,6 +8,8 @@ import { REALTIME_STATUS } from '../uni-voice-realtime/realtimeSessionModel.js';
 import {
   resolveRealtimeVoiceModeView,
   resolveVoiceModeView,
+  selectVoiceConversationMessages,
+  snapshotVoiceConversationStart,
   VOICE_MODE_ACTION_LABELS,
   VOICE_MODE_ACTIONS,
   VOICE_MODE_TONES,
@@ -71,7 +73,7 @@ test('um toque abre a tela e começa a ouvir no mesmo gesto (ativação exigida 
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(
     home,
-    /function handleOpenVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*beginVoiceCapture\(\);\s*\}/,
+    /function handleOpenVoiceMode\(\) \{\s*setVoiceConversationPreviousIds\(snapshotVoiceConversationStart\(messages\)\);\s*setIsVoiceModeOpen\(true\);\s*beginVoiceCapture\(\);\s*\}/,
   );
 });
 
@@ -252,4 +254,34 @@ test('conversa encerrada diz como começar outra', async () => {
   assert.match(home, /REALTIME_RESTART_HINT = 'Toque na Uni para começar uma nova conversa\.'/);
   assert.match(home, /if \(status === REALTIME_STATUS\.ENDED\) return REALTIME_RESTART_HINT;/);
   assert.match(home, /ninguém falou por um minuto\. \$\{REALTIME_RESTART_HINT\}/);
+});
+
+test('a conversa por voz começa sem a troca da conversa anterior', () => {
+  const anteriores = [
+    { id: 'u1', from: 'user', text: 'Pode confirmar.' },
+    { id: 'a1', from: 'uni', text: 'Foi em Alimentação, no valor de R$ 50,00.' },
+  ];
+  const previousIds = snapshotVoiceConversationStart(anteriores);
+  assert.deepEqual(selectVoiceConversationMessages(anteriores, previousIds), []);
+
+  const novas = [...anteriores, { id: 'u2', from: 'user', text: 'Quanto gastei hoje?' }];
+  assert.deepEqual(selectVoiceConversationMessages(novas, previousIds).map((m) => m.id), ['u2']);
+});
+
+test('o rascunho esperando confirmação continua na tela de voz, com o pedido que o gerou', () => {
+  const anteriores = [
+    { id: 'u0', from: 'user', text: 'Oi' },
+    { id: 'a0', from: 'uni', text: 'Oi!' },
+    { id: 'u1', from: 'user', text: 'Gastei 50 no mercado' },
+    { id: 'a1', from: 'uni', text: 'Confere?', confirmation: { status: 'pending' } },
+  ];
+  const previousIds = snapshotVoiceConversationStart(anteriores);
+  assert.deepEqual(selectVoiceConversationMessages(anteriores, previousIds).map((m) => m.id), ['u1', 'a1']);
+});
+
+test('cada conversa por voz, inclusive a reaberta pelo orb, esconde as mensagens anteriores', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /selectVoiceConversationMessages\(messages, voiceConversationPreviousIds\)/);
+  const begin = home.slice(home.indexOf('function beginRealtimeConversation() {'));
+  assert.match(begin, /^[^}]*setVoiceConversationPreviousIds\(snapshotVoiceConversationStart\(messages\)\);/);
 });
