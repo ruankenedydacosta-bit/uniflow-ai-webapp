@@ -90,7 +90,8 @@ export const VOICE_MODE_ACTION_LABELS = Object.freeze({
   [VOICE_MODE_ACTIONS.START]: Object.freeze({ label: 'Falar', aria: 'Falar com a Uni' }),
   [VOICE_MODE_ACTIONS.STOP_LISTENING]: Object.freeze({ label: 'Enviar', aria: 'Parar de gravar e enviar' }),
   [VOICE_MODE_ACTIONS.STOP_SPEAKING]: Object.freeze({ label: 'Parar', aria: 'Parar a resposta da Uni' }),
-  [VOICE_MODE_ACTIONS.END_CONVERSATION]: Object.freeze({ label: 'Encerrar', aria: 'Encerrar a conversa com a Uni' }),
+  // Redesign (épico #91, tela 03): o botão central da conversa diz "Parar".
+  [VOICE_MODE_ACTIONS.END_CONVERSATION]: Object.freeze({ label: 'Parar', aria: 'Parar a conversa com a Uni' }),
   [VOICE_MODE_ACTIONS.NONE]: Object.freeze({ label: 'Aguarde', aria: 'Aguarde a Uni terminar' }),
 });
 
@@ -148,8 +149,30 @@ const REALTIME_VIEW_BY_STATUS = Object.freeze({
   }),
 });
 
-export function resolveRealtimeVoiceModeView(realtimeStatus) {
-  return REALTIME_VIEW_BY_STATUS[realtimeStatus] ?? REALTIME_VIEW_BY_STATUS[REALTIME_STATUS.IDLE];
+// Com um rascunho esperando confirmação, a conversa parada (Uni ouvindo sem
+// ninguém falar, ou Uni falando) mostra "Rascunho pronto" em verde, como o
+// estado 3 do design. Quando a pessoa fala, volta a "Ouvindo".
+const REALTIME_DRAFT_READY_STATUSES = new Set([
+  REALTIME_STATUS.LISTENING,
+  REALTIME_STATUS.SPEAKING,
+]);
+
+export function resolveRealtimeVoiceModeView(realtimeStatus, { hasPendingDraft = false } = {}) {
+  const view = REALTIME_VIEW_BY_STATUS[realtimeStatus] ?? REALTIME_VIEW_BY_STATUS[REALTIME_STATUS.IDLE];
+  if (!hasPendingDraft || !REALTIME_DRAFT_READY_STATUSES.has(realtimeStatus)) return view;
+  return Object.freeze({ ...view, tone: VOICE_MODE_TONES.READY, status: 'Rascunho pronto' });
+}
+
+// O que ocupa o miolo da tela de voz. As ondas aparecem enquanto a pessoa
+// fala, ou enquanto a Uni ouve e ainda não respondeu nada. Fora disso fica a
+// resposta (texto e card). O orb encolhe de 180 para 120 quando há resposta
+// ou rascunho na tela, para o card caber sem rolar.
+export function resolveVoiceModeStage({ view, isUserSpeaking = false, hasReply = false } = {}) {
+  const isListening = view?.tone === VOICE_MODE_TONES.LISTENING;
+  const showWaves = isListening && (isUserSpeaking || !hasReply);
+  const isThinking = view?.orb === UNI_RING_ORB_STATES.THINKING;
+  const compact = !showWaves && !isThinking && (view?.tone === VOICE_MODE_TONES.READY || hasReply);
+  return Object.freeze({ showWaves, compact });
 }
 
 // Cada conversa por voz começa vazia: o card da tela de voz não mostra a

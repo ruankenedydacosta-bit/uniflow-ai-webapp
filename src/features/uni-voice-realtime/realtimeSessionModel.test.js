@@ -79,6 +79,37 @@ test('transcrição guarda as falas em ordem e ignora texto vazio', () => {
   ]);
 });
 
+test('a fala da pessoa aparece ao vivo, fica com o texto final e zera na fala seguinte', () => {
+  const live = play([
+    ['local.connected', 0],
+    ['input_audio_buffer.speech_started', 1, { item_id: 'a' }],
+    ['conversation.item.input_audio_transcription.delta', 2, { item_id: 'a', delta: 'gastei 42' }],
+    ['conversation.item.input_audio_transcription.delta', 3, { item_id: 'a', delta: ' na padaria' }],
+  ]);
+  assert.equal(live.liveUserText, 'gastei 42 na padaria');
+
+  const done = reduceRealtimeEvent(
+    live,
+    { type: 'conversation.item.input_audio_transcription.completed', item_id: 'a', transcript: ' Gastei 42 na padaria agora ' },
+    4,
+  );
+  assert.equal(done.liveUserText, 'Gastei 42 na padaria agora');
+
+  const next = reduceRealtimeEvent(done, { type: 'input_audio_buffer.speech_started', item_id: 'b' }, 5);
+  assert.equal(next.liveUserText, '');
+  // Trecho atrasado da fala anterior não entra na fala nova.
+  const late = play([
+    ['input_audio_buffer.speech_started', 1, { item_id: 'b' }],
+    ['conversation.item.input_audio_transcription.delta', 2, { item_id: 'a', delta: 'antiga' }],
+    ['conversation.item.input_audio_transcription.completed', 3, { item_id: 'a', transcript: 'fala antiga' }],
+    ['conversation.item.input_audio_transcription.delta', 4, { item_id: 'b', delta: 'nova' }],
+  ]);
+  assert.equal(late.liveUserText, 'nova');
+  assert.equal(late.transcript.at(-1).text, 'fala antiga');
+  // Uma conversa nova começa sem a fala da anterior.
+  assert.equal(reduceRealtimeEvent(done, { type: 'local.connecting' }, 6).liveUserText, '');
+});
+
 test('uso de tokens soma entre respostas e vira custo pelo preço do mini', () => {
   const usage = {
     input_token_details: { audio_tokens: 600, text_tokens: 400, cached_tokens: 200 },

@@ -111,7 +111,12 @@ function CompactResponse({
   turnStartToken,
   interpretingOperationHint,
   showDetailsLink = true,
+  // "voice": dentro da tela de voz (redesign, épico #91). O pedido da pessoa
+  // já aparece sob o orb, então sai daqui; a resposta fica centralizada e o
+  // card vai em vidro.
+  presentation = 'card',
 }) {
+  const isVoicePresentation = presentation === 'voice';
   const lastUser = [...messages].reverse().find((message) => message.from === 'user');
   const lastUni = [...messages].reverse().find((message) => message.from === 'uni');
   const pendingConfirmationMessage = [...messages].reverse()
@@ -272,8 +277,13 @@ function CompactResponse({
     : lastUni?.text;
 
   return (
-    <section className={styles.compactResponse} aria-label="Resposta da Uni" aria-live="polite">
-      {lastUser?.text ? (
+    <section
+      className={styles.compactResponse}
+      data-presentation={presentation}
+      aria-label="Resposta da Uni"
+      aria-live="polite"
+    >
+      {lastUser?.text && !isVoicePresentation ? (
         <p className={styles.transcript}><span>Você</span>{lastUser.text}</p>
       ) : null}
       {showProcessingIndicator ? (
@@ -283,7 +293,7 @@ function CompactResponse({
         </p>
       ) : lastUni?.text ? (
         <p className={styles.uniResponse}>
-          <span>Uni</span>
+          {isVoicePresentation ? null : <span>Uni</span>}
           {uniDisplayText}
         </p>
       ) : null}
@@ -303,6 +313,7 @@ function CompactResponse({
           isExecuting={isExecuting}
           executionError={executionError}
           processingLabel={processingMessage ?? undefined}
+          appearance={isVoicePresentation ? 'glass' : 'default'}
         />
       ) : null}
       {showDetailsLink ? (
@@ -823,10 +834,33 @@ function SimplifiedHomeView({
       turnStartToken={turnStartToken}
       interpretingOperationHint={interpretingOperationHint}
       showDetailsLink={!isVoiceModeOpen}
+      presentation={isVoiceModeOpen ? 'voice' : 'card'}
       editForm={editForm}
       onSaveEditAction={onSaveEditAction ? handleCardSaveEdit : undefined}
     />
   );
+
+  // Tela de voz (redesign, épico #91): o que a pessoa disse vai grande sob o
+  // orb e o status passa a "Rascunho pronto" quando há card esperando.
+  const voiceHasReply = isVoiceModeOpen
+    && compactResponseMessages.some((message) => message.from === 'uni' && Boolean(message.text));
+  const voiceHasPendingDraft = isVoiceModeOpen
+    && compactResponseMessages.some((message) => message.confirmation?.status === 'pending');
+  const voiceLastUserText = isVoiceModeOpen
+    ? ([...compactResponseMessages].reverse().find((message) => message.from === 'user')?.text ?? '')
+    : '';
+  // Na captura antiga, enquanto grava e transcreve, o pedido novo ainda não
+  // está na conversa: a última mensagem seria a do turno anterior.
+  const isLegacyVoiceTurnPending = isListening
+    || interactionState === SIMPLIFIED_UNI_STATES.TRANSCRIBING
+    || interactionState === SIMPLIFIED_UNI_STATES.SUCCESS;
+  const isRealtimeUserSpeaking = realtime.state.status === REALTIME_STATUS.USER_SPEAKING;
+  // Antes da primeira fala da conversa, a tela mostra o pedido do rascunho
+  // que ficou pendente. Depois, só o que a pessoa disse nesta conversa.
+  const realtimeHeardUser = isRealtimeUserSpeaking
+    || Boolean(realtime.state.liveUserText)
+    || realtime.state.transcript.some((entry) => entry.role === 'user');
+  const realtimeTranscript = realtimeHeardUser ? realtime.state.liveUserText : voiceLastUserText;
 
   const realtimeHint = (() => {
     const { status, error, errorCode } = realtime.state;
@@ -836,7 +870,11 @@ function SimplifiedHomeView({
         : `${error} Toque na Uni para tentar de novo.`;
     }
     if (status === REALTIME_STATUS.CONNECTING) return 'Se o navegador pedir, permita o uso do microfone.';
-    if (isRealtimeActive) return 'Fale normalmente. Você pode interromper a Uni a qualquer momento.';
+    // Com a fala da pessoa já na tela, a dica genérica sai para não disputar
+    // espaço com ela.
+    if (isRealtimeActive) {
+      return realtimeTranscript ? null : 'Fale normalmente. Você pode interromper a Uni a qualquer momento.';
+    }
     if (status === REALTIME_STATUS.ENDED && realtime.state.endReason === 'idle') {
       return `A conversa foi encerrada porque ninguém falou por um minuto. ${REALTIME_RESTART_HINT}`;
     }
@@ -929,9 +967,12 @@ function SimplifiedHomeView({
         <SimplifiedVoiceMode
           open={isVoiceModeOpen}
           interactionState={interactionState}
-          view={resolveRealtimeVoiceModeView(realtime.state.status)}
+          view={resolveRealtimeVoiceModeView(realtime.state.status, { hasPendingDraft: voiceHasPendingDraft })}
           hint={realtimeHint}
           response={isVoiceModeOpen ? compactResponse : null}
+          transcript={realtimeTranscript}
+          isUserSpeaking={isRealtimeUserSpeaking}
+          hasReply={voiceHasReply}
           getVoiceStream={realtime.getLocalStream}
           onAction={handleRealtimeVoiceModeAction}
           onClose={handleCloseRealtimeVoiceMode}
@@ -944,6 +985,9 @@ function SimplifiedHomeView({
           interactionState={interactionState}
           hint={voiceModeHint}
           response={isVoiceModeOpen ? compactResponse : null}
+          transcript={isLegacyVoiceTurnPending ? '' : voiceLastUserText}
+          isUserSpeaking={isListening}
+          hasReply={voiceHasReply}
           getVoiceStream={voiceInput.getActiveStream}
           getVoiceSessionId={voiceInput.getActiveSessionId}
           onAction={handleVoiceModeAction}

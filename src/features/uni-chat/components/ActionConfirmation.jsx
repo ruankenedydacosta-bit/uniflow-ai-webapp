@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
-import UniSignatureWave from './UniSignatureWave';
+import OutlineButton from '../../../components/ui/OutlineButton/OutlineButton.jsx';
+import { PhCheckIcon } from '../../simplified-app/SimplifiedIcons.jsx';
 import {
   amountToCents,
   centsToAmount,
@@ -12,6 +13,7 @@ import {
   initialEditValues,
   validateEditValues,
 } from '../confirmationEditForm.js';
+import { resolveConfirmationCard } from '../confirmationCardModel.js';
 import styles from './ActionConfirmation.module.css';
 
 // Campos do "Editar" dentro do próprio card (buildConfirmationEditForm).
@@ -87,6 +89,10 @@ function EditFields({ form, values, errors, onChange, disabled }) {
 //
 // Com `editForm` e `onSaveEdit`, "Editar" abre os campos no próprio card e
 // "Salvar" devolve só o que mudou. Sem eles, "Editar" chama `onEdit`.
+//
+// Redesign (épico #91): o card segue o "Card de rascunho" do handoff. Nada é
+// gravado sem Confirmar. `appearance="glass"` é a versão sobre o fundo da
+// tela de voz.
 export default function ActionConfirmation({
   data,
   onConfirm,
@@ -97,6 +103,7 @@ export default function ActionConfirmation({
   isExecuting = false,
   executionError = null,
   processingLabel = 'Registrando…',
+  appearance = 'default',
 }) {
   // O formulário da edição aberta fica guardado: se o rascunho mudar por
   // fora enquanto a pessoa edita, Salvar compara com o que ela viu.
@@ -104,7 +111,8 @@ export default function ActionConfirmation({
   const [editValues, setEditValues] = useState(null);
   const [editErrors, setEditErrors] = useState({});
   if (!data) return null;
-  const { title, rows = [], status = 'pending', editable = true } = data;
+  const { status = 'pending', editable = true } = data;
+  const card = resolveConfirmationCard(data);
   const canEditInline = Boolean(editForm?.fields?.length && onSaveEdit);
   const isEditing = canEditInline && status === 'pending' && editValues !== null;
 
@@ -143,19 +151,28 @@ export default function ActionConfirmation({
   }
 
   return (
-    <div className={`${styles.card} ${status !== 'pending' ? styles.resolved : ''}`}>
+    <section
+      className={styles.card}
+      data-status={status}
+      data-appearance={appearance}
+      aria-label={card.kind}
+    >
       <div className={styles.header}>
-        <span className={styles.title}>{title}</span>
+        <span className={styles.kind}>{card.kind}</span>
         {status === 'confirmed' && (
           <span className={styles.statusOk}>
-            <UniSignatureWave variant="success" size={20} /> Confirmado
+            <span className={styles.statusIcon} aria-hidden="true"><PhCheckIcon /></span>
+            Confirmado
           </span>
         )}
-        {status === 'canceled' && <span className={styles.statusCancel}>Cancelado</span>}
-        {status === 'expired' && <span className={styles.statusCancel}>Expirado</span>}
+        {status === 'canceled' && <span className={styles.statusMuted}>Cancelado</span>}
+        {status === 'expired' && <span className={styles.statusMuted}>Expirado</span>}
         {status === 'pending' && isExecuting && (
           <span className={styles.statusProcessing}>{processingLabel}</span>
         )}
+        {status === 'pending' && !isExecuting && card.tag ? (
+          <span className={styles.tag}>{card.tag}</span>
+        ) : null}
       </div>
 
       {isEditing ? (
@@ -168,62 +185,63 @@ export default function ActionConfirmation({
             disabled={isExecuting}
           />
           <div className={styles.actions}>
-            <button type="submit" className={styles.confirm} disabled={isExecuting}>
+            <OutlineButton type="submit" variant="confirm" className={styles.primaryAction} disabled={isExecuting}>
               Salvar
-            </button>
-            <button type="button" className={styles.cancel} onClick={stopEditing} disabled={isExecuting}>
+            </OutlineButton>
+            <OutlineButton variant="ghost" onClick={stopEditing} disabled={isExecuting}>
               Voltar
-            </button>
+            </OutlineButton>
           </div>
         </form>
       ) : (
-        <dl className={styles.rows}>
-          {rows.map((row, index) => (
-            <div className={styles.rowItem} key={row.key ?? `${row.label}-${index}`}>
-              <dt>{row.label}</dt>
-              <dd className={row.emphasis ? styles.emphasisValue : ''}>{row.value}</dd>
-            </div>
-          ))}
-        </dl>
+        <>
+          {card.amount ? (
+            <p className={styles.amount}>
+              {card.amountLabel ? <span className={styles.amountLabel}>{card.amountLabel}</span> : null}
+              {card.amount}
+            </p>
+          ) : null}
+          {card.details.length > 0 ? (
+            <dl className={styles.rows}>
+              {card.details.map((row, index) => (
+                <div className={styles.rowItem} key={row.key ?? `${row.label}-${index}`}>
+                  <dt>{row.label}</dt>
+                  <dd className={row.emphasis ? styles.emphasisValue : ''}>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </>
       )}
 
       {executionError && (
-        <div className={styles.errorBox}>
-          <span className={styles.errorIcon}>!</span>
+        <div className={styles.errorBox} role="alert">
+          <span className={styles.errorIcon} aria-hidden="true">!</span>
           <span className={styles.errorText}>{executionError}</span>
         </div>
       )}
 
       {status === 'pending' && !isEditing && (
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.confirm}
+          <OutlineButton
+            variant="confirm"
+            className={styles.primaryAction}
             onClick={onConfirm}
             disabled={isExecuting}
           >
+            {isExecuting ? null : <PhCheckIcon />}
             {isExecuting ? processingLabel : 'Confirmar'}
-          </button>
+          </OutlineButton>
           {editable && (
-            <button
-              type="button"
-              className={styles.edit}
-              onClick={startEditing}
-              disabled={isExecuting}
-            >
+            <OutlineButton variant="secondary" onClick={startEditing} disabled={isExecuting}>
               Editar
-            </button>
+            </OutlineButton>
           )}
-          <button
-            type="button"
-            className={styles.cancel}
-            onClick={onCancel}
-            disabled={isExecuting}
-          >
+          <OutlineButton variant="ghost" onClick={onCancel} disabled={isExecuting}>
             Cancelar
-          </button>
+          </OutlineButton>
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -1378,7 +1378,7 @@ test('ActionConfirmation só renderiza os botões Confirmar/Editar/Cancelar quan
 
 test('ActionConfirmation exibe "Expirado" para uma confirmação órfã saneada, sem inventar um "confirmado" falso', async () => {
   const card = await source('components/ActionConfirmation.jsx');
-  assert.match(card, /status === 'expired' && <span className=\{styles\.statusCancel\}>Expirado<\/span>/);
+  assert.match(card, /status === 'expired' && <span className=\{styles\.statusMuted\}>Expirado<\/span>/);
 });
 
 test('handleConfirmAction/handleCancelAction já se recusam a agir sem uma pendência real (guarda pré-existente, preservada)', async () => {

@@ -1,6 +1,9 @@
-import UniAvatar from './UniAvatar';
+import { UNI_RING_ORB_STATES, UniRingOrb } from '../../../components/ui/UniRingOrb/index.js';
+import { PhClockCounterClockwiseIcon, PhPlusIcon } from '../../simplified-app/SimplifiedIcons.jsx';
 import styles from './ChatHeader.module.css';
 
+// Cabeçalho da conversa (tela 02 do redesign, épico #91): orb de 28px, nome
+// e espaço ativo. O seletor Pessoal/Empresa só existe no chat completo.
 export default function ChatHeader({
   mode,
   onModeChange,
@@ -12,11 +15,14 @@ export default function ChatHeader({
   return (
     <header className={styles.header}>
       <div className={styles.identity}>
-        <UniAvatar status={isThinking ? 'thinking' : 'idle'} size="md" />
+        <UniRingOrb
+          size={28}
+          state={isThinking ? UNI_RING_ORB_STATES.THINKING : UNI_RING_ORB_STATES.IDLE}
+        />
         <div className={styles.text}>
-          <span className={styles.name}>Uni</span>
+          <h1 className={styles.name}>Uni</h1>
           <span className={styles.status}>
-            {isThinking ? 'Pensando…' : 'Pronta para ajudar'}
+            {mode === 'empresa' ? 'Espaço Empresa' : 'Espaço Pessoal'}
           </span>
         </div>
       </div>
@@ -50,31 +56,13 @@ export default function ChatHeader({
           </div>
         ) : null}
 
-        <button type="button" className={styles.iconBtn} onClick={onHistory} aria-label="Ver histórico de conversas">
-          <HistoryIcon />
+        <button type="button" className={styles.iconBtn} onClick={onHistory} aria-label="Ver histórico">
+          <PhClockCounterClockwiseIcon />
         </button>
-        <button type="button" className={styles.iconBtn} onClick={onNewChat} aria-label="Iniciar nova conversa">
-          <PlusIcon />
+        <button type="button" className={styles.iconBtn} onClick={onNewChat} aria-label="Nova conversa">
+          <PhPlusIcon />
         </button>
       </div>
     </header>
-  );
-}
-
-function HistoryIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 12a9 9 0 1 0 3-6.7" />
-      <path d="M3 4v4h4" />
-      <path d="M12 7v5l3 3" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
   );
 }

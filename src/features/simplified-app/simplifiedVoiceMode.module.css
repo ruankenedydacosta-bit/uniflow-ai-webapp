@@ -6,9 +6,10 @@
   flex-direction: column;
   overflow-y: auto;
   padding:
-    calc(env(safe-area-inset-top, 0px) + var(--uf-space-16))
-    var(--uf-space-20)
-    calc(env(safe-area-inset-bottom, 0px) + var(--uf-space-24));
+    calc(env(safe-area-inset-top, 0px) + 18px)
+    var(--uf-space-16)
+    calc(env(safe-area-inset-bottom, 0px) + 30px)
+    22px;
   color: var(--uf-app-text);
   font-family: var(--uf-font-family-base);
   background:
@@ -26,11 +27,13 @@
   min-height: 44px;
 }
 
-.title {
-  margin: 0;
+.workspace {
   font-size: 13px;
-  font-weight: var(--uf-font-weight-regular);
-  color: var(--uf-app-text-2);
+  color: var(--uf-app-text-3);
+}
+
+.srOnly {
+  composes: srOnly from './simplifiedApp.module.css';
 }
 
 .closeButton,
@@ -58,28 +61,24 @@
 .closeButton svg,
 .secondaryButton svg,
 .primaryButton svg {
-  width: 22px;
-  height: 22px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--uf-space-20);
-  padding-top: var(--uf-space-24);
+  gap: 22px;
+  padding-top: 28px;
 }
 
 .status {
   display: flex;
   align-items: center;
   gap: var(--uf-space-8);
-  min-height: 20px;
+  height: 20px;
   margin: 0;
   font-size: 13px;
   letter-spacing: .04em;
@@ -95,15 +94,15 @@
 }
 
 .status[data-tone="listening"] {
-  color: var(--uf-app-primary-text);
+  color: var(--uf-app-brand-blue-text);
 }
 
 .status[data-tone="thinking"] {
-  color: var(--uf-app-ai-text);
+  color: var(--uf-app-brand-violet-text);
 }
 
 .status[data-tone="ready"] {
-  color: var(--uf-app-success-text);
+  color: var(--uf-app-brand-green-text);
 }
 
 .status[data-tone="error"] {
@@ -124,6 +123,23 @@
 
 .orbButton:disabled {
   cursor: default;
+}
+
+.transcript {
+  min-height: 64px;
+  max-width: 320px;
+  margin: 0;
+  text-align: center;
+  color: var(--uf-app-text);
+  font-size: 22px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.35;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+}
+
+.caret {
+  animation: caretBlink 1s steps(1) infinite;
 }
 
 .hint {
@@ -156,7 +172,7 @@
   justify-content: center;
   gap: var(--uf-space-4);
   height: 52px;
-  padding-top: var(--uf-space-20);
+  margin-top: var(--uf-space-20);
 }
 
 .waveBar {
@@ -167,25 +183,25 @@
 }
 
 .waveBar[data-tone="blue"] {
-  background: linear-gradient(to top, var(--uf-blue-700), color-mix(in oklch, var(--uf-blue-700) 50%, var(--uf-app-text)));
+  background: linear-gradient(to top, var(--uf-app-brand-blue), color-mix(in oklch, var(--uf-app-brand-blue) 50%, var(--uf-app-text)));
 }
 
 .waveBar[data-tone="purple"] {
-  background: linear-gradient(to top, var(--uf-purple-600), color-mix(in oklch, var(--uf-purple-600) 50%, var(--uf-app-text)));
+  background: linear-gradient(to top, var(--uf-app-brand-violet), color-mix(in oklch, var(--uf-app-brand-violet) 50%, var(--uf-app-text)));
 }
 
 .waveBar[data-tone="green"] {
-  background: linear-gradient(to top, var(--uf-green-500), color-mix(in oklch, var(--uf-green-500) 50%, var(--uf-app-text)));
+  background: linear-gradient(to top, var(--uf-app-brand-green), color-mix(in oklch, var(--uf-app-brand-green) 50%, var(--uf-app-text)));
 }
 
 .controls {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 360px;
+  max-width: 390px;
   margin: 0 auto;
-  padding-top: var(--uf-space-12);
+  padding: var(--uf-space-12) var(--uf-space-20) 0 14px;
 }
 
 .control {
@@ -193,9 +209,13 @@
   flex-direction: column;
   align-items: center;
   gap: var(--uf-space-4);
-  min-width: 72px;
-  font-size: 12px;
+  min-width: 60px;
+  font-size: 11px;
   color: var(--uf-app-text-3);
+}
+
+.primaryLabel {
+  color: var(--uf-app-text-2);
 }
 
 .secondaryButton {
@@ -210,15 +230,15 @@
   width: 60px;
   height: 60px;
   border-radius: var(--uf-radius-full);
-  border: 1px solid var(--uf-purple-600);
-  color: var(--uf-app-ai-text);
-  box-shadow: 0 0 18px color-mix(in oklch, var(--uf-purple-600) 40%, transparent);
+  border: 1px solid var(--uf-app-brand-violet);
+  color: var(--uf-app-brand-violet-text);
+  box-shadow: 0 0 18px color-mix(in oklch, var(--uf-app-brand-violet) 40%, transparent);
 }
 
 .primaryButton[data-action="start"] {
-  border-color: var(--uf-blue-700);
-  color: var(--uf-app-primary-text);
-  box-shadow: 0 0 18px color-mix(in oklch, var(--uf-blue-700) 40%, transparent);
+  border-color: var(--uf-app-brand-blue);
+  color: var(--uf-app-brand-blue-text);
+  box-shadow: 0 0 18px color-mix(in oklch, var(--uf-app-brand-blue) 40%, transparent);
 }
 
 .primaryButton:disabled {
@@ -237,6 +257,26 @@
 @keyframes screenIn {
   from { opacity: 0; transform: scale(.98); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes caretBlink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen,
+  .caret {
+    animation: none;
+  }
+
+  .waveBar {
+    animation: none;
+    transform: scaleY(.4);
+  }
+
+  .orbButton {
+    transition: none;
+  }
 }
 
 @keyframes bar {

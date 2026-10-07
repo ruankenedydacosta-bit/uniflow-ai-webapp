@@ -48,6 +48,12 @@ export function createRealtimeSessionState() {
     falseInterruptions: 0,
     toolCallsPending: 0,
     transcript: [],
+    // O que a pessoa está dizendo agora, para a tela de voz mostrar ao vivo
+    // (épico #91). Zera quando ela começa a falar de novo.
+    liveUserText: '',
+    // Item da fala mostrada em liveUserText. A transcrição chega depois da
+    // fala; trecho de outro item (atrasado) não entra na fala atual.
+    liveUserItemId: null,
     usage: { ...EMPTY_USAGE },
     error: null,
     errorCode: null,
@@ -77,6 +83,11 @@ function appendTranscript(state, role, itemId, text) {
     ...state,
     transcript: [...state.transcript, { role, itemId: itemId ?? null, text: clean }],
   };
+}
+
+// Sem item conhecido (fala sem item_id), aceita; com item, só o mesmo.
+function isLiveUserItem(state, itemId) {
+  return !state.liveUserItemId || !itemId || state.liveUserItemId === itemId;
 }
 
 // Ações locais (início, fim, marcação) e eventos do servidor passam pelo
@@ -130,6 +141,8 @@ export function reduceRealtimeEvent(state, event, at) {
       return {
         ...state,
         status: REALTIME_STATUS.USER_SPEAKING,
+        liveUserText: '',
+        liveUserItemId: event.item_id ?? null,
         lastActivityAt: at,
         speechStoppedAt: null,
         interruptions: state.uniSpeaking ? state.interruptions + 1 : state.interruptions,
@@ -156,8 +169,21 @@ export function reduceRealtimeEvent(state, event, at) {
         uniSpeaking: false,
         lastActivityAt: at,
       };
-    case 'conversation.item.input_audio_transcription.completed':
-      return appendTranscript(state, 'user', event.item_id, event.transcript);
+    case 'conversation.item.input_audio_transcription.delta':
+      if (!isLiveUserItem(state, event.item_id)) return state;
+      return typeof event.delta === 'string' && event.delta
+        ? {
+          ...state,
+          liveUserText: `${state.liveUserText}${event.delta}`,
+          liveUserItemId: event.item_id ?? state.liveUserItemId,
+        }
+        : state;
+    case 'conversation.item.input_audio_transcription.completed': {
+      const next = appendTranscript(state, 'user', event.item_id, event.transcript);
+      const finalText = typeof event.transcript === 'string' ? event.transcript.trim() : '';
+      if (!finalText || !isLiveUserItem(state, event.item_id)) return next;
+      return { ...next, liveUserText: finalText, liveUserItemId: event.item_id ?? state.liveUserItemId };
+    }
     case 'response.output_audio_transcript.done':
       return appendTranscript(state, 'uni', event.item_id, event.transcript);
     case 'response.done':

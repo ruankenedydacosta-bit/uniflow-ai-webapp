@@ -915,6 +915,24 @@
   50% { opacity: 1; transform: scale(1.15); }
 }
 
+/* Na tela de voz (tela 03 do redesign), a resposta perde a caixa: o texto
+   da Uni fica centralizado e o card de rascunho fica em vidro sobre o
+   fundo. O que a pessoa disse já aparece grande sob o orb. */
+.compactResponse[data-presentation="voice"] {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.compactResponse[data-presentation="voice"] .uniResponse,
+.compactResponse[data-presentation="voice"] .uniProcessing {
+  justify-content: center;
+  color: var(--uf-app-text-2);
+  font-size: 15px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .detailsLink {
   min-height: 44px;
   display: inline-flex;
