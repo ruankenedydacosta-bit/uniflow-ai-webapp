@@ -499,6 +499,19 @@
   font-size: 13.5px;
 }
 
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--uf-app-primary-text);
+}
+
+.footerLink:focus-visible {
+  outline: 3px solid var(--uf-app-focus);
+  outline-offset: 2px;
+  border-radius: var(--uf-radius-8);
+}
+
 /* ---------- Microanimações (scroll reveal) ---------- */
 
 .reveal {

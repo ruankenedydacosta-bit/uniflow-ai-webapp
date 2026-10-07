@@ -1,3 +1,4 @@
+import { PRIVACIDADE_ROUTE } from '../../legal/politicaDePrivacidade.js';
 import styles from '../authMobile.module.css';
 
 function AuthLegalNotice({ checked, error, disabled, onChange, onLegalClick }) {
@@ -19,9 +20,14 @@ function AuthLegalNotice({ checked, error, disabled, onChange, onLegalClick }) {
             Termos de Uso
           </button>{' '}
           e a{' '}
-          <button type="button" className={styles.inlineLink} onClick={onLegalClick}>
+          <a
+            className={styles.inlineLink}
+            href={PRIVACIDADE_ROUTE}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Política de Privacidade
-          </button>.
+          </a>.
         </span>
       </div>
       {error ? <p className={styles.fieldError}>{error}</p> : null}

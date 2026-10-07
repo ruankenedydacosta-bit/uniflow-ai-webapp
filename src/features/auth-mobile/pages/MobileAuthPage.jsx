@@ -218,7 +218,7 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
                   ? 'Não foi possível carregar sua sessão. Tente novamente.' : '')}
                 onSubmit={handleEmailSubmit}
                 onForgotPassword={handleOpenForgotPassword}
-                onLegalClick={() => setFeedback('Os documentos legais serão disponibilizados em breve.')}
+                onLegalClick={() => setFeedback('Os Termos de Uso serão publicados em breve.')}
               />
               <div className={styles.authDivider}><span>ou</span></div>
               <SocialAuthButtons

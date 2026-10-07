@@ -32,7 +32,12 @@ test('documento declara instalação standalone e ícone oficial para iOS', asyn
 
 test('Vercel possui fallback SPA para deep links do React Router', async () => {
   const config = JSON.parse(await source('../../vercel.json'));
-  assert.deepEqual(config.rewrites, [{ source: '/(.*)', destination: '/index.html' }]);
+  // Páginas pré-renderizadas (como /privacidade) vêm antes; o fallback do
+  // SPA continua sendo a última regra.
+  assert.deepEqual(config.rewrites.at(-1), { source: '/(.*)', destination: '/index.html' });
+  for (const rewrite of config.rewrites.slice(0, -1)) {
+    assert.match(rewrite.destination, /^\/[a-z-]+\/index\.html$/);
+  }
 
   const routes = await source('routes.jsx');
   for (const path of ['/login', '/uni-ai', '/suporte', '/financeiro']) {
