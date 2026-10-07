@@ -39,7 +39,9 @@ test('traz as colunas que #100 e #101 usam', () => {
 });
 
 test('uniques e checks do contrato', () => {
-  assert.match(migration, /unique \(user_id, workspace_id, provider\)/);
+  // Pendência é linha à parte: unicidade separada para conexão e pendência.
+  assert.match(migration, /calendar_connections_user_workspace_provider_key\s+on public\.calendar_connections \(user_id, workspace_id, provider\)\s+where status <> 'pending';/);
+  assert.match(migration, /calendar_connections_pending_user_workspace_provider_key\s+on public\.calendar_connections \(user_id, workspace_id, provider\)\s+where status = 'pending';/);
   assert.match(migration, /unique \(connection_id, external_calendar_id\)/);
   assert.match(migration, /unique \(agenda_item_id, provider\)/);
   assert.match(migration, /unique \(workspace_id, provider, calendar_id, external_id\)/);
@@ -155,13 +157,17 @@ test('callback nunca ativa a conexão: grava pendente; quem ativa é a confirm',
   assert.match(callback, /confirmation_hash: await hashDoState\(pendente\)/);
   assert.doesNotMatch(callback, /status: 'active'/);
   assert.doesNotMatch(callback, /POST',\s*\n\s*caminho: '\/calendars'/);
-  assert.match(callback, /revogarSeNinguemMaisUsa\(config, \{\s*\n\s*token: tokenDaContaAnterior/);
+  // A conexão que já existe não é tocada pelo callback.
+  assert.doesNotMatch(callback, /on_conflict/);
+  assert.doesNotMatch(callback, /calendar_connection_calendars/);
+  assert.doesNotMatch(callback, /tokenDaContaAnterior/);
 
   const confirm = ler('supabase/functions/google-calendar-confirm/index.ts');
-  const consumo = confirm.indexOf("corpo: { status: 'error', confirmation_hash: null, confirmation_expires_at: null }");
+  const consumo = confirm.indexOf("confirmation_hash: `eq.${hash}`,\n      user_id: `eq.${userId}`,\n      status: 'eq.pending',");
+  const aplicacao = confirm.indexOf('await aplicarPendencia(config, pendencia!, token)');
   const ativacao = confirm.indexOf("status: 'active', last_error_code: null");
-  assert.ok(consumo > 0 && ativacao > 0);
-  assert.match(confirm, /user_id: `eq\.\$\{userId\}`,\s*\n\s*status: 'eq\.pending',/);
+  assert.ok(consumo > 0 && aplicacao > consumo && ativacao > 0);
+  assert.match(confirm, /revogarSeNinguemMaisUsa\(config, \{ token: tokenDaContaAnterior/);
   assert.match(confirm, /calendar_id: `not\.in\.\$\{listaParaFiltroIn\(calendariosDaConta\)\}`/);
   assert.match(confirm, /acharCalendarioDoEspaco\(lista\.itens, workspaceId\)/);
 });

@@ -43,12 +43,15 @@ function filtrar(linhas, query) {
   return linhas.filter((linha) => {
     for (const [campo, filtro] of query) {
       if (['select', 'limit', 'on_conflict'].includes(campo)) continue;
-      const [, op, valor] = filtro.match(/^(eq|neq|gt|lt|not\.in)\.(.*)$/s) ?? [];
+      const [, op, valor] = filtro.match(/^(eq|neq|gte|gt|lte|lt|not\.in)\.(.*)$/s) ?? [];
+      if (!op) throw new Error(`filtro não simulado: ${campo}=${filtro}`);
       const atual = linha[campo] ?? null;
       if (op === 'eq' && String(atual) !== valor) return false;
       if (op === 'neq' && String(atual) === valor) return false;
       if (op === 'gt' && !(atual !== null && atual > valor)) return false;
       if (op === 'lt' && !(atual !== null && atual < valor)) return false;
+      if (op === 'lte' && !(atual !== null && atual <= valor)) return false;
+      if (op === 'gte' && !(atual !== null && atual >= valor)) return false;
     }
     return true;
   });
@@ -86,9 +89,15 @@ function instalarFetch({ db, google }) {
       if (metodo === 'POST') {
         for (const item of Array.isArray(corpo) ? corpo : [corpo]) {
           if (nome === 'calendar_connections') {
-            const existente = linhas.find((l) => l.user_id === item.user_id && l.workspace_id === item.workspace_id);
-            if (existente) Object.assign(existente, item);
-            else linhas.push({ id: `conn-${linhas.length + 1}`, ...item });
+            // Mesmos índices únicos parciais da 055: um por (pessoa, espaço)
+            // entre as conexões e outro entre as pendências.
+            const pendente = item.status === 'pending';
+            const conflito = linhas.find((l) => l.user_id === item.user_id && l.workspace_id === item.workspace_id
+              && (l.status === 'pending') === pendente);
+            if (conflito) return resposta(409, { code: '23505' });
+            db.sequencia = (db.sequencia ?? 0) + 1;
+            item.id = `conn-${db.sequencia}`;
+            linhas.push({ ...item });
           } else if (nome === 'calendar_connection_calendars') {
             const existente = linhas.find((l) => l.connection_id === item.connection_id && l.external_calendar_id === item.external_calendar_id);
             if (existente) Object.assign(existente, item); else linhas.push({ ...item });
@@ -98,7 +107,7 @@ function instalarFetch({ db, google }) {
         }
         if (nome === 'calendar_connections') {
           const item = Array.isArray(corpo) ? corpo[0] : corpo;
-          return resposta(201, [{ id: linhas.find((l) => l.user_id === item.user_id && l.workspace_id === item.workspace_id).id }]);
+          return resposta(201, [{ id: item.id }]);
         }
         return resposta(201);
       }
@@ -205,8 +214,10 @@ test('mesma pessoa confirma: agenda do espaço criada, calendários gravados, st
   assert.deepEqual(corpo, { connected: true, workspace_id: WORKSPACE });
 
   const [conexao] = ambiente.db.connections;
+  assert.equal(ambiente.db.connections.length, 1, 'a pendência saiu; ficou só a conexão');
   assert.equal(conexao.status, 'active');
-  assert.equal(conexao.confirmation_hash, null);
+  assert.equal(conexao.confirmation_hash, undefined);
+  assert.equal(ambiente.db.secrets.get(conexao.id), 'RT-c1');
   assert.equal(conexao.app_calendar_id, 'app-1@group');
   assert.equal(conexao.destination_calendar_id, 'app-1@group');
   assert.equal(ambiente.google.criados, 1);
@@ -289,4 +300,63 @@ test('reconectar depois de desconectar reaproveita a agenda do espaço pela marc
   assert.equal((await confirmar(ambiente, DONO, pendente)).status, 200);
   assert.equal(ambiente.google.criados, 1, 'nenhuma agenda duplicada');
   assert.equal(ambiente.db.connections[0].app_calendar_id, 'app-1@group');
+});
+
+test('link repassado não toca a conexão que quem mandou já tinha', async () => {
+  const ambiente = criarAmbiente();
+  instalarFetch(ambiente);
+  let pendente = (await iniciarEVoltarDoGoogle(ambiente, DONO, 'original')).searchParams.get('pendente');
+  assert.equal((await confirmar(ambiente, DONO, pendente)).status, 200);
+  const antes = structuredClone(ambiente.db.connections[0]);
+  const calendariosAntes = ambiente.db.calendars.length;
+
+  // Quem recebe o link consente com outra conta Google.
+  ambiente.google.calendars[0] = { id: 'vitima@gmail.test', accessRole: 'owner', primary: true };
+  pendente = (await iniciarEVoltarDoGoogle(ambiente, DONO, 'repassado')).searchParams.get('pendente');
+  const ativa = ambiente.db.connections.find((c) => c.status !== 'pending');
+  assert.deepEqual(ativa, antes, 'o callback não altera a conexão ativa');
+  assert.equal(ambiente.db.calendars.length, calendariosAntes);
+  assert.equal(ambiente.db.secrets.get(antes.id), 'RT-original');
+
+  const { status } = await confirmar(ambiente, OUTRA, pendente);
+  assert.equal(status, 403);
+  assert.deepEqual(ambiente.db.connections, [antes], 'a pendência saiu e a conexão ativa ficou');
+  assert.equal(ambiente.db.secrets.get(antes.id), 'RT-original');
+  assert.deepEqual(ambiente.google.revogados, ['RT-repassado']);
+});
+
+test('reconexão não confirmada mantém a conexão ativa; a pendência vencida sai sozinha', async () => {
+  const ambiente = criarAmbiente();
+  instalarFetch(ambiente);
+  let pendente = (await iniciarEVoltarDoGoogle(ambiente, DONO, 'original')).searchParams.get('pendente');
+  assert.equal((await confirmar(ambiente, DONO, pendente)).status, 200);
+  const antes = structuredClone(ambiente.db.connections[0]);
+
+  await iniciarEVoltarDoGoogle(ambiente, DONO, 'abandonado');
+  ambiente.db.connections.find((c) => c.status === 'pending').confirmation_expires_at = new Date(Date.now() - 1000).toISOString();
+
+  const connect = await carregarFuncao(ambiente, 'google-calendar-connect');
+  assert.equal((await connect(post(OUTRA, { workspace_id: WORKSPACE }))).status, 200);
+  assert.deepEqual(ambiente.db.connections, [antes]);
+  assert.deepEqual(ambiente.google.revogados, [], 'mesma conta ativa: o grant não é revogado');
+});
+
+test('troca de conta confirmada: calendários da conta anterior saem e o token dela é revogado', async () => {
+  const ambiente = criarAmbiente();
+  instalarFetch(ambiente);
+  let pendente = (await iniciarEVoltarDoGoogle(ambiente, DONO, 'conta-a')).searchParams.get('pendente');
+  assert.equal((await confirmar(ambiente, DONO, pendente)).status, 200);
+  const id = ambiente.db.connections[0].id;
+
+  ambiente.google.calendars = [{ id: 'b@gmail.test', accessRole: 'owner', primary: true }];
+  pendente = (await iniciarEVoltarDoGoogle(ambiente, DONO, 'conta-b')).searchParams.get('pendente');
+  assert.equal((await confirmar(ambiente, DONO, pendente)).status, 200);
+
+  assert.equal(ambiente.db.connections.length, 1);
+  const [conexao] = ambiente.db.connections;
+  assert.equal(conexao.id, id);
+  assert.equal(conexao.account_email, 'b@gmail.test');
+  assert.equal(ambiente.db.secrets.get(id), 'RT-conta-b');
+  assert.deepEqual(ambiente.google.revogados, ['RT-conta-a']);
+  assert.ok(ambiente.db.calendars.every((c) => c.external_calendar_id !== 'eu@gmail.test'));
 });

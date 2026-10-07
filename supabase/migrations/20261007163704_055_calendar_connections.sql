@@ -9,12 +9,15 @@ begin;
 -- do segredo, e a leitura e a escrita passam pelas RPCs abaixo, que só o
 -- service_role executa.
 --
--- Confirmação: o callback do OAuth não ativa a conexão. Ele grava a linha
--- com status 'pending', o hash de um id de confirmação de uso único e um
--- prazo de 10 minutos. A função google-calendar-confirm só ativa se quem
--- confirma é a mesma pessoa que iniciou o fluxo. Assim, uma URL de
--- autorização repassada a outra pessoa não liga a conta Google dela ao
--- espaço de quem mandou. Workers (#100, #101) só processam status 'active'.
+-- Confirmação: o callback do OAuth não ativa a conexão. Ele grava uma linha
+-- à parte com status 'pending', o hash de um id de confirmação de uso único
+-- e um prazo de 10 minutos. A conexão que já existia no espaço não é tocada.
+-- A função google-calendar-confirm só aplica a pendência se quem confirma é
+-- a pessoa que iniciou o fluxo. Assim, uma URL de autorização repassada a
+-- outra pessoa não liga a conta Google dela ao espaço de quem mandou, nem
+-- derruba a conexão de quem mandou. Por isso a unicidade por pessoa, espaço
+-- e provedor vale separadamente para a conexão e para a pendência. Workers
+-- (#100, #101) só processam status 'active'.
 
 -- ---------------------------------------------------------------------------
 -- calendar_connections: uma conexão por pessoa, espaço e provedor.
@@ -49,9 +52,18 @@ create table if not exists public.calendar_connections (
   constraint calendar_connections_last_error_code_check check (
     last_error_code is null
     or last_error_code in ('token_revogado', 'escopo_insuficiente', 'destino_ausente')
-  ),
-  constraint calendar_connections_user_workspace_provider_key unique (user_id, workspace_id, provider)
+  )
 );
+
+-- Uma conexão (active ou error) e no máximo uma pendência por pessoa,
+-- espaço e provedor.
+create unique index if not exists calendar_connections_user_workspace_provider_key
+  on public.calendar_connections (user_id, workspace_id, provider)
+  where status <> 'pending';
+
+create unique index if not exists calendar_connections_pending_user_workspace_provider_key
+  on public.calendar_connections (user_id, workspace_id, provider)
+  where status = 'pending';
 
 create index if not exists calendar_connections_workspace_idx
   on public.calendar_connections (workspace_id);

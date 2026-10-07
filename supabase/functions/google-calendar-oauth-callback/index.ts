@@ -6,9 +6,10 @@
 // {origem}{return_path}?google_agenda=confirmar&pendente=<id>, ou
 // ?google_agenda=negado|escopo_insuficiente|erro.
 //
-// Esta função não ativa a conexão. Ela troca o código, guarda o refresh
-// token no Vault e deixa a conexão com status 'pending', com o hash de um id
-// de confirmação de uso único que vale 10 minutos. A ativação é da
+// Esta função não ativa a conexão. Ela troca o código e grava uma pendência
+// (linha à parte com status 'pending', token no Vault e o hash de um id de
+// confirmação de uso único que vale 10 minutos). A conexão que já existia no
+// espaço continua intacta até a confirmação. A ativação é da
 // google-calendar-confirm, chamada pela tela com a sessão de quem está no
 // navegador. Se a URL de autorização foi repassada a outra pessoa, a
 // confirmação falha e a conta Google dela não fica ligada ao espaço de quem
@@ -17,7 +18,7 @@
 // Nenhum token sai desta função: nem na resposta, nem no log.
 
 import { chamarGoogleAgenda } from '../_shared/googleCalendar/api.ts';
-import { chamarBanco, chamarRpc, ok } from '../_shared/googleCalendar/banco.ts';
+import { chamarBanco, chamarRpc, membroAtivoDoEspaco, ok } from '../_shared/googleCalendar/banco.ts';
 import { VALIDADE_DA_PENDENCIA_MS } from '../_shared/googleCalendar/confirmacao.js';
 import { lerEscoposConcedidos, temTodosOsEscopos } from '../_shared/googleCalendar/escopos.js';
 import {
@@ -31,6 +32,7 @@ import {
   RETURN_PATH_PADRAO,
   usuarioNaAllowlist,
 } from '../_shared/googleCalendar/oauth.js';
+import { descartarPendencia } from '../_shared/googleCalendar/pendencias.ts';
 import { revogarSeNinguemMaisUsa, revogarTokenNoGoogle } from '../_shared/googleCalendar/tokens.ts';
 
 type Config = { supabaseUrl: string; serviceRoleKey: string };
@@ -118,20 +120,6 @@ async function trocarCodigo({
   }
 }
 
-async function membroAtivo(config: Config, userId: string, workspaceId: string) {
-  const resposta = await chamarBanco(config, {
-    caminho: '/rest/v1/workspace_members',
-    query: {
-      select: 'workspace_id',
-      workspace_id: `eq.${workspaceId}`,
-      user_id: `eq.${userId}`,
-      status: 'eq.active',
-      limit: '1',
-    },
-  });
-  return ok(resposta.status) && Array.isArray(resposta.json) && resposta.json.length === 1;
-}
-
 // Grant recusado (escopo faltando ou pessoa fora do espaço): revoga para não
 // deixar acesso órfão na conta Google. Só quando a pessoa não tem nenhuma
 // conexão Google, porque o token novo carrega os escopos já concedidos.
@@ -146,6 +134,10 @@ async function descartarGrant(config: Config, userId: string, token: string) {
 }
 
 // Grava a conexão como pendente e devolve o id de confirmação (ou null).
+// Grava a pendência numa linha à parte e devolve o id de confirmação. A
+// conexão que já existe no espaço não é tocada: troca de conta, calendários
+// e token antigo só mudam na google-calendar-confirm, depois que a pessoa
+// certa confirmar.
 async function prepararPendencia(config: Config, state: StateConsumido, accessToken: string, refreshToken: string, escopos: string[]) {
   const { user_id: userId, workspace_id: workspaceId } = state;
 
@@ -155,27 +147,22 @@ async function prepararPendencia(config: Config, state: StateConsumido, accessTo
   if (primario.status !== 200 || typeof primario.json?.id !== 'string') return { resultado: RESULTADOS_CONEXAO.ERRO };
   const accountEmail = primario.json.id as string;
 
-  const existente = await chamarBanco(config, {
+  // Uma pendência por pessoa e espaço: a anterior sai. O token dela só é
+  // revogado se for de outra conta Google; da mesma conta, revogar
+  // derrubaria o grant que acabou de ser concedido.
+  const anteriores = await chamarBanco(config, {
     caminho: '/rest/v1/calendar_connections',
     query: {
-      select: 'id,account_email,app_calendar_id,destination_calendar_id,exportacao_inicial_em,last_synced_at,last_error_code,last_error_at',
+      select: 'id,account_email',
       user_id: `eq.${userId}`,
       workspace_id: `eq.${workspaceId}`,
       provider: 'eq.google',
-      limit: '1',
+      status: 'eq.pending',
     },
   });
-  if (!ok(existente.status) || !Array.isArray(existente.json)) return { resultado: RESULTADOS_CONEXAO.ERRO };
-  const anterior = existente.json[0] ?? null;
-  const mesmaConta = Boolean(anterior) && anterior.account_email === accountEmail;
-  const trocouDeConta = Boolean(anterior) && !mesmaConta;
-
-  // Troca de conta no mesmo espaço: o token da conta anterior é lido antes de
-  // ser sobrescrito no Vault, para ser revogado depois.
-  let tokenDaContaAnterior = '';
-  if (trocouDeConta) {
-    const segredoAnterior = await chamarRpc(config, 'calendar_connection_get_refresh_token', { p_connection_id: anterior.id });
-    tokenDaContaAnterior = ok(segredoAnterior.status) && typeof segredoAnterior.json === 'string' ? segredoAnterior.json : '';
+  if (!ok(anteriores.status) || !Array.isArray(anteriores.json)) return { resultado: RESULTADOS_CONEXAO.ERRO };
+  for (const anterior of anteriores.json) {
+    await descartarPendencia(config, anterior, { revogar: anterior.account_email !== accountEmail });
   }
 
   const pendente = gerarSegredoAleatorio(32);
@@ -183,7 +170,7 @@ async function prepararPendencia(config: Config, state: StateConsumido, accessTo
   const gravacao = await chamarBanco(config, {
     metodo: 'POST',
     caminho: '/rest/v1/calendar_connections',
-    query: { on_conflict: 'user_id,workspace_id,provider', select: 'id' },
+    query: { select: 'id' },
     corpo: {
       user_id: userId,
       workspace_id: workspaceId,
@@ -193,48 +180,25 @@ async function prepararPendencia(config: Config, state: StateConsumido, accessTo
       status: 'pending',
       confirmation_hash: await hashDoState(pendente),
       confirmation_expires_at: new Date(agora + VALIDADE_DA_PENDENCIA_MS).toISOString(),
-      last_error_code: mesmaConta ? anterior.last_error_code : null,
-      last_error_at: mesmaConta ? anterior.last_error_at : null,
       connected_at: new Date(agora).toISOString(),
-      app_calendar_id: mesmaConta ? anterior.app_calendar_id : null,
-      destination_calendar_id: mesmaConta ? anterior.destination_calendar_id : null,
-      exportacao_inicial_em: mesmaConta ? anterior.exportacao_inicial_em : null,
-      last_synced_at: mesmaConta ? anterior.last_synced_at : null,
     },
-    prefer: 'resolution=merge-duplicates,return=representation',
+    prefer: 'return=representation',
   });
-  const connectionId = Array.isArray(gravacao.json) ? gravacao.json[0]?.id : null;
-  if (!ok(gravacao.status) || typeof connectionId !== 'string') {
-    console.error('google-calendar-oauth-callback: falha ao gravar a conexão', gravacao.status);
+  const pendenciaId = Array.isArray(gravacao.json) ? gravacao.json[0]?.id : null;
+  if (!ok(gravacao.status) || typeof pendenciaId !== 'string') {
+    console.error('google-calendar-oauth-callback: falha ao gravar a pendência', gravacao.status);
     return { resultado: RESULTADOS_CONEXAO.ERRO };
   }
 
-  // Os calendários da conta anterior não valem mais.
-  if (trocouDeConta) {
-    const limpeza = await chamarBanco(config, {
-      metodo: 'DELETE',
-      caminho: '/rest/v1/calendar_connection_calendars',
-      query: { connection_id: `eq.${connectionId}` },
-      prefer: 'return=minimal',
-    });
-    if (!ok(limpeza.status)) return { resultado: RESULTADOS_CONEXAO.ERRO };
-  }
-
   const segredo = await chamarRpc(config, 'calendar_connection_set_refresh_token', {
-    p_connection_id: connectionId,
+    p_connection_id: pendenciaId,
     p_refresh_token: refreshToken,
   });
   if (!ok(segredo.status)) {
     console.error('google-calendar-oauth-callback: falha ao guardar o token no Vault', segredo.status);
+    await descartarPendencia(config, { id: pendenciaId, account_email: accountEmail }, { revogar: false });
+    await revogarSeNinguemMaisUsa(config, { token: refreshToken, email: accountEmail, exceto: pendenciaId });
     return { resultado: RESULTADOS_CONEXAO.ERRO };
-  }
-
-  if (trocouDeConta) {
-    await revogarSeNinguemMaisUsa(config, {
-      token: tokenDaContaAnterior,
-      email: anterior.account_email,
-      exceto: connectionId,
-    });
   }
 
   return { resultado: RESULTADOS_CONEXAO.CONFIRMAR, pendente };
@@ -284,7 +248,7 @@ Deno.serve(async (request) => {
   }
   if (!tokens.refreshToken) return voltar(RESULTADOS_CONEXAO.ERRO);
 
-  if (!(await membroAtivo(config, state.user_id, state.workspace_id))) {
+  if (!(await membroAtivoDoEspaco(config, state.user_id, state.workspace_id))) {
     await descartarGrant(config, state.user_id, grantRecebido);
     return voltar(RESULTADOS_CONEXAO.ERRO);
   }

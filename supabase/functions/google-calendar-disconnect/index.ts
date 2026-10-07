@@ -15,6 +15,7 @@
 import { chamarGoogleAgenda } from '../_shared/googleCalendar/api.ts';
 import { chamarBanco, chamarRpc, ok } from '../_shared/googleCalendar/banco.ts';
 import { origemPermitida } from '../_shared/googleCalendar/oauth.js';
+import { descartarPendencia } from '../_shared/googleCalendar/pendencias.ts';
 import { obterAccessTokenGoogle, revogarTokenNoGoogle } from '../_shared/googleCalendar/tokens.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -97,9 +98,26 @@ Deno.serve(async (request) => {
       user_id: `eq.${userId}`,
       workspace_id: `eq.${workspaceId}`,
       provider: 'eq.google',
+      status: 'neq.pending',
       limit: '1',
     },
   });
+
+  // Pendência aberta neste espaço (conexão iniciada e não confirmada) sai
+  // junto, com o token revogado.
+  const pendencias = await chamarBanco(config, {
+    caminho: '/rest/v1/calendar_connections',
+    query: {
+      select: 'id,account_email',
+      user_id: `eq.${userId}`,
+      workspace_id: `eq.${workspaceId}`,
+      provider: 'eq.google',
+      status: 'eq.pending',
+    },
+  });
+  for (const pendencia of Array.isArray(pendencias.json) ? pendencias.json : []) {
+    await descartarPendencia(config, pendencia);
+  }
   if (!ok(busca.status) || !Array.isArray(busca.json)) {
     return jsonResponse(500, errorBody('DISCONNECT_FAILED', 'Não foi possível desconectar agora.'), origin);
   }

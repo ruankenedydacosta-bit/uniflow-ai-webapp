@@ -10,7 +10,7 @@ import { cx } from '../../utils/cx.js';
 import {
   AVISO_SEM_SESSAO,
   avisoDaConfirmacao,
-  avisoDoRetorno,
+  avisoInicialDoRetorno,
   GOOGLE_AGENDA_PENDING_PARAM,
   GOOGLE_AGENDA_RETURN_PARAM,
   MENSAGEM_ERRO_AO_CARREGAR,
@@ -52,13 +52,13 @@ function AvisoDispensavel({ aviso, onDismiss }) {
  */
 function SimplifiedGoogleAgendaPage() {
   const navigate = useNavigate();
-  const { user, workspace } = useSession();
+  const { user, workspace, isLoading: isSessionLoading } = useSession();
   const workspaceId = workspace?.id;
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [aviso, setAviso] = useState(() => avisoDoRetorno(searchParams.get(GOOGLE_AGENDA_RETURN_PARAM)));
   // Lido uma vez: o parâmetro sai da URL logo em seguida.
   const [pendente] = useState(() => pendenciaDoRetorno(searchParams));
+  const [aviso, setAviso] = useState(() => avisoInicialDoRetorno(searchParams));
   const [isConfirming, setIsConfirming] = useState(() => Boolean(pendente));
   const confirmacaoIniciadaRef = useRef(false);
   const [conexao, setConexao] = useState(null);
@@ -77,21 +77,21 @@ function SimplifiedGoogleAgendaPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  // Troca de espaço com a tela aberta: a resposta do espaço anterior que
-  // chegar depois é descartada.
-  const workspaceAtualRef = useRef(workspaceId);
-  useEffect(() => {
-    workspaceAtualRef.current = workspaceId;
-  }, [workspaceId]);
+  // Só a resposta do pedido mais recente vale. Cobre a troca de espaço com a
+  // tela aberta e a leitura feita depois da confirmação, que não pode ser
+  // sobrescrita pela leitura inicial, mais lenta.
+  const ultimoPedidoRef = useRef(0);
 
   const carregarConexao = useCallback(() => {
+    const pedido = ultimoPedidoRef.current + 1;
+    ultimoPedidoRef.current = pedido;
     if (!workspaceId) {
       setIsLoading(false);
       return;
     }
     setIsLoading(true);
     obterConexao({ workspaceId }).then(({ data, error }) => {
-      if (workspaceAtualRef.current !== workspaceId) return;
+      if (ultimoPedidoRef.current !== pedido) return;
       setConexao(data ?? null);
       if (error) setAviso({ tone: 'alert', message: MENSAGEM_ERRO_AO_CARREGAR });
       setIsLoading(false);
@@ -110,8 +110,9 @@ function SimplifiedGoogleAgendaPage() {
   }, [carregarConexao]);
 
   // Volta do Google: confirma uma vez só, com a sessão aberta neste navegador.
+  // Espera a sessão carregar; sem sessão depois disso, avisa e não conecta.
   useEffect(() => {
-    if (!pendente || confirmacaoIniciadaRef.current) return;
+    if (!pendente || confirmacaoIniciadaRef.current || isSessionLoading) return;
     confirmacaoIniciadaRef.current = true;
     if (!user?.id) {
       window.setTimeout(() => {
@@ -125,7 +126,7 @@ function SimplifiedGoogleAgendaPage() {
       setIsConfirming(false);
       carregarConexao();
     });
-  }, [pendente, user?.id, carregarConexao]);
+  }, [pendente, isSessionLoading, user?.id, carregarConexao]);
 
   // Voltar do Google pelo botão do navegador restaura a página do cache com
   // o botão ainda carregando.

@@ -4,12 +4,16 @@
 export const GOOGLE_AGENDA_RETURN_PARAM = 'google_agenda';
 export const GOOGLE_AGENDA_PENDING_PARAM = 'pendente';
 export const RETORNO_A_CONFIRMAR = 'confirmar';
+export const PADRAO_ID_DE_PENDENCIA = /^[A-Za-z0-9_-]{32,128}$/;
 
 // Retorno do callback que pede confirmação: devolve o id da pendência.
+// Mesmo parâmetro e mesmo formato de PARAMETRO_PENDENTE e
+// PADRAO_ID_DE_PENDENCIA (supabase/functions/_shared/googleCalendar/
+// confirmacao.js); simplifiedGoogleAgenda.test.js compara os dois.
 export function pendenciaDoRetorno(searchParams) {
   if (searchParams?.get(GOOGLE_AGENDA_RETURN_PARAM) !== RETORNO_A_CONFIRMAR) return null;
   const pendente = searchParams.get(GOOGLE_AGENDA_PENDING_PARAM);
-  return typeof pendente === 'string' && /^[A-Za-z0-9_-]{32,128}$/.test(pendente) ? pendente : null;
+  return typeof pendente === 'string' && PADRAO_ID_DE_PENDENCIA.test(pendente) ? pendente : null;
 }
 
 export const AVISO_LINK_DE_OUTRA_PESSOA = Object.freeze({
@@ -37,6 +41,16 @@ const AVISOS_DA_CONFIRMACAO = Object.freeze({
     message: 'O Google Agenda não foi conectado porque faltaram permissões. Tente de novo e marque todas as permissões pedidas.',
   }),
 });
+
+// Aviso ao abrir a tela: o do retorno do callback ou, quando o retorno pede
+// confirmação mas o id veio cortado ou inválido, o de link já usado.
+export function avisoInicialDoRetorno(searchParams) {
+  const valor = searchParams?.get(GOOGLE_AGENDA_RETURN_PARAM);
+  if (valor === RETORNO_A_CONFIRMAR) {
+    return pendenciaDoRetorno(searchParams) ? null : avisoDaConfirmacao({ code: 'CONFIRMATION_INVALID' });
+  }
+  return avisoDoRetorno(valor);
+}
 
 export function avisoDaConfirmacao(error) {
   if (!error) return AVISOS_DE_RETORNO_CONECTADO;

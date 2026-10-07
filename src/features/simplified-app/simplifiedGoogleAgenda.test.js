@@ -4,8 +4,15 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
+  PADRAO_ID_DE_PENDENCIA as PADRAO_DO_SERVIDOR,
+  PARAMETRO_PENDENTE,
+} from '../../../supabase/functions/_shared/googleCalendar/confirmacao.js';
+import {
   AVISO_LINK_DE_OUTRA_PESSOA,
   avisoDaConfirmacao,
+  avisoInicialDoRetorno,
+  GOOGLE_AGENDA_PENDING_PARAM,
+  PADRAO_ID_DE_PENDENCIA,
   avisoDoRetorno,
   pendenciaDoRetorno,
   mensagemDeErroAoConectar,
@@ -64,9 +71,9 @@ test('nome da agenda do espaço', () => {
   }
 });
 
-test('resposta de outro espaço que chega atrasada é descartada', async () => {
+test('só a resposta do pedido mais recente da conexão vale', async () => {
   const page = await source('./SimplifiedGoogleAgendaPage.jsx');
-  assert.match(page, /if \(workspaceAtualRef\.current !== workspaceId\) return;/);
+  assert.match(page, /if \(ultimoPedidoRef\.current !== pedido\) return;/);
 });
 
 test('tela: aviso inline com "X" (sem toast), conectar, desconectar com confirmação e e-mail da conta', async () => {
@@ -108,9 +115,21 @@ test('aviso da confirmação: conectado, link de outra pessoa, vencido e já usa
 
 test('tela confirma uma vez só, com a sessão aberta, e limpa o id da URL', async () => {
   const page = await source('./SimplifiedGoogleAgendaPage.jsx');
-  assert.match(page, /if \(!pendente \|\| confirmacaoIniciadaRef\.current\) return;/);
+  assert.match(page, /if \(!pendente \|\| confirmacaoIniciadaRef\.current \|\| isSessionLoading\) return;/);
   assert.match(page, /if \(!user\?\.id\) \{/);
   assert.match(page, /setAviso\(AVISO_SEM_SESSAO\)/);
   assert.match(page, /confirmarConexao\(\{ pendente \}\)/);
   assert.match(page, /next\.delete\(GOOGLE_AGENDA_PENDING_PARAM\)/);
+});
+
+test('tela e servidor usam o mesmo parâmetro e o mesmo formato de id', () => {
+  assert.equal(GOOGLE_AGENDA_PENDING_PARAM, PARAMETRO_PENDENTE);
+  assert.equal(PADRAO_ID_DE_PENDENCIA.source, PADRAO_DO_SERVIDOR.source);
+});
+
+test('retorno "confirmar" com id cortado avisa em vez de ficar em silêncio', () => {
+  assert.match(avisoInicialDoRetorno(new URLSearchParams('google_agenda=confirmar&pendente=abc')).message, /já foi usado/);
+  assert.equal(avisoInicialDoRetorno(new URLSearchParams(`google_agenda=confirmar&pendente=${'a'.repeat(43)}`)), null);
+  assert.equal(avisoInicialDoRetorno(new URLSearchParams('google_agenda=negado')).tone, 'alert');
+  assert.equal(avisoInicialDoRetorno(new URLSearchParams('')), null);
 });

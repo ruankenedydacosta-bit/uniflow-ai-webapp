@@ -17,10 +17,11 @@ export const SITUACOES_DA_CONFIRMACAO = Object.freeze({
   OUTRA_PESSOA: 'outra_pessoa',
 });
 
-const ID_RE = /^[A-Za-z0-9_-]{32,128}$/;
+// O front (googleAgendaPresentation.js) repete esta regra; um teste compara.
+export const PADRAO_ID_DE_PENDENCIA = /^[A-Za-z0-9_-]{32,128}$/;
 
 export function idDePendenciaValido(valor) {
-  return typeof valor === 'string' && ID_RE.test(valor);
+  return typeof valor === 'string' && PADRAO_ID_DE_PENDENCIA.test(valor);
 }
 
 // `linha`: a conexão achada pelo hash do id (ou null).

@@ -51,6 +51,21 @@ export function ok(status: number) {
   return status >= 200 && status < 300;
 }
 
+// A pessoa é membro ativo do espaço? Mesma regra no callback e no confirm.
+export async function membroAtivoDoEspaco(config: ConfigDoBanco, userId: string, workspaceId: string) {
+  const resposta = await chamarBanco(config, {
+    caminho: '/rest/v1/workspace_members',
+    query: {
+      select: 'workspace_id',
+      workspace_id: `eq.${workspaceId}`,
+      user_id: `eq.${userId}`,
+      status: 'eq.active',
+      limit: '1',
+    },
+  });
+  return ok(resposta.status) && Array.isArray(resposta.json) && resposta.json.length === 1;
+}
+
 export function chamarRpc(config: ConfigDoBanco, nome: string, parametros: Record<string, unknown>) {
   return chamarBanco(config, { metodo: 'POST', caminho: `/rest/v1/rpc/${nome}`, corpo: parametros });
 }

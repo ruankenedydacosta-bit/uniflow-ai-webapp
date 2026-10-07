@@ -8,6 +8,7 @@
 // google-calendar-oauth-callback, que consome o state uma vez só e redireciona
 // para {origem}{return_path}?google_agenda=<resultado>.
 
+import { PARAMETRO_PENDENTE } from './confirmacao.js';
 import { ESCOPOS_GOOGLE_AGENDA } from './escopos.js';
 
 export const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -62,7 +63,7 @@ export function montarUrlDeRetorno({ origem, returnPath, resultado, pendente = n
   if (valor === RESULTADOS_CONEXAO.CONFIRMAR && !pendente) valor = RESULTADOS_CONEXAO.ERRO;
   const url = new URL(caminho, origem);
   url.searchParams.set(PARAMETRO_DE_RETORNO, valor);
-  if (valor === RESULTADOS_CONEXAO.CONFIRMAR) url.searchParams.set('pendente', pendente);
+  if (valor === RESULTADOS_CONEXAO.CONFIRMAR) url.searchParams.set(PARAMETRO_PENDENTE, pendente);
   return url.toString();
 }
 

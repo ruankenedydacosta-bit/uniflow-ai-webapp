@@ -11,7 +11,10 @@
 // - Outra pessoa ou id vencido: revoga o token no Google, apaga a pendência
 //   e devolve erro. Nada é conectado.
 // - Id já usado ou inexistente: erro, sem efeito.
-// - Mesma pessoa: consome o id (uso único) e faz os passos finais. A agenda
+// - Mesma pessoa: consome o id (uso único, DELETE da pendência) e aplica o
+//   token e a conta à conexão do espaço, que até aqui não foi tocada. Se a
+//   conta Google mudou, os calendários da anterior saem e o token dela é
+//   revogado. Depois vêm os passos finais. A agenda
 //   "UniFlow · <espaço>" é reaproveitada pelo app_calendar_id ou pela marca do
 //   espaço na descrição e só é criada quando não existe. Depois a lista de
 //   calendários é atualizada, os vínculos de fora da conta saem, o destino é
@@ -20,7 +23,7 @@
 // Nenhum token sai desta função: nem na resposta, nem no log.
 
 import { chamarGoogleAgenda } from '../_shared/googleCalendar/api.ts';
-import { chamarBanco, ok } from '../_shared/googleCalendar/banco.ts';
+import { chamarBanco, chamarRpc, membroAtivoDoEspaco, ok } from '../_shared/googleCalendar/banco.ts';
 import { atualizarListaDeCalendarios, listarCalendariosDoGoogle } from '../_shared/googleCalendar/calendarios.ts';
 import {
   classificarConfirmacao,
@@ -40,8 +43,12 @@ import {
   origemPermitida,
   usuarioNaAllowlist,
 } from '../_shared/googleCalendar/oauth.js';
-import { descartarPendencia, limparPendenciasVencidas } from '../_shared/googleCalendar/pendencias.ts';
-import { obterAccessTokenGoogle } from '../_shared/googleCalendar/tokens.ts';
+import {
+  agendarLimpezaDePendencias,
+  descartarPendencia,
+  lerTokenDaPendencia,
+} from '../_shared/googleCalendar/pendencias.ts';
+import { obterAccessTokenGoogle, revogarSeNinguemMaisUsa } from '../_shared/googleCalendar/tokens.ts';
 
 type Config = { supabaseUrl: string; serviceRoleKey: string };
 
@@ -51,12 +58,19 @@ interface Pendencia {
   workspace_id: string;
   status: string;
   account_email: string | null;
-  app_calendar_id: string | null;
-  destination_calendar_id: string | null;
+  granted_scopes: string[] | null;
   confirmation_expires_at: string | null;
 }
 
-const CAMPOS_DA_PENDENCIA = 'id,user_id,workspace_id,status,account_email,app_calendar_id,destination_calendar_id,confirmation_expires_at';
+interface Conexao {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  app_calendar_id: string | null;
+  destination_calendar_id: string | null;
+}
+
+const CAMPOS_DA_PENDENCIA = 'id,user_id,workspace_id,status,account_email,granted_scopes,confirmation_expires_at';
 
 function corsHeaders(origin: string) {
   return {
@@ -91,20 +105,6 @@ async function getAuthenticatedUserId(authorization: string, supabaseUrl: string
   }
 }
 
-async function membroAtivo(config: Config, userId: string, workspaceId: string) {
-  const resposta = await chamarBanco(config, {
-    caminho: '/rest/v1/workspace_members',
-    query: {
-      select: 'workspace_id',
-      workspace_id: `eq.${workspaceId}`,
-      user_id: `eq.${userId}`,
-      status: 'eq.active',
-      limit: '1',
-    },
-  });
-  return ok(resposta.status) && Array.isArray(resposta.json) && resposta.json.length === 1;
-}
-
 async function nomeDoEspaco(config: Config, workspaceId: string) {
   const resposta = await chamarBanco(config, {
     caminho: '/rest/v1/workspaces',
@@ -116,7 +116,102 @@ async function nomeDoEspaco(config: Config, workspaceId: string) {
 
 type Finalizacao = 'conectado' | 'escopo_insuficiente' | 'reconectar' | 'erro';
 
-async function finalizar(config: Config, conexao: Pendencia): Promise<Finalizacao> {
+// Aplica a pendência à conexão do espaço (cria se não houver). Devolve a
+// conexão para os passos finais, ou null se não conseguiu gravar.
+async function aplicarPendencia(config: Config, pendencia: Pendencia, token: string): Promise<Conexao | null> {
+  const existente = await chamarBanco(config, {
+    caminho: '/rest/v1/calendar_connections',
+    query: {
+      select: 'id,account_email,app_calendar_id,destination_calendar_id',
+      user_id: `eq.${pendencia.user_id}`,
+      workspace_id: `eq.${pendencia.workspace_id}`,
+      provider: 'eq.google',
+      status: 'neq.pending',
+      limit: '1',
+    },
+  });
+  if (!ok(existente.status) || !Array.isArray(existente.json)) return null;
+  const anterior = existente.json[0] ?? null;
+  const trocouDeConta = Boolean(anterior) && anterior.account_email !== pendencia.account_email;
+
+  // Fica 'error' até o último passo: se algo falhar, a tela oferece conectar de novo.
+  const dados = {
+    account_email: pendencia.account_email,
+    granted_scopes: pendencia.granted_scopes ?? [],
+    status: 'error',
+    last_error_code: null,
+    last_error_at: null,
+    connected_at: new Date().toISOString(),
+  };
+
+  let conexao: Conexao;
+  let tokenDaContaAnterior = '';
+  if (anterior) {
+    if (trocouDeConta) {
+      tokenDaContaAnterior = await lerTokenDaPendencia(config, anterior.id);
+      const limpeza = await chamarBanco(config, {
+        metodo: 'DELETE',
+        caminho: '/rest/v1/calendar_connection_calendars',
+        query: { connection_id: `eq.${anterior.id}` },
+        prefer: 'return=minimal',
+      });
+      if (!ok(limpeza.status)) return null;
+    }
+    const atualizacao = await chamarBanco(config, {
+      metodo: 'PATCH',
+      caminho: '/rest/v1/calendar_connections',
+      query: { id: `eq.${anterior.id}` },
+      corpo: {
+        ...dados,
+        ...(trocouDeConta
+          ? { app_calendar_id: null, destination_calendar_id: null, exportacao_inicial_em: null, last_synced_at: null }
+          : {}),
+      },
+      prefer: 'return=minimal',
+    });
+    if (!ok(atualizacao.status)) return null;
+    conexao = {
+      id: anterior.id,
+      user_id: pendencia.user_id,
+      workspace_id: pendencia.workspace_id,
+      app_calendar_id: trocouDeConta ? null : anterior.app_calendar_id,
+      destination_calendar_id: trocouDeConta ? null : anterior.destination_calendar_id,
+    };
+  } else {
+    const criacao = await chamarBanco(config, {
+      metodo: 'POST',
+      caminho: '/rest/v1/calendar_connections',
+      query: { select: 'id' },
+      corpo: { ...dados, user_id: pendencia.user_id, workspace_id: pendencia.workspace_id, provider: 'google' },
+      prefer: 'return=representation',
+    });
+    const id = Array.isArray(criacao.json) ? criacao.json[0]?.id : null;
+    if (!ok(criacao.status) || typeof id !== 'string') return null;
+    conexao = {
+      id,
+      user_id: pendencia.user_id,
+      workspace_id: pendencia.workspace_id,
+      app_calendar_id: null,
+      destination_calendar_id: null,
+    };
+  }
+
+  const segredo = await chamarRpc(config, 'calendar_connection_set_refresh_token', {
+    p_connection_id: conexao.id,
+    p_refresh_token: token,
+  });
+  if (!ok(segredo.status)) {
+    console.error('google-calendar-confirm: falha ao guardar o token no Vault', segredo.status);
+    return null;
+  }
+
+  if (trocouDeConta) {
+    await revogarSeNinguemMaisUsa(config, { token: tokenDaContaAnterior, email: anterior.account_email, exceto: conexao.id });
+  }
+  return conexao;
+}
+
+async function finalizar(config: Config, conexao: Conexao): Promise<Finalizacao> {
   const { id: connectionId, user_id: userId, workspace_id: workspaceId } = conexao;
 
   const token = await obterAccessTokenGoogle({ ...config, connectionId });
@@ -271,42 +366,47 @@ Deno.serve(async (request) => {
     if (pendencia && situacao !== SITUACOES_DA_CONFIRMACAO.INEXISTENTE) {
       await descartarPendencia(config, pendencia);
     }
-    await limparPendenciasVencidas(config);
+    await agendarLimpezaDePendencias(config);
     const erro = ERRO_DA_CONFIRMACAO[situacao];
     return jsonResponse(erro.status, errorBody(erro.code, erro.message), origin);
   }
 
   // A pessoa pode ter saído do espaço ou da allowlist entre o connect e aqui.
   const autorizada = usuarioNaAllowlist(userId, Deno.env.get('GOOGLE_CALENDAR_ALLOWED_USER_IDS') ?? '')
-    && await membroAtivo(config, userId, pendencia!.workspace_id);
+    && await membroAtivoDoEspaco(config, userId, pendencia!.workspace_id);
   if (!autorizada) {
     await descartarPendencia(config, pendencia!);
     return jsonResponse(403, errorBody('FORBIDDEN', 'Sem acesso a este espaço.'), origin);
   }
 
-  // Uso único: só um pedido consome o id. A conexão fica 'error' até o fim
-  // dos passos finais; se algo falhar, a tela oferece conectar de novo.
+  // Uso único: o token é lido e só um pedido consegue apagar a pendência.
+  const token = await lerTokenDaPendencia(config, pendencia!.id);
   const consumo = await chamarBanco(config, {
-    metodo: 'PATCH',
+    metodo: 'DELETE',
     caminho: '/rest/v1/calendar_connections',
     query: {
       confirmation_hash: `eq.${hash}`,
       user_id: `eq.${userId}`,
       status: 'eq.pending',
       confirmation_expires_at: `gt.${new Date().toISOString()}`,
-      select: CAMPOS_DA_PENDENCIA,
+      select: 'id',
     },
-    corpo: { status: 'error', confirmation_hash: null, confirmation_expires_at: null },
     prefer: 'return=representation',
   });
-  const conexao = ok(consumo.status) && Array.isArray(consumo.json) ? (consumo.json[0] as Pendencia | undefined) : undefined;
-  if (!conexao) {
+  const consumiu = ok(consumo.status) && Array.isArray(consumo.json) && consumo.json.length === 1;
+  if (!consumiu || !token) {
     const erro = ERRO_DA_CONFIRMACAO[SITUACOES_DA_CONFIRMACAO.INEXISTENTE];
     return jsonResponse(erro.status, errorBody(erro.code, erro.message), origin);
   }
 
+  const conexao = await aplicarPendencia(config, pendencia!, token);
+  if (!conexao) {
+    await revogarSeNinguemMaisUsa(config, { token, email: pendencia!.account_email, exceto: pendencia!.id });
+    return jsonResponse(500, errorBody('CONFIRM_FAILED', 'Não foi possível concluir a conexão agora.'), origin);
+  }
+
   const resultado = await finalizar(config, conexao);
-  await limparPendenciasVencidas(config);
+  await agendarLimpezaDePendencias(config);
 
   if (resultado === 'conectado') {
     return jsonResponse(200, { connected: true, workspace_id: conexao.workspace_id }, origin);

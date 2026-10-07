@@ -12,7 +12,7 @@
 // GOOGLE_CALENDAR_ALLOWED_USER_IDS (allowlist até a verificação do app, #103).
 
 import { chamarBanco, ok } from '../_shared/googleCalendar/banco.ts';
-import { limparPendenciasVencidas } from '../_shared/googleCalendar/pendencias.ts';
+import { agendarLimpezaDePendencias } from '../_shared/googleCalendar/pendencias.ts';
 import {
   desafioPkce,
   gerarSegredoAleatorio,
@@ -140,7 +140,7 @@ Deno.serve(async (request) => {
     query: { expires_at: `lt.${new Date(agora).toISOString()}` },
     prefer: 'return=minimal',
   });
-  await limparPendenciasVencidas(config);
+  await agendarLimpezaDePendencias(config);
 
   const state = gerarSegredoAleatorio(32);
   const codeVerifier = gerarSegredoAleatorio(48);
