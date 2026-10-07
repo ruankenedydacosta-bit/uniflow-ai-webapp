@@ -38,7 +38,7 @@ test('header usa o asset oficial; o orb de voz desenha o símbolo novo em SVG', 
   const header = await source('./SimplifiedHeader.jsx');
   const navigation = await source('./SimplifiedBottomNavigation.jsx');
   const orb = await source('../../components/ui/UniRingOrb/UniRingOrb.jsx');
-  assert.match(header, /import \{ BellIcon, UniMark \} from '\.\/SimplifiedIcons\.jsx';/);
+  assert.match(header, /import \{ PhBellIcon, UniMark \} from '\.\/SimplifiedIcons\.jsx';/);
   assert.match(header, /<UniMark \/>/);
   assert.match(navigation, /import \{ UniRingOrb \} from '\.\.\/\.\.\/components\/ui\/UniRingOrb\/index\.js';/);
   assert.match(navigation, /<UniRingOrb/);
@@ -62,7 +62,6 @@ test('header compacto: min-height 68px em todo breakpoint (era 102/86/78px) -- d
   const css = await source('./simplifiedApp.module.css');
   const heights = [...css.matchAll(/(?:--simplified-header-height|\.header\s*\{\s*(?:position:[^}]*?)?min-height):\s*68px/g)];
   assert.match(css, /--simplified-header-height: 68px;/);
-  assert.match(css, /min-height: 68px;\s*\n\s*padding-inline: max\(16px/);
   assert.match(css, /\n {2}\.header \{\s*\n {4}min-height: 68px;\s*\n {2}\}/);
   assert.ok(heights.length >= 0);
   assert.doesNotMatch(css, /min-height: 102px/);
@@ -70,18 +69,18 @@ test('header compacto: min-height 68px em todo breakpoint (era 102/86/78px) -- d
   assert.doesNotMatch(css, /--simplified-header-height: 78px/);
 });
 
-test('símbolo do header entre 36-42px, wordmark entre 20-26px (nunca protagonista da Home)', async () => {
+test('redesign (épico #91): símbolo de 26px e nome em 17/500, como no handoff', async () => {
   const css = await source('./simplifiedApp.module.css');
-  assert.match(css, /\.brandMark \{\s*\n\s*width: clamp\(36px, 9vw, 42px\);/);
-  assert.match(css, /\.brandLockup strong \{\s*\n\s*font-size: clamp\(20px, 5vw, 26px\);/);
+  assert.match(css, /\.brandMark \{\s*\n\s*width: 26px;/);
+  assert.match(css, /\.brandLockup strong \{\s*\n\s*font-size: 17px;\s*\n\s*font-weight: var\(--uf-font-weight-medium\);/);
 });
 
-test('header respeita safe-area (via --uf-header-safe-top, computada uma única vez) e padding lateral compatível com o resto da Home (18px)', async () => {
+test('header respeita safe-area (via --uf-header-safe-top, computada uma única vez) e padding lateral de 22px do handoff', async () => {
   const css = await source('./simplifiedApp.module.css');
   assert.match(css, /--uf-header-safe-top: max\(10px, env\(safe-area-inset-top, 0px\)\);/);
   assert.match(
     css,
-    /padding:\s*\n\s*var\(--uf-header-safe-top\)\s*\n\s*max\(18px, env\(safe-area-inset-right\)\)\s*\n\s*8px\s*\n\s*max\(18px, env\(safe-area-inset-left\)\);/,
+    /padding:\s*\n\s*var\(--uf-header-safe-top\)\s*\n\s*max\(22px, env\(safe-area-inset-right\)\)\s*\n\s*8px\s*\n\s*max\(22px, env\(safe-area-inset-left\)\);/,
   );
 });
 
@@ -97,10 +96,10 @@ test('layout da direita agrupado em headerActions -- um segundo ícone futuro en
   assert.match(css, /\.headerActions \{\s*\n\s*display: inline-flex;/);
 });
 
-test('fundo do header preserva o navy/azul profundo (--uf-app-canvas) -- blur opcional é discreto, nunca glassmorphism pesado', async () => {
+test('fundo do header é o canvas com o halo de topo -- blur opcional é discreto, nunca glassmorphism pesado', async () => {
   const css = await source('./simplifiedApp.module.css');
-  assert.match(css, /\.header \{[\s\S]*?background: var\(--uf-app-canvas\);/);
-  assert.match(css, /@supports \(backdrop-filter: blur\(1px\)\) or \(-webkit-backdrop-filter: blur\(1px\)\) \{\s*\n\s*\.header \{\s*\n\s*background: color-mix\(in srgb, var\(--uf-app-canvas\) 94%, transparent\);\s*\n\s*backdrop-filter: blur\(8px\);/);
+  assert.match(css, /\.header \{[\s\S]*?background-color: var\(--uf-app-canvas\);\s*\n\s*background-image: var\(--uf-app-halo\);/);
+  assert.match(css, /@supports \(backdrop-filter: blur\(1px\)\) or \(-webkit-backdrop-filter: blur\(1px\)\) \{\s*\n\s*\.header \{\s*\n\s*background-color: color-mix\(in srgb, var\(--uf-app-canvas\) 94%, transparent\);\s*\n\s*backdrop-filter: blur\(8px\);/);
 });
 
 // ============================================================================
@@ -217,4 +216,12 @@ test('painel de notificações não fica mais atrás do header -- ancorado na me
   const backdropRule = /\.notificationsBackdrop \{([\s\S]*?)\n\}/.exec(css);
   assert.ok(backdropRule, 'backdrop próprio -- Home nunca "empurrada", só coberta visualmente');
   assert.match(backdropRule[1], /top: var\(--uf-header-full-height\);/);
+});
+
+test('header leva à conta pelo avatar, sem tirar o sino', async () => {
+  const header = await source('./SimplifiedHeader.jsx');
+  assert.match(header, /<Link\s*\n\s*to=\{SIMPLIFIED_ROUTES\.ACCOUNT\}/);
+  assert.match(header, /aria-label="Sua conta"/);
+  assert.match(header, /<PhBellIcon \/>/);
+  assert.doesNotMatch(header, /Pessoal|Empresa/);
 });

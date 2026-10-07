@@ -321,3 +321,41 @@ test('V2: Tema é alcançável dentro do app simplificado', async () => {
   assert.match(accountPage, /ACCOUNT_SUBROUTE_IDS\.THEME/);
   assert.match(themePage, /useTheme\(\)/);
 });
+
+// Redesign "Uni no centro" (épico #91): os papéis do handoff têm valor
+// próprio nos dois temas selecionáveis, e o app troca para Inter sem passar
+// do peso 500.
+const REDESIGN_TOKENS = Object.freeze([
+  '--uf-app-brand-blue', '--uf-app-brand-violet', '--uf-app-brand-green',
+  '--uf-app-brand-blue-text', '--uf-app-brand-violet-text', '--uf-app-brand-green-text',
+  '--uf-app-card-surface', '--uf-app-card-edge', '--uf-app-well',
+  '--uf-app-halo', '--uf-app-stage-bg', '--uf-app-font-family',
+]);
+
+test('redesign: Claro e UniFlow declaram os tokens do handoff', async () => {
+  const css = await readFile(new URL('styles/theme.css', SRC_URL), 'utf8');
+
+  for (const selector of ['[data-theme="light"]', '[data-theme="uniflow"]']) {
+    const block = themeBlock(css, selector, '--uf-app-canvas');
+    for (const token of REDESIGN_TOKENS) {
+      assert.ok(block.includes(`${token}:`), `${selector} não define ${token}`);
+    }
+  }
+});
+
+test('redesign: o app usa Inter só nos pesos 400 e 500, inclusive nos portais', async () => {
+  const [theme, shell, appFont, appShell] = await Promise.all([
+    readFile(new URL('styles/theme.css', SRC_URL), 'utf8'),
+    readFile(new URL('features/simplified-app/simplifiedApp.module.css', SRC_URL), 'utf8'),
+    readFile(new URL('features/simplified-app/appFont.js', SRC_URL), 'utf8'),
+    readFile(new URL('features/simplified-app/SimplifiedAppShell.jsx', SRC_URL), 'utf8'),
+  ]);
+
+  // A folha do Inter só é pedida quando o app monta, nunca pelo theme.css global.
+  assert.doesNotMatch(theme, /family=Inter/);
+  assert.match(appFont, /family=Inter:wght@400;500&/);
+  assert.match(appShell, /ensureAppFont\(document\);/);
+  const body = themeBlock(shell, 'body[data-simplified-app-mounted="true"]');
+  assert.match(body, /--uf-font-family-base:\s*var\(--uf-app-font-family\)/);
+  assert.match(body, /font-synthesis-weight:\s*none/);
+});

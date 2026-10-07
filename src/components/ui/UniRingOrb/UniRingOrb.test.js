@@ -90,3 +90,15 @@ test('orb é decorativo: quem o usa dá o nome acessível ao botão', async () =
   const component = await source('./UniRingOrb.jsx');
   assert.match(component, /className=\{cx\(styles\.root, className\)\}\s+data-state=\{state\}\s+aria-hidden="true"/);
 });
+
+test('com menos movimento o orb para de girar e mantém as cores', async () => {
+  const css = await source('./UniRingOrb.module.css');
+  const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
+
+  assert.ok(reduced.length < css.length, 'falta o bloco de prefers-reduced-motion');
+  for (const selector of ['.ring', '.ringInner', '.markOuter', '.markInner']) {
+    assert.ok(reduced.includes(selector), `${selector} continua animando com menos movimento`);
+  }
+  assert.match(reduced, /animation:\s*none/);
+  assert.doesNotMatch(reduced, /background|stop-color|fill:/, 'menos movimento não pode mudar cor');
+});

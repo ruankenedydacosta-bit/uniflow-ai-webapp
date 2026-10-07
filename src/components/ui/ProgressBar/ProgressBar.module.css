@@ -1,0 +1,22 @@
+.track {
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-app-well);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.violet {
+  background: linear-gradient(to right, var(--uf-app-brand-blue), var(--uf-app-brand-violet));
+  box-shadow: 0 0 8px var(--uf-app-brand-violet);
+}
+
+.green {
+  background: linear-gradient(to right, var(--uf-app-brand-blue), var(--uf-app-brand-green));
+  box-shadow: 0 0 8px var(--uf-app-brand-green);
+}

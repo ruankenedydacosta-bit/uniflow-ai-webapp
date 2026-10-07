@@ -1359,7 +1359,10 @@ test('o orb da barra inferior é o UniRingOrb e a Home não tem mais orb própri
     source('./SimplifiedBottomNavigation.jsx'),
   ]);
   assert.match(navigation, /import \{ UniRingOrb \} from '\.\.\/\.\.\/components\/ui\/UniRingOrb\/index\.js';/);
-  assert.match(navigation, /<UniRingOrb size=\{60\} \/>/);
+  // Redesign (épico #91): orb de 64px, como no handoff.
+  assert.match(navigation, /<UniRingOrb size=\{64\} \/>/);
+  // A aba ativa usa a variante preenchida do ícone.
+  assert.match(navigation, /isActive \? <ActiveIcon \/> : <Icon \/>/);
   assert.doesNotMatch(home, /UniNeuralOrb|<UniRingOrb/);
   assert.doesNotMatch(home, /className=\{styles\.uniAction\}/);
   assert.doesNotMatch(home, /<RadialVoiceWaveform/);

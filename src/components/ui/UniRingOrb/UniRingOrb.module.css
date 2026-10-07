@@ -169,3 +169,19 @@
   50%, 70% { transform: perspective(60px) rotateY(-180deg); }
   100% { transform: perspective(60px) rotateY(-360deg); }
 }
+
+/* Menos movimento: o orb fica parado com as cores, sem ondas. */
+@media (prefers-reduced-motion: reduce) {
+  .glow::before,
+  .ring,
+  .ringInner,
+  .markOuter,
+  .markInner,
+  .markDot {
+    animation: none;
+  }
+
+  .ripple {
+    display: none;
+  }
+}

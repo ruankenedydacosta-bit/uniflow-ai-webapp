@@ -53,6 +53,10 @@ const UniRealtimePrototypePage = import.meta.env.DEV
   ? lazy(() => import('../pages/dev/uni-realtime'))
   : null;
 
+const RedesignShowcasePage = import.meta.env.DEV
+  ? lazy(() => import('../pages/dev/redesign'))
+  : null;
+
 export const publicRoutes = [
   {
     path: '/',
@@ -121,6 +125,16 @@ export const publicRoutes = [
           element: (
             <Suspense fallback={null}>
               <UniRealtimePrototypePage />
+            </Suspense>
+          ),
+        },
+        {
+          path: '/dev/redesign',
+          label: 'Base do redesign',
+          title: 'Base do redesign',
+          element: (
+            <Suspense fallback={null}>
+              <RedesignShowcasePage />
             </Suspense>
           ),
         },

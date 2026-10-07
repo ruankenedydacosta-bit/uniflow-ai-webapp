@@ -1,0 +1,33 @@
+.track {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+}
+
+.option {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--uf-app-text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color var(--uf-duration-fast) ease, color var(--uf-duration-fast) ease, box-shadow var(--uf-duration-fast) ease;
+}
+
+.option[aria-pressed="true"] {
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 35%, transparent);
+  color: var(--uf-app-text);
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 1px;
+}

@@ -831,6 +831,27 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
     #F4F7FC;
   --uf-app-shell-surface-bg:
     linear-gradient(180deg, #FFFFFF, #F4F7FC);
+
+  /* Redesign "Uni no centro" (épico #91). No Claro, o texto de marca usa as
+     versões escuras já verificadas por contraste. */
+  --uf-app-brand-blue:        var(--uf-blue-700);
+  --uf-app-brand-violet:      var(--uf-purple-600);
+  --uf-app-brand-green:       var(--uf-green-500);
+  --uf-app-brand-blue-text:   var(--uf-app-primary-text);
+  --uf-app-brand-violet-text: var(--uf-app-ai-text);
+  --uf-app-brand-green-text:  var(--uf-app-success-text);
+  --uf-app-card-surface:      var(--uf-app-surface);
+  --uf-app-card-edge:         rgba(15,23,42,.10);
+  --uf-app-well:              var(--uf-app-surface-3);
+  --uf-app-halo:
+    radial-gradient(closest-side at 35% 55%, rgba(29,78,219,.10), transparent),
+    radial-gradient(closest-side at 70% 45%, rgba(124,58,237,.08), transparent);
+  --uf-app-stage-bg:
+    radial-gradient(circle at 30% 28%, rgba(29,78,219,.12), transparent 55%),
+    radial-gradient(circle at 72% 34%, rgba(124,58,237,.12), transparent 55%),
+    radial-gradient(circle at 50% 100%, rgba(16,185,129,.06), transparent 60%),
+    var(--uf-app-canvas);
+  --uf-app-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* --- Tema ESCURO --- */
@@ -993,6 +1014,27 @@ button, a[role="button"], input[type="checkbox"], input[type="radio"]{
 
   --uf-app-shell-bg:       #161826;
   --uf-app-shell-surface-bg: #161826;
+
+  /* Redesign "Uni no centro" (épico #91, handoff Nocturne). A marca é linha
+     e luz; o texto de marca clareia o acento para ter contraste no escuro. */
+  --uf-app-brand-blue:        var(--uf-blue-700);
+  --uf-app-brand-violet:      var(--uf-purple-600);
+  --uf-app-brand-green:       var(--uf-green-500);
+  --uf-app-brand-blue-text:   color-mix(in oklch, var(--uf-blue-700) 55%, #F3F5FE);
+  --uf-app-brand-violet-text: color-mix(in oklch, var(--uf-purple-600) 55%, #F3F5FE);
+  --uf-app-brand-green-text:  color-mix(in oklch, var(--uf-green-500) 70%, #F3F5FE);
+  --uf-app-card-surface:      #232532;
+  --uf-app-card-edge:         color-mix(in oklch, #F3F5FE 8%, transparent);
+  --uf-app-well:              #292B31;
+  --uf-app-halo:
+    radial-gradient(closest-side at 35% 55%, color-mix(in oklch, var(--uf-blue-700) 26%, transparent), transparent),
+    radial-gradient(closest-side at 70% 45%, color-mix(in oklch, var(--uf-purple-600) 24%, transparent), transparent);
+  --uf-app-stage-bg:
+    radial-gradient(circle at 30% 28%, color-mix(in oklch, var(--uf-blue-700) 30%, transparent), transparent 55%),
+    radial-gradient(circle at 72% 34%, color-mix(in oklch, var(--uf-purple-600) 30%, transparent), transparent 55%),
+    radial-gradient(circle at 50% 100%, color-mix(in oklch, var(--uf-green-500) 12%, transparent), transparent 60%),
+    var(--uf-app-canvas);
+  --uf-app-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 

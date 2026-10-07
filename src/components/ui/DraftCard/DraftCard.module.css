@@ -1,0 +1,71 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-green) 30%, transparent),
+    var(--uf-shadow-md);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kind {
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-micro-size);
+}
+
+.tag {
+  padding: 2px 8px;
+  border: 1px solid var(--uf-app-border-strong);
+  border-radius: var(--uf-radius-full);
+  color: var(--uf-app-text-2);
+  font-size: 11px;
+}
+
+.amount {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 28px;
+  font-weight: var(--uf-font-weight-medium);
+  letter-spacing: -.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+.details {
+  display: grid;
+  row-gap: 4px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+}
+
+.detail dt {
+  color: var(--uf-app-text-3);
+}
+
+.detail dd {
+  margin: 0;
+  color: var(--uf-app-text);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.confirm {
+  flex: 1;
+}

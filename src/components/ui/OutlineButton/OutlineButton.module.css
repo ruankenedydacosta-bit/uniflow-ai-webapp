@@ -1,0 +1,67 @@
+.button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--uf-duration-fast) ease;
+}
+
+.button svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.primary {
+  border-color: var(--uf-app-ai-text);
+  color: var(--uf-app-ai-text);
+}
+
+.confirm {
+  border-color: var(--uf-app-brand-green);
+  color: var(--uf-app-brand-green-text);
+}
+
+.secondary {
+  border-color: var(--uf-app-border-strong);
+}
+
+.ghost {
+  padding-inline: 8px;
+  color: var(--uf-app-ai-text);
+}
+
+.primary:hover:not(:disabled),
+.ghost:hover:not(:disabled) {
+  background: var(--uf-app-ai-subtle);
+}
+
+.confirm:hover:not(:disabled) {
+  background: var(--uf-app-success-subtle);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--uf-app-surface-2);
+}
