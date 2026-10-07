@@ -1,10 +1,17 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { getPwaUpdateManager, UPDATE_STATUS } from './pwaUpdateStore.js';
 import styles from './PwaUpdateCard.module.css';
 
 function PwaUpdateCard({ blocked = false }) {
   const manager = getPwaUpdateManager();
   const state = useSyncExternalStore(manager.subscribe, manager.getSnapshot, manager.getSnapshot);
+
+  // O update automático não recarrega a página no meio de voz ou de uma
+  // ação pendente; volta a valer assim que ela termina.
+  useEffect(() => {
+    manager.setAutoUpdateBlocked(blocked);
+    return () => manager.setAutoUpdateBlocked(false);
+  }, [manager, blocked]);
   const visible = state.updateAvailable
     || state.status === UPDATE_STATUS.UPDATING
     || state.status === UPDATE_STATUS.FAILED;

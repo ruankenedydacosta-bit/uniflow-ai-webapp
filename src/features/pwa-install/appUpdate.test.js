@@ -635,7 +635,7 @@ test('CONTRATO: start() dispara checkForUpdate() de forma SINCRONA (fire-and-for
 // background, guardado por build, nunca em cima de um applyUpdate manual.
 // ============================================================================
 
-test('detecta o mesmo build pendente em 2 checagens consecutivas e ARMA o recovery -- mas nao dispara reload em foreground', async () => {
+test('ARMA o update automatico na primeira deteccao -- mas uma checagem em foreground nunca recarrega', async () => {
   const runtime = createRuntime();
   const manager = createPwaUpdateManager({
     runtime,
@@ -646,11 +646,10 @@ test('detecta o mesmo build pendente em 2 checagens consecutivas e ARMA o recove
 
   await manager.checkForUpdate();
   assert.deepEqual(manager.getPendingBuildStreak(), { buildId: 'build-b', count: 1 });
-  assert.equal(manager.getArmedAutoRecoveryBuild(), null);
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
 
   await manager.checkForUpdate();
   assert.deepEqual(manager.getPendingBuildStreak(), { buildId: 'build-b', count: 2 });
-  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
   assert.equal(runtime.reloadCalls, 0, 'app em foreground -- recovery armado nunca pode recarregar sozinho');
 });
 
@@ -731,7 +730,7 @@ test('streak reseta quando o build pendente muda -- nunca soma checagens de buil
   currentBuild = 'build-c';
   await manager.checkForUpdate();
   assert.deepEqual(manager.getPendingBuildStreak(), { buildId: 'build-c', count: 1 });
-  assert.equal(manager.getArmedAutoRecoveryBuild(), null);
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-c', 'arma para o build mais recente, nunca para o anterior');
 });
 
 test('streak reseta quando o build fica current -- nunca herda contagem de uma pendencia ja resolvida', async () => {
@@ -776,6 +775,82 @@ test('recovery automático nunca dispara se um applyUpdate (manual ou ja em anda
   await Promise.resolve();
 
   assert.equal(runtime.reloadCalls, 1, 'so UM reload -- o manual, nunca um segundo do recovery automático em cima dele');
+  cleanup();
+});
+
+// Abertura do app: build novo detectado antes do primeiro toque atualiza
+// sozinho, sem o usuario precisar tocar em "Atualizar agora".
+async function flushStartup() {
+  for (let i = 0; i < 6; i += 1) await Promise.resolve();
+}
+
+test('abertura com build novo e sem toque na tela atualiza sozinha', async () => {
+  const runtime = createRuntime();
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  const cleanup = manager.start();
+  await flushStartup();
+  cleanup();
+
+  assert.equal(runtime.reloadCalls, 1);
+  assert.equal(JSON.parse(runtime.localStorage.getItem('uniflow.app-update.auto-recovery-guard')).targetBuild, 'build-b');
+});
+
+test('abertura nao recarrega se o usuario ja tocou na tela -- espera o background', async () => {
+  const runtime = createRuntime();
+  let releaseFetch;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: () => new Promise((resolve) => { releaseFetch = () => resolve(manifestResponse('build-b')); }),
+  });
+
+  const cleanup = manager.start();
+  runtime.dispatchEvent(new Event('pointerdown'));
+  releaseFetch();
+  await flushStartup();
+  assert.equal(runtime.reloadCalls, 0, 'usuario ja interagiu -- nunca recarrega na cara dele');
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
+
+  runtime.document.visibilityState = 'hidden';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await flushStartup();
+  assert.equal(runtime.reloadCalls, 1);
+  cleanup();
+});
+
+test('acao em andamento bloqueia o update automatico, que segue armado para depois', async () => {
+  const runtime = createRuntime();
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  manager.setAutoUpdateBlocked(true);
+  const cleanup = manager.start();
+  await flushStartup();
+  runtime.document.visibilityState = 'hidden';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await flushStartup();
+  assert.equal(runtime.reloadCalls, 0, 'voz/acao em andamento -- nunca recarrega');
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
+
+  manager.setAutoUpdateBlocked(false);
+  runtime.document.visibilityState = 'visible';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await flushStartup();
+  runtime.document.visibilityState = 'hidden';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await flushStartup();
+  assert.equal(runtime.reloadCalls, 1);
   cleanup();
 });
 

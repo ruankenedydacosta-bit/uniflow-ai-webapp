@@ -25,9 +25,11 @@ import { getPwaDiagnosticSnapshot, BUILD_COHERENCE } from './pwaBuildDiagnostics
 //    registration.update() -> waiting/installing -> skipWaiting ->
 //    controllerchange -> reload controlado -> reverifica os 3 build IDs
 //    no próximo checkForUpdate() (agora síncrono, ver garantia 1).
-// 5. RECOVERY GUARDADO, NUNCA EM LOOP: no máximo 1 recovery automático por
-//    build/sessão (AUTO_RECOVERY_GUARD_KEY), disparado só ao sair de
-//    foreground -- nunca interrompe o usuário, nunca repete.
+// 5. ATUALIZA SOZINHO, NUNCA EM LOOP: no máximo 1 update automático por
+//    build (AUTO_RECOVERY_GUARD_KEY), disparado na abertura (antes do
+//    primeiro toque) ou ao sair de foreground -- nunca no meio de um uso,
+//    nunca com uma ação/voz em andamento (setAutoUpdateBlocked), nunca
+//    repete. O card só fica como plano B se o automático falhar.
 // 6. NUNCA DESTRÓI DADOS DO USUÁRIO: recovery só toca em cache de Service
 //    Worker comprovadamente obsoleto -- nunca sessão Supabase, IndexedDB,
 //    localStorage funcional, credenciais ou preferências.
@@ -67,11 +69,12 @@ export const UPDATE_RELOAD_GUARD_KEY = 'uniflow.app-update.reload-guard';
 // relaunch completo do PWA no iOS, ja que "por multiplas verificacoes"
 // pode abranger o app sendo fechado/reaberto entre uma checagem e outra.
 export const AUTO_RECOVERY_GUARD_KEY = 'uniflow.app-update.auto-recovery-guard';
-// PWA-UPDATE3: so dispara recovery automatico depois do update aparecer
-// disponivel em pelo menos 2 checagens CONSECUTIVAS para o MESMO build --
-// nunca na primeira deteccao (podia ser uma corrida com um clique manual
-// ja em andamento) e nunca por acaso num unico blip de rede.
-const AUTO_RECOVERY_THRESHOLD = 2;
+// Arma o update automatico na PRIMEIRA deteccao do build novo. Com 2, a
+// contagem (em memoria) zerava a cada reabertura do app e a abertura so
+// faz uma checagem -- na pratica o update nunca armava e o usuario sempre
+// precisava tocar no card. A corrida com um clique manual ja e coberta
+// por updatePromise.
+const AUTO_RECOVERY_THRESHOLD = 1;
 export const UPDATE_STATUS = Object.freeze({
   IDLE: 'idle',
   CHECKING: 'checking',
@@ -283,6 +286,12 @@ export function createPwaUpdateManager({
   // para a tela. Uma recuperacao automatica nunca deve interromper uma
   // interacao em andamento.
   let autoRecoveryArmedForBuild = null;
+  // Acao em andamento na tela (voz, confirmacao pendente): nenhum update
+  // automatico recarrega a pagina enquanto true. Informado pelo card.
+  let autoUpdateBlocked = false;
+  // Primeiro toque/tecla desde a abertura: depois disso a abertura deixa
+  // de ser um momento seguro para recarregar (so o background serve).
+  let userInteracted = false;
 
   const publish = (patch, event, extra) => {
     state = Object.freeze({ ...state, ...patch });
@@ -396,6 +405,7 @@ export function createPwaUpdateManager({
   // reload único) -- nenhuma segunda implementação de ativação.
   async function maybeFireArmedAutoRecovery() {
     if (!autoRecoveryArmedForBuild) return;
+    if (autoUpdateBlocked) return; // continua armado para a próxima oportunidade
     if (updatePromise) return; // um applyUpdate (manual ou automático) já em andamento
     const targetBuild = autoRecoveryArmedForBuild;
     if (state.latestBuildId !== targetBuild || !state.updateAvailable) {
@@ -500,6 +510,14 @@ export function createPwaUpdateManager({
     }
   };
   const handleForeground = () => void checkForUpdate();
+  const handleFirstInteraction = () => {
+    userInteracted = true;
+    removeInteractionListeners();
+  };
+  function removeInteractionListeners() {
+    runtime.removeEventListener?.('pointerdown', handleFirstInteraction, true);
+    runtime.removeEventListener?.('keydown', handleFirstInteraction, true);
+  }
   const handlePeriodicCheck = () => {
     if (runtime.document?.visibilityState === 'visible') void checkForUpdate();
   };
@@ -514,7 +532,13 @@ export function createPwaUpdateManager({
     if (periodicCheckIntervalMs > 0 && typeof runtime.setInterval === 'function') {
       periodicIntervalId = runtime.setInterval(handlePeriodicCheck, periodicCheckIntervalMs);
     }
-    void checkForUpdate();
+    runtime.addEventListener?.('pointerdown', handleFirstInteraction, true);
+    runtime.addEventListener?.('keydown', handleFirstInteraction, true);
+    // Abertura do app: se o build novo aparecer antes do primeiro toque,
+    // atualiza na hora -- a pessoa ainda não começou nada na tela.
+    void checkForUpdate().then(() => {
+      if (started && !userInteracted) void maybeFireArmedAutoRecovery();
+    });
     return () => stop();
   }
 
@@ -525,6 +549,7 @@ export function createPwaUpdateManager({
     runtime.removeEventListener?.('focus', handleForeground);
     runtime.removeEventListener?.('online', handleForeground);
     runtime.document?.removeEventListener?.('visibilitychange', handleVisibilityChange);
+    removeInteractionListeners();
     if (periodicIntervalId !== null) {
       runtime.clearInterval?.(periodicIntervalId);
       periodicIntervalId = null;
@@ -538,6 +563,7 @@ export function createPwaUpdateManager({
     applyUpdate,
     start,
     stop,
+    setAutoUpdateBlocked: (blocked) => { autoUpdateBlocked = Boolean(blocked); },
     // PWA-UPDATE3: expostos so para diagnostico/teste -- nunca consumidos
     // por UI voltada ao usuario comum.
     getPendingBuildStreak: () => pendingBuildStreak,
