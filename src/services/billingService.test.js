@@ -263,3 +263,13 @@ test('listPayments sem Supabase configurado resolve SUPABASE_NOT_CONFIGURED, nun
   assert.equal(result.data, null);
   assert.equal(result.error.code, 'SUPABASE_NOT_CONFIGURED');
 });
+
+test('getSubscription com localOnly manda local_only; sem ele, o corpo não muda', async () => {
+  const bodies = [];
+  const service = makeService({
+    fetchImpl: async (_url, init) => { bodies.push(JSON.parse(init.body)); return jsonResponse(200, { exists: false }); },
+  });
+  await service.getSubscription({ workspaceId: 'ws-1', localOnly: true });
+  await service.getSubscription({ workspaceId: 'ws-1' });
+  assert.deepEqual(bodies, [{ workspace_id: 'ws-1', local_only: true }, { workspace_id: 'ws-1' }]);
+});

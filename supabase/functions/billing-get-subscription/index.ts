@@ -6,6 +6,11 @@
 // para atualizar o status externo em tela). Fonte oficial:
 // https://docs.asaas.com/reference/retrieve-a-single-subscription
 // (status ACTIVE/INACTIVE/EXPIRED, nextDueDate, cycle, value, deleted).
+//
+// local_only: true pula a Asaas e devolve só o estado do banco, que o
+// webhook mantém. É o que o app usa ao abrir para decidir se libera o
+// acesso: a consulta à Asaas custava cerca de 1 s em todo carregamento.
+// Nesse modo provider_status, provider_deleted e pix voltam nulos.
 
 import {
   AsaasApiError,
@@ -188,10 +193,11 @@ Deno.serve(async (request) => {
     return jsonResponse(200, { workspace_id: workspaceId, exists: false, internal_status: 'free' }, origin);
   }
 
+  const localOnly = payload?.local_only === true;
   let providerStatus: string | null = null;
   let providerDeleted: boolean | null = null;
   let pix: Record<string, unknown> | null = null;
-  if (local.asaas_subscription_id) {
+  if (local.asaas_subscription_id && !localOnly) {
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY') ?? '';
     const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
     try {

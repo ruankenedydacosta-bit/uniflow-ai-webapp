@@ -105,7 +105,7 @@ test('bootstrap completo (nao silencioso) continua ativando isLoading=true -- lo
 test('App.jsx continua desmontando a arvore autenticada apenas durante isSessionLoading (bootstrap real), comportamento nao alterado por AUTH2', async () => {
   const content = await source('./App.jsx');
   assert.match(content, /if \(isSupabaseConfigured && isSessionLoading\) \{/);
-  assert.match(content, /<Loader\s*\n\s*fullScreen\s*\n\s*label=\{location\.pathname === '\/auth\/callback' \? 'Concluindo acesso…' : 'Carregando sua sessão'\}\s*\n\s*\/>/);
+  assert.match(content, /<AppBootScreen\s*\n\s*label=\{location\.pathname === '\/auth\/callback' \? 'Concluindo acesso…' : 'Carregando sua sessão'\}\s*\n\s*\/>/);
 });
 
 // ============================================================================

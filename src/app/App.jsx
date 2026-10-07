@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import Loader from '../components/ui/Loader';
+import AppBootScreen from './AppBootScreen.jsx';
 import AnalyticsConsentBanner from '../features/analytics/AnalyticsConsentBanner.jsx';
 import Ga4RouteTracker from '../features/analytics/ga4RouteTracker.jsx';
 import { AccessProvider } from './AccessContext';
@@ -98,8 +98,7 @@ function AppContent() {
     // sendo processado -- mesmo guard de loading da AUTH2, sem duplicar
     // logica, so uma mensagem mais precisa nesta rota especifica.
     return (
-      <Loader
-        fullScreen
+      <AppBootScreen
         label={location.pathname === '/auth/callback' ? 'Concluindo acesso…' : 'Carregando sua sessão'}
       />
     );
@@ -119,7 +118,7 @@ function AppContent() {
         // 2) apresentação nunca concluída aqui? apresentação (Caso 1); 3)
         // caso contrário, Plano Pessoal (Caso 3). Backend sempre decide.
         if (personalPlanAccessLoading) {
-          return <Loader fullScreen label="Verificando sua assinatura…" />;
+          return <AppBootScreen label="Verificando sua assinatura…" />;
         }
         return (
           <Navigate
@@ -174,7 +173,7 @@ function AppContent() {
     && !isPresentationRoute
     && personalPlanAccessLoading
   ) {
-    return <Loader fullScreen label="Verificando sua assinatura…" />;
+    return <AppBootScreen label="Verificando sua assinatura…" />;
   }
 
   // Caso 2 (assinatura ativa -> nunca reapresentado nem cobrado de novo,

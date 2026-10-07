@@ -103,3 +103,15 @@ test('hook cancela a consulta em andamento no cleanup -- nunca aplica um resulta
   const occurrences = HOOK_SOURCE.match(/cancelled = true; window\.clearTimeout\(timeoutId\);/g) ?? [];
   assert.equal(occurrences.length, 2, 'ambos os efeitos (consulta inicial e revalidação) devem limpar o timeout no cleanup');
 });
+
+test('ao abrir o app, o guard pede só o status do banco, sem consultar a Asaas', () => {
+  const calls = HOOK_SOURCE.match(/getSubscription\(\{[^}]*\}\)/g) ?? [];
+  assert.equal(calls.length, 2);
+  for (const call of calls) assert.match(call, /localOnly: true/);
+  const edge = readFileSync(
+    new URL('../../../supabase/functions/billing-get-subscription/index.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(edge, /const localOnly = payload\?\.local_only === true;/);
+  assert.match(edge, /if \(local\.asaas_subscription_id && !localOnly\) \{/);
+});

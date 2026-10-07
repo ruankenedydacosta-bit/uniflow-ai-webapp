@@ -1,0 +1,20 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--uf-z-modal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--uf-space-24);
+  min-height: 100vh;
+  padding: var(--uf-space-16);
+  background: var(--uf-color-bg-canvas);
+}
+
+.label {
+  margin: 0;
+  color: var(--uf-color-text-secondary);
+  font-weight: var(--uf-font-weight-medium);
+  text-align: center;
+}

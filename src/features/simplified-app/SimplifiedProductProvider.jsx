@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Loader from '../../components/ui/Loader/Loader.jsx';
+import AppBootScreen from '../../app/AppBootScreen.jsx';
 import { useSession } from '../../app/SessionContext.jsx';
 import { SimplifiedProductContext } from './SimplifiedProductContext.js';
 import {
@@ -11,7 +11,7 @@ import {
 
 function SimplifiedContextUnavailable({ status, error, onRetry }) {
   if (status === SIMPLIFIED_CONTEXT_STATUS.ACTIVATING) {
-    return <Loader fullScreen label="Preparando seu espaço pessoal" />;
+    return <AppBootScreen label="Preparando seu espaço pessoal" />;
   }
 
   return (

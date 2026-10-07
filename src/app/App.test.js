@@ -173,13 +173,13 @@ test('guard real: "loading"/"idle" nunca decidem -- nem redirecionam para /plano
     /const personalPlanAccessLoading = personalPlanGuardEnabled\s*\n\s*&& \(personalPlanAccessStatus === 'loading' \|\| personalPlanAccessStatus === 'idle'\);/,
   );
   // Bloco pós-login (/, /welcome, /login): loading nunca decide sozinho.
-  assert.match(content, /if \(personalPlanAccessLoading\) \{\s*\n\s*return <Loader fullScreen label="Verificando sua assinatura…" \/>;/);
+  assert.match(content, /if \(personalPlanAccessLoading\) \{\s*\n\s*return <AppBootScreen label="Verificando sua assinatura…" \/>;/);
   // Bloco de rotas protegidas: mesmo guard, agora incondicional a
   // presentationCompleted (ver GUARD FIX de troca de dispositivo).
   const idx = content.indexOf('// GUARD FIX (troca de dispositivo/sessão restaurada): a consulta de');
   assert.ok(idx !== -1);
   const slice = content.slice(idx, idx + 700);
-  assert.match(slice, /personalPlanAccessLoading\s*\n\s*\) \{\s*\n\s*return <Loader fullScreen label="Verificando sua assinatura…" \/>;/);
+  assert.match(slice, /personalPlanAccessLoading\s*\n\s*\) \{\s*\n\s*return <AppBootScreen label="Verificando sua assinatura…" \/>;/);
 });
 
 test('resolvePersonalPlanAccess: exists:false, pending, canceled, expired, past_due e suspended bloqueiam -- só "active" libera', async () => {
