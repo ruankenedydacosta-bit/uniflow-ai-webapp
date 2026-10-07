@@ -12,6 +12,7 @@ import ObjetivosPage from '../pages/ObjetivosPage';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
+import { PrivacidadePage, PRIVACIDADE_ROUTE } from '../features/legal';
 import SettingsPage from '../pages/SettingsPage';
 import OpenFinancePage from '../pages/OpenFinancePage';
 import { CategoriesPage } from '../features/categories';
@@ -96,6 +97,14 @@ export const publicRoutes = [
     label: 'Redefinir senha',
     title: 'Redefinir senha',
     element: <ResetPasswordPage />,
+  },
+  {
+    // Pública para quem está logado ou não. O HTML desta rota é
+    // pré-renderizado no build (scripts/prerender-legal.mjs).
+    path: PRIVACIDADE_ROUTE,
+    label: 'Política de Privacidade',
+    title: 'Política de Privacidade',
+    element: <PrivacidadePage />,
   },
   {
     // AUTH4: rota de retorno do login com Google -- pública (não exige

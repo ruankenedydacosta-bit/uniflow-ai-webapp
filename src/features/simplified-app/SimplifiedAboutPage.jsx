@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { PRIVACIDADE_ROUTE } from '../legal/politicaDePrivacidade.js';
 import { APP_NAME, APP_TAGLINE } from './appIdentity.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
@@ -288,6 +289,7 @@ function SimplifiedAboutPage() {
         <span className={styles.footerMark} aria-hidden="true"><UniMark /></span>
         <strong>{APP_NAME}</strong>
         <span>v{currentVersion}</span>
+        <a className={styles.footerLink} href={PRIVACIDADE_ROUTE}>Política de Privacidade</a>
         <small>© {APP_NAME} — Todos os direitos reservados.</small>
       </footer>
     </div>
