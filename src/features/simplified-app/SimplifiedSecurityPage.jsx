@@ -183,7 +183,7 @@ function SimplifiedSecurityPage() {
           <div className={cx(groups.row, styles.staticRow)} aria-label="Verificação em duas etapas">
             <IconBox><PhShieldCheckIcon /></IconBox>
             <span className={groups.rowText}>
-              <span className={groups.rowTitle}>Verificação em duas etapas</span>
+              <span className={cx(groups.rowTitle, styles.wrap)}>Verificação em duas etapas</span>
               <span className={cx(groups.rowSubtitle, styles.wrap)}>Estará disponível em uma futura versão.</span>
             </span>
             <span className={cx(groups.pill, groups.pillMuted)}>Não configurada</span>
