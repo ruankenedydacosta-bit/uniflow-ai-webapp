@@ -194,11 +194,18 @@ export function looksLikeFreshBalanceStatement(text) {
 // verbo futuro e ainda não catalogado apareça. Nesse caso o chamador deve
 // tentar financial_plan (camada neural) antes de qualquer resposta
 // consultiva -- nunca ir direto para handleUnresolvedMessage.
-const LAUNCH_NOUN_RE = /\b(despesa|gasto|receita|entrada|pagamento|compra)\b/i;
+//
+// BUG REAL EM PRODUCAO (voz): "Adicione 250 de despesas com gasolina" não
+// passava por aqui -- o plural "despesas", "saída" e os verbos de pedido
+// ("adicione", "lançar", "incluir") ficavam de fora, e a frase ia para o chat
+// geral, que respondia "não consigo criar a movimentação por aqui". As
+// fronteiras são por letra Unicode porque \b não enxerga "í" de "saída".
+const LAUNCH_NOUN_RE = /(?:^|[^\p{L}])(?:despesas?|gastos?|receitas?|entradas?|pagamentos?|compras?|sa[íi]das?)(?=$|[^\p{L}])/iu;
+const LAUNCH_REQUEST_VERB_RE = /(?:^|[^\p{L}])(?:registrar|registre|lan[çc]ar|lan[çc]asse|adicionar|adiciona|adicione|incluir|inclua|anotar|anote)(?=$|[^\p{L}])/iu;
 
 export function looksLikeUnclassifiedFinancialStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
   if (isAgendaExpression(text)) return false;
   if (!hasAnyAmountMention(text)) return false;
-  return FINANCIAL_VERB_RE.test(text) || LAUNCH_NOUN_RE.test(text);
+  return FINANCIAL_VERB_RE.test(text) || LAUNCH_NOUN_RE.test(text) || LAUNCH_REQUEST_VERB_RE.test(text);
 }

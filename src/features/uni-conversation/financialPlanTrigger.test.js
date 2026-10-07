@@ -148,6 +148,15 @@ test('looksLikeUnclassifiedFinancialStatement detecta valor + substantivo de lan
   assert.equal(looksLikeUnclassifiedFinancialStatement('Uma receita de R$ 500 hoje'), true);
 });
 
+// BUG REAL EM PRODUCAO (voz): pedido com plural, "saída" ou verbo de
+// pedido ia para o chat geral, que respondia "não consigo criar".
+test('looksLikeUnclassifiedFinancialStatement detecta pedido falado com plural, "saída" ou verbo de pedido', () => {
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Põe aí 250 de despesas com gasolina'), true);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Uma saída de 80 reais na farmácia'), true);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Será que dá pra incluir 40 reais de padaria?'), true);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Quero adicionar uma conta nova'), false);
+});
+
 test('looksLikeUnclassifiedFinancialStatement NÃO dispara sem nenhum valor monetário real', () => {
   assert.equal(looksLikeUnclassifiedFinancialStatement('Oi, tudo bem?'), false);
   assert.equal(looksLikeUnclassifiedFinancialStatement('Coloquei uma música nova'), false);

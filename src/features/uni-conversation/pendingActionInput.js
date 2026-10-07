@@ -16,7 +16,8 @@ const CONFIRMATION_PATTERNS = [
   // respondia pedindo para "dizer confirmar" mesmo depois do usuário já
   // ter confirmado.
   /^(?:sim|si|confirmar|confirmo|confirma|confirmado|certo|ok|isso|pode|pode usar|cria)[.!]?$/,
-  /^(?:pode registrar|pode salvar|pode confirmar|pode continuar)[.!]?$/,
+  /^(?:pode registrar|pode salvar|pode confirmar|pode continuar|pode lancar|pode seguir)[.!]?$/,
+  /^confirma(?:r)?\s+a[ií][.!]?$/,
   /^sim,?\s*(?:pode\s+)?confirma(?:r)?[.!]?$/,
   /^confirma(?:r)?\s+isso(?:\s+a[íi])?[.!]?$/,
   /^t[áa]\s+certo,?\s*(?:pode\s+)?confirma(?:r)?[.!]?$/,
@@ -94,9 +95,16 @@ function findMatches(items, input, fields = ['name'], workspaceId = null) {
     });
 }
 
+// BUG REAL EM PRODUÇÃO (voz): "Tá, confirmado, pode confirmar." não
+// confirmava -- falando, a resposta vem com aberturas afirmativas antes do
+// pedido ("tá", "ok", "isso", "sim"). Elas saem do começo e o resto passa
+// pelas mesmas listas de frase inteira; "Sim, cancela" continua cancelando.
+const AFFIRMATIVE_OPENING = /^(?:(?:ta\s+bom|ta\s+certo|ta|ok|okay|isso|sim|beleza|certo|perfeito|claro|confirmado|pode\s+sim)[,.!]?\s+)+/;
+
 export function classifyPendingActionReply(value) {
-  const normalized = normalizeFinancialText(value).replace(/[!?]+$/g, '');
-  if (CONFIRMATION_PATTERNS.some((pattern) => pattern.test(normalized))) return 'confirm';
+  const fullReply = normalizeFinancialText(value).replace(/[!?]+$/g, '');
+  const normalized = fullReply.replace(AFFIRMATIVE_OPENING, '') || fullReply;
+  if (CONFIRMATION_PATTERNS.some((pattern) => pattern.test(fullReply) || pattern.test(normalized))) return 'confirm';
   if (CANCELLATION_PATTERNS.some((pattern) => pattern.test(normalized))) return 'cancel';
   if (CANCELLATION_CONTAINS_PATTERNS.some((pattern) => pattern.test(normalized))) return 'cancel';
   return 'input';

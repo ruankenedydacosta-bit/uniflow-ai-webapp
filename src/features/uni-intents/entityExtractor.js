@@ -444,6 +444,10 @@ function extractDescription(input, intent, account, destinationAccount = null) {
     // que vinha depois), e sem nenhum outro sinal a Uni chegava a propor
     // criar uma categoria chamada literalmente "Fiz Uma Compra".
     .replace(/^(?:eu\s+)?(?:fiz|realizei)\s+(?:uma\s+)?compra\b/iu, '')
+    // BUG REAL EM PRODUÇÃO (voz): o pedido falado ("Eu queria registrar uma
+    // saída de...", "Gostaria que você lançasse...") ficava inteiro na
+    // descrição. Mesma abertura de PEDIDO_DE_LANCAMENTO (intentClassifier.js).
+    .replace(/^(?:(?:eu\s+)?(?:queria|quero|gostaria|preciso)(?:\s+de)?(?:\s+que\s+(?:voc[êe]|vc))?\s+|(?:voc[êe]|vc)\s+(?:pode|poderia|consegue)\s+|(?:pode|poderia)\s+|por\s+favor,?\s+)?(?:registrar|registre|registrasse|registra|registro|lan[çc]ar|lan[çc]asse|lancem|lance|lan[çc]a|anota|adicionar|adiciona|adicione|adicionasse|incluir|inclui|inclua|inclu[íi]sse|anotar|anote|anotasse)\b/iu, '')
     // BUG REAL: "coloquei/botei/foi/lancei/lança/registra/anota" nao eram
     // reconhecidos aqui -- a descricao ficava com o verbo grudado
     // ("Coloquei De Gasolina" em vez de "Gasolina").
@@ -455,11 +459,14 @@ function extractDescription(input, intent, account, destinationAccount = null) {
     // Substantivo genérico de lançamento ("uma despesa de", "um gasto de")
     // que sobra apos remover o verbo imperativo -- nao descreve a compra em
     // si, entao e removido antes da preposicao final.
-    .replace(/^\s*(?:uma?\s+)?(?:despesa|gasto|receita|entrada|pagamento)\s+(?:de\s+)?/iu, '')
+    .replace(/^\s*(?:de\s+)?(?:uma?\s+)?(?:despesa|gasto|receita|entrada|pagamento|sa[íi]da)s?\s+(?:no\s+valor\s+)?(?:de\s+|com\s+)?/iu, '')
     .replace(
-      /^\s*(?:de|do|da|no|na|em|para|pra|pro)\s+(?:(?:uma|um|o|a)\b)?\s*/iu,
+      /^\s*(?:de|do|da|no|na|em|para|pra|pro|com)\s+(?:(?:uma|um|o|a)\b)?\s*/iu,
       '',
     )
+    // A data já vai para o campo Data: "na data de ontem", "no dia de
+    // hoje" e "hoje" no fim não fazem parte da descrição.
+    .replace(/\s+(?:(?:na\s+data|no\s+dia)\s+(?:de\s+)?|de\s+|para\s+)?(?:hoje|ontem|anteontem)$/iu, '')
     // BUG REAL: preposição pendurada após remover o valor ("Um Pix de",
     // "Gasolina no") -- descrição malformada nunca é exibida assim.
     .replace(/\s+(?:de|do|da|no|na|em|para|pra|pro)\s*$/iu, '')

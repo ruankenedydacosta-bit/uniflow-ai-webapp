@@ -647,6 +647,27 @@ test('BUG REAL: "Sí."/"si" (transcrição de voz sem o "m" de "sim") confirma n
   assert.equal(classifyPendingActionReply('Si!'), 'confirm');
 });
 
+// BUG REAL EM PRODUCAO (voz): "Tá, confirmado, pode confirmar." recebia
+// "Para continuar, diga confirmar..." -- a resposta falada vem com
+// aberturas afirmativas antes do pedido.
+test('BUG REAL: confirmação falada com abertura afirmativa confirma; com cancelamento, cancela', () => {
+  for (const reply of [
+    'Tá, confirmado, pode confirmar.',
+    'Sim, pode.',
+    'Confirma aí.',
+    'Pode lançar.',
+    'Isso, pode registrar.',
+    'Ok, pode confirmar.',
+    'Tá bom, pode.',
+  ]) {
+    assert.equal(classifyPendingActionReply(reply), 'confirm', reply);
+  }
+  assert.equal(classifyPendingActionReply('Sim, cancela.'), 'cancel');
+  assert.equal(classifyPendingActionReply('Ok, cancela'), 'cancel');
+  assert.equal(classifyPendingActionReply('Sim, no Nubank'), 'input');
+  assert.equal(classifyPendingActionReply('Ok, 50 reais'), 'input');
+});
+
 test('categoria inexistente retorna categorias disponíveis sem repetir resposta genérica', () => {
   const action = createAction('Gastei 50 reais.');
   const result = resolvePendingActionInput({

@@ -476,3 +476,33 @@ test('CORREÇÃO URGENTE: perguntas reais continuam check_balance, nunca viram d
   assert.equal(parseFinancialText('Qual é meu saldo?').intent, 'check_balance');
   assert.equal(parseFinancialText('Quanto recebi este mês?').intent, 'question');
 });
+
+// BUG REAL EM PRODUCAO (conversa por voz): pedidos falados caíam em
+// 'question' e a Uni respondia que não entendeu.
+test('BUG REAL: pedido falado de lançamento vira despesa com valor, descrição limpa e data', () => {
+  const cases = [
+    ['Eu queria registrar uma saída de cento e vinte e cinco reais com alimentação na data de ontem.', 125, 'Alimentação', '2026-10-05'],
+    ['Queria registrar uma saída no valor de duzentos e cinquenta reais com gasolina.', 250, 'Gasolina', null],
+    ['Oi Uni, gostaria que você lançasse R$50 de alimentação no dia de hoje.', 50, 'Alimentação', '2026-10-06'],
+    ['Adicione 250 de despesas com gasolina na data de ontem', 250, 'Gasolina', '2026-10-05'],
+    ['Registro uma saída de 50 reais com a alimentação de hoje.', 50, 'Alimentação', '2026-10-06'],
+  ];
+  for (const [text, amount, description, date] of cases) {
+    const result = parseFinancialText(text, { referenceDate: '2026-10-06' });
+    assert.equal(result.intent, 'register_expense', text);
+    assert.equal(result.entities.amount, amount, text);
+    assert.equal(result.entities.description, description, text);
+    assert.equal(result.entities.date, date, text);
+  }
+  assert.equal(parseFinancialText('Eu quero que você lance uma saída no iFood de R$50,00.').entities.category, 'Alimentação');
+});
+
+test('BUG REAL: pedido falado de entrada vira receita; pergunta e pedido sem valor seguem como question', () => {
+  const salario = parseFinancialText('Queria registrar uma entrada de mil reais de salário.');
+  assert.equal(salario.intent, 'register_income');
+  assert.equal(salario.entities.amount, 1000);
+  assert.equal(parseFinancialText('Você pode lançar uma receita de 300 reais?').intent, 'register_income');
+  assert.equal(parseFinancialText('Como eu registro uma despesa?').intent, 'question');
+  assert.equal(parseFinancialText('Quero registrar').intent, 'question');
+  assert.equal(parseFinancialText('Adicionar a conta Nubank com 500 reais de saldo').intent, 'question');
+});

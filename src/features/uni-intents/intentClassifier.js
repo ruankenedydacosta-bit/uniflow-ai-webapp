@@ -172,6 +172,18 @@ if (has([
   return null;
 }
 
+// BUG REAL EM PRODUÇÃO (conversa por voz): falando, a pessoa pede em vez de
+// declarar -- "Eu queria registrar uma saída de cento e vinte e cinco
+// reais...", "Oi Uni, gostaria que você lançasse R$50...", "Adicione 250 de
+// despesas com gasolina...". Nenhum verbo catalogado abria a frase, ela caía
+// em 'question' e a Uni respondia que não entendeu. O pedido é uma abertura
+// opcional ("queria", "gostaria que você", "você pode") seguida de um verbo
+// de lançamento, sempre no início da frase.
+const PEDIDO_DE_LANCAMENTO = String.raw`^(?:(?:eu\s+)?(?:queria|quero|gostaria|preciso)(?:\s+de)?(?:\s+que\s+(?:voce|vc))?\s+|(?:voce|vc)\s+(?:pode|poderia|consegue)\s+|(?:pode|poderia)\s+|por\s+favor,?\s+)?(?:registrar|registra|registre|registro|registrasse|lancar|lanca|lance|lancasse|lancem|adicionar|adiciona|adicione|adicionasse|incluir|inclui|inclua|incluisse|anotar|anota|anote|anotasse)\b`;
+const VALOR_NA_FRASE = String.raw`(?:r\s*\$|\d|\b(?:reais?|mil|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos|dez|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)\b)`;
+// "Adicionar a conta Nubank com 500 de saldo" é saldo, nunca lançamento.
+const SEM_SALDO = String.raw`(?![\s\S]*\bsaldo\b)`;
+
 const INTENT_RULES = [
   {
     intent: 'register_transfer',
@@ -267,6 +279,9 @@ const INTENT_RULES = [
       /^vendas?\s+(?:de\s+)?(?=.*?(?:r\s*\$|\d+(?:[.,]\d+)?|reais?|mil)\b)/u,
       // ➝ receita/entrada explícita ("lance uma receita de...", "registra uma)
       /^(?:lance|lanca|registra|registre|anota|anote)\s+(?:uma\s+)?(?:receita|entrada)\b/,
+      // Pedido falado de receita ("queria registrar uma entrada de mil
+      // reais"), desde que a frase não fale também em saída/despesa.
+      new RegExp(`${PEDIDO_DE_LANCAMENTO}${SEM_SALDO}(?![\\s\\S]*\\b(?:saida|despesa|gasto)s?\\b)(?=[\\s\\S]*\\b(?:receita|entrada)s?\\b)`, 'u'),
     ],
   },
   {
@@ -294,6 +309,9 @@ const INTENT_RULES = [
       // Comandos imperativos genéricos ("lance uma despesa de...", "registra
       // R$ 120 de..."), sem "receita/entrada" explicita -- default despesa.
       /^(?:lance|lanca|registra|registre|anota|anote)\b/,
+      // Pedido falado de despesa: precisa de um valor ou de saída/despesa/
+      // gasto na frase, para "registrar" sozinho não virar lançamento.
+      new RegExp(`${PEDIDO_DE_LANCAMENTO}${SEM_SALDO}(?=[\\s\\S]*(?:${VALOR_NA_FRASE}|\\b(?:saida|despesa|gasto)s?\\b))`, 'u'),
       // BUG REAL (fluxo de confirmação financeira simples): "Cinquenta reais
       // de gasolina." não tem NENHUM verbo -- nem os anteriores, nem
       // "gastei/paguei/etc" -- e caía em 'question'/unsupported. O parser de

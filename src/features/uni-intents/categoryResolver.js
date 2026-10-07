@@ -3,7 +3,7 @@ import { normalizeFinancialText } from './intentClassifier.js';
 const CATEGORY_RULES = [
   { category: 'Salário', terms: ['salario', 'pagamento', 'holerite'] },
   { category: 'Receita de vendas', terms: ['venda', 'cliente', 'faturamento'] },
-  { category: 'Alimentação', terms: ['mercado', 'supermercado', 'comida', 'restaurante', 'ifood'] },
+  { category: 'Alimentação', terms: ['alimentacao', 'mercado', 'supermercado', 'comida', 'restaurante', 'ifood'] },
   { category: 'Transporte', terms: ['gasolina', 'combustivel', 'uber', '99', 'onibus', 'transporte'] },
   { category: 'Moradia', terms: ['casa', 'aluguel', 'condominio', 'energia', 'luz', 'agua'] },
   { category: 'Saúde', terms: ['saude', 'farmacia', 'medico', 'consulta'] },

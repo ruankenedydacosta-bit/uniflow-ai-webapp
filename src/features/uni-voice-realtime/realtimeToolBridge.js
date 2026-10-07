@@ -1,6 +1,6 @@
 // Ponte entre a ferramenta da conversa por voz e o chat da Uni. A conversa
 // em tempo real não decide nada sobre dinheiro: ela passa a frase da pessoa
-// ao mesmo pipeline do texto (uni-interpret, card de confirmação, RPC) e
+// ao mesmo pipeline do texto (parser do chat, card de confirmação, RPC) e
 // fala a resposta que ele devolve.
 
 // O nome e a descrição precisam bater com a sessão criada em
