@@ -101,3 +101,25 @@ export async function revogarTokenNoGoogle(token: string): Promise<boolean> {
     return false;
   }
 }
+
+// Revoga só quando nenhuma outra conexão ativa usa o mesmo e-mail: revogar
+// derruba o grant da conta Google inteira com este OAuth client.
+export async function revogarSeNinguemMaisUsa(
+  config: { supabaseUrl: string; serviceRoleKey: string },
+  { token, email, exceto }: { token: string; email: string | null; exceto: string },
+): Promise<boolean> {
+  if (!token || !email) return false;
+  const outras = await chamarBanco(config, {
+    caminho: '/rest/v1/calendar_connections',
+    query: {
+      select: 'id',
+      provider: 'eq.google',
+      status: 'eq.active',
+      account_email: `eq.${email}`,
+      id: `neq.${exceto}`,
+      limit: '1',
+    },
+  });
+  if (!ok(outras.status) || !Array.isArray(outras.json) || outras.json.length > 0) return false;
+  return revogarTokenNoGoogle(token);
+}

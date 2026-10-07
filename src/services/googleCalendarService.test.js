@@ -109,3 +109,26 @@ test('obterConexao: sem conexão devolve data null; erro do banco vira error', a
   const semSupabase = createGoogleCalendarService({});
   assert.equal((await semSupabase.obterConexao({ workspaceId: 'ws-1' })).error.code, 'SUPABASE_NOT_CONFIGURED');
 });
+
+test('confirmarConexao chama google-calendar-confirm só com o id da pendência', async () => {
+  let pedido;
+  const service = makeService({
+    fetchImpl: async (url, init) => {
+      pedido = { url, init };
+      return jsonResponse(200, { connected: true, workspace_id: 'ws-1' });
+    },
+  });
+  const { data, error } = await service.confirmarConexao({ pendente: 'abc' });
+  assert.equal(error, null);
+  assert.deepEqual(data, { connected: true, workspace_id: 'ws-1' });
+  assert.equal(pedido.url, 'https://demo.supabase.co/functions/v1/google-calendar-confirm');
+  assert.deepEqual(JSON.parse(pedido.init.body), { pendente: 'abc' });
+
+  const recusado = makeService({ fetchImpl: async () => jsonResponse(403, { error: { code: 'CONFIRMATION_FORBIDDEN', message: 'x' } }) });
+  assert.equal((await recusado.confirmarConexao({ pendente: 'abc' })).error.code, 'CONFIRMATION_FORBIDDEN');
+
+  let chamou = false;
+  const semId = makeService({ fetchImpl: async () => { chamou = true; return jsonResponse(200, {}); } });
+  assert.equal((await semId.confirmarConexao({})).error.code, 'CONFIRMATION_INVALID');
+  assert.equal(chamou, false);
+});

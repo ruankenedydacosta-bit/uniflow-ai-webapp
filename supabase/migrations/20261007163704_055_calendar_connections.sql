@@ -8,6 +8,13 @@ begin;
 -- O refresh token do Google fica no Supabase Vault. A tabela guarda só o id
 -- do segredo, e a leitura e a escrita passam pelas RPCs abaixo, que só o
 -- service_role executa.
+--
+-- Confirmação: o callback do OAuth não ativa a conexão. Ele grava a linha
+-- com status 'pending', o hash de um id de confirmação de uso único e um
+-- prazo de 10 minutos. A função google-calendar-confirm só ativa se quem
+-- confirma é a mesma pessoa que iniciou o fluxo. Assim, uma URL de
+-- autorização repassada a outra pessoa não liga a conta Google dela ao
+-- espaço de quem mandou. Workers (#100, #101) só processam status 'active'.
 
 -- ---------------------------------------------------------------------------
 -- calendar_connections: uma conexão por pessoa, espaço e provedor.
@@ -23,16 +30,22 @@ create table if not exists public.calendar_connections (
   refresh_token_secret_id uuid,
   app_calendar_id text,
   destination_calendar_id text,
-  status text not null default 'active',
+  status text not null default 'pending',
   last_error_code text,
   last_error_at timestamptz,
   last_synced_at timestamptz,
   exportacao_inicial_em timestamptz,
+  confirmation_hash text,
+  confirmation_expires_at timestamptz,
   connected_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint calendar_connections_provider_check check (provider in ('google')),
-  constraint calendar_connections_status_check check (status in ('active', 'error')),
+  constraint calendar_connections_status_check check (status in ('pending', 'active', 'error')),
+  constraint calendar_connections_pending_check check (
+    status <> 'pending'
+    or (confirmation_hash is not null and confirmation_expires_at is not null)
+  ),
   constraint calendar_connections_last_error_code_check check (
     last_error_code is null
     or last_error_code in ('token_revogado', 'escopo_insuficiente', 'destino_ausente')
@@ -48,6 +61,15 @@ create index if not exists calendar_connections_workspace_idx
 create index if not exists calendar_connections_account_email_idx
   on public.calendar_connections (provider, account_email)
   where status = 'active';
+
+-- Id de confirmação de uso único (só o hash) e limpeza das pendências vencidas.
+create unique index if not exists calendar_connections_confirmation_hash_key
+  on public.calendar_connections (confirmation_hash)
+  where confirmation_hash is not null;
+
+create index if not exists calendar_connections_pending_expires_idx
+  on public.calendar_connections (confirmation_expires_at)
+  where status = 'pending';
 
 comment on table public.calendar_connections is
   'Conexão de uma pessoa, num espaço, com a agenda de um provedor. O refresh token fica no Vault.';
@@ -273,7 +295,7 @@ grant all on table public.calendar_connection_calendars to service_role;
 grant all on table public.agenda_item_links to service_role;
 grant all on table public.calendar_oauth_states to service_role;
 
--- Sem refresh_token_secret_id.
+-- Sem refresh_token_secret_id, confirmation_hash e confirmation_expires_at.
 grant select (
   id, user_id, workspace_id, provider, account_email, granted_scopes,
   app_calendar_id, destination_calendar_id, status, last_error_code,
@@ -298,15 +320,15 @@ create policy calendar_connections_select_own
 on public.calendar_connections
 for select
 to authenticated
-using (user_id = (select auth.uid()));
+using (user_id = (select auth.uid()) and status <> 'pending');
 
 drop policy if exists calendar_connections_update_own on public.calendar_connections;
 create policy calendar_connections_update_own
 on public.calendar_connections
 for update
 to authenticated
-using (user_id = (select auth.uid()))
-with check (user_id = (select auth.uid()));
+using (user_id = (select auth.uid()) and status <> 'pending')
+with check (user_id = (select auth.uid()) and status <> 'pending');
 
 drop policy if exists calendar_connection_calendars_select_own on public.calendar_connection_calendars;
 create policy calendar_connection_calendars_select_own
@@ -319,6 +341,7 @@ using (
     from public.calendar_connections as connection
     where connection.id = calendar_connection_calendars.connection_id
       and connection.user_id = (select auth.uid())
+      and connection.status <> 'pending'
   )
 );
 
@@ -333,6 +356,7 @@ using (
     from public.calendar_connections as connection
     where connection.id = calendar_connection_calendars.connection_id
       and connection.user_id = (select auth.uid())
+      and connection.status <> 'pending'
   )
 )
 with check (
@@ -341,6 +365,7 @@ with check (
     from public.calendar_connections as connection
     where connection.id = calendar_connection_calendars.connection_id
       and connection.user_id = (select auth.uid())
+      and connection.status <> 'pending'
   )
 );
 

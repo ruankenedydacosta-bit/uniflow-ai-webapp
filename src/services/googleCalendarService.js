@@ -7,6 +7,8 @@
 // O token do Google nunca chega aqui: a conexão é lida sem
 // refresh_token_secret_id, que nem tem grant para authenticated.
 //
+// O callback do OAuth deixa a conexão pendente; confirmarConexao a ativa.
+//
 // #101 acrescenta sincronizarAgora e #102 acrescenta salvarPreferencias.
 
 import { isSupabaseConfigured, supabase, supabaseAnonKey, supabaseUrl } from './supabaseClient.js';
@@ -94,6 +96,14 @@ export function createGoogleCalendarService({
       }
       return invokeFunction('google-calendar-connect', { workspace_id: workspaceId, return_path: returnPath });
     },
+    // Ativa a conexão deixada pendente pelo callback do OAuth. Só funciona
+    // com a sessão de quem iniciou a conexão.
+    confirmarConexao({ pendente } = {}) {
+      if (typeof pendente !== 'string' || !pendente) {
+        return Promise.resolve({ data: null, error: { code: 'CONFIRMATION_INVALID', message: 'pending_id_required' } });
+      }
+      return invokeFunction('google-calendar-confirm', { pendente });
+    },
     desconectar({ workspaceId } = {}) {
       if (!workspaceId) {
         return Promise.resolve({ data: null, error: { code: 'INVALID_WORKSPACE', message: 'workspace_required' } });
@@ -132,5 +142,6 @@ const defaultGoogleCalendarService = createGoogleCalendarService({
 });
 
 export const iniciarConexao = defaultGoogleCalendarService.iniciarConexao;
+export const confirmarConexao = defaultGoogleCalendarService.confirmarConexao;
 export const desconectar = defaultGoogleCalendarService.desconectar;
 export const obterConexao = defaultGoogleCalendarService.obterConexao;

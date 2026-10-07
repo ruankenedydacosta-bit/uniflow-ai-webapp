@@ -19,6 +19,9 @@ export const PARAMETRO_DE_RETORNO = 'google_agenda';
 export const VALIDADE_DO_STATE_MS = 10 * 60 * 1000;
 
 export const RESULTADOS_CONEXAO = Object.freeze({
+  // O callback devolve "confirmar" com o id da pendência; quem devolve
+  // "conectado" é a tela, depois da google-calendar-confirm.
+  CONFIRMAR: 'confirmar',
   CONECTADO: 'conectado',
   NEGADO: 'negado',
   ESCOPO_INSUFICIENTE: 'escopo_insuficiente',
@@ -53,11 +56,13 @@ export function montarUrlDeAutorizacao({ clientId, redirectUri, state, codeChall
   return url.toString();
 }
 
-export function montarUrlDeRetorno({ origem, returnPath, resultado }) {
+export function montarUrlDeRetorno({ origem, returnPath, resultado, pendente = null }) {
   const caminho = normalizarReturnPath(returnPath) ?? RETURN_PATH_PADRAO;
-  const valor = RESULTADOS_VALIDOS.has(resultado) ? resultado : RESULTADOS_CONEXAO.ERRO;
+  let valor = RESULTADOS_VALIDOS.has(resultado) ? resultado : RESULTADOS_CONEXAO.ERRO;
+  if (valor === RESULTADOS_CONEXAO.CONFIRMAR && !pendente) valor = RESULTADOS_CONEXAO.ERRO;
   const url = new URL(caminho, origem);
   url.searchParams.set(PARAMETRO_DE_RETORNO, valor);
+  if (valor === RESULTADOS_CONEXAO.CONFIRMAR) url.searchParams.set('pendente', pendente);
   return url.toString();
 }
 

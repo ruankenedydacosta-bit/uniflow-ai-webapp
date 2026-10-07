@@ -11,8 +11,8 @@ const ler = (caminho) => readFileSync(new URL(caminho, raiz), 'utf8');
 const nomeDaMigration = readdirSync(new URL('supabase/migrations/', raiz)).find((nome) => /_055_calendar_connections\.sql$/.test(nome));
 const migration = nomeDaMigration ? ler(`supabase/migrations/${nomeDaMigration}`) : '';
 
-const FUNCOES = ['google-calendar-connect', 'google-calendar-oauth-callback', 'google-calendar-disconnect'];
-const COMPARTILHADOS = ['api.ts', 'banco.ts', 'calendarios.ts', 'tokens.ts', 'escopos.js', 'oauth.js', 'listaDeCalendarios.js'];
+const FUNCOES = ['google-calendar-connect', 'google-calendar-oauth-callback', 'google-calendar-confirm', 'google-calendar-disconnect'];
+const COMPARTILHADOS = ['api.ts', 'banco.ts', 'calendarios.ts', 'tokens.ts', 'pendencias.ts', 'escopos.js', 'oauth.js', 'listaDeCalendarios.js', 'confirmacao.js'];
 
 test('migration 055 existe com versão de 14 dígitos depois da 054', () => {
   assert.ok(nomeDaMigration, 'migration 055 ausente');
@@ -44,7 +44,10 @@ test('uniques e checks do contrato', () => {
   assert.match(migration, /unique \(agenda_item_id, provider\)/);
   assert.match(migration, /unique \(workspace_id, provider, calendar_id, external_id\)/);
   assert.match(migration, /last_error_code in \('token_revogado', 'escopo_insuficiente', 'destino_ausente'\)/);
-  assert.match(migration, /status in \('active', 'error'\)/);
+  // 'pending': o callback grava, a google-calendar-confirm ativa (#99).
+  assert.match(migration, /status in \('pending', 'active', 'error'\)/);
+  assert.match(migration, /status <> 'pending'\s+or \(confirmation_hash is not null and confirmation_expires_at is not null\)/);
+  assert.match(migration, /on public\.calendar_connections \(confirmation_hash\)\s+where confirmation_hash is not null/);
   assert.match(migration, /origin in \('app', 'provider'\)/);
   assert.match(migration, /on public\.calendar_connection_calendars \(channel_id\)\s+where channel_id is not null/);
 });
@@ -56,7 +59,10 @@ function grantDeSelect(tabela) {
 }
 
 test('client nunca lê o id do segredo nem o estado interno do sync', () => {
-  assert.ok(!grantDeSelect('calendar_connections').includes('refresh_token_secret_id'));
+  const conexoes = grantDeSelect('calendar_connections');
+  for (const coluna of ['refresh_token_secret_id', 'confirmation_hash', 'confirmation_expires_at']) {
+    assert.ok(!conexoes.includes(coluna), coluna);
+  }
   const calendarios = grantDeSelect('calendar_connection_calendars');
   for (const coluna of ['sync_token', 'channel_id', 'channel_resource_id', 'channel_token', 'sync_lock_until']) {
     assert.ok(!calendarios.includes(coluna), coluna);
@@ -95,8 +101,9 @@ test('nenhum project-ref nem URL de projeto Supabase em migration, função ou c
   }
 });
 
-test('config.toml: connect e disconnect com JWT, callback sem', () => {
+test('config.toml: connect, confirm e disconnect com JWT, callback sem', () => {
   const config = ler('supabase/config.toml');
+  assert.match(config, /\[functions\.google-calendar-confirm\]\nverify_jwt = true/);
   assert.match(config, /\[functions\.google-calendar-connect\]\nverify_jwt = true/);
   assert.match(config, /\[functions\.google-calendar-oauth-callback\]\nverify_jwt = false/);
   assert.match(config, /\[functions\.google-calendar-disconnect\]\nverify_jwt = true/);
@@ -142,14 +149,21 @@ test('disconnect só revoga sem outra conexão ativa com o mesmo e-mail', () => 
   assert.match(disconnect, /\/channels\/stop/);
 });
 
-test('callback: conexão só fica ativa no último passo e vínculos de outra conta saem', () => {
+test('callback nunca ativa a conexão: grava pendente; quem ativa é a confirm', () => {
   const callback = ler('supabase/functions/google-calendar-oauth-callback/index.ts');
-  const upsert = callback.indexOf("status: 'error',");
-  const ativacao = callback.indexOf("status: 'active', last_error_code: null");
-  assert.ok(upsert > 0 && ativacao > upsert);
-  assert.match(callback, /calendar_id: `not\.in\.\$\{listaParaFiltroIn\(calendariosDaConta\)\}`/);
-  assert.match(callback, /acharCalendarioDoEspaco\(lista\.itens, workspaceId\)/);
-  assert.match(callback, /revogarSeNinguemMaisUsa\(config, tokenDaContaAnterior/);
+  assert.match(callback, /status: 'pending',/);
+  assert.match(callback, /confirmation_hash: await hashDoState\(pendente\)/);
+  assert.doesNotMatch(callback, /status: 'active'/);
+  assert.doesNotMatch(callback, /POST',\s*\n\s*caminho: '\/calendars'/);
+  assert.match(callback, /revogarSeNinguemMaisUsa\(config, \{\s*\n\s*token: tokenDaContaAnterior/);
+
+  const confirm = ler('supabase/functions/google-calendar-confirm/index.ts');
+  const consumo = confirm.indexOf("corpo: { status: 'error', confirmation_hash: null, confirmation_expires_at: null }");
+  const ativacao = confirm.indexOf("status: 'active', last_error_code: null");
+  assert.ok(consumo > 0 && ativacao > 0);
+  assert.match(confirm, /user_id: `eq\.\$\{userId\}`,\s*\n\s*status: 'eq\.pending',/);
+  assert.match(confirm, /calendar_id: `not\.in\.\$\{listaParaFiltroIn\(calendariosDaConta\)\}`/);
+  assert.match(confirm, /acharCalendarioDoEspaco\(lista\.itens, workspaceId\)/);
 });
 
 test('disconnect apaga a conexão antes de revogar no Google', () => {
@@ -157,4 +171,9 @@ test('disconnect apaga a conexão antes de revogar no Google', () => {
   const remocao = disconnect.indexOf("metodo: 'DELETE',\n    caminho: '/rest/v1/calendar_connections'");
   const revogacao = disconnect.indexOf('await revogarTokenNoGoogle(refreshToken)');
   assert.ok(remocao > 0 && revogacao > remocao);
+});
+
+test('client não vê conexão pendente, nem a própria', () => {
+  assert.match(migration, /using \(user_id = \(select auth\.uid\(\)\) and status <> 'pending'\);/);
+  assert.equal((migration.match(/and connection\.status <> 'pending'/g) ?? []).length, 3);
 });

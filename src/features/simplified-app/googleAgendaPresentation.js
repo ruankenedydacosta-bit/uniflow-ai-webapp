@@ -2,9 +2,52 @@
 // Lógica pura, testada em simplifiedGoogleAgenda.test.js.
 
 export const GOOGLE_AGENDA_RETURN_PARAM = 'google_agenda';
+export const GOOGLE_AGENDA_PENDING_PARAM = 'pendente';
+export const RETORNO_A_CONFIRMAR = 'confirmar';
+
+// Retorno do callback que pede confirmação: devolve o id da pendência.
+export function pendenciaDoRetorno(searchParams) {
+  if (searchParams?.get(GOOGLE_AGENDA_RETURN_PARAM) !== RETORNO_A_CONFIRMAR) return null;
+  const pendente = searchParams.get(GOOGLE_AGENDA_PENDING_PARAM);
+  return typeof pendente === 'string' && /^[A-Za-z0-9_-]{32,128}$/.test(pendente) ? pendente : null;
+}
+
+export const AVISO_LINK_DE_OUTRA_PESSOA = Object.freeze({
+  tone: 'alert',
+  message: 'Este link de conexão foi aberto por outra conta do UniFlow. Nada foi conectado. Para conectar a sua conta Google, toque em Conectar ao Google Agenda.',
+});
+
+export const AVISO_SEM_SESSAO = Object.freeze({
+  tone: 'alert',
+  message: 'Entre na conta do UniFlow que pediu a conexão e tente conectar de novo. Nada foi conectado.',
+});
+
+const AVISOS_DA_CONFIRMACAO = Object.freeze({
+  CONFIRMATION_FORBIDDEN: AVISO_LINK_DE_OUTRA_PESSOA,
+  CONFIRMATION_EXPIRED: Object.freeze({
+    tone: 'alert',
+    message: 'O link de conexão venceu. Toque em Conectar ao Google Agenda para tentar de novo.',
+  }),
+  CONFIRMATION_INVALID: Object.freeze({
+    tone: 'alert',
+    message: 'Este link de conexão já foi usado ou venceu. Nada mais foi conectado.',
+  }),
+  SCOPE_INSUFFICIENT: Object.freeze({
+    tone: 'alert',
+    message: 'O Google Agenda não foi conectado porque faltaram permissões. Tente de novo e marque todas as permissões pedidas.',
+  }),
+});
+
+export function avisoDaConfirmacao(error) {
+  if (!error) return AVISOS_DE_RETORNO_CONECTADO;
+  return AVISOS_DA_CONFIRMACAO[error.code]
+    ?? Object.freeze({ tone: 'alert', message: 'Não foi possível concluir a conexão com o Google Agenda. Tente de novo em alguns minutos.' });
+}
+
+const AVISOS_DE_RETORNO_CONECTADO = Object.freeze({ tone: 'success', message: 'Google Agenda conectado.' });
 
 const AVISOS_DE_RETORNO = Object.freeze({
-  conectado: Object.freeze({ tone: 'success', message: 'Google Agenda conectado.' }),
+  conectado: AVISOS_DE_RETORNO_CONECTADO,
   negado: Object.freeze({
     tone: 'alert',
     message: 'Você não permitiu o acesso ao Google Agenda. Para conectar, tente de novo e permita o acesso.',

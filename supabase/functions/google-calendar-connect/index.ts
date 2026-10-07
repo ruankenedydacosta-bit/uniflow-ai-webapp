@@ -12,6 +12,7 @@
 // GOOGLE_CALENDAR_ALLOWED_USER_IDS (allowlist até a verificação do app, #103).
 
 import { chamarBanco, ok } from '../_shared/googleCalendar/banco.ts';
+import { limparPendenciasVencidas } from '../_shared/googleCalendar/pendencias.ts';
 import {
   desafioPkce,
   gerarSegredoAleatorio,
@@ -131,13 +132,15 @@ Deno.serve(async (request) => {
   const config = { supabaseUrl, serviceRoleKey };
   const agora = Date.now();
 
-  // States vencidos saem aqui mesmo, sem job à parte.
+  // States e pendências vencidos saem aqui mesmo, sem job à parte. A
+  // pendência vencida tem o token revogado no Google.
   await chamarBanco(config, {
     metodo: 'DELETE',
     caminho: '/rest/v1/calendar_oauth_states',
     query: { expires_at: `lt.${new Date(agora).toISOString()}` },
     prefer: 'return=minimal',
   });
+  await limparPendenciasVencidas(config);
 
   const state = gerarSegredoAleatorio(32);
   const codeVerifier = gerarSegredoAleatorio(48);

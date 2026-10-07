@@ -8,6 +8,13 @@ import {
   temTodosOsEscopos,
 } from '../../supabase/functions/_shared/googleCalendar/escopos.js';
 import {
+  classificarConfirmacao,
+  ERRO_DA_CONFIRMACAO,
+  idDePendenciaValido,
+  SITUACOES_DA_CONFIRMACAO,
+  VALIDADE_DA_PENDENCIA_MS,
+} from '../../supabase/functions/_shared/googleCalendar/confirmacao.js';
+import {
   acharCalendarioDoEspaco,
   descricaoDoCalendarioDoEspaco,
   escolherDestino,
@@ -102,7 +109,16 @@ test('URL de retorno: origem + return_path + ?google_agenda=, valor desconhecido
     montarUrlDeRetorno({ origem: 'https://app.exemplo.test', returnPath: '//evil.test', resultado: 'qualquer' }),
     'https://app.exemplo.test/app/conta/google-agenda?google_agenda=erro',
   );
-  assert.deepEqual(Object.values(RESULTADOS_CONEXAO).sort(), ['conectado', 'erro', 'escopo_insuficiente', 'negado']);
+  assert.deepEqual(Object.values(RESULTADOS_CONEXAO).sort(), ['conectado', 'confirmar', 'erro', 'escopo_insuficiente', 'negado']);
+  assert.equal(
+    montarUrlDeRetorno({ origem: 'https://app.exemplo.test', returnPath: '/app/agenda', resultado: 'confirmar', pendente: 'abc_-1' }),
+    'https://app.exemplo.test/app/agenda?google_agenda=confirmar&pendente=abc_-1',
+  );
+  assert.equal(
+    montarUrlDeRetorno({ origem: 'https://app.exemplo.test', returnPath: '/app/agenda', resultado: 'confirmar' }),
+    'https://app.exemplo.test/app/agenda?google_agenda=erro',
+    'confirmar sem id vira erro',
+  );
 });
 
 test('access_denied do Google vira "negado"; outro erro vira "erro"', () => {
@@ -226,4 +242,44 @@ test('marca do espaço: o calendário criado é achado de novo depois de um disc
 
 test('filtro in.() do PostgREST escapa aspas, barra e vírgula dos ids', () => {
   assert.equal(listaParaFiltroIn(['a@b.com', 'x,y', 'q"r', 'b\\s']), '("a@b.com","x,y","q\\"r","b\\\\s")');
+});
+
+// ---------------------------------------------------------------------------
+// Confirmação
+// ---------------------------------------------------------------------------
+
+const AGORA = Date.parse('2026-10-07T12:00:00Z');
+const pendencia = (extra = {}) => ({
+  status: 'pending',
+  user_id: 'dono',
+  confirmation_expires_at: new Date(AGORA + 60_000).toISOString(),
+  ...extra,
+});
+
+test('confirmação: mesma pessoa dentro do prazo', () => {
+  assert.equal(classificarConfirmacao({ linha: pendencia(), userId: 'dono', agora: AGORA }), SITUACOES_DA_CONFIRMACAO.OK);
+});
+
+test('confirmação: outra pessoa abrindo o retorno é recusada', () => {
+  assert.equal(classificarConfirmacao({ linha: pendencia(), userId: 'outra', agora: AGORA }), SITUACOES_DA_CONFIRMACAO.OUTRA_PESSOA);
+  assert.equal(ERRO_DA_CONFIRMACAO.outra_pessoa.status, 403);
+});
+
+test('confirmação: id já usado (conexão ativa ou inexistente) não vale', () => {
+  assert.equal(classificarConfirmacao({ linha: pendencia({ status: 'active' }), userId: 'dono', agora: AGORA }), SITUACOES_DA_CONFIRMACAO.INEXISTENTE);
+  assert.equal(classificarConfirmacao({ linha: null, userId: 'dono', agora: AGORA }), SITUACOES_DA_CONFIRMACAO.INEXISTENTE);
+});
+
+test('confirmação: id vencido não vale; o prazo é de 10 minutos', () => {
+  const vencida = pendencia({ confirmation_expires_at: new Date(AGORA - 1).toISOString() });
+  assert.equal(classificarConfirmacao({ linha: vencida, userId: 'dono', agora: AGORA }), SITUACOES_DA_CONFIRMACAO.VENCIDA);
+  assert.equal(classificarConfirmacao({ linha: pendencia({ confirmation_expires_at: null }), userId: 'dono', agora: AGORA }), SITUACOES_DA_CONFIRMACAO.VENCIDA);
+  assert.equal(VALIDADE_DA_PENDENCIA_MS, 10 * 60 * 1000);
+});
+
+test('id de pendência: base64url de 32 a 128 caracteres', () => {
+  assert.equal(idDePendenciaValido(gerarSegredoAleatorio(32)), true);
+  assert.equal(idDePendenciaValido('curto'), false);
+  assert.equal(idDePendenciaValido('x'.repeat(40) + '.'), false);
+  assert.equal(idDePendenciaValido(undefined), false);
 });

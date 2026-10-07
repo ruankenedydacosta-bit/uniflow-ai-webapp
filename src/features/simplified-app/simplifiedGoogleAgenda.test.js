@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
+  AVISO_LINK_DE_OUTRA_PESSOA,
+  avisoDaConfirmacao,
   avisoDoRetorno,
+  pendenciaDoRetorno,
   mensagemDeErroAoConectar,
   mensagemDoEstadoDaConexao,
   nomeDaAgendaDoEspaco,
@@ -84,4 +87,30 @@ test('routes.jsx monta a tela e a tira do placeholder', async () => {
   const routes = await source('../../app/routes.jsx');
   assert.match(routes, /<SimplifiedGoogleAgendaPage \/>/);
   assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.GOOGLE_CALENDAR\]\.path/);
+});
+
+test('retorno "confirmar" traz o id da pendência; sem id válido não há confirmação', () => {
+  const pendente = 'a'.repeat(43);
+  assert.equal(pendenciaDoRetorno(new URLSearchParams(`google_agenda=confirmar&pendente=${pendente}`)), pendente);
+  assert.equal(pendenciaDoRetorno(new URLSearchParams('google_agenda=confirmar&pendente=x')), null);
+  assert.equal(pendenciaDoRetorno(new URLSearchParams(`google_agenda=conectado&pendente=${pendente}`)), null);
+  assert.equal(avisoDoRetorno('confirmar'), null, 'o aviso vem da confirmação, não do retorno');
+});
+
+test('aviso da confirmação: conectado, link de outra pessoa, vencido e já usado', () => {
+  assert.equal(avisoDaConfirmacao(null).tone, 'success');
+  assert.equal(avisoDaConfirmacao({ code: 'CONFIRMATION_FORBIDDEN' }), AVISO_LINK_DE_OUTRA_PESSOA);
+  assert.match(AVISO_LINK_DE_OUTRA_PESSOA.message, /Nada foi conectado/);
+  assert.match(avisoDaConfirmacao({ code: 'CONFIRMATION_EXPIRED' }).message, /venceu/);
+  assert.match(avisoDaConfirmacao({ code: 'CONFIRMATION_INVALID' }).message, /já foi usado/);
+  assert.equal(avisoDaConfirmacao({ code: 'GOOGLE_UNAVAILABLE' }).tone, 'alert');
+});
+
+test('tela confirma uma vez só, com a sessão aberta, e limpa o id da URL', async () => {
+  const page = await source('./SimplifiedGoogleAgendaPage.jsx');
+  assert.match(page, /if \(!pendente \|\| confirmacaoIniciadaRef\.current\) return;/);
+  assert.match(page, /if \(!user\?\.id\) \{/);
+  assert.match(page, /setAviso\(AVISO_SEM_SESSAO\)/);
+  assert.match(page, /confirmarConexao\(\{ pendente \}\)/);
+  assert.match(page, /next\.delete\(GOOGLE_AGENDA_PENDING_PARAM\)/);
 });

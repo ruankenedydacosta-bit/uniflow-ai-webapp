@@ -5,16 +5,20 @@ import Button from '../../components/ui/Button/Button.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
 import Modal from '../../components/ui/Modal/Modal.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
-import { desconectar, iniciarConexao, obterConexao } from '../../services/googleCalendarService.js';
+import { confirmarConexao, desconectar, iniciarConexao, obterConexao } from '../../services/googleCalendarService.js';
 import { cx } from '../../utils/cx.js';
 import {
+  AVISO_SEM_SESSAO,
+  avisoDaConfirmacao,
   avisoDoRetorno,
+  GOOGLE_AGENDA_PENDING_PARAM,
   GOOGLE_AGENDA_RETURN_PARAM,
   MENSAGEM_ERRO_AO_CARREGAR,
   MENSAGEM_ERRO_AO_DESCONECTAR,
   mensagemDeErroAoConectar,
   mensagemDoEstadoDaConexao,
   nomeDaAgendaDoEspaco,
+  pendenciaDoRetorno,
   urlDeAutorizacaoValida,
 } from './googleAgendaPresentation.js';
 import { PhGoogleLogoIcon, PhXIcon } from './SimplifiedIcons.jsx';
@@ -39,15 +43,24 @@ function AvisoDispensavel({ aviso, onDismiss }) {
 /**
  * Épico #98, issue #99: conectar a conta Google à agenda. Rota fora do menu
  * até a #102 pôr a entrada em Preferências. O callback do OAuth volta para
- * cá com ?google_agenda=conectado|negado|escopo_insuficiente|erro.
+ * cá com ?google_agenda=confirmar&pendente=<id> ou
+ * ?google_agenda=negado|escopo_insuficiente|erro.
+ *
+ * "confirmar": a tela chama google-calendar-confirm com a sessão aberta. A
+ * função só ativa a conexão se esta é a pessoa que iniciou o fluxo; se o
+ * link foi aberto por outra conta, nada é conectado e a tela avisa.
  */
 function SimplifiedGoogleAgendaPage() {
   const navigate = useNavigate();
-  const { workspace } = useSession();
+  const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [aviso, setAviso] = useState(() => avisoDoRetorno(searchParams.get(GOOGLE_AGENDA_RETURN_PARAM)));
+  // Lido uma vez: o parâmetro sai da URL logo em seguida.
+  const [pendente] = useState(() => pendenciaDoRetorno(searchParams));
+  const [isConfirming, setIsConfirming] = useState(() => Boolean(pendente));
+  const confirmacaoIniciadaRef = useRef(false);
   const [conexao, setConexao] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -57,9 +70,10 @@ function SimplifiedGoogleAgendaPage() {
 
   // O resultado do retorno vira aviso uma vez só; a URL fica limpa.
   useEffect(() => {
-    if (!searchParams.has(GOOGLE_AGENDA_RETURN_PARAM)) return;
+    if (!searchParams.has(GOOGLE_AGENDA_RETURN_PARAM) && !searchParams.has(GOOGLE_AGENDA_PENDING_PARAM)) return;
     const next = new URLSearchParams(searchParams);
     next.delete(GOOGLE_AGENDA_RETURN_PARAM);
+    next.delete(GOOGLE_AGENDA_PENDING_PARAM);
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -94,6 +108,24 @@ function SimplifiedGoogleAgendaPage() {
       window.clearTimeout(timeoutId);
     };
   }, [carregarConexao]);
+
+  // Volta do Google: confirma uma vez só, com a sessão aberta neste navegador.
+  useEffect(() => {
+    if (!pendente || confirmacaoIniciadaRef.current) return;
+    confirmacaoIniciadaRef.current = true;
+    if (!user?.id) {
+      window.setTimeout(() => {
+        setAviso(AVISO_SEM_SESSAO);
+        setIsConfirming(false);
+      }, 0);
+      return;
+    }
+    confirmarConexao({ pendente }).then(({ error }) => {
+      setAviso(avisoDaConfirmacao(error));
+      setIsConfirming(false);
+      carregarConexao();
+    });
+  }, [pendente, user?.id, carregarConexao]);
 
   // Voltar do Google pelo botão do navegador restaura a página do cache com
   // o botão ainda carregando.
@@ -156,7 +188,9 @@ function SimplifiedGoogleAgendaPage() {
                 {conexao ? 'Conta conectada' : 'Nenhuma conta conectada'}
               </span>
               <span className={cx(groups.rowSubtitle, styles.wrap)}>
-                {isLoading
+                {isConfirming
+                  ? 'Concluindo a conexão…'
+                  : isLoading
                   ? 'Carregando…'
                   : conexao
                     ? (conexao.account_email || 'Conta Google')
@@ -169,7 +203,7 @@ function SimplifiedGoogleAgendaPage() {
 
         {estadoDaConexao ? <p className={styles.errorBanner} role="alert">{estadoDaConexao}</p> : null}
 
-        {!isLoading ? (
+        {!isLoading && !isConfirming ? (
           <div className={styles.actions}>
             {!conexao || estadoDaConexao ? (
               <Button type="button" onClick={handleConectar} loading={isConnecting} disabled={!workspaceId}>
