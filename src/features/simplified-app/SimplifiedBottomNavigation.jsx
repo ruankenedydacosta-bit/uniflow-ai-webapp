@@ -1,6 +1,15 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
-import { CalendarIcon, DotsIcon, SunHorizonIcon, WalletIcon } from './SimplifiedIcons.jsx';
+import {
+  PhCalendarBlankFillIcon,
+  PhCalendarBlankIcon,
+  PhDotsThreeFillIcon,
+  PhDotsThreeIcon,
+  PhHouseFillIcon,
+  PhHouseIcon,
+  PhWalletFillIcon,
+  PhWalletIcon,
+} from './SimplifiedIcons.jsx';
 import {
   buildVoiceModeUrl,
   SIMPLIFIED_NAVIGATION,
@@ -8,11 +17,12 @@ import {
 } from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
 
+// A aba ativa troca para a variante preenchida do mesmo ícone.
 const ICONS = Object.freeze({
-  [SIMPLIFIED_ROUTE_IDS.HOME]: SunHorizonIcon,
-  [SIMPLIFIED_ROUTE_IDS.RECORDS]: WalletIcon,
-  [SIMPLIFIED_ROUTE_IDS.AGENDA]: CalendarIcon,
-  [SIMPLIFIED_ROUTE_IDS.ACCOUNT]: DotsIcon,
+  [SIMPLIFIED_ROUTE_IDS.HOME]: [PhHouseIcon, PhHouseFillIcon],
+  [SIMPLIFIED_ROUTE_IDS.RECORDS]: [PhWalletIcon, PhWalletFillIcon],
+  [SIMPLIFIED_ROUTE_IDS.AGENDA]: [PhCalendarBlankIcon, PhCalendarBlankFillIcon],
+  [SIMPLIFIED_ROUTE_IDS.ACCOUNT]: [PhDotsThreeIcon, PhDotsThreeFillIcon],
 });
 
 function SimplifiedBottomNavigation({ hidden = false }) {
@@ -42,13 +52,13 @@ function SimplifiedBottomNavigation({ hidden = false }) {
                 aria-label="Falar com a Uni"
                 data-uni-voice-control
               >
-                <UniRingOrb size={60} />
+                <UniRingOrb size={64} />
                 <span aria-hidden="true">{item.label}</span>
               </button>
             );
           }
 
-          const Icon = ICONS[item.id];
+          const [Icon, ActiveIcon] = ICONS[item.id];
           return (
             <NavLink
               key={item.id}
@@ -57,8 +67,14 @@ function SimplifiedBottomNavigation({ hidden = false }) {
                 `${styles.navigationItem} ${isActive ? styles.navigationItemActive : ''}`
               )}
             >
-              <span className={styles.navigationIcon}><Icon /></span>
-              <span>{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  <span className={styles.navigationIcon}>
+                    {isActive ? <ActiveIcon /> : <Icon />}
+                  </span>
+                  <span>{item.label}</span>
+                </>
+              )}
             </NavLink>
           );
         })}

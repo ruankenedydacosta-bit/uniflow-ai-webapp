@@ -175,12 +175,16 @@ test('cada toque no orb abre a tela uma vez, mesmo com o efeito rodando duas vez
 test('rótulos da barra cabem em cinco colunas de 360px', async () => {
   const css = await source('./simplifiedApp.module.css');
   const rule = css.slice(css.indexOf('.navigationItem {'), css.indexOf('}', css.indexOf('.navigationItem {')));
-  assert.match(rule, /font-size: 12px;/);
+  // Redesign (épico #91): rótulo de 11px, como no handoff.
+  assert.match(rule, /font-size: 11px;/);
   // O orb sobe acima da barra: o recorte só vale com a barra escondida.
   const nav = css.slice(css.indexOf('.bottomNavigation {'), css.indexOf('}', css.indexOf('.bottomNavigation {')));
   assert.match(nav, /overflow: visible;/);
   const hidden = css.slice(css.indexOf('.bottomNavigationHidden {'), css.indexOf('}', css.indexOf('.bottomNavigationHidden {')));
   assert.match(hidden, /overflow: hidden;/);
+  // Linha superior em degradê que some nas pontas.
+  const line = css.slice(css.indexOf('.bottomNavigation::before {'), css.indexOf('}', css.indexOf('.bottomNavigation::before {')));
+  assert.match(line, /background: var\(--uf-app-rule-fade\);/);
 });
 
 // ============================================================================
