@@ -11,8 +11,9 @@ import UniCard from '../../../components/ui/UniCard/index.js';
 import { UniRingOrb } from '../../../components/ui/UniRingOrb/index.js';
 import { UNI_RING_ORB_STATES } from '../../../components/ui/UniRingOrb/uniRingOrbModel.js';
 import SimplifiedBottomNavigation from '../../../features/simplified-app/SimplifiedBottomNavigation.jsx';
+import { ensureAppFont } from '../../../features/simplified-app/appFont.js';
 import SimplifiedHeader from '../../../features/simplified-app/SimplifiedHeader.jsx';
-import { PhBankIcon } from '../../../features/simplified-app/SimplifiedIcons.jsx';
+import { PhBankIcon, PhCheckIcon } from '../../../features/simplified-app/SimplifiedIcons.jsx';
 import appStyles from '../../../features/simplified-app/simplifiedApp.module.css';
 import { THEME_OPTIONS, useTheme } from '../../../features/theme/index.js';
 import styles from './RedesignShowcasePage.module.css';
@@ -42,6 +43,7 @@ function RedesignShowcasePage() {
 
   useEffect(() => {
     document.body.setAttribute('data-simplified-app-mounted', 'true');
+    ensureAppFont(document);
     return () => document.body.removeAttribute('data-simplified-app-mounted');
   }, []);
 
@@ -104,6 +106,7 @@ function RedesignShowcasePage() {
               { label: 'Local', value: 'Padaria Pão Nosso' },
               { label: 'Conta', value: 'Nubank · débito' },
             ]}
+            confirmIcon={<PhCheckIcon />}
             onConfirm={() => {}}
             onEdit={() => {}}
             onCancel={() => {}}

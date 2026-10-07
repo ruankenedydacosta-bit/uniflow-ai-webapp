@@ -18,7 +18,7 @@
   font: inherit;
   font-size: 13px;
   cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  transition: background-color var(--uf-duration-fast) ease, color var(--uf-duration-fast) ease, box-shadow var(--uf-duration-fast) ease;
 }
 
 .option[aria-pressed="true"] {

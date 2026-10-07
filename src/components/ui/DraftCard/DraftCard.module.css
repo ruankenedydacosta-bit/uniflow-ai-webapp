@@ -19,7 +19,7 @@
 
 .kind {
   color: var(--uf-app-text-2);
-  font-size: 12px;
+  font-size: var(--uf-text-micro-size);
 }
 
 .tag {

@@ -71,13 +71,15 @@ test('chip pequeno mantém 44px de toque', async () => {
 test('barra de progresso limita o valor entre 0 e 100 e expõe o progresso', async () => {
   const markup = await jsx('ProgressBar');
   assert.match(markup, /Math\.min\(100, Math\.max\(0, Number\(value\) \|\| 0\)\)/);
-  assert.match(markup, /role="progressbar"/);
-  assert.match(markup, /aria-valuenow=\{Math\.round\(percent\)\}/);
+  assert.match(markup, /role: 'progressbar'/);
+  assert.match(markup, /'aria-valuenow': Math\.round\(percent\)/);
+  // Sem rótulo, a barra não é anunciada como uma barra sem nome.
+  assert.match(markup, /: \{ 'aria-hidden': true \}/);
 });
 
 test('rascunho não grava nada sozinho e trava os botões durante a confirmação', async () => {
   const markup = await jsx('DraftCard');
-  assert.doesNotMatch(markup, /services\/|supabase|fetch\(/);
+  assert.doesNotMatch(markup, /services\/|supabase|fetch\(|features\//);
   assert.equal(markup.match(/disabled=\{busy\}/g)?.length, 3);
   assert.match(markup, /variant="confirm"[\s\S]*?onClick=\{onConfirm\}/);
   assert.match(markup, /^\s*Confirmar$/m);
@@ -89,4 +91,11 @@ test('números da timeline, do rascunho e do card da Uni usam tabular-nums', asy
   for (const name of ['Timeline', 'DraftCard', 'UniCard']) {
     assert.match(await css(name), /font-variant-numeric: tabular-nums;/, name);
   }
+});
+
+test('avatar volta para as iniciais quando a foto falha (URL assinada vencida)', async () => {
+  const avatar = await source('./Avatar/Avatar.jsx');
+  assert.match(avatar, /onError=\{\(\) => setFailedSrc\(src\)\}/);
+  assert.match(avatar, /const showsImage = Boolean\(src\) && src !== failedSrc;/);
+  assert.match(avatar, /\{showsImage \? \(/);
 });

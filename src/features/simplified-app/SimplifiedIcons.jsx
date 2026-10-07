@@ -69,16 +69,6 @@ export function ArrowUpIcon() {
   );
 }
 
-export function WalletIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M5 11a4 4 0 0 1 4-4h14a2 2 0 0 1 2 2v3" />
-      <rect x="5" y="11" width="24" height="16" rx="3" />
-      <path d="M20 19h5" />
-    </svg>
-  );
-}
-
 export function CalendarIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
@@ -359,22 +349,6 @@ export function ChatBubbleIcon() {
     <svg viewBox="0 0 32 32" aria-hidden="true">
       <path d="M4 6h24v16H12l-6 6v-6H4Z" />
       <path d="M11 14h.01M16 14h.01M21 14h.01" strokeWidth="3" />
-    </svg>
-  );
-}
-
-export function SunHorizonIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M9 22a7 7 0 0 1 14 0M3 26h26M16 6v4M6.8 12.8l2.8 2.8M25.2 12.8l-2.8 2.8" />
-    </svg>
-  );
-}
-
-export function DotsIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M8 16h.01M16 16h.01M24 16h.01" strokeWidth="3.6" />
     </svg>
   );
 }

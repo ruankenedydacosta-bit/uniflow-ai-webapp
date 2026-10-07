@@ -27,8 +27,6 @@
    fica como fallback para ambientes que só importam este arquivo.
 ---------------------------------------------------------------------------- */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-/* Inter só nos pesos 400 e 500: o app (/app/*) usa peso máximo 500 (épico #91). */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
 /* Produção (recomendado), no <head> do index.html:
    <link rel="preconnect" href="https://fonts.googleapis.com">
    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

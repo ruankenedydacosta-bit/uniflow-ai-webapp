@@ -17,10 +17,10 @@
   background: transparent;
   color: var(--uf-app-text-2);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--uf-text-micro-size);
   white-space: nowrap;
   cursor: pointer;
-  transition: border-color 150ms ease, color 150ms ease;
+  transition: border-color var(--uf-duration-fast) ease, color var(--uf-duration-fast) ease;
 }
 
 /* Área de toque de 44px sem mudar o desenho do chip. */

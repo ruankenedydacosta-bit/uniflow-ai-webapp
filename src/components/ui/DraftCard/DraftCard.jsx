@@ -1,11 +1,11 @@
 import { cx } from '../../../utils/cx.js';
-import { PhCheckIcon } from '../../../features/simplified-app/SimplifiedIcons.jsx';
 import OutlineButton from '../OutlineButton/OutlineButton.jsx';
 import styles from './DraftCard.module.css';
 
 // Rascunho que a Uni montou e que só é salvo quando a pessoa confirma
 // (épico #91). O card não grava nada: quem usa decide o que cada botão faz.
-// `busy` trava os três botões enquanto a confirmação está em andamento.
+// `busy` trava os três botões enquanto a confirmação está em andamento, e
+// `confirmIcon` vem de quem usa, para o componente base não depender de feature.
 function DraftCard({
   kind,
   tag,
@@ -15,6 +15,7 @@ function DraftCard({
   onEdit,
   onCancel,
   busy = false,
+  confirmIcon = null,
   className,
   ...props
 }) {
@@ -37,7 +38,7 @@ function DraftCard({
       ) : null}
       <div className={styles.actions}>
         <OutlineButton variant="confirm" className={styles.confirm} onClick={onConfirm} disabled={busy}>
-          <PhCheckIcon />
+          {confirmIcon}
           Confirmar
         </OutlineButton>
         {onEdit ? (

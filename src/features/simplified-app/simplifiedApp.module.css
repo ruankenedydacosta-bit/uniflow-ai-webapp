@@ -39,6 +39,10 @@
   --uf-header-full-height: calc(var(--simplified-header-height) - 10px + var(--uf-header-safe-top));
   --header-progress: 0;
   --simplified-bottom-nav-height: calc(51px + max(18px, env(safe-area-inset-bottom)));
+  /* Halo de topo (épico #91): .shellSurface e .header usam as mesmas
+     coordenadas, senão aparece uma emenda na borda de baixo do header. */
+  --simplified-halo-position: 50% -180px;
+  --simplified-halo-size: 520px 420px;
   /* THEME SYSTEM V2 -- esta shell NAO define mais uma paleta propria.
      Antes, este bloco fixava valores escuros literais, o que sobrescrevia
      data-theme dentro de /app/* e deixava o seletor de temas inerte (trocar
@@ -126,8 +130,8 @@
      cobre o conteúdo que rola sem criar emenda na borda de baixo. */
   background-color: var(--uf-app-canvas);
   background-image: var(--uf-app-halo);
-  background-position: 50% -180px;
-  background-size: 520px 420px;
+  background-position: var(--simplified-halo-position);
+  background-size: var(--simplified-halo-size);
   background-repeat: no-repeat;
   box-shadow: 0 0 90px rgba(var(--uf-app-shadow-rgb), .4);
 }
@@ -169,8 +173,8 @@
      com o centro acima da tela, pintada como camada do próprio fundo. */
   background-color: var(--uf-app-canvas);
   background-image: var(--uf-app-halo);
-  background-position: 50% -180px;
-  background-size: 520px 420px;
+  background-position: var(--simplified-halo-position);
+  background-size: var(--simplified-halo-size);
   background-repeat: no-repeat;
   transform: translate3d(0, calc(var(--header-progress, 0) * -100%), 0);
   opacity: calc(1 - var(--header-progress, 0));
@@ -639,7 +643,7 @@
   font-size: 11px;
   font-weight: var(--uf-font-weight-regular);
   text-decoration: none;
-  transition: color 150ms ease;
+  transition: color var(--uf-duration-fast) ease;
 }
 
 .navigationItemActive {

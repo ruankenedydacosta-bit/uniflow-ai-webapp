@@ -5,6 +5,7 @@ import { PUSH_STATUS, useWebPush } from '../mobile-push/useWebPush.js';
 import NotificationsPanel from '../notifications/NotificationsPanel.jsx';
 import { useNotifications } from '../notifications/useNotifications.js';
 import { useCollapsibleHeaderOnScroll } from './collapsibleHeaderScroll.js';
+import { ensureAppFont } from './appFont.js';
 import SimplifiedBottomNavigation from './SimplifiedBottomNavigation.jsx';
 import SimplifiedHeader from './SimplifiedHeader.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
@@ -171,6 +172,7 @@ function SimplifiedAppShell({ children }) {
     const body = document.body;
     const previousValue = body.getAttribute('data-simplified-app-mounted');
     body.setAttribute('data-simplified-app-mounted', 'true');
+    ensureAppFont(document);
     return () => {
       if (previousValue === null) body.removeAttribute('data-simplified-app-mounted');
       else body.setAttribute('data-simplified-app-mounted', previousValue);

@@ -344,12 +344,17 @@ test('redesign: Claro e UniFlow declaram os tokens do handoff', async () => {
 });
 
 test('redesign: o app usa Inter só nos pesos 400 e 500, inclusive nos portais', async () => {
-  const [theme, shell] = await Promise.all([
+  const [theme, shell, appFont, appShell] = await Promise.all([
     readFile(new URL('styles/theme.css', SRC_URL), 'utf8'),
     readFile(new URL('features/simplified-app/simplifiedApp.module.css', SRC_URL), 'utf8'),
+    readFile(new URL('features/simplified-app/appFont.js', SRC_URL), 'utf8'),
+    readFile(new URL('features/simplified-app/SimplifiedAppShell.jsx', SRC_URL), 'utf8'),
   ]);
 
-  assert.match(theme, /family=Inter:wght@400;500&/);
+  // A folha do Inter só é pedida quando o app monta, nunca pelo theme.css global.
+  assert.doesNotMatch(theme, /family=Inter/);
+  assert.match(appFont, /family=Inter:wght@400;500&/);
+  assert.match(appShell, /ensureAppFont\(document\);/);
   const body = themeBlock(shell, 'body[data-simplified-app-mounted="true"]');
   assert.match(body, /--uf-font-family-base:\s*var\(--uf-app-font-family\)/);
   assert.match(body, /font-synthesis-weight:\s*none/);

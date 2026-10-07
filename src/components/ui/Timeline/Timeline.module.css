@@ -86,7 +86,7 @@
 .detail {
   margin: 0;
   color: var(--uf-app-text-3);
-  font-size: 12px;
+  font-size: var(--uf-text-micro-size);
 }
 
 .detail[data-highlight="true"] {

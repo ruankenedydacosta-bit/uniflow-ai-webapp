@@ -28,7 +28,7 @@ function SimplifiedHeader({
 
   return (
     <header className={styles.header} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden}>
-      <div className={styles.brandLockup} aria-label="UniFlow AI">
+      <div className={styles.brandLockup} aria-label="UniFlow">
         <span className={styles.brandMark} aria-hidden="true"><UniMark /></span>
         <strong>UniFlow</strong>
       </div>
