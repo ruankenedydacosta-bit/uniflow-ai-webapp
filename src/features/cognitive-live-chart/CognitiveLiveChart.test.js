@@ -256,3 +256,40 @@ test('o timeout da onda é limpo no unmount -- nunca setState em componente desm
   const source = await featureSource('CognitiveLiveChart.jsx');
   assert.match(source, /useEffect\(\(\) => \(\) => \{\s*\n\s*if \(pulseTimeoutRef\.current\) clearTimeout\(pulseTimeoutRef\.current\);\s*\n\s*\}, \[\]\);/);
 });
+
+// ============================================================================
+// RESPONSIVIDADE (vindo de SimplifiedHomeFinancialGraph.test.js, #89): o
+// componente continua em uso no dashboard mobile e no Financeiro desktop.
+// ============================================================================
+
+test('RESPONSIVIDADE: o teto de largura do gráfico é centralizado -- a sobra nunca cai toda à direita', async () => {
+  const css = await featureSource('CognitiveLiveChart.module.css');
+  assert.match(css, /\.rootCompact \{[\s\S]*?max-width: 430px;[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
+  assert.match(css, /\.rootDetailed \{[\s\S]*?max-width: 430px;[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
+});
+
+test('RESPONSIVIDADE: o container do gráfico continua fluido (100%), sem largura fixa por aparelho', async () => {
+  const css = await featureSource('CognitiveLiveChart.module.css');
+  assert.match(css, /\.chartWrapper \{[\s\S]*?width: 100%;/);
+  assert.match(css, /\.svg \{[\s\S]*?width: 100%;[\s\S]*?height: auto;/);
+  assert.doesNotMatch(css, /@media[^{]*\(width:\s*(390|412|430)px\)/);
+});
+
+test('RESPONSIVIDADE: margens simétricas do plot vêm de MARGIN left === right', async () => {
+  const chart = await featureSource('CognitiveLiveChart.jsx');
+  const margin = /const MARGIN = \{ top: (\d+), right: (\d+), bottom: (\d+), left: (\d+) \};/.exec(chart);
+  assert.ok(margin, 'MARGIN precisa continuar declarado explicitamente');
+  assert.equal(margin[2], margin[4], 'right e left precisam ser iguais');
+});
+
+test('RESPONSIVIDADE: rótulo de "hoje" troca de âncora nas bordas -- nunca transborda a viewBox', async () => {
+  const chart = await featureSource('CognitiveLiveChart.jsx');
+  assert.match(chart, /const todayLabelAnchor =/);
+  assert.match(chart, /textAnchor=\{todayLabelAnchor\}/);
+  assert.doesNotMatch(chart, /x=\{todayX\}[^>]*textAnchor="middle"/);
+});
+
+test('PERFORMANCE: ResizeObserver só atualiza estado quando a largura muda de verdade', async () => {
+  const chart = await featureSource('CognitiveLiveChart.jsx');
+  assert.match(chart, /setContainerWidth\(\(current\) => \(current === nextWidth \? current : nextWidth\)\)/);
+});

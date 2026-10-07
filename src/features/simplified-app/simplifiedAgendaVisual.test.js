@@ -45,10 +45,12 @@ test('grade usa o mesmo gerador de grade testado (simplifiedAgendaCalendar) -- p
   assert.match(page, /eventDot/);
 });
 
-test('dia selecionado abre painel: compromissos do dia + botão "+ Novo compromisso"', async () => {
+// Redesign (#89, handoff 06): o botão de criar é o flutuante "Criar item na
+// agenda", no canto inferior direito, em vez de "+ Novo compromisso".
+test('dia selecionado abre painel: compromissos do dia + botão flutuante "Criar item na agenda"', async () => {
   const page = await source('./SimplifiedAgendaPage.jsx');
   assert.match(page, /formatDayHeading\(new Date\(/);
-  assert.match(page, /\+ Novo compromisso/);
+  assert.match(page, /aria-label="Criar item na agenda"/);
   assert.match(page, /selectedDayItems/);
   assert.match(page, /Nenhum compromisso neste dia\./);
 });

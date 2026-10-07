@@ -1,3 +1,4 @@
+import { normalizeSearchText } from '../../utils/searchText.js';
 import {
   resolveCategoryIconKey,
   resolveCategoryTone,
@@ -169,7 +170,9 @@ export function filterRecordTransactions(
     type = 'all',
   } = {},
 ) {
-  const normalizedQuery = normalizeText(query);
+  // Busca sem acento e sem caixa nos DOIS lados (termo e campo), com o
+  // helper compartilhado de src/utils/searchText.js.
+  const normalizedQuery = normalizeSearchText(query);
   const filtered = transactions.filter((transaction) => {
     if (transaction.status !== 'completed') return false;
     if (type !== 'all' && transaction.transaction_type !== type) return false;
@@ -177,7 +180,7 @@ export function filterRecordTransactions(
       if (categoryId === 'uncategorized' && transaction.category_id) return false;
       if (categoryId !== 'uncategorized' && transaction.category_id !== categoryId) return false;
     }
-    return !normalizedQuery || normalizeText(transaction.description).includes(normalizedQuery);
+    return !normalizedQuery || normalizeSearchText(transaction.description).includes(normalizedQuery);
   });
 
   return filtered.sort((left, right) => {

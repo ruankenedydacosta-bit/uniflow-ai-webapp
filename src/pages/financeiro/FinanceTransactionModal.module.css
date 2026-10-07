@@ -169,9 +169,183 @@
   }
 }
 
+/* Folha (handoff 05, #89): com presentation="sheet" o diálogo do Modal
+   compartilhado vira uma folha ancorada embaixo, com alça, canto de 28px e
+   a linha violeta no topo. Só é usada dentro do app simplificado, por isso
+   lê os tokens --uf-app-*. A confirmação de exclusão (alertdialog)
+   continua centralizada. O overlay recebe .sheetOverlay pelo próprio
+   componente; os !important vencem a cor por tema do Modal base. */
+.sheetOverlay {
+  align-items: flex-end !important;
+  padding: 0 !important;
+  background: color-mix(in oklch, var(--uf-app-canvas) 70%, transparent) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.transactionDialog[data-presentation="sheet"] {
+  width: 100%;
+  max-width: none;
+  max-height: calc(100dvh - 40px);
+  padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
+  border: 0;
+  border-radius: 28px 28px 0 0;
+  background: var(--uf-app-card-surface);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--uf-app-brand-violet) 30%, transparent),
+    var(--uf-shadow-lg);
+  animation: sheetUp var(--uf-duration-base) var(--uf-ease-decelerate);
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(24px); opacity: 0; }
+}
+
+.transactionDialog[data-presentation="sheet"]::before {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 12px auto 0;
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-app-border-strong);
+  content: "";
+}
+
+/* Cabeçalho da folha: só o título, 17/500, e o X sem moldura. */
+.transactionDialog[data-presentation="sheet"] > :first-child {
+  align-items: center;
+  padding: 14px 22px 0;
+  border-bottom: 0;
+}
+
+.transactionDialog[data-presentation="sheet"] > :first-child h2 {
+  font-size: 17px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.3;
+}
+
+.transactionDialog[data-presentation="sheet"] > :first-child button {
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  color: var(--uf-app-text-2);
+}
+
+.transactionDialog[data-presentation="sheet"] > :nth-child(2) {
+  padding: 18px 22px 0;
+}
+
+/* Os blocos do formulário perdem a moldura: a folha já é o card. */
+.transactionDialog[data-presentation="sheet"] .formBlock {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.transactionDialog[data-presentation="sheet"] label,
+.transactionDialog[data-presentation="sheet"] label > span {
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-regular);
+}
+
+/* Campos: 44px de altura, poço escuro e borda interna de card. */
+.transactionDialog[data-presentation="sheet"] select,
+.transactionDialog[data-presentation="sheet"] div:has(> input:not([type="checkbox"])) {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+  color: var(--uf-app-text);
+  font-size: 14px;
+}
+
+.transactionDialog[data-presentation="sheet"] div:has(> input:focus-visible) {
+  box-shadow: inset 0 0 0 1px var(--uf-app-brand-violet);
+}
+
+.transactionDialog[data-presentation="sheet"] input:not([type="checkbox"]) {
+  min-height: 44px;
+  font-size: 14px;
+}
+
+/* Valor em destaque (handoff 05): 40/500, centralizado, sem poço. */
+.transactionDialog[data-presentation="sheet"] div:has(> :global(#finance-transaction-amount)) {
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+}
+
+.transactionDialog[data-presentation="sheet"] :global(#finance-transaction-amount) {
+  min-height: 56px;
+  font-size: 40px;
+  font-weight: var(--uf-font-weight-medium);
+  letter-spacing: -.02em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  caret-color: var(--uf-app-brand-violet-text);
+}
+
+.transactionDialog[data-presentation="sheet"] label[for="finance-transaction-amount"] {
+  text-align: center;
+}
+
+/* Dica da Uni dentro da folha. */
+.sheetHint {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-12);
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-color-ai-subtle);
+}
+
+.sheetHint p {
+  margin: 0;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+  line-height: 1.45;
+}
+
+/* Linha de ação: "Salvar …" ocupa o espaço e "Cancelar" fica ao lado,
+   também no celular. A marca é linha, nunca preenchimento. */
+.transactionDialog[data-presentation="sheet"] .actionRow,
+.transactionDialog[data-presentation="sheet"] .primaryActions {
+  flex-direction: row;
+  align-items: center;
+}
+
+.transactionDialog[data-presentation="sheet"] .primaryActions {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+}
+
+.transactionDialog[data-presentation="sheet"] .primaryActions > button {
+  width: auto;
+}
+
+.transactionDialog[data-presentation="sheet"] .primaryActions > button[type="submit"] {
+  flex: 1 1 auto;
+  min-height: 40px;
+  border: 1px solid var(--uf-app-ai-text);
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-ai-text);
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.transactionDialog[data-presentation="sheet"] .primaryActions > button[type="submit"]:hover:not(:disabled) {
+  background: var(--uf-app-ai-subtle);
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .deleteConfirmOverlay,
-  .deleteConfirmCard {
+  .deleteConfirmCard,
+  .transactionDialog[data-presentation="sheet"] {
     animation: none;
   }
 }
