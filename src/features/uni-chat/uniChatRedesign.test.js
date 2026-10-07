@@ -90,9 +90,13 @@ test('mensagens: pedido em balão azul à direita e a Uni com o orb de 22px', as
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b/i);
 });
 
-test('campo da conversa: "Escreva ou fale com a Uni" e um botão só, voz ou enviar', async () => {
+test('campo da conversa: "Escreva ou fale com a Uni", microfone sempre e enviar quando há texto', async () => {
   const input = await source('components/ChatInput.jsx');
   assert.match(input, /placeholder="Escreva ou fale com a Uni"/);
   assert.match(input, /const showSendButton = Boolean\(value\.trim\(\)\) && !isCapturing;/);
-  assert.match(input, /\{showSendButton \? \(/);
+  // O microfone fica fora da condição: ditar mais e interromper a Uni
+  // continuam possíveis com texto no campo.
+  const micIdx = input.indexOf('onClick={handleVoiceClick}');
+  const sendIdx = input.indexOf('{showSendButton ? (');
+  assert.ok(micIdx > -1 && sendIdx > micIdx);
 });

@@ -21,8 +21,8 @@ ninguém falar ou quando você sai do app.
 
 Na tela de voz, o status acima da Uni mostra o que está acontecendo:
 
-- **Ouvindo**: a Uni está ouvindo você. As ondas se mexem e o que você diz
-  aparece em letras grandes, entre aspas.
+- **Ouvindo**: a Uni está ouvindo você e as ondas se mexem. Quando você
+  termina de falar, o que você disse aparece em letras grandes, entre aspas.
 - **Entendendo**: a Uni está processando o pedido.
 - **Rascunho pronto**: o card de rascunho apareceu. Confira os dados e toque em
   **Confirmar**, ou diga que pode confirmar. Nada é salvo antes disso.

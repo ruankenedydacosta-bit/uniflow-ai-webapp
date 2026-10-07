@@ -4,8 +4,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 18px 16px 8px 22px;
+  gap: var(--uf-space-12);
+  padding: 18px var(--uf-space-16) var(--uf-space-8) 22px;
   padding-top: max(18px, env(safe-area-inset-top));
 }
 
@@ -38,7 +38,7 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--uf-space-4);
   flex-shrink: 0;
 }
 
@@ -70,7 +70,7 @@
   flex: 1;
   border: none;
   background: transparent;
-  padding: 7px 4px;
+  padding: 7px var(--uf-space-4);
   font-size: 12.5px;
   font-weight: 700;
   font-family: var(--uni-font-display);

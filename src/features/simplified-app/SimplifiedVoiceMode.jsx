@@ -92,9 +92,6 @@ function SimplifiedVoiceMode({
   const isActionDisabled = view.action === VOICE_MODE_ACTIONS.NONE;
   const stage = resolveVoiceModeStage({ view, isUserSpeaking, hasReply });
   const cleanTranscript = String(transcript ?? '').trim();
-  // Com a conversa aberta e a fala já na tela, a dica genérica sai para não
-  // disputar espaço. Erro e fim de conversa continuam aparecendo.
-  const showHint = Boolean(hint) && !(cleanTranscript && view.action === VOICE_MODE_ACTIONS.END_CONVERSATION);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -173,7 +170,7 @@ function SimplifiedVoiceMode({
           ) : null}
         </p>
 
-        {showHint ? <p className={styles.hint} data-tone={view.tone}>{hint}</p> : null}
+        {hint ? <p className={styles.hint} data-tone={view.tone}>{hint}</p> : null}
       </div>
 
       <div className={styles.content}>

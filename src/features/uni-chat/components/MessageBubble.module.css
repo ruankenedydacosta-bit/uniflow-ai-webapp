@@ -22,6 +22,12 @@
   padding-top: 2px;
 }
 
+/* O orb de cada mensagem fica parado: uma conversa longa teria dezenas de
+   orbs girando. O orb do cabeçalho e o do "pensando" continuam animados. */
+.avatar span {
+  animation: none;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -64,7 +70,7 @@
 /* Aviso e sugestão continuam com caixa: a etiqueta precisa de um contorno. */
 .alert,
 .suggestion {
-  padding: 12px 14px;
+  padding: var(--uf-space-12) 14px;
   border-radius: var(--uf-radius-16);
   background: var(--uf-app-card-surface);
   color: var(--uf-app-text);
@@ -81,7 +87,7 @@
 .badge, .badgeSoft {
   display: inline-block;
   margin-bottom: 6px;
-  padding: 2px 8px;
+  padding: 2px var(--uf-space-8);
   border: 1px solid currentColor;
   border-radius: var(--uf-radius-full);
   font-size: 11px;
@@ -125,7 +131,7 @@
 .speakBtn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--uf-space-4);
   border: none;
   background: transparent;
   color: var(--uf-app-text-3);
@@ -151,7 +157,7 @@
 .voiceControls {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--uf-space-4);
   flex-wrap: wrap;
 }
 
@@ -162,7 +168,7 @@
   border: none;
   background: transparent;
   color: var(--uf-app-text-3);
-  padding: 4px;
+  padding: var(--uf-space-4);
   border-radius: var(--uf-radius-full);
   cursor: pointer;
 }

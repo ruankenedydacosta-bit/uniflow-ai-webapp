@@ -849,6 +849,11 @@ function SimplifiedHomeView({
   const voiceLastUserText = isVoiceModeOpen
     ? ([...compactResponseMessages].reverse().find((message) => message.from === 'user')?.text ?? '')
     : '';
+  // Na captura antiga, enquanto grava e transcreve, o pedido novo ainda não
+  // está na conversa: a última mensagem seria a do turno anterior.
+  const isLegacyVoiceTurnPending = isListening
+    || interactionState === SIMPLIFIED_UNI_STATES.TRANSCRIBING
+    || interactionState === SIMPLIFIED_UNI_STATES.SUCCESS;
   const isRealtimeUserSpeaking = realtime.state.status === REALTIME_STATUS.USER_SPEAKING;
   // Antes da primeira fala da conversa, a tela mostra o pedido do rascunho
   // que ficou pendente. Depois, só o que a pessoa disse nesta conversa.
@@ -865,7 +870,11 @@ function SimplifiedHomeView({
         : `${error} Toque na Uni para tentar de novo.`;
     }
     if (status === REALTIME_STATUS.CONNECTING) return 'Se o navegador pedir, permita o uso do microfone.';
-    if (isRealtimeActive) return 'Fale normalmente. Você pode interromper a Uni a qualquer momento.';
+    // Com a fala da pessoa já na tela, a dica genérica sai para não disputar
+    // espaço com ela.
+    if (isRealtimeActive) {
+      return realtimeTranscript ? null : 'Fale normalmente. Você pode interromper a Uni a qualquer momento.';
+    }
     if (status === REALTIME_STATUS.ENDED && realtime.state.endReason === 'idle') {
       return `A conversa foi encerrada porque ninguém falou por um minuto. ${REALTIME_RESTART_HINT}`;
     }
@@ -976,7 +985,7 @@ function SimplifiedHomeView({
           interactionState={interactionState}
           hint={voiceModeHint}
           response={isVoiceModeOpen ? compactResponse : null}
-          transcript={isListening ? '' : voiceLastUserText}
+          transcript={isLegacyVoiceTurnPending ? '' : voiceLastUserText}
           isUserSpeaking={isListening}
           hasReply={voiceHasReply}
           getVoiceStream={voiceInput.getActiveStream}

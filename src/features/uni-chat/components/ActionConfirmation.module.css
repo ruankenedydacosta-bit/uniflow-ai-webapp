@@ -7,7 +7,7 @@
   gap: 10px;
   width: 100%;
   max-width: 340px;
-  padding: 16px;
+  padding: var(--uf-space-16);
   border-radius: var(--uf-radius-16);
   background: var(--uf-app-card-surface);
   box-shadow:
@@ -37,7 +37,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--uf-space-8);
   min-height: 20px;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .tag {
-  padding: 2px 8px;
+  padding: 2px var(--uf-space-8);
   border: 1px solid var(--uf-app-border-strong);
   border-radius: var(--uf-radius-full);
   color: var(--uf-app-text-2);
@@ -60,7 +60,7 @@
 .statusProcessing {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--uf-space-4);
   font-size: var(--uf-text-micro-size);
   white-space: nowrap;
 }
@@ -111,7 +111,7 @@
 .rows {
   display: grid;
   grid-template-columns: minmax(60px, max-content) 1fr;
-  gap: 4px 12px;
+  gap: var(--uf-space-4) var(--uf-space-12);
   margin: 0;
   font-size: 13px;
 }
@@ -137,7 +137,7 @@
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: var(--uf-space-8);
   margin-top: 2px;
 }
 
@@ -199,8 +199,8 @@
 .errorBox {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: var(--uf-space-8);
+  padding: 10px var(--uf-space-12);
   border-radius: var(--uf-radius-8);
   background: var(--uf-app-danger-subtle);
 }

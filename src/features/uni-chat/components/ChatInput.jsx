@@ -92,8 +92,9 @@ export default function ChatInput({
   const voiceLabel = status === VOICE_CAPTURE_STATES.LISTENING
     ? 'Parar e enviar áudio'
     : isCapturing ? 'Cancelar áudio' : 'Falar';
-  // Redesign (épico #91): um botão só, à direita. Com texto no campo ele
-  // envia; vazio (ou gravando) ele cuida da voz.
+  // Redesign (épico #91): vazio, o campo só tem o microfone, como no design.
+  // Com texto, o enviar entra ao lado; o microfone fica para ditar mais e
+  // para interromper a fala da Uni.
   const showSendButton = Boolean(value.trim()) && !isCapturing;
 
   return (
@@ -124,6 +125,17 @@ export default function ChatInput({
           aria-label="Escreva ou fale com a Uni"
         />
 
+        <button
+          type="button"
+          className={`${styles.voiceBtn} ${isCapturing ? styles.voiceBtnActive : ''}`}
+          data-secondary={showSendButton ? 'true' : undefined}
+          aria-label={voiceLabel}
+          aria-pressed={isCapturing}
+          title={voiceLabel}
+          onClick={handleVoiceClick}
+        >
+          <PhMicrophoneIcon />
+        </button>
         {showSendButton ? (
           <button
             type="submit"
@@ -133,18 +145,7 @@ export default function ChatInput({
           >
             <PhPaperPlaneRightIcon />
           </button>
-        ) : (
-          <button
-            type="button"
-            className={`${styles.voiceBtn} ${isCapturing ? styles.voiceBtnActive : ''}`}
-            aria-label={voiceLabel}
-            aria-pressed={isCapturing}
-            title={voiceLabel}
-            onClick={handleVoiceClick}
-          >
-            <PhMicrophoneIcon />
-          </button>
-        )}
+        ) : null}
       </div>
     </form>
   );
