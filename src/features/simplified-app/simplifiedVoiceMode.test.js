@@ -7,6 +7,7 @@ import { buildVoiceModeUrl, SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from '.
 import { REALTIME_STATUS } from '../uni-voice-realtime/realtimeSessionModel.js';
 import {
   resolveRealtimeVoiceModeView,
+  resolveVoiceModeStage,
   resolveVoiceModeView,
   selectVoiceConversationMessages,
   snapshotVoiceConversationStart,
@@ -129,7 +130,61 @@ test('controles de voz ficam fora do reenvio da saudação e não iniciam captur
 
 test('enquanto ouve, a tela mostra as ondas no lugar da resposta anterior', async () => {
   const modal = await source('./SimplifiedVoiceMode.jsx');
-  assert.match(modal, /\{isListening \? <VoiceWave \/> : response\}/);
+  assert.match(modal, /\{stage\.showWaves \? <VoiceWave \/> : response\}/);
+});
+
+// ============================================================================
+// Épico #91 (#88) — tela 03 do redesign: Ouvindo, Entendendo, Rascunho pronto.
+// ============================================================================
+
+test('com rascunho pendente, a conversa em tempo real parada mostra "Rascunho pronto" em verde', () => {
+  for (const status of [REALTIME_STATUS.LISTENING, REALTIME_STATUS.SPEAKING]) {
+    const view = resolveRealtimeVoiceModeView(status, { hasPendingDraft: true });
+    assert.equal(view.status, 'Rascunho pronto', status);
+    assert.equal(view.tone, VOICE_MODE_TONES.READY, status);
+    assert.equal(view.action, VOICE_MODE_ACTIONS.END_CONVERSATION, status);
+  }
+  // Quando a pessoa fala ou a Uni pensa, o status volta a Ouvindo/Entendendo.
+  assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.USER_SPEAKING, { hasPendingDraft: true }).status, 'Ouvindo');
+  assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.THINKING, { hasPendingDraft: true }).status, 'Entendendo');
+  // Sem rascunho, nada muda.
+  assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.LISTENING).status, 'Ouvindo');
+});
+
+test('as ondas aparecem enquanto a pessoa fala ou antes da primeira resposta; o orb encolhe com resposta ou rascunho', () => {
+  const listening = resolveRealtimeVoiceModeView(REALTIME_STATUS.LISTENING);
+  const speaking = resolveRealtimeVoiceModeView(REALTIME_STATUS.USER_SPEAKING);
+  const thinking = resolveRealtimeVoiceModeView(REALTIME_STATUS.THINKING);
+  const draft = resolveRealtimeVoiceModeView(REALTIME_STATUS.LISTENING, { hasPendingDraft: true });
+
+  assert.deepEqual({ ...resolveVoiceModeStage({ view: listening }) }, { showWaves: true, compact: false });
+  assert.deepEqual({ ...resolveVoiceModeStage({ view: listening, hasReply: true }) }, { showWaves: false, compact: true });
+  assert.deepEqual({ ...resolveVoiceModeStage({ view: speaking, isUserSpeaking: true, hasReply: true }) }, { showWaves: true, compact: false });
+  assert.deepEqual({ ...resolveVoiceModeStage({ view: thinking, hasReply: true }) }, { showWaves: false, compact: false });
+  assert.deepEqual({ ...resolveVoiceModeStage({ view: draft, hasReply: true }) }, { showWaves: false, compact: true });
+});
+
+test('tela de voz segue o handoff: 34 barras, transcrição com cursor e Escrever, Parar, Conversa', async () => {
+  const modal = await source('./SimplifiedVoiceMode.jsx');
+  const css = await source('./simplifiedVoiceMode.module.css');
+  assert.match(modal, /const WAVE_BAR_COUNT = 34;/);
+  assert.match(modal, /className=\{styles\.transcript\}/);
+  assert.match(modal, /isUserSpeaking \? <span className=\{styles\.caret\} aria-hidden="true">\|<\/span> : null/);
+  assert.match(modal, /<span className=\{styles\.workspace\}>\{workspaceLabel\}<\/span>/);
+  assert.match(modal, />Escrever</);
+  assert.match(modal, />Conversa</);
+  assert.equal(VOICE_MODE_ACTION_LABELS[VOICE_MODE_ACTIONS.END_CONVERSATION].label, 'Parar');
+  assert.match(css, /\.transcript \{[^}]*font-size: 22px;/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
+});
+
+test('na tela de voz a resposta perde a caixa e o card de rascunho vai em vidro', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /presentation=\{isVoiceModeOpen \? 'voice' : 'card'\}/);
+  assert.match(home, /appearance=\{isVoicePresentation \? 'glass' : 'default'\}/);
+  assert.match(home, /\{lastUser\?\.text && !isVoicePresentation \?/);
+  // O card continua chamando a mesma confirmação: nada é gravado sem Confirmar.
+  assert.match(home, /onConfirm=\{\(\) => onConfirmAction\(lastUni\.id\)\}/);
 });
 
 test('cores da tela de voz vêm dos tokens, sem hex solto', async () => {
@@ -213,7 +268,8 @@ test('na conversa em tempo real não existe Enviar: o botão central só encerra
   ]) {
     assert.equal(resolveRealtimeVoiceModeView(status).action, VOICE_MODE_ACTIONS.END_CONVERSATION, status);
   }
-  assert.equal(VOICE_MODE_ACTION_LABELS[VOICE_MODE_ACTIONS.END_CONVERSATION].label, 'Encerrar');
+  // Redesign (épico #91, tela 03): o botão central se chama "Parar".
+  assert.equal(VOICE_MODE_ACTION_LABELS[VOICE_MODE_ACTIONS.END_CONVERSATION].label, 'Parar');
   assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.ENDED).action, VOICE_MODE_ACTIONS.START);
   assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.SPEAKING).orb, UNI_RING_ORB_STATES.SPEAKING);
 });
@@ -223,7 +279,7 @@ test('com a flag, a tela de voz abre a conversa em tempo real no mesmo toque e o
   assert.match(home, /function handleOpenRealtimeVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*beginRealtimeConversation\(\);\s*\}/);
   assert.match(home, /if \(realtimeVoiceEnabled\) openVoiceModeRef\.current = handleOpenRealtimeVoiceMode;/);
   assert.match(home, /action === VOICE_MODE_ACTIONS\.END_CONVERSATION\) stopRealtime\('user'\)/);
-  assert.match(home, /view=\{resolveRealtimeVoiceModeView\(realtime\.state\.status\)\}/);
+  assert.match(home, /view=\{resolveRealtimeVoiceModeView\(realtime\.state\.status, \{ hasPendingDraft: voiceHasPendingDraft \}\)\}/);
 });
 
 test('fechar, ir para o chat ou deixar o app em segundo plano encerra a conversa em tempo real', async () => {

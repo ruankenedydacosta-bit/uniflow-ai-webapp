@@ -1,15 +1,23 @@
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { UNI_RING_ORB_STATES, UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
-import { ChatBubbleIcon, CloseIcon, KeyboardIcon, MicIcon, StopIcon } from './SimplifiedIcons.jsx';
+import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import {
+  PhChatCircleTextIcon,
+  PhKeyboardIcon,
+  PhMicrophoneIcon,
+  PhStopFillIcon,
+  PhXIcon,
+} from './SimplifiedIcons.jsx';
+import {
+  resolveVoiceModeStage,
   resolveVoiceModeView,
   VOICE_MODE_ACTION_LABELS,
   VOICE_MODE_ACTIONS,
 } from './voiceModeState.js';
 import styles from './simplifiedVoiceMode.module.css';
 
-const WAVE_BAR_COUNT = 28;
+// Tela 03 do handoff: 34 barras de 3px com 4px de intervalo.
+const WAVE_BAR_COUNT = 34;
 
 // Ondas decorativas enquanto a Uni ouve. A altura de cada barra segue uma
 // envoltória (mais alta no centro); o ritmo varia por barra para não pulsar
@@ -21,7 +29,8 @@ const WAVE_BARS = Array.from({ length: WAVE_BAR_COUNT }, (_, index) => {
     height: Math.round(10 + envelope * 38),
     duration: (0.55 + jitter * 0.6).toFixed(2),
     delay: (-jitter).toFixed(2),
-    tone: index < WAVE_BAR_COUNT / 3 ? 'blue' : index < (WAVE_BAR_COUNT * 2) / 3 ? 'purple' : 'green',
+    // Mesmos terços do design: 12 azuis, 11 roxas, 11 verdes.
+    tone: index < 12 ? 'blue' : index < 23 ? 'purple' : 'green',
   });
 });
 
@@ -46,11 +55,11 @@ function VoiceWave() {
 }
 
 const PRIMARY_ICONS = Object.freeze({
-  [VOICE_MODE_ACTIONS.START]: MicIcon,
-  [VOICE_MODE_ACTIONS.STOP_LISTENING]: StopIcon,
-  [VOICE_MODE_ACTIONS.STOP_SPEAKING]: StopIcon,
-  [VOICE_MODE_ACTIONS.END_CONVERSATION]: StopIcon,
-  [VOICE_MODE_ACTIONS.NONE]: StopIcon,
+  [VOICE_MODE_ACTIONS.START]: PhMicrophoneIcon,
+  [VOICE_MODE_ACTIONS.STOP_LISTENING]: PhStopFillIcon,
+  [VOICE_MODE_ACTIONS.STOP_SPEAKING]: PhStopFillIcon,
+  [VOICE_MODE_ACTIONS.END_CONVERSATION]: PhStopFillIcon,
+  [VOICE_MODE_ACTIONS.NONE]: PhStopFillIcon,
 });
 
 function SimplifiedVoiceMode({
@@ -61,6 +70,12 @@ function SimplifiedVoiceMode({
   view: viewOverride = null,
   hint,
   response,
+  // Redesign (épico #91, tela 03): o que a pessoa disse aparece grande sob o
+  // orb, com o cursor piscando enquanto ela fala.
+  transcript = '',
+  isUserSpeaking = false,
+  hasReply = false,
+  workspaceLabel = 'Pessoal',
   getVoiceStream,
   getVoiceSessionId,
   onAction,
@@ -75,8 +90,11 @@ function SimplifiedVoiceMode({
   const actionCopy = VOICE_MODE_ACTION_LABELS[view.action];
   const PrimaryIcon = PRIMARY_ICONS[view.action];
   const isActionDisabled = view.action === VOICE_MODE_ACTIONS.NONE;
-  const isListening = view.action === VOICE_MODE_ACTIONS.STOP_LISTENING;
-  const isCompact = Boolean(response) && !isListening && view.orb !== UNI_RING_ORB_STATES.THINKING;
+  const stage = resolveVoiceModeStage({ view, isUserSpeaking, hasReply });
+  const cleanTranscript = String(transcript ?? '').trim();
+  // Com a conversa aberta e a fala já na tela, a dica genérica sai para não
+  // disputar espaço. Erro e fim de conversa continuam aparecendo.
+  const showHint = Boolean(hint) && !(cleanTranscript && view.action === VOICE_MODE_ACTIONS.END_CONVERSATION);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -115,9 +133,10 @@ function SimplifiedVoiceMode({
       data-voice-mode
     >
       <header className={styles.header}>
-        <h2 id={titleId} className={styles.title}>Falar com a Uni</h2>
+        <h2 id={titleId} className={styles.srOnly}>Falar com a Uni</h2>
+        <span className={styles.workspace}>{workspaceLabel}</span>
         <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Fechar">
-          <CloseIcon />
+          <PhXIcon />
         </button>
       </header>
 
@@ -130,31 +149,41 @@ function SimplifiedVoiceMode({
         <button
           type="button"
           className={styles.orbButton}
-          data-compact={isCompact}
+          data-compact={stage.compact}
           onClick={handleAction}
           disabled={isActionDisabled}
           aria-label={actionCopy.aria}
           data-uni-voice-control
         >
           <UniRingOrb
-            size={isCompact ? 120 : 180}
+            size={stage.compact ? 120 : 180}
             state={view.orb}
             getVoiceStream={getVoiceStream}
             getVoiceSessionId={getVoiceSessionId}
           />
         </button>
 
-        {hint ? <p className={styles.hint} data-tone={view.tone}>{hint}</p> : null}
+        <p className={styles.transcript}>
+          {cleanTranscript || isUserSpeaking ? (
+            <>
+              “{cleanTranscript}
+              {isUserSpeaking ? <span className={styles.caret} aria-hidden="true">|</span> : null}
+              ”
+            </>
+          ) : null}
+        </p>
+
+        {showHint ? <p className={styles.hint} data-tone={view.tone}>{hint}</p> : null}
       </div>
 
       <div className={styles.content}>
-        {isListening ? <VoiceWave /> : response}
+        {stage.showWaves ? <VoiceWave /> : response}
       </div>
 
       <footer className={styles.controls}>
         <div className={styles.control}>
           <button type="button" className={styles.secondaryButton} onClick={onWrite} aria-label="Escrever para a Uni">
-            <KeyboardIcon />
+            <PhKeyboardIcon />
           </button>
           <span aria-hidden="true">Escrever</span>
         </div>
@@ -171,7 +200,7 @@ function SimplifiedVoiceMode({
           >
             <PrimaryIcon />
           </button>
-          <span aria-hidden="true">{actionCopy.label}</span>
+          <span className={styles.primaryLabel} aria-hidden="true">{actionCopy.label}</span>
         </div>
         <div className={styles.control}>
           <button
@@ -180,7 +209,7 @@ function SimplifiedVoiceMode({
             onClick={onOpenConversation}
             aria-label="Ver a conversa completa"
           >
-            <ChatBubbleIcon />
+            <PhChatCircleTextIcon />
           </button>
           <span aria-hidden="true">Conversa</span>
         </div>

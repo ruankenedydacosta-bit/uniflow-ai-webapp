@@ -48,6 +48,9 @@ export function createRealtimeSessionState() {
     falseInterruptions: 0,
     toolCallsPending: 0,
     transcript: [],
+    // O que a pessoa está dizendo agora, para a tela de voz mostrar ao vivo
+    // (épico #91). Zera quando ela começa a falar de novo.
+    liveUserText: '',
     usage: { ...EMPTY_USAGE },
     error: null,
     errorCode: null,
@@ -130,6 +133,7 @@ export function reduceRealtimeEvent(state, event, at) {
       return {
         ...state,
         status: REALTIME_STATUS.USER_SPEAKING,
+        liveUserText: '',
         lastActivityAt: at,
         speechStoppedAt: null,
         interruptions: state.uniSpeaking ? state.interruptions + 1 : state.interruptions,
@@ -156,8 +160,15 @@ export function reduceRealtimeEvent(state, event, at) {
         uniSpeaking: false,
         lastActivityAt: at,
       };
-    case 'conversation.item.input_audio_transcription.completed':
-      return appendTranscript(state, 'user', event.item_id, event.transcript);
+    case 'conversation.item.input_audio_transcription.delta':
+      return typeof event.delta === 'string' && event.delta
+        ? { ...state, liveUserText: `${state.liveUserText}${event.delta}` }
+        : state;
+    case 'conversation.item.input_audio_transcription.completed': {
+      const next = appendTranscript(state, 'user', event.item_id, event.transcript);
+      const finalText = typeof event.transcript === 'string' ? event.transcript.trim() : '';
+      return finalText ? { ...next, liveUserText: finalText } : next;
+    }
     case 'response.output_audio_transcript.done':
       return appendTranscript(state, 'uni', event.item_id, event.transcript);
     case 'response.done':
