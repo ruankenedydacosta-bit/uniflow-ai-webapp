@@ -6,29 +6,29 @@
      A fonte de verdade continua sendo --uf-*; estes nomes existem só para
      não reescrever cada seletor consumidor do feature uni-chat.
   ------------------------------------------------------------------ */
-  --uni-blue: var(--uf-color-primary);
-  --uni-blue-deep: var(--uf-color-primary-hover);
-  --uni-purple: var(--uf-color-ai);
-  --uni-purple-deep: var(--uf-color-ai-active);
+  --uni-blue: var(--uf-app-primary-text);
+  --uni-blue-deep: var(--uf-app-primary);
+  --uni-purple: var(--uf-app-brand-violet-text);
+  --uni-purple-deep: var(--uf-app-brand-violet);
   --uni-gradient: var(--uf-gradient-ai);
-  --uni-gradient-soft: linear-gradient(120deg, var(--uf-color-primary-subtle) 0%, var(--uf-color-ai-subtle) 100%);
-  --uni-success: var(--uf-color-success);
-  --uni-success-bg: var(--uf-color-success-subtle);
-  --uni-warning: var(--uf-color-warning);
-  --uni-warning-bg: var(--uf-color-warning-subtle);
-  --uni-error: var(--uf-color-danger);
-  --uni-error-bg: var(--uf-color-danger-subtle);
-  --uni-bg: var(--uf-color-bg-canvas);
-  --uni-surface: var(--uf-color-bg-surface);
-  --uni-surface-raised: var(--uf-color-bg-elevated);
-  --uni-border: var(--uf-color-border-default);
-  --uni-border-soft: var(--uf-color-border-subtle);
-  --uni-text-primary: var(--uf-color-text-primary);
-  --uni-text-secondary: var(--uf-color-text-secondary);
-  --uni-text-muted: var(--uf-color-text-tertiary);
-  --uni-text-on-gradient: var(--uf-color-on-primary);
-  --uni-font-display: var(--uf-font-family-base, 'Poppins', sans-serif);
-  --uni-font-body: var(--uf-font-family-base, 'Poppins', sans-serif);
+  --uni-gradient-soft: linear-gradient(120deg, var(--uf-app-primary-subtle) 0%, var(--uf-app-ai-subtle) 100%);
+  --uni-success: var(--uf-app-success);
+  --uni-success-bg: var(--uf-app-success-subtle);
+  --uni-warning: var(--uf-app-warning);
+  --uni-warning-bg: var(--uf-app-warning-subtle);
+  --uni-error: var(--uf-app-danger);
+  --uni-error-bg: var(--uf-app-danger-subtle);
+  --uni-bg: var(--uf-app-canvas);
+  --uni-surface: var(--uf-app-card-surface);
+  --uni-surface-raised: var(--uf-app-surface-2);
+  --uni-border: var(--uf-app-border);
+  --uni-border-soft: var(--uf-app-card-edge);
+  --uni-text-primary: var(--uf-app-text);
+  --uni-text-secondary: var(--uf-app-text-2);
+  --uni-text-muted: var(--uf-app-text-3);
+  --uni-text-on-gradient: var(--uf-app-on-accent);
+  --uni-font-display: var(--uf-font-family-base);
+  --uni-font-body: var(--uf-font-family-base);
   --uni-radius-sm: var(--uf-radius-12);
   --uni-radius-md: 18px;
   --uni-radius-lg: 26px;
@@ -50,7 +50,9 @@
   min-height: 0;
   max-width: 480px;
   margin: 0 auto;
-  background: var(--uni-bg);
+  /* Transparente: o halo de topo do shell aparece atrás do cabeçalho. */
+  background: transparent;
+  color: var(--uf-app-text);
   overflow: hidden;
   isolation: isolate;
 }
@@ -77,15 +79,16 @@
 .messages {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 16px;
+  gap: 16px;
+  padding: 10px 22px 16px;
   min-height: 100%;
 }
 
 .footer {
   flex: 0 0 auto;
-  background: var(--uni-surface);
-  border-top: 1px solid var(--uni-border-soft);
+  /* O orb da navegação sobe acima da barra (margin-top -34px): a folga
+     impede que ele cubra a pílula do campo. */
+  padding-bottom: 20px;
 }
 
 .offlineBanner {
@@ -106,8 +109,7 @@
   border-radius: var(--uni-radius-pill, 999px);
   background: var(--uni-surface);
   color: var(--uni-text-secondary);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -129,13 +131,6 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
-}
-
-@media (max-width: 400px) {
-  .messages {
-    padding: 12px;
-    gap: 12px;
-  }
 }
 
 @media (min-width: 481px) {

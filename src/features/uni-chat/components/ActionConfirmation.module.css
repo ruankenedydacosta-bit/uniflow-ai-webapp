@@ -1,126 +1,148 @@
+/* Card de rascunho do redesign (épico #91): mesma forma do DraftCard de
+   src/components/ui, com a edição no próprio card e os estados depois da
+   confirmação. A marca é linha: borda verde, nunca preenchimento. */
 .card {
-  background: var(--uni-surface);
-  border: 1px solid var(--uni-border);
-  border-radius: var(--uni-radius-md);
-  padding: 16px;
-  box-shadow: var(--uni-shadow-md);
-  animation: uniCardIn 0.36s var(--uni-ease, ease-out);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
   max-width: 340px;
+  padding: 16px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-green) 30%, transparent),
+    var(--uf-shadow-sm);
+  color: var(--uf-app-text);
+  animation: cardIn .36s var(--uf-ease-smooth, ease-out);
 }
 
-.resolved {
-  opacity: 0.92;
+/* Tela de voz: o card fica sobre o fundo com luz da marca. */
+.card[data-appearance="glass"] {
+  max-width: none;
+  background: color-mix(in oklch, var(--uf-app-card-surface) 85%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-green) 30%, transparent),
+    var(--uf-shadow-md);
+}
+
+/* Depois de resolvido, o card perde o verde de "pronto para confirmar". */
+.card:not([data-status="pending"]) {
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 8px;
+  min-height: 20px;
 }
 
-.title {
-  font-family: var(--uni-font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--uni-text-primary);
+.kind {
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-micro-size);
+}
+
+.tag {
+  padding: 2px 8px;
+  border: 1px solid var(--uf-app-border-strong);
+  border-radius: var(--uf-radius-full);
+  color: var(--uf-app-text-2);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.statusOk,
+.statusMuted,
+.statusProcessing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--uf-text-micro-size);
+  white-space: nowrap;
 }
 
 .statusOk {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--uni-success);
+  color: var(--uf-app-brand-green-text);
 }
 
-.statusCancel {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--uni-text-muted);
+.statusIcon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
 }
 
-.rows {
-  margin: 0 0 14px 0;
+.statusMuted {
+  color: var(--uf-app-text-3);
+}
+
+.statusProcessing {
+  color: var(--uf-app-brand-violet-text);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.amount {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 26px;
+  font-weight: var(--uf-font-weight-medium);
+  letter-spacing: -.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+.card[data-appearance="glass"] .amount {
+  font-size: 28px;
+}
+
+.amountLabel {
+  color: var(--uf-app-text-3);
+  font-size: 13px;
+  font-weight: var(--uf-font-weight-regular);
+  letter-spacing: 0;
+}
+
+/* Uma grade só para todas as linhas: a coluna de valores fica alinhada. */
+.rows {
+  display: grid;
+  grid-template-columns: minmax(60px, max-content) 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
 }
 
 .rowItem {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 14.5px;
+  display: contents;
 }
 
 .rowItem dt {
-  color: var(--uni-text-secondary);
+  color: var(--uf-app-text-3);
 }
 
 .rowItem dd {
   margin: 0;
-  font-weight: 600;
-  color: var(--uni-text-primary);
-  text-align: right;
+  color: var(--uf-app-text);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .emphasisValue {
-  font-family: var(--uni-font-display);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--uni-blue-deep);
+  font-weight: var(--uf-font-weight-medium);
 }
 
 .actions {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  margin-top: 2px;
 }
 
-.actions button {
-  flex: 1 1 auto;
-  min-height: 46px;
-  border-radius: var(--uni-radius-pill);
-  font-family: var(--uni-font-display);
-  font-weight: 700;
-  font-size: 14.5px;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.15s var(--uni-ease, ease-out), filter 0.15s ease;
-}
-
-.actions button:active {
-  transform: scale(0.97);
-}
-
-.confirm {
-  background: var(--uni-gradient);
-  color: #fff;
-  min-width: 120px;
-  box-shadow: var(--uni-shadow-glow);
-}
-.confirm:hover { filter: brightness(1.05); }
-
-.edit {
-  background: var(--uni-surface);
-  color: var(--uni-text-primary);
-  border: 1.5px solid var(--uni-border) !important;
-}
-
-.cancel {
-  background: transparent;
-  color: var(--uni-text-secondary);
-}
-.cancel:hover { color: var(--uni-error); }
-
-.actions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-  filter: none !important;
+.primaryAction {
+  flex: 1;
 }
 
 .editForm {
@@ -142,53 +164,45 @@
 }
 
 .editField label {
+  color: var(--uf-app-text-2);
   font-size: 13px;
-  font-weight: 600;
-  color: var(--uf-color-text-secondary);
 }
 
 .editInput {
   width: 100%;
   min-height: 44px;
   padding: 0 var(--uf-space-12);
-  border: 1px solid var(--uf-color-border-default);
-  border-radius: var(--uf-radius-12);
-  background: var(--uf-color-bg-surface);
-  color: var(--uf-color-text-primary);
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+  color: var(--uf-app-text);
   font: inherit;
-  font-size: var(--uf-text-body-size);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
-.editInput:focus {
-  outline: none;
-  border-color: var(--uf-color-primary);
-  box-shadow: var(--uf-shadow-glow-ai);
+.editInput:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
 }
 
 .editInput[aria-invalid='true'] {
-  border-color: var(--uf-color-danger);
+  box-shadow: inset 0 0 0 1px var(--uf-app-danger);
 }
 
 .editError {
-  font-size: 12.5px;
-  color: var(--uf-color-danger);
-}
-
-.statusProcessing {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--uni-text-muted);
-  animation: uniPulse 1.2s ease-in-out infinite;
+  color: var(--uf-app-danger-text);
+  font-size: var(--uf-text-micro-size);
 }
 
 .errorBox {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 12px;
   padding: 10px 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border-radius: var(--uni-radius-md, 10px);
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-danger-subtle);
 }
 
 .errorIcon {
@@ -198,26 +212,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--uni-error, #ef4444);
-  color: #fff;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 700;
+  border: 1px solid var(--uf-app-danger);
+  border-radius: var(--uf-radius-full);
+  color: var(--uf-app-danger-text);
+  font-size: var(--uf-text-micro-size);
   line-height: 1;
 }
 
 .errorText {
-  font-size: 13.5px;
+  color: var(--uf-app-text);
+  font-size: 13px;
   line-height: 1.45;
-  color: var(--uni-text-primary);
 }
 
-@keyframes uniPulse {
-  0%, 100% { opacity: 0.6; }
+@keyframes pulse {
+  0%, 100% { opacity: .6; }
   50% { opacity: 1; }
 }
 
-@keyframes uniCardIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .statusProcessing {
+    animation: none;
+  }
 }

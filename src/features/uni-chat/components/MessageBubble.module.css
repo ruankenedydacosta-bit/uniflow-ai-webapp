@@ -1,97 +1,113 @@
+/* Redesign (épico #91, tela 02 do handoff): pedido da pessoa em balão azul
+   à direita; resposta da Uni sem balão, com o orb de 22px à esquerda. */
 .row {
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  animation: uniMessageIn 0.34s var(--uni-ease, ease-out);
   max-width: 100%;
+  animation: uniMessageIn .34s var(--uf-ease-smooth, ease-out);
 }
 
 .rowUser {
-  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.rowUni {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.avatar {
+  display: flex;
+  padding-top: 2px;
 }
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rowUser .stack {
   max-width: 78%;
+  gap: 6px;
 }
 
 .bubble {
-  padding: 13px 16px;
-  border-radius: var(--uni-radius-lg);
-  font-size: 15.5px;
-  line-height: 1.5;
-  box-shadow: var(--uni-shadow-sm);
+  /* 14px no tamanho de texto padrão; acompanha a preferência Pequeno/Grande
+     da pessoa (ver .shell[data-text-size] no shell). */
+  font-size: calc(var(--simplified-user-text-size, 16px) - 2px);
+  line-height: 1.55;
   word-break: break-word;
+  text-wrap: pretty;
 }
 
 .uni {
-  background: var(--uni-surface);
-  border: 1px solid var(--uni-border-soft);
-  color: var(--uni-text-primary);
-  border-bottom-left-radius: 6px;
+  color: var(--uf-app-text-2);
+}
+
+.uni :where(strong, b) {
+  color: var(--uf-app-text);
+  font-weight: var(--uf-font-weight-medium);
 }
 
 .user {
-  background: var(--uni-gradient);
-  color: var(--uni-text-on-gradient);
-  border-bottom-right-radius: 6px;
-  margin-left: auto;
+  padding: 10px 14px;
+  border-radius: 16px 16px 4px 16px;
+  background: color-mix(in oklch, var(--uf-app-brand-blue) 22%, var(--uf-app-card-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-blue) 30%, transparent);
+  color: var(--uf-app-text);
+  line-height: 1.5;
+}
+
+/* Aviso e sugestão continuam com caixa: a etiqueta precisa de um contorno. */
+.alert,
+.suggestion {
+  padding: 12px 14px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  color: var(--uf-app-text);
 }
 
 .alert {
-  background: var(--uni-warning-bg);
-  border: 1px solid var(--uni-warning);
-  color: var(--uf-color-text-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-warning) 40%, transparent);
 }
 
 .suggestion {
-  background: var(--uni-gradient-soft);
-  border: 1px solid rgba(139, 92, 246, 0.22);
-  color: var(--uni-text-primary);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-uni-border);
 }
 
 .badge, .badgeSoft {
   display: inline-block;
-  font-family: var(--uni-font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: var(--uni-radius-pill);
   margin-bottom: 6px;
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--uf-radius-full);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
 .badge {
-  background: var(--uni-warning);
-  color: var(--uf-color-on-warning);
+  color: var(--uf-app-warning-text);
 }
 
 .badgeSoft {
-  background: var(--uni-purple);
-  color: var(--uf-color-on-ai);
+  color: var(--uf-app-brand-violet-text);
 }
 
 .text {
   margin: 0;
 }
 
-:global([data-theme='light']) .bubble .text,
-:global([data-theme='light']) .bubble .text p,
-:global([data-theme='light']) .bubble .text li {
+/* O parágrafo global (globals.css) traz 16px e outra cor: aqui manda a
+   mensagem. */
+.bubble .text,
+.bubble .text :where(p, li) {
   color: inherit;
-}
-
-.time {
-  font-size: 11.5px;
-  color: var(--uni-text-muted);
-  padding: 0 4px;
-}
-
-.rowUser .time {
-  text-align: right;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 @keyframes uniMessageIn {
@@ -103,11 +119,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 4px;
-}
-
-.rowUser .metaRow {
-  justify-content: flex-end;
+  margin-top: -4px;
 }
 
 .speakBtn {
@@ -116,24 +128,19 @@
   gap: 4px;
   border: none;
   background: transparent;
-  color: var(--uni-text-muted);
-  font-family: var(--uni-font-body);
-  font-size: 11.5px;
-  font-weight: 600;
+  color: var(--uf-app-text-3);
+  font: inherit;
+  font-size: var(--uf-text-micro-size);
   padding: 2px 6px;
-  border-radius: var(--uni-radius-pill);
+  border-radius: var(--uf-radius-full);
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color var(--uf-duration-fast) ease, background var(--uf-duration-fast) ease;
 }
 
-.speakBtn:hover {
-  color: var(--uni-purple);
-  background: rgba(139, 92, 246, 0.1);
-}
-
+.speakBtn:hover,
 .speakBtnActive {
-  color: var(--uni-purple);
-  background: rgba(139, 92, 246, 0.12);
+  color: var(--uf-app-brand-violet-text);
+  background: var(--uf-app-ai-subtle);
 }
 
 .speakBtn:disabled {
@@ -154,18 +161,24 @@
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--uni-text-muted);
+  color: var(--uf-app-text-3);
   padding: 4px;
-  border-radius: var(--uni-radius-pill);
+  border-radius: var(--uf-radius-full);
   cursor: pointer;
 }
 
 .stopVoiceBtn:hover {
-  color: var(--uni-purple);
-  background: rgba(139, 92, 246, 0.1);
+  color: var(--uf-app-brand-violet-text);
+  background: var(--uf-app-ai-subtle);
 }
 
 .voiceStatus {
   font-size: 11px;
-  color: var(--uni-text-muted);
+  color: var(--uf-app-text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    animation: none;
+  }
 }

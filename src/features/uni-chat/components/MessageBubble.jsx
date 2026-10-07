@@ -1,4 +1,4 @@
-import UniAvatar from './UniAvatar';
+import { UniRingOrb } from '../../../components/ui/UniRingOrb/index.js';
 import ActionConfirmation from './ActionConfirmation';
 import { VOICE_TTS_STATUS } from '../../uni-voice-tts';
 import SafeMarkdown from '../../../components/content/SafeMarkdown.jsx';
@@ -45,10 +45,12 @@ export default function MessageBubble({
   // está 100% visível de uma vez, nunca parcial.
   const resolvedText = displayText || message.text;
 
+  // Redesign (épico #91, tela 02): o pedido da pessoa é um balão à direita;
+  // a Uni fala sem balão, com o orb de 22px ao lado.
   if (message.type === 'confirmation') {
     return (
-      <div className={styles.row}>
-        {!isUser && <UniAvatar size="sm" />}
+      <div className={`${styles.row} ${styles.rowUni}`}>
+        <UniMessageOrb />
         <div className={styles.stack}>
           {message.text && (
             <div className={`${styles.bubble} ${styles.uni}`}>
@@ -106,8 +108,8 @@ export default function MessageBubble({
           : 'Ouvir resposta da Uni';
 
   return (
-    <div className={`${styles.row} ${isUser ? styles.rowUser : ''}`}>
-      {!isUser && <UniAvatar size="sm" />}
+    <div className={`${styles.row} ${isUser ? styles.rowUser : styles.rowUni}`}>
+      {!isUser && <UniMessageOrb />}
       <div className={styles.stack}>
         <div className={bubbleClass}>
           {message.type === 'alert' && <span className={styles.badge}>Atenção</span>}
@@ -120,9 +122,8 @@ export default function MessageBubble({
             <SafeMarkdown className={styles.text}>{resolvedText}</SafeMarkdown>
           )}
         </div>
-        <div className={styles.metaRow}>
-          {message.time && <span className={styles.time}>{message.time}</span>}
-          {showSpeak && (
+        {showSpeak && (
+          <div className={styles.metaRow}>
             <div className={styles.voiceControls}>
               <button
                 type="button"
@@ -158,10 +159,18 @@ export default function MessageBubble({
                 </span>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function UniMessageOrb() {
+  return (
+    <span className={styles.avatar}>
+      <UniRingOrb size={22} />
+    </span>
   );
 }
 

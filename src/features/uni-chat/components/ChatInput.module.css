@@ -1,8 +1,8 @@
+/* Campo da conversa no redesign (épico #91, tela 02): pílula sobre o fundo,
+   com um botão redondo à direita (voz ou enviar). */
 .form {
-  padding: 10px 12px;
+  padding: 8px 16px 0;
   padding-bottom: max(10px, env(safe-area-inset-bottom));
-  background: var(--uni-surface);
-  border-top: 1px solid var(--uni-border-soft);
 }
 
 :global([data-keyboard-open="true"]) .form {
@@ -12,109 +12,113 @@
 .field {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: var(--uni-bg);
-  border: 1.5px solid var(--uni-border);
-  border-radius: var(--uni-radius-pill);
-  padding: 6px 6px 6px 8px;
-  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+  gap: 10px;
+  padding: 6px 6px 6px 16px;
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge), var(--uf-shadow-sm);
+  transition: box-shadow var(--uf-duration-fast) ease;
 }
 
 .fieldFocused {
-  border-color: var(--uni-purple);
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
-}
-
-.voiceBtn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: var(--uni-text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.voiceBtn:hover {
-  color: var(--uni-purple);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 45%, transparent),
+    var(--uf-shadow-sm);
 }
 
 .input {
   flex: 1;
   min-width: 0;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 16px;
-  font-family: var(--uni-font-body);
-  color: var(--uni-text-primary);
-  padding: 8px 2px;
   max-height: 120px;
+  padding: 8px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--uf-app-text);
+  /* 16px evita o zoom automático do iOS ao focar o campo. */
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.4;
   resize: none;
   overflow-y: auto;
-  line-height: 1.4;
 }
 
 .input::placeholder {
-  color: var(--uni-text-muted);
+  color: var(--uf-app-text-3);
+  font-size: 14px;
 }
 
+.voiceBtn,
 .sendBtn {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: none;
-  background: var(--uni-gradient);
-  color: #fff;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  border: 1px solid var(--uf-app-brand-violet);
+  border-radius: var(--uf-radius-full);
+  background: transparent;
+  color: var(--uf-app-brand-violet-text);
+  box-shadow: 0 0 14px color-mix(in oklch, var(--uf-app-brand-violet) 35%, transparent);
   cursor: pointer;
-  flex-shrink: 0;
-  box-shadow: var(--uni-shadow-glow);
-  transition: transform 0.15s var(--uni-ease, ease-out), opacity 0.2s ease;
+  transition: background-color var(--uf-duration-fast) ease, transform var(--uf-duration-fast) ease;
+}
+
+.voiceBtn svg,
+.sendBtn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.voiceBtn:hover,
+.sendBtn:hover:not(:disabled) {
+  background: var(--uf-app-ai-subtle);
+}
+
+.voiceBtn:focus-visible,
+.sendBtn:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
 }
 
 .sendBtn:disabled {
-  opacity: 0.4;
+  opacity: .45;
   box-shadow: none;
   cursor: default;
 }
 
-.sendBtn:not(:disabled):active {
-  transform: scale(0.92);
+.sendBtn:not(:disabled):active,
+.voiceBtn:active {
+  transform: scale(.94);
 }
 
 .voiceBtnActive {
-  color: #fff;
-  background: var(--uni-gradient);
-  box-shadow: var(--uni-shadow-glow);
-  animation: uniVoicePulse 1.4s ease-in-out infinite;
+  background: var(--uf-app-ai-subtle);
+  animation: voicePulse 1.4s ease-in-out infinite;
 }
 
-.voiceBtnActive:hover {
-  color: #fff;
-}
-
-@keyframes uniVoicePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.35); }
-  50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--uf-app-brand-violet) 35%, transparent); }
+  50% { box-shadow: 0 0 0 6px transparent; }
 }
 
 .voiceStatus {
   margin: 0 0 8px;
   padding: 0 8px;
-  font-size: 12.5px;
+  color: var(--uf-app-text-3);
+  font-size: 13px;
   line-height: 1.35;
-  color: var(--uni-text-muted);
-  font-family: var(--uni-font-body);
 }
 
 .voiceStatusActive {
-  color: var(--uni-purple);
-  font-weight: 600;
+  color: var(--uf-app-brand-violet-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voiceBtnActive {
+    animation: none;
+  }
 }
