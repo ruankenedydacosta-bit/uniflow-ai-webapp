@@ -306,5 +306,19 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
 
   const getLocalStream = useCallback(() => connectionRef.current?.localStream ?? null, []);
 
-  return { state, now, start, stop, markFalseInterruption, getLocalStream };
+  // Conta à Uni algo que aconteceu na tela (ex.: toque no card) e pede que
+  // ela fale. Entra no histórico da conversa como mensagem do sistema, para
+  // a Uni lembrar depois que aquilo já foi resolvido.
+  const narrateScreenEvent = useCallback((instructions) => {
+    const channel = connectionRef.current?.channel;
+    if (channel?.readyState !== 'open' || !instructions) return false;
+    sendEvent(channel, {
+      type: 'conversation.item.create',
+      item: { type: 'message', role: 'system', content: [{ type: 'input_text', text: instructions }] },
+    });
+    sendEvent(channel, { type: 'response.create' });
+    return true;
+  }, []);
+
+  return { state, now, start, stop, markFalseInterruption, getLocalStream, narrateScreenEvent };
 }

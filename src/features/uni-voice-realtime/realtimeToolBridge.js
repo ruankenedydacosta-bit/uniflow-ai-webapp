@@ -113,3 +113,61 @@ export function resolveRealtimeToolOutcome(messages, turn) {
   }
   return null;
 }
+
+// Toque no card durante a conversa por voz. O chat responde por escrito, sem
+// passar pela ferramenta, e a Uni da conversa precisa falar essa resposta:
+// senão a pessoa confirma na tela e a conversa fica muda.
+export const REALTIME_SCREEN_ACTIONS = Object.freeze({
+  CONFIRM: 'confirm',
+  CANCEL: 'cancel',
+  EDIT: 'edit',
+});
+
+const SCREEN_ACTION_DESCRIPTIONS = Object.freeze({
+  [REALTIME_SCREEN_ACTIONS.CONFIRM]: 'tocou em Confirmar no card da tela',
+  [REALTIME_SCREEN_ACTIONS.CANCEL]: 'tocou em Cancelar no card da tela',
+  [REALTIME_SCREEN_ACTIONS.EDIT]: 'mudou os campos do card na tela e salvou',
+});
+
+const SCREEN_REPLY_MAX_LENGTH = 600;
+
+// Resposta da Uni que chegou depois do toque. Diferente do turno da
+// ferramenta, aqui não há mensagem da pessoa antes dela.
+function findUniMessageAfter(messages, baselineId) {
+  if (!Array.isArray(messages)) return null;
+  const baselineIndex = baselineId === null || baselineId === undefined
+    ? -1
+    : messages.findIndex((message) => message?.id === baselineId);
+  return messages.slice(baselineIndex + 1)
+    .filter((message) => message?.from === 'uni' && typeof message.text === 'string' && message.text.trim())
+    .at(-1) ?? null;
+}
+
+// O que a Uni deve dizer depois do toque; null enquanto o chat não terminou.
+export function resolveScreenActionOutcome(messages, turn) {
+  const reply = findUniMessageAfter(messages, turn.baselineId);
+  if (reply) {
+    return { text: reply.text.trim(), awaitingConfirmation: reply.confirmation?.status === 'pending' };
+  }
+  if (!turn.confirmationId) return null;
+  const confirmation = messages.find((message) => message?.id === turn.confirmationId)?.confirmation;
+  if (confirmation?.confirmationError && confirmation.confirmationError !== turn.confirmationError) {
+    return { text: confirmation.confirmationError, awaitingConfirmation: confirmation.status === 'pending', isError: true };
+  }
+  return null;
+}
+
+export function buildScreenActionInstructions(action, outcome) {
+  const description = SCREEN_ACTION_DESCRIPTIONS[action] ?? 'mexeu no card da tela';
+  const text = outcome.text.replace(/\s+/g, ' ').slice(0, SCREEN_REPLY_MAX_LENGTH);
+  const parts = [
+    `A pessoa ${description}, sem falar.`,
+    outcome.isError ? `Deu errado. O app avisou: "${text}".` : `O app respondeu: "${text}".`,
+    'Diga isso a ela agora, com naturalidade e em poucas palavras, sem ler palavra por palavra.',
+  ];
+  if (outcome.awaitingConfirmation) {
+    parts.push('O rascunho continua esperando confirmação: pergunte se pode confirmar.');
+  }
+  parts.push('Não chame ferramentas para isso.');
+  return parts.join(' ');
+}
