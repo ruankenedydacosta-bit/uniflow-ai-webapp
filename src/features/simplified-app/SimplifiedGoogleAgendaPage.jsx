@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
@@ -63,6 +63,13 @@ function SimplifiedGoogleAgendaPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  // Troca de espaço com a tela aberta: a resposta do espaço anterior que
+  // chegar depois é descartada.
+  const workspaceAtualRef = useRef(workspaceId);
+  useEffect(() => {
+    workspaceAtualRef.current = workspaceId;
+  }, [workspaceId]);
+
   const carregarConexao = useCallback(() => {
     if (!workspaceId) {
       setIsLoading(false);
@@ -70,6 +77,7 @@ function SimplifiedGoogleAgendaPage() {
     }
     setIsLoading(true);
     obterConexao({ workspaceId }).then(({ data, error }) => {
+      if (workspaceAtualRef.current !== workspaceId) return;
       setConexao(data ?? null);
       if (error) setAviso({ tone: 'alert', message: MENSAGEM_ERRO_AO_CARREGAR });
       setIsLoading(false);

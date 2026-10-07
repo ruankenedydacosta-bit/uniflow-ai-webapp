@@ -141,3 +141,20 @@ test('disconnect só revoga sem outra conexão ativa com o mesmo e-mail', () => 
   assert.match(disconnect, /if \(!haOutraConexao && conexao\.account_email\)/);
   assert.match(disconnect, /\/channels\/stop/);
 });
+
+test('callback: conexão só fica ativa no último passo e vínculos de outra conta saem', () => {
+  const callback = ler('supabase/functions/google-calendar-oauth-callback/index.ts');
+  const upsert = callback.indexOf("status: 'error',");
+  const ativacao = callback.indexOf("status: 'active', last_error_code: null");
+  assert.ok(upsert > 0 && ativacao > upsert);
+  assert.match(callback, /calendar_id: `not\.in\.\$\{listaParaFiltroIn\(calendariosDaConta\)\}`/);
+  assert.match(callback, /acharCalendarioDoEspaco\(lista\.itens, workspaceId\)/);
+  assert.match(callback, /revogarSeNinguemMaisUsa\(config, tokenDaContaAnterior/);
+});
+
+test('disconnect apaga a conexão antes de revogar no Google', () => {
+  const disconnect = ler('supabase/functions/google-calendar-disconnect/index.ts');
+  const remocao = disconnect.indexOf("metodo: 'DELETE',\n    caminho: '/rest/v1/calendar_connections'");
+  const revogacao = disconnect.indexOf('await revogarTokenNoGoogle(refreshToken)');
+  assert.ok(remocao > 0 && revogacao > remocao);
+});

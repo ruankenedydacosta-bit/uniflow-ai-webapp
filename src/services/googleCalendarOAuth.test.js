@@ -8,7 +8,10 @@ import {
   temTodosOsEscopos,
 } from '../../supabase/functions/_shared/googleCalendar/escopos.js';
 import {
+  acharCalendarioDoEspaco,
+  descricaoDoCalendarioDoEspaco,
   escolherDestino,
+  listaParaFiltroIn,
   montarCalendariosDaConexao,
 } from '../../supabase/functions/_shared/googleCalendar/listaDeCalendarios.js';
 import {
@@ -206,4 +209,21 @@ test('destino: mantém o atual se for próprio; senão, o calendário do espaço
   assert.equal(escolherDestino({ destinoAtual: 'feriados', appCalendarId: 'app-cal', linhas }), 'app-cal');
   assert.equal(escolherDestino({ destinoAtual: null, appCalendarId: 'app-cal', linhas }), 'app-cal');
   assert.equal(escolherDestino({ destinoAtual: null, appCalendarId: 'outro', linhas }), null);
+});
+
+test('marca do espaço: o calendário criado é achado de novo depois de um disconnect, nunca pelo nome', () => {
+  const descricao = descricaoDoCalendarioDoEspaco('ws-1');
+  const itens = [
+    { id: 'mesmo-nome', summary: 'UniFlow · Espaço', accessRole: 'owner' },
+    { id: 'outro-espaco', accessRole: 'owner', description: descricaoDoCalendarioDoEspaco('ws-10') },
+    { id: 'de-terceiro', accessRole: 'reader', description: descricao },
+    { id: 'certo', accessRole: 'owner', description: descricao },
+  ];
+  assert.equal(acharCalendarioDoEspaco(itens, 'ws-1')?.id, 'certo');
+  assert.equal(acharCalendarioDoEspaco(itens, 'ws-2'), null);
+  assert.equal(acharCalendarioDoEspaco(itens, ''), null);
+});
+
+test('filtro in.() do PostgREST escapa aspas, barra e vírgula dos ids', () => {
+  assert.equal(listaParaFiltroIn(['a@b.com', 'x,y', 'q"r', 'b\\s']), '("a@b.com","x,y","q\\"r","b\\\\s")');
 });

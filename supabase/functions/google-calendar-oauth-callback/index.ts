@@ -7,17 +7,27 @@
 //
 // Ao conectar:
 // - guarda o refresh token no Vault (calendar_connection_set_refresh_token);
-// - cria ou reaproveita, pelo app_calendar_id, o calendário
-//   "UniFlow · <nome do espaço>" (um por espaço);
+// - reaproveita o calendário "UniFlow · <nome do espaço>" pelo app_calendar_id
+//   guardado ou, depois de um disconnect, pela marca com o id do espaço na
+//   descrição. Só cria quando não acha nenhum dos dois (um por espaço);
 // - atualiza a lista de calendários e marca leitura e destino.
+//
+// A conexão fica com status 'error' até o último passo. Se algo falhar no
+// meio, a tela mostra "Conectar de novo" em vez de uma conexão que parece
+// saudável.
 //
 // Nenhum token sai desta função: nem na resposta, nem no log.
 
 import { chamarGoogleAgenda } from '../_shared/googleCalendar/api.ts';
 import { chamarBanco, chamarRpc, ok } from '../_shared/googleCalendar/banco.ts';
-import { atualizarListaDeCalendarios } from '../_shared/googleCalendar/calendarios.ts';
+import { atualizarListaDeCalendarios, listarCalendariosDoGoogle } from '../_shared/googleCalendar/calendarios.ts';
 import { lerEscoposConcedidos, temTodosOsEscopos } from '../_shared/googleCalendar/escopos.js';
-import { escolherDestino } from '../_shared/googleCalendar/listaDeCalendarios.js';
+import {
+  acharCalendarioDoEspaco,
+  descricaoDoCalendarioDoEspaco,
+  escolherDestino,
+  listaParaFiltroIn,
+} from '../_shared/googleCalendar/listaDeCalendarios.js';
 import {
   GOOGLE_TOKEN_URL,
   hashDoState,
@@ -26,8 +36,10 @@ import {
   origemPermitida,
   RESULTADOS_CONEXAO,
   resultadoDoErroDoGoogle,
+  RETURN_PATH_PADRAO,
   usuarioNaAllowlist,
 } from '../_shared/googleCalendar/oauth.js';
+import { revogarTokenNoGoogle } from '../_shared/googleCalendar/tokens.ts';
 
 type Config = { supabaseUrl: string; serviceRoleKey: string };
 
@@ -51,6 +63,18 @@ function redirecionar(url: string) {
     status: 302,
     headers: { Location: url, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' },
   });
+}
+
+// State inválido ou vencido não diz de qual origem veio. Volta para a
+// primeira origem de APP_ALLOWED_ORIGINS, para a pessoa não ficar presa numa
+// página de texto no domínio do Supabase.
+function voltarSemState() {
+  const origem = (Deno.env.get('APP_ALLOWED_ORIGINS') ?? '')
+    .split(',').map((item) => item.trim()).find((item) => item.startsWith('https://'));
+  if (!origem) {
+    return respostaDeTexto(400, 'Este link de conexão expirou. Volte ao UniFlow e tente conectar de novo.');
+  }
+  return redirecionar(montarUrlDeRetorno({ origem, returnPath: RETURN_PATH_PADRAO, resultado: RESULTADOS_CONEXAO.ERRO }));
 }
 
 async function consumirState(config: Config, state: string): Promise<StateConsumido | null> {
@@ -125,6 +149,39 @@ async function nomeDoEspaco(config: Config, workspaceId: string) {
   return typeof linha?.name === 'string' ? linha.name : '';
 }
 
+// Revogar derruba o grant da conta Google inteira com este OAuth client. Só
+// revoga quando nenhuma outra conexão ativa usa o mesmo e-mail.
+async function revogarSeNinguemMaisUsa(config: Config, token: string, email: string, exceto: string) {
+  if (!token || !email) return;
+  const outras = await chamarBanco(config, {
+    caminho: '/rest/v1/calendar_connections',
+    query: {
+      select: 'id',
+      provider: 'eq.google',
+      status: 'eq.active',
+      account_email: `eq.${email}`,
+      id: `neq.${exceto}`,
+      limit: '1',
+    },
+  });
+  if (ok(outras.status) && Array.isArray(outras.json) && outras.json.length === 0) {
+    await revogarTokenNoGoogle(token);
+  }
+}
+
+// Grant recusado (escopo faltando ou pessoa fora do espaço): revoga para não
+// deixar acesso órfão na conta Google. Só quando a pessoa não tem nenhuma
+// conexão Google, porque o token novo carrega os escopos já concedidos.
+async function descartarGrant(config: Config, userId: string, token: string) {
+  const conexoes = await chamarBanco(config, {
+    caminho: '/rest/v1/calendar_connections',
+    query: { select: 'id', user_id: `eq.${userId}`, provider: 'eq.google', limit: '1' },
+  });
+  if (ok(conexoes.status) && Array.isArray(conexoes.json) && conexoes.json.length === 0) {
+    await revogarTokenNoGoogle(token);
+  }
+}
+
 async function conectar(config: Config, state: StateConsumido, accessToken: string, refreshToken: string, escopos: string[]) {
   const { user_id: userId, workspace_id: workspaceId } = state;
 
@@ -138,7 +195,7 @@ async function conectar(config: Config, state: StateConsumido, accessToken: stri
   const existente = await chamarBanco(config, {
     caminho: '/rest/v1/calendar_connections',
     query: {
-      select: 'id,account_email,app_calendar_id,destination_calendar_id,exportacao_inicial_em,last_synced_at',
+      select: 'id,account_email,app_calendar_id,destination_calendar_id,exportacao_inicial_em,last_synced_at,last_error_code,last_error_at',
       user_id: `eq.${userId}`,
       workspace_id: `eq.${workspaceId}`,
       provider: 'eq.google',
@@ -148,22 +205,14 @@ async function conectar(config: Config, state: StateConsumido, accessToken: stri
   if (!ok(existente.status) || !Array.isArray(existente.json)) return RESULTADOS_CONEXAO.ERRO;
   const anterior = existente.json[0] ?? null;
   const mesmaConta = Boolean(anterior) && anterior.account_email === accountEmail;
+  const trocouDeConta = Boolean(anterior) && !mesmaConta;
 
-  // Outra conta Google no mesmo espaço: os calendários e os vínculos da conta
-  // anterior não valem mais.
-  if (anterior && !mesmaConta) {
-    await chamarBanco(config, {
-      metodo: 'DELETE',
-      caminho: '/rest/v1/calendar_connection_calendars',
-      query: { connection_id: `eq.${anterior.id}` },
-      prefer: 'return=minimal',
-    });
-    await chamarBanco(config, {
-      metodo: 'DELETE',
-      caminho: '/rest/v1/agenda_item_links',
-      query: { user_id: `eq.${userId}`, workspace_id: `eq.${workspaceId}`, provider: 'eq.google' },
-      prefer: 'return=minimal',
-    });
+  // Troca de conta no mesmo espaço: o token da conta anterior é lido antes de
+  // ser sobrescrito no Vault, para ser revogado depois.
+  let tokenDaContaAnterior = '';
+  if (trocouDeConta) {
+    const segredoAnterior = await chamarRpc(config, 'calendar_connection_get_refresh_token', { p_connection_id: anterior.id });
+    tokenDaContaAnterior = ok(segredoAnterior.status) && typeof segredoAnterior.json === 'string' ? segredoAnterior.json : '';
   }
 
   const gravacao = await chamarBanco(config, {
@@ -176,9 +225,10 @@ async function conectar(config: Config, state: StateConsumido, accessToken: stri
       provider: 'google',
       account_email: accountEmail,
       granted_scopes: escopos,
-      status: 'active',
-      last_error_code: null,
-      last_error_at: null,
+      // Vira 'active' só no último passo.
+      status: 'error',
+      last_error_code: mesmaConta ? anterior.last_error_code : null,
+      last_error_at: mesmaConta ? anterior.last_error_at : null,
       connected_at: new Date().toISOString(),
       app_calendar_id: mesmaConta ? anterior.app_calendar_id : null,
       destination_calendar_id: mesmaConta ? anterior.destination_calendar_id : null,
@@ -193,6 +243,17 @@ async function conectar(config: Config, state: StateConsumido, accessToken: stri
     return RESULTADOS_CONEXAO.ERRO;
   }
 
+  // Os calendários da conta anterior não valem mais.
+  if (trocouDeConta) {
+    const limpeza = await chamarBanco(config, {
+      metodo: 'DELETE',
+      caminho: '/rest/v1/calendar_connection_calendars',
+      query: { connection_id: `eq.${connectionId}` },
+      prefer: 'return=minimal',
+    });
+    if (!ok(limpeza.status)) return RESULTADOS_CONEXAO.ERRO;
+  }
+
   const segredo = await chamarRpc(config, 'calendar_connection_set_refresh_token', {
     p_connection_id: connectionId,
     p_refresh_token: refreshToken,
@@ -202,26 +263,46 @@ async function conectar(config: Config, state: StateConsumido, accessToken: stri
     return RESULTADOS_CONEXAO.ERRO;
   }
 
-  // Um calendário por espaço, reaproveitado pelo app_calendar_id guardado.
-  let appCalendarId: string | null = mesmaConta ? anterior.app_calendar_id : null;
+  if (trocouDeConta) {
+    await revogarSeNinguemMaisUsa(config, tokenDaContaAnterior, anterior.account_email, connectionId);
+  }
+
+  const lista = await listarCalendariosDoGoogle(accessToken);
+  if ('erro' in lista) {
+    return lista.erro === 'escopo_insuficiente' ? RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE : RESULTADOS_CONEXAO.ERRO;
+  }
+
+  // Um calendário por espaço: o app_calendar_id guardado, senão a marca do
+  // espaço na descrição, senão um calendário novo.
+  const appCalendarGuardado: string | null = mesmaConta ? anterior.app_calendar_id : null;
+  let appCalendarId = appCalendarGuardado;
   let calendarioNovo = null;
-  if (appCalendarId) {
+  if (appCalendarId && !lista.itens.some((item) => item.id === appCalendarId)) {
     const atual = await chamarGoogleAgenda(accessToken, { caminho: `/calendars/${encodeURIComponent(appCalendarId)}` });
     if (atual.status === 404 || atual.status === 410) appCalendarId = null;
     else if (atual.status !== 200) return atual.status === 403 ? RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE : RESULTADOS_CONEXAO.ERRO;
+  }
+  if (!appCalendarId) {
+    appCalendarId = acharCalendarioDoEspaco(lista.itens, workspaceId)?.id ?? null;
   }
   if (!appCalendarId) {
     const summary = nomeDoCalendarioDoEspaco(await nomeDoEspaco(config, workspaceId));
     const criado = await chamarGoogleAgenda(accessToken, {
       metodo: 'POST',
       caminho: '/calendars',
-      corpo: { summary, ...(fusoHorario ? { timeZone: fusoHorario } : {}) },
+      corpo: {
+        summary,
+        description: descricaoDoCalendarioDoEspaco(workspaceId),
+        ...(fusoHorario ? { timeZone: fusoHorario } : {}),
+      },
     });
     if (criado.status === 403) return RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE;
     if (criado.status !== 200 || typeof criado.json?.id !== 'string') return RESULTADOS_CONEXAO.ERRO;
     appCalendarId = criado.json.id as string;
     calendarioNovo = { id: appCalendarId, summary, timeZone: fusoHorario, accessRole: 'owner' };
+  }
 
+  if (appCalendarId !== appCalendarGuardado) {
     const vinculo = await chamarBanco(config, {
       metodo: 'PATCH',
       caminho: '/rest/v1/calendar_connections',
@@ -232,31 +313,47 @@ async function conectar(config: Config, state: StateConsumido, accessToken: stri
     if (!ok(vinculo.status)) return RESULTADOS_CONEXAO.ERRO;
   }
 
-  const lista = await atualizarListaDeCalendarios({
+  const atualizacao = await atualizarListaDeCalendarios({
     supabaseUrl: config.supabaseUrl,
     serviceRoleKey: config.serviceRoleKey,
     connectionId,
     accessToken,
     appCalendarId,
     calendarioDoEspaco: calendarioNovo,
+    itensDoGoogle: lista.itens,
   });
-  if ('erro' in lista) {
-    console.error('google-calendar-oauth-callback: falha ao atualizar os calendários', lista.erro);
-    return lista.erro === 'escopo_insuficiente' ? RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE : RESULTADOS_CONEXAO.ERRO;
+  if ('erro' in atualizacao) {
+    console.error('google-calendar-oauth-callback: falha ao atualizar os calendários', atualizacao.erro);
+    return atualizacao.erro === 'escopo_insuficiente' ? RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE : RESULTADOS_CONEXAO.ERRO;
   }
 
+  // Vínculos que apontam para calendário fora desta conta (outra conta,
+  // calendário apagado, conexão anterior ao disconnect) não alcançam mais o
+  // evento. Os itens ficam no app; só o vínculo sai.
+  const calendariosDaConta = atualizacao.linhas.map((linha) => linha.external_calendar_id);
+  const vinculos = await chamarBanco(config, {
+    metodo: 'DELETE',
+    caminho: '/rest/v1/agenda_item_links',
+    query: {
+      user_id: `eq.${userId}`,
+      workspace_id: `eq.${workspaceId}`,
+      provider: 'eq.google',
+      ...(calendariosDaConta.length > 0 ? { calendar_id: `not.in.${listaParaFiltroIn(calendariosDaConta)}` } : {}),
+    },
+    prefer: 'return=minimal',
+  });
+  if (!ok(vinculos.status)) return RESULTADOS_CONEXAO.ERRO;
+
   const destinoAtual = mesmaConta ? anterior.destination_calendar_id : null;
-  const destino = escolherDestino({ destinoAtual, appCalendarId, linhas: lista.linhas });
-  if (destino !== destinoAtual) {
-    const marcado = await chamarBanco(config, {
-      metodo: 'PATCH',
-      caminho: '/rest/v1/calendar_connections',
-      query: { id: `eq.${connectionId}` },
-      corpo: { destination_calendar_id: destino },
-      prefer: 'return=minimal',
-    });
-    if (!ok(marcado.status)) return RESULTADOS_CONEXAO.ERRO;
-  }
+  const destino = escolherDestino({ destinoAtual, appCalendarId, linhas: atualizacao.linhas });
+  const ativacao = await chamarBanco(config, {
+    metodo: 'PATCH',
+    caminho: '/rest/v1/calendar_connections',
+    query: { id: `eq.${connectionId}` },
+    corpo: { destination_calendar_id: destino, status: 'active', last_error_code: null, last_error_at: null },
+    prefer: 'return=minimal',
+  });
+  if (!ok(ativacao.status)) return RESULTADOS_CONEXAO.ERRO;
 
   return RESULTADOS_CONEXAO.CONECTADO;
 }
@@ -271,14 +368,10 @@ Deno.serve(async (request) => {
 
   const url = new URL(request.url);
   const stateRecebido = url.searchParams.get('state') ?? '';
-  if (!stateRecebido || stateRecebido.length > 200) {
-    return respostaDeTexto(400, 'Link de conexão inválido. Volte ao UniFlow e tente conectar de novo.');
-  }
+  if (!stateRecebido || stateRecebido.length > 200) return voltarSemState();
 
   const state = await consumirState(config, stateRecebido);
-  if (!state || !origemPermitida(state.origin, Deno.env.get('APP_ALLOWED_ORIGINS'))) {
-    return respostaDeTexto(400, 'Este link de conexão expirou. Volte ao UniFlow e tente conectar de novo.');
-  }
+  if (!state || !origemPermitida(state.origin, Deno.env.get('APP_ALLOWED_ORIGINS'))) return voltarSemState();
 
   const voltar = (resultado: string) => redirecionar(
     montarUrlDeRetorno({ origem: state.origin, returnPath: state.return_path, resultado }),
@@ -301,10 +394,18 @@ Deno.serve(async (request) => {
     code, codeVerifier: state.code_verifier, clientId, clientSecret, redirectUri,
   });
   if (!tokens) return voltar(RESULTADOS_CONEXAO.ERRO);
-  if (!temTodosOsEscopos(tokens.escopos)) return voltar(RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE);
+
+  const grantRecebido = tokens.refreshToken || tokens.accessToken;
+  if (!temTodosOsEscopos(tokens.escopos)) {
+    await descartarGrant(config, state.user_id, grantRecebido);
+    return voltar(RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE);
+  }
   if (!tokens.refreshToken) return voltar(RESULTADOS_CONEXAO.ERRO);
 
-  if (!(await membroAtivo(config, state.user_id, state.workspace_id))) return voltar(RESULTADOS_CONEXAO.ERRO);
+  if (!(await membroAtivo(config, state.user_id, state.workspace_id))) {
+    await descartarGrant(config, state.user_id, grantRecebido);
+    return voltar(RESULTADOS_CONEXAO.ERRO);
+  }
 
   const resultado = await conectar(config, state, tokens.accessToken, tokens.refreshToken, tokens.escopos);
   return voltar(resultado);

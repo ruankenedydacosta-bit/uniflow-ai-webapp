@@ -131,7 +131,9 @@ Deno.serve(async (request) => {
     }
   }
 
-  let revoked = false;
+  // O token é lido antes do DELETE (o trigger apaga o segredo junto com a
+  // linha) e só é revogado depois que a conexão saiu. Se o DELETE falhar, a
+  // conexão continua inteira e funcionando.
   const outras = await chamarBanco(config, {
     caminho: '/rest/v1/calendar_connections',
     query: {
@@ -144,10 +146,10 @@ Deno.serve(async (request) => {
     },
   });
   const haOutraConexao = !ok(outras.status) || !Array.isArray(outras.json) || outras.json.length > 0;
+  let refreshToken = '';
   if (!haOutraConexao && conexao.account_email) {
     const segredo = await chamarRpc(config, 'calendar_connection_get_refresh_token', { p_connection_id: conexao.id });
-    const refreshToken = ok(segredo.status) && typeof segredo.json === 'string' ? segredo.json : '';
-    if (refreshToken) revoked = await revogarTokenNoGoogle(refreshToken);
+    refreshToken = ok(segredo.status) && typeof segredo.json === 'string' ? segredo.json : '';
   }
 
   const remocao = await chamarBanco(config, {
@@ -160,6 +162,8 @@ Deno.serve(async (request) => {
     console.error('google-calendar-disconnect: falha ao apagar a conexão', remocao.status);
     return jsonResponse(500, errorBody('DISCONNECT_FAILED', 'Não foi possível desconectar agora.'), origin);
   }
+
+  const revoked = refreshToken ? await revogarTokenNoGoogle(refreshToken) : false;
 
   return jsonResponse(200, { disconnected: true, revoked }, origin);
 });

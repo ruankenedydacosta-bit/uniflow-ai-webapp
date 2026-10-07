@@ -61,3 +61,31 @@ export function escolherDestino({ destinoAtual, appCalendarId, linhas }) {
   if (appCalendarId && proprios.has(appCalendarId)) return appCalendarId;
   return null;
 }
+
+// Marca do calendário do espaço, gravada na descrição ao criar. O disconnect
+// apaga a conexão e, com ela, o app_calendar_id. Na reconexão, o callback
+// acha o calendário pela marca (o id do espaço, nunca o nome) e não cria outro.
+const PREFIXO_DA_MARCA = 'uniflow_workspace_id=';
+
+export function descricaoDoCalendarioDoEspaco(workspaceId) {
+  return `Compromissos do UniFlow. Não apague a linha abaixo.\n${PREFIXO_DA_MARCA}${workspaceId}`;
+}
+
+export function acharCalendarioDoEspaco(itens, workspaceId) {
+  if (!workspaceId) return null;
+  const marca = `${PREFIXO_DA_MARCA}${workspaceId}`;
+  const achado = (Array.isArray(itens) ? itens : []).find((item) => (
+    item && !item.deleted
+    && item.accessRole === PAPEL_PROPRIO
+    && typeof item.description === 'string'
+    && item.description.split(/\s+/).includes(marca)
+  ));
+  return achado ?? null;
+}
+
+// Valor do filtro in.(...) do PostgREST, com aspas e escape: ids do Google
+// podem ter vírgula, ponto, # e parênteses.
+export function listaParaFiltroIn(valores) {
+  const itens = valores.map((valor) => `"${String(valor).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+  return `(${itens.join(',')})`;
+}

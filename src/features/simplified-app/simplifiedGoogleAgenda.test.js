@@ -10,6 +10,7 @@ import {
   nomeDaAgendaDoEspaco,
   urlDeAutorizacaoValida,
 } from './googleAgendaPresentation.js';
+import { nomeDoCalendarioDoEspaco } from '../../../supabase/functions/_shared/googleCalendar/oauth.js';
 import { ACCOUNT_SUBROUTE_IDS, ACCOUNT_SUBROUTES } from './simplifiedAccountRoutes.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -55,6 +56,14 @@ test('só redireciona para a tela de consentimento do Google', () => {
 test('nome da agenda do espaço', () => {
   assert.equal(nomeDaAgendaDoEspaco('Ateliê'), 'UniFlow · Ateliê');
   assert.equal(nomeDaAgendaDoEspaco(undefined), 'UniFlow · Meu espaço');
+  for (const nome of ['Ateliê', '', '  x  ', 'y'.repeat(200), undefined]) {
+    assert.equal(nomeDaAgendaDoEspaco(nome), nomeDoCalendarioDoEspaco(nome), 'a tela mostra o nome criado no Google');
+  }
+});
+
+test('resposta de outro espaço que chega atrasada é descartada', async () => {
+  const page = await source('./SimplifiedGoogleAgendaPage.jsx');
+  assert.match(page, /if \(workspaceAtualRef\.current !== workspaceId\) return;/);
 });
 
 test('tela: aviso inline com "X" (sem toast), conectar, desconectar com confirmação e e-mail da conta', async () => {

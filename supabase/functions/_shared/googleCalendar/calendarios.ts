@@ -10,8 +10,9 @@ import { montarCalendariosDaConexao } from './listaDeCalendarios.js';
 
 export type ErroDaLista = 'google_indisponivel' | 'escopo_insuficiente' | 'conexao_revogada' | 'banco_indisponivel';
 
-interface ItemDaLista {
+export interface ItemDaLista {
   id: string;
+  description?: string;
   summary?: string;
   summaryOverride?: string;
   timeZone?: string;
@@ -26,7 +27,7 @@ function erroDoGoogle(status: number): ErroDaLista {
   return 'google_indisponivel';
 }
 
-async function listarCalendariosDoGoogle(accessToken: string): Promise<{ itens: ItemDaLista[] } | { erro: ErroDaLista }> {
+export async function listarCalendariosDoGoogle(accessToken: string): Promise<{ itens: ItemDaLista[] } | { erro: ErroDaLista }> {
   const itens: ItemDaLista[] = [];
   let pageToken: string | undefined;
   for (let pagina = 0; pagina < 20; pagina += 1) {
@@ -50,6 +51,7 @@ export async function atualizarListaDeCalendarios({
   accessToken,
   appCalendarId = null,
   calendarioDoEspaco = null,
+  itensDoGoogle = null,
 }: {
   supabaseUrl: string;
   serviceRoleKey: string;
@@ -58,13 +60,19 @@ export async function atualizarListaDeCalendarios({
   appCalendarId?: string | null;
   // Calendário recém-criado, caso ainda não apareça no calendarList.
   calendarioDoEspaco?: ItemDaLista | null;
+  // Lista já buscada nesta execução, para não chamar o Google duas vezes.
+  itensDoGoogle?: ItemDaLista[] | null;
 }) {
   const config = { supabaseUrl, serviceRoleKey };
 
-  const lista = await listarCalendariosDoGoogle(accessToken);
-  if ('erro' in lista) return { erro: lista.erro };
-
-  const itens = [...lista.itens];
+  let itens: ItemDaLista[];
+  if (itensDoGoogle) {
+    itens = [...itensDoGoogle];
+  } else {
+    const lista = await listarCalendariosDoGoogle(accessToken);
+    if ('erro' in lista) return { erro: lista.erro };
+    itens = [...lista.itens];
+  }
   if (calendarioDoEspaco && !itens.some((item) => item.id === calendarioDoEspaco.id)) {
     itens.push(calendarioDoEspaco);
   }

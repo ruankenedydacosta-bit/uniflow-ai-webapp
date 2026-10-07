@@ -56,7 +56,9 @@ export function urlDeAutorizacaoValida(valor) {
   }
 }
 
+// Mesmo nome que nomeDoCalendarioDoEspaco (supabase/functions/_shared/
+// googleCalendar/oauth.js) grava no Google, inclusive o corte em 80.
 export function nomeDaAgendaDoEspaco(nomeDoEspaco) {
   const nome = typeof nomeDoEspaco === 'string' ? nomeDoEspaco.trim() : '';
-  return `UniFlow · ${nome || 'Meu espaço'}`;
+  return `UniFlow · ${(nome || 'Meu espaço').slice(0, 80)}`;
 }
