@@ -21,6 +21,7 @@ import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRout
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import {
+  PhCalendarIcon,
   PhCaretRightIcon,
   PhChartBarIcon,
   PhCreditCardIcon,
@@ -112,8 +113,7 @@ function SimplifiedAccountPage() {
   }
 
   // Grupo "Conta" do handoff: Perfil, Configurações (a aba Preferências,
-  // que mora na rota de Tema) e Segurança. Pagamento e assinatura entra
-  // aqui porque é dado da conta, não do produto.
+  // que mora na rota de Tema) e Segurança.
   const accountItems = [
     {
       id: ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE,
@@ -130,23 +130,32 @@ function SimplifiedAccountPage() {
       Icon: PhShieldCheckIcon,
       title: 'Segurança',
     },
-    {
-      id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
-      Icon: PhCreditCardIcon,
-      title: 'Pagamento e assinatura',
-      subtitle: planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
-    },
   ];
 
-  // Grupo "Produto": Relatórios e Notificações vêm do handoff; Voz da Uni,
-  // Suporte, Privacidade e Sobre são telas que já existem e continuam
-  // alcançáveis só por aqui.
+  // Grupo "Produto": Relatórios e Notificações vêm do handoff; Agenda,
+  // Pagamento e assinatura, Voz da Uni, Suporte, Privacidade e Sobre são
+  // telas que já existem e continuam alcançáveis por aqui.
   const productItems = [
     {
       id: 'reports',
       Icon: PhChartBarIcon,
       title: 'Relatórios',
       to: SIMPLIFIED_ROUTES.RELATORIO,
+    },
+    // LOTE AGENDA VISUAL: não é subrota de Conta (não existe em
+    // ACCOUNT_SUBROUTES) -- navega pela rota interna /app/agenda.
+    {
+      id: 'agenda',
+      Icon: PhCalendarIcon,
+      title: 'Agenda',
+      subtitle: 'Seus compromissos e lembretes',
+      to: SIMPLIFIED_ROUTES.AGENDA,
+    },
+    {
+      id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
+      Icon: PhCreditCardIcon,
+      title: 'Pagamento e assinatura',
+      subtitle: planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.VOICE,
@@ -264,9 +273,9 @@ function SimplifiedAccountPage() {
       <section className={groups.group} aria-label="Produto">
         <h2 className={groups.groupLabel}>Produto</h2>
         <div className={groups.list}>
-          {renderRow(productItems[0])}
+          {productItems.slice(0, 2).map(renderRow)}
           <SimplifiedAccountNotificationsRow />
-          {productItems.slice(1).map(renderRow)}
+          {productItems.slice(2).map(renderRow)}
         </div>
       </section>
 

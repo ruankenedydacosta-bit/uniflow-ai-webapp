@@ -2,12 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../../app/SessionContext';
 import Button from '../../../components/ui/Button';
+import { UniRingOrb } from '../../../components/ui/UniRingOrb/index.js';
 import { PRESENTATION_ROUTE } from '../../presentation';
-import AuthBrandExperience from '../components/AuthBrandExperience.jsx';
-import AuthModeSwitch from '../components/AuthModeSwitch.jsx';
+import { ensureAppFont } from '../../simplified-app/appFont.js';
 import EmailAuthForm from '../components/EmailAuthForm.jsx';
 import ForgotPasswordForm from '../components/ForgotPasswordForm.jsx';
-import PartnershipFooter from '../components/PartnershipFooter.jsx';
 import SocialAuthButtons from '../components/SocialAuthButtons.jsx';
 import { AUTH_MODES, getGoogleAuthFeedback, normalizeAuthMode } from '../authMobileSchema.js';
 import { getPasswordResetRequestFeedback } from '../passwordRecoveryUtils.js';
@@ -17,6 +16,12 @@ import styles from '../authMobile.module.css';
 
 const POST_SIGN_UP_DESTINATION = PRESENTATION_ROUTE;
 
+/**
+ * Fase 3 do redesign (#90): tela 15 Login do handoff. Fundo do modo voz,
+ * orb de 132px, "UniFlow" e um apoio por modo (entrar, criar conta,
+ * recuperar senha). Formulário, Google e recuperação continuam os mesmos;
+ * a troca entre entrar e criar conta é o link do rodapé.
+ */
 function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,7 +40,7 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
     status: analyticsConsentStatus,
   } = useAnalyticsConsent();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // AUTH4: loading dedicado do clique em "Continuar com Google" -- distinto
+  // AUTH4: loading dedicado do clique em "Entrar com Google" -- distinto
   // de isSubmitting (formulário por e-mail), para não desabilitar um pelo
   // outro sem necessidade.
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -52,6 +57,12 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
   // Trava sincrona contra duplo clique -- mesmo padrao de mutationRef ja
   // usado em useClients.js/useAgenda.js/useTransactions.js.
   const resetRequestRef = useRef(false);
+
+  // Redesign (#90): a folha do Inter só entra quando a tela de acesso monta,
+  // mesmo mecanismo do app (/app/*); landing e páginas legais não a pedem.
+  useEffect(() => {
+    ensureAppFont(document);
+  }, []);
 
   useEffect(() => {
     signUpViewedLifecycle.update(mode === AUTH_MODES.SIGN_UP, {
@@ -173,24 +184,18 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
     }
   }
 
+  const isSignUp = mode === AUTH_MODES.SIGN_UP;
+  const subtitle = isForgotPasswordOpen
+    ? 'Recuperar senha'
+    : isSignUp ? 'Crie sua conta' : 'Entre para continuar';
+
   return (
     <main className={styles.authPage}>
-      <section className={styles.authShell} aria-labelledby="auth-title">
-        <AuthBrandExperience />
-
-        <div className={styles.authHeading}>
-          <h1 id="auth-title">
-            {isForgotPasswordOpen
-              ? 'Recuperar senha'
-              : mode === AUTH_MODES.SIGN_UP ? 'Crie sua conta' : 'Boas-vindas de volta'}
-          </h1>
-          <p>
-            {isForgotPasswordOpen
-              ? 'Receba as instruções para recuperar seu acesso.'
-              : mode === AUTH_MODES.SIGN_UP
-                ? 'Comece sua jornada financeira com a Uni.'
-                : 'Acesse sua experiência financeira.'}
-          </p>
+      <section className={styles.authShell} aria-labelledby="auth-title auth-subtitle">
+        <div className={styles.brand}>
+          <UniRingOrb size={132} />
+          <h1 id="auth-title" className={styles.brandName}>UniFlow</h1>
+          <p id="auth-subtitle" className={styles.brandSubtitle}>{subtitle}</p>
         </div>
 
         <div className={styles.authPanel}>
@@ -205,16 +210,6 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
             />
           ) : (
             <>
-              <h2 className={styles.authCardTitle}>
-                {mode === AUTH_MODES.SIGN_UP ? 'Comece agora' : 'Entrar na sua conta'}
-              </h2>
-              <AuthModeSwitch mode={mode} onChange={changeMode} />
-              <SocialAuthButtons
-                disabled={isSubmitting}
-                googleLoading={isGoogleLoading}
-                onGoogleAuth={handleGoogleAuth}
-              />
-              <div className={styles.authDivider}><span>ou</span></div>
               <EmailAuthForm
                 key={mode}
                 mode={mode}
@@ -225,22 +220,15 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
                 onForgotPassword={handleOpenForgotPassword}
                 onLegalClick={() => setFeedback('Os documentos legais serão disponibilizados em breve.')}
               />
-              <p className={styles.securityMessage}>
-                <span aria-hidden="true">✓</span>
-                Seus dados protegidos com segurança avançada
-              </p>
+              <div className={styles.authDivider}><span>ou</span></div>
+              <SocialAuthButtons
+                disabled={isSubmitting}
+                googleLoading={isGoogleLoading}
+                label={isSignUp ? 'Continuar com Google' : 'Entrar com Google'}
+                onGoogleAuth={handleGoogleAuth}
+              />
 
               {feedback ? <p className={styles.feedback} role="status">{feedback}</p> : null}
-
-              <button
-                type="button"
-                className={styles.switchModeLink}
-                onClick={() => changeMode(
-                  mode === AUTH_MODES.SIGN_UP ? AUTH_MODES.SIGN_IN : AUTH_MODES.SIGN_UP,
-                )}
-              >
-                {mode === AUTH_MODES.SIGN_UP ? 'Já tenho uma conta' : 'Quero criar uma conta'}
-              </button>
 
               {isDemoMode ? (
                 <div className={styles.demoAccess}>
@@ -249,10 +237,10 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
                     variant="ghost"
                     fullWidth
                     onClick={() => navigate(
-                      mode === AUTH_MODES.SIGN_UP ? POST_SIGN_UP_DESTINATION : returnTo,
+                      isSignUp ? POST_SIGN_UP_DESTINATION : returnTo,
                     )}
                   >
-                    {mode === AUTH_MODES.SIGN_UP ? 'Configurar demo' : 'Explorar demo'}
+                    {isSignUp ? 'Configurar demo' : 'Explorar demo'}
                   </Button>
                 </div>
               ) : null}
@@ -260,7 +248,18 @@ function MobileAuthPage({ onGoogleAuth, returnTo = '/dashboard', initialFeedback
           )}
         </div>
 
-        <PartnershipFooter />
+        {isForgotPasswordOpen ? null : (
+          <p className={styles.switchMode}>
+            {isSignUp ? 'Já tem conta? ' : 'Ainda não tem conta? '}
+            <button
+              type="button"
+              className={styles.switchModeLink}
+              onClick={() => changeMode(isSignUp ? AUTH_MODES.SIGN_IN : AUTH_MODES.SIGN_UP)}
+            >
+              {isSignUp ? 'Entrar' : 'Criar conta'}
+            </button>
+          </p>
+        )}
       </section>
     </main>
   );
