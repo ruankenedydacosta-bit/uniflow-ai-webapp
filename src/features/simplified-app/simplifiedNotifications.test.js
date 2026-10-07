@@ -16,11 +16,19 @@ test('rota /app/conta/notificacoes registrada com a página real, fora do loop d
   assert.match(barrel, /export \{ default as SimplifiedNotificationsPage \} from '\.\/SimplifiedNotificationsPage\.jsx';/);
 });
 
-test('usa a mesma fonte do sino (useNotifications) -- nunca um segundo serviço ou estado de lista', async () => {
+test('usa o estado do sino publicado pelo shell (contexto) -- nunca uma segunda instância de useNotifications', async () => {
   const page = await source('./SimplifiedNotificationsPage.jsx');
-  assert.match(page, /import \{ useNotifications \} from '\.\.\/notifications\/useNotifications\.js';/);
+  assert.match(page, /import \{ useSimplifiedNotifications \} from '\.\/simplifiedNotificationsContext\.js';/);
+  assert.doesNotMatch(page, /useNotifications\(/);
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /<SimplifiedNotificationsContext\.Provider value=\{notificationsContextValue\}>/);
+  const row = await source('./SimplifiedAccountNotificationsRow.jsx');
+  assert.match(row, /useSimplifiedNotifications\(\)/);
+  assert.doesNotMatch(row, /useNotifications\(/);
   assert.match(page, /markAsRead\(notification\.id\)/);
-  assert.match(page, /onClick=\{\(\) => markAllAsRead\(\)\}/);
+  assert.match(page, /onClick=\{handleMarkAllAsRead\}/);
+  assert.match(page, /disabled=\{isMarkingAll\}/);
+  assert.doesNotMatch(page, /disabled=\{isLoading\}/);
   assert.doesNotMatch(page, /notificationsService|supabase/);
 });
 
@@ -42,6 +50,10 @@ test('agrupa por dia (Hoje/Ontem/data) com a hora em cada item e ponto de não l
   assert.match(page, /groupNotificationsByDay\(notifications\)/);
   assert.match(page, /formatNotificationTime\(notification\.created_at\)/);
   assert.match(page, /\{unread \? <span className=\{styles\.unreadDot\} aria-hidden="true" \/> : null\}/);
+  // Leitor de tela: "(não lida)" como texto oculto dentro do botão, nunca um
+  // aria-label que esconderia mensagem e hora.
+  assert.match(page, /<span className=\{styles\.srOnly\}> \(não lida\)<\/span>/);
+  assert.doesNotMatch(page, /aria-label=\{`\$\{notification\.title\}/);
 });
 
 test('estados de carregando, erro (com Tentar novamente) e vazio -- os mesmos textos do painel do sino', async () => {
@@ -52,11 +64,12 @@ test('estados de carregando, erro (com Tentar novamente) e vazio -- os mesmos te
   assert.match(page, /Nenhuma notificação por enquanto\./);
 });
 
-test('ativação do push reaproveita useWebPush() e só aparece no estado DEFAULT; a nota do handoff some quando o push já está ativo', async () => {
+test('ativação do push reaproveita useWebPush() e só aparece no estado DEFAULT; a nota do handoff só aparece sem CTA e sem push ativo', async () => {
   const page = await source('./SimplifiedNotificationsPage.jsx');
   assert.match(page, /import \{ PUSH_STATUS, useWebPush \} from '\.\.\/mobile-push\/useWebPush\.js';/);
   assert.match(page, /const showPushCta = pushStatus === PUSH_STATUS\.DEFAULT;/);
-  assert.match(page, /\{isPushEnabled \? null : \(/);
+  assert.match(page, /const showNoPushNote = !showPushCta && !isPushEnabling && !isPushEnabled;/);
+  assert.match(page, /\{showNoPushNote \? \(/);
   assert.match(page, /Por enquanto, as notificações aparecem só aqui no app\. Elas não chegam por e-mail nem por push\./);
 });
 

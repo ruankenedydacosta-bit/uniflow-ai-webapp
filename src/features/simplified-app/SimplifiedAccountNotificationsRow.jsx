@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import IconBox from '../../components/ui/IconBox/index.js';
 import { cx } from '../../utils/cx.js';
-import { useNotifications } from '../notifications/useNotifications.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
+import { useSimplifiedNotifications } from './simplifiedNotificationsContext.js';
 import { PhBellIcon, PhCaretRightIcon } from './SimplifiedIcons.jsx';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedAccount.module.css';
@@ -15,7 +15,8 @@ import styles from './simplifiedAccount.module.css';
  */
 function SimplifiedAccountNotificationsRow() {
   const navigate = useNavigate();
-  const { unreadCount } = useNotifications();
+  // Estado publicado pelo SimplifiedAppShell (uma só busca da lista).
+  const { unreadCount } = useSimplifiedNotifications();
 
   const subtitle = unreadCount > 0
     ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}`

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useSession } from '../../app/SessionContext.jsx';
 import { cx } from '../../utils/cx.js';
 import { THEME_IDS, THEME_OPTIONS, useTheme } from '../theme/index.js';
 import { PhCaretRightIcon } from './SimplifiedIcons.jsx';
@@ -17,13 +18,19 @@ const THEME_ORDER = Object.freeze([THEME_IDS.LIGHT, THEME_IDS.UNIFLOW]);
 /**
  * Fase 3 do redesign (#90): aba "Preferências" da tela 14 Configurações.
  * Continua na rota de Tema e reutiliza exclusivamente o ThemeProvider
- * oficial (useTheme). O grupo Uni traz o que já existe (Voz da Uni, que
- * define o estilo de conversa) e marca como "Em breve" o que o handoff
- * desenha mas o produto ainda não tem.
+ * oficial (useTheme). O grupo Uni traz só o que existe (Voz da Uni, que
+ * define o estilo de conversa); as linhas do handoff sem feature por trás
+ * (voz nas respostas, animações do botão, notificações) ficam de fora,
+ * porque placeholder é promessa vazia (ver simplifiedAccountRoutes.js).
+ * "Trocar senha por e-mail" só aparece para quem entra com senha.
  */
 function SimplifiedThemePage() {
   const navigate = useNavigate();
   const { selectedTheme, setTheme } = useTheme();
+  const { user } = useSession();
+  const hasPasswordIdentity = Array.isArray(user?.identities)
+    ? user.identities.some((identity) => identity?.provider === 'email')
+    : false;
   const options = THEME_ORDER
     .map((id) => THEME_OPTIONS.find((option) => option.id === id))
     .filter(Boolean);
@@ -74,20 +81,6 @@ function SimplifiedThemePage() {
       <section className={groups.group} aria-label="Uni">
         <h2 className={groups.groupLabel}>Uni</h2>
         <div className={groups.list}>
-          <div className={cx(groups.row, groups.rowPlain, styles.soonRow)}>
-            <span className={groups.rowText}>
-              <span className={groups.rowTitle}>Voz nas respostas da Uni</span>
-              <span className={groups.rowSubtitle}>A Uni lê as respostas em voz alta.</span>
-            </span>
-            <span className={cx(groups.pill, groups.pillMuted)}>Em breve</span>
-          </div>
-          <div className={cx(groups.row, groups.rowPlain, styles.soonRow)}>
-            <span className={groups.rowText}>
-              <span className={groups.rowTitle}>Animações do botão da Uni</span>
-              <span className={groups.rowSubtitle}>Desligue para reduzir movimento.</span>
-            </span>
-            <span className={cx(groups.pill, groups.pillMuted)}>Em breve</span>
-          </div>
           <button
             type="button"
             className={cx(groups.row, groups.rowPlain)}
@@ -99,32 +92,27 @@ function SimplifiedThemePage() {
             </span>
             <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
           </button>
-          <div className={cx(groups.row, groups.rowPlain, styles.soonRow)}>
-            <span className={groups.rowText}>
-              <span className={groups.rowTitle}>Notificações</span>
-              <span className={groups.rowSubtitle}>Escolher o que avisar e quando</span>
-            </span>
-            <span className={cx(groups.pill, groups.pillMuted)}>Em breve</span>
-          </div>
         </div>
       </section>
 
-      <section className={groups.group} aria-label="Conta">
-        <h2 className={groups.groupLabel}>Conta</h2>
-        <div className={groups.list}>
-          <button
-            type="button"
-            className={cx(groups.row, groups.rowPlain)}
-            onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].path)}
-          >
-            <span className={groups.rowText}>
-              <span className={groups.rowTitle}>Trocar senha por e-mail</span>
-              <span className={groups.rowSubtitle}>Você recebe um link para criar uma nova senha</span>
-            </span>
-            <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
-          </button>
-        </div>
-      </section>
+      {hasPasswordIdentity ? (
+        <section className={groups.group} aria-label="Conta">
+          <h2 className={groups.groupLabel}>Conta</h2>
+          <div className={groups.list}>
+            <button
+              type="button"
+              className={cx(groups.row, groups.rowPlain)}
+              onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].path)}
+            >
+              <span className={groups.rowText}>
+                <span className={groups.rowTitle}>Trocar senha por e-mail</span>
+                <span className={groups.rowSubtitle}>Você recebe um link para criar uma nova senha</span>
+              </span>
+              <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
+            </button>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

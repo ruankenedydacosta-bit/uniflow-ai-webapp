@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { PUSH_STATUS, useWebPush } from '../mobile-push/useWebPush.js';
@@ -8,6 +8,7 @@ import { useCollapsibleHeaderOnScroll } from './collapsibleHeaderScroll.js';
 import { ensureAppFont } from './appFont.js';
 import SimplifiedBottomNavigation from './SimplifiedBottomNavigation.jsx';
 import SimplifiedHeader from './SimplifiedHeader.jsx';
+import { SimplifiedNotificationsContext } from './simplifiedNotificationsContext.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useVisualViewport, VisualViewportContext } from './useVisualViewport.js';
 import styles from './simplifiedApp.module.css';
@@ -25,6 +26,9 @@ function SimplifiedAppShell({ children }) {
   const mainContentRef = useRef(null);
   const shellRef = useRef(null);
   const viewportState = useVisualViewport();
+  // Fase 3 (#90): única instância de useNotifications() do app. A página de
+  // notificações e a linha do Mais consomem este mesmo estado por contexto.
+  const notificationsState = useNotifications();
   const {
     notifications,
     unreadCount,
@@ -34,7 +38,17 @@ function SimplifiedAppShell({ children }) {
     markAsRead,
     markAllAsRead,
     dismissNotification,
-  } = useNotifications();
+  } = notificationsState;
+  const notificationsContextValue = useMemo(() => ({
+    notifications,
+    unreadCount,
+    isLoading,
+    error,
+    refresh,
+    markAsRead,
+    markAllAsRead,
+    dismissNotification,
+  }), [notifications, unreadCount, isLoading, error, refresh, markAsRead, markAllAsRead, dismissNotification]);
   // NOTIF-UX3: o Notification Center interno e o Web Push são coisas
   // diferentes -- o sino abre a lista de notificações independentemente de
   // push estar autorizado. Este hook só alimenta o CTA discreto "Ativar
@@ -275,7 +289,9 @@ function SimplifiedAppShell({ children }) {
           data-notifications-open={isNotificationsOpen ? 'true' : undefined}
         >
           <VisualViewportContext.Provider value={viewportState}>
-            {children}
+            <SimplifiedNotificationsContext.Provider value={notificationsContextValue}>
+              {children}
+            </SimplifiedNotificationsContext.Provider>
           </VisualViewportContext.Provider>
         </main>
         <SimplifiedBottomNavigation hidden={isUniChatKeyboardOpen || isReportRoute} />

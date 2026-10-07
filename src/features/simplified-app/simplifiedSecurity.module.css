@@ -15,7 +15,9 @@
 }
 
 .page > header {
-  margin-inline: -22px;
+  margin-inline:
+    calc(-1 * max(22px, env(safe-area-inset-left)))
+    calc(-1 * max(22px, env(safe-area-inset-right)));
 }
 
 /* Linhas informativas: mesmo desenho das linhas de menu, sem toque. */

@@ -325,12 +325,6 @@
 
 /* ---------- Responsivo ---------- */
 
-@media (max-width: 520px) {
-  .planCard {
-    grid-template-columns: 36px minmax(0, 1fr) auto 14px;
-  }
-}
-
 @media (max-width: 359px) {
   .planPrice {
     display: none;
@@ -341,14 +335,5 @@
   .page,
   .subpage {
     padding-inline: 42px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .menuRow,
-  .profileCard,
-  .planCard,
-  .logoutCard {
-    transition: none;
   }
 }

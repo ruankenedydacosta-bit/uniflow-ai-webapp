@@ -16,7 +16,9 @@
 }
 
 .page > header {
-  margin-inline: -22px;
+  margin-inline:
+    calc(-1 * max(22px, env(safe-area-inset-left)))
+    calc(-1 * max(22px, env(safe-area-inset-right)));
 }
 
 /* ---------- Foto de perfil ---------- */

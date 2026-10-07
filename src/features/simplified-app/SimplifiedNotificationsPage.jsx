@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import IconBox from '../../components/ui/IconBox/index.js';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
@@ -8,7 +9,6 @@ import {
   groupNotificationsByDay,
 } from '../notifications/notificationGroups.js';
 import { isNotificationUnread, isSafeInternalUrl } from '../notifications/notificationFormatting.js';
-import { useNotifications } from '../notifications/useNotifications.js';
 import {
   PhCalendarCheckIcon,
   PhChatCircleTextIcon,
@@ -18,6 +18,7 @@ import {
   PhUsersThreeIcon,
 } from './SimplifiedIcons.jsx';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
+import { useSimplifiedNotifications } from './simplifiedNotificationsContext.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedNotifications.module.css';
@@ -39,9 +40,10 @@ function resolveTypePresentation(type) {
 
 /**
  * Fase 3 do redesign (#90): página de notificações (tela 13), alcançada
- * pelo item Notificações do Mais. Usa a MESMA fonte do sino do header
- * (useNotifications: lista, contagem, marcar como lida) -- nunca um
- * segundo estado. Tocar num item marca como lido e segue para a rota
+ * pelo item Notificações do Mais. Lê o MESMO estado do sino do header,
+ * publicado pelo SimplifiedAppShell por contexto (uma única instância de
+ * useNotifications): marcar como lida aqui atualiza o sino na hora e a
+ * lista não é buscada duas vezes. Tocar num item marca como lido e segue para a rota
  * interna segura do aviso, como no painel. Dispensar continua no painel
  * do sino (gesto de arrastar), que o handoff não traz nesta tela.
  */
@@ -49,15 +51,29 @@ function SimplifiedNotificationsPage() {
   const navigate = useNavigate();
   const {
     notifications, unreadCount, isLoading, error, refresh, markAsRead, markAllAsRead,
-  } = useNotifications();
+  } = useSimplifiedNotifications();
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
   // NOTIF-UX3: mesmo aviso do painel do sino -- DEFAULT é o único estado em
   // que o toque resolve algo; denied/unsupported não têm ação útil aqui.
   const { status: pushStatus, enableNotifications: enablePushNotifications } = useWebPush();
   const showPushCta = pushStatus === PUSH_STATUS.DEFAULT;
   const isPushEnabling = pushStatus === PUSH_STATUS.ENABLING;
   const isPushEnabled = pushStatus === PUSH_STATUS.ENABLED;
+  // A nota do handoff só vale quando não há como ativar o push por aqui
+  // (negado, sem suporte ou sem configuração) e ele não está ativo.
+  const showNoPushNote = !showPushCta && !isPushEnabling && !isPushEnabled;
 
   const dayGroups = groupNotificationsByDay(notifications);
+
+  async function handleMarkAllAsRead() {
+    if (isMarkingAll) return;
+    setIsMarkingAll(true);
+    try {
+      await markAllAsRead();
+    } finally {
+      setIsMarkingAll(false);
+    }
+  }
 
   function handleActivate(notification) {
     if (isNotificationUnread(notification)) {
@@ -80,8 +96,8 @@ function SimplifiedNotificationsPage() {
           <button
             type="button"
             className={styles.markAll}
-            disabled={isLoading}
-            onClick={() => markAllAsRead()}
+            disabled={isMarkingAll}
+            onClick={handleMarkAllAsRead}
           >
             Marcar todas como lidas
           </button>
@@ -112,13 +128,15 @@ function SimplifiedNotificationsPage() {
                       className={styles.item}
                       data-unread={unread ? 'true' : 'false'}
                       onClick={() => handleActivate(notification)}
-                      aria-label={`${notification.title}${unread ? ' (não lida)' : ''}`}
                     >
                       <IconBox className={cx(styles.icon, unread && styles[`tone_${tone}`])}>
                         <Icon />
                       </IconBox>
                       <span className={styles.itemText}>
-                        <span className={styles.itemTitle}>{notification.title}</span>
+                        <span className={styles.itemTitle}>
+                          {notification.title}
+                          {unread ? <span className={styles.srOnly}> (não lida)</span> : null}
+                        </span>
                         {notification.message ? (
                           <span className={styles.itemMessage}>{notification.message}</span>
                         ) : null}
@@ -145,11 +163,11 @@ function SimplifiedNotificationsPage() {
         </div>
       ) : null}
 
-      {isPushEnabled ? null : (
+      {showNoPushNote ? (
         <p className={styles.note}>
           Por enquanto, as notificações aparecem só aqui no app. Elas não chegam por e-mail nem por push.
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -147,7 +147,7 @@ function SimplifiedSecurityPage() {
       <section className={groups.group} aria-label="Acesso">
         <h2 className={groups.groupLabel}>Acesso</h2>
         <div className={groups.list}>
-          <div className={cx(groups.row, styles.staticRow)} aria-label="Alterar senha">
+          <section className={cx(groups.row, styles.staticRow)} aria-label="Alterar senha">
             <IconBox><PhLockKeyIcon /></IconBox>
             <span className={groups.rowText}>
               <span className={groups.rowTitle}>Alterar senha</span>
@@ -159,7 +159,7 @@ function SimplifiedSecurityPage() {
                     : 'Não foi possível determinar como você entra na conta.'}
               </span>
             </span>
-          </div>
+          </section>
           {hasPasswordIdentity ? (
             <div className={styles.inset}>
               <OutlineButton
@@ -180,14 +180,14 @@ function SimplifiedSecurityPage() {
             </div>
           ) : null}
 
-          <div className={cx(groups.row, styles.staticRow)} aria-label="Verificação em duas etapas">
+          <section className={cx(groups.row, styles.staticRow)} aria-label="Verificação em duas etapas">
             <IconBox><PhShieldCheckIcon /></IconBox>
             <span className={groups.rowText}>
               <span className={cx(groups.rowTitle, styles.wrap)}>Verificação em duas etapas</span>
               <span className={cx(groups.rowSubtitle, styles.wrap)}>Estará disponível em uma futura versão.</span>
             </span>
             <span className={cx(groups.pill, groups.pillMuted)}>Não configurada</span>
-          </div>
+          </section>
         </div>
       </section>
 

@@ -209,8 +209,9 @@ test('preço exibido é o da assinatura (épico #116), com a constante compartil
 // existindo (ainda usada por transferência/ajuste de saldo), só não tem mais
 // entrada aqui.
 // Fase 3 do redesign (#90): ordem da tela 07 -- Conta (Perfil, Configurações,
-// Segurança, Pagamento e assinatura), Produto (Relatórios, Notificações, Voz
-// da Uni, Suporte, Privacidade e Analytics, Sobre) e Sessão (Sair).
+// Segurança), Produto (Relatórios, Agenda, Notificações, Pagamento e
+// assinatura, Voz da Uni, Suporte, Privacidade e Analytics, Sobre) e Sessão
+// (Sair).
 test('menu preserva os itens existentes na ordem da tela 07 e inclui a preferência mínima de Analytics antes de Sobre', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
   const order = ['EDIT_PROFILE', 'THEME', 'SECURITY', 'PAYMENTS', 'VOICE', 'SUPPORT', 'ABOUT'];
@@ -269,9 +270,10 @@ test('linha de notificações nunca mostra "Enviar notificação de teste" nem "
 // Fase 3 do redesign (#90): a linha abre a página de notificações (tela 13)
 // e mostra quantas estão por ler; a ativação do push mora dentro da página,
 // no mesmo aviso do painel do sino (useWebPush continua a fonte única).
-test('linha de notificações reaproveita useNotifications() (mesma fonte do sino) e abre a página de notificações', async () => {
+test('linha de notificações lê o estado do sino publicado pelo shell (contexto) e abre a página de notificações', async () => {
   const row = await source('./SimplifiedAccountNotificationsRow.jsx');
-  assert.match(row, /import \{ useNotifications \} from '\.\.\/notifications\/useNotifications\.js';/);
+  assert.match(row, /import \{ useSimplifiedNotifications \} from '\.\/simplifiedNotificationsContext\.js';/);
+  assert.doesNotMatch(row, /useNotifications\(/);
   assert.match(row, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.NOTIFICATIONS\]\.path\)/);
   assert.doesNotMatch(row, /useWebPush|enableNotifications/);
 });
@@ -409,13 +411,14 @@ test('CSS da tela Voz da Uni cobre safe area, 320px, foco e redução de movimen
 // Responsividade estrutural (Fase 12) e acessibilidade (Fase 13) -- CSS.
 // ============================================================================
 
-test('CSS de Conta cobre safe-area, larguras estreitas (359/520px), desktop (1024px) e prefers-reduced-motion', async () => {
+// Fase 3 (#90): a tela não tem transição nem regra própria para 520px, então
+// esses blocos saíram (eram CSS sem efeito); ficam safe-area, 359px e 1024px.
+test('CSS de Conta cobre safe-area, largura estreita (359px) e desktop (1024px)', async () => {
   const css = await source('./simplifiedAccount.module.css');
   assert.match(css, /env\(safe-area-inset-top\)/);
-  assert.match(css, /@media \(max-width: 520px\)/);
   assert.match(css, /@media \(max-width: 359px\)/);
   assert.match(css, /@media \(min-width: 1024px\)/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.doesNotMatch(css, /transition: none/);
 });
 
 test('cabeçalho de Conta usa flex-wrap (mesma correção de Registros) -- nunca sobrepõe título e botão em telas estreitas', async () => {

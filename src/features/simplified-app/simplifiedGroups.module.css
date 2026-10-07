@@ -108,11 +108,6 @@
   color: var(--uf-app-brand-green-text);
 }
 
-.pillViolet {
-  border-color: var(--uf-app-brand-violet-text);
-  color: var(--uf-app-brand-violet-text);
-}
-
 .pillMuted {
   border-color: var(--uf-app-border-strong);
   color: var(--uf-app-text-3);

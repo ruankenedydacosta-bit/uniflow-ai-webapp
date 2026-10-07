@@ -23,7 +23,9 @@
 /* O cabeçalho compartilhado já respeita a safe-area do topo. */
 .page > header {
   flex: 0 0 auto;
-  margin-inline: -22px;
+  margin-inline:
+    calc(-1 * max(22px, env(safe-area-inset-left)))
+    calc(-1 * max(22px, env(safe-area-inset-right)));
 }
 
 /* --------------------------------------------------------- month nav */

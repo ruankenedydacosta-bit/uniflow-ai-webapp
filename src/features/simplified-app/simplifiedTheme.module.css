@@ -16,7 +16,9 @@
 }
 
 .page > header {
-  margin-inline: -22px;
+  margin-inline:
+    calc(-1 * max(22px, env(safe-area-inset-left)))
+    calc(-1 * max(22px, env(safe-area-inset-right)));
 }
 
 .options {
@@ -95,11 +97,6 @@
   white-space: nowrap;
 }
 
-.soonRow {
-  opacity: .6;
-  cursor: default;
-}
-
 @media (max-width: 359px) {
   .page {
     padding-inline:
@@ -108,7 +105,9 @@
   }
 
   .page > header {
-    margin-inline: -16px;
+    margin-inline:
+      calc(-1 * max(16px, env(safe-area-inset-left)))
+      calc(-1 * max(16px, env(safe-area-inset-right)));
   }
 }
 
