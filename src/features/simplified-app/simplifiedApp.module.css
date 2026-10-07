@@ -1,4 +1,9 @@
+/* Redesign (épico #91): Inter com peso máximo 500 no app, inclusive nos
+   portais. Só os pesos 400 e 500 são carregados; sem síntese de negrito,
+   um font-weight maior cai no 500. */
 :global(body[data-simplified-app-mounted="true"]) {
+  --uf-font-family-base: var(--uf-app-font-family);
+  font-synthesis-weight: none;
   background: var(--uf-app-body-bg);
 }
 
