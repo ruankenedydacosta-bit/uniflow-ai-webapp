@@ -12,7 +12,7 @@ import {
   useStableVoiceInputHandlers,
 } from '../uni-voice/index.js';
 import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
-import { PwaInstallExperience, PwaUpdateCard } from '../pwa-install/index.js';
+import { PwaInstallExperience, usePwaAutoUpdateBlock } from '../pwa-install/index.js';
 import SimplifiedHomeAgenda from './SimplifiedHomeAgenda.jsx';
 import SimplifiedHomeFinancialGraph from './SimplifiedHomeFinancialGraph.jsx';
 import {
@@ -586,6 +586,9 @@ function SimplifiedHomeView({
     VOICE_CAPTURE_STATES.PROCESSING,
   ].includes(voiceInput.status);
   const isInteractionBusy = isTyping || isExecuting || isCaptureBusy;
+  usePwaAutoUpdateBlock(
+    voiceInput.isActive || isInteractionBusy || pendingConfirmation || voiceActivationPending,
+  );
   const voiceErrorMessage = isVoiceErrorState(voiceInput.status) ? voiceInput.message : null;
 
   // TAP-TO-TALK (épico #99): um toque no orb abre a tela de voz e começa a
@@ -955,9 +958,6 @@ function SimplifiedHomeView({
       </UniCard>
 
       <PwaInstallExperience />
-      <PwaUpdateCard
-        blocked={voiceInput.isActive || isInteractionBusy || pendingConfirmation || voiceActivationPending}
-      />
       {isVoiceModeOpen ? null : compactResponse}
 
       <SimplifiedHomeAgenda />

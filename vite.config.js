@@ -78,6 +78,9 @@ export default defineConfig({
     versionManifestPlugin({ buildId, releasedAt }),
     buildIdBridgePlugin({ buildId }),
     VitePWA({
+      // 'prompt' só faz o novo Service Worker esperar o SKIP_WAITING. Quem o
+      // envia é o pwaUpdateStore, sozinho e num momento seguro; não há aviso
+      // nem botão de atualizar na tela.
       registerType: 'prompt',
       includeAssets: [
         'uniflow-icon.png',

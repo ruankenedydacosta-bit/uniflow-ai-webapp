@@ -4,6 +4,7 @@ import test from 'node:test';
 import { isDifferentBuild, parseVersionManifest } from './appVersion.js';
 import {
   createPwaUpdateManager,
+  MAX_AUTO_UPDATE_ATTEMPTS,
   UPDATE_RELOAD_GUARD_KEY,
   UPDATE_STATUS,
 } from './pwaUpdateStore.js';
@@ -264,7 +265,7 @@ test('controller que mudou durante registration.update não perde a corrida do l
   assert.equal(runtime.reloadCalls, 1);
 });
 
-test('falha real de rede em registration.update mostra erro e permite retry', async () => {
+test('falha real de rede em registration.update não recarrega e a próxima tentativa funciona', async () => {
   const serviceWorker = new EventTarget();
   const active = { state: 'activated' };
   serviceWorker.controller = active;
@@ -292,7 +293,7 @@ test('falha real de rede em registration.update mostra erro e permite retry', as
   assert.equal(runtime.sessionStorage.getItem(UPDATE_RELOAD_GUARD_KEY), null);
 
   shouldFail = false;
-  const retryResult = await manager.applyUpdate({ retry: true });
+  const retryResult = await manager.applyUpdate();
   assert.equal(retryResult.outcome, 'reloading');
   assert.equal(runtime.reloadCalls, 1);
 });
@@ -449,7 +450,8 @@ test('guarda detecta reload anterior sem sucesso e impede loop automático', asy
   await manager.checkForUpdate();
   assert.equal(manager.getSnapshot().status, UPDATE_STATUS.FAILED);
   assert.equal(runtime.reloadCalls, 0);
-  assert.match(manager.getSnapshot().error, /Tente novamente/);
+  assert.equal(manager.getSnapshot().error, 'reload_guard');
+  assert.equal(manager.getArmedAutoRecoveryBuild(), null, 'reload desta sessão já falhou -- nunca recarrega de novo');
 });
 
 test('storage indisponível falha seguro antes de qualquer reload', async () => {
@@ -470,21 +472,16 @@ test('storage indisponível falha seguro antes de qualquer reload', async () => 
   assert.equal(runtime.reloadCalls, 0);
 });
 
-test('card usa Home, bloqueia ações críticas e não interfere em voz ou scroll', async () => {
-  const [card, home, css, vite, vercel] = await Promise.all([
-    source('./PwaUpdateCard.jsx'),
+test('Home não mostra aviso de atualização e bloqueia o update automático durante ações críticas', async () => {
+  const [home, index, vite, vercel] = await Promise.all([
     source('../simplified-app/SimplifiedHomeView.jsx'),
-    source('./PwaUpdateCard.module.css'),
+    source('./index.js'),
     source('../../../vite.config.js'),
     source('../../../vercel.json'),
   ]);
-  assert.match(card, /Nova atualização disponível/);
-  assert.match(card, /Atualizar agora/);
-  assert.match(card, /Atualizando\.\.\./);
-  assert.match(home, /<PwaUpdateCard/);
-  assert.match(home, /voiceInput\.isActive \|\| isInteractionBusy \|\| pendingConfirmation/);
-  assert.doesNotMatch(card, /position:\s*fixed|role="dialog"|aria-modal/);
-  assert.doesNotMatch(css, /position:\s*fixed/);
+  assert.doesNotMatch(home, /PwaUpdateCard|Atualizar agora|Nova atualização disponível/);
+  assert.doesNotMatch(index, /PwaUpdateCard/);
+  assert.match(home, /usePwaAutoUpdateBlock\(\s*voiceInput\.isActive \|\| isInteractionBusy \|\| pendingConfirmation/);
   assert.match(vite, /registerType: 'prompt'/);
   assert.match(
     vite,
@@ -631,8 +628,9 @@ test('CONTRATO: start() dispara checkForUpdate() de forma SINCRONA (fire-and-for
 });
 
 // ============================================================================
-// PWA-UPDATE3 -- recovery automático: ARMA na deteccao, so DISPARA em
-// background, guardado por build, nunca em cima de um applyUpdate manual.
+// PWA-UPDATE3 -- recovery automático: ARMA na deteccao, so DISPARA na
+// abertura ou em background, com teto por build, nunca em cima de outro
+// applyUpdate.
 // ============================================================================
 
 test('ARMA o update automatico na primeira deteccao -- mas uma checagem em foreground nunca recarrega', async () => {
@@ -678,7 +676,7 @@ test('so dispara o reload de recovery quando a pagina REALMENTE sai de foregroun
   cleanup();
 });
 
-test('recovery automático escreve sua PRÓPRIA guarda em localStorage -- nunca re-arma o mesmo build ja tentado', async () => {
+test('recovery automático conta tentativas em localStorage -- para de re-armar o mesmo build no teto', async () => {
   const localStorage = createStorage();
   const runtime = createRuntime({ localStorage });
   const manager = createPwaUpdateManager({
@@ -702,18 +700,71 @@ test('recovery automático escreve sua PRÓPRIA guarda em localStorage -- nunca 
   const guardRaw = localStorage.getItem('uniflow.app-update.auto-recovery-guard');
   assert.ok(guardRaw);
   assert.equal(JSON.parse(guardRaw).targetBuild, 'build-b');
+  assert.equal(JSON.parse(guardRaw).attempts, 1);
 
-  // Simula uma NOVA sessao (contador em memoria reinicia), mas a guarda em
-  // localStorage sobrevive -- nunca re-arma para o MESMO build ja tentado.
-  const manager2 = createPwaUpdateManager({
+  const newSession = () => createPwaUpdateManager({
+    runtime: createRuntime({ localStorage }),
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  // Nova abertura do app (sessionStorage novo): o build não ativou, então
+  // tenta outra vez sozinho, sem pedir clique.
+  const manager2 = newSession();
+  await manager2.checkForUpdate();
+  assert.equal(manager2.getArmedAutoRecoveryBuild(), 'build-b', 'abaixo do teto -- re-arma sozinho');
+
+  localStorage.setItem('uniflow.app-update.auto-recovery-guard', JSON.stringify({
+    targetBuild: 'build-b',
+    attempts: MAX_AUTO_UPDATE_ATTEMPTS,
+    attemptedAt: Date.now(),
+  }));
+  const manager3 = newSession();
+  await manager3.checkForUpdate();
+  assert.equal(manager3.getArmedAutoRecoveryBuild(), null, 'teto atingido -- nunca recarrega em toda abertura');
+});
+
+test('falha sem reload não gasta tentativa e o automático tenta de novo no próximo background', async () => {
+  const serviceWorker = new EventTarget();
+  const active = { state: 'activated' };
+  serviceWorker.controller = active;
+  let shouldFail = true;
+  const registration = {
+    active,
+    waiting: null,
+    installing: null,
+    update: async () => {
+      if (shouldFail) throw new Error('network failed');
+    },
+  };
+  serviceWorker.ready = Promise.resolve(registration);
+  const runtime = createRuntime({ serviceWorker });
+  const manager = createPwaUpdateManager({
     runtime,
     loadedBuildId: 'build-a',
     periodicCheckIntervalMs: 0,
     fetchImpl: async () => manifestResponse('build-b'),
   });
-  await manager2.checkForUpdate();
-  await manager2.checkForUpdate();
-  assert.equal(manager2.getArmedAutoRecoveryBuild(), null, 'guarda ja usada -- nunca re-arma o mesmo build');
+
+  const cleanup = manager.start();
+  runtime.dispatchEvent(new Event('pointerdown'));
+  await flushStartup();
+  runtime.document.visibilityState = 'hidden';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(runtime.reloadCalls, 0);
+  assert.equal(runtime.localStorage.getItem('uniflow.app-update.auto-recovery-guard'), null);
+
+  shouldFail = false;
+  runtime.document.visibilityState = 'visible';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await flushStartup();
+  runtime.document.visibilityState = 'hidden';
+  runtime.document.dispatchEvent(new Event('visibilitychange'));
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(runtime.reloadCalls, 1);
+  cleanup();
 });
 
 test('streak reseta quando o build pendente muda -- nunca soma checagens de builds diferentes', async () => {
@@ -752,7 +803,7 @@ test('streak reseta quando o build fica current -- nunca herda contagem de uma p
   assert.deepEqual(manager.getPendingBuildStreak(), { buildId: null, count: 0 });
 });
 
-test('recovery automático nunca dispara se um applyUpdate (manual ou ja em andamento) existir', async () => {
+test('recovery automático nunca dispara se um applyUpdate ja estiver em andamento', async () => {
   const runtime = createRuntime();
   const manager = createPwaUpdateManager({
     runtime,
@@ -765,7 +816,7 @@ test('recovery automático nunca dispara se um applyUpdate (manual ou ja em anda
   await manager.checkForUpdate();
   assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
 
-  // Usuário clica manualmente ANTES da página sair de foreground.
+  // Um applyUpdate começa ANTES da página sair de foreground.
   void manager.applyUpdate();
   const cleanup = manager.start();
   runtime.document.visibilityState = 'hidden';
@@ -774,12 +825,12 @@ test('recovery automático nunca dispara se um applyUpdate (manual ou ja em anda
   await Promise.resolve();
   await Promise.resolve();
 
-  assert.equal(runtime.reloadCalls, 1, 'so UM reload -- o manual, nunca um segundo do recovery automático em cima dele');
+  assert.equal(runtime.reloadCalls, 1, 'so UM reload -- nunca um segundo do recovery automático em cima do primeiro');
   cleanup();
 });
 
 // Abertura do app: build novo detectado antes do primeiro toque atualiza
-// sozinho, sem o usuario precisar tocar em "Atualizar agora".
+// sozinho.
 async function flushStartup() {
   for (let i = 0; i < 6; i += 1) await Promise.resolve();
 }

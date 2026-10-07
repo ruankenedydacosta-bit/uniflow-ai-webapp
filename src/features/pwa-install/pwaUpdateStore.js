@@ -17,19 +17,19 @@ import { getPwaDiagnosticSnapshot, BUILD_COHERENCE } from './pwaBuildDiagnostics
 //    dentro de start(), abaixo.
 // 2. NÃO BLOQUEIA A ABERTURA: checkForUpdate() é fire-and-forget (void);
 //    rede lenta/offline nunca atrasa nem quebra a renderização do app.
-// 3. CARD APARECE IMEDIATAMENTE: PwaUpdateCard.jsx usa
-//    useSyncExternalStore ligado a este manager -- assim que a 1a
-//    checkForUpdate() do startup resolver com updateAvailable=true, o
-//    card aparece, sem exigir trocar de aba/minimizar/esperar.
-// 4. ATUALIZAR AGORA = 1 AÇÃO: applyUpdate() executa sozinho todo o fluxo
+// 3. SEM AÇÃO DO USUÁRIO: não existe banner, card nem botão de
+//    atualizar. Todo update é automático; a tela nunca pede um clique.
+// 4. UM FLUXO SÓ: applyUpdate() executa sozinho todo o fluxo
 //    registration.update() -> waiting/installing -> skipWaiting ->
 //    controllerchange -> reload controlado -> reverifica os 3 build IDs
 //    no próximo checkForUpdate() (agora síncrono, ver garantia 1).
-// 5. ATUALIZA SOZINHO, NUNCA EM LOOP: no máximo 1 update automático por
-//    build (AUTO_RECOVERY_GUARD_KEY), disparado na abertura (antes do
+// 5. ATUALIZA SOZINHO, NUNCA EM LOOP: disparado na abertura (antes do
 //    primeiro toque) ou ao sair de foreground -- nunca no meio de um uso,
-//    nunca com uma ação/voz em andamento (setAutoUpdateBlocked), nunca
-//    repete. O card só fica como plano B se o automático falhar.
+//    nunca com uma ação/voz em andamento (setAutoUpdateBlocked). Falha sem
+//    reload tenta de novo na próxima oportunidade. Reload que não trouxe o
+//    build novo só tenta de novo na próxima abertura do app (guarda de
+//    reload em sessionStorage), e no máximo MAX_AUTO_UPDATE_ATTEMPTS vezes
+//    por build (AUTO_RECOVERY_GUARD_KEY).
 // 6. NUNCA DESTRÓI DADOS DO USUÁRIO: recovery só toca em cache de Service
 //    Worker comprovadamente obsoleto -- nunca sessão Supabase, IndexedDB,
 //    localStorage funcional, credenciais ou preferências.
@@ -64,17 +64,19 @@ import { getPwaDiagnosticSnapshot, BUILD_COHERENCE } from './pwaBuildDiagnostics
 export const UPDATE_RELOAD_GUARD_KEY = 'uniflow.app-update.reload-guard';
 // PWA-UPDATE3: guarda SEPARADA da UPDATE_RELOAD_GUARD_KEY -- aquela evita
 // dois reloads dentro de UMA chamada de applyUpdate(); esta decide se vale
-// a pena DISPARAR applyUpdate() automaticamente (sem clique) para este
-// build. Em localStorage (nao sessionStorage): precisa sobreviver a um
-// relaunch completo do PWA no iOS, ja que "por multiplas verificacoes"
-// pode abranger o app sendo fechado/reaberto entre uma checagem e outra.
+// a pena DISPARAR applyUpdate() automaticamente para este build, e conta
+// as tentativas. Em localStorage (nao sessionStorage): precisa sobreviver a
+// um relaunch completo do PWA no iOS, senao a contagem zera a cada abertura
+// e um build que nunca ativa recarregaria o app em toda abertura.
 export const AUTO_RECOVERY_GUARD_KEY = 'uniflow.app-update.auto-recovery-guard';
 // Arma o update automatico na PRIMEIRA deteccao do build novo. Com 2, a
 // contagem (em memoria) zerava a cada reabertura do app e a abertura so
-// faz uma checagem -- na pratica o update nunca armava e o usuario sempre
-// precisava tocar no card. A corrida com um clique manual ja e coberta
-// por updatePromise.
+// faz uma checagem -- na pratica o update nunca armava.
 const AUTO_RECOVERY_THRESHOLD = 1;
+// Tentativas automaticas por build. Sem botao de plano B, o automatico
+// precisa tentar de novo; o teto evita reload em toda abertura quando o
+// build novo nao ativa de jeito nenhum.
+export const MAX_AUTO_UPDATE_ATTEMPTS = 3;
 export const UPDATE_STATUS = Object.freeze({
   IDLE: 'idle',
   CHECKING: 'checking',
@@ -146,18 +148,29 @@ function readAutoRecoveryGuard(storage) {
     const raw = storage?.getItem(AUTO_RECOVERY_GUARD_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return typeof parsed?.targetBuild === 'string' ? parsed : null;
+    if (typeof parsed?.targetBuild !== 'string') return null;
+    // Guarda antiga, sem contagem: vale como uma tentativa já feita.
+    const attempts = Number.isInteger(parsed.attempts) && parsed.attempts > 0 ? parsed.attempts : 1;
+    return { ...parsed, attempts };
   } catch {
     return null;
   }
 }
 
-function writeAutoRecoveryGuard(storage, targetBuild) {
+function writeAutoRecoveryGuard(storage, targetBuild, attempts) {
   try {
-    storage?.setItem(AUTO_RECOVERY_GUARD_KEY, JSON.stringify({ targetBuild, attemptedAt: Date.now() }));
+    storage?.setItem(AUTO_RECOVERY_GUARD_KEY, JSON.stringify({ targetBuild, attempts, attemptedAt: Date.now() }));
   } catch {
     // Sem storage disponivel: o recovery automatico simplesmente nao
     // dispara nesta sessao -- nunca uma excecao propagada.
+  }
+}
+
+function clearAutoRecoveryGuard(storage) {
+  try {
+    storage?.removeItem(AUTO_RECOVERY_GUARD_KEY);
+  } catch {
+    // Sem storage: a próxima tentativa só herda uma contagem a mais.
   }
 }
 
@@ -278,16 +291,17 @@ export function createPwaUpdateManager({
   // como nova sessão de verificação, nunca soma com contagens antigas
   // (evita disparar recovery cedo demais só porque o app foi reaberto).
   let pendingBuildStreak = { buildId: null, count: 0 };
-  // PWA-UPDATE3: "armado" != "disparado". Depois de ARMAdo_THRESHOLD
+  // PWA-UPDATE3: "armado" != "disparado". Depois de AUTO_RECOVERY_THRESHOLD
   // checagens confirmando o mesmo build pendente, so guardamos a
   // INTENCAO aqui -- o reload de verdade (dentro de applyUpdate) so
-  // acontece na PROXIMA vez que a pagina for para background
-  // (visibilitychange -> hidden), nunca enquanto o usuario esta olhando
-  // para a tela. Uma recuperacao automatica nunca deve interromper uma
+  // acontece na abertura (antes do primeiro toque) ou na PROXIMA vez que
+  // a pagina for para background (visibilitychange -> hidden), nunca
+  // enquanto o usuario esta usando a tela. Uma recuperacao automatica nunca deve interromper uma
   // interacao em andamento.
   let autoRecoveryArmedForBuild = null;
   // Acao em andamento na tela (voz, confirmacao pendente): nenhum update
-  // automatico recarrega a pagina enquanto true. Informado pelo card.
+  // automatico recarrega a pagina enquanto true. Informado pela Home via
+  // usePwaAutoUpdateBlock.
   let autoUpdateBlocked = false;
   // Primeiro toque/tecla desde a abertura: depois disso a abertura deixa
   // de ser um momento seguro para recarregar (so o background serve).
@@ -355,7 +369,7 @@ export function createPwaUpdateManager({
             latestRelease: manifest,
             updateAvailable: true,
             status: UPDATE_STATUS.FAILED,
-            error: 'Não foi possível atualizar agora. Tente novamente.',
+            error: 'reload_guard',
           }, 'updateFailed', { reason: 'reload_guard' });
           registerPendingBuildCheck(manifest.buildId);
         } else {
@@ -393,8 +407,11 @@ export function createPwaUpdateManager({
 
     if (pendingBuildStreak.count < AUTO_RECOVERY_THRESHOLD) return;
 
+    // Reload desta sessão já aconteceu e não trouxe o build: recarregar de
+    // novo agora seria loop. A próxima abertura do app tenta outra vez.
+    if (readReloadGuard(runtime.sessionStorage)?.targetBuild === buildId) return;
     const guard = readAutoRecoveryGuard(runtime.localStorage);
-    if (guard?.targetBuild === buildId) return; // já tentamos recuperar sozinho este build
+    if (guard?.targetBuild === buildId && guard.attempts >= MAX_AUTO_UPDATE_ATTEMPTS) return;
 
     autoRecoveryArmedForBuild = buildId;
   }
@@ -406,7 +423,7 @@ export function createPwaUpdateManager({
   async function maybeFireArmedAutoRecovery() {
     if (!autoRecoveryArmedForBuild) return;
     if (autoUpdateBlocked) return; // continua armado para a próxima oportunidade
-    if (updatePromise) return; // um applyUpdate (manual ou automático) já em andamento
+    if (updatePromise) return; // um applyUpdate já em andamento
     const targetBuild = autoRecoveryArmedForBuild;
     if (state.latestBuildId !== targetBuild || !state.updateAvailable) {
       autoRecoveryArmedForBuild = null;
@@ -414,25 +431,32 @@ export function createPwaUpdateManager({
     }
 
     autoRecoveryArmedForBuild = null;
-    writeAutoRecoveryGuard(runtime.localStorage, targetBuild);
-    devDiagnostic(isDev, 'auto_recovery_triggered', state, { targetBuild });
-    await applyUpdate({ auto: true });
+    const guard = readAutoRecoveryGuard(runtime.localStorage);
+    const attempts = guard?.targetBuild === targetBuild ? guard.attempts + 1 : 1;
+    writeAutoRecoveryGuard(runtime.localStorage, targetBuild, attempts);
+    devDiagnostic(isDev, 'auto_recovery_triggered', state, { targetBuild, attempts });
+    const result = await applyUpdate({ auto: true });
+    // Só conta tentativa que chegou ao reload: falha de rede ou de Service
+    // Worker não recarrega nada e tenta de novo na próxima oportunidade.
+    if (result.outcome !== 'reloading') {
+      if (attempts > 1) writeAutoRecoveryGuard(runtime.localStorage, targetBuild, attempts - 1);
+      else clearAutoRecoveryGuard(runtime.localStorage);
+    }
   }
 
-  async function applyUpdate({ retry = false, auto = false } = {}) {
+  async function applyUpdate({ auto = false } = {}) {
     if (updatePromise) return updatePromise;
     const targetBuild = state.latestBuildId;
     if (!state.updateAvailable || !targetBuild) return Object.freeze({ outcome: 'unavailable' });
 
     updatePromise = (async () => {
-      if (retry) clearReloadGuard(runtime.sessionStorage);
       const existingGuard = readReloadGuard(runtime.sessionStorage);
       if (existingGuard?.targetBuild === targetBuild) {
-        publish({ status: UPDATE_STATUS.FAILED, error: 'Não foi possível atualizar agora. Tente novamente.' }, 'updateFailed', { reason: 'reload_guard' });
+        publish({ status: UPDATE_STATUS.FAILED, error: 'reload_guard' }, 'updateFailed', { reason: 'reload_guard' });
         return Object.freeze({ outcome: 'guarded' });
       }
       if (!writeReloadGuard(runtime.sessionStorage, targetBuild)) {
-        publish({ status: UPDATE_STATUS.FAILED, error: 'Não foi possível atualizar agora. Tente novamente.' }, 'updateFailed', { reason: 'storage_unavailable' });
+        publish({ status: UPDATE_STATUS.FAILED, error: 'storage_unavailable' }, 'updateFailed', { reason: 'storage_unavailable' });
         return Object.freeze({ outcome: 'storage-error' });
       }
 
@@ -486,10 +510,8 @@ export function createPwaUpdateManager({
         return Object.freeze({ outcome: 'reloading', targetBuild });
       } catch (error) {
         clearReloadGuard(runtime.sessionStorage);
-        publish({
-          status: UPDATE_STATUS.FAILED,
-          error: 'Não foi possível atualizar agora. Tente novamente.',
-        }, 'updateFailed', { reason: error?.message ?? 'update_failed' });
+        const reason = error?.message ?? 'update_failed';
+        publish({ status: UPDATE_STATUS.FAILED, error: reason }, 'updateFailed', { reason });
         return Object.freeze({ outcome: 'error' });
       } finally {
         updatePromise = null;

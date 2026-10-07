@@ -133,14 +133,14 @@ test('lifecycle PWA reutiliza o store único e nunca força reload em controller
 });
 
 test('lifecycle PWA expoe o diagnostico de build (3 identidades) so no console, nunca em nenhuma tela/fluxo do app', async () => {
-  const [lifecycle, home, card] = await Promise.all([
+  const [lifecycle, home, blockHook] = await Promise.all([
     source('./pwaUpdateLifecycle.js'),
     source('../simplified-app/SimplifiedHomeView.jsx'),
-    source('./PwaUpdateCard.jsx'),
+    source('./usePwaAutoUpdateBlock.js'),
   ]);
   assert.match(lifecycle, /runtime\.__uniflowPwaDiagnostic = \(\) => manager\.getDiagnosticSnapshot\(\);/);
   assert.doesNotMatch(home, /__uniflowPwaDiagnostic|getDiagnosticSnapshot/);
-  assert.doesNotMatch(card, /__uniflowPwaDiagnostic|getDiagnosticSnapshot/);
+  assert.doesNotMatch(blockHook, /__uniflowPwaDiagnostic|getDiagnosticSnapshot/);
 });
 
 test('lifecycle PWA remove o helper de console e para o manager no cleanup, sem vazar nenhum dos dois', async () => {
