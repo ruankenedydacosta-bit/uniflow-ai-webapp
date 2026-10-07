@@ -1,47 +1,381 @@
+/* Fase 3 do redesign (#90): tela 15 Login do handoff. Fundo do modo voz
+   (--uf-app-stage-bg), Inter, orb de 132px, campos de 46px e botões
+   contornados. Os blocos marcados como "tela de boas-vindas" são da
+   /welcome, que não está no handoff e mantém a composição institucional. */
+
 .authPage {
+  position: relative;
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
   width: 100%;
+  display: flex;
+  flex-direction: column;
   overflow-x: hidden;
   overflow-y: auto;
-}
-
-.switchModeLink,
-.forgotLink,
-.inlineLink {
-  color: var(--uf-color-text-brand);
-  font-size: var(--uf-text-caption-size);
-  font-weight: var(--uf-font-weight-semibold);
-}
-
-.switchModeLink {
-  width: 100%;
-  text-align: center;
-}
-
-.authPage {
-  position: relative;
-  display: block;
   padding:
-    max(var(--uf-space-32), env(safe-area-inset-top))
-    max(var(--uf-space-12), env(safe-area-inset-right))
-    max(var(--uf-space-32), env(safe-area-inset-bottom))
-    max(var(--uf-space-12), env(safe-area-inset-left));
-  background:
-    radial-gradient(circle at 50% 18%, rgba(37, 99, 235, .13), transparent 30%),
-    #020713;
-  color: #f7f9ff;
+    env(safe-area-inset-top)
+    max(24px, env(safe-area-inset-right))
+    max(36px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+  background: var(--uf-app-stage-bg);
+  color: var(--uf-app-text);
+  font-family: var(--uf-app-font-family);
+  font-synthesis-weight: none;
 }
 
 .authShell {
-  width: min(100%, 680px);
+  width: min(100%, 420px);
   min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   margin: 0 auto;
 }
+
+/* --- Marca: orb 132 + UniFlow 28/500 + apoio 14 ------------------------- */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding-top: 88px;
+  text-align: center;
+}
+
+.brandName {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 28px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+
+.brandSubtitle {
+  margin: -10px 0 0;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* --- Painel do formulário ---------------------------------------------- */
+.authPanel {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 40px;
+}
+
+.emailForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formHint {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  color: var(--uf-app-text-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.fieldControl,
+.fieldControlError {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: var(--uf-radius-8);
+  background: color-mix(in oklch, var(--uf-app-card-surface) 80%, transparent);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+  transition: box-shadow var(--uf-duration-fast) ease;
+}
+
+.fieldControl:focus-within,
+.fieldControlError:focus-within {
+  box-shadow: inset 0 0 0 1px var(--uf-app-brand-violet);
+}
+
+.fieldControlError {
+  box-shadow: inset 0 0 0 1px var(--uf-app-danger);
+}
+
+.fieldIcon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--uf-app-text-3);
+}
+
+.fieldIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.fieldControl input,
+.fieldControlError input {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--uf-app-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.fieldControl input::placeholder,
+.fieldControlError input::placeholder {
+  color: var(--uf-app-text-3);
+}
+
+.passwordToggle {
+  min-width: auto;
+  min-height: 0;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--uf-app-brand-blue-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.passwordToggle:focus-visible,
+.forgotLink:focus-visible,
+.switchModeLink:focus-visible,
+.inlineLink:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+  border-radius: var(--uf-radius-8);
+}
+
+/* Botão principal: contornado em violeta, com brilho (handoff). */
+.emailForm > button[type='submit'] {
+  min-height: 46px;
+  border: 1px solid var(--uf-app-brand-violet);
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-brand-violet-text);
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+  box-shadow: 0 0 18px color-mix(in oklch, var(--uf-app-brand-violet) 30%, transparent);
+}
+
+.emailForm > button[type='submit']:hover:not(:disabled) {
+  background: var(--uf-app-ai-subtle);
+  transform: none;
+}
+
+.forgotLink {
+  min-height: 44px;
+  align-self: center;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--uf-app-brand-blue-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.forgotLink:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.authDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+}
+
+.authDivider::before,
+.authDivider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+}
+
+.authDivider::before {
+  background: linear-gradient(to right, transparent, var(--uf-app-border-strong));
+}
+
+.authDivider::after {
+  background: linear-gradient(to left, transparent, var(--uf-app-border-strong));
+}
+
+.socialActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Botão secundário contornado (handoff: borda do divisor, 46px). */
+.socialActions > button {
+  min-height: 46px;
+  border: 1px solid var(--uf-app-border-strong);
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-text);
+  font-size: 14px;
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.socialActions > button:hover:not(:disabled) {
+  background: var(--uf-app-surface-2);
+  transform: none;
+}
+
+.googleMark {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.googleMark svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Aceite legal (cadastro) ------------------------------------------- */
+.legalField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.legalLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--uf-app-text-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.checkboxHitArea {
+  display: flex;
+  width: var(--uf-tap-target-min);
+  min-width: var(--uf-tap-target-min);
+  height: var(--uf-tap-target-min);
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-top: 1px;
+  cursor: pointer;
+}
+
+.checkboxHitArea > input[type='checkbox'] {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--uf-app-brand-violet);
+}
+
+.checkboxHitArea > input[type='checkbox']:disabled,
+.checkboxHitArea:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+.inlineLink {
+  min-width: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--uf-app-brand-blue-text);
+  font: inherit;
+  font-size: 12px;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+/* --- Mensagens ---------------------------------------------------------- */
+.fieldError,
+.operationError {
+  margin: 0;
+  color: var(--uf-app-danger-text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.operationError {
+  padding: 10px 12px;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-danger-subtle);
+}
+
+.feedback {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-primary-subtle);
+  color: var(--uf-app-text);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.demoAccess {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--uf-app-border);
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* --- Rodapé: trocar entre entrar e criar conta --------------------------- */
+.switchMode {
+  margin: auto 0 0;
+  padding-top: 32px;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  text-align: center;
+}
+
+.switchModeLink {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--uf-app-brand-blue-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ======================================================================
+   Tela de boas-vindas (/welcome): composição institucional fora do handoff.
+   ====================================================================== */
 
 .brandExperience {
   position: relative;
@@ -334,138 +668,121 @@
 
 .authHeading {
   display: grid;
-  gap: var(--uf-space-6);
-  margin: calc(var(--uf-space-12) * -1) 0 var(--uf-space-16);
+  gap: 6px;
+  margin: 0 0 16px;
   text-align: center;
 }
 
 .authHeading h1 {
-  color: #f7f9ff;
-  font-size: clamp(28px, 8vw, 42px);
-  line-height: 1.1;
-  letter-spacing: 0;
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 28px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.2;
+  letter-spacing: -.02em;
 }
 
 .authHeading p {
-  color: #a2aabc;
-  font-size: var(--uf-text-md-size);
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
 }
 
-.authPanel {
-  width: 100%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-16);
-  padding: clamp(18px, 5vw, 32px);
-  border: 1px solid rgba(94, 115, 158, .28);
-  border-radius: var(--uf-radius-20);
-  background: rgba(5, 13, 28, .88);
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, .3),
-    inset 0 1px 0 rgba(255, 255, 255, .025);
-  backdrop-filter: blur(18px);
-}
-
-/* SIMPLIFICAÇÃO DA PRIMEIRA TELA: dois cards grandes de decisão (Já tenho
-   conta / Criar conta) -- mesma identidade visual premium do .authPanel
-   (vidro escuro, borda sutil, glow), mas cada opção é o próprio cartão
-   clicável, com ícone + título + descrição + seta, pensado para ser
-   confortável de ler e tocar mesmo para quem tem pouca familiaridade
-   digital (ex.: idosos). */
 .decisionOptions {
   display: grid;
-  gap: var(--uf-space-16);
+  gap: 12px;
   width: 100%;
 }
 
 .decisionCard {
   display: flex;
   align-items: center;
-  gap: var(--uf-space-16);
+  gap: 14px;
   width: 100%;
   min-height: var(--uf-tap-target-min);
-  padding: clamp(18px, 5vw, 26px);
-  border: 1px solid rgba(94, 115, 158, .28);
-  border-radius: var(--uf-radius-20);
-  background: rgba(5, 13, 28, .88);
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, .3),
-    inset 0 1px 0 rgba(255, 255, 255, .025);
-  backdrop-filter: blur(18px);
+  padding: 16px;
+  border: 0;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
   color: inherit;
+  font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: transform 160ms var(--uf-ease-smooth), border-color 160ms var(--uf-ease-smooth);
+  transition: box-shadow var(--uf-duration-fast) ease;
 }
 
 .decisionCard:hover,
 .decisionCard:focus-visible {
-  border-color: rgba(124, 124, 255, .55);
-  transform: translateY(-2px);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 35%, transparent);
 }
 
-.decisionCard:active {
-  transform: translateY(0);
+.decisionCard:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.decisionCard:disabled {
+  cursor: default;
+  opacity: .7;
 }
 
 .decisionCardIcon {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 56px;
-  height: 56px;
-  border: 1px solid rgba(105, 127, 172, .3);
-  border-radius: var(--uf-radius-16);
-  background: rgba(37, 99, 235, .12);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-app-well);
 }
 
 .decisionCardIcon svg {
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
   overflow: visible;
   fill: none;
-  stroke: #4de4d3;
+  stroke: var(--uf-app-brand-blue-text);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
 }
 
 .decisionCard[data-option='new'] .decisionCardIcon svg {
-  stroke: #7c7cff;
+  stroke: var(--uf-app-brand-violet-text);
 }
 
 .decisionCardText {
   display: grid;
-  gap: var(--uf-space-4);
+  gap: 2px;
   flex: 1 1 auto;
   min-width: 0;
 }
 
 .decisionCardText strong {
-  color: #f7f9ff;
-  font-size: var(--uf-text-md-size);
-  font-weight: var(--uf-font-weight-semibold);
+  color: var(--uf-app-text);
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
 }
 
 .decisionCardText span {
-  color: #a2aabc;
-  font-size: var(--uf-text-caption-size);
-  line-height: var(--uf-text-caption-lh);
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .decisionCardArrow {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
-  color: #6d79ff;
+  width: 14px;
+  height: 14px;
+  color: var(--uf-app-text-3);
 }
 
 .decisionCardArrow svg {
-  width: 22px;
-  height: 22px;
+  width: 14px;
+  height: 14px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -473,313 +790,26 @@
   stroke-width: 2;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .decisionCard {
-    transition: none;
-  }
-}
-
-@keyframes authBrandReveal {
-  from {
-    opacity: 0;
-    transform: scale(.94);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes authFadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(var(--uf-space-8));
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.authCardTitle {
-  margin: 0;
-  background: linear-gradient(90deg, #8b5cf6, #38bdf8 52%, #34d399);
-  background-clip: text;
-  color: transparent;
-  font-size: var(--uf-text-title-size);
-  line-height: var(--uf-text-title-lh);
-  letter-spacing: 0;
-  text-align: center;
-}
-
-.modeSwitch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--uf-space-4);
-  padding: var(--uf-space-4);
-  border-radius: var(--uf-radius-12);
-  background: rgba(15, 24, 43, .72);
-}
-
-.modeButton,
-.modeActive {
-  min-width: 0;
-  border-radius: var(--uf-radius-8);
-  color: #8f99ad;
-  font-weight: var(--uf-font-weight-semibold);
-}
-
-.modeActive {
-  background: #162036;
-  color: #f7f9ff;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, .22);
-}
-
-.socialActions,
-.emailForm {
-  display: grid;
-  gap: var(--uf-space-12);
-}
-
-.socialActions > button {
-  min-height: 54px;
-  border-color: rgba(104, 126, 169, .3);
-  background: #111a2b;
-  color: #f5f7fb;
-}
-
-.socialActions > button:hover {
-  background: #172239;
-}
-
-.googleMark {
-  width: 24px;
-  height: 24px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 50%;
-  background: conic-gradient(from -40deg, #4285f4 0 25%, #34a853 0 45%, #fbbc05 0 70%, #ea4335 0);
-}
-
-.googleMark > span {
-  width: 16px;
-  height: 16px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #111a2b;
-  color: #f7f9ff;
-  font-size: 12px;
-  font-weight: var(--uf-font-weight-bold);
-}
-
-.authDivider {
-  display: flex;
-  align-items: center;
-  gap: var(--uf-space-12);
-  color: #778196;
-  font-size: var(--uf-text-caption-size);
-}
-
-.authDivider::before,
-.authDivider::after {
-  content: '';
-  height: 1px;
-  flex: 1;
-  background: rgba(124, 142, 178, .2);
-}
-
-.passwordField {
-  display: grid;
-  gap: var(--uf-space-8);
-}
-
-.passwordField > label {
-  color: #dce2ee;
-  font-size: var(--uf-text-caption-size);
-  font-weight: var(--uf-font-weight-medium);
-}
-
-.passwordControl,
-.passwordControlError {
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  gap: var(--uf-space-8);
-  padding-left: var(--uf-space-16);
-  border: 1px solid rgba(103, 125, 169, .3);
-  border-radius: var(--uf-radius-12);
-  background: rgba(4, 12, 25, .56);
-  transition:
-    border-color var(--uf-duration-fast) var(--uf-ease-smooth),
-    box-shadow var(--uf-duration-fast) var(--uf-ease-smooth);
-}
-
-.passwordIcon {
-  width: 20px;
-  height: 20px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  color: #8e98ab;
-}
-
-.passwordIcon svg,
-.authPanel div:has(> input) svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.7;
-}
-
-.authPanel div:has(> input:not([type='checkbox']):not([type='radio'])) {
-  border-color: rgba(103, 125, 169, .3);
-  background: rgba(4, 12, 25, .56);
-  color: #8e98ab;
-}
-
-.authPanel input {
-  color: #f5f7fb;
-}
-
-.authPanel input::placeholder {
-  color: #687287;
-}
-
-.passwordControl:focus-within,
-.passwordControlError:focus-within {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .2);
-}
-
-.passwordControlError {
-  border-color: var(--uf-color-danger);
-}
-
-.passwordControl input,
-.passwordControlError input {
-  min-width: 0;
-  flex: 1;
-  outline: 0;
-}
-
-.passwordToggle {
-  min-width: auto;
-  padding: 0 var(--uf-space-12);
-  color: #6d79ff;
-  font-size: var(--uf-text-caption-size);
-  font-weight: var(--uf-font-weight-semibold);
-}
-
-.forgotLink {
-  justify-self: end;
-}
-
-.legalField {
-  display: grid;
-  gap: var(--uf-space-4);
-}
-
-.legalLabel {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--uf-space-8);
-  color: #a2aabc;
-  font-size: var(--uf-text-caption-size);
-  line-height: var(--uf-text-caption-lh);
-}
-
-.checkboxHitArea {
-  display: flex;
-  width: var(--uf-tap-target-min);
-  min-width: var(--uf-tap-target-min);
-  height: var(--uf-tap-target-min);
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding-top: 1px;
-  cursor: pointer;
-}
-
-.checkboxHitArea > input[type='checkbox'] {
-  width: 20px;
-  min-width: 20px;
-  height: 20px;
-  min-height: 20px;
-  margin: 0;
-  flex: 0 0 auto;
-  accent-color: var(--uf-color-primary);
-}
-
-.checkboxHitArea > input[type='checkbox']:disabled,
-.checkboxHitArea:has(input:disabled) {
-  cursor: not-allowed;
-}
-
-.inlineLink {
-  min-width: auto;
-  padding: 0;
-  vertical-align: baseline;
-}
-
-.fieldError,
-.operationError {
-  color: var(--uf-color-danger);
-  font-size: var(--uf-text-micro-size);
-  line-height: var(--uf-text-micro-lh);
-}
-
-.operationError {
-  padding: var(--uf-space-10) var(--uf-space-12);
-  border-radius: var(--uf-radius-8);
-  background: var(--uf-color-danger-subtle);
-}
-
-.feedback {
-  padding: var(--uf-space-10) var(--uf-space-12);
-  border-radius: var(--uf-radius-8);
-  background: var(--uf-color-primary-subtle);
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-caption-size);
-  text-align: center;
-}
-
-.emailForm > button[type='submit'] {
-  min-height: 54px;
-  border: 0;
-  background: linear-gradient(100deg, #3049f4 0%, #299bd7 53%, #2acb8b 100%);
-  color: #fff;
-  box-shadow: 0 10px 28px rgba(37, 99, 235, .24);
-}
-
-.emailForm > button[type='submit']:hover {
-  background: linear-gradient(100deg, #3d56ff 0%, #32a9e5 53%, #35d79a 100%);
-}
-
 .securityMessage {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--uf-space-8);
-  margin: 0;
-  color: #8f99ad;
-  font-size: var(--uf-text-caption-size);
+  gap: 8px;
+  margin: 16px 0 0;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
   text-align: center;
 }
 
 .securityMessage span {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  border: 1px solid #10b981;
-  border-radius: 7px;
-  color: #10b981;
+  border: 1px solid var(--uf-app-brand-green-text);
+  border-radius: 6px;
+  color: var(--uf-app-brand-green-text);
 }
 
 .partnershipFooter {
@@ -813,51 +843,10 @@
   line-height: 1.55;
 }
 
-.demoAccess {
-  display: grid;
-  gap: var(--uf-space-4);
-  padding-top: var(--uf-space-12);
-  border-top: 1px solid var(--uf-color-border-subtle);
-  color: var(--uf-color-text-tertiary);
-  font-size: var(--uf-text-micro-size);
-  text-align: center;
-}
-
-@media (min-width: 480px) {
-  .authPage {
-    padding:
-      max(var(--uf-space-24), env(safe-area-inset-top))
-      max(var(--uf-space-20), env(safe-area-inset-right))
-      max(var(--uf-space-24), env(safe-area-inset-bottom))
-      max(var(--uf-space-20), env(safe-area-inset-left));
-  }
-
-  .authPanel { padding: var(--uf-space-28); }
-}
-
-@media (max-width: 767px) {
-  .authPanel div:has(> input:not([type='checkbox']):not([type='radio'])) {
-    transition:
-      border-color 220ms var(--uf-ease-smooth),
-      box-shadow 220ms var(--uf-ease-smooth),
-      background-color 220ms var(--uf-ease-smooth);
-  }
-
-  .authPanel div:has(> input:not([type='checkbox']):not([type='radio'])):focus-within {
-    border-color: var(--uf-color-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--uf-color-primary) 22%, transparent);
-  }
-}
-
+/* --- Responsivo ---------------------------------------------------------- */
 @media (min-width: 768px) {
   .authShell {
-    width: min(100%, 720px);
-  }
-
-  .authPanel {
-    width: min(100%, 610px);
-    align-self: center;
-    padding: var(--uf-space-32);
+    width: min(100%, 420px);
   }
 
   .benefitsStrip {
@@ -868,8 +857,12 @@
 @media (max-width: 359px) {
   .authPage {
     padding-inline:
-      max(var(--uf-space-8), env(safe-area-inset-left))
-      max(var(--uf-space-8), env(safe-area-inset-right));
+      max(16px, env(safe-area-inset-left))
+      max(16px, env(safe-area-inset-right));
+  }
+
+  .brand {
+    padding-top: 56px;
   }
 
   .benefitsStrip {
@@ -879,15 +872,13 @@
   .benefitsStrip li {
     padding-inline: 3px;
   }
-
-  .authPanel {
-    padding-inline: var(--uf-space-14);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .uniflowLockup,
-  .authPanel div:has(> input) {
+  .fieldControl,
+  .fieldControlError,
+  .decisionCard {
     animation: none;
     transition: none;
   }

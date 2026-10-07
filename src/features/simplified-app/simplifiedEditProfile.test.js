@@ -37,11 +37,16 @@ test('index.js exporta SimplifiedEditProfilePage', async () => {
 // Cabeçalho -- voltar + título + Falar com a Uni real (sem chatbot paralelo).
 // ============================================================================
 
-test('cabeçalho tem botão voltar para Conta, título e Falar com a Uni real', async () => {
+// Fase 3 do redesign (#90): a tela é a aba Perfil de "Configurações"
+// (tela 14), com as abas navegando entre as rotas já existentes. O botão
+// Falar com a Uni mora no card da Uni ao fim da página.
+test('cabeçalho Configurações com voltar para o Mais, aba Perfil ativa e Falar com a Uni real no card da Uni', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  assert.match(content, /aria-label="Voltar para Conta"/);
+  assert.match(content, /backLabel="Voltar para Mais"/);
   assert.match(content, /navigate\(SIMPLIFIED_ROUTES\.ACCOUNT\)/);
-  assert.match(content, /Editar perfil/);
+  assert.match(content, /title="Configurações"/);
+  assert.match(content, /active=\{ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\}/);
+  assert.match(content, /onBeforeNavigate=\{requestNavigation\}/);
   assert.match(content, /navigate\(SIMPLIFIED_ROUTES\.UNI\)/);
   assert.match(content, /Falar com a Uni/);
 });
@@ -52,7 +57,7 @@ test('cabeçalho tem botão voltar para Conta, título e Falar com a Uni real', 
 
 test('avatar usa src/name reais (Avatar já trata fallback de iniciais)', async () => {
   const content = await source('./SimplifiedEditProfilePage.jsx');
-  assert.match(content, /<Avatar src=\{displayedAvatar\} name=\{form\.full_name \|\| undefined\}/);
+  assert.match(content, /<Avatar src=\{displayedAvatar\} name=\{form\.full_name \|\| undefined\} size="lg"/);
 });
 
 test('Trocar foto valida, cria preview e envia somente no salvamento explícito', async () => {
@@ -212,11 +217,14 @@ test('fechar aba com alterações pendentes usa beforeunload nativo (não bloque
 // Acessibilidade.
 // ============================================================================
 
-test('inputs têm min-height e foco visível definidos no CSS', async () => {
+// Fase 3 do redesign (#90): campo de 44px (handoff) e o botão voltar vive
+// no cabeçalho compartilhado das subpáginas.
+test('inputs têm min-height de 44px e foco visível definidos no CSS', async () => {
   const css = await source('./simplifiedEditProfile.module.css');
-  assert.match(css, /\.input\s*\{[^}]*min-height:\s*52px/);
+  assert.match(css, /\.input\s*\{[^}]*min-height:\s*44px/);
   assert.match(css, /\.input:focus-visible/);
-  assert.match(css, /\.backButton:focus-visible/);
+  const header = await source('./simplifiedSubpageHeader.module.css');
+  assert.match(header, /\.backButton:focus-visible/);
 });
 
 test('CSS oferece suporte a prefers-reduced-motion e responsividade', async () => {

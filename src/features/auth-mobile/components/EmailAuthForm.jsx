@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import {
+  PhEnvelopeSimpleIcon,
+  PhLockKeyIcon,
+  PhUserIcon,
+} from '../../simplified-app/SimplifiedIcons.jsx';
 import { AUTH_MODES } from '../authMobileSchema.js';
 import { validateAuthForm } from '../authMobileValidator.js';
 import AuthLegalNotice from './AuthLegalNotice.jsx';
@@ -13,20 +17,19 @@ const INITIAL_VALUES = Object.freeze({
   acceptedTerms: false,
 });
 
-function MailIcon() {
+// Fase 3 do redesign (#90): campo do handoff -- rótulo de 12px e caixa de
+// 46px com ícone à esquerda. O erro sai abaixo, ligado ao input por
+// aria-describedby.
+function AuthField({ id, label, icon, error, children }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 5h18v14H3zM3 7l9 7 9-7" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="5" y="10" width="14" height="11" rx="2" />
-      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2" />
-    </svg>
+    <div className={styles.field}>
+      <label htmlFor={id} className={styles.fieldLabel}>{label}</label>
+      <div className={error ? styles.fieldControlError : styles.fieldControl}>
+        <span className={styles.fieldIcon} aria-hidden="true">{icon}</span>
+        {children}
+      </div>
+      {error ? <p id={`${id}-error`} className={styles.fieldError}>{error}</p> : null}
+    </div>
   );
 }
 
@@ -51,69 +54,60 @@ function EmailAuthForm({ mode, loading, operationError, onSubmit, onForgotPasswo
   return (
     <form className={styles.emailForm} onSubmit={handleSubmit} noValidate>
       {isSignUp ? (
-        <Input
-          id="auth-full-name"
-          label="Nome"
-          value={values.fullName}
-          autoComplete="name"
-          placeholder="Como podemos chamar você?"
-          error={errors.fullName}
-          disabled={loading}
-          onChange={(event) => updateValue('fullName', event.target.value)}
-          fullWidth
-        />
+        <AuthField id="auth-full-name" label="Nome" icon={<PhUserIcon />} error={errors.fullName}>
+          <input
+            id="auth-full-name"
+            type="text"
+            value={values.fullName}
+            autoComplete="name"
+            placeholder="Como podemos chamar você?"
+            disabled={loading}
+            aria-invalid={errors.fullName ? true : undefined}
+            aria-describedby={errors.fullName ? 'auth-full-name-error' : undefined}
+            onChange={(event) => updateValue('fullName', event.target.value)}
+          />
+        </AuthField>
       ) : null}
 
-      <Input
-        id="auth-email"
-        label="Email"
-        type="email"
-        value={values.email}
-        autoComplete="email"
-        inputMode="email"
-        placeholder="voce@exemplo.com"
-        leftIcon={<MailIcon />}
-        error={errors.email}
-        disabled={loading}
-        onChange={(event) => updateValue('email', event.target.value)}
-        fullWidth
-      />
+      <AuthField id="auth-email" label="E-mail" icon={<PhEnvelopeSimpleIcon />} error={errors.email}>
+        <input
+          id="auth-email"
+          type="email"
+          value={values.email}
+          autoComplete="email"
+          inputMode="email"
+          placeholder="voce@email.com"
+          disabled={loading}
+          aria-invalid={errors.email ? true : undefined}
+          aria-describedby={errors.email ? 'auth-email-error' : undefined}
+          onChange={(event) => updateValue('email', event.target.value)}
+        />
+      </AuthField>
 
-      <div className={styles.passwordField}>
-        <label htmlFor="auth-password">Senha</label>
-        <div className={errors.password ? styles.passwordControlError : styles.passwordControl}>
-          <span className={styles.passwordIcon} aria-hidden="true"><LockIcon /></span>
-          <input
-            id="auth-password"
-            type={showPassword ? 'text' : 'password'}
-            value={values.password}
-            autoComplete={isSignUp ? 'new-password' : 'current-password'}
-            placeholder={isSignUp ? 'Pelo menos 8 caracteres' : 'Sua senha'}
-            disabled={loading}
-            aria-invalid={errors.password ? true : undefined}
-            aria-describedby={errors.password ? 'auth-password-error' : undefined}
-            onChange={(event) => updateValue('password', event.target.value)}
-          />
-          <button
-            type="button"
-            className={styles.passwordToggle}
-            aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-            aria-pressed={showPassword}
-            onClick={() => setShowPassword((visible) => !visible)}
-          >
-            {showPassword ? 'Ocultar' : 'Mostrar'}
-          </button>
-        </div>
-        {errors.password ? (
-          <p id="auth-password-error" className={styles.fieldError}>{errors.password}</p>
-        ) : null}
-      </div>
-
-      {!isSignUp ? (
-        <button type="button" className={styles.forgotLink} onClick={() => onForgotPassword(values.email)}>
-          Esqueci minha senha
+      <AuthField id="auth-password" label="Senha" icon={<PhLockKeyIcon />} error={errors.password}>
+        <input
+          id="auth-password"
+          type={showPassword ? 'text' : 'password'}
+          value={values.password}
+          autoComplete={isSignUp ? 'new-password' : 'current-password'}
+          placeholder={isSignUp ? 'Pelo menos 8 caracteres' : 'Sua senha'}
+          disabled={loading}
+          aria-invalid={errors.password ? true : undefined}
+          aria-describedby={errors.password ? 'auth-password-error' : undefined}
+          onChange={(event) => updateValue('password', event.target.value)}
+        />
+        <button
+          type="button"
+          className={styles.passwordToggle}
+          aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+          aria-pressed={showPassword}
+          onClick={() => setShowPassword((visible) => !visible)}
+        >
+          {showPassword ? 'Ocultar' : 'Mostrar'}
         </button>
-      ) : (
+      </AuthField>
+
+      {isSignUp ? (
         <AuthLegalNotice
           checked={values.acceptedTerms}
           error={errors.acceptedTerms}
@@ -121,13 +115,19 @@ function EmailAuthForm({ mode, loading, operationError, onSubmit, onForgotPasswo
           onChange={(value) => updateValue('acceptedTerms', value)}
           onLegalClick={onLegalClick}
         />
-      )}
+      ) : null}
 
       {operationError ? <p className={styles.operationError} role="alert">{operationError}</p> : null}
 
       <Button type="submit" size="lg" fullWidth loading={loading}>
         {isSignUp ? 'Criar conta' : 'Entrar'}
       </Button>
+
+      {!isSignUp ? (
+        <button type="button" className={styles.forgotLink} onClick={() => onForgotPassword(values.email)}>
+          Esqueci minha senha
+        </button>
+      ) : null}
     </form>
   );
 }

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import AuthBrandExperience from '../components/AuthBrandExperience.jsx';
 import PartnershipFooter from '../components/PartnershipFooter.jsx';
 import { useGoogleAuthRedirect } from '../useGoogleAuthRedirect.js';
+import { ensureAppFont } from '../../simplified-app/appFont.js';
 import styles from '../authMobile.module.css';
 
 // SIMPLIFICAÇÃO DA PRIMEIRA TELA: o usuário não decide mais COMO entrar
@@ -81,6 +82,10 @@ function WelcomeDecisionPage() {
   // terminar. Nenhum dos dois dispara um novo OAuth sozinho -- só liberam
   // a interação de novo.
   useEffect(() => {
+    // Redesign (#90): mesmo fundo e fonte da tela de acesso; a folha do
+    // Inter só entra quando esta tela monta.
+    ensureAppFont(document);
+
     function resetGoogleLoadingState() {
       setIsGoogleLoading((wasLoading) => {
         if (wasLoading) {

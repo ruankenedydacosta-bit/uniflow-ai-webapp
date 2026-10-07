@@ -39,8 +39,10 @@ test('feedback usa role="alert" para tone alert e role="status" para os demais (
   assert.match(content, /role=\{feedbackTone === 'alert' \? 'alert' : 'status'\}/);
 });
 
-test('campo de e-mail tem label associado (id/label via componente Input compartilhado)', async () => {
+// Fase 3 do redesign (#90): o campo segue o desenho do handoff (rótulo de
+// 12px + caixa com ícone), com o label ligado ao input por htmlFor.
+test('campo de e-mail tem label associado (htmlFor/id)', async () => {
   const content = await source('ForgotPasswordForm.jsx');
   assert.match(content, /id="forgot-password-email"/);
-  assert.match(content, /label="E-mail"/);
+  assert.match(content, /htmlFor="forgot-password-email" className=\{styles\.fieldLabel\}>E-mail<\/label>/);
 });

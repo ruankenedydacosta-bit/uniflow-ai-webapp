@@ -1,41 +1,43 @@
+/* Fase 3 do redesign (#90): tela 07 "Mais" do handoff. Padding lateral 22,
+   blocos com 20px de distância, cards com fundo de superfície e borda
+   interna de 1px. */
 .page {
   width: min(100%, 720px);
-  min-height: calc(100dvh - 112px);
   margin-inline: auto;
   padding:
-    max(14px, env(safe-area-inset-top))
-    max(18px, env(safe-area-inset-right))
-    34px
-    max(18px, env(safe-area-inset-left));
+    0
+    max(22px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: 20px;
   color: var(--uf-app-text);
 }
 
-/* ---------- Cabeçalho (mesmo padrão de Registros: título + Falar com a Uni) ---------- */
+/* ---------- Cabeçalho (símbolo 26 + "Mais" 17/500 + avatar 32) ---------- */
 
 .header {
-  min-height: 88px;
+  min-height: 60px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 16px;
+  gap: 8px;
+  padding: max(18px, env(safe-area-inset-top)) 0 8px;
 }
 
 .titleGroup {
   min-width: 0;
-  flex: 1 1 auto;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
 
 .mark {
-  width: clamp(52px, 13vw, 70px);
+  width: 26px;
   flex: 0 0 auto;
-  filter: drop-shadow(0 0 12px rgba(37, 99, 235, .32));
+  display: block;
 }
 
 .mark img {
@@ -46,246 +48,126 @@
 }
 
 .titleGroup h1 {
-  min-width: 0;
-  overflow: hidden;
   margin: 0;
   color: var(--uf-app-text);
-  font-size: clamp(22px, 6vw, 42px);
-  line-height: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 17px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.2;
 }
 
-.talkButton {
-  min-height: 52px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 0 18px;
-  border: 2px solid transparent;
-  border-radius: 16px;
-  background:
-    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
-    linear-gradient(110deg, var(--uf-app-success), var(--uf-app-cyan) 35%, var(--uf-app-primary) 66%, var(--uf-app-ai)) border-box;
-  color: var(--uf-app-text);
-  font: inherit;
-  font-size: 16px;
-  font-weight: 720;
-  cursor: pointer;
+.headerAvatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-right: -6px;
+  border-radius: var(--uf-radius-full);
 }
 
-.talkIcon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
+.headerAvatar:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
 }
 
-.talkIcon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: var(--uf-app-success-text);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
+/* Avatar do handoff: fundo neutro, iniciais 500, sem gradiente. */
+.page .avatar {
+  background: var(--uf-app-surface-3);
+  color: var(--uf-app-text-2);
+  font-weight: var(--uf-font-weight-medium);
+  box-shadow: none;
+}
+
+.headerAvatar .avatar {
+  font-size: 12px;
 }
 
 /* ---------- Card de perfil ---------- */
 
 .profileCard {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 20px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 22px;
-  background: var(--uf-app-card-bg);
-}
-
-.profileTop {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.profileInfo {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.nameRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
-.nameRow strong {
-  min-width: 0;
-  overflow: hidden;
-  font-size: clamp(18px, 4.6vw, 24px);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profileLine {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-  color: var(--uf-app-text-2);
-  font-size: 14.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.inlineIcon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 15px;
-  height: 15px;
-  color: var(--uf-app-text-3);
-}
-
-.inlineIcon svg {
   width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.addPhoneButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  align-self: flex-start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--uf-app-primary-text);
-  font: inherit;
-  font-size: 14.5px;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.profileActions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--uf-app-border);
-}
-
-.profileAction {
-  min-height: 64px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px;
+  gap: 14px;
+  padding: 14px;
   border: 0;
-  background: none;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
   color: var(--uf-app-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.profileAction strong {
-  display: block;
-  font-size: 15.5px;
+.profileCard .avatar {
+  font-size: 16px;
 }
 
-.profileAction small {
-  display: block;
-  color: var(--uf-app-text-2);
-  font-size: 13px;
+.profileInfo {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.actionIcon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
+.profileInfo strong {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.actionIcon svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
+.profileInfo small {
+  overflow: hidden;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-/* ---------- Tons compartilhados (perfil, plano, menu) ---------- */
-
-.toneBlue { background: var(--uf-app-primary-subtle); color: var(--uf-app-primary-text); }
-.toneGreen { background: var(--uf-app-success-subtle); color: var(--uf-app-success-text); }
-.tonePurple { background: var(--uf-app-ai-subtle); color: var(--uf-app-ai-text); }
 
 /* ---------- Card do plano ---------- */
 
 .planCard {
   width: 100%;
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto 18px;
+  grid-template-columns: 36px minmax(0, 1fr) auto 14px;
   align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  border: 1px solid rgba(45, 212, 191, .4);
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, .12), rgba(37, 99, 235, .08));
+  gap: 12px;
+  padding: 14px;
+  border: 0;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
   color: var(--uf-app-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.plan_neutral {
-  border-color: rgba(148, 163, 184, .35);
-  background: linear-gradient(135deg, rgba(71, 85, 105, .18), var(--uf-app-state-tail));
+.plan_ok {
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-green) 30%, transparent);
 }
 
 .plan_warn {
-  border-color: rgba(245, 158, 11, .45);
-  background: linear-gradient(135deg, rgba(245, 158, 11, .16), var(--uf-app-state-tail));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-warning) 35%, transparent);
 }
 
 .plan_danger {
-  border-color: rgba(239, 68, 68, .45);
-  background: linear-gradient(135deg, var(--uf-app-danger-subtle), var(--uf-app-state-tail));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-danger) 35%, transparent);
 }
 
-.planIcon {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: linear-gradient(145deg, rgba(124, 58, 237, .35), rgba(37, 99, 235, .35));
-  color: var(--uf-app-success-text);
-  box-shadow: 0 0 16px rgba(45, 212, 191, .28);
+.plan_ok .planIcon {
+  color: var(--uf-app-brand-green-text);
 }
 
-.planIcon svg {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
+.plan_warn .planIcon {
+  color: var(--uf-app-warning-text);
+}
+
+.plan_danger .planIcon {
+  color: var(--uf-app-danger-text);
 }
 
 .planInfo {
@@ -296,229 +178,60 @@
 }
 
 .planStatusLabel {
-  color: var(--uf-app-success-text);
-  font-size: 15.5px;
-  line-height: 1.25;
-}
-
-.plan_neutral .planStatusLabel {
-  color: var(--uf-app-text-2);
-}
-
-.plan_warn .planStatusLabel {
-  color: var(--uf-app-warning);
-}
-
-.plan_danger .planStatusLabel {
-  color: var(--uf-app-danger-text);
-}
-
-.planName {
   overflow: hidden;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: var(--uf-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.planName,
 .planInfo small {
-  color: var(--uf-app-text-2);
-  font-size: 13px;
+  overflow: hidden;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .planPrice {
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  text-align: right;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
 }
 
 .planPrice strong {
-  font-size: 20px;
+  font-size: 14px;
+  font-weight: var(--uf-font-weight-medium);
+  white-space: nowrap;
 }
 
 .planPrice small {
-  color: var(--uf-app-text-2);
-  font-size: 12.5px;
-}
-
-.planChevron {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
   color: var(--uf-app-text-3);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
-.planChevron svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
+/* ---------- Linhas do menu e sair ---------- */
 
-/* ---------- Menu principal ---------- */
-
-.menuCard {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 20px;
-  background: var(--uf-app-card-bg);
-  overflow: hidden;
-}
-
-.menuRow {
-  min-height: 68px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  border: 0;
-  border-bottom: 1px solid rgba(86, 109, 151, .22);
-  background: none;
-  color: var(--uf-app-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.menuRow:last-child {
-  border-bottom: 0;
+.menuRow,
+.logoutCard {
+  border-radius: var(--uf-radius-8);
 }
 
 .menuRow:hover,
-.profileAction:hover,
-.planCard:hover,
-.logoutCard:hover {
-  background: rgba(255, 255, 255, .03);
-}
-
-.menuIcon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-}
-
-.menuIcon svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.menuText {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.menuText strong {
-  overflow: hidden;
-  font-size: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.menuText small {
-  overflow: hidden;
-  color: var(--uf-app-text-2);
-  font-size: 13.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.menuChevron {
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  color: var(--uf-app-text-3);
-}
-
-.menuChevron svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-
-/* NOTIF-UX3: indicador neutro/desativado por padrão -- fica verde só
-   quando a subscription está confirmada (nunca otimista). Substitui a
-   badge grande "Ativadas/Desativadas" do card antigo por um sinal
-   discreto, coerente com o resto da lista (que não usa badges). */
-.notificationStatusDot {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--uf-app-text-3);
-}
-
-.notificationStatusDotOn {
-  background: var(--uf-app-success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--uf-app-success) 18%, transparent);
-}
-
-/* ---------- Sair da conta ---------- */
-
-.logoutCard {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 68px;
-  padding: 16px 18px;
-  border: 1px solid rgba(239, 68, 68, .3);
-  border-radius: 20px;
-  background: rgba(239, 68, 68, .06);
-  color: var(--uf-app-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.logoutIcon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--uf-app-danger-subtle);
-  color: var(--uf-app-danger);
-}
-
-.logoutIcon svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.logoutCard .menuText strong {
-  color: var(--uf-app-danger);
+.logoutCard:hover,
+.profileCard:hover,
+.planCard:hover {
+  background-color: var(--uf-app-card-row-hover);
 }
 
 .logoutError {
   margin: 0 0 12px;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--uf-radius-12);
   background: var(--uf-app-danger-subtle);
   color: var(--uf-app-danger-text);
   font-size: 14px;
@@ -526,13 +239,11 @@
 
 /* ---------- Foco visível (acessibilidade) ---------- */
 
-.talkButton:focus-visible,
-.profileAction:focus-visible,
-.addPhoneButton:focus-visible,
+.profileCard:focus-visible,
 .planCard:focus-visible,
 .menuRow:focus-visible,
 .logoutCard:focus-visible {
-  outline: 3px solid var(--uf-app-focus);
+  outline: 2px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -544,9 +255,9 @@
   margin-inline: auto;
   padding:
     max(14px, env(safe-area-inset-top))
-    max(18px, env(safe-area-inset-right))
+    max(22px, env(safe-area-inset-right))
     34px
-    max(18px, env(safe-area-inset-left));
+    max(22px, env(safe-area-inset-left));
   color: var(--uf-app-text);
 }
 
@@ -554,7 +265,7 @@
   min-height: 64px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 4px;
 }
 
 .backButton {
@@ -563,10 +274,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 50%;
-  background: var(--uf-app-surface-2);
-  color: var(--uf-app-text);
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-text-2);
   cursor: pointer;
 }
 
@@ -581,7 +292,7 @@
 }
 
 .backButton:focus-visible {
-  outline: 3px solid var(--uf-app-focus);
+  outline: 2px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -590,8 +301,8 @@
   overflow: hidden;
   margin: 0;
   color: var(--uf-app-text);
-  font-size: clamp(24px, 6vw, 34px);
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: var(--uf-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -608,39 +319,15 @@
   max-width: 420px;
   margin: 0;
   color: var(--uf-app-text-2);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
 /* ---------- Responsivo ---------- */
 
-@media (max-width: 520px) {
-  .profileTop {
-    align-items: flex-start;
-  }
-
-  .profileActions {
-    grid-template-columns: 1fr;
-  }
-
-  .planCard {
-    grid-template-columns: 44px minmax(0, 1fr) 18px;
-  }
-
+@media (max-width: 359px) {
   .planPrice {
     display: none;
-  }
-}
-
-@media (max-width: 359px) {
-  .talkButton {
-    padding-inline: 9px;
-    font-size: 12px;
-  }
-
-  .talkIcon {
-    width: 16px;
-    height: 16px;
   }
 }
 
@@ -648,14 +335,5 @@
   .page,
   .subpage {
     padding-inline: 42px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .menuRow,
-  .profileAction,
-  .planCard,
-  .logoutCard {
-    transition: none;
   }
 }

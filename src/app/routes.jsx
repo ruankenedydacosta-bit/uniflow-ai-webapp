@@ -28,6 +28,7 @@ import {
   SimplifiedAccountSubpagePlaceholder,
   SimplifiedEditProfilePage,
   SimplifiedMyAccountsPage,
+  SimplifiedNotificationsPage,
   SimplifiedPaymentHistoryPage,
   SimplifiedPaymentsPage,
   SimplifiedPlanPage,
@@ -321,6 +322,15 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedAboutPage />,
   },
+  // Fase 3 do redesign (#90): página de notificações (tela 13), alcançada
+  // pelo item Notificações do Mais.
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].title,
+    simplified: true,
+    element: <SimplifiedNotificationsPage />,
+  },
   // ETAPA 4 (Fase 8): demais rotas internas de Conta -- placeholders
   // honestos e consistentes (título + botão voltar + mensagem curta),
   // nunca uma tela em branco. A construção completa de cada uma acontece
@@ -338,6 +348,7 @@ export const appRoutes = [
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].path
     ))
     .map((subroute) => ({
       path: subroute.path,

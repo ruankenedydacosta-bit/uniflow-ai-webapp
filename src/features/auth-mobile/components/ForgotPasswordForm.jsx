@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import { PhEnvelopeSimpleIcon } from '../../simplified-app/SimplifiedIcons.jsx';
 import { validateForgotPasswordForm } from '../passwordRecoveryUtils.js';
 import styles from '../authMobile.module.css';
 
@@ -29,19 +29,29 @@ function ForgotPasswordForm({ initialEmail = '', loading = false, feedback, feed
 
   return (
     <form className={styles.emailForm} onSubmit={handleSubmit} noValidate>
-      <Input
-        id="forgot-password-email"
-        label="E-mail"
-        type="email"
-        value={email}
-        autoComplete="email"
-        inputMode="email"
-        placeholder="voce@exemplo.com"
-        error={validationError}
-        disabled={loading}
-        onChange={(event) => setEmail(event.target.value)}
-        fullWidth
-      />
+      <p className={styles.formHint}>Receba as instruções para recuperar seu acesso.</p>
+
+      <div className={styles.field}>
+        <label htmlFor="forgot-password-email" className={styles.fieldLabel}>E-mail</label>
+        <div className={validationError ? styles.fieldControlError : styles.fieldControl}>
+          <span className={styles.fieldIcon} aria-hidden="true"><PhEnvelopeSimpleIcon /></span>
+          <input
+            id="forgot-password-email"
+            type="email"
+            value={email}
+            autoComplete="email"
+            inputMode="email"
+            placeholder="voce@email.com"
+            disabled={loading}
+            aria-invalid={validationError ? true : undefined}
+            aria-describedby={validationError ? 'forgot-password-email-error' : undefined}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </div>
+        {validationError ? (
+          <p id="forgot-password-email-error" className={styles.fieldError}>{validationError}</p>
+        ) : null}
+      </div>
 
       {feedback ? (
         <p

@@ -7,22 +7,23 @@ import {
   validateProfileAvatarFile,
 } from '../../services/storage.service.js';
 import Avatar from '../../components/ui/Avatar/Avatar.jsx';
-import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
+import IconBox from '../../components/ui/IconBox/index.js';
 import Modal from '../../components/ui/Modal/Modal.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/index.js';
+import UniCard from '../../components/ui/UniCard/index.js';
+import { cx } from '../../utils/cx.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import {
-  CameraIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  GlobeIcon,
-  AccountIcon,
-  MailIcon,
-  MicIcon,
-  PhoneIcon,
-  TextSizeIcon,
-  TrashIcon,
+  PhCameraIcon,
+  PhCaretDownIcon,
+  PhHouseIcon,
+  PhTrashIcon,
 } from './SimplifiedIcons.jsx';
+import SimplifiedSettingsTabs from './SimplifiedSettingsTabs.jsx';
+import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
+import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedEditProfile.module.css';
 import {
   buildSimplifiedProfilePayload,
@@ -36,24 +37,6 @@ import {
   validateSimplifiedProfileForm,
 } from './simplifiedProfilePreferences.js';
 
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M20 6 10 16l10 10" />
-    </svg>
-  );
-}
-
-function HomeIconPlaceholder() {
-  // Reaproveita o mesmo estilo de ícone de casa usado na secao de endereco,
-  // sem depender de um icone novo dedicado so para este estado vazio.
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="m4 15 12-10 12 10v13h-8v-8h-8v8H4Z" />
-    </svg>
-  );
-}
-
 function localToday() {
   const today = new Date();
   const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -61,6 +44,11 @@ function localToday() {
   return `${today.getFullYear()}-${month}-${day}`;
 }
 
+/**
+ * Fase 3 do redesign (#90): aba "Perfil" da tela 14 Configurações. O
+ * formulário, a foto e as confirmações continuam os mesmos; mudou só o
+ * visual (campos de 44px, grupos com rótulo e card da Uni para ajuda).
+ */
 function SimplifiedEditProfilePage() {
   const navigate = useNavigate();
   const { user, profile, updateOwnProfile } = useSession();
@@ -231,32 +219,23 @@ function SimplifiedEditProfilePage() {
 
   return (
     <div className={styles.page} data-simplified-edit-profile>
-      <header className={styles.header}>
-        <div className={styles.titleGroup}>
-          <button
-            type="button"
-            className={styles.backButton}
-            onClick={handleBack}
-            aria-label="Voltar para Conta"
-          >
-            <BackIcon />
-          </button>
-          <h1>Editar perfil</h1>
-        </div>
-        <button type="button" className={styles.talkButton} onClick={() => navigate(SIMPLIFIED_ROUTES.UNI)}>
-          <span className={styles.talkIcon} aria-hidden="true"><MicIcon /></span>
-          Falar com a Uni
-        </button>
-      </header>
+      <SimplifiedSubpageHeader
+        title="Configurações"
+        onBack={handleBack}
+        backLabel="Voltar para Mais"
+      />
 
-      <p className={styles.subtitle}>Atualize seus dados para que a Uni possa te conhecer melhor.</p>
+      <SimplifiedSettingsTabs
+        active={ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE}
+        onBeforeNavigate={requestNavigation}
+      />
 
-      <section className={styles.card} aria-label="Foto de perfil">
+      <section className={groups.group} aria-label="Foto de perfil">
+        <h2 className={groups.groupLabel}>Foto de perfil</h2>
         <div className={styles.photoRow}>
-          <Avatar src={displayedAvatar} name={form.full_name || undefined} size="xl" />
+          <Avatar src={displayedAvatar} name={form.full_name || undefined} size="lg" className={styles.avatar} />
           <div className={styles.photoInfo}>
-            <strong>Foto de perfil</strong>
-            <p>JPEG, PNG ou WebP de até 5 MB.</p>
+            <p className={styles.photoHint}>JPEG, PNG ou WebP de até 5 MB.</p>
             <input
               ref={fileInputRef}
               className={styles.fileInput}
@@ -266,26 +245,18 @@ function SimplifiedEditProfilePage() {
               aria-label="Selecionar nova foto de perfil"
             />
             <div className={styles.photoActions}>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                leftIcon={<CameraIcon />}
-                onClick={() => fileInputRef.current?.click()}
-              >
+              <OutlineButton onClick={() => fileInputRef.current?.click()}>
+                <PhCameraIcon />
                 Trocar foto
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={styles.darkOutlineButton}
-                leftIcon={<TrashIcon />}
+              </OutlineButton>
+              <OutlineButton
+                variant="secondary"
                 disabled={!hasAvatar}
                 onClick={() => setShowRemovePhotoConfirm(true)}
               >
+                <PhTrashIcon />
                 Remover foto
-              </Button>
+              </OutlineButton>
             </div>
             {avatarPreview ? <p className={styles.notice} role="status">Prévia pronta. Salve para confirmar a nova foto.</p> : null}
             {avatarRemovalRequested ? <p className={styles.notice} role="status">A foto será removida ao salvar.</p> : null}
@@ -294,12 +265,11 @@ function SimplifiedEditProfilePage() {
         </div>
       </section>
 
-      <section className={styles.card} aria-label="Dados pessoais">
+      <section className={cx(groups.group, styles.fields)} aria-label="Dados pessoais">
+        <h2 className={groups.groupLabel}>Dados pessoais</h2>
+
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>
-            <span className={styles.fieldIcon} aria-hidden="true"><AccountIcon /></span>
-            Nome completo
-          </span>
+          <span className={styles.fieldLabel}>Nome completo</span>
           <input
             type="text"
             className={styles.input}
@@ -313,10 +283,7 @@ function SimplifiedEditProfilePage() {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>
-            <span className={styles.fieldIcon} aria-hidden="true"><AccountIcon /></span>
-            Como deseja ser chamado
-          </span>
+          <span className={styles.fieldLabel}>Como deseja ser chamado</span>
           <input
             type="text"
             className={styles.input}
@@ -329,24 +296,18 @@ function SimplifiedEditProfilePage() {
         </label>
 
         <div className={styles.field}>
-          <span className={styles.fieldLabel}>
-            <span className={styles.fieldIcon} aria-hidden="true"><MailIcon /></span>
-            E-mail
-          </span>
+          <span className={styles.fieldLabel}>E-mail</span>
           <div className={styles.readOnlyRow}>
             <span>{email || 'Ainda não definido'}</span>
             {isEmailVerified ? (
-              <Badge variant="success" size="sm" leftIcon={<CheckIcon />}>Verificado</Badge>
+              <span className={cx(groups.pill, groups.pillGreen)}>Verificado</span>
             ) : null}
           </div>
           <p className={styles.fieldHint}>O e-mail é gerenciado pela sua conta de acesso.</p>
         </div>
 
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>
-            <span className={styles.fieldIcon} aria-hidden="true"><PhoneIcon /></span>
-            Telefone
-          </span>
+          <span className={styles.fieldLabel}>Telefone</span>
           <input
             type="tel"
             className={styles.input}
@@ -361,10 +322,7 @@ function SimplifiedEditProfilePage() {
 
         <div className={styles.fieldRow}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>
-              <span className={styles.fieldIcon} aria-hidden="true"><AccountIcon /></span>
-              Forma de tratamento
-            </span>
+            <span className={styles.fieldLabel}>Forma de tratamento</span>
             <select
               className={styles.input}
               value={form.treatment_preference}
@@ -391,10 +349,7 @@ function SimplifiedEditProfilePage() {
           ) : null}
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>
-              <span className={styles.fieldIcon} aria-hidden="true"><AccountIcon /></span>
-              Data de nascimento
-            </span>
+            <span className={styles.fieldLabel}>Data de nascimento</span>
             <input
               type="date"
               className={styles.input}
@@ -406,10 +361,7 @@ function SimplifiedEditProfilePage() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>
-              <span className={styles.fieldIcon} aria-hidden="true"><GlobeIcon /></span>
-              Idioma
-            </span>
+            <span className={styles.fieldLabel}>Idioma</span>
             <select
               className={styles.input}
               value={form.locale}
@@ -423,10 +375,7 @@ function SimplifiedEditProfilePage() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>
-              <span className={styles.fieldIcon} aria-hidden="true"><TextSizeIcon /></span>
-              Tamanho do texto
-            </span>
+            <span className={styles.fieldLabel}>Tamanho do texto</span>
             <select
               className={styles.input}
               value={form.text_size}
@@ -441,26 +390,26 @@ function SimplifiedEditProfilePage() {
         </div>
       </section>
 
-      <section className={styles.card} aria-label="Endereço e dados de cobrança">
+      <section className={groups.group} aria-label="Endereço e dados de cobrança">
         <button
           type="button"
-          className={styles.expandHeader}
+          className={cx(groups.row, styles.expandHeader)}
           onClick={() => setIsAddressOpen((open) => !open)}
           aria-expanded={isAddressOpen}
         >
-          <span className={styles.expandIcon} aria-hidden="true"><HomeIconPlaceholder /></span>
-          <span className={styles.expandTitle}>
-            <strong>Endereço e dados de cobrança</strong>
-            <small>Usado para emissão de nota fiscal e cobrança.</small>
+          <IconBox><PhHouseIcon /></IconBox>
+          <span className={groups.rowText}>
+            <span className={groups.rowTitle}>Endereço e dados de cobrança</span>
+            <span className={groups.rowSubtitle}>Usado para emissão de nota fiscal e cobrança.</span>
           </span>
-          <span className={`${styles.chevron} ${isAddressOpen ? styles.chevronOpen : ''}`} aria-hidden="true">
-            <ChevronDownIcon />
+          <span className={cx(groups.caret, styles.chevron, isAddressOpen && styles.chevronOpen)} aria-hidden="true">
+            <PhCaretDownIcon />
           </span>
         </button>
         {isAddressOpen ? (
-          <div className={styles.expandBody}>
-            <p>Os dados de cobrança ainda não possuem uma estrutura segura definida. Nenhuma informação fictícia será armazenada.</p>
-          </div>
+          <p className={styles.expandBody}>
+            Os dados de cobrança ainda não possuem uma estrutura segura definida. Nenhuma informação fictícia será armazenada.
+          </p>
         ) : null}
       </section>
 
@@ -469,37 +418,30 @@ function SimplifiedEditProfilePage() {
         <p className={styles.successBanner} role="status">Alterações salvas com sucesso.</p>
       ) : null}
 
-      <Button
-        type="button"
-        variant="primary"
-        fullWidth
-        loading={isSaving}
-        disabled={!isDirty || isSaving}
-        onClick={handleSave}
-      >
-        Salvar alterações
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        className={styles.darkOutlineButton}
-        fullWidth
-        onClick={handleCancel}
-      >
-        Cancelar
-      </Button>
+      <div className={styles.actions}>
+        <Button
+          type="button"
+          variant="primary"
+          fullWidth
+          loading={isSaving}
+          disabled={!isDirty || isSaving}
+          onClick={handleSave}
+        >
+          Salvar alterações
+        </Button>
+        <OutlineButton variant="secondary" className={styles.cancelButton} onClick={handleCancel}>
+          Cancelar
+        </OutlineButton>
+      </div>
 
-      <section className={`${styles.card} ${styles.helpCard}`} aria-label="Ajuda">
-        <span className={styles.helpMascot} aria-hidden="true">🙂</span>
-        <div className={styles.helpText}>
-          <strong>Precisa de ajuda para alterar algo?</strong>
-          <p>Converse com a Uni.</p>
-        </div>
-        <button type="button" className={styles.talkButton} onClick={() => navigate(SIMPLIFIED_ROUTES.UNI)}>
-          <span className={styles.talkIcon} aria-hidden="true"><MicIcon /></span>
-          Falar com a Uni
-        </button>
-      </section>
+      <UniCard
+        title="Precisa de ajuda para alterar algo?"
+        actions={(
+          <OutlineButton onClick={() => navigate(SIMPLIFIED_ROUTES.UNI)}>Falar com a Uni</OutlineButton>
+        )}
+      >
+        <p>Converse com a Uni.</p>
+      </UniCard>
 
       <Modal
         open={showRemovePhotoConfirm}

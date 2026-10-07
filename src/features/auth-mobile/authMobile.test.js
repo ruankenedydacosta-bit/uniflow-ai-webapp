@@ -110,12 +110,20 @@ test('experiência institucional desenha as duas marcas em vetor, sem PNG recort
   assert.match(contents, /TECHNOLOGY MONITORING/);
 });
 
-test('login e cadastro compartilham a mesma composição institucional', async () => {
+// Fase 3 do redesign (#90): a tela de acesso segue a tela 15 do handoff --
+// orb de 132px, "UniFlow" e um apoio por modo. Entrar e criar conta
+// compartilham a mesma composição; a troca entre os dois é o link do
+// rodapé ("Ainda não tem conta? Criar conta" / "Já tem conta? Entrar").
+test('login e cadastro compartilham a mesma composição (orb + UniFlow + apoio por modo), com o link de troca no rodapé', async () => {
   const contents = await source('./pages/MobileAuthPage.jsx');
-  assert.match(contents, /<AuthBrandExperience \/>/);
-  assert.match(contents, /<PartnershipFooter \/>/);
-  assert.match(contents, /mode === AUTH_MODES\.SIGN_UP \? 'Crie sua conta' : 'Boas-vindas de volta'/);
-  assert.match(contents, /mode === AUTH_MODES\.SIGN_UP \? 'Comece agora' : 'Entrar na sua conta'/);
+  assert.match(contents, /<UniRingOrb size=\{132\} \/>/);
+  assert.match(contents, /<h1 id="auth-title" className=\{styles\.brandName\}>UniFlow<\/h1>/);
+  assert.match(contents, /isSignUp \? 'Crie sua conta' : 'Entre para continuar'/);
+  assert.match(contents, /\? 'Recuperar senha'/);
+  assert.match(contents, /isSignUp \? 'Já tem conta\? ' : 'Ainda não tem conta\? '/);
+  assert.match(contents, /isSignUp \? 'Entrar' : 'Criar conta'/);
+  assert.match(contents, /ensureAppFont\(document\)/);
+  assert.doesNotMatch(contents, /AuthBrandExperience|PartnershipFooter|AuthModeSwitch/);
 });
 
 test('benefícios e onda luminosa são construídos em SVG e CSS', async () => {
@@ -287,16 +295,16 @@ test('SocialAuthButtons recebe googleLoading e renderiza somente Google', async 
   const contents = await source('./components/SocialAuthButtons.jsx');
   assert.match(
     contents,
-    /function SocialAuthButtons\(\{ onGoogleAuth, disabled = false, googleLoading = false \}\)/,
+    /function SocialAuthButtons\(\{\s*\n\s*onGoogleAuth, disabled = false, googleLoading = false, label = 'Entrar com Google',\s*\n\s*\}\)/,
   );
-  const googleButtonBlock = contents.slice(contents.indexOf('<Button'), contents.indexOf('Continuar com Google'));
+  const googleButtonBlock = contents.slice(contents.indexOf('<Button'), contents.indexOf('{label}'));
   assert.match(googleButtonBlock, /loading=\{googleLoading\}/);
   assert.doesNotMatch(contents, /Apple/);
 });
 
 test('botao do Google e type="button" -- nunca envia um form por engano', async () => {
   const contents = await source('./components/SocialAuthButtons.jsx');
-  const googleButtonBlock = contents.slice(contents.indexOf('<Button'), contents.indexOf('Continuar com Google'));
+  const googleButtonBlock = contents.slice(contents.indexOf('<Button'), contents.indexOf('{label}'));
   assert.match(googleButtonBlock, /type="button"/);
 });
 

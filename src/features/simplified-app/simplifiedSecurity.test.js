@@ -38,16 +38,15 @@ test('index.js exporta SimplifiedSecurityPage', async () => {
 // Cabeçalho.
 // ============================================================================
 
-test('cabeçalho tem botão voltar, título e subtítulo curto -- SEM "Falar com a Uni" (reorganização dos acessos à Uni)', async () => {
+// Fase 3 do redesign (#90): a tela é a aba Segurança de "Configurações"
+// (tela 14), com as abas navegando entre as rotas já existentes.
+test('cabeçalho Configurações com voltar para o Mais e aba Segurança ativa -- SEM "Falar com a Uni"', async () => {
   const content = await source('./SimplifiedSecurityPage.jsx');
-  assert.match(content, /aria-label="Voltar para Conta"/);
+  assert.match(content, /backLabel="Voltar para Mais"/);
   assert.match(content, /navigate\(SIMPLIFIED_ROUTES\.ACCOUNT\)/);
-  assert.match(content, /<h1>Segurança<\/h1>/);
-  assert.match(content, /Gerencie a segurança da sua conta\./);
-  const headerStart = content.indexOf('<header className={styles.header}>');
-  const headerEnd = content.indexOf('</header>', headerStart);
-  const headerSlice = content.slice(headerStart, headerEnd);
-  assert.doesNotMatch(headerSlice, /Falar com a Uni/);
+  assert.match(content, /title="Configurações"/);
+  assert.match(content, /<SimplifiedSettingsTabs active=\{ACCOUNT_SUBROUTE_IDS\.SECURITY\} \/>/);
+  assert.doesNotMatch(content, /Falar com a Uni/);
   assert.doesNotMatch(content, /SIMPLIFIED_ROUTES\.UNI/);
 });
 
@@ -61,9 +60,9 @@ test('card final é "Ajuda" (Headset, descrição curta, botão "Ajuda") e naveg
   const cardStart = content.indexOf('aria-label="Ajuda"');
   assert.ok(cardStart > -1, 'card Ajuda deve existir');
   const cardSlice = content.slice(cardStart, content.indexOf('</section>', cardStart));
-  assert.match(cardSlice, /<HeadsetIcon \/>/);
-  assert.match(cardSlice, /<strong>Ajuda<\/strong>/);
-  assert.match(cardSlice, />\s*Ajuda\s*<\/button>/);
+  assert.match(cardSlice, /<PhHeadsetIcon \/>/);
+  assert.match(cardSlice, /<strong className=\{groups\.rowTitle\}>Ajuda<\/strong>/);
+  assert.match(cardSlice, />\s*Ajuda\s*<\/OutlineButton>/);
   assert.match(cardSlice, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SUPPORT\]\.path\)/);
   assert.doesNotMatch(cardSlice, /SIMPLIFIED_ROUTES\.UNI/);
 });
@@ -121,7 +120,7 @@ test('usuário só-OAuth vê orientação honesta em vez de botão de trocar sen
 
 test('verificação em duas etapas mostra estado honesto "Não configurada", nunca ativada', async () => {
   const content = await source('./SimplifiedSecurityPage.jsx');
-  assert.match(content, /variant="warning" size="sm">Não configurada/);
+  assert.match(content, /className=\{cx\(groups\.pill, groups\.pillMuted\)\}>Não configurada</);
   assert.match(content, /Estará disponível em uma futura versão\./);
   assert.doesNotMatch(content, /mfa\.enroll|supabase\.auth\.mfa/);
 });
@@ -149,8 +148,8 @@ test('atividade recente só usa last_sign_in_at real (Supabase Auth), nunca tent
 
 test('e-mail de recuperação vem de user.email; badge Verificado só com email_confirmed_at real', async () => {
   const content = await source('./SimplifiedSecurityPage.jsx');
-  assert.match(content, /<strong>\{user\?\.email \|\| 'Ainda não definido'\}<\/strong>/);
-  assert.match(content, /\{isEmailVerified \? <Badge variant="success" size="sm">Verificado<\/Badge> : null\}/);
+  assert.match(content, /<strong className=\{styles\.recoveryValue\}>\{user\?\.email \|\| 'Ainda não definido'\}<\/strong>/);
+  assert.match(content, /\{isEmailVerified \? <span className=\{cx\(groups\.pill, groups\.pillGreen\)\}>Verificado<\/span> : null\}/);
 });
 
 test('telefone de recuperação nunca mostra Verificado (sem verificação real desse dado)', async () => {
@@ -190,17 +189,23 @@ test('ação crítica tem loading e tratamento de erro, nunca apaga dados do usu
 // Acessibilidade e responsividade.
 // ============================================================================
 
+// Fase 3 do redesign (#90): o botão voltar vive no cabeçalho compartilhado
+// das subpáginas e a cor da zona crítica vem do token de perigo, não de um
+// rgba solto.
 test('CSS oferece foco visível, prefers-reduced-motion e responsividade', async () => {
   const css = await source('./simplifiedSecurity.module.css');
-  assert.match(css, /\.backButton:focus-visible/);
+  const header = await source('./simplifiedSubpageHeader.module.css');
+  assert.match(header, /\.backButton:focus-visible/);
+  assert.match(css, /\.linkButton:focus-visible/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /@media \(max-width: 520px\)/);
   assert.match(css, /@media \(min-width: 1024px\)/);
 });
 
-test('zona crítica é visualmente distinta (cor de aviso), não depende só de cor (também tem ícone e texto)', async () => {
+test('zona crítica é visualmente distinta (cor de perigo via token), não depende só de cor (também tem ícone e texto)', async () => {
   const content = await source('./SimplifiedSecurityPage.jsx');
-  assert.match(content, /<AlertTriangleIcon \/>/);
+  assert.match(content, /<PhWarningIcon \/>/);
   const css = await source('./simplifiedSecurity.module.css');
-  assert.match(css, /\.criticalCard \{[^}]*border-color:\s*rgba\(239, 68, 68/);
+  assert.match(css, /\.criticalCard \{[^}]*var\(--uf-app-danger\)/);
+  assert.doesNotMatch(css, /#[0-9a-fA-F]{3,8}\b|rgba\(/);
 });

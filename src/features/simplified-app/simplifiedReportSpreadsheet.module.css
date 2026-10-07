@@ -1,5 +1,5 @@
 /* RELATORIO-FLATTEN1: só a planilha em si (tabs + grid) -- header/mês/
-   cards/botão de download vivem na página que a envolve
+   resumo/botão de download vivem na página que a envolve
    (simplifiedReport.module.css), desde que RELATORIO_PLANILHA (rota
    separada) foi removida e a planilha passou a ser reaproveitada
    INLINE dentro do Relatório da Uni.
@@ -9,36 +9,48 @@
    Sheets/Excel Online incluídos): é o que permite o cabeçalho sticky
    (relativo a si mesma) e o scroll horizontal funcionarem sem conflito
    com o gesto vertical -- uma caixa 2D não compete eixo a eixo com o
-   resto da página, que só rola verticalmente por cima/por baixo dela. */
+   resto da página, que só rola verticalmente por cima/por baixo dela.
+
+   Fase 3 do redesign (#90): abas com o desenho do controle segmentado do
+   handoff (trilho de poço, opção ativa em superfície com borda violeta) e
+   grid com os tokens de superfície e borda de card. */
 
 /* ---------------------------------------------------------- sheet tabs */
 
 .tabs {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 3px;
+  padding: 3px;
   flex: 0 0 auto;
-  border-radius: 14px;
-  background: var(--uf-app-surface);
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
 }
 
 .tab,
 .tabActive {
-  flex: 1 1 0;
-  min-height: 40px;
+  min-height: 36px;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   background: transparent;
   color: var(--uf-app-text-2);
   font: inherit;
   font-size: 13px;
-  font-weight: 700;
   cursor: pointer;
+  transition: background-color var(--uf-duration-fast) ease, color var(--uf-duration-fast) ease, box-shadow var(--uf-duration-fast) ease;
 }
 
 .tabActive {
-  background: linear-gradient(135deg, var(--uf-app-primary), var(--uf-app-ai));
-  color: var(--uf-app-on-accent);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 35%, transparent);
+  color: var(--uf-app-text);
+}
+
+.tab:focus-visible,
+.tabActive:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 1px;
 }
 
 /* -------------------------------------------------------------- sheet */
@@ -48,9 +60,9 @@
   min-height: 200px;
   width: 100%;
   overflow: auto;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: var(--uf-app-canvas);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
 }
 
 .sheetEmpty {
@@ -69,13 +81,14 @@
   border-collapse: separate;
   border-spacing: 0;
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .sheetTable th,
 .sheetTable td {
   padding: 8px 12px;
-  border-right: 1px solid var(--uf-app-border);
-  border-bottom: 1px solid var(--uf-app-border);
+  border-right: 1px solid var(--uf-app-card-edge);
+  border-bottom: 1px solid var(--uf-app-card-edge);
   white-space: nowrap;
   text-align: left;
 }
@@ -90,10 +103,10 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--uf-app-surface-2, var(--uf-app-surface));
-  color: var(--uf-app-text-3, var(--uf-app-text-2));
+  background: var(--uf-app-well);
+  color: var(--uf-app-text-3);
   font-size: 10.5px;
-  font-weight: 650;
+  font-weight: var(--uf-font-weight-regular);
   text-align: center;
 }
 
@@ -102,9 +115,9 @@
   position: sticky;
   top: 21px;
   z-index: 2;
-  background: var(--uf-app-surface);
+  background: var(--uf-app-card-surface);
   color: var(--uf-app-text);
-  font-weight: 750;
+  font-weight: var(--uf-font-weight-medium);
 }
 
 /* Só a coluna # congela à esquerda -- nunca múltiplas colunas presas
@@ -113,8 +126,8 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  background: var(--uf-app-canvas);
-  color: var(--uf-app-text-3, var(--uf-app-text-2));
+  background: var(--uf-app-card-surface);
+  color: var(--uf-app-text-3);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -122,15 +135,15 @@
 .letterRow .cornerCell,
 .headRow .rowNumCell {
   z-index: 3;
-  background: var(--uf-app-surface-2, var(--uf-app-surface));
+  background: var(--uf-app-well);
 }
 
 .sheetTable tbody tr:nth-child(even) td {
-  background: var(--uf-app-surface, transparent);
+  background: var(--uf-app-surface-2);
 }
 
 .sheetTable tbody tr:nth-child(even) .rowNumCell {
-  background: var(--uf-app-surface, var(--uf-app-canvas));
+  background: var(--uf-app-surface-2);
 }
 
 .descriptionCell {
@@ -142,41 +155,47 @@
 .valueIncome,
 .valueExpense {
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: var(--uf-font-weight-medium);
   text-align: right;
 }
 
 .valueIncome {
-  color: var(--uf-app-success-text, var(--uf-app-success));
+  color: var(--uf-app-brand-green-text);
 }
 
 .valueExpense {
-  color: var(--uf-app-danger-text, var(--uf-app-danger));
+  color: var(--uf-app-danger-text);
 }
 
 .statusBadge {
   display: inline-flex;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--uf-app-surface-2);
+  padding: 2px 8px;
+  border: 1px solid var(--uf-app-border-strong);
+  border-radius: var(--uf-radius-full);
   color: var(--uf-app-text-2);
   font-size: 11px;
-  font-weight: 650;
   white-space: nowrap;
 }
 
 .statusBadge[data-status="completed"] {
-  background: var(--uf-app-success-subtle, var(--uf-app-surface-2));
-  color: var(--uf-app-success-text, var(--uf-app-success));
+  border-color: var(--uf-app-brand-green-text);
+  color: var(--uf-app-brand-green-text);
 }
 
 .statusBadge[data-status="cancelled"] {
-  background: var(--uf-app-danger-subtle, var(--uf-app-surface-2));
-  color: var(--uf-app-danger-text, var(--uf-app-danger));
+  border-color: var(--uf-app-danger-text);
+  color: var(--uf-app-danger-text);
 }
 
 @media (min-width: 768px) {
   .sheetTable {
     min-width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab,
+  .tabActive {
+    transition: none;
   }
 }

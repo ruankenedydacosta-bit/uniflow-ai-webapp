@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { getSubscription } from '../../services/billingService.js';
 import Avatar from '../../components/ui/Avatar/Avatar.jsx';
-import Badge from '../../components/ui/Badge/Badge.jsx';
+import IconBox from '../../components/ui/IconBox/index.js';
 import Modal from '../../components/ui/Modal/Modal.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
+import { cx } from '../../utils/cx.js';
 import AnalyticsConsentPreferencesModal from '../analytics/AnalyticsConsentPreferencesModal.jsx';
 import { useAnalyticsConsent } from '../analytics/useAnalyticsConsent.js';
 import SimplifiedAccountNotificationsRow from './SimplifiedAccountNotificationsRow.jsx';
@@ -20,35 +21,40 @@ import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRout
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import {
-  CalendarIcon,
-  CardIcon,
-  CrownIcon,
-  HelpIcon,
-  InfoIcon,
-  LockIcon,
-  LogoutIcon,
-  MicIcon,
-  PhoneIcon,
-  SparkleIcon,
+  PhCalendarIcon,
+  PhCaretRightIcon,
+  PhChartBarIcon,
+  PhCreditCardIcon,
+  PhCrownIcon,
+  PhGearIcon,
+  PhInfoIcon,
+  PhLifebuoyIcon,
+  PhLockKeyIcon,
+  PhMicrophoneIcon,
+  PhShieldCheckIcon,
+  PhSignOutIcon,
+  PhUserIcon,
   UniMark,
-  AccountIcon,
-  ChevronRightIcon,
 } from './SimplifiedIcons.jsx';
+import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedAccount.module.css';
 
 /**
- * Correção (Bloco Saldo + Cobrança): esta tela agora busca sua PRÓPRIA
- * assinatura via billingService.getSubscription() (mesma fonte de "Seu
- * plano"/"Pagamento e assinatura") em vez de reaproveitar
- * useSession().subscription -- aquele valor vem de
- * workspaceService.getWorkspaceSubscription(), filtrado para
- * status IN ('trialing','active','past_due') para fins de CONTROLE DE
- * ACESSO do app inteiro (App.jsx). Reaproveitar esse mesmo valor aqui para
- * EXIBIÇÃO fazia uma assinatura cancelada/suspensa/pendente aparecer como
- * "Nenhuma assinatura ativa" (o filtro devolve null), quando na verdade
- * existe uma linha real com um estado diferente. SessionContext e o guard
- * de acesso em App.jsx continuam INTOCADOS -- só a apresentação nesta tela
- * passou a usar a fonte mais rica.
+ * Correção (Bloco Saldo + Cobrança): esta tela busca sua PRÓPRIA assinatura
+ * via billingService.getSubscription() (mesma fonte de "Seu plano"/
+ * "Pagamento e assinatura") em vez de reaproveitar useSession().subscription
+ * -- aquele valor vem de workspaceService.getWorkspaceSubscription(),
+ * filtrado para status IN ('trialing','active','past_due') para fins de
+ * CONTROLE DE ACESSO do app inteiro (App.jsx). Reaproveitar esse mesmo valor
+ * aqui para EXIBIÇÃO fazia uma assinatura cancelada/suspensa/pendente
+ * aparecer como "Nenhuma assinatura ativa". SessionContext e o guard de
+ * acesso em App.jsx continuam INTOCADOS.
+ *
+ * Fase 3 do redesign (#90): tela 07 "Mais" do handoff. Card de perfil,
+ * card do plano e três grupos (Conta, Produto, Sessão) com linhas de 36px
+ * de ícone. Ficam de fora o espaço ativo e os itens que levam a telas que
+ * o app simplificado não tem (Metas, Visão de futuro, Categorias, Open
+ * Finance). O acesso à Uni é o orb da navegação inferior.
  */
 function SimplifiedAccountPage() {
   const navigate = useNavigate();
@@ -87,7 +93,6 @@ function SimplifiedAccountPage() {
     ? greeting.heading
     : (profile?.full_name?.trim() || 'Sua conta');
   const email = user?.email ?? '';
-  const phone = typeof profile?.phone === 'string' ? profile.phone.trim() : '';
   const planState = resolvePlanState(subscription);
   const renewsAt = resolveRenewsAt(subscription, planState);
 
@@ -107,51 +112,64 @@ function SimplifiedAccountPage() {
     setShowLogoutConfirm(false);
   }
 
-  const menuItems = [
-    // LOTE AGENDA VISUAL: a Agenda ganhou entrada própria logo abaixo do
-    // card "Seu plano" e ANTES de "Pagamento e assinatura". Não é subrota
-    // de Conta (não existe em ACCOUNT_SUBROUTES) -- navega pela rota
-    // interna /app/agenda (SIMPLIFIED_ROUTES.AGENDA), já sempre registrada.
+  // Grupo "Conta" do handoff: Perfil, Configurações (a aba Preferências,
+  // que mora na rota de Tema) e Segurança.
+  const accountItems = [
+    {
+      id: ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE,
+      Icon: PhUserIcon,
+      title: 'Perfil',
+    },
+    {
+      id: ACCOUNT_SUBROUTE_IDS.THEME,
+      Icon: PhGearIcon,
+      title: 'Configurações',
+    },
+    {
+      id: ACCOUNT_SUBROUTE_IDS.SECURITY,
+      Icon: PhShieldCheckIcon,
+      title: 'Segurança',
+    },
+  ];
+
+  // Grupo "Produto": Relatórios e Notificações vêm do handoff; Agenda,
+  // Pagamento e assinatura, Voz da Uni, Suporte, Privacidade e Sobre são
+  // telas que já existem e continuam alcançáveis por aqui.
+  const productItems = [
+    {
+      id: 'reports',
+      Icon: PhChartBarIcon,
+      title: 'Relatórios',
+      to: SIMPLIFIED_ROUTES.RELATORIO,
+    },
+    // LOTE AGENDA VISUAL: não é subrota de Conta (não existe em
+    // ACCOUNT_SUBROUTES) -- navega pela rota interna /app/agenda.
     {
       id: 'agenda',
-      Icon: CalendarIcon,
-      tone: 'purple',
+      Icon: PhCalendarIcon,
       title: 'Agenda',
       subtitle: 'Seus compromissos e lembretes',
       to: SIMPLIFIED_ROUTES.AGENDA,
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
-      Icon: CardIcon,
-      tone: 'blue',
+      Icon: PhCreditCardIcon,
       title: 'Pagamento e assinatura',
       subtitle: planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.VOICE,
-      Icon: MicIcon,
-      tone: 'blue',
+      Icon: PhMicrophoneIcon,
       title: 'Voz da Uni',
-      subtitle: 'Configurações de voz',
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.SUPPORT,
-      Icon: HelpIcon,
-      tone: 'blue',
+      Icon: PhLifebuoyIcon,
       title: 'Suporte',
-      subtitle: 'Fale com nossa equipe',
-    },
-    {
-      id: ACCOUNT_SUBROUTE_IDS.THEME,
-      Icon: SparkleIcon,
-      tone: 'purple',
-      title: 'Tema',
-      subtitle: 'UniFlow ou Claro',
     },
     {
       id: 'analytics-consent',
-      Icon: LockIcon,
-      tone: 'purple',
+      Icon: PhLockKeyIcon,
       title: 'Privacidade e Analytics',
       subtitle: analyticsConsentStatus === 'granted'
         ? 'Dados de uso permitidos'
@@ -162,73 +180,73 @@ function SimplifiedAccountPage() {
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.ABOUT,
-      Icon: InfoIcon,
-      tone: 'purple',
+      Icon: PhInfoIcon,
       title: 'Sobre a UniFlow AI',
       subtitle: `Versão ${currentVersion}`,
     },
   ];
 
+  function renderRow(item) {
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={cx(groups.row, styles.menuRow)}
+        onClick={() => (item.onSelect ? item.onSelect() : item.to ? navigate(item.to) : goTo(item.id))}
+      >
+        <IconBox><item.Icon /></IconBox>
+        <span className={groups.rowText}>
+          <span className={groups.rowTitle}>{item.title}</span>
+          {item.subtitle ? <span className={groups.rowSubtitle}>{item.subtitle}</span> : null}
+        </span>
+        <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
+      </button>
+    );
+  }
+
   return (
     <div className={styles.page} data-simplified-account>
       <header className={styles.header}>
         <div className={styles.titleGroup}>
-          <span className={styles.mark}><UniMark /></span>
-          <h1>Conta</h1>
+          <span className={styles.mark} aria-hidden="true"><UniMark /></span>
+          <h1>Mais</h1>
         </div>
-        <button type="button" className={styles.talkButton} onClick={() => navigate(SIMPLIFIED_ROUTES.UNI)}>
-          <span className={styles.talkIcon} aria-hidden="true"><MicIcon /></span>
-          Falar com a Uni
-        </button>
-      </header>
-
-      <section className={styles.profileCard} aria-label="Seu perfil">
-        <div className={styles.profileTop}>
+        <Link
+          to={ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE].path}
+          className={styles.headerAvatar}
+          aria-label="Seu perfil"
+        >
           <Avatar
+            size="sm"
+            className={styles.avatar}
             src={profile?.avatar_url || undefined}
             name={profile?.full_name || undefined}
-            size="xl"
+            alt=""
+            aria-hidden="true"
           />
-          <div className={styles.profileInfo}>
-            <div className={styles.nameRow}>
-              <strong>{displayName}</strong>
-              <Badge variant="success" size="sm">Plano Pessoal</Badge>
-            </div>
-            {email ? <span className={styles.profileLine}>{email}</span> : null}
-            {phone ? (
-              <span className={styles.profileLine}>
-                <span className={styles.inlineIcon} aria-hidden="true"><PhoneIcon /></span>
-                {phone}
-              </span>
-            ) : (
-              <button type="button" className={styles.addPhoneButton} onClick={() => goTo(ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE)}>
-                <span className={styles.inlineIcon} aria-hidden="true"><PhoneIcon /></span>
-                Adicionar telefone
-              </button>
-            )}
-          </div>
-        </div>
+        </Link>
+      </header>
 
-        <div className={styles.profileActions}>
-          <button type="button" className={styles.profileAction} onClick={() => goTo(ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE)}>
-            <span className={`${styles.actionIcon} ${styles.toneBlue}`} aria-hidden="true"><AccountIcon /></span>
-            <span>
-              <strong>Editar perfil</strong>
-              <small>Nome, foto e dados</small>
-            </span>
-          </button>
-          <button type="button" className={styles.profileAction} onClick={() => goTo(ACCOUNT_SUBROUTE_IDS.SECURITY)}>
-            <span className={`${styles.actionIcon} ${styles.toneGreen}`} aria-hidden="true"><LockIcon /></span>
-            <span>
-              <strong>Segurança</strong>
-              <small>Senha e acesso</small>
-            </span>
-          </button>
-        </div>
-      </section>
+      <button
+        type="button"
+        className={styles.profileCard}
+        onClick={() => goTo(ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE)}
+      >
+        <Avatar
+          className={styles.avatar}
+          src={profile?.avatar_url || undefined}
+          name={profile?.full_name || undefined}
+          size="lg"
+        />
+        <span className={styles.profileInfo}>
+          <strong>{displayName}</strong>
+          {email ? <small>{email}</small> : null}
+        </span>
+        <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
+      </button>
 
-      <button type="button" className={`${styles.planCard} ${styles[`plan_${planState.tone}`]}`} onClick={() => goTo(ACCOUNT_SUBROUTE_IDS.PLAN)}>
-        <span className={styles.planIcon} aria-hidden="true"><CrownIcon /></span>
+      <button type="button" className={cx(styles.planCard, styles[`plan_${planState.tone}`])} onClick={() => goTo(ACCOUNT_SUBROUTE_IDS.PLAN)}>
+        <IconBox className={styles.planIcon}><PhCrownIcon /></IconBox>
         <span className={styles.planInfo}>
           <strong className={styles.planStatusLabel}>{planState.label}</strong>
           <span className={styles.planName}>Plano Pessoal</span>
@@ -242,38 +260,36 @@ function SimplifiedAccountPage() {
             <small>{PERSONAL_PLAN_PRICE_PERIOD}</small>
           </span>
         ) : null}
-        <span className={styles.planChevron} aria-hidden="true"><ChevronRightIcon /></span>
+        <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
       </button>
 
-      <section className={styles.menuCard} aria-label="Configurações da conta">
-        <SimplifiedAccountNotificationsRow />
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={styles.menuRow}
-            onClick={() => (item.onSelect ? item.onSelect() : item.to ? navigate(item.to) : goTo(item.id))}
-          >
-            <span className={`${styles.menuIcon} ${styles[`tone${item.tone.charAt(0).toUpperCase()}${item.tone.slice(1)}`]}`} aria-hidden="true">
-              <item.Icon />
-            </span>
-            <span className={styles.menuText}>
-              <strong>{item.title}</strong>
-              <small>{item.subtitle}</small>
-            </span>
-            <span className={styles.menuChevron} aria-hidden="true"><ChevronRightIcon /></span>
-          </button>
-        ))}
+      <section className={groups.group} aria-label="Conta">
+        <h2 className={groups.groupLabel}>Conta</h2>
+        <div className={groups.list}>
+          {accountItems.map(renderRow)}
+        </div>
       </section>
 
-      <button type="button" className={styles.logoutCard} onClick={() => setShowLogoutConfirm(true)}>
-        <span className={styles.logoutIcon} aria-hidden="true"><LogoutIcon /></span>
-        <span className={styles.menuText}>
-          <strong>Sair da conta</strong>
-          <small>Encerrar a sessão com segurança</small>
-        </span>
-        <span className={styles.menuChevron} aria-hidden="true"><ChevronRightIcon /></span>
-      </button>
+      <section className={groups.group} aria-label="Produto">
+        <h2 className={groups.groupLabel}>Produto</h2>
+        <div className={groups.list}>
+          {productItems.slice(0, 2).map(renderRow)}
+          <SimplifiedAccountNotificationsRow />
+          {productItems.slice(2).map(renderRow)}
+        </div>
+      </section>
+
+      <section className={groups.group} aria-label="Sessão">
+        <h2 className={groups.groupLabel}>Sessão</h2>
+        <div className={groups.list}>
+          <button type="button" className={cx(groups.row, styles.logoutCard)} onClick={() => setShowLogoutConfirm(true)}>
+            <IconBox><PhSignOutIcon /></IconBox>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Sair</span>
+            </span>
+          </button>
+        </div>
+      </section>
 
       <AnalyticsConsentPreferencesModal
         open={showAnalyticsPreferences}

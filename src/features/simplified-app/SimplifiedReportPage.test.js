@@ -36,12 +36,15 @@ test('componente da antiga rota da planilha foi removido -- nunca duas implement
   assert.doesNotMatch(barrel, /SimplifiedReportSpreadsheetPage/);
 });
 
-test('cabeçalho próprio (← Relatório da Uni) -- shell nunca duplica o header genérico por cima', async () => {
+// Fase 3 do redesign (#90): o título passa a ser "Relatórios" (tela 12),
+// no cabeçalho compartilhado das subpáginas; a seta continua voltando
+// para a Home.
+test('cabeçalho próprio (← Relatórios) -- shell nunca duplica o header genérico por cima', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
   assert.match(shell, /\|\| location\.pathname === SIMPLIFIED_ROUTES\.RELATORIO;/);
   const page = await source('./SimplifiedReportPage.jsx');
-  assert.match(page, /<h1>Relatório da Uni<\/h1>/);
-  assert.match(page, /onClick=\{\(\) => navigate\(SIMPLIFIED_ROUTES\.HOME\)\}/);
+  assert.match(page, /<SimplifiedSubpageHeader\s*\n\s*title="Relatórios"/);
+  assert.match(page, /onBack=\{\(\) => navigate\(SIMPLIFIED_ROUTES\.HOME\)\}/);
 });
 
 test('IMERSIVA: bottom nav some SÓ nesta rota -- nenhuma outra rota é afetada', async () => {
@@ -100,7 +103,7 @@ test('ESTRUTURA: 4 indicadores presentes -- mesmo com empty state, os cards cont
 
 test('ORDEM VISUAL: header -> mês -> 4 cards -> Baixar planilha -> planilha (tabs+grid)', async () => {
   const page = await source('./SimplifiedReportPage.jsx');
-  const headerIndex = page.indexOf('<header');
+  const headerIndex = page.indexOf('<SimplifiedSubpageHeader');
   const monthNavIndex = page.indexOf('<nav');
   const summaryIndex = page.indexOf('styles.summaryGrid');
   const downloadIndex = page.indexOf('styles.downloadButton');
@@ -114,7 +117,7 @@ test('ORDEM VISUAL: header -> mês -> 4 cards -> Baixar planilha -> planilha (ta
 test('BOTÃO BAIXAR PLANILHA: full-width, fácil de encontrar, nunca escondido no header', async () => {
   const page = await source('./SimplifiedReportPage.jsx');
   assert.match(page, /Baixar planilha/);
-  const headerBlock = page.slice(page.indexOf('<header'), page.indexOf('</header>'));
+  const headerBlock = page.slice(page.indexOf('<SimplifiedSubpageHeader'), page.indexOf('<nav'));
   assert.doesNotMatch(headerBlock, /Baixar planilha/, 'o botão saiu do header -- agora fica abaixo dos cards');
   const css = await source('./simplifiedReport.module.css');
   assert.match(css, /\.downloadButton \{[\s\S]*?width: 100%;/);
@@ -217,14 +220,19 @@ test('CSS usa só tokens semânticos --uf-app-*, nunca hex fixo', async () => {
   assert.doesNotMatch(css, /#[0-9a-fA-F]{3,8}/);
 });
 
+// Fase 3 do redesign (#90): o botão voltar e a safe-area do topo vivem no
+// cabeçalho compartilhado das subpáginas.
 test('back button e setas de mês têm 44px/40px+ de área de toque', async () => {
+  const header = await source('./simplifiedSubpageHeader.module.css');
+  assert.match(header, /\.backButton \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
   const css = await source('./simplifiedReport.module.css');
-  assert.match(css, /\.backButton \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
+  assert.match(css, /\.monthArrow \{[\s\S]*?width: 40px;[\s\S]*?height: 40px;/);
 });
 
 test('safe-area respeitada -- topo e rodapé (planilha nunca fica atrás da barra/home-indicator do iPhone)', async () => {
+  const header = await source('./simplifiedSubpageHeader.module.css');
+  assert.match(header, /env\(safe-area-inset-top\)/);
   const css = await source('./simplifiedReport.module.css');
-  assert.match(css, /env\(safe-area-inset-top\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
 });
 

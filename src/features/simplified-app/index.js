@@ -29,6 +29,7 @@ export { default as SimplifiedSupportPage } from './SimplifiedSupportPage.jsx';
 export { default as SimplifiedUniSupportPage } from './SimplifiedUniSupportPage.jsx';
 export { default as SimplifiedVoicePage } from './SimplifiedVoicePage.jsx';
 export { default as SimplifiedThemePage } from './SimplifiedThemePage.jsx';
+export { default as SimplifiedNotificationsPage } from './SimplifiedNotificationsPage.jsx';
 export {
   resolveSimplifiedUniState,
   SIMPLIFIED_UNI_STATES,

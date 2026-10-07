@@ -1,0 +1,63 @@
+/* Fase 3 (#90): cabeçalho interno do handoff (padding 18 16 8 10, seta +
+   título 17/500). O topo respeita a safe-area porque estas rotas não têm o
+   header fixo do shell. */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: max(18px, env(safe-area-inset-top)) 16px 8px 6px;
+}
+
+.titleGroup {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-text-2);
+  cursor: pointer;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.backButton:hover {
+  background: var(--uf-app-surface-2);
+}
+
+.backButton:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 17px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}

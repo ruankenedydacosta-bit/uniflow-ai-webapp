@@ -15,15 +15,17 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // Rotas internas -- fonte única, paths reais, sem duplicidade.
 // ============================================================================
 
-// BLOCO FINAL DO MVP (Sobre a UniFlow AI): "notificacoes" e "privacidade"
-// foram removidos TOTALMENTE (nunca só escondidos do menu) -- Notificações
-// já mora exclusivamente no sino da Home; Privacidade e dados fica para uma
-// tarefa futura junto de LGPD/exportação/exclusão de conta.
-test('ACCOUNT_SUBROUTES tem exatamente os 10 paths pedidos, sob /app/conta/ -- notificacoes/privacidade removidos', () => {
+// BLOCO FINAL DO MVP (Sobre a UniFlow AI): "privacidade" foi removida
+// TOTALMENTE (nunca só escondida do menu) -- fica para uma tarefa futura
+// junto de LGPD/exportação/exclusão de conta.
+// Fase 3 do redesign (#90): "notificacoes" voltou como página própria
+// (tela 13 do handoff), alcançada pelo item Notificações do Mais.
+test('ACCOUNT_SUBROUTES tem exatamente os 11 paths pedidos, sob /app/conta/ -- privacidade removida, notificacoes da Fase 3', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path).sort();
   assert.deepEqual(paths, [
     '/app/conta/editar-perfil',
     '/app/conta/minhas-contas',
+    '/app/conta/notificacoes',
     '/app/conta/pagamentos',
     '/app/conta/pagamentos/historico',
     '/app/conta/plano',
@@ -45,7 +47,7 @@ test('todo subroute tem título e descrição honesta (nunca vazio, nunca dado f
   }
 });
 
-test('nenhum path duplicado entre os 10 subroutes', () => {
+test('nenhum path duplicado entre os 11 subroutes', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path);
   assert.equal(paths.length, new Set(paths).size);
 });
@@ -106,17 +108,19 @@ test('SimplifiedAppShell não duplica o cabeçalho genérico em /app/conta nem e
 // Página principal -- header, perfil, dados honestos, plano, menu, logout.
 // ============================================================================
 
-test('cabeçalho: título "Conta" e botão "Falar com a Uni" usam a rota pessoal, sem controlador novo', async () => {
+// Fase 3 do redesign (#90): o título passa a ser "Mais" (tela 07) e o
+// acesso à Uni é o orb da navegação inferior, não um botão no cabeçalho.
+test('cabeçalho: título "Mais" com o símbolo de 26px, sem botão "Falar com a Uni" nem controlador novo', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /<h1>Conta<\/h1>/);
-  assert.match(page, /Falar com a Uni/);
-  assert.match(page, /navigate\(SIMPLIFIED_ROUTES\.UNI\)/);
+  assert.match(page, /<h1>Mais<\/h1>/);
+  assert.match(page, /<UniMark \/>/);
+  assert.doesNotMatch(page, /Falar com a Uni/);
   assert.doesNotMatch(page, /new UniVoice|createVoiceController|useUniVoiceTts\(/);
 });
 
 test('perfil: usa Avatar com fallback de iniciais, nunca uma foto/pessoa fixa', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /<Avatar\s*\n\s*src=\{profile\?\.avatar_url \|\| undefined\}\s*\n\s*name=\{profile\?\.full_name \|\| undefined\}/);
+  assert.match(page, /<Avatar\s*\n\s*className=\{styles\.avatar\}\s*\n\s*src=\{profile\?\.avatar_url \|\| undefined\}\s*\n\s*name=\{profile\?\.full_name \|\| undefined\}/);
   assert.doesNotMatch(page, /Sr\. Ricardo|Sra\. |avatar fixo|foto fixa/i);
 });
 
@@ -126,22 +130,31 @@ test('perfil: nome vem de resolveSimplifiedGreeting (mesma prioridade oficial: p
   assert.match(page, /greeting\.hasKnownName/);
 });
 
-test('perfil: telefone real ou botão honesto "Adicionar telefone" -- nunca um número inventado', async () => {
+// Fase 3 do redesign (#90): o card de perfil mostra nome e e-mail e abre
+// Perfil (tela 07); telefone e selo do plano saíram do card -- o telefone
+// é editado em Perfil e o plano tem o próprio card logo abaixo.
+test('perfil: card com nome e e-mail reais abre Perfil -- nunca um telefone ou número inventado', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /profile\?\.phone/);
-  assert.match(page, /Adicionar telefone/);
+  assert.match(page, /const email = user\?\.email \?\? '';/);
+  assert.match(page, /className=\{styles\.profileCard\}\s*\n\s*onClick=\{\(\) => goTo\(ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\)\}/);
   assert.doesNotMatch(page, /\(11\) 9\d{4}-\d{4}/);
+  assert.doesNotMatch(page, /<Badge/);
 });
 
-test('perfil: selo "Plano Pessoal" via Badge do design system', async () => {
+test('grupo Conta: Perfil, Configurações e Segurança navegam para as rotas internas preparadas', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /<Badge variant="success" size="sm">Plano Pessoal<\/Badge>/);
+  const block = page.slice(page.indexOf('const accountItems'), page.indexOf('const productItems'));
+  assert.match(block, /id: ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE,\s*\n\s*Icon: PhUserIcon,\s*\n\s*title: 'Perfil',/);
+  assert.match(block, /id: ACCOUNT_SUBROUTE_IDS\.THEME,\s*\n\s*Icon: PhGearIcon,\s*\n\s*title: 'Configurações',/);
+  assert.match(block, /id: ACCOUNT_SUBROUTE_IDS\.SECURITY,\s*\n\s*Icon: PhShieldCheckIcon,\s*\n\s*title: 'Segurança',/);
+  assert.match(page, /navigate\(ACCOUNT_SUBROUTES\[subrouteId\]\.path\)/);
 });
 
-test('ações Editar perfil e Segurança navegam para as rotas internas preparadas', async () => {
-  const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /goTo\(ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\)/);
-  assert.match(page, /goTo\(ACCOUNT_SUBROUTE_IDS\.SECURITY\)/);
+test('nenhum item do Mais leva a tela que o app simplificado não tem (Metas, Visão de futuro, Categorias, Open Finance)', async () => {
+  const page = (await source('./SimplifiedAccountPage.jsx'))
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(page, /'Metas'|Visão de futuro|'Categorias'|Open Finance|Espaço ativo/);
 });
 
 // ---------- Card do plano: fonte única, nunca dado inventado ----------
@@ -195,25 +208,29 @@ test('preço exibido é o da assinatura (épico #116), com a constante compartil
 // receita/despesa não dependem mais de conta. A subrota/tela em si continua
 // existindo (ainda usada por transferência/ajuste de saldo), só não tem mais
 // entrada aqui.
-test('menu preserva os itens existentes e inclui a preferência mínima de Analytics antes de Sobre', async () => {
+// Fase 3 do redesign (#90): ordem da tela 07 -- Conta (Perfil, Configurações,
+// Segurança), Produto (Relatórios, Agenda, Notificações, Pagamento e
+// assinatura, Voz da Uni, Suporte, Privacidade e Analytics, Sobre) e Sessão
+// (Sair).
+test('menu preserva os itens existentes na ordem da tela 07 e inclui a preferência mínima de Analytics antes de Sobre', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const order = ['PAYMENTS', 'VOICE', 'SUPPORT', 'THEME', 'ABOUT'];
+  const order = ['EDIT_PROFILE', 'THEME', 'SECURITY', 'PAYMENTS', 'VOICE', 'SUPPORT', 'ABOUT'];
   const indices = order.map((id) => page.indexOf(`ACCOUNT_SUBROUTE_IDS.${id},`));
   assert.ok(indices.every((i) => i > -1), 'algum item do menu está ausente');
   for (let i = 1; i < indices.length; i += 1) {
     assert.ok(indices[i] > indices[i - 1], `ordem incorreta: ${order[i - 1]} deveria vir antes de ${order[i]}`);
   }
-  assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.NOTIFICATIONS/);
+  assert.match(page, /to: SIMPLIFIED_ROUTES\.RELATORIO,/);
   assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.PRIVACY/);
   assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.MY_ACCOUNTS/);
   const analyticsIndex = page.indexOf("id: 'analytics-consent'");
-  assert.ok(analyticsIndex > indices[3] && analyticsIndex < indices[4]);
+  assert.ok(analyticsIndex > indices[5] && analyticsIndex < indices[6]);
   assert.match(page, /title: 'Privacidade e Analytics'/);
 });
 
-test('NOTIFICATIONS e PRIVACY não existem mais em ACCOUNT_SUBROUTE_IDS/ACCOUNT_SUBROUTES -- remoção total, não só do menu', async () => {
+test('PRIVACY não existe em ACCOUNT_SUBROUTE_IDS/ACCOUNT_SUBROUTES -- remoção total, não só do menu; NOTIFICATIONS existe (Fase 3)', async () => {
   const routesSource = await source('./simplifiedAccountRoutes.js');
-  assert.doesNotMatch(routesSource, /NOTIFICATIONS:/);
+  assert.match(routesSource, /NOTIFICATIONS: 'notifications',/);
   assert.doesNotMatch(routesSource, /PRIVACY:/);
 });
 
@@ -230,13 +247,16 @@ test('NOTIFICATIONS e PRIVACY não existem mais em ACCOUNT_SUBROUTE_IDS/ACCOUNT_
 // parecer painel de desenvolvimento. SimplifiedPushNotificationsCard.jsx
 // continua existindo (nunca deletado, testes próprios continuam passando,
 // Edge Function de teste intacta) só deixou de ser renderizado em Conta.
-test('linha compacta de notificações substitui o card grande -- mesmo padrão visual de Agenda/Pagamento/Voz/Suporte', async () => {
+// Fase 3 do redesign (#90): a linha fica no grupo Produto, logo depois de
+// Relatórios, como na tela 07.
+test('linha compacta de notificações substitui o card grande -- mesmo padrão visual das demais linhas, no grupo Produto', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
   assert.doesNotMatch(page, /SimplifiedPushNotificationsCard/);
   assert.match(page, /import SimplifiedAccountNotificationsRow from '\.\/SimplifiedAccountNotificationsRow\.jsx';/);
-  const menuCardIndex = page.indexOf('styles.menuCard');
+  const productIndex = page.indexOf('aria-label="Produto"');
   const rowIndex = page.indexOf('<SimplifiedAccountNotificationsRow />');
-  assert.ok(menuCardIndex > -1 && rowIndex > menuCardIndex, 'a linha vive DENTRO do menuCard, no mesmo bloco de Agenda/Pagamento/Voz/Suporte');
+  const sessionIndex = page.indexOf('aria-label="Sessão"');
+  assert.ok(productIndex > -1 && rowIndex > productIndex && rowIndex < sessionIndex, 'a linha vive DENTRO do grupo Produto');
 });
 
 test('linha de notificações nunca mostra "Enviar notificação de teste" nem "Desativar notificações" para o usuário comum', async () => {
@@ -247,23 +267,27 @@ test('linha de notificações nunca mostra "Enviar notificação de teste" nem "
   assert.doesNotMatch(row, /sendTest/);
 });
 
-test('linha de notificações reaproveita useWebPush() -- nunca uma segunda arquitetura de subscription', async () => {
+// Fase 3 do redesign (#90): a linha abre a página de notificações (tela 13)
+// e mostra quantas estão por ler; a ativação do push mora dentro da página,
+// no mesmo aviso do painel do sino (useWebPush continua a fonte única).
+test('linha de notificações lê o estado do sino publicado pelo shell (contexto) e abre a página de notificações', async () => {
   const row = await source('./SimplifiedAccountNotificationsRow.jsx');
-  assert.match(row, /import \{ useWebPush, PUSH_STATUS \} from '\.\.\/mobile-push\/useWebPush\.js';/);
-  assert.match(row, /enableNotifications/);
+  assert.match(row, /import \{ useSimplifiedNotifications \} from '\.\/simplifiedNotificationsContext\.js';/);
+  assert.doesNotMatch(row, /useNotifications\(/);
+  assert.match(row, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.NOTIFICATIONS\]\.path\)/);
+  assert.doesNotMatch(row, /useWebPush|enableNotifications/);
 });
 
-test('estados da linha: "Ativar notificações" quando não autorizado, "Ativadas neste dispositivo" quando enabled', async () => {
+test('estados da linha: "N não lida(s)" quando há por ler, "Tudo em dia" quando não há', async () => {
   const row = await source('./SimplifiedAccountNotificationsRow.jsx');
-  assert.match(row, /'Ativadas neste dispositivo'/);
-  assert.match(row, /'Ativar notificações'/);
-  assert.match(row, /const isEnabled = status === PUSH_STATUS\.ENABLED;/);
+  assert.match(row, /não lida\$\{unreadCount > 1 \? 's' : ''\}/);
+  assert.match(row, /'Tudo em dia'/);
 });
 
-test('nenhuma rota nova foi criada para Web Push -- ACCOUNT_SUBROUTES continua com exatamente os mesmos 10 paths', async () => {
+test('nenhuma rota nova foi criada para Web Push -- a única rota nova é a página de notificações da Fase 3', async () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path);
-  assert.equal(paths.length, 10);
-  assert.ok(!paths.some((path) => /push|notifica/i.test(path)), 'nenhum path novo relacionado a push/notificações');
+  assert.equal(paths.length, 11);
+  assert.ok(!paths.some((path) => /push/i.test(path)), 'nenhum path novo relacionado a push');
 });
 
 test('useAccounts não é mais importado nesta tela -- "Minhas contas" não faz mais parte do menu de Conta', async () => {
@@ -285,11 +309,13 @@ test('"Sobre a UniFlow AI" mostra a versão atual real (currentVersion de useUni
   assert.doesNotMatch(page, /APP_VERSION/);
 });
 
-test('linha "Tema" descreve só os dois temas reais (UniFlow, Claro) -- nunca menciona Escuro/Sistema, removidos do seletor', async () => {
+// Fase 3 do redesign (#90): a linha chama-se "Configurações" (tela 07) e
+// abre a aba Preferências, onde o tema é escolhido; sem apoio na linha.
+test('linha "Configurações" (rota de Tema) nunca menciona Escuro/Sistema, removidos do seletor', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
   const themeStart = page.indexOf('ACCOUNT_SUBROUTE_IDS.THEME,');
   const themeSlice = page.slice(themeStart, page.indexOf('},', themeStart));
-  assert.match(themeSlice, /subtitle: 'UniFlow ou Claro',/);
+  assert.match(themeSlice, /title: 'Configurações',/);
   assert.doesNotMatch(themeSlice, /Escuro|Sistema/);
 });
 
@@ -385,13 +411,14 @@ test('CSS da tela Voz da Uni cobre safe area, 320px, foco e redução de movimen
 // Responsividade estrutural (Fase 12) e acessibilidade (Fase 13) -- CSS.
 // ============================================================================
 
-test('CSS de Conta cobre safe-area, larguras estreitas (359/520px), desktop (1024px) e prefers-reduced-motion', async () => {
+// Fase 3 (#90): a tela não tem transição nem regra própria para 520px, então
+// esses blocos saíram (eram CSS sem efeito); ficam safe-area, 359px e 1024px.
+test('CSS de Conta cobre safe-area, largura estreita (359px) e desktop (1024px)', async () => {
   const css = await source('./simplifiedAccount.module.css');
   assert.match(css, /env\(safe-area-inset-top\)/);
-  assert.match(css, /@media \(max-width: 520px\)/);
   assert.match(css, /@media \(max-width: 359px\)/);
   assert.match(css, /@media \(min-width: 1024px\)/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.doesNotMatch(css, /transition: none/);
 });
 
 test('cabeçalho de Conta usa flex-wrap (mesma correção de Registros) -- nunca sobrepõe título e botão em telas estreitas', async () => {

@@ -1155,7 +1155,10 @@ test('sino mostra quantidade real limitada a 9+', async () => {
 // mesma remoção otimista do hook -- sem props extras/estado duplicado.
 test('SimplifiedAppShell repassa dismissNotification do hook como onDismiss do painel', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
-  assert.match(shell, /dismissNotification,\s*\n\s*\} = useNotifications\(\);/);
+  // Fase 3 (#90): o resultado do hook fica numa variável para ser publicado
+  // por contexto (página de notificações e linha do Mais leem o mesmo estado).
+  assert.match(shell, /const notificationsState = useNotifications\(\);/);
+  assert.match(shell, /dismissNotification,\s*\n\s*\} = notificationsState;/);
   assert.match(shell, /onDismiss=\{dismissNotification\}/);
 });
 
