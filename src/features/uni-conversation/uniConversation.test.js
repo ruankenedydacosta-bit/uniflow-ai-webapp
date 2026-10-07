@@ -668,6 +668,34 @@ test('BUG REAL: confirmação falada com abertura afirmativa confirma; com cance
   assert.equal(classifyPendingActionReply('Ok, 50 reais'), 'input');
 });
 
+// BUG REAL EM PRODUÇÃO (voz): a conversa por voz repassa a frase como foi
+// dita. "Pode ser." virou proposta de criar a categoria "Pode ser.", e
+// "Criar a categoria Salário." não confirmava o card da categoria Salário.
+test('BUG REAL: confirmação falada com cortesia ou com o item do card confirma', () => {
+  for (const reply of [
+    'Pode ser.',
+    'Isso mesmo.',
+    'Confirmar já.',
+    'Pode confirmar agora, por favor.',
+    'Pode registrar a despesa.',
+    'Cria a categoria.',
+  ]) {
+    assert.equal(classifyPendingActionReply(reply), 'confirm', reply);
+  }
+  assert.equal(classifyPendingActionReply('Criar a categoria Salário.', { subjectName: 'Salário' }), 'confirm');
+  assert.equal(
+    classifyPendingActionReply('Confirmar agora a criação da categoria Salário.', { subjectName: 'Salário' }),
+    'confirm',
+  );
+  assert.equal(classifyPendingActionReply('Criar a conta Nubank', { subjectName: 'Nubank' }), 'confirm');
+  // Outro nome é resposta ao campo, nunca confirmação do card.
+  assert.equal(classifyPendingActionReply('Criar a categoria Mercado.', { subjectName: 'Salário' }), 'input');
+  assert.equal(classifyPendingActionReply('Criar a categoria Salário.'), 'input');
+  assert.equal(classifyPendingActionReply('Pode ser no Nubank'), 'input');
+  assert.equal(classifyPendingActionReply('Confirma o valor de 50'), 'input');
+  assert.equal(classifyPendingActionReply('Não, cancela agora.'), 'cancel');
+});
+
 test('categoria inexistente retorna categorias disponíveis sem repetir resposta genérica', () => {
   const action = createAction('Gastei 50 reais.');
   const result = resolvePendingActionInput({

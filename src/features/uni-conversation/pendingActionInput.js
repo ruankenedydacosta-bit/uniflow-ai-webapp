@@ -101,11 +101,42 @@ function findMatches(items, input, fields = ['name'], workspaceId = null) {
 // pelas mesmas listas de frase inteira; "Sim, cancela" continua cancelando.
 const AFFIRMATIVE_OPENING = /^(?:(?:ta\s+bom|ta\s+certo|ta|ok|okay|isso|sim|beleza|certo|perfeito|claro|confirmado|pode\s+sim)[,.!]?\s+)+/;
 
-export function classifyPendingActionReply(value) {
+// BUG REAL EM PRODUÇÃO (voz): a conversa por voz repassa a frase como foi
+// dita. "Pode ser." respondendo "Posso usar Outras despesas?" virou proposta
+// de criar a categoria "Pode ser."; "Criar a categoria Salário." e "Confirmar
+// agora a criação da categoria Salário." pediam para "confirmar a criação".
+// Respostas de aceite curtas e o pedido de confirmar/criar o próprio item do
+// card (sem outro nome) passam a confirmar.
+const SPOKEN_CONFIRMATION_PATTERNS = [
+  /^(?:pode\s+ser|isso\s+mesmo|isso\s+a[ií]|exato|exatamente|com\s+certeza|fechado|manda|pode\s+mandar|pode\s+fazer|pode\s+criar|pode\s+usar\s+essa)[.!]?$/,
+  /^(?:pode\s+)?(?:confirmar|confirma|confirmo|criar|cria|registrar|registra|lancar|lanca|salvar|salva)\s+(?:(?:agora|ja|entao)\s+)?(?:(?:o|a)\s+)?(?:criacao\s+d[aoe]\s+)?(?:(?:essa|esta|nova)\s+)?(?:conta|categoria|lancamento|registro|movimentacao|despesa|receita|transferencia|gasto)[.!]?$/,
+];
+
+// Cortesia e pressa no fim da frase não mudam a resposta: "confirmar já",
+// "pode confirmar agora, por favor".
+const TRAILING_COURTESY = /(?:[,\s]+(?:agora|ja|por\s+favor|pra\s+mim|para\s+mim|entao|mesmo))+[.!]?$/;
+
+function removeTrailingSubject(text, subjectName) {
+  const subject = normalizeFinancialText(subjectName).replace(/[.!?]+$/g, '');
+  if (!subject || !text.endsWith(subject)) return text;
+  const rest = text.slice(0, -subject.length);
+  return /(?:^|\s)$/.test(rest) ? rest.trim() : text;
+}
+
+// subjectName: nome da conta/categoria que o card propõe. Só esse nome pode
+// vir junto do pedido ("criar a categoria Salário"); outro nome é resposta
+// ao campo, nunca confirmação.
+export function classifyPendingActionReply(value, { subjectName = null } = {}) {
   const fullReply = normalizeFinancialText(value).replace(/[!?]+$/g, '');
+  const withoutCourtesy = fullReply.replace(TRAILING_COURTESY, '').replace(/[.!,]+$/g, '').trim() || fullReply;
   const normalized = fullReply.replace(AFFIRMATIVE_OPENING, '') || fullReply;
-  if (CONFIRMATION_PATTERNS.some((pattern) => pattern.test(fullReply) || pattern.test(normalized))) return 'confirm';
-  if (CANCELLATION_PATTERNS.some((pattern) => pattern.test(normalized))) return 'cancel';
+  const spoken = removeTrailingSubject(
+    withoutCourtesy.replace(AFFIRMATIVE_OPENING, '') || withoutCourtesy,
+    subjectName,
+  );
+  if (CONFIRMATION_PATTERNS.some((pattern) => pattern.test(fullReply) || pattern.test(normalized) || pattern.test(spoken))) return 'confirm';
+  if (SPOKEN_CONFIRMATION_PATTERNS.some((pattern) => pattern.test(spoken))) return 'confirm';
+  if (CANCELLATION_PATTERNS.some((pattern) => pattern.test(normalized) || pattern.test(spoken))) return 'cancel';
   if (CANCELLATION_CONTAINS_PATTERNS.some((pattern) => pattern.test(normalized))) return 'cancel';
   return 'input';
 }

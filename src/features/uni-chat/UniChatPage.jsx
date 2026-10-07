@@ -3483,7 +3483,14 @@ export default function UniChatPage({ variant = 'full' }) {
     // sempre corrige isso; a allowlist fechada de CONFIRMATION_PATTERNS/
     // CANCELLATION_PATTERNS garante que uma resposta real (nome de conta,
     // valor, descrição) nunca bate por acidente.
-    const replyType = classifyPendingActionReply(text);
+    // Nome que o card propõe: "criar a categoria Salário" confirma o card
+    // da categoria Salário, e nenhum outro nome confirma.
+    const replySubjectName = activeStackAction?.fields?.account?.name
+      ?? activeStackAction?.fields?.category?.name
+      ?? action?.proposedCategory?.name
+      ?? action?.proposedCategoryName
+      ?? null;
+    const replyType = classifyPendingActionReply(text, { subjectName: replySubjectName });
     syncMessageToSupabase(userMsg);
 
     // Cancelamento do lançamento simples AINDA em esclarecimento (sem card de

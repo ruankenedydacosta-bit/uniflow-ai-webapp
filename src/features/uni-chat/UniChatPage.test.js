@@ -1140,12 +1140,12 @@ test('BUG REAL: "cancelar" durante o esclarecimento de um campo (sem card de con
   const { body: fnBody, end } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
   assert.ok(end > -1, 'não foi possível localizar o corpo completo de handlePendingConversationInput');
 
-  assert.match(fnBody, /const replyType = classifyPendingActionReply\(text\);/);
+  assert.match(fnBody, /const replyType = classifyPendingActionReply\(text, \{ subjectName: replySubjectName \}\);/);
 
   const guardIdx = fnBody.indexOf('!pendingAction\n      && !accountDependencyActive\n      && !categoryDependencyActive\n      && !categoryConfirmationPending');
   assert.ok(guardIdx > -1, 'a barreira de cancelamento durante esclarecimento deve existir');
 
-  const replyTypeIdx = fnBody.indexOf('const replyType = classifyPendingActionReply(text);');
+  const replyTypeIdx = fnBody.indexOf('const replyType = classifyPendingActionReply(text, { subjectName: replySubjectName });');
   const accountDependencyIdx = fnBody.indexOf('if (accountDependencyActive && replyType');
   assert.ok(
     replyTypeIdx < guardIdx && guardIdx < accountDependencyIdx,
