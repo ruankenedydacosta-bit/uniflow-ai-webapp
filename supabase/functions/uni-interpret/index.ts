@@ -14,6 +14,7 @@
 
 import { interpretarFrase } from '../_shared/uniInterpret/servico.js';
 import { interpretarComOpenAi } from '../_shared/uniInterpret/provedores.js';
+import { registrarCusto, reservarChamada } from '../_shared/uniLlmCota.js';
 
 const TEMPO_LIMITE_MS = 15000;
 const MAX_CATEGORIAS = 200;
@@ -101,40 +102,6 @@ function temperaturaConfigurada() {
 
 class NaoAutenticado extends Error {}
 
-// Mesmo teto diário por pessoa da uni-chat-llm (tabela uni_llm_daily_usage):
-// as duas chamam a OpenAI, e o teto é das chamadas à IA, não de uma função.
-const TETO_DIARIO_PADRAO = 300;
-
-function tetoDiario() {
-  const valor = Number(Deno.env.get('UNI_LLM_DAILY_CALL_LIMIT'));
-  return Number.isInteger(valor) && valor > 0 ? valor : TETO_DIARIO_PADRAO;
-}
-
-// Falha fechado: sem conseguir contar, não chama a OpenAI. O app cai nas
-// regras sem IA.
-async function consumirChamadaDoDia(supabaseUrl: string, userId: string) {
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  if (!serviceRoleKey) return 'indisponivel';
-  try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/uni_llm_consume_call`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
-        apikey: serviceRoleKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ p_user_id: userId, p_daily_limit: tetoDiario() }),
-    });
-    if (!response.ok) return 'indisponivel';
-    const linhas = await response.json();
-    const linha = Array.isArray(linhas) ? linhas[0] : linhas;
-    if (typeof linha?.allowed !== 'boolean') return 'indisponivel';
-    return linha.allowed ? 'liberada' : 'teto_atingido';
-  } catch {
-    return 'indisponivel';
-  }
-}
-
 function registrarMetrica(status: number, metrica: Record<string, unknown>) {
   console.log(JSON.stringify({ at: 'uni-interpret', ts: new Date().toISOString(), status, ...metrica }));
 }
@@ -157,6 +124,7 @@ Deno.serve(async (request) => {
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
   const chave = Deno.env.get('OPENAI_API_KEY') ?? '';
   const modelo = Deno.env.get('UNI_INTERPRET_MODEL') ?? 'gpt-5.6-luna';
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   if (!supabaseUrl || !anonKey || !chave) {
     return respondJson(503, { error: 'A interpretação por IA não está configurada neste ambiente.' });
   }
@@ -184,11 +152,12 @@ Deno.serve(async (request) => {
       // Conta só o que vai mesmo chamar a OpenAI: pedido inválido ou sem
       // acesso ao espaço não gasta o teto.
       chamarModelo: async ({ instrucoes, mensagem }: { instrucoes: string; mensagem: string }) => {
+        // Teto por plano (migration 054), o mesmo da uni-chat-llm.
         const userId = await usuario;
-        const chamadaDoDia = userId ? await consumirChamadaDoDia(supabaseUrl, userId) : 'indisponivel';
-        if (chamadaDoDia === 'teto_atingido') return { ok: false, motivo: 'limite', modelo };
+        const chamadaDoDia = await reservarChamada({ supabaseUrl, serviceRoleKey, userId });
+        if (chamadaDoDia === 'teto_diario' || chamadaDoDia === 'teto_mensal') return { ok: false, motivo: 'limite', modelo };
         if (chamadaDoDia === 'indisponivel') return { ok: false, motivo: 'sem_cota', modelo };
-        return interpretarComOpenAi({
+        const chamada = await interpretarComOpenAi({
           chave,
           modelo,
           instrucoes,
@@ -196,6 +165,8 @@ Deno.serve(async (request) => {
           temperatura: temperaturaConfigurada(),
           sinal: AbortSignal.timeout(TEMPO_LIMITE_MS),
         });
+        if (chamada.uso) await registrarCusto({ supabaseUrl, serviceRoleKey, userId, modelo, uso: chamada.uso });
+        return chamada;
       },
     });
     registrarMetrica(resultado.status, resultado.metrica);
