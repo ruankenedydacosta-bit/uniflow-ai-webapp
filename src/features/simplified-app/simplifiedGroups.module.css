@@ -1,0 +1,119 @@
+/* Fase 3 (#90): grupos e linhas de lista do handoff (telas 07, 13 e 14).
+   Rótulo de grupo 11px uppercase, linha em grade 36px | 1fr | auto com
+   caixa de ícone (IconBox), título 14 e apoio 12. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.groupLabel {
+  margin: 0;
+  color: var(--uf-app-text-3);
+  font-size: 11px;
+  font-weight: var(--uf-font-weight-regular);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  width: 100%;
+  min-height: 56px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  color: var(--uf-app-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.row:disabled {
+  cursor: default;
+  opacity: .6;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+  border-radius: var(--uf-radius-8);
+}
+
+/* Linha sem ícone (tela 14): título + apoio à esquerda, controle à direita. */
+.rowPlain {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.rowText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rowTitle {
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowSubtitle {
+  overflow: hidden;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caret {
+  width: 14px;
+  height: 14px;
+  display: block;
+  color: var(--uf-app-text-3);
+}
+
+.caret svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Etiqueta contornada (handoff: 11px, padding 2 8, pill). */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--uf-app-text-3);
+  border-radius: var(--uf-radius-full);
+  color: var(--uf-app-text-3);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.pillGreen {
+  border-color: var(--uf-app-brand-green-text);
+  color: var(--uf-app-brand-green-text);
+}
+
+.pillViolet {
+  border-color: var(--uf-app-brand-violet-text);
+  color: var(--uf-app-brand-violet-text);
+}
+
+.pillMuted {
+  border-color: var(--uf-app-border-strong);
+  color: var(--uf-app-text-3);
+}

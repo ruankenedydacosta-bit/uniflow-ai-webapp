@@ -6,13 +6,12 @@
 // placeholder honesto -- "ainda não implementado", nunca uma tela em
 // branco nem dado fictício.
 //
-// BLOCO FINAL DO MVP (Sobre a UniFlow AI): "Notificações" e "Privacidade e
-// dados" foram removidas TOTALMENTE (id + rota) do menu Conta -- de
-// propósito, não um esquecimento. Notificações já têm um lar oficial (o
-// sino da Home, NotificationBell.jsx) e nunca deveriam existir duplicadas
-// aqui; Privacidade e dados será implementada no futuro junto de LGPD,
-// exportação/exclusão de conta e permissões -- construir um placeholder
-// agora só criaria uma promessa vazia.
+// BLOCO FINAL DO MVP (Sobre a UniFlow AI): "Privacidade e dados" foi
+// removida TOTALMENTE (id + rota) do menu Conta -- será implementada no
+// futuro junto de LGPD, exportação/exclusão de conta e permissões;
+// construir um placeholder agora só criaria uma promessa vazia.
+// "Notificações" voltou na Fase 3 do redesign (#90) como página própria
+// (tela 13 do handoff); o sino do header segue abrindo o painel rápido.
 export const ACCOUNT_SUBROUTE_IDS = Object.freeze({
   EDIT_PROFILE: 'edit-profile',
   SECURITY: 'security',
@@ -24,6 +23,10 @@ export const ACCOUNT_SUBROUTE_IDS = Object.freeze({
   SUPPORT: 'support',
   THEME: 'theme',
   ABOUT: 'about',
+  // Fase 3 do redesign (#90): a tela 13 do handoff é uma página própria de
+  // notificações, alcançada pelo item "Notificações" do Mais. O sino do
+  // header continua abrindo o painel rápido nas telas que o têm.
+  NOTIFICATIONS: 'notifications',
 });
 
 export const ACCOUNT_SUBROUTES = Object.freeze({
@@ -82,5 +85,10 @@ export const ACCOUNT_SUBROUTES = Object.freeze({
     path: '/app/conta/sobre',
     title: 'Sobre a UniFlow AI',
     description: 'Conheça a UniFlow AI: quem somos, nossa missão e o que a Uni faz por você.',
+  }),
+  [ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS]: Object.freeze({
+    path: '/app/conta/notificacoes',
+    title: 'Notificações',
+    description: 'Veja os avisos da Uni sobre contas, lembretes e sua conta.',
   }),
 });

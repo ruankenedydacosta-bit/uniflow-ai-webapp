@@ -1,59 +1,38 @@
-import { useWebPush, PUSH_STATUS } from '../mobile-push/useWebPush.js';
-import { BellIcon, ChevronRightIcon } from './SimplifiedIcons.jsx';
+import { useNavigate } from 'react-router-dom';
+import IconBox from '../../components/ui/IconBox/index.js';
+import { cx } from '../../utils/cx.js';
+import { useNotifications } from '../notifications/useNotifications.js';
+import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
+import { PhBellIcon, PhCaretRightIcon } from './SimplifiedIcons.jsx';
+import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedAccount.module.css';
 
 /**
- * NOTIF-UX3: substitui o antigo card grande "Notificações no celular" por
- * uma linha compacta, no MESMO padrão visual de Agenda/Pagamento/Voz/
- * Suporte -- reaproveita useWebPush() (mesmo hook/estado/persistência de
- * sempre, nunca uma segunda arquitetura de subscription).
- *
- * Nenhum controle de teste ou de desligar a capacidade fica visível para
- * o usuário comum: revogar é responsabilidade do sistema operacional
- * (Android/iOS), não da UI da UniFlow -- se o usuário revogar por lá, o
- * self-healing do próprio useWebPush() (reconciliação no mount com a
- * subscription REAL do navegador) já detecta e volta para o estado inicial
- * sozinho, sem fingir que continua ativo.
+ * Fase 3 do redesign (#90): linha "Notificações" do grupo Produto do Mais
+ * (tela 07). Mostra quantas estão por ler e abre a página de notificações
+ * (tela 13). A ativação do push no aparelho mora dentro dessa página,
+ * no mesmo aviso usado pelo painel do sino.
  */
 function SimplifiedAccountNotificationsRow() {
-  const {
-    capabilities, isPushConfigured, status, enableNotifications,
-  } = useWebPush();
+  const navigate = useNavigate();
+  const { unreadCount } = useNotifications();
 
-  const isEnabled = status === PUSH_STATUS.ENABLED;
-  const isEnabling = status === PUSH_STATUS.ENABLING;
-  const canEnable = capabilities.isSupported
-    && isPushConfigured
-    && !capabilities.needsAddToHomeScreen
-    && status !== PUSH_STATUS.DENIED;
-
-  const subtitle = isEnabled
-    ? 'Ativadas neste dispositivo'
-    : isEnabling
-      ? 'Ativando…'
-      : 'Ativar notificações';
+  const subtitle = unreadCount > 0
+    ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}`
+    : 'Tudo em dia';
 
   return (
     <button
       type="button"
-      className={styles.menuRow}
-      disabled={!isEnabled && (!canEnable || isEnabling)}
-      onClick={() => {
-        if (!isEnabled) enableNotifications();
-      }}
+      className={cx(groups.row, styles.menuRow)}
+      onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].path)}
     >
-      <span className={`${styles.menuIcon} ${styles.toneBlue}`} aria-hidden="true">
-        <BellIcon />
+      <IconBox><PhBellIcon /></IconBox>
+      <span className={groups.rowText}>
+        <span className={groups.rowTitle}>Notificações</span>
+        <span className={groups.rowSubtitle}>{subtitle}</span>
       </span>
-      <span className={styles.menuText}>
-        <strong>Notificações</strong>
-        <small>{subtitle}</small>
-      </span>
-      <span
-        className={`${styles.notificationStatusDot} ${isEnabled ? styles.notificationStatusDotOn : ''}`}
-        aria-hidden="true"
-      />
-      {isEnabled ? null : <span className={styles.menuChevron} aria-hidden="true"><ChevronRightIcon /></span>}
+      <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
     </button>
   );
 }
