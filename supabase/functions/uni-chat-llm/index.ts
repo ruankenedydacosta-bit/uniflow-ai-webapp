@@ -1148,6 +1148,41 @@ async function callOpenAiAdapter(
   return { status: 200, text, usage, reason: 'ok', toolCalls: null };
 }
 
+// Teto diário de chamadas por pessoa (migration 053). Cada pedido do chat
+// pode virar mais de uma chamada (interpretação, resposta, categoria), então
+// o padrão cobre algumas dezenas de conversas por dia. Ajuste por
+// UNI_LLM_DAILY_CALL_LIMIT nos secrets da função.
+const DEFAULT_DAILY_CALL_LIMIT = 300;
+
+function resolveDailyCallLimit(raw: string | undefined) {
+  const value = Number(raw);
+  return Number.isInteger(value) && value > 0 ? value : DEFAULT_DAILY_CALL_LIMIT;
+}
+
+// Falha fechado: sem conseguir contar, não chama a OpenAI. O app cai na
+// resposta sem IA, como em qualquer indisponibilidade desta função.
+async function consumeDailyCall(supabaseUrl: string, serviceRoleKey: string, userId: string, dailyLimit: number) {
+  if (!serviceRoleKey) return 'unavailable';
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/uni_llm_consume_call`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: serviceRoleKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_user_id: userId, p_daily_limit: dailyLimit }),
+    });
+    if (!response.ok) return 'unavailable';
+    const rows = await response.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (typeof row?.allowed !== 'boolean') return 'unavailable';
+    return row.allowed ? 'allowed' : 'limit_reached';
+  } catch {
+    return 'unavailable';
+  }
+}
+
 // OPENAI4: observabilidade segura -- so metadados operacionais, nunca texto
 // de pergunta/resposta, contexto financeiro ou conhecimento de produto.
 // Vai para os logs da propria Edge Function (painel do Supabase); nenhuma
@@ -1318,6 +1353,26 @@ Deno.serve(async (request) => {
             : mode === UNI_MODE.FINANCIAL_RESPONSE_COMPOSE
               ? FINANCIAL_RESPONSE_COMPOSE_OUTPUT_TOKENS
               : DEFAULT_OUTPUT_TOKENS;
+
+  // Conta só o que vai mesmo chamar a OpenAI: pedido inválido ou recusado
+  // antes daqui não gasta o teto.
+  const dailyCall = await consumeDailyCall(
+    supabaseUrl,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    userId,
+    resolveDailyCallLimit(Deno.env.get('UNI_LLM_DAILY_CALL_LIMIT')),
+  );
+  if (dailyCall === 'limit_reached') {
+    logSafeMetric({ mode, model, status: 429, reason: 'daily_limit', durationMs: 0, promptTokens: null, completionTokens: null });
+    return respondJson(429, {
+      error: 'Você chegou ao limite de respostas da Uni por hoje. Amanhã o limite volta.',
+      code: 'DAILY_LIMIT',
+    });
+  }
+  if (dailyCall === 'unavailable') {
+    logSafeMetric({ mode, model, status: 503, reason: 'daily_limit_unavailable', durationMs: 0, promptTokens: null, completionTokens: null });
+    return respondJson(503, { error: 'A resposta por IA está indisponível agora. Tente de novo em instantes.' });
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort('timeout'), PROVIDER_TIMEOUT_MS);
