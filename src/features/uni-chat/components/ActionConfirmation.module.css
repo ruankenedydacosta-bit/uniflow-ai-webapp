@@ -126,19 +126,19 @@
 .editForm {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--uf-space-16);
 }
 
 .editFields {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--uf-space-12);
 }
 
 .editField {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--uf-space-4);
 }
 
 .editField label {
@@ -150,13 +150,13 @@
 .editInput {
   width: 100%;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 var(--uf-space-12);
   border: 1px solid var(--uf-color-border-default);
   border-radius: var(--uf-radius-12);
   background: var(--uf-color-bg-surface);
   color: var(--uf-color-text-primary);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--uf-text-body-size);
 }
 
 .editInput:focus {

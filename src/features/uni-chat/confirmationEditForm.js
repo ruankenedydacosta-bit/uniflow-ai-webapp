@@ -57,12 +57,17 @@ export function buildConfirmationEditForm({ action, accounts = [], categories = 
   }
 
   if (accountOptions.length) {
+    // Receita e despesa podem ficar sem conta; a correção não tem como tirar
+    // uma conta já escolhida, então "Sem conta" só aparece quando não há.
+    const keepsWithoutAccount = !isTransfer && !isAdjustment && !action.account?.id;
     fields.push({
       key: 'accountId',
       label: isTransfer ? 'Conta de origem' : 'Conta',
       type: 'select',
       value: action.account?.id ? String(action.account.id) : '',
-      options: accountOptions,
+      options: keepsWithoutAccount
+        ? [{ value: '', label: 'Sem conta' }, ...accountOptions]
+        : accountOptions,
     });
     if (isTransfer) {
       fields.push({

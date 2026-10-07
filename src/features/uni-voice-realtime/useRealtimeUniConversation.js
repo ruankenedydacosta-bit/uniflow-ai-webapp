@@ -11,6 +11,7 @@ import {
   resolveRealtimeToolOutcome,
   resolveScreenActionOutcome,
   snapshotRealtimeToolTurn,
+  snapshotScreenActionTurn,
 } from './realtimeToolBridge.js';
 import { useRealtimeVoiceSession } from './useRealtimeVoiceSession.js';
 
@@ -126,15 +127,25 @@ export function useRealtimeUniConversation({
   // Com um turno da ferramenta aberto, a saída dele já conta o que houve.
   const announceScreenAction = useCallback((action) => {
     if (!isActiveRef.current || pendingTurnRef.current) return;
-    screenActionRef.current = { action, turn: snapshotRealtimeToolTurn(messagesRef.current) };
+    screenActionRef.current = {
+      action,
+      turn: snapshotScreenActionTurn(messagesRef.current),
+      at: Date.now(),
+    };
   }, []);
 
   useEffect(() => {
     const screenAction = screenActionRef.current;
     if (!screenAction || isBusy) return;
+    // Toque que o chat ignorou não fica esperando para sempre.
+    if (Date.now() - screenAction.at > REALTIME_TOOL_TIMEOUT_MS) {
+      screenActionRef.current = null;
+      return;
+    }
     const outcome = resolveScreenActionOutcome(messages, screenAction.turn);
     if (!outcome) return;
     screenActionRef.current = null;
+    if (outcome.discard) return;
     narrateScreenEvent(buildScreenActionInstructions(screenAction.action, outcome));
   }, [messages, isBusy, narrateScreenEvent]);
 

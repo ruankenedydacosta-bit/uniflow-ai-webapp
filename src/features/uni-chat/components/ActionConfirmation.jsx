@@ -98,6 +98,9 @@ export default function ActionConfirmation({
   executionError = null,
   processingLabel = 'Registrando…',
 }) {
+  // O formulário da edição aberta fica guardado: se o rascunho mudar por
+  // fora enquanto a pessoa edita, Salvar compara com o que ela viu.
+  const [editingForm, setEditingForm] = useState(null);
   const [editValues, setEditValues] = useState(null);
   const [editErrors, setEditErrors] = useState({});
   if (!data) return null;
@@ -111,10 +114,12 @@ export default function ActionConfirmation({
       return;
     }
     setEditErrors({});
+    setEditingForm(editForm);
     setEditValues(initialEditValues(editForm));
   }
 
   function stopEditing() {
+    setEditingForm(null);
     setEditValues(null);
     setEditErrors({});
   }
@@ -127,12 +132,12 @@ export default function ActionConfirmation({
   function saveEdit(event) {
     event.preventDefault();
     if (isExecuting) return;
-    const errors = validateEditValues(editForm, editValues);
+    const errors = validateEditValues(editingForm, editValues);
     if (Object.values(errors).some(Boolean)) {
       setEditErrors(errors);
       return;
     }
-    const overrides = buildEditOverrides(editForm, editValues);
+    const overrides = buildEditOverrides(editingForm, editValues);
     stopEditing();
     if (Object.keys(overrides).length) onSaveEdit(overrides);
   }
@@ -156,7 +161,7 @@ export default function ActionConfirmation({
       {isEditing ? (
         <form className={styles.editForm} onSubmit={saveEdit} noValidate>
           <EditFields
-            form={editForm}
+            form={editingForm}
             values={editValues}
             errors={editErrors}
             onChange={changeEditValue}

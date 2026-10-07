@@ -827,7 +827,8 @@ test('BLOCO VOZ 1: erro relevante ao usuário fala -- os 5 pontos de erro de han
   // de categoria, falha de confirmação e catch inesperado) -- a definição
   // da função é excluída contando só chamadas que terminam em ';'.
   const callSites = page.match(/reportConfirmationError\(id, [^)]*\);/g) ?? [];
-  assert.equal(callSites.length, 5, 'esperava 5 pontos de erro de confirmação usando reportConfirmationError');
+  // O sexto é a edição no card que não pôde ser aplicada (handleSaveEditAction).
+  assert.equal(callSites.length, 6, 'esperava 6 pontos de erro do card usando reportConfirmationError');
   // Nenhum setExecutionError fora do ponto central (sem duplicação de
   // registro/narração) -- só o reset neutro (null) continua nos fluxos.
   assert.equal((page.match(/setExecutionError\(errorText\);/g) ?? []).length, 1);

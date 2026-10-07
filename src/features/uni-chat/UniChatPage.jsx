@@ -4521,6 +4521,13 @@ export default function UniChatPage({ variant = 'full' }) {
   // falada ("muda o valor para 50") e o card revisado substitui este.
   function handleSaveEditAction(id, overrides) {
     if (confirmingRef.current || !pendingAction) return;
+    const result = financialConversation.provideInput(overrides);
+    // Sem a frase original interpretada não há como refazer o rascunho: o
+    // card atual continua valendo.
+    if (!result) {
+      reportConfirmationError(id, 'Não consegui aplicar essa edição. Diga o que quer mudar, por exemplo "muda o valor para 50".');
+      return;
+    }
     setExecutionError(null);
     setMessages((prev) =>
       prev.map((m) =>
@@ -4530,7 +4537,7 @@ export default function UniChatPage({ variant = 'full' }) {
       ),
     );
     setPendingAction(null);
-    publishConversationResult(financialConversation.provideInput(overrides));
+    void publishConversationResultWithInference(result);
   }
 
   function handleCancelAction(id, { cascade = false } = {}) {

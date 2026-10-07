@@ -30,21 +30,27 @@ export function readRealtimeToolPhrase(args) {
   return typeof args?.frase === 'string' ? args.frase.trim() : '';
 }
 
-// Resposta da Uni que chegou depois da mensagem de referência. Sem
-// referência (conversa vazia), qualquer resposta da Uni vale.
-export function findUniReplyAfter(messages, baselineId) {
-  if (!Array.isArray(messages)) return null;
+function messagesAfter(messages, baselineId) {
+  if (!Array.isArray(messages)) return [];
   const baselineIndex = baselineId === null || baselineId === undefined
     ? -1
     : messages.findIndex((message) => message?.id === baselineId);
-  const after = messages.slice(baselineIndex + 1);
+  return messages.slice(baselineIndex + 1);
+}
+
+function isUniReply(message) {
+  return message?.from === 'uni' && typeof message.text === 'string' && Boolean(message.text.trim());
+}
+
+// Resposta da Uni que chegou depois da mensagem de referência. Sem
+// referência (conversa vazia), qualquer resposta da Uni vale.
+export function findUniReplyAfter(messages, baselineId) {
+  const after = messagesAfter(messages, baselineId);
   // A mensagem da pessoa precisa ter entrado antes, senão a resposta é de
   // outro turno.
   const userIndex = after.findIndex((message) => message?.from === 'user');
   if (userIndex === -1) return null;
-  const replies = after.slice(userIndex + 1)
-    .filter((message) => message?.from === 'uni' && typeof message.text === 'string' && message.text.trim());
-  return replies.at(-1) ?? null;
+  return after.slice(userIndex + 1).filter(isUniReply).at(-1) ?? null;
 }
 
 // Pronúncia do nome como o banco aceita: uma linha, sem aspas, até 60
@@ -131,27 +137,38 @@ const SCREEN_ACTION_DESCRIPTIONS = Object.freeze({
 
 const SCREEN_REPLY_MAX_LENGTH = 600;
 
-// Resposta da Uni que chegou depois do toque. Diferente do turno da
-// ferramenta, aqui não há mensagem da pessoa antes dela.
-function findUniMessageAfter(messages, baselineId) {
-  if (!Array.isArray(messages)) return null;
-  const baselineIndex = baselineId === null || baselineId === undefined
-    ? -1
-    : messages.findIndex((message) => message?.id === baselineId);
-  return messages.slice(baselineIndex + 1)
-    .filter((message) => message?.from === 'uni' && typeof message.text === 'string' && message.text.trim())
-    .at(-1) ?? null;
+// Retrato do card no momento do toque. O objeto da confirmação entra junto
+// porque um novo erro igual ao anterior só se distingue por ele.
+export function snapshotScreenActionTurn(messages) {
+  const turn = snapshotRealtimeToolTurn(messages);
+  const card = Array.isArray(messages) && turn.confirmationId
+    ? messages.find((message) => message?.id === turn.confirmationId)
+    : null;
+  return Object.freeze({ ...turn, confirmation: card?.confirmation ?? null });
 }
 
-// O que a Uni deve dizer depois do toque; null enquanto o chat não terminou.
+// O que a Uni deve dizer depois do toque. null enquanto o chat não terminou;
+// { discard: true } quando a pessoa já falou ou escreveu outra coisa, porque
+// aí o toque não teve resposta e o que vier é de outro turno.
 export function resolveScreenActionOutcome(messages, turn) {
-  const reply = findUniMessageAfter(messages, turn.baselineId);
-  if (reply) {
-    return { text: reply.text.trim(), awaitingConfirmation: reply.confirmation?.status === 'pending' };
+  const after = messagesAfter(messages, turn.baselineId);
+  if (after.some((message) => message?.from === 'user')) return { discard: true };
+  // Um toque pode render mais de uma resposta (ex.: "Categoria criada" e o
+  // card retomado): a Uni fala todas.
+  const replies = after.filter(isUniReply);
+  if (replies.length) {
+    return {
+      text: replies.map((message) => message.text.trim()).join(' '),
+      awaitingConfirmation: replies.at(-1).confirmation?.status === 'pending',
+    };
   }
   if (!turn.confirmationId) return null;
   const confirmation = messages.find((message) => message?.id === turn.confirmationId)?.confirmation;
-  if (confirmation?.confirmationError && confirmation.confirmationError !== turn.confirmationError) {
+  const hasNewError = confirmation?.confirmationError && (
+    confirmation.confirmationError !== turn.confirmationError
+    || (turn.confirmation && confirmation !== turn.confirmation)
+  );
+  if (hasNewError) {
     return { text: confirmation.confirmationError, awaitingConfirmation: confirmation.status === 'pending', isError: true };
   }
   return null;

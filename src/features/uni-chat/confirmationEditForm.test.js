@@ -55,6 +55,17 @@ test('transferência tem origem e destino; ajuste edita o novo saldo', () => {
   assert.equal(adjustment.fields[0].value, 900);
 });
 
+test('receita ou despesa sem conta continua salvável sem conta', () => {
+  const form = buildConfirmationEditForm({ action: { ...expense, account: null }, accounts, categories });
+  const account = form.fields.find((field) => field.key === 'accountId');
+  assert.deepEqual(account.options[0], { value: '', label: 'Sem conta' });
+  const values = { ...initialEditValues(form), amount: 80 };
+  assert.deepEqual(validateEditValues(form, values), {});
+  assert.deepEqual(buildEditOverrides(form, values), { amount: 80 });
+  const withAccount = buildConfirmationEditForm({ action: expense, accounts, categories });
+  assert.ok(!withAccount.fields.find((field) => field.key === 'accountId').options.some((option) => option.value === ''));
+});
+
 test('rascunho incompleto não abre formulário', () => {
   assert.equal(buildConfirmationEditForm({ action: { ...expense, status: 'needs_clarification' } }), null);
   assert.equal(buildConfirmationEditForm({}), null);
