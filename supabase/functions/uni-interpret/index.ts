@@ -101,6 +101,40 @@ function temperaturaConfigurada() {
 
 class NaoAutenticado extends Error {}
 
+// Mesmo teto diário por pessoa da uni-chat-llm (tabela uni_llm_daily_usage):
+// as duas chamam a OpenAI, e o teto é das chamadas à IA, não de uma função.
+const TETO_DIARIO_PADRAO = 300;
+
+function tetoDiario() {
+  const valor = Number(Deno.env.get('UNI_LLM_DAILY_CALL_LIMIT'));
+  return Number.isInteger(valor) && valor > 0 ? valor : TETO_DIARIO_PADRAO;
+}
+
+// Falha fechado: sem conseguir contar, não chama a OpenAI. O app cai nas
+// regras sem IA.
+async function consumirChamadaDoDia(supabaseUrl: string, userId: string) {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!serviceRoleKey) return 'indisponivel';
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/uni_llm_consume_call`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: serviceRoleKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_user_id: userId, p_daily_limit: tetoDiario() }),
+    });
+    if (!response.ok) return 'indisponivel';
+    const linhas = await response.json();
+    const linha = Array.isArray(linhas) ? linhas[0] : linhas;
+    if (typeof linha?.allowed !== 'boolean') return 'indisponivel';
+    return linha.allowed ? 'liberada' : 'teto_atingido';
+  } catch {
+    return 'indisponivel';
+  }
+}
+
 function registrarMetrica(status: number, metrica: Record<string, unknown>) {
   console.log(JSON.stringify({ at: 'uni-interpret', ts: new Date().toISOString(), status, ...metrica }));
 }
@@ -147,15 +181,22 @@ Deno.serve(async (request) => {
         if (!userId) throw new NaoAutenticado();
         return contexto;
       },
-      chamarModelo: ({ instrucoes, mensagem }: { instrucoes: string; mensagem: string }) =>
-        interpretarComOpenAi({
+      // Conta só o que vai mesmo chamar a OpenAI: pedido inválido ou sem
+      // acesso ao espaço não gasta o teto.
+      chamarModelo: async ({ instrucoes, mensagem }: { instrucoes: string; mensagem: string }) => {
+        const userId = await usuario;
+        const chamadaDoDia = userId ? await consumirChamadaDoDia(supabaseUrl, userId) : 'indisponivel';
+        if (chamadaDoDia === 'teto_atingido') return { ok: false, motivo: 'limite', modelo };
+        if (chamadaDoDia === 'indisponivel') return { ok: false, motivo: 'sem_cota', modelo };
+        return interpretarComOpenAi({
           chave,
           modelo,
           instrucoes,
           mensagem,
           temperatura: temperaturaConfigurada(),
           sinal: AbortSignal.timeout(TEMPO_LIMITE_MS),
-        }),
+        });
+      },
     });
     registrarMetrica(resultado.status, resultado.metrica);
     return respondJson(resultado.status, resultado.corpo);

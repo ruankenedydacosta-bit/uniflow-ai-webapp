@@ -76,6 +76,12 @@ import { composeFinancialResponseWithLlm } from './composeFinancialResponseWithL
 import { buildFinancialOrchestratorTelemetryEntry, logFinancialOrchestratorTelemetry } from './financialOrchestratorTelemetry.js';
 import { recordFinancialValidationEvent } from './financialValidationTelemetry.js';
 import { createCategoryInferenceService } from '../uni-category-inference/index.js';
+import {
+  createUniInterpretClient,
+  interpretacaoParaOverrides,
+  montarHistoricoParaInterpretacao,
+  montarRascunhoParaInterpretacao,
+} from '../uni-interpret/uniInterpretClient.js';
 import { createFinancialPlanService } from '../uni-financial-plan/index.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
@@ -644,6 +650,18 @@ export default function UniChatPage({ variant = 'full' }) {
     }),
     [uniLlm.enabled],
   );
+  // Épico #76: a IA lê a frase inteira e escolhe valor, data, descrição,
+  // conta e categoria entre os registros do próprio usuário. O resultado
+  // corrige os campos do rascunho das regras; sem IA, ficam as regras.
+  const uniInterpretClient = useMemo(
+    () => createUniInterpretClient({
+      supabase,
+      supabaseUrl,
+      supabaseAnonKey,
+      enabled: uniLlm.enabled,
+    }),
+    [uniLlm.enabled],
+  );
   // Evita chamar a IA mais de uma vez para a MESMA tentativa de registro
   // (clientOperationId) -- se a IA já foi tentada e o resultado ainda assim
   // ficou sem categoria (uncertain/baixa confiança/erro), as próximas
@@ -1000,6 +1018,65 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     createAssistantResponse(outcome.response.text, { highlight: outcome.response.highlight });
     return true;
+  }
+
+  // Overrides da IA para o lançamento em andamento, ou null (sem IA,
+  // falha, outro tipo de operação). Nunca lança.
+  async function interpretWithAi(text, action, { history = messages, draft = null } = {}) {
+    const transactionType = action?.transactionType;
+    if (
+      (transactionType !== 'expense' && transactionType !== 'income')
+      || !effectiveWorkspace?.id
+      || !uniInterpretClient.isSupported()
+    ) {
+      return null;
+    }
+    const { interpretacao } = await uniInterpretClient.interpretar({
+      workspaceId: effectiveWorkspace.id,
+      frase: text,
+      historico: montarHistoricoParaInterpretacao(history),
+      rascunho: draft,
+    });
+    return interpretacaoParaOverrides(interpretacao, { transactionType });
+  }
+
+  // Lançamento novo: a IA corrige os campos que as regras leram antes de o
+  // card aparecer. "Mensalidade escolar das crianças" deixa de virar
+  // Impostos pelo "das".
+  async function publishInterpretedResult(result, text, history) {
+    const conversationId = activeIdRef.current;
+    const overrides = await interpretWithAi(text, result?.action, { history });
+    if (activeIdRef.current !== conversationId) return;
+    const interpreted = overrides ? financialConversation.provideInput(overrides, result.parsed) : null;
+    await publishConversationResultWithInference(
+      interpreted ? { ...interpreted, parsed: result.parsed } : result,
+    );
+  }
+
+  // Ajuste que as regras não entenderam, com o card na tela: a IA recebe o
+  // rascunho e devolve a operação corrigida ("não, foi no débito").
+  async function correctPendingWithAi(text, action, confirmationId) {
+    const conversationId = activeIdRef.current;
+    setIsTyping(true);
+    let overrides;
+    try {
+      overrides = await interpretWithAi(text, action, { draft: montarRascunhoParaInterpretacao(action) });
+    } finally {
+      setIsTyping(false);
+    }
+    if (activeIdRef.current !== conversationId) return;
+    const result = overrides ? financialConversation.provideInput(overrides) : null;
+    if (!result) {
+      createAssistantResponse('Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.');
+      return;
+    }
+    setMessages((current) => current.map((message) => (
+      message.id === confirmationId
+        ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
+        : message
+    )));
+    setPendingAction(null);
+    await publishConversationResultWithInference(result);
   }
 
   async function publishConversationResultWithInference(result) {
@@ -3658,6 +3735,11 @@ export default function UniChatPage({ variant = 'full' }) {
       ) {
         return true;
       }
+      const pendingConfirmationId = pendingAction ? findPendingConfirmationMessageId() : null;
+      if (resolvedInput.kind === 'invalid' && pendingConfirmationId && uniInterpretClient.isSupported()) {
+        void correctPendingWithAi(text, pendingAction, pendingConfirmationId);
+        return true;
+      }
       const message = resolvedInput.kind === 'ambiguous_account'
         ? `Encontrei mais de uma conta correspondente: ${accountNames.join(', ')}. Qual delas você quer usar?`
         : resolvedInput.kind === 'account_not_found'
@@ -3865,7 +3947,7 @@ export default function UniChatPage({ variant = 'full' }) {
       ) {
         return;
       }
-      void publishConversationResultWithInference(result);
+      void publishInterpretedResult(result, text, historySnapshot);
   }
 
   // BLOCO 1 — GATEWAY ÚNICO DE ENTRADA: voz (onFinalTranscript) e texto (onSend) convergem para o mesmo sendText, ponto único que alimenta o runUniEngineGateway em cada turno.
