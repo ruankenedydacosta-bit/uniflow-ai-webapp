@@ -38,7 +38,7 @@ test('upload nunca usa upsert nem base64', async () => {
 });
 
 test('migration cria bucket privado, limita MIME e isola todas as policies pelo auth.uid', async () => {
-  const sql = await source('../../supabase/migrations/20260801_029_profile_preferences_and_avatars.sql');
+  const sql = await source('../../supabase/migrations/20260802000000_029_profile_preferences_and_avatars.sql');
   assert.match(sql, /'profile-avatars'[\s\S]*false[\s\S]*5242880/);
   assert.match(sql, /image\/jpeg/);
   assert.match(sql, /image\/png/);
@@ -47,7 +47,7 @@ test('migration cria bucket privado, limita MIME e isola todas as policies pelo 
 });
 
 test('migration preserva RLS existente e concede apenas colunas novas ao authenticated', async () => {
-  const sql = await source('../../supabase/migrations/20260801_029_profile_preferences_and_avatars.sql');
+  const sql = await source('../../supabase/migrations/20260802000000_029_profile_preferences_and_avatars.sql');
   assert.match(sql, /revoke update \([\s\S]*\) on public\.profiles from public, anon/);
   assert.match(sql, /grant update \([\s\S]*\) on public\.profiles to authenticated/);
   assert.doesNotMatch(sql, /disable row level security|service_role/i);
