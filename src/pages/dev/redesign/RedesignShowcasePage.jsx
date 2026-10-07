@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import DraftCard from '../../../components/ui/DraftCard/index.js';
 import FilterChips from '../../../components/ui/FilterChips/index.js';
 import IconBox from '../../../components/ui/IconBox/index.js';
@@ -17,6 +18,7 @@ import { PhBankIcon, PhCheckIcon } from '../../../features/simplified-app/Simpli
 import appStyles from '../../../features/simplified-app/simplifiedApp.module.css';
 import { THEME_OPTIONS, useTheme } from '../../../features/theme/index.js';
 import styles from './RedesignShowcasePage.module.css';
+import { UniConversationPreview, UniVoicePreview } from './UniScreensPreview.jsx';
 
 const ORB_MODES = [
   [UNI_RING_ORB_STATES.IDLE, 'Parada'],
@@ -41,11 +43,17 @@ function RedesignShowcasePage() {
   const [segment, setSegment] = useState('saida');
   const [toggled, setToggled] = useState(true);
 
+  const [searchParams] = useSearchParams();
+
   useEffect(() => {
     document.body.setAttribute('data-simplified-app-mounted', 'true');
     ensureAppFont(document);
     return () => document.body.removeAttribute('data-simplified-app-mounted');
   }, []);
+
+  // Telas da Uni (#88): ?tela=conversa e ?voz=ouvindo|entendendo|rascunho.
+  if (searchParams.has('voz')) return <UniVoicePreview state={searchParams.get('voz')} />;
+  if (searchParams.get('tela') === 'conversa') return <UniConversationPreview />;
 
   return (
     <div className={appStyles.shell} data-simplified-app-shell>
