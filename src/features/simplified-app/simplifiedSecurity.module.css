@@ -1,284 +1,130 @@
+/* Fase 3 do redesign (#90): aba Segurança da tela 14 Configurações. Visão
+   geral em card, grupos com rótulo uppercase e linhas com caixa de ícone. */
 .page {
   width: min(100%, 720px);
-  min-height: calc(100dvh - 112px);
   margin-inline: auto;
   padding:
-    max(14px, env(safe-area-inset-top))
-    max(18px, env(safe-area-inset-right))
-    34px
-    max(18px, env(safe-area-inset-left));
+    0
+    max(22px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: 18px;
   color: var(--uf-app-text);
 }
 
-/* ---------- Cabeçalho ---------- */
-
-.header {
-  min-height: 64px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 16px;
+.page > header {
+  margin-inline: -22px;
 }
 
-.titleGroup {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+/* Linhas informativas: mesmo desenho das linhas de menu, sem toque. */
+.staticRow {
+  cursor: default;
 }
 
-.backButton {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 50%;
-  background: var(--uf-app-surface-2);
-  color: var(--uf-app-text);
-  cursor: pointer;
+.wrap {
+  white-space: normal;
+  text-wrap: pretty;
 }
 
-.backButton svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-
-.titleGroup h1 {
-  min-width: 0;
-  overflow: hidden;
-  margin: 0;
-  color: var(--uf-app-text);
-  font-size: clamp(22px, 6vw, 30px);
-  font-weight: 800;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.subtitle {
-  margin: 2px 0 0;
-  color: var(--uf-app-text-2);
-  font-size: 13.5px;
-}
-
-.talkButton {
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 0 16px;
-  border: 2px solid transparent;
-  border-radius: 16px;
-  background:
-    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
-    linear-gradient(110deg, var(--uf-app-success), var(--uf-app-cyan) 35%, var(--uf-app-primary) 66%, var(--uf-app-ai)) border-box;
-  color: var(--uf-app-text);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 720;
-  cursor: pointer;
-}
-
-.talkIcon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-}
-
-.talkIcon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: var(--uf-app-success-text);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-/* ---------- Cards ---------- */
-
-.card {
+.inset {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 22px;
-  background: var(--uf-app-card-bg);
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0 0 10px 48px;
 }
 
 /* ---------- Visão geral ---------- */
 
+.overviewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+}
+
 .overviewTop {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-
-.overviewIcon {
-  width: 56px;
-  height: 56px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-}
-
-.overviewIcon svg {
-  width: 28px;
-  height: 28px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
+  gap: 12px;
 }
 
 .overviewIconOk {
-  background: var(--uf-app-success-subtle);
-  color: var(--uf-app-success-text);
+  color: var(--uf-app-brand-green-text);
 }
 
 .overviewIconWarn {
-  background: var(--uf-app-warning-subtle);
-  color: var(--uf-app-warning);
+  color: var(--uf-app-warning-text);
 }
 
 .overviewSummary {
   margin: 0;
-  font-size: 16.5px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: var(--uf-font-weight-medium);
   line-height: 1.4;
+  text-wrap: pretty;
 }
 
 .checklist {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
-  padding: 14px 0 0;
-  border-top: 1px solid var(--uf-app-border);
+  padding: 12px 0 0;
+  border-top: 1px solid var(--uf-app-card-edge);
   list-style: none;
-  font-size: 14.5px;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .checklist li {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .checkOk,
 .checkNeutral {
   display: inline-flex;
   flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 .checkOk svg,
 .checkNeutral svg {
   width: 100%;
   height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
 }
 
 .checkOk {
-  color: var(--uf-app-success-text);
+  color: var(--uf-app-brand-green-text);
 }
 
 .checkNeutral {
   color: var(--uf-app-text-3);
 }
 
-/* ---------- Linhas de item (senha, 2FA, aparelhos, atividade, recuperação) ---------- */
-
-.rowHeader,
-.sectionTitle {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.rowIcon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-}
-
-.rowIcon svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.toneBlue { background: var(--uf-app-primary-subtle); color: var(--uf-app-primary-text); }
-.toneGreen { background: var(--uf-app-success-subtle); color: var(--uf-app-success-text); }
-.tonePurple { background: var(--uf-app-ai-subtle); color: var(--uf-app-ai-text); }
-
-.rowText {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.rowText strong {
-  font-size: 15.5px;
-}
-
-.rowText small {
-  color: var(--uf-app-text-2);
-  font-size: 13px;
-  line-height: 1.4;
-}
+/* ---------- Estados e banners ---------- */
 
 .emptyState {
   margin: 0;
-  padding: 12px 14px;
-  border: 1px dashed var(--uf-app-border);
-  border-radius: 14px;
-  color: var(--uf-app-text-2);
-  font-size: 14px;
+  padding: 0 0 0 48px;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
   line-height: 1.5;
-}
-
-.activityLine {
-  margin: 0;
-  color: var(--uf-app-text-2);
-  font-size: 14.5px;
 }
 
 .errorBanner {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--uf-radius-12);
   background: var(--uf-app-danger-subtle);
   color: var(--uf-app-danger-text);
   font-size: 14px;
@@ -287,7 +133,7 @@
 .successBanner {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--uf-radius-12);
   background: var(--uf-app-success-subtle);
   color: var(--uf-app-success-text);
   font-size: 14px;
@@ -295,143 +141,66 @@
 
 /* ---------- Recuperação da conta ---------- */
 
-.recoveryGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.recoveryItem {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: rgba(4, 13, 33, .35);
-}
-
-.fieldIcon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  color: var(--uf-app-text-3);
-}
-
-.fieldIcon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.recoveryItem strong {
-  font-size: 15px;
-}
-
-.recoveryItem small {
-  color: var(--uf-app-text-2);
-  font-size: 12.5px;
+.recoveryValue {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: var(--uf-font-weight-regular);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .linkButton {
+  min-height: 44px;
   align-self: flex-start;
   padding: 0;
   border: 0;
   background: none;
-  color: var(--uf-app-primary-text);
+  color: var(--uf-app-brand-blue-text);
   font: inherit;
-  font-size: 14.5px;
-  font-weight: 650;
+  font-size: 13px;
   cursor: pointer;
+}
+
+.linkButton:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+  border-radius: var(--uf-radius-8);
 }
 
 /* ---------- Zona crítica (encerrar sessões) ---------- */
 
 .criticalCard {
-  border-color: rgba(239, 68, 68, .35);
-  background: rgba(239, 68, 68, .06);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-danger) 35%, transparent);
+}
+
+.criticalTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .criticalIcon {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--uf-app-danger-subtle);
-  color: var(--uf-app-danger);
-}
-
-.criticalIcon svg {
-  width: 22px;
-  height: 22px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.criticalCard .rowText strong {
   color: var(--uf-app-danger-text);
 }
 
-/* ---------- Ajuda ---------- */
-
-.helpCard {
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 14px;
+.criticalTitle {
+  color: var(--uf-app-danger-text);
 }
 
-.helpMascot {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--uf-app-ai-subtle);
-  color: var(--uf-app-ai-text);
+.criticalCard .criticalButton {
+  width: 100%;
+  border-color: color-mix(in oklch, var(--uf-app-danger) 60%, transparent);
+  color: var(--uf-app-danger-text);
 }
 
-.helpMascot svg {
-  width: 22px;
-  height: 22px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.helpText {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.helpText p {
-  margin: 0;
-  color: var(--uf-app-text-2);
-  font-size: 14px;
-}
-
-/* ---------- Foco visível (acessibilidade) ---------- */
-
-.backButton:focus-visible,
-.talkButton:focus-visible,
-.linkButton:focus-visible {
-  outline: 3px solid var(--uf-app-focus);
-  outline-offset: 2px;
+.criticalCard .criticalButton:hover:not(:disabled) {
+  background: var(--uf-app-danger-subtle);
 }
 
 /* ---------- Responsivo ---------- */
@@ -440,33 +209,20 @@
   .overviewTop {
     align-items: flex-start;
   }
-
-  .helpCard {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-@media (max-width: 359px) {
-  .talkButton {
-    padding-inline: 9px;
-    font-size: 12px;
-  }
-
-  .talkIcon {
-    width: 16px;
-    height: 16px;
-  }
 }
 
 @media (min-width: 1024px) {
   .page {
     padding-inline: 42px;
   }
+
+  .page > header {
+    margin-inline: -42px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card {
+  .criticalButton {
     transition: none;
   }
 }

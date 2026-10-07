@@ -1,125 +1,22 @@
+/* Fase 3 do redesign (#90): aba Perfil da tela 14 Configurações. Campos de
+   44px com fundo de poço e borda interna, rótulos 12px, grupos com rótulo
+   uppercase. */
 .page {
   width: min(100%, 720px);
-  min-height: calc(100dvh - 112px);
   margin-inline: auto;
   padding:
-    max(14px, env(safe-area-inset-top))
-    max(18px, env(safe-area-inset-right))
-    max(48px, env(safe-area-inset-bottom))
-    max(18px, env(safe-area-inset-left));
+    0
+    max(22px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: 18px;
   color: var(--uf-app-text);
 }
 
-/* ---------- Cabeçalho (voltar + título + Falar com a Uni) ---------- */
-
-.header {
-  min-height: 64px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 16px;
-}
-
-.titleGroup {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.backButton {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 50%;
-  background: var(--uf-app-surface-2);
-  color: var(--uf-app-text);
-  cursor: pointer;
-}
-
-.backButton svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-
-.titleGroup h1 {
-  min-width: 0;
-  overflow: hidden;
-  margin: 0;
-  color: var(--uf-app-text);
-  font-size: clamp(22px, 6vw, 30px);
-  font-weight: 800;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.talkButton {
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 0 16px;
-  border: 2px solid transparent;
-  border-radius: 16px;
-  background:
-    linear-gradient(var(--uf-app-surface), var(--uf-app-surface)) padding-box,
-    linear-gradient(110deg, var(--uf-app-success), var(--uf-app-cyan) 35%, var(--uf-app-primary) 66%, var(--uf-app-ai)) border-box;
-  color: var(--uf-app-text);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 720;
-  cursor: pointer;
-}
-
-.talkIcon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-}
-
-.talkIcon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: var(--uf-app-success-text);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.subtitle {
-  margin: -6px 0 0;
-  color: var(--uf-app-text-2);
-  font-size: 14.5px;
-  line-height: 1.5;
-}
-
-/* ---------- Cards ---------- */
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 20px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 22px;
-  background: var(--uf-app-card-bg);
+.page > header {
+  margin-inline: -22px;
 }
 
 /* ---------- Foto de perfil ---------- */
@@ -127,7 +24,16 @@
 .photoRow {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
+  padding-top: 6px;
+}
+
+.page .avatar {
+  background: var(--uf-app-surface-3);
+  color: var(--uf-app-text-2);
+  font-size: 16px;
+  font-weight: var(--uf-font-weight-medium);
+  box-shadow: none;
 }
 
 .photoInfo {
@@ -135,24 +41,20 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
-.photoInfo strong {
-  font-size: 17px;
-}
-
-.photoInfo p {
+.photoHint {
   margin: 0;
-  color: var(--uf-app-text-2);
-  font-size: 14px;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .photoActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
 }
 
 .fileInput {
@@ -166,75 +68,56 @@
 }
 
 .notice {
-  margin: 6px 0 0;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--uf-app-primary-subtle);
-  color: var(--uf-app-primary-text);
-  font-size: 13.5px;
+  margin: 0;
+  color: var(--uf-app-brand-blue-text);
+  font-size: 12px;
   line-height: 1.4;
 }
 
 /* ---------- Campos ---------- */
 
+.fields {
+  gap: 14px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .fieldRow {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 14px;
 }
 
 .fieldLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   color: var(--uf-app-text-2);
-  font-size: 14.5px;
-  font-weight: 650;
-}
-
-.fieldIcon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  color: var(--uf-app-text-3);
-}
-
-.fieldIcon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .input {
-  min-height: 52px;
-  padding: 0 16px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: rgba(4, 13, 33, .6);
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
   color: var(--uf-app-text);
   font: inherit;
-  font-size: 16px;
-  color-scheme: dark;
+  font-size: 14px;
+  color-scheme: var(--uf-app-color-scheme);
 }
 
 select.input {
-  padding-right: 44px;
+  padding-right: 40px;
   appearance: auto;
 }
 
 .input:focus-visible {
-  outline: 3px solid var(--uf-app-focus);
+  outline: 2px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
@@ -242,108 +125,49 @@ select.input {
   color: var(--uf-app-text-3);
 }
 
-.readOnlyRow,
-.unavailableRow {
-  min-height: 52px;
+.readOnlyRow {
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 16px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: rgba(4, 13, 33, .35);
-  color: var(--uf-app-text);
-  font-size: 15.5px;
+  padding: 0 14px;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+  color: var(--uf-app-text-2);
+  font-size: 14px;
 }
 
-.unavailableRow {
-  color: var(--uf-app-text-2);
+.readOnlyRow > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fieldHint {
   margin: 0;
   color: var(--uf-app-text-3);
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
 .fieldError {
-  margin: 4px 0 0;
-  color: var(--uf-app-danger-text) !important;
-  font-size: 13px !important;
+  margin: 0;
+  color: var(--uf-app-danger-text);
+  font-size: 12px;
   line-height: 1.4;
 }
 
 /* ---------- Endereço (seção expansível) ---------- */
 
 .expandHeader {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--uf-app-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.expandIcon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--uf-app-primary-subtle);
-  color: var(--uf-app-primary-text);
-}
-
-.expandIcon svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-}
-
-.expandTitle {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.expandTitle strong {
-  font-size: 15.5px;
-}
-
-.expandTitle small {
-  color: var(--uf-app-text-2);
-  font-size: 13px;
+  border-radius: var(--uf-radius-8);
 }
 
 .chevron {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  color: var(--uf-app-text-3);
-  transition: transform .15s ease;
-}
-
-.chevron svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
+  transition: transform var(--uf-duration-fast) ease;
 }
 
 .chevronOpen {
@@ -351,70 +175,29 @@ select.input {
 }
 
 .expandBody {
-  padding-top: 4px;
-  border-top: 1px solid var(--uf-app-border);
-}
-
-.expandBody p {
-  margin: 12px 0 0;
+  margin: 0;
+  padding: 0 0 6px 48px;
   color: var(--uf-app-text-2);
-  font-size: 14.5px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
-/* ---------- Ajuda ---------- */
+/* ---------- Ações e banners ---------- */
 
-.helpCard {
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.helpMascot {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--uf-app-ai-subtle);
-  font-size: 24px;
-}
-
-.helpText {
-  min-width: 0;
-  flex: 1 1 auto;
+.actions {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
 }
 
-.helpText p {
-  margin: 0;
-  color: var(--uf-app-text-2);
-  font-size: 14px;
+.cancelButton {
+  width: 100%;
 }
-
-/* ---------- Override do Button compartilhado (variant="outline" assume tema
-   claro; aqui a página é sempre escura, então redefinimos cor/borda) ---------- */
-
-.darkOutlineButton {
-  border-color: rgba(86, 109, 151, .5) !important;
-  background: rgba(14, 31, 62, .5) !important;
-  color: var(--uf-app-text) !important;
-}
-
-.darkOutlineButton:disabled {
-  color: var(--uf-app-text-3) !important;
-}
-
-/* ---------- Banners ---------- */
 
 .errorBanner {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--uf-radius-12);
   background: var(--uf-app-danger-subtle);
   color: var(--uf-app-danger-text);
   font-size: 14px;
@@ -423,19 +206,10 @@ select.input {
 .successBanner {
   margin: 0;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--uf-radius-12);
   background: var(--uf-app-success-subtle);
   color: var(--uf-app-success-text);
   font-size: 14px;
-}
-
-/* ---------- Foco visível (acessibilidade) ---------- */
-
-.backButton:focus-visible,
-.talkButton:focus-visible,
-.expandHeader:focus-visible {
-  outline: 3px solid var(--uf-app-focus);
-  outline-offset: 2px;
 }
 
 /* ---------- Responsivo ---------- */
@@ -444,38 +218,21 @@ select.input {
   .fieldRow {
     grid-template-columns: 1fr;
   }
-
-  .photoRow {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .photoActions {
-    justify-content: center;
-  }
-
-  .helpCard {
-    flex-direction: column;
-    text-align: center;
-  }
 }
 
 @media (max-width: 359px) {
-  .talkButton {
-    padding-inline: 9px;
-    font-size: 12px;
-  }
-
-  .talkIcon {
-    width: 16px;
-    height: 16px;
+  .photoRow {
+    flex-direction: column;
   }
 }
 
 @media (min-width: 1024px) {
   .page {
     padding-inline: 42px;
+  }
+
+  .page > header {
+    margin-inline: -42px;
   }
 }
 

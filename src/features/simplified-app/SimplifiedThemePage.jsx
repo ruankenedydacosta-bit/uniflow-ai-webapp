@@ -1,66 +1,48 @@
 import { useNavigate } from 'react-router-dom';
+import { cx } from '../../utils/cx.js';
 import { THEME_IDS, THEME_OPTIONS, useTheme } from '../theme/index.js';
-import { CheckIcon, SparkleIcon, UniMark } from './SimplifiedIcons.jsx';
+import { PhCaretRightIcon } from './SimplifiedIcons.jsx';
+import SimplifiedSettingsTabs from './SimplifiedSettingsTabs.jsx';
+import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
+import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedTheme.module.css';
 
-const THEME_PRESENTATION = Object.freeze({
-  [THEME_IDS.LIGHT]: Object.freeze({
-    description: 'Visual claro, leve e confortável para ambientes iluminados.',
-  }),
-  [THEME_IDS.UNIFLOW]: Object.freeze({
-    description: 'A identidade premium da Uni, com azul, violeta e verde da marca.',
-    badge: 'Identidade Uni',
-  }),
-});
+// Só os dois temas reais entram na lista (UniFlow e Claro, ver
+// themeConstants.js). O handoff lista também Escuro e Automático, que não
+// existem no produto.
+const THEME_ORDER = Object.freeze([THEME_IDS.LIGHT, THEME_IDS.UNIFLOW]);
 
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M20 6 10 16l10 10" />
-    </svg>
-  );
-}
-
+/**
+ * Fase 3 do redesign (#90): aba "Preferências" da tela 14 Configurações.
+ * Continua na rota de Tema e reutiliza exclusivamente o ThemeProvider
+ * oficial (useTheme). O grupo Uni traz o que já existe (Voz da Uni, que
+ * define o estilo de conversa) e marca como "Em breve" o que o handoff
+ * desenha mas o produto ainda não tem.
+ */
 function SimplifiedThemePage() {
   const navigate = useNavigate();
   const { selectedTheme, setTheme } = useTheme();
+  const options = THEME_ORDER
+    .map((id) => THEME_OPTIONS.find((option) => option.id === id))
+    .filter(Boolean);
+  const selectedLabel = THEME_OPTIONS.find(({ id }) => id === selectedTheme)?.label;
 
   return (
     <div className={styles.page} data-simplified-theme data-selected-theme={selectedTheme}>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backButton}
-          onClick={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
-          aria-label="Voltar para Conta"
-        >
-          <BackIcon />
-        </button>
-        <div>
-          <h1>Tema</h1>
-          <p>Escolha como a UniFlow aparece neste dispositivo.</p>
-        </div>
-      </header>
+      <SimplifiedSubpageHeader
+        title="Configurações"
+        onBack={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
+        backLabel="Voltar para Mais"
+      />
 
-      <section className={styles.uniIdentity} aria-label="Identidade visual da Uni">
-        <span className={styles.uniMark} aria-hidden="true"><UniMark /></span>
-        <span className={styles.identityCopy}>
-          <span className={styles.identityLabel}>
-            <SparkleIcon />
-            Identidade visual da Uni
-          </span>
-          <strong>Uma experiência que combina com você.</strong>
-          <small>A alteração é aplicada e salva automaticamente.</small>
-        </span>
-      </section>
+      <SimplifiedSettingsTabs active={ACCOUNT_SUBROUTE_IDS.THEME} />
 
-      <fieldset className={styles.options}>
-        <legend>Escolha um tema</legend>
-        {THEME_OPTIONS.map((option) => {
-          const presentation = THEME_PRESENTATION[option.id];
+      <fieldset className={cx(groups.group, styles.options)}>
+        <legend className={groups.groupLabel}>Tema</legend>
+        {options.map((option) => {
           const isSelected = selectedTheme === option.id;
-
           return (
             <label
               key={option.id}
@@ -76,28 +58,73 @@ function SimplifiedThemePage() {
                 onChange={() => setTheme(option.id)}
                 aria-label={`Usar tema ${option.label}`}
               />
-              <span className={styles.preview} aria-hidden="true">
-                <span className={styles.previewSurface} />
-                <span className={styles.previewAccent} />
+              <span className={styles.radio} aria-hidden="true">
+                {isSelected ? <span className={styles.radioDot} /> : null}
               </span>
-              <span className={styles.optionCopy}>
-                <span className={styles.optionTitle}>
-                  <strong>{option.label}</strong>
-                  {presentation.badge ? <small>{presentation.badge}</small> : null}
-                </span>
-                <span>{presentation.description}</span>
-              </span>
-              <span className={styles.selectionMark} aria-hidden="true">
-                {isSelected ? <CheckIcon /> : null}
-              </span>
+              <span className={styles.optionLabel}>{option.label}</span>
             </label>
           );
         })}
       </fieldset>
 
       <p className={styles.savedStatus} role="status" aria-live="polite">
-        Tema selecionado: {THEME_OPTIONS.find(({ id }) => id === selectedTheme)?.label}.
+        Tema selecionado: {selectedLabel}.
       </p>
+
+      <section className={groups.group} aria-label="Uni">
+        <h2 className={groups.groupLabel}>Uni</h2>
+        <div className={groups.list}>
+          <div className={cx(groups.row, groups.rowPlain, styles.soonRow)}>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Voz nas respostas da Uni</span>
+              <span className={groups.rowSubtitle}>A Uni lê as respostas em voz alta.</span>
+            </span>
+            <span className={cx(groups.pill, groups.pillMuted)}>Em breve</span>
+          </div>
+          <div className={cx(groups.row, groups.rowPlain, styles.soonRow)}>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Animações do botão da Uni</span>
+              <span className={groups.rowSubtitle}>Desligue para reduzir movimento.</span>
+            </span>
+            <span className={cx(groups.pill, groups.pillMuted)}>Em breve</span>
+          </div>
+          <button
+            type="button"
+            className={cx(groups.row, groups.rowPlain)}
+            onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path)}
+          >
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Preferências da Uni</span>
+              <span className={groups.rowSubtitle}>Tom, explicações e alertas</span>
+            </span>
+            <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
+          </button>
+          <div className={cx(groups.row, groups.rowPlain, styles.soonRow)}>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Notificações</span>
+              <span className={groups.rowSubtitle}>Escolher o que avisar e quando</span>
+            </span>
+            <span className={cx(groups.pill, groups.pillMuted)}>Em breve</span>
+          </div>
+        </div>
+      </section>
+
+      <section className={groups.group} aria-label="Conta">
+        <h2 className={groups.groupLabel}>Conta</h2>
+        <div className={groups.list}>
+          <button
+            type="button"
+            className={cx(groups.row, groups.rowPlain)}
+            onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].path)}
+          >
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Trocar senha por e-mail</span>
+              <span className={groups.rowSubtitle}>Você recebe um link para criar uma nova senha</span>
+            </span>
+            <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

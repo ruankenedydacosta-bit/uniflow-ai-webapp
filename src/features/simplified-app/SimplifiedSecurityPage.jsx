@@ -2,32 +2,29 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { getPasswordResetRequestFeedback } from '../auth-mobile/passwordRecoveryUtils.js';
-import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
+import IconBox from '../../components/ui/IconBox/index.js';
 import Modal from '../../components/ui/Modal/Modal.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/index.js';
+import { cx } from '../../utils/cx.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
-  AlertTriangleIcon,
-  CheckIcon,
-  ClockIcon,
-  DeviceIcon,
-  HeadsetIcon,
-  LockIcon,
-  MailIcon,
-  PhoneIcon,
-  ShieldIcon,
-  XCircleIcon,
+  PhCheckCircleIcon,
+  PhClockCounterClockwiseIcon,
+  PhDeviceMobileIcon,
+  PhEnvelopeSimpleIcon,
+  PhHeadsetIcon,
+  PhLockKeyIcon,
+  PhPhoneIcon,
+  PhShieldCheckIcon,
+  PhWarningIcon,
+  PhXCircleIcon,
 } from './SimplifiedIcons.jsx';
+import SimplifiedSettingsTabs from './SimplifiedSettingsTabs.jsx';
+import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
+import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedSecurity.module.css';
-
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M20 6 10 16l10 10" />
-    </svg>
-  );
-}
 
 function formatDateTime(value) {
   if (!value) return '';
@@ -56,6 +53,10 @@ function formatDateTime(value) {
  * vazios, e "Encerrar sessões" reaproveita o mesmo signOut() real da Conta
  * (escopo padrão do Supabase já é global -- de fato encerra todas as
  * sessões, não é um rótulo vazio).
+ *
+ * Fase 3 do redesign (#90): aba "Segurança" da tela 14 Configurações.
+ * Mesmos dados e ações; só o visual mudou (grupos, linhas com caixa de
+ * ícone e etiquetas contornadas).
  */
 function SimplifiedSecurityPage() {
   const navigate = useNavigate();
@@ -108,146 +109,135 @@ function SimplifiedSecurityPage() {
 
   return (
     <div className={styles.page} data-simplified-security>
-      <header className={styles.header}>
-        <div className={styles.titleGroup}>
-          <button
-            type="button"
-            className={styles.backButton}
-            onClick={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
-            aria-label="Voltar para Conta"
-          >
-            <BackIcon />
-          </button>
-          <div>
-            <h1>Segurança</h1>
-            <p className={styles.subtitle}>Gerencie a segurança da sua conta.</p>
-          </div>
-        </div>
-      </header>
+      <SimplifiedSubpageHeader
+        title="Configurações"
+        onBack={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
+        backLabel="Voltar para Mais"
+      />
 
-      <section className={`${styles.card} ${styles.overviewCard}`} aria-label="Visão geral da proteção da conta">
+      <SimplifiedSettingsTabs active={ACCOUNT_SUBROUTE_IDS.SECURITY} />
+
+      <section className={styles.overviewCard} aria-label="Visão geral da proteção da conta">
         <div className={styles.overviewTop}>
-          <span className={`${styles.overviewIcon} ${hasBasicProtection ? styles.overviewIconOk : styles.overviewIconWarn}`} aria-hidden="true">
-            <ShieldIcon />
-          </span>
+          <IconBox className={hasBasicProtection ? styles.overviewIconOk : styles.overviewIconWarn}>
+            <PhShieldCheckIcon />
+          </IconBox>
           <p className={styles.overviewSummary}>{overviewSummary}</p>
         </div>
         <ul className={styles.checklist}>
           <li>
             <span className={isEmailVerified ? styles.checkOk : styles.checkNeutral} aria-hidden="true">
-              {isEmailVerified ? <CheckIcon /> : <XCircleIcon />}
+              {isEmailVerified ? <PhCheckCircleIcon /> : <PhXCircleIcon />}
             </span>
             E-mail verificado
           </li>
           <li>
             <span className={hasPasswordIdentity ? styles.checkOk : styles.checkNeutral} aria-hidden="true">
-              {hasPasswordIdentity ? <CheckIcon /> : <XCircleIcon />}
+              {hasPasswordIdentity ? <PhCheckCircleIcon /> : <PhXCircleIcon />}
             </span>
             {hasPasswordIdentity ? 'Senha configurada' : oauthProvider ? `Acesso via ${oauthProvider}` : 'Senha não configurada'}
           </li>
           <li>
-            <span className={styles.checkNeutral} aria-hidden="true"><XCircleIcon /></span>
+            <span className={styles.checkNeutral} aria-hidden="true"><PhXCircleIcon /></span>
             Verificação em duas etapas não configurada
           </li>
         </ul>
       </section>
 
-      <section className={styles.card} aria-label="Alterar senha">
-        <div className={styles.rowHeader}>
-          <span className={`${styles.rowIcon} ${styles.toneBlue}`} aria-hidden="true"><LockIcon /></span>
-          <div className={styles.rowText}>
-            <strong>Alterar senha</strong>
-            <small>
-              {hasPasswordIdentity
-                ? 'Enviaremos um link seguro para o seu e-mail.'
-                : oauthProvider
-                  ? `Você entra com sua conta ${oauthProvider}. A senha é gerenciada por lá.`
-                  : 'Não foi possível determinar como você entra na conta.'}
-            </small>
+      <section className={groups.group} aria-label="Acesso">
+        <h2 className={groups.groupLabel}>Acesso</h2>
+        <div className={groups.list}>
+          <div className={cx(groups.row, styles.staticRow)} aria-label="Alterar senha">
+            <IconBox><PhLockKeyIcon /></IconBox>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Alterar senha</span>
+              <span className={cx(groups.rowSubtitle, styles.wrap)}>
+                {hasPasswordIdentity
+                  ? 'Enviaremos um link seguro para o seu e-mail.'
+                  : oauthProvider
+                    ? `Você entra com sua conta ${oauthProvider}. A senha é gerenciada por lá.`
+                    : 'Não foi possível determinar como você entra na conta.'}
+              </span>
+            </span>
           </div>
-        </div>
-        {hasPasswordIdentity ? (
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              loading={isRequestingReset}
-              onClick={handleRequestPasswordReset}
-            >
-              Enviar link de redefinição
-            </Button>
-            {resetFeedback ? (
-              <p
-                className={resetFeedback.tone === 'alert' ? styles.errorBanner : styles.successBanner}
-                role={resetFeedback.tone === 'alert' ? 'alert' : 'status'}
+          {hasPasswordIdentity ? (
+            <div className={styles.inset}>
+              <OutlineButton
+                variant="secondary"
+                disabled={isRequestingReset}
+                onClick={handleRequestPasswordReset}
               >
-                {resetFeedback.message}
-              </p>
-            ) : null}
-          </>
-        ) : null}
-      </section>
+                {isRequestingReset ? 'Enviando…' : 'Enviar link de redefinição'}
+              </OutlineButton>
+              {resetFeedback ? (
+                <p
+                  className={resetFeedback.tone === 'alert' ? styles.errorBanner : styles.successBanner}
+                  role={resetFeedback.tone === 'alert' ? 'alert' : 'status'}
+                >
+                  {resetFeedback.message}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
-      <section className={styles.card} aria-label="Verificação em duas etapas">
-        <div className={styles.rowHeader}>
-          <span className={`${styles.rowIcon} ${styles.tonePurple}`} aria-hidden="true"><ShieldIcon /></span>
-          <div className={styles.rowText}>
-            <strong>Verificação em duas etapas</strong>
-            <small>Estará disponível em uma futura versão.</small>
+          <div className={cx(groups.row, styles.staticRow)} aria-label="Verificação em duas etapas">
+            <IconBox><PhShieldCheckIcon /></IconBox>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Verificação em duas etapas</span>
+              <span className={cx(groups.rowSubtitle, styles.wrap)}>Estará disponível em uma futura versão.</span>
+            </span>
+            <span className={cx(groups.pill, groups.pillMuted)}>Não configurada</span>
           </div>
-          <Badge variant="warning" size="sm">Não configurada</Badge>
         </div>
       </section>
 
-      <section className={styles.card} aria-label="Seus aparelhos">
-        <div className={styles.sectionTitle}>
-          <span className={`${styles.rowIcon} ${styles.toneBlue}`} aria-hidden="true"><DeviceIcon /></span>
-          <div className={styles.rowText}>
-            <strong>Seus aparelhos</strong>
-            <small>Aparelhos onde sua conta está conectada.</small>
+      <section className={groups.group} aria-label="Seus aparelhos">
+        <h2 className={groups.groupLabel}>Seus aparelhos</h2>
+        <div className={groups.list}>
+          <div className={cx(groups.row, styles.staticRow)}>
+            <IconBox><PhDeviceMobileIcon /></IconBox>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Aparelhos conectados</span>
+              <span className={cx(groups.rowSubtitle, styles.wrap)}>Aparelhos onde sua conta está conectada.</span>
+            </span>
           </div>
         </div>
         <p className={styles.emptyState}>Informações de aparelhos ainda não estão disponíveis nesta versão.</p>
       </section>
 
-      <section className={styles.card} aria-label="Atividade recente">
-        <div className={styles.sectionTitle}>
-          <span className={`${styles.rowIcon} ${styles.tonePurple}`} aria-hidden="true"><ClockIcon /></span>
-          <div className={styles.rowText}>
-            <strong>Atividade recente</strong>
-            <small>Veja os últimos acessos à sua conta.</small>
+      <section className={groups.group} aria-label="Atividade recente">
+        <h2 className={groups.groupLabel}>Atividade recente</h2>
+        <div className={groups.list}>
+          <div className={cx(groups.row, styles.staticRow)}>
+            <IconBox><PhClockCounterClockwiseIcon /></IconBox>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Últimos acessos</span>
+              <span className={cx(groups.rowSubtitle, styles.wrap)}>
+                {lastSignInAt ? `Último acesso: ${lastSignInAt}` : 'Veja os últimos acessos à sua conta.'}
+              </span>
+            </span>
           </div>
         </div>
-        {lastSignInAt ? (
-          <p className={styles.activityLine}>Último acesso: {lastSignInAt}</p>
-        ) : null}
         <p className={styles.emptyState}>Não há mais detalhes de atividade disponíveis nesta versão.</p>
       </section>
 
-      <section className={styles.card} aria-label="Recuperação da conta">
-        <div className={styles.sectionTitle}>
-          <span className={`${styles.rowIcon} ${styles.toneGreen}`} aria-hidden="true"><MailIcon /></span>
-          <div className={styles.rowText}>
-            <strong>Recuperação da conta</strong>
-            <small>Mantenha seus contatos sempre atualizados.</small>
+      <section className={groups.group} aria-label="Recuperação da conta">
+        <h2 className={groups.groupLabel}>Recuperação da conta</h2>
+        <div className={groups.list}>
+          <div className={cx(groups.row, styles.staticRow)}>
+            <IconBox><PhEnvelopeSimpleIcon /></IconBox>
+            <span className={groups.rowText}>
+              <span className={groups.rowSubtitle}>E-mail de recuperação</span>
+              <strong className={styles.recoveryValue}>{user?.email || 'Ainda não definido'}</strong>
+            </span>
+            {isEmailVerified ? <span className={cx(groups.pill, groups.pillGreen)}>Verificado</span> : null}
           </div>
-        </div>
-        <div className={styles.recoveryGrid}>
-          <div className={styles.recoveryItem}>
-            <span className={styles.fieldIcon} aria-hidden="true"><MailIcon /></span>
-            <div className={styles.rowText}>
-              <small>E-mail de recuperação</small>
-              <strong>{user?.email || 'Ainda não definido'}</strong>
-            </div>
-            {isEmailVerified ? <Badge variant="success" size="sm">Verificado</Badge> : null}
-          </div>
-          <div className={styles.recoveryItem}>
-            <span className={styles.fieldIcon} aria-hidden="true"><PhoneIcon /></span>
-            <div className={styles.rowText}>
-              <small>Telefone de recuperação</small>
-              <strong>{phone || 'Ainda não definido'}</strong>
-            </div>
+          <div className={cx(groups.row, styles.staticRow)}>
+            <IconBox><PhPhoneIcon /></IconBox>
+            <span className={groups.rowText}>
+              <span className={groups.rowSubtitle}>Telefone de recuperação</span>
+              <strong className={styles.recoveryValue}>{phone || 'Ainda não definido'}</strong>
+            </span>
           </div>
         </div>
         <button
@@ -259,33 +249,38 @@ function SimplifiedSecurityPage() {
         </button>
       </section>
 
-      <section className={`${styles.card} ${styles.criticalCard}`} aria-label="Encerrar sessões">
-        <span className={styles.criticalIcon} aria-hidden="true"><AlertTriangleIcon /></span>
-        <div className={styles.rowText}>
-          <strong>Encerrar todas as sessões</strong>
-          <small>
-            Se perdeu seu celular ou acredita que alguém entrou na sua conta, use esta opção.
-            Isso também encerra sua sessão aqui -- você precisará entrar novamente.
-          </small>
+      <section className={styles.criticalCard} aria-label="Encerrar sessões">
+        <div className={styles.criticalTop}>
+          <IconBox className={styles.criticalIcon}><PhWarningIcon /></IconBox>
+          <span className={groups.rowText}>
+            <span className={cx(groups.rowTitle, styles.criticalTitle)}>Encerrar todas as sessões</span>
+            <span className={cx(groups.rowSubtitle, styles.wrap)}>
+              Se perdeu seu celular ou acredita que alguém entrou na sua conta, use esta opção.
+              Isso também encerra sua sessão aqui. Você precisará entrar novamente.
+            </span>
+          </span>
         </div>
-        <Button type="button" variant="danger" fullWidth onClick={() => setShowEndSessionsConfirm(true)}>
+        <OutlineButton variant="secondary" className={styles.criticalButton} onClick={() => setShowEndSessionsConfirm(true)}>
           Encerrar todas as sessões
-        </Button>
+        </OutlineButton>
       </section>
 
-      <section className={`${styles.card} ${styles.helpCard}`} aria-label="Ajuda">
-        <span className={styles.helpMascot} aria-hidden="true"><HeadsetIcon /></span>
-        <div className={styles.helpText}>
-          <strong>Ajuda</strong>
-          <p>Precisa de ajuda com a segurança da sua conta? Fale com o nosso suporte.</p>
+      <section className={groups.group} aria-label="Ajuda">
+        <div className={groups.list}>
+          <div className={cx(groups.row, styles.staticRow)}>
+            <IconBox><PhHeadsetIcon /></IconBox>
+            <span className={groups.rowText}>
+              <strong className={groups.rowTitle}>Ajuda</strong>
+              <span className={cx(groups.rowSubtitle, styles.wrap)}>Precisa de ajuda com a segurança da sua conta? Fale com o nosso suporte.</span>
+            </span>
+            <OutlineButton
+              variant="secondary"
+              onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path)}
+            >
+              Ajuda
+            </OutlineButton>
+          </div>
         </div>
-        <button
-          type="button"
-          className={styles.talkButton}
-          onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path)}
-        >
-          Ajuda
-        </button>
       </section>
 
       <Modal
