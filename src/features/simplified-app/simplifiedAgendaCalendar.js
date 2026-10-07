@@ -14,9 +14,12 @@ const MONTH_NAMES = Object.freeze([
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
 ]);
 
-const WEEKDAY_LONG = Object.freeze([
-  'domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado',
+// Dia da semana curto e capitalizado, como no handoff ("Quinta, 23 de outubro").
+const WEEKDAY_SHORT = Object.freeze([
+  'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado',
 ]);
+
+const DONE_STATUSES = new Set(['completed', 'cancelled']);
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -65,12 +68,104 @@ export function formatMonthLabel(year, month) {
   return `${MONTH_NAMES[month]} ${year}`;
 }
 
+/** "Outubro": título da seção do mês no redesign (#89). */
+export function formatMonthTitle(month) {
+  const name = MONTH_NAMES[month];
+  return name.charAt(0).toLocaleUpperCase('pt-BR') + name.slice(1);
+}
+
+/** "Seg" a partir de "SEG" (os rótulos da grade continuam em caixa alta). */
+export function formatWeekdayHeader(label) {
+  return label.charAt(0) + label.slice(1).toLocaleLowerCase('pt-BR');
+}
+
 /**
- * "sábado, 8 de agosto" a partir de um Date. Usado no painel do dia
+ * "Sábado, 8 de agosto" a partir de um Date. Usado no painel do dia
  * selecionado e no modal de novo/editar compromisso.
  */
 export function formatDayHeading(date) {
-  return `${WEEKDAY_LONG[date.getDay()]}, ${date.getDate()} de ${MONTH_NAMES[date.getMonth()]}`;
+  return `${WEEKDAY_SHORT[date.getDay()]}, ${date.getDate()} de ${MONTH_NAMES[date.getMonth()]}`;
+}
+
+/**
+ * Chips de filtro da Agenda (handoff 06): cada chip agrupa tipos de item.
+ * "Tudo" não filtra.
+ */
+export const AGENDA_KIND_FILTERS = Object.freeze([
+  Object.freeze({ value: 'all', label: 'Tudo', types: null }),
+  Object.freeze({ value: 'appointments', label: 'Compromissos', types: Object.freeze(['meeting', 'appointment', 'other']) }),
+  Object.freeze({ value: 'bills', label: 'Contas', types: Object.freeze(['payment_due', 'receivable']) }),
+  Object.freeze({ value: 'tasks', label: 'Tarefas', types: Object.freeze(['task']) }),
+  Object.freeze({ value: 'reminders', label: 'Lembretes', types: Object.freeze(['reminder']) }),
+]);
+
+export function filterAgendaItemsByKind(items, kind) {
+  const filter = AGENDA_KIND_FILTERS.find((option) => option.value === kind);
+  if (!filter?.types) return items ?? [];
+  return (items ?? []).filter((item) => filter.types.includes(item?.item_type));
+}
+
+/** Cor da etiqueta e do marcador por tipo: conta azul, tarefa violeta, lembrete verde, o resto neutro. */
+export function resolveAgendaItemTagTone(item) {
+  const type = item?.item_type;
+  if (type === 'payment_due' || type === 'receivable') return 'blue';
+  if (type === 'task') return 'violet';
+  if (type === 'reminder') return 'green';
+  return 'neutral';
+}
+
+function toTimestamp(value) {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+
+/**
+ * Estado de cada item na timeline do dia selecionado: `done` para o que
+ * foi concluído ou cancelado (e, se o dia é hoje, o que já passou),
+ * `next` para o primeiro pendente de um dia que ainda não acabou, e
+ * `default` para o resto. Devolve na mesma ordem recebida.
+ */
+export function resolveAgendaTimelineStatuses(items, { now = new Date(), dayKey } = {}) {
+  const todayKey = toDateKey(now);
+  const isToday = dayKey === todayKey;
+  const isPastDay = Boolean(dayKey) && dayKey < todayKey;
+  let nextMarked = false;
+  return (items ?? []).map((item) => {
+    const end = toTimestamp(item?.ends_at) ?? toTimestamp(item?.starts_at) ?? 0;
+    const isDone = DONE_STATUSES.has(item?.status) || (isToday && end < now.getTime());
+    if (isDone) return 'done';
+    if (!nextMarked && !isPastDay) {
+      nextMarked = true;
+      return 'next';
+    }
+    return 'default';
+  });
+}
+
+function pluralize(count, singular, plural) {
+  return count === 1 ? singular : plural;
+}
+
+/**
+ * Frase da Uni no fim da Agenda (handoff 06): quantos compromissos e
+ * quantas contas vencem amanhã. Devolve null quando amanhã está fora do
+ * mês carregado, para a Agenda não afirmar "nenhum" sem ter os dados.
+ */
+export function buildTomorrowSummary(groupedItems, { now = new Date(), loadedMonth } = {}) {
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  if (loadedMonth && (tomorrow.getFullYear() !== loadedMonth.year || tomorrow.getMonth() !== loadedMonth.month)) {
+    return null;
+  }
+  const items = groupedItems?.get(toDateKey(tomorrow)) ?? [];
+  const bills = items.filter((item) => item.item_type === 'payment_due').length;
+  const appointments = items.length - bills;
+  const appointmentsText = `${appointments} ${pluralize(appointments, 'compromisso', 'compromissos')}`;
+  const billsText = `${bills} ${pluralize(bills, 'conta vencendo', 'contas vencendo')}`;
+  if (appointments === 0 && bills === 0) return 'Amanhã você não tem compromissos nem contas vencendo.';
+  if (appointments === 0) return `Amanhã você não tem compromissos, mas tem ${billsText}.`;
+  if (bills === 0) return `Amanhã você tem ${appointmentsText} e nenhuma conta vencendo.`;
+  return `Amanhã você tem ${appointmentsText} e ${billsText}.`;
 }
 
 /**

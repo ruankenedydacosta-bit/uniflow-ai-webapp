@@ -1,73 +1,45 @@
+/* Agenda do redesign (#89, handoff 06): mês com "Hoje", grade de dias,
+   chips de filtro, timeline do dia e o botão flutuante. */
 .page {
-  width: min(100%, 720px);
+  width: min(100%, 760px);
   min-height: calc(100dvh - 112px);
   margin-inline: auto;
   padding:
-    max(14px, env(safe-area-inset-top))
-    max(18px, env(safe-area-inset-right))
+    10px
+    max(22px, env(safe-area-inset-right))
     34px
-    max(18px, env(safe-area-inset-left));
+    max(22px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   color: var(--uf-app-text);
 }
 
-/* ---------- Cabeçalho (mesmo padrão de Pagamento e assinatura) ---------- */
-
+/* O título da tela fica no cabeçalho do shell; o h1 segue para o leitor
+   de tela. */
 .header {
-  min-height: 64px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 16px;
-}
-
-.titleGroup {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.backButton {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 50%;
-  background: var(--uf-app-surface-2);
-  color: var(--uf-app-text);
-  cursor: pointer;
-}
-
-.backButton svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-
-.titleGroup h1 {
-  min-width: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  margin: 0;
-  color: var(--uf-app-text);
-  font-size: clamp(20px, 5.6vw, 28px);
-  font-weight: 800;
-  line-height: 1.2;
-  text-overflow: ellipsis;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
   white-space: nowrap;
 }
 
-/* ---------- Navegação de meses ---------- */
+.titleGroup h1 {
+  margin: 0;
+}
+
+/* ---------- Mês e grade ---------- */
+
+.calendarBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
 .monthNav {
   display: flex;
@@ -76,28 +48,31 @@
   gap: 10px;
 }
 
+.monthNavTitle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .monthArrow {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: var(--uf-app-surface-2);
-  color: var(--uf-app-text);
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-text-2);
   cursor: pointer;
 }
 
 .monthArrow svg,
 .rotatedRight svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
+  width: 16px;
+  height: 16px;
 }
 
 .rotatedRight svg {
@@ -107,106 +82,102 @@
 
 .monthLabel {
   min-width: 0;
-  padding: 10px 14px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: var(--uf-app-panel-muted);
+  margin: 0;
+  padding: 0 4px;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
   color: var(--uf-app-text);
-  font: inherit;
-  font-size: clamp(17px, 4.6vw, 22px);
-  font-weight: 800;
-  line-height: 1.2;
-  text-transform: capitalize;
-  cursor: pointer;
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.3;
 }
 
-/* ---------- Grade do calendário ---------- */
-
-.calendarCard {
-  padding: 12px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 20px;
-  background:
-    linear-gradient(130deg, var(--uf-app-surface-2), var(--uf-app-surface));
+.todayLink {
+  min-height: 36px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-brand-blue-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .weekdayRow {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
-  margin-bottom: 8px;
 }
 
 .weekdayLabel {
   text-align: center;
   color: var(--uf-app-text-3);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .08em;
 }
 
 .monthGrid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
 .dayCell {
   position: relative;
-  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 44px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: var(--uf-radius-8);
   background: transparent;
-  color: var(--uf-app-text-2);
+  color: var(--uf-app-text);
+  font: inherit;
   cursor: pointer;
+  transition: background-color var(--uf-duration-fast) ease, box-shadow var(--uf-duration-fast) ease;
 }
 
 .dayNumber {
-  font-size: clamp(14px, 3.8vw, 17px);
-  font-weight: 700;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
 }
 
 .outsideMonth .dayNumber {
   color: var(--uf-app-text-3);
-  font-weight: 500;
 }
 
 .hasEvents .dayNumber {
   color: var(--uf-app-text);
-  font-weight: 800;
 }
 
 .today .dayNumber {
-  color: var(--uf-app-primary-text);
-}
-
-.today {
-  border-color: rgba(124, 196, 255, .55);
-  background: rgba(56, 130, 246, .14);
+  color: var(--uf-app-brand-blue-text);
 }
 
 .selected {
-  border-color: rgba(124, 196, 255, .85);
-  background: rgba(56, 130, 246, .32);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 45%, transparent);
+}
+
+.selected .dayNumber {
+  color: var(--uf-app-brand-violet-text);
 }
 
 .eventDot {
-  position: absolute;
-  bottom: 6px;
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background: var(--uf-app-primary-text);
+  background: transparent;
 }
 
-.selected .eventDot {
-  background: var(--uf-app-primary-text);
+.eventDotActive {
+  background: var(--uf-app-brand-violet);
 }
 
-/* ---------- Painel do dia selecionado ---------- */
+/* ---------- Timeline do dia selecionado ---------- */
 
 .dayPanel {
   display: flex;
@@ -216,45 +187,54 @@
 
 .dayPanelHeader {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 8px 12px;
+  gap: 12px;
 }
 
 .dayPanelHeader h2 {
   margin: 0;
   color: var(--uf-app-text);
-  font-size: clamp(16px, 4.4vw, 20px);
-  font-weight: 800;
-  line-height: 1.25;
-  text-transform: capitalize;
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.3;
 }
 
+/* Botão flutuante do handoff: 52px, borda violeta, vidro e brilho. */
 .addButton {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 14px;
-  background: linear-gradient(100deg, var(--uf-app-primary), var(--uf-app-ai));
-  color: var(--uf-app-on-accent);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 720;
+  position: fixed;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: calc(var(--simplified-bottom-nav-height, 69px) + 18px);
+  z-index: 10;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--uf-app-brand-violet);
+  border-radius: var(--uf-radius-full);
+  background: color-mix(in oklch, var(--uf-app-card-surface) 85%, transparent);
+  color: var(--uf-app-brand-violet-text);
+  box-shadow: 0 0 18px color-mix(in oklch, var(--uf-app-brand-violet) 40%, transparent);
+  backdrop-filter: blur(8px);
   cursor: pointer;
+  transition: transform var(--uf-duration-fast) ease;
+}
+
+.addButton svg {
+  width: 22px;
+  height: 22px;
+}
+
+.addButton:active {
+  transform: scale(.96);
 }
 
 .stateMessage {
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: var(--uf-app-empty-panel);
-  color: var(--uf-app-text-2);
-  font-size: 14.5px;
+  color: var(--uf-app-text-3);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .errorBlock {
@@ -265,77 +245,166 @@
 
 .retryButton {
   align-self: flex-start;
-  min-height: 42px;
-  padding: 0 18px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: var(--uf-app-surface-2);
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--uf-app-border-strong);
+  border-radius: var(--uf-radius-8);
+  background: transparent;
   color: var(--uf-app-text);
   font: inherit;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: var(--uf-font-weight-medium);
   cursor: pointer;
 }
 
+/* Linha vertical da timeline: azul, violeta e verde, como no handoff. */
 .dayItems {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 22px;
   list-style: none;
 }
 
+.dayItems::before {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 4px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    var(--uf-app-text-3),
+    var(--uf-app-brand-blue) 30%,
+    var(--uf-app-brand-violet) 65%,
+    color-mix(in oklch, var(--uf-app-brand-green) 50%, transparent)
+  );
+  content: "";
+}
+
+.timelineItem {
+  --tone: var(--uf-app-text-3);
+  --tone-text: var(--uf-app-text-3);
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.timelineItem[data-tone="blue"] {
+  --tone: var(--uf-app-brand-blue);
+  --tone-text: var(--uf-app-brand-blue-text);
+}
+
+.timelineItem[data-tone="violet"] {
+  --tone: var(--uf-app-brand-violet);
+  --tone-text: var(--uf-app-brand-violet-text);
+}
+
+.timelineItem[data-tone="green"] {
+  --tone: var(--uf-app-brand-green);
+  --tone-text: var(--uf-app-brand-green-text);
+}
+
+.timelineMarker {
+  position: absolute;
+  top: 5px;
+  left: -22px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--tone-text);
+  border-radius: 50%;
+  background: var(--uf-app-canvas);
+}
+
+.timelineItem[data-status="next"] .timelineMarker,
+.timelineItem[data-status="default"] .timelineMarker {
+  border: 0;
+  background: var(--tone);
+  box-shadow: 0 0 10px var(--tone);
+}
+
+.timelineItem[data-status="done"] {
+  opacity: .5;
+}
+
+.timelineItem[data-status="done"] .itemTitle {
+  text-decoration: line-through;
+}
+
+.itemTime {
+  padding-top: 2px;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
 .itemButton {
-  width: 100%;
-  min-height: 54px;
+  min-width: 0;
+  min-height: 44px;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: var(--uf-app-card-row);
-  box-shadow: var(--uf-app-soft-shadow);
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: inherit;
+  font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.itemTime {
-  flex: 0 0 auto;
-  min-width: 72px;
-  color: var(--uf-app-primary-text);
-  font-size: 12.5px;
-  font-weight: 800;
-}
-
-/* AGPUSH2: título + indicador de lembrete empilhados. O card já tinha
-   min-height 54px com uma única linha de 15px, então o chip (11px) cabe
-   dentro da altura existente -- nada é comprimido e o layout não pula. */
+/* AGPUSH2: título + etiqueta + indicador de lembrete empilhados. */
 .itemMain {
   min-width: 0;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 3px;
+}
+
+.itemTitleRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .itemTitle {
-  max-width: 100%;
   min-width: 0;
   overflow: hidden;
-  color: var(--uf-app-text-2);
-  font-size: 15px;
-  font-weight: 700;
+  color: var(--uf-app-text);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemTag {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border: 1px solid var(--tone-text);
+  border-radius: var(--uf-radius-full);
+  color: var(--tone-text);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.itemDetail {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 /* Indicador discreto de que existe lembrete configurado -- chip
    secundário, nunca um novo componente. Cor: token de marca já existente
-   (--uf-app-primary-text), o mesmo já usado pelo horário do card. */
+   (--uf-app-primary-text). */
 /* AGPUSH4: entrada visual do indicador -- SEMPRE toca ao montar (a
    partir da key={reminder.label} em SimplifiedAgendaPage.jsx, que forca
    remount quando o valor realmente muda: nasce pela 1a vez ou 30min->1h
@@ -352,7 +421,6 @@
   overflow: hidden;
   color: var(--uf-app-primary-text);
   font-size: 11px;
-  font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -382,8 +450,9 @@
 
 .itemChevron {
   flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
   color: var(--uf-app-text-3);
 }
 
@@ -395,6 +464,24 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2.2;
+}
+
+/* Frase da Uni sobre amanhã, num card de superfície. */
+.uniNote {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+}
+
+.uniNote p {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 /* ---------- Formulário simples (modal) ---------- */
@@ -598,20 +685,25 @@
 
 /* ---------- Acessibilidade ---------- */
 
-.backButton:focus-visible,
 .monthArrow:focus-visible,
-.monthLabel:focus-visible,
+.todayLink:focus-visible,
 .dayCell:focus-visible,
 .addButton:focus-visible,
 .retryButton:focus-visible,
 .itemButton:focus-visible {
-  outline: 3px solid rgba(91, 141, 239, .62);
+  outline: 2px solid var(--uf-app-focus);
   outline-offset: 2px;
 }
 
 @media (max-width: 359px) {
   .page {
-    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  }
+}
+
+@media (min-width: 768px) {
+  .addButton {
+    right: calc(50% - 380px + 22px);
   }
 }
 
@@ -648,12 +740,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dayCell,
-  .itemButton,
-  .monthArrow,
-  .monthLabel,
   .addButton,
-  .retryButton,
-  .backButton {
+  .monthArrow {
     transition: none;
   }
 
