@@ -175,6 +175,9 @@ export function resolvePendingActionInput({
   if (result.kind === 'correction') {
     return collected ? { ...result, overrides: { ...collected, ...result.overrides } } : result;
   }
+  // "A categoria é Pets" com outro campo na frase: o pedido de categoria
+  // nova vem primeiro; o resto não pode apagá-lo.
+  if (result.kind === 'category_not_found' && result.requestedCategoryName) return result;
   if (collected) return { kind: 'correction', overrides: collected };
 
   // BUG REAL (contexto/correção perdidos): a Uni pergunta um campo (ex.:
@@ -199,11 +202,39 @@ export function resolvePendingActionInput({
   return result;
 }
 
+// BUG REAL EM PRODUÇÃO (voz): com o card na tela, "A categoria é Animais de
+// Estimação." e "só que com a categoria Animais de Estimação" não achavam
+// categoria e caíam em "quer continuar ou falar de outra coisa?", em loop.
+// O nome é o que vem depois de "categoria", sem os conectivos. Referência ao
+// próprio registro ("a categoria do registro") não é nome.
+const CATEGORY_NAME_LEAD = /^(?:(?:é|e|eh|:|seja|sera|será|vai\s+ser|fica|ficar|tem\s+que\s+ser|para|pra|por|como|nova|novo|chamada|chamado|com\s+o\s+nome(?:\s+de)?)[\s:]*)+/i;
+const CATEGORY_NAME_TAIL = /(?:[,\s]+(?:por\s+favor|pra\s+mim|para\s+mim|agora|ta|tá|ok))+\s*$/i;
+const CATEGORY_REFERENCE_START = /^(?:do|da|dos|das|desse|dessa|deste|desta|disso|dele|dela|que|atual|certa|errada|outra|outro|diferente|ta|tá|esta|está|estava|ficou|nao|não)(?=\s|$)/i;
+const CATEGORY_NAME_MAX_LENGTH = 40;
+const CATEGORY_NAME_MAX_WORDS = 5;
+
+export function extractRequestedCategoryName(value) {
+  const text = typeof value === 'string' ? value : '';
+  const match = text.match(/\bcategoria\b(.*)$/i);
+  if (!match) return '';
+  const name = match[1]
+    .split(/[,;]|\s+e\s+(?:o|a)\s+/i)[0]
+    .replace(/[.!?]+\s*$/g, '')
+    .trim()
+    .replace(CATEGORY_NAME_LEAD, '')
+    .replace(CATEGORY_NAME_TAIL, '')
+    .replace(/^["“”']+|["“”'.!?]+$/g, '')
+    .trim();
+  if (!name || CATEGORY_REFERENCE_START.test(name)) return '';
+  if (name.length > CATEGORY_NAME_MAX_LENGTH || name.split(/\s+/).length > CATEGORY_NAME_MAX_WORDS) return '';
+  return name;
+}
+
 // Ajuste falado de um rascunho em andamento. Ganha do detector de
 // lançamento novo: "na verdade paguei 150 reais" e "coloca o valor de 150
 // reais" têm verbo e valor, mas corrigem o card em vez de abrir outro.
 const PENDING_CORRECTION_PATTERNS = [
-  /^(?:nao[,.]?\s+)*(?:na verdade|na real|corrige|corrigir|corrija|muda|mudar|mude|altera|alterar|altere|troca|trocar|troque|ajusta|ajustar|ajuste|substitui|substituir)\b/,
+  /^(?:nao[,.]?\s+)*(?:na verdade|na real|corrige|corrigir|corrija|muda|mudar|mude|altera|alterar|altere|troca|trocar|troque|ajusta|ajustar|ajuste|substitui|substituir|edita|editar|edite)\b/,
   /\b(?:em vez de|ao inves de|no lugar de)\b/,
   /^(?:nao[,.]?\s+)*(?:o|a)\s+(?:valor|data|categoria|conta|descricao)\s+(?:e|era|foi|fica|vai ser|tem que ser)\b/,
   /\b(?:coloca|coloque|bota|poe|deixa|deixe)\s+(?:o|a)\s+(?:valor|data|categoria|conta|descricao)\b/,
@@ -318,11 +349,17 @@ function resolveForField(field, { text, parsed, accounts, categories, workspaceI
   if (field === 'category') {
     const availableCategories = (Array.isArray(categories) ? categories : [])
       .filter((category) => category?.is_active !== false);
-    const [category] = findMatches(categories, text);
+    const requestedCategoryName = extractRequestedCategoryName(text);
+    const [category] = findMatches(categories, requestedCategoryName || text);
     if (category) {
       return { kind: 'correction', overrides: { categoryId: category.id } };
     }
-    return { kind: 'category_not_found', categories: availableCategories, overrides: null };
+    return {
+      kind: 'category_not_found',
+      categories: availableCategories,
+      requestedCategoryName: requestedCategoryName || null,
+      overrides: null,
+    };
   }
 
   if (field === 'date') {

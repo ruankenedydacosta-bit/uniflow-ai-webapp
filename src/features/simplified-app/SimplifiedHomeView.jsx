@@ -301,15 +301,17 @@ function CompactResponse({
           o fluxo principal aqui é sempre automático (autoplay). O botão
           continua existindo no chat completo (MessageBubble.jsx), que
           preserva a experiência de replay manual já aprovada. */}
-      {lastUni?.confirmation?.status === 'pending' ? (
+      {/* O rascunho continua na tela enquanto espera confirmação, mesmo
+          depois de outra resposta da Uni: é ele que "Confirma" grava. */}
+      {pendingConfirmationMessage ? (
         <ActionConfirmation
-          key={lastUni.id}
-          data={lastUni.confirmation}
-          onConfirm={() => onConfirmAction(lastUni.id)}
+          key={pendingConfirmationMessage.id}
+          data={pendingConfirmationMessage.confirmation}
+          onConfirm={() => onConfirmAction(pendingConfirmationMessage.id)}
           onEdit={onEditAction}
-          onCancel={() => onCancelAction(lastUni.id)}
+          onCancel={() => onCancelAction(pendingConfirmationMessage.id)}
           editForm={editForm}
-          onSaveEdit={onSaveEditAction ? (overrides) => onSaveEditAction(lastUni.id, overrides) : undefined}
+          onSaveEdit={onSaveEditAction ? (overrides) => onSaveEditAction(pendingConfirmationMessage.id, overrides) : undefined}
           isExecuting={isExecuting}
           executionError={executionError}
           processingLabel={processingMessage ?? undefined}

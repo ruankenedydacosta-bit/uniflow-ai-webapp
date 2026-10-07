@@ -184,7 +184,8 @@ test('na tela de voz a resposta perde a caixa e o card de rascunho vai em vidro'
   assert.match(home, /appearance=\{isVoicePresentation \? 'glass' : 'default'\}/);
   assert.match(home, /\{lastUser\?\.text && !isVoicePresentation \?/);
   // O card continua chamando a mesma confirmação: nada é gravado sem Confirmar.
-  assert.match(home, /onConfirm=\{\(\) => onConfirmAction\(lastUni\.id\)\}/);
+  // É o rascunho pendente que aparece, mesmo depois de outra resposta da Uni.
+  assert.match(home, /onConfirm=\{\(\) => onConfirmAction\(pendingConfirmationMessage\.id\)\}/);
 });
 
 test('cores da tela de voz vêm dos tokens, sem hex solto', async () => {

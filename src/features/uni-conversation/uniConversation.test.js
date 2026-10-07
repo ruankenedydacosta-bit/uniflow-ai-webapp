@@ -18,6 +18,7 @@ import {
 } from './uniResponseBuilder.js';
 import {
   classifyPendingActionReply,
+  extractRequestedCategoryName,
   looksLikePendingCorrection,
   resolvePendingActionInput,
 } from './pendingActionInput.js';
@@ -1282,4 +1283,59 @@ test('marcador de ajuste ganha do detector de lançamento novo; frase nova conti
   for (const text of ['Gastei 50 reais no mercado.', 'Recebi mil reais.', 'Nubank', 'Pode confirmar.']) {
     assert.equal(looksLikePendingCorrection(text), false, text);
   }
+});
+
+test('nome de categoria pedido no ajuste sai sem os conectivos', () => {
+  const cases = [
+    ['A categoria é Animais de Estimação.', 'Animais de Estimação'],
+    ['Eu quero continuar registrando esse lançamento, só que com a categoria Animais de Estimação.', 'Animais de Estimação'],
+    ['Edite a categoria para Animais de Estimação', 'Animais de Estimação'],
+    ['Cria a categoria nova Pets, por favor', 'Pets'],
+    ['Muda a categoria pra pets e o valor pra 120', 'pets'],
+    ['categoria: Saúde', 'Saúde'],
+    // Referência ao próprio registro ou ao estado da categoria não é nome.
+    ['Quero editar a categoria do registro que estávamos falando', ''],
+    ['A categoria tá errada', ''],
+    ['A categoria é outra', ''],
+    ['Foi no Nubank', ''],
+  ];
+  for (const [text, expected] of cases) {
+    assert.equal(extractRequestedCategoryName(text), expected, text);
+  }
+});
+
+test('card pronto: "a categoria é X" inexistente pede para criar X, e X existente corrige o card', () => {
+  const ready = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  assert.equal(ready.status, 'ready');
+
+  const missing = resolvePendingActionInput({
+    value: 'A categoria é Animais de Estimação.',
+    action: ready,
+    accounts,
+    categories,
+  });
+  assert.equal(missing.kind, 'category_not_found');
+  assert.equal(missing.requestedCategoryName, 'Animais de Estimação');
+
+  const editing = resolvePendingActionInput({
+    value: 'Edite a categoria para Animais de Estimação',
+    action: ready,
+    accounts,
+    categories,
+  });
+  assert.equal(editing.requestedCategoryName, 'Animais de Estimação');
+
+  const existing = resolvePendingActionInput({
+    value: 'Só que com a categoria Alimentação.',
+    action: ready,
+    accounts,
+    categories,
+  });
+  assert.equal(existing.kind, 'correction');
+  assert.equal(existing.overrides.categoryId, 'category-food');
+});
+
+test('"edite" também marca ajuste do rascunho', () => {
+  assert.equal(looksLikePendingCorrection('Edite a categoria para Pets'), true);
+  assert.equal(looksLikePendingCorrection('Editar o valor pra 120'), true);
 });
