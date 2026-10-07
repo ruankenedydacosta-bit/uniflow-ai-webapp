@@ -62,23 +62,34 @@ export async function renderLegalRoutes() {
   }
 }
 
+// Troca um trecho do shell e falha se ele não existir: uma substituição que
+// não acontece publicaria a página com o título e o idioma do app.
+function replaceOrFail(shell, pattern, replacement, url) {
+  if (!shell.match(pattern)) {
+    throw new Error(`prerender-legal: ${pattern} não encontrado no index.html para ${url}`);
+  }
+  return shell.replace(pattern, replacement);
+}
+
 export function injectIntoShell(shell, { html, meta, url }) {
+  const title = escapeAttribute(meta.title);
+  const description = escapeAttribute(meta.description);
   const head = [
-    `<title>${escapeAttribute(meta.title)}</title>`,
-    `<meta name="description" content="${escapeAttribute(meta.description)}" />`,
+    `<title>${title}</title>`,
+    `<meta name="description" content="${description}" />`,
+    '<meta property="og:type" content="website" />',
+    '<meta property="og:site_name" content="UniFlow AI" />',
+    '<meta property="og:locale" content="pt_BR" />',
+    `<meta property="og:title" content="${title}" />`,
+    `<meta property="og:description" content="${description}" />`,
+    '<meta name="twitter:card" content="summary" />',
     // Sem JavaScript, nada remove a splash, e ela cobriria o texto.
     '<noscript><style>#uniflow-splash { display: none; }</style></noscript>',
   ].join('\n    ');
 
-  const output = shell
-    .replace('<html lang="en">', '<html lang="pt-BR">')
-    .replace(/<title>[\s\S]*?<\/title>/, head)
-    .replace('<div id="root"></div>', () => `<div id="root">${html}</div>`);
-
-  if (!output.includes(html)) {
-    throw new Error(`prerender-legal: #root não encontrado no index.html para ${url}`);
-  }
-  return output;
+  let output = replaceOrFail(shell, /<html lang="[^"]*">/, '<html lang="pt-BR">', url);
+  output = replaceOrFail(output, /<title>[\s\S]*?<\/title>/, () => head, url);
+  return replaceOrFail(output, '<div id="root"></div>', () => `<div id="root">${html}</div>`, url);
 }
 
 async function main() {

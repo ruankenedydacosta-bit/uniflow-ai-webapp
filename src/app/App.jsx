@@ -37,7 +37,10 @@ function AppContent() {
   } = useSession();
   const location = useLocation();
   const activeRoute = appRoutes.find((route) => route.path === location.pathname);
-  const isPublicRoute = publicRoutes.some((route) => route.path === location.pathname);
+  // A Vercel também serve /privacidade/ (com barra), e o React Router aceita
+  // as duas formas. Sem normalizar, a política aberta com barra redirecionaria.
+  const publicPathname = location.pathname.replace(/(.)\/+$/, '$1');
+  const isPublicRoute = publicRoutes.some((route) => route.path === publicPathname);
   const requestedReturnPath = getSafeAuthReturnPath(location.state?.from);
   const presentationUserId = resolvePresentationUserId(session, isSupabaseConfigured);
   const presentationCompleted = isPresentationCompleted(presentationUserId);

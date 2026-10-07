@@ -3,7 +3,7 @@
 // página pelo mesmo caminho do build (scripts/prerender-legal.mjs, Vite em
 // modo SSR, ambiente node, sem window).
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { injectIntoShell, renderLegalRoutes } from '../../../scripts/prerender-legal.mjs';
 import { PROVEDORES } from './politicaDePrivacidade.js';
@@ -32,10 +32,71 @@ test('o prerender gera /privacidade com o texto inteiro', () => {
 
 test('todo provedor da lista aparece na página', () => {
   const texto = textoVisivel(privacidade.html);
-  for (const nome of ['Supabase', 'Vercel', 'OpenAI', 'ElevenLabs', 'Asaas', 'Google', 'Sentry']) {
-    assert.ok(PROVEDORES.some((provedor) => provedor.nome === nome), `${nome} saiu de PROVEDORES`);
-    assert.ok(texto.includes(nome), `${nome} não aparece na página`);
+  assert.ok(PROVEDORES.length >= 9);
+  for (const provedor of PROVEDORES) {
+    assert.ok(texto.includes(provedor.nome), `${provedor.nome} não aparece na página`);
   }
+});
+
+// Domínio externo encontrado no código -> provedor que precisa estar em
+// PROVEDORES. Domínio que não recebe dado do usuário vai em SEM_DADO_PESSOAL.
+const PROVEDOR_POR_DOMINIO = [
+  [/\.supabase\.co$/, 'Supabase'],
+  [/^api\.openai\.com$/, 'OpenAI'],
+  [/^api\.elevenlabs\.io$/, 'ElevenLabs'],
+  [/^(api|api-sandbox|sandbox|checkout)\.asaas\.com$/, 'Asaas'],
+  [/^fonts\.(googleapis|gstatic)\.com$/, 'Google'],
+  [/^www\.googletagmanager\.com$/, 'Google'],
+  [/^wa\.me$/, 'WhatsApp (Meta)'],
+];
+const PROVEDOR_POR_PACOTE = [
+  [/from ['"]@sentry\//, 'Sentry'],
+  [/from ['"](npm:)?web-push/, 'Serviços de notificação do navegador (Google, Apple e Mozilla)'],
+];
+const SEM_DADO_PESSOAL = [
+  /^docs\.asaas\.com$/, // links de documentação em comentários
+  /^developers\.google\.com$/, /^myaccount\.google\.com$/, /^www\.gov\.br$/, // links desta página
+  /^app\.uniflow\.ai$/, /^(www\.)?uniflow-ai\.com\.br$/, /^uniflow\.(local|invalid)$/, // domínios próprios
+  /^react\.dev$/, /^github\.com$/,
+  /(^|\.)example(\.com)?$/, /\.(test|invalid|local|example)$/, /^exemplo\.com$/,
+];
+
+async function arquivosDeCodigo(pasta) {
+  const raiz = new URL(`../../../${pasta}/`, import.meta.url);
+  const nomes = await readdir(raiz, { recursive: true });
+  return nomes
+    .filter((nome) => /\.(js|jsx|ts|mjs|css|html)$/.test(nome))
+    .filter((nome) => !/\.test\.|node_modules/.test(nome))
+    .map((nome) => new URL(nome, raiz));
+}
+
+test('todo domínio externo chamado pelo código tem provedor na política', async () => {
+  const arquivos = [
+    ...(await arquivosDeCodigo('src')),
+    ...(await arquivosDeCodigo('supabase/functions')),
+    ...(await arquivosDeCodigo('public')),
+    new URL('../../../index.html', import.meta.url),
+  ];
+  const nomes = new Set(PROVEDORES.map((provedor) => provedor.nome));
+  const faltando = [];
+
+  for (const arquivo of arquivos) {
+    const codigo = await readFile(arquivo, 'utf8');
+    for (const [, dominio] of codigo.matchAll(/https:\/\/([a-z0-9.-]+\.[a-z]{2,})/g)) {
+      if (SEM_DADO_PESSOAL.some((padrao) => padrao.test(dominio))) continue;
+      const provedor = PROVEDOR_POR_DOMINIO.find(([padrao]) => padrao.test(dominio))?.[1];
+      if (!provedor || !nomes.has(provedor)) faltando.push(`${dominio} (${arquivo.pathname})`);
+    }
+    for (const [padrao, provedor] of PROVEDOR_POR_PACOTE) {
+      if (padrao.test(codigo) && !nomes.has(provedor)) faltando.push(`${provedor} (${arquivo.pathname})`);
+    }
+  }
+
+  assert.deepEqual(
+    [...new Set(faltando)],
+    [],
+    'domínio externo sem provedor na Política de Privacidade: adicione em PROVEDORES ou, se não recebe dado do usuário, em SEM_DADO_PESSOAL',
+  );
 });
 
 test('a seção do Google traz escopos, Uso Limitado e revogação', () => {
@@ -59,7 +120,15 @@ test('o HTML final troca título, idioma e conteúdo do shell', () => {
   assert.match(html, /<meta name="description" content="[^"]+LGPD\." \/>/);
   assert.match(html, /<noscript><style>#uniflow-splash \{ display: none; \}<\/style><\/noscript>/);
   assert.ok(html.includes(`<div id="root">${privacidade.html}</div>`));
+  assert.match(html, /<meta property="og:title" content="Política de Privacidade \| UniFlow AI" \/>/);
   assert.doesNotMatch(html, /uniflow-ai-app/);
+});
+
+test('o prerender falha se o shell mudar e uma troca não acontecer', () => {
+  const semTitulo = '<html lang="en"><head></head><body><div id="root"></div></body></html>';
+  assert.throws(() => injectIntoShell(semTitulo, privacidade), /<title>/);
+  const semRoot = '<html lang="en"><head><title>x</title></head><body><div id="app"></div></body></html>';
+  assert.throws(() => injectIntoShell(semRoot, privacidade), /root/);
 });
 
 test('o build roda o prerender e a rota é pública', async () => {
@@ -75,7 +144,7 @@ test('o cadastro e a tela Sobre levam à política', async () => {
   const aviso = await source('../auth-mobile/components/AuthLegalNotice.jsx');
   assert.match(aviso, /href=\{PRIVACIDADE_ROUTE\}/);
   const sobre = await source('../simplified-app/SimplifiedAboutPage.jsx');
-  assert.match(sobre, /href=\{PRIVACIDADE_ROUTE\}/);
+  assert.match(sobre, /<Link className=\{styles\.footerLink\} to=\{PRIVACIDADE_ROUTE\}>/);
 });
 
 test('a Vercel serve o arquivo pré-renderizado antes do catch-all do SPA', async () => {

@@ -148,13 +148,13 @@ function PrivacidadePage() {
             <li>um resumo dos seus números do mês, como total de entradas e saídas e a categoria com mais gastos.</li>
           </ul>
           <p>
-            Antes do envio, o app troca por um marcador o que parecer CPF, CNPJ, número de cartão,
-            e-mail ou senha digitado na conversa.
+            Não escreva nem fale senhas, números de cartão ou documentos na conversa com a Uni.
           </p>
           <p>
             Quando você fala com a Uni, o áudio vai para a OpenAI para ser transcrito. Na conversa por
             voz contínua, o áudio do microfone vai do seu navegador direto para a OpenAI enquanto a
-            conversa estiver aberta, junto com o nome pelo qual você prefere ser chamado. O app só usa
+            conversa estiver aberta, junto com seu nome preferido (ou o primeiro nome do cadastro) e a
+            pronúncia do nome, se você a informou. O app só usa
             o microfone depois que você permite e toca para falar.
           </p>
           <p>

@@ -3,8 +3,11 @@
 // recebem dado pessoal.
 //
 // A lista de provedores acompanha o código. Integração nova que envie dado
-// do usuário a um terceiro entra aqui na mesma PR, e o teste
-// privacidadePrerender.test.js falha se um provedor esperado sumir da página.
+// do usuário a um terceiro entra aqui na mesma PR: o teste
+// privacidadePrerender.test.js varre o código atrás de domínios externos e
+// falha se algum não tiver provedor correspondente nesta lista.
+
+import { SUPPORT_WHATSAPP_NUMBER } from '../simplified-app/simplifiedSupportConfig.js';
 
 export const PRIVACIDADE_ROUTE = '/privacidade';
 
@@ -12,9 +15,15 @@ export const PRIVACIDADE_ATUALIZADA_EM = '7 de outubro de 2026';
 
 export const CONTATO_PRIVACIDADE = Object.freeze({
   email: 'contato@uniflow.ai',
-  whatsapp: '+55 47 92000-8797',
-  whatsappUrl: 'https://wa.me/5547920008797',
+  whatsapp: formatarWhatsApp(SUPPORT_WHATSAPP_NUMBER),
+  whatsappUrl: `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}`,
 });
+
+// '5547920008797' -> '+55 47 92000-8797'
+function formatarWhatsApp(numero) {
+  const [, ddi, ddd, inicio, fim] = numero.match(/^(\d{2})(\d{2})(\d+)(\d{4})$/);
+  return `+${ddi} ${ddd} ${inicio}-${fim}`;
+}
 
 export const PAGE_META = Object.freeze({
   title: 'Política de Privacidade | UniFlow AI',
@@ -35,7 +44,7 @@ export const PROVEDORES = Object.freeze([
   },
   {
     nome: 'OpenAI',
-    recebe: 'O que você escreve ou fala para a Uni, o histórico recente da conversa, nomes de contas e categorias, um resumo dos seus números do mês, seu nome preferido na conversa por voz e o áudio da sua voz.',
+    recebe: 'O que você escreve ou fala para a Uni, o histórico recente da conversa, nomes de contas e categorias, um resumo dos seus números do mês, seu nome preferido ou primeiro nome e a pronúncia do nome na conversa por voz, e o áudio da sua voz.',
     finalidade: 'Entender seus pedidos, gerar as respostas da Uni, transcrever sua voz e gerar a voz da Uni.',
   },
   {
