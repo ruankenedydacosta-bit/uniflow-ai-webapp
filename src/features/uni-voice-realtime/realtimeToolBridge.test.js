@@ -17,7 +17,12 @@ import {
   snapshotRealtimeToolTurn,
   readRealtimeToolPhrase,
   REALTIME_TOOL_NAMES,
+  REALTIME_DRAFT_REPLIES,
+  readRealtimeDraftReply,
+  buildEndConversationOutput,
 } from './realtimeToolBridge.js';
+import { classifyPendingActionReply } from '../uni-conversation/pendingActionInput.js';
+import { isCancelEntirePendingFlow } from '../uni-conversation/financialPendingActionFlow.js';
 
 const EDGE_SOURCE = readFileSync(
   new URL('../../../supabase/functions/uni-voice-realtime-session/index.ts', import.meta.url),
@@ -142,7 +147,7 @@ test('pronúncia do nome: uma linha, sem aspas e até 60 caracteres', () => {
 test('a ferramenta de pronúncia existe na sessão com o mesmo nome e parâmetro', () => {
   assert.match(EDGE_SOURCE, new RegExp(`name: '${REALTIME_TOOL_NAMES.SAVE_NAME_PRONUNCIATION}'`));
   assert.match(EDGE_SOURCE, /required: \['pronuncia'\]/);
-  assert.match(EDGE_SOURCE, /tools: \[SEND_TO_UNI_TOOL, SAVE_NAME_PRONUNCIATION_TOOL\]/);
+  assert.match(EDGE_SOURCE, /tools: \[SEND_TO_UNI_TOOL, SAVE_NAME_PRONUNCIATION_TOOL, ANSWER_DRAFT_TOOL, END_CONVERSATION_TOOL\]/);
 });
 
 test('a sessão lê a pronúncia do perfil e a põe nas instruções', () => {
@@ -240,4 +245,36 @@ test('card expirado espera a resposta do chat em vez de encerrar o turno', () =>
     JSON.parse(resolveRealtimeToolOutcome(replied, turn)),
     { resposta: 'Revise o lançamento.', aguardando_confirmacao: true },
   );
+});
+
+test('responder o card falando vira a frase padrão do chat', () => {
+  assert.equal(readRealtimeDraftReply({ acao: 'confirmar' }), 'Confirmar');
+  assert.equal(readRealtimeDraftReply({ acao: 'cancelar' }), 'Cancelar');
+  assert.equal(readRealtimeDraftReply({ acao: 'cancelar_tudo' }), 'Cancelar tudo');
+  assert.equal(readRealtimeDraftReply({ acao: 'editar' }), '');
+  assert.equal(readRealtimeDraftReply({ acao: 'toString' }), '');
+  assert.equal(readRealtimeDraftReply({}), '');
+  assert.equal(readRealtimeDraftReply(null), '');
+});
+
+test('o chat entende cada frase padrão do card do jeito certo', () => {
+  assert.equal(classifyPendingActionReply(REALTIME_DRAFT_REPLIES.confirmar), 'confirm');
+  assert.equal(classifyPendingActionReply(REALTIME_DRAFT_REPLIES.confirmar, { subjectName: 'Salário' }), 'confirm');
+  assert.equal(classifyPendingActionReply(REALTIME_DRAFT_REPLIES.cancelar), 'cancel');
+  assert.equal(isCancelEntirePendingFlow(REALTIME_DRAFT_REPLIES.cancelar), false);
+  assert.equal(classifyPendingActionReply(REALTIME_DRAFT_REPLIES.cancelar_tudo), 'cancel');
+  assert.equal(isCancelEntirePendingFlow(REALTIME_DRAFT_REPLIES.cancelar_tudo), true);
+});
+
+test('a sessão declara responder_rascunho com as mesmas ações do app', () => {
+  assert.match(EDGE_SOURCE, new RegExp(`name: '${REALTIME_TOOL_NAMES.ANSWER_DRAFT}'`));
+  assert.match(EDGE_SOURCE, /required: \['acao'\]/);
+  const actions = Object.keys(REALTIME_DRAFT_REPLIES).map((action) => `'${action}'`).join(', ');
+  assert.ok(EDGE_SOURCE.includes(`enum: [${actions}]`));
+});
+
+test('a sessão declara encerrar_conversa e a saída pede só a despedida', () => {
+  assert.match(EDGE_SOURCE, new RegExp(`name: '${REALTIME_TOOL_NAMES.END_CONVERSATION}'`));
+  assert.match(EDGE_SOURCE, /chame encerrar_conversa/);
+  assert.match(JSON.parse(buildEndConversationOutput()).resposta, /Despeça-se/);
 });

@@ -43,12 +43,16 @@ const UNI_REALTIME_INSTRUCTIONS = [
   'Pronuncie à brasileira marcas e bancos usados no Brasil, como Pix, Nubank, Itaú, iFood e Mercado Pago.',
   'Se a pessoa pausar no meio de uma frase, espere ela terminar. Não complete a frase por ela.',
   'Se for interrompida, pare e responda ao que a pessoa acabou de dizer.',
-  'Tudo que envolve dinheiro ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, mexer na agenda, e responder a um rascunho (confirmar, corrigir ou cancelar). Passe a frase da pessoa como ela disse, sem resumir nem completar.',
+  'Tudo que envolve dinheiro ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, mexer na agenda e corrigir um rascunho. Passe a frase da pessoa como ela disse, sem resumir nem completar.',
+  'Com um rascunho aguardando confirmação, quando a pessoa aceitar com qualquer palavra, como "manda ver", "fechou" ou "uhum, pode", chame responder_rascunho com acao confirmar. Se ela desistir do rascunho, use cancelar. Se desistir de tudo, inclusive da conta ou categoria que seria criada, use cancelar_tudo.',
+  'Só confirme quando a pessoa aceitar com clareza. Se a resposta for ambígua, pergunte antes.',
+  'Para mudar valor, conta, categoria, data ou descrição do rascunho, passe a frase com enviar_para_uni. Se a pessoa só disser que quer editar, pergunte o que ela quer mudar.',
   'Depois da ferramenta, fale a resposta dela com naturalidade e em poucas palavras. Não acrescente valores, datas, categorias nem contas que não estejam na resposta.',
   'Se a resposta disser que há um rascunho aguardando confirmação, pergunte se pode confirmar. A pessoa também pode confirmar tocando no card da tela.',
   'Você não sabe nada sobre as finanças da pessoa além do que a ferramenta devolve. Nunca invente valores.',
   'Para conversa que não envolve dinheiro nem agenda, responda direto, sem a ferramenta.',
   'Se a pessoa corrigir como se fala o nome dela, chame salvar_pronuncia_do_nome com a pronúncia certa e, daí em diante, diga o nome só desse jeito.',
+  'Quando a pessoa pedir para encerrar, desligar ou terminar a conversa, com quaisquer palavras, chame encerrar_conversa. Um "tchau" no meio de outra frase não basta: só chame quando ela quiser mesmo parar de falar.',
   'Nada de risadas, gritos, voz infantil ou exagero teatral.',
 ].join('\n');
 
@@ -113,7 +117,7 @@ async function sha256Hex(input: string) {
 const SEND_TO_UNI_TOOL = {
   type: 'function',
   name: 'enviar_para_uni',
-  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra lançamentos, consulta saldo, gastos e contas, cuida da agenda e confirma ou cancela rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
+  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra lançamentos, consulta saldo, gastos e contas, cuida da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
   parameters: {
     type: 'object',
     properties: {
@@ -143,6 +147,35 @@ const SAVE_NAME_PRONUNCIATION_TOOL = {
     },
     required: ['pronuncia'],
   },
+};
+
+// O nome e os valores de acao precisam bater com REALTIME_DRAFT_REPLIES em
+// src/features/uni-voice-realtime/realtimeToolBridge.js. O app só aceita a
+// chamada com um card esperando confirmação.
+const ANSWER_DRAFT_TOOL = {
+  type: 'function',
+  name: 'responder_rascunho',
+  description: 'Confirma ou cancela o rascunho que está aguardando confirmação na tela, como se a pessoa tocasse no card. Use quando a pessoa aceitar ou recusar o rascunho, com quaisquer palavras. Devolve a resposta a ser falada.',
+  parameters: {
+    type: 'object',
+    properties: {
+      acao: {
+        type: 'string',
+        enum: ['confirmar', 'cancelar', 'cancelar_tudo'],
+        description: 'confirmar grava o rascunho. cancelar descarta o rascunho. cancelar_tudo descarta também a conta ou categoria que seria criada para ele.',
+      },
+    },
+    required: ['acao'],
+  },
+};
+
+// O nome precisa bater com src/features/uni-voice-realtime/realtimeToolBridge.js.
+// Quem encerra é o app, depois de a Uni se despedir.
+const END_CONVERSATION_TOOL = {
+  type: 'function',
+  name: 'encerrar_conversa',
+  description: 'Encerra a conversa por voz, como se a pessoa tocasse em Parar. Use quando a pessoa pedir para desligar, encerrar ou terminar a conversa. Depois, despeça-se em uma frase curta.',
+  parameters: { type: 'object', properties: {} },
 };
 
 const MAX_NAME_LENGTH = 60;
@@ -202,7 +235,7 @@ function buildSessionConfig({ model, voice, eagerness, nameInstructions }: {
       type: 'realtime',
       model,
       instructions: nameInstructions ? `${UNI_REALTIME_INSTRUCTIONS}\n${nameInstructions}` : UNI_REALTIME_INSTRUCTIONS,
-      tools: [SEND_TO_UNI_TOOL, SAVE_NAME_PRONUNCIATION_TOOL],
+      tools: [SEND_TO_UNI_TOOL, SAVE_NAME_PRONUNCIATION_TOOL, ANSWER_DRAFT_TOOL, END_CONVERSATION_TOOL],
       tool_choice: 'auto',
       audio: {
         input: {

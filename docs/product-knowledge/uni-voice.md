@@ -16,8 +16,10 @@ botão "Ouvir" abaixo das respostas.
 a conversa por voz. Fale normalmente, com pausas: a Uni responde quando você
 termina e você pode interromper a Uni falando. Para registrar, consultar saldo
 ou mexer na agenda, a Uni usa o mesmo caminho do texto, e lançamentos continuam
-exigindo confirmação no card. A conversa também termina depois de um minuto sem
-ninguém falar ou quando você sai do app.
+exigindo confirmação no card. Para encerrar sem tocar na tela, diga "pode
+desligar" ou "encerra a conversa": a Uni se despede e a conversa termina. A
+conversa também termina depois de um minuto sem ninguém falar ou quando você
+sai do app.
 
 Na tela de voz, o status acima da Uni mostra o que está acontecendo:
 
@@ -25,7 +27,21 @@ Na tela de voz, o status acima da Uni mostra o que está acontecendo:
   termina de falar, o que você disse aparece em letras grandes, entre aspas.
 - **Entendendo**: a Uni está processando o pedido.
 - **Rascunho pronto**: o card de rascunho apareceu. Confira os dados e toque em
-  **Confirmar**, ou diga que pode confirmar. Nada é salvo antes disso.
+  **Confirmar**. Nada é salvo antes disso.
+
+Também dá para responder ao card só falando, sem tocar na tela:
+
+- **Confirmar**: diga que pode confirmar, com as suas palavras ("pode
+  lançar", "fechou", "manda ver").
+- **Cancelar**: diga que quer cancelar. Para desistir também da conta ou
+  categoria que seria criada, diga "cancela tudo".
+- **Corrigir**: diga o que muda, por exemplo "muda o valor pra cento e
+  cinquenta" ou "foi no Nubank". O card é atualizado e a Uni pergunta de novo
+  se pode confirmar. Se você pedir uma categoria que ainda não existe ("a
+  categoria é Animais de Estimação"), a Uni pergunta se pode criá-la. Depois
+  de criar, o rascunho volta com a categoria nova para você confirmar.
+
+Se a resposta não estiver clara, a Uni pergunta antes de confirmar.
 
 Os três botões de baixo fazem:
 

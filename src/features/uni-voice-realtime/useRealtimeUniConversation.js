@@ -4,6 +4,8 @@ import {
   buildNamePronunciationSavedOutput,
   buildScreenActionInstructions,
   buildRealtimeToolErrorOutput,
+  findPendingConfirmation,
+  readRealtimeDraftReply,
   readRealtimeNamePronunciation,
   readRealtimeToolPhrase,
   REALTIME_TOOL_NAMES,
@@ -29,7 +31,8 @@ export function isRealtimeConversationActive(status) {
 
 // Conversa por voz em tempo real ligada ao chat da Uni. Quando a Uni chama a
 // ferramenta, a frase vai para onSendTranscript (o mesmo caminho do texto) e
-// a ferramenta só devolve quando o chat termina o turno.
+// a ferramenta só devolve quando o chat termina o turno. Confirmar ou
+// cancelar o card falando segue o mesmo caminho, com a frase padrão do chat.
 //
 // onSaveNamePronunciation(pronuncia) grava no perfil como se fala o nome da
 // pessoa; a sessão seguinte já abre com ela.
@@ -72,15 +75,7 @@ export function useRealtimeUniConversation({
     return buildNamePronunciationSavedOutput();
   }, []);
 
-  const handleToolCall = useCallback(({ name, args }) => {
-    if (name === REALTIME_TOOL_NAMES.SAVE_NAME_PRONUNCIATION) return saveNamePronunciation(args);
-    if (name !== REALTIME_TOOL_NAMES.SEND_TO_UNI) {
-      return Promise.resolve(buildRealtimeToolErrorOutput('Ferramenta desconhecida.'));
-    }
-    const phrase = readRealtimeToolPhrase(args);
-    if (!phrase) {
-      return Promise.resolve(buildRealtimeToolErrorOutput('Não entendi o pedido. Peça para a pessoa repetir.'));
-    }
+  const sendToChat = useCallback((phrase) => {
     if (isBusyRef.current || pendingTurnRef.current) {
       return Promise.resolve(buildRealtimeToolErrorOutput('A Uni ainda está terminando o pedido anterior. Peça para a pessoa aguardar um instante.'));
     }
@@ -101,7 +96,33 @@ export function useRealtimeUniConversation({
       pendingTurnRef.current = { turn, finish };
       sendRef.current?.(phrase, { source: 'voice' });
     });
-  }, [saveNamePronunciation]);
+  }, []);
+
+  // Confirmar ou cancelar falando só vale com um card esperando: sem ele,
+  // "Confirmar" chegaria ao chat como conversa solta.
+  const answerDraft = useCallback((args) => {
+    const reply = readRealtimeDraftReply(args);
+    if (!reply) {
+      return Promise.resolve(buildRealtimeToolErrorOutput('Não entendi se é para confirmar ou cancelar. Pergunte à pessoa.'));
+    }
+    if (!findPendingConfirmation(messagesRef.current)) {
+      return Promise.resolve(buildRealtimeToolErrorOutput('Não há rascunho esperando confirmação na tela. Se a pessoa respondeu a uma pergunta da Uni, repasse a frase dela com enviar_para_uni.'));
+    }
+    return sendToChat(reply);
+  }, [sendToChat]);
+
+  const handleToolCall = useCallback(({ name, args }) => {
+    if (name === REALTIME_TOOL_NAMES.SAVE_NAME_PRONUNCIATION) return saveNamePronunciation(args);
+    if (name === REALTIME_TOOL_NAMES.ANSWER_DRAFT) return answerDraft(args);
+    if (name !== REALTIME_TOOL_NAMES.SEND_TO_UNI) {
+      return Promise.resolve(buildRealtimeToolErrorOutput('Ferramenta desconhecida.'));
+    }
+    const phrase = readRealtimeToolPhrase(args);
+    if (!phrase) {
+      return Promise.resolve(buildRealtimeToolErrorOutput('Não entendi o pedido. Peça para a pessoa repetir.'));
+    }
+    return sendToChat(phrase);
+  }, [saveNamePronunciation, answerDraft, sendToChat]);
 
   useEffect(() => {
     const pending = pendingTurnRef.current;

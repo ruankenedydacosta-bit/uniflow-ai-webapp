@@ -8,6 +8,21 @@
 export const REALTIME_TOOL_NAMES = Object.freeze({
   SEND_TO_UNI: 'enviar_para_uni',
   SAVE_NAME_PRONUNCIATION: 'salvar_pronuncia_do_nome',
+  ANSWER_DRAFT: 'responder_rascunho',
+  END_CONVERSATION: 'encerrar_conversa',
+});
+
+// Depois de pedir para encerrar, a conversa espera a Uni terminar a
+// despedida. Sem áudio de volta, fecha mesmo assim depois deste tempo.
+export const REALTIME_GOODBYE_TIMEOUT_MS = 8000;
+
+// Decisão falada sobre o card vira a frase que o chat já entende. Quem
+// interpreta "manda ver" ou "fechou" é a conversa; o chat só recebe uma das
+// frases que classifyPendingActionReply reconhece.
+export const REALTIME_DRAFT_REPLIES = Object.freeze({
+  confirmar: 'Confirmar',
+  cancelar: 'Cancelar',
+  cancelar_tudo: 'Cancelar tudo',
 });
 
 // Mesmo teto da coluna profiles.name_pronunciation.
@@ -28,6 +43,11 @@ export function parseRealtimeToolArguments(raw) {
 
 export function readRealtimeToolPhrase(args) {
   return typeof args?.frase === 'string' ? args.frase.trim() : '';
+}
+
+// Frase do chat para a ação pedida; vazio quando a ação não é conhecida.
+export function readRealtimeDraftReply(args) {
+  return Object.hasOwn(REALTIME_DRAFT_REPLIES, args?.acao ?? '') ? REALTIME_DRAFT_REPLIES[args.acao] : '';
 }
 
 function messagesAfter(messages, baselineId) {
@@ -68,6 +88,12 @@ export function readRealtimeNamePronunciation(args) {
 export function buildNamePronunciationSavedOutput() {
   return JSON.stringify({
     resposta: 'Pronúncia guardada. Diga o nome do jeito novo para a pessoa conferir. As próximas conversas já começam com ela.',
+  });
+}
+
+export function buildEndConversationOutput() {
+  return JSON.stringify({
+    resposta: 'A conversa vai ser encerrada assim que você se despedir. Despeça-se em uma frase curta, sem perguntas.',
   });
 }
 

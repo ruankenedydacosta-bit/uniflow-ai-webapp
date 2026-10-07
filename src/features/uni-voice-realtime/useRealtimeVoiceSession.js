@@ -5,7 +5,13 @@ import {
   isRealtimeSessionIdle,
   reduceRealtimeEvent,
 } from './realtimeSessionModel.js';
-import { buildRealtimeToolErrorOutput, parseRealtimeToolArguments } from './realtimeToolBridge.js';
+import {
+  buildEndConversationOutput,
+  buildRealtimeToolErrorOutput,
+  parseRealtimeToolArguments,
+  REALTIME_GOODBYE_TIMEOUT_MS,
+  REALTIME_TOOL_NAMES,
+} from './realtimeToolBridge.js';
 import { buildRealtimeGreetingEvent } from './realtimeGreeting.js';
 import { createConversationEndSound, shouldPlayConversationEndSound } from './conversationEndSound.js';
 import {
@@ -80,6 +86,7 @@ function sendEvent(channel, event) {
 }
 
 function closeConnection(connection) {
+  clearTimeout(connection.goodbyeTimer);
   closeVoiceReservation(connection.reservation);
   connection.channel?.close();
   connection.peer?.close();
@@ -151,7 +158,25 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
     dispatch({ type: 'local.ended', reason });
   }, [dispatch, teardown]);
 
+  // Pedido de desligar: a Uni se despede e a conversa fecha quando o áudio
+  // da despedida acaba, como se a pessoa tocasse em Parar.
+  const endAfterGoodbye = useCallback((connection, event) => {
+    connection.endingAfterGoodbye = true;
+    connection.goodbyeTimer = setTimeout(() => {
+      if (connectionRef.current === connection) stop('user');
+    }, REALTIME_GOODBYE_TIMEOUT_MS);
+    sendEvent(connection.channel, {
+      type: 'conversation.item.create',
+      item: { type: 'function_call_output', call_id: event.call_id, output: buildEndConversationOutput() },
+    });
+    sendEvent(connection.channel, { type: 'response.create' });
+  }, [stop]);
+
   const runToolCall = useCallback(async (connection, event) => {
+    if (event.name === REALTIME_TOOL_NAMES.END_CONVERSATION) {
+      endAfterGoodbye(connection, event);
+      return;
+    }
     dispatch({ type: 'local.tool_started' });
     let output;
     try {
@@ -172,7 +197,7 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
       item: { type: 'function_call_output', call_id: event.call_id, output },
     });
     sendEvent(connection.channel, { type: 'response.create' });
-  }, [dispatch]);
+  }, [dispatch, endAfterGoodbye]);
 
   // Chame dentro do toque da pessoa: o iOS só libera microfone e áudio
   // numa ação do usuário, então os dois são pedidos antes de qualquer rede.
@@ -245,6 +270,21 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
           flushScreenNarration(connection);
         }
         if (event?.type === 'response.function_call_arguments.done') void runToolCall(connection, event);
+        if (connection.endingAfterGoodbye && connection.goodbyeStarted && (
+          event?.type === 'output_audio_buffer.stopped' || event?.type === 'output_audio_buffer.cleared'
+        )) {
+          stop('user');
+          return;
+        }
+        // Despedida começou a tocar: o prazo passa a contar daqui, para não
+        // cortar a frase no meio.
+        if (connection.endingAfterGoodbye && event?.type === 'output_audio_buffer.started') {
+          connection.goodbyeStarted = true;
+          clearTimeout(connection.goodbyeTimer);
+          connection.goodbyeTimer = setTimeout(() => {
+            if (connectionRef.current === connection) stop('user');
+          }, REALTIME_GOODBYE_TIMEOUT_MS);
+        }
       };
 
       const offer = await peer.createOffer();
@@ -277,7 +317,7 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
           : error?.message ?? 'Não foi possível abrir a conversa.',
       });
     }
-  }, [dispatch, runToolCall, teardown]);
+  }, [dispatch, runToolCall, stop, teardown]);
 
   const markFalseInterruption = useCallback(() => {
     dispatch({ type: 'local.mark_false_interruption' });
