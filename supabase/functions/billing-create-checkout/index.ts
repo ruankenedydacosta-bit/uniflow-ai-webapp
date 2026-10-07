@@ -277,8 +277,9 @@ Deno.serve(async (request) => {
   const existingSubscription = await getNonTerminalSubscription({ authorization, supabaseUrl, anonKey, workspaceId });
   // BLOCO ASAAS CHECKOUT: ja existe uma assinatura real (vinculada na Asaas,
   // Pix ou cartao) -- nunca cria um segundo checkout/assinatura para o
-  // mesmo workspace.
-  if (existingSubscription?.asaas_subscription_id) {
+  // mesmo workspace. Plano manual (migration 055) também: a linha é da
+  // equipe e nunca vira um checkout pendente.
+  if (existingSubscription?.asaas_subscription_id || existingSubscription?.source === 'manual') {
     return jsonResponse(200, {
       workspace_id: workspaceId,
       status: existingSubscription.status,

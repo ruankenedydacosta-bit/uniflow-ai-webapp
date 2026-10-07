@@ -68,8 +68,9 @@ const RENEWAL_ELIGIBLE_STATUSES = Object.freeze(['active', 'trialing']);
 // Próxima cobrança real: só existe para status em que de fato haverá uma
 // nova cobrança. Nunca inventa uma data -- ausência aqui deve virar
 // "Nenhuma próxima cobrança disponível." na tela, nunca um placeholder.
+// Plano manual (concedido pela equipe) não renova: termina na data dele.
 export function resolveRenewsAt(subscription, planState) {
-  return RENEWAL_ELIGIBLE_STATUSES.includes(planState.status)
+  return RENEWAL_ELIGIBLE_STATUSES.includes(planState.status) && subscription?.source !== 'manual'
     ? subscription?.current_period_ends_at ?? null
     : null;
 }

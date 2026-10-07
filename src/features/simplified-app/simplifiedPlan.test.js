@@ -169,9 +169,9 @@ test('botão "Gerenciar assinatura" some para not_configured/canceled/expired --
   assert.match(content, /Assinar Plano Pessoal/);
 });
 
-test('modal "Gerenciar assinatura" só oferece cancelar quando canCancel (status active sem cancelamento já agendado)', async () => {
+test('modal "Gerenciar assinatura" só oferece cancelar quando canCancel (status active sem cancelamento já agendado, fora de plano manual)', async () => {
   const content = await source('./SimplifiedPlanPage.jsx');
-  assert.match(content, /const canCancel = planState\.status === 'active';/);
+  assert.match(content, /const canCancel = planState\.status === 'active' && !isManualPlan;/);
   assert.match(content, /\{canCancel \? \(/);
   assert.match(content, /Cancelar assinatura/);
 });

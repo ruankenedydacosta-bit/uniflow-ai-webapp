@@ -83,6 +83,12 @@ test('resolveRenewsAt: cancel_scheduled NUNCA aparece como "Próxima cobrança" 
   assert.equal(resolveCancelEffectiveAt(subscription, cancelScheduled), '2026-08-30T12:00:00Z');
 });
 
+test('resolveRenewsAt: plano manual não renova -- nunca mostra "Renova em" nem "Próxima cobrança"', () => {
+  const active = resolvePlanState({ exists: true, internal_status: 'active' });
+  const subscription = { source: 'manual', current_period_ends_at: '2026-12-30T12:00:00Z' };
+  assert.equal(resolveRenewsAt(subscription, active), null);
+});
+
 test('resolveRenewsAt: sem next billing real -> null (nunca 31/12/2099 nem qualquer outra data inventada)', () => {
   const active = resolvePlanState({ exists: true, internal_status: 'active' });
   assert.equal(resolveRenewsAt({ current_period_ends_at: null }, active), null);

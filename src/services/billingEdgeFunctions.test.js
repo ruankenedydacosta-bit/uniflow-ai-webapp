@@ -476,7 +476,8 @@ test('billing-create-checkout: monta o payload via buildCheckoutPayload (regra p
 });
 
 test('billing-create-checkout: idempotência -- assinatura não-terminal JÁ vinculada à Asaas nunca gera um segundo checkout', () => {
-  assert.match(CREATE_CHECKOUT, /if \(existingSubscription\?\.asaas_subscription_id\) \{/);
+  // Plano manual (migration 055) entra na mesma saída: ver platformAdminMigration.test.js.
+  assert.match(CREATE_CHECKOUT, /if \(existingSubscription\?\.asaas_subscription_id \|\| existingSubscription\?\.source === 'manual'\) \{/);
   assert.match(CREATE_CHECKOUT, /reused: true,/);
 });
 

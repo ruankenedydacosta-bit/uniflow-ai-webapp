@@ -1,0 +1,129 @@
+/* Painel de administração: mesma moldura das telas internas do Mais
+   (simplifiedTheme.module.css), com a lista nos grupos de simplifiedGroups. */
+.page {
+  width: min(100%, 720px);
+  margin-inline: auto;
+  padding:
+    0
+    max(22px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: var(--uf-app-text);
+}
+
+.page > header {
+  margin-inline:
+    calc(-1 * max(22px, env(safe-area-inset-left)))
+    calc(-1 * max(22px, env(safe-area-inset-right)));
+}
+
+.state {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--uf-app-border);
+  border-radius: 14px;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.banner {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.bannerOk {
+  background: var(--uf-app-success-subtle);
+  color: var(--uf-app-success-text);
+}
+
+.bannerError {
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
+}
+
+.dismiss {
+  min-width: 32px;
+  min-height: 32px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.dismiss svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dismiss:focus-visible {
+  outline: 3px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.facts {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.facts dt {
+  color: var(--uf-app-text-2);
+}
+
+.facts dd {
+  margin: 0;
+  color: var(--uf-app-text);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldLabel {
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.hint {
+  margin: 0;
+  color: var(--uf-app-text-3);
+  font-size: 13px;
+  line-height: 1.5;
+}
