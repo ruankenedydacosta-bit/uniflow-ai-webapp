@@ -1,24 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
+import FilterChips from '../../components/ui/FilterChips/index.js';
+import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { useAgenda } from '../../hooks/useAgenda.js';
 import { getAgendaItem } from '../../services/agendaService.js';
 import AgendaDeleteConfirmModal from '../../pages/agenda/AgendaDeleteConfirmModal.jsx';
-import { getAgendaItemErrorMessage } from '../../pages/agenda/agendaFormUtils.js';
+import { AGENDA_ITEM_TYPE_LABELS, getAgendaItemErrorMessage } from '../../pages/agenda/agendaFormUtils.js';
 import AgendaReminderChoiceModal from './AgendaReminderChoiceModal.jsx';
 import SimplifiedAgendaFormModal from './SimplifiedAgendaFormModal.jsx';
 import {
+  AGENDA_KIND_FILTERS,
   buildMonthGrid,
   buildMonthRange,
+  buildTomorrowSummary,
+  filterAgendaItemsByKind,
   formatAgendaItemTime,
   formatDayHeading,
-  formatMonthLabel,
+  formatMonthTitle,
+  formatWeekdayHeader,
   groupAgendaItemsByDay,
+  resolveAgendaItemTone,
+  resolveAgendaTimelineStatuses,
   shiftMonth,
   toDateKey,
   WEEKDAY_HEADER_LABELS,
 } from './simplifiedAgendaCalendar.js';
+import { buildAgendaItemDetail } from './simplifiedHomeAgenda.js';
 import { BellIcon, ChevronRightIcon } from './SimplifiedIcons.jsx';
+import { PhCaretLeftIcon, PhCaretRightIcon, PhPlusIcon } from './SimplifiedIcons.jsx';
 import {
   cancelReminderAppliedAnimation,
   playReminderAppliedAnimation,
@@ -44,36 +54,34 @@ const RING_VARIANT_CLASS_NAMES = {
 // simplesmente não acontece (fallback), nunca um erro.
 export const AGENDA_REMINDER_TARGET_ATTRIBUTE = 'data-agenda-reminder-target';
 
+// Etiquetas da timeline (handoff 06): só o vencimento muda de nome aqui;
+// o formulário e a lista legada continuam com AGENDA_ITEM_TYPE_LABELS.
+const TIMELINE_TAG_LABELS = Object.freeze({
+  ...AGENDA_ITEM_TYPE_LABELS,
+  payment_due: 'Conta a pagar',
+});
+
+// "Dia inteiro" e "Sem horário" não cabem na coluna da hora em 13px.
+const LONG_TIME_LABELS = new Set(['Dia inteiro', 'Sem horário']);
+
 /**
- * Agenda visual da experiência simplificada (rota /app/agenda, acessada via
- * Conta > Agenda). É um CALENDÁRIO simples de verdade:
+ * Agenda visual da experiência simplificada (rota /app/agenda). No redesign
+ * (#89, handoff 06) ela segue sendo um CALENDÁRIO simples:
  *
- * - grade do mês (SEG..DOM) com "Hoje" destacado e dias com compromissos
+ * - grade do mês (Seg..Dom) com "Hoje" destacado e dias com compromissos
  *   marcados;
- * - navegação de meses (anterior/próximo) e botão "Hoje";
- * - painel do dia selecionado com os compromissos do dia (+ o próprio item,
- *   com "Dia inteiro" ou horário local);
- * - "Novo compromisso" e edição via SimplifiedAgendaFormModal (mesmo
- *   contrato agendaFormUtils) e exclusão com confirmação via
- *   AgendaDeleteConfirmModal -- TODAS as escritas passam por useAgenda,
- *   nenhuma chamada direta ao Supabase aqui.
+ * - navegação de meses (anterior/próximo) e "Hoje";
+ * - chips de filtro por tipo (Tudo, Compromissos, Contas, Tarefas, Lembretes);
+ * - timeline do dia selecionado, com a etiqueta do tipo em cada item;
+ * - botão flutuante "Criar item na agenda" e edição via
+ *   SimplifiedAgendaFormModal (mesmo contrato agendaFormUtils) e exclusão
+ *   com confirmação via AgendaDeleteConfirmModal -- TODAS as escritas
+ *   passam por useAgenda, nenhuma chamada direta ao Supabase aqui.
  *
  * A lista completa legada (AgendaPage com filtros CRM) segue disponível na
  * rota legada /agenda; esta rota simplificada /app/agenda assume o visual
  * de calendário.
  */
-function ChevronRightButtonIcon() {
-  return <ChevronRightIcon />;
-}
-
-function ChevronLeftButtonIcon() {
-  return (
-    <span className={styles.rotatedRight} aria-hidden="true">
-      <ChevronRightIcon />
-    </span>
-  );
-}
-
 function SimplifiedAgendaPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, workspace } = useSession();
@@ -83,6 +91,7 @@ function SimplifiedAgendaPage() {
   const todayKey = toDateKey(now);
   const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selectedDayKey, setSelectedDayKey] = useState(todayKey);
+  const [kindFilter, setKindFilter] = useState('all');
 
   const { startsFrom, startsTo } = useMemo(
     () => buildMonthRange(view.year, view.month),
@@ -137,10 +146,20 @@ function SimplifiedAgendaPage() {
   const groupedItems = useMemo(() => groupAgendaItemsByDay(agenda.items), [agenda.items]);
   // Memoizado: `?? []` criaria um array novo a cada render, invalidando o
   // useMemo de visibleItemIds abaixo e refazendo a leitura dos lembretes
-  // sem necessidade.
+  // sem necessidade. A timeline é ordenada por horário e filtrada pelo chip.
   const selectedDayItems = useMemo(
-    () => groupedItems.get(selectedDayKey) ?? [],
-    [groupedItems, selectedDayKey],
+    () => filterAgendaItemsByKind(groupedItems.get(selectedDayKey) ?? [], kindFilter)
+      .slice()
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()),
+    [groupedItems, selectedDayKey, kindFilter],
+  );
+  const timelineStatuses = useMemo(
+    () => resolveAgendaTimelineStatuses(selectedDayItems, { now, dayKey: selectedDayKey }),
+    [selectedDayItems, now, selectedDayKey],
+  );
+  const tomorrowSummary = useMemo(
+    () => buildTomorrowSummary(groupedItems, { now, loadedMonth: view }),
+    [groupedItems, now, view],
   );
 
   // AGPUSH2: indicador de lembrete dos cards visíveis -- sempre a partir do
@@ -244,32 +263,35 @@ function SimplifiedAgendaPage() {
         </div>
       </header>
 
-      <nav className={styles.monthNav} aria-label="Navegação entre meses">
-        <button
-          type="button"
-          className={styles.monthArrow}
-          onClick={() => moveMonth(-1)}
-          aria-label="Mês anterior"
-        >
-          <ChevronLeftButtonIcon />
-        </button>
-        <button type="button" className={styles.monthLabel} onClick={selectToday} aria-label="Ir para hoje">
-          {formatMonthLabel(view.year, view.month)}
-        </button>
-        <button
-          type="button"
-          className={styles.monthArrow}
-          onClick={() => moveMonth(1)}
-          aria-label="Próximo mês"
-        >
-          <ChevronRightButtonIcon />
-        </button>
-      </nav>
+      <section className={styles.calendarBlock} aria-label="Calendário">
+        <nav className={styles.monthNav} aria-label="Navegação entre meses">
+          <div className={styles.monthNavTitle}>
+            <button
+              type="button"
+              className={styles.monthArrow}
+              onClick={() => moveMonth(-1)}
+              aria-label="Mês anterior"
+            >
+              <PhCaretLeftIcon />
+            </button>
+            <h2 className={styles.monthLabel}>{formatMonthTitle(view.year, view.month)}</h2>
+            <button
+              type="button"
+              className={styles.monthArrow}
+              onClick={() => moveMonth(1)}
+              aria-label="Próximo mês"
+            >
+              <PhCaretRightIcon />
+            </button>
+          </div>
+          <button type="button" className={styles.todayLink} onClick={selectToday} aria-label="Ir para hoje">
+            Hoje
+          </button>
+        </nav>
 
-      <section className={styles.calendarCard} aria-label="Calendário">
         <div className={styles.weekdayRow} role="row" aria-label="Dias da semana">
           {WEEKDAY_HEADER_LABELS.map((weekday) => (
-            <span key={weekday} className={styles.weekdayLabel}>{weekday}</span>
+            <span key={weekday} className={styles.weekdayLabel}>{formatWeekdayHeader(weekday)}</span>
           ))}
         </div>
         <div className={styles.monthGrid} role="grid">
@@ -295,19 +317,23 @@ function SimplifiedAgendaPage() {
                 aria-pressed={isSelected}
               >
                 <span className={styles.dayNumber}>{cell.day}</span>
-                {dayItems.length > 0 ? <span className={styles.eventDot} aria-hidden="true" /> : null}
+                <span className={`${styles.eventDot} ${dayItems.length > 0 ? styles.eventDotActive : ''}`} aria-hidden="true" />
               </button>
             );
           })}
         </div>
       </section>
 
+      <FilterChips
+        label="Filtrar por tipo"
+        options={AGENDA_KIND_FILTERS}
+        value={kindFilter}
+        onChange={setKindFilter}
+      />
+
       <section className={styles.dayPanel} aria-label={`Compromissos de ${formatDayHeading(new Date(`${selectedDayKey}T12:00:00`))}`}>
         <div className={styles.dayPanelHeader}>
           <h2>{formatDayHeading(new Date(`${selectedDayKey}T12:00:00`))}</h2>
-          <button type="button" className={styles.addButton} onClick={openCreate} aria-label="Novo compromisso">
-            + Novo compromisso
-          </button>
         </div>
 
         {agenda.isLoading ? (
@@ -324,11 +350,26 @@ function SimplifiedAgendaPage() {
         ) : selectedDayItems.length === 0 ? (
           <p className={styles.stateMessage}>Nenhum compromisso neste dia.</p>
         ) : (
-          <ul className={styles.dayItems}>
-            {selectedDayItems.map((item) => {
+          <ol className={styles.dayItems}>
+            {selectedDayItems.map((item, index) => {
               const reminder = resolveReminderIndicator(statesByItemId.get(item.id));
+              const detail = buildAgendaItemDetail(item);
+              const timeLabel = formatAgendaItemTime(item);
               return (
-                <li key={item.id}>
+                <li
+                  key={item.id}
+                  className={styles.timelineItem}
+                  data-tone={resolveAgendaItemTone(item)}
+                  data-status={timelineStatuses[index]}
+                >
+                  <span className={styles.timelineMarker} aria-hidden="true" />
+                  <span
+                    className={styles.itemTime}
+                    data-long={LONG_TIME_LABELS.has(timeLabel) ? 'true' : undefined}
+                    aria-hidden="true"
+                  >
+                    {timeLabel}
+                  </span>
                   <button
                     type="button"
                     className={styles.itemButton}
@@ -336,9 +377,14 @@ function SimplifiedAgendaPage() {
                     aria-label={`${item.title}, ${formatAgendaItemTime(item)}${reminder ? `, lembrete ${reminder.label}` : ''}`}
                     {...{ [AGENDA_REMINDER_TARGET_ATTRIBUTE]: item.id }}
                   >
-                    <span className={styles.itemTime} aria-hidden="true">{formatAgendaItemTime(item)}</span>
                     <span className={styles.itemMain}>
-                      <span className={styles.itemTitle}>{item.title}</span>
+                      <span className={styles.itemTitleRow}>
+                        <span className={styles.itemTitle}>{item.title}</span>
+                        <span className={styles.itemTag} aria-hidden="true">
+                          {TIMELINE_TAG_LABELS[item.item_type] ?? TIMELINE_TAG_LABELS.other}
+                        </span>
+                      </span>
+                      {detail ? <span className={styles.itemDetail}>{detail}</span> : null}
                       {reminder ? (
                         // AGPUSH4: key pelo rotulo -- forca um remount (e
                         // portanto a animacao de entrada em CSS tocar de
@@ -356,9 +402,25 @@ function SimplifiedAgendaPage() {
                 </li>
               );
             })}
-          </ul>
+          </ol>
         )}
       </section>
+
+      {tomorrowSummary && !agenda.isLoading && !agenda.error ? (
+        <aside className={styles.uniNote}>
+          <UniRingOrb size={22} />
+          <p>{tomorrowSummary}</p>
+        </aside>
+      ) : null}
+
+      <button
+        type="button"
+        className={styles.addButton}
+        onClick={openCreate}
+        aria-label="Criar item na agenda"
+      >
+        <PhPlusIcon />
+      </button>
 
       {showCreateModal ? (
         <SimplifiedAgendaFormModal

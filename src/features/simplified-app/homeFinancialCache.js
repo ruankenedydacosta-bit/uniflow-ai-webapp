@@ -45,6 +45,8 @@ export function pickCacheableHomeFinancialData(graphData, transactionCount = 0) 
   if (!graphData) return null;
   return {
     periodLabel: graphData.periodLabel,
+    monthTitle: graphData.monthTitle ?? null,
+    usedShare: graphData.usedShare ?? null,
     hasMovements: graphData.hasMovements === true,
     incomeLabel: graphData.incomeLabel,
     expenseLabel: graphData.expenseLabel,

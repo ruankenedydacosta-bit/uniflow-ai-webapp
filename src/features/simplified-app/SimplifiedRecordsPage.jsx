@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
+import FilterChips from '../../components/ui/FilterChips/index.js';
+import IconBox from '../../components/ui/IconBox/index.js';
+import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import CategoryCreateModal from '../categories/components/CategoryCreateModal.jsx';
 import { CategoryIcon, PlusIcon } from '../categories/categoryIcons.jsx';
 import { useAccounts, useCategories, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
@@ -8,14 +11,13 @@ import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionMo
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import MonthPickerModal from './MonthPickerModal.jsx';
+import SimplifiedRecordsMonthChart from './SimplifiedRecordsMonthChart.jsx';
 import UpdateBalanceModal from './UpdateBalanceModal.jsx';
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CalendarIcon,
-  ListIcon,
-  MicIcon,
-  PieChartIcon,
+  PhCaretLeftIcon,
+  PhCaretRightIcon,
+  PhMicrophoneIcon,
+  PhPlusIcon,
   UniMark,
 } from './SimplifiedIcons.jsx';
 import {
@@ -33,17 +35,26 @@ const CATEGORY_PREVIEW_SIZE = 8;
 const TRANSACTION_SUCCESS_NOTICE_MS = 2000;
 const EMPTY_RECORDS = Object.freeze([]);
 
+const TYPE_FILTER_OPTIONS = Object.freeze([
+  { value: 'all', label: 'Todas' },
+  { value: 'income', label: 'Entradas' },
+  { value: 'expense', label: 'Saídas' },
+  { value: 'transfer', label: 'Transferências' },
+]);
+
+// Cabeçalho da tela (handoff 04): símbolo de 26px e título 17/500, como o
+// header padrão do shell. "Falar com a Uni" continua levando à conversa.
 function RecordsHeader({ onTalkToUni }) {
   return (
     <header className={styles.recordsHeader}>
       <div className={styles.recordsTitle}>
-        <span className={styles.recordsMark}><UniMark /></span>
+        <span className={styles.recordsMark} aria-hidden="true"><UniMark /></span>
         <h1>Financeiro</h1>
       </div>
-      <button className={styles.talkButton} type="button" onClick={onTalkToUni}>
-        <span className={styles.talkIcon} aria-hidden="true"><MicIcon /></span>
+      <OutlineButton variant="ghost" className={styles.talkButton} onClick={onTalkToUni}>
+        <span className={styles.talkIcon} aria-hidden="true"><PhMicrophoneIcon /></span>
         Falar com a Uni
-      </button>
+      </OutlineButton>
     </header>
   );
 }
@@ -58,7 +69,6 @@ function RecordsTabs({ activeTab, onChange }) {
         className={activeTab === 'summary' ? styles.activeTab : ''}
         onClick={() => onChange('summary')}
       >
-        <span aria-hidden="true"><PieChartIcon /></span>
         Resumo
       </button>
       <button
@@ -68,31 +78,51 @@ function RecordsTabs({ activeTab, onChange }) {
         className={activeTab === 'history' ? styles.activeTab : ''}
         onClick={() => onChange('history')}
       >
-        <span aria-hidden="true"><ListIcon /></span>
         Histórico
       </button>
     </div>
   );
 }
 
+/** "Outubro de 2026", como no handoff. */
 function formatMonthLabel(date) {
   const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(date);
   const capitalized = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-  return `${capitalized}/${date.getFullYear()}`;
+  return `${capitalized} de ${date.getFullYear()}`;
+}
+
+function shiftMonth(date, delta) {
+  return new Date(date.getFullYear(), date.getMonth() + delta, 1);
 }
 
 // BLOCO REGISTROS iOS: substitui inteiramente o input nativo de mês (Safari
 // iOS não abre o seletor de forma confiável) por um modal próprio
-// (MonthPickerModal) com a identidade visual da UniFlow.
+// (MonthPickerModal) com a identidade visual da UniFlow. No redesign (#89)
+// as setas trocam o mês direto e o toque no nome do mês abre o seletor.
 function MonthSelector({ month, onChange }) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
-    <>
+    <div className={styles.periodNav}>
+      <button
+        type="button"
+        className={styles.periodArrow}
+        onClick={() => onChange(shiftMonth(month.date, -1))}
+        aria-label="Mês anterior"
+      >
+        <PhCaretLeftIcon />
+      </button>
       <button type="button" className={styles.monthSelector} onClick={() => setPickerOpen(true)}>
-        <span className={styles.monthIcon} aria-hidden="true"><CalendarIcon /></span>
         <span>{formatMonthLabel(month.date)}</span>
         <span className={styles.srOnly}>Selecionar mês</span>
+      </button>
+      <button
+        type="button"
+        className={styles.periodArrow}
+        onClick={() => onChange(shiftMonth(month.date, 1))}
+        aria-label="Próximo mês"
+      >
+        <PhCaretRightIcon />
       </button>
       <MonthPickerModal
         open={pickerOpen}
@@ -103,39 +133,41 @@ function MonthSelector({ month, onChange }) {
         }}
         onClose={() => setPickerOpen(false)}
       />
-    </>
+    </div>
   );
 }
 
-function MonthlySummary({ onCardClick, summary }) {
+// Card do mês (handoff 04): Entradas, Saídas e o atalho da Agenda, mais o
+// gráfico acumulado. Não existe card público de Saldo.
+function MonthlySummary({ onCardClick, summary, transactions, monthRange }) {
   const cards = [
-    { id: 'income', label: 'Entradas', value: summary.income, Icon: ArrowDownIcon, action: 'atualizar as entradas' },
-    { id: 'expense', label: 'Saídas', value: summary.expense, Icon: ArrowUpIcon, action: 'atualizar as saídas' },
-    { id: 'agenda', label: 'Agenda', detail: 'Ver compromissos', Icon: CalendarIcon, action: 'abrir a Agenda' },
+    { id: 'income', label: 'Entradas', value: summary.income, action: 'atualizar as entradas' },
+    { id: 'expense', label: 'Saídas', value: summary.expense, action: 'atualizar as saídas' },
+    { id: 'agenda', label: 'Agenda', detail: 'Ver compromissos', action: 'abrir a Agenda' },
   ];
 
   return (
-    <div className={styles.summaryCards}>
-      {cards.map((card) => (
-        <button
-          key={card.id}
-          type="button"
-          className={`${styles.summaryCard} ${styles[card.id]} ${styles.balanceButton}`}
-          onClick={() => onCardClick(card.id)}
-          aria-label={card.id === 'agenda'
-            ? `${card.label}: ${card.detail}. Toque para ${card.action}.`
-            : `${card.label}: ${formatCurrency(card.value)}. Toque para ${card.action}.`}
-        >
-          <div>
-            <span className={styles.summaryIcon} aria-hidden="true"><card.Icon /></span>
-            <h3>{card.label}</h3>
-          </div>
-          <strong aria-hidden="true">
-            {card.id === 'agenda' ? card.detail : formatCurrency(card.value)}
-          </strong>
-        </button>
-      ))}
-    </div>
+    <section className={styles.monthCard} aria-label="Resumo do mês">
+      <div className={styles.summaryCards}>
+        {cards.map((card) => (
+          <button
+            key={card.id}
+            type="button"
+            className={`${styles.summaryCard} ${styles[card.id]}`}
+            onClick={() => onCardClick(card.id)}
+            aria-label={card.id === 'agenda'
+              ? `${card.label}: ${card.detail}. Toque para ${card.action}.`
+              : `${card.label}: ${formatCurrency(card.value)}. Toque para ${card.action}.`}
+          >
+            <span aria-hidden="true">{card.label}</span>
+            <strong aria-hidden="true">
+              {card.id === 'agenda' ? card.detail : formatCurrency(card.value)}
+            </strong>
+          </button>
+        ))}
+      </div>
+      <SimplifiedRecordsMonthChart transactions={transactions} monthRange={monthRange} />
+    </section>
   );
 }
 
@@ -167,13 +199,13 @@ function CategoryGrid({
             <button
               key={category.id}
               type="button"
-              className={`${styles.categoryCard} ${styles[`tone${category.tone}`]}`}
+              className={styles.categoryCard}
               onClick={() => onSelect(category.id)}
               aria-label={`${category.name}: ${formatCurrency(category.amount)}, ${category.count} registros`}
             >
-              <span className={styles.categoryIcon}>
+              <IconBox className={styles.categoryIcon}>
                 <CategoryIcon category={category} />
-              </span>
+              </IconBox>
               <strong>{category.name}</strong>
               <b>{formatCurrency(category.amount)}</b>
               <small>{category.count} {category.count === 1 ? 'registro' : 'registros'}</small>
@@ -186,7 +218,7 @@ function CategoryGrid({
             disabled={!canCreate}
             title={createTitle}
           >
-            <span className={styles.categoryIcon}><PlusIcon /></span>
+            <IconBox className={styles.categoryIcon}><PlusIcon /></IconBox>
             <strong>Criar categoria</strong>
             <small>Nome, tipo e ícone</small>
           </button>
@@ -194,15 +226,16 @@ function CategoryGrid({
       ) : (
         <div className={styles.inlineEmpty}>
           <span>Nenhuma categoria disponível neste espaço.</span>
-          <button type="button" onClick={onCreate} disabled={!canCreate} title={createTitle}>
+          <OutlineButton variant="secondary" onClick={onCreate} disabled={!canCreate} title={createTitle}>
             <PlusIcon /> Criar categoria
-          </button>
+          </OutlineButton>
         </div>
       )}
     </section>
   );
 }
 
+// Botão flutuante do handoff: registra uma movimentação de qualquer aba.
 function NewRecordAction({ disabled, onClick }) {
   return (
     <button
@@ -210,14 +243,10 @@ function NewRecordAction({ disabled, onClick }) {
       className={styles.newRecordAction}
       onClick={onClick}
       disabled={disabled}
+      aria-label="Registrar movimentação"
       title={disabled ? 'Aguarde o carregamento das permissões ou cadastre uma conta.' : undefined}
     >
-      <span className={styles.newRecordIcon} aria-hidden="true">+</span>
-      <span>
-        <strong>Novo registro</strong>
-        <small>Adicionar entrada ou saída</small>
-      </span>
-      <b aria-hidden="true">›</b>
+      <PhPlusIcon />
     </button>
   );
 }
@@ -243,35 +272,34 @@ function HistoryFilters({
           onChange={(event) => onChange('query', event.target.value)}
         />
       </label>
-      <label>
-        <span>Tipo</span>
-        <select value={filters.type} onChange={(event) => onChange('type', event.target.value)}>
-          <option value="all">Todas</option>
-          <option value="income">Entradas</option>
-          <option value="expense">Saídas</option>
-          <option value="transfer">Transferências</option>
-        </select>
-      </label>
-      <label>
-        <span>Categoria</span>
-        <select value={filters.categoryId} onChange={(event) => onChange('categoryId', event.target.value)}>
-          <option value="all">Todas</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>{category.name}</option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span>Ordenar</span>
-        <select value={filters.sort} onChange={(event) => onChange('sort', event.target.value)}>
-          <option value="recent">Mais recentes</option>
-          <option value="oldest">Mais antigas</option>
-        </select>
-      </label>
+      <FilterChips
+        label="Tipo"
+        options={TYPE_FILTER_OPTIONS}
+        value={filters.type}
+        onChange={(value) => onChange('type', value)}
+      />
+      <div className={styles.historySelects}>
+        <label>
+          <span>Categoria</span>
+          <select value={filters.categoryId} onChange={(event) => onChange('categoryId', event.target.value)}>
+            <option value="all">Todas</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Ordenar</span>
+          <select value={filters.sort} onChange={(event) => onChange('sort', event.target.value)}>
+            <option value="recent">Mais recentes</option>
+            <option value="oldest">Mais antigas</option>
+          </select>
+        </label>
+      </div>
       {hasFilters ? (
-        <button className={styles.clearFilters} type="button" onClick={onClear}>
+        <OutlineButton variant="ghost" className={styles.clearFilters} onClick={onClear}>
           Limpar filtros
-        </button>
+        </OutlineButton>
       ) : null}
     </div>
   );
@@ -405,6 +433,7 @@ function TransactionRow({
     setDragX(isOpen ? -SWIPE_REVEAL_PX : 0);
   }
 
+
   return (
     <div className={styles.transactionRowWrapper}>
       {isOpen ? (
@@ -447,16 +476,18 @@ function TransactionRow({
         onPointerCancel={handlePointerCancel}
         aria-label={`${transaction.description}, ${formatCurrency(transaction.amount)}. Toque para editar, segure ou arraste para mais opções.`}
       >
-        <span className={`${styles.transactionIcon} ${styles[`tone${categoryPresentation?.tone ?? 'gray'}`]}`}>
+        <IconBox className={`${styles.transactionIcon} ${isIncome || isPositiveAdjustment ? styles.transactionIconIncome : ''}`}>
           <CategoryIcon category={{
             name: categoryPresentation?.name,
             category_type: isTransfer ? 'transfer' : transaction.transaction_type,
             icon: categoryPresentation?.icon,
           }} />
-        </span>
+        </IconBox>
         <span className={styles.transactionMain}>
           <strong>{transaction.description || categoryPresentation?.name || 'Outros'}</strong>
-          <small>{formatRelativeTransactionDate(transaction.transaction_date)}</small>
+          <small>
+            {`${formatRelativeTransactionDate(transaction.transaction_date)} · ${categoryPresentation?.name ?? 'Outros'}`}
+          </small>
         </span>
         <b className={isIncome || isPositiveAdjustment ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
           {isIncome || isPositiveAdjustment ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
@@ -520,7 +551,7 @@ function TransactionList({
     <section className={styles.recordsSection} aria-labelledby="recent-transactions-title">
       <div className={styles.sectionHeading}>
         <h2 id="recent-transactions-title">
-          {showAllAction ? 'Últimos lançamentos' : 'Histórico'}
+          {showAllAction ? 'Transações recentes' : 'Histórico'}
         </h2>
         {showAllAction && transactions.length ? (
           <button type="button" onClick={onShowAll}>Ver todas</button>
@@ -706,7 +737,7 @@ function SimplifiedRecordsPage() {
     workspaceRole.canDelete === true || transaction?.created_by === user?.id
   );
 
-  // BLOCO EXCLUIR FACILITADO: exclusão direta na lista "Últimos lançamentos"
+  // BLOCO EXCLUIR FACILITADO: exclusão direta na lista "Transações recentes"
   // (segurar, arrastar ou o ícone sempre visível -- ver TransactionRow),
   // sem precisar abrir o formulário completo primeiro. Só cobre o caso
   // simples (lançamento avulso, sem parcelamento) -- um lançamento com
@@ -822,13 +853,14 @@ function SimplifiedRecordsPage() {
       ) : null}
       <div className={styles.recordsPage} data-simplified-records>
         <RecordsHeader onTalkToUni={() => navigate(SIMPLIFIED_ROUTES.UNI)} />
-        <RecordsTabs activeTab={activeTab} onChange={setActiveTab} />
+
+        <div className={styles.periodBlock}>
+          <RecordsTabs activeTab={activeTab} onChange={setActiveTab} />
+          <MonthSelector month={month} onChange={changeMonth} />
+        </div>
 
         <section className={styles.monthSection} aria-labelledby="month-summary-title">
-          <div className={styles.sectionHeading}>
-            <h2 id="month-summary-title">Resumo do mês</h2>
-            <MonthSelector month={month} onChange={changeMonth} />
-          </div>
+          <h2 id="month-summary-title" className={styles.srOnly}>Resumo do mês</h2>
 
           {!isOnline ? (
             <div className={styles.stateCard} role="status">
@@ -838,7 +870,7 @@ function SimplifiedRecordsPage() {
 
           {isLoading ? (
             <div className={styles.loadingState} aria-busy="true" aria-label="Carregando registros">
-              {Array.from({ length: 6 }, (_, index) => <span key={index} />)}
+              {Array.from({ length: 3 }, (_, index) => <span key={index} />)}
             </div>
           ) : error ? (
             <div className={styles.stateCard} role="alert">
@@ -850,19 +882,11 @@ function SimplifiedRecordsPage() {
             <>
               {activeTab === 'summary' ? (
                 <>
-                  <MonthlySummary summary={summary} onCardClick={openSummaryCard} />
-                  <CategoryGrid
-                    canCreate={canCreateCategory}
-                    categories={categorySummaries}
-                    createTitle={getCreateCategoryTitle()}
-                    expanded={showAllCategories}
-                    onCreate={openCategoryCreate}
-                    onExpand={() => setShowAllCategories((current) => !current)}
-                    onSelect={selectCategory}
-                  />
-                  <NewRecordAction
-                    disabled={!canManage}
-                    onClick={openNewTransaction}
+                  <MonthlySummary
+                    summary={summary}
+                    onCardClick={openSummaryCard}
+                    transactions={transactionState.transactions}
+                    monthRange={month}
                   />
                   <TransactionList
                     categories={categoryState.categories}
@@ -877,6 +901,15 @@ function SimplifiedRecordsPage() {
                     showAllAction
                     transactions={recentTransactions}
                     visibleCount={4}
+                  />
+                  <CategoryGrid
+                    canCreate={canCreateCategory}
+                    categories={categorySummaries}
+                    createTitle={getCreateCategoryTitle()}
+                    expanded={showAllCategories}
+                    onCreate={openCategoryCreate}
+                    onExpand={() => setShowAllCategories((current) => !current)}
+                    onSelect={selectCategory}
                   />
                 </>
               ) : (
@@ -906,25 +939,24 @@ function SimplifiedRecordsPage() {
                     visibleCount={visibleCount}
                   />
                   {filteredTransactions.length > visibleCount ? (
-                    <button
+                    <OutlineButton
+                      variant="secondary"
                       className={styles.loadMore}
-                      type="button"
                       onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
                     >
                       Carregar mais
-                    </button>
-                  ) : null}
-                  {!transactionState.transactions.length ? (
-                    <NewRecordAction
-                      disabled={!canManage}
-                      onClick={openNewTransaction}
-                    />
+                    </OutlineButton>
                   ) : null}
                 </>
               )}
             </>
           )}
         </section>
+
+        <NewRecordAction
+          disabled={!canManage}
+          onClick={openNewTransaction}
+        />
       </div>
 
       <FinanceTransactionModal
@@ -940,6 +972,7 @@ function SimplifiedRecordsPage() {
         canDeleteTransaction={canDeleteTransaction}
         hideAccountFields
         showExistingList={false}
+        presentation="sheet"
         accountState={displayAccountState}
         categoryState={categoryState}
         transactionState={transactionState}

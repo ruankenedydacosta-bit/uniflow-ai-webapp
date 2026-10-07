@@ -13,118 +13,75 @@ const codeOnly = (content) => content
   .replace(/^\s*\/\/.*$/gm, '');
 
 // ============================================================================
-// HOME-GRAPH2 -- responsividade, fonte única e redesign da seção abaixo do
-// gráfico. O gráfico principal (CognitiveLiveChart) NÃO foi redesenhado.
+// Redesign (#89): a seção do mês na Home mostra o mês, Entradas/Saídas e a
+// barra de quanto do que entrou já saiu. O gráfico e a lista de
+// movimentações vivem no Financeiro, não aqui.
 // ============================================================================
 
-test('continua reutilizando o CognitiveLiveChart existente -- nunca um segundo gráfico', async () => {
+test('REDESIGN: a seção do mês não desenha gráfico nem lista de movimentações -- isso fica no Financeiro', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /import \{ CognitiveLiveChart \} from '\.\.\/cognitive-live-chart\/index\.js';/);
-  assert.match(graph, /variant="compact"/);
-  assert.match(graph, /defaultMode="overview"/);
+  assert.doesNotMatch(graph, /CognitiveLiveChart/);
+  assert.doesNotMatch(graph, /recentView|styles\.recentRow|buildRecentMovements/);
+  assert.match(graph, /<Link to=\{SIMPLIFIED_ROUTES\.RECORDS\}>Ver Financeiro<\/Link>/);
+  assert.match(graph, /\{graphData\.monthTitle \?\? graphData\.periodLabel\}/);
 });
 
-// ----------------------------------------------------------- RESPONSIVIDADE
-
-test('RESPONSIVIDADE: o teto de largura do gráfico é centralizado -- a sobra nunca cai toda à direita', async () => {
-  const css = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
-  assert.match(css, /\.rootCompact \{[\s\S]*?max-width: 430px;[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
-  assert.match(css, /\.rootDetailed \{[\s\S]*?max-width: 430px;[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
-});
-
-// --------------------------------------------------- LARGURA TOTAL (V2.1)
-//
-// Medido no navegador ANTES da correção, viewport 480: cards de Entradas/
-// Saídas com 428px e o gráfico com 355px -- 40px de vão de cada lado. O
-// teto de 430px travava a largura e, pior, `margin-inline: auto` tirava o
-// stretch do item flex, encolhendo o card até o conteúdo.
-
-test('LARGURA TOTAL: a Home neutraliza o teto e as margens automáticas do componente compartilhado', async () => {
-  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  const rule = /\.chart\.chart \{([\s\S]*?)\}/.exec(css);
-  assert.ok(rule, 'a Home precisa de uma regra própria para o gráfico');
-  assert.match(rule[1], /max-width: none;/);
-  assert.match(rule[1], /margin-inline: 0;/);
-  assert.match(rule[1], /width: 100%;/);
-  assert.match(rule[1], /align-self: stretch;/);
-});
-
-test('LARGURA TOTAL: a regra vence .rootCompact por especificidade, sem !important', async () => {
-  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  // Classe repetida = especificidade (0,2,0) > .rootCompact (0,1,0), sem
-  // depender da ordem dos arquivos no bundle.
-  assert.match(css, /\.chart\.chart \{/);
-  assert.doesNotMatch(codeOnly(css), /!important/);
-});
-
-test('LARGURA TOTAL: a classe é aplicada só na instância da Home -- dashboard e Financeiro intactos', async () => {
+test('REDESIGN: a barra de uso vem do ProgressBar base e só aparece quando houve entrada no mês', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /className=\{styles\.chart\}/);
-  // O componente compartilhado continua com o teto original para os outros
-  // consumidores (dashboard mobile usa compact; Financeiro usa detailed).
-  const chartCss = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
-  assert.match(chartCss, /\.rootCompact \{[\s\S]*?max-width: 430px;/);
-  const financeiro = await source('../../pages/financeiro/mobile/components/IncomeExpenseChart.jsx');
-  assert.doesNotMatch(financeiro, /className=\{styles\.chart\}/);
+  assert.match(graph, /import ProgressBar from '\.\.\/\.\.\/components\/ui\/ProgressBar\/index\.js';/);
+  assert.match(graph, /\{usedShare !== null \? \(/);
+  assert.match(graph, /<ProgressBar value=\{usedShare\} \/>/);
+  assert.match(graph, /Você usou \$\{usedShare\}% do que entrou no mês\./);
 });
 
-test('LARGURA TOTAL: nenhum breakpoint por aparelho foi criado para resolver a largura', async () => {
+test('REDESIGN: usedShare é a parte do que entrou que já saiu, inteira, entre 0 e 100, e null sem entrada', async () => {
+  const { computeUsedShare } = await import('./homeFinancialGraphData.js');
+  assert.equal(computeUsedShare(6500, 2270), 35);
+  assert.equal(computeUsedShare(100, 250), 100);
+  assert.equal(computeUsedShare(100, -5), 0);
+  assert.equal(computeUsedShare(0, 50), null);
+  assert.equal(computeUsedShare(undefined, 50), null);
+});
+
+test('REDESIGN: o título do mês vem capitalizado ("Outubro") e entra no cache junto com usedShare', async () => {
+  const { buildHomeFinancialGraphData } = await import('./homeFinancialGraphData.js');
+  const { pickCacheableHomeFinancialData } = await import('./homeFinancialCache.js');
+  const data = buildHomeFinancialGraphData({ transactions: [], now: new Date(2026, 9, 23, 12) });
+  assert.equal(data.monthTitle, 'Outubro');
+  assert.equal(data.usedShare, null);
+  const picked = pickCacheableHomeFinancialData(data, 0);
+  assert.equal(picked.monthTitle, 'Outubro');
+  assert.equal(picked.usedShare, null);
+  // Cache de antes do redesign: sem os campos, o JSON continua estável.
+  const legacy = pickCacheableHomeFinancialData({
+    periodLabel: 'outubro de 2026',
+    incomeLabel: 'R$ 0,00',
+    expenseLabel: 'R$ 0,00',
+  }, 0);
+  assert.equal(legacy.monthTitle, null);
+  assert.equal(legacy.usedShare, null);
+  assert.deepEqual(JSON.parse(JSON.stringify(legacy)), legacy);
+});
+
+test('RESPONSIVIDADE: nenhum breakpoint por aparelho foi criado para resolver a largura', async () => {
   const css = await source('./SimplifiedHomeFinancialGraph.module.css');
   assert.doesNotMatch(css, /@media[^{]*\b(390|412|430|480)px/);
 });
 
-test('LARGURA TOTAL: o gráfico compartilha a mesma coluna dos cards -- só o padding do card os separa da borda', async () => {
+test('RESPONSIVIDADE: os valores truncam em vez de quebrar o layout', async () => {
   const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  // Gráfico e .totalsRow são irmãos dentro de .card, que tem o único inset
-  // horizontal (4px). Nenhum dos dois pode ter inset próprio.
-  assert.match(css, /\.card \{[\s\S]*?padding-inline: 4px;/);
-  const totalsRow = /\.totalsRow \{([\s\S]*?)\}/.exec(css);
-  assert.ok(totalsRow);
-  assert.doesNotMatch(totalsRow[1], /margin-inline|max-width|padding-inline/);
+  assert.match(css, /\.totalValueIncome,\s*\n\.totalValueExpense \{[\s\S]*?text-overflow: ellipsis;/);
+  assert.match(css, /font-variant-numeric: tabular-nums;/);
 });
 
-test('RESPONSIVIDADE: o container do gráfico continua fluido (100%), sem largura fixa por aparelho', async () => {
-  const css = await source('../cognitive-live-chart/CognitiveLiveChart.module.css');
-  assert.match(css, /\.chartWrapper \{[\s\S]*?width: 100%;/);
-  assert.match(css, /\.svg \{[\s\S]*?width: 100%;[\s\S]*?height: auto;/);
-  assert.doesNotMatch(css, /@media[^{]*\(width:\s*(390|412|430)px\)/);
-});
-
-test('RESPONSIVIDADE: margens simétricas do plot vêm de MARGIN left === right', async () => {
-  const chart = await source('../cognitive-live-chart/CognitiveLiveChart.jsx');
-  const margin = /const MARGIN = \{ top: (\d+), right: (\d+), bottom: (\d+), left: (\d+) \};/.exec(chart);
-  assert.ok(margin, 'MARGIN precisa continuar declarado explicitamente');
-  assert.equal(margin[2], margin[4], 'right e left precisam ser iguais');
-});
-
-test('RESPONSIVIDADE: rótulo de "hoje" troca de âncora nas bordas -- nunca transborda a viewBox', async () => {
-  const chart = await source('../cognitive-live-chart/CognitiveLiveChart.jsx');
-  assert.match(chart, /const todayLabelAnchor =/);
-  assert.match(chart, /textAnchor=\{todayLabelAnchor\}/);
-  assert.doesNotMatch(chart, /x=\{todayX\}[^>]*textAnchor="middle"/);
-});
-
-test('RESPONSIVIDADE: nenhum filho da seção soma width:100% com margin lateral (estouro horizontal)', async () => {
-  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  assert.doesNotMatch(codeOnly(css), /margin-inline: 4px/, 'margem lateral em filho de largura total estoura o container');
-  assert.match(css, /\.card \{[\s\S]*?padding-inline: 4px;[\s\S]*?box-sizing: border-box;/);
-});
-
-test('RELATORIO1: o CTA "Pergunte à Uni sobre seus dados" foi substituído pelo card do Relatório da Uni', async () => {
+test('RELATORIO1: o card do Relatório da Uni continua na seção, com a contagem vinda do mesmo graphData', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
   assert.doesNotMatch(graph, /Pergunte à Uni sobre seus dados/);
   assert.match(graph, /import SimplifiedReportCard from '\.\/SimplifiedReportCard\.jsx';/);
   // HOME-INSTANT1: a contagem passou a vir do mesmo `graphData` (cache ou
   // fresco) em vez de transactionState -- continua sendo a MESMA busca já
-  // feita pelo gráfico, nunca um segundo fetch financeiro só para o card.
+  // feita pela seção, nunca um segundo fetch financeiro só para o card.
   assert.match(graph, /<SimplifiedReportCard transactionCount=\{graphData\.transactionCount\} \/>/);
-});
-
-test('RESPONSIVIDADE: textos longos truncam em vez de quebrar o layout', async () => {
-  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  assert.match(css, /\.recentDescription \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
-  assert.match(css, /\.recentMeta \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
-  assert.match(css, /\.totalValueIncome,\s*\n\.totalValueExpense \{[\s\S]*?text-overflow: ellipsis;/);
 });
 
 // ------------------------------------------------------------------- DADOS
@@ -138,16 +95,15 @@ test('FONTE ÚNICA: a derivação vem de simplifiedRecordsData (mesmas funções
   assert.doesNotMatch(codeOnly(data), /totalByType|buildCumulativeSeries|financeiroMobileData/);
 });
 
-test('FONTE ÚNICA: a busca usa os MESMOS parâmetros de Registros (status completed + categorias personal)', async () => {
+test('FONTE ÚNICA: a busca usa os MESMOS parâmetros de Registros (status completed)', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
   const records = await source('./SimplifiedRecordsPage.jsx');
   assert.match(graph, /status: 'completed',/);
-  assert.match(graph, /useCategories\(\{ workspaceId, context: 'personal' \}\)/);
   assert.match(records, /status: 'completed',/);
   assert.match(records, /context: 'personal',/);
 });
 
-test('FONTE ÚNICA: período do gráfico é o mesmo getMonthRange usado por Registros', async () => {
+test('FONTE ÚNICA: período da seção é o mesmo getMonthRange usado por Registros', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
   assert.match(graph, /getMonthRange/);
   assert.match(graph, /dateFrom: month\.dateFrom,/);
@@ -171,44 +127,9 @@ test('ATUALIZAÇÃO: listener registrado uma única vez (handler em ref), nunca 
   assert.ok(effect, 'o efeito do listener precisa ter dependências vazias');
 });
 
-test('ATUALIZAÇÃO: ambos os refreshes (transações e categorias) são disparados juntos', async () => {
+test('ATUALIZAÇÃO: o refresh de transações é disparado pelo handler', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /transactionState\.refresh\(\), categoryState\.refresh\(\)/);
-});
-
-// ---------------------------------------------------------------- RECENTES
-
-test('RECENTES: no máximo 2 por tipo, definido na derivação', async () => {
-  const data = await source('./homeFinancialGraphData.js');
-  assert.match(data, /export function buildRecentMovements\(transactions, categories, type, limit = 2\)/);
-  assert.match(data, /\.slice\(0, limit\)/);
-});
-
-test('RECENTES: ordem herdada de filterRecordTransactions (mesma ordem visual de Registros)', async () => {
-  const data = await source('./homeFinancialGraphData.js');
-  assert.match(data, /filterRecordTransactions\(transactions, \{ type, sort: 'recent' \}\)/);
-  assert.doesNotMatch(data, /\.sort\(\(.*created_at/);
-});
-
-test('RECENTES: são movimentações, com categoria só como metadado -- nunca lista agregada de categorias', async () => {
-  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /styles\.recentDescription/);
-  assert.match(graph, /movement\.categoryName/);
-  assert.doesNotMatch(graph, /buildCategoryBreakdown|categoryView|activeCategories/);
-});
-
-test('RECENTES: empty state por tipo, sem dado fictício', async () => {
-  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /Nenhuma saída neste período\./);
-  assert.match(graph, /Nenhuma entrada neste período\./);
-});
-
-test('RECENTES: toggle [Saídas][Entradas] nunca mistura os dois tipos', async () => {
-  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /const \[recentView, setRecentView\] = useState\('expense'\);/);
-  assert.match(graph, /onClick=\{\(\) => setRecentView\('expense'\)\}/);
-  assert.match(graph, /onClick=\{\(\) => setRecentView\('income'\)\}/);
-  assert.match(graph, /const activeRecent = graphData\.recent\[recentView\];/);
+  assert.match(graph, /void transactionState\.refresh\(\);/);
 });
 
 // -------------------------------------------------------------- PERFORMANCE
@@ -250,38 +171,22 @@ test('sem cache, mostra skeleton -- nunca espaço vazio nem "R$ 0,00" piscando a
   assert.match(graph, /if \(showSkeleton\) return <SimplifiedHomeFinancialGraphSkeleton \/>;/);
 });
 
-test('skeleton reaproveita as classes de layout do card real -- o espaço ocupado é o mesmo, nada salta de lugar', async () => {
+test('skeleton reaproveita as classes de layout da seção real -- o espaço ocupado é o mesmo, nada salta de lugar', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
   const skeleton = graph.slice(
     graph.indexOf('function SimplifiedHomeFinancialGraphSkeleton'),
     graph.indexOf('HOME-GRAPH2: conteúdo real'),
   );
-  for (const layoutClass of ['styles.card', 'styles.header', 'styles.chart', 'styles.totalsRow', 'styles.totalCard', 'styles.recentBlock', 'styles.recentHead']) {
+  for (const layoutClass of ['styles.card', 'styles.header', 'styles.totalsRow', 'styles.totalCard', 'styles.skeletonBar', 'styles.skeletonReportCard']) {
     assert.ok(skeleton.includes(layoutClass), `skeleton deveria reusar ${layoutClass}`);
   }
   assert.match(skeleton, /role="status"/);
   assert.match(skeleton, /aria-label="Carregando seu fluxo financeiro"/);
 });
 
-// REGRESSÃO (pego em verificação visual, invisível para teste estrutural):
-// .skeletonChart só define altura -- fundo e onda vêm de .skeletonLine. Sem
-// as duas, a área do gráfico virava um vão invisível no meio do card.
-test('a área do gráfico no skeleton tem fundo/onda (skeletonLine), não só altura', async () => {
-  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  const skeleton = graph.slice(
-    graph.indexOf('function SimplifiedHomeFinancialGraphSkeleton'),
-    graph.indexOf('HOME-GRAPH2: conteúdo real'),
-  );
-  const chartLine = skeleton.slice(skeleton.indexOf('styles.skeletonChart') - 200, skeleton.indexOf('styles.skeletonChart') + 40);
-  assert.ok(chartLine.includes('styles.skeletonLine'), 'a área do gráfico precisa de skeletonLine junto de skeletonChart');
-  const css = await source('./SimplifiedHomeFinancialGraph.module.css');
-  const chartCss = css.slice(css.indexOf('.skeletonChart {'), css.indexOf('.skeletonTotalHead'));
-  assert.doesNotMatch(chartCss, /background:/, 'o fundo deve vir de .skeletonLine, nunca duplicado aqui');
-});
-
 test('só o último estado REAL é persistido -- nunca um estado ainda carregando', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  const effect = graph.slice(graph.indexOf('if (isLoadingFinancials) return;'), graph.indexOf('const activeRecent'));
+  const effect = graph.slice(graph.indexOf('if (isLoadingFinancials) return;'), graph.indexOf('if (showSkeleton)'));
   assert.match(effect, /writeHomeFinancialCache\(\{/);
   assert.match(effect, /periodKey,/);
 });
@@ -302,15 +207,8 @@ test('SEGURANÇA: o logout apaga o cache financeiro do usuário -- nunca vaza n�
 
 test('PERFORMANCE: derivação memoizada, nunca recalculada a cada render', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  // HOME-INSTANT1: renomeado para freshGraphData (o dado "fresco" da API,
-  // por oposição ao cacheado) -- a memoização em si continua idêntica.
   assert.match(graph, /const freshGraphData = useMemo\(/);
-  assert.match(graph, /\[transactionState\.transactions, categoryState\.categories\],/);
-});
-
-test('PERFORMANCE: ResizeObserver só atualiza estado quando a largura muda de verdade', async () => {
-  const chart = await source('../cognitive-live-chart/CognitiveLiveChart.jsx');
-  assert.match(chart, /setContainerWidth\(\(current\) => \(current === nextWidth \? current : nextWidth\)\)/);
+  assert.match(graph, /\[transactionState\.transactions\],/);
 });
 
 test('PERFORMANCE: nada de scroll listener nesta seção (o header scroll recém-otimizado não é tocado)', async () => {
