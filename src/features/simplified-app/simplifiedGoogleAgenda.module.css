@@ -1,0 +1,93 @@
+/* Google Agenda (#99): mesma estrutura da tela de Segurança. */
+.page {
+  width: min(100%, 720px);
+  margin-inline: auto;
+  padding:
+    0
+    max(22px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: var(--uf-app-text);
+}
+
+.page > header {
+  margin-inline:
+    calc(-1 * max(22px, env(safe-area-inset-left)))
+    calc(-1 * max(22px, env(safe-area-inset-right)));
+}
+
+.staticRow {
+  cursor: default;
+}
+
+.wrap {
+  white-space: normal;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.errorBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
+  font-size: 14px;
+}
+
+/* ---------- Aviso com "X" ---------- */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 6px 10px 14px;
+  border-radius: var(--uf-radius-12);
+  font-size: 14px;
+}
+
+.noticeSuccess {
+  background: var(--uf-app-success-subtle);
+  color: var(--uf-app-success-text);
+}
+
+.noticeAlert {
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
+}
+
+.noticeMessage {
+  flex: 1;
+  margin: 0;
+  padding-block: 2px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.dismissButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--uf-tap-target-min);
+  height: var(--uf-tap-target-min);
+  margin-block: -10px;
+  border: 0;
+  border-radius: var(--uf-radius-12);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dismissButton:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}

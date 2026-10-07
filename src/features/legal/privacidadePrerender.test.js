@@ -47,6 +47,8 @@ const PROVEDOR_POR_DOMINIO = [
   [/^(api|api-sandbox|sandbox|checkout)\.asaas\.com$/, 'Asaas'],
   [/^fonts\.(googleapis|gstatic)\.com$/, 'Google'],
   [/^www\.googletagmanager\.com$/, 'Google'],
+  // Google Agenda (#99): OAuth e Calendar API.
+  [/^(accounts\.google|oauth2\.googleapis|www\.googleapis)\.com$/, 'Google'],
   [/^wa\.me$/, 'WhatsApp (Meta)'],
 ];
 const PROVEDOR_POR_PACOTE = [

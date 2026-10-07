@@ -168,7 +168,7 @@ function PrivacidadePage() {
         </section>
 
         <section>
-          <h2>5. Login com Google</h2>
+          <h2>5. Login com Google e Google Agenda</h2>
           <p>
             Se você entrar com o Google, o app pede só os escopos <strong>openid</strong>,{' '}
             <strong>userinfo.email</strong> e <strong>userinfo.profile</strong>. Com eles, o app recebe
@@ -180,8 +180,27 @@ function PrivacidadePage() {
             <li><strong>Com quem compartilhamos:</strong> com ninguém além dos provedores que operam o app, listados na seção 6.</li>
           </ul>
           <p>
-            O app não pede acesso a contatos, agenda, Gmail ou Google Drive.
+            O app não pede acesso a contatos, Gmail ou Google Drive. O acesso ao Google Agenda só é
+            pedido se você conectar a agenda, como explicado abaixo.
           </p>
+
+          <h3>Google Agenda</h3>
+          <p>
+            Se você conectar o Google Agenda, o app pede os escopos{' '}
+            <strong>calendar.app.created</strong>, <strong>calendar.calendarlist.readonly</strong> e{' '}
+            <strong>calendar.events.owned</strong>. Com eles, o app:
+          </p>
+          <ul>
+            <li>cria na sua conta a agenda “UniFlow”, com o nome do seu espaço;</li>
+            <li>lê a lista das suas agendas, com nome, fuso horário e permissão, e o e-mail da conta;</li>
+            <li>grava seus compromissos do UniFlow na agenda que você escolher;</li>
+            <li>lê os eventos das agendas próprias que você escolher, para mostrá-los na agenda do app.</li>
+          </ul>
+          <ul>
+            <li><strong>Onde ficam:</strong> no Supabase. A chave de acesso ao Google fica criptografada e nunca chega ao aparelho.</li>
+            <li><strong>Com quem compartilhamos:</strong> com ninguém além dos provedores que operam o app, listados na seção 6.</li>
+            <li><strong>Como desconectar:</strong> na tela do Google Agenda no app, toque em <strong>Desconectar</strong>. O app apaga a conexão e revoga o acesso no Google quando a mesma conta Google não está conectada em outro espaço. A agenda UniFlow e os eventos continuam na sua conta Google. Você também pode remover o acesso em myaccount.google.com/permissions.</li>
+          </ul>
           <p>
             O uso de dados recebidos das APIs do Google segue a{' '}
             <a href={GOOGLE_USER_DATA_POLICY} rel="noopener noreferrer">
