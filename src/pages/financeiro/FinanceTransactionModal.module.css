@@ -169,6 +169,44 @@
   }
 }
 
+/* Folha (handoff 05, #89, presentation="sheet"): dica da Uni e a linha de
+   ação com "Salvar …" ocupando o espaço e "Cancelar" ao lado, também no
+   celular. */
+.sheetHint {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-12);
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-color-ai-subtle);
+}
+
+.sheetHint p {
+  margin: 0;
+  color: var(--uf-color-text-secondary);
+  font-size: var(--uf-text-micro-size);
+  line-height: 1.45;
+}
+
+.transactionDialog[data-presentation="sheet"] .actionRow,
+.transactionDialog[data-presentation="sheet"] .primaryActions {
+  flex-direction: row;
+  align-items: center;
+}
+
+.transactionDialog[data-presentation="sheet"] .primaryActions {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+}
+
+.transactionDialog[data-presentation="sheet"] .primaryActions > button {
+  width: auto;
+}
+
+.transactionDialog[data-presentation="sheet"] .primaryActions > button[type="submit"] {
+  flex: 1 1 auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .deleteConfirmOverlay,
   .deleteConfirmCard {

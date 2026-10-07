@@ -5,6 +5,8 @@ import Button from '../../components/ui/Button';
 import { createDownloadReadyNotification } from '../../features/notifications/notificationsService.js';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import Segmented from '../../components/ui/Segmented/index.js';
+import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { cx } from '../../utils/cx';
 import { formatCurrency } from '../../utils/formatters';
 import styles from './FinanceTransactionModal.module.css';
@@ -87,6 +89,15 @@ const HISTORY_TYPE_LABELS = {
   expense: 'Saída',
   transfer: 'Transferência',
   adjustment: 'Ajuste',
+};
+
+// Folha de "Nova movimentação" (handoff 05, #89): o botão principal diz o
+// que vai salvar, conforme o segmento escolhido.
+const SHEET_SUBMIT_LABELS = {
+  expense: 'Salvar saída',
+  income: 'Salvar entrada',
+  transfer: 'Salvar transferência',
+  adjustment: 'Salvar ajuste',
 };
 
 const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar lançamentos deste espaço.';
@@ -214,6 +225,10 @@ function DeleteConfirmationDialog({
 // para editar UM lançamento a partir da lista da própria página (ver
 // SimplifiedRecordsPage.jsx). Nenhum dos dois muda o comportamento default
 // (FinanceiroPage.jsx / desktop continuam recebendo os dois blocos).
+// `presentation="sheet"` (handoff 05, #89): o diálogo vira uma folha que
+// sobe sobre a tela, o Tipo vira um segmented, o botão principal diz
+// "Salvar saída/entrada/transferência" e o rodapé "Fechar" dá lugar a
+// "Cancelar" na própria linha de ação. O default 'dialog' é o desktop.
 function FinanceTransactionModal({
   accountState,
   canDeleteTransaction = () => true,
@@ -230,10 +245,12 @@ function FinanceTransactionModal({
   onDeleted,
   onEdited,
   open,
+  presentation = 'dialog',
   showExistingList = true,
   transactionState,
 }) {
   const { user, workspace } = useSession();
+  const isSheet = presentation === 'sheet';
   const [form, setForm] = useState(() => {
     if (editingTransactionId) {
       const transaction = transactionState.transactions.find((t) => t.id === editingTransactionId);
@@ -533,18 +550,19 @@ function FinanceTransactionModal({
       onClose={handleClose}
       closeOnOverlayClick={!transactionState.isMutating && !isDeleteConfirmOpen}
       closeOnEsc={!transactionState.isMutating && !isDeleteConfirmOpen}
-      title="Lançamentos"
-      description="Registre entradas, saídas, transferências e ajustes deste espaço."
+      title={isSheet ? (editingId ? 'Editar movimentação' : 'Nova movimentação') : 'Lançamentos'}
+      description={isSheet ? undefined : 'Registre entradas, saídas, transferências e ajustes deste espaço.'}
       size="xl"
       className={cx(styles.transactionDialog, className)}
       overlayClassName={overlayClassName}
+      data-presentation={presentation}
       aria-hidden={isDeleteConfirmOpen}
       inert={isDeleteConfirmOpen}
-      footer={
+      footer={isSheet ? null : (
         <Button variant="ghost" onClick={handleClose} disabled={transactionState.isMutating}>
           Fechar
         </Button>
-      }
+      )}
     >
       <div className={styles.modalBody}>
         <form className="uf-flex uf-flex-column uf-gap-md" onSubmit={handleSubmit}>
@@ -554,6 +572,28 @@ function FinanceTransactionModal({
             </FormMessage>
           ) : null}
           <section className={styles.formBlock} aria-label="Dados principais">
+          {isSheet ? (
+            <div id="finance-transaction-type">
+              <Segmented
+                label="Tipo"
+                value={form.transaction_type}
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    transaction_type: value,
+                    category_id: '',
+                    destination_account_id: '',
+                  }))
+                }
+                options={[
+                  { value: 'expense', label: 'Saída' },
+                  { value: 'income', label: 'Entrada' },
+                  ...(hideAccountFields ? [] : [{ value: 'transfer', label: 'Transferência' }]),
+                  { value: 'adjustment', label: 'Ajuste' },
+                ]}
+              />
+            </div>
+          ) : (
           <SelectField
             id="finance-transaction-type"
             label="Tipo"
@@ -575,6 +615,7 @@ function FinanceTransactionModal({
             {hideAccountFields ? null : <option value="transfer">Transferência</option>}
             <option value="adjustment">Ajuste</option>
           </SelectField>
+          )}
           {/* CONTA-OPCIONAL: entrada/despesa não pedem mais conta -- meses de
               atrito real vinham exatamente daqui. Transferência continua
               exigindo (precisa saber DE QUAL conta o dinheiro sai) e ajuste
@@ -789,6 +830,13 @@ function FinanceTransactionModal({
           </FormMessage>
           </section>
 
+          {isSheet ? (
+            <div className={styles.sheetHint}>
+              <UniRingOrb size={22} />
+              <p>Você também pode tocar na Uni e falar a movimentação.</p>
+            </div>
+          ) : null}
+
           <section className={styles.formBlock} aria-label="Ação">
           <div className={styles.actionRow}>
             {editingId && editingTransaction && canDeleteTransaction(editingTransaction) ? (
@@ -813,8 +861,15 @@ function FinanceTransactionModal({
                 disabled={!canSubmit}
                 title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
               >
-                {editingId ? 'Salvar lançamento' : 'Criar lançamento'}
+                {isSheet
+                  ? SHEET_SUBMIT_LABELS[form.transaction_type] ?? 'Salvar movimentação'
+                  : editingId ? 'Salvar lançamento' : 'Criar lançamento'}
               </Button>
+              {isSheet && !editingId ? (
+                <Button variant="ghost" onClick={handleClose} disabled={transactionState.isMutating}>
+                  Cancelar
+                </Button>
+              ) : null}
             </div>
           </div>
           </section>
