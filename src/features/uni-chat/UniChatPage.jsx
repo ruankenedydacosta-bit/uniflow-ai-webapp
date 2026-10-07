@@ -262,8 +262,11 @@ const EMPTY_FINANCIAL_FALLBACK = Object.freeze({
   transactions: Object.freeze([]),
 });
 
+// Resposta quando nem as regras fixas nem a IA deram conta do pedido.
 const UNI_DETERMINISTIC_FALLBACK_TEXT =
-  'Entendi. Posso ajudar a registrar uma Saída de R$ 50, uma Entrada de R$ 1.000 ou agendar uma reunião amanhã.';
+  'Não entendi esse pedido. Tente dizer de outro jeito, por exemplo: gastei 50 no mercado, ou marque uma reunião amanhã às 10h.';
+const UNI_LLM_DAILY_LIMIT_TEXT =
+  'Você chegou ao limite de respostas da Uni por hoje. Amanhã o limite volta. Até lá, lançamentos simples como gastei 50 no mercado continuam funcionando.';
 
 function getLocalIsoDate() {
   const today = new Date();
@@ -3031,6 +3034,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // LLM existente (a Edge Function). Nenhuma flag e default: fica null e
     // a integração não dispara nada.
     let rawToolCalls = null;
+    let llmDailyLimitReached = false;
     // FASE 21 — zera o resultado do turno anterior no início de CADA turno
     // (antes só era zerado na troca de conversa): sem isso, um turno sem
     // tool_calls reaproveitaria por engano o responseText de um turno
@@ -3050,6 +3054,7 @@ export default function UniChatPage({ variant = 'full' }) {
           conversationStyle,
         });
         llmText = outcome?.text ?? null;
+        llmDailyLimitReached = outcome?.dailyLimitReached === true;
         // FASE 20.1 — fonte bruta de tool calls: leitura defensiva do retorno
         // da camada LLM existente (a Edge Function), SEM criar segunda
         // chamada. Hoje o contrato é { text, usage } — sem tool_calls a
@@ -3183,7 +3188,9 @@ export default function UniChatPage({ variant = 'full' }) {
     // usuario pode perguntar de novo.
     if (uniTurnTokenRef.current !== turnTokenAtStart) return;
     const usedDeterministicFallback = !finalResponseText;
-    createAssistantResponse(finalResponseText || UNI_DETERMINISTIC_FALLBACK_TEXT);
+    createAssistantResponse(
+      finalResponseText || (llmDailyLimitReached ? UNI_LLM_DAILY_LIMIT_TEXT : UNI_DETERMINISTIC_FALLBACK_TEXT),
+    );
     // A Home simplificada sempre preserva uma resposta textual utilizavel.
     // Quando o backend conversacional estiver indisponivel, o fallback nao
     // deve deixar o controle principal preso no estado visual de erro.

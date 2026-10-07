@@ -310,7 +310,7 @@ test('mensagem não resolvida só tenta o LLM quando habilitado, e sempre cai no
   );
   assert.match(fnBody, /if \(uniLlm\.enabled\) \{/);
   assert.match(fnBody, /catch \{\s*\n\s*llmText = null;/);
-  assert.match(fnBody, /createAssistantResponse\(finalResponseText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\)/);
+  assert.match(fnBody, /createAssistantResponse\(\s*finalResponseText \|\| \(llmDailyLimitReached \? UNI_LLM_DAILY_LIMIT_TEXT : UNI_DETERMINISTIC_FALLBACK_TEXT\),\s*\);/);
 });
 
 test('pergunta futura ampla é interceptada ANTES do LLM, nunca chega a handleUnresolvedMessage', async () => {
@@ -481,7 +481,7 @@ test('a mensagem final (sucesso ou fallback determinístico) sempre passa pelo p
   );
   const afterEnabledBlock = fnBody.slice(fnBody.lastIndexOf('aiCancelledRef.current = false;'));
   assert.match(afterEnabledBlock, /const usedDeterministicFallback = !finalResponseText;/);
-  assert.match(afterEnabledBlock, /createAssistantResponse\(finalResponseText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\);/);
+  assert.match(afterEnabledBlock, /createAssistantResponse\(\s*finalResponseText \|\| \(llmDailyLimitReached \? UNI_LLM_DAILY_LIMIT_TEXT : UNI_DETERMINISTIC_FALLBACK_TEXT\),\s*\);/);
 });
 
 test('fallback textual na Home simplificada neutraliza o estado de erro e libera a proxima interacao', async () => {
@@ -3366,7 +3366,7 @@ test('FASE 22: responseText do Tool Calling é combinado com llmText via compose
     fnBody,
     /const finalResponseText = composeFinalResponseText\(\{\s*\n\s*llmText,\s*\n\s*toolResponseText: toolCallingResponseText,\s*\n\s*conversationStyle,\s*\n\s*\}\);/,
   );
-  assert.match(fnBody, /createAssistantResponse\(finalResponseText \|\| UNI_DETERMINISTIC_FALLBACK_TEXT\);/);
+  assert.match(fnBody, /createAssistantResponse\(\s*finalResponseText \|\| \(llmDailyLimitReached \? UNI_LLM_DAILY_LIMIT_TEXT : UNI_DETERMINISTIC_FALLBACK_TEXT\),\s*\);/);
 });
 
 test('FASE 22: composeFinalResponseText é importado da uni-engine (nenhuma lógica de composição duplicada em UniChatPage)', async () => {
@@ -3810,4 +3810,12 @@ test('Preview R1: respostas e erros da Agenda podem narrar clarificações idên
   assert.match(agendaBlock, /createAssistantResponse\(result\.text, \{ deduplicateNarration: false \}\)/);
   assert.match(agendaBlock, /deduplicateNarration: false/);
   assert.match(pipeline, /markSpoken\(userId, msg\.id\)/);
+});
+
+test('resposta sem IA diz que não entendeu, e o teto diário tem aviso próprio', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /UNI_DETERMINISTIC_FALLBACK_TEXT =\s*\n\s*'Não entendi esse pedido\./);
+  assert.doesNotMatch(page, /'Entendi\. Posso ajudar a registrar/);
+  assert.match(page, /UNI_LLM_DAILY_LIMIT_TEXT =\s*\n\s*'Você chegou ao limite de respostas da Uni por hoje\./);
+  assert.match(page, /llmDailyLimitReached = outcome\?\.dailyLimitReached === true;/);
 });

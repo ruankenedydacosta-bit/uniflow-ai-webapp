@@ -113,6 +113,16 @@ test('rate limit (429) -> fallback', async () => {
   assert.equal(await orchestrator.generateContextualResponse({ text: 'oi', messages: [] }), null);
 });
 
+test('teto diario (429 com DAILY_LIMIT) -> o chat fica sabendo o motivo', async () => {
+  const provider = makeProvider({ fetchImpl: async () => jsonResponse(429, { error: 'limite', code: 'DAILY_LIMIT' }) });
+  const direct = await provider.generateResponse({ system: 's', messages: [{ role: 'user', content: 'oi' }] });
+  assert.equal(direct.error.code, 'DAILY_LIMIT');
+  const orchestrator = createUniLlmOrchestrator({ provider, logger: silentLogger });
+  const outcome = await orchestrator.generateContextualResponse({ text: 'oi', messages: [] });
+  assert.equal(outcome.text, null);
+  assert.equal(outcome.dailyLimitReached, true);
+});
+
 test('sem sessao autenticada -> UNAUTHORIZED e fallback', async () => {
   const provider = makeProvider({ token: null, fetchImpl: async () => jsonResponse(200, { text: 'x' }) });
   const direct = await provider.generateResponse({ system: 's', messages: [{ role: 'user', content: 'oi' }] });

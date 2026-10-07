@@ -3,7 +3,9 @@
 // Une: montagem de contexto sanitizado + provider + guarda de resposta.
 // Retorna { text } quando ha uma resposta LLM valida, ou null quando deve-se
 // cair no fluxo deterministico (desativado, sem credencial, timeout, erro,
-// rate limit, resposta invalida ou tentativa de acao financeira).
+// rate limit, resposta invalida ou tentativa de acao financeira). No teto
+// diario, retorna { text: null, dailyLimitReached: true }, para o chat dizer
+// o motivo em vez da resposta generica.
 //
 // NUNCA lanca. Logs nunca incluem dados financeiros sensiveis (apenas codigos).
 
@@ -49,6 +51,9 @@ export function createUniLlmOrchestrator({ provider, logger = console } = {}) {
     // tratada como "sem resposta válida" -- é exatamente o caso em que a
     // OpenAI decidiu usar uma ferramenta em vez de responder em texto.
     const hasToolCalls = Array.isArray(result?.tool_calls) && result.tool_calls.length > 0;
+    if (result?.error?.code === 'DAILY_LIMIT') {
+      return { text: null, usage: null, tool_calls: null, dailyLimitReached: true };
+    }
     if (!result || result.error || (!result.text && !hasToolCalls)) {
       if (result?.error?.code) {
         logger?.info?.(`[uni-llm] fallback deterministico (motivo: ${result.error.code})`);

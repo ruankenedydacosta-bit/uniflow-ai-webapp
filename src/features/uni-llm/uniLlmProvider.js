@@ -161,9 +161,12 @@ export function createUniLlmProvider({
 
     const { response } = attempt;
     if (!response.ok) {
+      // 429 com DAILY_LIMIT: a pessoa atingiu o teto diario da Edge Function,
+      // e nao um rate limit passageiro da OpenAI.
+      const body = response.status === 429 ? await response.json().catch(() => null) : null;
       const code = response.status === 401 ? 'UNAUTHORIZED'
         : response.status === 403 ? 'FORBIDDEN'
-          : response.status === 429 ? 'RATE_LIMIT'
+          : response.status === 429 ? (body?.code === 'DAILY_LIMIT' ? 'DAILY_LIMIT' : 'RATE_LIMIT')
             : response.status === 503 ? 'NOT_CONFIGURED'
               : response.status === 504 ? 'TIMEOUT' : 'PROVIDER_ERROR';
       return { text: null, usage: null, error: { code, message: 'llm_request_rejected' } };
