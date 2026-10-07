@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 
-import { resolveLlmConfig, isLlmFlagEnabled } from './llmConfig.js';
+import { resolveLlmConfig } from './llmConfig.js';
 import { createUniLlmProvider } from './uniLlmProvider.js';
 import { createUniLlmOrchestrator } from './uniLlmOrchestrator.js';
 import {
@@ -39,22 +39,19 @@ function makeProvider({ fetchImpl, enabled = true, token = 'jwt-token', timeoutM
   });
 }
 
-test('feature flag desativada: config nao habilita e provider nao chama o backend', () => {
-  assert.equal(isLlmFlagEnabled({ VITE_UNI_LLM_ENABLED: 'false' }), false);
-  assert.equal(isLlmFlagEnabled({}), false);
+test('Supabase configurado: a IA do chat liga sem depender de flag', () => {
   const config = resolveLlmConfig({
     supabaseUrl: 'https://x.supabase.co',
     supabaseAnonKey: 'k',
-    env: { VITE_UNI_LLM_ENABLED: 'false' },
   });
-  assert.equal(config.enabled, false);
+  assert.equal(config.backendConfigured, true);
+  assert.equal(config.enabled, true);
 });
 
-test('feature flag ativa mas backend Supabase ausente: nao habilita', () => {
+test('backend Supabase ausente: nao habilita', () => {
   const config = resolveLlmConfig({
     supabaseUrl: '',
     supabaseAnonKey: '',
-    env: { VITE_UNI_LLM_ENABLED: 'true' },
   });
   assert.equal(config.backendConfigured, false);
   assert.equal(config.enabled, false);

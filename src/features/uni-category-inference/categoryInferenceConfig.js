@@ -1,7 +1,7 @@
 // BLOCO D: limiares e limites centralizados da inferencia semantica de
 // categorias via OpenAI. Nenhum valor secreto aqui -- apenas configuracao
-// publica de comportamento, reaproveitando VITE_UNI_LLM_ENABLED (uni-llm/
-// llmConfig.js) como feature flag em vez de criar uma variavel nova.
+// publica de comportamento. Liga junto com a camada de LLM (uni-llm/
+// llmConfig.js), sem flag propria.
 
 // Confianca >= HIGH: a categoria sugerida e tratada como recomendacao
 // principal (RESOLVED), sem uma pergunta extra de "posso usar X?" -- ainda

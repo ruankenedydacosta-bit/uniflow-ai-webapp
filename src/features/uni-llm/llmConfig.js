@@ -1,17 +1,16 @@
 // Configuracao da camada de LLM da Uni.
 //
-// A camada e DESATIVADA POR PADRAO. Para ser usada exige, de forma cumulativa:
-//   1. A feature flag `VITE_UNI_LLM_ENABLED` estar explicitamente em "true".
-//   2. O Supabase estar configurado no frontend (URL + anon key), pois a chamada
-//      real ao provedor acontece dentro de uma Edge Function autenticada.
+// A camada fica ligada sempre que o Supabase esta configurado no frontend
+// (URL + anon key), pois a chamada real ao provedor acontece dentro de uma
+// Edge Function autenticada. A flag VITE_UNI_LLM_ENABLED que a desligava foi
+// removida: sem IA, toda frase fora das regras fixas caia na mesma resposta
+// generica.
 //
 // A chave real do provedor (ex.: OPENAI_API_KEY) NUNCA vive no frontend/bundle
-// Vite. Ela existe apenas no ambiente da Edge Function `uni-chat-llm`. Por isso
-// aqui so verificamos flag + presenca do backend Supabase; a existencia real da
-// credencial e verificada pela Edge Function (que responde 503 quando ausente),
-// e o frontend trata esse 503 como "indisponivel" e cai no fluxo deterministico.
+// Vite. Ela existe apenas no ambiente da Edge Function `uni-chat-llm`, que
+// responde 503 quando ela falta e 429 quando a pessoa atinge o teto diario;
+// nos dois casos o frontend cai no fluxo deterministico.
 
-export const UNI_LLM_FLAG = 'VITE_UNI_LLM_ENABLED';
 // Sprint 1 (IA Conversacional) — flags adicionais, também desligadas por
 // padrão, seguindo exatamente o mesmo critério acima:
 //   - VITE_UNI_LLM_TOOLS_ENABLED: envia os 6 tools de leitura (Fase 20.2)
@@ -96,10 +95,6 @@ function readEnv() {
   }
 }
 
-export function isLlmFlagEnabled(env = readEnv()) {
-  return env?.[UNI_LLM_FLAG] === 'true';
-}
-
 export function isLlmToolsFlagEnabled(env = readEnv()) {
   return env?.[UNI_LLM_TOOLS_FLAG] === 'true';
 }
@@ -134,14 +129,12 @@ export function isLlmBackendConfigured({ supabaseUrl, supabaseAnonKey } = {}) {
   return Boolean(supabaseUrl && supabaseAnonKey);
 }
 
-export function resolveLlmConfig({ supabaseUrl, supabaseAnonKey, env } = {}) {
-  const flag = isLlmFlagEnabled(env);
+export function resolveLlmConfig({ supabaseUrl, supabaseAnonKey } = {}) {
   const backend = isLlmBackendConfigured({ supabaseUrl, supabaseAnonKey });
   return {
-    flagEnabled: flag,
     backendConfigured: backend,
     // "enabled" significa apenas que PODEMOS tentar. Falha/indisponibilidade
     // do provedor ainda cai no fallback deterministico.
-    enabled: flag && backend,
+    enabled: backend,
   };
 }

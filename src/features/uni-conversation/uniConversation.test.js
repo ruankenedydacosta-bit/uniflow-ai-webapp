@@ -1012,9 +1012,8 @@ test('nenhum ID é inventado: a conta resolvida sempre é uma conta real da list
 // -> despesa não bloqueia mais por conta, fica pronta DIRETO, com categoria
 // Alimentação já resolvida via alias determinístico (sem IA) -> confirmação
 // -> execução ÚNICA via executeFinancialIntentAction (RPC mockada) ->
-// nenhuma chamada de rede/IA em nenhum momento deste fluxo, mesmo com
-// VITE_UNI_LLM_ENABLED=false (aiInference nunca é passado nem necessário
-// aqui).
+// nenhuma chamada de rede/IA em nenhum momento deste fluxo (aiInference
+// nunca é passado nem necessário aqui).
 // ============================================================================
 
 test('BLOCO UNI 1A: fluxo completo "Gastei R$ 50 no mercado" -> já fica ready sem perguntar conta, com Alimentação via alias -> confirmação -> execução única -- sem IA', async () => {

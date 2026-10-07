@@ -624,7 +624,7 @@ export default function UniChatPage({ variant = 'full' }) {
     });
   }
 
-  // BLOCO D: mesma Edge Function/flag do chat (uni-chat-llm + VITE_UNI_LLM_ENABLED,
+  // BLOCO D: mesma Edge Function/flag do chat (uni-chat-llm,
   // via uniLlm.enabled) -- nenhum novo secret, nenhuma nova variável de
   // ambiente. Só é chamada quando a resolução determinística de categoria já
   // esgotou (ver handlePendingConversationInput/sendText); nunca escolhe
@@ -694,8 +694,8 @@ export default function UniChatPage({ variant = 'full' }) {
 
   // Sprint 1 (IA Conversacional) -- ponte "fato estruturado -> frase
   // natural" para as perguntas de clarificação (conta/categoria faltando
-  // etc.). Mesma Edge Function/flag base do chat (uni-chat-llm +
-  // VITE_UNI_LLM_ENABLED), com o gate ADICIONAL VITE_UNI_LLM_PHRASING_ENABLED
+  // etc.). Mesma Edge Function do chat (uni-chat-llm), com o gate
+  // ADICIONAL VITE_UNI_LLM_PHRASING_ENABLED
   // (default desligado) -- nenhum novo secret, nenhuma nova Edge Function.
   // Nunca decide conta/categoria, nunca persiste -- apenas fraseia o mesmo
   // `issue` que uniResponseBuilder.js já usa para o texto canônico.
@@ -739,7 +739,7 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   // Sprint 3 (Interpretação Semântica) -- mesma Edge Function/gate base do
-  // chat (uni-chat-llm + VITE_UNI_LLM_ENABLED), com a flag PRÓPRIA e nova
+  // chat (uni-chat-llm), com a flag PRÓPRIA e nova
   // VITE_UNI_SEMANTIC_INTENT_ENABLED (default desligada, nunca reaproveita
   // as flags de tools/phrasing da Sprint 1, que têm responsabilidades
   // diferentes). Com a flag desligada, `enabled` é sempre false e nenhuma
@@ -1002,7 +1002,7 @@ export default function UniChatPage({ variant = 'full' }) {
     publishConversationResult(phrased);
   }
 
-  // BLOCO E: mesma Edge Function/flag do chat (uni-chat-llm + VITE_UNI_LLM_ENABLED),
+  // BLOCO E: mesma Edge Function/flag do chat (uni-chat-llm),
   // agora com mode='financial_plan' -- nenhum novo secret, nenhuma nova
   // variável de ambiente (mesmo padrão do Bloco D). Só é chamada quando o
   // texto parece complexo/multioperação/transferência (ver

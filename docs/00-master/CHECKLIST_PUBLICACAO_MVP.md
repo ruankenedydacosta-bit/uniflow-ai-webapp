@@ -4,7 +4,7 @@ Data: 2026-07-30. Cada item marca o estado encontrado nesta auditoria — nada f
 
 ## Ambiente e variáveis
 
-- [x] `.env.example` existe e está sincronizado com o que o app realmente consome (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_UNI_PREMIUM_VOICE_DEMO_ENABLED`, `VITE_UNI_LLM_ENABLED`, `VITE_APP_URL`) — nenhuma divergência encontrada.
+- [x] `.env.example` existe e está sincronizado com o que o app realmente consome (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_UNI_PREMIUM_VOICE_DEMO_ENABLED`, `VITE_APP_URL`) — nenhuma divergência encontrada.
 - [ ] Secrets de Edge Functions (`OPENAI_API_KEY`, `ELEVENLABS_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, etc.) — confirmar que estão configurados no projeto de **produção** do Supabase, não só no de desenvolvimento (não verificável por leitura de repositório).
 - [ ] Secret da Asaas (`ASAAS_API_KEY`) — não existe ainda; depende do Bloco 3 do roadmap.
 

@@ -1,7 +1,6 @@
 // BLOCO E: limiares e limites centralizados do plano financeiro (modo
-// financial_plan da Edge Function uni-chat-llm). Reaproveita a mesma
-// feature flag do Bloco D (VITE_UNI_LLM_ENABLED via uni-llm/llmConfig.js)
-// -- nenhuma variavel de ambiente nova.
+// financial_plan da Edge Function uni-chat-llm). Liga junto com a camada de
+// LLM (uni-llm/llmConfig.js), sem flag propria.
 
 export const FINANCIAL_PLAN_VERSION = '1';
 

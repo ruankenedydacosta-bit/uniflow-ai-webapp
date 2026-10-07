@@ -28,7 +28,7 @@ Documento operacional (não é conhecimento de produto para a Uni consumir — �
 
 1. Correspondência exata (nome idêntico).
 2. Alias/aproximação local por texto (`categorySimilarity` — substring/overlap de palavras).
-3. **Inferência da OpenAI** (só chamada quando 1–2 não encontraram nada, a feature flag `VITE_UNI_LLM_ENABLED` está ativa e existem categorias pessoais compatíveis para comparar).
+3. **Inferência da OpenAI** (só chamada quando 1–2 não encontraram nada e existem categorias pessoais compatíveis para comparar).
 4. Confirmação explícita do usuário (quando a confiança exige).
 5. Criação assistida (`CREATE_CATEGORY`, fluxo já existente do Bloco B — nunca a IA cria a categoria, apenas sugere um nome).
 6. Persistência pelo RPC determinístico existente (`execute_confirmed_financial_action`).

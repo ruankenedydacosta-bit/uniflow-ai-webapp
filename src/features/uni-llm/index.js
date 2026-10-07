@@ -1,5 +1,5 @@
 export {
-  resolveLlmConfig, isLlmFlagEnabled, isLlmBackendConfigured, UNI_LLM_FLAG,
+  resolveLlmConfig, isLlmBackendConfigured,
   isLlmToolsFlagEnabled, isLlmPhrasingFlagEnabled, UNI_LLM_TOOLS_FLAG, UNI_LLM_PHRASING_FLAG,
   isSemanticIntentFlagEnabled, UNI_SEMANTIC_INTENT_FLAG,
   isFinancialOrchestratorFlagEnabled, UNI_FINANCIAL_ORCHESTRATOR_FLAG,
