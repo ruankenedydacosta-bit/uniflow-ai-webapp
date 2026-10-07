@@ -114,9 +114,9 @@ export function resolveRealtimeToolOutcome(messages, turn) {
   if (confirmation.status === 'canceled') {
     return JSON.stringify({ resposta: 'Rascunho cancelado. Nada foi lançado.', aguardando_confirmacao: false });
   }
-  if (confirmation.status === 'expired') {
-    return JSON.stringify({ resposta: 'Esse rascunho expirou. Nada foi lançado.', aguardando_confirmacao: false });
-  }
+  // Card expirado não encerra o turno: o chat descarta o rascunho ao trocar
+  // de assunto e a resposta nova chega em seguida. Encerrar aqui fazia a Uni
+  // dizer "esse rascunho expirou" no meio de um ajuste.
   return null;
 }
 

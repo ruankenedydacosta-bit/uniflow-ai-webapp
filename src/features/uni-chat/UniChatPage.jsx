@@ -13,6 +13,7 @@ import {
   cancelAccountCreationDependency,
   cancelCategoryCreationDependency,
   classifyPendingActionReply,
+  looksLikePendingCorrection,
   clearPendingActionStack,
   clearPendingAction,
   completeAccountCreationDependency,
@@ -4021,21 +4022,25 @@ export default function UniChatPage({ variant = 'full' }) {
       });
       return;
     }
+    // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
+    // explícita NOVA. Se a frase é reconhecida como ação financeira
+    // (set_balance/ambiguidade/receita/despesa/transferência/meta) e o
+    // intent declarado é DIFERENTE do intent da pendência atual ("Recebi
+    // mil reais" contra uma pendência de despesa antiga, por exemplo), a
+    // pendência é abandonada e a frase nova processada do zero -- nunca
+    // vira correção de um campo da ação antiga. A mesma intenção (ex.:
+    // usuário reiterando/completando o próprio lançamento) continua
+    // alimentando a pendência como resposta legítima.
+    // BUG REAL EM PRODUÇÃO (voz): "na verdade paguei 150 reais" tem verbo e
+    // valor, mas corrige o rascunho (looksLikePendingCorrection). Tratada
+    // como frase nova, descartava o card e a pessoa recomeçava do zero.
     if (hasPendingConversation) {
-      // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
-      // explícita NOVA. Se a frase é reconhecida como ação financeira
-      // (set_balance/ambiguidade/receita/despesa/transferência/meta) e o
-      // intent declarado é DIFERENTE do intent da pendência atual ("Recebi
-      // mil reais" contra uma pendência de despesa antiga, por exemplo), a
-      // pendência é abandonada e a frase nova processada do zero -- nunca
-      // vira correção de um campo da ação antiga. A mesma intenção (ex.:
-      // usuário reiterando/completando o próprio lançamento) continua
-      // alimentando a pendência como resposta legítima.
       const pendingActionIntent = (pendingAction ?? financialConversation.state.action)?.intent;
       if (
-        looksLikeFreshFinancialStatement(functionalText)
+        !looksLikePendingCorrection(functionalText)
+        && (looksLikeFreshFinancialStatement(functionalText)
         || looksLikeFreshBalanceStatement(functionalText)
-        || (ACTION_STATEMENT_INTENTS.has(declaredIntent) && declaredIntent !== pendingActionIntent)
+        || (ACTION_STATEMENT_INTENTS.has(declaredIntent) && declaredIntent !== pendingActionIntent))
       ) {
         abandonStalePendingState();
       } else {

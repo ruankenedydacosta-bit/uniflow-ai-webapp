@@ -1,4 +1,4 @@
-import { normalizeFinancialText, parseFinancialText } from '../uni-intents/index.js';
+import { extractAmount, normalizeFinancialText, parseFinancialText } from '../uni-intents/index.js';
 import { normalizeFinancialInstitutionName } from '../financial-institutions/index.js';
 
 // BLOCO F: fala real do usuário raramente é um token isolado ("confirma")
@@ -164,7 +164,18 @@ export function resolvePendingActionInput({
               : null;
   const field = explicitField ?? firstIssue;
   const result = resolveForField(field, { text, parsed, accounts, categories, workspaceId });
-  if (result.kind === 'correction') return result;
+  // BUG REAL EM PRODUÇÃO (voz): com o card na tela, "muda pra cento e
+  // cinquenta", "foi no Nubank" ou "na verdade foi ontem" não citam o nome
+  // do campo e recebiam "informe o campo que deseja corrigir". Sem campo
+  // pendente, ou com marcador de correção, a frase vale por todos os campos
+  // que ela traz ("troca pra alimentação e a data pra anteontem").
+  const collected = !firstIssue || looksLikePendingCorrection(text)
+    ? collectCorrectionOverrides({ text, normalized, parsed, accounts, categories, workspaceId })
+    : null;
+  if (result.kind === 'correction') {
+    return collected ? { ...result, overrides: { ...collected, ...result.overrides } } : result;
+  }
+  if (collected) return { kind: 'correction', overrides: collected };
 
   // BUG REAL (contexto/correção perdidos): a Uni pergunta um campo (ex.:
   // "Em qual conta?") mas o usuário responde corrigindo OUTRO campo já
@@ -186,6 +197,48 @@ export function resolvePendingActionInput({
   }
 
   return result;
+}
+
+// Ajuste falado de um rascunho em andamento. Ganha do detector de
+// lançamento novo: "na verdade paguei 150 reais" e "coloca o valor de 150
+// reais" têm verbo e valor, mas corrigem o card em vez de abrir outro.
+const PENDING_CORRECTION_PATTERNS = [
+  /^(?:nao[,.]?\s+)*(?:na verdade|na real|corrige|corrigir|corrija|muda|mudar|mude|altera|alterar|altere|troca|trocar|troque|ajusta|ajustar|ajuste|substitui|substituir)\b/,
+  /\b(?:em vez de|ao inves de|no lugar de)\b/,
+  /^(?:nao[,.]?\s+)*(?:o|a)\s+(?:valor|data|categoria|conta|descricao)\s+(?:e|era|foi|fica|vai ser|tem que ser)\b/,
+  /\b(?:coloca|coloque|bota|poe|deixa|deixe)\s+(?:o|a)\s+(?:valor|data|categoria|conta|descricao)\b/,
+];
+
+export function looksLikePendingCorrection(value) {
+  const normalized = normalizeFinancialText(value);
+  if (!normalized) return false;
+  return PENDING_CORRECTION_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function collectCorrectionOverrides({ text, normalized, parsed, accounts, categories, workspaceId }) {
+  const overrides = {};
+  const date = parsed.entities.date;
+  if (date) overrides.date = date;
+
+  let amount = Number(parsed.entities.amount);
+  // Número por extenso sem "reais" ("muda pra cento e cinquenta") só vira
+  // valor quando a frase não fala de data.
+  if (!(amount > 0) && !date && !/\b(?:dia|data)\b/.test(normalized)) {
+    amount = Number(extractAmount(`${text.replace(/[.!?]+$/g, '')} reais`));
+  }
+  if (amount > 0 && !(date && /\b(?:dia|data)\b/.test(normalized) && !/\b(?:reais|real|r\$|valor)\b/.test(normalized))) {
+    overrides.amount = amount;
+  }
+
+  const [account] = findMatches(accounts, text, ACCOUNT_IDENTITY_FIELDS, workspaceId)
+    .filter((item) => normalized.includes(normalizeFinancialText(item.name)));
+  if (account) overrides.accountId = account.id;
+
+  const [category] = findMatches(categories, text)
+    .filter((item) => normalized.includes(normalizeFinancialText(item.name)));
+  if (category) overrides.categoryId = category.id;
+
+  return Object.keys(overrides).length ? overrides : null;
 }
 
 // Verdadeiro quando o texto inteiro é essencialmente "uma quantia e nada

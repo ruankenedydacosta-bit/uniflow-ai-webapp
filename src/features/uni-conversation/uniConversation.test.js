@@ -18,6 +18,7 @@ import {
 } from './uniResponseBuilder.js';
 import {
   classifyPendingActionReply,
+  looksLikePendingCorrection,
   resolvePendingActionInput,
 } from './pendingActionInput.js';
 import {
@@ -1235,5 +1236,50 @@ test('BUG REAL: respostas reais de conta continuam resolvendo ("No Nubank.", "En
   for (const reply of ['No Nubank.', 'Entrou no Nubank.', 'Nubank', 'foi no Nubank']) {
     const resolved = resolvePendingActionInput({ value: reply, action: pendingAccountAction(), accounts });
     assert.equal(resolved.kind, 'correction', `"${reply}" deveria resolver a conta`);
+  }
+});
+
+// BUG REAL EM PRODUÇÃO (voz): ajuste falado de um card na tela sem o nome do
+// campo ("muda pra cento e cinquenta") recebia "informe o campo que deseja
+// corrigir", e o ajuste com verbo e valor ("na verdade paguei 150 reais")
+// descartava o card como se fosse um lançamento novo.
+test('BUG REAL: ajuste falado corrige o card na tela e mantém os outros campos', () => {
+  const ready = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  assert.equal(ready.status, 'ready');
+  const resolve = (value) => resolvePendingActionInput({
+    value, action: ready, accounts, categories, referenceDate: REFERENCE_DATE,
+  });
+
+  assert.deepEqual(resolve('muda pra cento e cinquenta').overrides, { amount: 150 });
+  assert.deepEqual(resolve('na verdade paguei 150 reais').overrides, { amount: 150 });
+  assert.deepEqual(resolve('na verdade foi ontem').overrides, { date: '2026-07-10' });
+  assert.deepEqual(resolve('foi na Conta principal').overrides, { accountId: 'account-main' });
+  assert.deepEqual(
+    resolve('troca pra alimentação e a data pra ontem').overrides,
+    { date: '2026-07-10', categoryId: 'category-food' },
+  );
+  assert.equal(resolve('qual meu saldo').kind, 'invalid');
+
+  const corrected = createAction('Paguei 85 reais no mercado pelo Nubank.', {
+    overrides: resolve('muda pra cento e cinquenta').overrides,
+  });
+  assert.equal(corrected.status, 'ready');
+  assert.equal(corrected.amount, 150);
+  assert.equal(corrected.account.id, 'account-nubank');
+  assert.equal(corrected.description, ready.description);
+});
+
+test('marcador de ajuste ganha do detector de lançamento novo; frase nova continua nova', () => {
+  for (const text of [
+    'Na verdade paguei 150 reais.',
+    'Coloca o valor de 150 reais.',
+    'Muda pra cento e cinquenta.',
+    'Não, o valor é 200.',
+    'Lança 150 em vez de 200.',
+  ]) {
+    assert.equal(looksLikePendingCorrection(text), true, text);
+  }
+  for (const text of ['Gastei 50 reais no mercado.', 'Recebi mil reais.', 'Nubank', 'Pode confirmar.']) {
+    assert.equal(looksLikePendingCorrection(text), false, text);
   }
 });

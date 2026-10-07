@@ -225,3 +225,19 @@ test('um toque com duas respostas: a Uni fala as duas', () => {
   assert.equal(outcome.text, 'Categoria Pet criada. Revise antes de registrar.');
   assert.equal(outcome.awaitingConfirmation, true);
 });
+
+// BUG REAL EM PRODUÇÃO (voz): um ajuste que o chat trata como frase nova
+// descarta o card (expired) antes de a resposta nova chegar. Encerrar o turno
+// aí fazia a Uni dizer "esse rascunho expirou" no meio do ajuste.
+test('card expirado espera a resposta do chat em vez de encerrar o turno', () => {
+  const before = [{ id: 'u1', from: 'user', text: 'gastei 50' }, DRAFT];
+  const turn = snapshotRealtimeToolTurn(before);
+  const expired = [before[0], { ...DRAFT, confirmation: { status: 'expired' } }, { id: 'u2', from: 'user', text: 'gastei 80 no mercado' }];
+  assert.equal(resolveRealtimeToolOutcome(expired, turn), null);
+
+  const replied = [...expired, { id: 'a2', from: 'uni', text: 'Revise o lançamento.', confirmation: { status: 'pending' } }];
+  assert.deepEqual(
+    JSON.parse(resolveRealtimeToolOutcome(replied, turn)),
+    { resposta: 'Revise o lançamento.', aguardando_confirmacao: true },
+  );
+});

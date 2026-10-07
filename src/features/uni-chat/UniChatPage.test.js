@@ -1248,6 +1248,14 @@ test('BUG REAL: uma frase financeira nova e autossuficiente abandona qualquer pe
   assert.match(slice, /\} else \{\s*handlePendingConversationInput\(functionalText, userMsg\);\s*return;\s*\}/);
 });
 
+test('BUG REAL: ajuste falado ("na verdade paguei 150 reais") corrige a pendência em vez de abandoná-la', async () => {
+  const page = await source('UniChatPage.jsx');
+  assert.match(page, /import \{[\s\S]*?looksLikePendingCorrection[\s\S]*?\} from '\.\.\/uni-conversation';/);
+  const idx = page.indexOf('if (hasPendingConversation) {');
+  const slice = page.slice(idx, idx + 1400);
+  assert.match(slice, /!looksLikePendingCorrection\(functionalText\)\s*&& \(looksLikeFreshFinancialStatement\(functionalText\)/);
+});
+
 test('declarações de saldo também são frases novas autossuficientes (ajuste/pergunta de decisão, nunca resposta a pendência antiga)', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /import \{[\s\S]*?looksLikeFreshBalanceStatement[\s\S]*?\} from '\.\.\/uni-conversation';/);

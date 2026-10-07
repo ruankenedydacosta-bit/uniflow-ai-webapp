@@ -2,6 +2,7 @@ export { useUniConversation } from './useUniConversation.js';
 export { createConversationalMemory } from './conversationalMemory.js';
 export {
   classifyPendingActionReply,
+  looksLikePendingCorrection,
   resolvePendingActionInput,
 } from './pendingActionInput.js';
 export {
