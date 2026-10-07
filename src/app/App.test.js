@@ -4,13 +4,22 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-test('splash possui fallback temporal e restauração pageshow para não prender tela escura no Safari', async () => {
+test('splash sai quando o React desenha, com fallback temporal e restauração pageshow para não prender a tela no Safari', async () => {
   const html = await source('../../index.html');
-  assert.match(html, /window\.addEventListener\('load',[\s\S]*?\{ once: true \}/);
+  assert.match(html, /window\.uniflowHideSplash = hideSplash;/);
   assert.match(html, /window\.addEventListener\('pageshow'/);
-  assert.match(html, /if \(event\.persisted\) hideSplash\(0\)/);
-  assert.match(html, /hideSplash\(0\);[\s\S]*?4000/);
-  assert.match(html, /if \(hidden\) return;/);
+  assert.match(html, /if \(event\.persisted\) hideSplash\(\)/);
+  assert.match(html, /window\.setTimeout\(hideSplash, 8000\)/);
+  const app = await source('App.jsx');
+  assert.match(app, /useEffect\(\(\) => \{\s*\n\s*window\.uniflowHideSplash\?\.\(\);\s*\n\s*\}, \[\]\);/);
+});
+
+test('splash mostra a Uni girando sem baixar imagem, com o fundo de cada tema', async () => {
+  const html = await source('../../index.html');
+  assert.doesNotMatch(html, /uniflow-splash\.png/);
+  assert.match(html, /<span class="ring"><\/span>/);
+  assert.match(html, /\[data-theme="light"\] #uniflow-splash \{ background: #F5F7FB; \}/);
+  assert.match(html, /\[data-theme="dark"\] #uniflow-splash \{ background: #111318; \}/);
 });
 
 test('documento declara instalação standalone e ícone oficial para iOS', async () => {
@@ -592,4 +601,29 @@ test('Caso 3/4: conta Google sem assinatura ativa (existente ou recém-criada, s
   // apresentação/Plano Pessoal, nunca passa direto para Home.
   const config = await source('../features/presentation/presentationConfig.js');
   assert.doesNotMatch(config, /profile\.|profileMissing/);
+});
+
+test('cores da splash batem com os tokens do theme.css', async () => {
+  const html = await source('../../index.html');
+  const theme = await source('../styles/theme.css');
+  const token = (name) => theme.match(new RegExp(`--${name}:\\s*(#[0-9A-Fa-f]{6})`))[1].toUpperCase();
+  const canvasIn = (selector) => {
+    const block = theme.slice(theme.indexOf(`${selector}{`));
+    return block.match(/--uf-color-bg-canvas:\s*(#[0-9A-Fa-f]{6})/)[1].toUpperCase();
+  };
+  const splashBg = (selector) => html.match(new RegExp(`${selector} #uniflow-splash \\{ background: (#[0-9A-Fa-f]{6}); \\}`))[1].toUpperCase();
+
+  assert.equal(splashBg('\\[data-theme="light"\\]'), canvasIn('[data-theme="light"]'));
+  assert.equal(splashBg('\\[data-theme="dark"\\]'), canvasIn('[data-theme="dark"]'));
+  assert.match(html, new RegExp(`background: ${token('uf-gray-950')};`, 'i'));
+  for (const name of ['uf-blue-700', 'uf-purple-600', 'uf-green-500']) {
+    assert.ok(html.toUpperCase().includes(token(name)), `${name} ausente da splash`);
+  }
+});
+
+test('o tema padrão do index.html é o mesmo do app, para a splash não piscar em outra cor', async () => {
+  const html = await source('../../index.html');
+  const constants = await source('../features/theme/themeConstants.js');
+  assert.match(constants, /export const DEFAULT_THEME = THEME_IDS\.UNIFLOW;/);
+  assert.match(html, /var pref = 'uniflow';/);
 });

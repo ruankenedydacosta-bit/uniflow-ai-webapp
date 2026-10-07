@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppBootScreen from './AppBootScreen.jsx';
 import AnalyticsConsentBanner from '../features/analytics/AnalyticsConsentBanner.jsx';
@@ -257,6 +258,12 @@ function AppContent() {
 }
 
 function App() {
+  // A splash do index.html mostra a mesma Uni da AppBootScreen, no mesmo
+  // lugar. Sai assim que o React desenha a primeira tela.
+  useEffect(() => {
+    window.uniflowHideSplash?.();
+  }, []);
+
   // Ordem OBRIGATÓRIA: SessionProvider por fora, AccessProvider por dentro.
   // O AccessContext agora DERIVA do SessionContext (useSession), então precisa estar
   // dentro dele. Fonte de verdade única: sessão → access (sem estado paralelo).

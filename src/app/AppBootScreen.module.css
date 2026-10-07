@@ -6,13 +6,19 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--uf-space-24);
   min-height: 100vh;
   padding: var(--uf-space-16);
   background: var(--uf-color-bg-canvas);
 }
 
+/* O texto fica fora do fluxo para a Uni ficar no centro exato da tela, no
+   mesmo lugar da splash do index.html, que não tem texto. Metade do orb
+   (56px) mais o espaço entre os dois. */
 .label {
+  position: absolute;
+  top: calc(50% + 56px + var(--uf-space-24));
+  right: var(--uf-space-16);
+  left: var(--uf-space-16);
   margin: 0;
   color: var(--uf-color-text-secondary);
   font-weight: var(--uf-font-weight-medium);

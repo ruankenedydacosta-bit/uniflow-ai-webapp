@@ -14,6 +14,12 @@
     <title>uniflow-ai-app</title>
 
     <style>
+      /* Splash: a mesma Uni girando de src/app/AppBootScreen.jsx (UniRingOrb
+         no estado "pensando", 112 px), em HTML e CSS puros, para aparecer
+         antes do JavaScript. O fundo segue o --uf-color-bg-canvas de cada
+         tema em src/styles/theme.css. Quando o React desenha a primeira
+         tela, src/app/App.jsx remove a splash, e a AppBootScreen alinha as
+         animações às desta para a Uni não pular na troca. */
       #uniflow-splash {
         position: fixed;
         inset: 0;
@@ -21,43 +27,148 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #020817;
-        opacity: 1;
-        visibility: visible;
-        transition:
-          opacity 320ms ease,
-          visibility 320ms ease;
+        background: #05070C;
       }
 
-      #uniflow-splash.is-hidden {
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
+      [data-theme="light"] #uniflow-splash { background: #F5F7FB; }
+      [data-theme="dark"] #uniflow-splash { background: #111318; }
+
+      #uniflow-splash .orb {
+        position: relative;
+        width: 112px;
+        height: 112px;
       }
 
-      #uniflow-splash img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
+      #uniflow-splash .glow,
+      #uniflow-splash .ring,
+      #uniflow-splash .ring-inner,
+      #uniflow-splash .core {
+        position: absolute;
+        border-radius: 50%;
       }
 
+      #uniflow-splash .glow { inset: -40%; }
+
+      #uniflow-splash .glow::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: radial-gradient(
+          closest-side,
+          color-mix(in oklch, #7C3AED 42%, transparent),
+          color-mix(in oklch, #1D4EDB 21%, transparent) 55%,
+          transparent
+        );
+        animation: uniflow-splash-breath 4s ease-in-out infinite;
+      }
+
+      #uniflow-splash .ring,
+      #uniflow-splash .ring-inner {
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.1px), #000 calc(100% - 1.6px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 2.1px), #000 calc(100% - 1.6px));
+      }
+
+      #uniflow-splash .ring {
+        inset: 0;
+        background: conic-gradient(
+          from 0deg,
+          transparent 0 6%,
+          #1D4EDB 22%,
+          #7C3AED 40%,
+          transparent 54%,
+          #7C3AED 66%,
+          #10B981 82%,
+          transparent 96%
+        );
+        animation: uniflow-splash-spin 1.2s linear infinite;
+      }
+
+      #uniflow-splash .ring-inner {
+        inset: 10%;
+        opacity: .55;
+        background: conic-gradient(
+          from 180deg,
+          transparent 0 20%,
+          #10B981 40%,
+          #1D4EDB 55%,
+          transparent 72%
+        );
+        animation: uniflow-splash-spin 2.04s linear infinite reverse;
+      }
+
+      #uniflow-splash .core {
+        inset: 18%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #uniflow-splash svg {
+        width: 78%;
+        height: 78%;
+        overflow: visible;
+      }
+
+      #uniflow-splash .mark-outer,
+      #uniflow-splash .mark-inner,
+      #uniflow-splash .mark-dot {
+        transform-box: fill-box;
+        transform-origin: center;
+      }
+
+      #uniflow-splash .mark-outer {
+        animation: uniflow-splash-flip-forward 3.6s cubic-bezier(.45, 0, .55, 1) infinite;
+      }
+
+      #uniflow-splash .mark-inner {
+        animation: uniflow-splash-flip-backward 3.6s cubic-bezier(.45, 0, .55, 1) .432s infinite;
+      }
+
+      #uniflow-splash .mark-dot {
+        fill: #1D4EDB;
+        animation: uniflow-splash-breath 3.6s ease-in-out infinite;
+      }
+
+      /* Mesma regra do theme.css, que ainda não carregou aqui. */
       @media (prefers-reduced-motion: reduce) {
-        #uniflow-splash {
-          transition: none;
+        #uniflow-splash *,
+        #uniflow-splash *::before {
+          animation: none !important;
         }
+      }
+
+      @keyframes uniflow-splash-spin {
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes uniflow-splash-breath {
+        0%, 100% { transform: scale(1); opacity: .8; }
+        50% { transform: scale(1.06); opacity: 1; }
+      }
+
+      @keyframes uniflow-splash-flip-forward {
+        0%, 20% { transform: perspective(60px) rotateY(0deg); }
+        50%, 70% { transform: perspective(60px) rotateY(180deg); }
+        100% { transform: perspective(60px) rotateY(360deg); }
+      }
+
+      @keyframes uniflow-splash-flip-backward {
+        0%, 20% { transform: perspective(60px) rotateY(0deg); }
+        50%, 70% { transform: perspective(60px) rotateY(-180deg); }
+        100% { transform: perspective(60px) rotateY(-360deg); }
       }
     </style>
 
     <script>
       // FOUC guard: aplica data-theme antes do React montar, espelhando
-      // src/features/theme (chave 'uniflow.theme.preference', padrão 'light').
+      // src/features/theme (chave 'uniflow.theme.preference', padrão
+      // DEFAULT_THEME = 'uniflow' em themeConstants.js).
       (function () {
         try {
           var KEY = 'uniflow.theme.preference';
           var VALID = { light: 1, dark: 1, uniflow: 1, system: 1 };
-          var pref = 'light';
+          var pref = 'uniflow';
 
           try {
             var stored = window.localStorage.getItem(KEY);
@@ -88,7 +199,28 @@
 
   <body>
     <div id="uniflow-splash" aria-hidden="true">
-      <img src="/uniflow-splash.png" alt="" />
+      <span class="orb">
+        <span class="glow"></span>
+        <span class="ring"></span>
+        <span class="ring-inner"></span>
+        <span class="core">
+          <svg viewBox="-1 1 38 38" fill="none">
+            <defs>
+              <linearGradient id="uniflow-splash-outer" x1="6" y1="6" x2="30" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#1D4EDB" />
+                <stop offset="1" stop-color="#7C3AED" />
+              </linearGradient>
+              <linearGradient id="uniflow-splash-inner" x1="15" y1="11" x2="27" y2="21" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#7C3AED" />
+                <stop offset="1" stop-color="#10B981" />
+              </linearGradient>
+            </defs>
+            <path class="mark-outer" d="M6 6v16a12 12 0 0 0 24 0V6" stroke="url(#uniflow-splash-outer)" stroke-width="3.4" stroke-linecap="round" />
+            <path class="mark-inner" d="M15 11v10a6 6 0 0 0 12 0v-6" stroke="url(#uniflow-splash-inner)" stroke-width="3.4" stroke-linecap="round" />
+            <circle class="mark-dot" cx="6" cy="4.5" r="2.2" />
+          </svg>
+        </span>
+      </span>
     </div>
 
     <div id="root"></div>
@@ -96,35 +228,20 @@
     <script type="module" src="/src/main.jsx"></script>
 
     <script>
+      // Remove a splash. O React chama window.uniflowHideSplash() quando
+      // desenha a primeira tela (src/app/App.jsx); o temporizador abaixo só
+      // garante que ela saia se o app não subir.
       (function () {
-        var hidden = false;
-
-        function hideSplash(delay) {
-          if (hidden) return;
+        function hideSplash() {
           var splash = document.getElementById('uniflow-splash');
-
-          if (!splash) return;
-
-          window.setTimeout(function () {
-            if (hidden) return;
-            hidden = true;
-            splash.classList.add('is-hidden');
-
-            window.setTimeout(function () {
-              splash.remove();
-            }, 350);
-          }, delay);
+          if (splash) splash.remove();
         }
 
-        window.addEventListener('load', function () {
-          hideSplash(450);
-        }, { once: true });
+        window.uniflowHideSplash = hideSplash;
         window.addEventListener('pageshow', function (event) {
-          if (event.persisted) hideSplash(0);
+          if (event.persisted) hideSplash();
         });
-        window.setTimeout(function () {
-          hideSplash(0);
-        }, 4000);
+        window.setTimeout(hideSplash, 8000);
       })();
     </script>
   </body>
