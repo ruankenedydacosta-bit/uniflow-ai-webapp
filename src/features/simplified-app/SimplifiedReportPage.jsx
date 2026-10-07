@@ -1,20 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/index.js';
+import { cx } from '../../utils/cx.js';
 import { createDownloadReadyNotification } from '../notifications/notificationsService.js';
-import { ChevronRightIcon, DownloadIcon } from './SimplifiedIcons.jsx';
+import { PhCaretLeftIcon, PhCaretRightIcon, PhDownloadSimpleIcon } from './SimplifiedIcons.jsx';
 import SimplifiedReportSpreadsheet from './SimplifiedReportSpreadsheet.jsx';
+import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedReport.module.css';
 import { useMonthlyReport } from './useMonthlyReport.js';
-
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M20 6 10 16l10 10" />
-    </svg>
-  );
-}
 
 /**
  * RELATORIO-FLATTEN1: UMA ÚNICA tela -- resumo (4 indicadores) + botão
@@ -30,6 +26,11 @@ function BackIcon() {
  * financeiras, duas de Agenda, dois listeners ou dois reportData: a
  * planilha (SimplifiedReportSpreadsheet.jsx) é um componente de
  * apresentação puro, recebe `report` já pronto por prop.
+ *
+ * Fase 3 do redesign (#90): tela 12 do handoff. Cabeçalho "Relatórios",
+ * mês com setas, etiqueta "Dados confirmados" (o relatório só lê
+ * movimentações concluídas), resumo em card e botão contornado. O gráfico
+ * de seis meses do handoff fica de fora: o relatório carrega um mês por vez.
  */
 function SimplifiedReportPage() {
   const navigate = useNavigate();
@@ -71,26 +72,23 @@ function SimplifiedReportPage() {
 
   return (
     <div className={styles.page} data-simplified-report>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backButton}
-          onClick={() => navigate(SIMPLIFIED_ROUTES.HOME)}
-          aria-label="Voltar para a Home"
-        >
-          <BackIcon />
-        </button>
-        <h1>Relatório da Uni</h1>
-      </header>
+      <SimplifiedSubpageHeader
+        title="Relatórios"
+        onBack={() => navigate(SIMPLIFIED_ROUTES.HOME)}
+        backLabel="Voltar para a Home"
+      />
 
       <nav className={styles.monthNav} aria-label="Navegação entre meses">
-        <button type="button" className={styles.monthArrow} onClick={() => moveMonth(-1)} aria-label="Mês anterior">
-          <span className={styles.rotatedRight} aria-hidden="true"><ChevronRightIcon /></span>
-        </button>
-        <span className={styles.monthLabel}>{report.period.label}</span>
-        <button type="button" className={styles.monthArrow} onClick={() => moveMonth(1)} aria-label="Próximo mês">
-          <ChevronRightIcon />
-        </button>
+        <div className={styles.monthPicker}>
+          <button type="button" className={styles.monthArrow} onClick={() => moveMonth(-1)} aria-label="Mês anterior">
+            <PhCaretLeftIcon />
+          </button>
+          <span className={styles.monthLabel}>{report.period.label}</span>
+          <button type="button" className={styles.monthArrow} onClick={() => moveMonth(1)} aria-label="Próximo mês">
+            <PhCaretRightIcon />
+          </button>
+        </div>
+        <span className={cx(groups.pill, groups.pillGreen)}>Dados confirmados</span>
       </nav>
 
       <section className={styles.summaryGrid} aria-label="Resumo do mês">
@@ -112,15 +110,15 @@ function SimplifiedReportPage() {
         </div>
       </section>
 
-      <button
-        type="button"
+      <OutlineButton
+        variant="secondary"
         className={styles.downloadButton}
         onClick={handleDownload}
         disabled={downloadState === 'preparing'}
       >
-        <span className={styles.downloadIcon} aria-hidden="true"><DownloadIcon /></span>
+        <PhDownloadSimpleIcon />
         {downloadState === 'preparing' ? 'Preparando…' : 'Baixar planilha'}
-      </button>
+      </OutlineButton>
 
       {downloadState === 'error' ? (
         <p className={styles.downloadError} role="alert">
