@@ -30,21 +30,27 @@ export function readRealtimeToolPhrase(args) {
   return typeof args?.frase === 'string' ? args.frase.trim() : '';
 }
 
-// Resposta da Uni que chegou depois da mensagem de referência. Sem
-// referência (conversa vazia), qualquer resposta da Uni vale.
-export function findUniReplyAfter(messages, baselineId) {
-  if (!Array.isArray(messages)) return null;
+function messagesAfter(messages, baselineId) {
+  if (!Array.isArray(messages)) return [];
   const baselineIndex = baselineId === null || baselineId === undefined
     ? -1
     : messages.findIndex((message) => message?.id === baselineId);
-  const after = messages.slice(baselineIndex + 1);
+  return messages.slice(baselineIndex + 1);
+}
+
+function isUniReply(message) {
+  return message?.from === 'uni' && typeof message.text === 'string' && Boolean(message.text.trim());
+}
+
+// Resposta da Uni que chegou depois da mensagem de referência. Sem
+// referência (conversa vazia), qualquer resposta da Uni vale.
+export function findUniReplyAfter(messages, baselineId) {
+  const after = messagesAfter(messages, baselineId);
   // A mensagem da pessoa precisa ter entrado antes, senão a resposta é de
   // outro turno.
   const userIndex = after.findIndex((message) => message?.from === 'user');
   if (userIndex === -1) return null;
-  const replies = after.slice(userIndex + 1)
-    .filter((message) => message?.from === 'uni' && typeof message.text === 'string' && message.text.trim());
-  return replies.at(-1) ?? null;
+  return after.slice(userIndex + 1).filter(isUniReply).at(-1) ?? null;
 }
 
 // Pronúncia do nome como o banco aceita: uma linha, sem aspas, até 60
@@ -112,4 +118,73 @@ export function resolveRealtimeToolOutcome(messages, turn) {
     return JSON.stringify({ resposta: 'Esse rascunho expirou. Nada foi lançado.', aguardando_confirmacao: false });
   }
   return null;
+}
+
+// Toque no card durante a conversa por voz. O chat responde por escrito, sem
+// passar pela ferramenta, e a Uni da conversa precisa falar essa resposta:
+// senão a pessoa confirma na tela e a conversa fica muda.
+export const REALTIME_SCREEN_ACTIONS = Object.freeze({
+  CONFIRM: 'confirm',
+  CANCEL: 'cancel',
+  EDIT: 'edit',
+});
+
+const SCREEN_ACTION_DESCRIPTIONS = Object.freeze({
+  [REALTIME_SCREEN_ACTIONS.CONFIRM]: 'tocou em Confirmar no card da tela',
+  [REALTIME_SCREEN_ACTIONS.CANCEL]: 'tocou em Cancelar no card da tela',
+  [REALTIME_SCREEN_ACTIONS.EDIT]: 'mudou os campos do card na tela e salvou',
+});
+
+const SCREEN_REPLY_MAX_LENGTH = 600;
+
+// Retrato do card no momento do toque. O objeto da confirmação entra junto
+// porque um novo erro igual ao anterior só se distingue por ele.
+export function snapshotScreenActionTurn(messages) {
+  const turn = snapshotRealtimeToolTurn(messages);
+  const card = Array.isArray(messages) && turn.confirmationId
+    ? messages.find((message) => message?.id === turn.confirmationId)
+    : null;
+  return Object.freeze({ ...turn, confirmation: card?.confirmation ?? null });
+}
+
+// O que a Uni deve dizer depois do toque. null enquanto o chat não terminou;
+// { discard: true } quando a pessoa já falou ou escreveu outra coisa, porque
+// aí o toque não teve resposta e o que vier é de outro turno.
+export function resolveScreenActionOutcome(messages, turn) {
+  const after = messagesAfter(messages, turn.baselineId);
+  if (after.some((message) => message?.from === 'user')) return { discard: true };
+  // Um toque pode render mais de uma resposta (ex.: "Categoria criada" e o
+  // card retomado): a Uni fala todas.
+  const replies = after.filter(isUniReply);
+  if (replies.length) {
+    return {
+      text: replies.map((message) => message.text.trim()).join(' '),
+      awaitingConfirmation: replies.at(-1).confirmation?.status === 'pending',
+    };
+  }
+  if (!turn.confirmationId) return null;
+  const confirmation = messages.find((message) => message?.id === turn.confirmationId)?.confirmation;
+  const hasNewError = confirmation?.confirmationError && (
+    confirmation.confirmationError !== turn.confirmationError
+    || (turn.confirmation && confirmation !== turn.confirmation)
+  );
+  if (hasNewError) {
+    return { text: confirmation.confirmationError, awaitingConfirmation: confirmation.status === 'pending', isError: true };
+  }
+  return null;
+}
+
+export function buildScreenActionInstructions(action, outcome) {
+  const description = SCREEN_ACTION_DESCRIPTIONS[action] ?? 'mexeu no card da tela';
+  const text = outcome.text.replace(/\s+/g, ' ').slice(0, SCREEN_REPLY_MAX_LENGTH);
+  const parts = [
+    `A pessoa ${description}, sem falar.`,
+    outcome.isError ? `Deu errado. O app avisou: "${text}".` : `O app respondeu: "${text}".`,
+    'Diga isso a ela agora, com naturalidade e em poucas palavras, sem ler palavra por palavra.',
+  ];
+  if (outcome.awaitingConfirmation) {
+    parts.push('O rascunho continua esperando confirmação: pergunte se pode confirmar.');
+  }
+  parts.push('Não chame ferramentas para isso.');
+  return parts.join(' ');
 }

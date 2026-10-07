@@ -2,13 +2,16 @@ import { useCallback, useEffect, useRef } from 'react';
 import { REALTIME_STATUS } from './realtimeSessionModel.js';
 import {
   buildNamePronunciationSavedOutput,
+  buildScreenActionInstructions,
   buildRealtimeToolErrorOutput,
   readRealtimeNamePronunciation,
   readRealtimeToolPhrase,
   REALTIME_TOOL_NAMES,
   REALTIME_TOOL_TIMEOUT_MS,
   resolveRealtimeToolOutcome,
+  resolveScreenActionOutcome,
   snapshotRealtimeToolTurn,
+  snapshotScreenActionTurn,
 } from './realtimeToolBridge.js';
 import { useRealtimeVoiceSession } from './useRealtimeVoiceSession.js';
 
@@ -31,6 +34,9 @@ export function isRealtimeConversationActive(status) {
 // onSaveNamePronunciation(pronuncia) grava no perfil como se fala o nome da
 // pessoa; a sessão seguinte já abre com ela.
 //
+// announceScreenAction(acao) vem antes de o chat tratar um toque no card
+// (REALTIME_SCREEN_ACTIONS): quando a resposta do chat chega, a Uni a fala.
+//
 // onActiveChange avisa o chat para não falar as respostas com a voz antiga
 // enquanto a conversa está aberta: quem fala é a Uni da conversa.
 export function useRealtimeUniConversation({
@@ -45,6 +51,7 @@ export function useRealtimeUniConversation({
   const sendRef = useRef(onSendTranscript);
   const saveNamePronunciationRef = useRef(onSaveNamePronunciation);
   const pendingTurnRef = useRef(null);
+  const screenActionRef = useRef(null);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -78,6 +85,9 @@ export function useRealtimeUniConversation({
       return Promise.resolve(buildRealtimeToolErrorOutput('A Uni ainda está terminando o pedido anterior. Peça para a pessoa aguardar um instante.'));
     }
 
+    // Um toque no card que o chat ignorou não pode narrar a resposta deste
+    // turno.
+    screenActionRef.current = null;
     return new Promise((resolve) => {
       const turn = snapshotRealtimeToolTurn(messagesRef.current);
       const timer = setTimeout(() => {
@@ -106,6 +116,38 @@ export function useRealtimeUniConversation({
 
   const session = useRealtimeVoiceSession({ onToolCall: handleToolCall });
   const isActive = isRealtimeConversationActive(session.state.status);
+  const isActiveRef = useRef(isActive);
+  const narrateScreenEvent = session.narrateScreenEvent;
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+    if (!isActive) screenActionRef.current = null;
+  }, [isActive]);
+
+  // Com um turno da ferramenta aberto, a saída dele já conta o que houve.
+  const announceScreenAction = useCallback((action) => {
+    if (!isActiveRef.current || pendingTurnRef.current) return;
+    screenActionRef.current = {
+      action,
+      turn: snapshotScreenActionTurn(messagesRef.current),
+      at: Date.now(),
+    };
+  }, []);
+
+  useEffect(() => {
+    const screenAction = screenActionRef.current;
+    if (!screenAction || isBusy) return;
+    // Toque que o chat ignorou não fica esperando para sempre.
+    if (Date.now() - screenAction.at > REALTIME_TOOL_TIMEOUT_MS) {
+      screenActionRef.current = null;
+      return;
+    }
+    const outcome = resolveScreenActionOutcome(messages, screenAction.turn);
+    if (!outcome) return;
+    screenActionRef.current = null;
+    if (outcome.discard) return;
+    narrateScreenEvent(buildScreenActionInstructions(screenAction.action, outcome));
+  }, [messages, isBusy, narrateScreenEvent]);
 
   const onActiveChangeRef = useRef(onActiveChange);
   useEffect(() => {
@@ -115,5 +157,5 @@ export function useRealtimeUniConversation({
     onActiveChangeRef.current?.(isActive);
   }, [isActive]);
 
-  return { ...session, isActive };
+  return { ...session, isActive, announceScreenAction };
 }

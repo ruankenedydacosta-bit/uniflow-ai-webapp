@@ -7,7 +7,11 @@ import {
   NAME_PRONUNCIATION_MAX_LENGTH,
   readRealtimeNamePronunciation,
   buildRealtimeToolOutput,
+  buildScreenActionInstructions,
   findUniReplyAfter,
+  REALTIME_SCREEN_ACTIONS,
+  resolveScreenActionOutcome,
+  snapshotScreenActionTurn,
   parseRealtimeToolArguments,
   resolveRealtimeToolOutcome,
   snapshotRealtimeToolTurn,
@@ -148,4 +152,76 @@ test('a sessão lê a pronúncia do perfil e a põe nas instruções', () => {
 
 test('a resposta de pronúncia salva é JSON com a fala para a Uni', () => {
   assert.match(JSON.parse(buildNamePronunciationSavedOutput()).resposta, /Pronúncia guardada/);
+});
+
+test('toque no card: a resposta do chat depois do toque vira fala da Uni', () => {
+  const before = [
+    { id: 'u1', from: 'user', text: 'gastei 50 no mercado' },
+    { id: 'c1', from: 'uni', text: 'Confere?', confirmation: { status: 'pending' } },
+  ];
+  const turn = snapshotScreenActionTurn(before);
+  assert.equal(resolveScreenActionOutcome(before, turn), null);
+
+  const after = [
+    { ...before[0] },
+    { ...before[1], confirmation: { status: 'confirmed' } },
+    { id: 'a2', from: 'uni', text: 'Pronto. Quer que eu faça mais alguma coisa?' },
+  ];
+  const outcome = resolveScreenActionOutcome(after, turn);
+  assert.deepEqual(outcome, { text: 'Pronto. Quer que eu faça mais alguma coisa?', awaitingConfirmation: false });
+  const instructions = buildScreenActionInstructions(REALTIME_SCREEN_ACTIONS.CONFIRM, outcome);
+  assert.match(instructions, /tocou em Confirmar/);
+  assert.match(instructions, /Quer que eu faça mais alguma coisa\?/);
+});
+
+test('toque no card com erro: a Uni conta o aviso do card', () => {
+  const before = [{ id: 'c1', from: 'uni', text: 'Confere?', confirmation: { status: 'pending' } }];
+  const turn = snapshotRealtimeToolTurn(before);
+  const after = [{ ...before[0], confirmation: { status: 'pending', confirmationError: 'Falhou.' } }];
+  const outcome = resolveScreenActionOutcome(after, turn);
+  assert.equal(outcome.isError, true);
+  assert.match(buildScreenActionInstructions(REALTIME_SCREEN_ACTIONS.CONFIRM, outcome), /Deu errado.*Falhou\..*pergunte se pode confirmar/);
+});
+
+test('edição salva: o card novo continua esperando confirmação', () => {
+  const before = [{ id: 'c1', from: 'uni', text: 'Confere?', confirmation: { status: 'pending' } }];
+  const turn = snapshotRealtimeToolTurn(before);
+  const after = [
+    { ...before[0], confirmation: { status: 'updated' } },
+    { id: 'c2', from: 'uni', text: 'Revise antes de registrar.', confirmation: { status: 'pending' } },
+  ];
+  const instructions = buildScreenActionInstructions(
+    REALTIME_SCREEN_ACTIONS.EDIT,
+    resolveScreenActionOutcome(after, turn),
+  );
+  assert.match(instructions, /mudou os campos do card/);
+  assert.match(instructions, /pergunte se pode confirmar/);
+});
+
+test('toque ignorado: resposta a outra frase da pessoa não vira fala do toque', () => {
+  const before = [{ id: 'c1', from: 'uni', text: 'Confere?', confirmation: { status: 'pending' } }];
+  const turn = snapshotScreenActionTurn(before);
+  const after = [...before, { id: 'u2', from: 'user', text: 'qual meu saldo?' }, { id: 'a3', from: 'uni', text: 'R$ 100.' }];
+  assert.deepEqual(resolveScreenActionOutcome(after, turn), { discard: true });
+});
+
+test('erro repetido igual ao anterior também é falado', () => {
+  const card = { id: 'c1', from: 'uni', text: 'Confere?', confirmation: { status: 'pending', confirmationError: 'Falhou.' } };
+  const turn = snapshotScreenActionTurn([card]);
+  assert.equal(resolveScreenActionOutcome([card], turn), null);
+  const retried = { ...card, confirmation: { ...card.confirmation, confirmationError: 'Falhou.' } };
+  assert.equal(resolveScreenActionOutcome([retried], turn).isError, true);
+});
+
+test('um toque com duas respostas: a Uni fala as duas', () => {
+  const before = [{ id: 'c1', from: 'uni', text: 'Criar a categoria?', confirmation: { status: 'pending' } }];
+  const turn = snapshotScreenActionTurn(before);
+  const after = [
+    { ...before[0], confirmation: { status: 'confirmed' } },
+    { id: 'a2', from: 'uni', text: 'Categoria Pet criada.' },
+    { id: 'c2', from: 'uni', text: 'Revise antes de registrar.', confirmation: { status: 'pending' } },
+  ];
+  const outcome = resolveScreenActionOutcome(after, turn);
+  assert.equal(outcome.text, 'Categoria Pet criada. Revise antes de registrar.');
+  assert.equal(outcome.awaitingConfirmation, true);
 });

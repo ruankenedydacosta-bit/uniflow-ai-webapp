@@ -827,11 +827,12 @@ test('BLOCO VOZ 1: erro relevante ao usuário fala -- os 5 pontos de erro de han
   // de categoria, falha de confirmação e catch inesperado) -- a definição
   // da função é excluída contando só chamadas que terminam em ';'.
   const callSites = page.match(/reportConfirmationError\(id, [^)]*\);/g) ?? [];
-  assert.equal(callSites.length, 5, 'esperava 5 pontos de erro de confirmação usando reportConfirmationError');
+  // O sexto é a edição no card que não pôde ser aplicada (handleSaveEditAction).
+  assert.equal(callSites.length, 6, 'esperava 6 pontos de erro do card usando reportConfirmationError');
   // Nenhum setExecutionError fora do ponto central (sem duplicação de
   // registro/narração) -- só o reset neutro (null) continua nos fluxos.
   assert.equal((page.match(/setExecutionError\(errorText\);/g) ?? []).length, 1);
-  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 11);
+  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 12);
 });
 
 test('BLOCO VOZ 1: narração de erro é gated pela experiência simplificada + preferência de voz -- chat completo permanece manual', async () => {
@@ -1355,14 +1356,16 @@ test('BUG 2 REAL: o saneamento de confirmação órfã nunca mexe em mensagens q
 
 test('ActionConfirmation só renderiza os botões Confirmar/Editar/Cancelar quando status === "pending" -- nunca para expired/confirmed/canceled', async () => {
   const card = await source('components/ActionConfirmation.jsx');
-  const buttonsIdx = card.indexOf("{status === 'pending' && (");
+  const buttonsIdx = card.indexOf("{status === 'pending' && !isEditing && (");
   assert.ok(buttonsIdx > -1);
   const slice = card.slice(buttonsIdx, buttonsIdx + 800);
   assert.match(slice, /Confirmar/);
   assert.match(slice, /Cancelar/);
-  // Nenhum outro bloco de botões existe fora dessa guarda de status.
+  // O outro bloco de botões é o do formulário de edição, que também só
+  // existe com status pendente.
+  assert.match(card, /const isEditing = canEditInline && status === 'pending' && editValues !== null;/);
   const allButtonBlocks = [...card.matchAll(/className=\{styles\.actions\}/g)];
-  assert.equal(allButtonBlocks.length, 1);
+  assert.equal(allButtonBlocks.length, 2);
 });
 
 test('ActionConfirmation exibe "Expirado" para uma confirmação órfã saneada, sem inventar um "confirmado" falso', async () => {

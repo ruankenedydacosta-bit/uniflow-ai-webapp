@@ -42,7 +42,11 @@ import {
   VOICE_MODE_ACTIONS,
 } from './voiceModeState.js';
 import { SIMPLIFIED_FEATURE_FLAGS } from './simplifiedFeatureFlags.js';
-import { REALTIME_STATUS, useRealtimeUniConversation } from '../uni-voice-realtime/index.js';
+import {
+  REALTIME_SCREEN_ACTIONS,
+  REALTIME_STATUS,
+  useRealtimeUniConversation,
+} from '../uni-voice-realtime/index.js';
 import { buildRealtimeGreetingInstructions } from '../uni-voice-realtime/realtimeGreeting.js';
 import styles from './simplifiedApp.module.css';
 
@@ -134,6 +138,8 @@ function CompactResponse({
   onConfirmAction,
   onEditAction,
   onCancelAction,
+  editForm = null,
+  onSaveEditAction,
   interactionState,
   voiceStatus,
   voiceCaptureStatus,
@@ -323,10 +329,13 @@ function CompactResponse({
           preserva a experiência de replay manual já aprovada. */}
       {lastUni?.confirmation?.status === 'pending' ? (
         <ActionConfirmation
+          key={lastUni.id}
           data={lastUni.confirmation}
           onConfirm={() => onConfirmAction(lastUni.id)}
           onEdit={onEditAction}
           onCancel={() => onCancelAction(lastUni.id)}
+          editForm={editForm}
+          onSaveEdit={onSaveEditAction ? (overrides) => onSaveEditAction(lastUni.id, overrides) : undefined}
           isExecuting={isExecuting}
           executionError={executionError}
           processingLabel={processingMessage ?? undefined}
@@ -356,6 +365,8 @@ function SimplifiedHomeView({
   onBeforeVoiceStart,
   onConfirmAction,
   onCancelAction,
+  editForm = null,
+  onSaveEditAction,
   onWelcomeVoiceSettled,
   onRealtimeVoiceActiveChange,
   realtimeVoiceEnabled = SIMPLIFIED_FEATURE_FLAGS.realtimeVoiceEnabled,
@@ -813,6 +824,22 @@ function SimplifiedHomeView({
     navigate(SIMPLIFIED_ROUTES.UNI);
   }
 
+  // Toques no card: com a conversa por voz aberta, a Uni fala a resposta.
+  function handleCardConfirm(id) {
+    realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.CONFIRM);
+    onConfirmAction(id);
+  }
+
+  function handleCardCancel(id) {
+    realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.CANCEL);
+    onCancelAction(id);
+  }
+
+  function handleCardSaveEdit(id, overrides) {
+    realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.EDIT);
+    onSaveEditAction(id, overrides);
+  }
+
   const compactResponseMessages = isVoiceModeOpen
     ? selectVoiceConversationMessages(messages, voiceConversationPreviousIds)
     : messages;
@@ -821,9 +848,9 @@ function SimplifiedHomeView({
       messages={compactResponseMessages}
       isExecuting={isExecuting}
       executionError={executionError}
-      onConfirmAction={onConfirmAction}
+      onConfirmAction={handleCardConfirm}
       onEditAction={() => navigate(SIMPLIFIED_ROUTES.UNI)}
-      onCancelAction={onCancelAction}
+      onCancelAction={handleCardCancel}
       interactionState={interactionState}
       voiceStatus={voiceController.status}
       voiceCaptureStatus={voiceInput.status}
@@ -831,6 +858,8 @@ function SimplifiedHomeView({
       turnStartToken={turnStartToken}
       interpretingOperationHint={interpretingOperationHint}
       showDetailsLink={!isVoiceModeOpen}
+      editForm={editForm}
+      onSaveEditAction={onSaveEditAction ? handleCardSaveEdit : undefined}
     />
   );
 

@@ -90,6 +90,18 @@ function closeConnection(connection) {
   }
 }
 
+function flushScreenNarration(connection) {
+  const instructions = connection.pendingScreenNarration;
+  if (!instructions) return;
+  connection.pendingScreenNarration = null;
+  connection.responseActive = true;
+  sendEvent(connection.channel, {
+    type: 'conversation.item.create',
+    item: { type: 'message', role: 'system', content: [{ type: 'input_text', text: instructions }] },
+  });
+  sendEvent(connection.channel, { type: 'response.create' });
+}
+
 // Parar durante a conexão anula a tentativa em andamento.
 class ConnectionCancelled extends Error {}
 
@@ -227,6 +239,11 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
           return;
         }
         dispatch(event);
+        if (event?.type === 'response.created') connection.responseActive = true;
+        if (event?.type === 'response.done') {
+          connection.responseActive = false;
+          flushScreenNarration(connection);
+        }
         if (event?.type === 'response.function_call_arguments.done') void runToolCall(connection, event);
       };
 
@@ -306,5 +323,18 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
 
   const getLocalStream = useCallback(() => connectionRef.current?.localStream ?? null, []);
 
-  return { state, now, start, stop, markFalseInterruption, getLocalStream };
+  // Conta à Uni algo que aconteceu na tela (ex.: toque no card) e pede que
+  // ela fale. Entra no histórico da conversa como mensagem do sistema, para
+  // a Uni lembrar depois que aquilo já foi resolvido.
+  // Com a Uni no meio de uma resposta, a OpenAI recusa outro
+  // response.create: a fala espera essa resposta terminar.
+  const narrateScreenEvent = useCallback((instructions) => {
+    const connection = connectionRef.current;
+    if (connection?.channel?.readyState !== 'open' || !instructions) return false;
+    connection.pendingScreenNarration = instructions;
+    if (!connection.responseActive) flushScreenNarration(connection);
+    return true;
+  }, []);
+
+  return { state, now, start, stop, markFalseInterruption, getLocalStream, narrateScreenEvent };
 }

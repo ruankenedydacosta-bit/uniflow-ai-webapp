@@ -216,6 +216,8 @@ import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { executeConfirmedFinancialAction } from '../../services/confirmedFinancialActionService.js';
 import * as dataService from './uniChatDataService';
+import { CANCELED_WITH_FOLLOW_UP, withFollowUpQuestion } from './confirmationFollowUp.js';
+import { buildConfirmationEditForm } from './confirmationEditForm.js';
 import styles from './UniChatPage.module.css';
 
 const UNI_THINK_MIN_MS = 600;
@@ -1175,7 +1177,12 @@ export default function UniChatPage({ variant = 'full' }) {
         setFinancialPlan(workingPlan);
       }
 
-      createAssistantResponse(buildPlanResultText(workingPlan));
+      const planResultText = buildPlanResultText(workingPlan);
+      createAssistantResponse(
+        workingPlan.status === PLAN_STATUS.COMPLETED
+          ? withFollowUpQuestion(planResultText)
+          : planResultText,
+      );
     } finally {
       // S6: rejeicao inesperada (rede/erro cru) nunca deixa a Uni travada
       // com isExecutingAction=true e confirmingPlanRef=true -- o estado
@@ -1200,7 +1207,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // de uma correção pontual, aqui a conversa financeira encerra por completo.
     setFinancialPlan(null);
     resolveFinancialPlanConfirmation('canceled');
-    createAssistantResponse(buildPlanCancelledText());
+    createAssistantResponse(withFollowUpQuestion(buildPlanCancelledText()));
   }
 
   function handlePlanConversationInput(text) {
@@ -4463,8 +4470,9 @@ export default function UniChatPage({ variant = 'full' }) {
         return;
       }
 
-      const successText = outcome.response?.text
-        || 'Prontinho! Registrei essa movimentação para você.';
+      const successText = withFollowUpQuestion(
+        outcome.response?.text || 'Prontinho! Registrei essa movimentação para você.',
+      );
       setMessages((prev) =>
         prev.map((m) =>
           m.id === id
@@ -4509,6 +4517,29 @@ export default function UniChatPage({ variant = 'full' }) {
     setInputValue('Quero alterar o valor para ');
   }
 
+  // "Salvar" do formulário do card: as mudanças entram como a correção
+  // falada ("muda o valor para 50") e o card revisado substitui este.
+  function handleSaveEditAction(id, overrides) {
+    if (confirmingRef.current || !pendingAction) return;
+    const result = financialConversation.provideInput(overrides);
+    // Sem a frase original interpretada não há como refazer o rascunho: o
+    // card atual continua valendo.
+    if (!result) {
+      reportConfirmationError(id, 'Não consegui aplicar essa edição. Diga o que quer mudar, por exemplo "muda o valor para 50".');
+      return;
+    }
+    setExecutionError(null);
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? { ...m, confirmation: { ...m.confirmation, status: 'updated' } }
+          : m,
+      ),
+    );
+    setPendingAction(null);
+    void publishConversationResultWithInference(result);
+  }
+
   function handleCancelAction(id, { cascade = false } = {}) {
     if (confirmingRef.current) return;
     if (
@@ -4546,7 +4577,7 @@ export default function UniChatPage({ variant = 'full' }) {
         // movimentação cancelada sobrevivendo para o próximo turno.
         financialConversation.reset();
         clearCurrentPendingAction();
-        createAssistantResponse('Tudo bem. Cancelei a criação da conta e a movimentação.');
+        createAssistantResponse(withFollowUpQuestion('Tudo bem. Cancelei a criação da conta e a movimentação.'));
         return;
       }
 
@@ -4582,7 +4613,7 @@ export default function UniChatPage({ variant = 'full' }) {
         // que nenhum campo/issue da movimentação cancelada sobrevive.
         financialConversation.reset();
         clearCurrentPendingAction();
-        createAssistantResponse('Tudo bem. Cancelei a criação da categoria e a movimentação.');
+        createAssistantResponse(withFollowUpQuestion('Tudo bem. Cancelei a criação da categoria e a movimentação.'));
         return;
       }
 
@@ -4607,7 +4638,7 @@ export default function UniChatPage({ variant = 'full' }) {
           : m,
       ),
     );
-    createAssistantResponse('Sem problemas, cancelei esse registro.');
+    createAssistantResponse(CANCELED_WITH_FOLLOW_UP);
     // BUG REAL (Sprint 2.1, BUG 6): idem -- cancelamento definitivo do
     // lançamento simples (com card já confirmável) usa reset(), não
     // cancel(), para não deixar account/category/issues da movimentação
@@ -4631,6 +4662,18 @@ export default function UniChatPage({ variant = 'full' }) {
   const pendingConfirmationMessage = useMemo(
     () => messages.find((m) => m.confirmation?.status === 'pending') ?? null,
     [messages],
+  );
+  // Só o card do lançamento em andamento abre o formulário; plano e
+  // criação de conta/categoria continuam com o "Editar" antigo.
+  const pendingEditForm = useMemo(
+    () => (pendingAction
+      ? buildConfirmationEditForm({
+          action: pendingAction,
+          accounts: accountState.accounts,
+          categories: categoryState.categories,
+        })
+      : null),
+    [pendingAction, accountState.accounts, categoryState.categories],
   );
   const chatProcessingState = isExecutingAction ? 'executing' : (isTyping ? 'interpreting' : 'idle');
   const chatProcessingMessage = useUniProcessingMessage(chatProcessingState, {
@@ -4675,6 +4718,8 @@ export default function UniChatPage({ variant = 'full' }) {
         onBeforeVoiceStart={handleBeforeVoiceStart}
         onConfirmAction={handleConfirmAction}
         onCancelAction={handleCancelAction}
+        editForm={pendingEditForm}
+        onSaveEditAction={handleSaveEditAction}
         onWelcomeVoiceSettled={handleWelcomeVoiceSettled}
         onRealtimeVoiceActiveChange={handleRealtimeVoiceActiveChange}
       />
@@ -4730,6 +4775,8 @@ export default function UniChatPage({ variant = 'full' }) {
                 onConfirmAction={handleConfirmAction}
                 onEditAction={handleEditAction}
                 onCancelAction={handleCancelAction}
+                editForm={message.confirmation?.status === 'pending' ? pendingEditForm : null}
+                onSaveEditAction={handleSaveEditAction}
                 isExecuting={isExecutingAction}
                 executionError={message.confirmation?.status === 'pending' ? executionError : null}
                 voiceEnabled={voicePreference.enabled}

@@ -20,6 +20,8 @@ export default function MessageBubble({
   onConfirmAction,
   onEditAction,
   onCancelAction,
+  editForm = null,
+  onSaveEditAction,
   isExecuting = false,
   executionError = null,
   voiceEnabled = false,
@@ -58,6 +60,8 @@ export default function MessageBubble({
             onConfirm={() => onConfirmAction?.(message.id)}
             onEdit={() => onEditAction?.(message.id)}
             onCancel={() => onCancelAction?.(message.id)}
+            editForm={editForm}
+            onSaveEdit={onSaveEditAction ? (overrides) => onSaveEditAction(message.id, overrides) : undefined}
             isExecuting={isExecuting}
             executionError={executionError}
             {...(processingLabel ? { processingLabel } : {})}
