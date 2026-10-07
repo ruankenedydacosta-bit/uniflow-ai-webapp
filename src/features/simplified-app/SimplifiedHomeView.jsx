@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/index.js';
+import UniCard from '../../components/ui/UniCard/index.js';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
 import {
   isAppleWebKitRuntime,
@@ -11,6 +13,7 @@ import {
 } from '../uni-voice/index.js';
 import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import { PwaInstallExperience, PwaUpdateCard } from '../pwa-install/index.js';
+import SimplifiedHomeAgenda from './SimplifiedHomeAgenda.jsx';
 import SimplifiedHomeFinancialGraph from './SimplifiedHomeFinancialGraph.jsx';
 import {
   isVoiceErrorState,
@@ -76,47 +79,8 @@ function getVoiceActivationError(errorCode) {
   return 'Não consegui ativar o microfone. Tente novamente.';
 }
 
-function LightWave() {
-  const gradientId = useId().replace(/:/g, '');
-  const glowId = useId().replace(/:/g, '');
-
-  return (
-    <div className={styles.lightWave} aria-hidden="true">
-      <svg viewBox="0 0 900 210" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
-            <stop stopColor="#7c3aed" />
-            <stop offset=".46" stopColor="#2563eb" />
-            <stop offset=".54" stopColor="#22d3ee" />
-            <stop offset="1" stopColor="#10b981" />
-          </linearGradient>
-          <filter id={glowId} x="-10%" y="-50%" width="120%" height="200%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        {[0, 1, 2, 3, 4].map((line) => (
-          <path
-            key={line}
-            d={`M-20 ${92 + line * 8}C150 ${18 + line * 7} 270 ${176 - line * 5} 450 103S735 ${22 + line * 9} 920 ${86 + line * 8}`}
-            stroke={`url(#${gradientId})`}
-            strokeOpacity={String(.2 + line * .14)}
-          />
-        ))}
-        <path
-          className={styles.waveCore}
-          d="M-20 124C160 30 285 174 450 103S735 24 920 118"
-          stroke={`url(#${gradientId})`}
-          filter={`url(#${glowId})`}
-        />
-        <circle cx="450" cy="103" r="5" fill="#ecfeff" filter={`url(#${glowId})`} />
-      </svg>
-    </div>
-  );
-}
+// Hora do cabeçalho do card da Uni ("Uni · 21:40"), fixada na abertura da Home.
+const CLOCK_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 // FASE ESTADOS DE PROCESSAMENTO: estados que mostram a mensagem de
 // processamento rotativa NO LUGAR da última resposta (em vez da resposta
@@ -375,6 +339,7 @@ function SimplifiedHomeView({
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const voiceInput = useSharedUniVoiceInput();
+  const [clockLabel] = useState(() => CLOCK_FORMATTER.format(new Date()));
   // Saudação falada ao abrir o app. Com a conversa em tempo real (épico
   // #116), a Home não fala sozinha: a saudação é visual, e a Uni fala
   // primeiro quando a pessoa toca no orb, com a mesma voz da conversa. Sem
@@ -893,21 +858,40 @@ function SimplifiedHomeView({
 
   return (
     <div className={styles.home} data-simplified-home>
-      <section className={styles.greeting} aria-labelledby="simplified-home-title">
-        <p>{greeting.visualGreeting.eyebrow}</p>
-        <h1 id="simplified-home-title">{greeting.displayName}</h1>
+      {/* Card da Uni (redesign, #89): a saudação vira o título e a frase de
+          apoio vira o corpo. A abertura e o nome continuam vindo de
+          resolveSimplifiedGreeting, a mesma fonte da saudação falada. */}
+      <UniCard
+        as="section"
+        aria-labelledby="simplified-home-title"
+        time={clockLabel}
+        title={(
+          <span id="simplified-home-title">
+            {greeting.visualGreeting.eyebrow} {greeting.displayName}
+          </span>
+        )}
+        actions={voiceActivationRequired ? (
+          <OutlineButton
+            className={styles.voiceActivationButton}
+            onClick={handleActivateVoice}
+            disabled={voiceActivationPending}
+          >
+            {voiceActivationPending ? 'ATIVANDO...' : 'ATIVAR VOZ E MICROFONE'}
+          </OutlineButton>
+        ) : null}
+      >
         {pendingUniUpdate ? (
           <div className={styles.uniUpdateBanner}>
             <p className={styles.greetingMessage}>
               🚀 <strong>A Uni evoluiu</strong>
             </p>
-            <button
-              type="button"
+            <OutlineButton
+              variant="ghost"
               className={styles.uniUpdateBannerButton}
               onClick={() => navigate(buildNovidadeUrl(pendingUniUpdate.id))}
             >
               Ver novidades
-            </button>
+            </OutlineButton>
           </div>
         ) : realtimeVoiceEnabled ? (
           // A saudação é visual: a Home diz como começar a conversa, e a Uni
@@ -922,28 +906,21 @@ function SimplifiedHomeView({
         )}
         {voiceActivationRequired ? (
           <div className={styles.voiceActivation}>
-            <button
-              type="button"
-              className={styles.voiceActivationButton}
-              onClick={handleActivateVoice}
-              disabled={voiceActivationPending}
-            >
-              {voiceActivationPending ? 'ATIVANDO...' : 'ATIVAR VOZ E MICROFONE'}
-            </button>
             <small>
               Toque uma vez para permitir o microfone e ouvir a saudação da Uni.
             </small>
             {voiceActivationError ? <p role="alert">{voiceActivationError}</p> : null}
           </div>
         ) : null}
-      </section>
+      </UniCard>
 
       <PwaInstallExperience />
       <PwaUpdateCard
         blocked={voiceInput.isActive || isInteractionBusy || pendingConfirmation || voiceActivationPending}
       />
       {isVoiceModeOpen ? null : compactResponse}
-      <LightWave />
+
+      <SimplifiedHomeAgenda />
 
 
       {realtimeVoiceEnabled ? (

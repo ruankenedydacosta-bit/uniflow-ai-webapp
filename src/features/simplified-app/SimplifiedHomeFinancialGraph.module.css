@@ -1,19 +1,15 @@
-/* HOME-GRAPH1: espaço de respiro pedido (32-56px) entre "A Uni está
-   pronta para ajudar" e o gráfico -- nunca colado. */
+/* Seção do mês na Home (redesign, #89): título, Entradas/Saídas e a barra
+   de quanto do que entrou já saiu, direto sobre o fundo da tela. */
 .wrapper {
   width: 100%;
-  margin-top: clamp(32px, 8vw, 56px);
 }
 
 /* Placeholder antes do IntersectionObserver montar o conteúdo real --
-   altura aproximada do card real, para nunca causar CLS quando o
+   altura aproximada da seção real, para nunca causar CLS quando o
    conteúdo de verdade entra. */
 .placeholder {
   width: 100%;
-  min-height: 420px;
-  border-radius: 20px;
-  background: var(--uf-app-surface);
-  opacity: .4;
+  min-height: 220px;
 }
 
 /* Microentrada: uma única vez, no mount real do conteúdo -- nunca a cada
@@ -34,113 +30,65 @@
   }
 }
 
-/* HOME-GRAPH2: o ritmo horizontal do bloco inteiro vive AQUI, num único
-   padding no card. Antes cada seção tinha o seu (padding-inline: 4px em
-   umas, margin-inline: 4px no botão) e o botão ainda somava width:100% +
-   margin, estourando 8px para fora do container. Agora nenhum filho tem
-   inset próprio: todos herdam a mesma coluna, então as margens do bloco
-   são simétricas por construção, em qualquer largura. */
 .card {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-inline: 4px;
-  box-sizing: border-box;
+  gap: 10px;
 }
 
-/* HOME-GRAPH2.1: o gráfico da Home ocupa a MESMA coluna dos cards de
-   Entradas/Saídas -- nada de caixinha estreita centralizada.
-
-   O componente compartilhado traz `max-width: 430px; margin-inline: auto`,
-   que serve às telas legadas (dashboard mobile), mas aqui fazia duas
-   coisas ruins acima de ~470px de viewport: o teto travava a largura E as
-   margens automáticas transformavam o item flex em shrink-to-fit (margem
-   auto desliga o stretch no eixo cruzado), então o card encolhia até o
-   conteúdo e sobrava um vão simétrico dos dois lados -- medido: viewport
-   480 => cards 428px, gráfico 355px, 40px de vão de cada lado.
-
-   A classe é aplicada só na instância da Home (prop `className`), então
-   dashboard e Financeiro continuam exatamente como estavam. Repetida no
-   seletor para vencer `.rootCompact` por especificidade, sem !important e
-   sem depender da ordem dos arquivos no bundle. */
-.chart.chart {
-  width: 100%;
-  max-width: none;
-  margin-inline: 0;
-  align-self: stretch;
-}
-
+/* Título 15/500 e link 13 em azul de marca, como "Outubro · Ver Financeiro". */
 .header {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.eyebrow {
-  color: var(--uf-app-text-2);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .header h2 {
   margin: 0;
   color: var(--uf-app-text);
-  font-size: clamp(18px, 4.6vw, 22px);
-  font-weight: 750;
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.3;
+}
+
+.header a {
+  color: var(--uf-app-brand-blue-text);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.header a:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+  border-radius: var(--uf-radius-8);
 }
 
 /* ---------------------------------------------------------------- resumo */
 
 .totalsRow {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .totalCard {
-  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 16px;
-  background: var(--uf-app-surface);
-  box-sizing: border-box;
+  gap: 2px;
 }
 
 .totalHead {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--uf-app-text-2);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.totalDot {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-}
-
-.totalDotIncome {
-  background: var(--uf-app-success);
-}
-
-.totalDotExpense {
-  background: var(--uf-app-danger);
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
 }
 
 .totalValueIncome,
 .totalValueExpense {
-  font-size: clamp(17px, 4.6vw, 20px);
-  font-weight: 750;
-  letter-spacing: -.01em;
+  font-size: 17px;
+  font-weight: var(--uf-font-weight-regular);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -148,148 +96,26 @@
 }
 
 .totalValueIncome {
-  color: var(--uf-app-success-text, var(--uf-app-success));
+  color: var(--uf-app-brand-green-text);
 }
 
 .totalValueExpense {
-  color: var(--uf-app-danger-text, var(--uf-app-danger));
-}
-
-/* ------------------------------------------------------------- recentes */
-
-.recentBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.recentHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.recentTitle {
-  margin: 0;
   color: var(--uf-app-text);
-  font-size: 14px;
-  font-weight: 700;
 }
 
-.toggle {
-  display: inline-flex;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--uf-app-surface);
-  border: 1px solid var(--uf-app-border);
-  gap: 2px;
-}
-
-.toggleTab,
-.toggleTabActive {
-  min-height: 32px;
-  padding-inline: 14px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--uf-app-text-2);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.toggleTabActive {
-  background: linear-gradient(135deg, var(--uf-app-primary), var(--uf-app-ai));
-  color: var(--uf-app-on-accent);
-}
-
-.recentList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.usage {
   margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recentRow {
-  width: 100%;
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 14px;
-  background: var(--uf-app-canvas);
-  color: var(--uf-app-text);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-  box-sizing: border-box;
-}
-
-.recentMain {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.recentDescription {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
-  font-weight: 650;
-}
-
-/* Categoria + data são METADADO do registro -- discretos, e nunca uma
-   série do gráfico. */
-.recentMeta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--uf-app-text-3, var(--uf-app-text-2));
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.recentValueIncome,
-.recentValueExpense {
-  flex: 0 0 auto;
-  font-size: 14px;
-  font-weight: 750;
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
   font-variant-numeric: tabular-nums;
 }
 
-.recentValueIncome {
-  color: var(--uf-app-success-text, var(--uf-app-success));
-}
-
-.recentValueExpense {
-  color: var(--uf-app-danger-text, var(--uf-app-danger));
-}
-
-.recentEmpty {
-  margin: 0;
-  padding: 14px;
-  border: 1px dashed var(--uf-app-border);
-  border-radius: 14px;
-  color: var(--uf-app-text-2);
-  font-size: 13px;
-  text-align: center;
-}
-
 /* ---------------------------------------------------------------------------
-   HOME-INSTANT1 -- skeleton do bloco financeiro.
+   HOME-INSTANT1 -- skeleton da seção do mês.
 
    Só aparece na primeira abertura de um mês (quando ainda não há cache
-   local). Reaproveita as classes de layout do card real (.card/.totalsRow/
-   .totalCard/.recentBlock), então só as "barras" precisam de estilo
+   local). Reaproveita as classes de layout da seção real (.card/.header/
+   .totalsRow/.totalCard), então só as "barras" precisam de estilo
    próprio -- o espaço ocupado já vem do layout verdadeiro, e nada salta de
    lugar quando o conteúdo entra.
 
@@ -299,7 +125,7 @@
 --------------------------------------------------------------------------- */
 .skeletonLine {
   display: block;
-  border-radius: 8px;
+  border-radius: var(--uf-radius-8);
   background: linear-gradient(
     90deg,
     var(--uf-app-surface-2) 0%,
@@ -315,21 +141,14 @@
   to { background-position: -120% 0; }
 }
 
-.skeletonEyebrow {
-  width: 42%;
-  max-width: 150px;
-  height: 12px;
-}
-
 .skeletonTitle {
-  width: 62%;
-  max-width: 230px;
-  height: 20px;
+  width: 90px;
+  height: 15px;
 }
 
-.skeletonChart {
-  min-height: 168px;
-  border-radius: 16px;
+.skeletonLink {
+  width: 96px;
+  height: 13px;
 }
 
 .skeletonTotalHead {
@@ -342,34 +161,17 @@
   height: 19px;
 }
 
-.skeletonRecentTitle {
-  width: 130px;
-  height: 15px;
-}
-
-.skeletonToggle {
-  width: 116px;
-  height: 32px;
-  border-radius: 999px;
-}
-
-.skeletonRecentList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Mesma altura mínima da linha real de movimentação (.recentRow: 56px). */
-.skeletonRecentRow {
+/* Mesma altura da barra de progresso real (3px). */
+.skeletonBar {
   width: 100%;
-  min-height: 56px;
-  border-radius: 14px;
+  height: 3px;
+  border-radius: var(--uf-radius-full);
 }
 
 .skeletonReportCard {
   width: 100%;
   min-height: 64px;
-  border-radius: 18px;
+  border-radius: var(--uf-radius-16);
 }
 
 /* Movimento reduzido: o skeleton continua marcando o espaço, só para de
@@ -379,4 +181,3 @@
     animation: none;
   }
 }
-

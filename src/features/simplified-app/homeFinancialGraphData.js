@@ -27,6 +27,23 @@ const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
   month: 'short',
 });
 
+// Título da seção do mês na Home (redesign, #89): "Outubro".
+const MONTH_TITLE_FORMATTER = new Intl.DateTimeFormat('pt-BR', { month: 'long' });
+
+function capitalizeMonth(value) {
+  return value.charAt(0).toLocaleUpperCase('pt-BR') + value.slice(1);
+}
+
+/**
+ * Parte do que entrou no mês que já saiu, em porcentagem inteira (0 a 100),
+ * para a barra "Você usou 35% do que entrou no mês." Sem entrada no mês não
+ * há proporção: devolve null e a barra não aparece.
+ */
+export function computeUsedShare(income, expense) {
+  if (!(income > 0)) return null;
+  return Math.min(100, Math.max(0, Math.round((Math.max(0, expense) / income) * 100)));
+}
+
 function dayOfMonth(dateKey) {
   return Number(String(dateKey).slice(8, 10));
 }
@@ -109,6 +126,8 @@ export function buildHomeFinancialGraphData({
   return {
     monthRange,
     periodLabel: monthRange.label,
+    monthTitle: capitalizeMonth(MONTH_TITLE_FORMATTER.format(monthRange.date)),
+    usedShare: computeUsedShare(totals.income, totals.expense),
     hasMovements: transactions.some((transaction) => transaction.status === 'completed'),
     income: totals.income,
     expense: totals.expense,

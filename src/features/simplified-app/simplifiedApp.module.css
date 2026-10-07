@@ -694,10 +694,9 @@
 
 .home {
   width: min(100%, 760px);
-  min-height: calc(100dvh - 208px);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 18px;
   margin-inline: auto;
   padding:
     10px
@@ -706,48 +705,18 @@
     max(22px, env(safe-area-inset-left));
 }
 
-.greeting {
-  width: 100%;
-  padding-inline: clamp(4px, 4vw, 32px);
-}
-
-.greeting > p:first-child {
-  margin: 0 0 6px;
-  color: var(--uf-app-text);
-  font-size: clamp(26px, 7vw, 42px);
-  font-weight: 760;
-  letter-spacing: 0;
-  line-height: 1.16;
-}
-
-.greeting h1 {
-  margin: 0;
-  background: linear-gradient(90deg, var(--uf-app-text) 0 16%, var(--uf-app-ai) 28%, var(--uf-app-primary) 57%, var(--uf-app-success) 100%);
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(38px, 11vw, 66px);
-  font-weight: 830;
-  letter-spacing: 0;
-  line-height: 1.05;
-}
-
-/* HOTFIX (compactação da Home): o botão "FALAR COM A UNI" precisa ficar
-   evidente e próximo da primeira dobra -- este bloco institucional só
-   precisa caber, não ocupar a tela. Fonte/espaçamento reduzidos, frase
-   preservada. */
+/* Corpo do card da Uni (redesign, #89): apoio 14/1.55 em texto secundário. */
 .greetingMessage {
-  max-width: 560px;
-  margin: 8px 0 0;
+  margin: 0;
   color: var(--uf-app-text-2);
-  font-size: clamp(13px, 3.4vw, 16px);
-  line-height: 1.35;
+  font-size: 14px;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .greetingMessage strong {
-  background: linear-gradient(90deg, var(--uf-app-success), var(--uf-app-success-text));
-  background-clip: text;
-  color: transparent;
-  font-weight: 600;
+  color: var(--uf-app-text);
+  font-weight: var(--uf-font-weight-medium);
 }
 
 /* UNIUPD1: destaque de "A Uni evoluiu" na Home -- substitui a frase
@@ -757,98 +726,91 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
-  margin-top: 8px;
-}
-
-.uniUpdateBanner .greetingMessage {
-  margin: 0;
+  gap: 8px 12px;
 }
 
 .uniUpdateBannerButton {
-  min-height: 40px;
-  padding: 9px 18px;
-  border: 1px solid rgba(45, 212, 191, .72);
-  border-radius: 20px;
-  background: linear-gradient(105deg, rgba(37, 99, 235, .22), rgba(124, 58, 237, .3), rgba(16, 185, 129, .2));
-  box-shadow: 0 0 18px var(--uf-app-primary-subtle);
-  color: var(--uf-app-cyan);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 780;
-  letter-spacing: .02em;
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
-}
-
-.uniUpdateBannerButton:hover {
-  border-color: var(--uf-app-focus);
-  box-shadow: 0 0 24px rgba(34, 211, 238, .24);
-}
-
-.uniUpdateBannerButton:active {
-  transform: scale(.98);
+  min-height: 36px;
 }
 
 .voiceActivation {
   display: grid;
-  justify-items: start;
-  gap: 7px;
-  margin-top: 14px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .voiceActivationButton {
-  min-height: 48px;
-  padding: 11px 18px;
-  border: 1px solid rgba(45, 212, 191, .72);
-  border-radius: 24px;
-  background: linear-gradient(105deg, rgba(37, 99, 235, .22), rgba(124, 58, 237, .3), rgba(16, 185, 129, .2));
-  box-shadow: 0 0 24px var(--uf-app-primary-subtle);
-  color: var(--uf-app-cyan);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 780;
-  letter-spacing: .02em;
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
-}
-
-.voiceActivationButton:hover {
-  border-color: var(--uf-app-focus);
-  box-shadow: 0 0 30px rgba(34, 211, 238, .24);
-}
-
-.voiceActivationButton:active {
-  transform: scale(.98);
+  white-space: normal;
 }
 
 .voiceActivationButton:disabled {
   cursor: wait;
-  opacity: .72;
 }
 
 .voiceActivation small {
   max-width: 440px;
-  color: var(--uf-app-text-2);
-  font-size: 12px;
-  line-height: 1.4;
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+  line-height: 1.45;
 }
 
 .voiceActivation p {
   margin: 0;
   color: var(--uf-app-danger-text);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: var(--uf-text-micro-size);
+  line-height: 1.45;
 }
 
+/* Seções da Home (redesign, #89): título 15/500 e link 13 em azul de
+   marca, como "Amanhã · Ver agenda" e "Outubro · Ver Financeiro". */
+.homeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.homeSectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.homeSectionHead h2 {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.3;
+}
+
+.homeSectionHead a {
+  color: var(--uf-app-brand-blue-text);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.homeSectionHead a:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+  border-radius: var(--uf-radius-8);
+}
+
+.homeSectionEmpty {
+  margin: 0;
+  color: var(--uf-app-text-3);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Última troca com a Uni (texto, resposta e confirmação pendente). */
 .compactResponse {
-  width: min(100%, 590px);
   display: grid;
   gap: 10px;
-  margin-top: 14px;
-  padding: 15px;
-  border: 1px solid rgba(37, 99, 235, .35);
-  border-radius: 18px;
-  background: var(--uf-app-panel);
-  box-shadow: var(--uf-app-soft-shadow);
+  padding: 16px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
 }
 
 .transcript,
@@ -858,16 +820,22 @@
   margin: 0;
   color: var(--uf-app-text-2);
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .transcript span,
 .uniResponse span {
-  color: var(--uf-app-focus);
-  font-size: 11px;
-  font-weight: 760;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.uniResponse {
+  color: var(--uf-app-text);
+}
+
+.uniResponse span {
+  color: var(--uf-app-brand-violet-text);
 }
 
 /* FASE ESTADOS DE PROCESSAMENTO: mensagem curta ("Ouvindo…", "Entendendo
@@ -891,7 +859,7 @@
   height: 7px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: linear-gradient(105deg, var(--uf-app-primary), var(--uf-app-primary) 50%, var(--uf-app-success));
+  background: linear-gradient(105deg, var(--uf-app-brand-blue), var(--uf-app-brand-violet) 50%, var(--uf-app-brand-green));
   animation: uniProcessingPulse 1.4s ease-in-out infinite;
 }
 
@@ -906,39 +874,14 @@
 }
 
 .detailsLink {
-  min-height: 48px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   justify-self: end;
-  color: var(--uf-app-focus);
+  color: var(--uf-app-brand-blue-text);
   font-size: 13px;
-  font-weight: 650;
-}
-
-.lightWave {
-  width: calc(100% + 44px);
-  height: clamp(118px, 29vw, 200px);
-  margin-top: 20px;
-  margin-inline: -22px;
-  pointer-events: none;
-}
-
-.lightWave svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  overflow: visible;
-}
-
-.lightWave path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-width: 1.2;
-}
-
-.lightWave .waveCore {
-  stroke-width: 2.6;
+  text-decoration: none;
 }
 
 .uniAction {
@@ -1349,32 +1292,10 @@
     height: 48px;
   }
 
-  .home {
-    min-height: calc(100dvh - 192px);
-    padding-inline: max(18px, env(safe-area-inset-left));
-  }
-
   .agendaPage {
     padding-inline:
       max(12px, env(safe-area-inset-left))
       max(12px, env(safe-area-inset-right));
-  }
-
-  .greeting {
-    padding-inline: 0;
-  }
-
-  .greetingMessage {
-    margin-top: 6px;
-  }
-
-  .lightWave {
-    width: calc(100% + 36px);
-    margin-inline: -18px;
-  }
-
-  .uniAction {
-    margin-top: -20px;
   }
 
   .availabilityCard {
@@ -1393,18 +1314,6 @@
 
   .header {
     min-height: 68px;
-  }
-
-  .greeting > p:first-child {
-    font-size: 24px;
-  }
-
-  .greeting h1 {
-    font-size: 35px;
-  }
-
-  .greetingMessage {
-    font-size: 13px;
   }
 
   .uniButton {
@@ -1438,7 +1347,6 @@
 @media (prefers-reduced-motion: reduce) {
   .navigationItem,
   .uniButton,
-  .voiceActivationButton,
   .uniVoiceLevelRing,
   .radialVoiceWaveform,
   .radialVoiceBar::before,
