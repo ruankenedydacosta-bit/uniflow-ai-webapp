@@ -122,7 +122,13 @@
   /* LOTE F -- a malha nunca excede a altura da shell (senão o documento
      voltaria a rolar): tudo o que sobrar fica dentro do .mainContent. */
   overflow: hidden;
-  background: var(--uf-app-shell-surface-bg);
+  /* Halo de topo (épico #91) nas mesmas coordenadas do .header: o header
+     cobre o conteúdo que rola sem criar emenda na borda de baixo. */
+  background-color: var(--uf-app-canvas);
+  background-image: var(--uf-app-halo);
+  background-position: 50% -180px;
+  background-size: 520px 420px;
+  background-repeat: no-repeat;
   box-shadow: 0 0 90px rgba(var(--uf-app-shadow-rgb), .4);
 }
 
@@ -156,10 +162,16 @@
   justify-content: space-between;
   padding:
     var(--uf-header-safe-top)
-    max(18px, env(safe-area-inset-right))
+    max(22px, env(safe-area-inset-right))
     8px
-    max(18px, env(safe-area-inset-left));
-  background: var(--uf-app-canvas);
+    max(22px, env(safe-area-inset-left));
+  /* Halo de topo do redesign (épico #91): a elipse de 520x420px do handoff,
+     com o centro acima da tela, pintada como camada do próprio fundo. */
+  background-color: var(--uf-app-canvas);
+  background-image: var(--uf-app-halo);
+  background-position: 50% -180px;
+  background-size: 520px 420px;
+  background-repeat: no-repeat;
   transform: translate3d(0, calc(var(--header-progress, 0) * -100%), 0);
   opacity: calc(1 - var(--header-progress, 0));
   will-change: transform, opacity;
@@ -169,7 +181,7 @@
    navegador suporta blur real, e mantém o navy praticamente opaco. */
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .header {
-    background: color-mix(in srgb, var(--uf-app-canvas) 94%, transparent);
+    background-color: color-mix(in srgb, var(--uf-app-canvas) 94%, transparent);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
@@ -202,16 +214,14 @@
 .brandLockup {
   display: inline-flex;
   align-items: center;
-  gap: 13px;
+  gap: 10px;
   color: var(--uf-app-text);
 }
 
-/* COMPACT-HEADER1: símbolo 36-42px (era 54-72px) -- legível, mas nunca
-   protagonista da Home. */
+/* Redesign (épico #91): símbolo de 26px ao lado do nome, como no handoff. */
 .brandMark {
-  width: clamp(36px, 9vw, 42px);
+  width: 26px;
   display: block;
-  filter: drop-shadow(0 0 10px rgba(37, 99, 235, .28));
 }
 
 .brandMark img {
@@ -221,19 +231,11 @@
   object-fit: contain;
 }
 
-/* COMPACT-HEADER1: wordmark ~24-28px (era 21-30, protagonismo maior) --
-   mesma fonte/tokens globais, só reduz o tamanho local do header. */
+/* Redesign (épico #91): título de tela 17/500. */
 .brandLockup strong {
-  font-size: clamp(20px, 5vw, 26px);
-  font-weight: 700;
-  letter-spacing: .02em;
+  font-size: 17px;
+  font-weight: var(--uf-font-weight-medium);
   white-space: nowrap;
-}
-
-.brandLockup strong span {
-  background: linear-gradient(90deg, var(--uf-app-ai), var(--uf-app-primary) 52%, var(--uf-app-success));
-  background-clip: text;
-  color: transparent;
 }
 
 /* COMPACT-HEADER1: agrupa as ações da direita -- um segundo ícone futuro
@@ -242,7 +244,31 @@
 .headerActions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+}
+
+/* Avatar de 32px do handoff dentro de uma área de toque de 44px. */
+.headerAvatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-right: -6px;
+  border-radius: 50%;
+  text-decoration: none;
+}
+
+.headerAvatar > span {
+  background: var(--uf-app-surface-3);
+  color: var(--uf-app-text-2);
+  font-size: 12px;
+  font-weight: var(--uf-font-weight-medium);
+  box-shadow: none;
+}
+
+.headerAvatar:focus-visible {
+  outline: 3px solid var(--uf-app-focus);
+  outline-offset: 2px;
 }
 
 .notificationButton {
@@ -260,7 +286,7 @@
 }
 
 .notificationButton:hover {
-  background: rgba(37, 99, 235, .1);
+  background: var(--uf-app-primary-subtle);
 }
 
 .notificationButton:focus-visible,
@@ -273,13 +299,8 @@
 }
 
 .notificationButton svg {
-  width: 32px;
-  height: 32px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
+  width: 22px;
+  height: 22px;
 }
 
 .notificationDot {
@@ -674,7 +695,6 @@
   flex-direction: column;
   align-items: center;
   margin-inline: auto;
-  background: var(--uf-app-canvas);
   padding:
     10px
     max(22px, env(safe-area-inset-right))
@@ -1318,11 +1338,6 @@
 
   .header {
     min-height: 68px;
-    padding-inline: max(16px, env(safe-area-inset-left));
-  }
-
-  .brandLockup {
-    gap: 10px;
   }
 
   .notificationButton {
@@ -1374,10 +1389,6 @@
 
   .header {
     min-height: 68px;
-  }
-
-  .brandLockup strong {
-    font-size: 19px;
   }
 
   .greeting > p:first-child {

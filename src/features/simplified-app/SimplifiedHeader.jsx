@@ -1,4 +1,7 @@
-import { BellIcon, UniMark } from './SimplifiedIcons.jsx';
+import { Link } from 'react-router-dom';
+import Avatar from '../../components/ui/Avatar/Avatar.jsx';
+import { PhBellIcon, UniMark } from './SimplifiedIcons.jsx';
+import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
 
 /**
@@ -18,6 +21,8 @@ function SimplifiedHeader({
   notificationButtonRef,
   onNotifications,
   hidden = false,
+  profileName,
+  avatarUrl,
 }) {
   const badgeLabel = unreadCount > 9 ? '9+' : String(unreadCount);
 
@@ -25,7 +30,7 @@ function SimplifiedHeader({
     <header className={styles.header} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden}>
       <div className={styles.brandLockup} aria-label="UniFlow AI">
         <span className={styles.brandMark} aria-hidden="true"><UniMark /></span>
-        <strong>UNIFLOW <span>AI</span></strong>
+        <strong>UniFlow</strong>
       </div>
 
       {/* COMPACT-HEADER1: agrupa as ações da direita num container próprio
@@ -44,11 +49,25 @@ function SimplifiedHeader({
           tabIndex={hidden ? -1 : undefined}
           onClick={onNotifications}
         >
-          <BellIcon />
+          <PhBellIcon />
           {unreadCount > 0 ? (
             <span className={styles.notificationCount} aria-hidden="true">{badgeLabel}</span>
           ) : null}
         </button>
+        <Link
+          to={SIMPLIFIED_ROUTES.ACCOUNT}
+          className={styles.headerAvatar}
+          aria-label="Sua conta"
+          tabIndex={hidden ? -1 : undefined}
+        >
+          <Avatar
+            size="sm"
+            src={avatarUrl || undefined}
+            name={profileName || undefined}
+            alt=""
+            aria-hidden="true"
+          />
+        </Link>
       </div>
     </header>
   );

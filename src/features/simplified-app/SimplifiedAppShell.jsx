@@ -195,6 +195,8 @@ function SimplifiedAppShell({ children }) {
               isNotificationsOpen={isNotificationsOpen}
               onNotifications={toggleNotifications}
               hidden={isHeaderHidden}
+              profileName={profile?.full_name}
+              avatarUrl={profile?.avatar_url}
             />
           )}
           {isNotificationsRendered && !hasPageHeader && !isUniChatRoute ? (
