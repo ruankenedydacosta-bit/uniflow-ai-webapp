@@ -21,6 +21,7 @@ function SimplifiedRecordsMonthChart({ transactions, monthRange }) {
       <svg
         className={styles.monthChart}
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+        preserveAspectRatio="none"
         role="img"
         aria-label="Entradas e saídas acumuladas no mês"
       >

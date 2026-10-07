@@ -554,7 +554,7 @@ function FinanceTransactionModal({
       description={isSheet ? undefined : 'Registre entradas, saídas, transferências e ajustes deste espaço.'}
       size="xl"
       className={cx(styles.transactionDialog, className)}
-      overlayClassName={overlayClassName}
+      overlayClassName={cx(overlayClassName, isSheet && styles.sheetOverlay)}
       data-presentation={presentation}
       aria-hidden={isDeleteConfirmOpen}
       inert={isDeleteConfirmOpen}
@@ -850,7 +850,7 @@ function FinanceTransactionModal({
               </Button>
             ) : null}
             <div className={styles.primaryActions}>
-              {editingId ? (
+              {editingId && !isSheet ? (
                 <Button variant="outline" onClick={resetForm} disabled={transactionState.isMutating}>
                   Cancelar edição
                 </Button>
@@ -865,7 +865,7 @@ function FinanceTransactionModal({
                   ? SHEET_SUBMIT_LABELS[form.transaction_type] ?? 'Salvar movimentação'
                   : editingId ? 'Salvar lançamento' : 'Criar lançamento'}
               </Button>
-              {isSheet && !editingId ? (
+              {isSheet ? (
                 <Button variant="ghost" onClick={handleClose} disabled={transactionState.isMutating}>
                   Cancelar
                 </Button>

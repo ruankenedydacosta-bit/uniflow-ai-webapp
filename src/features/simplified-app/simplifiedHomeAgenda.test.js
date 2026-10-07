@@ -69,6 +69,18 @@ test('item concluído ou cancelado é riscado mesmo que ainda esteja no futuro',
   assert.deepEqual(timeline.items.map((entry) => entry.status), ['done', 'done', 'next']);
 });
 
+test('item de dia inteiro ou sem horário de hoje fica pendente até o fim do dia', () => {
+  const midnight = new Date(2026, 9, 23, 0, 0).toISOString();
+  const timeline = buildHomeTimeline([
+    item({ id: 'a', starts_at: midnight, title: 'Dia inteiro' }),
+    item({ id: 'b', starts_at: midnight, title: 'Sem horário' }),
+  ].map((entry, index) => (index === 0
+    ? { ...entry, is_all_day: true }
+    : { ...entry, has_explicit_time: false })), NOW);
+  assert.deepEqual(timeline.items.map((entry) => entry.status), ['next', 'default']);
+  assert.deepEqual(timeline.items.map((entry) => entry.time), ['Dia inteiro', 'Sem horário']);
+});
+
 test('detalhe junta observação e local com " · ", usando só a primeira linha da observação', () => {
   assert.equal(buildAgendaItemDetail({ description: 'Dra. Paula\nlevar exames', location: 'Av. Paulista' }), 'Dra. Paula · Av. Paulista');
   assert.equal(buildAgendaItemDetail({ description: '', location: 'Av. Paulista' }), 'Av. Paulista');

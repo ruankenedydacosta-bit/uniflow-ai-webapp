@@ -108,7 +108,7 @@ function MonthSelector({ month, onChange }) {
         type="button"
         className={styles.periodArrow}
         onClick={() => onChange(shiftMonth(month.date, -1))}
-        aria-label="Período anterior"
+        aria-label="Mês anterior"
       >
         <PhCaretLeftIcon />
       </button>
@@ -120,7 +120,7 @@ function MonthSelector({ month, onChange }) {
         type="button"
         className={styles.periodArrow}
         onClick={() => onChange(shiftMonth(month.date, 1))}
-        aria-label="Próximo período"
+        aria-label="Próximo mês"
       >
         <PhCaretRightIcon />
       </button>

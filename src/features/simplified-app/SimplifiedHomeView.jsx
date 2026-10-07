@@ -858,16 +858,18 @@ function SimplifiedHomeView({
 
   return (
     <div className={styles.home} data-simplified-home>
+      <h1 id="simplified-home-title" className={styles.srOnly}>Hoje</h1>
       {/* Card da Uni (redesign, #89): a saudação vira o título e a frase de
           apoio vira o corpo. A abertura e o nome continuam vindo de
           resolveSimplifiedGreeting, a mesma fonte da saudação falada. */}
       <UniCard
         as="section"
-        aria-labelledby="simplified-home-title"
+        className={styles.homeCard}
+        aria-labelledby="simplified-home-uni-title"
         time={clockLabel}
         title={(
-          <span id="simplified-home-title">
-            {greeting.visualGreeting.eyebrow} {greeting.displayName}
+          <span id="simplified-home-uni-title">
+            {greeting.visualGreeting.eyebrow} {greeting.displayName}.
           </span>
         )}
         actions={voiceActivationRequired ? (

@@ -21,6 +21,49 @@ const WEEKDAY_SHORT = Object.freeze([
 
 const DONE_STATUSES = new Set(['completed', 'cancelled']);
 
+function toTimestamp(value) {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+
+/**
+ * Fim do item em ms: `ends_at`, senão `starts_at`. Item de dia inteiro ou
+ * sem horário (`is_all_day`, `has_explicit_time === false`) só termina no
+ * fim do dia local, nunca às 00:00 em que o banco guarda o início.
+ */
+export function resolveAgendaItemEnd(item) {
+  const start = toTimestamp(item?.starts_at);
+  if (start === null) return null;
+  if (item?.is_all_day || item?.has_explicit_time === false) {
+    const day = new Date(start);
+    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999).getTime();
+  }
+  return toTimestamp(item?.ends_at) ?? start;
+}
+
+/**
+ * Concluído ou cancelado, ou já terminado (quando `markPast`): é o que a
+ * Home e a Agenda riscam. Fonte única para as duas telas.
+ */
+export function isAgendaItemDone(item, { now = new Date(), markPast = true } = {}) {
+  if (DONE_STATUSES.has(item?.status)) return true;
+  if (!markPast) return false;
+  const end = resolveAgendaItemEnd(item);
+  return end !== null && end < now.getTime();
+}
+
+/**
+ * Cor do marcador e da etiqueta por tipo, igual na Home e na Agenda:
+ * tarefa violeta, lembrete verde, o resto (compromisso, reunião, conta,
+ * recebimento) azul.
+ */
+export function resolveAgendaItemTone(item) {
+  if (item?.item_type === 'task') return 'violet';
+  if (item?.item_type === 'reminder') return 'green';
+  return 'blue';
+}
+
 function pad2(value) {
   return String(value).padStart(2, '0');
 }
@@ -68,10 +111,10 @@ export function formatMonthLabel(year, month) {
   return `${MONTH_NAMES[month]} ${year}`;
 }
 
-/** "Outubro": título da seção do mês no redesign (#89). */
-export function formatMonthTitle(month) {
+/** "Outubro de 2026": título do mês no redesign (#89), como no Financeiro. */
+export function formatMonthTitle(year, month) {
   const name = MONTH_NAMES[month];
-  return name.charAt(0).toLocaleUpperCase('pt-BR') + name.slice(1);
+  return `${name.charAt(0).toLocaleUpperCase('pt-BR')}${name.slice(1)} de ${year}`;
 }
 
 /** "Seg" a partir de "SEG" (os rótulos da grade continuam em caixa alta). */
@@ -105,21 +148,6 @@ export function filterAgendaItemsByKind(items, kind) {
   return (items ?? []).filter((item) => filter.types.includes(item?.item_type));
 }
 
-/** Cor da etiqueta e do marcador por tipo: conta azul, tarefa violeta, lembrete verde, o resto neutro. */
-export function resolveAgendaItemTagTone(item) {
-  const type = item?.item_type;
-  if (type === 'payment_due' || type === 'receivable') return 'blue';
-  if (type === 'task') return 'violet';
-  if (type === 'reminder') return 'green';
-  return 'neutral';
-}
-
-function toTimestamp(value) {
-  if (!value) return null;
-  const time = new Date(value).getTime();
-  return Number.isFinite(time) ? time : null;
-}
-
 /**
  * Estado de cada item na timeline do dia selecionado: `done` para o que
  * foi concluído ou cancelado (e, se o dia é hoje, o que já passou),
@@ -132,9 +160,7 @@ export function resolveAgendaTimelineStatuses(items, { now = new Date(), dayKey 
   const isPastDay = Boolean(dayKey) && dayKey < todayKey;
   let nextMarked = false;
   return (items ?? []).map((item) => {
-    const end = toTimestamp(item?.ends_at) ?? toTimestamp(item?.starts_at) ?? 0;
-    const isDone = DONE_STATUSES.has(item?.status) || (isToday && end < now.getTime());
-    if (isDone) return 'done';
+    if (isAgendaItemDone(item, { now, markPast: isToday })) return 'done';
     if (!nextMarked && !isPastDay) {
       nextMarked = true;
       return 'next';
@@ -147,10 +173,14 @@ function pluralize(count, singular, plural) {
   return count === 1 ? singular : plural;
 }
 
+const APPOINTMENT_TYPES = new Set(['meeting', 'appointment']);
+
 /**
- * Frase da Uni no fim da Agenda (handoff 06): quantos compromissos e
- * quantas contas vencem amanhã. Devolve null quando amanhã está fora do
- * mês carregado, para a Agenda não afirmar "nenhum" sem ter os dados.
+ * Frase da Uni no fim da Agenda (handoff 06): quantos compromissos
+ * (compromisso e reunião) e quantas contas (vencimento) amanhã. Tarefa,
+ * lembrete, recebimento e outros não entram na conta. Devolve null quando
+ * amanhã está fora do mês carregado, para a Agenda não afirmar "nenhum"
+ * sem ter os dados.
  */
 export function buildTomorrowSummary(groupedItems, { now = new Date(), loadedMonth } = {}) {
   const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -159,7 +189,7 @@ export function buildTomorrowSummary(groupedItems, { now = new Date(), loadedMon
   }
   const items = groupedItems?.get(toDateKey(tomorrow)) ?? [];
   const bills = items.filter((item) => item.item_type === 'payment_due').length;
-  const appointments = items.length - bills;
+  const appointments = items.filter((item) => APPOINTMENT_TYPES.has(item.item_type)).length;
   const appointmentsText = `${appointments} ${pluralize(appointments, 'compromisso', 'compromissos')}`;
   const billsText = `${bills} ${pluralize(bills, 'conta vencendo', 'contas vencendo')}`;
   if (appointments === 0 && bills === 0) return 'Amanhã você não tem compromissos nem contas vencendo.';

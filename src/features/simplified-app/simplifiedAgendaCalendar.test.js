@@ -181,9 +181,10 @@ test('getWeekdayIndex: domingo-0 vira SEG-0; sabado vira indice 6', () => {
 // itens na timeline e a frase da Uni sobre amanhã.
 // ============================================================================
 
-test('formatMonthTitle/formatWeekdayHeader: "Outubro" e "Seg"', async () => {
+test('formatMonthTitle/formatWeekdayHeader: "Outubro de 2026" e "Seg"', async () => {
   const { formatMonthTitle, formatWeekdayHeader } = await import('./simplifiedAgendaCalendar.js');
-  assert.equal(formatMonthTitle(9), 'Outubro');
+  assert.equal(formatMonthTitle(2026, 9), 'Outubro de 2026');
+  assert.equal(formatMonthTitle(2027, 0), 'Janeiro de 2027');
   assert.equal(formatWeekdayHeader('SEG'), 'Seg');
   assert.equal(formatWeekdayHeader('SÁB'), 'Sáb');
 });
@@ -200,12 +201,28 @@ test('filterAgendaItemsByKind: Tudo não filtra; os demais agrupam tipos', async
   assert.deepEqual(filterAgendaItemsByKind(items, 'reminders').map((item) => item.item_type), ['reminder']);
 });
 
-test('resolveAgendaItemTagTone: conta azul, tarefa violeta, lembrete verde, reunião neutra', async () => {
-  const { resolveAgendaItemTagTone } = await import('./simplifiedAgendaCalendar.js');
-  assert.equal(resolveAgendaItemTagTone({ item_type: 'payment_due' }), 'blue');
-  assert.equal(resolveAgendaItemTagTone({ item_type: 'task' }), 'violet');
-  assert.equal(resolveAgendaItemTagTone({ item_type: 'reminder' }), 'green');
-  assert.equal(resolveAgendaItemTagTone({ item_type: 'meeting' }), 'neutral');
+test('resolveAgendaItemTone: tarefa violeta, lembrete verde, o resto azul (igual na Home e na Agenda)', async () => {
+  const { resolveAgendaItemTone } = await import('./simplifiedAgendaCalendar.js');
+  const { resolveAgendaItemTone: homeTone } = await import('./simplifiedHomeAgenda.js');
+  assert.equal(homeTone, resolveAgendaItemTone);
+  assert.equal(resolveAgendaItemTone({ item_type: 'payment_due' }), 'blue');
+  assert.equal(resolveAgendaItemTone({ item_type: 'task' }), 'violet');
+  assert.equal(resolveAgendaItemTone({ item_type: 'reminder' }), 'green');
+  assert.equal(resolveAgendaItemTone({ item_type: 'meeting' }), 'blue');
+  assert.equal(resolveAgendaItemTone(null), 'blue');
+});
+
+test('isAgendaItemDone: dia inteiro ou sem horário só termina no fim do dia; com hora, termina no ends_at', async () => {
+  const { isAgendaItemDone, resolveAgendaItemEnd } = await import('./simplifiedAgendaCalendar.js');
+  const midnight = new Date(2026, 9, 23, 0, 0).toISOString();
+  const now = new Date(2026, 9, 23, 15, 0);
+  assert.equal(isAgendaItemDone({ starts_at: midnight, ends_at: null, is_all_day: true, status: 'open' }, { now }), false);
+  assert.equal(isAgendaItemDone({ starts_at: midnight, ends_at: null, has_explicit_time: false, status: 'open' }, { now }), false);
+  assert.equal(isAgendaItemDone({ starts_at: midnight, ends_at: null, is_all_day: true, status: 'open' }, { now: new Date(2026, 9, 24, 0, 1) }), true);
+  assert.equal(isAgendaItemDone({ starts_at: midnight, ends_at: null, status: 'open' }, { now }), true);
+  assert.equal(isAgendaItemDone({ starts_at: midnight, status: 'completed' }, { now, markPast: false }), true);
+  assert.equal(isAgendaItemDone({ starts_at: midnight, status: 'open' }, { now, markPast: false }), false);
+  assert.equal(resolveAgendaItemEnd({ starts_at: 'inválido' }), null);
 });
 
 test('resolveAgendaTimelineStatuses: hoje risca o passado e destaca o primeiro pendente; dia passado não tem próximo', async () => {
@@ -218,6 +235,9 @@ test('resolveAgendaTimelineStatuses: hoje risca o passado e destaca o primeiro p
     { starts_at: new Date(2026, 9, 23, 15, 30).toISOString(), status: 'open' },
   ];
   assert.deepEqual(resolveAgendaTimelineStatuses(items, { now, dayKey: '2026-10-23' }), ['done', 'done', 'next', 'default']);
+  // Item de dia inteiro de hoje continua pendente até o fim do dia.
+  const allDay = [{ starts_at: new Date(2026, 9, 23, 0, 0).toISOString(), ends_at: null, is_all_day: true, status: 'open' }];
+  assert.deepEqual(resolveAgendaTimelineStatuses(allDay, { now, dayKey: '2026-10-23' }), ['next']);
   assert.deepEqual(resolveAgendaTimelineStatuses(items, { now, dayKey: '2026-10-24' }), ['done', 'next', 'default', 'default']);
   assert.deepEqual(resolveAgendaTimelineStatuses(items, { now, dayKey: '2026-10-22' }), ['done', 'default', 'default', 'default']);
 });
@@ -226,9 +246,12 @@ test('buildTomorrowSummary: conta compromissos e contas de amanhã, ou null fora
   const { buildTomorrowSummary } = await import('./simplifiedAgendaCalendar.js');
   const now = new Date(2026, 9, 23, 21, 40);
   const grouped = new Map([
-    ['2026-10-24', [{ item_type: 'meeting' }, { item_type: 'task' }]],
+    ['2026-10-24', [{ item_type: 'meeting' }, { item_type: 'appointment' }, { item_type: 'task' }, { item_type: 'reminder' }, { item_type: 'receivable' }]],
   ]);
+  // Tarefa, lembrete e recebimento não contam como compromisso nem como conta.
   assert.equal(buildTomorrowSummary(grouped, { now, loadedMonth: { year: 2026, month: 9 } }), 'Amanhã você tem 2 compromissos e nenhuma conta vencendo.');
+  grouped.set('2026-10-24', [{ item_type: 'meeting' }, { item_type: 'payment_due' }, { item_type: 'payment_due' }]);
+  assert.equal(buildTomorrowSummary(grouped, { now, loadedMonth: { year: 2026, month: 9 } }), 'Amanhã você tem 1 compromisso e 2 contas vencendo.');
   grouped.set('2026-10-24', [{ item_type: 'payment_due' }]);
   assert.equal(buildTomorrowSummary(grouped, { now, loadedMonth: { year: 2026, month: 9 } }), 'Amanhã você não tem compromissos, mas tem 1 conta vencendo.');
   assert.equal(buildTomorrowSummary(new Map(), { now, loadedMonth: { year: 2026, month: 9 } }), 'Amanhã você não tem compromissos nem contas vencendo.');

@@ -100,6 +100,7 @@ test('FONTE ÚNICA: a busca usa os MESMOS parâmetros de Registros (status compl
   const records = await source('./SimplifiedRecordsPage.jsx');
   assert.match(graph, /status: 'completed',/);
   assert.match(records, /status: 'completed',/);
+  assert.match(records, /context: 'personal',/);
 });
 
 test('FONTE ÚNICA: período da seção é o mesmo getMonthRange usado por Registros', async () => {

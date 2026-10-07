@@ -7,7 +7,7 @@
   padding:
     10px
     max(22px, env(safe-area-inset-right))
-    34px
+    88px
     max(22px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
@@ -69,16 +69,11 @@
   cursor: pointer;
 }
 
-.monthArrow svg,
-.rotatedRight svg {
+.monthArrow svg {
   width: 16px;
   height: 16px;
 }
 
-.rotatedRight svg {
-  display: block;
-  transform: rotate(180deg);
-}
 
 .monthLabel {
   min-width: 0;
@@ -285,11 +280,11 @@
 }
 
 .timelineItem {
-  --tone: var(--uf-app-text-3);
-  --tone-text: var(--uf-app-text-3);
+  --tone: var(--uf-app-brand-blue);
+  --tone-text: var(--uf-app-brand-blue-text);
   position: relative;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 56px minmax(0, 1fr);
   gap: 8px;
 }
 
@@ -310,17 +305,21 @@
 
 .timelineMarker {
   position: absolute;
-  top: 5px;
-  left: -22px;
-  width: 9px;
-  height: 9px;
+  top: 6px;
+  left: -21px;
+  width: 7px;
+  height: 7px;
   border: 1px solid var(--tone-text);
   border-radius: 50%;
   background: var(--uf-app-canvas);
 }
 
-.timelineItem[data-status="next"] .timelineMarker,
-.timelineItem[data-status="default"] .timelineMarker {
+/* Só o próximo item é sólido e brilha (como o Timeline base da Fase 0). */
+.timelineItem[data-status="next"] .timelineMarker {
+  top: 5px;
+  left: -22px;
+  width: 9px;
+  height: 9px;
   border: 0;
   background: var(--tone);
   box-shadow: 0 0 10px var(--tone);
@@ -339,6 +338,13 @@
   color: var(--uf-app-text-2);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* "Dia inteiro"/"Sem horário" ficam numa linha só, menores. */
+.itemTime[data-long="true"] {
+  padding-top: 4px;
+  font-size: 11px;
 }
 
 .itemButton {

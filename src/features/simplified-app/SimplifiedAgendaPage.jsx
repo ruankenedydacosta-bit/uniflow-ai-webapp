@@ -20,7 +20,7 @@ import {
   formatMonthTitle,
   formatWeekdayHeader,
   groupAgendaItemsByDay,
-  resolveAgendaItemTagTone,
+  resolveAgendaItemTone,
   resolveAgendaTimelineStatuses,
   shiftMonth,
   toDateKey,
@@ -53,6 +53,16 @@ const RING_VARIANT_CLASS_NAMES = {
 // lógica da Agenda -- se o card não estiver montado, a animação
 // simplesmente não acontece (fallback), nunca um erro.
 export const AGENDA_REMINDER_TARGET_ATTRIBUTE = 'data-agenda-reminder-target';
+
+// Etiquetas da timeline (handoff 06): só o vencimento muda de nome aqui;
+// o formulário e a lista legada continuam com AGENDA_ITEM_TYPE_LABELS.
+const TIMELINE_TAG_LABELS = Object.freeze({
+  ...AGENDA_ITEM_TYPE_LABELS,
+  payment_due: 'Conta a pagar',
+});
+
+// "Dia inteiro" e "Sem horário" não cabem na coluna da hora em 13px.
+const LONG_TIME_LABELS = new Set(['Dia inteiro', 'Sem horário']);
 
 /**
  * Agenda visual da experiência simplificada (rota /app/agenda). No redesign
@@ -264,7 +274,7 @@ function SimplifiedAgendaPage() {
             >
               <PhCaretLeftIcon />
             </button>
-            <h2 className={styles.monthLabel}>{formatMonthTitle(view.month)}</h2>
+            <h2 className={styles.monthLabel}>{formatMonthTitle(view.year, view.month)}</h2>
             <button
               type="button"
               className={styles.monthArrow}
@@ -344,15 +354,22 @@ function SimplifiedAgendaPage() {
             {selectedDayItems.map((item, index) => {
               const reminder = resolveReminderIndicator(statesByItemId.get(item.id));
               const detail = buildAgendaItemDetail(item);
+              const timeLabel = formatAgendaItemTime(item);
               return (
                 <li
                   key={item.id}
                   className={styles.timelineItem}
-                  data-tone={resolveAgendaItemTagTone(item)}
+                  data-tone={resolveAgendaItemTone(item)}
                   data-status={timelineStatuses[index]}
                 >
                   <span className={styles.timelineMarker} aria-hidden="true" />
-                  <span className={styles.itemTime} aria-hidden="true">{formatAgendaItemTime(item)}</span>
+                  <span
+                    className={styles.itemTime}
+                    data-long={LONG_TIME_LABELS.has(timeLabel) ? 'true' : undefined}
+                    aria-hidden="true"
+                  >
+                    {timeLabel}
+                  </span>
                   <button
                     type="button"
                     className={styles.itemButton}
@@ -364,7 +381,7 @@ function SimplifiedAgendaPage() {
                       <span className={styles.itemTitleRow}>
                         <span className={styles.itemTitle}>{item.title}</span>
                         <span className={styles.itemTag} aria-hidden="true">
-                          {AGENDA_ITEM_TYPE_LABELS[item.item_type] ?? AGENDA_ITEM_TYPE_LABELS.other}
+                          {TIMELINE_TAG_LABELS[item.item_type] ?? TIMELINE_TAG_LABELS.other}
                         </span>
                       </span>
                       {detail ? <span className={styles.itemDetail}>{detail}</span> : null}

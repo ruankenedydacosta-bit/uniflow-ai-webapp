@@ -17,9 +17,23 @@ function SimplifiedHomeAgenda() {
   const agenda = useAgenda({ workspaceId, startsFrom: range.startsFrom, startsTo: range.startsTo });
   const timeline = useMemo(() => buildHomeTimeline(agenda.items, now), [agenda.items, now]);
 
-  // Erro de carregamento não vira aviso na Home: a Agenda já mostra o
-  // problema com o botão de tentar de novo.
-  if (agenda.error) return null;
+  // A seção fica sempre, com "Ver agenda": carregando mostra um esqueleto
+  // curto e, em erro, a Agenda é onde se tenta de novo.
+  let body;
+  if (agenda.isLoading && timeline.items.length === 0) {
+    body = (
+      <div className={styles.homeSectionSkeleton} role="status" aria-label="Carregando compromissos">
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
+      </div>
+    );
+  } else if (agenda.error) {
+    body = <p className={styles.homeSectionEmpty}>Não foi possível carregar a agenda.</p>;
+  } else if (timeline.items.length > 0) {
+    body = <Timeline label={timeline.title} items={timeline.items} />;
+  } else {
+    body = <p className={styles.homeSectionEmpty}>Nenhum compromisso hoje.</p>;
+  }
 
   return (
     <section className={styles.homeSection} aria-labelledby="home-agenda-title">
@@ -27,11 +41,7 @@ function SimplifiedHomeAgenda() {
         <h2 id="home-agenda-title">{timeline.title}</h2>
         <Link to={SIMPLIFIED_ROUTES.AGENDA}>Ver agenda</Link>
       </div>
-      {timeline.items.length > 0 ? (
-        <Timeline label={timeline.title} items={timeline.items} />
-      ) : agenda.isLoading ? null : (
-        <p className={styles.homeSectionEmpty}>Nenhum compromisso hoje.</p>
-      )}
+      {body}
     </section>
   );
 }

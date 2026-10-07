@@ -1,31 +1,23 @@
-import { formatAgendaItemTime, toDateKey } from './simplifiedAgendaCalendar.js';
+import {
+  formatAgendaItemTime,
+  isAgendaItemDone,
+  resolveAgendaItemTone,
+  toDateKey,
+} from './simplifiedAgendaCalendar.js';
 
 // Lógica pura da timeline do dia na Home (redesign, #89). Sem React nem
 // Supabase: recebe os itens já carregados e o relógio, devolve o que a
 // Timeline (src/components/ui/Timeline) desenha.
 
-const DONE_STATUSES = new Set(['completed', 'cancelled']);
-
-// Cor do marcador por tipo de item: tarefa é violeta, lembrete é verde e o
-// resto (compromisso, reunião, vencimento, recebimento) é azul.
-export function resolveAgendaItemTone(item) {
-  if (item?.item_type === 'task') return 'violet';
-  if (item?.item_type === 'reminder') return 'green';
-  return 'blue';
-}
-
-function toTimestamp(value) {
-  if (!value) return null;
-  const time = new Date(value).getTime();
-  return Number.isFinite(time) ? time : null;
-}
+// Estado, fim e cor do item vêm de simplifiedAgendaCalendar.js, os mesmos
+// helpers da Agenda: o mesmo item nunca muda de cor nem de estado entre
+// as duas telas.
+export { resolveAgendaItemTone };
 
 function startTimestamp(item) {
-  return toTimestamp(item?.starts_at);
-}
-
-function endTimestamp(item) {
-  return toTimestamp(item?.ends_at) ?? startTimestamp(item);
+  if (!item?.starts_at) return null;
+  const time = new Date(item.starts_at).getTime();
+  return Number.isFinite(time) ? time : null;
 }
 
 function firstLine(value) {
@@ -54,11 +46,9 @@ function sortByStart(items) {
 }
 
 function toTimelineItems(items, { now, markPast }) {
-  const nowTime = now.getTime();
   let nextMarked = false;
   return items.map((item) => {
-    const isDone = DONE_STATUSES.has(item.status)
-      || (markPast && (endTimestamp(item) ?? 0) < nowTime);
+    const isDone = isAgendaItemDone(item, { now, markPast });
     let status = isDone ? 'done' : 'default';
     if (!isDone && !nextMarked) {
       status = 'next';
