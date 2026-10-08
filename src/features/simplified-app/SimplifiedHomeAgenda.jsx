@@ -3,19 +3,30 @@ import { Link } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import Timeline from '../../components/ui/Timeline/index.js';
 import { useAgenda } from '../../hooks/useAgenda.js';
+import { toDateKey } from './simplifiedAgendaCalendar.js';
 import { buildHomeAgendaRange, buildHomeTimeline } from './simplifiedHomeAgenda.js';
+import { useScheduledTransactionAgendaItems } from './useScheduledTransactionAgendaItems.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
 
 // Timeline do dia na Home (redesign, #89): os compromissos de hoje ou, sem
-// nada hoje, os de amanhã. Só leitura; criar e editar continuam na Agenda.
+// nada hoje, os de amanhã, junto das contas lançadas com antecedência no
+// Financeiro. Só leitura; criar e editar continuam na Agenda.
 function SimplifiedHomeAgenda() {
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
   const now = useMemo(() => new Date(), []);
   const range = useMemo(() => buildHomeAgendaRange(now), [now]);
   const agenda = useAgenda({ workspaceId, startsFrom: range.startsFrom, startsTo: range.startsTo });
-  const timeline = useMemo(() => buildHomeTimeline(agenda.items, now), [agenda.items, now]);
+  const scheduledTransactionItems = useScheduledTransactionAgendaItems({
+    workspaceId,
+    dateFrom: toDateKey(now),
+    dateTo: toDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)),
+  });
+  const timeline = useMemo(
+    () => buildHomeTimeline([...agenda.items, ...scheduledTransactionItems], now),
+    [agenda.items, scheduledTransactionItems, now],
+  );
 
   // A seção fica sempre, com "Ver agenda": carregando mostra um esqueleto
   // curto e, em erro, a Agenda é onde se tenta de novo.

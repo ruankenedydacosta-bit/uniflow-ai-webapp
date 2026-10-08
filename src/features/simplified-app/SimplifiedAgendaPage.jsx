@@ -5,16 +5,15 @@ import FilterChips from '../../components/ui/FilterChips/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { useAgenda } from '../../hooks/useAgenda.js';
 import { getAgendaItem } from '../../services/agendaService.js';
-import { listTransactionsForPeriod } from '../../services/transactionService.js';
 import AgendaDeleteConfirmModal from '../../pages/agenda/AgendaDeleteConfirmModal.jsx';
 import { AGENDA_ITEM_TYPE_LABELS, getAgendaItemErrorMessage } from '../../pages/agenda/agendaFormUtils.js';
 import AgendaReminderChoiceModal from './AgendaReminderChoiceModal.jsx';
 import SimplifiedAgendaFormModal from './SimplifiedAgendaFormModal.jsx';
 import {
-  buildFutureTransactionAgendaItems,
   buildMonthTransactionRange,
   isProjectedTransactionItem,
 } from './agendaTransactionProjection.js';
+import { useScheduledTransactionAgendaItems } from './useScheduledTransactionAgendaItems.js';
 import {
   AGENDA_KIND_FILTERS,
   buildMonthGrid,
@@ -105,33 +104,17 @@ function SimplifiedAgendaPage() {
   );
 
   const agenda = useAgenda({ workspaceId, startsFrom, startsTo });
-  // Lançamentos do Financeiro com data futura, projetados como contas. Falha
-  // ao buscar não derruba a agenda: a tela segue só com os compromissos.
-  // Guarda o workspace junto dos itens: ao trocar de espaço, a lista antiga
-  // deixa de valer na hora, sem esperar o novo fetch.
-  const [futureTransactions, setFutureTransactions] = useState({ workspaceId: null, items: [] });
-  const futureTransactionItems = useMemo(
-    () => (futureTransactions.workspaceId === workspaceId ? futureTransactions.items : []),
-    [futureTransactions, workspaceId],
+  // Contas lançadas com antecedência no Financeiro entram no calendário
+  // como itens de leitura, ao lado dos compromissos.
+  const transactionRange = useMemo(
+    () => buildMonthTransactionRange(view.year, view.month),
+    [view.year, view.month],
   );
-  useEffect(() => {
-    if (!workspaceId) return undefined;
-
-    let ignoreResult = false;
-    (async () => {
-      const { dateFrom, dateTo } = buildMonthTransactionRange(view.year, view.month);
-      const result = await listTransactionsForPeriod(workspaceId, { dateFrom, dateTo });
-      if (ignoreResult) return;
-      setFutureTransactions({
-        workspaceId,
-        items: result.error ? [] : buildFutureTransactionAgendaItems(result.data, { now }),
-      });
-    })();
-
-    return () => {
-      ignoreResult = true;
-    };
-  }, [workspaceId, view.year, view.month, now]);
+  const scheduledTransactionItems = useScheduledTransactionAgendaItems({
+    workspaceId,
+    dateFrom: transactionRange.dateFrom,
+    dateTo: transactionRange.dateTo,
+  });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -178,8 +161,8 @@ function SimplifiedAgendaPage() {
   }, [workspaceId]);
 
   const groupedItems = useMemo(
-    () => groupAgendaItemsByDay([...agenda.items, ...futureTransactionItems]),
-    [agenda.items, futureTransactionItems],
+    () => groupAgendaItemsByDay([...agenda.items, ...scheduledTransactionItems]),
+    [agenda.items, scheduledTransactionItems],
   );
   // Memoizado: `?? []` criaria um array novo a cada render, invalidando o
   // useMemo de visibleItemIds abaixo e refazendo a leitura dos lembretes
@@ -415,6 +398,7 @@ function SimplifiedAgendaPage() {
                   </span>
                   <ItemTag
                     type={isProjected ? undefined : 'button'}
+                    role={isProjected ? 'group' : undefined}
                     className={styles.itemButton}
                     onClick={isProjected ? undefined : () => openEdit(item)}
                     aria-label={`${item.title}, ${formatAgendaItemTime(item)}${reminder ? `, lembrete ${reminder.label}` : ''}`}

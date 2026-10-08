@@ -1,8 +1,12 @@
 import { toDateKey } from './simplifiedAgendaCalendar.js';
 
-// Lançamento do Financeiro com data futura aparece na Agenda como conta.
-// Não é compromisso: o registro continua sendo a transação, e o item é só
-// uma projeção de leitura (id com prefixo, sem edição nem exclusão aqui).
+// Lançamento do Financeiro feito com antecedência (data da transação depois
+// do dia em que foi registrado) aparece na Agenda como conta. Não é
+// compromisso: o registro continua sendo a transação, e o item é só uma
+// projeção de leitura (id com prefixo, sem edição, exclusão nem lembrete).
+//
+// O critério é a data de registro, não a de hoje: a conta continua na Agenda
+// no dia do vencimento e depois dele, como qualquer compromisso passado.
 
 export const TRANSACTION_AGENDA_ID_PREFIX = 'transaction:';
 
@@ -25,18 +29,25 @@ export function buildMonthTransactionRange(year, month) {
   };
 }
 
-/**
- * Transações de despesa e receita com data depois de hoje, vistas como itens
- * de dia inteiro. Comparação por string: transaction_date é YYYY-MM-DD.
- */
-export function buildFutureTransactionAgendaItems(transactions, { now = new Date() } = {}) {
-  const todayKey = toDateKey(now);
+/** Data do registro em hora local. created_at inválido devolve null. */
+function registeredDateKey(transaction) {
+  const time = Date.parse(transaction?.created_at ?? '');
+  return Number.isFinite(time) ? toDateKey(new Date(time)) : null;
+}
 
+/**
+ * Despesas e receitas lançadas com data futura, vistas como itens de dia
+ * inteiro no dia da transação. Comparação por string: as duas datas são
+ * YYYY-MM-DD.
+ */
+export function buildScheduledTransactionAgendaItems(transactions) {
   return (transactions ?? []).flatMap((transaction) => {
     const itemType = PROJECTED_ITEM_TYPES[transaction?.transaction_type];
     if (!itemType) return [];
     if (EXCLUDED_STATUSES.has(transaction.status)) return [];
-    if (!(transaction.transaction_date > todayKey)) return [];
+
+    const registeredKey = registeredDateKey(transaction);
+    if (!registeredKey || !(transaction.transaction_date > registeredKey)) return [];
 
     const [year, month, day] = transaction.transaction_date.split('-').map(Number);
     return [{
