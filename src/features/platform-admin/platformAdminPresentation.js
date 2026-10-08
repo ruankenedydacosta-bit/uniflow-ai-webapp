@@ -77,7 +77,6 @@ const ERROR_MESSAGES_BY_HINT = Object.freeze({
   admin_acesso_negado: 'Sua conta não tem acesso à administração.',
   admin_periodo_invalido: 'Escolha um período de 1 a 24 meses.',
   admin_plano_invalido: 'Escolha um dos planos da lista.',
-  admin_sem_workspace: 'Essa pessoa ainda não concluiu o cadastro. Peça para ela entrar no app uma vez e tente de novo.',
   admin_assinatura_paga: 'Essa pessoa tem uma assinatura paga ou aguardando pagamento. Altere o plano dela pela cobrança, não por aqui.',
   admin_sem_plano_manual: 'Essa pessoa não tem plano manual ativo para encerrar.',
   admin_checkout_recente: 'Essa pessoa abriu o pagamento há menos de 2 horas. Tente de novo depois desse prazo.',
