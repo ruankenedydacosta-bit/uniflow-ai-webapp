@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   filterPlatformUsers,
+  keepsManualPlanPeriod,
   PLATFORM_ADMIN_ROUTE,
   resolvePlatformAdminErrorMessage,
   resolveUserPlanSummary,
@@ -66,10 +67,37 @@ test('assinatura da Asaas corrente não é alterada pelo painel', () => {
   }
 });
 
+test('linha da Asaas sem cobrança pode virar plano manual, mas não ser encerrada', () => {
+  const summary = resolveUserPlanSummary({
+    subscription_status: 'active', subscription_source: 'asaas', subscription_billed: false, tier_id: 'uni_voz',
+  });
+  assert.equal(summary.canGrant, true);
+  assert.equal(summary.canRevoke, false);
+  assert.equal(summary.isManual, false);
+});
+
+test('assinatura ligada à Asaas segue fora do painel', () => {
+  const summary = resolveUserPlanSummary({
+    subscription_status: 'active', subscription_source: 'asaas', subscription_billed: true, tier_id: 'uni_voz',
+  });
+  assert.equal(summary.canGrant, false);
+});
+
+test('troca pela lista mantém a data só de plano manual ativo e no prazo', () => {
+  const now = new Date('2026-10-08T12:00:00Z');
+  const manual = { subscription_source: 'manual', subscription_status: 'active', current_period_ends_at: '2026-11-08T12:00:00Z' };
+  assert.equal(keepsManualPlanPeriod(manual, now), true);
+  assert.equal(keepsManualPlanPeriod({ ...manual, current_period_ends_at: '2026-10-08T11:58:00Z' }, now), false);
+  assert.equal(keepsManualPlanPeriod({ ...manual, subscription_source: 'asaas' }, now), false);
+  assert.equal(keepsManualPlanPeriod({ subscription_status: null }, now), false);
+});
+
 test('erro do banco vira mensagem pelo hint', () => {
   assert.match(resolvePlatformAdminErrorMessage({ hint: 'admin_assinatura_paga' }), /pela cobrança/);
   assert.match(resolvePlatformAdminErrorMessage({ hint: 'admin_acesso_negado' }), /não tem acesso/);
   assert.match(resolvePlatformAdminErrorMessage({ hint: 'admin_checkout_recente' }), /2 horas/);
+  assert.match(resolvePlatformAdminErrorMessage({ hint: 'admin_bloquear_a_si' }), /própria conta/);
+  assert.match(resolvePlatformAdminErrorMessage({ hint: 'admin_bloquear_admin' }), /equipe/);
   assert.match(resolvePlatformAdminErrorMessage({ message: 'falha' }), /Tente de novo/);
   assert.match(resolvePlatformAdminErrorMessage(null), /Tente de novo/);
 });
