@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
-import { useCategories, useTransactions } from '../../hooks/index.js';
+import { useCategories, useCategoryBudgets, useTransactions } from '../../hooks/index.js';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../services/financialDataEvents.js';
 import { CategoryIcon } from '../categories/categoryIcons.jsx';
 import {
@@ -18,14 +18,24 @@ import styles from './simplifiedApp.module.css';
 const CLOCK_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 const TONE_CLASS = Object.freeze({
+  [HOME_MONTH_READING_KINDS.OVER_BUDGET]: styles.homeReadingIconViolet,
+  [HOME_MONTH_READING_KINDS.NEAR_BUDGET]: styles.homeReadingIconViolet,
   [HOME_MONTH_READING_KINDS.INCREASE]: styles.homeReadingIconViolet,
   [HOME_MONTH_READING_KINDS.TOP]: styles.homeReadingIconBlue,
+  [HOME_MONTH_READING_KINDS.ON_TRACK]: styles.homeReadingIconGreen,
   [HOME_MONTH_READING_KINDS.DECREASE]: styles.homeReadingIconGreen,
 });
 
+const WARNING_KINDS = new Set([
+  HOME_MONTH_READING_KINDS.OVER_BUDGET,
+  HOME_MONTH_READING_KINDS.NEAR_BUDGET,
+  HOME_MONTH_READING_KINDS.INCREASE,
+]);
+const POSITIVE_KINDS = new Set([HOME_MONTH_READING_KINDS.ON_TRACK, HOME_MONTH_READING_KINDS.DECREASE]);
+
 function ReadingIcon({ reading }) {
-  if (reading.kind === HOME_MONTH_READING_KINDS.INCREASE) return <PhWarningCircleIcon />;
-  if (reading.kind === HOME_MONTH_READING_KINDS.DECREASE) return <PhCheckCircleIcon />;
+  if (WARNING_KINDS.has(reading.kind)) return <PhWarningCircleIcon />;
+  if (POSITIVE_KINDS.has(reading.kind)) return <PhCheckCircleIcon />;
   return <CategoryIcon category={reading.category} />;
 }
 
@@ -42,6 +52,7 @@ function SimplifiedHomeMonthReading() {
 
   // Mesmo contexto do Financeiro: a experiência simplificada é só Pessoal.
   const categoryState = useCategories({ workspaceId, context: 'personal' });
+  const budgetState = useCategoryBudgets({ workspaceId });
   const transactionState = useTransactions({
     workspaceId,
     dateFrom: range.dateFrom,
@@ -57,6 +68,7 @@ function SimplifiedHomeMonthReading() {
       setToday(new Date());
       void transactionState.refresh();
       void categoryState.refresh();
+      void budgetState.refresh();
     };
   });
 
@@ -77,21 +89,26 @@ function SimplifiedHomeMonthReading() {
   // depois que elas chegam. Ao recarregar, a lista anterior continua valendo.
   const categoriesReady = categoryState.categories.length > 0
     || (!categoryState.isLoading && !categoryState.error);
+  // Sem os tetos, a leitura usaria a média e trocaria de frase quando eles
+  // chegassem. Falha ao ler os tetos não segura a leitura: vale a média.
+  const budgetsReady = budgetState.hasLoaded || Boolean(budgetState.error);
+  const isReady = categoriesReady && budgetsReady;
 
   // A hora de "Atualizada às" muda a cada resposta nova da consulta, não a
   // cada render.
   const reading = useMemo(
     () => ({
-      ...(categoriesReady
+      ...(isReady
         ? buildHomeMonthReading({
           transactions: transactionState.transactions,
           categories: categoryState.categories,
+          budgets: budgetState.budgets,
           now: today,
         })
         : buildHomeMonthReading({ now: today })),
       updatedAtLabel: CLOCK_FORMATTER.format(new Date()),
     }),
-    [categoriesReady, transactionState.transactions, categoryState.categories, today],
+    [isReady, transactionState.transactions, categoryState.categories, budgetState.budgets, today],
   );
 
   // Antes de a sessão trazer o espaço, os hooks respondem "espaço ausente":
@@ -100,7 +117,8 @@ function SimplifiedHomeMonthReading() {
 
   return (
     <SimplifiedHomeMonthReadingView
-      isLoading={isWaitingWorkspace || transactionState.isLoading || (categoryState.isLoading && !categoriesReady)}
+      isLoading={isWaitingWorkspace || transactionState.isLoading || (categoryState.isLoading && !categoriesReady)
+        || !budgetsReady}
       error={isWaitingWorkspace ? null : (transactionState.error ?? categoryState.error)}
       reading={reading}
     />

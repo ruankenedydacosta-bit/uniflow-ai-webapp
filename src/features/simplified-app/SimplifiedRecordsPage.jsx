@@ -6,10 +6,11 @@ import IconBox from '../../components/ui/IconBox/index.js';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import CategoryCreateModal from '../categories/components/CategoryCreateModal.jsx';
 import { CategoryIcon, PlusIcon } from '../categories/categoryIcons.jsx';
-import { useAccounts, useCategories, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
+import { useAccounts, useCategories, useCategoryBudgets, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
 import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionModal.jsx';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import CategoryBudgetModal from './CategoryBudgetModal.jsx';
 import MonthPickerModal from './MonthPickerModal.jsx';
 import SimplifiedRecordsMonthChart from './SimplifiedRecordsMonthChart.jsx';
 import UpdateBalanceModal from './UpdateBalanceModal.jsx';
@@ -596,6 +597,34 @@ function TransactionList({
   );
 }
 
+// Orçamento da categoria filtrada no histórico (#121): o teto definido ou, sem
+// ele, o aviso de que a Uni usa a média. O botão só aparece para quem pode
+// editar o espaço.
+function CategoryBudgetCard({ category, monthLabel, spent, limit, canEdit, onEdit }) {
+  let detail = `Sem teto, a Uni compara ${category.name} com a média dos últimos 3 meses.`;
+  if (limit) {
+    const left = limit - spent;
+    detail = left >= 0
+      ? `Em ${monthLabel}: ${formatCurrency(spent)}. Restam ${formatCurrency(left)}.`
+      : `Em ${monthLabel}: ${formatCurrency(spent)}. Passou ${formatCurrency(-left)} do teto.`;
+  }
+
+  return (
+    <section className={styles.budgetCard} aria-label={`Orçamento de ${category.name}`}>
+      <div className={styles.budgetText}>
+        <span>Orçamento mensal</span>
+        <strong>{limit ? formatCurrency(limit) : 'Sem teto'}</strong>
+        <small>{detail}</small>
+      </div>
+      {canEdit ? (
+        <OutlineButton variant="secondary" className={styles.budgetButton} onClick={onEdit}>
+          {limit ? 'Alterar' : 'Definir teto'}
+        </OutlineButton>
+      ) : null}
+    </section>
+  );
+}
+
 const EMPTY_FILTERS = Object.freeze({
   query: '',
   type: 'all',
@@ -655,6 +684,8 @@ function SimplifiedRecordsPage() {
     status: 'completed',
   });
   const balanceState = useFinancialBalances({ workspaceId: workspace?.id });
+  const budgetState = useCategoryBudgets({ workspaceId: workspace?.id });
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const workspaceRole = useWorkspaceRole({
     workspaceId: workspace?.id,
     ownerUserId: workspace?.owner_user_id,
@@ -743,6 +774,17 @@ function SimplifiedRecordsPage() {
   const canCreateCategory = workspaceRole.canUpdate === true
     && !workspaceRole.isLoading
     && !categoryState.isMutating;
+  const canManageBudget = workspaceRole.canUpdate === true
+    && !workspaceRole.isLoading
+    && budgetState.hasLoaded;
+  // Só categoria de saída tem orçamento. "Outros" (sem categoria) não tem
+  // linha em categories para receber o teto.
+  const filteredBudgetCategory = categoryState.categories.find((category) => (
+    category.id === filters.categoryId && category.category_type === 'expense'
+  )) ?? null;
+  const filteredBudgetLimit = filteredBudgetCategory
+    ? Number(budgetState.budgets.find((budget) => budget.category_id === filteredBudgetCategory.id)?.monthly_limit ?? 0) || null
+    : null;
   const canDeleteTransaction = (transaction) => (
     workspaceRole.canDelete === true || transaction?.created_by === user?.id
   );
@@ -933,6 +975,16 @@ function SimplifiedRecordsPage() {
                       setVisibleCount(PAGE_SIZE);
                     }}
                   />
+                  {filteredBudgetCategory ? (
+                    <CategoryBudgetCard
+                      category={filteredBudgetCategory}
+                      monthLabel={month.label}
+                      spent={categorySummaries.find((row) => row.id === filteredBudgetCategory.id)?.amount ?? 0}
+                      limit={filteredBudgetLimit}
+                      canEdit={canManageBudget}
+                      onEdit={() => setBudgetModalOpen(true)}
+                    />
+                  ) : null}
                   <TransactionList
                     categories={categoryState.categories}
                     emptyMessage={transactionState.transactions.length
@@ -968,6 +1020,18 @@ function SimplifiedRecordsPage() {
           onClick={openNewTransaction}
         />
       </div>
+
+      {filteredBudgetCategory ? (
+        <CategoryBudgetModal
+          key={`category-budget-${filteredBudgetCategory.id}-${budgetModalOpen}`}
+          open={budgetModalOpen}
+          categoryName={filteredBudgetCategory.name}
+          currentLimit={filteredBudgetLimit}
+          onSave={(amount) => budgetState.saveBudget(filteredBudgetCategory.id, amount)}
+          onRemove={() => budgetState.removeBudget(filteredBudgetCategory.id)}
+          onClose={() => setBudgetModalOpen(false)}
+        />
+      ) : null}
 
       <FinanceTransactionModal
         key={`simplified-record-${transactionDialog?.type ?? 'closed'}-${transactionDialog?.transactionId ?? 'new'}`}
