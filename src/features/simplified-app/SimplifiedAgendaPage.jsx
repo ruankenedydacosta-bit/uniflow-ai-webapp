@@ -107,7 +107,13 @@ function SimplifiedAgendaPage() {
   const agenda = useAgenda({ workspaceId, startsFrom, startsTo });
   // Lançamentos do Financeiro com data futura, projetados como contas. Falha
   // ao buscar não derruba a agenda: a tela segue só com os compromissos.
-  const [futureTransactionItems, setFutureTransactionItems] = useState([]);
+  // Guarda o workspace junto dos itens: ao trocar de espaço, a lista antiga
+  // deixa de valer na hora, sem esperar o novo fetch.
+  const [futureTransactions, setFutureTransactions] = useState({ workspaceId: null, items: [] });
+  const futureTransactionItems = useMemo(
+    () => (futureTransactions.workspaceId === workspaceId ? futureTransactions.items : []),
+    [futureTransactions, workspaceId],
+  );
   useEffect(() => {
     if (!workspaceId) return undefined;
 
@@ -116,9 +122,10 @@ function SimplifiedAgendaPage() {
       const { dateFrom, dateTo } = buildMonthTransactionRange(view.year, view.month);
       const result = await listTransactionsForPeriod(workspaceId, { dateFrom, dateTo });
       if (ignoreResult) return;
-      setFutureTransactionItems(
-        result.error ? [] : buildFutureTransactionAgendaItems(result.data, { now }),
-      );
+      setFutureTransactions({
+        workspaceId,
+        items: result.error ? [] : buildFutureTransactionAgendaItems(result.data, { now }),
+      });
     })();
 
     return () => {
