@@ -156,3 +156,12 @@ test('o card e localizado por agenda_item_id (atributo estavel), nunca por titul
   assert.match(attrUsage, /item\.id/);
   assert.doesNotMatch(attrUsage, /item\.title/);
 });
+
+test('lançamento futuro do Financeiro entra no calendário como conta, sem abrir edição nem pedir lembrete', async () => {
+  const content = await source();
+  assert.match(content, /listTransactionsForPeriod\(workspaceId, \{ dateFrom, dateTo \}\)/);
+  assert.match(content, /groupAgendaItemsByDay\(\[\.\.\.agenda\.items, \.\.\.futureTransactionItems\]\)/);
+  assert.match(content, /const ItemTag = isProjected \? 'div' : 'button';/);
+  assert.match(content, /onClick=\{isProjected \? undefined : \(\) => openEdit\(item\)\}/);
+  assert.match(content, /selectedDayItems\.filter\(\(item\) => !isProjectedTransactionItem\(item\)\)/);
+});
