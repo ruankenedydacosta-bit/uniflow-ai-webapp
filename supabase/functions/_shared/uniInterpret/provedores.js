@@ -12,6 +12,9 @@
 import { ESQUEMA } from './contrato.js';
 
 export const MAX_TOKENS_SAIDA = 1024;
+// O Haiku 5.5 pensa antes de responder, e o pensamento conta em max_tokens:
+// com o teto da OpenAI a resposta parava no meio do JSON ('cortada').
+export const MAX_TOKENS_SAIDA_ANTHROPIC = 4096;
 const NOME_ESQUEMA = 'uni_interpretacao';
 
 function lerJson(texto) {
@@ -44,7 +47,7 @@ export async function interpretarComAnthropic({ cliente, modelo, instrucoes, men
   try {
     resposta = await cliente.messages.create({
       model: modelo,
-      max_tokens: MAX_TOKENS_SAIDA,
+      max_tokens: MAX_TOKENS_SAIDA_ANTHROPIC,
       system: [{ type: 'text', text: instrucoes, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: mensagem }],
       output_config: { format: { type: 'json_schema', schema: ESQUEMA } },

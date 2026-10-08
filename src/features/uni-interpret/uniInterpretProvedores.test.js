@@ -52,6 +52,10 @@ test('Anthropic: envia schema fixo em output_config, system com cache e devolve 
   assert.deepEqual(corpo.output_config, { format: { type: 'json_schema', schema: ESQUEMA } });
   assert.deepEqual(corpo.system, [{ type: 'text', text: 'INSTRUCOES', cache_control: { type: 'ephemeral' } }]);
   assert.deepEqual(corpo.messages, [{ role: 'user', content: 'MENSAGEM' }]);
+  // Os modelos atuais (Haiku 5.5 incluso) devolvem 400 com amostragem fora do padrão.
+  for (const parametro of ['temperature', 'top_p', 'top_k']) {
+    assert.equal(parametro in corpo, false, `${parametro} não pode ir no corpo`);
+  }
 });
 
 test('Anthropic: recusa, resposta cortada e JSON inválido viram falha sem lançar', async () => {
