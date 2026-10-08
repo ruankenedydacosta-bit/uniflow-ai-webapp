@@ -176,8 +176,13 @@ export function resolvePendingActionInput({
     return collected ? { ...result, overrides: { ...collected, ...result.overrides } } : result;
   }
   // "A categoria é Pets" com outro campo na frase: o pedido de categoria
-  // nova vem primeiro; o resto não pode apagá-lo.
-  if (result.kind === 'category_not_found' && result.requestedCategoryName) return result;
+  // nova vem primeiro; o resto não pode apagá-lo. Os outros campos ("foi
+  // ontem") seguem em overrides para o rascunho voltar com eles.
+  if (result.kind === 'category_not_found' && result.requestedCategoryName) {
+    const otherOverrides = { ...collected };
+    delete otherOverrides.categoryId;
+    return Object.keys(otherOverrides).length ? { ...result, overrides: otherOverrides } : result;
+  }
   if (collected) return { kind: 'correction', overrides: collected };
 
   // BUG REAL (contexto/correção perdidos): a Uni pergunta um campo (ex.:
@@ -207,7 +212,9 @@ export function resolvePendingActionInput({
 // categoria e caíam em "quer continuar ou falar de outra coisa?", em loop.
 // O nome é o que vem depois de "categoria", sem os conectivos. Referência ao
 // próprio registro ("a categoria do registro") não é nome.
-const CATEGORY_NAME_LEAD = /^(?:(?:é|e|eh|:|seja|sera|será|vai\s+ser|fica|ficar|tem\s+que\s+ser|para|pra|por|como|nova|novo|chamada|chamado|com\s+o\s+nome(?:\s+de)?)[\s:]*)+/i;
+// Artigo e "de" também saem: "é de lazer" pede "lazer", e "a Pets" pede
+// "Pets". "do"/"da" ficam, porque marcam referência ao registro.
+const CATEGORY_NAME_LEAD = /^(?:(?::|(?:é|e|eh|seja|sera|será|vai\s+ser|fica|ficar|tem\s+que\s+ser|para|pra|por|como|nova|novo|chamada|chamado|com\s+o\s+nome(?:\s+de)?|a|o|de)(?=[\s:]|$))[\s:]*)+/i;
 const CATEGORY_NAME_TAIL = /(?:[,\s]+(?:por\s+favor|pra\s+mim|para\s+mim|agora|ta|tá|ok))+\s*$/i;
 const CATEGORY_REFERENCE_START = /^(?:do|da|dos|das|desse|dessa|deste|desta|disso|dele|dela|que|atual|certa|errada|outra|outro|diferente|ta|tá|esta|está|estava|ficou|nao|não)(?=\s|$)/i;
 const CATEGORY_NAME_MAX_LENGTH = 40;
@@ -218,7 +225,9 @@ export function extractRequestedCategoryName(value) {
   const match = text.match(/\bcategoria\b(.*)$/i);
   if (!match) return '';
   const name = match[1]
-    .split(/[,;]|\s+e\s+(?:o|a)\s+/i)[0]
+    // Outra oração ("e foi ontem", "e no Nubank") não faz parte do nome;
+    // "Casa e Jardim" faz.
+    .split(/[,;]|\s+e\s+(?=(?:o|a|os|as|foi|era|é|eh|no|na|pelo|pela|com|em|ontem|hoje|anteontem|data|valor|conta)(?:\s|$))/i)[0]
     .replace(/[.!?]+\s*$/g, '')
     .trim()
     .replace(CATEGORY_NAME_LEAD, '')
