@@ -130,7 +130,8 @@ test('controles de voz ficam fora do reenvio da saudação e não iniciam captur
 
 test('enquanto ouve, a tela mostra as ondas no lugar da resposta anterior', async () => {
   const modal = await source('./SimplifiedVoiceMode.jsx');
-  assert.match(modal, /\{stage\.showWaves \? <VoiceWave \/> : response\}/);
+  // Sem minutos de voz (tela 19), ninguém está ouvindo: a onda não aparece.
+  assert.match(modal, /\{stage\.showWaves && !minutesOut \? <VoiceWave \/> : response\}/);
 });
 
 // ============================================================================
@@ -277,7 +278,8 @@ test('na conversa em tempo real não existe Enviar: o botão central só encerra
 
 test('com a flag, a tela de voz abre a conversa em tempo real no mesmo toque e o botão central encerra', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /function handleOpenRealtimeVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*beginRealtimeConversation\(\);\s*\}/);
+  // A conexão continua no mesmo toque; só não acontece com o saldo zerado.
+  assert.match(home, /function handleOpenRealtimeVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*refreshVoiceMinutes\(\);\s*if \(!isVoiceMinutesOut\) beginRealtimeConversation\(\);\s*\}/);
   assert.match(home, /if \(realtimeVoiceEnabled\) openVoiceModeRef\.current = handleOpenRealtimeVoiceMode;/);
   assert.match(home, /action === VOICE_MODE_ACTIONS\.END_CONVERSATION\) stopRealtime\('user'\)/);
   assert.match(home, /view=\{resolveRealtimeVoiceModeView\(realtime\.state\.status, \{ hasPendingDraft: voiceHasPendingDraft \}\)\}/);

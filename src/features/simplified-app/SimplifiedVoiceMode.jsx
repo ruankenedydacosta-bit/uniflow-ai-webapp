@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import {
   PhChatCircleTextIcon,
+  PhCrownIcon,
   PhKeyboardIcon,
   PhMicrophoneIcon,
   PhStopFillIcon,
@@ -14,6 +15,7 @@ import {
   VOICE_MODE_ACTION_LABELS,
   VOICE_MODE_ACTIONS,
 } from './voiceModeState.js';
+import { describeVoiceMinutesChip, describeVoiceMinutesOut } from './voiceMinutesPresentation.js';
 import styles from './simplifiedVoiceMode.module.css';
 
 // Tela 03 do handoff: 34 barras de 3px com 4px de intervalo.
@@ -76,12 +78,16 @@ function SimplifiedVoiceMode({
   isUserSpeaking = false,
   hasReply = false,
   workspaceLabel = 'Pessoal',
+  // Tela 19: saldo do mês (resolveVoiceMinutes). Nulo quando não se sabe:
+  // a tela fica como antes e o servidor decide.
+  voiceMinutes = null,
   getVoiceStream,
   getVoiceSessionId,
   onAction,
   onClose,
   onWrite,
   onOpenConversation,
+  onOpenPlan,
 }) {
   const titleId = useId();
   const primaryButtonRef = useRef(null);
@@ -92,6 +98,8 @@ function SimplifiedVoiceMode({
   const isActionDisabled = view.action === VOICE_MODE_ACTIONS.NONE;
   const stage = resolveVoiceModeStage({ view, isUserSpeaking, hasReply });
   const cleanTranscript = String(transcript ?? '').trim();
+  const minutesChip = describeVoiceMinutesChip(voiceMinutes);
+  const minutesOut = voiceMinutes?.isOut ? describeVoiceMinutesOut(voiceMinutes) : null;
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -132,11 +140,35 @@ function SimplifiedVoiceMode({
       <header className={styles.header}>
         <h2 id={titleId} className={styles.srOnly}>Falar com a Uni</h2>
         <span className={styles.workspace}>{workspaceLabel}</span>
-        <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Fechar">
-          <PhXIcon />
-        </button>
+        <div className={styles.headerActions}>
+          {minutesChip ? (
+            <span className={styles.minutesChip} data-low={minutesChip.isLow} title={minutesChip.title}>
+              <PhMicrophoneIcon />
+              <span aria-hidden="true">{minutesChip.label}</span>
+              <span className={styles.srOnly}>{minutesChip.title}</span>
+            </span>
+          ) : null}
+          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Fechar">
+            <PhXIcon />
+          </button>
+        </div>
       </header>
 
+      {minutesOut ? (
+        <div className={styles.stage}>
+          <p className={styles.status} data-tone="muted" role="status">
+            <span className={styles.statusDot} data-muted="true" aria-hidden="true" />
+            {minutesOut.status}
+          </p>
+          <div className={styles.orbStill} aria-hidden="true">
+            <UniRingOrb size={120} state="idle" />
+          </div>
+          <div className={styles.outCopy}>
+            <p className={styles.outTitle}>{minutesOut.title}</p>
+            <p className={styles.outBody}>{minutesOut.body}</p>
+          </div>
+        </div>
+      ) : (
       <div className={styles.stage}>
         <p className={styles.status} data-tone={view.tone} role="status">
           <span className={styles.statusDot} aria-hidden="true" />
@@ -172,11 +204,45 @@ function SimplifiedVoiceMode({
 
         {hint ? <p className={styles.hint} data-tone={view.tone}>{hint}</p> : null}
       </div>
+      )}
 
       <div className={styles.content}>
-        {stage.showWaves ? <VoiceWave /> : response}
+        {stage.showWaves && !minutesOut ? <VoiceWave /> : response}
       </div>
 
+      {minutesOut ? (
+        <footer className={styles.controls}>
+          <div className={styles.control}>
+            <button type="button" className={styles.secondaryButton} onClick={onOpenPlan} aria-label="Ver plano">
+              <PhCrownIcon />
+            </button>
+            <span aria-hidden="true">Ver plano</span>
+          </div>
+          <div className={styles.control}>
+            <button
+              ref={primaryButtonRef}
+              type="button"
+              className={styles.primaryButton}
+              onClick={onWrite}
+              aria-label="Escrever para a Uni"
+            >
+              <PhKeyboardIcon />
+            </button>
+            <span className={styles.primaryLabel} aria-hidden="true">Escrever</span>
+          </div>
+          <div className={styles.control}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={onOpenConversation}
+              aria-label="Ver a conversa completa"
+            >
+              <PhChatCircleTextIcon />
+            </button>
+            <span aria-hidden="true">Conversa</span>
+          </div>
+        </footer>
+      ) : (
       <footer className={styles.controls}>
         <div className={styles.control}>
           <button type="button" className={styles.secondaryButton} onClick={onWrite} aria-label="Escrever para a Uni">
@@ -211,6 +277,7 @@ function SimplifiedVoiceMode({
           <span aria-hidden="true">Conversa</span>
         </div>
       </footer>
+      )}
     </div>,
     document.body,
   );
