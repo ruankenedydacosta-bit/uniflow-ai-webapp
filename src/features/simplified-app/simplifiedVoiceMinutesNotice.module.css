@@ -1,0 +1,99 @@
+/* Tela 19 do redesign: aviso de minutos de voz na Home. Superfície com
+   contorno violeta leve, ícone de microfone e as ações alinhadas ao texto. */
+.notice {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px var(--uf-space-16);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 22%, transparent);
+}
+
+.body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--uf-space-12);
+}
+
+.icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-app-well);
+  color: var(--uf-app-brand-violet-text);
+}
+
+.icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+  min-width: 0;
+}
+
+.dismissButton {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -6px -8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-full);
+  background: none;
+  color: var(--uf-app-text-3);
+  cursor: pointer;
+}
+
+.dismissButton svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.dismissButton:hover {
+  background: var(--uf-app-surface-2);
+}
+
+.dismissButton:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.title {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+
+.description {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
+  padding-left: 48px;
+}

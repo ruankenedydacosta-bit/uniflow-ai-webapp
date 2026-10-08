@@ -38,6 +38,14 @@ import { SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.j
 import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import SimplifiedVoiceMode from './SimplifiedVoiceMode.jsx';
+import SimplifiedVoiceMinutesNotice from './SimplifiedVoiceMinutesNotice.jsx';
+import { ACCOUNT_SUBROUTE_IDS, ACCOUNT_SUBROUTES } from './simplifiedAccountRoutes.js';
+import { useVoiceMinutes } from './useVoiceMinutes.js';
+import {
+  describeVoiceMinutesNotice,
+  readDismissedVoiceMinutesNotice,
+  writeDismissedVoiceMinutesNotice,
+} from './voiceMinutesPresentation.js';
 import {
   resolveRealtimeVoiceModeView,
   selectVoiceConversationMessages,
@@ -633,6 +641,46 @@ function SimplifiedHomeView({
   });
   const stopRealtime = realtime.stop;
   const isRealtimeActive = realtime.isActive;
+  const realtimeStatus = realtime.state.status;
+
+  // Tela 19: saldo de minutos de voz. O chip desconta a conversa em
+  // andamento, e o saldo é relido depois que ela termina (useVoiceMinutes).
+  const userId = user?.id ?? null;
+  const { voiceMinutes, refresh: refreshVoiceMinutes } = useVoiceMinutes({
+    enabled: realtimeVoiceEnabled,
+    userId,
+    sessionStartedAt: realtime.state.startedAt,
+    sessionEndedAt: realtime.state.endedAt,
+  });
+  // Recusa antes de conectar (ex.: minutos esgotados) não abre reserva: o
+  // saldo pode ser relido na hora.
+  const failedBeforeConnecting = realtimeStatus === REALTIME_STATUS.ERROR && realtime.state.startedAt === null;
+  useEffect(() => {
+    if (failedBeforeConnecting) refreshVoiceMinutes();
+  }, [failedBeforeConnecting, refreshVoiceMinutes]);
+  // Com a conversa aberta ou conectando, a tela nunca troca para "sem
+  // minutos": ela perderia o botão de encerrar.
+  const isRealtimeLive = isRealtimeActive || realtimeStatus === REALTIME_STATUS.CONNECTING;
+  const isVoiceMinutesOut = voiceMinutes?.isOut === true && !isRealtimeLive;
+  const voiceMinutesNotice = describeVoiceMinutesNotice(voiceMinutes);
+  const voiceMinutesNoticeKey = voiceMinutesNotice?.key ?? null;
+  const [dismissedVoiceNoticeKey, setDismissedVoiceNoticeKey] = useState(null);
+  const storedDismissedVoiceNoticeKey = useMemo(
+    () => (voiceMinutesNoticeKey ? readDismissedVoiceMinutesNotice(userId) : null),
+    [userId, voiceMinutesNoticeKey],
+  );
+  const showVoiceMinutesNotice = Boolean(voiceMinutesNoticeKey)
+    && voiceMinutesNoticeKey !== dismissedVoiceNoticeKey
+    && voiceMinutesNoticeKey !== storedDismissedVoiceNoticeKey;
+
+  function handleDismissVoiceMinutesNotice() {
+    setDismissedVoiceNoticeKey(voiceMinutesNotice.key);
+    writeDismissedVoiceMinutesNotice(userId, voiceMinutesNotice.key);
+  }
+
+  function handleOpenVoicePlan() {
+    navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].path);
+  }
 
   const cancelVoiceCaptureRef = useRef(null);
   const openVoiceModeRef = useRef(null);
@@ -736,9 +784,14 @@ function SimplifiedHomeView({
     beginVoiceCapture();
   }
 
+  // Sem minutos, a tela abre no estado de saldo zerado e não tenta conectar.
+  // O saldo é relido: se o plano mudou, a tela volta ao orb para conversar.
+  // Com saldo, não se relê aqui: a reserva da conversa que começa entraria
+  // no saldo como gasta.
   function handleOpenRealtimeVoiceMode() {
     setIsVoiceModeOpen(true);
-    beginRealtimeConversation();
+    if (isVoiceMinutesOut) refreshVoiceMinutes();
+    else beginRealtimeConversation();
   }
 
   // Declarado antes do efeito que lê a ref: efeitos rodam na ordem do código.
@@ -780,6 +833,12 @@ function SimplifiedHomeView({
   function handleLeaveRealtimeVoiceModeToChat() {
     stopRealtime('user');
     handleLeaveVoiceModeToChat();
+  }
+
+  function handleOpenPlanFromVoiceMode() {
+    stopRealtime('user');
+    setIsVoiceModeOpen(false);
+    handleOpenVoicePlan();
   }
 
   function handleVoiceModeAction(action) {
@@ -954,6 +1013,14 @@ function SimplifiedHomeView({
         ) : null}
       </UniCard>
 
+      {showVoiceMinutesNotice ? (
+        <SimplifiedVoiceMinutesNotice
+          notice={voiceMinutesNotice}
+          onOpenPlan={handleOpenVoicePlan}
+          onDismiss={handleDismissVoiceMinutesNotice}
+        />
+      ) : null}
+
       <PwaInstallExperience />
       {isVoiceModeOpen ? null : compactResponse}
 
@@ -971,10 +1038,13 @@ function SimplifiedHomeView({
           isUserSpeaking={isRealtimeUserSpeaking}
           hasReply={voiceHasReply}
           getVoiceStream={realtime.getLocalStream}
+          voiceMinutes={voiceMinutes}
+          isVoiceMinutesOut={isVoiceMinutesOut}
           onAction={handleRealtimeVoiceModeAction}
           onClose={handleCloseRealtimeVoiceMode}
           onWrite={handleLeaveRealtimeVoiceModeToChat}
           onOpenConversation={handleLeaveRealtimeVoiceModeToChat}
+          onOpenPlan={handleOpenPlanFromVoiceMode}
         />
       ) : (
         <SimplifiedVoiceMode
