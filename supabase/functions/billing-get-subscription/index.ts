@@ -246,6 +246,9 @@ Deno.serve(async (request) => {
     pending_tier_name: pendingTier?.name ?? null,
     cycle: 'MONTHLY',
     internal_status: local.status,
+    // 'manual' = plano concedido pela equipe (migration 055): sem cobrança,
+    // sem troca nem cancelamento pelo app.
+    source: local.source ?? 'asaas',
     provider_status: providerStatus,
     provider_deleted: providerDeleted,
     payment_method: local.payment_method,

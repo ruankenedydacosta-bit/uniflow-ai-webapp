@@ -9,6 +9,8 @@ import Button from '../../components/ui/Button/Button.jsx';
 import { cx } from '../../utils/cx.js';
 import AnalyticsConsentPreferencesModal from '../analytics/AnalyticsConsentPreferencesModal.jsx';
 import { useAnalyticsConsent } from '../analytics/useAnalyticsConsent.js';
+import { PLATFORM_ADMIN_ROUTE } from '../platform-admin/platformAdminPresentation.js';
+import { useIsPlatformAdmin } from '../platform-admin/useIsPlatformAdmin.js';
 import SimplifiedAccountNotificationsRow from './SimplifiedAccountNotificationsRow.jsx';
 import {
   formatPlanPrice,
@@ -34,6 +36,7 @@ import {
   PhShieldCheckIcon,
   PhSignOutIcon,
   PhUserIcon,
+  PhUsersThreeIcon,
   UniMark,
 } from './SimplifiedIcons.jsx';
 import groups from './simplifiedGroups.module.css';
@@ -69,6 +72,7 @@ function SimplifiedAccountPage() {
   // UNIUPD2: limit:1 -- só precisa da versão atual (mesma fonte de Sobre a
   // UniFlow AI e da notificação), nunca o histórico inteiro.
   const { currentVersion } = useUniUpdates({ limit: 1 });
+  const platformAdminStatus = useIsPlatformAdmin();
 
   useEffect(() => {
     let isActive = true;
@@ -278,6 +282,21 @@ function SimplifiedAccountPage() {
           {productItems.slice(2).map(renderRow)}
         </div>
       </section>
+
+      {platformAdminStatus === 'granted' ? (
+        <section className={groups.group} aria-label="Equipe UniFlow">
+          <h2 className={groups.groupLabel}>Equipe UniFlow</h2>
+          <div className={groups.list}>
+            {renderRow({
+              id: 'platform-admin',
+              Icon: PhUsersThreeIcon,
+              title: 'Administração',
+              subtitle: 'Usuários e planos',
+              to: PLATFORM_ADMIN_ROUTE,
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <section className={groups.group} aria-label="Sessão">
         <h2 className={groups.groupLabel}>Sessão</h2>

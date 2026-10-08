@@ -120,7 +120,10 @@ function SimplifiedPlanPage() {
   const renewsAt = resolveRenewsAt(subscription, planState);
   const cancelEffectiveAt = resolveCancelEffectiveAt(subscription, planState);
   const trialEndsAt = resolveTrialEndsAt(subscription, planState);
-  const canCancel = planState.status === 'active';
+  // Plano manual (concedido pela equipe) não tem cobrança: nada a cancelar
+  // nem a trocar pelo app.
+  const isManualPlan = subscription?.source === 'manual';
+  const canCancel = planState.status === 'active' && !isManualPlan;
 
   const usageMessage = isLoadingTransactions
     ? 'Calculando...'
@@ -135,6 +138,10 @@ function SimplifiedPlanPage() {
   const voiceBalanceText = planState.status === 'active' ? describeVoiceBalance(voiceBalance) : null;
 
   function handleOpenChangePlan() {
+    if (isManualPlan) {
+      setShowManageModal(true);
+      return;
+    }
     if (planState.status !== 'active' || !currentTierId) {
       navigate(PERSONAL_PLAN_ROUTE);
       return;
@@ -274,6 +281,13 @@ function SimplifiedPlanPage() {
           {planState.status === 'suspended' ? (
             <p className={styles.hint}>Seu acesso ao Plano Pessoal está suspenso por falta de pagamento. Fale com a Uni para regularizar.</p>
           ) : null}
+          {isManualPlan && planState.status === 'active' ? (
+            <p className={styles.hint}>
+              {subscription?.current_period_ends_at
+                ? `Plano liberado pela equipe da UniFlow até ${formatDate(subscription.current_period_ends_at)}. Não há cobrança.`
+                : 'Plano liberado pela equipe da UniFlow. Não há cobrança.'}
+            </p>
+          ) : null}
           {planState.status === 'cancel_scheduled' ? (
             <p className={styles.hint}>Seu acesso continua ativo até a data acima. Não haverá nova cobrança.</p>
           ) : null}
@@ -374,9 +388,11 @@ function SimplifiedPlanPage() {
         open={showManageModal}
         onClose={() => setShowManageModal(false)}
         title="Gerenciar assinatura"
-        description={canCancel
-          ? 'Você pode cancelar sua assinatura. Seu acesso continua até o fim do período já pago.'
-          : 'A troca de forma de pagamento e a emissão de faturas ainda não estão disponíveis nesta versão.'}
+        description={isManualPlan
+          ? 'Seu plano foi liberado pela equipe da UniFlow e não gera cobrança. Para trocar ou encerrar, fale com o suporte.'
+          : canCancel
+            ? 'Você pode cancelar sua assinatura. Seu acesso continua até o fim do período já pago.'
+            : 'A troca de forma de pagamento e a emissão de faturas ainda não estão disponíveis nesta versão.'}
         footer={(
           <>
             <Button type="button" variant="secondary" onClick={() => { setShowManageModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}>

@@ -19,6 +19,7 @@ import { CategoriesPage } from '../features/categories';
 import { FuturePage } from '../features/future';
 import { PresentationPage } from '../features/presentation';
 import { PERSONAL_PLAN_RETURN_ROUTE, PersonalPlanPage, PersonalPlanReturnPage } from '../features/personal-plan';
+import { PLATFORM_ADMIN_ROUTE, PlatformAdminPage } from '../features/platform-admin';
 import {
   ACCOUNT_SUBROUTE_IDS,
   ACCOUNT_SUBROUTES,
@@ -340,6 +341,15 @@ export const appRoutes = [
     title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].title,
     simplified: true,
     element: <SimplifiedNotificationsPage />,
+  },
+  {
+    // Painel da equipe da UniFlow. A tela confere is_platform_admin() e as
+    // funções admin_* do banco recusam quem não é admin.
+    path: PLATFORM_ADMIN_ROUTE,
+    label: 'Administração',
+    title: 'Administração',
+    simplified: true,
+    element: <PlatformAdminPage />,
   },
   // Épico #98 (#99): Google Agenda, fora do menu. O callback do OAuth volta
   // para esta rota com ?google_agenda=.
