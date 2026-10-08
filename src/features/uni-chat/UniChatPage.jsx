@@ -222,6 +222,21 @@ import {
 import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/financialCrud.mock';
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { executeConfirmedFinancialAction } from '../../services/confirmedFinancialActionService.js';
+import { getTransaction, listTransactions, updateTransaction } from '../../services/transactionService.js';
+import {
+  analisarAlvo,
+  cardDaAlteracao,
+  escolherCandidato,
+  FORMAS_DE_EDICAO,
+  interpretarPedidoDeEdicao,
+  lerAjusteDaAlteracao,
+  localizarLancamento,
+  montarAlteracao,
+  motivoDeBloqueio,
+  textoDaAlteracao,
+  textoDaAlteracaoFeita,
+  textoDaEscolha,
+} from '../uni-conversation/edicaoDeLancamento.js';
 import * as dataService from './uniChatDataService';
 import { CANCELED_WITH_FOLLOW_UP, withFollowUpQuestion } from './confirmationFollowUp.js';
 import { buildConfirmationEditForm } from './confirmationEditForm.js';
@@ -231,6 +246,11 @@ const UNI_THINK_MIN_MS = 600;
 // BLOCO F: mesmo TTL já usado pelo Pending Action Stack (pendingActionStorage.js)
 // -- um plano financeiro pendente não pode ficar executável indefinidamente.
 const FINANCIAL_PLAN_TTL_MS = 15 * 60 * 1000;
+// Edição de lançamento salvo esperando escolha ou confirmação.
+const EDICAO_TTL_MS = 15 * 60 * 1000;
+// "corrige pra 50" vale para o lançamento confirmado há até 30 minutos.
+const ULTIMO_CONFIRMADO_TTL_MS = 30 * 60 * 1000;
+const TEXTO_EDICAO_VENCIDA = 'Essa alteração expirou e nada foi salvo. Peça de novo se ainda quiser alterar.';
 const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze([
   'register_income',
   'register_expense',
@@ -1533,6 +1553,337 @@ export default function UniChatPage({ variant = 'full' }) {
     setPendingActionStack(null);
     setFinancialPlan(null);
     clearCurrentPendingAction();
+    encerrarEdicao('expired');
+  }
+
+  // Edição de lançamento já salvo pedida em conversa ("corrige o mercado de
+  // ontem pra 50"). Pendência paralela, como o plano financeiro: a lista
+  // para escolher qual lançamento ou o card esperando confirmação. Não
+  // sobrevive a recarregar a página: o card fica expirado.
+  const [edicaoPendente, setEdicaoPendenteState] = useState(null);
+  const edicaoPendenteRef = useRef(null);
+  const ultimoConfirmadoRef = useRef(null);
+
+  function setEdicaoPendente(next) {
+    edicaoPendenteRef.current = next;
+    setEdicaoPendenteState(next);
+  }
+
+  function edicaoAtiva(edicao = edicaoPendenteRef.current) {
+    return Boolean(
+      edicao
+      && Date.now() - edicao.criadaEm <= EDICAO_TTL_MS
+      && edicao.conversationId === activeIdRef.current
+      && edicao.workspaceId === effectiveWorkspace?.id,
+    );
+  }
+
+  function encerrarEdicao(status) {
+    const edicao = edicaoPendenteRef.current;
+    if (!edicao) return;
+    if (status && edicao.messageId) {
+      setMessages((current) => current.map((message) => (
+        message.id === edicao.messageId && message.confirmation?.status === 'pending'
+          ? { ...message, confirmation: { ...message.confirmation, status } }
+          : message
+      )));
+    }
+    setEdicaoPendente(null);
+  }
+
+  function contextoDaEdicao() {
+    return {
+      accounts: accountState.accounts,
+      categories: categoryState.categories,
+      workspaceId: effectiveWorkspace?.id ?? null,
+      referenceDate: getLocalIsoDate(),
+    };
+  }
+
+  // Último lançamento confirmado nesta conversa, para "corrige pra 50".
+  function ultimoConfirmadoValido() {
+    const ultimo = ultimoConfirmadoRef.current;
+    return ultimo
+      && ultimo.conversationId === activeIdRef.current
+      && ultimo.workspaceId === effectiveWorkspace?.id
+      && Date.now() - ultimo.em <= ULTIMO_CONFIRMADO_TTL_MS
+      ? ultimo
+      : null;
+  }
+
+  function ultimoLancamentoCriado() {
+    return [...(transactionsState.transactions ?? [])]
+      .filter((transacao) => transacao?.status !== 'canceled' && !motivoDeBloqueio(transacao))
+      .sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')))[0] ?? null;
+  }
+
+  // Relê o lançamento antes do card: o card mostra o valor de agora e a
+  // gravação só passa se ninguém tiver mexido nele depois (updated_at).
+  async function prepararAlteracao(transacaoId, mudancas, turnToken) {
+    const workspaceId = effectiveWorkspace?.id;
+    const conversationId = activeIdRef.current;
+    setIsTyping(true);
+    const lida = await getTransaction(workspaceId, transacaoId).catch(() => null);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
+    setIsTyping(false);
+    const transacao = lida?.data ?? null;
+    if (!transacao) {
+      createAssistantResponse('Não consegui abrir esse lançamento agora. Tente de novo ou altere na tela Financeiro.', { deduplicateNarration: false });
+      return;
+    }
+    const contexto = contextoDaEdicao();
+    const alteracao = montarAlteracao(transacao, mudancas, contexto);
+    if (alteracao.erro) {
+      createAssistantResponse(alteracao.erro, { deduplicateNarration: false });
+      return;
+    }
+    const message = createAssistantResponse(textoDaAlteracao(transacao, alteracao.campos), {
+      type: 'confirmation',
+      confirmation: cardDaAlteracao(transacao, alteracao.campos, contexto),
+      deduplicateNarration: false,
+    });
+    setEdicaoPendente({
+      etapa: 'confirmar',
+      transacao,
+      mudancas,
+      alteracoes: alteracao.alteracoes,
+      campos: alteracao.campos,
+      messageId: message?.id ?? null,
+      workspaceId,
+      conversationId,
+      criadaEm: Date.now(),
+    });
+  }
+
+  function publicarResultadoDaBusca(resultado, mudancas, turnToken) {
+    if (resultado.tipo === 'bloqueado') {
+      createAssistantResponse(resultado.motivo, { deduplicateNarration: false });
+      return;
+    }
+    if (resultado.tipo === 'varios') {
+      createAssistantResponse(
+        textoDaEscolha(resultado.candidatos, resultado.total, contextoDaEdicao()),
+        { deduplicateNarration: false },
+      );
+      setEdicaoPendente({
+        etapa: 'escolher',
+        candidatos: resultado.candidatos,
+        mudancas,
+        messageId: null,
+        workspaceId: effectiveWorkspace?.id,
+        conversationId: activeIdRef.current,
+        criadaEm: Date.now(),
+      });
+      return;
+    }
+    void prepararAlteracao(resultado.transacao.id, mudancas, turnToken);
+  }
+
+  // Lançamento fora dos que estão carregados: com data dita, busca aquele
+  // dia no servidor antes de dizer que não achou.
+  async function buscarAlvoNoDia(alvo, mudancas, turnToken) {
+    const conversationId = activeIdRef.current;
+    setIsTyping(true);
+    const doDia = await listTransactions(effectiveWorkspace?.id, { dateFrom: alvo.data, dateTo: alvo.data, limit: 100 })
+      .catch(() => null);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
+    setIsTyping(false);
+    const resultado = localizarLancamento(alvo, doDia?.data ?? [], { categories: categoryState.categories });
+    if (resultado.tipo === 'nenhum') {
+      createAssistantResponse(
+        'Não encontrei esse lançamento nesse dia. Diga o nome como aparece no Financeiro, com o dia ou o valor.',
+        { deduplicateNarration: false },
+      );
+      return;
+    }
+    publicarResultadoDaBusca(resultado, mudancas, turnToken);
+  }
+
+  // true quando a frase era um pedido de edição e já foi respondida.
+  function tentarPedidoDeEdicao(texto, userMsg, declaredIntent, turnToken) {
+    const contexto = contextoDaEdicao();
+    const pedido = interpretarPedidoDeEdicao(texto, contexto);
+    if (!pedido) return false;
+
+    if (pedido.forma === FORMAS_DE_EDICAO.ULTIMO) {
+      const ultimo = ultimoConfirmadoValido();
+      const transacaoId = ultimo?.id ?? (pedido.ultimoExplicito ? ultimoLancamentoCriado()?.id : null);
+      // Sem lançamento recente a que "pra 50" possa se referir, a frase
+      // segue o caminho de sempre.
+      if (!transacaoId || !pedido.mudancas) return false;
+      syncMessageToSupabase(userMsg);
+      void prepararAlteracao(transacaoId, pedido.mudancas, turnToken);
+      return true;
+    }
+
+    const alvo = analisarAlvo(pedido.alvo, contexto);
+    const resultado = localizarLancamento(alvo, transactionsState.transactions, { categories: categoryState.categories });
+    if (resultado.tipo === 'nenhum') {
+      // Sem lançamento com esse nome, "muda a reunião pra amanhã" é agenda.
+      // Só valor, conta e categoria são inequívocos de lançamento.
+      const mudancaDeLancamento = pedido.categoriaPedida
+        || ['amount', 'accountId', 'categoryId'].some((campo) => pedido.mudancas?.[campo] !== undefined);
+      if (
+        pedido.forma === FORMAS_DE_EDICAO.COPULA
+        || declaredIntent.startsWith('agenda_')
+        || ACTION_STATEMENT_INTENTS.has(declaredIntent)
+        || looksLikeFreshFinancialStatement(texto)
+        || !mudancaDeLancamento
+      ) {
+        return false;
+      }
+    }
+
+    syncMessageToSupabase(userMsg);
+    if (pedido.categoriaPedida) {
+      createAssistantResponse(
+        `Não encontrei a categoria ${pedido.categoriaPedida} neste espaço. Diga uma categoria que já existe ou crie ${pedido.categoriaPedida} na tela Categorias.`,
+        { deduplicateNarration: false },
+      );
+      return true;
+    }
+    if (resultado.tipo === 'nenhum') {
+      if (alvo.data) {
+        void buscarAlvoNoDia(alvo, pedido.mudancas, turnToken);
+      } else {
+        createAssistantResponse(
+          'Não encontrei esse lançamento entre os mais recentes. Diga também o dia ou o valor dele.',
+          { deduplicateNarration: false },
+        );
+      }
+      return true;
+    }
+    publicarResultadoDaBusca(resultado, pedido.mudancas, turnToken);
+    return true;
+  }
+
+  // Resposta com a edição pendente. false quando a frase é outro assunto:
+  // a edição é descartada e a frase segue o caminho de sempre.
+  function tratarRespostaDaEdicao(texto, userMsg, turnToken) {
+    const edicao = edicaoPendenteRef.current;
+    const contexto = contextoDaEdicao();
+    const resposta = classifyPendingActionReply(texto);
+
+    if (edicao.etapa === 'confirmar') {
+      if (resposta === 'confirm') {
+        syncMessageToSupabase(userMsg);
+        void confirmarEdicao(edicao.messageId);
+        return true;
+      }
+      if (resposta === 'cancel') {
+        syncMessageToSupabase(userMsg);
+        cancelarEdicao(edicao.messageId);
+        return true;
+      }
+      const ajuste = lerAjusteDaAlteracao(texto, contexto);
+      if (ajuste?.mudancas) {
+        syncMessageToSupabase(userMsg);
+        encerrarEdicao('updated');
+        void prepararAlteracao(edicao.transacao.id, { ...edicao.mudancas, ...ajuste.mudancas }, turnToken);
+        return true;
+      }
+      encerrarEdicao('expired');
+      return false;
+    }
+
+    if (resposta === 'cancel') {
+      syncMessageToSupabase(userMsg);
+      encerrarEdicao(null);
+      createAssistantResponse(withFollowUpQuestion('Tudo bem. Não alterei nada.'), { deduplicateNarration: false });
+      return true;
+    }
+    // "gastei 85 no mercado" é lançamento novo, mesmo batendo com o valor de
+    // um item da lista.
+    if (
+      looksLikeFreshFinancialStatement(texto)
+      || looksLikeFreshBalanceStatement(texto)
+      || interpretarPedidoDeEdicao(texto, contexto)
+    ) {
+      encerrarEdicao(null);
+      return false;
+    }
+    const escolhido = escolherCandidato(texto, edicao.candidatos, contexto);
+    if (escolhido) {
+      syncMessageToSupabase(userMsg);
+      encerrarEdicao(null);
+      void prepararAlteracao(escolhido.id, edicao.mudancas, turnToken);
+      return true;
+    }
+    syncMessageToSupabase(userMsg);
+    createAssistantResponse(
+      `Não identifiquei qual deles. Diga o número da lista, de 1 a ${edicao.candidatos.length}, ou "cancelar".`,
+      { deduplicateNarration: false },
+    );
+    return true;
+  }
+
+  async function confirmarEdicao(id) {
+    const edicao = edicaoPendenteRef.current;
+    if (!edicaoAtiva(edicao) || edicao.etapa !== 'confirmar' || confirmingRef.current) return;
+    const messageId = id ?? edicao.messageId;
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    setExecutionError(null);
+    try {
+      const resultado = await updateTransaction(
+        edicao.workspaceId,
+        edicao.transacao.id,
+        edicao.alteracoes,
+        { expectedUpdatedAt: edicao.transacao.updated_at },
+      );
+      if (resultado?.error || !resultado?.data) {
+        const mudou = resultado?.error?.code === 'TRANSACTION_CHANGED';
+        if (mudou) {
+          encerrarEdicao('expired');
+          void transactionsState.refresh();
+        }
+        reportConfirmationError(
+          messageId,
+          mudou
+            ? 'Esse lançamento mudou depois que eu preparei a alteração. Peça de novo para eu ver como ele está agora.'
+            : 'Não consegui alterar esse lançamento. Tente de novo.',
+        );
+        return;
+      }
+      await Promise.all([
+        transactionsState.refresh(),
+        balanceState.refresh(),
+        accountState.refresh(),
+      ]);
+      if (activeIdRef.current !== edicao.conversationId) return;
+      setMessages((current) => current.map((message) => (
+        message.id === messageId
+          ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
+          : message
+      )));
+      setEdicaoPendente(null);
+      ultimoConfirmadoRef.current = {
+        id: edicao.transacao.id,
+        workspaceId: edicao.workspaceId,
+        conversationId: edicao.conversationId,
+        em: Date.now(),
+      };
+      createAssistantResponse(withFollowUpQuestion(textoDaAlteracaoFeita(edicao.transacao, edicao.campos)));
+      notifyFinancialDataChanged('uni-chat');
+    } catch {
+      reportConfirmationError(messageId, 'Ocorreu um erro inesperado. Tente novamente.');
+    } finally {
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
+  }
+
+  function cancelarEdicao(id) {
+    const edicao = edicaoPendenteRef.current;
+    if (!edicao) return;
+    setMessages((current) => current.map((message) => (
+      message.id === (id ?? edicao.messageId)
+        ? { ...message, confirmation: { ...message.confirmation, status: 'canceled' } }
+        : message
+    )));
+    setEdicaoPendente(null);
+    setExecutionError(null);
+    createAssistantResponse(withFollowUpQuestion('Tudo bem. Não alterei nada.'));
   }
 
   useEffect(() => {
@@ -1655,7 +2006,8 @@ export default function UniChatPage({ variant = 'full' }) {
     const hasRealPendingEntity = Boolean(
       pendingAction
       || pendingActionStack?.actions?.length
-      || isFinancialPlanActive(),
+      || isFinancialPlanActive()
+      || edicaoAtiva(edicaoPendente),
     );
     if (hasRealPendingEntity) return;
     setMessages((current) => {
@@ -1670,7 +2022,7 @@ export default function UniChatPage({ variant = 'full' }) {
       return changed ? sanitized : current;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- isFinancialPlanActive lê financialPlanRef.current (ref, não estado); incluí-la recriaria o efeito a cada render sem mudar seu comportamento.
-  }, [pendingHydrated, pendingAction, pendingActionStack]);
+  }, [pendingHydrated, pendingAction, pendingActionStack, edicaoPendente]);
 
   const reconcileConversations = useCallback(async () => {
     if (!effectiveWorkspace?.id) return;
@@ -1793,6 +2145,8 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
+    setEdicaoPendente(null);
+    ultimoConfirmadoRef.current = null;
     conversationalMemoryRef.current.reset();
     const candidates = updated
       .filter((c) => c.mode === correctMode)
@@ -3055,6 +3409,8 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
+    setEdicaoPendente(null);
+    ultimoConfirmadoRef.current = null;
     // FASE 14 — isolamento de conversa: zera os resultados observacionais do
     // pipeline cognitivo e limpa a telemetria técnica em memória ao trocar de
     // conversa. Nada persiste, nada influencia a nova conversa.
@@ -4011,9 +4367,7 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     const hasAgendaConversation = !shouldAbandonAgendaForFinancial
       && (hasPendingAgendaConversation || declaredIntent.startsWith('agenda_'));
-    const hasPendingConversation = Boolean(
-      hasAgendaConversation
-      ||
+    const hasPendingFinancialConversation = Boolean(
       pendingAction
       || isAccountCreationDependency(
         pendingActionStackRef.current
@@ -4028,6 +4382,7 @@ export default function UniChatPage({ variant = 'full' }) {
       || financialConversation.state.status === 'needs_clarification'
       || isFinancialPlanActive(),
     );
+    const hasPendingConversation = hasAgendaConversation || hasPendingFinancialConversation;
     // PARTE 2 — BLOCO 1 (SHADOW MODE): a Uni Engine observa a interação,
     // mas SOMENTE depois que o resultado legado existir — a execução do
     // motor acontece no ponto único de saída de resposta
@@ -4086,6 +4441,24 @@ export default function UniChatPage({ variant = 'full' }) {
         { deduplicateNarration: false },
       );
       return;
+    }
+    // Edição de lançamento salvo: resposta à lista ou ao card, ou pedido
+    // novo ("corrige o mercado de ontem pra 50"). Com rascunho ou agenda em
+    // andamento, "corrige…" continua sendo deles.
+    if (!hasPendingFinancialConversation && !hasPendingAgendaConversation) {
+      if (edicaoPendenteRef.current && !edicaoAtiva()) {
+        const vencida = edicaoPendenteRef.current;
+        encerrarEdicao('expired');
+        if (vencida.etapa === 'confirmar' && classifyPendingActionReply(functionalText) !== 'input') {
+          syncMessageToSupabase(userMsg);
+          createAssistantResponse(TEXTO_EDICAO_VENCIDA, { deduplicateNarration: false });
+          return;
+        }
+      }
+      if (edicaoAtiva() && tratarRespostaDaEdicao(functionalText, userMsg, turnToken)) return;
+      if (tentarPedidoDeEdicao(functionalText, userMsg, declaredIntent, turnToken)) return;
+    } else if (edicaoPendenteRef.current) {
+      encerrarEdicao('expired');
     }
     if (hasAgendaConversation) {
       setIsTyping(true);
@@ -4203,6 +4576,8 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
+    setEdicaoPendente(null);
+    ultimoConfirmadoRef.current = null;
     conversationalMemoryRef.current.reset();
     const candidates = conversations
       .filter((c) => c.mode === next)
@@ -4253,6 +4628,8 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUnresolvedRef.current = null;
     confirmingRef.current = false;
     financialConversation.reset();
+    setEdicaoPendente(null);
+    ultimoConfirmadoRef.current = null;
     conversationalMemoryRef.current.reset();
     stickToBottom.current = true;
   }
@@ -4298,6 +4675,8 @@ export default function UniChatPage({ variant = 'full' }) {
       lastUnresolvedRef.current = null;
       confirmingRef.current = false;
       financialConversation.reset();
+      setEdicaoPendente(null);
+      ultimoConfirmadoRef.current = null;
       conversationalMemoryRef.current.reset();
       saveHistory(nextList);
       saveActiveId(conv.id);
@@ -4309,6 +4688,15 @@ export default function UniChatPage({ variant = 'full' }) {
 
   async function handleConfirmAction(id) {
     if (confirmingRef.current) return;
+    if (edicaoPendenteRef.current?.messageId === id) {
+      if (edicaoAtiva()) {
+        await confirmarEdicao(id);
+      } else {
+        encerrarEdicao('expired');
+        reportConfirmationError(id, TEXTO_EDICAO_VENCIDA);
+      }
+      return;
+    }
     const currentConversationId = activeIdRef.current;
     const currentWorkspaceId = effectiveWorkspace?.id;
     const stack = pendingActionStackRef.current;
@@ -4592,6 +4980,14 @@ export default function UniChatPage({ variant = 'full' }) {
       // "essa conta"/"essa categoria" -- só os campos realmente resolvidos
       // no lançamento persistido, nunca inventados.
       const persistedTransaction = outcome.result.data;
+      if (persistedTransaction?.id) {
+        ultimoConfirmadoRef.current = {
+          id: persistedTransaction.id,
+          workspaceId: currentWorkspaceId,
+          conversationId: currentConversationId,
+          em: Date.now(),
+        };
+      }
       const rememberedAccountName = accountState.accounts
         .find((account) => account.id === persistedTransaction?.account_id)?.name ?? null;
       const rememberedCategoryName = persistedTransaction?.category_id
@@ -4649,6 +5045,10 @@ export default function UniChatPage({ variant = 'full' }) {
 
   function handleCancelAction(id, { cascade = false } = {}) {
     if (confirmingRef.current) return;
+    if (edicaoPendenteRef.current?.messageId === id) {
+      cancelarEdicao(id);
+      return;
+    }
     if (
       !pendingAction
       && isPlanReadyForFinalConfirmation(financialPlanRef.current)

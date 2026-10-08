@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { buildConfirmationFromAction } from './uniChatAdapter.js';
 import { resolveConfirmationCard } from './confirmationCardModel.js';
+import { cardDaAlteracao } from '../uni-conversation/edicaoDeLancamento.js';
 import {
   buildAccountCreationConfirmation,
   FINANCIAL_PENDING_ACTION_TYPES,
@@ -49,6 +50,20 @@ test('ajuste de saldo mostra o novo saldo em destaque com o rótulo em cima', ()
   assert.equal(card.kind, 'Ajuste de saldo · rascunho');
   assert.equal(card.amountLabel, 'Novo saldo');
   assert.deepEqual(card.details.map((row) => row.label), ['Conta', 'Saldo atual', 'Ajuste']);
+});
+
+test('card de alteração de lançamento mostra todas as linhas, sem valor em destaque', () => {
+  const data = cardDaAlteracao(
+    { description: 'Mercado', amount: 32, transaction_date: '2026-10-07', account_id: 'itau' },
+    [{ campo: 'amount', antes: 32, depois: 50 }],
+    { accounts: [{ id: 'itau', name: 'Itaú' }] },
+  );
+  assert.equal(data.editable, false);
+  const card = resolveConfirmationCard(data);
+  assert.equal(card.kind, 'Alteração · rascunho');
+  assert.equal(card.amount, null);
+  assert.deepEqual(card.details.map((row) => row.label), ['Lançamento', 'Data', 'Conta', 'Valor']);
+  assert.equal(resolveConfirmationCard({ ...data, status: 'confirmed' }).kind, 'Alteração');
 });
 
 test('card de criar conta mantém o título e todas as linhas, sem inventar valor', () => {

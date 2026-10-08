@@ -43,6 +43,14 @@ Também dá para responder ao card só falando, sem tocar na tela:
 
 Se a resposta não estiver clara, a Uni pergunta antes de confirmar.
 
+Também dá para alterar uma movimentação já salva falando, por exemplo
+"corrige o mercado de ontem pra cinquenta" ou "o Uber de segunda foi no
+Nubank". A Uni mostra o card "Alteração · rascunho" com o antes e o depois e
+pergunta se pode confirmar. Responda como no rascunho: confirme, cancele ou
+diga o que muda. Se mais de uma movimentação combinar, a Uni lê a lista e
+pergunta qual. Responda com o número ou com um detalhe ("a de oitenta e
+cinco").
+
 Os três botões de baixo fazem:
 
 - **Escrever**: fecha a voz e abre a conversa para você digitar.
@@ -92,7 +100,8 @@ um desses recursos estiver indisponível, a digitação continua funcionando.
 - Não há reprodução automática ao receber uma resposta — sempre exige toque do usuário.
 - Gravações são curtas e não são armazenadas pela aplicação.
 - Transferências, pagamentos, exclusões e criação de objetivo não podem ser
-  executados por voz nesta versão.
+  executados por voz nesta versão. Alterar transferências, ajustes de saldo,
+  parcelas e movimentações importadas também não.
 - O cache de áudio tem validade de 30 dias; depois disso, uma nova geração pode ocorrer mesmo para o mesmo texto.
 - Configurações adicionais de voz (além do interruptor liga/desliga) ainda não estão disponíveis ("Voz e interação" está marcado "em breve").
 

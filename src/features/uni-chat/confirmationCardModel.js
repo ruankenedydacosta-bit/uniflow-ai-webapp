@@ -22,6 +22,16 @@ export function resolveConfirmationCard(data) {
   const status = data.status ?? 'pending';
   const isTransaction = isTransactionCard(data);
 
+  if (data.actionKind === 'edit_transaction') {
+    return {
+      kind: status === 'pending' ? 'Alteração · rascunho' : 'Alteração',
+      tag: null,
+      amount: null,
+      amountLabel: null,
+      details: rows,
+    };
+  }
+
   if (!isTransaction) {
     return {
       kind: data.title ?? '',

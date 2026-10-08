@@ -828,11 +828,13 @@ test('BLOCO VOZ 1: erro relevante ao usuário fala -- os 5 pontos de erro de han
   // da função é excluída contando só chamadas que terminam em ';'.
   const callSites = page.match(/reportConfirmationError\(id, [^)]*\);/g) ?? [];
   // O sexto é a edição no card que não pôde ser aplicada (handleSaveEditAction).
-  assert.equal(callSites.length, 6, 'esperava 6 pontos de erro do card usando reportConfirmationError');
+  // O sétimo é o toque em Confirmar numa alteração de lançamento vencida.
+  assert.equal(callSites.length, 7, 'esperava 7 pontos de erro do card usando reportConfirmationError');
   // Nenhum setExecutionError fora do ponto central (sem duplicação de
   // registro/narração) -- só o reset neutro (null) continua nos fluxos.
   assert.equal((page.match(/setExecutionError\(errorText\);/g) ?? []).length, 1);
-  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 12);
+  // 14: os dois últimos são confirmar e cancelar a edição de lançamento salvo.
+  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 14);
 });
 
 test('BLOCO VOZ 1: narração de erro é gated pela experiência simplificada + preferência de voz -- chat completo permanece manual', async () => {
@@ -1345,8 +1347,9 @@ test('BUG 2 REAL: confirmações órfãs (sem pendingAction/pendingActionStack/f
   assert.ok(idx > -1);
   const slice = page.slice(idx, idx + 1800);
   assert.match(slice, /if \(!pendingHydrated\) return;/);
-  assert.match(slice, /const hasRealPendingEntity = Boolean\(\s*pendingAction\s*\|\|\s*pendingActionStack\?\.actions\?\.length\s*\|\|\s*isFinancialPlanActive\(\),\s*\);/);
+  assert.match(slice, /const hasRealPendingEntity = Boolean\(\s*pendingAction\s*\|\|\s*pendingActionStack\?\.actions\?\.length\s*\|\|\s*isFinancialPlanActive\(\)\s*\|\|\s*edicaoAtiva\(edicaoPendente\),\s*\);/);
   assert.match(slice, /if \(hasRealPendingEntity\) return;/);
+  assert.match(slice, /\[pendingHydrated, pendingAction, pendingActionStack, edicaoPendente\]/);
   assert.match(slice, /status: 'expired'/);
 });
 
@@ -3829,4 +3832,70 @@ test('resposta sem IA diz que não entendeu, e o teto diário tem aviso próprio
   assert.doesNotMatch(page, /'Entendi\. Posso ajudar a registrar/);
   assert.match(page, /UNI_LLM_DAILY_LIMIT_TEXT =\s*\n\s*'Você chegou ao limite de respostas da Uni por hoje\./);
   assert.match(page, /llmDailyLimitReached = outcome\?\.dailyLimitReached === true;/);
+});
+
+test('edição de lançamento salvo: pedido e resposta só são tratados sem rascunho ou agenda em andamento', async () => {
+  const page = await source('UniChatPage.jsx');
+  const desvio = page.indexOf('// Edição de lançamento salvo: resposta à lista ou ao card');
+  assert.ok(desvio > -1);
+  // Depois de conversa comum e antes da agenda: "muda a data do mercado pra
+  // ontem" é classificado como agenda e precisa ser testado como edição antes.
+  assert.ok(desvio > page.indexOf("if (declaredIntent === 'conversation_common') {"));
+  assert.ok(desvio < page.indexOf('if (hasAgendaConversation) {\n      setIsTyping(true);'));
+  const trecho = page.slice(desvio, desvio + 1400);
+  assert.match(trecho, /if \(!hasPendingFinancialConversation && !hasPendingAgendaConversation\) \{/);
+  assert.match(trecho, /if \(edicaoAtiva\(\) && tratarRespostaDaEdicao\(functionalText, userMsg, turnToken\)\) return;/);
+  assert.match(trecho, /if \(tentarPedidoDeEdicao\(functionalText, userMsg, declaredIntent, turnToken\)\) return;/);
+  assert.match(trecho, /encerrarEdicao\('expired'\);/);
+});
+
+test('edição de lançamento salvo: o toque no card confirma ou cancela a edição antes de qualquer outra pendência', async () => {
+  const page = await source('UniChatPage.jsx');
+  const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
+  assert.match(confirmar.slice(0, 400), /if \(edicaoPendenteRef\.current\?\.messageId === id\) \{\s*if \(edicaoAtiva\(\)\) \{\s*await confirmarEdicao\(id\);\s*\} else \{\s*encerrarEdicao\('expired'\);\s*reportConfirmationError\(id, TEXTO_EDICAO_VENCIDA\);/);
+  const cancelar = page.slice(page.indexOf('function handleCancelAction(id, { cascade = false } = {}) {'));
+  assert.match(cancelar.slice(0, 300), /if \(edicaoPendenteRef\.current\?\.messageId === id\) \{\s*cancelarEdicao\(id\);/);
+});
+
+test('edição de lançamento salvo: grava só a versão lida e recarrega saldos depois', async () => {
+  const page = await source('UniChatPage.jsx');
+  const corpo = page.slice(page.indexOf('async function confirmarEdicao(id) {'), page.indexOf('function cancelarEdicao(id) {'));
+  assert.match(corpo, /\{ expectedUpdatedAt: edicao\.transacao\.updated_at \}/);
+  assert.match(corpo, /resultado\?\.error\?\.code === 'TRANSACTION_CHANGED'/);
+  assert.match(corpo, /transactionsState\.refresh\(\),\s*balanceState\.refresh\(\),/);
+  assert.match(corpo, /notifyFinancialDataChanged\('uni-chat'\);/);
+  // Todo caminho termina com resposta ou erro no card: a conversa por voz
+  // espera por um dos dois.
+  assert.match(corpo, /reportConfirmationError\(\s*messageId,/);
+  assert.match(corpo, /createAssistantResponse\(withFollowUpQuestion\(textoDaAlteracaoFeita/);
+});
+
+test('edição de lançamento salvo: o card é montado com o lançamento relido do servidor', async () => {
+  const page = await source('UniChatPage.jsx');
+  const corpo = page.slice(page.indexOf('async function prepararAlteracao('), page.indexOf('function publicarResultadoDaBusca('));
+  assert.match(corpo, /await getTransaction\(workspaceId, transacaoId\)/);
+  assert.match(corpo, /confirmation: cardDaAlteracao\(transacao, alteracao\.campos, contexto\)/);
+  assert.match(corpo, /etapa: 'confirmar'/);
+});
+
+test('edição de lançamento salvo: "corrige pra 50" usa o último lançamento confirmado na conversa', async () => {
+  const page = await source('UniChatPage.jsx');
+  const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
+  assert.match(confirmar, /const persistedTransaction = outcome\.result\.data;\s*if \(persistedTransaction\?\.id\) \{\s*ultimoConfirmadoRef\.current = \{/);
+  assert.match(page, /const ULTIMO_CONFIRMADO_TTL_MS = 30 \* 60 \* 1000;/);
+});
+
+test('edição de lançamento salvo: edição vencida avisa em vez de cair no fluxo genérico', async () => {
+  const page = await source('UniChatPage.jsx');
+  const desvio = page.slice(page.indexOf('// Edição de lançamento salvo: resposta à lista ou ao card'));
+  assert.match(desvio.slice(0, 900), /if \(edicaoPendenteRef\.current && !edicaoAtiva\(\)\) \{[\s\S]*?encerrarEdicao\('expired'\);[\s\S]*?createAssistantResponse\(TEXTO_EDICAO_VENCIDA/);
+});
+
+test('edição de lançamento salvo: frase de lançamento novo nunca vira "não encontrei" nem escolha da lista', async () => {
+  const page = await source('UniChatPage.jsx');
+  const tentar = page.slice(page.indexOf('function tentarPedidoDeEdicao('), page.indexOf('function tratarRespostaDaEdicao('));
+  assert.match(tentar, /ACTION_STATEMENT_INTENTS\.has\(declaredIntent\)\s*\|\|\s*looksLikeFreshFinancialStatement\(texto\)/);
+  assert.doesNotMatch(tentar, /\$\{pedido\.alvo\}/);
+  const tratar = page.slice(page.indexOf('function tratarRespostaDaEdicao('), page.indexOf('async function confirmarEdicao('));
+  assert.ok(tratar.indexOf('looksLikeFreshFinancialStatement(texto)') < tratar.indexOf('escolherCandidato(texto'));
 });

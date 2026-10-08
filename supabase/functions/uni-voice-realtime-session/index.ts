@@ -43,8 +43,9 @@ const UNI_REALTIME_INSTRUCTIONS = [
   'Pronuncie à brasileira marcas e bancos usados no Brasil, como Pix, Nubank, Itaú, iFood e Mercado Pago.',
   'Se a pessoa pausar no meio de uma frase, espere ela terminar. Não complete a frase por ela.',
   'Se for interrompida, pare e responda ao que a pessoa acabou de dizer.',
-  'Tudo que envolve dinheiro ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, mexer na agenda e corrigir um rascunho. Passe a frase da pessoa como ela disse, sem resumir nem completar.',
-  'Com um rascunho aguardando confirmação, quando a pessoa aceitar com qualquer palavra, como "manda ver", "fechou" ou "uhum, pode", chame responder_rascunho com acao confirmar. Se ela desistir do rascunho, use cancelar. Se desistir de tudo, inclusive da conta ou categoria que seria criada, use cancelar_tudo.',
+  'Tudo que envolve dinheiro ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, mexer na agenda, corrigir um rascunho e alterar um lançamento já registrado. Passe a frase da pessoa como ela disse, sem resumir nem completar.',
+  'Para alterar um lançamento já registrado, como "corrige o mercado de ontem pra cinquenta" ou "o Uber de segunda foi no Nubank", passe a frase com enviar_para_uni. Se a Uni listar vários lançamentos e perguntar qual, passe a resposta da pessoa com enviar_para_uni.',
+  'Com um rascunho ou uma alteração aguardando confirmação, quando a pessoa aceitar com qualquer palavra, como "manda ver", "fechou" ou "uhum, pode", chame responder_rascunho com acao confirmar. Se ela desistir do rascunho, use cancelar. Se desistir de tudo, inclusive da conta ou categoria que seria criada, use cancelar_tudo.',
   'Só confirme quando a pessoa aceitar com clareza. Se a resposta for ambígua, pergunte antes.',
   'Para mudar valor, conta, categoria, data ou descrição do rascunho, passe a frase com enviar_para_uni. Se a pessoa só disser que quer editar, pergunte o que ela quer mudar.',
   'Depois da ferramenta, fale a resposta dela com naturalidade e em poucas palavras. Não acrescente valores, datas, categorias nem contas que não estejam na resposta.',
@@ -117,7 +118,7 @@ async function sha256Hex(input: string) {
 const SEND_TO_UNI_TOOL = {
   type: 'function',
   name: 'enviar_para_uni',
-  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra lançamentos, consulta saldo, gastos e contas, cuida da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
+  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra e altera lançamentos, consulta saldo, gastos e contas, cuida da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
   parameters: {
     type: 'object',
     properties: {
@@ -155,14 +156,14 @@ const SAVE_NAME_PRONUNCIATION_TOOL = {
 const ANSWER_DRAFT_TOOL = {
   type: 'function',
   name: 'responder_rascunho',
-  description: 'Confirma ou cancela o rascunho que está aguardando confirmação na tela, como se a pessoa tocasse no card. Use quando a pessoa aceitar ou recusar o rascunho, com quaisquer palavras. Devolve a resposta a ser falada.',
+  description: 'Confirma ou cancela o rascunho ou a alteração de lançamento que está aguardando confirmação na tela, como se a pessoa tocasse no card. Use quando a pessoa aceitar ou recusar o rascunho, com quaisquer palavras. Devolve a resposta a ser falada.',
   parameters: {
     type: 'object',
     properties: {
       acao: {
         type: 'string',
         enum: ['confirmar', 'cancelar', 'cancelar_tudo'],
-        description: 'confirmar grava o rascunho. cancelar descarta o rascunho. cancelar_tudo descarta também a conta ou categoria que seria criada para ele.',
+        description: 'confirmar grava o rascunho ou a alteração. cancelar descarta o rascunho ou a alteração. cancelar_tudo descarta também a conta ou categoria que seria criada para ele.',
       },
     },
     required: ['acao'],
