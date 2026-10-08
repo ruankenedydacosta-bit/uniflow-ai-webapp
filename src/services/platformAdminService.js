@@ -1,6 +1,6 @@
-// Painel de administração da plataforma. Tudo passa pelas funções admin_* da
-// migration 055, que conferem is_platform_admin() no banco: quem não é da
-// equipe recebe erro mesmo chamando direto.
+// Painel de administração da plataforma. Tudo passa pelas funções admin_* das
+// migrations 056 e 057, que conferem is_platform_admin() no banco: quem não é
+// da equipe recebe erro mesmo chamando direto.
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 function createResult(data, error = null) {
@@ -45,6 +45,29 @@ export async function revokeManualPlan({ userId, note }) {
 
   const { data, error } = await supabase.rpc('admin_revoke_manual_plan', {
     p_user_id: userId,
+    p_note: note ?? null,
+  });
+  return createResult(data ?? null, error);
+}
+
+// Troca de nível pela lista (migration 057): plano manual ativo mantém a data
+// de fim; quem não tem ganha 1 mês.
+export async function setUserPlan({ userId, tierId }) {
+  if (!supabase) return createUnavailableResult(null);
+
+  const { data, error } = await supabase.rpc('admin_set_user_plan', {
+    p_user_id: userId,
+    p_tier_id: tierId,
+  });
+  return createResult(data ?? null, error);
+}
+
+export async function setUserBlocked({ userId, blocked, note }) {
+  if (!supabase) return createUnavailableResult(null);
+
+  const { data, error } = await supabase.rpc('admin_set_user_blocked', {
+    p_user_id: userId,
+    p_blocked: blocked,
     p_note: note ?? null,
   });
   return createResult(data ?? null, error);

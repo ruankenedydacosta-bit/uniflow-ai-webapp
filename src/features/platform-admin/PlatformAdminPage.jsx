@@ -9,15 +9,18 @@ import {
   grantManualPlan,
   listPlatformUsers,
   revokeManualPlan,
+  setUserBlocked,
+  setUserPlan,
 } from '../../services/platformAdminService.js';
 import { cx } from '../../utils/cx.js';
 import SimplifiedSubpageHeader from '../simplified-app/SimplifiedSubpageHeader.jsx';
-import { PhCaretRightIcon, PhXIcon } from '../simplified-app/SimplifiedIcons.jsx';
+import { PhXIcon } from '../simplified-app/SimplifiedIcons.jsx';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/simplifiedRoutes.js';
 import { formatDate } from '../simplified-app/subscriptionPresentation.js';
 import groups from '../simplified-app/simplifiedGroups.module.css';
 import {
   filterPlatformUsers,
+  keepsManualPlanPeriod,
   MANUAL_PLAN_MONTH_OPTIONS,
   PLATFORM_USERS_LIST_LIMIT,
   resolvePlatformAdminErrorMessage,
@@ -27,15 +30,22 @@ import { useIsPlatformAdmin } from './useIsPlatformAdmin.js';
 import styles from './platformAdmin.module.css';
 
 const TIER_OPTIONS = SUBSCRIPTION_TIERS.map((tier) => ({ value: tier.id, label: tier.name }));
-const PILL_TONES = Object.freeze({ ok: groups.pillGreen, warn: null, neutral: groups.pillMuted });
 const MONTH_OPTIONS = MANUAL_PLAN_MONTH_OPTIONS.map((months) => ({
   value: months,
   label: months === 1 ? '1 mês' : `${months} meses`,
 }));
 
-// Painel da equipe da UniFlow: lista todos os usuários e concede, renova ou
-// encerra um plano manual. Quem não é admin vê só o aviso de acesso negado;
-// o bloqueio de verdade está nas funções admin_* do banco (migration 055).
+const NO_PLAN_VALUE = '';
+
+function resolveOriginLabel(user, summary) {
+  if (summary.isManual) return 'manual';
+  return user.subscription_billed ? 'pela cobrança' : 'sem cobrança';
+}
+
+// Painel da equipe da UniFlow: lista todos os usuários, troca o plano direto
+// na linha e, no modal, concede, renova ou encerra um plano manual e bloqueia
+// o acesso. Quem não é admin vê só o aviso de acesso negado; o bloqueio de
+// verdade está nas funções admin_* do banco (migrations 056 e 057).
 function PlatformAdminPage() {
   const navigate = useNavigate();
   const accessStatus = useIsPlatformAdmin();
@@ -50,6 +60,11 @@ function PlatformAdminPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [rowError, setRowError] = useState(null);
+  const [savingUserIds, setSavingUserIds] = useState(() => new Set());
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [isRevoking, setIsRevoking] = useState(false);
+  const [isConfirmingBlock, setIsConfirmingBlock] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setIsLoadingUsers(true);
@@ -77,12 +92,67 @@ function PlatformAdminPage() {
     setMonths(MONTH_OPTIONS[0].value);
     setNote('');
     setActionError(null);
+    setIsConfirmingBlock(false);
   }
 
   function closeUser() {
     if (isSaving) return;
     setSelectedUser(null);
     setActionError(null);
+    setIsConfirmingBlock(false);
+  }
+
+  function nameOf(user) {
+    return user.full_name || user.email;
+  }
+
+  function markSaving(userId, isRowSaving) {
+    setSavingUserIds((current) => {
+      const next = new Set(current);
+      if (isRowSaving) next.add(userId);
+      else next.delete(userId);
+      return next;
+    });
+  }
+
+  // Troca pela lista: plano manual mantém a data de fim; sem plano manual,
+  // ganha 1 mês. "Sem plano" pede confirmação antes de encerrar.
+  async function handleRowPlanChange(user, value) {
+    if (value === NO_PLAN_VALUE) {
+      setRevokeTarget(user);
+      return;
+    }
+    markSaving(user.user_id, true);
+    setRowError(null);
+    setNotice(null);
+    const keepsPeriod = keepsManualPlanPeriod(user, new Date());
+    const result = await setUserPlan({ userId: user.user_id, tierId: value });
+    markSaving(user.user_id, false);
+    if (result.error) {
+      setRowError(`${nameOf(user)}: ${resolvePlatformAdminErrorMessage(result.error)}`);
+      return;
+    }
+    const tierName = TIER_OPTIONS.find((option) => option.value === value)?.label;
+    setNotice(keepsPeriod
+      ? `${nameOf(user)} agora tem o plano ${tierName}, com a mesma data de fim.`
+      : `${nameOf(user)} agora tem o plano ${tierName} por 1 mês.`);
+    loadUsers();
+  }
+
+  async function handleConfirmRevoke() {
+    const user = revokeTarget;
+    setIsRevoking(true);
+    setRowError(null);
+    setNotice(null);
+    const result = await revokeManualPlan({ userId: user.user_id });
+    setIsRevoking(false);
+    setRevokeTarget(null);
+    if (result.error) {
+      setRowError(`${nameOf(user)}: ${resolvePlatformAdminErrorMessage(result.error)}`);
+      return;
+    }
+    setNotice(`O plano manual de ${nameOf(user)} foi encerrado. O acesso termina agora.`);
+    loadUsers();
   }
 
   async function runAction(action, successMessage) {
@@ -100,7 +170,7 @@ function PlatformAdminPage() {
   }
 
   function handleGrant() {
-    const who = selectedUser.full_name || selectedUser.email;
+    const who = nameOf(selectedUser);
     const tierName = TIER_OPTIONS.find((option) => option.value === tierId)?.label;
     const period = MONTH_OPTIONS.find((option) => option.value === months)?.label;
     runAction(
@@ -110,10 +180,21 @@ function PlatformAdminPage() {
   }
 
   function handleRevoke() {
-    const who = selectedUser.full_name || selectedUser.email;
+    const who = nameOf(selectedUser);
     runAction(
       () => revokeManualPlan({ userId: selectedUser.user_id, note }),
       `O plano manual de ${who} foi encerrado. O acesso termina agora.`,
+    );
+  }
+
+  function handleToggleBlock() {
+    const who = nameOf(selectedUser);
+    const blocked = !selectedUser.is_blocked;
+    runAction(
+      () => setUserBlocked({ userId: selectedUser.user_id, blocked, note }),
+      blocked
+        ? `${who} foi bloqueado. O login está recusado e as sessões abertas foram encerradas.`
+        : `${who} foi desbloqueado e já pode entrar de novo.`,
     );
   }
 
@@ -135,6 +216,15 @@ function PlatformAdminPage() {
             <div className={cx(styles.banner, styles.bannerOk)} role="status">
               <span>{notice}</span>
               <button type="button" className={styles.dismiss} onClick={() => setNotice(null)} aria-label="Fechar aviso">
+                <PhXIcon />
+              </button>
+            </div>
+          ) : null}
+
+          {rowError ? (
+            <div className={cx(styles.banner, styles.bannerError)} role="alert">
+              <span>{rowError}</span>
+              <button type="button" className={styles.dismiss} onClick={() => setRowError(null)} aria-label="Fechar aviso">
                 <PhXIcon />
               </button>
             </div>
@@ -174,25 +264,43 @@ function PlatformAdminPage() {
                 <div className={groups.list}>
                   {visibleUsers.map((user) => {
                     const summary = resolveUserPlanSummary(user);
+                    const isRowSaving = savingUserIds.has(user.user_id);
+                    const details = [
+                      user.full_name ? user.email : null,
+                      user.is_platform_admin ? 'Admin' : null,
+                      summary.tierName && !summary.isManual
+                        ? (user.subscription_billed ? 'Pela cobrança' : 'Sem cobrança')
+                        : null,
+                      summary.tierName && summary.tone !== 'ok' ? summary.label : null,
+                    ].filter(Boolean);
                     return (
-                      <button
-                        key={user.user_id}
-                        type="button"
-                        className={groups.row}
-                        onClick={() => openUser(user)}
-                      >
+                      <div key={user.user_id} className={styles.userRow}>
                         <span className={groups.rowText}>
-                          <span className={groups.rowTitle}>{user.full_name || user.email}</span>
-                          <span className={groups.rowSubtitle}>
-                            {user.full_name ? user.email : null}
-                            {user.is_platform_admin ? `${user.full_name ? ' · ' : ''}Admin` : null}
-                          </span>
+                          <span className={groups.rowTitle}>{nameOf(user)}</span>
+                          {details.length > 0 ? (
+                            <span className={groups.rowSubtitle}>{details.join(' · ')}</span>
+                          ) : null}
+                          {user.is_blocked ? (
+                            <span className={cx(groups.pill, styles.pillBlocked)}>Bloqueado</span>
+                          ) : null}
                         </span>
-                        <span className={cx(groups.pill, PILL_TONES[summary.tone])}>
-                          {summary.tierName ? `${summary.tierName}${summary.isManual ? ' · manual' : ''}` : summary.label}
-                        </span>
-                        <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
-                      </button>
+                        <select
+                          className={styles.planSelect}
+                          aria-label={`Plano de ${nameOf(user)}`}
+                          title={summary.canGrant ? undefined : 'Assinatura paga pela Asaas. Altere o plano pela cobrança.'}
+                          value={summary.tierName ? user.tier_id : NO_PLAN_VALUE}
+                          onChange={(event) => handleRowPlanChange(user, event.target.value)}
+                          disabled={!summary.canGrant || isRowSaving}
+                        >
+                          <option value={NO_PLAN_VALUE} disabled={!summary.canRevoke}>Sem plano</option>
+                          {TIER_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => openUser(user)}>
+                          Ver
+                        </Button>
+                      </div>
                     );
                   })}
                 </div>
@@ -229,7 +337,7 @@ function PlatformAdminPage() {
                 <dt>Plano atual</dt>
                 <dd>
                   {selectedSummary.tierName
-                    ? `${selectedSummary.tierName} · ${selectedSummary.label}${selectedSummary.isManual ? ' · manual' : ' · pela cobrança'}`
+                    ? `${selectedSummary.tierName} · ${selectedSummary.label} · ${resolveOriginLabel(selectedUser, selectedSummary)}`
                     : selectedSummary.lastStatusLabel
                       ? `Sem plano (último: ${selectedSummary.lastStatusLabel})`
                       : 'Sem plano'}
@@ -267,14 +375,6 @@ function PlatformAdminPage() {
                   <span className={styles.fieldLabel}>Período a partir de hoje</span>
                   <Segmented label="Período" options={MONTH_OPTIONS} value={months} onChange={setMonths} />
                 </div>
-                <Input
-                  label="Motivo (opcional)"
-                  placeholder="Ex.: parceiro, cortesia, teste"
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  maxLength={200}
-                  fullWidth
-                />
                 <p className={styles.hint}>
                   Os minutos de voz do período inteiro ficam liberados de uma vez. Renovar começa um período novo com a cota cheia.
                 </p>
@@ -285,9 +385,70 @@ function PlatformAdminPage() {
               </p>
             )}
 
+            <Input
+              label="Motivo (opcional)"
+              placeholder="Ex.: parceiro, cortesia, teste, abuso"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              maxLength={200}
+              fullWidth
+            />
+
+            {selectedUser.is_platform_admin && !selectedUser.is_blocked ? null : (
+              <div className={styles.field}>
+                <span className={styles.fieldLabel}>Acesso</span>
+                {selectedUser.is_blocked ? (
+                  <>
+                    <p className={styles.hint}>Conta bloqueada. O login é recusado até você desbloquear.</p>
+                    <Button type="button" variant="secondary" onClick={handleToggleBlock} disabled={isSaving}>
+                      Desbloquear conta
+                    </Button>
+                  </>
+                ) : isConfirmingBlock ? (
+                  <>
+                    <p className={styles.hint}>
+                      Bloquear recusa o login e encerra as sessões abertas. Quem está com o app aberto sai em até 1 hora. O plano não muda.
+                    </p>
+                    <div className={styles.inlineActions}>
+                      <Button type="button" variant="secondary" onClick={() => setIsConfirmingBlock(false)} disabled={isSaving}>
+                        Cancelar
+                      </Button>
+                      <Button type="button" variant="danger" onClick={handleToggleBlock} disabled={isSaving}>
+                        Confirmar bloqueio
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <Button type="button" variant="outline" onClick={() => setIsConfirmingBlock(true)} disabled={isSaving}>
+                    Bloquear conta
+                  </Button>
+                )}
+              </div>
+            )}
+
             {actionError ? <p className={cx(styles.banner, styles.bannerError)} role="alert">{actionError}</p> : null}
           </div>
         ) : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(revokeTarget)}
+        onClose={() => (isRevoking ? null : setRevokeTarget(null))}
+        title="Encerrar plano manual?"
+        description={revokeTarget ? nameOf(revokeTarget) : undefined}
+        size="sm"
+        footer={(
+          <>
+            <Button type="button" variant="secondary" onClick={() => setRevokeTarget(null)} disabled={isRevoking}>
+              Manter plano
+            </Button>
+            <Button type="button" variant="danger" onClick={handleConfirmRevoke} loading={isRevoking}>
+              Encerrar plano
+            </Button>
+          </>
+        )}
+      >
+        <p className={styles.hint}>O acesso pago e os minutos de voz terminam agora.</p>
       </Modal>
     </div>
   );
