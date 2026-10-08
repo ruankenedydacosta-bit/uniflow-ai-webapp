@@ -845,6 +845,108 @@
   to { background-position: -120% 0; }
 }
 
+/* Leitura do mês (design 20b): até três linhas com ícone, frase, detalhe e
+   seta, separadas por um fio que some nas pontas. */
+.homeReadingHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-8);
+}
+
+.homeReadingUpdated {
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+}
+
+.homeReadingSkeleton {
+  gap: var(--uf-space-8);
+  padding-left: 0;
+}
+
+.homeReadingSkeleton span {
+  height: 48px;
+}
+
+.homeReadingList {
+  margin: -6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.homeReadingList li + li {
+  background: var(--uf-app-rule-fade) top / 100% 1px no-repeat;
+}
+
+.homeReadingRow {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-12) 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.homeReadingRow:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+  border-radius: var(--uf-radius-8);
+}
+
+.homeReadingIcon {
+  width: 32px;
+  height: 32px;
+}
+
+.homeReadingIcon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.homeReadingIconViolet {
+  color: var(--uf-app-brand-violet-text);
+}
+
+.homeReadingIconBlue {
+  color: var(--uf-app-brand-blue-text);
+}
+
+.homeReadingIconGreen {
+  color: var(--uf-app-brand-green-text);
+}
+
+.homeReadingText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.homeReadingTitle {
+  color: var(--uf-app-text);
+  font-size: 14px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.homeReadingDetail {
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.homeReadingCaret {
+  display: grid;
+  place-items: center;
+  color: var(--uf-app-text-3);
+}
+
+.homeReadingCaret svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Última troca com a Uni (texto, resposta e confirmação pendente). */
 .compactResponse {
   display: grid;

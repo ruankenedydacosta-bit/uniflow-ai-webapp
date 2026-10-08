@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import FilterChips from '../../components/ui/FilterChips/index.js';
 import IconBox from '../../components/ui/IconBox/index.js';
@@ -605,10 +605,20 @@ const EMPTY_FILTERS = Object.freeze({
 
 function SimplifiedRecordsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, workspace } = useSession();
-  const [activeTab, setActiveTab] = useState('summary');
+  // A Leitura do mês da Home abre o histórico já filtrado pela categoria.
+  const initialCategoryId = location.state?.categoryId ?? null;
+  const [activeTab, setActiveTab] = useState(() => (initialCategoryId ? 'history' : 'summary'));
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState(() => (
+    initialCategoryId ? { ...EMPTY_FILTERS, categoryId: initialCategoryId } : EMPTY_FILTERS
+  ));
+  // O filtro vale para esta abertura. Sem limpar o state do histórico, recarregar
+  // ou voltar para a tela reaplicaria a categoria que a pessoa já tirou.
+  useEffect(() => {
+    if (initialCategoryId) navigate(location.pathname, { replace: true, state: null });
+  }, [initialCategoryId, location.pathname, navigate]);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);

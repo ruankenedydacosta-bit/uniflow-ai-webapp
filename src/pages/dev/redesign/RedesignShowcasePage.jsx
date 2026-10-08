@@ -14,6 +14,8 @@ import { UNI_RING_ORB_STATES } from '../../../components/ui/UniRingOrb/uniRingOr
 import SimplifiedBottomNavigation from '../../../features/simplified-app/SimplifiedBottomNavigation.jsx';
 import { ensureAppFont } from '../../../features/simplified-app/appFont.js';
 import SimplifiedHeader from '../../../features/simplified-app/SimplifiedHeader.jsx';
+import { SimplifiedHomeMonthReadingView } from '../../../features/simplified-app/SimplifiedHomeMonthReading.jsx';
+import { buildHomeMonthReading } from '../../../features/simplified-app/homeMonthReading.js';
 import { PhBankIcon, PhCheckIcon } from '../../../features/simplified-app/SimplifiedIcons.jsx';
 import appStyles from '../../../features/simplified-app/simplifiedApp.module.css';
 import { THEME_OPTIONS, useTheme } from '../../../features/theme/index.js';
@@ -33,6 +35,55 @@ const TIMELINE = [
   { id: 2, time: '12:00', title: 'Pagar fatura Nubank', detail: 'R$ 1.240 · lembrete às 11h', tone: 'violet' },
   { id: 3, time: '19:00', title: 'Aniversário da Ana', detail: 'Você ainda não comprou o presente', tone: 'green', highlightDetail: true },
 ];
+
+// Leitura do mês (design 20b) com saídas de exemplo em 8 de outubro.
+const READING_NOW = new Date(2026, 9, 8, 21, 40);
+const READING_CATEGORIES = [
+  { id: 'alim', name: 'Alimentação', category_type: 'expense' },
+  { id: 'lazer', name: 'Lazer', category_type: 'expense' },
+  { id: 'transp', name: 'Transporte', category_type: 'expense' },
+];
+const READING_TRANSACTIONS = [
+  ['alim', 812, '2026-10-05'], ['alim', 952, '2026-09-04'],
+  ['lazer', 320, '2026-10-06'], ['lazer', 230, '2026-09-02'],
+  ['transp', 60, '2026-10-02'], ['transp', 200, '2026-09-03'],
+].map(([categoryId, amount, date], index) => ({
+  id: `r${index}`,
+  status: 'completed',
+  transaction_type: 'expense',
+  category_id: categoryId,
+  amount,
+  transaction_date: date,
+}));
+
+function MonthReadingPreview() {
+  const reading = {
+    ...buildHomeMonthReading({
+      transactions: READING_TRANSACTIONS,
+      categories: READING_CATEGORIES,
+      now: READING_NOW,
+    }),
+    updatedAtLabel: '21:40',
+  };
+  const emptyReading = { readings: [], currentMonthName: 'outubro', updatedAtLabel: '21:40' };
+
+  return (
+    <div className={appStyles.shell} data-simplified-app-shell>
+      <div className={appStyles.shellSurface}>
+        <main className={`${appStyles.mainContent} ${styles.content}`}>
+          <div className={appStyles.home}>
+            <UniCard time="21:40" title="Boa noite, Jonatas.">
+              <p>Toque na Uni, no centro da barra abaixo, para conversar por voz.</p>
+            </UniCard>
+            <SimplifiedHomeMonthReadingView isLoading={false} error={null} reading={reading} />
+            <SimplifiedHomeMonthReadingView isLoading={false} error={null} reading={emptyReading} />
+            <SimplifiedHomeMonthReadingView isLoading error={null} reading={emptyReading} />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
 
 // Vitrine só de desenvolvimento (épico #91): mostra a base do redesign com
 // as mesmas classes do shell do app, para comparar com o handoff em 390px
@@ -54,6 +105,7 @@ function RedesignShowcasePage() {
   // Telas da Uni (#88): ?tela=conversa e ?voz=ouvindo|entendendo|rascunho.
   if (searchParams.has('voz')) return <UniVoicePreview state={searchParams.get('voz')} />;
   if (searchParams.get('tela') === 'conversa') return <UniConversationPreview />;
+  if (searchParams.get('tela') === 'leitura') return <MonthReadingPreview />;
 
   return (
     <div className={appStyles.shell} data-simplified-app-shell>
