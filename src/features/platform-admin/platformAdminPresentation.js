@@ -65,7 +65,7 @@ export function resolveUserPlanSummary(user) {
   };
 }
 
-// Mesma regra de admin_set_user_plan (migration 057): plano manual ativo e
+// Mesma regra de admin_set_user_plan (migration 058): plano manual ativo e
 // ainda no prazo troca de nível e mantém a data de fim; o resto ganha 1 mês.
 export function keepsManualPlanPeriod(user, now) {
   return user?.subscription_source === 'manual'

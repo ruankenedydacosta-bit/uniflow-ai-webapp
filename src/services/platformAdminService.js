@@ -1,5 +1,5 @@
 // Painel de administração da plataforma. Tudo passa pelas funções admin_* das
-// migrations 056 e 057, que conferem is_platform_admin() no banco: quem não é
+// migrations 056 e 058, que conferem is_platform_admin() no banco: quem não é
 // da equipe recebe erro mesmo chamando direto.
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
@@ -50,7 +50,7 @@ export async function revokeManualPlan({ userId, note }) {
   return createResult(data ?? null, error);
 }
 
-// Troca de nível pela lista (migration 057): plano manual ativo mantém a data
+// Troca de nível pela lista (migration 058): plano manual ativo mantém a data
 // de fim; quem não tem ganha 1 mês.
 export async function setUserPlan({ userId, tierId }) {
   if (!supabase) return createUnavailableResult(null);

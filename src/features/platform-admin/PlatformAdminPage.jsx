@@ -45,7 +45,7 @@ function resolveOriginLabel(user, summary) {
 // Painel da equipe da UniFlow: lista todos os usuários, troca o plano direto
 // na linha e, no modal, concede, renova ou encerra um plano manual e bloqueia
 // o acesso. Quem não é admin vê só o aviso de acesso negado; o bloqueio de
-// verdade está nas funções admin_* do banco (migrations 056 e 057).
+// verdade está nas funções admin_* do banco (migrations 056 e 058).
 function PlatformAdminPage() {
   const navigate = useNavigate();
   const accessStatus = useIsPlatformAdmin();

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const migration = () => readFile(
-  new URL('../../supabase/migrations/20261008120000_057_platform_admin_troca_e_bloqueio.sql', import.meta.url),
+  new URL('../../supabase/migrations/20261008190000_058_platform_admin_troca_e_bloqueio.sql', import.meta.url),
   'utf8',
 );
 
