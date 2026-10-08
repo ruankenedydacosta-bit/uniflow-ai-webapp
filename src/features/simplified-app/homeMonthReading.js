@@ -47,6 +47,15 @@ export function buildHomeMonthReadingRange(now = new Date()) {
   });
 }
 
+// "de 1 a 8 de outubro"; no dia 1, "em 1º de outubro".
+function describeRange(lastDay, monthName) {
+  return lastDay === 1 ? `em 1º de ${monthName}` : `de 1 a ${lastDay} de ${monthName}`;
+}
+
+function capitalize(value) {
+  return value.charAt(0).toLocaleUpperCase('pt-BR') + value.slice(1);
+}
+
 function buildComparisonWindow(now) {
   const year = now.getFullYear();
   const monthIndex = now.getMonth();
@@ -56,7 +65,8 @@ function buildComparisonWindow(now) {
   const previousCutoff = Math.min(day, previousLastDay);
 
   return {
-    day,
+    currentLabel: describeRange(day, MONTH_NAME_FORMATTER.format(now)),
+    previousLabel: describeRange(previousCutoff, MONTH_NAME_FORMATTER.format(previousDate)),
     currentFrom: toDateKey(year, monthIndex, 1),
     currentTo: toDateKey(year, monthIndex, day),
     previousFrom: toDateKey(previousDate.getFullYear(), previousDate.getMonth(), 1),
@@ -79,11 +89,11 @@ function isSignificantChange(delta, previous) {
 
 function describeTopComparison(delta, previous, period, share) {
   if (previous > 0) {
-    if (delta > 0) return `${formatCurrency(delta)} a mais que no mesmo dia de ${period.previousMonthName}.`;
-    if (delta < 0) return `${formatCurrency(-delta)} a menos que no mesmo dia de ${period.previousMonthName}.`;
-    return `O mesmo valor do mesmo dia de ${period.previousMonthName}.`;
+    if (delta > 0) return `${formatCurrency(delta)} a mais que no mesmo período de ${period.previousMonthName}.`;
+    if (delta < 0) return `${formatCurrency(-delta)} a menos que no mesmo período de ${period.previousMonthName}.`;
+    return `O mesmo valor do mesmo período de ${period.previousMonthName}.`;
   }
-  return `${share}% das suas saídas de ${period.currentMonthName}.`;
+  return `${share}% das suas saídas ${period.currentLabel}.`;
 }
 
 function toReading(kind, row, title, detail) {
@@ -119,15 +129,19 @@ export function buildHomeMonthReading({ transactions = [], categories = [], now 
       const previousAmount = previousAmountById.get(row.id) ?? 0;
       return { ...row, previousAmount, delta: row.amount - previousAmount };
     });
-  // Categoria sem saída em nenhum dos dois meses não tem o que ler.
-  const comparable = rows.filter((row) => row.amount > 0 || row.previousAmount > 0);
+  // Categoria sem saída em nenhum dos dois meses não tem o que ler. O balaio
+  // "Outros" (saída sem categoria do Financeiro Pessoal) não é categoria que
+  // o Financeiro consiga filtrar, então também fica de fora.
+  const comparable = rows.filter((row) => (
+    row.id !== 'uncategorized' && (row.amount > 0 || row.previousAmount > 0)
+  ));
   const monthExpense = rows.reduce((total, row) => total + row.amount, 0);
 
   const readings = [];
   const used = new Set();
   const comparisonDetail = (row) => (
-    `Até o dia ${period.day}: ${formatCurrency(row.amount)} em ${period.currentMonthName} e `
-    + `${formatCurrency(row.previousAmount)} em ${period.previousMonthName}.`
+    `${capitalize(period.currentLabel)}: ${formatCurrency(row.amount)}. `
+    + `${capitalize(period.previousLabel)}: ${formatCurrency(row.previousAmount)}.`
   );
 
   const increase = comparable
@@ -138,7 +152,7 @@ export function buildHomeMonthReading({ transactions = [], categories = [], now 
     readings.push(toReading(
       HOME_MONTH_READING_KINDS.INCREASE,
       increase,
-      `Você gastou ${formatCurrency(increase.delta)} a mais com ${increase.name} que em ${period.previousMonthName}.`,
+      `Você gastou ${formatCurrency(increase.delta)} a mais com ${increase.name} que no mesmo período de ${period.previousMonthName}.`,
       comparisonDetail(increase),
     ));
   }
@@ -152,7 +166,7 @@ export function buildHomeMonthReading({ transactions = [], categories = [], now 
     readings.push(toReading(
       HOME_MONTH_READING_KINDS.TOP,
       top,
-      `Você gastou ${formatCurrency(top.amount)} com ${top.name} em ${period.currentMonthName}.`,
+      `Você gastou ${formatCurrency(top.amount)} com ${top.name} ${period.currentLabel}.`,
       describeTopComparison(top.delta, top.previousAmount, period, share),
     ));
   }
@@ -164,7 +178,7 @@ export function buildHomeMonthReading({ transactions = [], categories = [], now 
     readings.push(toReading(
       HOME_MONTH_READING_KINDS.DECREASE,
       decrease,
-      `Você gastou ${formatCurrency(-decrease.delta)} a menos com ${decrease.name} que em ${period.previousMonthName}.`,
+      `Você gastou ${formatCurrency(-decrease.delta)} a menos com ${decrease.name} que no mesmo período de ${period.previousMonthName}.`,
       comparisonDetail(decrease),
     ));
   }

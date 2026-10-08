@@ -614,6 +614,11 @@ function SimplifiedRecordsPage() {
   const [filters, setFilters] = useState(() => (
     initialCategoryId ? { ...EMPTY_FILTERS, categoryId: initialCategoryId } : EMPTY_FILTERS
   ));
+  // O filtro vale para esta abertura. Sem limpar o state do histórico, recarregar
+  // ou voltar para a tela reaplicaria a categoria que a pessoa já tirou.
+  useEffect(() => {
+    if (initialCategoryId) navigate(location.pathname, { replace: true, state: null });
+  }, [initialCategoryId, location.pathname, navigate]);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);

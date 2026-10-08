@@ -55,11 +55,11 @@ test('ordena alta, maior categoria e queda, sem repetir categoria', () => {
     [HOME_MONTH_READING_KINDS.TOP, 'alim'],
     [HOME_MONTH_READING_KINDS.DECREASE, 'transp'],
   ]);
-  assert.match(readings[0].title, /R\$\s90,00 a mais com Lazer que em setembro\./);
-  assert.match(readings[0].detail, /^Até o dia 8: R\$\s320,00 em outubro e R\$\s230,00 em setembro\.$/);
-  assert.match(readings[1].title, /^Você gastou R\$\s812,00 com Alimentação em outubro\.$/);
-  assert.match(readings[1].detail, /^R\$\s140,00 a menos que no mesmo dia de setembro\.$/);
-  assert.match(readings[2].title, /R\$\s140,00 a menos com Transporte que em setembro\./);
+  assert.match(readings[0].title, /R\$\s90,00 a mais com Lazer que no mesmo período de setembro\./);
+  assert.match(readings[0].detail, /^De 1 a 8 de outubro: R\$\s320,00\. De 1 a 8 de setembro: R\$\s230,00\.$/);
+  assert.match(readings[1].title, /^Você gastou R\$\s812,00 com Alimentação de 1 a 8 de outubro\.$/);
+  assert.match(readings[1].detail, /^R\$\s140,00 a menos que no mesmo período de setembro\.$/);
+  assert.match(readings[2].title, /R\$\s140,00 a menos com Transporte que no mesmo período de setembro\./);
 });
 
 test('compara só até o mesmo dia do mês anterior', () => {
@@ -73,7 +73,7 @@ test('compara só até o mesmo dia do mês anterior', () => {
   const { readings } = buildHomeMonthReading({ transactions, categories: CATEGORIES, now: NOW });
 
   assert.equal(readings[0].kind, HOME_MONTH_READING_KINDS.INCREASE);
-  assert.match(readings[0].detail, /R\$\s200,00 em setembro/);
+  assert.match(readings[0].detail, /De 1 a 8 de setembro: R\$\s200,00\./);
 });
 
 test('variação pequena em reais ou em proporção não vira leitura', () => {
@@ -101,10 +101,39 @@ test('maior categoria sem histórico mostra a parte das saídas do mês', () => 
   const { readings } = buildHomeMonthReading({ transactions, categories: CATEGORIES, now: NOW });
 
   assert.equal(readings.length, 1);
-  assert.equal(readings[0].detail, '75% das suas saídas de outubro.');
+  assert.equal(readings[0].detail, '75% das suas saídas de 1 a 8 de outubro.');
 });
 
-test('sem saídas no mês não há leitura', () => {
+test('saída sem categoria conta no total, mas não vira leitura', () => {
+  const transactions = [
+    expense(null, 900, '2026-10-03'),
+    expense('alim', 300, '2026-10-04'),
+  ];
+
+  const { readings } = buildHomeMonthReading({ transactions, categories: CATEGORIES, now: NOW });
+
+  assert.deepEqual(readings.map((reading) => reading.categoryId), ['alim']);
+  assert.equal(readings[0].detail, '25% das suas saídas de 1 a 8 de outubro.');
+});
+
+test('no dia 1 compara só o primeiro dia de cada mês', () => {
+  const transactions = [
+    expense('lazer', 300, '2026-10-01'),
+    expense('lazer', 100, '2026-09-01'),
+    expense('lazer', 500, '2026-09-02'),
+  ];
+
+  const { readings } = buildHomeMonthReading({
+    transactions,
+    categories: CATEGORIES,
+    now: new Date(2026, 9, 1, 9),
+  });
+
+  assert.equal(readings[0].kind, HOME_MONTH_READING_KINDS.INCREASE);
+  assert.match(readings[0].detail, /^Em 1º de outubro: R\$\s300,00\. Em 1º de setembro: R\$\s100,00\.$/);
+});
+
+test('saída lançada para depois de hoje não entra na comparação', () => {
   const transactions = [
     { ...expense('salario', 5000, '2026-10-05'), transaction_type: 'income' },
     expense('alim', 400, '2026-10-20'),
@@ -124,5 +153,5 @@ test('queda aparece mesmo sem saída no mês corrente', () => {
   const { readings } = buildHomeMonthReading({ transactions, categories: CATEGORIES, now: NOW });
 
   assert.deepEqual(readings.map((reading) => reading.categoryId), ['alim', 'transp']);
-  assert.match(readings[1].detail, /R\$\s0,00 em outubro e R\$\s200,00 em setembro/);
+  assert.match(readings[1].detail, /De 1 a 8 de outubro: R\$\s0,00\. De 1 a 8 de setembro: R\$\s200,00\./);
 });

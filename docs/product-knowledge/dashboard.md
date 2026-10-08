@@ -20,7 +20,7 @@ Na Home de `/app/home`, logo abaixo da fala da Uni, o bloco "Leitura do mês" mo
 2. a categoria com mais saídas no mês;
 3. a categoria que mais caiu.
 
-Subida ou queda só aparece se for de pelo menos R$ 50 e 20%. Tocar numa frase abre o Financeiro no histórico, filtrado pela categoria. Sem saídas no mês, o bloco pede para registrar uma.
+Subida ou queda só aparece se for de pelo menos R$ 50 e 20%. Saída sem categoria conta no total do mês, mas não vira frase. Tocar numa frase abre o Financeiro no histórico, filtrado pela categoria. Sem saídas no mês até hoje, o bloco avisa que ainda não há saídas.
 
 ## Diferenças PF/PJ
 

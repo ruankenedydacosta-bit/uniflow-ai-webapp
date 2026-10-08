@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
@@ -35,8 +35,10 @@ function ReadingIcon({ reading }) {
 function SimplifiedHomeMonthReading() {
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
-  const now = useMemo(() => new Date(), []);
-  const range = useMemo(() => buildHomeMonthReadingRange(now), [now]);
+  // "Hoje" anda quando o app volta do background: aberto em 30/set e
+  // retomado em 01/out, o período buscado e a comparação passam para outubro.
+  const [today, setToday] = useState(() => new Date());
+  const range = buildHomeMonthReadingRange(today);
 
   // Mesmo contexto do Financeiro: a experiência simplificada é só Pessoal.
   const categoryState = useCategories({ workspaceId, context: 'personal' });
@@ -52,6 +54,7 @@ function SimplifiedHomeMonthReading() {
   const refreshRef = useRef(null);
   useEffect(() => {
     refreshRef.current = () => {
+      setToday(new Date());
       void transactionState.refresh();
       void categoryState.refresh();
     };
@@ -70,24 +73,35 @@ function SimplifiedHomeMonthReading() {
     };
   }, []);
 
+  // Sem as categorias, toda saída cairia em "Outros": a leitura só é montada
+  // depois que elas chegam. Ao recarregar, a lista anterior continua valendo.
+  const categoriesReady = categoryState.categories.length > 0
+    || (!categoryState.isLoading && !categoryState.error);
+
   // A hora de "Atualizada às" muda a cada resposta nova da consulta, não a
   // cada render.
   const reading = useMemo(
     () => ({
-      ...buildHomeMonthReading({
-        transactions: transactionState.transactions,
-        categories: categoryState.categories,
-        now: new Date(),
-      }),
+      ...(categoriesReady
+        ? buildHomeMonthReading({
+          transactions: transactionState.transactions,
+          categories: categoryState.categories,
+          now: today,
+        })
+        : buildHomeMonthReading({ now: today })),
       updatedAtLabel: CLOCK_FORMATTER.format(new Date()),
     }),
-    [transactionState.transactions, categoryState.categories],
+    [categoriesReady, transactionState.transactions, categoryState.categories, today],
   );
+
+  // Antes de a sessão trazer o espaço, os hooks respondem "espaço ausente":
+  // isso é espera, não falha.
+  const isWaitingWorkspace = !workspaceId;
 
   return (
     <SimplifiedHomeMonthReadingView
-      isLoading={transactionState.isLoading || categoryState.isLoading}
-      error={transactionState.error ?? categoryState.error}
+      isLoading={isWaitingWorkspace || transactionState.isLoading || (categoryState.isLoading && !categoriesReady)}
+      error={isWaitingWorkspace ? null : (transactionState.error ?? categoryState.error)}
       reading={reading}
     />
   );
@@ -116,7 +130,7 @@ export function SimplifiedHomeMonthReadingView({ isLoading, error, reading }) {
   } else if (!hasReadings) {
     body = (
       <p className={styles.homeSectionEmpty}>
-        {`Registre uma saída em ${reading.currentMonthName} para ver a leitura do mês.`}
+        {`Ainda não há saídas de ${reading.currentMonthName} até hoje.`}
       </p>
     );
   } else {

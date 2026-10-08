@@ -850,7 +850,7 @@
 .homeReadingHeading {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--uf-space-8);
 }
 
 .homeReadingUpdated {
@@ -859,7 +859,7 @@
 }
 
 .homeReadingSkeleton {
-  gap: 10px;
+  gap: var(--uf-space-8);
   padding-left: 0;
 }
 
@@ -881,8 +881,8 @@
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) 16px;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-12) 0;
   color: inherit;
   text-decoration: none;
 }
