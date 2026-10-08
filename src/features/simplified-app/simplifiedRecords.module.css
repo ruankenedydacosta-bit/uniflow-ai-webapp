@@ -627,7 +627,7 @@
 }
 
 .positiveAmount { color: var(--uf-app-brand-green-text); }
-.negativeAmount { color: var(--uf-app-text); }
+.negativeAmount { color: var(--uf-app-danger-text); }
 .transferAmount { color: var(--uf-app-brand-blue-text); }
 
 /* Terceira forma de chegar em Editar/Excluir: ícone sempre visível (nunca
