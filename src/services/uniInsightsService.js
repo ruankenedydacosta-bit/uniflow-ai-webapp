@@ -8,8 +8,9 @@ import { isSupabaseConfigured, supabase, supabaseAnonKey, supabaseUrl } from './
 export const UNI_INSIGHTS_FUNCTION_NAME = 'uni-insights';
 
 // Sem cache, a Home mostra o carregamento enquanto espera. Passou disso, a
-// leitura calculada entra no lugar.
-export const UNI_INSIGHTS_TIMEOUT_MS = 8000;
+// leitura calculada entra no lugar. A função para o modelo em 7 s, antes
+// deste prazo, para a leitura paga não chegar depois de o app desistir.
+export const UNI_INSIGHTS_TIMEOUT_MS = 10000;
 
 const CODIGO_POR_STATUS = Object.freeze({
   400: 'INVALID_REQUEST',
@@ -41,10 +42,12 @@ export async function requestUniInsights(payload, {
 
   const controller = new AbortController();
   const timeout = runtime.setTimeout?.(() => controller.abort('timeout'), timeoutMs);
+  const failure = (code) => ({ leituras: null, error: { code } });
 
-  let response;
+  // O prazo vale até o corpo inteiro chegar: conexão que trava depois dos
+  // cabeçalhos também cai na leitura calculada.
   try {
-    response = await fetchImpl(`${url}/functions/v1/${UNI_INSIGHTS_FUNCTION_NAME}`, {
+    const response = await fetchImpl(`${url}/functions/v1/${UNI_INSIGHTS_FUNCTION_NAME}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -54,23 +57,19 @@ export async function requestUniInsights(payload, {
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-  } catch {
-    return { leituras: null, error: { code: controller.signal.reason === 'timeout' ? 'TIMEOUT' : 'NETWORK' } };
-  } finally {
-    runtime.clearTimeout?.(timeout);
-  }
+    if (!response.ok) return failure(CODIGO_POR_STATUS[response.status] ?? 'PROVIDER_ERROR');
 
-  if (!response.ok) {
-    return { leituras: null, error: { code: CODIGO_POR_STATUS[response.status] ?? 'PROVIDER_ERROR' } };
-  }
-
-  try {
-    const data = await response.json();
-    if (!Array.isArray(data?.leituras) || data.leituras.length === 0) {
-      return { leituras: null, error: { code: 'INVALID_RESPONSE' } };
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      return failure(controller.signal.aborted ? 'TIMEOUT' : 'PARSE_ERROR');
     }
+    if (!Array.isArray(data?.leituras) || data.leituras.length === 0) return failure('INVALID_RESPONSE');
     return { leituras: data.leituras, error: null };
   } catch {
-    return { leituras: null, error: { code: 'PARSE_ERROR' } };
+    return failure(controller.signal.reason === 'timeout' ? 'TIMEOUT' : 'NETWORK');
+  } finally {
+    runtime.clearTimeout?.(timeout);
   }
 }

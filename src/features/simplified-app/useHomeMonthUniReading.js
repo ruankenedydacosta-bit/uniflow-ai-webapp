@@ -6,11 +6,24 @@ import {
   writeUniReadingSuccess,
 } from './homeMonthUniReading.js';
 
+// Sem localStorage (aba anônima, armazenamento bloqueado), a memória da aba
+// guarda a leitura: voltar para a Home não gasta outra geração.
+const memoryEntries = new Map();
+const memoryStorage = Object.freeze({
+  getItem: (key) => (memoryEntries.has(key) ? memoryEntries.get(key) : null),
+  setItem: (key, value) => {
+    memoryEntries.set(key, String(value));
+  },
+});
+
 function getStorage() {
   try {
-    return typeof window === 'undefined' ? null : window.localStorage;
+    const storage = window.localStorage;
+    storage.setItem('uniflow:leitura-do-mes:teste', '1');
+    storage.removeItem('uniflow:leitura-do-mes:teste');
+    return storage;
   } catch {
-    return null;
+    return memoryStorage;
   }
 }
 
@@ -18,13 +31,21 @@ function getStorage() {
 // cheguem de novo iguais no meio do caminho. O cache é gravado aqui, e não no
 // componente: a geração já paga fica guardada mesmo se a pessoa sair da Home.
 const inflight = new Map();
+// Último pedido de cada usuário e espaço. Dois lançamentos seguidos geram dois
+// pedidos; a resposta do mais antigo, se chegar depois, não apaga a do novo.
+const latestRequest = new Map();
 
 function generate({ key, userId, workspaceId, fingerprint, payload }) {
   if (inflight.has(key)) return inflight.get(key);
+  const owner = `${userId}|${workspaceId}`;
+  latestRequest.set(owner, key);
   const promise = requestUniInsights(payload)
     .then(({ leituras, error }) => {
       const storage = getStorage();
       const now = new Date();
+      if (latestRequest.get(owner) !== key) {
+        return leituras ? { leituras, generatedAt: now.toISOString() } : { leituras: null, generatedAt: null };
+      }
       if (leituras) {
         writeUniReadingSuccess(storage, { userId, workspaceId, fingerprint, leituras, now });
         return { leituras, generatedAt: now.toISOString() };
@@ -45,19 +66,27 @@ function generate({ key, userId, workspaceId, fingerprint, payload }) {
  *   anteriores, quando houver, para a tela não piscar;
  * - 'ready': `leituras` são da Uni para estes fatos;
  * - 'fallback': a Home mostra a leitura calculada.
+ *
+ * pause: um recarregamento está no meio (os lançamentos chegaram e as
+ * categorias ainda não, por exemplo). Os fatos desse meio-tempo são
+ * passageiros e não podem gastar uma geração: vale a impressão anterior.
  */
-export function useHomeMonthUniReading({ userId, workspaceId, payload, fingerprint, enabled }) {
-  const key = enabled && userId && workspaceId && payload ? `${userId}|${workspaceId}|${fingerprint}` : null;
+export function useHomeMonthUniReading({ userId, workspaceId, payload, fingerprint, enabled, pause = false }) {
+  const candidateKey = enabled && userId && workspaceId && payload ? `${userId}|${workspaceId}|${fingerprint}` : null;
+  const [stable, setStable] = useState({ key: candidateKey, fingerprint, payload });
+  if (!pause && stable.key !== candidateKey) setStable({ key: candidateKey, fingerprint, payload });
+  const active = pause ? stable : { key: candidateKey, fingerprint, payload };
+  const { key } = active;
   // O pedido só muda junto com a impressão; o ref evita refazer a chamada
   // quando os mesmos dados chegam num objeto novo.
-  const payloadRef = useRef(payload);
+  const payloadRef = useRef(active.payload);
   // Roda antes do efeito que chama a Uni (mesma ordem de declaração).
   useEffect(() => {
-    payloadRef.current = payload;
+    payloadRef.current = active.payload;
   });
 
   const cached = useMemo(
-    () => (key ? readUniReadingCache(getStorage(), { userId, workspaceId, fingerprint }) : null),
+    () => (key ? readUniReadingCache(getStorage(), { userId, workspaceId, fingerprint: active.fingerprint }) : null),
     // key já carrega userId, workspaceId e fingerprint.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [key],
@@ -67,7 +96,7 @@ export function useHomeMonthUniReading({ userId, workspaceId, payload, fingerpri
   useEffect(() => {
     if (!key || !cached || cached.status === 'ready' || cached.status === 'blocked') return undefined;
     let ignore = false;
-    generate({ key, userId, workspaceId, fingerprint, payload: payloadRef.current }).then((generated) => {
+    generate({ key, userId, workspaceId, fingerprint: active.fingerprint, payload: payloadRef.current }).then((generated) => {
       if (!ignore) setResult({ key, ...generated });
     });
     return () => {

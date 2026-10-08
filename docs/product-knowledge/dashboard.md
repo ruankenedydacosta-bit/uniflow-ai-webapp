@@ -20,7 +20,7 @@ As frases são escritas pela Uni com inteligência artificial (Claude Haiku, da 
 
 A leitura fica guardada no aparelho até o fim do dia. Um registro novo faz a Uni escrever de novo, e no dia seguinte ela escreve uma leitura nova. São até 10 leituras escritas pela Uni por dia, e elas também contam no limite mensal de uso de IA do plano.
 
-Quando a Uni não consegue escrever (sem conexão, limite do dia atingido ou demora de mais de 8 segundos), o bloco mostra uma leitura calculada pelo app, nesta ordem de prioridade, com as três primeiras que existirem:
+Quando a Uni não consegue escrever (sem conexão, limite do dia atingido ou demora de mais de 10 segundos), o bloco mostra uma leitura calculada pelo app, nesta ordem de prioridade, com as três primeiras que existirem:
 
 1. a categoria que mais passou do orçamento;
 2. a categoria que já usou 80% ou mais do orçamento;

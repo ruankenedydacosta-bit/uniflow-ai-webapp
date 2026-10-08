@@ -8,6 +8,20 @@ import { MAX_DETALHE, MAX_LEITURAS, MAX_TITULO, TIPOS } from './contrato.js';
 const REAIS = /R\$\s?\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?/g;
 const PORCENTAGEM = /\d+(?:,\d+)?\s?%/g;
 
+// Número que não vem como "R$ 1.234,56" nem como "86%": "812 reais",
+// "812,00" solto ou um inteiro grande demais para ser dia do mês ou contagem
+// de categorias ("dia 8 de 31", "3 de 4 categorias" continuam valendo).
+const MAIOR_CONTAGEM = 60;
+function temNumeroSolto(texto, nomesDeCategorias = []) {
+  if (/\breais\b/i.test(texto)) return true;
+  // Nome de categoria pode ter número ("Carro 2020") e não é valor.
+  const semNomes = nomesDeCategorias.reduce((atual, nome) => atual.split(nome).join(' '), texto);
+  const semValores = semNomes.replace(REAIS, ' ').replace(PORCENTAGEM, ' ');
+  if (/\d,\d/.test(semValores)) return true;
+  return [...semValores.matchAll(/\d[\d.]*/g)]
+    .some(([numero]) => Number(numero.replace(/\./g, '')) > MAIOR_CONTAGEM);
+}
+
 function normalizarReais(escrito) {
   return escrito.replace(/^R\$\s?/, 'R$ ');
 }
@@ -30,7 +44,7 @@ function limpar(valor) {
  * passam: tipo conhecido, texto dentro do tamanho, categoria da lista e
  * nenhum valor fora de `permitidos`. Uma categoria aparece uma vez só.
  */
-export function validarLeituras(resposta, { permitidos, idsDeCategorias }) {
+export function validarLeituras(resposta, { permitidos, idsDeCategorias, nomesDeCategorias = [] }) {
   const lista = Array.isArray(resposta?.leituras) ? resposta.leituras : [];
   const usadas = new Set();
   const descartes = [];
@@ -49,6 +63,7 @@ export function validarLeituras(resposta, { permitidos, idsDeCategorias }) {
     else if (categoriaId && !idsDeCategorias.has(categoriaId)) motivo = 'categoria';
     else if (categoriaId && usadas.has(categoriaId)) motivo = 'repetida';
     else if (extrairValores(`${titulo} ${detalhe}`).some((valor) => !permitidos.has(valor))) motivo = 'valor';
+    else if (temNumeroSolto(`${titulo} ${detalhe}`, nomesDeCategorias)) motivo = 'valor';
 
     if (motivo) {
       descartes.push(motivo);

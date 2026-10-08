@@ -106,6 +106,16 @@ test('cache: limite do dia bloqueia até amanhã; outra falha bloqueia só aquel
   assert.equal(readUniReadingCache(storage, { ...IDS, fingerprint: 'c', now: new Date(2026, 9, 9, 8) }).status, 'miss');
 });
 
+test('falha passageira não grava nada: a próxima abertura tenta de novo', () => {
+  const storage = memoryStorage();
+  writeUniReadingSuccess(storage, { ...IDS, fingerprint: 'a', leituras: LEITURAS, now: NOW });
+  for (const errorCode of ['TIMEOUT', 'NETWORK', 'UNAUTHORIZED']) {
+    writeUniReadingFailure(storage, { ...IDS, fingerprint: 'b', errorCode, now: NOW });
+  }
+  assert.equal(readUniReadingCache(storage, { ...IDS, fingerprint: 'b', now: NOW }).status, 'stale');
+  assert.equal(readUniReadingCache(storage, { ...IDS, fingerprint: 'a', now: NOW }).status, 'ready');
+});
+
 test('cache sem armazenamento não quebra', () => {
   const quebrado = { getItem: () => { throw new Error('bloqueado'); }, setItem: () => { throw new Error('cheio'); } };
   assert.doesNotThrow(() => writeUniReadingSuccess(quebrado, { ...IDS, fingerprint: 'a', leituras: LEITURAS, now: NOW }));

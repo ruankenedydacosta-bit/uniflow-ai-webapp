@@ -17,7 +17,9 @@ import { LIMITE_DIARIO } from '../_shared/uniInsights/contrato.js';
 import { escreverLeituras, gerarComAnthropic } from '../_shared/uniInsights/servico.js';
 import { registrarCusto, reservarLeitura } from '../_shared/uniLlmCota.js';
 
-const TEMPO_LIMITE_MS = 12000;
+// Abaixo dos 10 s do app (uniInsightsService.js), com folga para a
+// autenticação e a reserva da cota. Sem nova tentativa do SDK pelo mesmo motivo.
+const TEMPO_LIMITE_MS = 7000;
 const MODELO = 'claude-haiku-5-5';
 
 function getAllowedOrigins() {
@@ -106,7 +108,14 @@ Deno.serve(async (request) => {
           mensagem,
           sinal: AbortSignal.timeout(TEMPO_LIMITE_MS),
         });
-        if (chamada.uso) await registrarCusto({ supabaseUrl, serviceRoleKey, userId, modelo: MODELO, uso: chamada.uso });
+        // O custo entra depois da resposta, para não somar uma RPC ao tempo
+        // que o app espera.
+        if (chamada.uso) {
+          const custo = registrarCusto({ supabaseUrl, serviceRoleKey, userId, modelo: MODELO, uso: chamada.uso });
+          const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (tarefa: Promise<unknown>) => void } }).EdgeRuntime;
+          if (runtime?.waitUntil) runtime.waitUntil(custo);
+          else await custo;
+        }
         return chamada;
       },
     });

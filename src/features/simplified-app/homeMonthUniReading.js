@@ -1,4 +1,5 @@
 import { HOME_MONTH_READING_KINDS, BUDGET_SOURCES } from './homeMonthReading.js';
+import { toDateKey } from './simplifiedAgendaCalendar.js';
 
 /**
  * Leitura do mês escrita pela Uni (#122). Este módulo é a ponte entre os
@@ -9,13 +10,18 @@ import { HOME_MONTH_READING_KINDS, BUDGET_SOURCES } from './homeMonthReading.js'
  * Cache: uma entrada por usuário e espaço, válida só no dia em que foi
  * gerada. A impressão dos fatos muda com qualquer lançamento novo, e aí a Uni
  * escreve de novo. Limite do dia atingido ou função sem chave bloqueiam novas
- * tentativas até o dia seguinte; outra falha bloqueia só aqueles fatos.
+ * tentativas até o dia seguinte. Falha do modelo bloqueia só aqueles fatos.
+ * Falha de rede, de sessão ou de tempo não fica gravada: a próxima abertura
+ * da Home tenta de novo.
  */
 
 export const UNI_READING_CACHE_PREFIX = 'uniflow:leitura-do-mes:v1';
 
 // Falha que não muda com fatos novos: tentar de novo hoje só gasta pedido.
 const DAY_BLOCKING_ERRORS = new Set(['RATE_LIMIT', 'NOT_CONFIGURED', 'UNSUPPORTED']);
+// Falha passageira: não grava nada, para não perder a leitura do dia por uma
+// oscilação de rede.
+const TRANSIENT_ERRORS = new Set(['TIMEOUT', 'NETWORK', 'UNAUTHORIZED']);
 
 const KIND_BY_TIPO = Object.freeze({
   alerta: HOME_MONTH_READING_KINDS.OVER_BUDGET,
@@ -81,7 +87,7 @@ export function fingerprintPayload(payload) {
 }
 
 export function todayKey(now = new Date()) {
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return toDateKey(now);
 }
 
 export function uniReadingCacheKey(userId, workspaceId) {
@@ -138,6 +144,7 @@ export function writeUniReadingSuccess(storage, { userId, workspaceId, fingerpri
 }
 
 export function writeUniReadingFailure(storage, { userId, workspaceId, fingerprint, errorCode, now = new Date() }) {
+  if (TRANSIENT_ERRORS.has(errorCode)) return;
   const key = uniReadingCacheKey(userId, workspaceId);
   const previous = readEntry(storage, key);
   const keep = previous?.date === todayKey(now) ? previous : {};

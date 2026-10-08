@@ -50,7 +50,7 @@ export async function gerarComAnthropic({ cliente, modelo, instrucoes, mensagem,
       system: [{ type: 'text', text: instrucoes, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: mensagem }],
       output_config: { effort: ESFORCO, format: { type: 'json_schema', schema: ESQUEMA } },
-    }, { signal: sinal, maxRetries: 1 });
+    }, { signal: sinal, maxRetries: 0 });
   } catch (erro) {
     const status = typeof erro?.status === 'number' ? erro.status : null;
     if (status === 401) return { ok: false, motivo: 'chave_invalida', status };
@@ -59,11 +59,15 @@ export async function gerarComAnthropic({ cliente, modelo, instrucoes, mensagem,
     return { ok: false, motivo: nomes.includes(erro?.name) ? 'tempo_esgotado' : 'rede' };
   }
 
+  // Entrada em "tokens a preço cheio": leitura do cache custa 0,1x e escrita
+  // no cache de 5 minutos 1,25x. Somar tudo a preço cheio cobraria do teto
+  // mensal (o mesmo da conversa) mais do que a leitura custou.
+  const cacheLeitura = resposta.usage?.cache_read_input_tokens ?? 0;
+  const cacheEscrita = resposta.usage?.cache_creation_input_tokens ?? 0;
   const uso = {
-    entrada: (resposta.usage?.input_tokens ?? 0) + (resposta.usage?.cache_read_input_tokens ?? 0)
-      + (resposta.usage?.cache_creation_input_tokens ?? 0),
+    entrada: Math.ceil((resposta.usage?.input_tokens ?? 0) + cacheEscrita * 1.25 + cacheLeitura * 0.1),
     saida: resposta.usage?.output_tokens ?? 0,
-    cacheLeitura: resposta.usage?.cache_read_input_tokens ?? 0,
+    cacheLeitura,
   };
   // Recusa e corte também custam: o uso volta para entrar no teto mensal.
   if (resposta.stop_reason === 'refusal') return { ok: false, motivo: 'recusa', uso };
@@ -96,6 +100,7 @@ export async function escreverLeituras({ corpo, reservar, chamarModelo }) {
   const { leituras, descartes } = validarLeituras(chamada.bruta, {
     permitidos,
     idsDeCategorias: new Set(pedido.fatos.categorias.map((categoria) => categoria.id)),
+    nomesDeCategorias: pedido.fatos.categorias.map((categoria) => categoria.nome),
   });
   if (leituras.length === 0) return falha('sem_leitura', { ...metrica, descartes });
 

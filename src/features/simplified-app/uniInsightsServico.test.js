@@ -111,6 +111,26 @@ test('validarLeituras descarta valor inventado, categoria estranha, repetida e t
   assert.deepEqual(descartes, ['repetida', 'valor', 'categoria', 'tipo', 'tamanho']);
 });
 
+test('validarLeituras recusa valor escrito sem "R$" e aceita dia e contagem', () => {
+  const permitidos = new Set(['R$ 56,00', '86%']);
+  const idsDeCategorias = new Set();
+  const validar = (titulo) => validarLeituras(
+    { leituras: [{ tipo: 'informacao', categoriaId: '', titulo, detalhe: '' }] },
+    { permitidos, idsDeCategorias },
+  ).leituras.length;
+
+  assert.equal(validar('Você gastou 812 reais a mais em Lazer.'), 0);
+  assert.equal(validar('Você gastou 812,00 a mais em Lazer.'), 0);
+  assert.equal(validar('Você gastou 812 a mais em Lazer.'), 0);
+  assert.equal(validar('No dia 8 de 31, você está bem em 3 de 4 categorias.'), 1);
+  assert.equal(validar('Restam R$56,00, e você já usou 86% do orçamento.'), 1);
+  const comNome = validarLeituras(
+    { leituras: [{ tipo: 'informacao', categoriaId: '', titulo: 'Carro 2020 está dentro do orçamento.', detalhe: '' }] },
+    { permitidos, idsDeCategorias, nomesDeCategorias: ['Carro 2020'] },
+  );
+  assert.equal(comNome.leituras.length, 1);
+});
+
 test('escreverLeituras: pedido inválido não reserva cota nem chama o modelo', async () => {
   let reservou = false;
   const resultado = await escreverLeituras({
@@ -177,7 +197,8 @@ test('gerarComAnthropic manda modelo, esforço baixo, esquema e cache nas instru
   assert.equal(pedido.output_config.format.type, 'json_schema');
   assert.deepEqual(pedido.system[0].cache_control, { type: 'ephemeral' });
   assert.equal(pedido.thinking, undefined);
-  assert.equal(resultado.uso.entrada, 1200);
+  // 300 de entrada + 900 lidos do cache a 0,1x.
+  assert.equal(resultado.uso.entrada, 390);
 });
 
 test('gerarComAnthropic separa recusa, corte, JSON inválido, chave e tempo esgotado', async () => {

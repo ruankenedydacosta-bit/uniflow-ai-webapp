@@ -126,6 +126,7 @@ function SimplifiedHomeMonthReading() {
     payload,
     fingerprint,
     enabled: isReady,
+    pause: transactionState.isLoading || categoryState.isLoading || budgetState.isLoading,
   });
 
   // A hora de "Atualizada às" muda a cada resposta nova da consulta, não a
