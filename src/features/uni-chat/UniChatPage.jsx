@@ -3744,6 +3744,62 @@ export default function UniChatPage({ variant = 'full' }) {
     );
   }
 
+  // BUG REAL EM PRODUÇÃO (voz): com o card "Criar categoria para continuar" na
+  // tela, "Salário não é despesa, salário é uma receita" caía no aviso "confirme
+  // a criação da categoria", e a Uni dizia que tinha corrigido sem o card mudar.
+  // O que a pessoa corrige é o lançamento que espera atrás do card (tipo, valor,
+  // data, descrição ou a categoria em si). O card de criação sai, o lançamento
+  // volta com a correção e, se ainda faltar a categoria, o card reaparece já
+  // revisado. Frase que não é correção clara devolve false e segue o aviso.
+  function correctDraftBehindCategoryCreation(text) {
+    const stack = pendingActionStackRef.current;
+    const parent = stack?.actions?.find((item) => item.type === 'financial_transaction');
+    const parentSnapshot = parent?.fields?.snapshot;
+    if (
+      !parentSnapshot?.parsed
+      || !['ready', 'needs_clarification'].includes(parentSnapshot.action?.status)
+    ) {
+      return false;
+    }
+    const resolved = resolvePendingActionInput({
+      value: text,
+      action: parentSnapshot.action,
+      accounts: accountState.accounts,
+      categories: categoryState.categories,
+      workspaceId: effectiveWorkspace?.id,
+      referenceDate: getLocalIsoDate(),
+    });
+    if (resolved.kind !== 'correction') return false;
+    // "A categoria é Salário" com um card que cria Salário de saída: a categoria
+    // existente é de outro tipo e não serve ao lançamento, então não é correção.
+    const chosenCategory = resolved.overrides.categoryId
+      ? categoryState.categories.find((category) => category.id === resolved.overrides.categoryId)
+      : null;
+    const wantedType = resolved.overrides.transactionType ?? parentSnapshot.action.transactionType;
+    if (chosenCategory && chosenCategory.category_type !== wantedType) return false;
+
+    // O nome que o card propunha vale de novo se a categoria ainda faltar: sem
+    // ele, o card voltaria com um palpite novo (ex.: "Pets" virando "Mercado").
+    const proposedCategoryName = getActivePendingAction(stack)?.fields?.category?.name ?? null;
+    const creationCardId = findPendingConfirmationMessageId();
+    setMessages((current) => current.map((message) => (
+      message.id === creationCardId && message.confirmation?.status === 'pending'
+        ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
+        : message
+    )));
+    pendingActionStackRef.current = null;
+    setPendingActionStack(null);
+    setPendingAction(null);
+    clearCurrentPendingAction();
+    financialConversation.restore(parentSnapshot);
+    const result = financialConversation.provideInput(
+      { ...resolved.overrides, ...(proposedCategoryName ? { categoryName: proposedCategoryName } : {}) },
+      parentSnapshot.parsed,
+    );
+    void publishConversationResultWithInference(result);
+    return true;
+  }
+
   function openAccountCreationDependency(proposal) {
     if (!proposal?.action?.proposedAccount) return false;
     const financialSnapshot = {
@@ -3941,6 +3997,10 @@ export default function UniChatPage({ variant = 'full' }) {
     ) {
       financialConversation.cancel();
       clearCurrentPendingAction();
+      // O lançamento que ficou preservado depois de "cancelar só a criação"
+      // ainda está na pilha: sem limpar, ele volta no próximo pedido.
+      pendingActionStackRef.current = null;
+      setPendingActionStack(null);
       createAssistantResponse('Tudo bem. Não registrei nada.');
       return true;
     }
@@ -3980,6 +4040,7 @@ export default function UniChatPage({ variant = 'full' }) {
       }
       return true;
     }
+    if (categoryDependencyActive && correctDraftBehindCategoryCreation(text)) return true;
     if (categoryDependencyActive) {
       createAssistantResponse(
         'Para continuar, confirme a criação da categoria, cancele apenas a criação ou diga “cancelar tudo”.',
@@ -5102,7 +5163,7 @@ export default function UniChatPage({ variant = 'full' }) {
       setPendingAction(null);
       financialConversation.restore(transition.resumedAction.fields.snapshot);
       createAssistantResponse(
-        'Tudo bem. Não criei a conta. A movimentação continua preservada; informe outra conta para continuar.',
+        'Tudo bem. Não criei a conta. A movimentação continua preservada; informe outra conta para continuar ou diga “cancelar” para descartar tudo.',
       );
       return;
     }
@@ -5138,7 +5199,7 @@ export default function UniChatPage({ variant = 'full' }) {
       setPendingAction(null);
       financialConversation.restore(transition.resumedAction.fields.snapshot);
       createAssistantResponse(
-        'Tudo bem. Não criei a categoria. A movimentação continua preservada; informe outra categoria para continuar.',
+        'Tudo bem. Não criei a categoria. A movimentação continua preservada; informe outra categoria para continuar ou diga “cancelar” para descartar tudo.',
       );
       return;
     }

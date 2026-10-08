@@ -16,6 +16,11 @@ const ACTION_INTENTS = Object.freeze({
   set_balance: 'adjustment',
 });
 
+const TYPE_OVERRIDE_INTENTS = Object.freeze({
+  income: 'register_income',
+  expense: 'register_expense',
+});
+
 const TYPE_LABELS = Object.freeze({
   income: 'Entrada',
   expense: 'Saída',
@@ -176,6 +181,29 @@ export function buildFinancialIntentAction({
     });
   }
 
+  // Correção de tipo do rascunho ("salário não é despesa, é receita"): troca
+  // entre entrada e saída. A categoria e os demais campos são reavaliados para
+  // o tipo novo; transferência e ajuste de saldo não trocam de tipo assim.
+  const switchedIntent = Object.hasOwn(TYPE_OVERRIDE_INTENTS, overrides.transactionType)
+    ? TYPE_OVERRIDE_INTENTS[overrides.transactionType]
+    : null;
+  if (
+    switchedIntent
+    && switchedIntent !== parsed.intent
+    && Object.values(TYPE_OVERRIDE_INTENTS).includes(parsed.intent)
+  ) {
+    return buildFinancialIntentAction({
+      parsed: { ...parsed, intent: switchedIntent },
+      accounts,
+      accountTypes,
+      categories,
+      referenceDate,
+      overrides,
+      workspaceType,
+      accountBalances,
+    });
+  }
+
   if (!isFinancialTransactionIntent(parsed.intent)) {
     return { status: 'unsupported', intent: parsed.intent, issues: [] };
   }
@@ -211,7 +239,9 @@ export function buildFinancialIntentAction({
         categories,
         transactionType,
         categoryId: overrides.categoryId,
-        requestedName: parsed.entities.category,
+        // categoryName: a categoria que o card de criação já propunha, preservada
+        // quando o rascunho volta com uma correção de outro campo.
+        requestedName: overrides.categoryName ?? parsed.entities.category,
         description: parsed.entities.description,
         normalizedInput: parsed.normalizedInput,
         approved: overrides.categoryApproved,

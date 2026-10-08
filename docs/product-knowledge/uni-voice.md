@@ -40,6 +40,9 @@ Também dá para responder ao card só falando, sem tocar na tela:
   se pode confirmar. Se você pedir uma categoria que ainda não existe ("a
   categoria é Animais de Estimação"), a Uni pergunta se pode criá-la. Depois
   de criar, o rascunho volta com a categoria nova para você confirmar.
+- **Corrigir entrada e saída**: se a Uni entendeu uma entrada como saída, ou o
+  contrário, diga "não é despesa, é receita". O rascunho volta no tipo certo,
+  também quando o card na tela é o de criar a categoria.
 
 Se a resposta não estiver clara, a Uni pergunta antes de confirmar.
 

@@ -183,6 +183,14 @@ const PEDIDO_DE_LANCAMENTO = String.raw`^(?:(?:eu\s+)?(?:queria|quero|gostaria|p
 const VALOR_NA_FRASE = String.raw`(?:r\s*\$|\d|\b(?:reais?|mil|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos|dez|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)\b)`;
 // "Adicionar a conta Nubank com 500 de saldo" é saldo, nunca lançamento.
 const SEM_SALDO = String.raw`(?![\s\S]*\bsaldo\b)`;
+// BUG REAL EM PRODUÇÃO (voz): "Registre hoje um salário de 2500" virava despesa
+// na categoria Salário ("Criar categoria Salário, Saída"), porque só a palavra
+// "receita"/"entrada" abria o caminho de receita e o verbo de pedido cai em
+// despesa por padrão. Salário é, por natureza, dinheiro que entra.
+const SUBSTANTIVO_DE_ENTRADA = String.raw`(?:salario|holerite|contracheque|decimo\s+terceiro)`;
+// Quem paga o salário (funcionário, folha) tem despesa, mesmo com a palavra.
+// Bônus e comissão ficam de fora de propósito: a pessoa tanto recebe quanto paga.
+const SINAL_DE_SAIDA = String.raw`\b(?:saida|despesa|gasto|pagamento|pagar|paguei|funcionari[oa]|colaborador|empregad[oa]|diarista|folha)s?\b`;
 
 const INTENT_RULES = [
   {
@@ -282,6 +290,12 @@ const INTENT_RULES = [
       // Pedido falado de receita ("queria registrar uma entrada de mil
       // reais"), desde que a frase não fale também em saída/despesa.
       new RegExp(`${PEDIDO_DE_LANCAMENTO}${SEM_SALDO}(?![\\s\\S]*\\b(?:saida|despesa|gasto)s?\\b)(?=[\\s\\S]*\\b(?:receita|entrada)s?\\b)`, 'u'),
+      // Pedido de lançamento de salário e afins ("registre hoje um salário de
+      // 2500"): entrada, salvo sinal de que a pessoa é quem paga.
+      new RegExp(`${PEDIDO_DE_LANCAMENTO}${SEM_SALDO}(?![\\s\\S]*${SINAL_DE_SAIDA})(?=[\\s\\S]*\\b${SUBSTANTIVO_DE_ENTRADA}\\b)`, 'u'),
+      // Declaração nominal com valor ("Salário de 2500", "meu salário 2.500"),
+      // como a voz costuma transcrever. Pergunta não entra.
+      new RegExp(`^(?:(?:o|um|meu|minha)\\s+)?${SUBSTANTIVO_DE_ENTRADA}\\s+(?:de\\s+)?(?:r\\s*\\$\\s*)?\\d${SEM_SALDO}(?![\\s\\S]*(?:\\?|${SINAL_DE_SAIDA}))`, 'u'),
     ],
   },
   {

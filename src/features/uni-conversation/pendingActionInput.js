@@ -172,6 +172,29 @@ export function resolvePendingActionInput({
   const collected = !firstIssue || looksLikePendingCorrection(text)
     ? collectCorrectionOverrides({ text, normalized, parsed, accounts, categories, workspaceId })
     : null;
+  // Troca de tipo ("não é despesa, é receita"): ganha do campo pendente, que
+  // trataria "Salário" como resposta de categoria do tipo antigo. A categoria
+  // citada só vale se for do tipo novo; senão sai e é reavaliada pelo nome.
+  // Com a pergunta "receita ou saldo?" pendente, a resposta é a intenção.
+  const typeCorrection = field !== 'intent' && isTypeSwitchableAction(action)
+    ? resolveTransactionTypeCorrection(text)
+    : null;
+  if (typeCorrection) {
+    const overrides = {
+      ...collected,
+      ...(result.kind === 'correction' ? result.overrides : {}),
+      transactionType: typeCorrection,
+    };
+    const chosenCategory = overrides.categoryId
+      ? (Array.isArray(categories) ? categories : []).find((category) => category?.id === overrides.categoryId)
+      : null;
+    // A categoria de antes é do tipo antigo. "undefined" explícito (e não só
+    // tirar a chave) é o que apaga o id que o hook já guardou nos overrides.
+    if (action.transactionType !== typeCorrection && chosenCategory?.category_type !== typeCorrection) {
+      overrides.categoryId = undefined;
+    }
+    return { kind: 'correction', overrides };
+  }
   if (result.kind === 'correction') {
     return collected ? { ...result, overrides: { ...collected, ...result.overrides } } : result;
   }
@@ -252,7 +275,54 @@ const PENDING_CORRECTION_PATTERNS = [
 export function looksLikePendingCorrection(value) {
   const normalized = normalizeFinancialText(value);
   if (!normalized) return false;
-  return PENDING_CORRECTION_PATTERNS.some((pattern) => pattern.test(normalized));
+  return PENDING_CORRECTION_PATTERNS.some((pattern) => pattern.test(normalized))
+    || Boolean(resolveTransactionTypeCorrection(value));
+}
+
+// BUG REAL EM PRODUÇÃO (voz): "Salário não é despesa, salário é uma receita."
+// com o card na tela não mudava nada, porque o tipo (entrada/saída) não era um
+// campo corrigível. Reconhece a troca de tipo dita de forma direta e devolve
+// 'income' ou 'expense'; null quando a frase não fala do tipo.
+//
+// O texto chega sem acento, então "é" e a conjunção "e" são iguais. Para não
+// tomar "gastei no mercado e gasto na padaria" nem "a descrição é gasto com
+// combustível" por troca de tipo, o tipo precisa fechar a oração ("é receita.",
+// "é uma despesa, não é receita") e não pode ser resposta de campo ("a
+// categoria é Receita"). "receita de vendas" e "entrada do apartamento" são
+// nomes, não troca de tipo.
+const TYPE_WORD = String.raw`(receita|entrada|rendimento|ganho|despesa|saida|gasto)`;
+const NOT_A_FIELD_ANSWER = String.raw`(?<!\b(?:categoria|conta|descricao|valor|data|nome|destino)\s+(?:nao\s+)?)`;
+const CLAUSE_END = String.raw`(?=\s*(?:[,.;!?]|$)|\s+(?:mesmo|ne|ok|sim|entao|por favor|pra mim|para mim|aqui|ai)\b)`;
+const LINKED_TYPE = new RegExp(
+  String.raw`${NOT_A_FIELD_ANSWER}\b(nao\s+)?(?:e|eh|foi|era|seria)\s+(?:uma?\s+|a\s+|o\s+)?${TYPE_WORD}\b${CLAUSE_END}`,
+  'g',
+);
+const COMMANDED_TYPE = new RegExp(
+  String.raw`\b(?:muda|mude|mudar|troca|troque|trocar|altera|altere|alterar|coloca|coloque|bota|deixa|deixe|registra|registre|lanca|lance|anota|anote|passa|passe|marca|marque)\s+(?:isso\s+|ela\s+|ele\s+|o\s+lancamento\s+|a\s+movimentacao\s+)?(?:como|pra|para|em)\s+(?:uma?\s+)?${TYPE_WORD}\b${CLAUSE_END}`,
+  'g',
+);
+const INCOME_TYPE_WORDS = new Set(['receita', 'entrada', 'rendimento', 'ganho']);
+
+export function resolveTransactionTypeCorrection(value) {
+  const normalized = normalizeFinancialText(value);
+  if (!normalized) return null;
+
+  // A última afirmação vale: "não é despesa, é receita" e "é despesa, não é
+  // receita" terminam cada uma no tipo certo.
+  const decisions = [];
+  for (const match of normalized.matchAll(LINKED_TYPE)) {
+    const isIncome = INCOME_TYPE_WORDS.has(match[2]);
+    decisions.push({ at: match.index, type: Boolean(match[1]) === isIncome ? 'expense' : 'income' });
+  }
+  for (const match of normalized.matchAll(COMMANDED_TYPE)) {
+    decisions.push({ at: match.index, type: INCOME_TYPE_WORDS.has(match[1]) ? 'income' : 'expense' });
+  }
+  if (!decisions.length) return null;
+  return decisions.sort((left, right) => left.at - right.at).at(-1).type;
+}
+
+function isTypeSwitchableAction(action) {
+  return action?.intent === 'register_income' || action?.intent === 'register_expense';
 }
 
 export function collectCorrectionOverrides({ text, normalized, parsed, accounts, categories, workspaceId }) {
@@ -298,6 +368,8 @@ function looksLikePureAmountCorrection(text, parsed) {
   const remainder = withoutNumbers.replace(/\s+/g, ' ').trim();
   return remainder.length === 0;
 }
+
+const DESCRIPTION_REQUEST_LEAD = /^(?:(?:n[ãa]o[,.]?\s+)*(?:muda|mude|mudar|troca|troque|trocar|altera|altere|alterar|corrige|corrija|corrigir|ajusta|ajuste|ajustar|coloca|coloque|bota|deixa|deixe|p[õo]e)\s+)?(?:(?:a|o)\s+)?(?:descri[cç][aã]o|identificar)\s*(?:(?:para|pra|por|como|de)\s+|[ée]\s+|:\s*)?/i;
 
 function resolveForField(field, { text, parsed, accounts, categories, workspaceId }) {
   if (field === 'amount') {
@@ -378,8 +450,11 @@ function resolveForField(field, { text, parsed, accounts, categories, workspaceI
   }
 
   if (field === 'description') {
+    // "muda a descrição para almoço com a equipe" vira "almoço com a equipe":
+    // o pedido não faz parte da descrição.
     const description = text
-      .replace(/^(?:descricao|descrição|identificar)\s*(?:é|e|:)?\s*/i, '')
+      .replace(DESCRIPTION_REQUEST_LEAD, '')
+      .replace(/(?<!\betc)[.!?]+$/i, '')
       .trim();
     return description.length >= 2
       ? { kind: 'correction', overrides: { description } }

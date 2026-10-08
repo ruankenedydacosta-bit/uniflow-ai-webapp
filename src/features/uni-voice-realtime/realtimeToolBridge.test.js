@@ -284,3 +284,10 @@ test('a sessão manda alterar lançamento já registrado pelo mesmo caminho do c
   assert.match(EDGE_SOURCE, /Se a Uni listar vários lançamentos e perguntar qual, passe a resposta da pessoa com enviar_para_uni\./);
   assert.match(EDGE_SOURCE, /Com um rascunho ou uma alteração aguardando confirmação/);
 });
+
+// BUG REAL (voz): a Uni dizia "corrigi" com o card igual na tela. Ela só pode
+// afirmar o que a resposta da ferramenta desta vez afirma.
+test('a sessão proíbe dizer que corrigiu, registrou ou cancelou sem a ferramenta confirmar', () => {
+  assert.match(EDGE_SOURCE, /Só diga que registrou, corrigiu, alterou ou cancelou algo se a resposta da ferramenta, nesta vez, disser isso\./);
+  assert.match(EDGE_SOURCE, /Nunca finja que deu certo\./);
+});
