@@ -18,14 +18,14 @@ function SimplifiedHomeAgenda() {
   const now = useMemo(() => new Date(), []);
   const range = useMemo(() => buildHomeAgendaRange(now), [now]);
   const agenda = useAgenda({ workspaceId, startsFrom: range.startsFrom, startsTo: range.startsTo });
-  const scheduledTransactionItems = useScheduledTransactionAgendaItems({
+  const scheduledTransactions = useScheduledTransactionAgendaItems({
     workspaceId,
     dateFrom: toDateKey(now),
     dateTo: toDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)),
   });
   const timeline = useMemo(
-    () => buildHomeTimeline([...agenda.items, ...scheduledTransactionItems], now),
-    [agenda.items, scheduledTransactionItems, now],
+    () => buildHomeTimeline([...agenda.items, ...scheduledTransactions.items], now),
+    [agenda.items, scheduledTransactions.items, now],
   );
 
   // A seção fica sempre, com "Ver agenda": carregando mostra um esqueleto

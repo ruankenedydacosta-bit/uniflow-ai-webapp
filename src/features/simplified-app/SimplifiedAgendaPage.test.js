@@ -157,22 +157,47 @@ test('o card e localizado por agenda_item_id (atributo estavel), nunca por titul
   assert.doesNotMatch(attrUsage, /item\.title/);
 });
 
-test('conta lançada com antecedência entra no calendário como leitura: sem edição, sem lembrete', async () => {
+test('conta lançada com antecedência entra no calendário; tocar nela abre o Financeiro, nunca a edição de compromisso', async () => {
   const content = await source();
   assert.match(content, /useScheduledTransactionAgendaItems\(\{\s+workspaceId,/);
-  assert.match(content, /groupAgendaItemsByDay\(\[\.\.\.agenda\.items, \.\.\.scheduledTransactionItems\]\)/);
-  assert.match(content, /const ItemTag = isProjected \? 'div' : 'button';/);
-  assert.match(content, /onClick=\{isProjected \? undefined : \(\) => openEdit\(item\)\}/);
+  assert.match(content, /groupAgendaItemsByDay\(\[\.\.\.agenda\.items, \.\.\.scheduledTransactions\.items\]\)/);
+  assert.match(content, /onClick=\{isProjected \? \(\) => navigate\(SIMPLIFIED_ROUTES\.RECORDS\) : \(\) => openEdit\(item\)\}/);
+  assert.match(content, /\$\{isProjected \? ', abrir no Financeiro' : ''\}/);
+});
+
+test('conta projetada nunca vai para a consulta de lembretes (id com prefixo não existe em agenda_push_reminders)', async () => {
+  const content = await source();
   assert.match(content, /selectedDayItems\.filter\(\(item\) => !isProjectedTransactionItem\(item\)\)/);
+});
+
+test('o resumo de amanhã só aparece com as contas do Financeiro carregadas, nunca afirma "nenhuma conta" sem dado', async () => {
+  const content = await source();
+  assert.match(content, /!scheduledTransactions\.isLoading && !scheduledTransactions\.error \? \(/);
 });
 
 test('a Home junta as contas lançadas com antecedência aos compromissos de hoje e amanhã', async () => {
   const home = await readFile(new URL('./SimplifiedHomeAgenda.jsx', import.meta.url), 'utf8');
-  assert.match(home, /buildHomeTimeline\(\[\.\.\.agenda\.items, \.\.\.scheduledTransactionItems\], now\)/);
+  assert.match(home, /buildHomeTimeline\(\[\.\.\.agenda\.items, \.\.\.scheduledTransactions\.items\], now\)/);
 });
 
-test('o hook guarda o resultado com a chave da consulta: troca de espaço ou de mês não mostra a lista anterior', async () => {
+test('o hook guarda o resultado com a chave da consulta e busca de novo quando o Financeiro muda', async () => {
   const hook = await readFile(new URL('./useScheduledTransactionAgendaItems.js', import.meta.url), 'utf8');
   assert.match(hook, /const queryKey = workspaceId \? `\$\{workspaceId\}\|\$\{dateFrom\}\|\$\{dateTo\}` : null;/);
-  assert.match(hook, /loaded\.queryKey === queryKey \? loaded\.items : NO_ITEMS/);
+  assert.match(hook, /if \(loaded\.queryKey !== queryKey\) return \{ items: NO_ITEMS, isLoading: true, error: null \};/);
+  assert.match(hook, /window\.addEventListener\(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged\);/);
+  assert.match(hook, /\[queryKey, workspaceId, dateFrom, dateTo, reloadToken\]/);
+  assert.match(hook, /\} catch \{\n\s+next = \{ queryKey, items: NO_ITEMS, error: LOAD_ERROR \};/);
+});
+
+test('a busca das contas é enxuta: só despesa e receita válidas, só os campos da projeção', async () => {
+  const service = await readFile(new URL('../../services/transactionService.js', import.meta.url), 'utf8');
+  const fnBody = service.slice(
+    service.indexOf('export async function listScheduledTransactionCandidates'),
+    service.indexOf('export async function getTransaction'),
+  );
+  assert.match(fnBody, /\.select\(SCHEDULED_TRANSACTION_FIELDS\)/);
+  assert.match(fnBody, /\.in\('transaction_type', \['expense', 'income'\]\)/);
+  assert.match(fnBody, /\.not\('status', 'in', '\(canceled,failed\)'\)/);
+  assert.match(fnBody, /fetchAllPages\(/);
+  assert.match(service, /const SCHEDULED_TRANSACTION_FIELDS =\n {2}'id, description, transaction_type, status, transaction_date, created_at, updated_at';/);
 });

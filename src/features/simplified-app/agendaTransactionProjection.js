@@ -57,7 +57,9 @@ export function buildScheduledTransactionAgendaItems(transactions) {
       title: transaction.description,
       description: null,
       location: null,
-      starts_at: new Date(year, month - 1, day, 12).toISOString(),
+      // Meia-noite local, como o formulário grava dia inteiro: na ordenação
+      // por horário, a conta abre o dia em vez de cair entre compromissos.
+      starts_at: new Date(year, month - 1, day).toISOString(),
       ends_at: null,
       is_all_day: true,
       has_explicit_time: false,

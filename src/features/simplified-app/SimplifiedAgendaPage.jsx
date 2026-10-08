@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import FilterChips from '../../components/ui/FilterChips/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
@@ -14,6 +14,7 @@ import {
   isProjectedTransactionItem,
 } from './agendaTransactionProjection.js';
 import { useScheduledTransactionAgendaItems } from './useScheduledTransactionAgendaItems.js';
+import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import {
   AGENDA_KIND_FILTERS,
   buildMonthGrid,
@@ -89,6 +90,7 @@ const LONG_TIME_LABELS = new Set(['Dia inteiro', 'Sem horário']);
  */
 function SimplifiedAgendaPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
 
@@ -104,13 +106,14 @@ function SimplifiedAgendaPage() {
   );
 
   const agenda = useAgenda({ workspaceId, startsFrom, startsTo });
-  // Contas lançadas com antecedência no Financeiro entram no calendário
-  // como itens de leitura, ao lado dos compromissos.
+  // Contas lançadas com antecedência no Financeiro entram no calendário ao
+  // lado dos compromissos. Tocar numa delas abre o Financeiro, onde ela é
+  // editada.
   const transactionRange = useMemo(
     () => buildMonthTransactionRange(view.year, view.month),
     [view.year, view.month],
   );
-  const scheduledTransactionItems = useScheduledTransactionAgendaItems({
+  const scheduledTransactions = useScheduledTransactionAgendaItems({
     workspaceId,
     dateFrom: transactionRange.dateFrom,
     dateTo: transactionRange.dateTo,
@@ -161,8 +164,8 @@ function SimplifiedAgendaPage() {
   }, [workspaceId]);
 
   const groupedItems = useMemo(
-    () => groupAgendaItemsByDay([...agenda.items, ...scheduledTransactionItems]),
-    [agenda.items, scheduledTransactionItems],
+    () => groupAgendaItemsByDay([...agenda.items, ...scheduledTransactions.items]),
+    [agenda.items, scheduledTransactions.items],
   );
   // Memoizado: `?? []` criaria um array novo a cada render, invalidando o
   // useMemo de visibleItemIds abaixo e refazendo a leitura dos lembretes
@@ -377,10 +380,9 @@ function SimplifiedAgendaPage() {
               const reminder = resolveReminderIndicator(statesByItemId.get(item.id));
               const detail = buildAgendaItemDetail(item);
               const timeLabel = formatAgendaItemTime(item);
-              // Conta vinda do Financeiro é leitura: não abre edição nem
-              // recebe lembrete, porque não existe agenda_item por trás.
+              // Conta vinda do Financeiro não tem agenda_item por trás: não
+              // abre a edição de compromisso nem recebe lembrete.
               const isProjected = isProjectedTransactionItem(item);
-              const ItemTag = isProjected ? 'div' : 'button';
               return (
                 <li
                   key={item.id}
@@ -396,12 +398,11 @@ function SimplifiedAgendaPage() {
                   >
                     {timeLabel}
                   </span>
-                  <ItemTag
-                    type={isProjected ? undefined : 'button'}
-                    role={isProjected ? 'group' : undefined}
+                  <button
+                    type="button"
                     className={styles.itemButton}
-                    onClick={isProjected ? undefined : () => openEdit(item)}
-                    aria-label={`${item.title}, ${formatAgendaItemTime(item)}${reminder ? `, lembrete ${reminder.label}` : ''}`}
+                    onClick={isProjected ? () => navigate(SIMPLIFIED_ROUTES.RECORDS) : () => openEdit(item)}
+                    aria-label={`${item.title}, ${formatAgendaItemTime(item)}${reminder ? `, lembrete ${reminder.label}` : ''}${isProjected ? ', abrir no Financeiro' : ''}`}
                     {...{ [AGENDA_REMINDER_TARGET_ATTRIBUTE]: item.id }}
                   >
                     <span className={styles.itemMain}>
@@ -424,8 +425,8 @@ function SimplifiedAgendaPage() {
                         </span>
                       ) : null}
                     </span>
-                    {isProjected ? null : <span className={styles.itemChevron} aria-hidden="true"><ChevronRightIcon /></span>}
-                  </ItemTag>
+                    <span className={styles.itemChevron} aria-hidden="true"><ChevronRightIcon /></span>
+                  </button>
                 </li>
               );
             })}
@@ -433,7 +434,8 @@ function SimplifiedAgendaPage() {
         )}
       </section>
 
-      {tomorrowSummary && !agenda.isLoading && !agenda.error ? (
+      {tomorrowSummary && !agenda.isLoading && !agenda.error
+        && !scheduledTransactions.isLoading && !scheduledTransactions.error ? (
         <aside className={styles.uniNote}>
           <UniRingOrb size={22} />
           <p>{tomorrowSummary}</p>

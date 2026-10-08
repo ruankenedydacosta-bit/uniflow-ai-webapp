@@ -99,6 +99,15 @@ test('no dia do vencimento a conta continua na Home, sob "Hoje", e não aparece 
   assert.notEqual(timeline.items[0].status, 'done');
 });
 
+test('no dia com compromissos, a conta abre a timeline como os itens de dia inteiro', () => {
+  const [bill] = buildScheduledTransactionAgendaItems([transaction()]);
+  const morning = { id: 'm', item_type: 'meeting', title: 'Reunião', starts_at: new Date(2026, 9, 9, 9).toISOString(), status: 'scheduled' };
+  const afternoon = { id: 't', item_type: 'meeting', title: 'Visita', starts_at: new Date(2026, 9, 9, 14).toISOString(), status: 'scheduled' };
+  const timeline = buildHomeTimeline([afternoon, morning, bill], new Date(2026, 9, 9, 7, 0));
+  assert.deepEqual(timeline.items.map((item) => item.title), ['Aluguel', 'Reunião', 'Visita']);
+  assert.equal(new Date(bill.starts_at).getHours(), 0);
+});
+
 test('intervalo do mês cobre do dia 1 ao último dia', () => {
   assert.deepEqual(buildMonthTransactionRange(2026, 9), {
     dateFrom: '2026-10-01',
