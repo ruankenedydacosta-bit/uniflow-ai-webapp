@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<!-- Fonte dos ícones do PWA em public/ (192, 512, maskable, apple-touch e favicon). O símbolo é o de uni-logo.svg do handoff do redesign. -->
+  <defs>
+    <radialGradient id="gb" cx="38" cy="40" r="46" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D4EDB" stop-opacity=".30"/><stop offset="1" stop-color="#1D4EDB" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gv" cx="64" cy="58" r="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED" stop-opacity=".26"/><stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lg1" x1="6" y1="6" x2="30" y2="22" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D4EDB"/><stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="lg2" x1="15" y1="11" x2="27" y2="21" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/><stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="#020817"/>
+  <rect width="100" height="100" fill="url(#gb)"/>
+  <rect width="100" height="100" fill="url(#gv)"/>
+  <g transform="translate(19.82035928143712 18.143712574850294) scale(1.6766467065868267)" fill="none">
+    <path d="M6 6v16a12 12 0 0 0 24 0V6" stroke="url(#lg1)" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M15 11v10a6 6 0 0 0 12 0v-6" stroke="url(#lg2)" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="6" cy="4.5" r="2.2" fill="#1D4EDB"/>
+  </g>
+</svg>
