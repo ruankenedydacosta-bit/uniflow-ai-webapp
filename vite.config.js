@@ -86,6 +86,7 @@ export default defineConfig({
         'uniflow-icon.png',
         'uniflow-icon-192.png',
         'uniflow-icon-512.png',
+        'uniflow-icon-maskable-512.png',
       ],
       manifest: {
         name: 'UniFlow AI',
@@ -110,7 +111,8 @@ export default defineConfig({
             purpose: 'any',
           },
           {
-            src: '/uniflow-icon-512.png',
+            // Símbolo menor, dentro da zona segura de 80% do recorte.
+            src: '/uniflow-icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
