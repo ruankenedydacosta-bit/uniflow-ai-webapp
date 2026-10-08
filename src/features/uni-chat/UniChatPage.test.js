@@ -256,6 +256,63 @@ test('dependência de categoria pode ser cancelada sem perder a movimentação s
   assert.match(page, /Cancelei a criação da categoria e a movimentação/);
 });
 
+// BUG REAL (voz): com o card "Criar categoria para continuar" na tela, a
+// correção "Salário não é despesa, é receita" caía no aviso "confirme a criação"
+// e o card não mudava. A correção vale para o lançamento atrás do card.
+test('correção falada com o card de criar categoria na tela corrige o lançamento e troca o card', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body, end } = extractFunctionBody(page, 'function correctDraftBehindCategoryCreation(text) {');
+  assert.ok(end > -1, 'não foi possível localizar correctDraftBehindCategoryCreation');
+
+  // Só corrige com uma correção clara e com o rascunho original guardado.
+  assert.match(body, /item\.type === 'financial_transaction'/);
+  assert.match(body, /resolvePendingActionInput\(\{[\s\S]*action: parentSnapshot\.action,/);
+  assert.match(body, /if \(resolved\.kind !== 'correction'\) return false;/);
+  // Categoria existente de outro tipo não é correção.
+  assert.match(body, /chosenCategory\.category_type !== wantedType\) return false;/);
+  // O card de criação sai e o rascunho volta com a correção, sem criar nada.
+  assert.match(body, /status: 'updated'/);
+  assert.match(body, /pendingActionStackRef\.current = null;/);
+  assert.match(body, /financialConversation\.restore\(parentSnapshot\);/);
+  assert.match(body, /financialConversation\.provideInput\(\s*\{ \.\.\.resolved\.overrides,[\s\S]*?categoryName: proposedCategoryName[\s\S]*?parentSnapshot\.parsed,/);
+  // O nome proposto pelo card de criação é preservado se a categoria ainda faltar.
+  assert.match(body, /getActivePendingAction\(stack\)\?\.fields\?\.category\?\.name/);
+  assert.match(body, /publishConversationResultWithInference\(result\)/);
+  assert.doesNotMatch(body, /handleConfirmAction|completeCategoryCreationDependency/);
+
+  // A tentativa de correção vem antes do aviso genérico.
+  const pending = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {').body;
+  const attempt = pending.indexOf('categoryDependencyActive && correctDraftBehindCategoryCreation(text)');
+  const generic = pending.indexOf('Para continuar, confirme a criação da categoria');
+  assert.ok(attempt > -1, 'a correção precisa ser tentada com o card de categoria ativo');
+  assert.ok(attempt < generic, 'a correção precisa vir antes do aviso genérico');
+});
+
+test('"Cancelar" do card sem lançamento pronto não depende de existir plano financeiro', async () => {
+  const page = await source('UniChatPage.jsx');
+  // extractFunctionBody pararia na chave do parâmetro desestruturado.
+  const cancelStart = page.indexOf('function handleCancelAction(id, { cascade = false } = {}) {');
+  assert.ok(cancelStart > -1);
+  const cancel = page.slice(cancelStart, cancelStart + 3600);
+  // Sem plano, financialPlanRef.current é null: o handler consulta isso antes de
+  // chegar nas dependências de conta e categoria.
+  assert.match(cancel, /isPlanReadyForFinalConfirmation\(financialPlanRef\.current\)/);
+  assert.ok(
+    cancel.indexOf('isPlanReadyForFinalConfirmation(financialPlanRef.current)')
+      < cancel.indexOf('cancelCategoryCreationDependency(stack, { cascade })'),
+    'a consulta do plano acontece antes do cancelamento da categoria',
+  );
+  assert.match(page, /const financialPlanRef = useRef\(null\);/);
+});
+
+test('cancelar o lançamento que sobrou depois de "cancelar só a criação" também limpa a pilha', async () => {
+  const page = await source('UniChatPage.jsx');
+  const start = page.indexOf("createAssistantResponse('Tudo bem. Não registrei nada.');");
+  assert.ok(start > -1);
+  const before = page.slice(start - 500, start);
+  assert.match(before, /pendingActionStackRef\.current = null;\s*setPendingActionStack\(null\);/);
+});
+
 test('experiência simplificada força contexto financeiro pessoal sem alterar o legado completo', async () => {
   const page = await source('UniChatPage.jsx');
   assert.match(page, /const isSimplifiedExperience = variant === 'simplified-home' \|\| variant === 'simplified'/);

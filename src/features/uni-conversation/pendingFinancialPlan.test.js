@@ -118,6 +118,14 @@ test('multioperação: duas despesas resolvem independentemente e ficam prontas 
   assert.equal(isPlanReadyForFinalConfirmation(plan), true);
 });
 
+// BUG REAL: o Cancelar do card "Criar categoria para continuar" não fazia nada.
+// handleCancelAction chama isto com financialPlanRef.current nulo (nenhum plano
+// em andamento) e o acesso a `.status` lançava TypeError antes de cancelar.
+test('sem plano em andamento, nada está pronto para confirmação final e a checagem não lança', () => {
+  assert.equal(isPlanReadyForFinalConfirmation(null), false);
+  assert.equal(isPlanReadyForFinalConfirmation(undefined), false);
+});
+
 test('receita e despesa na mesma frase continuam operações independentes, nunca o valor líquido', () => {
   const plan = buildPlan([
     rawOperation({

@@ -21,6 +21,7 @@ import {
   extractRequestedCategoryName,
   looksLikePendingCorrection,
   resolvePendingActionInput,
+  resolveTransactionTypeCorrection,
 } from './pendingActionInput.js';
 import {
   clearPendingAction,
@@ -1361,4 +1362,180 @@ test('categoria nova pedida no ajuste leva junto os outros campos da frase', () 
 test('"edite" também marca ajuste do rascunho', () => {
   assert.equal(looksLikePendingCorrection('Edite a categoria para Pets'), true);
   assert.equal(looksLikePendingCorrection('Editar o valor pra 120'), true);
+});
+
+// ============================================================================
+// BUG REAL (voz): "Registre hoje um salário de 2500" virou despesa e, depois,
+// "Salário não é despesa, salário é uma receita" não corrigia nada. O tipo
+// (entrada/saída) passa a ser um campo corrigível do rascunho.
+// ============================================================================
+
+test('pedido de salário vira receita pronta na categoria Salário, sem criar categoria', () => {
+  const action = createAction('Registre hoje um salário de 2500');
+
+  assert.equal(action.status, 'ready');
+  assert.equal(action.transactionType, 'income');
+  assert.equal(action.amount, 2500);
+  assert.equal(action.category.id, 'category-income');
+  assert.equal(action.payload.transaction_type, 'income');
+});
+
+test('overrides.transactionType troca despesa por receita e reavalia a categoria', () => {
+  const expense = createAction('Gastei 2500 de salário');
+  assert.equal(expense.transactionType, 'expense');
+  assert.equal(expense.issues[0].code, 'category_not_found');
+
+  const income = createAction('Gastei 2500 de salário', { overrides: { transactionType: 'income' } });
+  assert.equal(income.status, 'ready');
+  assert.equal(income.transactionType, 'income');
+  assert.equal(income.intent, 'register_income');
+  assert.equal(income.category.id, 'category-income');
+
+  const backToExpense = createAction('Recebi 2500 de salário', { overrides: { transactionType: 'expense' } });
+  assert.equal(backToExpense.transactionType, 'expense');
+  assert.equal(backToExpense.issues[0].code, 'category_not_found');
+});
+
+test('overrides.transactionType ignora tipos que não são entrada/saída e não mexe em transferência', () => {
+  const transfer = createAction('Transferi 100 reais para o Nubank', { overrides: { transactionType: 'income' } });
+  assert.equal(transfer.transactionType, 'transfer');
+
+  const odd = createAction('Gastei 50 no mercado', { overrides: { transactionType: 'constructor' } });
+  assert.equal(odd.transactionType, 'expense');
+});
+
+test('troca de tipo dita de forma direta: lê afirmação e negação, e a última frase vale', () => {
+  const expectations = [
+    ['Salário não é despesa, salário é uma receita.', 'income'],
+    ['É receita', 'income'],
+    ['Foi uma entrada', 'income'],
+    ['Não é despesa', 'income'],
+    ['Não é receita, é despesa', 'expense'],
+    ['É uma despesa, não é receita', 'expense'],
+    ['É uma receita, não é despesa', 'income'],
+    ['Muda para receita', 'income'],
+    ['Troca pra saída', 'expense'],
+    ['Registra como receita', 'income'],
+    ['É receita mesmo', 'income'],
+    ['Foi uma despesa, ok?', 'expense'],
+  ];
+  for (const [phrase, expected] of expectations) {
+    assert.equal(resolveTransactionTypeCorrection(phrase), expected, phrase);
+    assert.equal(looksLikePendingCorrection(phrase), true, phrase);
+  }
+});
+
+test('nome que contém receita/entrada não é troca de tipo', () => {
+  for (const phrase of [
+    'A categoria é Receita de vendas',
+    'Paguei pra entrada do apartamento',
+    'É entrada de caixa',
+    'Conta de entrada',
+    'Nubank',
+    // "é" sem acento é igual à conjunção "e": o tipo precisa fechar a oração e
+    // não pode ser a resposta de um campo.
+    'A categoria é Receita',
+    'A descrição é gasto com combustível',
+    'Gastei 50 no mercado e gasto 30 na padaria',
+    'A categoria não é receita',
+  ]) {
+    assert.equal(resolveTransactionTypeCorrection(phrase), null, phrase);
+  }
+});
+
+test('card de despesa pronto: "não é despesa, é receita" corrige o tipo e a categoria do tipo antigo sai', () => {
+  const ready = createAction('Gastei 2500 de salário', { overrides: { categoryId: 'category-food' } });
+  assert.equal(ready.status, 'ready');
+  assert.equal(ready.transactionType, 'expense');
+
+  const resolved = resolvePendingActionInput({
+    value: 'Salário não é despesa, salário é uma receita.',
+    action: ready,
+    accounts,
+    categories,
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(resolved.kind, 'correction');
+  assert.equal(resolved.overrides.transactionType, 'income');
+  // "Salário" é categoria de entrada: serve ao tipo novo.
+  assert.equal(resolved.overrides.categoryId, 'category-income');
+
+  const toExpense = resolvePendingActionInput({
+    value: 'Não é receita, é despesa, a categoria é Alimentação',
+    action: createAction('Recebi 2500 de salário'),
+    accounts,
+    categories,
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(toExpense.overrides.transactionType, 'expense');
+  assert.equal(toExpense.overrides.categoryId, 'category-food');
+
+  const wrongTypeCategory = resolvePendingActionInput({
+    value: 'Não é receita, é despesa de salário',
+    action: createAction('Recebi 2500 de salário'),
+    accounts,
+    categories,
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(wrongTypeCategory.overrides.transactionType, 'expense');
+  // "undefined" explícito: é o que apaga o id que o hook já guardou nos overrides.
+  assert.equal(Object.hasOwn(wrongTypeCategory.overrides, 'categoryId'), true);
+  assert.equal(wrongTypeCategory.overrides.categoryId, undefined);
+});
+
+test('corrigir o tipo no rascunho devolve o card de receita pronto, sem passar pela criação de categoria', () => {
+  const parsed = parseFinancialText('Gastei 2500 de salário', { referenceDate: REFERENCE_DATE });
+  const draft = createAction('Gastei 2500 de salário');
+  assert.equal(draft.issues[0].code, 'category_not_found');
+
+  const resolved = resolvePendingActionInput({
+    value: 'Salário não é despesa, salário é uma receita.',
+    action: draft,
+    accounts,
+    categories,
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(resolved.kind, 'correction');
+
+  const corrected = buildFinancialIntentAction({
+    parsed,
+    accounts,
+    categories,
+    referenceDate: REFERENCE_DATE,
+    overrides: resolved.overrides,
+  });
+  assert.equal(corrected.status, 'ready');
+  assert.equal(corrected.transactionType, 'income');
+  assert.equal(corrected.category.id, 'category-income');
+  assert.equal(corrected.amount, 2500);
+});
+
+test('pergunta "receita ou saldo?" pendente: "foi uma receita" continua sendo a decisão de intenção', () => {
+  const ambiguous = createAction('Tenho 1000 reais');
+  assert.equal(ambiguous.issues[0].code, 'ambiguous_balance_or_income');
+
+  const resolved = resolvePendingActionInput({
+    value: 'Foi uma receita',
+    action: ambiguous,
+    accounts,
+    categories,
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.deepEqual(resolved.overrides, { intentDecision: 'register_income' });
+});
+
+test('correção de descrição usa só a descrição, sem o pedido nem o ponto final', () => {
+  const ready = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const cases = [
+    ['Muda a descrição para compras diversas etc.', 'compras diversas etc.'],
+    ['Muda a descrição para almoço com a equipe.', 'almoço com a equipe'],
+    ['Troca a descrição pra Feira do mês', 'Feira do mês'],
+    ['A descrição é almoço', 'almoço'],
+    ['Descrição: almoço de domingo', 'almoço de domingo'],
+  ];
+  for (const [phrase, description] of cases) {
+    const resolved = resolvePendingActionInput({ value: phrase, action: ready, accounts, categories });
+    assert.equal(resolved.kind, 'correction', phrase);
+    assert.equal(resolved.overrides.description, description, phrase);
+  }
 });

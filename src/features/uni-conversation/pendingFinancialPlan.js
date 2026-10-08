@@ -318,8 +318,11 @@ export function getPersistablePlanOperations(planState) {
   return getActivePlanOperations(planState).filter((op) => !op.capabilityPending);
 }
 
+// Sem plano em andamento (planState nulo), nada está pronto. Quem cancela ou
+// confirma um card sem plano chama isto com `financialPlanRef.current` nulo:
+// lançar aqui abortava o handler antes de qualquer efeito.
 export function isPlanReadyForFinalConfirmation(planState) {
-  return planState.status === PLAN_STATUS.READY_FOR_CONFIRMATION;
+  return planState?.status === PLAN_STATUS.READY_FOR_CONFIRMATION;
 }
 
 /**

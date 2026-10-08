@@ -172,6 +172,63 @@ test('BUG REAL: "Coloca pra mim aí setenta e cinco reais no mercado." é reconh
 // com pendência ativa, a frase inteira virava nome de conta proposto).
 // ============================================================================
 
+// ============================================================================
+// BUG REAL (voz): "Registre hoje um salário de 2500" virava DESPESA na
+// categoria Salário (o verbo de pedido cai em despesa por padrão e só
+// "receita"/"entrada" abriam o caminho de receita). Salário é entrada, salvo
+// quando a pessoa é quem paga.
+// ============================================================================
+
+test('BUG REAL: pedido de lançamento de salário é receita com valor e categoria Salário', () => {
+  for (const phrase of [
+    'Registre hoje um salário de 2500',
+    'Lance o salário de 2500 reais',
+    'Registra meu salário de 2.500',
+    'Queria registrar o décimo terceiro de 1800 reais',
+    'Registre meu salário pago hoje, 2500',
+  ]) {
+    const result = parseFinancialText(phrase);
+    assert.equal(result.intent, 'register_income', phrase);
+    assert.ok(result.entities.amount > 0, phrase);
+  }
+
+  const salary = parseFinancialText('Registre hoje um salário de 2500');
+  assert.equal(salary.entities.amount, 2500);
+  assert.equal(salary.entities.category, 'Salário');
+});
+
+test('declaração nominal "Salário de 2500" é receita, e pergunta com salário não é lançamento', () => {
+  assert.equal(parseFinancialText('Salário de 2500').intent, 'register_income');
+  assert.equal(parseFinancialText('Meu salário 2.500 reais').intent, 'register_income');
+  assert.notEqual(parseFinancialText('Salário de 2500 é bom?').intent, 'register_income');
+  assert.notEqual(parseFinancialText('Qual foi meu salário?').intent, 'register_income');
+});
+
+test('salário pago pela pessoa continua despesa, e despesa explícita vence a palavra salário', () => {
+  for (const phrase of [
+    'Paguei o salário da funcionária 2500',
+    'Registre o salário da funcionária de 2500 reais',
+    'Registre uma despesa de salário de 2500',
+    'Lance a folha de salário de 8000 reais',
+    'Registre o pagamento do salário de 2500',
+  ]) {
+    assert.equal(parseFinancialText(phrase).intent, 'register_expense', phrase);
+  }
+});
+
+// Comissão e bônus são tão comuns como despesa quanto como entrada: sem verbo de
+// recebimento, não viram receita sozinhos.
+test('comissão e bônus não são tratados como entrada só pela palavra', () => {
+  for (const phrase of [
+    'Lance a taxa de comissão da imobiliária 500',
+    'Registre o bônus de 100 que dei ao entregador',
+    'Comissão de 300',
+  ]) {
+    assert.notEqual(parseFinancialText(phrase).intent, 'register_income', phrase);
+  }
+  assert.equal(parseFinancialText('Recebi uma comissão de 300 reais').intent, 'register_income');
+});
+
 test('BUG REAL: "Entraram mil reais." (plural) é reconhecida como receita com valor', () => {
   const result = parseFinancialText('Entraram mil reais.');
 

@@ -286,6 +286,11 @@ export function useUniConversation({
       clientOperationId: snapshot.action.clientOperationId,
       analyticsOrigin: snapshot.action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
       amount: snapshot.action.amount,
+      // Sem isto, um rascunho que já trocou de tipo ("é receita") voltaria ao
+      // tipo da frase original ao retomar depois da criação da categoria.
+      transactionType: ['income', 'expense'].includes(snapshot.action.transactionType)
+        ? snapshot.action.transactionType
+        : undefined,
       accountId: snapshot.action.account?.id ?? snapshot.action.payload?.account_id,
       accountRecord: snapshot.action.account ?? null,
       destinationAccountId: snapshot.action.payload?.destination_account_id,
