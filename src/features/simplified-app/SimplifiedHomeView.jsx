@@ -706,20 +706,15 @@ function SimplifiedHomeView({
     stopRealtimeRef.current = stopRealtime;
   });
 
-  // Conversa aberta com o app em segundo plano gasta minutos à toa.
+  // Só fechar ou sair da página encerra a conversa. Trocar de aba ou de app
+  // mantém a chamada; o limite de silêncio (REALTIME_IDLE_LIMIT_MS) e a
+  // reserva de minutos já impedem que ela fique aberta gastando à toa.
   useEffect(() => {
-    const endOnBackground = () => {
+    const endOnPageExit = () => {
       if (isRealtimeActiveRef.current) stopRealtimeRef.current?.('lifecycle');
     };
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') endOnBackground();
-    };
-    window.addEventListener('pagehide', endOnBackground);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      window.removeEventListener('pagehide', endOnBackground);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    window.addEventListener('pagehide', endOnPageExit);
+    return () => window.removeEventListener('pagehide', endOnPageExit);
   }, []);
 
   // Chamado dentro do toque: o iOS só libera microfone e áudio ali.

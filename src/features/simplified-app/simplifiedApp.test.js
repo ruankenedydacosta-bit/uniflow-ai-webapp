@@ -579,6 +579,17 @@ test('HOTFIX: beginVoiceCapture interrompe a fala (voiceController.stop()) E ini
   assert.match(slice, /return true;\s*\}/, 'quando o plano prossegue (mesmo interrompendo a fala), o gesto é tratado como iniciado (true)');
 });
 
+test('conversa em tempo real só encerra ao sair da página, não ao trocar de aba', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  const idx = home.indexOf('const endOnPageExit = () => {');
+  assert.ok(idx > -1);
+  const slice = home.slice(idx, home.indexOf('}, []);', idx));
+  assert.match(slice, /stopRealtimeRef\.current\?\.\('lifecycle'\)/);
+  assert.match(slice, /window\.addEventListener\('pagehide', endOnPageExit\)/);
+  assert.match(slice, /window\.removeEventListener\('pagehide', endOnPageExit\)/);
+  assert.doesNotMatch(slice, /visibilitychange/);
+});
+
 test('ir para segundo plano descarta a captura em andamento sem enviar e sem exigir reload', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /const cancelOnBackground = \(\) => cancelVoiceCaptureRef\.current\?\.\('lifecycle'\);/);
