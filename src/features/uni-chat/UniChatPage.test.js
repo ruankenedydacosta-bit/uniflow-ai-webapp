@@ -3899,3 +3899,15 @@ test('edição de lançamento salvo: frase de lançamento novo nunca vira "não 
   const tratar = page.slice(page.indexOf('function tratarRespostaDaEdicao('), page.indexOf('async function confirmarEdicao('));
   assert.ok(tratar.indexOf('looksLikeFreshFinancialStatement(texto)') < tratar.indexOf('escolherCandidato(texto'));
 });
+
+test('pergunta sobre a categoria com o card na tela não vira categoria nova', async () => {
+  const page = await source('UniChatPage.jsx');
+  const changesSubject = page.indexOf("if (relation.relation === 'changes_subject') {");
+  const newCategory = page.indexOf('resolvedInput.requestedCategoryName && action');
+  assert.ok(changesSubject > 0 && newCategory > changesSubject);
+  // Só o card do rascunho sai de cena, e só depois de a criação abrir.
+  assert.match(
+    page,
+    /if \(startCategoryDependency\(resolvedInput\.requestedCategoryName, draftAction\)\) \{\s*setMessages\([\s\S]{0,120}message\.id === draftCardId/,
+  );
+});

@@ -1293,6 +1293,15 @@ test('nome de categoria pedido no ajuste sai sem os conectivos', () => {
     ['Cria a categoria nova Pets, por favor', 'Pets'],
     ['Muda a categoria pra pets e o valor pra 120', 'pets'],
     ['categoria: Saúde', 'Saúde'],
+    // Outra oração, artigo e "de" não entram no nome.
+    ['A categoria é Pets e foi ontem', 'Pets'],
+    ['A categoria é Pets e no Nubank', 'Pets'],
+    ['A categoria é de lazer', 'lazer'],
+    ['Muda pra categoria a Pets', 'Pets'],
+    ['A categoria é Casa e Jardim', 'Casa e Jardim'],
+    // Palavra que só começa com um conectivo continua inteira.
+    ['Categoria é Eletrônicos', 'Eletrônicos'],
+    ['A categoria é Parafusos', 'Parafusos'],
     // Referência ao próprio registro ou ao estado da categoria não é nome.
     ['Quero editar a categoria do registro que estávamos falando', ''],
     ['A categoria tá errada', ''],
@@ -1333,6 +1342,20 @@ test('card pronto: "a categoria é X" inexistente pede para criar X, e X existen
   });
   assert.equal(existing.kind, 'correction');
   assert.equal(existing.overrides.categoryId, 'category-food');
+});
+
+test('categoria nova pedida no ajuste leva junto os outros campos da frase', () => {
+  const ready = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const result = resolvePendingActionInput({
+    value: 'A categoria é Pets, foi ontem',
+    action: ready,
+    accounts,
+    categories,
+    referenceDate: REFERENCE_DATE,
+  });
+  assert.equal(result.kind, 'category_not_found');
+  assert.equal(result.requestedCategoryName, 'Pets');
+  assert.deepEqual(result.overrides, { date: '2026-07-10' });
 });
 
 test('"edite" também marca ajuste do rascunho', () => {

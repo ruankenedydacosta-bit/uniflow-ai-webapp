@@ -206,7 +206,7 @@ export function buildScreenActionInstructions(action, outcome) {
   const parts = [
     `A pessoa ${description}, sem falar.`,
     outcome.isError ? `Deu errado. O app avisou: "${text}".` : `O app respondeu: "${text}".`,
-    'Diga isso a ela agora, com naturalidade e em poucas palavras, sem ler palavra por palavra.',
+    'Diga o essencial a ela agora, em uma frase, sem ler palavra por palavra e sem oferecer ajuda extra.',
   ];
   if (outcome.awaitingConfirmation) {
     parts.push('O rascunho continua esperando confirmação: pergunte se pode confirmar.');

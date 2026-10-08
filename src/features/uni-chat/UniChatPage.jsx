@@ -4041,19 +4041,6 @@ export default function UniChatPage({ variant = 'full' }) {
     if (resolvedInput.kind !== 'correction') {
       const accountNames = resolvedInput.accounts?.map((account) => account.name).filter(Boolean) ?? [];
 
-      // "A categoria é Animais de Estimação" com o card na tela: o nome veio
-      // explícito, então a frase responde ao rascunho e não muda de assunto.
-      // O card antigo sai de cena; o rascunho volta com a categoria nova
-      // depois que a criação for confirmada.
-      if (resolvedInput.kind === 'category_not_found' && resolvedInput.requestedCategoryName && action) {
-        setMessages((current) => current.map((message) => (
-          message.confirmation?.status === 'pending'
-            ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
-            : message
-        )));
-        if (startCategoryDependency(resolvedInput.requestedCategoryName, action)) return true;
-      }
-
       // BUG 2 (Sprint 4, Bloco 4.0): antes de tratar "não encontrei essa
       // conta/categoria" como proposta de CRIAR uma conta/categoria com o
       // texto INTEIRO do usuário (causa raiz do bug real: "Estou gastando
@@ -4083,6 +4070,28 @@ export default function UniChatPage({ variant = 'full' }) {
           void handleUnresolvedMessage(text, messages);
           return true;
         }
+
+        // "A categoria é Animais de Estimação" com o card na tela: o nome veio
+        // explícito, então a frase responde ao rascunho, mesmo que o
+        // classificador a ache ambígua. Pergunta ("qual categoria você
+        // usou?") já saiu acima como mudança de assunto. Os outros campos da
+        // mesma frase ("foi ontem") entram no rascunho antes, para ele voltar
+        // com eles depois que a categoria for criada.
+        if (resolvedInput.kind === 'category_not_found' && resolvedInput.requestedCategoryName && action) {
+          const draftCardId = findPendingConfirmationMessageId();
+          const draftAction = resolvedInput.overrides
+            ? financialConversation.provideInput(resolvedInput.overrides).action ?? action
+            : action;
+          if (startCategoryDependency(resolvedInput.requestedCategoryName, draftAction)) {
+            setMessages((current) => current.map((message) => (
+              message.id === draftCardId && message.confirmation?.status === 'pending'
+                ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
+                : message
+            )));
+            return true;
+          }
+        }
+
         if (relation.relation === 'ambiguous') {
           createAssistantResponse(relation.suggestedClarification);
           return true;

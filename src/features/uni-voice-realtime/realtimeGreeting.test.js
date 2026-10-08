@@ -42,3 +42,9 @@ test('com a conversa em tempo real, a Home não fala sozinha ao abrir o app', ()
 test('com a conversa em tempo real, o texto da Home diz como começar a conversar', () => {
   assert.match(HOME, /Toque na <strong>Uni<\/strong>, no centro da barra abaixo, para conversar por voz\./);
 });
+
+test('fala depois de ferramenta espera a resposta que chamou a ferramenta terminar', () => {
+  assert.doesNotMatch(HOOK, /call_id: event\.call_id[\s\S]{0,120}sendEvent\(connection\.channel, \{ type: 'response\.create' \}\)/);
+  assert.match(HOOK, /if \(connection\.responseActive\) \{\s*connection\.responseRequested = true;/);
+  assert.match(HOOK, /if \(connection\.responseRequested\) \{\s*connection\.responseRequested = false;\s*requestResponse\(connection\);/);
+});

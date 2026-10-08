@@ -109,6 +109,18 @@ function flushScreenNarration(connection) {
   sendEvent(connection.channel, { type: 'response.create' });
 }
 
+// Pede a próxima fala da Uni. A OpenAI recusa response.create com outra
+// resposta em andamento, e a resposta que chamou a ferramenta só termina no
+// response.done: o pedido espera por ele.
+function requestResponse(connection) {
+  if (connection.responseActive) {
+    connection.responseRequested = true;
+    return;
+  }
+  connection.responseActive = true;
+  sendEvent(connection.channel, { type: 'response.create' });
+}
+
 // Parar durante a conexão anula a tentativa em andamento.
 class ConnectionCancelled extends Error {}
 
@@ -169,7 +181,7 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
       type: 'conversation.item.create',
       item: { type: 'function_call_output', call_id: event.call_id, output: buildEndConversationOutput() },
     });
-    sendEvent(connection.channel, { type: 'response.create' });
+    requestResponse(connection);
   }, [stop]);
 
   const runToolCall = useCallback(async (connection, event) => {
@@ -196,7 +208,7 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
       type: 'conversation.item.create',
       item: { type: 'function_call_output', call_id: event.call_id, output },
     });
-    sendEvent(connection.channel, { type: 'response.create' });
+    requestResponse(connection);
   }, [dispatch, endAfterGoodbye]);
 
   // Chame dentro do toque da pessoa: o iOS só libera microfone e áudio
@@ -267,7 +279,12 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
         if (event?.type === 'response.created') connection.responseActive = true;
         if (event?.type === 'response.done') {
           connection.responseActive = false;
-          flushScreenNarration(connection);
+          if (connection.responseRequested) {
+            connection.responseRequested = false;
+            requestResponse(connection);
+          } else {
+            flushScreenNarration(connection);
+          }
         }
         if (event?.type === 'response.function_call_arguments.done') void runToolCall(connection, event);
         if (connection.endingAfterGoodbye && connection.goodbyeStarted && (
