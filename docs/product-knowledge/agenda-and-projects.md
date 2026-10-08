@@ -12,7 +12,7 @@ Agenda: compromissos, tarefas e lembretes com data. Projetos: acompanhamento de 
 
 **Agenda** — disponível em **ambos** os espaços (Pessoal e Empresa), diferente de CRM/Clientes/Projetos. Um item de agenda tem tipo (reunião, compromisso, tarefa, conta a pagar, conta a receber, lembrete ou outro), título, descrição, local, data/hora de início e fim (ou dia inteiro), e opcionalmente um cliente vinculado. Status vai de "agendado" para "concluído" ou "cancelado" — não é possível reabrir um item já concluído/cancelado.
 
-Lançamentos do Financeiro feitos com data futura aparecem na Agenda e na tela Hoje como "Conta a pagar" (despesa) ou "Recebimento" (receita), no dia da transação, como dia inteiro. Eles continuam lá no dia do vencimento e depois dele. Para editar ou excluir, use o Financeiro.
+Lançamentos do Financeiro feitos com data futura aparecem na Agenda e na tela Hoje como "Conta a pagar" (despesa) ou "Recebimento" (receita), no dia da transação, como dia inteiro. Eles continuam lá no dia do vencimento e depois dele. Toque na conta para abrir o Financeiro, onde ela é editada ou excluída.
 
 **Projetos** — **exclusivo do Espaço Empresa**. Um projeto tem nome, descrição, status (planejado, ativo, em pausa, concluído, cancelado), prioridade, progresso (0–100%), datas de início/prazo, cliente vinculado (opcional) e próximo marco. Excluir um projeto é definitivo (não há arquivamento como em Clientes) e exige papel owner ou admin.
 
