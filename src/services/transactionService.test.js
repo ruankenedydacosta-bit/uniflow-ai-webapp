@@ -266,3 +266,12 @@ test('updateTransaction nunca rejeita uma edição por descrição vazia', async
   assert.doesNotMatch(fnBody, /A descricao deve ser um texto valido/);
   assert.doesNotMatch(fnBody, /payload\.description === ''/);
 });
+
+test('updateTransaction com expectedUpdatedAt só grava a versão lida e avisa quando ela mudou', async () => {
+  const content = await readFile(new URL('./transactionService.js', import.meta.url), 'utf8');
+  const fnStart = content.indexOf('export async function updateTransaction(');
+  const fnBody = content.slice(fnStart, content.indexOf('\nexport ', fnStart + 10));
+  assert.match(fnBody, /\{ expectedUpdatedAt = null \} = \{\}/);
+  assert.match(fnBody, /query = query\.eq\('updated_at', expectedUpdatedAt\)/);
+  assert.match(fnBody, /code: 'TRANSACTION_CHANGED'/);
+});

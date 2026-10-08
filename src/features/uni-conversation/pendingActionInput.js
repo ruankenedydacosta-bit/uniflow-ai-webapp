@@ -246,7 +246,7 @@ export function looksLikePendingCorrection(value) {
   return PENDING_CORRECTION_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
-function collectCorrectionOverrides({ text, normalized, parsed, accounts, categories, workspaceId }) {
+export function collectCorrectionOverrides({ text, normalized, parsed, accounts, categories, workspaceId }) {
   const overrides = {};
   const date = parsed.entities.date;
   if (date) overrides.date = date;

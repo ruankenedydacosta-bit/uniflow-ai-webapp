@@ -278,3 +278,9 @@ test('a sessão declara encerrar_conversa e a saída pede só a despedida', () =
   assert.match(EDGE_SOURCE, /chame encerrar_conversa/);
   assert.match(JSON.parse(buildEndConversationOutput()).resposta, /Despeça-se/);
 });
+
+test('a sessão manda alterar lançamento já registrado pelo mesmo caminho do chat', () => {
+  assert.match(EDGE_SOURCE, /alterar um lançamento já registrado/);
+  assert.match(EDGE_SOURCE, /Se a Uni listar vários lançamentos e perguntar qual, passe a resposta da pessoa com enviar_para_uni\./);
+  assert.match(EDGE_SOURCE, /Com um rascunho ou uma alteração aguardando confirmação/);
+});

@@ -352,10 +352,13 @@ export function buildTransactionUpdatePayload(changes = {}) {
   ]);
 }
 
+// expectedUpdatedAt: só grava se o lançamento ainda estiver como foi lido.
+// Sem linha afetada, devolve TRANSACTION_CHANGED: alguém editou no meio.
 export async function updateTransaction(
   workspaceId,
   transactionId,
   changes = {},
+  { expectedUpdatedAt = null } = {},
 ) {
   if (!supabase) {
     return createUnavailableResult(null);
@@ -397,13 +400,24 @@ export async function updateTransaction(
     return createValidationResult('Nenhuma alteracao valida foi informada.');
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('transactions')
     .update(payload)
     .eq('workspace_id', workspaceId)
-    .eq('id', transactionId)
+    .eq('id', transactionId);
+  if (expectedUpdatedAt) {
+    query = query.eq('updated_at', expectedUpdatedAt);
+  }
+  const { data, error } = await query
     .select(TRANSACTION_FIELDS)
     .maybeSingle();
+
+  if (expectedUpdatedAt && !error && !data) {
+    return createResult(null, {
+      code: 'TRANSACTION_CHANGED',
+      message: 'O lancamento mudou ou nao existe mais.',
+    });
+  }
 
   return normalizeSingleResult(
     data,
