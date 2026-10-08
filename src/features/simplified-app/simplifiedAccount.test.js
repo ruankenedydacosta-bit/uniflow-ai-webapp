@@ -20,10 +20,12 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // junto de LGPD/exportação/exclusão de conta.
 // Fase 3 do redesign (#90): "notificacoes" voltou como página própria
 // (tela 13 do handoff), alcançada pelo item Notificações do Mais.
-test('ACCOUNT_SUBROUTES tem exatamente os 11 paths pedidos, sob /app/conta/ -- privacidade removida, notificacoes da Fase 3', () => {
+// Épico #98 (#99): "google-agenda" entra fora do menu.
+test('ACCOUNT_SUBROUTES tem exatamente os 12 paths pedidos, sob /app/conta/ -- privacidade removida, notificacoes da Fase 3, google-agenda do #99', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path).sort();
   assert.deepEqual(paths, [
     '/app/conta/editar-perfil',
+    '/app/conta/google-agenda',
     '/app/conta/minhas-contas',
     '/app/conta/notificacoes',
     '/app/conta/pagamentos',
@@ -47,7 +49,7 @@ test('todo subroute tem título e descrição honesta (nunca vazio, nunca dado f
   }
 });
 
-test('nenhum path duplicado entre os 11 subroutes', () => {
+test('nenhum path duplicado entre os 12 subroutes', () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path);
   assert.equal(paths.length, new Set(paths).size);
 });
@@ -284,10 +286,16 @@ test('estados da linha: "N não lida(s)" quando há por ler, "Tudo em dia" quand
   assert.match(row, /'Tudo em dia'/);
 });
 
-test('nenhuma rota nova foi criada para Web Push -- a única rota nova é a página de notificações da Fase 3', async () => {
+// Épico #98 (#99): a 12ª rota é a do Google Agenda, que não é de push.
+test('nenhuma rota nova foi criada para Web Push -- as rotas novas são notificações (Fase 3) e Google Agenda (#99)', async () => {
   const paths = Object.values(ACCOUNT_SUBROUTES).map((r) => r.path);
-  assert.equal(paths.length, 11);
+  assert.equal(paths.length, 12);
   assert.ok(!paths.some((path) => /push/i.test(path)), 'nenhum path novo relacionado a push');
+});
+
+test('Google Agenda fica fora do menu do Mais até a #102', async () => {
+  const page = await source('./SimplifiedAccountPage.jsx');
+  assert.doesNotMatch(page, /GOOGLE_CALENDAR|google-agenda/);
 });
 
 test('useAccounts não é mais importado nesta tela -- "Minhas contas" não faz mais parte do menu de Conta', async () => {

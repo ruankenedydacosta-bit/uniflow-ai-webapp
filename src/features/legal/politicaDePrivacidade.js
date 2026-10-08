@@ -59,8 +59,8 @@ export const PROVEDORES = Object.freeze([
   },
   {
     nome: 'Google',
-    recebe: 'Nome, e-mail e foto de perfil, se você entrar com o Google. Endereço IP ao carregar as fontes do app. Dados de navegação, se você permitir o Google Analytics.',
-    finalidade: 'Login com Google, fontes do app e estatísticas de uso.',
+    recebe: 'Nome, e-mail e foto de perfil, se você entrar com o Google. Compromissos da agenda e o nome do espaço, se você conectar o Google Agenda. Endereço IP ao carregar as fontes do app. Dados de navegação, se você permitir o Google Analytics.',
+    finalidade: 'Login com Google, Google Agenda, fontes do app e estatísticas de uso.',
   },
   {
     nome: 'Sentry',

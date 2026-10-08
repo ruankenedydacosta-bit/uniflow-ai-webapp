@@ -20,6 +20,7 @@ export { default as SimplifiedAccountPage } from './SimplifiedAccountPage.jsx';
 export { default as SimplifiedAccountSubpagePlaceholder } from './SimplifiedAccountSubpagePlaceholder.jsx';
 export { default as SimplifiedEditProfilePage } from './SimplifiedEditProfilePage.jsx';
 export { default as SimplifiedSecurityPage } from './SimplifiedSecurityPage.jsx';
+export { default as SimplifiedGoogleAgendaPage } from './SimplifiedGoogleAgendaPage.jsx';
 export { default as SimplifiedPlanPage } from './SimplifiedPlanPage.jsx';
 export { default as SimplifiedPaymentsPage } from './SimplifiedPaymentsPage.jsx';
 export { default as SimplifiedPaymentHistoryPage } from './SimplifiedPaymentHistoryPage.jsx';

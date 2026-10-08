@@ -27,6 +27,9 @@ export const ACCOUNT_SUBROUTE_IDS = Object.freeze({
   // notificações, alcançada pelo item "Notificações" do Mais. O sino do
   // header continua abrindo o painel rápido nas telas que o têm.
   NOTIFICATIONS: 'notifications',
+  // Épico #98 (#99): conexão com o Google Agenda. Fora do menu até a #102
+  // pôr a entrada em Preferências atrás de VITE_AGENDA_GOOGLE_ENABLED.
+  GOOGLE_CALENDAR: 'google-calendar',
 });
 
 export const ACCOUNT_SUBROUTES = Object.freeze({
@@ -90,5 +93,10 @@ export const ACCOUNT_SUBROUTES = Object.freeze({
     path: '/app/conta/notificacoes',
     title: 'Notificações',
     description: 'Veja os avisos da Uni sobre contas, lembretes e sua conta.',
+  }),
+  [ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR]: Object.freeze({
+    path: '/app/conta/google-agenda',
+    title: 'Google Agenda',
+    description: 'Conecte sua conta Google à agenda do UniFlow.',
   }),
 });

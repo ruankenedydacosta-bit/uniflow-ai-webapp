@@ -35,6 +35,7 @@ export const GA4_PAGE_CATALOG = Object.freeze({
   '/app/conta/tema': createPage('/app/conta/tema', 'Conta - Tema'),
   '/app/conta/sobre': createPage('/app/conta/sobre', 'Conta - Sobre'),
   '/app/conta/notificacoes': createPage('/app/conta/notificacoes', 'Conta - Notificacoes'),
+  '/app/conta/google-agenda': createPage('/app/conta/google-agenda', 'Conta - Google Agenda'),
 });
 
 export const GA4_EXCLUDED_PATHS = Object.freeze([
