@@ -250,3 +250,62 @@ test('texto de sucesso diz como o lançamento ficou', () => {
     'Pronto, alterei Mercado. Agora está com valor R$ 50,00 e conta Nubank.',
   );
 });
+
+test('número de data não vira valor e valor com ponto ou vírgula fica inteiro', () => {
+  assert.deepEqual(
+    [analisarAlvo('mercado do dia 5', contexto).data, analisarAlvo('mercado do dia 5', contexto).valor],
+    ['2026-10-05', null],
+  );
+  assert.deepEqual(
+    [analisarAlvo('mercado de 05/10', contexto).data, analisarAlvo('mercado de 05/10', contexto).valor],
+    ['2026-10-05', null],
+  );
+  // Sem ano e no futuro: é o do ano passado.
+  assert.equal(analisarAlvo('mercado de 20/12', contexto).data, '2025-12-20');
+  assert.equal(analisarAlvo('aluguel de 1.500', contexto).valor, 1500);
+  assert.equal(analisarAlvo('mercado de ontem de 32,50', contexto).valor, 32.5);
+  assert.deepEqual(analisarAlvo('aluguel de 1.500', contexto).palavras, ['aluguel']);
+  assert.deepEqual(
+    interpretarPedidoDeEdicao('corrige o aluguel de 1.500 pra 1.600', contexto),
+    { forma: FORMAS_DE_EDICAO.VERBO, alvo: 'aluguel de 1.500', mudancas: { amount: 1600 } },
+  );
+});
+
+test('substantivo com verbo de edição é lançamento novo', () => {
+  for (const frase of ['Troca de óleo do carro por 200 reais', 'troca de pneu por 300', 'Ajuste do relógio por 50 reais']) {
+    assert.equal(interpretarPedidoDeEdicao(frase, contexto), null, frase);
+  }
+  // Com o nome do campo, "do" é só a ligação.
+  assert.deepEqual(
+    interpretarPedidoDeEdicao('muda o valor do pneu pra 300', contexto),
+    { forma: FORMAS_DE_EDICAO.VERBO, alvo: 'pneu', mudancas: { amount: 300 } },
+  );
+});
+
+test('descrição nova pode ter "pra" no meio', () => {
+  assert.deepEqual(
+    interpretarPedidoDeEdicao('muda a descrição do presente pra Presente pra mãe', contexto),
+    { forma: FORMAS_DE_EDICAO.VERBO, alvo: 'presente', mudancas: { description: 'Presente pra mãe' } },
+  );
+});
+
+test('ajuste de descrição com o card na tela mantém caixa e acento', () => {
+  assert.deepEqual(
+    lerAjusteDaAlteracao('Não, muda a descrição pra Feira de Sábado', contexto)?.mudancas,
+    { description: 'Feira de Sábado' },
+  );
+});
+
+test('lançamento cancelado não é alterado', () => {
+  assert.match(
+    montarAlteracao({ ...mercadoOntem, status: 'canceled' }, { amount: 50 }, contexto).erro,
+    /cancelado/,
+  );
+});
+
+test('"a segunda" na lista é segunda-feira, não a segunda posição', () => {
+  const daSegunda = lancamento({ id: 's', description: 'Mercado', amount: 40, transaction_date: '2026-10-05' });
+  const lista = [mercadoOntem, mercadoSemanaPassada, daSegunda];
+  assert.equal(escolherCandidato('a segunda', lista, contexto), daSegunda);
+  assert.equal(escolherCandidato('o segundo', lista, contexto), mercadoSemanaPassada);
+});

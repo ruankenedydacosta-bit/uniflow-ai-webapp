@@ -9,6 +9,7 @@ import {
   parseFinancialText,
   resolveRelativeDateExpression,
 } from '../uni-intents/index.js';
+import { formatCurrency } from '../../utils/formatters.js';
 import { normalizeSearchText } from '../../utils/searchText.js';
 import { collectCorrectionOverrides, extractRequestedCategoryName } from './pendingActionInput.js';
 
@@ -28,10 +29,18 @@ const LIGACAO_DO_CAMPO = String.raw`(?:do|da|dos|das|desse|dessa|deste|desta)`;
 const SEPARADOR = String.raw`(?:pra|para|pro|por)`;
 
 // "corrige o mercado de ontem pra 50", "muda a categoria do iFood de sexta
-// pra Lazer". O alvo é guloso: a mudança começa no ÚLTIMO "pra".
+// pra Lazer". O alvo é guloso: a mudança começa no ÚLTIMO "pra". Na
+// descrição é o contrário: "muda a descrição do presente pra Presente pra
+// mãe" muda a partir do PRIMEIRO.
 const PEDIDO_COM_VERBO = new RegExp(
   `^${ABERTURA}${VERBO}\\s+(?:(?:o|a)\\s+)?(?:${CAMPO}\\s+${LIGACAO_DO_CAMPO}\\s+)?(.+)\\s+${SEPARADOR}\\s+(.+)$`,
 );
+const PEDIDO_DE_DESCRICAO = new RegExp(
+  `^${ABERTURA}${VERBO}\\s+(?:a\\s+)?descricao\\s+${LIGACAO_DO_CAMPO}\\s+(.+?)\\s+${SEPARADOR}\\s+(.+)$`,
+);
+// "troca de óleo do carro por 200 reais" é lançamento novo: sem o nome do
+// campo, o lançamento procurado não começa com preposição.
+const ALVO_QUE_E_SUBSTANTIVO = /^(?:de|do|da|dos|das)\s/;
 // "corrige pra 50", "muda o valor pra 50": vale para o último lançamento
 // confirmado na conversa.
 const PEDIDO_SEM_ALVO = new RegExp(`^${ABERTURA}${VERBO}\\s+(?:(?:o|a)\\s+${CAMPO}\\s+)?${SEPARADOR}\\s+(.+)$`);
@@ -107,9 +116,11 @@ export function interpretarPedidoDeEdicao(texto, contexto = {}) {
     return mudanca ? { forma: FORMAS_DE_EDICAO.ULTIMO, alvo: '', ...mudanca } : null;
   }
 
-  const comVerbo = frase.match(PEDIDO_COM_VERBO);
+  const deDescricao = frase.match(PEDIDO_DE_DESCRICAO);
+  const comVerbo = deDescricao ? [deDescricao[0], 'descricao', deDescricao[1], deDescricao[2]] : frase.match(PEDIDO_COM_VERBO);
   if (comVerbo) {
     const [, campo, alvo, textoDaMudanca] = comVerbo;
+    if (!campo && ALVO_QUE_E_SUBSTANTIVO.test(alvo)) return null;
     const mudanca = lerMudanca(recortarOriginal(texto, textoDaMudanca), campo, contexto);
     if (!mudanca) return null;
     if (REFERENCIA_AO_ULTIMO.test(alvo.trim())) {
@@ -146,9 +157,10 @@ export function interpretarPedidoDeEdicao(texto, contexto = {}) {
 // foi 60", "muda a data pra ontem". Vale para o mesmo lançamento do card.
 export function lerAjusteDaAlteracao(texto, contexto = {}) {
   if (typeof texto !== 'string' || /\?\s*$/.test(texto)) return null;
-  const frase = limparFrase(texto).replace(/^nao[,.!]?\s*/, '');
+  const semNao = texto.trim().replace(/^n[ãa]o[,.!]?\s*/i, '');
+  const frase = limparFrase(semNao);
   if (!frase) return null;
-  const pedido = interpretarPedidoDeEdicao(frase, contexto);
+  const pedido = interpretarPedidoDeEdicao(semNao, contexto);
   if (pedido?.forma === FORMAS_DE_EDICAO.ULTIMO) return pedido;
   const solto = frase.match(/^(?:e\s+)?(?:pra|para|pro|por|foi|era|foram|eram)\s+(.+)$/);
   if (!solto) return null;
@@ -191,20 +203,50 @@ function contaCitada(textoNormalizado, accounts, workspaceId) {
 
 // Critérios do lançamento procurado: data, valor, conta e palavras da
 // descrição ou categoria.
+const DATA_CURTA = /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?\b/;
+const EXPRESSOES_DE_DATA = /\bdia\s+\d{1,2}\b|\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g;
+
+// "05/10" sem ano é a ocorrência mais recente que não está no futuro.
+function resolverDataCurta(dia, mes, ano, referenceDate) {
+  const referencia = /^\d{4}-\d{2}-\d{2}$/.test(referenceDate ?? '') ? referenceDate : null;
+  const anoDito = ano ? Number(ano.length === 2 ? `20${ano}` : ano) : null;
+  const anoBase = anoDito ?? Number((referencia ?? '').slice(0, 4));
+  if (!anoBase) return null;
+  const montar = (umAno) => {
+    const data = new Date(Date.UTC(umAno, Number(mes) - 1, Number(dia)));
+    return data.getUTCDate() === Number(dia) && data.getUTCMonth() === Number(mes) - 1
+      ? data.toISOString().slice(0, 10)
+      : null;
+  };
+  const candidata = montar(anoBase);
+  if (!candidata || anoDito || !referencia || candidata <= referencia) return candidata;
+  return montar(anoBase - 1);
+}
+
 export function analisarAlvo(textoDoAlvo, { accounts = [], workspaceId = null, referenceDate } = {}) {
-  const normalizado = normalizeSearchText(textoDoAlvo).replace(/[.,!;:]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // Ponto e vírgula entre dígitos ficam: "1.500" e "32,50" são valores.
+  const normalizado = normalizeSearchText(textoDoAlvo)
+    .replace(/[!;:?]+/g, ' ')
+    .replace(/[.,](?!\d)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!normalizado) return { criterios: 0 };
 
-  const resolucao = resolveRelativeDateExpression(normalizado, referenceDate);
-  const data = REGRAS_DE_DATA_EXATA.has(resolucao.ruleId) ? resolucao.resolvedDate : null;
-  const valorExtraido = Number(extractAmount(normalizado));
+  const dataCurta = normalizado.match(DATA_CURTA);
+  const resolucao = dataCurta ? null : resolveRelativeDateExpression(normalizado, referenceDate);
+  const data = dataCurta
+    ? resolverDataCurta(dataCurta[1], dataCurta[2], dataCurta[3], referenceDate)
+    : (REGRAS_DE_DATA_EXATA.has(resolucao.ruleId) ? resolucao.resolvedDate : null);
+  // O número de "dia 5" e de "05/10" é data, não valor.
+  const semData = normalizado.replace(EXPRESSOES_DE_DATA, ' ');
+  const valorExtraido = Number(extractAmount(semData));
   const valor = valorExtraido > 0 ? valorExtraido : null;
   const citada = contaCitada(normalizado, accounts, workspaceId);
 
-  let restante = normalizado
-    .replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, ' ')
+  let restante = semData
     .replace(/r\$\s*/g, ' ')
-    .replace(/\b\d+(?:[.,]\d+)*\b/g, ' ');
+    .replace(/\b\d+(?:[.,]\d+)*\b/g, ' ')
+    .replace(/[.,]/g, ' ');
   if (citada) restante = restante.replace(citada.nome, ' ');
   const palavras = restante
     .split(/\s+/)
@@ -254,6 +296,7 @@ function maisRecentesPrimeiro(a, b) {
 // Por que a conversa não edita este lançamento; null quando pode.
 export function motivoDeBloqueio(transacao) {
   if (!transacao) return 'Não encontrei esse lançamento.';
+  if (transacao.status === 'canceled') return 'Esse lançamento foi cancelado e não pode ser alterado.';
   if (transacao.transaction_type === 'transfer') {
     return 'Transferências só podem ser alteradas na tela Financeiro.';
   }
@@ -291,20 +334,21 @@ export function localizarLancamento(alvo, transacoes, { categories = [], limite 
 
 const ORDINAIS = Object.freeze({
   primeiro: 0, primeira: 0, um: 0, '1': 0,
-  segundo: 1, segunda: 1, dois: 1, '2': 1,
+  segundo: 1, dois: 1, '2': 1,
   terceiro: 2, terceira: 2, tres: 2, '3': 2,
-  quarto: 3, quarta: 3, quatro: 3, '4': 3,
-  quinto: 4, quinta: 4, cinco: 4, '5': 4,
+  quarto: 3, quatro: 3, '4': 3,
+  quinto: 4, cinco: 4, '5': 4,
 });
 
 // Resposta à lista "qual deles?": "o segundo", "o de 85", "o do Nubank",
-// "o de ontem". null quando não dá para saber qual.
+// "o de ontem". "A segunda", "a quarta" e "a quinta" são dias da semana,
+// não posições. null quando não dá para saber qual.
 export function escolherCandidato(resposta, candidatos, contexto = {}) {
   const lista = Array.isArray(candidatos) ? candidatos : [];
   const frase = normalizeSearchText(resposta).replace(/[.,!]+/g, ' ').replace(/\s+/g, ' ').trim();
   if (!frase || !lista.length) return null;
 
-  const ordinal = frase.match(/^(?:(?:e|foi|era)\s+)?(?:(?:o|a)\s+)?(?:(?:numero|opcao)\s+)?(primeir[oa]|segund[oa]|terceir[oa]|quart[oa]|quint[oa]|um|dois|tres|quatro|cinco|[1-5])(?:\s+(?:lancamento|da\s+lista|opcao))?$/);
+  const ordinal = frase.match(/^(?:(?:e|foi|era)\s+)?(?:(?:o|a)\s+)?(?:(?:numero|opcao)\s+)?(primeir[oa]|segundo|terceir[oa]|quarto|quinto|um|dois|tres|quatro|cinco|[1-5])(?:\s+(?:lancamento|da\s+lista|opcao))?$/);
   if (ordinal) {
     const indice = ORDINAIS[ordinal[1]];
     return indice < lista.length ? lista[indice] : null;
@@ -374,10 +418,8 @@ export function montarAlteracao(transacao, mudancas, { accounts = [], categories
   return { alteracoes, campos };
 }
 
-const formatadorDeMoeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
 export function formatarValor(valor) {
-  return formatadorDeMoeda.format(Number(valor) || 0);
+  return formatCurrency(valor);
 }
 
 export function formatarData(iso) {

@@ -828,7 +828,8 @@ test('BLOCO VOZ 1: erro relevante ao usuário fala -- os 5 pontos de erro de han
   // da função é excluída contando só chamadas que terminam em ';'.
   const callSites = page.match(/reportConfirmationError\(id, [^)]*\);/g) ?? [];
   // O sexto é a edição no card que não pôde ser aplicada (handleSaveEditAction).
-  assert.equal(callSites.length, 6, 'esperava 6 pontos de erro do card usando reportConfirmationError');
+  // O sétimo é o toque em Confirmar numa alteração de lançamento vencida.
+  assert.equal(callSites.length, 7, 'esperava 7 pontos de erro do card usando reportConfirmationError');
   // Nenhum setExecutionError fora do ponto central (sem duplicação de
   // registro/narração) -- só o reset neutro (null) continua nos fluxos.
   assert.equal((page.match(/setExecutionError\(errorText\);/g) ?? []).length, 1);
@@ -3841,7 +3842,7 @@ test('edição de lançamento salvo: pedido e resposta só são tratados sem ras
   // ontem" é classificado como agenda e precisa ser testado como edição antes.
   assert.ok(desvio > page.indexOf("if (declaredIntent === 'conversation_common') {"));
   assert.ok(desvio < page.indexOf('if (hasAgendaConversation) {\n      setIsTyping(true);'));
-  const trecho = page.slice(desvio, desvio + 700);
+  const trecho = page.slice(desvio, desvio + 1400);
   assert.match(trecho, /if \(!hasPendingFinancialConversation && !hasPendingAgendaConversation\) \{/);
   assert.match(trecho, /if \(edicaoAtiva\(\) && tratarRespostaDaEdicao\(functionalText, userMsg, turnToken\)\) return;/);
   assert.match(trecho, /if \(tentarPedidoDeEdicao\(functionalText, userMsg, declaredIntent, turnToken\)\) return;/);
@@ -3851,7 +3852,7 @@ test('edição de lançamento salvo: pedido e resposta só são tratados sem ras
 test('edição de lançamento salvo: o toque no card confirma ou cancela a edição antes de qualquer outra pendência', async () => {
   const page = await source('UniChatPage.jsx');
   const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
-  assert.match(confirmar.slice(0, 300), /if \(edicaoAtiva\(\) && edicaoPendenteRef\.current\.messageId === id\) \{\s*await confirmarEdicao\(id\);/);
+  assert.match(confirmar.slice(0, 400), /if \(edicaoPendenteRef\.current\?\.messageId === id\) \{\s*if \(edicaoAtiva\(\)\) \{\s*await confirmarEdicao\(id\);\s*\} else \{\s*encerrarEdicao\('expired'\);\s*reportConfirmationError\(id, TEXTO_EDICAO_VENCIDA\);/);
   const cancelar = page.slice(page.indexOf('function handleCancelAction(id, { cascade = false } = {}) {'));
   assert.match(cancelar.slice(0, 300), /if \(edicaoPendenteRef\.current\?\.messageId === id\) \{\s*cancelarEdicao\(id\);/);
 });
@@ -3882,4 +3883,19 @@ test('edição de lançamento salvo: "corrige pra 50" usa o último lançamento 
   const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
   assert.match(confirmar, /const persistedTransaction = outcome\.result\.data;\s*if \(persistedTransaction\?\.id\) \{\s*ultimoConfirmadoRef\.current = \{/);
   assert.match(page, /const ULTIMO_CONFIRMADO_TTL_MS = 30 \* 60 \* 1000;/);
+});
+
+test('edição de lançamento salvo: edição vencida avisa em vez de cair no fluxo genérico', async () => {
+  const page = await source('UniChatPage.jsx');
+  const desvio = page.slice(page.indexOf('// Edição de lançamento salvo: resposta à lista ou ao card'));
+  assert.match(desvio.slice(0, 900), /if \(edicaoPendenteRef\.current && !edicaoAtiva\(\)\) \{[\s\S]*?encerrarEdicao\('expired'\);[\s\S]*?createAssistantResponse\(TEXTO_EDICAO_VENCIDA/);
+});
+
+test('edição de lançamento salvo: frase de lançamento novo nunca vira "não encontrei" nem escolha da lista', async () => {
+  const page = await source('UniChatPage.jsx');
+  const tentar = page.slice(page.indexOf('function tentarPedidoDeEdicao('), page.indexOf('function tratarRespostaDaEdicao('));
+  assert.match(tentar, /ACTION_STATEMENT_INTENTS\.has\(declaredIntent\)\s*\|\|\s*looksLikeFreshFinancialStatement\(texto\)/);
+  assert.doesNotMatch(tentar, /\$\{pedido\.alvo\}/);
+  const tratar = page.slice(page.indexOf('function tratarRespostaDaEdicao('), page.indexOf('async function confirmarEdicao('));
+  assert.ok(tratar.indexOf('looksLikeFreshFinancialStatement(texto)') < tratar.indexOf('escolherCandidato(texto'));
 });

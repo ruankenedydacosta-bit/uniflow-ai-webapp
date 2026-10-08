@@ -22,7 +22,7 @@ No topo da conversa ficam a Uni, o espaço ativo ("Espaço Pessoal") e dois bot�
 
 A Uni procura a movimentação pelo nome, pelo dia, pelo valor ou pela conta que você disser e mostra um card "Alteração · rascunho" com o valor de antes e o de depois (por exemplo, "R$ 32,00 → R$ 50,00"). Toque em **Confirmar** para salvar ou em **Cancelar** para deixar como estava. Para ajustar antes de confirmar, diga só a mudança ("não, pra 60").
 
-- Se mais de uma movimentação combinar com o que você disse, a Uni lista até cinco e pergunta qual. Responda com o número ("a segunda") ou com um detalhe ("a de 85", "a do Nubank").
+- Se mais de uma movimentação combinar com o que você disse, a Uni lista até cinco e pergunta qual. Responda com o número da lista ("número 2") ou com um detalhe ("a de 85", "a do Nubank").
 - Logo depois de confirmar uma movimentação, "corrige pra 50" ou "na verdade foi 50" altera essa mesma movimentação.
 - Dá para mudar valor, data, conta, categoria e descrição. A categoria nova precisa ser do mesmo tipo (despesa ou receita) e já existir.
 

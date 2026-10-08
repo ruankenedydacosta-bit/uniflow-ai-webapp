@@ -250,6 +250,7 @@ const FINANCIAL_PLAN_TTL_MS = 15 * 60 * 1000;
 const EDICAO_TTL_MS = 15 * 60 * 1000;
 // "corrige pra 50" vale para o lançamento confirmado há até 30 minutos.
 const ULTIMO_CONFIRMADO_TTL_MS = 30 * 60 * 1000;
+const TEXTO_EDICAO_VENCIDA = 'Essa alteração expirou e nada foi salvo. Peça de novo se ainda quiser alterar.';
 const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze([
   'register_income',
   'register_expense',
@@ -1680,7 +1681,7 @@ export default function UniChatPage({ variant = 'full' }) {
 
   // Lançamento fora dos que estão carregados: com data dita, busca aquele
   // dia no servidor antes de dizer que não achou.
-  async function buscarAlvoNoDia(alvo, mudancas, textoDoAlvo, turnToken) {
+  async function buscarAlvoNoDia(alvo, mudancas, turnToken) {
     const conversationId = activeIdRef.current;
     setIsTyping(true);
     const doDia = await listTransactions(effectiveWorkspace?.id, { dateFrom: alvo.data, dateTo: alvo.data, limit: 100 })
@@ -1690,7 +1691,7 @@ export default function UniChatPage({ variant = 'full' }) {
     const resultado = localizarLancamento(alvo, doDia?.data ?? [], { categories: categoryState.categories });
     if (resultado.tipo === 'nenhum') {
       createAssistantResponse(
-        `Não encontrei o lançamento "${textoDoAlvo}". Diga o nome como aparece no Financeiro, com o dia ou o valor.`,
+        'Não encontrei esse lançamento nesse dia. Diga o nome como aparece no Financeiro, com o dia ou o valor.',
         { deduplicateNarration: false },
       );
       return;
@@ -1722,7 +1723,13 @@ export default function UniChatPage({ variant = 'full' }) {
       // Só valor, conta e categoria são inequívocos de lançamento.
       const mudancaDeLancamento = pedido.categoriaPedida
         || ['amount', 'accountId', 'categoryId'].some((campo) => pedido.mudancas?.[campo] !== undefined);
-      if (pedido.forma === FORMAS_DE_EDICAO.COPULA || declaredIntent.startsWith('agenda_') || !mudancaDeLancamento) {
+      if (
+        pedido.forma === FORMAS_DE_EDICAO.COPULA
+        || declaredIntent.startsWith('agenda_')
+        || ACTION_STATEMENT_INTENTS.has(declaredIntent)
+        || looksLikeFreshFinancialStatement(texto)
+        || !mudancaDeLancamento
+      ) {
         return false;
       }
     }
@@ -1737,10 +1744,10 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     if (resultado.tipo === 'nenhum') {
       if (alvo.data) {
-        void buscarAlvoNoDia(alvo, pedido.mudancas, pedido.alvo, turnToken);
+        void buscarAlvoNoDia(alvo, pedido.mudancas, turnToken);
       } else {
         createAssistantResponse(
-          `Não encontrei o lançamento "${pedido.alvo}" entre os mais recentes. Diga também o dia ou o valor dele.`,
+          'Não encontrei esse lançamento entre os mais recentes. Diga também o dia ou o valor dele.',
           { deduplicateNarration: false },
         );
       }
@@ -1785,13 +1792,8 @@ export default function UniChatPage({ variant = 'full' }) {
       createAssistantResponse(withFollowUpQuestion('Tudo bem. Não alterei nada.'), { deduplicateNarration: false });
       return true;
     }
-    const escolhido = escolherCandidato(texto, edicao.candidatos, contexto);
-    if (escolhido) {
-      syncMessageToSupabase(userMsg);
-      encerrarEdicao(null);
-      void prepararAlteracao(escolhido.id, edicao.mudancas, turnToken);
-      return true;
-    }
+    // "gastei 85 no mercado" é lançamento novo, mesmo batendo com o valor de
+    // um item da lista.
     if (
       looksLikeFreshFinancialStatement(texto)
       || looksLikeFreshBalanceStatement(texto)
@@ -1799,6 +1801,13 @@ export default function UniChatPage({ variant = 'full' }) {
     ) {
       encerrarEdicao(null);
       return false;
+    }
+    const escolhido = escolherCandidato(texto, edicao.candidatos, contexto);
+    if (escolhido) {
+      syncMessageToSupabase(userMsg);
+      encerrarEdicao(null);
+      void prepararAlteracao(escolhido.id, edicao.mudancas, turnToken);
+      return true;
     }
     syncMessageToSupabase(userMsg);
     createAssistantResponse(
@@ -4437,6 +4446,15 @@ export default function UniChatPage({ variant = 'full' }) {
     // novo ("corrige o mercado de ontem pra 50"). Com rascunho ou agenda em
     // andamento, "corrige…" continua sendo deles.
     if (!hasPendingFinancialConversation && !hasPendingAgendaConversation) {
+      if (edicaoPendenteRef.current && !edicaoAtiva()) {
+        const vencida = edicaoPendenteRef.current;
+        encerrarEdicao('expired');
+        if (vencida.etapa === 'confirmar' && classifyPendingActionReply(functionalText) !== 'input') {
+          syncMessageToSupabase(userMsg);
+          createAssistantResponse(TEXTO_EDICAO_VENCIDA, { deduplicateNarration: false });
+          return;
+        }
+      }
       if (edicaoAtiva() && tratarRespostaDaEdicao(functionalText, userMsg, turnToken)) return;
       if (tentarPedidoDeEdicao(functionalText, userMsg, declaredIntent, turnToken)) return;
     } else if (edicaoPendenteRef.current) {
@@ -4670,8 +4688,13 @@ export default function UniChatPage({ variant = 'full' }) {
 
   async function handleConfirmAction(id) {
     if (confirmingRef.current) return;
-    if (edicaoAtiva() && edicaoPendenteRef.current.messageId === id) {
-      await confirmarEdicao(id);
+    if (edicaoPendenteRef.current?.messageId === id) {
+      if (edicaoAtiva()) {
+        await confirmarEdicao(id);
+      } else {
+        encerrarEdicao('expired');
+        reportConfirmationError(id, TEXTO_EDICAO_VENCIDA);
+      }
       return;
     }
     const currentConversationId = activeIdRef.current;
