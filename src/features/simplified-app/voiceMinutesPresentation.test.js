@@ -51,6 +51,16 @@ test('chip da tela de voz: neutro com saldo folgado, violeta com 5 minutos ou me
   assert.equal(describeVoiceMinutesChip(resolveVoiceMinutes(balance(0))), null);
 });
 
+test('sem assinatura ativa, o ciclo que sobrou não aparece', () => {
+  assert.equal(resolveVoiceMinutes(balance(12 * 60, { has_active_subscription: false })), null);
+});
+
+test('durante a conversa, o tempo dela sai do saldo lido antes de começar', () => {
+  assert.equal(resolveVoiceMinutes(balance(8 * 60), { spentSeconds: 6 * 60 + 10 }).minutes, 1);
+  assert.equal(resolveVoiceMinutes(balance(8 * 60), { spentSeconds: 9 * 60 }).isOut, true);
+  assert.equal(resolveVoiceMinutes(balance(8 * 60), { spentSeconds: -30 }).minutes, 8);
+});
+
 test('saldo zerado só com zero segundo: meio minuto ainda abre uma conversa', () => {
   assert.equal(resolveVoiceMinutes(balance(30)).isOut, false);
   assert.equal(resolveVoiceMinutes(balance(0)).isOut, true);
@@ -100,7 +110,8 @@ test('"Entendi" fica salvo por pessoa e sobrevive a storage quebrado', () => {
 
 test('tela de voz e Home usam o saldo: sem minutos, a conversa não conecta', () => {
   const home = readFileSync(new URL('./SimplifiedHomeView.jsx', import.meta.url), 'utf8');
-  assert.match(home, /if \(!isVoiceMinutesOut\) beginRealtimeConversation\(\);/);
+  assert.match(home, /if \(isVoiceMinutesOut\) refreshVoiceMinutes\(\);\s*else beginRealtimeConversation\(\);/);
+  assert.match(home, /const isVoiceMinutesOut = voiceMinutes\?\.isOut === true && !isRealtimeLive;/);
   assert.match(home, /voiceMinutes=\{voiceMinutes\}/);
   assert.match(home, /<SimplifiedVoiceMinutesNotice/);
 

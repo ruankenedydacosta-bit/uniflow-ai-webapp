@@ -43,7 +43,7 @@
   border-radius: var(--uf-radius-full);
   box-shadow: inset 0 0 0 1px var(--uf-app-border);
   color: var(--uf-app-text-3);
-  font-size: 12px;
+  font-size: var(--uf-text-micro-size);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -181,7 +181,7 @@
 .outBody {
   margin: 0;
   color: var(--uf-app-text-2);
-  font-size: 14px;
+  font-size: var(--uf-text-caption-size);
   line-height: 1.55;
   text-wrap: pretty;
 }

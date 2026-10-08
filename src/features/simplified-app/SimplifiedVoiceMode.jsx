@@ -79,8 +79,10 @@ function SimplifiedVoiceMode({
   hasReply = false,
   workspaceLabel = 'Pessoal',
   // Tela 19: saldo do mês (resolveVoiceMinutes). Nulo quando não se sabe:
-  // a tela fica como antes e o servidor decide.
+  // a tela fica como antes e o servidor decide. A Home só liga
+  // isVoiceMinutesOut sem conversa aberta.
   voiceMinutes = null,
+  isVoiceMinutesOut = false,
   getVoiceStream,
   getVoiceSessionId,
   onAction,
@@ -99,7 +101,8 @@ function SimplifiedVoiceMode({
   const stage = resolveVoiceModeStage({ view, isUserSpeaking, hasReply });
   const cleanTranscript = String(transcript ?? '').trim();
   const minutesChip = describeVoiceMinutesChip(voiceMinutes);
-  const minutesOut = voiceMinutes?.isOut ? describeVoiceMinutesOut(voiceMinutes) : null;
+  const minutesOut = isVoiceMinutesOut ? describeVoiceMinutesOut(voiceMinutes) : null;
+  const isMinutesOut = Boolean(minutesOut);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -122,6 +125,15 @@ function SimplifiedVoiceMode({
       window.clearTimeout(focusTimer);
     };
   }, [open]);
+
+  // Saldo zerado troca o botão central: o foco vai para o botão novo, senão
+  // cai no body dentro do diálogo.
+  const previousMinutesOutRef = useRef(isMinutesOut);
+  useEffect(() => {
+    if (previousMinutesOutRef.current === isMinutesOut) return;
+    previousMinutesOutRef.current = isMinutesOut;
+    if (open) primaryButtonRef.current?.focus();
+  }, [isMinutesOut, open]);
 
   if (!open) return null;
 
@@ -210,15 +222,25 @@ function SimplifiedVoiceMode({
         {stage.showWaves && !minutesOut ? <VoiceWave /> : response}
       </div>
 
-      {minutesOut ? (
-        <footer className={styles.controls}>
+      <footer className={styles.controls}>
+        {minutesOut ? (
           <div className={styles.control}>
             <button type="button" className={styles.secondaryButton} onClick={onOpenPlan} aria-label="Ver plano">
               <PhCrownIcon />
             </button>
             <span aria-hidden="true">Ver plano</span>
           </div>
+        ) : (
           <div className={styles.control}>
+            <button type="button" className={styles.secondaryButton} onClick={onWrite} aria-label="Escrever para a Uni">
+              <PhKeyboardIcon />
+            </button>
+            <span aria-hidden="true">Escrever</span>
+          </div>
+        )}
+        {/* Sem minutos, Escrever vira a ação principal. */}
+        <div className={styles.control}>
+          {minutesOut ? (
             <button
               ref={primaryButtonRef}
               type="button"
@@ -228,42 +250,21 @@ function SimplifiedVoiceMode({
             >
               <PhKeyboardIcon />
             </button>
-            <span className={styles.primaryLabel} aria-hidden="true">Escrever</span>
-          </div>
-          <div className={styles.control}>
+          ) : (
             <button
+              ref={primaryButtonRef}
               type="button"
-              className={styles.secondaryButton}
-              onClick={onOpenConversation}
-              aria-label="Ver a conversa completa"
+              className={styles.primaryButton}
+              data-action={view.action}
+              onClick={handleAction}
+              disabled={isActionDisabled}
+              aria-label={actionCopy.aria}
+              data-uni-voice-control
             >
-              <PhChatCircleTextIcon />
+              <PrimaryIcon />
             </button>
-            <span aria-hidden="true">Conversa</span>
-          </div>
-        </footer>
-      ) : (
-      <footer className={styles.controls}>
-        <div className={styles.control}>
-          <button type="button" className={styles.secondaryButton} onClick={onWrite} aria-label="Escrever para a Uni">
-            <PhKeyboardIcon />
-          </button>
-          <span aria-hidden="true">Escrever</span>
-        </div>
-        <div className={styles.control}>
-          <button
-            ref={primaryButtonRef}
-            type="button"
-            className={styles.primaryButton}
-            data-action={view.action}
-            onClick={handleAction}
-            disabled={isActionDisabled}
-            aria-label={actionCopy.aria}
-            data-uni-voice-control
-          >
-            <PrimaryIcon />
-          </button>
-          <span className={styles.primaryLabel} aria-hidden="true">{actionCopy.label}</span>
+          )}
+          <span className={styles.primaryLabel} aria-hidden="true">{minutesOut ? 'Escrever' : actionCopy.label}</span>
         </div>
         <div className={styles.control}>
           <button
@@ -277,7 +278,6 @@ function SimplifiedVoiceMode({
           <span aria-hidden="true">Conversa</span>
         </div>
       </footer>
-      )}
     </div>,
     document.body,
   );

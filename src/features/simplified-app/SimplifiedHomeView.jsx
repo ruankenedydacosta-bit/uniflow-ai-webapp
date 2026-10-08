@@ -643,24 +643,39 @@ function SimplifiedHomeView({
   const isRealtimeActive = realtime.isActive;
   const realtimeStatus = realtime.state.status;
 
-  // Tela 19: saldo de minutos de voz. Relido ao abrir a tela de voz e quando
-  // a conversa termina, que é quando o servidor cobra os minutos.
-  const { voiceMinutes, refresh: refreshVoiceMinutes } = useVoiceMinutes({ enabled: realtimeVoiceEnabled });
-  const isVoiceMinutesOut = voiceMinutes?.isOut === true;
+  // Tela 19: saldo de minutos de voz. O chip desconta a conversa em
+  // andamento, e o saldo é relido depois que ela termina (useVoiceMinutes).
+  const userId = user?.id ?? null;
+  const { voiceMinutes, refresh: refreshVoiceMinutes } = useVoiceMinutes({
+    enabled: realtimeVoiceEnabled,
+    userId,
+    sessionStartedAt: realtime.state.startedAt,
+    sessionEndedAt: realtime.state.endedAt,
+  });
+  // Recusa antes de conectar (ex.: minutos esgotados) não abre reserva: o
+  // saldo pode ser relido na hora.
+  const failedBeforeConnecting = realtimeStatus === REALTIME_STATUS.ERROR && realtime.state.startedAt === null;
   useEffect(() => {
-    if (realtimeStatus === REALTIME_STATUS.ENDED || realtimeStatus === REALTIME_STATUS.ERROR) {
-      refreshVoiceMinutes();
-    }
-  }, [realtimeStatus, refreshVoiceMinutes]);
+    if (failedBeforeConnecting) refreshVoiceMinutes();
+  }, [failedBeforeConnecting, refreshVoiceMinutes]);
+  // Com a conversa aberta ou conectando, a tela nunca troca para "sem
+  // minutos": ela perderia o botão de encerrar.
+  const isRealtimeLive = isRealtimeActive || realtimeStatus === REALTIME_STATUS.CONNECTING;
+  const isVoiceMinutesOut = voiceMinutes?.isOut === true && !isRealtimeLive;
   const voiceMinutesNotice = describeVoiceMinutesNotice(voiceMinutes);
+  const voiceMinutesNoticeKey = voiceMinutesNotice?.key ?? null;
   const [dismissedVoiceNoticeKey, setDismissedVoiceNoticeKey] = useState(null);
-  const showVoiceMinutesNotice = Boolean(voiceMinutesNotice)
-    && voiceMinutesNotice.key !== dismissedVoiceNoticeKey
-    && voiceMinutesNotice.key !== readDismissedVoiceMinutesNotice(user?.id);
+  const storedDismissedVoiceNoticeKey = useMemo(
+    () => (voiceMinutesNoticeKey ? readDismissedVoiceMinutesNotice(userId) : null),
+    [userId, voiceMinutesNoticeKey],
+  );
+  const showVoiceMinutesNotice = Boolean(voiceMinutesNoticeKey)
+    && voiceMinutesNoticeKey !== dismissedVoiceNoticeKey
+    && voiceMinutesNoticeKey !== storedDismissedVoiceNoticeKey;
 
   function handleDismissVoiceMinutesNotice() {
     setDismissedVoiceNoticeKey(voiceMinutesNotice.key);
-    writeDismissedVoiceMinutesNotice(user?.id, voiceMinutesNotice.key);
+    writeDismissedVoiceMinutesNotice(userId, voiceMinutesNotice.key);
   }
 
   function handleOpenVoicePlan() {
@@ -770,11 +785,13 @@ function SimplifiedHomeView({
   }
 
   // Sem minutos, a tela abre no estado de saldo zerado e não tenta conectar.
-  // O saldo é relido: se o plano mudou, o orb volta a abrir a conversa.
+  // O saldo é relido: se o plano mudou, a tela volta ao orb para conversar.
+  // Com saldo, não se relê aqui: a reserva da conversa que começa entraria
+  // no saldo como gasta.
   function handleOpenRealtimeVoiceMode() {
     setIsVoiceModeOpen(true);
-    refreshVoiceMinutes();
-    if (!isVoiceMinutesOut) beginRealtimeConversation();
+    if (isVoiceMinutesOut) refreshVoiceMinutes();
+    else beginRealtimeConversation();
   }
 
   // Declarado antes do efeito que lê a ref: efeitos rodam na ordem do código.
@@ -1022,6 +1039,7 @@ function SimplifiedHomeView({
           hasReply={voiceHasReply}
           getVoiceStream={realtime.getLocalStream}
           voiceMinutes={voiceMinutes}
+          isVoiceMinutesOut={isVoiceMinutesOut}
           onAction={handleRealtimeVoiceModeAction}
           onClose={handleCloseRealtimeVoiceMode}
           onWrite={handleLeaveRealtimeVoiceModeToChat}

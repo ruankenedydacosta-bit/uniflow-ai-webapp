@@ -279,7 +279,7 @@ test('na conversa em tempo real não existe Enviar: o botão central só encerra
 test('com a flag, a tela de voz abre a conversa em tempo real no mesmo toque e o botão central encerra', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   // A conexão continua no mesmo toque; só não acontece com o saldo zerado.
-  assert.match(home, /function handleOpenRealtimeVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*refreshVoiceMinutes\(\);\s*if \(!isVoiceMinutesOut\) beginRealtimeConversation\(\);\s*\}/);
+  assert.match(home, /function handleOpenRealtimeVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*if \(isVoiceMinutesOut\) refreshVoiceMinutes\(\);\s*else beginRealtimeConversation\(\);\s*\}/);
   assert.match(home, /if \(realtimeVoiceEnabled\) openVoiceModeRef\.current = handleOpenRealtimeVoiceMode;/);
   assert.match(home, /action === VOICE_MODE_ACTIONS\.END_CONVERSATION\) stopRealtime\('user'\)/);
   assert.match(home, /view=\{resolveRealtimeVoiceModeView\(realtime\.state\.status, \{ hasPendingDraft: voiceHasPendingDraft \}\)\}/);

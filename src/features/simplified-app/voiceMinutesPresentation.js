@@ -17,12 +17,15 @@ export function formatVoiceRenewalDate(value) {
   return RENEWAL_DATE_FORMATTER.format(date);
 }
 
-// Sem ciclo de minutos (sem assinatura, saldo indisponível), nada aparece e o
-// servidor continua decidindo ao abrir a conversa. "Acabou" é saldo zero de
-// verdade: meio minuto ainda abre uma conversa curta.
-export function resolveVoiceMinutes(balance) {
-  if (!balance || !(balance.secondsGranted > 0)) return null;
-  const remainingSeconds = Math.max(0, Number(balance.remainingSeconds) || 0);
+// Sem ciclo de minutos ou sem assinatura ativa (saldo indisponível), nada
+// aparece e o servidor continua decidindo ao abrir a conversa. "Acabou" é
+// saldo zero de verdade: meio minuto ainda abre uma conversa curta.
+// `spentSeconds` desconta a conversa em andamento, que o saldo lido antes
+// dela ainda não inclui.
+export function resolveVoiceMinutes(balance, { spentSeconds = 0 } = {}) {
+  if (!balance || !(balance.secondsGranted > 0) || balance.hasActiveSubscription !== true) return null;
+  const spent = Math.max(0, Number(spentSeconds) || 0);
+  const remainingSeconds = Math.max(0, (Number(balance.remainingSeconds) || 0) - spent);
   const minutes = Math.floor(remainingSeconds / 60);
   const isOut = remainingSeconds <= 0;
   const renewsOn = formatVoiceRenewalDate(balance.cycleEndsAt);
@@ -35,16 +38,19 @@ export function resolveVoiceMinutes(balance) {
   };
 }
 
+function describeRemainingMinutes(minutes) {
+  if (minutes === 0) return 'Resta menos de 1 minuto de voz este mês';
+  if (minutes === 1) return 'Resta 1 minuto de voz este mês';
+  return `Restam ${minutes} minutos de voz este mês`;
+}
+
 // Chip no topo da tela de voz, ao lado de Fechar.
 export function describeVoiceMinutesChip(voiceMinutes) {
   if (!voiceMinutes || voiceMinutes.isOut) return null;
   const { minutes } = voiceMinutes;
-  if (minutes === 0) {
-    return { label: 'Menos de 1 min', title: 'Resta menos de 1 minuto de voz este mês', isLow: true };
-  }
   return {
-    label: `${minutes} min restantes`,
-    title: minutes === 1 ? 'Resta 1 minuto de voz este mês' : `Restam ${minutes} minutos de voz este mês`,
+    label: minutes === 0 ? 'Menos de 1 min' : `${minutes} min restantes`,
+    title: describeRemainingMinutes(minutes),
     isLow: voiceMinutes.isLow,
   };
 }
@@ -75,15 +81,9 @@ export function describeVoiceMinutesNotice(voiceMinutes) {
       body: `${renewal} Até lá, você pode escrever para a Uni.`,
     };
   }
-  const { minutes } = voiceMinutes;
-  const title = minutes === 0
-    ? 'Resta menos de 1 minuto de voz este mês'
-    : minutes === 1
-      ? 'Resta 1 minuto de voz este mês'
-      : `Restam ${minutes} minutos de voz este mês`;
   return {
     key: `${cycleKey}:baixo`,
-    title,
+    title: describeRemainingMinutes(voiceMinutes.minutes),
     body: `${renewal} Quando acabarem, você ainda pode escrever para a Uni.`,
   };
 }
