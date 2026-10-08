@@ -54,6 +54,8 @@ const PROVEDOR_POR_DOMINIO = [
 const PROVEDOR_POR_PACOTE = [
   [/from ['"]@sentry\//, 'Sentry'],
   [/from ['"](npm:)?web-push/, 'Serviços de notificação do navegador (Google, Apple e Mozilla)'],
+  // Leitura do mês (#122): o SDK chama api.anthropic.com sem a URL no código.
+  [/from ['"](npm:)?@anthropic-ai\/sdk/, 'Anthropic'],
 ];
 const SEM_DADO_PESSOAL = [
   /^docs\.asaas\.com$/, // links de documentação em comentários

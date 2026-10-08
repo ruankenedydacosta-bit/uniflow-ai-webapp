@@ -11,7 +11,7 @@ import { SUPPORT_WHATSAPP_NUMBER } from '../simplified-app/simplifiedSupportConf
 
 export const PRIVACIDADE_ROUTE = '/privacidade';
 
-export const PRIVACIDADE_ATUALIZADA_EM = '7 de outubro de 2026';
+export const PRIVACIDADE_ATUALIZADA_EM = '8 de outubro de 2026';
 
 export const CONTATO_PRIVACIDADE = Object.freeze({
   email: 'contato@uniflow.ai',
@@ -46,6 +46,11 @@ export const PROVEDORES = Object.freeze([
     nome: 'OpenAI',
     recebe: 'O que você escreve ou fala para a Uni, o histórico recente da conversa, nomes de contas e categorias, um resumo dos seus números do mês, seu nome preferido ou primeiro nome e a pronúncia do nome na conversa por voz, e o áudio da sua voz.',
     finalidade: 'Entender seus pedidos, gerar as respostas da Uni, transcrever sua voz e gerar a voz da Uni.',
+  },
+  {
+    nome: 'Anthropic',
+    recebe: 'Os números do mês por categoria de saída (gasto, gasto do mês anterior, média e teto) e o nome de cada categoria. Nunca a descrição dos registros.',
+    finalidade: 'Escrever as frases da Leitura do mês, na tela inicial.',
   },
   {
     nome: 'ElevenLabs',

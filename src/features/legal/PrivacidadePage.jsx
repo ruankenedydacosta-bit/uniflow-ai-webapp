@@ -158,9 +158,18 @@ function PrivacidadePage() {
             o microfone depois que você permite e toca para falar.
           </p>
           <p>
+            As frases da Leitura do mês, na tela inicial, são escritas pela Uni com modelos da
+            Anthropic. Para isso, o app envia à Anthropic só os números do mês por categoria: quanto você
+            gastou em cada uma, quanto gastou no mês anterior, a média dos últimos meses e o teto que
+            você definiu, junto com o nome da categoria. A descrição dos seus registros não é enviada.
+          </p>
+          <p>
             A UniFlow AI não usa seus dados para treinar modelos de inteligência artificial. Pelos
             termos da API da OpenAI, os dados enviados pela API também não são usados para treinar os
             modelos da OpenAI. A OpenAI pode guardá-los por um período limitado para monitorar abuso.
+            O mesmo vale para a Anthropic: pelos termos comerciais da API, os dados enviados não são
+            usados para treinar os modelos dela, e ela pode guardá-los por um período limitado para
+            segurança e monitoramento de abuso.
           </p>
           <p>
             A Uni pode errar. Confira os valores antes de confirmar um registro.

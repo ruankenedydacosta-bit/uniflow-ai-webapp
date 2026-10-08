@@ -80,6 +80,9 @@ function buildComparisonWindow(now) {
   const averageFrom = new Date(year, monthIndex - HOME_MONTH_AVERAGE_MONTHS, 1);
 
   return {
+    // Dia de hoje e tamanho do mês: a Uni usa para avaliar o ritmo (#122).
+    day,
+    daysInMonth: new Date(year, monthIndex + 1, 0).getDate(),
     averageFrom: toDateKey(averageFrom.getFullYear(), averageFrom.getMonth(), 1),
     averageTo: toDateKey(previousDate.getFullYear(), previousDate.getMonth(), previousLastDay),
     currentLabel: describeRange(day, MONTH_NAME_FORMATTER.format(now)),

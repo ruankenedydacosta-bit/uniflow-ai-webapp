@@ -263,6 +263,8 @@ test('fatos trazem gasto, média, teto e orçamento por categoria', () => {
   const alim = facts.rows.find((row) => row.id === 'alim');
   const lazer = facts.rows.find((row) => row.id === 'lazer');
 
+  assert.equal(facts.period.day, 8);
+  assert.equal(facts.period.daysInMonth, 31);
   assert.equal(alim.average, 750);
   assert.deepEqual(alim.budget, { amount: 750, source: BUDGET_SOURCES.AVERAGE });
   assert.deepEqual(lazer.budget, { amount: 400, source: BUDGET_SOURCES.LIMIT });
