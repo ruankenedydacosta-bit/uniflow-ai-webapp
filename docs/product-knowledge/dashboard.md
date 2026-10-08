@@ -12,6 +12,16 @@ Tela inicial com um resumo do estado financeiro do espaço ativo e sugestões de
 
 A tela mostra: saudação personalizada; um resumo de "clareza financeira" (situação atual, previsão, principal sinal de atenção); uma recomendação de próxima ação; até 3 sinais de atenção (ex.: meta atrasada, mês com resultado negativo); um grid de métricas financeiras; um checklist de ativação para usuários novos; um gráfico de receitas x despesas; carrosséis de contas e categorias; uma prévia da Visão de Futuro; e atalhos de navegação rápida.
 
+### Leitura do mês (Home simplificada)
+
+Na Home de `/app/home`, logo abaixo da fala da Uni, o bloco "Leitura do mês" mostra até três frases sobre as saídas por categoria. A comparação é sempre com o mês anterior até o mesmo dia (no dia 8, de 1 a 8 de cada mês). A ordem é:
+
+1. a categoria que mais subiu;
+2. a categoria com mais saídas no mês;
+3. a categoria que mais caiu.
+
+Subida ou queda só aparece se for de pelo menos R$ 50 e 20%. Tocar numa frase abre o Financeiro no histórico, filtrado pela categoria. Sem saídas no mês, o bloco pede para registrar uma.
+
 ## Diferenças PF/PJ
 
 O conteúdo reflete os dados do espaço ativo (Pessoal ou Empresa) — trocar de espaço atualiza todo o dashboard.

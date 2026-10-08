@@ -15,6 +15,7 @@ import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.
 import { PwaInstallExperience, usePwaAutoUpdateBlock } from '../pwa-install/index.js';
 import SimplifiedHomeAgenda from './SimplifiedHomeAgenda.jsx';
 import SimplifiedHomeFinancialGraph from './SimplifiedHomeFinancialGraph.jsx';
+import SimplifiedHomeMonthReading from './SimplifiedHomeMonthReading.jsx';
 import {
   isVoiceErrorState,
   resolveBargeInPlan,
@@ -1023,6 +1024,8 @@ function SimplifiedHomeView({
 
       <PwaInstallExperience />
       {isVoiceModeOpen ? null : compactResponse}
+
+      <SimplifiedHomeMonthReading />
 
       <SimplifiedHomeAgenda />
 

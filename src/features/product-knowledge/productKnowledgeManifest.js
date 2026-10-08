@@ -128,7 +128,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A Home simplificada (rota /app/home) mostra a saudação, a interação principal com a Uni e a resposta compacta mais recente. A barra inferior permite seguir para Registros ou Conta. A Uni usa o espaço Pessoal/Empresa ativo e não deve cruzar dados entre espaços.',
+      'A Home simplificada (rota /app/home) mostra a saudação, a interação principal com a Uni e a resposta compacta mais recente. Logo abaixo fica a Leitura do mês: até três frases sobre as saídas por categoria, comparando o mês atual com o mês anterior até o mesmo dia. Aparecem, nesta ordem, a categoria que mais subiu, a categoria com mais saídas no mês e a categoria que mais caiu. Só entra subida ou queda de pelo menos R$ 50 e 20%. Tocar numa frase abre o Financeiro no histórico, filtrado pela categoria. Ainda não existe orçamento por categoria. A barra inferior permite seguir para Registros ou Conta. A Uni usa o espaço Pessoal/Empresa ativo e não deve cruzar dados entre espaços.',
   },
   {
     id: 'financial-management',
