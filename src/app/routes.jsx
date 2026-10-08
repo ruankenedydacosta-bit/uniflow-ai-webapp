@@ -29,6 +29,7 @@ import {
   SimplifiedAccountPage,
   SimplifiedAccountSubpagePlaceholder,
   SimplifiedEditProfilePage,
+  SimplifiedGoogleAgendaPage,
   SimplifiedMyAccountsPage,
   SimplifiedNotificationsPage,
   SimplifiedPaymentHistoryPage,
@@ -350,6 +351,15 @@ export const appRoutes = [
     simplified: true,
     element: <PlatformAdminPage />,
   },
+  // Épico #98 (#99): Google Agenda, fora do menu. O callback do OAuth volta
+  // para esta rota com ?google_agenda=.
+  {
+    path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR].path,
+    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR].title,
+    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR].title,
+    simplified: true,
+    element: <SimplifiedGoogleAgendaPage />,
+  },
   // ETAPA 4 (Fase 8): demais rotas internas de Conta -- placeholders
   // honestos e consistentes (título + botão voltar + mensagem curta),
   // nunca uma tela em branco. A construção completa de cada uma acontece
@@ -368,6 +378,7 @@ export const appRoutes = [
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path
       && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].path
+      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR].path
     ))
     .map((subroute) => ({
       path: subroute.path,

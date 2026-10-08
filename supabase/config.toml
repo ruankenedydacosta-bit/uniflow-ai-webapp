@@ -37,3 +37,19 @@ verify_jwt = true
 
 [functions.billing-webhook]
 verify_jwt = false
+
+# Google Agenda (épico #98). connect, confirm e disconnect exigem sessão. O callback é
+# chamado pelo Google, sem JWT do Supabase: quem autentica é o state de uso
+# único gravado pelo connect, mais o PKCE.
+[functions.google-calendar-connect]
+verify_jwt = true
+
+[functions.google-calendar-oauth-callback]
+verify_jwt = false
+
+[functions.google-calendar-disconnect]
+verify_jwt = true
+
+# Ativa a conexão deixada pendente pelo callback, só para quem iniciou o fluxo.
+[functions.google-calendar-confirm]
+verify_jwt = true
