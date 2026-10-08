@@ -12,6 +12,9 @@
 import { ESQUEMA } from './contrato.js';
 
 export const MAX_TOKENS_SAIDA = 1024;
+// O Haiku 5.5 pensa antes de responder, e o pensamento conta em max_tokens:
+// com o teto da OpenAI a resposta parava no meio do JSON ('cortada').
+export const MAX_TOKENS_SAIDA_ANTHROPIC = 4096;
 const NOME_ESQUEMA = 'uni_interpretacao';
 
 function lerJson(texto) {
@@ -36,15 +39,15 @@ function motivoDoErro(erro) {
 }
 
 // Claude Messages API com saída estruturada (output_config.format). O system
-// é fixo e vai com cache_control: hoje ele fica abaixo do mínimo cacheável do
-// Haiku e não cacheia, mas passa a cachear sozinho se crescer.
+// é fixo e vai com cache_control: cacheia quando passa do mínimo cacheável do
+// modelo (512 tokens no Haiku 5.5). Sem temperature: os modelos atuais recusam
+// valor fora do padrão com 400.
 export async function interpretarComAnthropic({ cliente, modelo, instrucoes, mensagem, sinal }) {
   let resposta;
   try {
     resposta = await cliente.messages.create({
       model: modelo,
-      max_tokens: MAX_TOKENS_SAIDA,
-      temperature: 0,
+      max_tokens: MAX_TOKENS_SAIDA_ANTHROPIC,
       system: [{ type: 'text', text: instrucoes, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: mensagem }],
       output_config: { format: { type: 'json_schema', schema: ESQUEMA } },

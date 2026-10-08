@@ -4,7 +4,7 @@
 // (avaliar-regras-atuais.js). Cada frase custa uma chamada ao provedor.
 //
 // Uso:
-//   npm run uni:eval:modelo -- --provedor anthropic --modelo claude-haiku-4-5
+//   npm run uni:eval:modelo -- --provedor anthropic --modelo claude-haiku-5-5
 //   npm run uni:eval:modelo -- --provedor openai --modelo gpt-5.4-mini
 // Opções: --conjunto ajuste|reservado|todos (padrão todos; o reservado só
 //   serve para medir no fim, nunca para ajustar o prompt), --erros (só casos
