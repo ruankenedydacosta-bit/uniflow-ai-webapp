@@ -600,9 +600,20 @@ function TransactionList({
 // Orçamento da categoria filtrada no histórico (#121): o teto definido ou, sem
 // ele, o aviso de que a Uni usa a média. O botão só aparece para quem pode
 // editar o espaço.
-function CategoryBudgetCard({ category, monthLabel, spent, limit, canEdit, onEdit }) {
-  let detail = `Sem teto, a Uni compara ${category.name} com a média dos últimos 3 meses.`;
-  if (limit) {
+function CategoryBudgetCard({ category, monthLabel, spent, limit, status, canEdit, onEdit, onRetry }) {
+  let value = limit ? formatCurrency(limit) : 'Sem teto';
+  let detail = `A Uni usa a média de ${category.name} nos últimos 3 meses, quando houver histórico.`;
+  let action = canEdit ? { label: limit ? 'Alterar' : 'Definir teto', onClick: onEdit } : null;
+
+  if (status === 'loading') {
+    value = '...';
+    detail = 'Carregando o teto.';
+    action = null;
+  } else if (status === 'error') {
+    value = '...';
+    detail = 'Não foi possível carregar o teto.';
+    action = { label: 'Tentar de novo', onClick: onRetry };
+  } else if (limit) {
     const left = limit - spent;
     detail = left >= 0
       ? `Em ${monthLabel}: ${formatCurrency(spent)}. Restam ${formatCurrency(left)}.`
@@ -610,15 +621,15 @@ function CategoryBudgetCard({ category, monthLabel, spent, limit, canEdit, onEdi
   }
 
   return (
-    <section className={styles.budgetCard} aria-label={`Orçamento de ${category.name}`}>
+    <section className={styles.budgetCard} aria-label={`Orçamento de ${category.name}`} aria-busy={status === 'loading'}>
       <div className={styles.budgetText}>
         <span>Orçamento mensal</span>
-        <strong>{limit ? formatCurrency(limit) : 'Sem teto'}</strong>
+        <strong>{value}</strong>
         <small>{detail}</small>
       </div>
-      {canEdit ? (
-        <OutlineButton variant="secondary" className={styles.budgetButton} onClick={onEdit}>
-          {limit ? 'Alterar' : 'Definir teto'}
+      {action ? (
+        <OutlineButton variant="secondary" className={styles.budgetButton} onClick={action.onClick}>
+          {action.label}
         </OutlineButton>
       ) : null}
     </section>
@@ -699,8 +710,9 @@ function SimplifiedRecordsPage() {
       categoryState.refresh(),
       transactionState.refresh(),
       balanceState.refresh(),
+      budgetState.refresh(),
     ]);
-  }, [accountState, balanceState, categoryState, transactionState]);
+  }, [accountState, balanceState, budgetState, categoryState, transactionState]);
 
   useEffect(() => {
     const handleDataChanged = (event) => {
@@ -710,11 +722,12 @@ function SimplifiedRecordsPage() {
         categoryState.refresh(),
         transactionState.refresh(),
         balanceState.refresh(),
+        budgetState.refresh(),
       ]);
     };
     window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
     return () => window.removeEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
-  }, [accountState, balanceState, categoryState, transactionState]);
+  }, [accountState, balanceState, budgetState, categoryState, transactionState]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -774,6 +787,8 @@ function SimplifiedRecordsPage() {
   const canCreateCategory = workspaceRole.canUpdate === true
     && !workspaceRole.isLoading
     && !categoryState.isMutating;
+  let budgetCardStatus = 'ready';
+  if (!budgetState.hasLoaded) budgetCardStatus = budgetState.error ? 'error' : 'loading';
   const canManageBudget = workspaceRole.canUpdate === true
     && !workspaceRole.isLoading
     && budgetState.hasLoaded;
@@ -981,8 +996,10 @@ function SimplifiedRecordsPage() {
                       monthLabel={month.label}
                       spent={categorySummaries.find((row) => row.id === filteredBudgetCategory.id)?.amount ?? 0}
                       limit={filteredBudgetLimit}
+                      status={budgetCardStatus}
                       canEdit={canManageBudget}
                       onEdit={() => setBudgetModalOpen(true)}
+                      onRetry={() => void budgetState.refresh()}
                     />
                   ) : null}
                   <TransactionList

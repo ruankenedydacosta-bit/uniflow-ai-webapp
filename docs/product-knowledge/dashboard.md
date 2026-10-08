@@ -20,10 +20,10 @@ Na Home de `/app/home`, logo abaixo da fala da Uni, o bloco "Leitura do mês" mo
 2. a categoria que já usou 80% ou mais do orçamento;
 3. a categoria que mais subiu em relação ao mês anterior;
 4. a categoria com mais saídas no mês;
-5. em quantas categorias você está dentro do orçamento;
-6. a categoria que mais caiu.
+5. a categoria que mais caiu;
+6. em quantas categorias você está dentro do orçamento.
 
-O orçamento de uma categoria é o teto mensal que você definiu. Sem teto, a Uni usa a média das saídas da categoria nos 3 meses anteriores. A média conta só os meses em que houve alguma saída, e média abaixo de R$ 50 não vira orçamento.
+O orçamento de uma categoria é o teto mensal que você definiu. Sem teto, a Uni usa a média das saídas da categoria nos 3 meses anteriores, quando houver histórico. A média conta só os meses em que houve alguma saída, e média abaixo de R$ 50 não vira orçamento.
 
 A comparação com o mês anterior é sempre até o mesmo dia (no dia 8, de 1 a 8 de cada mês). Subida ou queda só aparece se for de pelo menos R$ 50 e 20%. Saída sem categoria conta no total do mês, mas não vira frase. Tocar numa frase abre o Financeiro no histórico, filtrado pela categoria. Sem saídas no mês até hoje, o bloco avisa que ainda não há saídas.
 

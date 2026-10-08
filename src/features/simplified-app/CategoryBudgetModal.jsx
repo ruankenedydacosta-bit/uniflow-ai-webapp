@@ -50,7 +50,7 @@ function CategoryBudgetModal({ open, categoryName, currentLimit, onSave, onRemov
       closeOnOverlayClick={!isBusy}
       closeOnEsc={!isBusy}
       title={`Orçamento de ${categoryName}`}
-      description={`Defina quanto você quer gastar com ${categoryName} por mês. Sem teto, a Uni compara com a média dos últimos 3 meses.`}
+      description={`Defina quanto você quer gastar com ${categoryName} por mês. Sem teto, a Uni usa a média dos últimos 3 meses, quando houver histórico.`}
       size="sm"
       className={styles.balanceDialog}
       overlayClassName={styles.darkOverlay}

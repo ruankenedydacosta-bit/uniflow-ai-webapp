@@ -54,6 +54,9 @@ export async function saveCategoryBudget(workspaceId, categoryId, monthlyLimit) 
   if (!isValidUuid(workspaceId) || !isValidUuid(categoryId)) {
     return createValidationResult('Categoria inválida.');
   }
+  if (Number(monthlyLimit) > MAX_MONTHLY_LIMIT) {
+    return createValidationResult('O teto pode ser de até R$ 999.999.999.999,99.');
+  }
   const amount = normalizeMonthlyLimit(monthlyLimit);
   if (amount === null) return createValidationResult('Informe um valor maior que zero.');
 
@@ -79,7 +82,11 @@ export async function saveCategoryBudget(workspaceId, categoryId, monthlyLimit) 
     .single();
   if (inserted.error?.code === '23505') {
     const retried = await update();
-    return createResult(retried.data?.[0] ?? null, retried.error);
+    if (retried.error || retried.data?.length) return createResult(retried.data?.[0] ?? null, retried.error);
+    return createResult(null, {
+      code: 'CATEGORY_BUDGET_CONFLICT',
+      message: 'O teto mudou em outro aparelho. Tente salvar de novo.',
+    });
   }
   return createResult(inserted.data ?? null, inserted.error);
 }
@@ -95,5 +102,5 @@ export async function deleteCategoryBudget(workspaceId, categoryId) {
     .delete()
     .eq('workspace_id', workspaceId)
     .eq('category_id', categoryId);
-  return createResult(null, error);
+  return createResult(error ? null : { workspace_id: workspaceId, category_id: categoryId }, error);
 }

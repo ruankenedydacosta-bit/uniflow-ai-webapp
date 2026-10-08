@@ -872,7 +872,7 @@
 
 .budgetText span {
   color: var(--uf-app-text-3);
-  font-size: 12px;
+  font-size: var(--uf-text-micro-size);
 }
 
 .budgetText strong {
@@ -884,7 +884,7 @@
 
 .budgetText small {
   color: var(--uf-app-text-3);
-  font-size: 12px;
+  font-size: var(--uf-text-micro-size);
   line-height: 1.45;
   text-wrap: pretty;
 }

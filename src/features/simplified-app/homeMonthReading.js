@@ -80,8 +80,6 @@ function buildComparisonWindow(now) {
   const averageFrom = new Date(year, monthIndex - HOME_MONTH_AVERAGE_MONTHS, 1);
 
   return {
-    day,
-    daysInMonth: new Date(year, monthIndex + 1, 0).getDate(),
     averageFrom: toDateKey(averageFrom.getFullYear(), averageFrom.getMonth(), 1),
     averageTo: toDateKey(previousDate.getFullYear(), previousDate.getMonth(), previousLastDay),
     currentLabel: describeRange(day, MONTH_NAME_FORMATTER.format(now)),
@@ -238,8 +236,8 @@ function joinNames(names) {
  *   2. a categoria mais perto do orçamento (80% ou mais);
  *   3. a categoria que mais subiu em relação ao mês anterior;
  *   4. a categoria com mais saídas no mês;
- *   5. quantas categorias estão dentro do orçamento;
- *   6. a categoria que mais caiu.
+ *   5. a categoria que mais caiu;
+ *   6. quantas categorias estão dentro do orçamento.
  * Uma categoria aparece uma vez só, e ficam as três primeiras que existirem.
  */
 export function buildHomeMonthReading({ transactions = [], categories = [], budgets = [], now = new Date() } = {}) {
@@ -302,6 +300,17 @@ export function buildHomeMonthReading({ transactions = [], categories = [], budg
     ]);
   }
 
+  const decrease = pick(
+    comparable.filter((row) => row.delta < 0 && isSignificantChange(row.delta, row.previousAmount)),
+    (left, right) => left.delta - right.delta,
+  );
+  if (decrease) {
+    push(HOME_MONTH_READING_KINDS.DECREASE, decrease, [
+      `Você gastou ${formatCurrency(-decrease.delta)} a menos com ${decrease.name} que no mesmo período de ${period.previousMonthName}.`,
+      comparisonDetail(decrease),
+    ]);
+  }
+
   // Resumo do orçamento: só com duas ou mais categorias com orçamento, senão
   // repetiria a frase da própria categoria.
   if (budgeted.length >= 2) {
@@ -312,17 +321,6 @@ export function buildHomeMonthReading({ transactions = [], categories = [], budg
       outside.length === 0
         ? 'Até agora você tem ido bem no seu orçamento.'
         : `Fora do orçamento: ${joinNames(outside.map((row) => row.name))}.`,
-    ]);
-  }
-
-  const decrease = pick(
-    comparable.filter((row) => row.delta < 0 && isSignificantChange(row.delta, row.previousAmount)),
-    (left, right) => left.delta - right.delta,
-  );
-  if (decrease) {
-    push(HOME_MONTH_READING_KINDS.DECREASE, decrease, [
-      `Você gastou ${formatCurrency(-decrease.delta)} a menos com ${decrease.name} que no mesmo período de ${period.previousMonthName}.`,
-      comparisonDetail(decrease),
     ]);
   }
 

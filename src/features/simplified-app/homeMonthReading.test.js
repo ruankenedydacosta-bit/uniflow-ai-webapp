@@ -40,7 +40,7 @@ test('período busca os 3 meses da média e o mês corrente', () => {
   );
 });
 
-test('sem categoria perto do orçamento, ordena alta, maior categoria e resumo', () => {
+test('sem categoria perto do orçamento, ordena alta, maior categoria e queda', () => {
   const transactions = [
     expense('alim', 812, '2026-10-05'),
     expense('alim', 952, '2026-09-04'),
@@ -60,14 +60,13 @@ test('sem categoria perto do orçamento, ordena alta, maior categoria e resumo',
   assert.deepEqual(readings.map((reading) => [reading.kind, reading.categoryId]), [
     [HOME_MONTH_READING_KINDS.INCREASE, 'lazer'],
     [HOME_MONTH_READING_KINDS.TOP, 'alim'],
-    [HOME_MONTH_READING_KINDS.ON_TRACK, null],
+    [HOME_MONTH_READING_KINDS.DECREASE, 'transp'],
   ]);
   assert.match(readings[0].title, /R\$\s90,00 a mais com Lazer que no mesmo período de setembro\./);
   assert.match(readings[0].detail, /^De 1 a 8 de outubro: R\$\s320,00\. De 1 a 8 de setembro: R\$\s230,00\.$/);
   assert.match(readings[1].title, /^Você gastou R\$\s812,00 com Alimentação de 1 a 8 de outubro\.$/);
   assert.match(readings[1].detail, /^R\$\s140,00 a menos que no mesmo período de setembro\.$/);
-  assert.equal(readings[2].title, 'Você está dentro do orçamento em 3 de 3 categorias.');
-  assert.equal(readings[2].detail, 'Até agora você tem ido bem no seu orçamento.');
+  assert.match(readings[2].title, /R\$\s140,00 a menos com Transporte que no mesmo período de setembro\./);
 });
 
 test('compara só até o mesmo dia do mês anterior', () => {
@@ -264,10 +263,22 @@ test('fatos trazem gasto, média, teto e orçamento por categoria', () => {
   const alim = facts.rows.find((row) => row.id === 'alim');
   const lazer = facts.rows.find((row) => row.id === 'lazer');
 
-  assert.equal(facts.period.day, 8);
-  assert.equal(facts.period.daysInMonth, 31);
   assert.equal(alim.average, 750);
   assert.deepEqual(alim.budget, { amount: 750, source: BUDGET_SOURCES.AVERAGE });
   assert.deepEqual(lazer.budget, { amount: 400, source: BUDGET_SOURCES.LIMIT });
   assert.equal(lazer.usedShare, 0);
+});
+
+test('com espaço sobrando, o resumo diz que está tudo dentro do orçamento', () => {
+  const transactions = [
+    expense('alim', 300, '2026-10-03'),
+    expense('alim', 1000, '2026-09-20'),
+    expense('lazer', 500, '2026-09-20'),
+  ];
+
+  const { readings } = buildHomeMonthReading({ transactions, categories: CATEGORIES, now: NOW });
+  const summary = readings.find((reading) => reading.kind === HOME_MONTH_READING_KINDS.ON_TRACK);
+
+  assert.equal(summary.title, 'Você está dentro do orçamento em 2 de 2 categorias.');
+  assert.equal(summary.detail, 'Até agora você tem ido bem no seu orçamento.');
 });

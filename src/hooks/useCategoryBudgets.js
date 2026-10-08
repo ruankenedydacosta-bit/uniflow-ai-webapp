@@ -7,42 +7,38 @@ import {
 import { isSupabaseConfigured } from '../services/supabaseClient.js';
 
 const EMPTY_ARRAY = [];
+const NOT_LOADED = Object.freeze({ workspaceId: null, budgets: EMPTY_ARRAY, error: null, ok: false });
 
 // Tetos mensais por categoria do espaço (#121). Sem Supabase (modo demo), a
 // lista fica vazia e salvar devolve o erro do serviço.
+//
+// O resultado fica guardado com o espaço que o pediu: ao trocar de espaço, os
+// tetos e o erro anteriores deixam de valer na hora, e hasLoaded volta a
+// false até a resposta do espaço novo. Recarregar o mesmo espaço mantém a
+// lista na tela.
 export function useCategoryBudgets({ workspaceId } = {}) {
-  const [budgets, setBudgets] = useState(EMPTY_ARRAY);
-  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [loaded, setLoaded] = useState(NOT_LOADED);
   const [isMutating, setIsMutating] = useState(false);
-  const [error, setError] = useState(null);
-  // Primeira resposta já chegou. Recarregar volta isLoading a true, e quem
-  // monta tela com os tetos não deve piscar o estado "sem teto" nesse meio.
-  const [hasLoaded, setHasLoaded] = useState(!isSupabaseConfigured);
   const requestIdRef = useRef(0);
   // Trava síncrona contra duplo toque em Salvar (mesmo padrão de useTransactions).
   const mutationRef = useRef(false);
 
   const refresh = useCallback(async () => {
     const requestId = ++requestIdRef.current;
-    if (!isSupabaseConfigured) {
-      setBudgets(EMPTY_ARRAY);
-      setIsLoading(false);
-      return null;
-    }
-    if (!workspaceId) {
-      setBudgets(EMPTY_ARRAY);
-      setError({ code: 'WORKSPACE_REQUIRED', message: 'Workspace financeiro ausente.' });
-      setIsLoading(false);
-      return null;
-    }
+    if (!isSupabaseConfigured || !workspaceId) return null;
 
-    setIsLoading(true);
     const result = await listCategoryBudgets(workspaceId);
     if (requestId !== requestIdRef.current) return null;
-    setBudgets(result.data ?? EMPTY_ARRAY);
-    setError(result.error);
-    setIsLoading(false);
-    if (!result.error) setHasLoaded(true);
+    setLoaded((current) => {
+      // Falha ao recarregar o mesmo espaço não apaga os tetos já na tela.
+      const keepCurrent = Boolean(result.error) && current.workspaceId === workspaceId && current.ok;
+      return {
+        workspaceId,
+        budgets: keepCurrent ? current.budgets : (result.data ?? EMPTY_ARRAY),
+        error: result.error,
+        ok: !result.error || keepCurrent,
+      };
+    });
     return result;
   }, [workspaceId]);
 
@@ -62,13 +58,19 @@ export function useCategoryBudgets({ workspaceId } = {}) {
     setIsMutating(true);
     try {
       const result = await run();
-      if (!result.error) setBudgets((current) => apply(current, result.data));
+      if (!result.error && result.data !== null) {
+        setLoaded((current) => (
+          current.workspaceId === workspaceId
+            ? { ...current, budgets: apply(current.budgets, result.data) }
+            : current
+        ));
+      }
       return result;
     } finally {
       mutationRef.current = false;
       setIsMutating(false);
     }
-  }, []);
+  }, [workspaceId]);
 
   const saveBudget = useCallback((categoryId, monthlyLimit) => mutate(
     () => saveCategoryBudget(workspaceId, categoryId, monthlyLimit),
@@ -80,5 +82,17 @@ export function useCategoryBudgets({ workspaceId } = {}) {
     (current) => current.filter((budget) => budget.category_id !== categoryId),
   ), [mutate, workspaceId]);
 
-  return { budgets, error, hasLoaded, isLoading, isMutating, refresh, saveBudget, removeBudget };
+  const isCurrent = Boolean(workspaceId) && loaded.workspaceId === workspaceId;
+  const hasLoaded = !isSupabaseConfigured || (isCurrent && loaded.ok);
+
+  return {
+    budgets: isCurrent ? loaded.budgets : EMPTY_ARRAY,
+    error: isCurrent ? loaded.error : null,
+    hasLoaded,
+    isLoading: isSupabaseConfigured && Boolean(workspaceId) && !isCurrent,
+    isMutating,
+    refresh,
+    saveBudget,
+    removeBudget,
+  };
 }
