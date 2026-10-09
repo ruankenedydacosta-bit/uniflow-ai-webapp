@@ -30,3 +30,27 @@ export function escoposQueFaltam(concedidos) {
 export function temTodosOsEscopos(concedidos) {
   return escoposQueFaltam(concedidos).length === 0;
 }
+
+// Motivos de um erro da Calendar API: `error.errors[].reason` (formato v3) e
+// o `reason` do ErrorInfo em `error.details`. Serve para o log; não traz token.
+export function motivosDoErroDoGoogle(json) {
+  const erro = json?.error;
+  const itens = [
+    ...(Array.isArray(erro?.errors) ? erro.errors : []),
+    ...(Array.isArray(erro?.details) ? erro.details : []),
+  ];
+  return [...new Set(itens.map((item) => item?.reason).filter((motivo) => typeof motivo === 'string' && motivo))];
+}
+
+// O Google devolve 403 por vários motivos: escopo faltando, Calendar API
+// desativada no projeto (accessNotConfigured), cota estourada
+// (rateLimitExceeded) e outros. Só o primeiro pede que a pessoa conecte de
+// novo; os demais são configuração ou falha passageira. O cabeçalho
+// WWW-Authenticate com insufficient_scope cobre o 403 sem corpo.
+const MOTIVOS_DE_ESCOPO = new Set(['insufficientPermissions', 'ACCESS_TOKEN_SCOPE_INSUFFICIENT']);
+
+export function faltouEscopo(status, json, wwwAuthenticate = null) {
+  if (status !== 403) return false;
+  if (typeof wwwAuthenticate === 'string' && /insufficient_scope/i.test(wwwAuthenticate)) return true;
+  return motivosDoErroDoGoogle(json).some((motivo) => MOTIVOS_DE_ESCOPO.has(motivo));
+}

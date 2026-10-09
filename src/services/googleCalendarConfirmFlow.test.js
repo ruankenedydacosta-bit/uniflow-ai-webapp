@@ -141,6 +141,19 @@ function instalarFetch({ db, google }) {
     }
     if (url.host === 'www.googleapis.com') {
       const caminho = url.pathname.replace('/calendar/v3', '');
+      const falha = google.falhas?.[caminho];
+      if (falha) {
+        // Corpo no formato que a Calendar API devolve: errors[] (v3) e ErrorInfo em details.
+        const info = { insufficientPermissions: 'ACCESS_TOKEN_SCOPE_INSUFFICIENT', accessNotConfigured: 'SERVICE_DISABLED', rateLimitExceeded: 'RATE_LIMIT_EXCEEDED' }[falha];
+        return resposta(403, {
+          error: {
+            code: 403,
+            status: 'PERMISSION_DENIED',
+            errors: [{ domain: 'global', reason: falha }],
+            details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: info, domain: 'googleapis.com' }],
+          },
+        });
+      }
       if (caminho === '/users/me/calendarList/primary') return resposta(200, google.calendars[0]);
       if (caminho === '/users/me/calendarList') return resposta(200, { items: google.calendars });
       if (caminho === '/calendars' && metodo === 'POST') {
@@ -359,4 +372,44 @@ test('troca de conta confirmada: calendários da conta anterior saem e o token d
   assert.equal(ambiente.db.secrets.get(id), 'RT-conta-b');
   assert.deepEqual(ambiente.google.revogados, ['RT-conta-a']);
   assert.ok(ambiente.db.calendars.every((c) => c.external_calendar_id !== 'eu@gmail.test'));
+});
+
+test('Calendar API desativada no callback: volta com erro, não com falta de permissão', async () => {
+  const ambiente = criarAmbiente();
+  ambiente.google.falhas = { '/users/me/calendarList/primary': 'accessNotConfigured' };
+  instalarFetch(ambiente);
+  const retorno = await iniciarEVoltarDoGoogle(ambiente);
+  assert.equal(retorno.searchParams.get('google_agenda'), 'erro');
+  assert.deepEqual(ambiente.db.connections, []);
+  assert.deepEqual(ambiente.google.revogados, ['RT-c1'], 'o grant recém-emitido não fica órfão na conta Google');
+});
+
+test('escopo faltando no callback: volta com escopo_insuficiente', async () => {
+  const ambiente = criarAmbiente();
+  ambiente.google.falhas = { '/users/me/calendarList/primary': 'insufficientPermissions' };
+  instalarFetch(ambiente);
+  const retorno = await iniciarEVoltarDoGoogle(ambiente);
+  assert.equal(retorno.searchParams.get('google_agenda'), 'escopo_insuficiente');
+});
+
+test('cota estourada na confirmação: 502, não pede para marcar permissões', async () => {
+  const ambiente = criarAmbiente();
+  instalarFetch(ambiente);
+  const pendente = (await iniciarEVoltarDoGoogle(ambiente)).searchParams.get('pendente');
+  ambiente.google.falhas = { '/users/me/calendarList': 'rateLimitExceeded' };
+
+  const { status, corpo } = await confirmar(ambiente, DONO, pendente);
+  assert.equal(status, 502);
+  assert.equal(corpo.error.code, 'GOOGLE_UNAVAILABLE');
+});
+
+test('escopo faltando ao criar a agenda do espaço: 403 SCOPE_INSUFFICIENT', async () => {
+  const ambiente = criarAmbiente();
+  instalarFetch(ambiente);
+  const pendente = (await iniciarEVoltarDoGoogle(ambiente)).searchParams.get('pendente');
+  ambiente.google.falhas = { '/calendars': 'insufficientPermissions' };
+
+  const { status, corpo } = await confirmar(ambiente, DONO, pendente);
+  assert.equal(status, 403);
+  assert.equal(corpo.error.code, 'SCOPE_INSUFFICIENT');
 });

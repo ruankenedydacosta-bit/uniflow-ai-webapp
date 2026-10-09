@@ -17,7 +17,7 @@
 //
 // Nenhum token sai desta função: nem na resposta, nem no log.
 
-import { chamarGoogleAgenda } from '../_shared/googleCalendar/api.ts';
+import { chamarGoogleAgenda, registrarFalhaDoGoogle } from '../_shared/googleCalendar/api.ts';
 import { chamarBanco, chamarRpc, membroAtivoDoEspaco, ok } from '../_shared/googleCalendar/banco.ts';
 import { VALIDADE_DA_PENDENCIA_MS } from '../_shared/googleCalendar/confirmacao.js';
 import { lerEscoposConcedidos, temTodosOsEscopos } from '../_shared/googleCalendar/escopos.js';
@@ -143,8 +143,10 @@ async function prepararPendencia(config: Config, state: StateConsumido, accessTo
 
   // E-mail da conta: id do calendário primário (sem openid/email).
   const primario = await chamarGoogleAgenda(accessToken, { caminho: '/users/me/calendarList/primary' });
-  if (primario.status === 403) return { resultado: RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE };
-  if (primario.status !== 200 || typeof primario.json?.id !== 'string') return { resultado: RESULTADOS_CONEXAO.ERRO };
+  if (primario.status !== 200 || typeof primario.json?.id !== 'string') {
+    const semEscopo = registrarFalhaDoGoogle('google-calendar-oauth-callback: calendário principal', primario);
+    return { resultado: semEscopo ? RESULTADOS_CONEXAO.ESCOPO_INSUFICIENTE : RESULTADOS_CONEXAO.ERRO };
+  }
   const accountEmail = primario.json.id as string;
 
   // Uma pendência por pessoa e espaço: a anterior sai. O token dela só é
@@ -256,5 +258,7 @@ Deno.serve(async (request) => {
   const { resultado, pendente } = await prepararPendencia(
     config, state, tokens.accessToken, tokens.refreshToken, tokens.escopos,
   );
+  // Sem pendência gravada, nada no banco aponta para o grant recém-emitido.
+  if (!pendente) await descartarGrant(config, state.user_id, grantRecebido);
   return voltar(resultado, pendente ?? null);
 });
