@@ -11,8 +11,8 @@ const ler = (caminho) => readFileSync(new URL(caminho, raiz), 'utf8');
 const nomeDaMigration = readdirSync(new URL('supabase/migrations/', raiz)).find((nome) => /_055_calendar_connections\.sql$/.test(nome));
 const migration = nomeDaMigration ? ler(`supabase/migrations/${nomeDaMigration}`) : '';
 
-const FUNCOES = ['google-calendar-connect', 'google-calendar-oauth-callback', 'google-calendar-confirm', 'google-calendar-disconnect'];
-const COMPARTILHADOS = ['api.ts', 'banco.ts', 'calendarios.ts', 'tokens.ts', 'pendencias.ts', 'escopos.js', 'oauth.js', 'listaDeCalendarios.js', 'confirmacao.js'];
+const FUNCOES = ['google-calendar-connect', 'google-calendar-oauth-callback', 'google-calendar-confirm', 'google-calendar-disconnect', 'google-calendar-export'];
+const COMPARTILHADOS = ['api.ts', 'banco.ts', 'calendarios.ts', 'tokens.ts', 'pendencias.ts', 'escopos.js', 'oauth.js', 'listaDeCalendarios.js', 'confirmacao.js', 'eventoGoogle.js'];
 
 test('migration 055 existe com versão de 14 dígitos depois da 054', () => {
   assert.ok(nomeDaMigration, 'migration 055 ausente');
