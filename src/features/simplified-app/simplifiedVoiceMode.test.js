@@ -96,13 +96,11 @@ test('Enviar encerra e manda para a transcrição; fechar descarta e para a fala
   );
 });
 
-test('a resposta e o rascunho aparecem uma vez só: na tela de voz quando aberta, na Home quando fechada', async () => {
+test('a resposta e o rascunho aparecem só na tela de voz; a Home não mostra a última conversa', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /\{isVoiceModeOpen \? null : compactResponse\}/);
+  assert.doesNotMatch(home, /\{isVoiceModeOpen \? null : compactResponse\}/);
+  assert.doesNotMatch(home, /Ver conversa completa/);
   assert.match(home, /response=\{isVoiceModeOpen \? compactResponse : null\}/);
-  // Na tela de voz, o botão Conversa substitui o link "Ver conversa completa".
-  assert.match(home, /showDetailsLink=\{!isVoiceModeOpen\}/);
-  assert.match(home, /\{showDetailsLink \? \(\s*<Link className=\{styles\.detailsLink\}/);
 });
 
 test('tela de voz é um diálogo modal no body, fecha com Esc e devolve a rolagem da página', async () => {
