@@ -21,11 +21,12 @@
 // Nenhum token vai para log nem para a resposta.
 
 import { chamarGoogleAgenda, registrarFalhaDoGoogle, type RespostaGoogleAgenda } from '../_shared/googleCalendar/api.ts';
-import { chamarBanco, chamarRpc, membroAtivoDoEspaco, ok, type ConfigDoBanco } from '../_shared/googleCalendar/banco.ts';
+import { chamarBanco, chamarRpc, ok, type ConfigDoBanco } from '../_shared/googleCalendar/banco.ts';
 import { corpoDeInsercao, idDoEventoGoogle, montarEventoGoogle } from '../_shared/googleCalendar/eventoGoogle.js';
 import { obterAccessTokenGoogle } from '../_shared/googleCalendar/tokens.ts';
 
-const LIMITE_POR_EXECUCAO = 50;
+// 20 linhas cabem na reserva de 5 minutos mesmo com o Google lento.
+const LIMITE_POR_EXECUCAO = 20;
 const CONEXOES_INICIAIS_POR_EXECUCAO = 10;
 const MAXIMO_DE_TENTATIVAS = 30;
 const ESPERA_MAXIMA_MS = 60 * 60 * 1000;
@@ -85,9 +86,25 @@ function caminhoDoEvento(calendarId: string, eventId: string) {
   return `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
 }
 
+// 400 é o corpo recusado: repetir não muda nada. O resto (5xx, cota, API
+// desativada, escopo) volta para a fila. Escopo faltando também marca a
+// conexão, no laço principal, para a tela pedir reconexão.
 function falhaDoGoogle(resposta: RespostaGoogleAgenda, onde: string): Resultado {
   const semEscopo = registrarFalhaDoGoogle(`google-calendar-export: ${onde}`, resposta);
-  return { tipo: 'tentar_de_novo', motivo: semEscopo ? 'escopo_insuficiente' : `google_${resposta.status}` };
+  if (semEscopo) return { tipo: 'tentar_de_novo', motivo: 'escopo_insuficiente' };
+  if (resposta.status === 400) return { tipo: 'concluir', motivo: 'google_400' };
+  return { tipo: 'tentar_de_novo', motivo: `google_${resposta.status}` };
+}
+
+// Membro ativo do espaço? null quando o banco não respondeu: aí a linha
+// volta para a fila em vez de ser descartada como "fora do espaço".
+async function membroAtivo(config: ConfigDoBanco, userId: string, workspaceId: string): Promise<boolean | null> {
+  const resposta = await chamarBanco(config, {
+    caminho: '/rest/v1/workspace_members',
+    query: { select: 'workspace_id', workspace_id: `eq.${workspaceId}`, user_id: `eq.${userId}`, status: 'eq.active', limit: '1' },
+  });
+  if (!ok(resposta.status) || !Array.isArray(resposta.json)) return null;
+  return resposta.json.length === 1;
 }
 
 async function marcarErroNaConexao(config: ConfigDoBanco, conexaoId: string, codigo: 'destino_ausente' | 'escopo_insuficiente') {
@@ -116,7 +133,9 @@ async function prepararContexto(config: ConfigDoBanco, userId: string, workspace
   const conexao = busca.json[0] as Conexao | undefined;
   if (!conexao) return { tipo: 'concluir', motivo: 'sem_conexao' };
 
-  if (!(await membroAtivoDoEspaco(config, userId, workspaceId))) return { tipo: 'concluir', motivo: 'fora_do_espaco' };
+  const membro = await membroAtivo(config, userId, workspaceId);
+  if (membro === null) return { tipo: 'tentar_de_novo', motivo: 'banco_indisponivel' };
+  if (!membro) return { tipo: 'concluir', motivo: 'fora_do_espaco' };
 
   const token = await obterAccessTokenGoogle({ ...config, connectionId: conexao.id });
   if ('erro' in token) {
@@ -278,11 +297,7 @@ async function exportarItem(config: ConfigDoBanco, contexto: { conexao: Conexao;
     await marcarErroNaConexao(config, conexao.id, 'destino_ausente');
     return { tipo: 'tentar_de_novo', motivo: 'destino_ausente' };
   }
-  const falha = falhaDoGoogle(criado, 'criar evento');
-  if (falha.tipo === 'tentar_de_novo' && falha.motivo === 'escopo_insuficiente') {
-    await marcarErroNaConexao(config, conexao.id, 'escopo_insuficiente');
-  }
-  return falha;
+  return falhaDoGoogle(criado, 'criar evento');
 }
 
 async function apagarEvento(
@@ -336,13 +351,15 @@ async function exportacaoInicial(config: ConfigDoBanco) {
       provider: 'eq.google',
       status: 'eq.active',
       exportacao_inicial_em: 'is.null',
+      order: 'connected_at.asc',
       limit: String(CONEXOES_INICIAIS_POR_EXECUCAO),
     },
   });
   if (!ok(busca.status) || !Array.isArray(busca.json)) return 0;
   let enfileirados = 0;
+  // Sem checar se o dono ainda é membro: a RPC grava a data de qualquer
+  // jeito, e as linhas de quem saiu do espaço são concluídas na fila.
   for (const conexao of busca.json as Conexao[]) {
-    if (!(await membroAtivoDoEspaco(config, conexao.user_id, conexao.workspace_id))) continue;
     const resposta = await chamarRpc(config, 'google_calendar_export_inicial', { p_connection_id: conexao.id });
     if (ok(resposta.status) && typeof resposta.json === 'number') enfileirados += resposta.json;
   }
@@ -379,6 +396,7 @@ Deno.serve(async (request) => {
 
   // Uma conexão e um access token por pessoa e espaço nesta execução.
   const contextos = new Map<string, Contexto>();
+  const escopoMarcado = new Set<string>();
   let concluidas = 0;
   let reagendadas = 0;
 
@@ -394,6 +412,10 @@ Deno.serve(async (request) => {
       ? await processarLinha(config, contexto, linha)
       : contexto;
 
+    if (resultado.motivo === 'escopo_insuficiente' && contexto.tipo === 'pronto' && !escopoMarcado.has(chave)) {
+      escopoMarcado.add(chave);
+      await marcarErroNaConexao(config, contexto.conexao.id, 'escopo_insuficiente');
+    }
     await concluir(config, linha, resultado);
     if (resultado.tipo === 'concluir') concluidas += 1;
     else reagendadas += 1;

@@ -47,7 +47,7 @@ function enfileirar(db, linha) {
 function filtrar(linhas, query) {
   return linhas.filter((linha) => {
     for (const [campo, filtro] of query) {
-      if (['select', 'limit'].includes(campo)) continue;
+      if (['select', 'limit', 'order'].includes(campo)) continue;
       const atual = linha[campo] ?? null;
       if (filtro === 'is.null') {
         if (atual !== null) return false;
@@ -92,13 +92,15 @@ function instalarFetch({ db, google }) {
     if (url.pathname === '/rest/v1/rpc/google_calendar_export_concluir') {
       const linha = db.queue.find((l) => l.id === corpo.p_id);
       linha.ultimo_erro = corpo.p_erro;
-      if (corpo.p_tentar_de_novo_em) linha.proxima_tentativa_em = corpo.p_tentar_de_novo_em;
-      else if (linha.versao === corpo.p_versao) linha.concluida_em = new Date().toISOString();
+      if (corpo.p_tentar_de_novo_em) {
+        if (linha.versao === corpo.p_versao) linha.proxima_tentativa_em = corpo.p_tentar_de_novo_em;
+      } else if (linha.versao === corpo.p_versao) linha.concluida_em = new Date().toISOString();
       return resposta(200, !corpo.p_tentar_de_novo_em);
     }
 
     const tabelas = { calendar_connections: db.connections, workspace_members: db.members, agenda_items: db.items, agenda_item_links: db.links };
     const nome = url.pathname.replace('/rest/v1/', '');
+    if (db.falhar?.[nome]) return resposta(db.falhar[nome], { message: 'indisponível' });
     const linhas = tabelas[nome];
     if (linhas) {
       if (metodo === 'GET') return resposta(200, filtrar(linhas, query).map((l) => ({ ...l })));
@@ -384,6 +386,51 @@ test('conexão sem exportação inicial: chama a RPC uma vez', async () => {
   ambiente.db.connections[0].exportacao_inicial_em = null;
   instalarFetch(ambiente);
   await rodarExportacao(ambiente);
+  await rodarExportacao(ambiente);
+  assert.deepEqual(ambiente.db.iniciais, ['conn-1']);
+});
+
+test('Google recusa o corpo (400): conclui com o motivo, sem repetir 30 vezes', async () => {
+  const ambiente = criarAmbiente();
+  ambiente.google.forcar[`POST /calendars/${DESTINO}/events`] = 400;
+  enfileirar(ambiente.db, {});
+  instalarFetch(ambiente);
+  await rodarExportacao(ambiente);
+  assert.ok(ambiente.db.queue[0].concluida_em);
+  assert.equal(ambiente.db.queue[0].ultimo_erro, 'google_400');
+});
+
+test('escopo faltando ao atualizar: marca a conexão para pedir reconexão e tenta de novo', async () => {
+  const ambiente = criarAmbiente();
+  ambiente.google.eventos.set(`${DESTINO}|${EVENTO_ID}`, { id: EVENTO_ID, etag: '"e1"' });
+  ambiente.db.links.push({ id: 'link-1', agenda_item_id: ITEM_ID, provider: 'google', calendar_id: DESTINO, external_id: EVENTO_ID, etag: '"e1"', origin: 'app' });
+  ambiente.google.forcar[`PATCH /calendars/${DESTINO}/events/${EVENTO_ID}`] = {
+    status: 403,
+    corpo: { error: { code: 403, errors: [{ reason: 'insufficientPermissions' }] } },
+  };
+  enfileirar(ambiente.db, {});
+  instalarFetch(ambiente);
+  await rodarExportacao(ambiente);
+  assert.equal(ambiente.db.connections[0].last_error_code, 'escopo_insuficiente');
+  assert.equal(ambiente.db.queue[0].concluida_em, null);
+});
+
+test('banco fora ao checar o membro: a linha volta para a fila, não é descartada', async () => {
+  const ambiente = criarAmbiente();
+  ambiente.db.falhar = { workspace_members: 503 };
+  enfileirar(ambiente.db, {});
+  instalarFetch(ambiente);
+  await rodarExportacao(ambiente);
+  assert.equal(ambiente.db.queue[0].concluida_em, null);
+  assert.equal(ambiente.db.queue[0].ultimo_erro, 'banco_indisponivel');
+  assert.deepEqual(ambiente.google.chamadas, []);
+});
+
+test('exportação inicial roda mesmo com o dono fora do espaço, para não ficar pendente para sempre', async () => {
+  const ambiente = criarAmbiente();
+  ambiente.db.connections[0].exportacao_inicial_em = null;
+  ambiente.db.members = [];
+  instalarFetch(ambiente);
   await rodarExportacao(ambiente);
   assert.deepEqual(ambiente.db.iniciais, ['conn-1']);
 });

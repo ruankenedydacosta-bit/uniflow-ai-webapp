@@ -56,3 +56,9 @@ test('config.toml: export sem JWT (o segredo do cron autentica)', () => {
   assert.match(funcao, /verify_google_calendar_dispatch_secret/);
   assert.match(funcao, /X-Dispatch-Secret/);
 });
+
+test('reserva de 5 minutos, retry respeita a versao e a exportação inicial só pula item do Google', () => {
+  assert.match(migration, /bloqueada_ate = now\(\) \+ interval '5 minutes'/);
+  assert.match(migration, /set proxima_tentativa_em = p_tentar_de_novo_em,[\s\S]*?where id = p_id and versao = p_versao and concluida_em is null;/);
+  assert.match(migration, /and link\.origin = 'provider'\n {4}\)\n {2}on conflict/);
+});

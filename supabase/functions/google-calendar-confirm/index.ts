@@ -306,7 +306,9 @@ async function finalizar(config: Config, conexao: Conexao): Promise<Finalizacao>
     metodo: 'PATCH',
     caminho: '/rest/v1/calendar_connections',
     query: { id: `eq.${connectionId}` },
-    corpo: { destination_calendar_id: destino, status: 'active', last_error_code: null, last_error_at: null },
+    // exportacao_inicial_em volta a null: o export (#100) reenvia os itens
+    // futuros, inclusive o que mudou enquanto a conexão estava com erro.
+    corpo: { destination_calendar_id: destino, status: 'active', last_error_code: null, last_error_at: null, exportacao_inicial_em: null },
     prefer: 'return=minimal',
   });
   return ok(ativacao.status) ? 'conectado' : 'erro';

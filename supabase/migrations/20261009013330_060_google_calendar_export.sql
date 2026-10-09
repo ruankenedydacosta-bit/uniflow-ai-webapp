@@ -200,7 +200,8 @@ for each row execute function public.agenda_items_enfileirar_google();
 -- RPCs do worker (só service_role)
 -- ---------------------------------------------------------------------------
 
--- Reserva até p_limite linhas vencidas por 2 minutos. Aproveita para apagar
+-- Reserva até p_limite linhas vencidas por 5 minutos, folga para uma
+-- execução inteira do worker. Aproveita para apagar
 -- as concluídas há mais de 7 dias.
 create or replace function public.google_calendar_export_reservar(p_limite integer default 50)
 returns setof public.calendar_export_queue
@@ -214,7 +215,7 @@ begin
 
   return query
   update public.calendar_export_queue as fila
-  set bloqueada_ate = now() + interval '2 minutes',
+  set bloqueada_ate = now() + interval '5 minutes',
       tentativas = fila.tentativas + 1
   where fila.id in (
     select candidata.id
@@ -232,7 +233,9 @@ $$;
 
 -- Sem p_tentar_de_novo_em: conclui, se a versao ainda é a reservada. Se o
 -- item mudou no meio, solta a linha para o próximo ciclo e devolve false.
--- Com p_tentar_de_novo_em: devolve a linha para a fila nessa hora.
+-- Com p_tentar_de_novo_em: devolve a linha para a fila nessa hora, se a
+-- versao ainda é a reservada; uma edição nova no meio já marcou a linha para
+-- agora e não pode esperar a espera da falha anterior.
 create or replace function public.google_calendar_export_concluir(
   p_id bigint,
   p_versao integer,
@@ -250,7 +253,12 @@ begin
     set proxima_tentativa_em = p_tentar_de_novo_em,
         ultimo_erro = left(p_erro, 200),
         bloqueada_ate = null
-    where id = p_id and concluida_em is null;
+    where id = p_id and versao = p_versao and concluida_em is null;
+    if not found then
+      update public.calendar_export_queue
+      set bloqueada_ate = null
+      where id = p_id and concluida_em is null;
+    end if;
     return false;
   end if;
 
@@ -272,7 +280,9 @@ $$;
 
 -- Exportação inicial: na primeira passada por uma conexão ativa, enfileira
 -- os itens futuros (a partir de hoje, no fuso de São Paulo) criados pelo
--- dono e ainda sem vínculo. Grava a data para não repetir.
+-- dono, com ou sem vínculo: a reconexão zera exportacao_inicial_em e assim
+-- reenvia o que mudou enquanto a conexão estava com erro. Item que veio do
+-- Google fica de fora. Grava a data para não repetir.
 create or replace function public.google_calendar_export_inicial(p_connection_id uuid)
 returns integer
 language plpgsql
@@ -306,6 +316,7 @@ begin
       from public.agenda_item_links as link
       where link.agenda_item_id = item.id
         and link.provider = 'google'
+        and link.origin = 'provider'
     )
   on conflict (agenda_item_id, provider) where concluida_em is null do nothing;
 

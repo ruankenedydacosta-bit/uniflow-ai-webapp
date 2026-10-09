@@ -230,6 +230,7 @@ test('mesma pessoa confirma: agenda do espaço criada, calendários gravados, st
   assert.equal(ambiente.db.connections.length, 1, 'a pendência saiu; ficou só a conexão');
   assert.equal(conexao.status, 'active');
   assert.equal(conexao.confirmation_hash, undefined);
+  assert.equal(conexao.exportacao_inicial_em, null, 'ativar zera a exportação inicial do #100');
   assert.equal(ambiente.db.secrets.get(conexao.id), 'RT-c1');
   assert.equal(conexao.app_calendar_id, 'app-1@group');
   assert.equal(conexao.destination_calendar_id, 'app-1@group');
