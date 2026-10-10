@@ -58,3 +58,8 @@ verify_jwt = true
 # pg_cron com o segredo de private.google_calendar_dispatch_secret.
 [functions.google-calendar-export]
 verify_jwt = false
+
+# Escreve a Leitura do mês da Home com o Haiku (#122). Exige sessão: a
+# função confere o usuário em /auth/v1/user e a cota diária por pessoa.
+[functions.uni-insights]
+verify_jwt = true
