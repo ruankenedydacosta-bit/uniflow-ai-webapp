@@ -1,0 +1,159 @@
+/* Tela 22h. No celular o Modal vira a folha padrão; aqui ficam o desktop e
+   o conteúdo. A folha não passa da altura da tela: só a grade de ícones
+   rola, por seção, e as ações ficam sempre à vista. */
+.categoryCreateDialog.categoryCreateDialog {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .categoryCreateDialog.categoryCreateDialog {
+    width: 94vw;
+    max-width: 520px;
+    max-height: min(90dvh, 820px);
+  }
+}
+
+.categoryCreateBody {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  /* Em tela baixa (teclado aberto, paisagem) a grade para em 120px e o corpo
+     rola, para as ações continuarem alcançáveis. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.categoryCreateForm {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.iconFieldset {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.iconFieldset legend {
+  /* float tira a legenda da borda do fieldset e a põe no fluxo do flex. */
+  float: left;
+  width: 100%;
+  padding: 0;
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-micro-size);
+}
+
+.iconLibrary {
+  min-height: 120px;
+  max-height: min(240px, 34dvh);
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.iconSection + .iconSection {
+  margin-top: 14px;
+}
+
+.iconSection h3 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0 0 8px;
+  background: var(--uf-app-card-surface);
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+  font-weight: var(--uf-font-weight-regular);
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* Célula de 52px no poço escuro; a marcada leva violeta a 12% e borda
+   violeta. O nome do ícone fica no rótulo acessível e na dica do mouse. */
+.iconOption {
+  min-width: 0;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  color: var(--uf-app-text-2);
+  cursor: pointer;
+  transition: background-color var(--uf-duration-fast) ease, box-shadow var(--uf-duration-fast) ease;
+}
+
+.iconOption svg {
+  width: 22px;
+  height: 22px;
+}
+
+.iconOption:hover {
+  background: var(--uf-app-surface-2);
+}
+
+.iconOption[aria-checked="true"] {
+  background: color-mix(in oklch, var(--uf-app-brand-violet) 12%, var(--uf-app-well));
+  box-shadow: inset 0 0 0 1px var(--uf-app-brand-violet);
+  color: var(--uf-app-brand-violet-text);
+}
+
+.iconOption:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.iconHelper {
+  margin: 0;
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+}
+
+.formError {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
+}
+
+.submitButton {
+  flex: 1;
+}
+
+@media (max-height: 520px) {
+  .categoryCreateHeader p {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iconOption {
+    transition: none;
+  }
+}

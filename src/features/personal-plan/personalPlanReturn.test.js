@@ -77,21 +77,28 @@ test('cobre os 4 estados pedidos: processando, aguardando/timeout, ativo, falhou
   const page = await source('./PersonalPlanReturnPage.jsx');
   assert.match(page, /Processando seu pagamento/);
   assert.match(page, /Ainda aguardando a confirmação/);
-  assert.match(page, /Plano Pessoal ativado com sucesso/);
+  assert.match(page, /Pagamento confirmado/);
   assert.match(page, /Pagamento não concluído/);
 });
 
-test('sempre oferece "Voltar ao Plano Pessoal" exceto quando já ativo (aí oferece ir para o início)', async () => {
+// Tela 21g–i: confirmado leva ao início; processando não tem botão (a tela
+// atualiza sozinha); não concluído e tempo esgotado voltam ao Plano Pessoal.
+test('ativo oferece ir para o início, processando não tem botão e os demais voltam ao Plano Pessoal', async () => {
   const page = await source('./PersonalPlanReturnPage.jsx');
   assert.match(page, /Voltar ao Plano Pessoal/);
-  assert.match(page, /onClick={handleBackToPlan}/);
+  assert.match(page, /onClick=\{handleBackToPlan\}/);
   assert.match(page, /navigate\(PERSONAL_PLAN_ROUTE\);/);
+  assert.match(page, /action=\{resolvedState === 'active' \? \([\s\S]*?handleGoHome[\s\S]*?\) : isProcessing \? null : \(/);
 });
 
-test('CSS tem estados de tom (ok/warn/neutral) e reduz animação do spinner em prefers-reduced-motion', async () => {
+test('cada estado usa o orb da Uni: falando no confirmado, pensando no processando, parado nos demais', async () => {
+  const page = await source('./PersonalPlanReturnPage.jsx');
+  const screen = await source('./PlanResultScreen.jsx');
   const css = await source('./PersonalPlanReturn.module.css');
-  assert.match(css, /\.tone_ok h1/);
-  assert.match(css, /\.tone_warn h1/);
-  assert.match(css, /\.tone_neutral h1/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{/);
+  assert.match(page, /orbState = UNI_RING_ORB_STATES\.SPEAKING;/);
+  assert.match(page, /orbState = UNI_RING_ORB_STATES\.THINKING;/);
+  assert.match(page, /orbState = UNI_RING_ORB_STATES\.IDLE;/);
+  assert.match(screen, /<UniRingOrb size=\{120\} state=\{orbState\} \/>/);
+  assert.match(screen, /aria-live="polite"/);
+  assert.match(css, /env\(safe-area-inset-bottom, 0px\)/);
 });

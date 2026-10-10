@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext';
 import { resolvePresentationUserId } from '../presentation';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/index.js';
-import Button from '../../components/ui/Button/Button.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/OutlineButton.jsx';
+import { UNI_RING_ORB_STATES } from '../../components/ui/UniRingOrb/uniRingOrbModel.js';
 import { PERSONAL_PLAN_ROUTE } from './personalPlanConfig.js';
 import { useSubscriptionStatusPolling } from './useSubscriptionStatusPolling.js';
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
@@ -13,7 +14,7 @@ import {
   clearPendingGa4SubscriptionActivation,
   trackConfirmedGa4SubscriptionActivation,
 } from '../analytics/ga4SubscriptionActivationOperation.js';
-import styles from './PersonalPlanReturn.module.css';
+import PlanResultScreen from './PlanResultScreen.jsx';
 
 // BLOCO ASAAS CHECKOUT: rota de retorno do Asaas Checkout hospedado
 // (cartão de crédito). O redirecionamento em si NUNCA significa que o
@@ -82,44 +83,50 @@ function PersonalPlanReturnPage() {
     navigate(SIMPLIFIED_ROUTES.HOME);
   }
 
+  // Tela 21g–i: confirmado (orb falando, "Ir para o início"), processando
+  // (orb pensando, sem botão) e não concluído ou tempo esgotado (orb parado,
+  // "Voltar ao Plano Pessoal").
+  const voiceMinutes = polledSubscription?.voice_minutes;
   let title;
   let description;
-  let tone;
+  let orbState;
   if (resolvedState === 'active') {
-    title = 'Plano Pessoal ativado com sucesso!';
-    description = 'Seu pagamento foi confirmado. Você já pode aproveitar todos os benefícios.';
-    tone = 'ok';
+    title = 'Pagamento confirmado';
+    description = Number.isFinite(voiceMinutes)
+      ? `Seu Plano Pessoal está ativo. Você tem ${voiceMinutes} minutos de conversa por voz por mês.`
+      : 'Seu Plano Pessoal está ativo.';
+    orbState = UNI_RING_ORB_STATES.SPEAKING;
   } else if (resolvedState === 'canceled' || resolvedState === 'expired' || redirectStatus === 'cancel' || redirectStatus === 'expired') {
     title = redirectStatus === 'expired' || resolvedState === 'expired' ? 'O checkout expirou' : 'Pagamento não concluído';
-    description = 'Nenhuma cobrança foi feita. Você pode tentar novamente quando quiser.';
-    tone = 'warn';
+    description = 'Nenhuma cobrança foi feita. Você pode tentar de novo quando quiser.';
+    orbState = UNI_RING_ORB_STATES.IDLE;
   } else if (pollError && timedOut) {
     title = 'Não foi possível confirmar o pagamento agora';
     description = 'Isso não significa que o pagamento falhou -- pode levar alguns instantes a mais. Volte ao Plano Pessoal para conferir o status.';
-    tone = 'warn';
+    orbState = UNI_RING_ORB_STATES.IDLE;
   } else if (timedOut) {
     title = 'Ainda aguardando a confirmação';
     description = 'O pagamento pode levar mais alguns instantes para ser confirmado. Volte ao Plano Pessoal para conferir o status mais tarde.';
-    tone = 'warn';
+    orbState = UNI_RING_ORB_STATES.IDLE;
   } else {
-    title = 'Processando seu pagamento...';
-    description = 'Estamos aguardando a confirmação do Asaas. Esta tela atualiza sozinha.';
-    tone = 'neutral';
+    title = 'Processando seu pagamento';
+    description = 'Esta tela atualiza sozinha quando o Asaas confirmar o pagamento.';
+    orbState = UNI_RING_ORB_STATES.THINKING;
   }
 
+  const isProcessing = orbState === UNI_RING_ORB_STATES.THINKING;
+
   return (
-    <main className={styles.page}>
-      <section className={`${styles.card} ${styles[`tone_${tone}`]}`} aria-live="polite">
-        {tone === 'neutral' ? <span className={styles.spinner} aria-hidden="true" /> : null}
-        <h1>{title}</h1>
-        <p>{description}</p>
-        {resolvedState === 'active' ? (
-          <Button type="button" variant="primary" fullWidth onClick={handleGoHome}>Ir para o início</Button>
-        ) : (
-          <Button type="button" variant="secondary" fullWidth onClick={handleBackToPlan}>Voltar ao Plano Pessoal</Button>
-        )}
-      </section>
-    </main>
+    <PlanResultScreen
+      orbState={orbState}
+      title={title}
+      description={description}
+      action={resolvedState === 'active' ? (
+        <OutlineButton onClick={handleGoHome}>Ir para o início</OutlineButton>
+      ) : isProcessing ? null : (
+        <OutlineButton variant="secondary" onClick={handleBackToPlan}>Voltar ao Plano Pessoal</OutlineButton>
+      )}
+    />
   );
 }
 

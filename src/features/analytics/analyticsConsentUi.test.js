@@ -11,39 +11,43 @@ test('banner exige escolha explícita e oferece aceitar/recusar sem fechamento i
   assert.match(banner, /onClick=\{accept\}[\s\S]*?Permitir/);
   assert.match(banner, /onClick=\{deny\}[\s\S]*?Não permitir/);
   assert.match(banner, /Privacidade e melhoria do app/);
-  assert.match(banner, /dados financeiros, mensagens, áudios ou transcrições/);
+  assert.match(banner, /dados\s+financeiros, mensagens, áudios e transcrições não são enviados/);
   assert.doesNotMatch(banner, /Aceitar Analytics|Recusar Analytics/);
   assert.doesNotMatch(banner, /onClose|closeButton|Fechar|dismiss|continuar.*consent/i);
   assert.doesNotMatch(banner, /useSession|supabase|workspace|user\??\.|email/);
 });
 
+// Tela 22i: card do redesign fixo acima da barra inferior do app, junto da
+// base fora dele e no topo do desktop fora do app.
 test('banner reutiliza o design system com layout compacto, safe-area e movimento reduzido', async () => {
   const [banner, css] = await Promise.all([
     source('./AnalyticsConsentBanner.jsx'),
     source('./analyticsConsent.module.css'),
   ]);
 
-  assert.match(banner, /import \{ LockIcon \} from '\.\.\/simplified-app\/SimplifiedIcons\.jsx';/);
+  assert.match(banner, /import \{ PhLockSimpleIcon \} from '\.\.\/simplified-app\/SimplifiedIcons\.jsx';/);
+  assert.match(banner, /import IconBox from '\.\.\/\.\.\/components\/ui\/IconBox\/IconBox\.jsx';/);
+  assert.match(banner, /import OutlineButton from '\.\.\/\.\.\/components\/ui\/OutlineButton\/OutlineButton\.jsx';/);
   assert.match(banner, /aria-labelledby="analytics-consent-title"/);
   assert.match(banner, /aria-describedby="analytics-consent-description"/);
-  assert.match(css, /var\(--uf-gradient-hairline\)/);
-  assert.match(css, /var\(--uf-gray-950\)/);
+  assert.match(css, /background: var\(--uf-app-card-surface\)/);
+  assert.match(css, /color-mix\(in oklch, var\(--uf-app-brand-violet\) 22%, transparent\)/);
   assert.match(css, /env\(safe-area-inset-bottom/);
   assert.match(css, /min-height:\s*var\(--uf-tap-target-min\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /animation:\s*none/);
   assert.match(css, /body:not\(\[data-simplified-app-mounted='true'\]\)/);
-  assert.match(css, /@media \(max-width: 640px\)/);
+  assert.match(css, /body\[data-simplified-app-mounted='true'\]\) \.bannerPosition \{\s*\n\s*padding-bottom: calc\(104px/);
 });
 
-test('preferência posterior fica em Conta e reutiliza Modal/Button existentes', async () => {
+test('preferência posterior fica em Conta e reutiliza Modal/OutlineButton existentes', async () => {
   const account = await source('../simplified-app/SimplifiedAccountPage.jsx');
   const modal = await source('./AnalyticsConsentPreferencesModal.jsx');
 
   assert.match(account, /title: 'Privacidade e Analytics'/);
   assert.match(account, /setShowAnalyticsPreferences\(true\)/);
   assert.match(account, /<AnalyticsConsentPreferencesModal/);
-  assert.match(modal, /import Button from '\.\.\/\.\.\/components\/ui\/Button\/Button\.jsx';/);
+  assert.match(modal, /import OutlineButton from '\.\.\/\.\.\/components\/ui\/OutlineButton\/OutlineButton\.jsx';/);
   assert.match(modal, /import Modal from '\.\.\/\.\.\/components\/ui\/Modal\/Modal\.jsx';/);
   assert.match(modal, /title="Privacidade e melhoria do app"/);
   assert.match(modal, /onClick=\{accept\}[\s\S]*?Permitir/);

@@ -76,9 +76,11 @@ test('form de edição expõe botão "Excluir" que pede confirmação (nunca exc
     source(`./${FORM_MODAL}`),
     source('./SimplifiedAgendaPage.jsx'),
   ]);
-  assert.match(form, /Excluir/);
+  // Tela 22e: a exclusão vira a lixeira ao lado das ações; a confirmação
+  // continua no AgendaDeleteConfirmModal.
+  assert.match(form, /aria-label="Excluir compromisso"/);
   assert.match(form, /onRequestDelete/);
-  assert.match(form, /variant="danger"/);
+  assert.match(form, /onClick=\{\(\) => \{ if \(onRequestDelete\) onRequestDelete\(item\); \}\}/);
   assert.match(page, /onRequestDelete=\{\(item\) => \{/);
 });
 

@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import IconBox from '../../components/ui/IconBox/IconBox.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/OutlineButton.jsx';
+import { PhDownloadSimpleIcon, PhXIcon } from '../simplified-app/SimplifiedIcons.jsx';
 import { PWA_INSTALL_ENABLED } from './pwaInstallConfig.js';
 import {
   detectPwaInstallPlatform,
@@ -56,36 +59,41 @@ function PwaInstallExperience() {
   // duas UIs de entrada distintas para o usuário escolher errado.
   const isIos = platform === PWA_INSTALL_PLATFORM.IOS_SAFARI || platform === PWA_INSTALL_PLATFORM.IOS_OTHER_BROWSER;
   const canInstallDirectly = Boolean(deferredPrompt);
+  // Tela 22k: mesmo lugar e forma do aviso de minutos (tela 19), com borda
+  // azul. No Android sem o pedido do navegador, o card só ensina o caminho
+  // pelo menu do Chrome e oferece "Entendi".
   return (
     <>
       <aside className={styles.prompt} aria-labelledby="pwa-install-title" data-pwa-install-prompt>
-        <button type="button" className={styles.closeButton} onClick={dismiss} aria-label="Lembrar mais tarde">
-          ×
-        </button>
-        <div className={styles.icon} aria-hidden="true">↓</div>
-        <div className={styles.content}>
-          <span className={styles.eyebrow}>Acesso mais rápido</span>
-          <h2 id="pwa-install-title">{isIos ? 'Instalar UniFlow no iPhone' : 'Leve a UniFlow com você'}</h2>
-          {isIos ? (
-            <p>Leva menos de 20 segundos, direto pelo navegador.</p>
-          ) : canInstallDirectly ? (
-            <p>Abra sua vida financeira com um toque, direto pela tela inicial do dispositivo.</p>
-          ) : (
-            <p>No Chrome, abra o menu <strong>⋮</strong> e escolha <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</p>
-          )}
-          <small>Instalação segura pelo navegador, sem APK externo.</small>
+        <div className={styles.body}>
+          <IconBox tone="blue"><PhDownloadSimpleIcon /></IconBox>
+          <div className={styles.content}>
+            <h2 id="pwa-install-title">{isIos ? 'Instale a UniFlow no iPhone' : 'Instale a UniFlow'}</h2>
+            {isIos || canInstallDirectly ? (
+              <p>Abra o app direto da tela inicial. A instalação é feita pelo navegador.</p>
+            ) : (
+              <p>No Chrome, abra o menu <strong>⋮</strong> e escolha <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</p>
+            )}
+          </div>
+          <button type="button" className={styles.closeButton} onClick={dismiss} aria-label="Agora não">
+            <PhXIcon />
+          </button>
         </div>
-        {isIos ? (
-          <button type="button" className={styles.installButton} onClick={() => setGuideOpen(true)}>
-            Instalar
-          </button>
-        ) : !canInstallDirectly ? (
-          <button type="button" className={styles.secondaryButton} onClick={dismiss}>Entendi</button>
-        ) : (
-          <button type="button" className={styles.installButton} onClick={install} disabled={isInstalling}>
-            {isInstalling ? 'Instalando...' : 'Instalar'}
-          </button>
-        )}
+        <div className={styles.actions}>
+          {isIos ? (
+            <>
+              <OutlineButton variant="secondary" onClick={() => setGuideOpen(true)}>Instalar</OutlineButton>
+              <OutlineButton variant="ghost" onClick={dismiss}>Agora não</OutlineButton>
+            </>
+          ) : !canInstallDirectly ? (
+            <OutlineButton variant="ghost" onClick={dismiss}>Entendi</OutlineButton>
+          ) : (
+            <>
+              <OutlineButton variant="secondary" onClick={install} loading={isInstalling}>Instalar</OutlineButton>
+              <OutlineButton variant="ghost" onClick={dismiss} disabled={isInstalling}>Agora não</OutlineButton>
+            </>
+          )}
+        </div>
       </aside>
       {isIos ? (
         <PwaIosInstallGuide

@@ -154,7 +154,7 @@ test('UI aparece imediatamente, mesmo sem prompt nativo, e orienta Chrome e iOS'
     source('./PwaInstallExperience.module.css'),
   ]);
   assert.match(component, /Instalar app/);
-  assert.match(component, /sem APK externo/);
+  assert.match(component, /A instalação é feita pelo navegador\./);
   assert.match(component, /requestCapturedPwaInstall\(\)/);
   assert.match(component, /readPwaInstallCooldown/);
   assert.match(component, /globalThis\.sessionStorage/);
@@ -176,14 +176,14 @@ test('UI aparece imediatamente, mesmo sem prompt nativo, e orienta Chrome e iOS'
 test('CTA de iPhone abre o guia (nunca a copy generica de Chrome), e desktop/Android nunca veem a copy de iPhone', async () => {
   const component = await source('./PwaInstallExperience.jsx');
   assert.match(component, /const isIos = platform === PWA_INSTALL_PLATFORM\.IOS_SAFARI \|\| platform === PWA_INSTALL_PLATFORM\.IOS_OTHER_BROWSER;/);
-  assert.match(component, /Instalar UniFlow no iPhone/);
+  assert.match(component, /Instale a UniFlow no iPhone/);
   assert.match(component, /onClick=\{\(\) => setGuideOpen\(true\)\}/);
   assert.match(component, /<PwaIosInstallGuide/);
   assert.match(component, /inSafari=\{platform === PWA_INSTALL_PLATFORM\.IOS_SAFARI\}/);
   // A copy "Instalar UniFlow no iPhone" só é alcançável dentro do ramo
   // `isIos ? ... : ...` -- em qualquer outra plataforma (Chromium/desktop)
   // o componente cai nos ramos de deferredPrompt/menu do Chrome abaixo.
-  const iosCopyIndex = component.indexOf('Instalar UniFlow no iPhone');
+  const iosCopyIndex = component.indexOf('Instale a UniFlow no iPhone');
   const isIosDeclarationIndex = component.indexOf('const isIos =');
   assert.ok(iosCopyIndex > isIosDeclarationIndex);
 });
@@ -200,14 +200,16 @@ test('fechar o guia é só um setGuideOpen(false) local -- nunca navega nem desm
 // TESTES IPHONE INSTALL -- guia de instalação (PwaIosInstallGuide.jsx)
 // ============================================================================
 
-test('guia iOS (Safari) mostra os 3 passos corretos, com desenhos esquemáticos (nunca screenshot)', async () => {
+// Tela 22j: os passos usam os ícones Phosphor do app (export, plus-square,
+// check-square) em vez de desenhos próprios.
+test('guia iOS (Safari) mostra os 3 passos corretos, com ícones (nunca screenshot)', async () => {
   const guide = await source('./PwaIosInstallGuide.jsx');
-  assert.match(guide, /Instale a UniFlow no seu iPhone/);
+  assert.match(guide, /Instale a UniFlow no iPhone/);
   assert.match(guide, /Leva menos de 20 segundos\./);
-  assert.match(guide, /Toque no ícone Compartilhar/);
-  assert.match(guide, /Escolha "Adicionar à Tela de Início"/);
-  assert.match(guide, /Ative "Abrir como App da Web" e toque em Adicionar/);
-  assert.match(guide, /<svg /);
+  assert.match(guide, /Toque em Compartilhar/);
+  assert.match(guide, /Toque em Adicionar à Tela de Início/);
+  assert.match(guide, /Ative Abrir como App da Web e toque em Adicionar/);
+  assert.match(guide, /import \{ PhCheckSquareIcon, PhExportIcon, PhPlusSquareIcon \} from '\.\.\/simplified-app\/SimplifiedIcons\.jsx';/);
   assert.doesNotMatch(guide, /\.(png|jpe?g|webp)['"]/, 'nunca uma imagem/screenshot fixa do Safari');
 });
 

@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
+import { ensureAppFont } from '../simplified-app/appFont.js';
 import PresentationCarousel from './PresentationCarousel.jsx';
 import {
   PRESENTATION_DEMO_USER_ID,
@@ -14,6 +16,11 @@ function PresentationPage() {
   const userId = isSupabaseConfigured
     ? session?.user?.id
     : PRESENTATION_DEMO_USER_ID;
+
+  // Tela 21: a apresentação usa a fonte do app (Inter), como o login.
+  useEffect(() => {
+    ensureAppFont(document);
+  }, []);
 
   function handleComplete() {
     markPresentationCompleted(userId);

@@ -13,3 +13,36 @@
   width: 20px;
   height: 20px;
 }
+
+.small {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.small svg {
+  width: 16px;
+  height: 16px;
+}
+
+.large {
+  width: 44px;
+  height: 44px;
+}
+
+.large svg {
+  width: 22px;
+  height: 22px;
+}
+
+.blue {
+  color: var(--uf-app-brand-blue-text);
+}
+
+.violet {
+  color: var(--uf-app-brand-violet-text);
+}
+
+.green {
+  color: var(--uf-app-brand-green-text);
+}

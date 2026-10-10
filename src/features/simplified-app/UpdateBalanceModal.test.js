@@ -80,7 +80,7 @@ test('"Zerar" preenche o valor com 0 sem persistir sozinho -- a confirmação co
   const slice = modal.slice(start, modal.indexOf('\n  }', start));
   assert.match(slice, /setCents\(0\);/);
   assert.doesNotMatch(slice, /submitBalanceAdjustment|setStep/);
-  assert.match(modal, /<button type="button" className=\{styles\.zeroButton\} onClick=\{handleZero\}>/);
+  assert.match(modal, /<OutlineButton variant="ghost" className=\{styles\.zeroButton\} onClick=\{handleZero\}>/);
 });
 
 // UX: o campo nasce preenchido com o valor atual do card (amountToCents),
@@ -94,7 +94,7 @@ test('campo de valor nasce preenchido com currentValue, nunca zerado por padrão
 test('"Salvar" fica desabilitado até o valor realmente mudar (delta zero é rejeitado pela RPC) -- nunca depende de conta', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
   assert.match(modal, /const hasChange = delta !== 0;/);
-  assert.match(modal, /<Button type="submit" disabled=\{!hasChange\}>/);
+  assert.match(modal, /<OutlineButton type="submit" className=\{styles\.primaryAction\} disabled=\{!hasChange\}>/);
 });
 
 test('fluxo exige confirmação explícita: enviar o formulário só avança para o resumo, não persiste', async () => {
@@ -122,7 +122,7 @@ test('clique duplo/repetido no Confirmar nunca dispara uma segunda chamada (guar
   const confirmStart = modal.indexOf('async function handleConfirm() {');
   const confirmSlice = modal.slice(confirmStart, confirmStart + 120);
   assert.match(confirmSlice, /if \(isSubmitting\) return;/);
-  assert.match(modal, /<Button type="button" onClick=\{handleConfirm\} loading=\{isSubmitting\}>/);
+  assert.match(modal, /<OutlineButton className=\{styles\.primaryAction\} onClick=\{handleConfirm\} loading=\{isSubmitting\}>/);
 });
 
 test('modal nunca pode ser fechada (overlay/ESC) enquanto a persistência está em andamento', async () => {
@@ -163,7 +163,8 @@ test('confirmação mostra os rótulos de `copy` (atual/novo/ajuste) e (se houve
   assert.match(confirmSlice, /<dt>\{copy\.currentLabel\}<\/dt>/);
   assert.match(confirmSlice, /formatCurrency\(currentValueNumber\)/);
   assert.match(confirmSlice, /<dt>\{copy\.newLabel\}<\/dt>/);
-  assert.match(confirmSlice, /<dt>Ajuste registrado<\/dt>/);
+  // Tela 22b: a linha do ajuste se chama só "Ajuste".
+  assert.match(confirmSlice, /<dt>Ajuste<\/dt>/);
   assert.doesNotMatch(confirmSlice, /<dt>Conta<\/dt>/);
   assert.match(confirmSlice, /note\.trim\(\) \? \(/);
 });

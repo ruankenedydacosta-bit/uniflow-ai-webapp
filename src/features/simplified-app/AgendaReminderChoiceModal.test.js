@@ -28,7 +28,8 @@ test('as tres escolhas usam exatamente os offsets aceitos pela Edge Function (30
   const content = await source();
   assert.match(content, /offset: '30', label: '30 min antes'/);
   assert.match(content, /offset: '60', label: '1h antes'/);
-  assert.match(content, /offset: 'none', label: 'Não precisa'/);
+  // Tela 22f: a terceira opção se chama "Sem lembrete", igual à confirmação.
+  assert.match(content, /offset: 'none', label: 'Sem lembrete'/);
 });
 
 test('escolha e enviada via sendAgendaReminderDecision (caminho autenticado) -- nunca uma segunda implementacao de escrita', async () => {

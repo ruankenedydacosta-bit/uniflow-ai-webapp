@@ -8,6 +8,7 @@ import {
   compareAgendaItemsByRecentActivity,
   formatAgendaItemTime,
   formatDayHeading,
+  formatReminderPromptWhen,
   formatMonthLabel,
   getWeekdayIndex,
   groupAgendaItemsByDay,
@@ -256,4 +257,12 @@ test('buildTomorrowSummary: conta compromissos e contas de amanhã, ou null fora
   assert.equal(buildTomorrowSummary(grouped, { now, loadedMonth: { year: 2026, month: 9 } }), 'Amanhã você não tem compromissos, mas tem 1 conta vencendo.');
   assert.equal(buildTomorrowSummary(new Map(), { now, loadedMonth: { year: 2026, month: 9 } }), 'Amanhã você não tem compromissos nem contas vencendo.');
   assert.equal(buildTomorrowSummary(grouped, { now: new Date(2026, 9, 31, 10), loadedMonth: { year: 2026, month: 9 } }), null);
+});
+
+test('formatReminderPromptWhen: dia da semana, data e horário; dia inteiro sem horário', () => {
+  const startsAt = new Date(2026, 9, 22, 8, 30, 0, 0).toISOString();
+  assert.equal(formatReminderPromptWhen({ starts_at: startsAt }), 'quinta, 22/10 às 08:30');
+  assert.equal(formatReminderPromptWhen({ starts_at: startsAt, is_all_day: true }), 'quinta, 22/10');
+  assert.equal(formatReminderPromptWhen({ starts_at: startsAt, has_explicit_time: false }), 'quinta, 22/10');
+  assert.equal(formatReminderPromptWhen({ starts_at: null }), '');
 });

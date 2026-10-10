@@ -1,67 +1,82 @@
+/* Tela 21g–i: resultado do pagamento (PlanResultScreen). Conteúdo
+   centralizado na vertical e alinhado à esquerda, botão de 48px no rodapé.
+   Fundo do app com o halo de topo. */
 .page {
+  --uf-font-family-base: var(--uf-app-font-family);
+  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
   padding:
-    max(22px, env(safe-area-inset-top))
-    max(16px, env(safe-area-inset-right))
-    max(28px, env(safe-area-inset-bottom))
-    max(16px, env(safe-area-inset-left));
-  background: linear-gradient(180deg, #020816 0%, #010611 48%, #020916 100%);
+    env(safe-area-inset-top, 0px)
+    env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  background: var(--uf-app-canvas);
+  color: var(--uf-app-text);
+  font-family: var(--uf-app-font-family);
+  isolation: isolate;
 }
 
-.card {
-  width: min(100%, 420px);
-  display: grid;
-  justify-items: center;
-  gap: 14px;
-  padding: 32px 24px;
-  border: 1px solid rgba(43, 91, 158, .5);
-  border-radius: 20px;
-  background: rgba(2, 10, 26, .85);
-  text-align: center;
-}
-
-.card h1 {
-  margin: 0;
-  color: #f8fafc;
-  font-size: clamp(20px, 5vw, 26px);
-  font-weight: 800;
-}
-
-.card p {
-  margin: 0 0 4px;
-  color: #c9cfdb;
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.tone_ok h1 { color: #4ade80; }
-.tone_warn h1 { color: #fbbf24; }
-.tone_neutral h1 { color: #67e8f9; }
-
-.spinner {
-  width: 34px;
-  height: 34px;
-  border: 3px solid rgba(103, 232, 249, .25);
-  border-top-color: #67e8f9;
+.page::before {
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  z-index: -1;
+  width: 520px;
+  height: 420px;
   border-radius: 50%;
-  animation: spin 800ms linear infinite;
+  background: var(--uf-app-halo);
+  content: "";
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.body {
+  width: min(100%, 520px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+  margin: 0 auto;
+  padding: 0 22px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation: none;
-  }
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-@media (max-width: 430px) {
-  .card {
-    padding: 26px 18px;
-  }
+.copy h1 {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 26px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.25;
+  letter-spacing: -.015em;
+  text-wrap: balance;
+}
+
+.copy p {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 15px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.footer {
+  width: min(100%, 520px);
+  min-height: 78px;
+  margin: 0 auto;
+  padding: 0 22px 30px;
+}
+
+.footer > button {
+  width: 100%;
+  min-height: 48px;
 }

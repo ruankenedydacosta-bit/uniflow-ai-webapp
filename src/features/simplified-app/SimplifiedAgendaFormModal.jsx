@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import Button from '../../components/ui/Button/Button.jsx';
+import Field from '../../components/ui/Field/Field.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/OutlineButton.jsx';
+import Toggle from '../../components/ui/Toggle/Toggle.jsx';
 import {
   buildAgendaItemCreationPayload,
   createAgendaItemEditForm,
@@ -19,7 +21,7 @@ import {
   runOwnedAgendaPreOperation,
 } from '../../pages/agenda/agendaFormSubmissionLifecycle.js';
 import { formatDayHeading } from './simplifiedAgendaCalendar.js';
-import { BellIcon } from './SimplifiedIcons.jsx';
+import { PhBellIcon, PhCaretDownIcon, PhTrashIcon } from './SimplifiedIcons.jsx';
 import AgendaReminderChoiceModal from './AgendaReminderChoiceModal.jsx';
 import { getAgendaPushReminderState } from '../agenda-push/agendaPushReminderService.js';
 import { prefersReducedMotion } from '../agenda-push/agendaReminderAnimation.js';
@@ -265,6 +267,8 @@ function SimplifiedAgendaFormModal({
 
   const isBusy = isMutating || isClosingForReminder;
 
+  // Tela 22e: folha padrão com os campos do redesign. A exclusão vira um
+  // ícone ao lado das ações e o lembrete, um bloco com "Alterar".
   return (
     <Modal
       open
@@ -279,33 +283,33 @@ function SimplifiedAgendaFormModal({
       size="md"
       footer={(
         <>
-          <Button type="button" variant="ghost" onClick={handleClose} disabled={isBusy}>
-            Cancelar
-          </Button>
           {isEditing ? (
-            <Button
+            <button
               type="button"
-              variant="danger"
+              className={styles.deleteButton}
+              aria-label="Excluir compromisso"
               onClick={() => { if (onRequestDelete) onRequestDelete(item); }}
               disabled={isBusy}
             >
-              Excluir
-            </Button>
+              <PhTrashIcon />
+            </button>
           ) : null}
-          <Button
-            type="button"
+          <OutlineButton
+            className={styles.saveButton}
             loading={isMutating}
             disabled={isBusy}
             onClick={handleSave}
           >
             {isEditing ? 'Salvar alterações' : 'Salvar'}
-          </Button>
+          </OutlineButton>
+          <OutlineButton variant="ghost" onClick={handleClose} disabled={isBusy}>
+            Cancelar
+          </OutlineButton>
         </>
       )}
     >
       <div className={styles.formFields}>
-        <label className={`${styles.field} ${styles.fieldRequired}`}>
-          <span>Título</span>
+        <Field label="Título">
           <input
             type="text"
             autoFocus
@@ -314,82 +318,77 @@ function SimplifiedAgendaFormModal({
             aria-required="true"
             aria-label="Título do compromisso"
           />
-        </label>
+        </Field>
 
-        <label className={styles.field}>
-          <span>Data</span>
-          <input
-            type="date"
-            value={form.date}
-            onChange={(event) => update({ date: event.target.value })}
-            aria-required="true"
-            aria-label="Data do compromisso"
-          />
-        </label>
+        <div className={styles.dateTimeRow}>
+          <Field label="Data" trailing={<PhCaretDownIcon />}>
+            <input
+              type="date"
+              className={styles.pickerInput}
+              value={form.date}
+              onChange={(event) => update({ date: event.target.value })}
+              aria-required="true"
+              aria-label="Data do compromisso"
+            />
+          </Field>
 
-        <label className={`${styles.field} ${form.allDay ? styles.fieldDisabled : ''}`}>
-          <span>Horário</span>
-          <input
-            type="time"
-            value={form.time}
-            onChange={(event) => update({
-              time: event.target.value,
-              hasExplicitTime: Boolean(event.target.value),
-              allDay: event.target.value ? false : form.allDay,
-              ends_at: event.target.value ? form.ends_at : '',
-            })}
-            aria-label="Horário do compromisso"
-            disabled={form.allDay}
-          />
-        </label>
+          <Field label="Horário" trailing={<PhCaretDownIcon />}>
+            <input
+              type="time"
+              className={styles.pickerInput}
+              value={form.time}
+              onChange={(event) => update({
+                time: event.target.value,
+                hasExplicitTime: Boolean(event.target.value),
+                allDay: event.target.value ? false : form.allDay,
+                ends_at: event.target.value ? form.ends_at : '',
+              })}
+              aria-label="Horário do compromisso"
+              disabled={form.allDay}
+            />
+          </Field>
+        </div>
 
-        <label className={styles.allDayRow}>
-          <input
-            type="checkbox"
+        <div className={styles.allDayRow}>
+          <span>Dia inteiro</span>
+          <Toggle
             checked={Boolean(form.allDay)}
-            onChange={(event) => update({
-              allDay: event.target.checked,
+            label="Dia inteiro"
+            onChange={(checked) => update({
+              allDay: checked,
               hasExplicitTime: false,
               time: '',
-              ends_at: event.target.checked ? '' : form.ends_at,
+              ends_at: checked ? '' : form.ends_at,
             })}
-            aria-label="Dia inteiro"
           />
-          <span>Dia inteiro</span>
-        </label>
+        </div>
 
-        <label className={styles.field}>
-          <span>Observações</span>
+        <Field label="Observações" multiline>
           <textarea
             rows={3}
             value={form.description}
             onChange={(event) => update({ description: event.target.value })}
             aria-label="Observações do compromisso"
           />
-        </label>
+        </Field>
 
         {isEditing ? (
           <div className={styles.reminderSection}>
-            <span className={styles.reminderSectionLabel}>Lembrete</span>
-            <div className={styles.reminderSectionRow}>
+            <span className={styles.reminderSectionIcon} aria-hidden="true"><PhBellIcon /></span>
+            <span className={styles.reminderSectionText}>
+              <span className={styles.reminderSectionLabel}>Lembrete</span>
               <span className={styles.reminderSectionValue}>
-                {reminderIndicator ? (
-                  <>
-                    <span className={styles.reminderSectionIcon}><BellIcon /></span>
-                    {reminderIndicator.label}
-                  </>
-                ) : 'Nenhum lembrete configurado'}
+                {reminderIndicator ? reminderIndicator.label : 'Nenhum lembrete configurado'}
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={isBusy}
-                onClick={() => setShowReminderChoice(true)}
-              >
-                {reminderIndicator ? 'Alterar' : 'Escolher lembrete'}
-              </Button>
-            </div>
+            </span>
+            <OutlineButton
+              variant="ghost"
+              className={styles.reminderSectionButton}
+              disabled={isBusy}
+              onClick={() => setShowReminderChoice(true)}
+            >
+              {reminderIndicator ? 'Alterar' : 'Escolher lembrete'}
+            </OutlineButton>
           </div>
         ) : (
           // AGPUSH3: criar um compromisso ainda não gera um agenda_item_id

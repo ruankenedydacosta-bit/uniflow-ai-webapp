@@ -1,5 +1,7 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo, useState } from 'react';
+import Modal from '../../components/ui/Modal';
+import OutlineButton from '../../components/ui/OutlineButton';
+import { PhCaretLeftIcon, PhCaretRightIcon } from './SimplifiedIcons.jsx';
 import styles from './MonthPickerModal.module.css';
 
 const MONTH_LABELS = [
@@ -19,9 +21,9 @@ function isMonthDisabled(year, monthIndex, today) {
   return year > todayYear || (year === todayYear && monthIndex > todayMonth);
 }
 
+// Tela 22d: usa o Modal compartilhado, que no celular vira a folha padrão e
+// cuida de Escape, toque fora, X, portal e trava de rolagem.
 function MonthPickerModal({ open, initialDate, onApply, onClose }) {
-  const titleId = useId();
-  const dialogRef = useRef(null);
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(() => initialDate.getFullYear());
   const [selectedYear, setSelectedYear] = useState(() => initialDate.getFullYear());
@@ -42,38 +44,6 @@ function MonthPickerModal({ open, initialDate, onApply, onClose }) {
     setWasOpen(false);
   }
 
-  useEffect(() => {
-    if (!open) return undefined;
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') onClose();
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const focusTimer = window.setTimeout(() => dialogRef.current?.focus(), 0);
-    return () => window.clearTimeout(focusTimer);
-  }, [open]);
-
-  if (!open) return null;
-
-  function handleOverlayClick(event) {
-    if (event.target === event.currentTarget) onClose();
-  }
-
   function selectThisMonth() {
     setViewYear(today.getFullYear());
     setSelectedYear(today.getFullYear());
@@ -84,23 +54,15 @@ function MonthPickerModal({ open, initialDate, onApply, onClose }) {
     onApply(new Date(selectedYear, selectedMonth, 1));
   }
 
-  return createPortal(
-    <div className={styles.overlay} onClick={handleOverlayClick}>
-      <div
-        ref={dialogRef}
-        className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-      >
-        <div className={styles.header}>
-          <h2 id={titleId}>Selecionar período</h2>
-          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Fechar">
-            <span aria-hidden="true">×</span>
-          </button>
-        </div>
-
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Selecionar mês"
+      size="sm"
+      className={styles.dialog}
+    >
+      <div className={styles.content}>
         <div className={styles.yearRow}>
           <button
             type="button"
@@ -108,7 +70,7 @@ function MonthPickerModal({ open, initialDate, onApply, onClose }) {
             onClick={() => setViewYear((year) => year - 1)}
             aria-label="Ano anterior"
           >
-            ‹
+            <PhCaretLeftIcon />
           </button>
           <strong className={styles.yearLabel}>{viewYear}</strong>
           <button
@@ -117,7 +79,7 @@ function MonthPickerModal({ open, initialDate, onApply, onClose }) {
             onClick={() => setViewYear((year) => year + 1)}
             aria-label="Próximo ano"
           >
-            ›
+            <PhCaretRightIcon />
           </button>
         </div>
 
@@ -129,7 +91,7 @@ function MonthPickerModal({ open, initialDate, onApply, onClose }) {
               <button
                 key={label}
                 type="button"
-                className={`${styles.monthCell} ${isSelected ? styles.monthCellSelected : ''}`}
+                className={styles.monthCell}
                 disabled={disabled}
                 aria-pressed={isSelected}
                 onClick={() => {
@@ -144,21 +106,18 @@ function MonthPickerModal({ open, initialDate, onApply, onClose }) {
         </div>
 
         <div className={styles.actions}>
-          <button type="button" className={styles.thisMonthButton} onClick={selectThisMonth}>
+          <OutlineButton variant="ghost" className={styles.thisMonthButton} onClick={selectThisMonth}>
             Este mês
-          </button>
-          <div className={styles.actionsRight}>
-            <button type="button" className={styles.cancelButton} onClick={onClose}>
-              Cancelar
-            </button>
-            <button type="button" className={styles.applyButton} onClick={handleApply}>
-              Aplicar
-            </button>
-          </div>
+          </OutlineButton>
+          <OutlineButton onClick={handleApply}>
+            Aplicar
+          </OutlineButton>
+          <OutlineButton variant="ghost" onClick={onClose}>
+            Cancelar
+          </OutlineButton>
         </div>
       </div>
-    </div>,
-    document.body,
+    </Modal>
   );
 }
 

@@ -24,8 +24,12 @@ export function useGoogleAuthRedirect() {
     persistPendingGa4GoogleAuth(GA4_PRODUCT_EVENT_NAMES.LOGIN);
     try {
       const result = await signInWithGoogle();
-      const feedback = getGoogleAuthFeedback(result?.error);
-      if (result?.error) clearPendingGa4GoogleAuth();
+      // Sem Supabase configurado (ambiente sem as variáveis VITE_*), o
+      // signInWithGoogle devolve isConfigured: false e nenhum erro. Sem esta
+      // mensagem a tela ficava esperando um redirecionamento que nunca vem.
+      const unavailable = result?.isConfigured === false;
+      const feedback = getGoogleAuthFeedback(result?.error ?? (unavailable ? { code: 'UNAVAILABLE' } : null));
+      if (result?.error || unavailable) clearPendingGa4GoogleAuth();
       // Sucesso real: o navegador já foi redirecionado para o Google pelo SDK
       // -- este retorno só é observável se, por algum motivo, o redirect não
       // chegou a ocorrer (ex.: Supabase não configurado).

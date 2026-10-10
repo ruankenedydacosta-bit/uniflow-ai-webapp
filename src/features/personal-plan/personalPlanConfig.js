@@ -43,37 +43,44 @@ export const PERSONAL_PLAN_PRICE_PERIOD = '/mês';
 // título + uma descrição curta). Todos os itens têm a MESMA forma
 // (`description`, nunca `lines`), porque a lista nativa mostra exatamente
 // uma linha de apoio por recurso; blocos com bullets eram o que dava à
-// página o aspecto de landing page de venda.
+// página o aspecto de landing page de venda. Tela 21d: `tone` é a cor da
+// marca do ícone.
 export const PERSONAL_PLAN_BENEFITS = Object.freeze([
   Object.freeze({
     id: 'voice',
     title: 'Registros por voz',
     description: 'Registre entradas e saídas falando com a Uni.',
+    tone: 'violet',
   }),
   Object.freeze({
     id: 'categories',
     title: 'Categorias inteligentes',
-    description: 'Organização automática dos seus registros.',
+    description: 'Seus registros são organizados por categoria.',
+    tone: 'blue',
   }),
   Object.freeze({
     id: 'uni',
     title: 'Converse com a Uni',
     description: 'Consulte suas informações por voz ou texto.',
+    tone: 'violet',
   }),
   Object.freeze({
     id: 'agenda',
     title: 'Agenda integrada',
     description: 'Organize seus compromissos com a Uni.',
+    tone: 'blue',
   }),
   Object.freeze({
     id: 'summary',
     title: 'Resumo financeiro',
-    description: 'Veja rapidamente o que entrou e o que saiu.',
+    description: 'Veja o que entrou e o que saiu no mês.',
+    tone: 'green',
   }),
   Object.freeze({
     id: 'history',
     title: 'Histórico completo',
-    description: 'Seus registros organizados em um só lugar.',
+    description: 'Consulte todos os seus registros.',
+    tone: 'green',
   }),
 ]);
 

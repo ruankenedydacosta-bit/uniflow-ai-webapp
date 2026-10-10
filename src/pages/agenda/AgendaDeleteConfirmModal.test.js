@@ -5,24 +5,27 @@ import test from 'node:test';
 const ROOT = new URL('./', import.meta.url);
 const source = (path) => readFile(new URL(path, ROOT), 'utf8');
 
-test('titulo e "Excluir compromisso"', async () => {
+// Tela 22g: folha sem cabeçalho. A pergunta leva o título do compromisso e
+// é o nome acessível do diálogo; o texto diz que a exclusão é definitiva.
+test('pergunta usa o titulo do item entre aspas e da nome ao dialogo', async () => {
   const contents = await source('AgendaDeleteConfirmModal.jsx');
-  assert.match(contents, /title="Excluir compromisso"/);
+  assert.match(contents, /<h2 id=\{titleId\}>Excluir “\{item\.title\}”\?<\/h2>/);
+  assert.match(contents, /aria-labelledby=\{titleId\}/);
+  assert.match(contents, /hideCloseButton/);
 });
 
-test('descricao usa o titulo do item entre aspas e informa que a exclusao e permanente', async () => {
+test('texto informa que a exclusao e permanente', async () => {
+  const contents = await source('AgendaDeleteConfirmModal.jsx');
+  assert.match(contents, /O compromisso sai da sua agenda\. Não é possível desfazer\./);
+  assert.match(contents, /aria-describedby=\{descriptionId\}/);
+});
+
+// O padrão não tem cor de perigo: o botão é contornado neutro (secondary).
+test('botao principal: texto "Excluir definitivamente", variante secondary', async () => {
   const contents = await source('AgendaDeleteConfirmModal.jsx');
   assert.match(
     contents,
-    /description=\{`Excluir "\$\{item\.title\}"\? Esta ação é permanente e não pode ser desfeita\.`\}/,
-  );
-});
-
-test('botao principal: texto "Excluir definitivamente", variante danger', async () => {
-  const contents = await source('AgendaDeleteConfirmModal.jsx');
-  assert.match(
-    contents,
-    /<Button variant="danger" loading=\{isMutating\} disabled=\{isMutating\} onClick=\{handleConfirm\}>\s*\n\s*Excluir definitivamente\s*\n\s*<\/Button>/,
+    /<OutlineButton variant="secondary" className=\{styles\.confirm\} loading=\{isMutating\} disabled=\{isMutating\} onClick=\{handleConfirm\}>\s*\n\s*Excluir definitivamente\s*\n\s*<\/OutlineButton>/,
   );
 });
 
@@ -30,7 +33,7 @@ test('botao secundario: "Cancelar", variante ghost, chama handleClose', async ()
   const contents = await source('AgendaDeleteConfirmModal.jsx');
   assert.match(
     contents,
-    /<Button variant="ghost" onClick=\{handleClose\} disabled=\{isMutating\}>\s*\n\s*Cancelar\s*\n\s*<\/Button>/,
+    /<OutlineButton variant="ghost" onClick=\{handleClose\} disabled=\{isMutating\}>\s*\n\s*Cancelar\s*\n\s*<\/OutlineButton>/,
   );
 });
 
@@ -76,7 +79,7 @@ test('importa getAgendaItemErrorMessage de agendaFormUtils.js (funcao renomeada,
 
 test('loading e disabled no botao principal durante mutacao', async () => {
   const contents = await source('AgendaDeleteConfirmModal.jsx');
-  assert.match(contents, /variant="danger" loading=\{isMutating\} disabled=\{isMutating\}/);
+  assert.match(contents, /loading=\{isMutating\} disabled=\{isMutating\} onClick=\{handleConfirm\}/);
 });
 
 test('bloqueia fechamento por overlay e Esc durante mutation', async () => {
