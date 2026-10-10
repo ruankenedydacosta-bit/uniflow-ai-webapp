@@ -22,7 +22,7 @@
 //
 // Nenhum token sai desta função: nem na resposta, nem no log.
 
-import { chamarGoogleAgenda } from '../_shared/googleCalendar/api.ts';
+import { chamarGoogleAgenda, registrarFalhaDoGoogle } from '../_shared/googleCalendar/api.ts';
 import { chamarBanco, chamarRpc, membroAtivoDoEspaco, ok } from '../_shared/googleCalendar/banco.ts';
 import { atualizarListaDeCalendarios, listarCalendariosDoGoogle } from '../_shared/googleCalendar/calendarios.ts';
 import {
@@ -233,7 +233,7 @@ async function finalizar(config: Config, conexao: Conexao): Promise<Finalizacao>
   if (appCalendarId && !lista.itens.some((item) => item.id === appCalendarId)) {
     const atual = await chamarGoogleAgenda(accessToken, { caminho: `/calendars/${encodeURIComponent(appCalendarId)}` });
     if (atual.status === 404 || atual.status === 410) appCalendarId = null;
-    else if (atual.status !== 200) return atual.status === 403 ? 'escopo_insuficiente' : 'erro';
+    else if (atual.status !== 200) return registrarFalhaDoGoogle('google-calendar-confirm: agenda do espaço', atual) ? 'escopo_insuficiente' : 'erro';
   }
   if (!appCalendarId) {
     appCalendarId = acharCalendarioDoEspaco(lista.itens, workspaceId)?.id ?? null;
@@ -250,8 +250,7 @@ async function finalizar(config: Config, conexao: Conexao): Promise<Finalizacao>
         ...(fusoHorario ? { timeZone: fusoHorario } : {}),
       },
     });
-    if (criado.status === 403) return 'escopo_insuficiente';
-    if (criado.status !== 200 || typeof criado.json?.id !== 'string') return 'erro';
+    if (criado.status !== 200 || typeof criado.json?.id !== 'string') return registrarFalhaDoGoogle('google-calendar-confirm: criar agenda do espaço', criado) ? 'escopo_insuficiente' : 'erro';
     appCalendarId = criado.json.id as string;
     calendarioNovo = { id: appCalendarId, summary, timeZone: fusoHorario, accessRole: 'owner' };
   }

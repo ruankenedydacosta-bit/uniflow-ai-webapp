@@ -4,7 +4,9 @@ import test from 'node:test';
 import {
   ESCOPOS_GOOGLE_AGENDA,
   escoposQueFaltam,
+  faltouEscopo,
   lerEscoposConcedidos,
+  motivosDoErroDoGoogle,
   temTodosOsEscopos,
 } from '../../supabase/functions/_shared/googleCalendar/escopos.js';
 import {
@@ -65,6 +67,28 @@ test('escopo faltando é detectado; escopo a mais não atrapalha', () => {
   const semEventos = ESCOPOS_GOOGLE_AGENDA.slice(0, 2).join(' ');
   assert.equal(temTodosOsEscopos(semEventos), false);
   assert.deepEqual(escoposQueFaltam(semEventos), [ESCOPOS_GOOGLE_AGENDA[2]]);
+});
+
+test('403 do Google só é falta de escopo quando o motivo diz isso', () => {
+  const erroDoGoogle = (reason, detalhe) => ({
+    error: {
+      code: 403,
+      errors: reason ? [{ domain: 'global', reason }] : [],
+      details: detalhe ? [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: detalhe }] : [],
+    },
+  });
+  assert.equal(faltouEscopo(403, erroDoGoogle('insufficientPermissions')), true);
+  assert.equal(faltouEscopo(403, erroDoGoogle(null, 'ACCESS_TOKEN_SCOPE_INSUFFICIENT')), true);
+  assert.equal(faltouEscopo(403, erroDoGoogle('accessNotConfigured', 'SERVICE_DISABLED')), false, 'Calendar API desativada');
+  assert.equal(faltouEscopo(403, erroDoGoogle('rateLimitExceeded')), false, 'cota estourada');
+  assert.equal(faltouEscopo(403, null), false, '403 sem corpo');
+  assert.equal(faltouEscopo(401, erroDoGoogle('insufficientPermissions')), false);
+
+  assert.equal(faltouEscopo(403, null, 'Bearer realm="https://accounts.google.com/", error="insufficient_scope"'), true, '403 sem corpo');
+
+  assert.deepEqual(motivosDoErroDoGoogle(erroDoGoogle('forbidden', 'SERVICE_DISABLED')), ['forbidden', 'SERVICE_DISABLED']);
+  assert.deepEqual(motivosDoErroDoGoogle({ error: 'invalid_grant' }), []);
+  assert.deepEqual(motivosDoErroDoGoogle(null), []);
 });
 
 // ---------------------------------------------------------------------------

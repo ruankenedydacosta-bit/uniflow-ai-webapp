@@ -4,7 +4,7 @@
 //
 // Usado pelo callback (#99) e uma vez por execução pelo sync (#101).
 
-import { chamarGoogleAgenda } from './api.ts';
+import { chamarGoogleAgenda, registrarFalhaDoGoogle, type RespostaGoogleAgenda } from './api.ts';
 import { chamarBanco, ok } from './banco.ts';
 import { montarCalendariosDaConexao } from './listaDeCalendarios.js';
 
@@ -21,9 +21,9 @@ export interface ItemDaLista {
   deleted?: boolean;
 }
 
-function erroDoGoogle(status: number): ErroDaLista {
-  if (status === 401) return 'conexao_revogada';
-  if (status === 403) return 'escopo_insuficiente';
+function erroDoGoogle(resposta: RespostaGoogleAgenda): ErroDaLista {
+  if (resposta.status === 401) return 'conexao_revogada';
+  if (registrarFalhaDoGoogle('google-calendar: lista de calendários', resposta)) return 'escopo_insuficiente';
   return 'google_indisponivel';
 }
 
@@ -35,7 +35,7 @@ export async function listarCalendariosDoGoogle(accessToken: string): Promise<{ 
       caminho: '/users/me/calendarList',
       query: { maxResults: 250, pageToken },
     });
-    if (resposta.status !== 200) return { erro: erroDoGoogle(resposta.status) };
+    if (resposta.status !== 200) return { erro: erroDoGoogle(resposta) };
     const lote = Array.isArray(resposta.json?.items) ? resposta.json.items : [];
     itens.push(...lote);
     pageToken = typeof resposta.json?.nextPageToken === 'string' ? resposta.json.nextPageToken : undefined;
