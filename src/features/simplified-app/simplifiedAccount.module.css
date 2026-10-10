@@ -228,15 +228,6 @@
   background-color: var(--uf-app-card-row-hover);
 }
 
-.logoutError {
-  margin: 0 0 12px;
-  padding: 10px 14px;
-  border-radius: var(--uf-radius-12);
-  background: var(--uf-app-danger-subtle);
-  color: var(--uf-app-danger-text);
-  font-size: 14px;
-}
-
 /* ---------- Foco visível (acessibilidade) ---------- */
 
 .profileCard:focus-visible,

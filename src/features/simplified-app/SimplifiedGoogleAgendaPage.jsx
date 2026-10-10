@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
-import Modal from '../../components/ui/Modal/Modal.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import { confirmarConexao, desconectar, iniciarConexao, obterConexao } from '../../services/googleCalendarService.js';
 import { cx } from '../../utils/cx.js';
@@ -22,6 +21,7 @@ import {
   urlDeAutorizacaoValida,
 } from './googleAgendaPresentation.js';
 import { PhGoogleLogoIcon, PhXIcon } from './SimplifiedIcons.jsx';
+import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import groups from './simplifiedGroups.module.css';
@@ -220,29 +220,17 @@ function SimplifiedGoogleAgendaPage() {
         ) : null}
       </section>
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showDisconnectConfirm}
         onClose={() => { if (!isDisconnecting) { setShowDisconnectConfirm(false); setDisconnectError(null); } }}
+        icon={<PhGoogleLogoIcon />}
         title="Desconectar o Google Agenda?"
         description="Os compromissos continuam no UniFlow. A agenda UniFlow e os eventos continuam na sua conta Google."
-        footer={(
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => { setShowDisconnectConfirm(false); setDisconnectError(null); }}
-              disabled={isDisconnecting}
-            >
-              Cancelar
-            </Button>
-            <Button type="button" variant="danger" onClick={handleConfirmDesconectar} loading={isDisconnecting}>
-              Desconectar
-            </Button>
-          </>
-        )}
-      >
-        {disconnectError ? <p className={styles.errorBanner} role="alert">{disconnectError}</p> : null}
-      </Modal>
+        confirmLabel="Desconectar"
+        onConfirm={handleConfirmDesconectar}
+        loading={isDisconnecting}
+        error={disconnectError}
+      />
     </div>
   );
 }
