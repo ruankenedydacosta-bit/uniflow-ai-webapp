@@ -158,11 +158,17 @@ function AgendaReminderChoiceModal({ item, onClose, onReminderApplied }) {
 
   const when = formatReminderPromptWhen(item);
 
+  // O X da folha também respeita a gravação e o recolhimento em andamento.
+  function handleClose() {
+    if (isBusy) return;
+    onClose();
+  }
+
   // Tela 22f: o X da folha fecha; não há botão Fechar no rodapé.
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={handleClose}
       closeOnOverlayClick={!isBusy}
       closeOnEsc={!isBusy}
       title="Quando devo te lembrar?"

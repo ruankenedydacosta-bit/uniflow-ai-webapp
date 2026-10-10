@@ -14,6 +14,7 @@ import styles from './Presentation.module.css';
 function PresentationCarousel({ onComplete }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const pointerStartRef = useRef(null);
+  const carouselRef = useRef(null);
   const completingRef = useRef(false);
   const activeSlide = PRESENTATION_SLIDES[activeIndex];
   const isFirst = activeIndex === 0;
@@ -27,6 +28,13 @@ function PresentationCarousel({ onComplete }) {
     if (completingRef.current) return;
     completingRef.current = true;
     onComplete();
+  }
+
+  // No primeiro slide o voltar some (tela 21a). Quem estava nele não perde o
+  // foco para o começo da página: o foco volta para o carrossel.
+  function handleBack() {
+    if (activeIndex === 1) carouselRef.current?.focus();
+    move(-1);
   }
 
   function handlePrimaryAction() {
@@ -60,6 +68,7 @@ function PresentationCarousel({ onComplete }) {
 
   return (
     <section
+      ref={carouselRef}
       className={styles.carousel}
       aria-roledescription="carrossel"
       aria-label="Apresentação inicial da UniFlow AI"
@@ -107,7 +116,7 @@ function PresentationCarousel({ onComplete }) {
               type="button"
               className={styles.backAction}
               aria-label="Voltar ao slide anterior"
-              onClick={() => move(-1)}
+              onClick={handleBack}
             >
               <PhArrowLeftIcon />
             </button>

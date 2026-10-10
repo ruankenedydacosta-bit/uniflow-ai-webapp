@@ -28,9 +28,12 @@
   --uf-focus-ring-color: var(--uf-app-focus);
 }
 
-.darkOverlay {
-  background: var(--uf-app-overlay-panel) !important;
-  backdrop-filter: blur(8px) !important;
+/* No celular o Modal já escurece o fundo como folha padrão (tela 22). */
+@media (min-width: 768px) {
+  .darkOverlay {
+    background: var(--uf-app-overlay-panel) !important;
+    backdrop-filter: blur(8px) !important;
+  }
 }
 
 .transactionSuccessToast {

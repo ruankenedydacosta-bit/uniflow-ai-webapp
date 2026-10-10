@@ -572,7 +572,7 @@ if (!resolvedWorkspaceId) {
   // Tela 21g: pagamento confirmado nesta tela (Pix aprovado ou ativação
   // imediata) troca a página inteira pelo resultado.
   if (flowState === 'active') {
-    const activeVoiceMinutes = polledSubscription?.voice_minutes ?? selectedTier.voiceMinutes;
+    const activeVoiceMinutes = polledSubscription?.voice_minutes ?? (pixTier ?? selectedTier).voiceMinutes;
     return (
       <PlanResultScreen
         orbState={UNI_RING_ORB_STATES.SPEAKING}

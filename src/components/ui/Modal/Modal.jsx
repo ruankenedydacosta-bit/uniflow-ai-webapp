@@ -1,4 +1,4 @@
-import { useEffect, useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cx } from '../../../utils/cx';
 import styles from './Modal.module.css';
@@ -36,6 +36,7 @@ function Modal({
   ...props
 }) {
   const generatedId = useId();
+  const dialogRef = useRef(null);
   const titleId = title ? `${generatedId}-title` : undefined;
   const descriptionId = description ? `${generatedId}-description` : undefined;
 
@@ -51,6 +52,17 @@ function Modal({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, closeOnEsc, onClose]);
+
+  // Ao abrir, o foco entra no diálogo, a não ser que um campo com autoFocus
+  // já o tenha recebido. Sem isso, Tab e o leitor de tela continuam na página
+  // atrás do fundo escurecido.
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.contains(document.activeElement)) {
+      dialog.focus({ preventScroll: true });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -74,6 +86,8 @@ function Modal({
   return createPortal(
     <div className={cx(styles.overlay, overlayClassName)} onClick={handleOverlayClick}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className={cx(styles.dialog, styles[size], className)}
         role="dialog"
         aria-modal="true"

@@ -355,7 +355,7 @@ test('QR Code Pix mantém proporção 1:1, fundo branco e nunca é esticado', as
   const qrBlock = css.slice(qrIdx, css.indexOf('}', qrIdx));
   assert.match(qrBlock, /aspect-ratio:\s*1 \/ 1/);
   assert.match(qrBlock, /object-fit:\s*contain/);
-  assert.match(qrBlock, /background:\s*#fff/);
+  assert.match(qrBlock, /background:\s*var\(--uf-white\)/);
   assert.match(qrBlock, /max-width:\s*100%/);
 });
 

@@ -16,6 +16,7 @@
 
 .dialog {
   width: 100%;
+  outline: none;
   max-height: calc(100dvh - var(--uf-space-24));
   overflow: auto;
   border: 1px solid var(--uf-color-border-default);
@@ -23,6 +24,10 @@
   background: var(--uf-color-bg-elevated);
   color: var(--uf-color-text-primary);
   box-shadow: var(--uf-shadow-lg);
+}
+
+.dialog:focus-visible {
+  outline: none;
 }
 
 .sm {
@@ -141,7 +146,8 @@
     --uf-font-family-base: var(--uf-app-font-family);
     width: 100%;
     max-width: none;
-    max-height: calc(100dvh - 40px);
+    /* A folha nunca sobe até a barra de status nem até a ilha do iPhone. */
+    max-height: calc(100dvh - max(40px, env(safe-area-inset-top, 0px) + 12px));
     display: flex;
     flex-direction: column;
     padding: 0 0 max(28px, env(safe-area-inset-bottom, 0px));

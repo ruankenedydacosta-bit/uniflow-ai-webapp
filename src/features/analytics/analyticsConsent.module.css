@@ -8,9 +8,9 @@
   z-index: var(--uf-z-toast);
   padding:
     0
-    max(12px, env(safe-area-inset-right, 0px))
-    max(12px, env(safe-area-inset-bottom, 0px))
-    max(12px, env(safe-area-inset-left, 0px));
+    max(var(--uf-space-12), env(safe-area-inset-right, 0px))
+    max(var(--uf-space-12), env(safe-area-inset-bottom, 0px))
+    max(var(--uf-space-12), env(safe-area-inset-left, 0px));
   pointer-events: none;
 }
 
@@ -22,9 +22,9 @@
   width: min(100%, 540px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--uf-space-12);
   margin-inline: auto;
-  padding: 16px;
+  padding: var(--uf-space-16);
   border-radius: var(--uf-radius-16);
   background: var(--uf-app-card-surface);
   box-shadow:
@@ -39,7 +39,7 @@
 .bannerBody {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--uf-space-12);
 }
 
 .bannerBody svg {
@@ -51,7 +51,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--uf-space-4);
 }
 
 .bannerCopy h2 {
@@ -76,7 +76,7 @@
 .bannerActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--uf-space-8);
   padding-left: 48px;
 }
 
@@ -118,7 +118,7 @@
 .preferenceActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--uf-space-8);
 }
 
 @keyframes analyticsConsentEnter {

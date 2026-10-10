@@ -20,7 +20,10 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* Em tela baixa (teclado aberto, paisagem) a grade para em 120px e o corpo
+     rola, para as ações continuarem alcançáveis. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .categoryCreateForm {
