@@ -46,100 +46,68 @@
   margin-left: auto;
 }
 
-.deleteConfirmOverlay {
-  position: fixed;
-  inset: 0;
+/* Confirmação de exclusão (molde da tela 22g). No celular o Modal vira a
+   folha padrão; aqui ficam o conteúdo e o diálogo do desktop. Ela abre por
+   cima do Modal da movimentação, por isso o overlay sobe uma camada. */
+.deleteConfirmOverlay.deleteConfirmOverlay {
   z-index: calc(var(--uf-z-modal) + 1);
-  display: grid;
-  place-items: center;
-  padding:
-    max(var(--uf-space-16), env(safe-area-inset-top, 0px))
-    max(var(--uf-space-16), env(safe-area-inset-right, 0px))
-    max(var(--uf-space-16), env(safe-area-inset-bottom, 0px))
-    max(var(--uf-space-16), env(safe-area-inset-left, 0px));
-  background: color-mix(in srgb, var(--uf-color-overlay) 86%, transparent);
-  backdrop-filter: blur(10px) saturate(120%);
-  animation: deleteOverlayIn 140ms var(--uf-ease-smooth);
 }
 
-.deleteConfirmCard {
-  width: min(100%, 430px);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--uf-space-16);
-  padding: clamp(var(--uf-space-20), 5vw, var(--uf-space-24));
-  border: 1px solid var(--uf-color-border-strong);
-  border-radius: var(--uf-radius-20);
-  background: var(--uf-color-bg-elevated);
-  color: var(--uf-color-text-primary);
-  box-shadow: var(--uf-shadow-lg), 0 0 34px color-mix(in srgb, var(--uf-color-danger) 16%, transparent);
-  animation: deleteCardIn 160ms var(--uf-ease-smooth);
+.deleteConfirmDialog {
+  max-width: 420px;
 }
 
-.deleteConfirmIcon {
-  width: var(--uf-space-40);
-  height: var(--uf-space-40);
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--uf-color-danger) 58%, transparent);
-  border-radius: var(--uf-radius-full);
-  background: var(--uf-color-danger-subtle);
-  color: var(--uf-color-danger);
-  font-weight: var(--uf-font-weight-bold);
+.deleteConfirmContent {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.deleteConfirmMessage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 6px;
 }
 
 .deleteConfirmCopy {
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--uf-space-8);
-}
-
-.deleteConfirmCopy h2,
-.deleteConfirmCopy p {
-  margin: 0;
+  gap: 6px;
 }
 
 .deleteConfirmCopy h2 {
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-title-size);
+  margin: 0;
+  letter-spacing: 0;
+  color: var(--uf-app-text);
+  font-size: 17px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .deleteConfirmCopy p,
-.deleteConfirmCopy strong {
-  color: var(--uf-color-text-secondary);
-  font-size: var(--uf-text-caption-size);
-  line-height: var(--uf-text-caption-lh);
+.deleteConfirmError {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
-.deleteConfirmCopy strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.deleteConfirmCard > label,
-.deleteConfirmCard > p,
-.deleteConfirmActions {
-  grid-column: 1 / -1;
+.deleteConfirmError {
+  color: var(--uf-app-text);
+  font-size: 13px;
 }
 
 .deleteConfirmActions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--uf-space-12);
-  margin-top: var(--uf-space-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
 }
 
-@keyframes deleteOverlayIn {
-  from { opacity: 0; }
-}
-
-@keyframes deleteCardIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(.98);
-  }
+.deleteConfirmButton {
+  flex: 1;
 }
 
 @media (max-width: 767px) {
@@ -163,17 +131,13 @@
     width: 100%;
     margin-left: 0;
   }
-
-  .deleteConfirmCard {
-    width: min(100%, 390px);
-  }
 }
 
 /* Folha (handoff 05, #89): com presentation="sheet" o diálogo do Modal
    compartilhado vira uma folha ancorada embaixo, com alça, canto de 28px e
    a linha violeta no topo. Só é usada dentro do app simplificado, por isso
    lê os tokens --uf-app-*. A confirmação de exclusão (alertdialog)
-   continua centralizada. O overlay recebe .sheetOverlay pelo próprio
+   também sobe como folha, pelo Modal compartilhado. O overlay recebe .sheetOverlay pelo próprio
    componente; os !important vencem a cor por tema do Modal base. */
 .sheetOverlay {
   align-items: flex-end !important;
@@ -343,8 +307,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .deleteConfirmOverlay,
-  .deleteConfirmCard,
   .transactionDialog[data-presentation="sheet"] {
     animation: none;
   }
