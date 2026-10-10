@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import AuthBrandExperience from '../components/AuthBrandExperience.jsx';
 import PartnershipFooter from '../components/PartnershipFooter.jsx';
-import { useGoogleAuthRedirect } from '../useGoogleAuthRedirect.js';
 import { ensureAppFont } from '../../simplified-app/appFont.js';
 import styles from '../authMobile.module.css';
 
@@ -11,12 +10,18 @@ import styles from '../authMobile.module.css';
 // confundia usuários com menos familiaridade digital (ex.: idosos). Esta
 // tela é puramente uma decisão binária.
 //
-// GOOGLE DIRETO: "Já tenho conta" significa, no MVP, entrar diretamente com
-// Google -- nunca abre /login antes (isso só adicionava uma etapa igual à
-// tela antiga, com abas Entrar/Criar conta, e-mail/senha, "Continuar com
-// Google" de novo). "Criar conta" continua abrindo o fluxo de cadastro
-// (/cadastro -> /login?mode=signup), onde Google e e-mail continuam
-// disponíveis.
+// "Já tenho conta" abre a tela de login (/login), onde a pessoa entra com
+// e-mail e senha ou com o Google. Antes o card chamava o Google direto: quem
+// usa e-mail e senha não tinha como entrar, e quando o redirecionamento não
+// acontecia o card ficava preso carregando. "Criar conta" abre o
+// cadastro (/cadastro -> /login?mode=signup).
+const EXISTING_ACCOUNT_OPTION = Object.freeze({
+  id: 'existing',
+  title: 'Já tenho conta',
+  description: 'Entre com seu e-mail ou com o Google.',
+  to: '/login',
+});
+
 const NEW_ACCOUNT_OPTION = Object.freeze({
   id: 'new',
   title: 'Criar conta',
@@ -54,90 +59,21 @@ function DecisionArrowIcon() {
 function WelcomeDecisionPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { startGoogleAuth } = useGoogleAuthRedirect();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [feedback, setFeedback] = useState(() => (
-    location.state?.oauthFailed
-      ? 'Não foi possível entrar com o Google. Tente novamente.'
-      : ''
-  ));
+  // Volta do Google sem concluir o acesso (AuthCallbackPage).
+  const feedback = location.state?.oauthFailed
+    ? 'Não foi possível entrar com o Google. Tente novamente.'
+    : '';
 
-  // BUGFIX (estado preso ao voltar do Google): startGoogleAuth navega o
-  // documento inteiro para accounts.google.com -- não é uma navegação do
-  // React Router. Se o usuário aperta "voltar" ANTES de concluir o OAuth,
-  // o Chromium (e outros navegadores com bfcache) restaura esta página a
-  // partir do Back-Forward Cache: o componente NUNCA desmonta/remonta, só
-  // é "reidratado" congelado exatamente como estava no momento da saída --
-  // com isGoogleLoading ainda `true`. Um useEffect de montagem comum nunca
-  // dispara nesse caso (não há montagem nova), então o card ficava preso
-  // em "Abrindo Google..." para sempre, só saindo com refresh manual.
-  //
-  // A correção real é ouvir o evento `pageshow` em nível de window --
-  // `event.persisted === true` é o sinal oficial do navegador para "esta
-  // página voltou do bfcache" (nunca dispara em carregamentos normais).
-  // `visibilitychange` é uma rede de segurança adicional: como a navegação
-  // para o Google sempre esconde a aba (documento inteiro trocado), a aba
-  // só volta a ficar visível quando o usuário retorna -- sem OAuth
-  // concluído, chegar aqui de novo já significa que ele voltou sem
-  // terminar. Nenhum dos dois dispara um novo OAuth sozinho -- só liberam
-  // a interação de novo.
   useEffect(() => {
     // Redesign (#90): mesmo fundo e fonte da tela de acesso; a folha do
     // Inter só entra quando esta tela monta.
     ensureAppFont(document);
-
-    function resetGoogleLoadingState() {
-      setIsGoogleLoading((wasLoading) => {
-        if (wasLoading) {
-          // Opcional (nunca obrigatório) -- mensagem simples, sem detalhe
-          // técnico, só quando havia mesmo uma tentativa em andamento.
-          setFeedback('Login com Google cancelado. Você pode tentar novamente.');
-        }
-        return false;
-      });
-    }
-
-    function handlePageShow(event) {
-      if (event.persisted) {
-        resetGoogleLoadingState();
-      }
-    }
-
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') {
-        resetGoogleLoadingState();
-      }
-    }
-
-    window.addEventListener('pageshow', handlePageShow);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('pageshow', handlePageShow);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
   }, []);
 
-  // LOADING E DUPLO CLIQUE: isGoogleLoading trava o card em si (disabled)
-  // e a checagem no início da função impede uma segunda chamada OAuth
-  // disparada por cliques rápidos repetidos antes do primeiro re-render.
-  async function handleExistingUserClick() {
-    if (isGoogleLoading) return;
-    setFeedback('');
-    setIsGoogleLoading(true);
-    try {
-      const result = await startGoogleAuth(location.state?.from);
-      // Sucesso real: o navegador já foi redirecionado para o Google pelo
-      // SDK -- só chega aqui com `message` se o redirect NÃO ocorreu (ex.:
-      // Supabase não configurado, falha síncrona antes do redirect).
-      if (result.message) {
-        setFeedback(result.message);
-        setIsGoogleLoading(false);
-      }
-    } catch {
-      setFeedback('Não foi possível entrar com o Google. Tente novamente.');
-      setIsGoogleLoading(false);
-    }
+  // O destino depois do login (from) segue para o /login, como no guard de
+  // rota do App.jsx.
+  function handleExistingUserClick() {
+    navigate(EXISTING_ACCOUNT_OPTION.to, { state: { from: location.state?.from } });
   }
 
   return (
@@ -158,19 +94,15 @@ function WelcomeDecisionPage() {
           <button
             type="button"
             className={styles.decisionCard}
-            data-option="existing"
-            disabled={isGoogleLoading}
-            aria-busy={isGoogleLoading}
+            data-option={EXISTING_ACCOUNT_OPTION.id}
             onClick={handleExistingUserClick}
           >
             <span className={styles.decisionCardIcon} aria-hidden="true">
               <ExistingUserIcon />
             </span>
             <span className={styles.decisionCardText}>
-              <strong>Já tenho conta</strong>
-              <span>
-                {isGoogleLoading ? 'Abrindo Google...' : 'Entre com o Google e continue de onde parou.'}
-              </span>
+              <strong>{EXISTING_ACCOUNT_OPTION.title}</strong>
+              <span>{EXISTING_ACCOUNT_OPTION.description}</span>
             </span>
             <span className={styles.decisionCardArrow} aria-hidden="true">
               <DecisionArrowIcon />
@@ -181,7 +113,6 @@ function WelcomeDecisionPage() {
             type="button"
             className={styles.decisionCard}
             data-option={NEW_ACCOUNT_OPTION.id}
-            disabled={isGoogleLoading}
             onClick={() => navigate(NEW_ACCOUNT_OPTION.to)}
           >
             <span className={styles.decisionCardIcon} aria-hidden="true">
