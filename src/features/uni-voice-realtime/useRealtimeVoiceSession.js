@@ -72,8 +72,8 @@ function closeVoiceReservation(reservation) {
   }).catch(() => {});
 }
 
-// Erro com código, para a tela decidir o que oferecer (ex.: NOT_ALLOWED leva
-// ao texto).
+// Erro com código, para a tela decidir o que oferecer (ex.:
+// VOICE_QUOTA_EXHAUSTED leva ao texto).
 export class RealtimeSessionError extends Error {
   constructor(code, message) {
     super(message);

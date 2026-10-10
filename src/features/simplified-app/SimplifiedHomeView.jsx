@@ -67,8 +67,8 @@ import styles from './simplifiedApp.module.css';
 // (PLAYING), mas o carregamento continua interrompível pelo mesmo gesto de
 // barge-in para nunca iniciar por cima de uma nova captura.
 // Recusas da conversa em tempo real que mandam a pessoa para o texto:
-// conta fora do teste, minutos do mês esgotados ou sem assinatura.
-const REALTIME_TEXT_FALLBACK_CODES = new Set(['NOT_ALLOWED', 'VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE']);
+// minutos do mês esgotados ou sem assinatura.
+const REALTIME_TEXT_FALLBACK_CODES = new Set(['VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE']);
 
 // Depois que a conversa termina, o orb e o botão central abrem outra.
 const REALTIME_RESTART_HINT = 'Toque na Uni para começar uma nova conversa.';
