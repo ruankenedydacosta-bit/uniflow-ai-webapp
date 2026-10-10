@@ -53,3 +53,8 @@ verify_jwt = true
 # Ativa a conexão deixada pendente pelo callback, só para quem iniciou o fluxo.
 [functions.google-calendar-confirm]
 verify_jwt = true
+
+# Consome a fila de exportação para o Google Agenda (#100). Chamada pelo
+# pg_cron com o segredo de private.google_calendar_dispatch_secret.
+[functions.google-calendar-export]
+verify_jwt = false
