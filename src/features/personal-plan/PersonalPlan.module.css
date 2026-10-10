@@ -1,11 +1,15 @@
-/* Tela 21d–f: Plano Pessoal, Assinar e Pix. Fundo do app com o halo de topo,
-   cabeçalho interno preso no topo, conteúdo rolável e a barra de assinatura
-   fixa embaixo. Lê os tokens --uf-app-*, que existem nos temas UniFlow,
-   Escuro e Claro. */
+/* Tela 21d–f: Plano Pessoal, Assinar e Pix. A página ocupa a altura da tela:
+   cabeçalho interno em cima, só o conteúdo rola (sem barra visível) e a barra
+   de assinatura fica embaixo. O halo de topo fica atrás do cabeçalho. Lê os
+   tokens --uf-app-*, que existem nos temas UniFlow, Escuro e Claro. */
 .page {
+  --uf-font-family-base: var(--uf-app-font-family);
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   overflow-x: hidden;
   background: var(--uf-app-canvas);
   color: var(--uf-app-text);
@@ -28,16 +32,11 @@
 }
 
 .topBar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 8px 10px;
-  background: color-mix(in oklch, var(--uf-app-canvas) 88%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
 }
 
 .backButton {
@@ -80,18 +79,27 @@
 
 .topTitle {
   margin: 0;
+  color: var(--uf-app-text);
   font-size: 17px;
+  letter-spacing: 0;
   font-weight: var(--uf-font-weight-medium);
 }
 
-/* O fim do conteúdo reserva a altura da barra fixa de assinatura. */
 .content {
-  width: min(100%, 560px);
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 22px;
-  margin: 0 auto;
-  padding: 8px 22px calc(150px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: 8px max(22px, calc((100% - 516px) / 2)) 24px;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
 }
 
 /* Status de quem já tem assinatura: forma do aviso de minutos (tela 19). */
@@ -134,7 +142,9 @@
 .sectionTitle {
   margin: 0;
   padding-bottom: 6px;
+  color: var(--uf-app-text);
   font-size: 15px;
+  letter-spacing: 0;
   font-weight: var(--uf-font-weight-medium);
 }
 
@@ -192,6 +202,7 @@
 }
 
 .demoTitle {
+  color: var(--uf-app-text);
   font-size: 17px;
   font-weight: var(--uf-font-weight-medium);
 }
@@ -205,6 +216,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--uf-app-text);
   font-size: 13px;
 }
 
@@ -222,13 +234,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Barra fixa: preço do plano marcado, "Assinar" e a nota do Asaas. */
+/* Barra de assinatura: preço do plano marcado, "Assinar" e a nota do Asaas. */
 .ctaBar {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 10;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -251,6 +259,7 @@
   flex-direction: column;
   gap: 2px;
   margin: 0;
+  color: var(--uf-app-text);
   min-width: 0;
 }
 
@@ -306,6 +315,10 @@
 
 .checkoutPriceCard p {
   margin: 0;
+}
+
+.checkoutPrice {
+  color: var(--uf-app-text);
 }
 
 .checkoutPrice strong {
@@ -447,6 +460,7 @@
 
 .pixQrTitle {
   margin: 0;
+  color: var(--uf-app-text);
   font-size: 14px;
   text-align: center;
 }

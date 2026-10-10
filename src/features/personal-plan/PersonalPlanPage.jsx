@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext';
 import { resolvePresentationUserId } from '../presentation';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/index.js';
+import { ensureAppFont } from '../simplified-app/appFont.js';
 import ChoiceRow from '../../components/ui/ChoiceRow/ChoiceRow.jsx';
 import Field from '../../components/ui/Field/Field.jsx';
 import IconBox from '../../components/ui/IconBox/IconBox.jsx';
@@ -311,6 +312,11 @@ const {
   const [subscriptionActivationLifecycle] = useState(
     () => createGa4SubscriptionActivationLifecycle(),
   );
+
+  // Tela 21d: a página usa a fonte do app (Inter), como o login.
+  useEffect(() => {
+    ensureAppFont(document);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -671,8 +677,10 @@ if (!resolvedWorkspaceId) {
           <p className={styles.demoUtterance}>“{PERSONAL_PLAN_VOICE_DEMO.utterance}”</p>
           <p className={styles.demoResult}>
             <span className={styles.demoResultIcon} aria-hidden="true"><PhCheckCircleIcon /></span>
-            {PERSONAL_PLAN_VOICE_DEMO.direction} · {PERSONAL_PLAN_VOICE_DEMO.category} ·{' '}
-            <span className={styles.demoAmount}>{PERSONAL_PLAN_VOICE_DEMO.amount}</span>
+            <span>
+              {PERSONAL_PLAN_VOICE_DEMO.direction} · {PERSONAL_PLAN_VOICE_DEMO.category} ·{' '}
+              <span className={styles.demoAmount}>{PERSONAL_PLAN_VOICE_DEMO.amount}</span>
+            </span>
           </p>
         </section>
       </div>
@@ -720,3 +728,4 @@ if (!resolvedWorkspaceId) {
 }
 
 export default PersonalPlanPage;
+export { PixPaymentModal, SubscriptionMethodModal };

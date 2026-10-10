@@ -2,6 +2,7 @@
    telas. Lê os tokens --uf-app-*, que existem nos temas UniFlow, Escuro e
    Claro. */
 .presentationPage {
+  --uf-font-family-base: var(--uf-app-font-family);
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
@@ -175,11 +176,14 @@
 }
 
 /* Ponto de 6px; o ativo se alonga para 18px no degradê azul → violeta. A
-   área de toque é maior que o desenho. */
+   área de toque é maior que o desenho; o mínimo global de 44px dos botões
+   não vale aqui. */
 .progressDot {
   position: relative;
   width: 6px;
   height: 6px;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: var(--uf-radius-full);
@@ -271,7 +275,7 @@
 }
 
 .pieceAgenda {
-  width: 230px;
+  min-width: 230px;
   display: grid;
   grid-template-columns: 44px 1fr;
   gap: 8px;
@@ -345,7 +349,7 @@
   }
 
   .pieceAgenda {
-    width: 214px;
+    min-width: 214px;
     margin-left: 40px;
   }
 }

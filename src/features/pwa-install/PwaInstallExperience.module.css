@@ -39,6 +39,7 @@
 
 .content h2 {
   color: var(--uf-app-text);
+  letter-spacing: 0;
   font-size: 15px;
   font-weight: var(--uf-font-weight-medium);
   line-height: 1.35;

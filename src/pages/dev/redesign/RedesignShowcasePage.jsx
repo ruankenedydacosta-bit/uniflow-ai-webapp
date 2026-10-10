@@ -20,6 +20,7 @@ import { PhBankIcon, PhCheckIcon } from '../../../features/simplified-app/Simpli
 import appStyles from '../../../features/simplified-app/simplifiedApp.module.css';
 import { THEME_OPTIONS, useTheme } from '../../../features/theme/index.js';
 import styles from './RedesignShowcasePage.module.css';
+import FirstAccessPreview from './FirstAccessPreview.jsx';
 import { UniConversationPreview, UniVoicePreview } from './UniScreensPreview.jsx';
 
 const ORB_MODES = [
@@ -85,6 +86,8 @@ function MonthReadingPreview() {
   );
 }
 
+const FIRST_ACCESS_SCREENS = new Set(['apresentacao', 'plano', 'assinar', 'pix', 'resultado', 'instalar', 'modal']);
+
 // Vitrine só de desenvolvimento (épico #91): mostra a base do redesign com
 // as mesmas classes do shell do app, para comparar com o handoff em 390px
 // sem precisar de sessão.
@@ -106,6 +109,10 @@ function RedesignShowcasePage() {
   if (searchParams.has('voz')) return <UniVoicePreview state={searchParams.get('voz')} />;
   if (searchParams.get('tela') === 'conversa') return <UniConversationPreview />;
   if (searchParams.get('tela') === 'leitura') return <MonthReadingPreview />;
+  // Telas 21 e 22: ?tela=apresentacao|plano|assinar|pix|resultado|instalar|modal.
+  if (FIRST_ACCESS_SCREENS.has(searchParams.get('tela'))) {
+    return <FirstAccessPreview screen={searchParams.get('tela')} variant={searchParams.get('r') ?? searchParams.get('m')} />;
+  }
 
   return (
     <div className={appStyles.shell} data-simplified-app-shell>

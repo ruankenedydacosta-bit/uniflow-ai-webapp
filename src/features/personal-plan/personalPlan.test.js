@@ -619,30 +619,28 @@ test('elementos de landing page não voltam: banner de parceria no topo, onda de
   }
 });
 
-test('CTA fixo respeita safe-area e reserva espaço para o conteúdo não ficar atrás dele', async () => {
+// Tela 21d: a página ocupa a altura da tela e só o conteúdo rola; o
+// cabeçalho e a barra de assinatura ficam fora da rolagem, sempre à vista.
+test('barra de assinatura fica embaixo, fora da rolagem, e respeita a safe-area', async () => {
   const css = await source('./PersonalPlan.module.css');
-
-  const ctaIdx = css.indexOf('.ctaBar {');
-  const ctaBlock = css.slice(ctaIdx, css.indexOf('}', ctaIdx) + 1);
-  assert.match(ctaBlock, /position:\s*fixed/);
-  assert.match(ctaBlock, /bottom:\s*0/);
-  assert.match(ctaBlock, /env\(safe-area-inset-bottom,\s*0px\)/);
-
-  // O conteúdo precisa reservar altura suficiente para o último elemento
-  // (assinatura da parceria) ficar visível acima da barra fixa.
-  const contentIdx = css.indexOf('.content {');
-  const contentBlock = css.slice(contentIdx, css.indexOf('}', contentIdx) + 1);
-  assert.match(contentBlock, /calc\(150px \+ env\(safe-area-inset-bottom, 0px\)\)/);
-  assert.match(contentBlock, /env\(safe-area-inset-bottom,\s*0px\)/);
+  const block = (selector) => {
+    const idx = css.indexOf(`${selector} {`);
+    return css.slice(idx, css.indexOf('}', idx) + 1);
+  };
+  assert.match(block('.page'), /height: 100dvh;/);
+  assert.match(block('.page'), /flex-direction: column;/);
+  assert.match(block('.content'), /overflow-y: auto;/);
+  assert.match(block('.content'), /flex: 1 1 auto;/);
+  assert.match(block('.ctaBar'), /flex: 0 0 auto;/);
+  assert.match(block('.ctaBar'), /env\(safe-area-inset-bottom,\s*0px\)/);
 });
 
-test('barra de topo é sticky e respeita a safe-area superior (notch)', async () => {
+test('cabeçalho fica fora da rolagem e respeita a safe-area superior (notch)', async () => {
   const css = await source('./PersonalPlan.module.css');
   const idx = css.indexOf('.topBar {');
-  const block = css.slice(idx, css.indexOf('}', idx) + 1);
-  assert.match(block, /position:\s*sticky/);
-  assert.match(block, /top:\s*0/);
-  assert.match(block, /env\(safe-area-inset-top,\s*0px\)/);
+  const topBar = css.slice(idx, css.indexOf('}', idx) + 1);
+  assert.match(topBar, /flex: 0 0 auto;/);
+  assert.match(topBar, /env\(safe-area-inset-top,\s*0px\)/);
 });
 
 test('seta de voltar tem área de toque confortável (>=44px) e estado de foco visível', async () => {

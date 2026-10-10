@@ -2,6 +2,7 @@
    centralizado na vertical e alinhado à esquerda, botão de 48px no rodapé.
    Fundo do app com o halo de topo. */
 .page {
+  --uf-font-family-base: var(--uf-app-font-family);
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;

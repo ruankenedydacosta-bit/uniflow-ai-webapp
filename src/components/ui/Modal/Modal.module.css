@@ -138,6 +138,7 @@
   }
 
   .overlay > .dialog {
+    --uf-font-family-base: var(--uf-app-font-family);
     width: 100%;
     max-width: none;
     max-height: calc(100dvh - 40px);
@@ -181,6 +182,7 @@
   .overlay > .dialog .title {
     color: var(--uf-app-text);
     font-size: 17px;
+    letter-spacing: 0;
     font-weight: var(--uf-font-weight-medium);
     line-height: 1.3;
     text-wrap: pretty;
