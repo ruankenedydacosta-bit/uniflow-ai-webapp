@@ -96,13 +96,11 @@ test('Enviar encerra e manda para a transcrição; fechar descarta e para a fala
   );
 });
 
-test('a resposta e o rascunho aparecem uma vez só: na tela de voz quando aberta, na Home quando fechada', async () => {
+test('a resposta e o rascunho aparecem só na tela de voz; a Home não mostra a última conversa', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /\{isVoiceModeOpen \? null : compactResponse\}/);
+  assert.doesNotMatch(home, /\{isVoiceModeOpen \? null : compactResponse\}/);
+  assert.doesNotMatch(home, /Ver conversa completa/);
   assert.match(home, /response=\{isVoiceModeOpen \? compactResponse : null\}/);
-  // Na tela de voz, o botão Conversa substitui o link "Ver conversa completa".
-  assert.match(home, /showDetailsLink=\{!isVoiceModeOpen\}/);
-  assert.match(home, /\{showDetailsLink \? \(\s*<Link className=\{styles\.detailsLink\}/);
 });
 
 test('tela de voz é um diálogo modal no body, fecha com Esc e devolve a rolagem da página', async () => {
@@ -308,7 +306,7 @@ test('a flag da conversa em tempo real só liga com "true"', async () => {
 
 test('sem minutos ou sem assinatura, a tela de voz manda a pessoa para o texto', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /REALTIME_TEXT_FALLBACK_CODES = new Set\(\['NOT_ALLOWED', 'VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE'\]\)/);
+  assert.match(home, /REALTIME_TEXT_FALLBACK_CODES = new Set\(\['VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE'\]\)/);
   assert.match(home, /endReason === 'quota'\) \{\s*return 'Seus minutos de conversa por voz deste mês acabaram\. Continue pelo texto\. Toque em Escrever\.';/);
 });
 

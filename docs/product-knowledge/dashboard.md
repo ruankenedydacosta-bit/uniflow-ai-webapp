@@ -14,13 +14,33 @@ A tela mostra: saudação personalizada; um resumo de "clareza financeira" (situ
 
 ### Leitura do mês (Home simplificada)
 
-Na Home de `/app/home`, logo abaixo da fala da Uni, o bloco "Leitura do mês" mostra até três frases sobre as saídas por categoria. A comparação é sempre com o mês anterior até o mesmo dia (no dia 8, de 1 a 8 de cada mês). A ordem é:
+Na Home de `/app/home`, logo abaixo da fala da Uni, o bloco "Leitura do mês" mostra até três frases sobre as saídas por categoria.
 
-1. a categoria que mais subiu;
-2. a categoria com mais saídas no mês;
-3. a categoria que mais caiu.
+As frases são escritas pela Uni com inteligência artificial (Claude Haiku, da Anthropic), como uma analista que ajuda no orçamento: avisam quando uma categoria passa ou chega perto do orçamento, comentam o ritmo dos gastos e elogiam quando o mês vai bem. A Uni recebe só os números do mês por categoria e o nome de cada categoria, nunca a descrição dos registros. Frase com valor que não estava nesses números é descartada antes de aparecer.
 
-Subida ou queda só aparece se for de pelo menos R$ 50 e 20%. Saída sem categoria conta no total do mês, mas não vira frase. Tocar numa frase abre o Financeiro no histórico, filtrado pela categoria. Sem saídas no mês até hoje, o bloco avisa que ainda não há saídas.
+A leitura fica guardada no aparelho até o fim do dia. Um registro novo faz a Uni escrever de novo, e no dia seguinte ela escreve uma leitura nova. São até 10 leituras escritas pela Uni por dia, e elas também contam no limite mensal de uso de IA do plano.
+
+Quando a Uni não consegue escrever (sem conexão, limite do dia atingido ou demora de mais de 10 segundos), o bloco mostra uma leitura calculada pelo app, nesta ordem de prioridade, com as três primeiras que existirem:
+
+1. a categoria que mais passou do orçamento;
+2. a categoria que já usou 80% ou mais do orçamento;
+3. a categoria que mais subiu em relação ao mês anterior;
+4. a categoria com mais saídas no mês;
+5. a categoria que mais caiu;
+6. em quantas categorias você está dentro do orçamento.
+
+O orçamento de uma categoria é o teto mensal que você definiu. Sem teto, a Uni usa a média das saídas da categoria nos 3 meses anteriores, quando houver histórico. A média conta só os meses em que houve alguma saída, e média abaixo de R$ 50 não vira orçamento.
+
+A comparação com o mês anterior é sempre até o mesmo dia (no dia 8, de 1 a 8 de cada mês). Subida ou queda só aparece se for de pelo menos R$ 50 e 20%. Saída sem categoria conta no total do mês, mas não vira frase. Tocar numa frase abre o Financeiro no histórico, filtrado pela categoria. Sem saídas no mês até hoje, o bloco avisa que ainda não há saídas.
+
+### Definir o teto de uma categoria
+
+1. Abra o Financeiro e vá para o histórico.
+2. Em Categoria, escolha uma categoria de saída.
+3. No cartão "Orçamento mensal", toque em Definir teto (ou Alterar, se já houver um).
+4. Informe o valor e toque em Salvar teto.
+
+Para voltar a usar a média, toque em Alterar e depois em Remover teto. Quem só pode ver o espaço não vê o botão.
 
 ## Diferenças PF/PJ
 

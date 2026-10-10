@@ -239,8 +239,8 @@ test('Home oferece instalação dentro do fluxo e a Conta não mantém uma cópi
     source('./pwaInstallConfig.js'),
   ]);
   assert.match(home, /<PwaInstallExperience \/>/);
-  // A resposta é montada numa constante e renderizada neste ponto da Home.
-  assert.ok(home.indexOf('<PwaInstallExperience />') < home.indexOf('{isVoiceModeOpen ? null : compactResponse}'));
+  // A instalação vem antes da leitura do mês na Home.
+  assert.ok(home.indexOf('<PwaInstallExperience />') < home.indexOf('<SimplifiedHomeMonthReading />'));
   assert.doesNotMatch(shell, /PwaInstallExperience/);
   assert.match(main, /initializePwaInstallCapture\(\)/);
   assert.match(config, /PWA_INSTALL_ENABLED = resolvePwaInstallEnabled\(import\.meta\.env\)/);

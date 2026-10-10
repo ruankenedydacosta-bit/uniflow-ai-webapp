@@ -11,6 +11,8 @@
 export const PRECOS_POR_MILHAO_USD = Object.freeze({
   'gpt-5.6-luna': { entrada: 0.2, saida: 1.2 },
   'gpt-5.4-mini': { entrada: 0.75, saida: 4.5 },
+  // Leitura do mês (#122).
+  'claude-haiku-5-5': { entrada: 0.1, saida: 0.5 },
 });
 const PRECO_DESCONHECIDO = Object.freeze({ entrada: 2.5, saida: 15 });
 
@@ -51,6 +53,27 @@ export async function reservarChamada({ fetchImpl = globalThis.fetch, supabaseUr
     return linha.reason === 'monthly_ceiling' ? 'teto_mensal' : 'teto_diario';
   } catch {
     return 'indisponivel';
+  }
+}
+
+// Leitura do mês (#122): 'liberada', 'limite' (teto diário de gerações ou teto
+// mensal de custo) ou 'sem_cota'. Falha fechado, como reservarChamada.
+export async function reservarLeitura({
+  fetchImpl = globalThis.fetch, supabaseUrl, serviceRoleKey, userId, limiteDiario,
+}) {
+  if (!serviceRoleKey || !supabaseUrl || !userId) return 'sem_cota';
+  try {
+    const response = await chamarRpc(fetchImpl, supabaseUrl, serviceRoleKey, 'uni_insights_reserve_call', {
+      p_user_id: userId,
+      p_daily_limit: limiteDiario,
+    });
+    if (!response.ok) return 'sem_cota';
+    const linhas = await response.json();
+    const linha = Array.isArray(linhas) ? linhas[0] : linhas;
+    if (typeof linha?.allowed !== 'boolean') return 'sem_cota';
+    return linha.allowed ? 'liberada' : 'limite';
+  } catch {
+    return 'sem_cota';
   }
 }
 

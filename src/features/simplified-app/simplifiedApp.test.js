@@ -656,7 +656,7 @@ test('não inicia nova gravação durante o processamento (isInteractionBusy inc
   assert.match(home.slice(beginIdx, beginEndIdx), /if \(!plan\.proceed\) return false;/);
 });
 
-test('só "Ver conversa completa", editar uma confirmação e sair da tela de voz navegam para /app/uni', async () => {
+test('só editar uma confirmação e sair da tela de voz navegam para /app/uni', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const navigateCalls = [...home.matchAll(/navigate\(([^)]*)\)/g)].map((match) => match[1]);
   // UNIUPD1: "Ver novidades" também chama navigate(), mas para
@@ -664,7 +664,6 @@ test('só "Ver conversa completa", editar uma confirmação e sair da tela de vo
   const uniNavigateCalls = navigateCalls.filter((call) => call === 'SIMPLIFIED_ROUTES.UNI');
   assert.deepEqual(uniNavigateCalls, ['SIMPLIFIED_ROUTES.UNI', 'SIMPLIFIED_ROUTES.UNI']);
   assert.match(home, /onEditAction={\(\) => navigate\(SIMPLIFIED_ROUTES\.UNI\)}/);
-  assert.match(home, /<Link className={styles\.detailsLink} to={SIMPLIFIED_ROUTES\.UNI}>Ver conversa completa<\/Link>/);
   // Sair da tela de voz para o chat descarta a gravação antes de navegar:
   // nunca deixa o microfone aberto atrás de outra rota.
   assert.match(

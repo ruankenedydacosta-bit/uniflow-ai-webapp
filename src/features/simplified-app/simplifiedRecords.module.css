@@ -850,3 +850,45 @@
     animation: none;
   }
 }
+
+/* Orçamento da categoria filtrada no histórico (#121). */
+.budgetCard {
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-12);
+  padding: var(--uf-space-12) var(--uf-space-16);
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+}
+
+.budgetText {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.budgetText span {
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+}
+
+.budgetText strong {
+  color: var(--uf-app-text);
+  font-size: 17px;
+  font-weight: var(--uf-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.budgetText small {
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.budgetButton {
+  flex: 0 0 auto;
+}

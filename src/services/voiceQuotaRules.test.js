@@ -48,6 +48,14 @@ test('a reserva acontece antes da chamada à OpenAI, e a falha da OpenAI devolve
   assert.equal(releases.length, 2);
 });
 
+test('a Edge Function não tem trava por usuário: autentica e segue para a reserva do plano', () => {
+  assert.doesNotMatch(SESSION_FUNCTION, /allowlist\.has\(|ALLOWED_USER_IDS|readAllowlist/);
+  assert.doesNotMatch(SESSION_FUNCTION, /'NOT_ALLOWED'/);
+  const authIndex = SESSION_FUNCTION.indexOf('const userId = await getAuthenticatedUserId(');
+  const reserveIndex = SESSION_FUNCTION.indexOf("'voice_reserve_block'");
+  assert.ok(authIndex > 0 && reserveIndex > authIndex);
+});
+
 test('a chave da conversa vale 60 segundos', () => {
   assert.match(SESSION_FUNCTION, /CLIENT_SECRET_TTL_SECONDS = 60;/);
   assert.match(SESSION_FUNCTION, /expires_after: \{ anchor: 'created_at', seconds: CLIENT_SECRET_TTL_SECONDS \}/);
