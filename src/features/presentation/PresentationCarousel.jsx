@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import BrandPartnershipHeader from './BrandPartnershipHeader.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/OutlineButton.jsx';
+import { PhArrowLeftIcon, UniMark } from '../simplified-app/SimplifiedIcons.jsx';
 import PresentationArtwork from './PresentationArtwork.jsx';
 import { PRESENTATION_SLIDES } from './presentationConfig.js';
 import {
@@ -8,6 +9,8 @@ import {
 } from './presentationNavigation.js';
 import styles from './Presentation.module.css';
 
+// Tela 21a–c: topo com a marca e "Pular", arte no espaço livre e, na base,
+// título, texto, voltar com os pontos, o botão principal e a parceria.
 function PresentationCarousel({ onComplete }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const pointerStartRef = useRef(null);
@@ -63,7 +66,17 @@ function PresentationCarousel({ onComplete }) {
       tabIndex="0"
       onKeyDown={handleKeyDown}
     >
-      <BrandPartnershipHeader />
+      <header className={styles.topBar}>
+        <span className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true"><UniMark /></span>
+          <span>UniFlow AI</span>
+        </span>
+        {activeSlide.skipAction ? (
+          <OutlineButton variant="ghost" className={styles.skipAction} onClick={completePresentation}>
+            {activeSlide.skipAction}
+          </OutlineButton>
+        ) : null}
+      </header>
 
       <div
         className={styles.slideViewport}
@@ -82,53 +95,23 @@ function PresentationCarousel({ onComplete }) {
 
           <div className={styles.slideCopy}>
             <h1 id={`presentation-title-${activeSlide.id}`}>{activeSlide.title}</h1>
-            <span className={styles.lightDivider} aria-hidden="true" />
             <p>{activeSlide.description}</p>
-          </div>
-
-          <p className={styles.partnershipNote}>
-            <span aria-hidden="true">✓</span>
-            Em parceria com a <strong>SmartTech.</strong>
-          </p>
-
-          <div className={styles.lowerWave} aria-hidden="true">
-            <PresentationArtwork type="welcome" />
           </div>
         </article>
       </div>
 
       <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.primaryAction}
-          aria-label={activeSlide.primaryAction}
-          onClick={handlePrimaryAction}
-        >
-          {activeSlide.primaryAction}
-        </button>
-
-        {activeSlide.skipAction ? (
-          <button
-            type="button"
-            className={styles.skipAction}
-            onClick={completePresentation}
-          >
-            {activeSlide.skipAction}
-          </button>
-        ) : (
-          <span className={styles.skipPlaceholder} aria-hidden="true" />
-        )}
-
         <div className={styles.navigationRow}>
-          <button
-            type="button"
-            className={styles.backAction}
-            aria-label="Voltar ao slide anterior"
-            disabled={isFirst}
-            onClick={() => move(-1)}
-          >
-            <span aria-hidden="true">←</span>
-          </button>
+          {isFirst ? null : (
+            <button
+              type="button"
+              className={styles.backAction}
+              aria-label="Voltar ao slide anterior"
+              onClick={() => move(-1)}
+            >
+              <PhArrowLeftIcon />
+            </button>
+          )}
 
           <div
             className={styles.progressDots}
@@ -139,16 +122,20 @@ function PresentationCarousel({ onComplete }) {
               <button
                 key={slide.id}
                 type="button"
-                className={index === activeIndex ? styles.progressDotActive : styles.progressDot}
+                className={styles.progressDot}
                 aria-label={`Ir para o slide ${index + 1}`}
                 aria-current={index === activeIndex ? 'step' : undefined}
                 onClick={() => setActiveIndex(index)}
               />
             ))}
           </div>
-
-          <span className={styles.navigationSpacer} aria-hidden="true" />
         </div>
+
+        <OutlineButton className={styles.primaryAction} onClick={handlePrimaryAction}>
+          {activeSlide.primaryAction}
+        </OutlineButton>
+
+        <p className={styles.partnershipNote}>Em parceria com a SmartTech</p>
       </div>
 
       <p className={styles.liveRegion} aria-live="polite">
@@ -159,4 +146,3 @@ function PresentationCarousel({ onComplete }) {
 }
 
 export default PresentationCarousel;
-

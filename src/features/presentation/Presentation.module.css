@@ -1,11 +1,13 @@
+/* Tela 21a–c: apresentação no fundo do app com o halo de topo das outras
+   telas. Lê os tokens --uf-app-*, que existem nos temas UniFlow, Escuro e
+   Claro. */
 .presentationPage {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
-  background:
-    radial-gradient(circle at 50% 10%, rgba(37, 99, 235, .12), transparent 34%),
-    linear-gradient(180deg, #020716 0%, #010511 100%);
-  color: #f8fafc;
+  background: var(--uf-app-canvas);
+  color: var(--uf-app-text);
+  font-family: var(--uf-app-font-family);
 }
 
 .carousel {
@@ -17,327 +19,196 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   margin: 0 auto;
   padding:
-    max(18px, env(safe-area-inset-top))
-    max(18px, env(safe-area-inset-right))
-    max(18px, env(safe-area-inset-bottom))
-    max(18px, env(safe-area-inset-left));
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
   outline: none;
   isolation: isolate;
   touch-action: pan-y;
 }
 
+/* Halo de topo: elipse de 520x420 com azul e violeta. */
 .carousel::before {
   position: absolute;
-  inset: 0;
+  top: -180px;
+  left: 50%;
   z-index: -1;
-  background-image:
-    radial-gradient(circle at 14% 24%, rgba(124, 58, 237, .13) 0 1px, transparent 2px),
-    radial-gradient(circle at 84% 35%, rgba(34, 211, 238, .14) 0 1px, transparent 2px);
-  background-size: 74px 91px, 97px 83px;
+  width: 520px;
+  height: 420px;
+  border-radius: 50%;
+  background: var(--uf-app-halo);
   content: "";
-  opacity: .55;
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .carousel:focus-visible {
-  box-shadow: inset 0 0 0 2px rgba(103, 232, 249, .8);
+  box-shadow: inset 0 0 0 2px var(--uf-app-focus);
 }
 
-.brandHeader {
-  height: clamp(76px, 22vw, 104px);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 1px 44px 1px minmax(0, 1fr);
+.topBar {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px 8px 22px;
+}
+
+.brand {
+  display: flex;
   align-items: center;
   gap: 8px;
-  animation: presentationReveal 260ms ease-out both;
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
 }
 
-.brandLogoFrame {
-  height: 76px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
+.brandMark {
+  width: 26px;
+  display: block;
 }
 
-.brandLogoFrame img {
+.brandMark img {
   width: 100%;
   height: auto;
   display: block;
-  filter: drop-shadow(0 0 12px rgba(37, 99, 235, .22));
 }
 
-.uniflowLogo {
-  transform: scale(1.15);
-}
-
-.smartechLogo {
-  transform: scale(1.16) translateY(-1%);
-}
-
-.brandDivider {
-  width: 1px;
-  height: 44px;
-  background: linear-gradient(transparent, rgba(148, 163, 184, .45), transparent);
-}
-
-.partnershipSymbol {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  color: #67e8f9;
-}
-
-.partnershipSymbol svg {
-  width: 42px;
-  fill: none;
-  stroke: #4f8cff;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.6;
-  filter: drop-shadow(0 0 7px rgba(124, 58, 237, .65));
+.skipAction {
+  color: var(--uf-app-text-2);
 }
 
 .slideViewport {
   min-height: 0;
-  display: grid;
-  align-items: center;
+  display: flex;
 }
 
 .slide {
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-rows: minmax(140px, 1fr) auto auto minmax(78px, .72fr);
-  align-content: center;
-  animation: presentationSlideIn 250ms ease-out both;
+  grid-template-rows: minmax(0, 1fr) auto;
+  animation: presentationReveal 260ms ease-out both;
 }
 
 .illustrationArea {
-  min-height: 140px;
-  display: grid;
-  place-items: center;
-  margin-inline: auto;
-}
-
-.illustrationArea svg {
-  width: min(100%, 390px);
-  max-height: 230px;
-  display: block;
-  overflow: visible;
-}
-
-.slideCopy {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-  text-align: center;
-}
-
-.slideCopy h1 {
-  max-width: 440px;
-  margin: 0;
-  color: #f8fafc;
-  font-size: clamp(29px, 8.2vw, 43px);
-  font-weight: 760;
-  line-height: 1.08;
-  letter-spacing: 0;
-  text-wrap: balance;
-}
-
-.slideCopy h1::first-line {
-  text-shadow: 0 0 24px rgba(37, 99, 235, .15);
-}
-
-.slideCopy p {
-  max-width: 410px;
-  margin: 0;
-  color: #c3cad8;
-  font-size: clamp(16px, 4.6vw, 20px);
-  line-height: 1.48;
-  text-wrap: balance;
-}
-
-.lightDivider {
-  position: relative;
-  width: 118px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #2563eb, transparent);
-}
-
-.lightDivider::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #67e8f9;
-  box-shadow: 0 0 7px #22d3ee, 0 0 15px #2563eb;
-  content: "";
-  transform: translate(-50%, -50%);
-  animation: centralPulse 1900ms ease-in-out infinite;
-}
-
-.partnershipNote {
+  min-height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  margin: 22px 0 0;
-  color: #cbd5e1;
-  font-size: clamp(14px, 4vw, 17px);
-  text-align: center;
+  padding: 16px 22px;
 }
 
-.partnershipNote > span {
-  width: 29px;
-  height: 29px;
-  display: inline-grid;
-  place-items: center;
-  border: 2px solid #2dd4bf;
-  border-radius: 9px;
-  color: #8b5cf6;
-  box-shadow: 0 0 10px rgba(45, 212, 191, .22);
+.slideCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 22px;
 }
 
-.partnershipNote strong {
-  color: #34d399;
-  font-weight: 600;
+.slideCopy h1 {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 28px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.2;
+  letter-spacing: -.02em;
+  text-wrap: balance;
 }
 
-.lowerWave {
-  align-self: center;
-  width: calc(100% + 36px);
-  margin-left: -18px;
-  pointer-events: none;
-}
-
-.lowerWave svg {
-  width: 100%;
-  height: 112px;
-  display: block;
-  overflow: visible;
+.slideCopy p {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 15px;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .actions {
-  display: grid;
-  justify-items: stretch;
-  gap: 10px;
-}
-
-.primaryAction {
-  min-height: 58px;
-  padding: 12px 24px;
-  border: 1px solid rgba(103, 232, 249, .34);
-  border-radius: 15px;
-  background: linear-gradient(105deg, #155dfc 0%, #6438ef 45%, #2dd4bf 100%);
-  color: #fff;
-  box-shadow:
-    0 12px 28px rgba(37, 99, 235, .22),
-    inset 0 1px 0 rgba(255, 255, 255, .25);
-  font: inherit;
-  font-size: clamp(17px, 5vw, 21px);
-  font-weight: 760;
-  letter-spacing: 0;
-  cursor: pointer;
-  transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
-}
-
-.primaryAction:hover {
-  filter: brightness(1.08);
-  box-shadow:
-    0 15px 34px rgba(37, 99, 235, .28),
-    inset 0 1px 0 rgba(255, 255, 255, .28);
-}
-
-.primaryAction:active {
-  transform: scale(.985);
-}
-
-.primaryAction:focus-visible,
-.skipAction:focus-visible,
-.backAction:focus-visible,
-.progressDot:focus-visible,
-.progressDotActive:focus-visible {
-  outline: 3px solid #67e8f9;
-  outline-offset: 3px;
-}
-
-.skipAction,
-.skipPlaceholder {
-  min-height: 44px;
-}
-
-.skipAction {
-  border: 0;
-  background: transparent;
-  color: #8b5cf6;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 740;
-  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 22px 30px;
 }
 
 .navigationRow {
   min-height: 44px;
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .backAction {
   width: 44px;
   height: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  margin-left: -12px;
+  padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: rgba(15, 23, 42, .72);
-  color: #cbd5e1;
-  font: inherit;
-  font-size: 22px;
+  border-radius: var(--uf-radius-full);
+  background: transparent;
+  color: var(--uf-app-text-2);
   cursor: pointer;
 }
 
-.backAction:disabled {
-  visibility: hidden;
+.backAction svg {
+  width: 18px;
+  height: 18px;
+}
+
+.backAction:hover {
+  background: var(--uf-app-surface-2);
+}
+
+.backAction:focus-visible,
+.progressDot:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
 }
 
 .progressDots {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 6px;
 }
 
-.progressDot,
-.progressDotActive {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
+/* Ponto de 6px; o ativo se alonga para 18px no degradê azul → violeta. A
+   área de toque é maior que o desenho. */
+.progressDot {
+  position: relative;
+  width: 6px;
+  height: 6px;
   padding: 0;
   border: 0;
-  background: transparent;
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-app-border-strong);
   cursor: pointer;
+  transition: width var(--uf-duration-fast) ease;
 }
 
-.progressDot::before,
-.progressDotActive::before {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #334155;
+.progressDot::before {
+  position: absolute;
+  inset: -19px -4px;
   content: "";
-  transition: width 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
-.progressDotActive::before {
-  width: 24px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #2563eb, #7c3aed);
-  box-shadow: 0 0 12px rgba(99, 102, 241, .5);
+.progressDot[aria-current="step"] {
+  width: 18px;
+  background: linear-gradient(to right, var(--uf-app-brand-blue), var(--uf-app-brand-violet));
 }
 
-.navigationSpacer {
-  width: 44px;
+.primaryAction {
+  width: 100%;
+  min-height: 48px;
+}
+
+.partnershipNote {
+  margin: 0;
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+  text-align: center;
 }
 
 .liveRegion {
@@ -349,362 +220,159 @@
   white-space: nowrap;
 }
 
-.panelSurface {
-  fill: rgba(5, 14, 33, .95);
-  stroke: rgba(37, 99, 235, .62);
-  stroke-width: 1.4;
+/* 21b: card de rascunho e item da agenda, deslocado 60px. */
+.pieces {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.chartLine {
-  fill: none;
-  stroke-width: 3;
-  stroke-linecap: round;
+.pieceDraft {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--uf-radius-16);
+  background: color-mix(in oklch, var(--uf-app-card-surface) 85%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-green) 30%, transparent),
+    var(--uf-app-soft-shadow);
 }
 
-.chartGrid {
-  fill: none;
-  stroke: rgba(100, 116, 139, .18);
-  stroke-width: 1;
+.pieceDraftHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-micro-size);
 }
 
-.miniCard,
-.uniCard {
-  fill: rgba(13, 24, 55, .96);
-  stroke: rgba(124, 58, 237, .52);
-  stroke-width: 1.2;
+.pieceTag {
+  padding: 2px 8px;
+  border: 1px solid var(--uf-app-border-strong);
+  border-radius: var(--uf-radius-full);
+  font-size: 11px;
 }
 
-.uniCard {
-  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .38));
+.pieceAmount {
+  font-size: 24px;
+  font-weight: var(--uf-font-weight-medium);
+  font-variant-numeric: tabular-nums;
 }
 
-.dataStroke,
-.uniMark {
-  fill: none;
-  stroke: #6f8bbb;
-  stroke-linecap: round;
-  stroke-width: 3;
+.pieceMeta {
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
 }
 
-.uniMark {
-  stroke: #fff;
-  stroke-width: 2;
+.pieceDraft .pieceMeta {
+  color: var(--uf-app-text-2);
 }
 
-.securityOrbit,
-.securityOrbitAlt {
-  fill: none;
-  stroke: rgba(37, 99, 235, .48);
-  stroke-width: 1.2;
-  stroke-dasharray: 4 8;
+.pieceAgenda {
+  width: 230px;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 8px;
+  margin-left: 60px;
+  padding: 12px 14px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow: var(--uf-app-soft-shadow);
 }
 
-.securityOrbitAlt {
-  stroke: rgba(45, 212, 191, .25);
+.pieceTime {
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
-.shieldFill {
-  fill: rgba(9, 30, 64, .92);
-  stroke-width: 4;
+.pieceTitle {
+  font-size: 14px;
 }
 
-.shieldInner {
-  fill: rgba(9, 19, 43, .62);
-  stroke: rgba(103, 232, 249, .18);
+/* 21c: escudo de 44px num círculo de 104px sobre halo de 180px. */
+.shield {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: grid;
+  place-items: center;
 }
 
-.lockArc {
-  fill: none;
-  stroke: #67e8f9;
-  stroke-linecap: round;
-  stroke-width: 7;
+.shieldHalo {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--uf-radius-full);
+  background: radial-gradient(closest-side, color-mix(in oklch, var(--uf-app-brand-violet) 22%, transparent), transparent);
 }
 
-.lockKey {
-  fill: none;
-  stroke: #031329;
-  stroke-linecap: round;
-  stroke-width: 4;
+.shieldBadge {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-app-card-surface);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 45%, transparent),
+    0 0 24px color-mix(in oklch, var(--uf-app-brand-violet) 30%, transparent);
+  color: var(--uf-app-brand-violet-text);
 }
 
-.securityIconCircle {
-  fill: rgba(6, 19, 43, .92);
-  stroke: rgba(37, 99, 235, .68);
-  stroke-width: 1.2;
-}
-
-.securityIcon {
-  fill: none;
-  stroke: #34d399;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-
-.welcomeWave,
-.welcomeWaveGhost {
-  fill: none;
-  stroke-linecap: round;
-}
-
-.welcomeWave {
-  stroke-width: 2.8;
-}
-
-.welcomeWaveGhost {
-  stroke: rgba(37, 99, 235, .24);
-  stroke-width: 18;
-}
-
-.centralPulse {
-  animation: centralPulse 1900ms ease-in-out infinite;
-}
-
-.artworkFloat {
-  transform-origin: center;
-  animation: artworkFloat 3800ms ease-in-out infinite;
+.shieldBadge svg {
+  width: 44px;
+  height: 44px;
 }
 
 @keyframes presentationReveal {
-  from { opacity: 0; transform: scale(.98); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
-@keyframes presentationSlideIn {
-  from { opacity: 0; transform: translateX(18px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes centralPulse {
-  0%, 100% { opacity: .72; transform: scale(.92); }
-  50% { opacity: 1; transform: scale(1.12); }
-}
-
-@keyframes artworkFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-
+/* Telas muito estreitas: a arte encolhe para caber. */
 @media (max-width: 359px) {
-  .carousel {
-    padding-inline: max(12px, env(safe-area-inset-left));
-    padding-top: max(10px, env(safe-area-inset-top));
-  }
-
-  .brandHeader {
-    height: 64px;
-    grid-template-columns: minmax(0, 1fr) 1px 34px 1px minmax(0, 1fr);
-    gap: 5px;
-  }
-
-  .brandLogoFrame {
-    height: 61px;
-  }
-
-  .partnershipSymbol,
-  .partnershipSymbol svg {
-    width: 34px;
-  }
-
-  .slide {
-    grid-template-rows: minmax(112px, .8fr) auto auto minmax(58px, .5fr);
-  }
-
-  .illustrationArea {
-    min-height: 112px;
-  }
-
-  .illustrationArea svg {
-    max-height: 168px;
-  }
-
-  .slideCopy {
-    gap: 8px;
-  }
-
   .slideCopy h1 {
-    font-size: 27px;
+    font-size: 24px;
   }
 
-  .slideCopy p {
-    font-size: 15px;
-    line-height: 1.36;
+  .pieceDraft {
+    width: 240px;
   }
 
-  .partnershipNote {
-    margin-top: 12px;
-    font-size: 13px;
-  }
-
-  .lowerWave svg {
-    height: 72px;
-  }
-
-  .primaryAction {
-    min-height: 52px;
-    font-size: 17px;
-  }
-
-  .skipAction,
-  .skipPlaceholder {
-    min-height: 36px;
-  }
-
-  .navigationRow {
-    min-height: 40px;
+  .pieceAgenda {
+    width: 214px;
+    margin-left: 40px;
   }
 }
 
-@media (max-height: 880px) {
-  .carousel {
-    padding-top: max(10px, env(safe-area-inset-top));
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
-  }
-
-  .brandHeader {
-    height: 72px;
-  }
-
-  .brandLogoFrame {
-    height: 66px;
-  }
-
-  .slide {
-    grid-template-rows: minmax(124px, .82fr) auto auto minmax(62px, .48fr);
-  }
-
+/* Telas baixas: menos respiro em volta da arte. */
+@media (max-height: 680px) {
   .illustrationArea {
-    min-height: 124px;
-  }
-
-  .illustrationArea svg {
-    max-height: 188px;
-  }
-
-  .partnershipNote {
-    margin-top: 13px;
-  }
-
-  .lowerWave svg {
-    height: 76px;
+    min-height: 160px;
+    padding-block: 8px;
   }
 
   .actions {
-    gap: 6px;
-  }
-
-  .skipAction,
-  .skipPlaceholder,
-  .navigationRow {
-    min-height: 40px;
-  }
-}
-
-@media (max-height: 680px) {
-  .brandHeader {
-    height: 54px;
-    grid-template-columns: minmax(0, 1fr) 1px 34px 1px minmax(0, 1fr);
-  }
-
-  .brandLogoFrame {
-    height: 50px;
-  }
-
-  .brandDivider {
-    height: 34px;
-  }
-
-  .partnershipSymbol,
-  .partnershipSymbol svg {
-    width: 34px;
-    height: 34px;
-  }
-
-  .slide {
-    grid-template-rows: minmax(88px, .7fr) auto auto minmax(42px, .35fr);
-  }
-
-  .illustrationArea,
-  .illustrationArea svg {
-    min-height: 88px;
-    max-height: 118px;
-  }
-
-  .slideCopy {
-    gap: 6px;
-  }
-
-  .slideCopy h1 {
-    font-size: clamp(25px, 7.6vw, 31px);
-  }
-
-  .slideCopy p {
-    font-size: clamp(14px, 4.1vw, 17px);
-    line-height: 1.34;
-  }
-
-  .partnershipNote {
-    margin-top: 8px;
-    font-size: 13px;
-  }
-
-  .partnershipNote > span {
-    width: 25px;
-    height: 25px;
-  }
-
-  .lowerWave svg {
-    height: 52px;
-  }
-
-  .primaryAction {
-    min-height: 48px;
-    font-size: 16px;
-  }
-
-  .skipAction,
-  .skipPlaceholder,
-  .navigationRow {
-    min-height: 34px;
-  }
-
-  .backAction,
-  .progressDot,
-  .progressDotActive,
-  .navigationSpacer {
-    width: 40px;
-    height: 40px;
+    gap: 14px;
+    padding-bottom: 20px;
   }
 }
 
 @media (min-width: 700px) {
-  .presentationPage {
-    display: grid;
-    place-items: center;
-    padding: 32px;
-  }
-
   .carousel {
-    min-height: min(900px, calc(100vh - 64px));
-    border: 1px solid rgba(71, 85, 105, .45);
-    border-radius: 24px;
-    background: rgba(2, 7, 22, .8);
-    box-shadow: 0 28px 70px rgba(0, 0, 0, .46);
+    min-height: min(100dvh, 920px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brandHeader,
   .slide,
-  .artworkFloat,
-  .centralPulse,
-  .lightDivider::after {
+  .progressDot {
     animation: none;
-  }
-
-  .primaryAction,
-  .progressDot::before,
-  .progressDotActive::before {
     transition: none;
   }
 }

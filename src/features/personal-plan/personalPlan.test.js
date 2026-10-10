@@ -60,8 +60,8 @@ test('selos comerciais foram removidos -- resta um único card discreto de garan
   assert.doesNotMatch(indexSource, /PERSONAL_PLAN_TRUST_SEALS/);
   assert.doesNotMatch(page, /PERSONAL_PLAN_TRUST_SEALS|TrustSealIcon/);
   assert.doesNotMatch(page, /Dados protegidos|Tecnologia segura|Suporte humano|Feito para facilitar sua vida/);
-  assert.match(page, /Cancele quando quiser\./);
-  assert.match(page, /Pagamento seguro processado pelo Asaas\./);
+  // Tela 21d: a garantia virou a nota da barra fixa de assinatura.
+  assert.match(page, /Cancele quando quiser\. Pagamento processado pelo Asaas\./);
 });
 
 // A demonstração "Você fala. A Uni organiza." é apresentação pura: nunca
@@ -70,7 +70,7 @@ test('demonstração da Uni é estática -- nenhum request, nenhuma Uni Engine, 
   const page = await source('./PersonalPlanPage.jsx');
   const demo = page.slice(
     page.indexOf('<section className={styles.demoCard}'),
-    page.indexOf('<section className={styles.assuranceCard}'),
+    page.indexOf('{canSubscribe ? ('),
   );
   assert.ok(demo.length > 0, 'bloco de demonstração não encontrado');
   assert.match(demo, /PERSONAL_PLAN_VOICE_DEMO\.utterance/);
@@ -95,9 +95,10 @@ test('CTA abre o modal de método (nunca chama o backend direto no clique do bot
   assert.match(page, /onClick=\{handleBeginCheckout\}/);
   assert.match(page, /function handleBeginCheckout\(\) \{[\s\S]*?setFlowState\('method_modal'\);[\s\S]*?\}/);
   // REDESIGN APP-LIKE: o CTA gigante do meio da página deu lugar à barra
-  // fixa inferior ("ASSINAR AGORA"), que chama o MESMO handler.
-  assert.match(page, /ASSINAR AGORA/);
-  assert.doesNotMatch(page, /ASSINAR PLANO PESSOAL/);
+  // fixa inferior, que chama o MESMO handler. Tela 21d: "Assinar" em caixa
+  // normal.
+  assert.match(page, /<PhCrownSimpleIcon \/>\s*\n\s*Assinar\s*\n/);
+  assert.doesNotMatch(page, /ASSINAR AGORA|ASSINAR PLANO PESSOAL/);
 });
 
 // REDESIGN APP-LIKE: a barra fixa é o único CTA de assinatura e só existe
@@ -190,8 +191,8 @@ test('modal de método: Pix e cartão de crédito são ambos selecionáveis -- n
 // acontece NO Asaas, nunca dentro da UniFlow.
 test('modal de método: texto do cartão é honesto sobre onde o pagamento acontece (Asaas)', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /<strong>Cartão de crédito<\/strong>/);
-  assert.match(page, /<small>Pagamento processado com segurança pelo Asaas<\/small>/);
+  assert.match(page, /title="Cartão de crédito"/);
+  assert.match(page, /description="Você informa os dados do cartão na página do Asaas\."/);
 });
 
 // GUARD FIX: PersonalPlanPage.jsx agora cria o workspace pessoal sob
@@ -313,46 +314,37 @@ test('modal exige CPF/CNPJ em formato válido (11 ou 14 dígitos) antes de habil
 // exclusivamente na página hospedada da Asaas.
 test('cartão TAMBÉM exige CPF/CNPJ no modal agora -- só nome/endereço/dados do cartão continuam na página segura do Asaas', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /Nome, endereço e dados do cartão serão informados diretamente na página segura do Asaas\./);
+  // Tela 21e: a linha do cartão diz que os dados do cartão vão na página do
+  // Asaas; o CPF ou CNPJ continua na folha para os dois métodos.
+  assert.match(page, /Você informa os dados do cartão na página do Asaas\./);
   assert.doesNotMatch(page, /Você informará seus dados \(CPF, nome e endereço\) diretamente na página segura do Asaas\./);
+  assert.doesNotMatch(page, /\{paymentMethod === 'credit_card' \? \(/);
 });
 
 test('CPF/CNPJ tem label visível associado ao input (não é só placeholder) -- aparece para os DOIS métodos, nunca condicionado a paymentMethod === \'pix\'', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /<label className={styles\.cpfField}>\s*\n\s*<span>CPF ou CNPJ<\/span>/);
-  assert.doesNotMatch(page, /\{paymentMethod === 'pix' \? \(\s*\n\s*<label className={styles\.cpfField}>/);
+  const field = await readFile(new URL('../../components/ui/Field/Field.jsx', import.meta.url), 'utf8');
+  assert.match(page, /<Field\s*\n\s*label="CPF ou CNPJ"/);
+  assert.doesNotMatch(page, /\{paymentMethod === 'pix' \? \(\s*\n\s*<Field/);
+  // O Field envolve rótulo e campo no mesmo <label>.
+  assert.match(field, /<label className=\{styles\.labelWrap\}>\s*\n\s*<span className=\{styles\.label\}>\{label\}<\/span>/);
 });
 
-// REDESIGN CHECKOUT: o Modal compartilhado (Modal.jsx) nasce com superfície
-// CLARA (--uf-color-bg-elevated). As duas telas de pagamento agora a
-// reapresentam em azul-marinho por className/overlayClassName/
-// headerClassName/bodyClassName -- SOMENTE elas. A invariante original
-// permanece: nenhuma cor herdada/transparente; todo texto precisa ser
-// explícito e legível sobre a superfície real do modal (agora escura).
-test('modal de método/CPF usa cores explícitas próprias, legíveis sobre a superfície escura do checkout', async () => {
+// Tela 21e: a folha de assinatura lê os tokens --uf-app-* do tema ativo,
+// como o resto do app. Nenhum texto herda cor transparente, e o campo de CPF
+// usa 16px, que evita o zoom automático do iOS ao focar na PWA.
+test('modal de método/CPF usa os tokens do tema, legíveis sobre a superfície da folha', async () => {
   const css = await source('./PersonalPlan.module.css');
-
-  // A superfície escura é aplicada só ao diálogo do checkout (dupla classe
-  // para vencer Modal.module.css sem depender da ordem do bundle).
-  assert.match(css, /\.checkoutDialog\.checkoutDialog \{/);
-  assert.match(css, /\.checkoutDialog\.checkoutDialog \{[\s\S]*?color:\s*#e8f0fb/);
-
-  const methodOptionIdx = css.indexOf('.methodOption {');
-  const methodOptionBlock = css.slice(methodOptionIdx, css.indexOf('}', methodOptionIdx));
-  assert.doesNotMatch(methodOptionBlock, /color:\s*inherit/);
-  assert.doesNotMatch(methodOptionBlock, /color:\s*transparent/);
-  assert.match(methodOptionBlock, /color:\s*#e8f0fb/);
-
-  const cpfInputIdx = css.indexOf('.cpfField input {');
-  const cpfInputBlock = css.slice(cpfInputIdx, css.indexOf('}', cpfInputIdx));
-  assert.doesNotMatch(cpfInputBlock, /color:\s*inherit/);
-  assert.match(cpfInputBlock, /color:\s*#f2f7ff/);
-  // >=16px evita o zoom automático do iOS ao focar o campo na PWA.
-  assert.match(cpfInputBlock, /font-size:\s*16px/);
-
-  assert.match(css, /\.cpfField input:focus-visible \{/);
-  assert.match(css, /\.cpfField input\[aria-invalid='true'\] \{/);
-  assert.match(css, /\.methodOption\[data-disabled='true'\] \{[\s\S]*?color:\s*#64748b/);
+  const fieldCss = await readFile(new URL('../../components/ui/Field/Field.module.css', import.meta.url), 'utf8');
+  const checkout = css.slice(css.indexOf('/* Folhas de Assinar (21e) e Pix (21f). */'), css.indexOf('/* O QR Code fica sempre em fundo claro'));
+  assert.ok(checkout.length > 0);
+  assert.doesNotMatch(checkout, /color:\s*transparent/);
+  assert.doesNotMatch(checkout, /#[0-9a-f]{3,8}\b/i);
+  assert.match(fieldCss, /\.box \{[\s\S]*?color: var\(--uf-app-text\);/);
+  const inputIdx = fieldCss.indexOf('.box > input,');
+  const inputBlock = fieldCss.slice(inputIdx, fieldCss.indexOf('}', inputIdx));
+  assert.match(inputBlock, /font-size:\s*16px/);
+  assert.match(inputBlock, /color: inherit/);
 });
 
 // REDESIGN CHECKOUT: o QR Code oficial da Asaas nunca pode ser deformado
@@ -440,7 +432,7 @@ test('PixPaymentModal mostra "Aguardando pagamento" e o texto de confirmação a
   const slice = pixModalSource(page);
   assert.match(slice, /Aguardando pagamento/);
   assert.match(slice, /O pagamento é identificado automaticamente em poucos segundos\./);
-  assert.match(slice, /A confirmação acontece automaticamente\./);
+  assert.match(slice, /Deixe esta tela aberta até o pagamento ser identificado\./);
 });
 
 // REDESIGN CHECKOUT: o valor exibido vem da fonte central do plano
@@ -457,24 +449,25 @@ test('valor do plano no checkout/Pix vem do plano escolhido (ou da cobrança da 
   assert.doesNotMatch(checkout, /R\$ \d+,\d{2}/);
 });
 
-test('PixPaymentModal mostra "Pagamento confirmado" e "Seu Plano Pessoal está ativo." quando isActive', async () => {
+// Tela 21g: com o pagamento confirmado, a página troca a folha do Pix pela
+// tela de resultado. O estado continua vindo SOMENTE de flowState (polling
+// real ou resposta da criação), nunca de um estado local do modal.
+test('pagamento confirmado mostra a tela de resultado "Pagamento confirmado" com o plano ativo', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  const slice = pixModalSource(page);
-  assert.match(slice, /Pagamento confirmado\./);
-  assert.match(slice, /Seu Plano Pessoal está ativo\./);
-  // O estado exibido continua derivando SOMENTE de `isActive` (polling real),
-  // nunca de um estado local/simulado dentro do modal.
-  assert.match(slice, /\{isActive \? \(/);
+  const idx = page.indexOf("if (flowState === 'active') {");
+  assert.ok(idx > -1);
+  const slice = page.slice(idx, page.indexOf('return (\n    <main', idx));
+  assert.match(slice, /<PlanResultScreen/);
+  assert.match(slice, /title="Pagamento confirmado"/);
+  assert.match(slice, /Seu Plano Pessoal está ativo\. Você tem \$\{activeVoiceMinutes\} minutos de conversa por voz por mês\./);
+  assert.match(slice, /onClick=\{handleGoHome\}/);
+  assert.doesNotMatch(pixModalSource(page), /isActive/);
 });
 
-test('PixPaymentModal é renderizado no componente principal, aberto durante pending e durante active com pixData', async () => {
+test('PixPaymentModal é renderizado no componente principal e fica aberto enquanto o pagamento está pendente', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(
-    page,
-    /open={\(flowState === 'pending' \|\| \(flowState === 'active' && Boolean\(pixData\)\)\) && !pixModalDismissed}/,
-  );
+  assert.match(page, /open={flowState === 'pending' && !pixModalDismissed}/);
   assert.match(page, /pixData={pixData}/);
-  assert.match(page, /isActive={flowState === 'active'}/);
 });
 
 test('status "pending" liga o polling (useSubscriptionStatusPolling) automaticamente, sem exigir refresh manual', async () => {
@@ -549,14 +542,13 @@ test('página apresenta a hierarquia app-like aprovada, sem a copy de landing pa
   const page = await source('./PersonalPlanPage.jsx');
   const promotionCard = await source('./PlanPromotionCard.jsx');
   assert.match(page, /<PlanPromotionCard\s*\n\s*selectedTierId=/);
-  assert.match(promotionCard, /Plano Pessoal/);
-  assert.match(promotionCard, /Tudo da Uni em um só lugar\./);
-  assert.match(promotionCard, /ACESSO COMPLETO/);
-  assert.match(promotionCard, /assets\/branding\/uniflow-mark\.png/);
-  assert.match(promotionCard, /promotionBackgroundMark/);
-  assert.doesNotMatch(promotionCard, /logo_uniflowai\.png|promotionBrand|PlanFlowLines/);
-  assert.match(page, /Incluído no seu plano/);
-  assert.match(page, /A <span>Uni<\/span> organiza\./);
+  // Tela 21d: título e apoio no topo do conteúdo, sem selo ACESSO COMPLETO.
+  assert.match(page, /Plano Pessoal<\/h1>/);
+  assert.match(promotionCard, /Tudo da Uni em um só lugar/);
+  assert.match(promotionCard, /Escolha quantos minutos de conversa por voz você quer por mês\./);
+  assert.doesNotMatch(promotionCard, /ACESSO COMPLETO|\.png|promotionBackgroundMark|promotionBrand|PlanFlowLines/);
+  assert.match(page, /Incluído em todos os planos/);
+  assert.match(page, /Você fala\. A Uni organiza\./);
 
   assert.doesNotMatch(promotionCard, />PLANO PESSOAL</);
   assert.doesNotMatch(page, /Organize sua vida financeira conversando com a/);
@@ -566,30 +558,20 @@ test('página apresenta a hierarquia app-like aprovada, sem a copy de landing pa
   assert.doesNotMatch(page, /O QUE VOCÊ GANHA/);
 });
 
-// REDESIGN APP-LIKE: a parceria virou assinatura institucional em TEXTO no
-// rodapé. Isso também tirou do carregamento da página dois PNGs de ~2,5 MB
-// (logo_uniflowai.png e smartech_logo_transparente.png) que eram baixados
-// só para desenhar o banner do topo.
-test('parceria é assinatura institucional em texto no rodapé -- nenhum PNG de marca é carregado', async () => {
-  const brand = await source('./PlanBrandHeader.jsx');
+// REDESIGN APP-LIKE: a página não carrega PNG de marca nenhum (os dois
+// PNGs de ~2,5 MB do antigo banner de parceria saíram). Tela 21d: a única
+// imagem do arquivo é o QR Code oficial da Asaas, dentro da folha do Pix.
+test('nenhum PNG de marca é carregado e a única imagem é o QR Code do Pix', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  const combined = `${brand}\n${page}`;
   // Só declarações reais contam: os comentários acima explicam QUAIS PNGs
   // saíram, então a checagem exige um `import ... from '...png'` de verdade.
-  assert.doesNotMatch(combined, /import\s+[^;]*from\s+'[^']*\.png'/);
-  // Nenhuma imagem na APRESENTAÇÃO (o único <img> do arquivo é o QR Code
-  // oficial da Asaas, dentro do modal Pix -- checkout congelado, legítimo).
+  assert.doesNotMatch(page, /import\s+[^;]*from\s+'[^']*\.png'/);
   const presentation = page.slice(
     page.indexOf('<main className={styles.page}>'),
     page.indexOf('<SubscriptionMethodModal'),
   );
   assert.doesNotMatch(presentation, /<img|backgroundImage|plano_de_acesso/i);
-  assert.match(brand, /UniFlow AI/);
-  assert.match(brand, /Smartech/);
-  assert.match(brand, /Parceria que conecta tecnologia e inteligência\./);
-  // A assinatura fica no FIM do conteúdo, nunca no topo da página.
-  const signatureIdx = page.indexOf('<PlanBrandSignature />');
-  assert.ok(signatureIdx > page.indexOf('styles.assuranceCard'), 'a assinatura da parceria precisa vir depois da garantia, no fim da página');
+  assert.equal((page.match(/<img/g) ?? []).length, 1);
 });
 
 test('rota é autenticada e renderizada fora do App Shell', async () => {
@@ -612,9 +594,6 @@ test('CSS cobre breakpoints, safe areas, foco e redução de movimento', async (
   assert.match(css, /env\(safe-area-inset-top(?:,\s*0px)?\)/);
   assert.match(css, /env\(safe-area-inset-bottom(?:,\s*0px)?\)/);
   assert.match(css, /@media \(max-width: 359px\)/);
-  assert.match(css, /@media \(max-width: 430px\)/);
-  assert.match(css, /@media \(max-width: 767px\)/);
-  assert.match(css, /@media \(min-width: 1200px\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /focus-visible/);
   assert.match(css, /overflow-x: hidden/);
@@ -653,7 +632,7 @@ test('CTA fixo respeita safe-area e reserva espaço para o conteúdo não ficar 
   // (assinatura da parceria) ficar visível acima da barra fixa.
   const contentIdx = css.indexOf('.content {');
   const contentBlock = css.slice(contentIdx, css.indexOf('}', contentIdx) + 1);
-  assert.match(contentBlock, /padding-bottom|calc\(124px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(contentBlock, /calc\(150px \+ env\(safe-area-inset-bottom, 0px\)\)/);
   assert.match(contentBlock, /env\(safe-area-inset-bottom,\s*0px\)/);
 });
 

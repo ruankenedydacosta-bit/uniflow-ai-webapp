@@ -36,8 +36,8 @@ test('apresentação possui exatamente os três slides aprovados na ordem corret
     ['welcome', 'everything', 'security'],
   );
   assert.equal(PRESENTATION_SLIDES[0].title, 'Bem-vindo à UniFlow AI');
-  assert.equal(PRESENTATION_SLIDES[1].title, 'Tudo o que você precisa, em um só lugar');
-  assert.equal(PRESENTATION_SLIDES[2].title, 'Segurança, privacidade e tecnologia de ponta');
+  assert.equal(PRESENTATION_SLIDES[1].title, 'Tudo em um só lugar');
+  assert.equal(PRESENTATION_SLIDES[2].title, 'Seus dados protegidos');
 });
 
 test('configuração centraliza rota da apresentação e fallback temporário da Etapa 3', () => {
@@ -104,25 +104,29 @@ test('carrossel implementa botões, indicadores, teclado, swipe e conclusão ide
   assert.match(contents, /aria-current=\{index === activeIndex \? 'step'/);
 });
 
-test('COMEÇAR e PRÓXIMO avançam; PULAR e COMEÇAR AGORA concluem', async () => {
+// Tela 21a–c: botões em caixa normal.
+test('Começar e Próximo avançam; Pular e Começar agora concluem', async () => {
   const carousel = await source('./PresentationCarousel.jsx');
   const config = await source('./presentationConfig.js');
-  assert.match(config, /primaryAction: 'COMEÇAR'/);
-  assert.match(config, /primaryAction: 'PRÓXIMO'/);
-  assert.match(config, /primaryAction: 'COMEÇAR AGORA'/);
-  assert.equal((config.match(/skipAction: 'PULAR'/g) ?? []).length, 2);
+  assert.match(config, /primaryAction: 'Começar'/);
+  assert.match(config, /primaryAction: 'Próximo'/);
+  assert.match(config, /primaryAction: 'Começar agora'/);
+  assert.equal((config.match(/skipAction: 'Pular'/g) ?? []).length, 2);
   assert.match(carousel, /if \(isLast\) \{\s*completePresentation\(\)/);
   assert.match(carousel, /onClick=\{completePresentation\}/);
 });
 
-test('logos oficiais são importadas por código e ilustrações são SVG reais', async () => {
-  const brand = await source('./BrandPartnershipHeader.jsx');
+// Tela 21a–c: a marca do topo é o símbolo oficial do app e a arte usa peças
+// reais (orb da Uni, rascunho e agenda, escudo), nunca captura de tela.
+test('marca oficial no topo e arte feita com peças do app, sem captura de tela', async () => {
+  const carousel = await source('./PresentationCarousel.jsx');
   const artwork = await source('./PresentationArtwork.jsx');
-  assert.match(brand, /logo_uniflowai\.png/);
-  assert.match(brand, /smartech_logo_transparente\.png/);
-  assert.match(artwork, /<svg viewBox=/);
-  assert.match(artwork, /useId\(\)/);
-  assert.doesNotMatch(`${brand}\n${artwork}`, /apresentacao_parte|screenshot|backgroundImage/);
+  assert.match(carousel, /<UniMark \/>/);
+  assert.match(carousel, /Em parceria com a SmartTech/);
+  assert.match(artwork, /<UniRingOrb size=\{200\} state=\{UNI_RING_ORB_STATES\.LISTENING\} \/>/);
+  assert.match(artwork, /Saída · rascunho/);
+  assert.match(artwork, /PhShieldCheckIcon/);
+  assert.doesNotMatch(`${carousel}\n${artwork}`, /apresentacao_parte|screenshot|backgroundImage|\.png/);
 });
 
 test('rota é autenticada, standalone e usuários concluídos não entram novamente', async () => {

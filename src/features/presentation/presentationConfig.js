@@ -14,30 +14,31 @@ export function resolvePresentationUserId(session, isSupabaseConfigured) {
     : null;
 }
 
+// Tela 21a–c: botões em caixa normal e a arte feita com peças do app (orb da
+// Uni, card de rascunho com item da agenda e o escudo).
 export const PRESENTATION_SLIDES = Object.freeze([
   Object.freeze({
     id: 'welcome',
     title: 'Bem-vindo à UniFlow AI',
-    description: 'Sua jornada para uma vida financeira mais organizada começa agora.',
-    artwork: 'welcome',
-    primaryAction: 'COMEÇAR',
+    description: 'Organize sua vida financeira conversando com a Uni, por voz ou texto.',
+    artwork: 'orb',
+    primaryAction: 'Começar',
   }),
   Object.freeze({
     id: 'everything',
-    title: 'Tudo o que você precisa, em um só lugar',
+    title: 'Tudo em um só lugar',
     description:
-      'Centralize suas finanças, converse com a Uni e acompanhe tudo em um único aplicativo.',
-    artwork: 'dashboard',
-    primaryAction: 'PRÓXIMO',
-    skipAction: 'PULAR',
+      'Registre entradas e saídas, acompanhe sua agenda e converse com a Uni no mesmo app.',
+    artwork: 'pieces',
+    primaryAction: 'Próximo',
+    skipAction: 'Pular',
   }),
   Object.freeze({
     id: 'security',
-    title: 'Segurança, privacidade e tecnologia de ponta',
-    description:
-      'Seus dados são protegidos e organizados com segurança para que você tenha tranquilidade.',
-    artwork: 'security',
-    primaryAction: 'COMEÇAR AGORA',
-    skipAction: 'PULAR',
+    title: 'Seus dados protegidos',
+    description: 'Suas informações financeiras ficam guardadas com segurança.',
+    artwork: 'shield',
+    primaryAction: 'Começar agora',
+    skipAction: 'Pular',
   }),
 ]);
