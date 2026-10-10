@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import UniCard from '../../components/ui/UniCard/index.js';
@@ -119,7 +119,6 @@ function CompactResponse({
   voiceMessageId,
   turnStartToken,
   interpretingOperationHint,
-  showDetailsLink = true,
   // "voice": dentro da tela de voz (redesign, épico #91). O pedido da pessoa
   // já aparece sob o orb, então sai daqui; a resposta fica centralizada e o
   // card vai em vidro.
@@ -326,9 +325,6 @@ function CompactResponse({
           processingLabel={processingMessage ?? undefined}
           appearance={isVoicePresentation ? 'glass' : 'default'}
         />
-      ) : null}
-      {showDetailsLink ? (
-        <Link className={styles.detailsLink} to={SIMPLIFIED_ROUTES.UNI}>Ver conversa completa</Link>
       ) : null}
     </section>
   );
@@ -893,7 +889,6 @@ function SimplifiedHomeView({
       voiceMessageId={voiceMessageId}
       turnStartToken={turnStartToken}
       interpretingOperationHint={interpretingOperationHint}
-      showDetailsLink={!isVoiceModeOpen}
       presentation={isVoiceModeOpen ? 'voice' : 'card'}
       editForm={editForm}
       onSaveEditAction={onSaveEditAction ? handleCardSaveEdit : undefined}
@@ -1023,8 +1018,6 @@ function SimplifiedHomeView({
       ) : null}
 
       <PwaInstallExperience />
-      {isVoiceModeOpen ? null : compactResponse}
-
       <SimplifiedHomeMonthReading />
 
       <SimplifiedHomeAgenda />
