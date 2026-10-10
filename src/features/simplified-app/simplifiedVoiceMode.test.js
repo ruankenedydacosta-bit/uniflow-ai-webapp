@@ -99,18 +99,30 @@ test('Enviar encerra e manda para a transcrição; fechar descarta e para a fala
 // #128 tirou a última conversa da Home. O rascunho pendente e o pedido em
 // andamento continuam nela: sem o card não há como confirmar ou cancelar, e
 // usePwaAutoUpdateBlock segura a atualização enquanto houver rascunho.
-test('a Home não mostra a última conversa, só o pedido em andamento e o rascunho pendente', async () => {
+test('a Home não mostra a última conversa, só o pedido em andamento, o rascunho pendente e a resposta a um pedido feito nela', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /\{isVoiceModeOpen \? null : compactResponse\}/);
   assert.match(home, /response=\{isVoiceModeOpen \? compactResponse : null\}/);
   assert.match(home, /presentation=\{isVoiceModeOpen \? 'voice' : 'home'\}/);
   assert.match(
     home,
-    /if \(!isVoicePresentation && !showProcessingIndicator && !pendingConfirmationMessage\) return null;/,
+    /if \(!isVoicePresentation && !showProcessingIndicator && !pendingConfirmationMessage && !showHomeReply\) return null;/,
   );
-  // A resposta da Uni em texto só aparece na tela de voz; a fala da pessoa
-  // ("Você") não aparece mais no card.
-  assert.match(home, /isVoicePresentation && lastUni\?\.text \? \(/);
+  // Na Home, a resposta só aparece depois de um pedido feito ali: a última
+  // resposta antiga é a base e só uma mais nova entra no card.
+  assert.match(home, /const showHomeReply = Boolean\(homeReplyBaseline && lastUni && lastUni\.id !== homeReplyBaseline\.uniId\);/);
+  assert.match(home, /\(isVoicePresentation \|\| showHomeReply\) && lastUni\?\.text \? \(/);
+  // Confirmar, Editar e Cancelar no card da Home marcam a resposta seguinte;
+  // fechar a tela de voz com pedido em andamento também. Abrir a voz limpa.
+  for (const handler of ['handleCardConfirm', 'handleCardCancel', 'handleCardSaveEdit']) {
+    const start = home.indexOf(`function ${handler}(`);
+    assert.match(home.slice(start, home.indexOf('\n  }', start)), /markHomeReply\(\);/);
+  }
+  assert.match(home, /if \(!isVoiceModeOpen\) setHomeReplyBaseline\(\{ uniId: lastUniMessageId \}\);/);
+  assert.match(
+    home,
+    /setHomeReplyBaseline\(!isVoiceModeOpen && isInteractionBusy \? \{ uniId: lastUniMessageId \} : null\);/,
+  );
   assert.doesNotMatch(home, /<span>Você<\/span>/);
   assert.doesNotMatch(home, /Ver conversa completa/);
 });

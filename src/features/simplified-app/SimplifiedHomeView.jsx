@@ -123,8 +123,12 @@ function CompactResponse({
   // já aparece sob o orb, então sai daqui; a resposta fica centralizada e o
   // card vai em vidro.
   // "home": na Home, só o que pede ação (o pedido em andamento e o rascunho
-  // pendente). A última troca com a Uni fica no chat.
+  // pendente) e a resposta a um pedido feito na própria Home. A última troca
+  // com a Uni fica no chat.
   presentation = 'home',
+  // Na Home: {uniId} da última resposta da Uni no instante do pedido feito
+  // ali. A resposta seguinte aparece no card. null: nenhuma resposta aparece.
+  homeReplyBaseline = null,
 }) {
   const isVoicePresentation = presentation === 'voice';
   const lastUser = [...messages].reverse().find((message) => message.from === 'user');
@@ -279,7 +283,8 @@ function CompactResponse({
   // específica, reaproveita a mesma frase genérica já usada por
   // "interpreting" sem hint reconhecido.
   const displayedProcessingMessage = processingMessage ?? 'Entendendo seu pedido…';
-  if (!isVoicePresentation && !showProcessingIndicator && !pendingConfirmationMessage) return null;
+  const showHomeReply = Boolean(homeReplyBaseline && lastUni && lastUni.id !== homeReplyBaseline.uniId);
+  if (!isVoicePresentation && !showProcessingIndicator && !pendingConfirmationMessage && !showHomeReply) return null;
   // HOTFIX (abandono da revelação progressiva): a resposta nunca aparece
   // parcialmente -- ou está oculta (pending, cai no indicador de
   // processamento acima) ou está 100% visível de uma vez, junto com a voz.
@@ -299,7 +304,7 @@ function CompactResponse({
           <span className={styles.uniProcessingDot} aria-hidden="true" />
           {displayedProcessingMessage}
         </p>
-      ) : isVoicePresentation && lastUni?.text ? (
+      ) : (isVoicePresentation || showHomeReply) && lastUni?.text ? (
         <p className={styles.uniResponse}>{uniDisplayText}</p>
       ) : null}
       {/* HOTFIX P1.4: "Ouvir resposta" removido do card compacto da Home --
@@ -606,6 +611,22 @@ function SimplifiedHomeView({
   // voz não as mostra (ver snapshotVoiceConversationStart).
   const [voiceConversationPreviousIds, setVoiceConversationPreviousIds] = useState(null);
 
+  // Resposta da Uni na Home (#128): só a de um pedido feito daqui. Vale para
+  // Confirmar, Editar e Cancelar no card da Home e para o pedido que ainda
+  // estava em andamento quando a tela de voz fechou. Sem isso, "Lançamento
+  // salvo" ou o erro da gravação sumiam com o card. Abrir a tela de voz
+  // limpa. Ajustado durante a renderização, como o turnState do card.
+  const lastUniMessageId = [...messages].reverse().find((message) => message.from === 'uni')?.id ?? null;
+  const [homeReplyBaseline, setHomeReplyBaseline] = useState(null);
+  const [wasVoiceModeOpen, setWasVoiceModeOpen] = useState(isVoiceModeOpen);
+  if (wasVoiceModeOpen !== isVoiceModeOpen) {
+    setWasVoiceModeOpen(isVoiceModeOpen);
+    setHomeReplyBaseline(!isVoiceModeOpen && isInteractionBusy ? { uniId: lastUniMessageId } : null);
+  }
+  function markHomeReply() {
+    if (!isVoiceModeOpen) setHomeReplyBaseline({ uniId: lastUniMessageId });
+  }
+
   // Watchdog de ESTADO (última barreira): a UI diz "ouvindo", mas o gravador
   // já parou por fora (track encerrada, permissão revogada). Nunca age por
   // tempo decorrido sozinho.
@@ -856,16 +877,19 @@ function SimplifiedHomeView({
   // Toques no card: com a conversa por voz aberta, a Uni fala a resposta.
   function handleCardConfirm(id) {
     realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.CONFIRM);
+    markHomeReply();
     onConfirmAction(id);
   }
 
   function handleCardCancel(id) {
     realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.CANCEL);
+    markHomeReply();
     onCancelAction(id);
   }
 
   function handleCardSaveEdit(id, overrides) {
     realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.EDIT);
+    markHomeReply();
     onSaveEditAction(id, overrides);
   }
 
@@ -887,6 +911,7 @@ function SimplifiedHomeView({
       turnStartToken={turnStartToken}
       interpretingOperationHint={interpretingOperationHint}
       presentation={isVoiceModeOpen ? 'voice' : 'home'}
+      homeReplyBaseline={homeReplyBaseline}
       editForm={editForm}
       onSaveEditAction={onSaveEditAction ? handleCardSaveEdit : undefined}
     />

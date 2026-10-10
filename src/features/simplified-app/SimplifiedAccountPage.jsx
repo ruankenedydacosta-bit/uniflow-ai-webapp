@@ -138,12 +138,11 @@ function SimplifiedAccountPage() {
     },
   ];
 
-  // Grupo "Produto": Relatórios e Notificações vêm do handoff. A conversa
-  // escrita com a Uni (/app/uni) entra aqui desde que o card da última
-  // conversa saiu da Home (#128): é o único caminho até ela sem abrir a
-  // tela de voz. Agenda,
+  // Grupo "Produto": Relatórios e Notificações vêm do handoff; Agenda,
   // Pagamento e assinatura, Voz da Uni, Suporte, Privacidade e Sobre são
-  // telas que já existem e continuam alcançáveis por aqui.
+  // telas que já existem e continuam alcançáveis por aqui. A conversa
+  // escrita com a Uni (/app/uni) entrou quando o card da última conversa
+  // saiu da Home (#128): é o caminho até ela sem abrir a tela de voz.
   const productItems = [
     {
       id: 'uni-chat',
