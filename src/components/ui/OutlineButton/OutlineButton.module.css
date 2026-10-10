@@ -65,3 +65,30 @@
 .secondary:hover:not(:disabled) {
   background: var(--uf-app-surface-2);
 }
+
+/* Com `loading`, o giro ocupa o lugar do ícone que vier antes do texto. */
+.spinner {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--uf-radius-full);
+  animation: outlineButtonSpin .8s linear infinite;
+}
+
+.spinner + svg {
+  display: none;
+}
+
+@keyframes outlineButtonSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}

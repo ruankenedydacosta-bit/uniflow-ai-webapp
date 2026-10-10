@@ -130,6 +130,18 @@ export function formatDayHeading(date) {
   return `${WEEKDAY_SHORT[date.getDay()]}, ${date.getDate()} de ${MONTH_NAMES[date.getMonth()]}`;
 }
 
+// Tela 22f: quando é o compromisso, no apoio do "Quando devo te lembrar?"
+// ("quinta, 08:30"). Dia inteiro ou sem horário marcado mostra só o dia.
+export function formatReminderPromptWhen(item) {
+  const time = toTimestamp(item?.starts_at);
+  if (time === null) return '';
+  const date = new Date(time);
+  const weekday = WEEKDAY_SHORT[date.getDay()].toLowerCase();
+  if (item.is_all_day || item.has_explicit_time === false) return weekday;
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${weekday}, ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /**
  * Chips de filtro da Agenda (handoff 06): cada chip agrupa tipos de item.
  * "Tudo" não filtra.

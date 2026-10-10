@@ -1,9 +1,12 @@
-import Button from '../../components/ui/Button/Button.jsx';
-import { LockIcon } from '../simplified-app/SimplifiedIcons.jsx';
+import IconBox from '../../components/ui/IconBox/IconBox.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/OutlineButton.jsx';
+import { PhLockSimpleIcon } from '../simplified-app/SimplifiedIcons.jsx';
 import { GA4_CONSENT_STATUS } from './ga4Contracts.js';
 import { useAnalyticsConsent } from './useAnalyticsConsent.js';
 import styles from './analyticsConsent.module.css';
 
+// Tela 22i: card fixo acima da barra inferior, sem escurecer a tela. Fica
+// até a pessoa escolher; não tem X nem fechamento implícito.
 function AnalyticsConsentBanner() {
   const { accept, deny, status } = useAnalyticsConsent();
 
@@ -17,35 +20,23 @@ function AnalyticsConsentBanner() {
       data-analytics-consent-banner
     >
       <div className={styles.bannerCard}>
-        <span className={styles.bannerIcon} aria-hidden="true">
-          <LockIcon />
-        </span>
-        <div className={styles.bannerCopy}>
-          <h2 id="analytics-consent-title">Privacidade e melhoria do app</h2>
-          <p id="analytics-consent-description">
-            A UniFlow usa dados de uso para entender quais telas e recursos funcionam melhor. Não
-            enviamos ao Analytics seus dados financeiros, mensagens, áudios ou transcrições.
-          </p>
+        <div className={styles.bannerBody}>
+          <IconBox tone="violet"><PhLockSimpleIcon /></IconBox>
+          <div className={styles.bannerCopy}>
+            <h2 id="analytics-consent-title">Privacidade e melhoria do app</h2>
+            <p id="analytics-consent-description">
+              A UniFlow usa dados de uso para saber quais telas funcionam melhor. Seus dados
+              financeiros, mensagens, áudios e transcrições não são enviados.
+            </p>
+          </div>
         </div>
         <div className={styles.bannerActions}>
-          <Button
-            type="button"
-            variant="primary"
-            className={styles.allowButton}
-            fullWidth
-            onClick={accept}
-          >
+          <OutlineButton onClick={accept}>
             Permitir
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className={styles.denyButton}
-            fullWidth
-            onClick={deny}
-          >
+          </OutlineButton>
+          <OutlineButton variant="secondary" onClick={deny}>
             Não permitir
-          </Button>
+          </OutlineButton>
         </div>
       </div>
     </aside>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import Button from '../../components/ui/Button/Button.jsx';
+import ChoiceRow from '../../components/ui/ChoiceRow/ChoiceRow.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
 import { getAgendaPushReminderState } from '../agenda-push/agendaPushReminderService.js';
 import { prefersReducedMotion } from '../agenda-push/agendaReminderAnimation.js';
@@ -9,17 +9,19 @@ import {
   resolveMotionVariantForOffset,
 } from '../agenda-push/agendaReminderMotionProfiles.js';
 import { sendAgendaReminderDecision } from '../mobile-push/pushEdgeFunctions.js';
-import { FormMessage } from '../../pages/agenda/AgendaFormPrimitives.jsx';
+import { formatReminderPromptWhen } from './simplifiedAgendaCalendar.js';
+import { PhBellIcon, PhBellRingingIcon, PhBellSlashIcon } from './SimplifiedIcons.jsx';
 import styles from './AgendaReminderChoiceModal.module.css';
 
 // AGPUSH4: cada opção carrega sua própria assinatura de movimento --
 // '30' é sempre energetic, '60' é sempre calm, 'none' é sempre none
 // (mapeamento explícito em agendaReminderMotionProfiles.js, nunca por
 // posição no array).
+// Tela 22f: cada opção tem o seu sino; "Sem lembrete" fica sem cor de marca.
 const OFFSET_OPTIONS = [
-  { offset: '30', label: '30 min antes', confirmedLabel: '30 min antes' },
-  { offset: '60', label: '1h antes', confirmedLabel: '1h antes' },
-  { offset: 'none', label: 'Não precisa', confirmedLabel: 'Sem lembrete' },
+  { offset: '30', label: '30 min antes', confirmedLabel: '30 min antes', icon: PhBellRingingIcon, tone: 'violet' },
+  { offset: '60', label: '1h antes', confirmedLabel: '1h antes', icon: PhBellIcon, tone: 'blue' },
+  { offset: 'none', label: 'Sem lembrete', confirmedLabel: 'Sem lembrete', icon: PhBellSlashIcon },
 ];
 
 // Com prefers-reduced-motion não há recolhimento nem trajetória: só a
@@ -62,6 +64,7 @@ function wait(ms) {
 function AgendaReminderChoiceModal({ item, onClose, onReminderApplied }) {
   const [state, setState] = useState({ status: 'loading', decisionMade: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [choosing, setChoosing] = useState(null);
   const [confirmed, setConfirmed] = useState(null);
   const [isCollapsing, setIsCollapsing] = useState(false);
   const [localError, setLocalError] = useState(null);
@@ -95,6 +98,7 @@ function AgendaReminderChoiceModal({ item, onClose, onReminderApplied }) {
   async function handleChoose(option) {
     if (isSubmitting || confirmed) return;
     setIsSubmitting(true);
+    setChoosing(option.offset);
     setLocalError(null);
 
     // 1. PERSISTE PRIMEIRO -- a animação nunca antecipa o resultado real.
@@ -105,6 +109,7 @@ function AgendaReminderChoiceModal({ item, onClose, onReminderApplied }) {
 
     if (result?.error) {
       setIsSubmitting(false);
+      setChoosing(null);
       setLocalError('Não foi possível registrar sua escolha. Tente novamente.');
       return;
     }
@@ -151,6 +156,9 @@ function AgendaReminderChoiceModal({ item, onClose, onReminderApplied }) {
     '--uf-agenda-dissolve-ms': `${activeProfile.dissolveFlashMs ?? activeProfile.modalCollapseMs}ms`,
   };
 
+  const when = formatReminderPromptWhen(item);
+
+  // Tela 22f: o X da folha fecha; não há botão Fechar no rodapé.
   return (
     <Modal
       open
@@ -158,7 +166,7 @@ function AgendaReminderChoiceModal({ item, onClose, onReminderApplied }) {
       closeOnOverlayClick={!isBusy}
       closeOnEsc={!isBusy}
       title="Quando devo te lembrar?"
-      description={`"${item.title}"`}
+      description={when ? `${item.title} · ${when}` : item.title}
       size="sm"
       style={motionStyle}
       className={[
@@ -166,36 +174,37 @@ function AgendaReminderChoiceModal({ item, onClose, onReminderApplied }) {
         isCollapsing ? styles.dialogCollapsing : '',
         confirmed?.offset === 'none' && isCollapsing ? styles.dialogDissolving : '',
       ].filter(Boolean).join(' ')}
-      footer={(
-        <Button variant="ghost" onClick={onClose} disabled={isBusy}>
-          Fechar
-        </Button>
-      )}
     >
-      <div ref={contentRef}>
+      <div ref={contentRef} className={styles.content}>
         {isLoading ? null : state.decisionMade ? (
-          <p>Já registramos sua escolha para este compromisso.</p>
+          <p className={styles.decisionMade}>Já registramos sua escolha para este compromisso.</p>
         ) : confirmed ? (
           <p className={styles.confirmation} role="status">
             <CheckIcon />
             {confirmed.confirmedLabel}
           </p>
         ) : (
-          <div className={styles.choices}>
-            {OFFSET_OPTIONS.map((option) => (
-              <Button
-                key={option.offset}
-                className={styles.choiceButton}
-                variant="secondary"
-                loading={isSubmitting}
-                disabled={isSubmitting}
-                onClick={() => handleChoose(option)}
-              >
-                {option.label}
-              </Button>
-            ))}
-            <FormMessage>{localError}</FormMessage>
-          </div>
+          <>
+            <div className={styles.choices}>
+              {OFFSET_OPTIONS.map((option) => {
+                const OptionIcon = option.icon;
+                return (
+                  <ChoiceRow
+                    key={option.offset}
+                    className={styles.choiceButton}
+                    title={option.label}
+                    icon={<OptionIcon />}
+                    iconTone={option.tone}
+                    checked={choosing === option.offset}
+                    disabled={isSubmitting}
+                    onClick={() => handleChoose(option)}
+                  />
+                );
+              })}
+            </div>
+            {localError ? <p className={styles.error} role="alert">{localError}</p> : null}
+            <p className={styles.hint}>A escolha é salva assim que você toca na opção.</p>
+          </>
         )}
       </div>
     </Modal>

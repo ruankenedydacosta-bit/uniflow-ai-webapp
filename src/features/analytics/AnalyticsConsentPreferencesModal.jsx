@@ -1,5 +1,5 @@
-import Button from '../../components/ui/Button/Button.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/OutlineButton.jsx';
 import { GA4_CONSENT_STATUS } from './ga4Contracts.js';
 import { useAnalyticsConsent } from './useAnalyticsConsent.js';
 import styles from './analyticsConsent.module.css';
@@ -23,8 +23,8 @@ function AnalyticsConsentPreferencesModal({ open, onClose }) {
     >
       <div className={styles.preferenceContent}>
         <p>
-          A UniFlow usa dados de uso para entender quais telas e recursos funcionam melhor. Não
-          enviamos ao Analytics seus dados financeiros, mensagens, áudios ou transcrições.
+          A UniFlow usa dados de uso para saber quais telas funcionam melhor. Seus dados
+          financeiros, mensagens, áudios e transcrições não são enviados.
         </p>
         <p className={styles.currentStatus} role="status">
           {STATUS_LABELS[status]}
@@ -35,24 +35,20 @@ function AnalyticsConsentPreferencesModal({ open, onClose }) {
           </p>
         ) : null}
         <div className={styles.preferenceActions}>
-          <Button
-            type="button"
-            variant={status === GA4_CONSENT_STATUS.GRANTED ? 'primary' : 'outline'}
-            fullWidth
+          <OutlineButton
+            variant={status === GA4_CONSENT_STATUS.GRANTED ? 'primary' : 'secondary'}
             aria-pressed={status === GA4_CONSENT_STATUS.GRANTED}
             onClick={accept}
           >
             Permitir
-          </Button>
-          <Button
-            type="button"
-            variant={status === GA4_CONSENT_STATUS.DENIED ? 'primary' : 'outline'}
-            fullWidth
+          </OutlineButton>
+          <OutlineButton
+            variant={status === GA4_CONSENT_STATUS.DENIED ? 'primary' : 'secondary'}
             aria-pressed={status === GA4_CONSENT_STATUS.DENIED}
             onClick={deny}
           >
             Não permitir
-          </Button>
+          </OutlineButton>
         </div>
       </div>
     </Modal>

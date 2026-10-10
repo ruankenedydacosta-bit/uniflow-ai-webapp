@@ -783,48 +783,47 @@ test('MonthPickerModal preserva a regra existente de bloqueio de mês futuro (se
 
 test('MonthPickerModal tem título, ano navegável, grade de 12 meses, "Este mês", Cancelar e Aplicar', async () => {
   const modal = await source('./MonthPickerModal.jsx');
-  assert.match(modal, /Selecionar período/);
+  assert.match(modal, /title="Selecionar mês"/);
   assert.match(modal, /aria-label="Ano anterior"/);
   assert.match(modal, /aria-label="Próximo ano"/);
   assert.match(modal, /MONTH_LABELS\.map/);
   assert.match(modal, />\s*Este mês\s*</);
   assert.match(modal, />\s*Cancelar\s*</);
   assert.match(modal, />\s*Aplicar\s*</);
-  assert.match(modal, /aria-label="Fechar"/);
 });
 
-test('MonthPickerModal fecha por Escape, backdrop e X -- nunca window.confirm', async () => {
-  const modal = await source('./MonthPickerModal.jsx');
-  assert.match(modal, /event\.key === 'Escape'\) onClose\(\)/);
-  assert.match(modal, /function handleOverlayClick\(event\) \{\s*if \(event\.target === event\.currentTarget\) onClose\(\);/);
-  assert.doesNotMatch(modal, /window\.confirm/);
+// Tela 22d: o seletor passou a usar o Modal compartilhado, que no celular é a
+// folha padrão. Escape, toque fora, X, portal, role="dialog" e a trava de
+// rolagem vêm de lá, sem cópia própria.
+test('MonthPickerModal usa o Modal compartilhado para fechar (Escape, toque fora, X) -- nunca window.confirm', async () => {
+  const [modal, baseModal] = await Promise.all([
+    source('./MonthPickerModal.jsx'),
+    source('../../components/ui/Modal/Modal.jsx'),
+  ]);
+  assert.match(modal, /import Modal from '\.\.\/\.\.\/components\/ui\/Modal';/);
+  assert.match(modal, /<Modal\s*\n\s*open=\{open\}\s*\n\s*onClose=\{onClose\}/);
+  assert.doesNotMatch(modal, /window\.confirm|createPortal/);
+  assert.match(baseModal, /event\.key === 'Escape'/);
+  assert.match(baseModal, /function handleOverlayClick\(event\) \{/);
+  assert.match(baseModal, /aria-label="Fechar"/);
 });
 
-test('MonthPickerModal bloqueia o scroll da página enquanto aberto e restaura ao fechar', async () => {
-  const modal = await source('./MonthPickerModal.jsx');
-  assert.match(modal, /document\.body\.style\.overflow = 'hidden'/);
-  assert.match(modal, /document\.body\.style\.overflow = previousOverflow/);
+test('o Modal compartilhado do seletor bloqueia o scroll da página, é portal e usa role="dialog" acessível', async () => {
+  const baseModal = await source('../../components/ui/Modal/Modal.jsx');
+  assert.match(baseModal, /document\.body\.style\.overflow = 'hidden'/);
+  assert.match(baseModal, /document\.body\.style\.overflow = previousOverflow/);
+  assert.match(baseModal, /createPortal\(/);
+  assert.match(baseModal, /role="dialog"/);
+  assert.match(baseModal, /aria-modal="true"/);
 });
 
-test('MonthPickerModal é portal para document.body e usa role="dialog" acessível', async () => {
-  const modal = await source('./MonthPickerModal.jsx');
-  assert.match(modal, /createPortal\(/);
-  assert.match(modal, /document\.body,/);
-  assert.match(modal, /role="dialog"/);
-  assert.match(modal, /aria-modal="true"/);
-  assert.match(modal, /aria-labelledby=\{titleId\}/);
-});
-
-test('CSS do MonthPickerModal acompanha o tema, preserva overlay, safe area e dvh', async () => {
+test('CSS do MonthPickerModal segue a tela 22d: grade 4x3, mês marcado em violeta, futuro sem toque', async () => {
   const css = await source('./MonthPickerModal.module.css');
-  assert.match(css, /background: var\(--uf-app-overlay-panel\)/);
-  // Superfície do modal vem do tema (mesma identidade no UniFlow, adaptada
-  // no Claro e no Escuro) em vez de um gradiente escuro fixo.
-  assert.match(css, /linear-gradient\(145deg, var\(--uf-app-surface-2\), var\(--uf-app-surface\)\)/);
-  assert.match(css, /env\(safe-area-inset-top\)/);
-  assert.match(css, /env\(safe-area-inset-bottom\)/);
-  assert.match(css, /100dvh/);
-  assert.match(css, /100svh/);
+  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.monthCell\[aria-pressed="true"\] \{[\s\S]*?var\(--uf-app-brand-violet\)/);
+  assert.match(css, /\.monthCell:disabled \{[\s\S]*?cursor: not-allowed;/);
+  assert.match(css, /background: var\(--uf-app-well\)/);
+  assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b/i);
   assert.doesNotMatch(css, /background:\s*#fff|background:\s*white/);
 });
 

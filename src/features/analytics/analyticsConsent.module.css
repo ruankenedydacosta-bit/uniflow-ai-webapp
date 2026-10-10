@@ -1,163 +1,122 @@
+/* Tela 22i: card fixo a 12px das laterais. No app, fica 104px acima da
+   base, por cima da barra inferior; fora dele (login, apresentação, plano),
+   fica junto da base. Não escurece a tela. */
 .bannerPosition {
   position: fixed;
   inset-inline: 0;
   bottom: 0;
   z-index: var(--uf-z-toast);
   padding:
-    var(--uf-space-16)
-    max(var(--uf-space-16), env(safe-area-inset-right, 0px))
-    max(var(--uf-space-16), env(safe-area-inset-bottom, 0px))
-    max(var(--uf-space-16), env(safe-area-inset-left, 0px));
+    0
+    max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px))
+    max(12px, env(safe-area-inset-left, 0px));
   pointer-events: none;
 }
 
+:global(body[data-simplified-app-mounted='true']) .bannerPosition {
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+}
+
 .bannerCard {
-  position: relative;
-  width: min(100%, 620px);
-  margin-inline-start: auto;
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  align-items: start;
-  gap: var(--uf-space-12) var(--uf-space-16);
-  padding: var(--uf-space-16);
-  overflow: hidden;
-  border: 1px solid transparent;
-  border-radius: var(--uf-radius-20);
-  background:
-    var(--uf-gradient-mesh-1) padding-box,
-    linear-gradient(145deg, rgba(15, 23, 42, .96), rgba(5, 7, 12, .97)) padding-box,
-    var(--uf-gradient-hairline) border-box;
-  background-color: var(--uf-gray-950);
-  color: var(--uf-white);
-  box-shadow: var(--uf-shadow-lg), var(--uf-shadow-glow-ai);
-  -webkit-backdrop-filter: saturate(var(--uf-glass-saturate)) blur(var(--uf-glass-blur));
-  backdrop-filter: saturate(var(--uf-glass-saturate)) blur(var(--uf-glass-blur));
+  width: min(100%, 540px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-inline: auto;
+  padding: 16px;
+  border-radius: var(--uf-radius-16);
+  background: var(--uf-app-card-surface);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 22%, transparent),
+    var(--uf-shadow-lg);
+  color: var(--uf-app-text);
+  font-family: var(--uf-app-font-family);
   pointer-events: auto;
   animation: analyticsConsentEnter var(--uf-duration-base) var(--uf-ease-smooth) both;
 }
 
-.bannerCard::after {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(110deg, rgba(255, 255, 255, .055), transparent 38%);
-  content: '';
-  pointer-events: none;
+.bannerBody {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
-.bannerIcon {
-  position: relative;
-  z-index: 1;
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(103, 232, 249, .26);
-  border-radius: var(--uf-radius-16);
-  background: var(--uf-gradient-ai);
-  color: var(--uf-white);
-  box-shadow: 0 10px 24px -14px var(--uf-color-info);
-}
-
-.bannerIcon svg {
-  width: 23px;
-  height: 23px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
+.bannerBody svg {
+  width: 18px;
+  height: 18px;
 }
 
 .bannerCopy {
-  position: relative;
-  z-index: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .bannerCopy h2 {
   margin: 0;
-  margin-bottom: var(--uf-space-4);
-  font-size: var(--uf-text-lg-size);
-  line-height: var(--uf-text-lg-lh);
-  color: var(--uf-white);
+  color: var(--uf-app-text);
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.35;
 }
 
 .bannerCopy p {
   margin: 0;
-  color: var(--uf-gray-300);
-  font-size: var(--uf-text-sm-size);
-  line-height: 1.55;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Botões alinhados ao texto, metade cada. */
+.bannerActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-left: 48px;
+}
+
+.bannerActions button {
+  min-height: var(--uf-tap-target-min);
+}
+
+/* Preferência em Conta: folha padrão com o mesmo texto do aviso e o status
+   atual num bloco do poço escuro. */
+.preferenceContent {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .preferenceContent p {
   margin: 0;
-  color: var(--uf-color-text-secondary);
-  font-size: var(--uf-text-sm-size);
+  color: var(--uf-app-text-2);
+  font-size: 14px;
   line-height: 1.55;
-}
-
-.bannerActions {
-  position: relative;
-  z-index: 1;
-  grid-column: 2;
-  width: min(100%, 304px);
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--uf-space-8);
-}
-
-.bannerActions .allowButton,
-.bannerActions .denyButton {
-  min-height: var(--uf-tap-target-min);
-}
-
-.bannerActions .allowButton {
-  box-shadow: 0 10px 24px -16px var(--uf-color-primary);
-}
-
-.bannerActions .denyButton {
-  border-color: var(--uf-gray-600);
-  background: rgba(15, 23, 42, .42);
-  color: var(--uf-gray-100);
-}
-
-.bannerActions .denyButton:hover:not(:disabled) {
-  border-color: var(--uf-gray-400);
-  background: var(--uf-gray-800);
-  color: var(--uf-white);
-}
-
-.bannerActions button:focus-visible {
-  outline-color: var(--uf-color-info);
-}
-
-.preferenceContent {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-16);
+  text-wrap: pretty;
 }
 
 .preferenceContent .currentStatus {
-  padding: var(--uf-space-12) var(--uf-space-14);
-  border: 1px solid var(--uf-color-border-subtle);
-  border-radius: var(--uf-radius-12);
-  background: var(--uf-color-bg-surface);
-  color: var(--uf-color-text-primary);
-  font-weight: var(--uf-font-weight-semibold);
+  padding: 12px 14px;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  color: var(--uf-app-text);
 }
 
 .preferenceContent .storageWarning {
-  padding: var(--uf-space-12) var(--uf-space-14);
-  border-radius: var(--uf-radius-12);
-  background: var(--uf-color-warning-subtle);
-  color: var(--uf-color-warning);
+  padding: 12px 14px;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  color: var(--uf-app-text);
+  font-size: 13px;
 }
 
 .preferenceActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--uf-space-12);
+  gap: 8px;
 }
 
 @keyframes analyticsConsentEnter {
@@ -172,47 +131,12 @@
   }
 }
 
+/* Desktop fora do app: o card sobe para o topo, longe das ações da página. */
 @media (min-width: 641px) {
   :global(body:not([data-simplified-app-mounted='true'])) .bannerPosition {
     top: 0;
     bottom: auto;
-  }
-
-  :global(body:not([data-simplified-app-mounted='true'])) .bannerCard {
-    width: min(100%, 540px);
-  }
-}
-
-@media (max-width: 640px) {
-  .bannerPosition {
-    padding:
-      var(--uf-space-12)
-      max(var(--uf-space-12), env(safe-area-inset-right, 0px))
-      max(var(--uf-space-12), env(safe-area-inset-bottom, 0px))
-      max(var(--uf-space-12), env(safe-area-inset-left, 0px));
-  }
-
-  .bannerCard {
-    width: 100%;
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: var(--uf-space-12);
-    margin-inline: auto;
-    padding: var(--uf-space-16);
-  }
-
-  .bannerIcon {
-    width: 44px;
-    height: 44px;
-    border-radius: var(--uf-radius-12);
-  }
-
-  .bannerActions {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-
-  .preferenceActions {
-    grid-template-columns: 1fr;
+    padding-top: 16px;
   }
 }
 

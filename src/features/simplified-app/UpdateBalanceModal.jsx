@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
+import Field from '../../components/ui/Field';
+import IconBox from '../../components/ui/IconBox';
 import Modal from '../../components/ui/Modal';
+import OutlineButton from '../../components/ui/OutlineButton';
 import { submitBalanceAdjustment } from '../../services/balanceAdjustmentService.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import {
@@ -12,6 +13,7 @@ import {
   formatCentsAsCurrencyInput,
   formatSignedCurrency,
 } from './balanceAdjustmentFormUtils.js';
+import { PhCheckIcon } from './SimplifiedIcons.jsx';
 import styles from './UpdateBalanceModal.module.css';
 
 const NOTE_MAX_LENGTH = 120;
@@ -144,14 +146,20 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
     await onChanged?.();
   }
 
+  // Tela 22: o formulário (22a) e o resumo (22b) usam a folha padrão com
+  // título; a confirmação (22c) abre sem cabeçalho, só com "Concluir".
+  const isSuccess = step === 'success';
+
   return (
     <Modal
       open={Boolean(open)}
       onClose={handleClose}
       closeOnOverlayClick={!isSubmitting}
       closeOnEsc={!isSubmitting}
-      title={copy.title}
+      title={step === 'form' ? copy.title : step === 'confirm' ? 'Confira o ajuste' : undefined}
       description={step === 'form' ? copy.formDescription : undefined}
+      hideCloseButton={isSuccess}
+      aria-label={isSuccess ? copy.successTitle : undefined}
       size="sm"
       className={styles.balanceDialog}
       overlayClassName={styles.darkOverlay}
@@ -159,40 +167,38 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
       {step === 'form' ? (
         <form className={styles.form} onSubmit={handleReviewSubmit}>
           <div className={styles.amountField}>
-            <label htmlFor="update-balance-amount">
-              <span>{copy.amountLabel}</span>
-              <input
-                id="update-balance-amount"
-                className={styles.amountInput}
-                inputMode="numeric"
-                autoComplete="off"
-                value={formatCentsAsCurrencyInput(cents)}
-                onChange={handleAmountChange}
-                placeholder="R$ 0,00"
-                required
-              />
-            </label>
-            <button type="button" className={styles.zeroButton} onClick={handleZero}>
+            <label htmlFor="update-balance-amount">{copy.amountLabel}</label>
+            <input
+              id="update-balance-amount"
+              className={styles.amountInput}
+              inputMode="numeric"
+              autoComplete="off"
+              value={formatCentsAsCurrencyInput(cents)}
+              onChange={handleAmountChange}
+              placeholder="R$ 0,00"
+              required
+            />
+            <OutlineButton variant="ghost" className={styles.zeroButton} onClick={handleZero}>
               Zerar
-            </button>
+            </OutlineButton>
           </div>
 
-          <Input
-            id="update-balance-description"
-            label="Descrição (opcional)"
-            placeholder="Ex.: Correção manual"
-            value={note}
-            maxLength={NOTE_MAX_LENGTH}
-            onChange={(event) => setNote(event.target.value)}
-            fullWidth
-          />
+          <Field label="Descrição (opcional)">
+            <input
+              id="update-balance-description"
+              placeholder="Ex.: Correção manual"
+              value={note}
+              maxLength={NOTE_MAX_LENGTH}
+              onChange={(event) => setNote(event.target.value)}
+            />
+          </Field>
           <div className={styles.actions}>
-            <Button type="button" variant="ghost" onClick={handleClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={!hasChange}>
+            <OutlineButton type="submit" className={styles.primaryAction} disabled={!hasChange}>
               {copy.submitLabel}
-            </Button>
+            </OutlineButton>
+            <OutlineButton variant="ghost" onClick={handleClose}>
+              Cancelar
+            </OutlineButton>
           </div>
         </form>
       ) : step === 'confirm' ? (
@@ -206,9 +212,9 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
               <dt>{copy.newLabel}</dt>
               <dd>{formatCurrency(newValue)}</dd>
             </div>
-            <div className={styles.summaryDelta}>
-              <dt>Ajuste registrado</dt>
-              <dd className={delta >= 0 ? styles.positive : styles.negative}>
+            <div>
+              <dt>Ajuste</dt>
+              <dd className={delta > 0 ? styles.positive : undefined}>
                 {formatSignedCurrency(delta, formatCurrency)}
               </dd>
             </div>
@@ -220,29 +226,34 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
             ) : null}
           </dl>
 
+          <p className={styles.note}>
+            Suas movimentações não mudam. A diferença entra no histórico como um ajuste.
+          </p>
+
           {error ? (
             <p className={styles.errorMessage} role="alert">{error.message}</p>
           ) : null}
 
           <div className={styles.actions}>
-            <Button type="button" variant="ghost" onClick={() => setStep('form')} disabled={isSubmitting}>
-              Voltar
-            </Button>
-            <Button type="button" onClick={handleConfirm} loading={isSubmitting}>
+            <OutlineButton className={styles.primaryAction} onClick={handleConfirm} loading={isSubmitting}>
               Confirmar
-            </Button>
+            </OutlineButton>
+            <OutlineButton variant="ghost" onClick={() => setStep('form')} disabled={isSubmitting}>
+              Voltar
+            </OutlineButton>
           </div>
         </div>
       ) : (
         <div className={styles.successContent} role="status">
-          <span className={styles.successIcon} aria-hidden="true">✓</span>
-          <strong>{copy.successTitle}</strong>
-          <p>
-            {formatCurrency(newValue)}
-            {' '}({formatSignedCurrency(savedDelta, formatCurrency)})
-          </p>
+          <IconBox size={44} tone="green"><PhCheckIcon /></IconBox>
+          <div className={styles.successText}>
+            <strong>{copy.successTitle}</strong>
+            <p>
+              {formatCurrency(newValue)} · ajuste de {formatSignedCurrency(savedDelta, formatCurrency)}
+            </p>
+          </div>
           <div className={styles.actions}>
-            <Button type="button" onClick={onClose}>Concluir</Button>
+            <OutlineButton className={styles.primaryAction} onClick={onClose}>Concluir</OutlineButton>
           </div>
         </div>
       )}

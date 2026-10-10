@@ -126,31 +126,32 @@ test('CategoryCreateModal preserva escolha livre ao alternar Entrada/Saída', as
   assert.match(modal, /if \(!iconWasChosenRef\.current\) \{\s*setIcon\(getDefaultCategoryIconKey\(type\)\)/);
 });
 
-test('modal ampliado mantém ícones roláveis e ações acessíveis no viewport móvel', async () => {
+// Tela 22h: no celular a Nova categoria é a folha padrão. A folha não passa
+// da altura da tela: só a grade de ícones rola, e as ações ficam à vista.
+test('folha de Nova categoria rola só a grade de ícones e mantém as ações à vista', async () => {
   const modal = await source('components/CategoryCreateModal.jsx');
-  const css = await source('CategoriesPage.module.css');
+  const css = await source('components/CategoryCreateModal.module.css');
   const baseModal = await source('../../components/ui/Modal/Modal.jsx');
   assert.match(modal, /size="lg"/);
   assert.match(modal, /bodyClassName=\{styles\.categoryCreateBody\}/);
   assert.match(modal, /headerClassName=\{styles\.categoryCreateHeader\}/);
   assert.match(baseModal, /bodyClassName/);
   assert.match(baseModal, /headerClassName/);
-  assert.match(css, /\.categoryCreateDialog\s*\{[\s\S]*?width: 94vw;[\s\S]*?height: min\(90dvh, 820px\);[\s\S]*?max-width: 620px;[\s\S]*?max-height: min\(90dvh, 820px\);[\s\S]*?overflow: hidden;/);
+  assert.match(css, /\.categoryCreateDialog\.categoryCreateDialog \{[\s\S]*?overflow: hidden;/);
   assert.match(css, /\.iconLibrary\s*\{[\s\S]*?overflow-x: hidden;[\s\S]*?overflow-y: auto;[\s\S]*?overscroll-behavior: contain;/);
-  assert.match(css, /@media \(max-width: 520px\)[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(css, /@media \(max-height: 640px\)[\s\S]*?max-height: calc\(100dvh - var\(--uf-space-16\)\)/);
+  assert.match(css, /\.iconGrid\s*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(min-width: 768px\)[\s\S]*?max-width: 520px;/);
   assert.match(css, /@media \(max-height: 520px\)[\s\S]*?\.categoryCreateHeader p\s*\{\s*display: none;/);
-  assert.match(css, /env\(safe-area-inset-top, 0px\)/);
+  assert.match(modal, /Role para ver todos os ícones\./);
 });
 
-test('rótulos aceitam duas linhas e seleção combina borda, glow e check', async () => {
+test('ícones têm nome acessível e a seleção usa violeta, sem cor de perigo', async () => {
   const modal = await source('components/CategoryCreateModal.jsx');
-  const css = await source('CategoriesPage.module.css');
-  const labelRule = css.match(/\.iconLabel\s*\{[\s\S]*?\}/)?.[0] ?? '';
-  assert.match(modal, /styles\.iconCheck/);
-  assert.match(labelRule, /-webkit-line-clamp: 2;/);
-  assert.doesNotMatch(labelRule, /white-space:\s*nowrap|text-overflow:\s*ellipsis/);
-  assert.match(css, /\.iconOptionSelected\s*\{[\s\S]*?border-width: 2px;[\s\S]*?box-shadow:/);
+  const css = await source('components/CategoryCreateModal.module.css');
+  assert.match(modal, /aria-label=\{option\.label\}/);
+  assert.match(modal, /aria-checked=\{selected\}/);
+  assert.match(css, /\.iconOption\[aria-checked="true"\] \{[\s\S]*?var\(--uf-app-brand-violet\)/);
+  assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b/i);
 });
 
 test('serviço de categorias mantém icon no contrato de leitura e no payload persistido', async () => {

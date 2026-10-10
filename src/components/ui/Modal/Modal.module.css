@@ -89,6 +89,12 @@
     color var(--uf-duration-fast) var(--uf-ease-smooth);
 }
 
+.closeIcon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
 .closeButton:hover {
   background: var(--uf-color-bg-surface-hover);
   border-color: var(--uf-color-border-strong);
@@ -115,4 +121,119 @@
 
 :global([data-theme='light']) .overlay {
   background: var(--uf-app-overlay-panel);
+}
+
+/* Folha padrão (handoff 22): no celular o diálogo sobe de baixo, com alça
+   de 40x4, canto de 28px, linha violeta de 1px no topo e o fundo da tela
+   escurecido a 70% com desfoque de 6px. Cabeçalho e rodapé sem linhas. Lê os
+   tokens --uf-app-*, que existem nos temas UniFlow, Escuro e Claro. A dupla
+   classe vence o className de quem usa o Modal, que vem depois no bundle. */
+@media (max-width: 767px) {
+  .overlay.overlay {
+    align-items: flex-end;
+    padding: 0;
+    background: color-mix(in oklch, var(--uf-app-canvas) 70%, transparent);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+
+  .overlay > .dialog {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 40px);
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 max(28px, env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 28px 28px 0 0;
+    background: var(--uf-app-card-surface);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklch, var(--uf-app-brand-violet) 30%, transparent),
+      var(--uf-shadow-lg);
+    color: var(--uf-app-text);
+    font-family: var(--uf-app-font-family);
+    scrollbar-width: none;
+    animation: sheetUp var(--uf-duration-base) var(--uf-ease-decelerate);
+  }
+
+  .overlay > .dialog::before {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 4px;
+    margin: 12px auto 0;
+    border-radius: var(--uf-radius-full);
+    background: var(--uf-app-border-strong);
+    content: "";
+  }
+
+  .overlay > .dialog > .header {
+    align-items: flex-start;
+    gap: var(--uf-space-12);
+    padding: 18px 22px 0;
+    border-bottom: 0;
+  }
+
+  .overlay > .dialog .heading {
+    gap: var(--uf-space-4);
+    min-width: 0;
+  }
+
+  .overlay > .dialog .title {
+    color: var(--uf-app-text);
+    font-size: 17px;
+    font-weight: var(--uf-font-weight-medium);
+    line-height: 1.3;
+    text-wrap: pretty;
+  }
+
+  .overlay > .dialog .description {
+    color: var(--uf-app-text-2);
+    font-size: 13px;
+    font-weight: var(--uf-font-weight-regular);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .overlay > .dialog .closeButton {
+    width: 36px;
+    height: 36px;
+    margin: -6px -8px 0 0;
+    border: 0;
+    border-radius: var(--uf-radius-full);
+    background: transparent;
+    color: var(--uf-app-text-2);
+  }
+
+  .overlay > .dialog .closeButton:hover {
+    background: var(--uf-app-surface-2);
+    color: var(--uf-app-text);
+  }
+
+  .overlay > .dialog .closeButton:focus-visible {
+    outline-color: var(--uf-app-focus);
+  }
+
+  .overlay > .dialog > .body {
+    padding: 18px 22px 0;
+  }
+
+  .overlay > .dialog > .footer {
+    flex-wrap: wrap;
+    gap: var(--uf-space-8);
+    padding: 18px 22px 0;
+    border-top: 0;
+  }
+}
+
+@keyframes sheetUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay > .dialog {
+    animation: none;
+  }
 }

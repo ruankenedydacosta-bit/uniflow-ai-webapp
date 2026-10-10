@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import Field from '../../../components/ui/Field';
 import Modal from '../../../components/ui/Modal';
+import OutlineButton from '../../../components/ui/OutlineButton';
+import Segmented from '../../../components/ui/Segmented';
 import { cx } from '../../../utils/cx.js';
 import {
   getCategoryIconSections,
@@ -9,17 +10,20 @@ import {
 } from '../categoryIconCatalog.js';
 import { CategoryIcon } from '../categoryIcons.jsx';
 import { CATEGORY_TYPES, isDuplicateCategoryName } from '../categoryUtils.js';
-import styles from '../CategoriesPage.module.css';
+import styles from './CategoryCreateModal.module.css';
 
-const TYPE_LABELS = {
-  [CATEGORY_TYPES.EXPENSE]: 'Saída',
-  [CATEGORY_TYPES.INCOME]: 'Entrada',
-};
+const TYPE_OPTIONS = [
+  { value: CATEGORY_TYPES.EXPENSE, label: 'Saída' },
+  { value: CATEGORY_TYPES.INCOME, label: 'Entrada' },
+];
 
 /**
  * Formulário curto de criação de categoria. Reusa o Modal do Design System
  * e a mutação `saveCategory` do useCategories. Valida nome duplicado dentro
  * do mesmo tipo antes de chamar o serviço.
+ *
+ * Tela 22h: folha padrão com o nome, Saída/Entrada e a grade de ícones em
+ * cinco colunas, rolando por seção dentro da folha.
  */
 function CategoryCreateModal({
   open,
@@ -74,6 +78,13 @@ function CategoryCreateModal({
     await onCreate({ name: trimmed, category_type: categoryType, icon });
   }
 
+  function handleTypeChange(type) {
+    setCategoryType(type);
+    if (!iconWasChosenRef.current) {
+      setIcon(getDefaultCategoryIconKey(type));
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -88,48 +99,26 @@ function CategoryCreateModal({
       headerClassName={styles.categoryCreateHeader}
       overlayClassName={overlayClassName}
     >
-      <form className={cx(styles.form, styles.categoryCreateForm)} onSubmit={handleSubmit}>
-        <Input
-          id="new-category-name"
-          label="Nome da categoria"
-          placeholder="Ex: Mercado"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          autoFocus
-          fullWidth
+      <form className={styles.categoryCreateForm} onSubmit={handleSubmit}>
+        <Field label="Nome da categoria">
+          <input
+            id="new-category-name"
+            placeholder="Ex.: Mercado"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            autoFocus
+          />
+        </Field>
+
+        <Segmented
+          label="Tipo da categoria"
+          options={TYPE_OPTIONS}
+          value={categoryType}
+          onChange={handleTypeChange}
         />
 
-        <div
-          className={styles.segmented}
-          role="radiogroup"
-          aria-label="Tipo da categoria"
-        >
-          {[CATEGORY_TYPES.EXPENSE, CATEGORY_TYPES.INCOME].map((type) => (
-            <button
-              key={type}
-              type="button"
-              role="radio"
-              aria-checked={categoryType === type}
-              className={
-                categoryType === type
-                  ? `${styles.segment} ${styles.segmentActive}`
-                  : styles.segment
-              }
-              onClick={() => {
-                setCategoryType(type);
-                if (!iconWasChosenRef.current) {
-                  setIcon(getDefaultCategoryIconKey(type));
-                }
-              }}
-            >
-              {TYPE_LABELS[type]}
-            </button>
-          ))}
-        </div>
-
         <fieldset className={styles.iconFieldset}>
-          <legend>Escolha um ícone</legend>
-          <p className={styles.iconHelper}>Todos os símbolos continuam disponíveis.</p>
+          <legend>Ícone</legend>
           <div className={styles.iconLibrary} role="radiogroup" aria-label="Ícone da categoria">
             {iconSections.map((section) => (
               <section className={styles.iconSection} key={section.id}>
@@ -144,19 +133,14 @@ function CategoryCreateModal({
                         role="radio"
                         aria-checked={selected}
                         aria-label={option.label}
-                        className={selected
-                          ? `${styles.iconOption} ${styles.iconOptionSelected}`
-                          : styles.iconOption}
+                        title={option.label}
+                        className={styles.iconOption}
                         onClick={() => {
                           iconWasChosenRef.current = true;
                           setIcon(option.key);
                         }}
                       >
-                        <span className={styles.iconGlyph}>
-                          <CategoryIcon category={{ icon: option.key }} />
-                          {selected ? <span className={styles.iconCheck} aria-hidden="true">✓</span> : null}
-                        </span>
-                        <span className={styles.iconLabel}>{option.label}</span>
+                        <CategoryIcon category={{ icon: option.key }} />
                       </button>
                     );
                   })}
@@ -164,6 +148,7 @@ function CategoryCreateModal({
               </section>
             ))}
           </div>
+          <p className={styles.iconHelper}>Role para ver todos os ícones.</p>
         </fieldset>
 
         {(localError || serverError) ? (
@@ -173,12 +158,12 @@ function CategoryCreateModal({
         ) : null}
 
         <div className={styles.formActions}>
-          <Button variant="ghost" type="button" onClick={handleClose} disabled={isMutating}>
-            Cancelar
-          </Button>
-          <Button type="submit" loading={isMutating} disabled={isMutating || !name.trim()}>
+          <OutlineButton className={styles.submitButton} type="submit" loading={isMutating} disabled={isMutating || !name.trim()}>
             Criar categoria
-          </Button>
+          </OutlineButton>
+          <OutlineButton variant="ghost" type="button" onClick={handleClose} disabled={isMutating}>
+            Cancelar
+          </OutlineButton>
         </div>
       </form>
     </Modal>

@@ -490,19 +490,18 @@
   line-height: 1.45;
 }
 
-/* ---------- Formulário simples (modal) ---------- */
+/* ---------- Formulário simples (modal, tela 22e) ---------- */
 
-.formOverlay {
-  background: var(--uf-app-overlay-panel);
+/* No celular o Modal vira a folha padrão (Modal.module.css). Aqui ficam o
+   desktop, os campos e o recolhimento do lembrete. */
+@media (min-width: 768px) {
+  .formOverlay {
+    background: var(--uf-app-overlay-panel);
+  }
 }
 
 .formDialog {
   color-scheme: var(--uf-app-color-scheme);
-  border-color: var(--uf-color-border-strong);
-  background:
-    radial-gradient(circle at 88% 4%, rgba(37, 99, 235, .14), transparent 34%),
-    var(--uf-color-bg-elevated);
-  box-shadow: var(--uf-shadow-lg);
   /* AGPUSH3/AGPUSH4: transicao sempre presente (mesmo padrao de
      AgendaReminderChoiceModal.module.css/.dialog) -- so o estado alvo
      muda quando .formDialogCollapsing e somado. Duracao via
@@ -515,147 +514,136 @@
     filter var(--uf-agenda-form-collapse-ms, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.formDialog > :last-child {
-  background: color-mix(in srgb, var(--uf-color-bg-elevated) 94%, transparent);
-  backdrop-filter: blur(12px);
-}
-
-.formDialog > :last-child > * {
-  min-width: 108px;
-}
-
 .formFields {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.dateTimeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
 }
 
-.field span {
-  color: var(--uf-app-text-3);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.field input,
-.field textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 12px;
-  background: var(--uf-app-canvas);
-  color: var(--uf-app-text);
-  font: inherit;
-  font-size: 15px;
-}
-
-.field input:focus-visible,
-.field textarea:focus-visible,
-.allDayRow input:focus-visible {
-  border-color: var(--uf-color-primary);
-  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
-  outline-offset: var(--uf-focus-ring-offset);
-}
-
-.field textarea {
-  resize: vertical;
-}
-
-.fieldDisabled input {
-  opacity: .55;
-}
-
-.fieldRequired span::after {
-  content: ' *';
-  color: var(--uf-app-danger-text);
+/* O seletor nativo de data e hora cobre a caixa inteira, invisível: o
+   caret do desenho fica à direita e o toque em qualquer ponto abre o
+   seletor. */
+.pickerInput::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .allDayRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  color: var(--uf-app-text-2);
-  font-size: 14.5px;
-  font-weight: 600;
-}
-
-.allDayRow input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--uf-app-primary);
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  color: var(--uf-app-text);
+  font-size: 14px;
 }
 
 .reminderNote {
   margin: 0;
   color: var(--uf-app-text-3);
-  font-size: 12.5px;
+  font-size: var(--uf-text-micro-size);
+  line-height: 1.45;
 }
 
 /* AGPUSH3: entry point real do lembrete dentro de Editar compromisso.
-   Chip pequeno, sem virar um novo card grande -- mesmo espírito de
-   .field (rótulo em cima, conteúdo embaixo). */
+   Bloco no poço escuro: sino violeta, rótulo de 12px, valor de 14px e o
+   botão discreto à direita. Os valores são copy fixa e curta ("Nenhum
+   lembrete configurado", "30 min antes", "1h antes"), por isso quebram de
+   linha em vez de cortar com reticências. */
 .reminderSection {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.reminderSectionLabel {
-  color: var(--uf-app-text-3);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-/* AGPUSH3: os textos aqui sao sempre copy fixa e curta desta secao
-   ("Nenhum lembrete configurado", "30 min antes", "1h antes") -- nunca
-   titulo de compromisso (livre/potencialmente longo). Por isso NUNCA
-   trunca com ellipsis: em telas estreitas, o valor quebra para a proxima
-   linha e o botao desce junto, em vez de cortar a mensagem. */
-.reminderSectionRow {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-  min-height: 40px;
-  padding: 8px 12px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 12px;
-  background: var(--uf-app-card-row);
-}
-
-.reminderSectionValue {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1 1 auto;
-  min-width: 0;
-  color: var(--uf-app-text-2);
-  font-size: 13.5px;
-  font-weight: 700;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
 }
 
 .reminderSectionIcon {
   flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  color: var(--uf-app-primary-text);
+  display: inline-flex;
+  color: var(--uf-app-brand-violet-text);
 }
 
 .reminderSectionIcon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
+  width: 18px;
+  height: 18px;
+}
+
+.reminderSectionText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reminderSectionLabel {
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-micro-size);
+}
+
+.reminderSectionValue {
+  color: var(--uf-app-text);
+  font-size: 14px;
+}
+
+.reminderSectionButton {
+  min-height: 32px;
+  padding-block: 4px;
+}
+
+/* Ações: lixeira contornada, "Salvar" ocupando o espaço e "Cancelar". */
+.deleteButton {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in oklch, var(--uf-app-text) 12%, transparent);
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-text-2);
+  cursor: pointer;
+}
+
+.deleteButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--uf-app-surface-2);
+}
+
+.deleteButton:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.deleteButton:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.saveButton {
+  flex: 1;
+}
+
+.formDialog > :last-child {
+  justify-content: stretch;
+  flex-wrap: nowrap;
 }
 
 /* AGPUSH3: o Editar compromisso precisa sair suavemente antes da
@@ -681,12 +669,10 @@
 }
 
 .formError {
-  margin: 0;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--uf-app-danger-subtle);
-  color: var(--uf-app-danger-text);
-  font-size: 14px;
+  margin: 14px 0 0;
+  color: var(--uf-app-text);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 /* ---------- Acessibilidade ---------- */
@@ -713,34 +699,22 @@
   }
 }
 
+/* Celular: com o teclado aberto o formulário rola dentro da folha e as
+   ações ficam presas embaixo, sempre ao alcance. O respiro de baixo da
+   folha passa para a barra de ações, que é a parte presa. */
 @media (max-width: 480px) {
-  .formOverlay {
-    align-items: flex-end;
-    padding:
-      max(8px, env(safe-area-inset-top, 0px))
-      max(8px, env(safe-area-inset-right, 0px))
-      0
-      max(8px, env(safe-area-inset-left, 0px));
-  }
-
-  .formDialog {
-    max-height: calc(100dvh - max(8px, env(safe-area-inset-top, 0px)));
-    border-bottom: 0;
-    border-radius: var(--uf-radius-20) var(--uf-radius-20) 0 0;
+  .formOverlay > .formDialog.formDialog {
+    padding-bottom: 0;
     overscroll-behavior: contain;
     scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   }
 
-  .formDialog > :last-child {
+  .formOverlay > .formDialog.formDialog > :last-child {
     position: sticky;
     bottom: 0;
     z-index: 1;
-    flex-wrap: wrap;
-    padding-bottom: max(var(--uf-space-24), env(safe-area-inset-bottom, 0px));
-  }
-
-  .formDialog > :last-child > * {
-    flex: 1 1 108px;
+    padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
+    background: var(--uf-app-card-surface);
   }
 }
 
