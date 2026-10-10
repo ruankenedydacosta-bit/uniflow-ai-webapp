@@ -14,8 +14,8 @@
 // fallback 'text' e o app abre a conversa por texto. A chave vale 60 s: só
 // abre a conversa dentro da reserva que acabou de ser feita.
 //
-// Enquanto a liberação geral não sai (#113), só quem está em
-// UNI_REALTIME_ALLOWED_USER_IDS abre sessão. Lista vazia fecha a função.
+// Não há allowlist de usuários: quem pode abrir sessão é decidido pelo plano.
+// Sem assinatura ativa ou sem minutos no ciclo, voice_reserve_block recusa.
 
 import {
   mapVoiceReserveError,
@@ -94,10 +94,6 @@ function jsonResponse(status: number, body: Record<string, unknown>, origin: str
 
 function errorResponse(status: number, code: string, message: string, origin: string = '') {
   return jsonResponse(status, { error: { code, message } }, origin);
-}
-
-function readAllowlist(value = '') {
-  return new Set(value.split(',').map((id) => id.trim()).filter(Boolean));
 }
 
 async function getAuthenticatedUserId(authorization: string, supabaseUrl: string, anonKey: string) {
@@ -304,7 +300,6 @@ Deno.serve(async (request) => {
   const model = Deno.env.get('OPENAI_REALTIME_MODEL') || DEFAULT_MODEL;
   const voice = Deno.env.get('OPENAI_REALTIME_VOICE') || DEFAULT_VOICE;
   const timeoutMs = Number(Deno.env.get('UNI_REALTIME_TIMEOUT_MS')) || DEFAULT_TIMEOUT_MS;
-  const allowlist = readAllowlist(Deno.env.get('UNI_REALTIME_ALLOWED_USER_IDS'));
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey || !providerKey) {
     const missing = [
@@ -319,9 +314,6 @@ Deno.serve(async (request) => {
 
   const userId = await getAuthenticatedUserId(authorization, supabaseUrl, anonKey);
   if (!userId) return errorResponse(401, 'UNAUTHORIZED', 'Entre no app para conversar com a Uni.', origin);
-  if (!allowlist.has(userId)) {
-    return errorResponse(403, 'NOT_ALLOWED', 'A conversa contínua ainda está em teste e não foi liberada para esta conta.', origin);
-  }
 
   let payload: Record<string, unknown> = {};
   try {
