@@ -96,11 +96,23 @@ test('Enviar encerra e manda para a transcrição; fechar descarta e para a fala
   );
 });
 
-test('a resposta e o rascunho aparecem só na tela de voz; a Home não mostra a última conversa', async () => {
+// #128 tirou a última conversa da Home. O rascunho pendente e o pedido em
+// andamento continuam nela: sem o card não há como confirmar ou cancelar, e
+// usePwaAutoUpdateBlock segura a atualização enquanto houver rascunho.
+test('a Home não mostra a última conversa, só o pedido em andamento e o rascunho pendente', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.doesNotMatch(home, /\{isVoiceModeOpen \? null : compactResponse\}/);
-  assert.doesNotMatch(home, /Ver conversa completa/);
+  assert.match(home, /\{isVoiceModeOpen \? null : compactResponse\}/);
   assert.match(home, /response=\{isVoiceModeOpen \? compactResponse : null\}/);
+  assert.match(home, /presentation=\{isVoiceModeOpen \? 'voice' : 'home'\}/);
+  assert.match(
+    home,
+    /if \(!isVoicePresentation && !showProcessingIndicator && !pendingConfirmationMessage\) return null;/,
+  );
+  // A resposta da Uni em texto só aparece na tela de voz; a fala da pessoa
+  // ("Você") não aparece mais no card.
+  assert.match(home, /isVoicePresentation && lastUni\?\.text \? \(/);
+  assert.doesNotMatch(home, /<span>Você<\/span>/);
+  assert.doesNotMatch(home, /Ver conversa completa/);
 });
 
 test('tela de voz é um diálogo modal no body, fecha com Esc e devolve a rolagem da página', async () => {
@@ -179,9 +191,8 @@ test('tela de voz segue o handoff: 34 barras, transcrição com cursor e Escreve
 
 test('na tela de voz a resposta perde a caixa e o card de rascunho vai em vidro', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /presentation=\{isVoiceModeOpen \? 'voice' : 'card'\}/);
+  assert.match(home, /presentation=\{isVoiceModeOpen \? 'voice' : 'home'\}/);
   assert.match(home, /appearance=\{isVoicePresentation \? 'glass' : 'default'\}/);
-  assert.match(home, /\{lastUser\?\.text && !isVoicePresentation \?/);
   // O card continua chamando a mesma confirmação: nada é gravado sem Confirmar.
   // É o rascunho pendente que aparece, mesmo depois de outra resposta da Uni.
   assert.match(home, /onConfirm=\{\(\) => onConfirmAction\(pendingConfirmationMessage\.id\)\}/);

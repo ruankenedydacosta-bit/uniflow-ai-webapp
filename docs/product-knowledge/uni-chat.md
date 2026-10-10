@@ -6,7 +6,7 @@ Conversar em linguagem natural com a assistente Uni para tirar dúvidas e regist
 
 ## Onde encontrar
 
-`/app/uni`. Para abrir a conversa, toque em "Ver conversa completa" na Home ou em "Conversa" na tela de voz.
+`/app/uni`. Para abrir a conversa, toque em **Mais** na barra inferior e depois em **Conversa com a Uni**. Na tela de voz, toque em **Conversa**.
 
 No topo da conversa ficam a Uni, o espaço ativo ("Espaço Pessoal") e dois botões: "Ver histórico" e "Nova conversa". Embaixo fica o campo "Escreva ou fale com a Uni". Com o campo vazio, o botão à direita grava sua voz. Depois que você digita, o mesmo botão envia a mensagem.
 

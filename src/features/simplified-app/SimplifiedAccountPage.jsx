@@ -26,6 +26,7 @@ import {
   PhCalendarIcon,
   PhCaretRightIcon,
   PhChartBarIcon,
+  PhChatCircleTextIcon,
   PhCreditCardIcon,
   PhCrownIcon,
   PhGearIcon,
@@ -57,7 +58,8 @@ import styles from './simplifiedAccount.module.css';
  * card do plano e três grupos (Conta, Produto, Sessão) com linhas de 36px
  * de ícone. Ficam de fora o espaço ativo e os itens que levam a telas que
  * o app simplificado não tem (Metas, Visão de futuro, Categorias, Open
- * Finance). O acesso à Uni é o orb da navegação inferior.
+ * Finance). A voz da Uni é o orb da navegação inferior; a conversa escrita
+ * abre por "Conversa com a Uni", o primeiro item de Produto.
  */
 function SimplifiedAccountPage() {
   const navigate = useNavigate();
@@ -136,10 +138,20 @@ function SimplifiedAccountPage() {
     },
   ];
 
-  // Grupo "Produto": Relatórios e Notificações vêm do handoff; Agenda,
+  // Grupo "Produto": Relatórios e Notificações vêm do handoff. A conversa
+  // escrita com a Uni (/app/uni) entra aqui desde que o card da última
+  // conversa saiu da Home (#128): é o único caminho até ela sem abrir a
+  // tela de voz. Agenda,
   // Pagamento e assinatura, Voz da Uni, Suporte, Privacidade e Sobre são
   // telas que já existem e continuam alcançáveis por aqui.
   const productItems = [
+    {
+      id: 'uni-chat',
+      Icon: PhChatCircleTextIcon,
+      title: 'Conversa com a Uni',
+      subtitle: 'Escreva para a Uni e veja o histórico',
+      to: SIMPLIFIED_ROUTES.UNI,
+    },
     {
       id: 'reports',
       Icon: PhChartBarIcon,
@@ -277,9 +289,9 @@ function SimplifiedAccountPage() {
       <section className={groups.group} aria-label="Produto">
         <h2 className={groups.groupLabel}>Produto</h2>
         <div className={groups.list}>
-          {productItems.slice(0, 2).map(renderRow)}
+          {productItems.slice(0, 3).map(renderRow)}
           <SimplifiedAccountNotificationsRow />
-          {productItems.slice(2).map(renderRow)}
+          {productItems.slice(3).map(renderRow)}
         </div>
       </section>
 

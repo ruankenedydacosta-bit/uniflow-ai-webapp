@@ -122,7 +122,9 @@ function CompactResponse({
   // "voice": dentro da tela de voz (redesign, épico #91). O pedido da pessoa
   // já aparece sob o orb, então sai daqui; a resposta fica centralizada e o
   // card vai em vidro.
-  presentation = 'card',
+  // "home": na Home, só o que pede ação (o pedido em andamento e o rascunho
+  // pendente). A última troca com a Uni fica no chat.
+  presentation = 'home',
 }) {
   const isVoicePresentation = presentation === 'voice';
   const lastUser = [...messages].reverse().find((message) => message.from === 'user');
@@ -277,6 +279,7 @@ function CompactResponse({
   // específica, reaproveita a mesma frase genérica já usada por
   // "interpreting" sem hint reconhecido.
   const displayedProcessingMessage = processingMessage ?? 'Entendendo seu pedido…';
+  if (!isVoicePresentation && !showProcessingIndicator && !pendingConfirmationMessage) return null;
   // HOTFIX (abandono da revelação progressiva): a resposta nunca aparece
   // parcialmente -- ou está oculta (pending, cai no indicador de
   // processamento acima) ou está 100% visível de uma vez, junto com a voz.
@@ -291,19 +294,13 @@ function CompactResponse({
       aria-label="Resposta da Uni"
       aria-live="polite"
     >
-      {lastUser?.text && !isVoicePresentation ? (
-        <p className={styles.transcript}><span>Você</span>{lastUser.text}</p>
-      ) : null}
       {showProcessingIndicator ? (
         <p className={styles.uniProcessing} role="status">
           <span className={styles.uniProcessingDot} aria-hidden="true" />
           {displayedProcessingMessage}
         </p>
-      ) : lastUni?.text ? (
-        <p className={styles.uniResponse}>
-          {isVoicePresentation ? null : <span>Uni</span>}
-          {uniDisplayText}
-        </p>
+      ) : isVoicePresentation && lastUni?.text ? (
+        <p className={styles.uniResponse}>{uniDisplayText}</p>
       ) : null}
       {/* HOTFIX P1.4: "Ouvir resposta" removido do card compacto da Home --
           o fluxo principal aqui é sempre automático (autoplay). O botão
@@ -889,7 +886,7 @@ function SimplifiedHomeView({
       voiceMessageId={voiceMessageId}
       turnStartToken={turnStartToken}
       interpretingOperationHint={interpretingOperationHint}
-      presentation={isVoiceModeOpen ? 'voice' : 'card'}
+      presentation={isVoiceModeOpen ? 'voice' : 'home'}
       editForm={editForm}
       onSaveEditAction={onSaveEditAction ? handleCardSaveEdit : undefined}
     />
@@ -1018,6 +1015,10 @@ function SimplifiedHomeView({
       ) : null}
 
       <PwaInstallExperience />
+      {/* Fora da tela de voz, o rascunho pendente continua aqui: sem ele não
+          há como confirmar ou cancelar, e a atualização do app fica parada
+          esperando (usePwaAutoUpdateBlock). */}
+      {isVoiceModeOpen ? null : compactResponse}
       <SimplifiedHomeMonthReading />
 
       <SimplifiedHomeAgenda />
