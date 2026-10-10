@@ -296,8 +296,7 @@
 .notificationButton:focus-visible,
 .navigationItem:focus-visible,
 .uniButton:focus-visible,
-.cancelVoice:focus-visible,
-.detailsLink:focus-visible {
+.cancelVoice:focus-visible {
   outline: 3px solid var(--uf-app-focus);
   outline-offset: 4px;
 }
@@ -947,7 +946,8 @@
   height: 14px;
 }
 
-/* Última troca com a Uni (texto, resposta e confirmação pendente). */
+/* Card de resposta: na Home, o pedido em andamento e o rascunho pendente;
+   na Uni Suporte, a última pergunta e a resposta. */
 .compactResponse {
   display: grid;
   gap: 10px;
@@ -1033,17 +1033,6 @@
   font-size: 15px;
   line-height: 1.5;
   text-align: center;
-}
-
-.detailsLink {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: end;
-  color: var(--uf-app-brand-blue-text);
-  font-size: 13px;
-  text-decoration: none;
 }
 
 .uniAction {

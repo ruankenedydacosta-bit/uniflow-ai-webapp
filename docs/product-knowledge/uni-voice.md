@@ -29,6 +29,9 @@ Na tela de voz, o status acima da Uni mostra o que está acontecendo:
 - **Rascunho pronto**: o card de rascunho apareceu. Confira os dados e toque em
   **Confirmar**. Nada é salvo antes disso.
 
+Se você fechar a tela de voz com um rascunho esperando, o card fica na Home até
+você confirmar ou cancelar.
+
 Também dá para responder ao card só falando, sem tocar na tela:
 
 - **Confirmar**: diga que pode confirmar, com as suas palavras ("pode

@@ -1641,7 +1641,7 @@ test('BUG 3: toda restauração de mensagens reserva IDs msg-N (troca de workspa
   );
 });
 
-test('BUG 4: scroll consome stickToBottom em layout effect -- "Ver conversa completa" não abre mais no topo', async () => {
+test('BUG 4: scroll consome stickToBottom em layout effect -- a conversa aberta a partir da Home não abre mais no topo', async () => {
   const page = await source('UniChatPage.jsx');
   const scrollBlock = page.slice(
     page.indexOf('function scrollToLatest()'),
@@ -1658,8 +1658,8 @@ test('BUG 4: scroll consome stickToBottom em layout effect -- "Ver conversa comp
   assert.match(scrollBlock, /rolou para cima/);
 });
 
-// HOTFIX FINAL -- causa raiz real medida diretamente no DOM: clicar no link
-// real "Ver conversa completa" (troca de rota client-side, SEM reload) faz
+// HOTFIX FINAL -- causa raiz real medida diretamente no DOM: abrir a conversa
+// a partir da Home (troca de rota client-side, SEM reload) faz
 // `.body`/`.messages` montarem pela primeira vez nesse commit, mas
 // `messages`/`historyHydrated` já tinham o MESMO valor de quando a Home
 // (early return, nunca renderiza `.body`) era exibida -- o efeito de scroll

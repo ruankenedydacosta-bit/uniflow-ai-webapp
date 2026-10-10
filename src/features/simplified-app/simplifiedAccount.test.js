@@ -230,6 +230,20 @@ test('menu preserva os itens existentes na ordem da tela 07 e inclui a preferên
   assert.match(page, /title: 'Privacidade e Analytics'/);
 });
 
+// #128 tirou da Home o link "Ver conversa completa". A conversa escrita
+// (/app/uni) passou a abrir pelo primeiro item do grupo Produto, sem passar
+// pela tela de voz, que liga o microfone.
+test('menu Mais abre a conversa escrita com a Uni no topo do grupo Produto', async () => {
+  const page = await source('./SimplifiedAccountPage.jsx');
+  const productItems = page.slice(page.indexOf('const productItems'), page.indexOf('function renderRow'));
+  assert.ok(productItems.indexOf("id: 'uni-chat'") > -1, 'item da conversa ausente');
+  assert.ok(productItems.indexOf("id: 'uni-chat'") < productItems.indexOf("id: 'reports'"));
+  assert.match(productItems, /title: 'Conversa com a Uni',/);
+  assert.match(productItems, /to: SIMPLIFIED_ROUTES\.UNI,/);
+  // Notificações continua depois de Relatórios e Agenda.
+  assert.match(page, /\{productItems\.slice\(0, 3\)\.map\(renderRow\)\}\s*<SimplifiedAccountNotificationsRow \/>/);
+});
+
 test('PRIVACY não existe em ACCOUNT_SUBROUTE_IDS/ACCOUNT_SUBROUTES -- remoção total, não só do menu; NOTIFICATIONS existe (Fase 3)', async () => {
   const routesSource = await source('./simplifiedAccountRoutes.js');
   assert.match(routesSource, /NOTIFICATIONS: 'notifications',/);

@@ -3297,7 +3297,9 @@ export default function UniChatPage({ variant = 'full' }) {
     setShowScrollBtn(false);
   }
 
-  // BUG REAL (BUG 4): "Ver conversa completa" abria no TOPO do histórico --
+  // BUG REAL (BUG 4): abrir a conversa a partir da Home (na época, pelo link
+  // "Ver conversa completa"; hoje, pelo menu Mais ou pela tela de voz) caía no
+  // TOPO do histórico --
   // stickToBottom era escrito (sendText, switchConversation, handleScroll)
   // mas NUNCA lido: não existia efeito que rolasse o chat. Agora toda
   // mudança de mensagens com stickToBottom=true (nova resposta, hidratação
@@ -3320,7 +3322,7 @@ export default function UniChatPage({ variant = 'full' }) {
   // posição depois que o navegador realmente pintou o frame -- pega
   // qualquer reflow que aconteça entre o commit do React e o paint real.
   // HOTFIX FINAL -- CAUSA RAIZ REAL (confirmada por medição direta no DOM,
-  // clicando no link real "Ver conversa completa" -- nunca por reload de
+  // abrindo a conversa a partir da Home -- nunca por reload de
   // página): Home (`variant="simplified-home"`) retorna ANTES de renderizar
   // `.body`/`.messages` (early return). Ao navegar de Home para /app/uni
   // via troca de rota client-side (sem reload), `.body` é montado no DOM
