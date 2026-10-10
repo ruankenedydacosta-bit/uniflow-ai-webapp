@@ -318,6 +318,7 @@ function SimplifiedPaymentsPage() {
         onConfirm={() => setShowManageModal(false)}
         cancelLabel="Falar com a Uni"
         onCancel={() => { setShowManageModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}
+        closeButton
       />
 
       <SimplifiedConfirmModal

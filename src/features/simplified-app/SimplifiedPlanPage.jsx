@@ -405,6 +405,7 @@ function SimplifiedPlanPage() {
           : () => setShowManageModal(false)}
         cancelLabel="Falar com a Uni"
         onCancel={() => { setShowManageModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}
+        closeButton
       />
 
       {/* Tela 22: folha com título e X. Os planos são linhas de seleção, como
@@ -412,8 +413,6 @@ function SimplifiedPlanPage() {
       <Modal
         open={showChangePlanModal}
         onClose={handleCloseChangePlan}
-        closeOnOverlayClick={!isChangingPlan}
-        closeOnEsc={!isChangingPlan}
         title="Trocar de plano"
         description={upgradePix
           ? 'Pague o Pix abaixo. Os minutos do novo plano entram assim que o pagamento for confirmado.'

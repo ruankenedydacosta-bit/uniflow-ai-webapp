@@ -9,7 +9,8 @@ import styles from './SimplifiedConfirmModal.module.css';
 // contornada e a saída em ghost logo ao lado. O padrão não usa cor de perigo.
 // `busy` trava toque fora, Esc e a saída enquanto a ação roda; `onClose`
 // continua decidindo sozinho se pode fechar. `onCancel` existe para a saída
-// que faz algo além de fechar (ex.: "Falar com a Uni").
+// que faz algo além de fechar (ex.: "Falar com a Uni"); nesse caso passe
+// `closeButton` para a folha ganhar o X e ter uma saída neutra.
 function SimplifiedConfirmModal({
   open,
   onClose,
@@ -23,6 +24,7 @@ function SimplifiedConfirmModal({
   loading = false,
   busy = loading,
   error,
+  closeButton = false,
   children,
 }) {
   const titleId = useId();
@@ -34,9 +36,9 @@ function SimplifiedConfirmModal({
       onClose={onClose}
       closeOnOverlayClick={!busy}
       closeOnEsc={!busy}
-      hideCloseButton
+      hideCloseButton={!closeButton}
       aria-labelledby={titleId}
-      aria-describedby={description ? descriptionId : undefined}
+      aria-describedby={description || children ? descriptionId : undefined}
       size="sm"
     >
       <div className={styles.content}>
@@ -44,8 +46,12 @@ function SimplifiedConfirmModal({
           {icon ? <IconBox size={44}>{icon}</IconBox> : null}
           <div className={styles.text}>
             <h2 id={titleId}>{title}</h2>
-            {description ? <p id={descriptionId}>{description}</p> : null}
-            {children}
+            {description || children ? (
+              <div id={descriptionId} className={styles.description}>
+                {description ? <p>{description}</p> : null}
+                {children}
+              </div>
+            ) : null}
           </div>
         </div>
 

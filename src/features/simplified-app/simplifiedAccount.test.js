@@ -370,14 +370,19 @@ test('logout: "Continuar conectado" fecha o modal sem chamar signOut; "Sair da c
   assert.doesNotMatch(onCloseLine, /handleConfirmLogout|signOut/);
 });
 
-test('aviso curto: sem X, e toque fora, Esc e as duas ações travam enquanto a ação roda', async () => {
+test('aviso curto: sem X por padrão, e toque fora, Esc e as duas ações travam enquanto a ação roda', async () => {
   const confirmModal = await source('./SimplifiedConfirmModal.jsx');
-  assert.match(confirmModal, /hideCloseButton/);
+  assert.match(confirmModal, /hideCloseButton=\{!closeButton\}/);
+  assert.match(confirmModal, /closeButton = false,/);
   assert.match(confirmModal, /closeOnOverlayClick=\{!busy\}/);
   assert.match(confirmModal, /closeOnEsc=\{!busy\}/);
-  assert.match(confirmModal, /loading=\{loading\} disabled=\{busy\} onClick=\{onConfirm\}/);
-  assert.match(confirmModal, /onClick=\{onCancel \?\? onClose\} disabled=\{busy\}/);
   assert.match(confirmModal, /busy = loading,/);
+  const buttons = confirmModal.match(/<OutlineButton[^>]*>/g) ?? [];
+  assert.equal(buttons.length, 2);
+  for (const button of buttons) assert.match(button, /disabled=\{busy\}/);
+  assert.match(buttons[0], /onClick=\{onConfirm\}/);
+  assert.match(buttons[0], /loading=\{loading\}/);
+  assert.match(buttons[1], /onClick=\{onCancel \?\? onClose\}/);
 });
 
 test('logout: loading real durante signOut (botão "Sair da conta" com loading), erro exibido se falhar, sessão nunca apagada em caso de erro', async () => {
