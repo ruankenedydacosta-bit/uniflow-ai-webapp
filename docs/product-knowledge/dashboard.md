@@ -14,7 +14,13 @@ A tela mostra: saudação personalizada; um resumo de "clareza financeira" (situ
 
 ### Leitura do mês (Home simplificada)
 
-Na Home de `/app/home`, logo abaixo da fala da Uni, o bloco "Leitura do mês" mostra até três frases sobre as saídas por categoria. Elas aparecem nesta ordem de prioridade, e ficam as três primeiras que existirem:
+Na Home de `/app/home`, logo abaixo da fala da Uni, o bloco "Leitura do mês" mostra até três frases sobre as saídas por categoria.
+
+As frases são escritas pela Uni com inteligência artificial (Claude Haiku, da Anthropic), como uma analista que ajuda no orçamento: avisam quando uma categoria passa ou chega perto do orçamento, comentam o ritmo dos gastos e elogiam quando o mês vai bem. A Uni recebe só os números do mês por categoria e o nome de cada categoria, nunca a descrição dos registros. Frase com valor que não estava nesses números é descartada antes de aparecer.
+
+A leitura fica guardada no aparelho até o fim do dia. Um registro novo faz a Uni escrever de novo, e no dia seguinte ela escreve uma leitura nova. São até 10 leituras escritas pela Uni por dia, e elas também contam no limite mensal de uso de IA do plano.
+
+Quando a Uni não consegue escrever (sem conexão, limite do dia atingido ou demora de mais de 10 segundos), o bloco mostra uma leitura calculada pelo app, nesta ordem de prioridade, com as três primeiras que existirem:
 
 1. a categoria que mais passou do orçamento;
 2. a categoria que já usou 80% ou mais do orçamento;

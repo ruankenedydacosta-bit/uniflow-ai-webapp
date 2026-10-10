@@ -7,11 +7,19 @@ import { useCategories, useCategoryBudgets, useTransactions } from '../../hooks/
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../services/financialDataEvents.js';
 import { CategoryIcon } from '../categories/categoryIcons.jsx';
 import {
+  buildHomeMonthFacts,
   buildHomeMonthReading,
   buildHomeMonthReadingRange,
   HOME_MONTH_READING_KINDS,
 } from './homeMonthReading.js';
-import { PhCaretRightIcon, PhCheckCircleIcon, PhWarningCircleIcon } from './SimplifiedIcons.jsx';
+import { buildUniInsightsPayload, fingerprintPayload, toUniReadingItems } from './homeMonthUniReading.js';
+import {
+  PhCaretRightIcon,
+  PhChartBarIcon,
+  PhCheckCircleIcon,
+  PhWarningCircleIcon,
+} from './SimplifiedIcons.jsx';
+import { useHomeMonthUniReading } from './useHomeMonthUniReading.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
 
@@ -36,14 +44,19 @@ const POSITIVE_KINDS = new Set([HOME_MONTH_READING_KINDS.ON_TRACK, HOME_MONTH_RE
 function ReadingIcon({ reading }) {
   if (WARNING_KINDS.has(reading.kind)) return <PhWarningCircleIcon />;
   if (POSITIVE_KINDS.has(reading.kind)) return <PhCheckCircleIcon />;
+  // Leitura geral da Uni, sem categoria: ícone de resumo.
+  if (!reading.category) return <PhChartBarIcon />;
   return <CategoryIcon category={reading.category} />;
 }
 
 // Leitura do mês na Home (design 20b): bloco fixo logo abaixo da fala da Uni,
 // com até três leituras sobre as saídas por categoria. Tocar numa leitura abre
 // o Financeiro no histórico, filtrado pela categoria.
+//
+// As frases são da Uni (#122), escritas com IA a partir dos números do mês.
+// Sem elas (falha, limite do dia, demora), vale a leitura calculada aqui.
 function SimplifiedHomeMonthReading() {
-  const { workspace } = useSession();
+  const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
   // "Hoje" anda quando o app volta do background: aberto em 30/set e
   // retomado em 01/out, o período buscado e a comparação passam para outubro.
@@ -94,9 +107,31 @@ function SimplifiedHomeMonthReading() {
   const budgetsReady = budgetState.hasLoaded || Boolean(budgetState.error);
   const isReady = categoriesReady && budgetsReady;
 
+  const facts = useMemo(
+    () => (isReady
+      ? buildHomeMonthFacts({
+        transactions: transactionState.transactions,
+        categories: categoryState.categories,
+        budgets: budgetState.budgets,
+        now: today,
+      })
+      : null),
+    [isReady, transactionState.transactions, categoryState.categories, budgetState.budgets, today],
+  );
+  const payload = useMemo(() => (facts ? buildUniInsightsPayload(facts) : null), [facts]);
+  const fingerprint = useMemo(() => (payload ? fingerprintPayload(payload) : null), [payload]);
+  const uni = useHomeMonthUniReading({
+    userId: user?.id,
+    workspaceId,
+    payload,
+    fingerprint,
+    enabled: isReady,
+    pause: transactionState.isLoading || categoryState.isLoading || budgetState.isLoading,
+  });
+
   // A hora de "Atualizada às" muda a cada resposta nova da consulta, não a
   // cada render.
-  const reading = useMemo(
+  const calculated = useMemo(
     () => ({
       ...(isReady
         ? buildHomeMonthReading({
@@ -115,10 +150,28 @@ function SimplifiedHomeMonthReading() {
   // isso é espera, não falha.
   const isWaitingWorkspace = !workspaceId;
 
+  const isLoadingData = isWaitingWorkspace || transactionState.isLoading
+    || (categoryState.isLoading && !categoriesReady) || !budgetsReady;
+
+  let reading = calculated;
+  let isLoading = isLoadingData;
+  if (uni.leituras && facts) {
+    // Frases da Uni: as destes fatos ou, enquanto ela reescreve, as de hoje.
+    reading = {
+      ...calculated,
+      readings: toUniReadingItems(uni.leituras, facts),
+      updatedAtLabel: CLOCK_FORMATTER.format(new Date(uni.generatedAt)),
+    };
+  } else if (uni.status === 'loading') {
+    // Sem frase guardada, o carregamento fica até a Uni responder ou o tempo
+    // do pedido acabar; aí a leitura calculada entra.
+    reading = { ...calculated, readings: [] };
+    isLoading = true;
+  }
+
   return (
     <SimplifiedHomeMonthReadingView
-      isLoading={isWaitingWorkspace || transactionState.isLoading || (categoryState.isLoading && !categoriesReady)
-        || !budgetsReady}
+      isLoading={isLoading}
       error={isWaitingWorkspace ? null : (transactionState.error ?? categoryState.error)}
       reading={reading}
     />
