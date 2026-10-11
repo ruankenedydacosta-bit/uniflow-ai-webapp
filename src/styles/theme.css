@@ -371,10 +371,17 @@
   --uf-motion-contar:    800ms; /* números e anéis */
   --uf-motion-reduzido:  150ms; /* fade único com Reduzir movimento */
   --uf-motion-sequencia: 45ms;  /* intervalo entre blocos que entram em sequência */
+  --uf-motion-fundo:     240ms; /* fundo que escurece atrás da folha */
+  --uf-motion-linha:     320ms; /* linha nova que abre na lista */
+  --uf-motion-brilho:    1600ms; /* brilho que se apaga na linha nova */
+  --uf-motion-faisca:    900ms; /* voo mais curto de uma faísca */
+  --uf-motion-anel:      720ms; /* anel que se expande ao salvar */
+  --uf-motion-esqueleto: 1300ms; /* uma passada do brilho no esqueleto de carregamento */
 
   --uf-motion-curva-saida:   cubic-bezier(.2, .8, .2, 1);
   --uf-motion-curva-navegar: cubic-bezier(.32, .72, 0, 1);
   --uf-motion-curva-acelera: cubic-bezier(.4, 0, 1, 1);
+  --uf-motion-curva-faisca:  cubic-bezier(.15, .7, .3, 1);
 
   /* salto 380/22, rebote de 11%: ícone da aba, check, aviso no topo */
   --uf-motion-mola-salto: linear(0, 0.037, 0.15, 0.263, 0.388, 0.556, 0.674, 0.779, 0.871, 0.968, 1.022, 1.061, 1.094, 1.105, 1.108, 1.102, 1.093, 1.081, 1.067, 1.049, 1.036, 1.025, 1.012, 1.004, 0.998, 0.993, 0.99, 0.989, 0.988, 0.989, 0.99, 0.991, 0.993, 0.995, 0.996, 0.998, 0.999, 0.999, 1, 1.001, 1);

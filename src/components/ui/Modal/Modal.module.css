@@ -140,6 +140,7 @@
     background: color-mix(in oklch, var(--uf-app-canvas) 70%, transparent);
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
+    animation: fundoEscurece var(--uf-motion-fundo) var(--uf-motion-curva-saida) both;
   }
 
   .overlay > .dialog {
@@ -160,7 +161,7 @@
     color: var(--uf-app-text);
     font-family: var(--uf-app-font-family);
     scrollbar-width: none;
-    animation: sheetUp var(--uf-duration-base) var(--uf-ease-decelerate);
+    animation: folhaSobe var(--uf-motion-mola-folha-duracao) var(--uf-motion-mola-folha) both;
   }
 
   .overlay > .dialog::before {
@@ -233,15 +234,27 @@
   }
 }
 
-@keyframes sheetUp {
+/* Folha que sobe, direção 23b Salto (#145): sobe inteira com a mola folha
+   enquanto o fundo escurece. Os blocos entram em sequência pelo Modal.jsx. */
+@keyframes folhaSobe {
   from {
-    transform: translateY(24px);
+    transform: translateY(100%);
+  }
+}
+
+@keyframes fundoEscurece {
+  from {
     opacity: 0;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+/* Com Reduzir movimento, folha e fundo só aparecem, em 150 ms. */
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .overlay.overlay {
+    animation: fundoEscurece var(--uf-motion-reduzido) linear both;
+  }
+
   .overlay > .dialog {
-    animation: none;
+    animation: fundoEscurece var(--uf-motion-reduzido) linear both;
   }
 }

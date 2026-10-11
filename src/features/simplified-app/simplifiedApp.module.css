@@ -952,7 +952,7 @@ html[data-uf-transicao="voltar"]::view-transition-new(uf-tela) {
   border-radius: var(--uf-radius-8);
   background: linear-gradient(90deg, var(--uf-app-surface-2) 0%, var(--uf-app-surface-3) 45%, var(--uf-app-surface-2) 90%);
   background-size: 220% 100%;
-  animation: homeSkeletonWave 1.5s linear infinite;
+  animation: homeSkeletonWave var(--uf-motion-esqueleto) linear infinite;
 }
 
 @keyframes homeSkeletonWave {

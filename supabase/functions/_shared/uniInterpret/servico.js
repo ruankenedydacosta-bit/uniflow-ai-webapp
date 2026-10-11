@@ -72,6 +72,7 @@ function serializar(validada) {
   const { consulta } = validada;
   return {
     intent: validada.intent,
+    ...(validada.agenda ? { agenda: validada.agenda } : {}),
     ...(consulta ? {
       consulta: {
         tipo: consulta.tipo,
@@ -94,6 +95,8 @@ function serializar(validada) {
       conta: paraCliente(operacao.conta),
       contaDestino: paraCliente(operacao.contaDestino),
       confianca: operacao.confianca,
+      parcelas: operacao.parcelas,
+      recorrente: operacao.recorrente,
       faltando: operacao.faltando,
       ajustes: operacao.ajustes,
     })),

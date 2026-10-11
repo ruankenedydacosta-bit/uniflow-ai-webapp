@@ -342,7 +342,7 @@ test('useUniConversation injeta a categoria recém-criada antes do próximo rend
 
 test('UniChatPage consome useUniLlm e AI_STATUS do bloco consolidado', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{\s*\n\s*useUniLlm, AI_STATUS, resolveConversationStyle,\s*\n\s*createPhraseStructuredFactService, isLlmPhrasingFlagEnabled,\s*\n\s*createFinancialIntentInterpreter, isSemanticIntentFlagEnabled,\s*\n\s*isFinancialOrchestratorFlagEnabled, isCompoundFinancialQueriesFlagEnabled,\s*\n\s*createFinancialResponseComposer, isLlmResponseComposerFlagEnabled,\s*\n\s*\} from '\.\.\/uni-llm';/);
+  assert.match(page, /import \{\s*\n\s*useUniLlm, AI_STATUS, resolveConversationStyle,\s*\n\s*createPhraseStructuredFactService, isLlmPhrasingFlagEnabled,\s*\n\s*\} from '\.\.\/uni-llm';/);
   assert.match(page, /const uniLlm = useUniLlm\(\);/);
 });
 
@@ -3534,10 +3534,10 @@ test('Sprint 2: resolveReferences também roda antes do motor de consultas no ca
   assert.ok(resolveIndex > -1 && engineIndex > -1 && resolveIndex < engineIndex);
 });
 
-test('Sprint 2/3/4: lastQuery da memória é repassado ao motor de consultas nos pontos de chamada (2 do determinístico + 1 do semântico da Sprint 3 + 1 do orquestrador da Sprint 4)', async () => {
+test('Sprint 2: lastQuery da memória é repassado ao motor de consultas nos 2 pontos de chamada do determinístico', async () => {
   const page = await source('UniChatPage.jsx');
   const occurrences = page.match(/lastQuery: conversationalMemoryRef\.current\.getLastQuery\(\),/g) || [];
-  assert.equal(occurrences.length, 4);
+  assert.equal(occurrences.length, 2);
 });
 
 test('Sprint 2: consultas de período bem-sucedidas alimentam a memória (remember) sem duplicar a publicação da resposta', async () => {
@@ -3573,110 +3573,6 @@ test('Sprint 2: llmContext adiciona a data de referência ao system prompt de fo
   const llmContext = await source('../uni-llm/llmContext.js');
   assert.match(llmContext, /Data de referencia de hoje: \$\{referenceDate\}\.`\);/);
   assert.match(llmContext, /referenceDate: referenceDate \?\? financialContext\?\.snapshot\?\.referenceDate \?\? null,/);
-});
-
-// ============================================================================
-// Sprint 4 (Bloco 4.2) — Orquestrador Semântico Financeiro
-// ============================================================================
-
-test('Sprint 4: attemptSemanticFinancialQuery checa isFinancialOrchestratorFlagEnabled ANTES de decidir o caminho', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  assert.match(body, /const useOrchestrator = isFinancialOrchestratorFlagEnabled\(\);/);
-  const useOrchestratorIndex = body.indexOf('const useOrchestrator');
-  const ifUseOrchestratorIndex = body.indexOf('if (useOrchestrator) {');
-  assert.ok(useOrchestratorIndex > -1 && ifUseOrchestratorIndex > -1 && useOrchestratorIndex < ifUseOrchestratorIndex);
-});
-
-test('Sprint 4: com a flag desligada, o caminho é BYTE A BYTE o da Sprint 3 -- resolveSemanticFinancialIntent continua sendo chamado fora do bloco useOrchestrator', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  const ifBlockEnd = body.indexOf('const outcome = resolveSemanticFinancialIntent({');
-  const ifUseOrchestratorIndex = body.indexOf('if (useOrchestrator) {');
-  assert.ok(ifBlockEnd > ifUseOrchestratorIndex, 'resolveSemanticFinancialIntent (Sprint 3) deve continuar existindo como fallback quando useOrchestrator é false');
-});
-
-test('Sprint 4: consultas compostas exigem a própria flag -- isCompound/subIntents são descartados quando ela está desligada', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  assert.match(body, /const allowCompound = isCompoundFinancialQueriesFlagEnabled\(\);/);
-  assert.match(body, /isCompound: false, subIntents: \[\]/);
-});
-
-test('Sprint 4: escrita nunca é executada pelo orquestrador -- publishConversationResultWithInference/executeFinancialIntentAction não são chamados dentro de attemptSemanticFinancialQuery', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  assert.doesNotMatch(body, /executeFinancialIntentAction/);
-  assert.doesNotMatch(body, /publishConversationResultWithInference/);
-});
-
-test('Sprint 4: catálogo de capacidades só é montado quando o orquestrador está ligado (nunca gasta ciclo com a flag desligada)', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  assert.match(body, /availableCapabilities: useOrchestrator\s*\n\s*\? buildOrchestratorCapabilityCatalog\(\)\.map/);
-});
-
-test('Sprint 4: composição final passa por composeNaturalFinancialResponse, nunca publica o texto cru sem essa camada', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  assert.match(body, /const deterministicText = composeNaturalFinancialResponse\(\{/);
-  assert.match(body, /createAssistantResponse\(finalText,/);
-});
-
-test('Sprint 4 Ciclo 3 (Bloco 4.4): composição via LLM só é tentada quando a flag/serviço estão disponíveis, e sempre com deterministicText como fallback obrigatório', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  assert.match(body, /let finalText = deterministicText;/);
-  assert.match(body, /if \(financialResponseComposer\.isSupported\(\) && result\.structuredResult\) \{/);
-  assert.match(body, /deterministicText,/);
-  assert.match(body, /finalText = composed\.text \?\? deterministicText;/);
-});
-
-test('Sprint 4 Ciclo 4 (Bloco 4.8): universeEntityNames real (contas + categorias) é repassado ao composer via LLM para o guardrail de entidades', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  assert.match(body, /universeEntityNames: \[\s*\n\s*\.\.\.accountState\.accounts\.map\(\(account\) => account\.name\),\s*\n\s*\.\.\.categoryState\.categories\.map\(\(category\) => category\.name\),\s*\n\s*\],/);
-});
-
-test('Fase 1 (correção do kill switch, Bloco 4.10): enabled do composer é passado como FUNÇÃO, nunca um booleano pré-calculado -- kill switch precisa ter efeito imediato', async () => {
-  const page = await source('UniChatPage.jsx');
-  assert.match(page, /enabled: \(\) => uniLlm\.enabled && isLlmResponseComposerFlagEnabled\(\),/);
-  // Nunca mais o padrão antigo (booleano calculado uma vez dentro do useMemo).
-  assert.doesNotMatch(page, /enabled: uniLlm\.enabled && isLlmResponseComposerFlagEnabled\(\),/);
-});
-
-test('Sprint 4 Ciclo 4 (Bloco 4.9): telemetria de validação real é registrada tanto para a interpretação quanto para o composer, sempre em DEV', async () => {
-  const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{ recordFinancialValidationEvent \} from '\.\/financialValidationTelemetry\.js';/);
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  assert.match(body, /recordFinancialValidationEvent\(\s*\n\s*\{\s*\n\s*mode: 'financial_intent',/);
-  assert.match(body, /recordFinancialValidationEvent\(\s*\n\s*\{\s*\n\s*mode: 'financial_response_compose',/);
-  // Registrada logo após a chamada de interpretação, ANTES do early
-  // return por erro -- prova que o evento é registrado mesmo quando a
-  // interpretação falha (a chamada aconteceu e custou de qualquer forma).
-  const interpretCallIndex = body.indexOf('await financialIntentInterpreter.interpretFinancialIntent(');
-  const recordCallIndex = body.indexOf("mode: 'financial_intent',");
-  const earlyReturnIndex = body.indexOf('if (error || !interpretation) return false;');
-  assert.ok(interpretCallIndex > -1 && recordCallIndex > interpretCallIndex && recordCallIndex < earlyReturnIndex);
-});
-
-test('Sprint 4 Ciclo 3 (Bloco 4.6.2): status "unsupported" responde direto, sem cair no fallback conversacional (evita segunda chamada LLM no mesmo turno)', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  const unsupportedIndex = body.indexOf("result.status === 'unsupported'");
-  assert.ok(unsupportedIndex > -1, 'deve checar explicitamente o status unsupported');
-  const returnTrueAfter = body.indexOf('return true;', unsupportedIndex);
-  const nextFallbackCheck = body.indexOf("result.status !== 'handled'", unsupportedIndex);
-  assert.ok(returnTrueAfter > -1 && returnTrueAfter < nextFallbackCheck, 'unsupported deve responder e retornar true ANTES do fallback geral');
-});
-
-test('Sprint 4 Ciclo 3 (Bloco 4.6.3): telemetria DEV é registrada para todo turno do orquestrador, nunca condicional ao sucesso', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'async function attemptSemanticFinancialQuery(text, historySnapshot) {');
-  const telemetryIndex = body.indexOf('logFinancialOrchestratorTelemetry(');
-  const needsClarificationIndex = body.indexOf("result.status === 'needs_clarification'");
-  assert.ok(telemetryIndex > -1 && telemetryIndex < needsClarificationIndex, 'telemetria deve ser registrada antes de qualquer branch de status, cobrindo todos os resultados');
-  assert.match(body, /isDev: import\.meta\.env\.DEV/);
 });
 
 test('Sprint 2: dispatcher/executor/registry do Tool Calling (Sprint 1) permanecem intactos -- nenhuma referência nova a eles nesta Sprint', async () => {
@@ -3782,11 +3678,6 @@ test('S4: handleUnresolvedMessage aborta publicação se um novo turno começou 
   assert.match(slice, /const turnTokenAtStart = uniTurnTokenRef\.current;/);
   // guard antes de qualquer publicação final, inclusive da marcação de fallback
   assert.match(page, /if \(uniTurnTokenRef\.current !== turnTokenAtStart\) return;\s*\n\s*const usedDeterministicFallback = !finalResponseText;\s*\n\s*createAssistantResponse/);
-});
-
-test('S4: attemptSemanticFinancialQuery usa o token anti-stale', async () => {
-  const page = await source('UniChatPage.jsx');
-  assert.match(page, /async function attemptSemanticFinancialQuery\(text, historySnapshot\) \{\s*\n\s*const turnTokenAtStart = uniTurnTokenRef\.current;/);
 });
 
 // ============================================================

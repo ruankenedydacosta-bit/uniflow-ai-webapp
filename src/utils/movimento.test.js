@@ -5,7 +5,10 @@ import {
   LIMITE_DA_SEQUENCIA,
   atrasosDaSequencia,
   lerMilissegundos,
+  planoDaContagem,
   prefereMovimentoReduzido,
+  trajetoriasDasFaiscas,
+  valorDaContagem,
 } from './movimento.js';
 
 const tema = readFileSync(new URL('../styles/theme.css', import.meta.url), 'utf8');
@@ -35,10 +38,13 @@ test('prefereMovimentoReduzido segue a preferência do sistema e tolera ambiente
 });
 
 test('theme.css define as durações e curvas que o movimento lê', () => {
-  for (const nome of ['toque', 'saida', 'entrada', 'navegar', 'contar', 'reduzido', 'sequencia']) {
+  for (const nome of [
+    'toque', 'saida', 'entrada', 'navegar', 'contar', 'reduzido', 'sequencia',
+    'fundo', 'linha', 'brilho', 'faisca', 'anel', 'esqueleto',
+  ]) {
     assert.match(token(nome) ?? '', /^\d+ms$/, `--uf-motion-${nome}`);
   }
-  for (const nome of ['saida', 'navegar', 'acelera']) {
+  for (const nome of ['saida', 'navegar', 'acelera', 'faisca']) {
     assert.match(token(`curva-${nome}`) ?? '', /^cubic-bezier\(/, `--uf-motion-curva-${nome}`);
   }
 });
@@ -51,4 +57,54 @@ test('cada mola tem curva linear() de 0 a 1 e a duração até assentar', () => 
     assert.equal(pontos.at(-1), 1, `fim da mola ${nome}`);
     assert.match(token(`mola-${nome}-duracao`) ?? '', /^\d+ms$/, `duração da mola ${nome}`);
   }
+});
+
+test('valorDaContagem sai do valor antigo, assenta no novo e não passa dele', () => {
+  assert.equal(valorDaContagem(100, 148.9, 0), 100);
+  assert.equal(valorDaContagem(100, 148.9, 1), 148.9);
+  assert.equal(valorDaContagem(100, 148.9, 2), 148.9);
+  assert.equal(valorDaContagem(100, 148.9, -1), 100);
+  // Ease-out: na metade do tempo já andou mais da metade do caminho.
+  assert.ok(valorDaContagem(0, 100, 0.5) > 50);
+  assert.ok(valorDaContagem(100, 0, 0.5) < 50);
+});
+
+test('trajetoriasDasFaiscas espalha as 12 faíscas do salvar em volta do ponto, com as cores da marca', () => {
+  const meio = () => 0.5;
+  const faiscas = trajetoriasDasFaiscas(12, 0.7, { voo: 900, aleatorio: meio });
+  assert.equal(faiscas.length, 12);
+  for (const faisca of faiscas) {
+    const distancia = Math.hypot(faisca.dx, faisca.dy);
+    assert.ok(Math.abs(distancia - 110 * 0.7) < 1e-9);
+    assert.equal(faisca.duracao, 1100);
+    assert.match(faisca.cor, /^var\(--uf-app-brand-/);
+  }
+  assert.notEqual(faiscas[0].cor, faiscas[1].cor);
+  // Uma volta inteira: há faíscas para a esquerda e para a direita.
+  assert.ok(faiscas.some((faisca) => faisca.dx > 0) && faiscas.some((faisca) => faisca.dx < 0));
+});
+
+test('trajetoriasDasFaiscas mantém a distância entre 70 e 150 px vezes a força', () => {
+  for (const sorteio of [0, 0.999]) {
+    const [faisca] = trajetoriasDasFaiscas(1, 1, { voo: 900, aleatorio: () => sorteio });
+    const distancia = Math.hypot(faisca.dx, faisca.dy);
+    assert.ok(distancia >= 70 && distancia < 150.1, String(distancia));
+  }
+});
+
+test('planoDaContagem: número à vista conta do valor antigo e pulsa; saído do esqueleto conta do zero sem pulsar', () => {
+  assert.deepEqual(planoDaContagem({ de: 700, para: 900, escondido: false, duracao: 800 }), { de: 700, duracao: 800, pulsa: true });
+  assert.deepEqual(planoDaContagem({ de: 700, para: 900, escondido: true, duracao: 800 }), { de: 0, duracao: 800, pulsa: false });
+  // Mesmo valor depois do esqueleto ainda conta do zero.
+  assert.deepEqual(planoDaContagem({ de: 900, para: 900, escondido: true, duracao: 800 }), { de: 0, duracao: 800, pulsa: false });
+});
+
+test('planoDaContagem troca direto quando nada muda, com Reduzir movimento ou valor que não é número', () => {
+  assert.deepEqual(planoDaContagem({ de: 900, para: 900, escondido: false, duracao: 800 }), { de: 900, duracao: 0, pulsa: false });
+  assert.deepEqual(planoDaContagem({ de: 0, para: 0, escondido: true, duracao: 800 }), { de: 0, duracao: 0, pulsa: false });
+  // Reduzir movimento chega como duração zero.
+  assert.deepEqual(planoDaContagem({ de: 700, para: 900, escondido: false, duracao: 0 }), { de: 700, duracao: 0, pulsa: false });
+  // Cache antigo da Home, sem o número cru.
+  assert.equal(planoDaContagem({ de: undefined, para: 900, escondido: false, duracao: 800 }).duracao, 0);
+  assert.equal(planoDaContagem({ de: 700, para: null, escondido: false, duracao: 800 }).duracao, 0);
 });

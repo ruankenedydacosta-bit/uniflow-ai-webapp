@@ -1,6 +1,15 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cx } from '../../../utils/cx';
+import {
+  animar,
+  atrasosDaSequencia,
+  ehFolha,
+  lerCurva,
+  lerDuracao,
+  lerMola,
+  prefereMovimentoReduzido,
+} from '../../../utils/movimento.js';
 import styles from './Modal.module.css';
 
 // X do Phosphor 2.1 (ph-x), inline para o componente base não depender de
@@ -11,6 +20,47 @@ function CloseIcon() {
       <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z" />
     </svg>
   );
+}
+
+// Atraso do primeiro bloco depois que a folha começa a subir (#145).
+const INICIO_DA_SEQUENCIA_MS = 60;
+
+// Blocos da folha que entram em sequência: o cabeçalho e o rodapé inteiros
+// e, no corpo, os filhos do primeiro elemento com mais de um filho (o
+// formulário, quase sempre). Bloco sem altura não ocupa lugar na fila.
+function blocosDaFolha(dialogo) {
+  const blocos = [];
+  for (const filho of dialogo.children) {
+    let atual = filho;
+    while (atual.childElementCount === 1) atual = atual.firstElementChild;
+    if (atual === filho || atual.childElementCount === 0) blocos.push(filho);
+    else blocos.push(...atual.children);
+  }
+  return blocos.filter((bloco) => bloco.offsetHeight > 1);
+}
+
+function animarBlocosDaFolha(dialogo) {
+  if (!dialogo || prefereMovimentoReduzido() || !ehFolha(dialogo)) return;
+  const blocos = blocosDaFolha(dialogo);
+  const mola = lerMola('macio');
+  const duracaoDaOpacidade = lerDuracao('entrada');
+  const curvaDaOpacidade = lerCurva('saida');
+  const atrasos = atrasosDaSequencia(blocos.length, {
+    inicio: INICIO_DA_SEQUENCIA_MS,
+    intervalo: lerDuracao('sequencia'),
+  });
+  atrasos.forEach((atraso, indice) => {
+    animar(blocos[indice], [{ translate: '0 20px', scale: '.98' }], {
+      duracao: mola.duracao,
+      curva: mola.curva,
+      atraso,
+    });
+    animar(blocos[indice], [{ opacity: 0 }], {
+      duracao: duracaoDaOpacidade,
+      curva: curvaDaOpacidade,
+      atraso,
+    });
+  });
 }
 
 // Folha padrão (handoff 22): no celular todo Modal sobe de baixo, com alça,
@@ -52,6 +102,10 @@ function Modal({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, closeOnEsc, onClose]);
+
+  useLayoutEffect(() => {
+    if (open) animarBlocosDaFolha(dialogRef.current);
+  }, [open]);
 
   // Ao abrir, o foco entra no diálogo, a não ser que um campo com autoFocus
   // já o tenha recebido. Sem isso, Tab e o leitor de tela continuam na página

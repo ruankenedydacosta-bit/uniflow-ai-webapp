@@ -41,6 +41,13 @@ Só quando o intent é consulta; nos outros, todos os campos são null.
 - conta: apelido, só se a frase cita a conta.
 - Pergunta curta que continua a anterior do histórico ("e no outro mês?", "só no cartão") repete os campos que não mudaram.
 
+## agenda
+Só quando o intent é agenda; nos outros, titulo e valor são null. Em agenda, operacoes fica vazia.
+- titulo: o compromisso como a pessoa escreveria na própria agenda, começando pelo que vai fazer, com acentos e inicial maiúscula. Sem o pedido ("me lembra", "marca", "anota", "eu vou ter que"), sem data, sem hora e sem valor. "Anota aí que na terça eu preciso levar o carro na revisão" vira "Levar o carro na revisão". Nomes de pessoas e lugares ficam.
+- Palavras no começo da frase que são o nome da Uni mal transcrito ("O meu", "Uni,") não entram no título.
+- titulo é null quando a frase não diz do que se trata ("marca um compromisso pra sexta"): a Uni vai perguntar.
+- valor: em reais, quando a frase cita quanto pagar ou receber. null se não cita.
+
 ## resposta
 Só para conversa e nao_entendi: uma frase curta em português, para ser falada. Para nao_entendi, peça para a pessoa dizer de outro jeito. Nos outros intents, string vazia.
 

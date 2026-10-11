@@ -49,7 +49,7 @@ export const SUPPORT_FAQ_CATEGORIES = Object.freeze([
   },
   {
     id: 'objetivos',
-    label: 'Objetivos',
+    label: 'Metas',
     items: [
       { question: 'Como acompanho o progresso de uma meta?', knowledgeId: 'goals' },
     ],

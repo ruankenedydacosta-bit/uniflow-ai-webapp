@@ -6,6 +6,7 @@ import {
   indexarCatalogo,
   MAX_ALTERNATIVAS,
   MAX_OPERACOES,
+  MAX_TITULO_AGENDA,
   validarInterpretacao,
 } from '../../../supabase/functions/_shared/uniInterpret/contrato.js';
 import { INSTRUCOES, montarMensagemUsuario } from '../../../supabase/functions/_shared/uniInterpret/prompt.js';
@@ -57,7 +58,7 @@ test('apelidos seguem a ordem por tipo e nome, independente da ordem recebida', 
 });
 
 test('schema é estrito: todo campo obrigatório e nenhum extra', () => {
-  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.consulta];
+  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta];
   for (const objeto of objetos) {
     assert.equal(objeto.additionalProperties, false);
     assert.deepEqual([...objeto.required].sort(), Object.keys(objeto.properties).sort());
@@ -186,6 +187,24 @@ test('limita o número de operações', () => {
 test('intents sem lançamento descartam operações e mantêm só a resposta', () => {
   const resultado = validarInterpretacao({ intent: 'conversa', operacoes: [operacao()], resposta: 'Bom dia!' }, CONTEXTO);
   assert.deepEqual(resultado, { intent: 'conversa', operacoes: [], resposta: 'Bom dia!' });
+});
+
+test('agenda: título limpo e valor positivo; vazio ou inválido vira null', () => {
+  const agenda = (campos) => validarInterpretacao({ intent: 'agenda', operacoes: [operacao()], agenda: campos, resposta: '' }, CONTEXTO);
+  assert.deepEqual(agenda({ titulo: '  Pagar mensalidade\ndas escolas ', valor: 2500.004 }), {
+    intent: 'agenda',
+    operacoes: [],
+    agenda: { titulo: 'Pagar mensalidade das escolas', valor: 2500 },
+    resposta: '',
+  });
+  assert.deepEqual(agenda({ titulo: '   ', valor: 0 }).agenda, { titulo: null, valor: null });
+  assert.deepEqual(agenda({ titulo: null, valor: null }).agenda, { titulo: null, valor: null });
+  assert.deepEqual(agenda(undefined).agenda, { titulo: null, valor: null });
+  assert.equal(agenda({ titulo: 'x'.repeat(200), valor: null }).agenda.titulo.length, MAX_TITULO_AGENDA);
+  const longo = agenda({ titulo: `Pagar ${'mensalidade '.repeat(10)}das escolas`, valor: null }).agenda.titulo;
+  assert.ok(longo.length <= MAX_TITULO_AGENDA);
+  assert.match(longo, /mensalidade$/, 'corta na palavra inteira');
+  assert.equal(agenda({ titulo: 'Dentista', valor: 0.004 }).agenda.valor, null);
 });
 
 // #80, etapa 2b: o app público não ajusta saldo nem cria meta pela
@@ -340,7 +359,7 @@ test('normalização para a régua: confiança baixa vira sugestão, nova catego
 
   assert.deepEqual(normalizarInterpretacao(validar({})), {
     intent: 'lancar_saida', valor: 300, data: '2026-10-02', categoria: 'Educação', modoCategoria: 'resolveu',
-    parcelas: null, recorrente: false, consulta: null,
+    parcelas: null, recorrente: false, titulo: null, consulta: null,
   });
   assert.equal(normalizarInterpretacao(validar({ confianca: 0.4 })).modoCategoria, 'sugeriu');
   assert.equal(normalizarInterpretacao(validar({ categoria: null, nova_categoria: 'Pets' })).modoCategoria, 'propos_criar');
@@ -349,5 +368,9 @@ test('normalização para a régua: confiança baixa vira sugestão, nova catego
   assert.deepEqual(
     normalizarInterpretacao(validarInterpretacao(consulta({ categoria: C.ali, termo: 'feira' }), CONTEXTO)).consulta,
     { tipo: 'saidas', inicio: null, fim: null, categoria: 'Alimentação', termo: 'feira' },
+  );
+  assert.equal(
+    normalizarInterpretacao({ intent: 'agenda', operacoes: [], agenda: { titulo: 'Dentista', valor: null }, resposta: '' }).titulo,
+    'Dentista',
   );
 });

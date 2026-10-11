@@ -2007,7 +2007,9 @@ export function createAgendaConversationFlow({
     return null;
   }
 
-  async function handleInternal({ text, identity, referenceDate, origin = 'text' }) {
+  // interpretado: { titulo } do uni-interpret (#142). Com ele, o título não
+  // sai da regex.
+  async function handleInternal({ text, identity, referenceDate, origin = 'text', interpretado = null }) {
     if (!identity?.userId || !identity?.workspaceId || !identity?.conversationId) {
       return { handled: true, text: 'Não consegui identificar seu espaço atual. Atualize a página e tente novamente.' };
     }
@@ -2033,7 +2035,7 @@ export function createAgendaConversationFlow({
     if (classification.intent === 'agenda_financial_conflict') {
       const fields = {
         originalText: agendaText,
-        title: extractTitle(agendaText),
+        title: interpretado?.titulo ?? extractTitle(agendaText),
         date: resolveAgendaDate(agendaText, referenceDate),
         analyticsOrigin,
       };
@@ -2049,8 +2051,14 @@ export function createAgendaConversationFlow({
       const content = extractAgendaContent(agendaText, timeAnalysis);
       const fields = {
         intent: classification.intent,
-        title: classification.signals.includes('agenda_vague_subject') ? null : content.title,
-        description: content.description,
+        // Pedido vago ("marca um compromisso pra sexta") pergunta o assunto
+        // mesmo que o modelo invente um título genérico.
+        title: classification.signals.includes('agenda_vague_subject')
+          ? null
+          : interpretado?.titulo ?? content.title,
+        // O título do modelo já resume a frase inteira; a descrição da regex
+        // repetiria o assunto.
+        description: interpretado?.titulo ? null : content.description,
         date: resolveAgendaDate(agendaText, referenceDate),
         time: timeAnalysis.time,
         allDay: /\b(?:o\s+)?dia\s+inteiro\b/.test(normalizeFinancialText(agendaText)),

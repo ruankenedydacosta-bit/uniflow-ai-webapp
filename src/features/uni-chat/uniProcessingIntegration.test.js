@@ -202,7 +202,7 @@ test('P0.4: turno abandonado (cancelado\\/erro, sem nunca produzir mensagem nova
 // HOTFIX FINAL -- causa raiz real da "resposta fantasma" intermitente na
 // Home: `interactionState === IDLE` sozinho era uma FALSA saída de
 // abandono. `sendText` (UniChatPage.jsx) zera `isTyping` via setTimeout
-// ANTES do pipeline de resposta (determinístico -> semântico/LLM ->
+// ANTES do pipeline de resposta (determinístico -> LLM ->
 // handleUnresolvedMessage) sequer começar a trabalhar -- handleUnresolvedMessage
 // só marca isTyping=true de novo bem mais tarde, dentro do await da chamada
 // ao LLM. Se o reset automático de voiceInput (1600ms após COMPLETED) já

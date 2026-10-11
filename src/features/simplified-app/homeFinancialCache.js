@@ -48,6 +48,10 @@ export function pickCacheableHomeFinancialData(graphData, transactionCount = 0) 
     monthTitle: graphData.monthTitle ?? null,
     usedShare: graphData.usedShare ?? null,
     hasMovements: graphData.hasMovements === true,
+    // Números crus, para Entradas e Saídas contarem do valor guardado ao
+    // fresco (#146). Cache antigo sem eles mostra só os rótulos.
+    income: graphData.income ?? null,
+    expense: graphData.expense ?? null,
     incomeLabel: graphData.incomeLabel,
     expenseLabel: graphData.expenseLabel,
     chart: {

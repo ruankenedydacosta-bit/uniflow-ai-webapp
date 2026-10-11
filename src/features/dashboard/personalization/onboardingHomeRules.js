@@ -47,16 +47,16 @@ const GOAL_CTA_MAP = {
     business: { title: 'Organizar finan\u00E7as da empresa', cta: 'Registrar movimenta\u00E7\u00F5es', href: '/financeiro' },
   },
   dividas: {
-    personal: { title: 'Reduzir suas d\u00EDvidas', cta: 'Criar plano de redu\u00E7\u00E3o', href: '/objetivos' },
-    business: { title: 'Reduzir d\u00EDvidas da empresa', cta: 'Criar plano de redu\u00E7\u00E3o', href: '/objetivos' },
+    personal: { title: 'Reduzir suas d\u00EDvidas', cta: 'Criar plano de redu\u00E7\u00E3o', href: '/metas' },
+    business: { title: 'Reduzir d\u00EDvidas da empresa', cta: 'Criar plano de redu\u00E7\u00E3o', href: '/metas' },
   },
   reserva: {
-    personal: { title: 'Criar reserva de emerg\u00EAncia', cta: 'Definir meta de reserva', href: '/objetivos' },
-    business: { title: 'Criar reserva da empresa', cta: 'Definir meta de reserva', href: '/objetivos' },
+    personal: { title: 'Criar reserva de emerg\u00EAncia', cta: 'Definir meta de reserva', href: '/metas' },
+    business: { title: 'Criar reserva da empresa', cta: 'Definir meta de reserva', href: '/metas' },
   },
   meta: {
-    personal: { title: 'Economizar para sua meta', cta: 'Criar ou acompanhar meta', href: '/objetivos' },
-    business: { title: 'Acompanhar meta da empresa', cta: 'Criar ou acompanhar meta', href: '/objetivos' },
+    personal: { title: 'Economizar para sua meta', cta: 'Criar ou acompanhar meta', href: '/metas' },
+    business: { title: 'Acompanhar meta da empresa', cta: 'Criar ou acompanhar meta', href: '/metas' },
   },
   investir: {
     personal: { title: 'Come\u00E7ar a investir', cta: 'Organizar fluxo mensal', href: '/financeiro' },
@@ -128,7 +128,7 @@ export function getActivationSteps({ hasTransactions, hasGoals, hasFutureProject
       key: 'first-goal',
       title: 'Criar primeira meta',
       description: 'Defina um objetivo financeiro para acompanhar seu progresso.',
-      href: '/objetivos',
+      href: '/metas',
       cta: 'Criar meta',
       completed: Boolean(hasGoals),
     },

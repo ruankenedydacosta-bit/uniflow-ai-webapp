@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import FilterChips from '../../components/ui/FilterChips/index.js';
@@ -9,7 +9,9 @@ import { CategoryIcon, PlusIcon } from '../categories/categoryIcons.jsx';
 import { useAccounts, useCategories, useCategoryBudgets, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
 import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionModal.jsx';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
+import { isSupabaseConfigured } from '../../services/supabaseClient.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { entrarEmSequencia } from '../../utils/movimento.js';
 import CategoryBudgetModal from './CategoryBudgetModal.jsx';
 import MonthPickerModal from './MonthPickerModal.jsx';
 import SimplifiedRecordsMonthChart from './SimplifiedRecordsMonthChart.jsx';
@@ -19,21 +21,31 @@ import {
   PhCaretRightIcon,
   PhMicrophoneIcon,
   PhPlusIcon,
+  PhXIcon,
   UniMark,
 } from './SimplifiedIcons.jsx';
+import { animarLinhaNova } from './movimentoDeSalvar.js';
+import { useNumeroContado } from './useNumeroContado.js';
 import {
   buildCategorySummaries,
   filterRecordTransactions,
   formatRelativeTransactionDate,
   getMonthRange,
   summarizeMonth,
+  transactionNoticeDuration,
 } from './simplifiedRecordsData.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedRecords.module.css';
 
 const PAGE_SIZE = 20;
 const CATEGORY_PREVIEW_SIZE = 8;
-const TRANSACTION_SUCCESS_NOTICE_MS = 2000;
+// Aviso de quem salvou uma movimentação nova pela folha (#145).
+const CREATED_NOTICES = {
+  expense: 'Saída registrada.',
+  income: 'Entrada registrada.',
+  transfer: 'Transferência registrada.',
+  adjustment: 'Ajuste registrado.',
+};
 const EMPTY_RECORDS = Object.freeze([]);
 
 const TYPE_FILTER_OPTIONS = Object.freeze([
@@ -140,7 +152,9 @@ function MonthSelector({ month, onChange }) {
 
 // Card do mês (handoff 04): Entradas, Saídas e o atalho da Agenda, mais o
 // gráfico acumulado. Não existe card público de Saldo.
-function MonthlySummary({ onCardClick, summary, transactions, monthRange }) {
+// `shownValues` e `valueRefs` vêm da página, que conta Entradas e Saídas
+// depois de salvar (#145). O rótulo de leitor de tela usa o valor real.
+function MonthlySummary({ onCardClick, shownValues, summary, transactions, monthRange, valueRefs }) {
   const cards = [
     { id: 'income', label: 'Entradas', value: summary.income, action: 'atualizar as entradas' },
     { id: 'expense', label: 'Saídas', value: summary.expense, action: 'atualizar as saídas' },
@@ -161,8 +175,8 @@ function MonthlySummary({ onCardClick, summary, transactions, monthRange }) {
               : `${card.label}: ${formatCurrency(card.value)}. Toque para ${card.action}.`}
           >
             <span aria-hidden="true">{card.label}</span>
-            <strong aria-hidden="true">
-              {card.id === 'agenda' ? card.detail : formatCurrency(card.value)}
+            <strong aria-hidden="true" ref={valueRefs[card.id]}>
+              {card.id === 'agenda' ? card.detail : formatCurrency(shownValues[card.id])}
             </strong>
           </button>
         ))}
@@ -436,7 +450,7 @@ function TransactionRow({
 
 
   return (
-    <div className={styles.transactionRowWrapper}>
+    <div className={styles.transactionRowWrapper} data-transaction-id={transaction.id}>
       {isOpen ? (
         <div className={styles.transactionRowActions}>
           {isConfirmingDelete ? (
@@ -665,6 +679,9 @@ function SimplifiedRecordsPage() {
   const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [transactionSuccessNotice, setTransactionSuccessNotice] = useState(null);
   const transactionNoticeTimerRef = useRef(null);
+  const recordsPageRef = useRef(null);
+  // Movimentação nova a animar quando a folha fechar (#145).
+  const newTransactionIdRef = useRef(null);
   // Somente Entradas/Saídas abrem o ajuste financeiro. O terceiro card
   // reutiliza a Agenda já existente, sem duplicar calendário ou dados.
   const [summaryModalTarget, setSummaryModalTarget] = useState(null);
@@ -748,6 +765,8 @@ function SimplifiedRecordsPage() {
     () => summarizeMonth(transactionState.transactions, balanceState.workspaceBalance),
     [balanceState.workspaceBalance, transactionState.transactions],
   );
+  const holdSummary = Boolean(transactionDialog || summaryModalTarget);
+
   const categorySummaries = useMemo(
     () => buildCategorySummaries(categoryState.categories, transactionState.transactions),
     [categoryState.categories, transactionState.transactions],
@@ -781,6 +800,47 @@ function SimplifiedRecordsPage() {
     || transactionState.isLoading
     || balanceState.isLoading
     || workspaceRole.isLoading;
+  // Esqueleto só na primeira carga de cada mês (#146). Recarga depois de
+  // salvar, excluir ou de um aviso da Uni mantém o conteúdo na tela, e os
+  // números contam do valor antigo ao novo. O mês só conta como carregado
+  // depois de a recarga dele começar: logo após a troca, isLoading ainda é
+  // o do mês anterior.
+  const [loadedMonthKey, setLoadedMonthKey] = useState(null);
+  const loadingMonthKeyRef = useRef(null);
+  useEffect(() => {
+    if (isLoading) {
+      loadingMonthKeyRef.current = month.dateFrom;
+      return;
+    }
+    if (loadingMonthKeyRef.current === month.dateFrom || !isSupabaseConfigured) setLoadedMonthKey(month.dateFrom);
+  }, [isLoading, month.dateFrom]);
+  const showLoading = loadedMonthKey !== month.dateFrom;
+  // Com uma folha aberta, Entradas e Saídas param no valor de antes e contam
+  // até o novo quando ela fecha. Depois do esqueleto, contam a partir de zero.
+  const [shownIncome, incomeValueRef] = useNumeroContado(summary.income, { segurar: holdSummary, esqueleto: showLoading });
+  const [shownExpense, expenseValueRef] = useNumeroContado(summary.expense, { segurar: holdSummary, esqueleto: showLoading });
+  // Quando o esqueleto sai, o conteúdo do mês entra em sequência (#146). O
+  // aviso de offline já estava à vista e fica parado.
+  const monthSectionRef = useRef(null);
+  const showedLoadingRef = useRef(showLoading);
+  useLayoutEffect(() => {
+    const leftLoading = showedLoadingRef.current && !showLoading;
+    showedLoadingRef.current = showLoading;
+    if (!leftLoading || holdSummary || !monthSectionRef.current) return;
+    entrarEmSequencia([...monthSectionRef.current.children].filter((block) => !block.hasAttribute('data-offline-notice')));
+  }, [holdSummary, showLoading]);
+  // A linha nova abre, entra pela esquerda e brilha quando a folha fecha e
+  // a lista está carregada. Se ela não está à vista (outro filtro, data
+  // antiga fora das recentes), nada anima.
+  useLayoutEffect(() => {
+    const transactionId = newTransactionIdRef.current;
+    if (!transactionId || transactionDialog || isLoading) return;
+    newTransactionIdRef.current = null;
+    animarLinhaNova(recordsPageRef.current?.querySelector(
+      `[data-transaction-id="${CSS.escape(transactionId)}"]`,
+    ));
+  }, [isLoading, transactionDialog]);
+
   const canManage = workspaceRole.canUpdate === true
     && !workspaceRole.isLoading
     && !transactionState.isMutating;
@@ -817,25 +877,38 @@ function SimplifiedRecordsPage() {
     if (!result.error) await refresh();
   }
 
-  function completeTransactionMutation(message) {
-    setTransactionDialog(null);
-    setActiveTab('history');
-    setVisibleCount(PAGE_SIZE);
+  function showTransactionNotice(message) {
     setTransactionSuccessNotice(message);
     if (transactionNoticeTimerRef.current) window.clearTimeout(transactionNoticeTimerRef.current);
     transactionNoticeTimerRef.current = window.setTimeout(() => {
       transactionNoticeTimerRef.current = null;
       setTransactionSuccessNotice(null);
-    }, TRANSACTION_SUCCESS_NOTICE_MS);
+    }, transactionNoticeDuration(message));
+  }
+
+  function dismissTransactionNotice() {
+    if (transactionNoticeTimerRef.current) window.clearTimeout(transactionNoticeTimerRef.current);
+    transactionNoticeTimerRef.current = null;
+    setTransactionSuccessNotice(null);
+  }
+
+  function completeTransactionMutation(message) {
+    setTransactionDialog(null);
+    setActiveTab('history');
+    setVisibleCount(PAGE_SIZE);
+    showTransactionNotice(message);
   }
 
   function showCategorySuccessNotice() {
-    setTransactionSuccessNotice('Categoria criada com sucesso.');
-    if (transactionNoticeTimerRef.current) window.clearTimeout(transactionNoticeTimerRef.current);
-    transactionNoticeTimerRef.current = window.setTimeout(() => {
-      transactionNoticeTimerRef.current = null;
-      setTransactionSuccessNotice(null);
-    }, TRANSACTION_SUCCESS_NOTICE_MS);
+    showTransactionNotice('Categoria criada com sucesso.');
+  }
+
+  // Movimentação nova: a tela fica na aba em que estava, para a linha nova
+  // e a contagem aparecerem onde a pessoa tocou em "+".
+  function handleTransactionCreated(transaction) {
+    newTransactionIdRef.current = transaction?.id ?? null;
+    setTransactionDialog(null);
+    showTransactionNotice(CREATED_NOTICES[transaction?.transaction_type] ?? 'Movimentação registrada.');
   }
 
   function handleTransactionDeleted() {
@@ -916,9 +989,17 @@ function SimplifiedRecordsPage() {
         <div className={styles.transactionSuccessToast} role="status" aria-live="polite">
           <span aria-hidden="true">✓</span>
           {transactionSuccessNotice}
+          <button
+            type="button"
+            className={styles.transactionToastDismiss}
+            onClick={dismissTransactionNotice}
+            aria-label="Dispensar aviso"
+          >
+            <PhXIcon />
+          </button>
         </div>
       ) : null}
-      <div className={styles.recordsPage} data-simplified-records>
+      <div ref={recordsPageRef} className={styles.recordsPage} data-simplified-records>
         <RecordsHeader onTalkToUni={() => navigate(SIMPLIFIED_ROUTES.UNI)} />
 
         <div className={styles.periodBlock}>
@@ -926,16 +1007,16 @@ function SimplifiedRecordsPage() {
           <MonthSelector month={month} onChange={changeMonth} />
         </div>
 
-        <section className={styles.monthSection} aria-labelledby="month-summary-title">
+        <section ref={monthSectionRef} className={styles.monthSection} aria-labelledby="month-summary-title">
           <h2 id="month-summary-title" className={styles.srOnly}>Resumo do mês</h2>
 
           {!isOnline ? (
-            <div className={styles.stateCard} role="status">
+            <div className={styles.stateCard} role="status" data-offline-notice>
               Você está offline. Mostrando os últimos dados disponíveis.
             </div>
           ) : null}
 
-          {isLoading ? (
+          {showLoading ? (
             <div className={styles.loadingState} aria-busy="true" aria-label="Carregando registros">
               {Array.from({ length: 3 }, (_, index) => <span key={index} />)}
             </div>
@@ -951,6 +1032,8 @@ function SimplifiedRecordsPage() {
                 <>
                   <MonthlySummary
                     summary={summary}
+                    shownValues={{ income: shownIncome, expense: shownExpense }}
+                    valueRefs={{ income: incomeValueRef, expense: expenseValueRef }}
                     onCardClick={openSummaryCard}
                     transactions={transactionState.transactions}
                     monthRange={month}
@@ -1055,6 +1138,7 @@ function SimplifiedRecordsPage() {
         open={Boolean(transactionDialog)}
         onClose={() => setTransactionDialog(null)}
         onChanged={refresh}
+        onCreated={handleTransactionCreated}
         onDeleted={handleTransactionDeleted}
         onEdited={handleTransactionEdited}
         initialType={transactionDialog?.type ?? 'expense'}

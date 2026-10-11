@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   ROTAS_INTERPRETACAO,
   escolherRotaDaInterpretacao,
+  interpretacaoParaAgenda,
   interpretacaoParaPlano,
   interpretacaoParaRascunho,
 } from './uniInterpretRoteamento.js';
@@ -277,6 +278,30 @@ test('plano do modelo: operação sem valor fica sem valor, nunca R$ 0,00', () =
   assert.equal(taxi.status, PLAN_OPERATION_STATUS.NEEDS_CLARIFICATION);
   assert.doesNotMatch(describePlanOperation(taxi), /R\$ 0,00/);
   assert.match(describePlanOperation(taxi), /valor não informado/);
+});
+
+test('agenda: título do modelo com o valor formatado', () => {
+  const agenda = (campos) => ({ intent: 'agenda', operacoes: [], agenda: campos, resposta: '' });
+  assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ titulo: 'Pagar mensalidade das escolas', valor: 2500 })),
+    { titulo: 'Pagar mensalidade das escolas no valor de R$\u00a02.500,00' },
+  );
+  assert.deepEqual(interpretacaoParaAgenda(agenda({ titulo: 'Dentista', valor: null })), { titulo: 'Dentista' });
+  assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ titulo: 'Pagar IPTU de R$ 300', valor: 300 })),
+    { titulo: 'Pagar IPTU de R$ 300' },
+    'não repete o valor que o título já traz',
+  );
+  assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ titulo: 'Pagar aluguel de 1.200', valor: 1200 })),
+    { titulo: 'Pagar aluguel de 1.200' },
+  );
+});
+
+test('agenda: sem título do modelo, ou de uma função anterior ao contrato, a regex segue', () => {
+  assert.equal(interpretacaoParaAgenda({ intent: 'agenda', operacoes: [], agenda: { titulo: '  ', valor: 50 }, resposta: '' }), null);
+  assert.equal(interpretacaoParaAgenda({ intent: 'agenda', operacoes: [], resposta: '' }), null);
+  assert.equal(interpretacaoParaAgenda({ intent: 'consulta', operacoes: [], agenda: { titulo: 'X', valor: null }, resposta: '' }), null);
 });
 
 // #80, etapa 2b: saldo declarado e meta saem das regras fixas.

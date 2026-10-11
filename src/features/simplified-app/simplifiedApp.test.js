@@ -950,7 +950,7 @@ test('os 3 cards (Entradas/Saídas/Agenda) são botões acessíveis e Agenda anu
   assert.match(records, /card\.id === 'agenda'/);
   assert.match(records, /card\.detail/);
   assert.doesNotMatch(records, /label: 'Saldo'/);
-  assert.match(records, /<strong aria-hidden="true">/);
+  assert.match(records, /<strong aria-hidden="true"[^>]*>/);
 });
 
 test('histórico exibe o sinal correto de um ajuste de saldo positivo (nunca sempre vermelho como despesa)', async () => {
@@ -1043,7 +1043,7 @@ test('Registros cria categoria pelo mesmo estado persistente usado no modal de l
   assert.match(records, /<strong>Criar categoria<\/strong>/);
   assert.match(records, /const result = await categoryState\.saveCategory\(values\)/);
   assert.match(records, /await refresh\(\)/);
-  assert.match(records, /setTransactionSuccessNotice\('Categoria criada com sucesso\.'\)/);
+  assert.match(records, /showTransactionNotice\('Categoria criada com sucesso\.'\)/);
   assert.match(records, /<CategoryCreateModal[\s\S]*categories=\{categoryState\.categories\}[\s\S]*onCreate=\{handleCreateCategory\}/);
   assert.match(records, /<FinanceTransactionModal[\s\S]*categoryState=\{categoryState\}/);
 });
@@ -1491,4 +1491,64 @@ test('Requisito 6 — nenhuma mensagem é publicada duas vezes: onFinalTranscrip
   // start() recusa uma segunda gravação enquanto a anterior ainda está
   // ativa (adapter já existe OU status já é de captura em andamento).
   assert.match(voiceInput, /if \(adapterRef\.current \|\| isVoiceCaptureActive\(state\.status\) \|\| !workspaceId\) return false;/);
+});
+
+test('aviso do Histórico fica o tempo de ler: piso de 4 s, cresce com o texto e para em 15 s', async () => {
+  const { transactionNoticeDuration } = await import('./simplifiedRecordsData.js');
+  assert.equal(transactionNoticeDuration('Saída registrada.'), 4000);
+  assert.equal(transactionNoticeDuration('x'.repeat(100)), 6500);
+  assert.equal(transactionNoticeDuration('x'.repeat(1000)), 15000);
+});
+
+test('movimentação nova pela folha fecha, avisa no topo e anima a linha e os números (#145)', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const createdStart = records.indexOf('function handleTransactionCreated(transaction)');
+  const created = records.slice(createdStart, records.indexOf('function handleTransactionDeleted()', createdStart));
+  assert.match(created, /setTransactionDialog\(null\)/);
+  assert.match(created, /showTransactionNotice\(CREATED_NOTICES\[transaction\?\.transaction_type\]/);
+  // Fica na aba em que estava: a linha nova e a contagem aparecem ali.
+  assert.doesNotMatch(created, /setActiveTab/);
+  assert.match(records, /onCreated=\{handleTransactionCreated\}/);
+  assert.match(records, /useNumeroContado\(summary\.income, \{ segurar: holdSummary, esqueleto: showLoading \}\)/);
+  assert.match(records, /useNumeroContado\(summary\.expense, \{ segurar: holdSummary, esqueleto: showLoading \}\)/);
+  assert.match(records, /animarLinhaNova\(/);
+  assert.match(records, /data-transaction-id=\{transaction\.id\}/);
+});
+
+test('carregamento: esqueleto com brilho de 1,3 s, conteúdo do mês entra em sequência e os números contam (#146)', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const recordsCss = await source('./simplifiedRecords.module.css');
+  const homeCss = await source('./simplifiedApp.module.css');
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  const graphCss = await source('./SimplifiedHomeFinancialGraph.module.css');
+  assert.match(recordsCss, /animation: recordsLoading var\(--uf-motion-esqueleto\) linear infinite/);
+  assert.match(homeCss, /animation: homeSkeletonWave var\(--uf-motion-esqueleto\) linear infinite/);
+  assert.match(graphCss, /animation: homeGraphSkeletonWave var\(--uf-motion-esqueleto\) linear infinite/);
+  // O esqueleto do Financeiro sai e o conteúdo do mês entra em sequência.
+  // Esqueleto só na primeira carga do mês: recarga mantém o conteúdo e os números contam do antigo ao novo.
+  assert.match(records, /const showLoading = loadedMonthKey !== month\.dateFrom;/);
+  assert.match(records, /if \(isLoading\) \{\s*loadingMonthKeyRef\.current = month\.dateFrom;/);
+  assert.match(records, /\{showLoading \? \(/);
+  assert.match(records, /if \(!leftLoading \|\| holdSummary \|\| !monthSectionRef\.current\) return;\s*entrarEmSequencia\(/);
+  assert.match(records, /<section ref=\{monthSectionRef\} className=\{styles\.monthSection\}/);
+  // Entradas e Saídas da Home contam ao chegar o dado fresco, como ao voltar para a aba.
+  assert.match(graph, /useNumeroContado\(graphData\?\.expense, \{ esqueleto: showSkeleton \}\)/);
+  assert.match(graph, /useNumeroContado\(graphData\?\.income, \{ esqueleto: showSkeleton \}\)/);
+  // Recarga fica no último dado fresco, sem voltar ao cache da montagem nem ao esqueleto.
+  assert.match(graph, /const graphData = isLoadingFinancials \? knownData : freshData;/);
+  assert.match(graph, /ref=\{expenseValueRef\}/);
+  assert.match(graph, /Number\.isFinite\(shownExpense\) \? formatCurrency\(shownExpense\) : graphData\.expenseLabel/);
+});
+
+test('folha sobe com a mola folha, o fundo escurece em 240 ms e Reduzir movimento vira fade de 150 ms (#145)', async () => {
+  const modalCss = await source('../../components/ui/Modal/Modal.module.css');
+  const sheetCss = await source('../../pages/financeiro/FinanceTransactionModal.module.css');
+  const toastCss = await source('./simplifiedRecords.module.css');
+  for (const css of [modalCss, sheetCss]) {
+    assert.match(css, /animation: folhaSobe var\(--uf-motion-mola-folha-duracao\) var\(--uf-motion-mola-folha\)/);
+    assert.match(css, /animation: fundoEscurece var\(--uf-motion-fundo\)/);
+    assert.match(css, /prefers-reduced-motion: reduce\)[\s\S]*?animation: fundoEscurece var\(--uf-motion-reduzido\) linear both/);
+  }
+  assert.match(toastCss, /animation: avisoDesce var\(--uf-motion-mola-salto-duracao\) var\(--uf-motion-mola-salto\)/);
+  assert.match(toastCss, /\.transactionSuccessToast \{\s*animation: avisoSurge var\(--uf-motion-reduzido\)/);
 });
