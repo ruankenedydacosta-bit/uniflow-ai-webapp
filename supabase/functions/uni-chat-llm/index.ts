@@ -69,17 +69,6 @@ const UNI_MODE = {
   // Sprint 1 (IA Conversacional): fraseia um fato estruturado (JSON) em
   // texto natural -- ver PHRASE_FACT_INSTRUCTIONS abaixo.
   PHRASE_FACT: 'phrase_fact',
-  // Sprint 3 (Interpretação Semântica): classifica a intenção financeira
-  // de uma frase livre em JSON estruturado -- ver
-  // FINANCIAL_INTENT_INSTRUCTIONS abaixo. Nunca executa nada, nunca
-  // calcula valores -- só interpreta o que o usuário quis dizer.
-  FINANCIAL_INTENT: 'financial_intent',
-  // Sprint 4 Ciclo 3 (Bloco 4.4): verbaliza FATOS JÁ ESTRUTURADOS (vindos
-  // do motor determinístico) em texto natural curto -- ver
-  // FINANCIAL_RESPONSE_COMPOSE_INSTRUCTIONS abaixo. Nunca recebe
-  // instrução livre do usuário, nunca recalcula, nunca decide dado --
-  // só verbaliza os fatos que o cliente já validou.
-  FINANCIAL_RESPONSE_COMPOSE: 'financial_response_compose',
 } as const;
 
 // Sprint 1 (IA Conversacional): allowlist fixa dos 6 tools de leitura já
@@ -137,8 +126,7 @@ function clampPayloadText(value: unknown, max: number) {
 // `messages` do cliente são IGNORADOS por completo; a IA recebe SOMENTE o
 // JSON do fato (já sanitizado/clampado pelo cliente antes de enviar, nunca
 // dado financeiro sensível cru) e nunca decide nem executa nada, só
-// fraseia. Saída é texto livre curto (não JSON) -- por isso NUNCA usa
-// response_format json_object.
+// fraseia. Saída é texto livre curto.
 const PHRASE_FACT_OUTPUT_TOKENS = 90;
 const MAX_PHRASE_FACT_JSON_CHARS = 600;
 
@@ -171,341 +159,6 @@ function normalizePhraseFactInput(raw: unknown): { factText: string } {
 
 function buildPhraseFactUserMessage(factText: string) {
   return `Fato estruturado (JSON):\n${factText}\n\nResponda apenas com a frase final, em portugues do Brasil.`;
-}
-
-// Sprint 3 (Interpretacao Semantica): classifica a intencao financeira de
-// uma frase livre. A IA SO interpreta -- nunca calcula valores, nunca
-// confirma contas/categorias como existentes, nunca executa nada. Todo
-// campo devolvido e revalidado no cliente (financialIntentSchema.js)
-// contra dados reais antes de qualquer consulta/execucao.
-const MAX_FINANCIAL_INTENT_TEXT_CHARS = 400;
-const MAX_FINANCIAL_INTENT_HISTORY_MESSAGES = 6;
-const MAX_FINANCIAL_INTENT_LIST_ENTRIES = 40;
-const MAX_FINANCIAL_INTENT_NAME_CHARS = 60;
-const FINANCIAL_INTENT_OUTPUT_TOKENS = 260;
-
-const FINANCIAL_INTENT_STATUSES = new Set(['resolved', 'needs_clarification', 'not_financial', 'unsupported']);
-const FINANCIAL_INTENT_VALUES = new Set([
-  'total_balance', 'account_balance', 'total_expenses', 'total_income',
-  'expenses_by_account', 'expenses_by_category', 'income_by_account', 'income_by_category',
-  'financial_summary', 'top_expenses', 'recent_transactions',
-  'period_comparison', 'period_detail', 'query_refinement',
-  'create_expense', 'create_income', 'create_transfer', 'set_balance',
-  'not_financial', 'unsupported',
-]);
-const FINANCIAL_INTENT_TOOL_NAMES = new Set([...ALLOWED_TOOL_NAMES]);
-const MAX_REASONING_TAGS = 6;
-const MAX_REASONING_TAG_CHARS = 40;
-// Sprint 4 (Bloco 4.2.1/4.2.3): extensao ADITIVA do modo financial_intent
-// -- consultas compostas e catalogo de capacidades. Mantem retrocompatibilidade
-// total: campos ausentes no output da LLM caem em defaults seguros (mesma
-// garantia do validador cliente em financialIntentSchema.js).
-const MAX_FINANCIAL_INTENT_SUB_INTENTS = 3;
-const MAX_FINANCIAL_INTENT_CAPABILITIES = 5;
-const CAPABILITY_ID_PATTERN = /^[a-z0-9_]{2,40}$/;
-const FINANCIAL_INTENT_OPERATIONS = new Set(['read', 'write', 'clarify', 'compare', 'refine']);
-
-const FINANCIAL_INTENT_INSTRUCTIONS = `Voce interpreta a intencao financeira de uma frase livre em portugues do Brasil (pt-BR). Voce SO interpreta -- nunca calcula valores, nunca confirma que uma conta/categoria existe, nunca executa nem persiste nada.
-
-Regras obrigatorias:
-- Responda SOMENTE com um objeto JSON valido, sem nenhum texto antes ou depois, seguindo exatamente este formato:
-  {"status": "resolved" | "needs_clarification" | "not_financial" | "unsupported", "intent": "<uma das intencoes permitidas, ou null>", "confidence": <numero entre 0 e 1>, "entities": {"transactionType": "expense" | "income" | "transfer" | null, "amount": <numero ou null>, "account": "<texto curto ou null>", "category": "<texto curto ou null>", "description": "<texto curto ou null>", "period": "<texto curto ou null>", "comparisonPeriod": "<texto curto ou null>"}, "suggestedTool": "<nome de ferramenta ou null>", "clarificationQuestion": "<pergunta curta ou null>", "reasoningTags": ["<marcador curto>", ...]}
-- "intent" so pode ser um destes valores: total_balance, account_balance, total_expenses, total_income, expenses_by_account, expenses_by_category, income_by_account, income_by_category, financial_summary, top_expenses, recent_transactions, period_comparison, period_detail, query_refinement, create_expense, create_income, create_transfer, set_balance, not_financial, unsupported.
-- "account"/"category" devem ser o texto MENCIONADO pelo usuario (ex.: "Nu", "mercado") -- nunca invente um nome que nao apareceu na frase ou na memoria da conversa fornecida.
-- "period"/"comparisonPeriod" devem ser a EXPRESSAO TEMPORAL como o usuario disse (ex.: "este mes", "mes passado", "julho") -- nunca converta para datas, nunca calcule intervalos.
-- "amount" so quando um valor monetario aparecer explicitamente na frase.
-- Use "needs_clarification" quando a intencao for financeira mas faltar informacao essencial (ex.: qual periodo) -- "clarificationQuestion" deve ser curta, natural e especifica (nunca generica como "nao entendi"). CONTA-OPCIONAL: para "create_expense"/"create_income", conta NUNCA e informacao essencial -- nunca use "needs_clarification" so por falta de conta nessas duas intencoes (deixe "account" null quando nao mencionada).
-- Use "not_financial" para conversa social, agradecimentos, duvidas sobre o produto ou qualquer coisa sem relacao com dinheiro.
-- Use "unsupported" para uma acao financeira real que a Uni nao pode fazer (ex.: excluir conta, mudar senha).
-- "suggestedTool" so pode ser um destes nomes, ou null: get_financial_summary, get_expense_breakdown, compare_financial_periods, get_goal_progress, get_account_summary, get_recurring_expenses.
-- "reasoningTags" e uma lista curta (no maximo 6) de marcadores curtos e seguros (ex.: "expense_query", "account_reference", "relative_period", "comparison", "missing_account", "ambiguous_category", "emotional_concern") -- NUNCA inclua explicacao, racioncio (chain of thought) ou texto livre longo.
-- "confidence" reflete sua propria certeza da interpretacao, sempre entre 0 e 1.
-- Voce nunca decide se uma conta ou categoria existe de verdade -- isso e responsabilidade de outro sistema. Voce so relata o que o usuario disse.
-- Voce nunca propoe, confirma ou executa nenhuma escrita financeira -- so identifica a intencao.
-- Se a frase do usuario tiver MAIS DE UMA pergunta financeira de leitura (ex.: "Quanto gastei e qual minha maior despesa?"), defina "isCompound": true e preencha "subIntents" (lista, no maximo 3) com um objeto {"intent", "entities"} para cada parte -- cada subIntent usa o MESMO formato de "intent"/"entities" do objeto principal. Nunca inclua uma sub-intencao de escrita dentro de subIntents.
-- Se souber exatamente quais capacidades (da lista "Capacidades disponiveis" abaixo) resolvem o pedido, preencha "requestedCapabilities" (lista de ids, no maximo 5) -- use APENAS ids que aparecem na lista fornecida, nunca invente um id novo. Campo opcional; omita se nao tiver certeza.
-- "operation" e opcional: "read" | "write" | "clarify" | "compare" | "refine", refletindo o tipo de operacao identificada.`;
-
-type FinancialIntentOption = { name: string };
-
-function normalizeFinancialIntentInput(raw: unknown): {
-  text: string;
-  history: Array<{ role: string; content: string }>;
-  memory: string;
-  referenceDate: string;
-  accounts: FinancialIntentOption[];
-  categories: FinancialIntentOption[];
-  availableTools: string[];
-  availableCapabilities: string[];
-} {
-  const record = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
-  const text = clampPayloadText(record.text, MAX_FINANCIAL_INTENT_TEXT_CHARS);
-  const rawHistory = Array.isArray(record.conversationHistory) ? record.conversationHistory : [];
-  const history: Array<{ role: string; content: string }> = [];
-  for (const item of rawHistory.slice(-MAX_FINANCIAL_INTENT_HISTORY_MESSAGES)) {
-    if (!item || typeof item !== 'object') continue;
-    const entry = item as Record<string, unknown>;
-    const role = entry.from === 'user' ? 'user' : entry.from === 'uni' ? 'assistant' : null;
-    const content = clampPayloadText(entry.text, MAX_FINANCIAL_INTENT_TEXT_CHARS);
-    if (!role || !content) continue;
-    history.push({ role, content });
-  }
-  const memory = clampPayloadText(record.conversationalMemory, 300);
-  const referenceDate = /^\d{4}-\d{2}-\d{2}$/.test(String(record.referenceDate ?? '')) ? String(record.referenceDate) : '';
-
-  function normalizeNames(input: unknown): FinancialIntentOption[] {
-    if (!Array.isArray(input)) return [];
-    const out: FinancialIntentOption[] = [];
-    for (const item of input) {
-      if (out.length >= MAX_FINANCIAL_INTENT_LIST_ENTRIES) break;
-      const name = clampPayloadText(item, MAX_FINANCIAL_INTENT_NAME_CHARS);
-      if (name) out.push({ name });
-    }
-    return out;
-  }
-  const accounts = normalizeNames(record.accounts);
-  const categories = normalizeNames(record.categories);
-  const availableTools = Array.isArray(record.availableTools)
-    ? record.availableTools.filter((name): name is string => typeof name === 'string' && FINANCIAL_INTENT_TOOL_NAMES.has(name))
-    : [];
-  // Sprint 4 (Bloco 4.2.3): catalogo de capacidades -- so formato de id
-  // curto e seguro; a existencia REAL da capacidade e responsabilidade do
-  // orquestrador no cliente (que monta esta lista a partir do registro
-  // central), nunca desta funcao.
-  const availableCapabilities = Array.isArray(record.availableCapabilities)
-    ? record.availableCapabilities
-      .filter((id): id is string => typeof id === 'string' && CAPABILITY_ID_PATTERN.test(id))
-      .slice(0, MAX_FINANCIAL_INTENT_CAPABILITIES * 4)
-    : [];
-
-  return { text, history, memory, referenceDate, accounts, categories, availableTools, availableCapabilities };
-}
-
-function buildFinancialIntentUserMessage(input: ReturnType<typeof normalizeFinancialIntentInput>) {
-  const accountNames = input.accounts.map((a) => a.name).join(', ') || '(nenhuma)';
-  const categoryNames = input.categories.map((c) => c.name).join(', ') || '(nenhuma)';
-  const historyBlock = input.history.length
-    ? input.history.map((m) => `${m.role === 'user' ? 'Usuario' : 'Uni'}: ${m.content}`).join('\n')
-    : '(sem historico recente)';
-  return `Data de referencia: ${input.referenceDate || '(desconhecida)'}
-Contas do usuario: ${accountNames}
-Categorias do usuario: ${categoryNames}
-Ferramentas disponiveis: ${input.availableTools.join(', ') || '(nenhuma)'}
-Capacidades disponiveis (use apenas estes ids em requestedCapabilities): ${input.availableCapabilities.join(', ') || '(nenhuma)'}
-Memoria da conversa (ultima conta/categoria/periodo mencionados): ${input.memory || '(vazia)'}
-
-Historico recente:
-${historyBlock}
-
-Frase atual do usuario: "${input.text}"
-
-Responda apenas com o JSON pedido.`;
-}
-
-// Sprint 4 Ciclo 3 (Bloco 4.4.2/4.4.3) -- verbaliza fatos JÁ ESTRUTURADOS
-// (vindos do orquestrador semântico + motor determinístico) em texto
-// natural curto. Saída é texto livre (não JSON) -- mesma postura de
-// PHRASE_FACT (Sprint 1), nunca usa response_format json_object. A IA
-// NUNCA recebe saldo/transações cruas -- só os fatos já agregados e
-// sanitizados que o cliente decidiu enviar.
-const FINANCIAL_RESPONSE_COMPOSE_OUTPUT_TOKENS = 140;
-const MAX_FINANCIAL_RESPONSE_COMPOSE_FACTS_CHARS = 900;
-const MAX_FINANCIAL_RESPONSE_COMPOSE_TEXT_CHARS = 160;
-
-const FINANCIAL_RESPONSE_COMPOSE_INSTRUCTIONS = `Voce e a Uni, uma consultora financeira acessivel, conversando em portugues do Brasil (pt-BR). Voce e natural, direta, simples, humana no estilo -- nunca robotica, nunca repetitiva, nunca prolixa por padrao. Voce e acolhedora quando ha emocao, precisa com numeros, e honesta sobre limites.
-
-Voce recebe FATOS JA ESTRUTURADOS E VALIDADOS (JSON) -- nunca dados brutos. Sua UNICA tarefa e transformar esses fatos numa resposta natural curta. Voce NUNCA calcula, NUNCA recalcula, NUNCA inventa nenhum numero, conta, categoria ou periodo que nao esteja EXATAMENTE no JSON recebido.
-
-Regras obrigatorias:
-- Responda APENAS com a frase final -- sem aspas, sem JSON, sem explicar a tarefa.
-- Padrao de 1 a 3 frases curtas. Só detalhe mais se os fatos indicarem "detailed": true.
-- Varie a construcao das frases -- nunca comece sempre do mesmo jeito (nunca sempre "Em [periodo]..." nem sempre "Voce gastou...").
-- Nunca repita a pergunta do usuario de volta.
-- Nunca termine com "Como posso ajudar?" ou similar.
-- Nunca pareca um menu nem liste opcoes sem necessidade.
-- Use nome de conta/categoria SOMENTE se aparecer literalmente nos fatos recebidos.
-- Nunca use jargao sem explicar quando o fato pedir explicacao.
-- Nunca use frases terapeuticas excessivas, nunca diga "como uma IA" ou "nao tenho sentimentos".
-- Se os fatos indicarem emocao (campo "emotionalContext" preenchido), comece com um acolhimento curto (uma frase), depois o dado real, depois um proximo passo opcional -- mas SO quando houver esse sinal, nunca por padrao.
-- Se os fatos pedirem explicacao de um termo ("explanationRequest" preenchido), explique em uma frase simples com um exemplo pratico, e retome o fluxo.
-- Se os fatos indicarem ausencia de dados, diga isso honestamente -- nunca finja que ha dado.
-- Nunca afirme que uma escrita/transacao foi concluida -- os fatos desta camada NUNCA representam uma escrita confirmada.
-- Nunca prometa nenhuma capacidade que nao esteja implicita nos fatos recebidos.
-- Todo valor monetario deve SEMPRE aparecer no formato brasileiro completo: "R$" seguido do valor com separador de milhar por ponto e vírgula decimal com duas casas (ex.: "R$ 13.045,90", "R$ 50,00", "-R$ 725,00" quando negativo). Nunca escreva um valor monetario como numero solto (nunca "13045" ou "50" sozinhos) -- o "R$" e a formatacao completa sao obrigatorios em toda mencao a dinheiro, em qualquer frase.`;
-
-type FinancialResponseComposeInput = {
-  factsText: string;
-  userIntent: string;
-  operation: string;
-  conversationStyle: string;
-  hasEmotionalContext: boolean;
-  hasExplanationRequest: boolean;
-  locale: string;
-};
-
-function normalizeFinancialResponseComposeInput(raw: unknown): FinancialResponseComposeInput {
-  const record = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
-  const facts = record.structuredFacts;
-  let factsText = '';
-  if (facts && typeof facts === 'object') {
-    try {
-      factsText = clampPayloadText(JSON.stringify(facts), MAX_FINANCIAL_RESPONSE_COMPOSE_FACTS_CHARS);
-    } catch {
-      factsText = '';
-    }
-  }
-  return {
-    factsText,
-    userIntent: clampPayloadText(record.userIntent, 60),
-    operation: clampPayloadText(record.operation, 20),
-    conversationStyle: clampPayloadText(record.conversationStyle, 20) || 'simple',
-    hasEmotionalContext: Boolean(record.emotionalContext),
-    hasExplanationRequest: Boolean(record.explanationRequest),
-    locale: 'pt-BR',
-  };
-}
-
-function buildFinancialResponseComposeUserMessage(input: FinancialResponseComposeInput) {
-  return `Fatos estruturados (JSON, unica fonte de verdade -- nunca calcule nada alem disso):
-${input.factsText}
-
-Intencao do usuario: ${input.userIntent || '(nao informada)'}
-Operacao: ${input.operation || '(nao informada)'}
-Estilo de conversa: ${input.conversationStyle}
-Contexto emocional presente: ${input.hasEmotionalContext ? 'sim' : 'nao'}
-Pedido de explicacao de termo presente: ${input.hasExplanationRequest ? 'sim' : 'nao'}
-
-Responda apenas com a frase final, em portugues do Brasil, usando SOMENTE os fatos acima.`;
-}
-
-function validateFinancialIntentOutput(text: string):
-  | { valid: true; interpretation: Record<string, unknown> }
-  | { valid: false; reason: string } {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return { valid: false, reason: 'invalid_json' };
-  }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return { valid: false, reason: 'invalid_json' };
-  }
-  const record = parsed as Record<string, unknown>;
-  const status = record.status;
-  if (typeof status !== 'string' || !FINANCIAL_INTENT_STATUSES.has(status)) {
-    return { valid: false, reason: 'invalid_status' };
-  }
-  const intent = record.intent === null || record.intent === undefined ? null
-    : (typeof record.intent === 'string' && FINANCIAL_INTENT_VALUES.has(record.intent) ? record.intent : undefined);
-  if (intent === undefined) return { valid: false, reason: 'invalid_intent' };
-
-  const confidence = typeof record.confidence === 'number' ? record.confidence : Number(record.confidence);
-  if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
-    return { valid: false, reason: 'invalid_confidence' };
-  }
-
-  const rawEntities = (record.entities && typeof record.entities === 'object' && !Array.isArray(record.entities))
-    ? record.entities as Record<string, unknown>
-    : {};
-  function clampEntity(value: unknown, max = 80): string | null {
-    const clamped = clampPayloadText(value, max);
-    return clamped || null;
-  }
-  const transactionType = rawEntities.transactionType === 'expense' || rawEntities.transactionType === 'income' || rawEntities.transactionType === 'transfer'
-    ? rawEntities.transactionType
-    : null;
-  const amountRaw = rawEntities.amount;
-  const amount = amountRaw === null || amountRaw === undefined ? null
-    : (Number.isFinite(Number(amountRaw)) && Number(amountRaw) > 0 ? Number(amountRaw) : null);
-  const entities = {
-    transactionType,
-    amount,
-    account: clampEntity(rawEntities.account, MAX_FINANCIAL_INTENT_NAME_CHARS),
-    category: clampEntity(rawEntities.category, MAX_FINANCIAL_INTENT_NAME_CHARS),
-    description: clampEntity(rawEntities.description, 160),
-    period: clampEntity(rawEntities.period, 80),
-    comparisonPeriod: clampEntity(rawEntities.comparisonPeriod, 80),
-  };
-
-  const suggestedTool = record.suggestedTool === null || record.suggestedTool === undefined
-    ? null
-    : (typeof record.suggestedTool === 'string' && FINANCIAL_INTENT_TOOL_NAMES.has(record.suggestedTool) ? record.suggestedTool : null);
-
-  const clarificationQuestion = clampEntity(record.clarificationQuestion, 200);
-  if (status === 'needs_clarification' && !clarificationQuestion) {
-    return { valid: false, reason: 'missing_clarification_question' };
-  }
-
-  const rawTags = Array.isArray(record.reasoningTags) ? record.reasoningTags : [];
-  const reasoningTags: string[] = [];
-  for (const tag of rawTags) {
-    if (reasoningTags.length >= MAX_REASONING_TAGS) break;
-    const clamped = clampPayloadText(tag, MAX_REASONING_TAG_CHARS);
-    // Marcador curto e seguro: só letras/números/underscore, nunca uma
-    // frase inteira (bloqueia qualquer tentativa de "chain of thought"
-    // disfarçada de tag).
-    if (clamped && /^[a-z0-9_]{2,40}$/.test(clamped)) reasoningTags.push(clamped);
-  }
-
-  // Sprint 4 (Bloco 4.2.1) -- extensao aditiva, sempre com default seguro.
-  function extractEntities(rawSub: unknown) {
-    const source = (rawSub && typeof rawSub === 'object' && !Array.isArray(rawSub))
-      ? rawSub as Record<string, unknown>
-      : {};
-    const subType = source.transactionType === 'expense' || source.transactionType === 'income' || source.transactionType === 'transfer'
-      ? source.transactionType
-      : null;
-    const subAmountRaw = source.amount;
-    const subAmount = subAmountRaw === null || subAmountRaw === undefined ? null
-      : (Number.isFinite(Number(subAmountRaw)) && Number(subAmountRaw) > 0 ? Number(subAmountRaw) : null);
-    return {
-      transactionType: subType,
-      amount: subAmount,
-      account: clampEntity(source.account, MAX_FINANCIAL_INTENT_NAME_CHARS),
-      category: clampEntity(source.category, MAX_FINANCIAL_INTENT_NAME_CHARS),
-      description: clampEntity(source.description, 160),
-      period: clampEntity(source.period, 80),
-      comparisonPeriod: clampEntity(source.comparisonPeriod, 80),
-    };
-  }
-
-  const rawSubIntents = record.isCompound === true && Array.isArray(record.subIntents) ? record.subIntents : [];
-  const subIntents: Array<{ intent: string; entities: ReturnType<typeof extractEntities> }> = [];
-  for (const rawSub of rawSubIntents) {
-    if (subIntents.length >= MAX_FINANCIAL_INTENT_SUB_INTENTS) break;
-    if (!rawSub || typeof rawSub !== 'object' || Array.isArray(rawSub)) continue;
-    const subRecord = rawSub as Record<string, unknown>;
-    const subIntentValue = typeof subRecord.intent === 'string' && FINANCIAL_INTENT_VALUES.has(subRecord.intent)
-      ? subRecord.intent
-      : null;
-    if (!subIntentValue) continue;
-    subIntents.push({ intent: subIntentValue, entities: extractEntities(subRecord.entities) });
-  }
-
-  const requestedCapabilities: string[] = [];
-  if (Array.isArray(record.requestedCapabilities)) {
-    for (const capabilityId of record.requestedCapabilities) {
-      if (requestedCapabilities.length >= MAX_FINANCIAL_INTENT_CAPABILITIES) break;
-      if (typeof capabilityId === 'string' && CAPABILITY_ID_PATTERN.test(capabilityId)) {
-        requestedCapabilities.push(capabilityId);
-      }
-    }
-  }
-
-  const operation = typeof record.operation === 'string' && FINANCIAL_INTENT_OPERATIONS.has(record.operation)
-    ? record.operation
-    : null;
-
-  return {
-    valid: true,
-    interpretation: {
-      status, intent, confidence, entities, suggestedTool, clarificationQuestion, reasoningTags,
-      operation,
-      isCompound: subIntents.length > 0,
-      subIntents,
-      requestedCapabilities,
-    },
-  };
 }
 
 // Instrucoes fixas do modo suporte -- vivem so aqui (server-side), nunca no
@@ -641,10 +294,10 @@ type AdapterOutcome =
 // unica forma oficial de diferenciar os dois), e erro do lado do provedor
 // (>=500) de erro de payload nosso (4xx que nao seja auth/quota).
 async function callOpenAiAdapter(
-  { apiKey, model, system, messages, signal, maxOutputTokens, jsonResponseFormat = false, tools = [] }:
+  { apiKey, model, system, messages, signal, maxOutputTokens, tools = [] }:
   {
     apiKey: string; model: string; system: string; messages: Array<{ role: string; content: string }>;
-    signal: AbortSignal; maxOutputTokens: number; jsonResponseFormat?: boolean;
+    signal: AbortSignal; maxOutputTokens: number;
     tools?: Array<Record<string, unknown>>;
   },
 ): Promise<AdapterOutcome> {
@@ -667,12 +320,6 @@ async function callOpenAiAdapter(
       // fixo unico.
       max_completion_tokens: maxOutputTokens,
       temperature: 0.5,
-      // Forca o modelo a responder com um objeto JSON valido (modo
-      // financial_intent) -- reduz drasticamente a chance de JSON
-      // malformado; mesmo assim o resultado e sempre validado
-      // explicitamente (validateFinancialIntentOutput), nunca confiado
-      // apenas por causa deste parametro.
-      ...(jsonResponseFormat ? { response_format: { type: 'json_object' } } : {}),
       // Sprint 1 (IA Conversacional): `tools` só é incluído no corpo quando
       // não-vazio -- payload byte-idêntico ao de antes desta sprint em
       // qualquer chamada sem tools (todo tráfego hoje, flag desligada).
@@ -812,11 +459,7 @@ Deno.serve(async (request) => {
     ? UNI_MODE.SUPPORT
     : payload.mode === UNI_MODE.PHRASE_FACT
       ? UNI_MODE.PHRASE_FACT
-      : payload.mode === UNI_MODE.FINANCIAL_INTENT
-        ? UNI_MODE.FINANCIAL_INTENT
-        : payload.mode === UNI_MODE.FINANCIAL_RESPONSE_COMPOSE
-          ? UNI_MODE.FINANCIAL_RESPONSE_COMPOSE
-          : UNI_MODE.FINANCIAL;
+      : UNI_MODE.FINANCIAL;
 
   let system: string;
   let messages: Array<{ role: string; content: string }>;
@@ -843,25 +486,6 @@ Deno.serve(async (request) => {
     messages = phraseFactInput.factText
       ? [{ role: 'user', content: buildPhraseFactUserMessage(phraseFactInput.factText) }]
       : [];
-  } else if (mode === UNI_MODE.FINANCIAL_INTENT) {
-    // Sprint 3: mesma garantia -- `system`/`messages` do cliente ignorados
-    // por completo. A IA só recebe a frase atual, um histórico curto,
-    // a memória conversacional resumida e nomes de contas/categorias --
-    // nunca saldo, nunca transações, nunca dado financeiro sensível.
-    const financialIntentInput = normalizeFinancialIntentInput(payload.financialIntent);
-    system = FINANCIAL_INTENT_INSTRUCTIONS;
-    messages = financialIntentInput.text
-      ? [{ role: 'user', content: buildFinancialIntentUserMessage(financialIntentInput) }]
-      : [];
-  } else if (mode === UNI_MODE.FINANCIAL_RESPONSE_COMPOSE) {
-    // Sprint 4 Ciclo 3: mesma garantia -- `system`/`messages` do cliente
-    // ignorados por completo. A IA só recebe os fatos já estruturados
-    // (nunca dado bruto/sensível).
-    const composeInput = normalizeFinancialResponseComposeInput(payload.financialResponseCompose);
-    system = FINANCIAL_RESPONSE_COMPOSE_INSTRUCTIONS;
-    messages = composeInput.factsText
-      ? [{ role: 'user', content: buildFinancialResponseComposeUserMessage(composeInput) }]
-      : [];
   } else {
     system = clampText(payload.system, MAX_SYSTEM_CHARS);
     messages = normalizeMessages(payload.messages);
@@ -879,11 +503,7 @@ Deno.serve(async (request) => {
     ? resolveOutputTokenBudget(payload.maxOutputTokens)
     : mode === UNI_MODE.PHRASE_FACT
       ? PHRASE_FACT_OUTPUT_TOKENS
-      : mode === UNI_MODE.FINANCIAL_INTENT
-        ? FINANCIAL_INTENT_OUTPUT_TOKENS
-        : mode === UNI_MODE.FINANCIAL_RESPONSE_COMPOSE
-          ? FINANCIAL_RESPONSE_COMPOSE_OUTPUT_TOKENS
-          : DEFAULT_OUTPUT_TOKENS;
+      : DEFAULT_OUTPUT_TOKENS;
 
   // Conta só o que vai mesmo chamar a OpenAI: pedido inválido ou recusado
   // antes daqui não gasta o teto.
@@ -924,7 +544,6 @@ Deno.serve(async (request) => {
       messages,
       signal: controller.signal,
       maxOutputTokens,
-      jsonResponseFormat: mode === UNI_MODE.FINANCIAL_INTENT,
       tools,
     });
     if (result.usage) {
@@ -967,36 +586,6 @@ Deno.serve(async (request) => {
     const text = clampText(result.text, 2000);
     if (!text) {
       return finish(422, 'empty_after_clamp', { error: 'Resposta invalida.' });
-    }
-
-    if (mode === UNI_MODE.FINANCIAL_INTENT) {
-      // Sprint 3: resposta estruturada é o ponto inteiro deste modo,
-      // looksLikeStructuredFinancialAction não se aplica. O contrato
-      // inteiro é validado aqui; qualquer coisa fora
-      // dele vira 422 e o cliente cai no comportamento seguro anterior
-      // (fluxo determinístico / handleUnresolvedMessage).
-      const validated = validateFinancialIntentOutput(text);
-      if (!validated.valid) {
-        return finish(422, `financial_intent_${validated.reason}`, { error: 'Resposta invalida.' });
-      }
-      return finish(200, 'ok', { interpretation: validated.interpretation, usage: result.usage }, result.usage);
-    }
-
-    if (mode === UNI_MODE.FINANCIAL_RESPONSE_COMPOSE) {
-      // Sprint 4 Ciclo 3 (Bloco 4.4.5) -- guardrails server-side de defesa
-      // em profundidade: nunca vazio, nunca excede o tamanho esperado de
-      // uma resposta curta. A validação PRINCIPAL (números batem com os
-      // fatos, nenhuma conta/categoria/período inventado) só é possível no
-      // CLIENTE, que é quem tem os fatos reais em mãos -- ver
-      // composeNaturalFinancialResponse.js.
-      const trimmed = text.trim();
-      if (!trimmed) {
-        return finish(422, 'financial_response_compose_empty', { error: 'Resposta invalida.' });
-      }
-      if (trimmed.length > MAX_FINANCIAL_RESPONSE_COMPOSE_TEXT_CHARS) {
-        return finish(422, 'financial_response_compose_too_long', { error: 'Resposta invalida.' });
-      }
-      return finish(200, 'ok', { text: trimmed, usage: result.usage, composerVersion: '1' }, result.usage);
     }
 
     if (looksLikeStructuredFinancialAction(text)) {

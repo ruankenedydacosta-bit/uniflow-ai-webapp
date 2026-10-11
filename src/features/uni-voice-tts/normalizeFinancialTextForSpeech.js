@@ -3,7 +3,7 @@
 // quando lidos como símbolo+dígitos crus. Esta transformação é EXCLUSIVA
 // para o texto enviado à voz -- nunca altera o texto visual (message.text),
 // nunca altera dado financeiro nenhum, nunca roda no domínio financeiro
-// (composeNaturalFinancialResponse etc. continuam produzindo "R$ 497,80"
+// (as respostas do chat continuam produzindo "R$ 497,80"
 // normalmente). É aplicada só nos dois pontos únicos que chamam
 // uniVoice.speak (ver UniChatPage.jsx, handleSpeakMessage/
 // speakSideEffectNotice), sobre o texto JÁ pronto para fala.

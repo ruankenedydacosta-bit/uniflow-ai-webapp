@@ -56,7 +56,7 @@ test('orcamento de tokens de saida e clampado server-side, nunca confia cegament
 test('modo suporte nunca usa o orcamento de tokens vindo do cliente -- so o modo financeiro pode', () => {
   assert.match(
     EDGE_SOURCE,
-    /const maxOutputTokens = mode === UNI_MODE\.FINANCIAL\s*\n\s*\? resolveOutputTokenBudget\(payload\.maxOutputTokens\)\s*\n\s*: mode === UNI_MODE\.PHRASE_FACT\s*\n\s*\? PHRASE_FACT_OUTPUT_TOKENS\s*\n\s*: mode === UNI_MODE\.FINANCIAL_INTENT\s*\n\s*\? FINANCIAL_INTENT_OUTPUT_TOKENS\s*\n\s*: mode === UNI_MODE\.FINANCIAL_RESPONSE_COMPOSE\s*\n\s*\? FINANCIAL_RESPONSE_COMPOSE_OUTPUT_TOKENS\s*\n\s*: DEFAULT_OUTPUT_TOKENS;/,
+    /const maxOutputTokens = mode === UNI_MODE\.FINANCIAL\s*\n\s*\? resolveOutputTokenBudget\(payload\.maxOutputTokens\)\s*\n\s*: mode === UNI_MODE\.PHRASE_FACT\s*\n\s*\? PHRASE_FACT_OUTPUT_TOKENS\s*\n\s*: DEFAULT_OUTPUT_TOKENS;/,
   );
 });
 
@@ -146,7 +146,10 @@ test('category_inference e financial_plan nao existem mais na Edge Function', ()
   assert.doesNotMatch(EDGE_SOURCE, /category_inference|financial_plan|CATEGORY_INFERENCE|FINANCIAL_PLAN/);
 });
 
-test('response_format json_object so no modo estruturado que restou (financial_intent)', () => {
-  assert.match(EDGE_SOURCE, /jsonResponseFormat: mode === UNI_MODE\.FINANCIAL_INTENT,/);
-  assert.match(EDGE_SOURCE, /response_format: \{ type: 'json_object' \}/);
+// #80: os modos financial_intent e financial_response_compose sairam -- a
+// consulta vem do uni-interpret. Um PWA antigo que ainda mande esses modos
+// cai no financeiro sem `system` e recebe 400, sem gastar token.
+test('financial_intent e financial_response_compose nao existem mais na Edge Function', () => {
+  assert.doesNotMatch(EDGE_SOURCE, /financial_intent|financial_response_compose|FINANCIAL_INTENT|FINANCIAL_RESPONSE_COMPOSE/);
+  assert.doesNotMatch(EDGE_SOURCE, /json_object/);
 });

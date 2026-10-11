@@ -7,7 +7,7 @@ Documento operacional (não é conhecimento de produto para a Uni consumir — �
 - Frontend nunca fala com a OpenAI diretamente. Toda chamada passa pela Edge Function `supabase/functions/uni-chat-llm/index.ts`, que é a única detentora da credencial (`OPENAI_API_KEY`, Secret do Supabase — nunca lido, copiado ou logado por este processo, apenas confirmado como existente pelo nome).
 - API usada: **Chat Completions** (`POST https://api.openai.com/v1/chat/completions`), oficialmente suportada e mantida indefinidamente pela OpenAI. Não migramos para a Responses API porque a arquitetura atual (mensagens simples, sem tools/estado gerenciado pela OpenAI) não precisa dela — migrar sem necessidade violaria a instrução da própria fase.
 - Autenticação ao provedor: `Authorization: Bearer ${OPENAI_API_KEY}`, apenas server-side.
-- Modos explícitos, via campo `mode` no payload: `financial` (default, compatível com OPENAI1/OPENAI2), `support` (OPENAI3), `phrase_fact`, `financial_intent` e `financial_response_compose`. Os modos `category_inference` e `financial_plan` saíram em #138: o plano e a categoria do lançamento vêm do `uni-interpret`.
+- Modos explícitos, via campo `mode` no payload: `financial` (default, compatível com OPENAI1/OPENAI2), `support` (OPENAI3) e `phrase_fact`. Os modos `category_inference` e `financial_plan` saíram em #138: o plano e a categoria do lançamento vêm do `uni-interpret`. Os modos `financial_intent` e `financial_response_compose` saíram em #80: a consulta também vem do `uni-interpret`.
 
 ## Modo financeiro (`UNI_MODE.FINANCIAL`)
 
