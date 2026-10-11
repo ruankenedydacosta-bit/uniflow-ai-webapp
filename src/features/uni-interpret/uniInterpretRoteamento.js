@@ -11,6 +11,8 @@ import { normalizeFinancialText } from '../uni-intents/index.js';
 export const ROTAS_INTERPRETACAO = Object.freeze({
   LANCAMENTO: 'lancamento',
   PLANO: 'plano',
+  SALDO: 'saldo',
+  META: 'meta',
   CONSULTA: 'consulta',
   AGENDA: 'agenda',
   CONVERSA: 'conversa',
@@ -43,6 +45,10 @@ export function escolherRotaDaInterpretacao(interpretacao) {
         return ROTAS_INTERPRETACAO.LANCAMENTO;
       }
       return operacoes.length > 0 ? ROTAS_INTERPRETACAO.PLANO : ROTAS_INTERPRETACAO.NAO_ENTENDI;
+    case 'saldo':
+      return ROTAS_INTERPRETACAO.SALDO;
+    case 'meta':
+      return ROTAS_INTERPRETACAO.META;
     case 'consulta':
       return ROTAS_INTERPRETACAO.CONSULTA;
     case 'agenda':

@@ -4,8 +4,8 @@
 // pessoa atenta daria. Serve para medir as regras atuais e, depois, comparar
 // os modelos candidatos do uni-interpret com a mesma régua.
 //
-// esperado.intent: lancar_saida | lancar_entrada | transferir | consulta |
-//   agenda | conversa.
+// esperado.intent: lancar_saida | lancar_entrada | transferir | saldo |
+//   meta | consulta | agenda | conversa.
 // esperado.categoria: nome do catálogo do workspace; null quando a frase não
 //   dá base para escolher e a Uni deve perguntar. `aceitas` lista outras
 //   respostas igualmente corretas.
@@ -351,7 +351,7 @@ export const CASOS = [
   {
     id: 'consulta-saldo',
     frase: 'Qual é o meu saldo?',
-    esperado: { intent: 'consulta' },
+    esperado: { intent: 'saldo' },
   },
   {
     id: 'agenda-dentista',
@@ -908,5 +908,102 @@ export const CASOS = [
     reservado: true,
     frase: 'paguei 90',
     esperado: { intent: 'lancar_saida', valor: 90, categoria: null },
+  },
+  // Saldo declarado e meta (#80, etapa 2b). "Tenho X" sem dizer que recebeu
+  // também é saldo: não pode virar entrada.
+  {
+    id: 'saldo-nubank',
+    frase: 'meu saldo no Nubank é 1.250',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-ajusta-carteira',
+    frase: 'ajusta o saldo da carteira pra 80 reais',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-de-saldo',
+    frase: 'tenho 3 mil de saldo na conta',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-ta-errado',
+    frase: 'meu saldo tá errado, o certo é 412,30',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-tenho',
+    frase: 'tenho mil reais',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-to-com',
+    frase: 'to com 600 na poupança',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'recebi-nao-e-saldo',
+    frase: 'recebi mil reais do meu pai',
+    esperado: { intent: 'lancar_entrada', valor: 1000, categoria: 'Presente', aceitas: ['Outras entradas'] },
+  },
+  {
+    id: 'consulta-saldo-conta',
+    frase: 'quanto tenho de saldo no Inter?',
+    esperado: { intent: 'saldo' },
+  },
+  // Frases de saldo que a trava por regex do chat não reconhece: só o
+  // modelo as separa de um lançamento.
+  {
+    id: 'saldo-sem-palavra-nubank',
+    frase: 'o Nubank está com 1.200',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-sem-palavra-pergunta',
+    frase: 'qual o valor que está na minha conta do Inter?',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-sem-palavra-poupanca',
+    frase: 'na poupança tem 3 mil',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'to-com-conta-a-pagar',
+    frase: 'to com 300 de conta de luz pra pagar sexta',
+    esperado: { intent: 'agenda' },
+  },
+  {
+    id: 'meta-juntar',
+    frase: 'quero juntar 10 mil pra viajar no ano que vem',
+    esperado: { intent: 'meta' },
+  },
+  {
+    id: 'meta-criar',
+    frase: 'cria uma meta de reserva de emergência de 6 mil',
+    esperado: { intent: 'meta' },
+  },
+  {
+    id: 'meta-consulta',
+    frase: 'quanto falta pra eu bater minha meta?',
+    esperado: { intent: 'consulta' },
+  },
+  {
+    id: 'saldo-carteira-agora',
+    reservado: true,
+    frase: 'o saldo da carteira agora é 35',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-estou-com',
+    reservado: true,
+    frase: 'estou com 2 mil e quinhentos',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'meta-carro',
+    reservado: true,
+    frase: 'quero economizar uns 40 mil pra trocar de carro',
+    esperado: { intent: 'meta' },
   },
 ];

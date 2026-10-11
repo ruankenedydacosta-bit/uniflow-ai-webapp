@@ -3907,9 +3907,9 @@ test('pergunta sobre a categoria com o card na tela não vira categoria nova', a
 test('#80: com IA, o uni-interpret decide a frase nova antes das regras fixas', async () => {
   const page = await source('UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
-  assert.match(body, /const roteiaPeloModelo = Boolean\(effectiveWorkspace\?\.id && uniInterpretClient\.isSupported\(\)\)\s*&& !INTENTS_FORA_DO_INTERPRETADOR\.has\(declaredIntent\);/);
-  // Saldo declarado e meta têm fluxo próprio fora do contrato do modelo.
-  assert.match(page, /const INTENTS_FORA_DO_INTERPRETADOR = new Set\(\[\s*'set_balance',\s*'ambiguous_balance_or_income',\s*'create_goal',\s*\]\);/);
+  // Saldo declarado e meta também passam pelo modelo (#80, etapa 2b).
+  assert.match(body, /const roteiaPeloModelo = Boolean\(effectiveWorkspace\?\.id && uniInterpretClient\.isSupported\(\)\);/);
+  assert.doesNotMatch(page, /INTENTS_FORA_DO_INTERPRETADOR/);
   const modelIdx = body.indexOf('void rotearPeloModelo(functionalText,');
   const rulesIdx = body.indexOf('function runRuleBasedFlow() {');
   assert.ok(modelIdx > -1 && rulesIdx > modelIdx, 'o modelo roda antes das regras');
@@ -3935,6 +3935,20 @@ test('#80: lançamento e plano interpretados pelo modelo nunca vão ao chat gera
   assert.doesNotMatch(lancamento, /não consigo registrar/i);
   // Turno trocado durante a frase natural não deixa rascunho invisível.
   assert.match(lancamento, /financialConversation\.reset\(\);/);
+});
+
+test('#80: saldo responde que o app não usa mais saldo e meta responde que ainda não cria objetivos', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
+  // A mesma resposta da trava de saldo do sendText, sem card de ajuste.
+  assert.match(body, /case ROTAS_INTERPRETACAO\.SALDO:\s*setIsTyping\(false\);\s*responderResumoSemSaldo\(text, true\);\s*return true;/);
+  const { body: sendText } = extractFunctionBody(page, 'function sendText(text, metadata) {');
+  assert.match(sendText, /responderResumoSemSaldo\(functionalText, isRetiredBalanceRequest\);/);
+  const saldo = body.slice(body.indexOf('case ROTAS_INTERPRETACAO.SALDO:'), body.indexOf('case ROTAS_INTERPRETACAO.META:'));
+  assert.doesNotMatch(saldo, /startFromParsed/);
+  assert.match(body, /case ROTAS_INTERPRETACAO\.META:\s*setIsTyping\(false\);[\s\S]*?createAssistantResponse\(TEXTO_META_SEM_CRIACAO, \{ deduplicateNarration: false \}\);\s*return true;/);
+  // Sem o modelo, a meta recebe a mesma resposta pelas regras.
+  assert.match(page, /result\.parsed\?\.intent === 'create_goal'\) \{\s*createAssistantResponse\(TEXTO_META_SEM_CRIACAO\);/);
 });
 
 test('#80: sem interpretação ou sem entender, as regras fixas tentam antes do chat geral', async () => {
