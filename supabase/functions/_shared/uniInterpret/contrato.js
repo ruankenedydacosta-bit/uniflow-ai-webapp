@@ -201,31 +201,38 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
 }
 
 const CATEGORY_TYPE_POR_TIPO_CONSULTA = Object.freeze({ saidas: 'expense', entradas: 'income' });
+// Mais que isso é histórico inteiro: as regras respondem sem baixar anos de
+// movimentações para uma soma.
+export const MAX_DIAS_CONSULTA = 731;
 
-// Período da consulta: os dois extremos válidos e em ordem, começando no
-// passado. Sem período, ou com período inválido, vale o mês atual (null).
-// "Desde agosto" chega sem fim e vai até hoje.
+// Período da consulta. Os dois null valem o mês atual; "desde agosto" chega
+// sem fim e vai até hoje. Qualquer outro período que não dá para respeitar
+// (só o fim, data impossível, invertido, futuro, longo demais) devolve o
+// motivo, e a consulta vai para as regras em vez de responder outro período.
 function validarPeriodo(bruta, dataReferencia) {
-  const inicio = dataValida(bruta?.inicio) ? bruta.inicio : null;
-  const fim = dataValida(bruta?.fim) ? bruta.fim : (inicio ? dataReferencia : null);
-  if (!inicio || !fim || inicio > fim) return { inicio: null, fim: null, futuro: false };
-  return { inicio, fim, futuro: inicio > dataReferencia };
+  const temInicio = bruta?.inicio !== null && bruta?.inicio !== undefined;
+  const temFim = bruta?.fim !== null && bruta?.fim !== undefined;
+  if (!temInicio && !temFim) return { inicio: null, fim: null, problema: null };
+
+  const inicio = dataValida(bruta.inicio) ? bruta.inicio : null;
+  const fim = temFim ? (dataValida(bruta.fim) ? bruta.fim : null) : (inicio ? dataReferencia : null);
+  if (!inicio || !fim || inicio > fim) return { inicio: inicio ?? null, fim: fim ?? null, problema: 'periodo_invalido' };
+  if (inicio > dataReferencia) return { inicio, fim, problema: 'periodo_futuro' };
+  if (distanciaEmDias(inicio, fim) > MAX_DIAS_CONSULTA) return { inicio, fim, problema: 'periodo_longo' };
+  return { inicio, fim, problema: null };
 }
 
-// Sem tipo, a consulta vira 'outra' e o app cai nas regras.
+// Sem tipo, a consulta vira 'outra' e o app cai nas regras. Filtro que o app
+// não consegue aplicar também: responder o total sem ele pareceria a resposta
+// da pergunta.
 function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataReferencia }) {
   const ajustes = [];
   let tipo = TIPOS_CONSULTA.includes(bruta?.tipo) ? bruta.tipo : 'outra';
 
-  const { inicio, fim, futuro } = validarPeriodo(bruta, dataReferencia);
-  // Pergunta sobre o futuro não tem movimentação para somar: as regras
-  // respondem sem inventar número.
-  if (futuro) {
-    tipo = 'outra';
-    ajustes.push('periodo_futuro');
-  }
+  const { inicio, fim, problema } = validarPeriodo(bruta, dataReferencia);
+  if (problema) ajustes.push(problema);
 
-  // Categoria de outro tipo ("quanto gastei de salário") não filtra nada.
+  // Categoria de outro tipo ("quanto gastei de salário") ou apelido inventado.
   const categoriaBruta = categoriasPorApelido.get(bruta?.categoria) ?? null;
   const categoryType = CATEGORY_TYPE_POR_TIPO_CONSULTA[tipo];
   const categoria = categoriaBruta && categoryType && categoriaBruta.category_type === categoryType
@@ -233,15 +240,16 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
     : null;
   if (bruta?.categoria && !categoria) ajustes.push('categoria_descartada');
 
-  return {
-    tipo,
-    inicio,
-    fim,
-    categoria,
-    conta: contasPorApelido.get(bruta?.conta) ?? null,
-    termo: textoLimpo(bruta?.termo, MAX_TERMO) || null,
-    ajustes,
-  };
+  const conta = contasPorApelido.get(bruta?.conta) ?? null;
+  if (bruta?.conta && !conta) ajustes.push('conta_descartada');
+
+  const termo = textoLimpo(bruta?.termo, MAX_TERMO) || null;
+  // O resumo soma tudo do período: não filtra por categoria nem por termo.
+  if (tipo === 'resumo' && termo) ajustes.push('termo_no_resumo');
+
+  if (ajustes.length > 0) tipo = 'outra';
+
+  return { tipo, inicio, fim, categoria, conta, termo, ajustes };
 }
 
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:

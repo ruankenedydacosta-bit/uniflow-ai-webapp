@@ -6,6 +6,7 @@
 // conhecia o mês atual para categoria.
 
 import { formatCurrency } from '../../utils/formatters.js';
+import { roundMoney } from '../uni-chat/financialSnapshot.js';
 import { normalizeSearchText } from '../../utils/searchText.js';
 
 const TIPOS_RESPONDIVEIS = new Set(['saidas', 'entradas', 'resumo']);
@@ -107,7 +108,7 @@ function filtrar(transacoes, { transactionType, categoria, conta, termo }) {
 }
 
 function somar(transacoes) {
-  return Math.round(transacoes.reduce((total, transacao) => total + Math.round(Number(transacao.amount) * 100), 0)) / 100;
+  return roundMoney(transacoes.reduce((total, transacao) => total + roundMoney(transacao.amount), 0));
 }
 
 // transacoes: as movimentações concluídas do período, já buscadas no banco.
@@ -136,7 +137,11 @@ export function responderConsulta({ consulta, transacoes, dataReferencia }) {
     conta: consulta.conta,
     termo: consulta.termo,
   });
-  const doQue = consulta.categoria ? ` com ${consulta.categoria.name}` : (consulta.termo ? ` com ${consulta.termo}` : '');
+  // Categoria e termo juntos somam só parte da categoria, e a frase diz isso.
+  const comTermo = consulta.termo ? ` com ${consulta.termo}` : '';
+  const doQue = consulta.categoria
+    ? `${comTermo}${comTermo ? ' em' : ' com'} ${consulta.categoria.name}`
+    : comTermo;
   const filtro = `${doQue}${naConta}`;
 
   if (consulta.tipo === 'saidas') {
@@ -145,4 +150,17 @@ export function responderConsulta({ consulta, transacoes, dataReferencia }) {
   }
   if (encontradas.length === 0) return `${quando}, não encontrei entradas${filtro}.`;
   return `${quando}, você recebeu ${formatCurrency(somar(encontradas))}${filtro}, em ${contagem(encontradas.length, 'entrada', 'entradas')}.`;
+}
+
+// O que a memória da conversa guarda depois da resposta: a conta e a
+// categoria para "nessa conta"/"essa categoria", e esta consulta como a
+// última, para as regras não refinarem uma pergunta anterior.
+export function memoriaDaConsulta(consulta, resposta) {
+  return {
+    account: consulta.conta?.name ?? null,
+    category: consulta.categoria?.name ?? null,
+    queryType: 'uni_interpret_consulta',
+    queryParams: { kind: 'uni_interpret_consulta' },
+    response: resposta,
+  };
 }

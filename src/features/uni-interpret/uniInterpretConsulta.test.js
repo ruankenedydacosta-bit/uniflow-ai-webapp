@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { consultaRespondivel, periodoDaConsulta, responderConsulta, rotuloDoPeriodo } from './uniInterpretConsulta.js';
+import {
+  consultaRespondivel,
+  memoriaDaConsulta,
+  periodoDaConsulta,
+  responderConsulta,
+  rotuloDoPeriodo,
+} from './uniInterpretConsulta.js';
 
 // Sexta, 02/10/2026.
 const HOJE = '2026-10-02';
@@ -107,4 +113,21 @@ test('resumo junta entradas e saídas, sem saldo', () => {
     responder({ consulta: consulta({ tipo: 'resumo' }), transacoes: [], dataReferencia: HOJE }),
     'Neste mês, você não registrou entradas nem saídas.',
   );
+});
+
+test('categoria e termo juntos: a frase diz que é só parte da categoria', () => {
+  assert.equal(
+    responder({ consulta: consulta({ categoria: SAUDE, termo: 'farmácia' }), transacoes: TRANSACOES, dataReferencia: HOJE }),
+    'Neste mês, você gastou R$ 120,10 com farmácia em Saúde, em 1 saída.',
+  );
+});
+
+test('memória guarda conta e categoria e troca a última consulta', () => {
+  assert.deepEqual(memoriaDaConsulta(consulta({ categoria: SAUDE, conta: NUBANK }), 'Neste mês...'), {
+    account: 'Nubank',
+    category: 'Saúde',
+    queryType: 'uni_interpret_consulta',
+    queryParams: { kind: 'uni_interpret_consulta' },
+    response: 'Neste mês...',
+  });
 });

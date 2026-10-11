@@ -87,7 +87,12 @@ import {
   interpretacaoParaPlano,
   interpretacaoParaRascunho,
 } from '../uni-interpret/uniInterpretRoteamento.js';
-import { consultaRespondivel, periodoDaConsulta, responderConsulta } from '../uni-interpret/uniInterpretConsulta.js';
+import {
+  consultaRespondivel,
+  memoriaDaConsulta,
+  periodoDaConsulta,
+  responderConsulta,
+} from '../uni-interpret/uniInterpretConsulta.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
 import {
@@ -4406,6 +4411,7 @@ export default function UniChatPage({ variant = 'full' }) {
           if (uniTurnTokenRef.current !== turnToken) return true;
           if (resposta) {
             setIsTyping(false);
+            conversationalMemoryRef.current.remember(memoriaDaConsulta(interpretacao.consulta, resposta));
             createAssistantResponse(resposta, { deduplicateNarration: false });
             return true;
           }

@@ -228,26 +228,35 @@ test('consulta: troca apelidos pelos registros e mantém período e termo', () =
   });
 });
 
-test('consulta: categoria de outro tipo, apelido inventado ou sem tipo de soma não filtra', () => {
-  assert.equal(validarInterpretacao(consulta({ categoria: C.sal }), CONTEXTO).consulta.categoria, null);
-  assert.deepEqual(validarInterpretacao(consulta({ categoria: C.sal }), CONTEXTO).consulta.ajustes, ['categoria_descartada']);
-  assert.equal(validarInterpretacao(consulta({ categoria: 'c99', conta: 'k99' }), CONTEXTO).consulta.conta, null);
-  assert.equal(validarInterpretacao(consulta({ tipo: 'entradas', categoria: C.sal }), CONTEXTO).consulta.categoria.id, 'cat-sal');
-  assert.equal(validarInterpretacao(consulta({ tipo: 'resumo', categoria: C.ali }), CONTEXTO).consulta.categoria, null);
+test('consulta: filtro que o app não aplica vira outra, em vez de somar tudo', () => {
+  const resultado = (campos) => {
+    const { tipo, categoria, conta, ajustes } = validarInterpretacao(consulta(campos), CONTEXTO).consulta;
+    return { tipo, categoria: categoria?.id ?? null, conta: conta?.id ?? null, ajustes };
+  };
+  assert.deepEqual(resultado({ categoria: C.sal }), { tipo: 'outra', categoria: null, conta: null, ajustes: ['categoria_descartada'] });
+  assert.deepEqual(resultado({ categoria: 'c99' }), { tipo: 'outra', categoria: null, conta: null, ajustes: ['categoria_descartada'] });
+  assert.deepEqual(resultado({ conta: 'k99' }), { tipo: 'outra', categoria: null, conta: null, ajustes: ['conta_descartada'] });
+  assert.deepEqual(resultado({ tipo: 'entradas', categoria: C.sal }), { tipo: 'entradas', categoria: 'cat-sal', conta: null, ajustes: [] });
+  assert.deepEqual(resultado({ tipo: 'resumo', conta: K.pp }), { tipo: 'resumo', categoria: null, conta: 'conta-pp', ajustes: [] });
+  assert.deepEqual(resultado({ tipo: 'resumo', categoria: C.ali }), { tipo: 'outra', categoria: null, conta: null, ajustes: ['categoria_descartada'] });
+  assert.equal(resultado({ tipo: 'resumo', termo: 'Uber' }).tipo, 'outra');
 });
 
-test('consulta: período inválido vira o mês atual; sem fim vai até hoje; futuro vira outra', () => {
+test('consulta: sem período vale o mês atual; sem fim vai até hoje; o resto vira outra', () => {
   const periodo = (inicio, fim) => {
     const { tipo, inicio: i, fim: f, ajustes } = validarInterpretacao(consulta({ inicio, fim }), CONTEXTO).consulta;
     return { tipo, inicio: i, fim: f, ajustes };
   };
-  assert.deepEqual(periodo('2026-09-31', '2026-10-01'), { tipo: 'saidas', inicio: null, fim: null, ajustes: [] });
-  assert.deepEqual(periodo('2026-09-10', '2026-09-01'), { tipo: 'saidas', inicio: null, fim: null, ajustes: [] });
-  assert.deepEqual(periodo(null, '2026-09-30'), { tipo: 'saidas', inicio: null, fim: null, ajustes: [] });
+  assert.deepEqual(periodo(null, null), { tipo: 'saidas', inicio: null, fim: null, ajustes: [] });
   assert.deepEqual(periodo('2026-03-01', null), { tipo: 'saidas', inicio: '2026-03-01', fim: '2026-10-02', ajustes: [] });
+  assert.deepEqual(periodo(null, '2026-08-15'), { tipo: 'outra', inicio: null, fim: '2026-08-15', ajustes: ['periodo_invalido'] });
+  assert.equal(periodo('2026-09-31', '2026-10-01').ajustes[0], 'periodo_invalido');
+  assert.equal(periodo('2026-09-10', '2026-09-01').ajustes[0], 'periodo_invalido');
   assert.deepEqual(periodo('2026-11-01', '2026-11-30'), {
     tipo: 'outra', inicio: '2026-11-01', fim: '2026-11-30', ajustes: ['periodo_futuro'],
   });
+  assert.deepEqual(periodo('2020-01-01', null).ajustes, ['periodo_longo']);
+  assert.deepEqual(periodo('2025-01-01', '2026-10-02').ajustes, []);
 });
 
 test('consulta: tipo fora do contrato ou consulta ausente vira outra', () => {

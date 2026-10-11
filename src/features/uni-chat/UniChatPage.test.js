@@ -3956,7 +3956,8 @@ test('#80: consulta com parâmetros soma o período inteiro no banco; outra perg
   const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
   const consulta = body.slice(body.indexOf('case ROTAS_INTERPRETACAO.CONSULTA:'), body.indexOf('case ROTAS_INTERPRETACAO.AGENDA:'));
   assert.match(consulta, /if \(consultaRespondivel\(interpretacao\.consulta\)\) \{\s*const resposta = await responderConsultaDoModelo\(interpretacao\.consulta, interpretacao\.dataReferencia\);\s*if \(uniTurnTokenRef\.current !== turnToken\) return true;/);
-  assert.match(consulta, /if \(resposta\) \{\s*setIsTyping\(false\);\s*createAssistantResponse\(resposta, \{ deduplicateNarration: false \}\);\s*return true;\s*\}/);
+  // A memória troca a última consulta: as regras não refinam uma pergunta anterior.
+  assert.match(consulta, /if \(resposta\) \{\s*setIsTyping\(false\);\s*conversationalMemoryRef\.current\.remember\(memoriaDaConsulta\(interpretacao\.consulta, resposta\)\);\s*createAssistantResponse\(resposta, \{ deduplicateNarration: false \}\);\s*return true;\s*\}/);
   assert.match(consulta, /setIsTyping\(false\);\s*runDeterministicFinancialFlow\(text, historySnapshot, true\);\s*return true;\s*\}\s*$/);
 
   // O chat só carrega as movimentações recentes: a soma vem do período
