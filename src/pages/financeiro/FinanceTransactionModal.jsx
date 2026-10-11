@@ -9,7 +9,8 @@ import Modal from '../../components/ui/Modal';
 import OutlineButton from '../../components/ui/OutlineButton';
 import Segmented from '../../components/ui/Segmented/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
-import { PhCaretDownIcon, PhTrashIcon } from '../../features/simplified-app/SimplifiedIcons.jsx';
+import { PhCaretDownIcon, PhCheckIcon, PhTrashIcon } from '../../features/simplified-app/SimplifiedIcons.jsx';
+import { celebrarSalvar, fecharFolha } from '../../features/simplified-app/movimentoDeSalvar.js';
 import { cx } from '../../utils/cx';
 import { formatCurrency } from '../../utils/formatters';
 import styles from './FinanceTransactionModal.module.css';
@@ -251,6 +252,9 @@ function DeleteConfirmationDialog({
 // sobe sobre a tela, o Tipo vira um segmented, o botão principal diz
 // "Salvar saída/entrada/transferência" e o rodapé "Fechar" dá lugar a
 // "Cancelar" na própria linha de ação. O default 'dialog' é o desktop.
+// Na folha, `onCreated` recebe a movimentação nova depois que o botão
+// comemora e a folha desce; quem abriu fecha o Modal nela, como em
+// `onEdited`. Sem `onCreated`, a folha continua aberta e limpa.
 function FinanceTransactionModal({
   accountState,
   canDeleteTransaction = () => true,
@@ -264,6 +268,7 @@ function FinanceTransactionModal({
   initialType = 'expense',
   onChanged,
   onClose,
+  onCreated,
   onDeleted,
   onEdited,
   open,
@@ -294,6 +299,9 @@ function FinanceTransactionModal({
   const [listFilters, setListFilters] = useState(DEFAULT_TRANSACTION_FILTERS);
   const [listFiltersOpen, setListFiltersOpen] = useState(false);
   const [periodMode, setPeriodMode] = useState('all');
+  // Salvou e a folha está comemorando e descendo: nada mais é aceito.
+  const [concluindo, setConcluindo] = useState(false);
+  const saveButtonRef = useRef(null);
   const categoriesById = useMemo(
     () => new Map(categoryState.categories.map((category) => [category.id, category])),
     [categoryState.categories],
@@ -392,6 +400,7 @@ function FinanceTransactionModal({
 
   function handleClose() {
     if (transactionState.isMutating) return;
+    if (concluindo) return;
     if (isDeleteConfirmOpen) {
       setPendingDeleteId(null);
       setPendingDeleteSnapshot(null);
@@ -448,6 +457,7 @@ function FinanceTransactionModal({
   async function handleSubmit(event) {
     event.preventDefault();
     if (transactionState.isMutating || !canManage) return;
+    if (concluindo) return;
     setBatchError(null);
 
     // Edição de uma transação que pertence a um grupo de parcelas: aplica as
@@ -471,12 +481,7 @@ function FinanceTransactionModal({
           return;
         }
       }
-      await onChanged?.();
-      if (onEdited) {
-        await onEdited(editingTransaction);
-        return;
-      }
-      resetForm();
+      await concludeSave(onEdited && (() => onEdited(editingTransaction)));
       return;
     }
 
@@ -493,15 +498,16 @@ function FinanceTransactionModal({
         return;
       }
 
+      let firstInstallment = null;
       for (const payload of payloads) {
         const result = await transactionState.saveTransaction(payload, null);
         if (result.error) {
           setBatchError(result.error);
           return;
         }
+        firstInstallment ??= result.data;
       }
-      await onChanged?.();
-      resetForm();
+      await concludeSave(onCreated && (() => onCreated(firstInstallment)));
       return;
     }
 
@@ -514,12 +520,41 @@ function FinanceTransactionModal({
     );
 
     if (!result.error) {
+      const onDone = editingId
+        ? onEdited && (() => onEdited(editingTransaction))
+        : onCreated && (() => onCreated(result.data));
+      await concludeSave(onDone);
+    }
+  }
+
+  // Depois de salvar. Na folha, com quem receba o resultado, o botão
+  // comemora e a folha desce antes (#145); a recarga dos dados corre junto
+  // com a comemoração. Sem quem receba, o formulário só é limpo.
+  async function concludeSave(onDone) {
+    if (!onDone) {
       await onChanged?.();
-      if (editingId && onEdited) {
-        await onEdited(editingTransaction);
-        return;
-      }
       resetForm();
+      return;
+    }
+    if (!isSheet) {
+      await onChanged?.();
+      await onDone();
+      return;
+    }
+    setConcluindo(true);
+    try {
+      const reload = onChanged?.();
+      await celebrarSalvar(saveButtonRef.current);
+      try {
+        await reload;
+      } catch {
+        // O salvamento já deu certo: a folha fecha mesmo se a recarga
+        // falhar, e a lista se acerta na próxima recarga.
+      }
+      await fecharFolha(saveButtonRef.current?.closest('[role="dialog"]'));
+      await onDone();
+    } finally {
+      setConcluindo(false);
     }
   }
 
@@ -899,11 +934,19 @@ function FinanceTransactionModal({
                 type="submit"
                 loading={transactionState.isMutating}
                 disabled={!canSubmit}
+                ref={saveButtonRef}
                 title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
               >
-                {isSheet
-                  ? SHEET_SUBMIT_LABELS[form.transaction_type] ?? 'Salvar movimentação'
-                  : editingId ? 'Salvar lançamento' : 'Criar lançamento'}
+                {isSheet ? (
+                  <>
+                    <span className={styles.saveLabel} data-salvar-rotulo>
+                      {SHEET_SUBMIT_LABELS[form.transaction_type] ?? 'Salvar movimentação'}
+                    </span>
+                    <span className={styles.saveCheck} data-salvar-check aria-hidden="true">
+                      <PhCheckIcon />
+                    </span>
+                  </>
+                ) : editingId ? 'Salvar lançamento' : 'Criar lançamento'}
               </Button>
               {isSheet ? (
                 <Button variant="ghost" onClick={handleClose} disabled={transactionState.isMutating}>

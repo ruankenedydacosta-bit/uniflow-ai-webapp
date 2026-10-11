@@ -52,3 +52,122 @@ export const LIMITE_DA_SEQUENCIA = 8;
 export function atrasosDaSequencia(quantidade, { inicio, intervalo, limite = LIMITE_DA_SEQUENCIA }) {
   return Array.from({ length: Math.min(quantidade, limite) }, (_, indice) => inicio + indice * intervalo);
 }
+
+// Contagem de número: anda rápido no começo e assenta no valor final
+// (ease-out cúbica, como no protótipo do Salto).
+export function valorDaContagem(de, para, progresso) {
+  const andado = Math.min(1, Math.max(0, progresso));
+  return de + (para - de) * (1 - (1 - andado) ** 3);
+}
+
+// Folha é o diálogo encostado no pé da tela. No desktop o Modal é um
+// diálogo no centro: abre sem sequência e fecha só sumindo.
+export function ehFolha(dialogo) {
+  return dialogo.getBoundingClientRect().bottom >= window.innerHeight - 1;
+}
+
+export function centroDe(elemento) {
+  const caixa = elemento.getBoundingClientRect();
+  return { x: caixa.left + caixa.width / 2, y: caixa.top + caixa.height / 2 };
+}
+
+// Cores das faíscas, na ordem em que se alternam.
+const CORES_DAS_FAISCAS = [
+  'var(--uf-app-brand-blue)',
+  'var(--uf-app-brand-violet)',
+  'var(--uf-app-brand-green)',
+  'var(--uf-app-brand-violet-text)',
+];
+
+// Para onde cada faísca voa: espalhadas em volta do ponto, com um pouco de
+// acaso no ângulo, na distância, no giro e no tempo de voo. `forca` escala
+// a distância (0,7 ao salvar, 1 ou mais nos marcos de meta).
+export function trajetoriasDasFaiscas(quantidade, forca, { voo, aleatorio = Math.random }) {
+  return Array.from({ length: quantidade }, (_, indice) => {
+    const angulo = (indice / quantidade) * Math.PI * 2 + aleatorio() * 0.5;
+    const distancia = (70 + aleatorio() * 80) * forca;
+    return {
+      dx: Math.cos(angulo) * distancia,
+      dy: Math.sin(angulo) * distancia,
+      giro: Math.round(aleatorio() * 540 - 270),
+      duracao: voo + aleatorio() * 400,
+      ponto: aleatorio() < 0.45,
+      cor: CORES_DAS_FAISCAS[indice % CORES_DAS_FAISCAS.length],
+    };
+  });
+}
+
+// Camada fixa por cima de tudo, que some quando a última animação acaba.
+function camadaDeEfeito(animacoesDe) {
+  const camada = document.createElement('div');
+  Object.assign(camada.style, {
+    position: 'fixed',
+    inset: '0',
+    zIndex: 'var(--uf-z-toast)',
+    overflow: 'hidden',
+    pointerEvents: 'none',
+  });
+  camada.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(camada);
+  const animacoes = animacoesDe(camada).filter(Boolean);
+  Promise.allSettled(animacoes.map((animacao) => animacao.finished)).then(() => camada.remove());
+  if (!animacoes.length) camada.remove();
+}
+
+// Faíscas: só ao salvar e nos marcos de meta, nunca em erro (épico #148).
+export function soltarFaiscas({ x, y, quantidade, forca }) {
+  if (prefereMovimentoReduzido()) return;
+  const voo = lerDuracao('faisca');
+  const curva = lerCurva('faisca');
+  camadaDeEfeito((camada) => trajetoriasDasFaiscas(quantidade, forca, { voo }).map((faisca) => {
+    const largura = faisca.ponto ? 6 : 4;
+    const altura = faisca.ponto ? 6 : 10;
+    const elemento = document.createElement('span');
+    Object.assign(elemento.style, {
+      position: 'absolute',
+      left: `${x - largura / 2}px`,
+      top: `${y - altura / 2}px`,
+      width: `${largura}px`,
+      height: `${altura}px`,
+      borderRadius: faisca.ponto ? '50%' : '2px',
+      background: faisca.cor,
+      boxShadow: `0 0 6px ${faisca.cor}`,
+    });
+    camada.appendChild(elemento);
+    return animar(elemento, [
+      { transform: 'translate(0, 0) rotate(0deg) scale(.4)', opacity: 1 },
+      {
+        transform: `translate(${faisca.dx * 0.85}px, ${faisca.dy * 0.85 - 10}px) rotate(${faisca.giro / 2}deg) scale(1)`,
+        opacity: 1,
+        offset: 0.45,
+      },
+      { transform: `translate(${faisca.dx}px, ${faisca.dy + 60}px) rotate(${faisca.giro}deg) scale(.6)`, opacity: 0 },
+    ], { duracao: faisca.duracao, curva, preencher: 'forwards' });
+  }));
+}
+
+// Anel que se expande e se apaga em volta do ponto.
+export function acenderAnel({ x, y, tamanho, cor }) {
+  if (prefereMovimentoReduzido()) return;
+  camadaDeEfeito((camada) => {
+    const anel = document.createElement('span');
+    Object.assign(anel.style, {
+      position: 'absolute',
+      left: `${x - tamanho / 2}px`,
+      top: `${y - tamanho / 2}px`,
+      width: `${tamanho}px`,
+      height: `${tamanho}px`,
+      borderRadius: '50%',
+      boxShadow: `inset 0 0 0 2px ${cor}, 0 0 16px ${cor}`,
+    });
+    camada.appendChild(anel);
+    return [animar(anel, [
+      { transform: 'scale(1)', opacity: 0.9 },
+      { transform: 'scale(2.2)', opacity: 0 },
+    ], { duracao: lerDuracao('anel'), curva: lerCurva('saida'), preencher: 'forwards' })];
+  });
+}
+
+export function esperar(milissegundos) {
+  return new Promise((resolver) => { setTimeout(resolver, milissegundos); });
+}
