@@ -159,11 +159,17 @@ test('looksLikeUnclassifiedFinancialStatement detecta pedido falado com plural, 
 
 // BUG REAL EM PRODUCAO (voz, 10/10/2026): a Uni da conversa por voz disse
 // que não conseguia registrar movimentações.
-test('looksLikeUnclassifiedFinancialStatement detecta pedido com "lançamento" ou "movimentação" e verbo de criação', () => {
+test('looksLikeUnclassifiedFinancialStatement detecta pedido com "lançamento" ou "movimentação"', () => {
   assert.equal(looksLikeUnclassifiedFinancialStatement('Fazer um lançamento de teste: descrição “teste”, categoria “educação”, valor 350 reais, na data de cinco de outubro deste ano.'), true);
   assert.equal(looksLikeUnclassifiedFinancialStatement('Faz um lançamento de 350 reais em educação'), true);
   assert.equal(looksLikeUnclassifiedFinancialStatement('Cria uma movimentação de trezentos e cinquenta reais'), true);
   assert.equal(looksLikeUnclassifiedFinancialStatement('Insere 80 reais de padaria'), true);
+});
+
+test('looksLikeUnclassifiedFinancialStatement NÃO trata pergunta sobre lançamentos nem criação de conta como lançamento', () => {
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Quais lançamentos acima de 200 reais eu fiz esse mês?'), false);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Me mostra as transações de mais de 100 reais'), false);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Criar uma conta Nubank com 500 reais de saldo'), false);
 });
 
 test('looksLikeUnclassifiedFinancialStatement NÃO dispara sem nenhum valor monetário real', () => {

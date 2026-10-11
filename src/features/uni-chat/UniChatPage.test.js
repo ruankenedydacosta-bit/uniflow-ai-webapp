@@ -3895,7 +3895,7 @@ test('edição de lançamento salvo: pedido e resposta só são tratados sem ras
   assert.ok(desvio > -1);
   // Depois de conversa comum e antes da agenda: "muda a data do mercado pra
   // ontem" é classificado como agenda e precisa ser testado como edição antes.
-  assert.ok(desvio > page.indexOf("if (!roteiaPeloModelo && declaredIntent === 'conversation_common') {"));
+  assert.ok(desvio > page.indexOf("if (declaredIntent === 'conversation_common' && (!roteiaPeloModelo || hasPendingConversation)) {"));
   assert.ok(desvio < page.indexOf('if (hasAgendaConversation) {\n      syncMessageToSupabase(userMsg);'));
   const trecho = page.slice(desvio, desvio + 1400);
   assert.match(trecho, /if \(!hasPendingFinancialConversation && !hasPendingAgendaConversation\) \{/);
@@ -3973,14 +3973,19 @@ test('pergunta sobre a categoria com o card na tela não vira categoria nova', a
 test('#80: com IA, o uni-interpret decide a frase nova antes das regras fixas', async () => {
   const page = await source('UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
-  assert.match(body, /const roteiaPeloModelo = Boolean\(effectiveWorkspace\?\.id && uniInterpretClient\.isSupported\(\)\);/);
+  assert.match(body, /const roteiaPeloModelo = Boolean\(effectiveWorkspace\?\.id && uniInterpretClient\.isSupported\(\)\)\s*&& !INTENTS_FORA_DO_INTERPRETADOR\.has\(declaredIntent\);/);
+  // Saldo declarado e meta têm fluxo próprio fora do contrato do modelo.
+  assert.match(page, /const INTENTS_FORA_DO_INTERPRETADOR = new Set\(\[\s*'set_balance',\s*'ambiguous_balance_or_income',\s*'create_goal',\s*\]\);/);
   const modelIdx = body.indexOf('void rotearPeloModelo(functionalText,');
   const rulesIdx = body.indexOf('function runRuleBasedFlow() {');
   assert.ok(modelIdx > -1 && rulesIdx > modelIdx, 'o modelo roda antes das regras');
   assert.match(body, /if \(!handled\) runRuleBasedFlow\(\);/);
-  // Atalhos de regex não decidem a intenção quando o modelo está disponível.
-  assert.match(body, /if \(!roteiaPeloModelo && declaredIntent === 'conversation_common'\) \{/);
-  assert.match(body, /\(!roteiaPeloModelo && declaredIntent\.startsWith\('agenda_'\)\)/);
+  // Sem nada pendente, os atalhos de regex não decidem a intenção. Com
+  // rascunho na tela, cumprimento e agenda explícita continuam tirando a vez
+  // dele, porque o modelo não é consultado nesse caso.
+  assert.match(body, /if \(declaredIntent === 'conversation_common' && \(!roteiaPeloModelo \|\| hasPendingConversation\)\) \{/);
+  assert.match(body, /declaredIntent\.startsWith\('agenda_'\) && \(!roteiaPeloModelo \|\| hasPendingFinancialConversation\)/);
+  assert.ok(body.indexOf('const hasPendingFinancialConversation') < body.indexOf('const hasAgendaConversation'));
 });
 
 test('#80: lançamento e plano interpretados pelo modelo nunca vão ao chat geral', async () => {
@@ -3992,4 +3997,15 @@ test('#80: lançamento e plano interpretados pelo modelo nunca vão ao chat gera
   assert.match(lancamento, /attemptFinancialPlan\(text\)/);
   assert.doesNotMatch(lancamento, /handleUnresolvedMessage/);
   assert.doesNotMatch(lancamento, /não consigo registrar/i);
+  // Sem plano, o parser de uma operação ainda tenta.
+  assert.match(lancamento, /if \(!handled\) runDeterministicFinancialFlow\(text, historySnapshot\);/);
+  // Turno trocado durante a frase natural não deixa rascunho invisível.
+  assert.match(lancamento, /financialConversation\.reset\(\);/);
+});
+
+test('#80: sem interpretação ou sem entender, as regras fixas tentam antes do chat geral', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
+  assert.match(body, /if \(!rota \|\| rota === ROTAS_INTERPRETACAO\.NAO_ENTENDI\) \{\s*setIsTyping\(false\);\s*return false;\s*\}/);
+  assert.doesNotMatch(body, /handleUnresolvedMessage/);
 });
