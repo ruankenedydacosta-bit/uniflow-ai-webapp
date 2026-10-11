@@ -146,8 +146,8 @@ test('category_inference e financial_plan nao existem mais na Edge Function', ()
   assert.doesNotMatch(EDGE_SOURCE, /category_inference|financial_plan|CATEGORY_INFERENCE|FINANCIAL_PLAN/);
 });
 
-// #80: os modos financial_intent e financial_response_compose sairam -- a
-// consulta vem do uni-interpret. Um PWA antigo que ainda mande esses modos
+// #80: os modos financial_intent e financial_response_compose sairam -- so
+// eram chamados com uma flag desligada em todos os ambientes. Um PWA antigo que ainda mande esses modos
 // cai no financeiro sem `system` e recebe 400, sem gastar token.
 test('financial_intent e financial_response_compose nao existem mais na Edge Function', () => {
   assert.doesNotMatch(EDGE_SOURCE, /financial_intent|financial_response_compose|FINANCIAL_INTENT|FINANCIAL_RESPONSE_COMPOSE/);

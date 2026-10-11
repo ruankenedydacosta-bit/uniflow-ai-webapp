@@ -1093,7 +1093,7 @@ export default function UniChatPage({ variant = 'full' }) {
   // o codigo do erro ao chamador).
   const aiCancelledRef = useRef(false);
   // TOKEN DE TURNO (S4): incrementado a cada sendText. Cadeias assincronas
-  // (LLM, plano financeiro, semantica) capturam o token no inicio e so
+  // (LLM, plano financeiro) capturam o token no inicio e so
   // publicam a resposta se o token ainda for o atual -- resposta antiga
   // chegando depois de um turno novo nunca sobrescreve a conversa atual.
   const uniTurnTokenRef = useRef(0);

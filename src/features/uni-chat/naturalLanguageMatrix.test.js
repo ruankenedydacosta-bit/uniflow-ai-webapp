@@ -42,12 +42,25 @@ function buildSnapshot(overrides = {}) {
   });
 }
 
-// Valores em reais citados no texto ("R$ 1.234,56").
+// "R$ 3.000,00" e "R$ 3.000" têm ponto de milhar; "R$ 3.5" tem ponto decimal.
+function valorEmReais(bruto) {
+  const limpo = bruto.replace(/^-?R\$\s?/, '');
+  let normalizado;
+  if (limpo.includes(',')) {
+    normalizado = limpo.replace(/\./g, '').replace(',', '.');
+  } else {
+    const grupos = limpo.split('.');
+    normalizado = grupos.length > 1 && grupos[grupos.length - 1].length === 3 ? grupos.join('') : limpo;
+  }
+  const valor = Number(normalizado);
+  if (!Number.isFinite(valor)) return null;
+  return bruto.trim().startsWith('-') ? -Math.abs(valor) : valor;
+}
+
+// Valores em reais citados no texto. A captura termina em dígito, para não
+// engolir o ponto final da frase.
 function valoresEmReais(texto) {
-  return (texto.match(/-?R\$\s?-?\d+(?:[.,]\d+)*/g) ?? []).map((valor) => {
-    const numero = Number(valor.replace(/^-?R\$\s?/, '').replace(/\./g, '').replace(',', '.'));
-    return valor.trim().startsWith('-') ? -numero : numero;
-  });
+  return (texto.match(/-?R\$\s?-?\d+(?:[.,]\d+)*/g) ?? []).map(valorEmReais).filter((valor) => valor !== null);
 }
 
 function numerosDe(valor, saida = []) {
@@ -255,7 +268,7 @@ test('Matriz [longa/curta]: tamanho da frase não afeta a segurança do motor --
 });
 
 // ── 18. Erros de digitação ──────────────────────────────────────────────
-test('Matriz [erro de digitação]: typos nunca causam exceção -- o motor determinístico responde honestamente ou não reconhece (cai no fallback semântico em produção)', () => {
+test('Matriz [erro de digitação]: typos nunca causam exceção -- o motor determinístico responde honestamente ou não reconhece (cai no chat geral em produção)', () => {
   const snapshot = buildSnapshot();
   for (const { phrase } of PHRASE_MATRIX.filter((p) => p.category === 'erro_digitacao')) {
     assert.doesNotThrow(() => resolveFinancialQuery({ text: phrase, snapshot, referenceDate: REFERENCE_DATE }));
