@@ -153,3 +153,9 @@ test('financial_intent e financial_response_compose nao existem mais na Edge Fun
   assert.doesNotMatch(EDGE_SOURCE, /financial_intent|financial_response_compose|FINANCIAL_INTENT|FINANCIAL_RESPONSE_COMPOSE/);
   assert.doesNotMatch(EDGE_SOURCE, /json_object/);
 });
+
+// #80: a Edge Function ignora `tools` do cliente. Sem isso, um usuário que
+// editasse o corpo da chamada podia oferecer ferramentas à OpenAI.
+test('tools do cliente nunca chegam a OpenAI', () => {
+  assert.doesNotMatch(EDGE_SOURCE, /payload\.tools|normalizeTools|tool_choice/);
+});

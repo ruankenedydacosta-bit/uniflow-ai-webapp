@@ -11,14 +11,9 @@
 // responde 503 quando ela falta e 429 quando a pessoa atinge o teto diario;
 // nos dois casos o frontend cai no fluxo deterministico.
 
-// Sprint 1 (IA Conversacional) — flags adicionais, também desligadas por
-// padrão, seguindo exatamente o mesmo critério acima:
-//   - VITE_UNI_LLM_TOOLS_ENABLED: envia os 6 tools de leitura (Fase 20.2)
-//     para a OpenAI no modo financeiro. Sem ela, o payload nunca inclui
-//     `tools` — comportamento idêntico ao de antes desta sprint.
+// Sprint 1 (IA Conversacional) — flag adicional, desligada por padrão:
 //   - VITE_UNI_LLM_PHRASING_ENABLED: liga a ponte "fato estruturado → frase
 //     natural" usada para perguntas de clarificação (ver phraseStructuredFact.js).
-export const UNI_LLM_TOOLS_FLAG = 'VITE_UNI_LLM_TOOLS_ENABLED';
 export const UNI_LLM_PHRASING_FLAG = 'VITE_UNI_LLM_PHRASING_ENABLED';
 
 function readEnv() {
@@ -27,10 +22,6 @@ function readEnv() {
   } catch {
     return {};
   }
-}
-
-export function isLlmToolsFlagEnabled(env = readEnv()) {
-  return env?.[UNI_LLM_TOOLS_FLAG] === 'true';
 }
 
 export function isLlmPhrasingFlagEnabled(env = readEnv()) {

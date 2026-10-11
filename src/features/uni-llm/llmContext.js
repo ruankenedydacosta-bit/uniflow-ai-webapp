@@ -1,13 +1,11 @@
 // Montagem do contexto minimo, sanitizado e truncado enviado ao LLM.
 import { buildPersonalityInstructions } from '../uni-personality/index.js';
 import { buildContextGuidanceLines } from '../uni-chat/uniContextCopy.js';
-import { buildOpenAiToolsSchema } from '../uni-engine/tool-calling/financial-tools/index.js';
 import {
   buildConversationStyleInstructions,
   resolveConversationStyle,
   resolveConversationStyleTokenBudget,
 } from './conversationStyle.js';
-import { isLlmToolsFlagEnabled } from './llmConfig.js';
 
 export const MAX_HISTORY_MESSAGES = 8;
 export const MAX_MESSAGE_CHARS = 500;
@@ -182,12 +180,6 @@ export function buildLlmPayload({
   return {
     system,
     messages: [...history, { role: 'user', content: userText }].filter((m) => m.content),
-    // Sprint 1 (IA Conversacional): só inclui `tools` com a flag explícita
-    // ligada (default desligada) -- sem ela, `tools` fica `undefined` e o
-    // payload é byte-a-byte igual ao de antes desta sprint. As definições
-    // vêm de FINANCIAL_READ_TOOL_META (Fase 20.2, único ponto de verdade),
-    // nunca duplicadas aqui.
-    tools: isLlmToolsFlagEnabled() ? buildOpenAiToolsSchema() : undefined,
     // BLOCO A1: conversationStyle e o orcamento de tokens correspondente vao
     // no meta -- o orquestrador repassa maxOutputTokens ao provider/Edge
     // Function; nunca confiavel cegamente no servidor (que sempre clampa).

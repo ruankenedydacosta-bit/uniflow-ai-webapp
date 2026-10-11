@@ -37,10 +37,6 @@ export function createUniLlmOrchestrator({ provider, logger = console } = {}) {
         // conversationStyle (ver conversationStyle.js) -- a Edge Function
         // sempre clampa este valor, nunca confia cegamente no cliente.
         maxOutputTokens: payload.meta?.maxOutputTokens,
-        // Sprint 1 (IA Conversacional): `undefined` quando a flag de tools
-        // está desligada -- payload.tools já vem undefined nesse caso
-        // (buildLlmPayload), então esta chamada fica idêntica à de antes.
-        tools: payload.tools,
       });
     } catch {
       // provider e desenhado para nao lancar, mas garantimos o fallback
