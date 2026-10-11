@@ -792,8 +792,12 @@ export default function UniChatPage({ variant = 'full' }) {
       setIsTyping(false);
     }
     if (activeIdRef.current !== conversationId || uniTurnTokenRef.current !== turnToken) return;
+    // Os botões do card seguem ativos durante a espera: se a pessoa tocou em
+    // Confirmar, Cancelar ou Editar, o rascunho já é outro e a resposta do
+    // modelo não vale mais.
+    if (rascunhoAtualRef.current !== action) return;
 
-    const correcao = correcaoDoRascunho(interpretacao, action);
+    const correcao = correcaoDoRascunho(interpretacao, action, { categorias: categoryState.categories });
     if (!correcao) {
       pelasRegras();
       return;
@@ -804,22 +808,16 @@ export default function UniChatPage({ variant = 'full' }) {
         ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
         : message
     )));
-    const temOverrides = Object.keys(correcao.overrides).length > 0;
 
     // Categoria pedida pelo nome e fora do catálogo: o card de criar a
     // categoria vem antes, e o rascunho volta com os outros campos da frase.
     if (correcao.novaCategoria) {
-      const draftAction = temOverrides
+      const draftAction = Object.keys(correcao.overrides).length
         ? financialConversation.provideInput(correcao.overrides).action ?? action
         : action;
-      if (startCategoryDependency(correcao.novaCategoria, draftAction)) {
-        marcarCardAtualizado();
-        return;
-      }
-      if (!temOverrides) {
-        pelasRegras();
-        return;
-      }
+      startCategoryDependency(correcao.novaCategoria, draftAction);
+      marcarCardAtualizado();
+      return;
     }
 
     if (pendingAction) {
@@ -1114,6 +1112,11 @@ export default function UniChatPage({ variant = 'full' }) {
   const [conversations, setConversations] = useState(initialChatState.conversations);
   const [activeId, setActiveId] = useState(initialChatState.activeId);
   const [pendingAction, setPendingAction] = useState(null);
+  // Rascunho de agora, para quem volta de uma espera saber se ele mudou.
+  const rascunhoAtualRef = useRef(null);
+  useEffect(() => {
+    rascunhoAtualRef.current = pendingAction ?? financialConversation.state.action;
+  });
   const [pendingActionStack, setPendingActionStack] = useState(null);
   const agendaConversationRef = useRef(null);
   if (!agendaConversationRef.current) {

@@ -196,3 +196,19 @@ test('resposta ao rascunho que não muda nada ou não é correção dele fica co
   assert.equal(correcaoDoRascunho({ intent: 'correcao', operacoes: [{ ...OPERACAO_IMPOSTOS, parcelas: 3 }] }, RASCUNHO_IMPOSTOS), null);
   assert.equal(correcaoDoRascunho(null, RASCUNHO_IMPOSTOS), null);
 });
+
+test('resposta ao rascunho: descrição reescrita sem mudança e valor em texto não contam', () => {
+  const operacao = { ...OPERACAO_IMPOSTOS, valor: '5500', descricao: 'impostos', novaCategoria: null, categoria: { id: 'cat-outras', name: 'Outras despesas' }, data: '2026-10-11' };
+  assert.equal(correcaoDoRascunho({ intent: 'correcao', operacoes: [operacao] }, { ...RASCUNHO_IMPOSTOS, amount: 5500 }), null);
+});
+
+test('resposta ao rascunho: categoria "nova" que já existe com outro acento usa a existente', () => {
+  const categorias = [
+    { id: 'cat-ali', name: 'Alimentação', category_type: 'expense', is_active: true },
+    { id: 'cat-sal', name: 'Alimentacao', category_type: 'income', is_active: true },
+  ];
+  assert.deepEqual(
+    correcaoDoRascunho({ intent: 'correcao', operacoes: [{ ...OPERACAO_IMPOSTOS, novaCategoria: 'alimentacao' }] }, RASCUNHO_IMPOSTOS, { categorias }),
+    { overrides: { amount: 5500, date: '2026-10-15', categoryId: 'cat-ali' }, novaCategoria: null },
+  );
+});

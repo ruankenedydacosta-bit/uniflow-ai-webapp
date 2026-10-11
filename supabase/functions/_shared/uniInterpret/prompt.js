@@ -12,7 +12,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - meta: quer criar uma meta ou um objetivo de juntar dinheiro daqui para frente ("quero guardar 2 mil até dezembro"). Dinheiro que a pessoa já guardou ou separou é lancamento: transferencia, quando foi para uma poupança ou reserva dela. Perguntar sobre uma meta que já existe é consulta.
 - consulta: pergunta sobre os dados dele (gastos, entradas, quanto falta para uma meta).
 - agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento).
-- correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram.
+- correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
 - conversa: cumprimento, agradecimento, papo.
 - nao_entendi: nenhuma das anteriores com segurança.
 

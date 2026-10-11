@@ -3900,7 +3900,9 @@ test('#80: resposta ao rascunho vai ao uni-interpret antes das regras, que ficam
 
   const { body: leitura } = extractFunctionBody(page, 'async function lerRascunhoPeloModelo(text, action, pelasRegras) {');
   assert.match(leitura, /rascunho: montarRascunhoParaInterpretacao\(action\)/);
-  assert.match(leitura, /const correcao = correcaoDoRascunho\(interpretacao, action\);/);
+  assert.match(leitura, /const correcao = correcaoDoRascunho\(interpretacao, action, \{ categorias: categoryState\.categories \}\);/);
+  // Toque no card durante a espera: a resposta do modelo é descartada.
+  assert.match(leitura, /if \(rascunhoAtualRef\.current !== action\) return;/);
   assert.match(leitura, /if \(!correcao\) \{\s*pelasRegras\(\);/);
   assert.match(leitura, /uniTurnTokenRef\.current !== turnToken/);
   // Com o modelo lendo primeiro, a segunda chamada depois das regras sobra.
