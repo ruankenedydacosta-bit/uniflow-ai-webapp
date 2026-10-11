@@ -8,12 +8,12 @@ import {
   readRealtimeDraftReply,
   readRealtimeNamePronunciation,
   readRealtimeToolPhrase,
-  readRealtimeToolReply,
   REALTIME_TOOL_NAMES,
   REALTIME_TOOL_TIMEOUT_MS,
   resolveRealtimeToolOutcome,
   resolveScreenActionOutcome,
   snapshotRealtimeToolTurn,
+  snapshotRealtimeToolReply,
   snapshotScreenActionTurn,
   warnRepeatedRealtimeReply,
 } from './realtimeToolBridge.js';
@@ -133,8 +133,8 @@ export function useRealtimeUniConversation({
     const output = resolveRealtimeToolOutcome(messages, pending.turn);
     if (!output) return;
     const previousReply = lastToolReplyRef.current;
-    lastToolReplyRef.current = readRealtimeToolReply(output);
-    pending.finish(warnRepeatedRealtimeReply(output, previousReply));
+    lastToolReplyRef.current = snapshotRealtimeToolReply(messages, pending.turn);
+    pending.finish(warnRepeatedRealtimeReply(output, previousReply, pending.turn));
   }, [messages, isBusy]);
 
   useEffect(() => () => {

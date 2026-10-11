@@ -130,17 +130,3 @@ test('motivoParaNaoLerSemModelo: várias operações e parcela com valor', () =>
   assert.equal(motivoParaNaoLerSemModelo('quanto falta pagar do que comprei parcelado?'), null);
   assert.equal(motivoParaNaoLerSemModelo(''), null);
 });
-
-// BUG REAL EM PRODUÇÃO (voz, 11/10/2026): com a Uni perguntando o valor,
-// "Registrar uma despesa de cinco mil e quinhentos reais no dia quinze de
-// outubro" virava resposta de campo e perdia a data.
-test('pedido com verbo de registrar, nome do lançamento e valor é frase nova', () => {
-  assert.equal(
-    looksLikeFreshFinancialStatement('Registrar uma despesa de cinco mil e quinhentos reais no dia quinze de outubro, com a categoria Impostos.'),
-    true,
-  );
-  assert.equal(looksLikeFreshFinancialStatement('Adicione uma saída de 80 reais no Nubank'), true);
-  // Sem o nome do lançamento, o pedido ainda pode ser ajuste de campo.
-  assert.equal(looksLikeFreshFinancialStatement('Registrar com 150 reais'), false);
-  assert.equal(looksLikeFreshFinancialStatement('Registrar uma despesa'), false);
-});

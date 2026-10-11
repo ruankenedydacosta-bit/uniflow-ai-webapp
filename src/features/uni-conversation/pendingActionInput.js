@@ -169,12 +169,21 @@ export function resolvePendingActionInput({
   // do campo e recebiam "informe o campo que deseja corrigir". Sem campo
   // pendente, ou com marcador de correção, a frase vale por todos os campos
   // que ela traz ("troca pra alimentação e a data pra anteontem").
-  // Frase que cita outro campo além do pendente também vale por todos: com a
-  // Uni perguntando o valor, "despesa de cinco mil reais com a categoria
-  // Impostos" entrega o valor junto com a categoria.
-  const collected = !firstIssue || looksLikePendingCorrection(text)
-    || (explicitField !== null && explicitField !== firstIssue)
+  const correctionOverrides = !firstIssue || looksLikePendingCorrection(text)
     ? collectCorrectionOverrides({ text, normalized, parsed, accounts, categories, workspaceId })
+    : null;
+  // BUG REAL EM PRODUÇÃO (voz, 11/10/2026): com a Uni perguntando o valor,
+  // "Registrar uma despesa de cinco mil e quinhentos reais [...], com a
+  // categoria Impostos" só era lida como resposta de categoria, porque cita
+  // "categoria". O valor se perdia e a Uni perguntava o valor de novo, quatro
+  // vezes. O valor pendente também é lido da frase, mas só com "reais" ou
+  // "R$": um número solto ("na Conta 2") não vira valor.
+  const pendingAmount = firstIssue === 'amount' && explicitField !== null && explicitField !== 'amount'
+    && /(?:\breais\b|\breal\b|r\$)/.test(normalized)
+    ? resolveForField('amount', { text, parsed, accounts, categories, workspaceId })
+    : null;
+  const collected = correctionOverrides || pendingAmount?.kind === 'correction'
+    ? { ...(pendingAmount?.kind === 'correction' ? pendingAmount.overrides : {}), ...correctionOverrides }
     : null;
   // Troca de tipo ("não é despesa, é receita"): ganha do campo pendente, que
   // trataria "Salário" como resposta de categoria do tipo antigo. A categoria
@@ -251,8 +260,10 @@ const CATEGORY_NAME_MAX_WORDS = 5;
 // vincular essa despesa". Nome entre aspas é o nome inteiro; a finalidade
 // ("para vincular essa despesa", "pra esse gasto") não faz parte dele.
 // "Presentes para a família" continua inteiro.
-const CATEGORY_QUOTED_NAME = /^["“'‘]([^"“”'‘’]+)["”'’]/;
-const CATEGORY_NAME_PURPOSE = /\s+(?:para|pra)\s+(?:vincular|usar|colocar|lan[cç]ar|registrar|associar|ligar|classificar|esse|essa|este|esta|isso|ele|ela|o\s+(?:lan[cç]amento|gasto|registro|rascunho)|a\s+(?:despesa|receita|sa[ií]da|entrada|movimenta[cç][aã]o|compra))(?=\s|$).*$/i;
+// O apóstrofo de "Pão d'Ouro" não fecha as aspas: só fecha a aspa seguida de
+// espaço, pontuação ou fim.
+const CATEGORY_QUOTED_NAME = /^["“'‘](.+?)["”'’](?=[\s.,;!?]|$)/;
+const CATEGORY_NAME_PURPOSE = /\s+(?:para|pra)\s+(?:(?:vincular|usar|colocar|lan[cç]ar|registrar|associar|classificar)|(?:esse|essa|este|esta|o|a)\s+(?:lan[cç]amento|gasto|registro|rascunho|despesa|receita|sa[ií]da|entrada|movimenta[cç][aã]o))(?=\s|[.,;!?]|$).*$/i;
 
 export function extractRequestedCategoryName(value) {
   const text = typeof value === 'string' ? value : '';
@@ -267,7 +278,6 @@ export function extractRequestedCategoryName(value) {
     .replace(/[.!?]+\s*$/g, '')
     .replace(CATEGORY_NAME_PURPOSE, '')
     .trim()
-    .replace(CATEGORY_NAME_LEAD, '')
     .replace(CATEGORY_NAME_TAIL, ''))
     .replace(/^["“”']+|["“”'.!?]+$/g, '')
     .trim();

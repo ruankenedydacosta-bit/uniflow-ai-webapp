@@ -1309,6 +1309,9 @@ test('nome de categoria pedido no ajuste sai sem os conectivos', () => {
     ['A categoria é Impostos pra essa despesa', 'Impostos'],
     ['Categoria Pets para usar nesse lançamento', 'Pets'],
     ['A categoria é Presentes para a família', 'Presentes para a família'],
+    ['Cria a categoria Presente para ela', 'Presente para ela'],
+    ['Categoria Viagem para a praia', 'Viagem para a praia'],
+    ["A categoria é 'Pão d'Ouro'", "Pão d'Ouro"],
     // Palavra que só começa com um conectivo continua inteira.
     ['Categoria é Eletrônicos', 'Eletrônicos'],
     ['A categoria é Parafusos', 'Parafusos'],
@@ -1573,6 +1576,18 @@ test('valor pendente: frase que cita a categoria também entrega o valor que tra
   assert.equal(inexistente.kind, 'category_not_found');
   assert.equal(inexistente.requestedCategoryName, 'Impostos');
   assert.equal(inexistente.overrides?.amount, 5500);
+});
+
+test('valor pendente só: número solto em outra resposta não sobrescreve o valor do card', () => {
+  const contas = [...accounts, { id: 'account-2', name: 'Conta 2', institution_name: 'Banco', is_active: true }];
+  const action = createAction('Paguei 85 reais pelo Nubank.', { accounts: contas });
+  assert.notEqual(action.issues[0]?.field, 'amount');
+  const resultado = resolvePendingActionInput({ value: 'Alimentação, na Conta 2', action, accounts: contas, categories });
+  assert.equal(resultado.overrides?.amount, undefined);
+
+  const semValor = createAction('Quero lançar uma despesa de mercado.', { accounts: contas });
+  const resposta = resolvePendingActionInput({ value: 'Categoria Alimentação, na Conta 2', action: semValor, accounts: contas, categories });
+  assert.equal(resposta.overrides?.amount, undefined);
 });
 
 test('valor pendente: resposta só de categoria continua sem inventar valor', () => {

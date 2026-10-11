@@ -21,7 +21,7 @@ import {
   readRealtimeDraftReply,
   buildEndConversationOutput,
   AVISO_RESPOSTA_REPETIDA,
-  readRealtimeToolReply,
+  snapshotRealtimeToolReply,
   warnRepeatedRealtimeReply,
 } from './realtimeToolBridge.js';
 import { classifyPendingActionReply } from '../uni-conversation/pendingActionInput.js';
@@ -297,28 +297,41 @@ test('a sessão proíbe dizer que corrigiu, registrou ou cancelou sem a ferramen
 
 // BUG REAL EM PRODUÇÃO (voz, 11/10/2026): "Qual foi o valor dessa
 // movimentação?" quatro vezes seguidas, e a IA reenviando a mesma frase.
-test('a mesma pergunta duas vezes seguidas vai com aviso para não reenviar', () => {
-  const pergunta = buildRealtimeToolOutput({ text: 'Qual foi o valor dessa movimentação?' });
-  assert.equal(readRealtimeToolReply(pergunta), 'Qual foi o valor dessa movimentação?');
+const PERGUNTA_VALOR = 'Qual foi o valor dessa movimentação?';
 
-  const repetida = JSON.parse(warnRepeatedRealtimeReply(pergunta, 'Qual foi o valor dessa movimentação?'));
+test('a mesma pergunta logo depois da anterior vai com aviso para não reenviar', () => {
+  const primeiro = [
+    { id: 'u1', from: 'user', text: 'Vamos criar uma categoria chamada Impostos.' },
+    { id: 'a1', from: 'uni', text: PERGUNTA_VALOR },
+  ];
+  const anterior = snapshotRealtimeToolReply(primeiro, { baselineId: null });
+  assert.deepEqual({ ...anterior }, { id: 'a1', text: PERGUNTA_VALOR });
+
+  const turno = snapshotRealtimeToolTurn(primeiro);
+  const saida = buildRealtimeToolOutput({ text: PERGUNTA_VALOR });
+  const repetida = JSON.parse(warnRepeatedRealtimeReply(saida, anterior, turno));
   assert.equal(repetida.aviso, AVISO_RESPOSTA_REPETIDA);
-  assert.equal(repetida.resposta, 'Qual foi o valor dessa movimentação?');
+  assert.equal(repetida.resposta, PERGUNTA_VALOR);
 
-  assert.equal(warnRepeatedRealtimeReply(pergunta, null), pergunta);
-  assert.equal(warnRepeatedRealtimeReply(pergunta, 'Em qual conta?'), pergunta);
+  assert.equal(warnRepeatedRealtimeReply(saida, null, turno), saida);
+  assert.equal(warnRepeatedRealtimeReply(buildRealtimeToolOutput({ text: 'Em qual conta?' }), anterior, turno), buildRealtimeToolOutput({ text: 'Em qual conta?' }));
+});
+
+test('com algo no meio (toque, texto digitado), a mesma pergunta não ganha aviso', () => {
+  const anterior = { id: 'a1', text: PERGUNTA_VALOR };
+  const saida = buildRealtimeToolOutput({ text: PERGUNTA_VALOR });
+  assert.equal(warnRepeatedRealtimeReply(saida, anterior, { baselineId: 'a2' }), saida);
 });
 
 test('rascunho novo e resposta sem pergunta repetidos não ganham aviso', () => {
-  const rascunho = buildRealtimeToolOutput({
-    text: 'Perfeito. Revise as informações abaixo antes de registrar?',
-    confirmation: { status: 'pending' },
-  });
-  assert.equal(warnRepeatedRealtimeReply(rascunho, 'Perfeito. Revise as informações abaixo antes de registrar?'), rascunho);
+  const turno = { baselineId: 'a1' };
+  const texto = 'Perfeito. Revise as informações abaixo antes de registrar?';
+  const rascunho = buildRealtimeToolOutput({ text: texto, confirmation: { status: 'pending' } });
+  assert.equal(warnRepeatedRealtimeReply(rascunho, { id: 'a1', text: texto }, turno), rascunho);
   const cancelado = buildRealtimeToolOutput({ text: 'Tudo bem. Não registrei nada.' });
-  assert.equal(warnRepeatedRealtimeReply(cancelado, 'Tudo bem. Não registrei nada.'), cancelado);
+  assert.equal(warnRepeatedRealtimeReply(cancelado, { id: 'a1', text: 'Tudo bem. Não registrei nada.' }, turno), cancelado);
   const erro = buildRealtimeToolErrorOutput('A Uni demorou para responder?');
-  assert.equal(warnRepeatedRealtimeReply(erro, 'A Uni demorou para responder?'), erro);
+  assert.equal(warnRepeatedRealtimeReply(erro, { id: 'a1', text: 'A Uni demorou para responder?' }, turno), erro);
 });
 
 test('a sessão manda seguir o aviso da ferramenta', () => {
