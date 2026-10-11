@@ -9,10 +9,11 @@ project_id = "ikulazofzufeblzrhtif"
 # usuário do UniFlow), então a plataforma não pode exigir um JWT do
 # Supabase Auth aqui -- a autenticidade é garantida em código, comparando o
 # header `asaas-access-token` com o secret `ASAAS_WEBHOOK_TOKEN` (ver
-# supabase/functions/billing-webhook/index.ts). Nenhuma outra função deste
-# projeto (uni-chat-llm, uni-voice-tts, uni-voice-transcribe) é afetada por
-# este arquivo -- o padrão do Supabase para uma função sem entrada aqui
-# continua sendo verify_jwt = true.
+# supabase/functions/billing-webhook/index.ts).
+#
+# A integração com o GitHub só deploya, no merge na main, as funções que têm
+# entrada neste arquivo. Função nova entra aqui na mesma PR, senão só sobe
+# por `supabase functions deploy` à mão.
 
 [functions.billing-health]
 verify_jwt = true
@@ -63,3 +64,43 @@ verify_jwt = false
 # função confere o usuário em /auth/v1/user e a cota diária por pessoa.
 [functions.uni-insights]
 verify_jwt = true
+
+# Uni: interpretação da frase, chat, voz e atualizações. Exigem sessão.
+[functions.uni-interpret]
+verify_jwt = true
+
+[functions.uni-chat-llm]
+verify_jwt = true
+
+[functions.uni-voice-realtime-session]
+verify_jwt = true
+
+[functions.uni-voice-transcribe]
+verify_jwt = true
+
+[functions.uni-voice-tts]
+verify_jwt = true
+
+[functions.generate-uni-premium-voice]
+verify_jwt = true
+
+[functions.billing-change-plan]
+verify_jwt = true
+
+[functions.billing-create-test-payment]
+verify_jwt = true
+
+# Web Push. decision e test exigem sessão. Os dois dispatch são chamados pelo
+# pg_cron sem JWT do Supabase: quem autentica é o segredo conferido por RPC
+# (verify_agenda_dispatch_secret e verify_uni_updates_dispatch_secret).
+[functions.agenda-push-decision]
+verify_jwt = true
+
+[functions.push-send-test-notification]
+verify_jwt = true
+
+[functions.agenda-push-dispatch]
+verify_jwt = false
+
+[functions.uni-updates-push-dispatch]
+verify_jwt = false
