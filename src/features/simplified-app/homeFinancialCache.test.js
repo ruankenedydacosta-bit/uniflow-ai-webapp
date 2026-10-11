@@ -56,6 +56,9 @@ test('guarda só o recorte renderizado -- o Date de monthRange nunca entra (não
   assert.equal(picked.periodLabel, 'agosto de 2026');
   assert.equal(picked.incomeLabel, 'R$ 1.000,00');
   assert.equal(picked.expenseLabel, 'R$ 250,50');
+  // Os números crus vão junto: Entradas e Saídas contam a partir deles (#146).
+  assert.equal(picked.income, 1000);
+  assert.equal(picked.expense, 250.5);
   assert.equal(picked.transactionCount, 7);
   assert.deepEqual(picked.chart, { data: [{ day: 1, value: 10 }], todayDay: 19 });
   assert.deepEqual(picked.recent, { income: [{ id: 'i1' }], expense: [{ id: 'e1' }] });

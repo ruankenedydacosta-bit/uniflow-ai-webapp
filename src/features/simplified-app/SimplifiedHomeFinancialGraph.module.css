@@ -133,7 +133,7 @@
     var(--uf-app-surface-2) 90%
   );
   background-size: 220% 100%;
-  animation: homeGraphSkeletonWave 1.5s linear infinite;
+  animation: homeGraphSkeletonWave var(--uf-motion-esqueleto) linear infinite;
 }
 
 @keyframes homeGraphSkeletonWave {

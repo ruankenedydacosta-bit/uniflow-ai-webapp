@@ -10,6 +10,7 @@ import { useAccounts, useCategories, useCategoryBudgets, useFinancialBalances, u
 import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionModal.jsx';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { entrarEmSequencia } from '../../utils/movimento.js';
 import CategoryBudgetModal from './CategoryBudgetModal.jsx';
 import MonthPickerModal from './MonthPickerModal.jsx';
 import SimplifiedRecordsMonthChart from './SimplifiedRecordsMonthChart.jsx';
@@ -763,11 +764,7 @@ function SimplifiedRecordsPage() {
     () => summarizeMonth(transactionState.transactions, balanceState.workspaceBalance),
     [balanceState.workspaceBalance, transactionState.transactions],
   );
-  // Com uma folha aberta, Entradas e Saídas ficam no valor de antes e contam
-  // até o novo quando ela fecha.
   const holdSummary = Boolean(transactionDialog || summaryModalTarget);
-  const [shownIncome, incomeValueRef] = useNumeroContado(summary.income, { segurar: holdSummary });
-  const [shownExpense, expenseValueRef] = useNumeroContado(summary.expense, { segurar: holdSummary });
 
   const categorySummaries = useMemo(
     () => buildCategorySummaries(categoryState.categories, transactionState.transactions),
@@ -802,6 +799,22 @@ function SimplifiedRecordsPage() {
     || transactionState.isLoading
     || balanceState.isLoading
     || workspaceRole.isLoading;
+  // Com uma folha aberta, o resumo fica na tela durante a recarga, sem
+  // esqueleto: Entradas e Saídas param no valor de antes e contam até o novo
+  // quando ela fecha. Depois do esqueleto, contam a partir de zero.
+  const showLoading = isLoading && !holdSummary;
+  const [shownIncome, incomeValueRef] = useNumeroContado(summary.income, { segurar: holdSummary, esqueleto: showLoading });
+  const [shownExpense, expenseValueRef] = useNumeroContado(summary.expense, { segurar: holdSummary, esqueleto: showLoading });
+  // Quando o esqueleto sai, o conteúdo do mês entra em sequência (#146). O
+  // aviso de offline já estava à vista e fica parado.
+  const monthSectionRef = useRef(null);
+  const showedLoadingRef = useRef(showLoading);
+  useLayoutEffect(() => {
+    const leftLoading = showedLoadingRef.current && !showLoading;
+    showedLoadingRef.current = showLoading;
+    if (!leftLoading || !monthSectionRef.current) return;
+    entrarEmSequencia([...monthSectionRef.current.children].filter((block) => !block.hasAttribute('data-offline-notice')));
+  }, [showLoading]);
   // A linha nova abre, entra pela esquerda e brilha quando a folha fecha e
   // a lista está carregada. Se ela não está à vista (outro filtro, data
   // antiga fora das recentes), nada anima.
@@ -980,16 +993,16 @@ function SimplifiedRecordsPage() {
           <MonthSelector month={month} onChange={changeMonth} />
         </div>
 
-        <section className={styles.monthSection} aria-labelledby="month-summary-title">
+        <section ref={monthSectionRef} className={styles.monthSection} aria-labelledby="month-summary-title">
           <h2 id="month-summary-title" className={styles.srOnly}>Resumo do mês</h2>
 
           {!isOnline ? (
-            <div className={styles.stateCard} role="status">
+            <div className={styles.stateCard} role="status" data-offline-notice>
               Você está offline. Mostrando os últimos dados disponíveis.
             </div>
           ) : null}
 
-          {isLoading && !holdSummary ? (
+          {showLoading ? (
             <div className={styles.loadingState} aria-busy="true" aria-label="Carregando registros">
               {Array.from({ length: 3 }, (_, index) => <span key={index} />)}
             </div>

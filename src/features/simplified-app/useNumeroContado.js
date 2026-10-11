@@ -1,57 +1,57 @@
 import { useEffect, useRef, useState } from 'react';
-import { lerDuracao, prefereMovimentoReduzido, valorDaContagem } from '../../utils/movimento.js';
+import { lerDuracao, planoDaContagem, prefereMovimentoReduzido, valorDaContagem } from '../../utils/movimento.js';
 import { pulsar } from './movimentoDeSalvar.js';
 
-// Número que conta e pulsa depois de salvar (#145). Enquanto `segurar` está
-// ligado (a folha aberta), a tela continua mostrando o valor de quando ela
-// abriu; quando a folha desce, o número conta até o valor novo e pulsa no
-// elemento de `elementoRef`. Mudança fora da folha (carregar, trocar de mês)
-// troca direto, inclusive no meio de uma contagem. Com Reduzir movimento,
-// troca direto também.
-export function useNumeroContado(valor, { segurar = false } = {}) {
-  // Embrulhado para um valor nulo não se confundir com "nada retido".
-  const [retido, setRetido] = useState(null);
+// Número que conta do valor antigo ao novo, só quando o valor muda (#145,
+// #146). Enquanto `segurar` está ligado (folha aberta, dado recarregando),
+// a tela continua no valor de antes e conta quando ele desliga. Número à
+// vista conta do que mostrava e pulsa no elemento de `elementoRef`.
+// `esqueleto` diz que o número está escondido pelo carregamento: ao sair
+// dele, conta a partir de zero, sem pulsar. Mudança no meio de uma
+// contagem conta dali até o valor novo. Com Reduzir movimento, troca direto.
+export function useNumeroContado(valor, { segurar = false, esqueleto = false } = {}) {
+  // Valor parado na tela, fora de contagem.
+  const [assentado, setAssentado] = useState(valor);
   const [contado, setContado] = useState(null);
-  // Contagem em andamento: de qual retenção ela saiu e o valor na tela.
-  const contagemRef = useRef({ retido: null, mostrado: null });
+  // O número passou pelo esqueleto desde a última vez que assentou.
+  const [escondido, setEscondido] = useState(esqueleto);
+  // Valor na tela no meio de uma contagem, para a próxima sair dali.
+  const mostradoRef = useRef(null);
   const elementoRef = useRef(null);
 
-  if (segurar && retido === null) setRetido({ valor });
+  if (esqueleto && !escondido) setEscondido(true);
 
   useEffect(() => {
-    const contagem = contagemRef.current;
-    if (segurar) {
-      // Folha aberta no meio de uma contagem: o número para onde estava e,
-      // quando ela descer, conta dali.
-      contagem.retido = null;
-      return undefined;
-    }
-    if (retido === null) return undefined;
-    const mudouNoMeio = contagem.retido === retido;
-    const de = contagem.mostrado ?? retido.valor;
-    const duracao = mudouNoMeio || de === valor || prefereMovimentoReduzido() ? 0 : lerDuracao('contar');
-    contagem.retido = retido;
+    if (segurar || esqueleto) return undefined;
+    if (valor === assentado && !escondido && mostradoRef.current === null) return undefined;
+    const plano = planoDaContagem({
+      de: mostradoRef.current ?? assentado,
+      para: valor,
+      escondido,
+      duracao: prefereMovimentoReduzido() ? 0 : lerDuracao('contar'),
+    });
     let inicio = null;
     let quadro = requestAnimationFrame(function passo(agora) {
       inicio ??= agora;
-      const progresso = duracao > 0 ? (agora - inicio) / duracao : 1;
+      const progresso = plano.duracao > 0 ? (agora - inicio) / plano.duracao : 1;
       if (progresso < 1) {
-        contagem.mostrado = valorDaContagem(de, valor, progresso);
-        setContado(contagem.mostrado);
+        mostradoRef.current = valorDaContagem(plano.de, valor, progresso);
+        setContado(mostradoRef.current);
         quadro = requestAnimationFrame(passo);
         return;
       }
-      contagem.retido = null;
-      contagem.mostrado = null;
+      mostradoRef.current = null;
       setContado(null);
-      setRetido(null);
-      if (duracao > 0) pulsar(elementoRef.current);
+      setEscondido(false);
+      setAssentado(valor);
+      if (plano.pulsa) pulsar(elementoRef.current);
     });
     return () => cancelAnimationFrame(quadro);
-  }, [retido, segurar, valor]);
+  }, [assentado, escondido, esqueleto, segurar, valor]);
 
-  let mostrado = valor;
+  let mostrado = assentado;
   if (contado !== null) mostrado = contado;
-  else if (retido !== null) mostrado = retido.valor;
+  // Saiu do esqueleto e a contagem ainda não deu o primeiro quadro.
+  else if (escondido && !esqueleto) mostrado = 0;
   return [mostrado, elementoRef];
 }

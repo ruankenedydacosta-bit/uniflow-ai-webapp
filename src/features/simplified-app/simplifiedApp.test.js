@@ -1509,10 +1509,31 @@ test('movimentação nova pela folha fecha, avisa no topo e anima a linha e os n
   // Fica na aba em que estava: a linha nova e a contagem aparecem ali.
   assert.doesNotMatch(created, /setActiveTab/);
   assert.match(records, /onCreated=\{handleTransactionCreated\}/);
-  assert.match(records, /useNumeroContado\(summary\.income, \{ segurar: holdSummary \}\)/);
-  assert.match(records, /useNumeroContado\(summary\.expense, \{ segurar: holdSummary \}\)/);
+  assert.match(records, /useNumeroContado\(summary\.income, \{ segurar: holdSummary, esqueleto: showLoading \}\)/);
+  assert.match(records, /useNumeroContado\(summary\.expense, \{ segurar: holdSummary, esqueleto: showLoading \}\)/);
   assert.match(records, /animarLinhaNova\(/);
   assert.match(records, /data-transaction-id=\{transaction\.id\}/);
+});
+
+test('carregamento: esqueleto com brilho de 1,3 s, conteúdo do mês entra em sequência e os números contam (#146)', async () => {
+  const records = await source('./SimplifiedRecordsPage.jsx');
+  const recordsCss = await source('./simplifiedRecords.module.css');
+  const homeCss = await source('./simplifiedApp.module.css');
+  const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
+  const graphCss = await source('./SimplifiedHomeFinancialGraph.module.css');
+  assert.match(recordsCss, /animation: recordsLoading var\(--uf-motion-esqueleto\) linear infinite/);
+  assert.match(homeCss, /animation: homeSkeletonWave var\(--uf-motion-esqueleto\) linear infinite/);
+  assert.match(graphCss, /animation: homeGraphSkeletonWave var\(--uf-motion-esqueleto\) linear infinite/);
+  // O esqueleto do Financeiro sai e o conteúdo do mês entra em sequência.
+  assert.match(records, /const showLoading = isLoading && !holdSummary;/);
+  assert.match(records, /\{showLoading \? \(/);
+  assert.match(records, /if \(!leftLoading \|\| !monthSectionRef\.current\) return;\s*entrarEmSequencia\(/);
+  assert.match(records, /<section ref=\{monthSectionRef\} className=\{styles\.monthSection\}/);
+  // Entradas e Saídas da Home contam ao chegar o dado fresco, como ao voltar para a aba.
+  assert.match(graph, /useNumeroContado\(graphData\.expense, \{\s*segurar: isLoadingFinancials,\s*esqueleto: showSkeleton,\s*\}\)/);
+  assert.match(graph, /useNumeroContado\(graphData\.income, \{\s*segurar: isLoadingFinancials,\s*esqueleto: showSkeleton,\s*\}\)/);
+  assert.match(graph, /ref=\{expenseValueRef\}/);
+  assert.match(graph, /Number\.isFinite\(shownExpense\) \? formatCurrency\(shownExpense\) : graphData\.expenseLabel/);
 });
 
 test('folha sobe com a mola folha, o fundo escurece em 240 ms e Reduzir movimento vira fade de 150 ms (#145)', async () => {

@@ -376,6 +376,7 @@
   --uf-motion-brilho:    1600ms; /* brilho que se apaga na linha nova */
   --uf-motion-faisca:    900ms; /* voo mais curto de uma faísca */
   --uf-motion-anel:      720ms; /* anel que se expande ao salvar */
+  --uf-motion-esqueleto: 1300ms; /* uma passada do brilho no esqueleto de carregamento */
 
   --uf-motion-curva-saida:   cubic-bezier(.2, .8, .2, 1);
   --uf-motion-curva-navegar: cubic-bezier(.32, .72, 0, 1);
