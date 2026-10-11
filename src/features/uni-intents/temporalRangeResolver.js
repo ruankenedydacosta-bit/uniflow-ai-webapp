@@ -8,16 +8,14 @@
 // { status: 'not_recognized' }.
 //
 // Reaproveita, sem alterar, os resolvedores puros já existentes:
-//   - resolveRuntimeTemporal (Fase 17) já cobre, embutido em frase inteira
+//   - resolveTemporalExpression já cobre, embutido em frase inteira
 //     (regex não ancorada): hoje, ontem, esta semana, semana passada, este
 //     mês, mês passado, mês que vem, últimos N meses/dias, este ano, ano
 //     passado, mês nomeado + ano, ano isolado, intervalo dd/mm[/aaaa].
 //   - resolveRelativeDateExpression (uni-intents, já em produção) cobre
 //     anteontem/amanhã como ponto único -- aqui só embrulhamos como
 //     intervalo de 1 dia.
-// Nenhum dos dois arquivos originais é modificado; nenhum gate de shadow/
-// rollout é tocado ou ligado.
-import { resolveRuntimeTemporal } from '../uni-engine/financial-runtime/temporal/resolveRuntimeTemporal.js';
+import { resolveTemporalExpression } from './temporalExpressionResolver.js';
 import { resolveRelativeDateExpression } from './relativeDateResolver.js';
 
 const MONTH_NAMES_PT = Object.freeze({
@@ -87,7 +85,7 @@ function shiftDaysIso(dateStr, days) {
 }
 
 // "esta semana" / "semana passada" -- calculado aqui (nunca delegado ao
-// resolveRuntimeTemporal) porque aquele resolvedor usa `new Date(string)` +
+// resolveTemporalExpression) porque aquele resolvedor usa `new Date(string)` +
 // getters em fuso LOCAL para achar o início da semana; em qualquer fuso com
 // offset negativo (ex.: America/Sao_Paulo) isso desloca o resultado em 1
 // dia. Aritmética 100% em UTC aqui evita o problema, sem tocar no arquivo
@@ -113,7 +111,7 @@ function resolveWeekRange(text, referenceDate) {
 }
 
 // "anteontem" / "amanhã" -- únicos pontos-no-tempo que faltam no
-// resolveRuntimeTemporal; embrulhados aqui como intervalo de 1 dia.
+// resolveTemporalExpression; embrulhados aqui como intervalo de 1 dia.
 function resolveSingleDayExtras(text, referenceDate) {
   const { resolvedDate, ruleId } = resolveRelativeDateExpression(text, todayIso(referenceDate));
   if (!resolvedDate) return null;
@@ -199,7 +197,7 @@ function resolveSinceNamedMonth(text, referenceDate) {
   });
 }
 
-// resolveRuntimeTemporal só reconhece "este mês"/"esta semana"/"este ano";
+// resolveTemporalExpression só reconhece "este mês"/"esta semana"/"este ano";
 // "esse mês"/"essa semana"/"esse ano" (tão comuns na fala quanto "este") são
 // canonicalizados aqui ANTES de delegar -- sem alterar o arquivo original.
 // BUG REAL (Sprint 2.1, BUG 3): "nesse mês"/"nessa semana" (contração "em
@@ -236,7 +234,7 @@ export function resolveTemporalRange(text, referenceDate = null) {
   const week = resolveWeekRange(canonicalText, referenceDate);
   if (week) return week;
 
-  const runtime = resolveRuntimeTemporal(canonicalText, todayIso(referenceDate));
+  const runtime = resolveTemporalExpression(canonicalText, todayIso(referenceDate));
   const DAY_GRANULARITY_ENTITIES = new Set([
     'today', 'yesterday', 'last_n_days', 'date_range', 'specific_date',
   ]);
