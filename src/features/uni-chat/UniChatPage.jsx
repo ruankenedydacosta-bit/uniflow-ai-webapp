@@ -924,7 +924,6 @@ export default function UniChatPage({ variant = 'full' }) {
   const [executionError, setExecutionError] = useState(null);
   const [isExecutingAction, setIsExecutingAction] = useState(false);
   const confirmingRef = useRef(false);
-  const pendingActionRef = useRef(null);
   const pendingActionStackRef = useRef(null);
   const activeIdRef = useRef(activeId);
   const agendaRequestContextRef = useRef(null);
@@ -1001,10 +1000,6 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    pendingActionRef.current = pendingAction;
-  }, [pendingAction]);
 
   useEffect(() => {
     pendingActionStackRef.current = pendingActionStack;

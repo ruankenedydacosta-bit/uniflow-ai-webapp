@@ -1706,7 +1706,10 @@ test('buildGuidedUniMessage aplica a política pública com o texto da pergunta 
   assert.match(buildBlock, /requestText: lastUserTurnTextRef\.current,/);
   assert.match(buildBlock, /return buildUniMessage\(publicText, messageOptions\);/);
   const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
-  assert.match(body, /lastUserTurnTextRef\.current = text;/);
+  // Gravado antes da primeira resposta do turno (o resumo público sai logo depois).
+  const gravaIndex = body.indexOf('lastUserTurnTextRef.current = text;');
+  const resumoIndex = body.indexOf('responderResumoSemSaldo(');
+  assert.ok(gravaIndex > -1 && resumoIndex > -1 && gravaIndex < resumoIndex);
 });
 
 test('FASE 21: createAssistantResponse permanece o único ponto de publicação em handleUnresolvedMessage', async () => {
