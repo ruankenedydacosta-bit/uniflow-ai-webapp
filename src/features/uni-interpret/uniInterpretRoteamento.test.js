@@ -278,3 +278,13 @@ test('plano do modelo: operação sem valor fica sem valor, nunca R$ 0,00', () =
   assert.doesNotMatch(describePlanOperation(taxi), /R\$ 0,00/);
   assert.match(describePlanOperation(taxi), /valor não informado/);
 });
+
+// #80, etapa 2b: saldo declarado e meta saem das regras fixas.
+test('saldo e meta têm rota própria e nunca viram rascunho nem plano', () => {
+  const comOperacao = [operacao({ tipo: 'entrada', valor: 1250 })];
+  for (const [intent, rota] of [['saldo', ROTAS_INTERPRETACAO.SALDO], ['meta', ROTAS_INTERPRETACAO.META]]) {
+    assert.equal(escolherRotaDaInterpretacao({ intent, operacoes: [], resposta: '' }), rota);
+    assert.equal(interpretacaoParaRascunho({ intent, operacoes: comOperacao, resposta: '' }, 'x'), null);
+    assert.equal(interpretacaoParaPlano({ intent, operacoes: comOperacao, resposta: '' }), null);
+  }
+});

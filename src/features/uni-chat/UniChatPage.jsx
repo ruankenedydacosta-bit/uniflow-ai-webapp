@@ -294,11 +294,7 @@ const TEXTO_SEM_MODELO = Object.freeze({
   parcela: 'Compra parcelada ainda não é registrada pela conversa. Lance pelo Financeiro.',
 });
 const TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO = 'Esse rascunho vale só para este lançamento. A Uni ainda não repete lançamentos sozinha.';
-const INTENTS_FORA_DO_INTERPRETADOR = new Set([
-  'set_balance',
-  'ambiguous_balance_or_income',
-  'create_goal',
-]);
+const TEXTO_META_SEM_CRIACAO = 'Ainda não posso criar objetivos pela conversa com segurança. Posso consultar seus objetivos ou orientar você a criá-los na área de Objetivos.';
 const EMPTY_FINANCIAL_FALLBACK = Object.freeze({
   accounts: Object.freeze([]),
   categories: Object.freeze([]),
@@ -4216,9 +4212,7 @@ export default function UniChatPage({ variant = 'full' }) {
           return;
         }
         if (result.parsed?.intent === 'create_goal') {
-          createAssistantResponse(
-            'Ainda não posso criar objetivos pela conversa com segurança. Posso consultar seus objetivos ou orientar você a criá-los na área de Objetivos.',
-          );
+          createAssistantResponse(TEXTO_META_SEM_CRIACAO);
           return;
         }
         // Perguntas sobre futuro/tendência/continuidade financeira que não
@@ -4357,6 +4351,23 @@ export default function UniChatPage({ variant = 'full' }) {
         setIsTyping(false);
         iniciarPlanoFinanceiro(interpretacaoParaPlano(interpretacao), text);
         return true;
+      // Saldo saiu do app público: a frase que a regex de saldo não pegou
+      // recebe a mesma resposta, e nunca vira entrada.
+      case ROTAS_INTERPRETACAO.SALDO:
+        setIsTyping(false);
+        createAssistantResponse(
+          buildPublicMovementSummaryResponse({
+            snapshot: financialContext.snapshot,
+            text,
+            includeRetirementIntro: true,
+          }).text,
+          { deduplicateNarration: false },
+        );
+        return true;
+      case ROTAS_INTERPRETACAO.META:
+        setIsTyping(false);
+        createAssistantResponse(TEXTO_META_SEM_CRIACAO);
+        return true;
       case ROTAS_INTERPRETACAO.CONSULTA:
         setIsTyping(false);
         runDeterministicFinancialFlow(text, historySnapshot, true);
@@ -4414,10 +4425,7 @@ export default function UniChatPage({ variant = 'full' }) {
     const agendaRequest = { ...agendaIdentity, turnToken };
     // #80: com o uni-interpret disponível, quem decide a intenção de uma
     // frase nova é ele; a classificação por regex só vale sem IA.
-    // Saldo declarado e meta têm fluxo próprio que o contrato do
-    // uni-interpret ainda não cobre: continuam com as regras.
-    const roteiaPeloModelo = Boolean(effectiveWorkspace?.id && uniInterpretClient.isSupported())
-      && !INTENTS_FORA_DO_INTERPRETADOR.has(declaredIntent);
+    const roteiaPeloModelo = Boolean(effectiveWorkspace?.id && uniInterpretClient.isSupported());
     const hasPendingAgendaConversation = agendaConversationRef.current.hasPending(agendaIdentity);
     const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation
       && !declaredIntent.startsWith('agenda_')
