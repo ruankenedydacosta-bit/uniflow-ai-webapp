@@ -13,7 +13,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - consulta: pergunta sobre os dados dele (gastos, entradas, quanto falta para uma meta).
 - agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento).
 - correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
-- conversa: cumprimento, agradecimento, papo.
+- conversa: cumprimento, agradecimento, papo. Também o pedido para criar, renomear ou excluir uma categoria sem registrar dinheiro ("cria uma categoria chamada Impostos", "apaga a categoria Carro"): a Uni ainda não faz isso pela conversa, e a resposta diz para abrir Categorias, no menu Mais. Com valor gasto ou recebido na frase, é lancamento com nova_categoria.
 - nao_entendi: nenhuma das anteriores com segurança.
 
 ## Cada operação de lançamento

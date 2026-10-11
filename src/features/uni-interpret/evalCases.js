@@ -9,6 +9,8 @@
 // esperado.categoria: nome do catálogo do workspace; null quando a frase não
 //   dá base para escolher e a Uni deve perguntar. `aceitas` lista outras
 //   respostas igualmente corretas.
+// esperado.novaCategoria: nome que o card deve propor criar, quando a pessoa
+//   pede pelo nome uma categoria que não está no catálogo.
 // esperado.data: ISO; ausente quando a frase não fala de data (vale hoje).
 // esperado.titulo: em agenda, palavras que o título precisa ter (#142).
 //
@@ -811,6 +813,23 @@ export const CASOS = [
     reservado: true,
     frase: 'e aí, tudo bem com você?',
     esperado: { intent: 'conversa' },
+  },
+  // Conversa por voz de 11/10/2026: pedir uma categoria sem valor virava
+  // lançamento, e a Uni perguntava "Qual foi o valor dessa movimentação?".
+  {
+    id: 'categoria-criar-sem-valor',
+    frase: 'Vamos criar uma categoria chamada Impostos.',
+    esperado: { intent: 'conversa' },
+  },
+  {
+    id: 'categoria-renomear',
+    frase: 'renomeia a categoria Carro para Veículo',
+    esperado: { intent: 'conversa' },
+  },
+  {
+    id: 'categoria-nova-com-valor',
+    frase: 'registrar uma despesa de cinco mil e quinhentos reais no dia primeiro de outubro com a categoria Impostos',
+    esperado: { intent: 'lancar_saida', valor: 5500, novaCategoria: 'Impostos', data: '2026-10-01' },
   },
   // Workspace empresa.
   {

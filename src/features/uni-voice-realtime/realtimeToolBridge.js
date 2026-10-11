@@ -104,6 +104,32 @@ export function buildRealtimeToolOutput(reply) {
   });
 }
 
+// BUG REAL EM PRODUÇÃO (voz, 11/10/2026): a Uni respondeu "Qual foi o valor
+// dessa movimentação?" quatro vezes seguidas e a IA da conversa reenviou a
+// mesma frase a cada vez, sem dizer à pessoa que estava travado. A mesma
+// pergunta logo depois da anterior, sem nada no meio (toque, texto
+// digitado), vai com um aviso. Rascunho novo repete "Revise as informações"
+// de propósito e não conta.
+export const AVISO_RESPOSTA_REPETIDA = 'A Uni fez a mesma pergunta da vez anterior. Se a pessoa já tinha respondido, a Uni não entendeu a resposta: não envie a mesma frase de novo. Diga à pessoa o que a Uni está perguntando e que ela pode responder de outro jeito ou cancelar.';
+
+// Resposta da Uni que encerrou o turno da ferramenta, para comparar com o
+// próximo. null quando o turno terminou sem resposta nova.
+export function snapshotRealtimeToolReply(messages, turn) {
+  const reply = findUniReplyAfter(messages, turn.baselineId);
+  return reply ? Object.freeze({ id: reply.id, text: reply.text.trim() }) : null;
+}
+
+export function warnRepeatedRealtimeReply(output, previousReply, turn) {
+  const parsed = parseRealtimeToolArguments(output);
+  const reply = typeof parsed?.resposta === 'string' ? parsed.resposta.trim() : '';
+  const repeated = reply.endsWith('?')
+    && parsed.aguardando_confirmacao !== true
+    && Boolean(previousReply)
+    && previousReply.id === turn?.baselineId
+    && previousReply.text === reply;
+  return repeated ? JSON.stringify({ ...parsed, aviso: AVISO_RESPOSTA_REPETIDA }) : output;
+}
+
 export function buildRealtimeToolErrorOutput(motivo) {
   return JSON.stringify({ erro: motivo });
 }
