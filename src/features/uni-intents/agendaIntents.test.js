@@ -11,7 +11,6 @@ import {
 import { extractAmount } from './entityExtractor.js';
 import {
   isAgendaExpression,
-  looksLikeComplexFinancialText,
   looksLikeFreshFinancialStatement,
   looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
@@ -208,7 +207,6 @@ for (const phrase of AGENDA_GUARD_PHRASES) {
   });
 
   for (const lookup of [
-    looksLikeComplexFinancialText,
     looksLikeFreshFinancialStatement,
     looksLikeFreshBalanceStatement,
     looksLikeUnclassifiedFinancialStatement,

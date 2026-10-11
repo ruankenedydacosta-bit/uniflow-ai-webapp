@@ -124,10 +124,10 @@ for (const caso of casosDoConjunto) {
   const operacao = validada.operacoes[0];
   const esperado = caso.esperado.categoria === undefined ? '' : ` | esperado: ${caso.esperado.categoria ?? '(perguntar)'}`;
   console.log(
-    `${marca(veredito.intent).padEnd(2)} ${marca(veredito.valor).padEnd(2)} ${marca(veredito.data).padEnd(2)} ${marca(veredito.categoria).padEnd(2)}  ${caso.id}  ${duracao}ms${chamada.ok ? '' : ` FALHA ${chamada.motivo}`}`,
+    `${marca(veredito.intent).padEnd(2)} ${marca(veredito.valor).padEnd(2)} ${marca(veredito.data).padEnd(2)} ${marca(veredito.categoria).padEnd(2)} ${marca(veredito.modalidade).padEnd(2)}  ${caso.id}  ${duracao}ms${chamada.ok ? '' : ` FALHA ${chamada.motivo}`}`,
   );
   console.log(
-    `      ${resultado.intent} | ${resultado.valor ?? '-'} | ${resultado.data ?? '-'} | ${resultado.categoria ?? '-'} (${resultado.modoCategoria}${operacao ? ` ${operacao.confianca}` : ''})${esperado} | "${operacao?.descricao ?? ''}"`,
+    `      ${resultado.intent} | ${resultado.valor ?? '-'} | ${resultado.data ?? '-'} | ${resultado.categoria ?? '-'} (${resultado.modoCategoria}${operacao ? ` ${operacao.confianca}` : ''})${esperado} | "${operacao?.descricao ?? ''}"${resultado.parcelas ? ` | ${resultado.parcelas}x` : ''}${resultado.recorrente ? ' | recorrente' : ''}`,
   );
 }
 

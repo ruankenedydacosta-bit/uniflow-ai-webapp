@@ -3,7 +3,7 @@
 // regras atuais e o uni-interpret sejam medidos exatamente do mesmo jeito.
 //
 // Resultado normalizado:
-//   { intent, valor, data, categoria, modoCategoria }
+//   { intent, valor, data, categoria, modoCategoria, parcelas, recorrente }
 // modoCategoria: 'resolveu' | 'sugeriu' | 'propos_criar' | 'perguntou'.
 
 import { DATA_REFERENCIA } from './evalCases.js';
@@ -31,7 +31,7 @@ export function avaliarCaso(caso, resultado) {
   const intent = resultado.intent === esperado.intent;
 
   if (!INTENTS_DE_LANCAMENTO.has(esperado.intent)) {
-    return { intent, valor: null, data: null, categoria: null };
+    return { intent, valor: null, data: null, categoria: null, modalidade: null };
   }
 
   return {
@@ -39,11 +39,16 @@ export function avaliarCaso(caso, resultado) {
     valor: intent && mesmoValor(esperado.valor, resultado.valor),
     data: intent && resultado.data === (esperado.data ?? DATA_REFERENCIA),
     categoria: intent && avaliarCategoria(esperado, resultado),
+    // Parcelamento e recorrência: por padrão, compra à vista e única. Pagar
+    // "a parcela do IPTU" não pode virar parcelamento.
+    modalidade: intent
+      && (resultado.parcelas ?? null) === (esperado.parcelas ?? null)
+      && (resultado.recorrente === true) === (esperado.recorrente === true),
   };
 }
 
 export function resumirAvaliacao(vereditos) {
-  const campos = ['intent', 'valor', 'data', 'categoria'];
+  const campos = ['intent', 'valor', 'data', 'categoria', 'modalidade'];
   return Object.fromEntries(campos.map((campo) => {
     const aplicaveis = vereditos.filter((veredito) => veredito[campo] !== null);
     const acertos = aplicaveis.filter((veredito) => veredito[campo]).length;
@@ -70,7 +75,7 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
     : INTENT_DO_INTERPRETADOR[validada.intent] ?? validada.intent;
 
   if (!operacao) {
-    return { intent, valor: null, data: null, categoria: null, modoCategoria: 'perguntou' };
+    return { intent, valor: null, data: null, categoria: null, modoCategoria: 'perguntou', parcelas: null, recorrente: false };
   }
 
   let modoCategoria = 'perguntou';
@@ -86,5 +91,7 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
     data: operacao.data,
     categoria: operacao.categoria?.name ?? operacao.novaCategoria ?? null,
     modoCategoria,
+    parcelas: operacao.parcelas ?? null,
+    recorrente: operacao.recorrente === true,
   };
 }

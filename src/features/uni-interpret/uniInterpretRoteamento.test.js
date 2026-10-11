@@ -4,9 +4,11 @@ import test from 'node:test';
 import {
   ROTAS_INTERPRETACAO,
   escolherRotaDaInterpretacao,
+  interpretacaoParaPlano,
   interpretacaoParaRascunho,
 } from './uniInterpretRoteamento.js';
 import { buildFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
+import { createPendingFinancialPlan, PLAN_OPERATION_STATUS } from '../uni-conversation/pendingFinancialPlan.js';
 
 const CATEGORIAS = [
   { id: 'cat-edu', name: 'Educação', category_type: 'expense' },
@@ -158,4 +160,83 @@ test('interpretação que não é lançamento simples não vira rascunho', () =>
     interpretacaoParaRascunho({ intent: 'lancamento', operacoes: [operacao(), operacao()], resposta: '' }, 'x'),
     null,
   );
+});
+
+const CONTAS = [
+  { id: 'conta-cc', name: 'Conta corrente', account_type: 'checking', is_active: true },
+  { id: 'conta-pp', name: 'Poupança', account_type: 'savings', is_active: true },
+];
+const CATEGORIAS_PLANO = [
+  ...CATEGORIAS,
+  { id: 'cat-ali', name: 'Alimentação', category_type: 'expense' },
+  { id: 'cat-trf', name: 'Transferência', category_type: 'transfer' },
+];
+
+test('parcela ou recorrência numa operação única vão para o plano', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'lancamento', operacoes: [operacao({ parcelas: 12 })], resposta: '' }),
+    ROTAS_INTERPRETACAO.PLANO,
+  );
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'lancamento', operacoes: [operacao({ recorrente: true })], resposta: '' }),
+    ROTAS_INTERPRETACAO.PLANO,
+  );
+});
+
+test('plano do modelo: duas saídas ficam prontas com a categoria e a data escolhidas', () => {
+  const plano = interpretacaoParaPlano({
+    intent: 'lancamento',
+    operacoes: [
+      operacao({ valor: 40, descricao: 'Táxi', categoria: null, novaCategoria: null }),
+      operacao({ valor: 25, descricao: 'Lanche', categoria: { id: 'cat-ali', name: 'Alimentação' } }),
+    ],
+    resposta: '',
+  });
+  assert.equal(plano.operations.length, 2);
+  assert.equal(plano.operations[1].categoryReference, 'Alimentação');
+  assert.equal(plano.operations[1].date, '2026-10-05');
+
+  const pendente = createPendingFinancialPlan({
+    plan: plano, phrase: 'x', accounts: CONTAS, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-10',
+  });
+  const lanche = pendente.operations[1];
+  assert.equal(lanche.status, PLAN_OPERATION_STATUS.READY);
+  assert.equal(lanche.action.category?.id, 'cat-ali');
+  assert.equal(lanche.action.date, '2026-10-05');
+});
+
+test('plano do modelo: transferência resolve origem e destino pelas contas escolhidas', () => {
+  const plano = interpretacaoParaPlano({
+    intent: 'lancamento',
+    operacoes: [operacao({
+      tipo: 'transferencia', valor: 500, categoria: null,
+      conta: { id: 'conta-cc', name: 'Conta corrente' }, contaDestino: { id: 'conta-pp', name: 'Poupança' },
+    })],
+    resposta: '',
+  });
+  assert.equal(plano.operations[0].operationType, 'transfer');
+  assert.equal(plano.operations[0].categoryReference, null);
+  const pendente = createPendingFinancialPlan({
+    plan: plano, phrase: 'x', accounts: CONTAS, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-10',
+  });
+  const [transferencia] = pendente.operations;
+  assert.equal(transferencia.action.account?.id, 'conta-cc');
+  assert.equal(transferencia.destinationAccountResolution.account?.id, 'conta-pp');
+});
+
+test('plano do modelo: parcela e recorrência viram operação entendida mas ainda não registrável', () => {
+  const plano = interpretacaoParaPlano({
+    intent: 'lancamento',
+    operacoes: [operacao({ valor: 3600, parcelas: 12 }), operacao({ tipo: 'entrada', recorrente: true })],
+    resposta: '',
+  });
+  assert.deepEqual(plano.operations.map((item) => item.operationType), ['installment_purchase', 'recurring_income']);
+  const pendente = createPendingFinancialPlan({
+    plan: plano, phrase: 'x', accounts: CONTAS, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-10',
+  });
+  assert.ok(pendente.operations.every((item) => item.capabilityPending && item.status === PLAN_OPERATION_STATUS.BLOCKED));
+});
+
+test('lançamento simples não vira plano', () => {
+  assert.equal(interpretacaoParaPlano({ intent: 'lancamento', operacoes: [operacao()], resposta: '' }), null);
 });

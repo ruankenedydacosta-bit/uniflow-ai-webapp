@@ -19,6 +19,10 @@ export const ROTAS_INTERPRETACAO = Object.freeze({
 
 const INTENT_POR_TIPO = Object.freeze({ saida: 'register_expense', entrada: 'register_income' });
 
+function ehLancamentoSimples(operacao) {
+  return Object.hasOwn(INTENT_POR_TIPO, operacao?.tipo) && !operacao.parcelas && operacao.recorrente !== true;
+}
+
 // null quando não há interpretação utilizável: o chamador segue com as
 // regras fixas.
 export function escolherRotaDaInterpretacao(interpretacao) {
@@ -29,9 +33,9 @@ export function escolherRotaDaInterpretacao(interpretacao) {
     case 'lancamento':
     case 'correcao':
       // Sem rascunho na tela, "correcao" é um lançamento novo. Mais de uma
-      // operação ou transferência vai para o plano, que sabe revisar várias
-      // de uma vez.
-      if (operacoes.length === 1 && Object.hasOwn(INTENT_POR_TIPO, operacoes[0]?.tipo)) {
+      // operação, transferência, parcela ou recorrência vão para o plano,
+      // que sabe revisar várias de uma vez.
+      if (operacoes.length === 1 && ehLancamentoSimples(operacoes[0])) {
         return ROTAS_INTERPRETACAO.LANCAMENTO;
       }
       return operacoes.length > 0 ? ROTAS_INTERPRETACAO.PLANO : ROTAS_INTERPRETACAO.NAO_ENTENDI;
@@ -88,4 +92,45 @@ export function interpretacaoParaRascunho(interpretacao, texto) {
   }
   if (operacao.conta?.id) overrides.accountId = operacao.conta.id;
   return { parsed, overrides };
+}
+
+function tipoDaOperacaoDoPlano(operacao) {
+  if (operacao.tipo === 'transferencia') return 'transfer';
+  if (operacao.tipo === 'saida') {
+    if (operacao.parcelas) return 'installment_purchase';
+    return operacao.recorrente === true ? 'recurring_expense' : 'expense';
+  }
+  return operacao.recorrente === true ? 'recurring_income' : 'income';
+}
+
+// Operações da interpretação → plano que createPendingFinancialPlan recebe
+// (o mesmo formato que o modo financial_plan devolvia). Conta e categoria vão
+// pelo nome do registro escolhido no catálogo, que os resolutores acham por
+// nome exato. null quando a interpretação não é um plano.
+export function interpretacaoParaPlano(interpretacao) {
+  if (escolherRotaDaInterpretacao(interpretacao) !== ROTAS_INTERPRETACAO.PLANO) return null;
+  const operations = interpretacao.operacoes.map((operacao, indice) => {
+    const operationType = tipoDaOperacaoDoPlano(operacao);
+    const valor = Number(operacao.valor);
+    return {
+      temporaryId: `op${indice + 1}`,
+      operationType,
+      amount: Number.isFinite(valor) && valor > 0 ? valor : null,
+      currency: 'BRL',
+      description: typeof operacao.descricao === 'string' && operacao.descricao.trim() ? operacao.descricao.trim() : null,
+      date: typeof operacao.data === 'string' && operacao.data ? operacao.data : null,
+      dateExpression: null,
+      sourceAccountReference: operacao.conta?.name ?? null,
+      destinationAccountReference: operacao.contaDestino?.name ?? null,
+      categoryReference: operationType === 'transfer'
+        ? null
+        : operacao.categoria?.name ?? operacao.novaCategoria ?? null,
+      installments: operacao.parcelas ? { count: operacao.parcelas } : null,
+      recurrence: null,
+      confidence: Number.isFinite(Number(operacao.confianca)) ? Number(operacao.confianca) : 0,
+      missingFields: Array.isArray(operacao.faltando) ? operacao.faltando : [],
+      reason: '',
+    };
+  });
+  return { operations, clarificationQuestion: null };
 }

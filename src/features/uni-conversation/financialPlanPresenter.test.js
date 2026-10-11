@@ -1,6 +1,5 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateFinancialPlanResponse } from '../uni-financial-plan/financialPlanContract.js';
 import {
   createPendingFinancialPlan,
   applyPlanOperationCorrection,
@@ -18,6 +17,41 @@ import {
   getSingleReadyPlanAction,
   parsePlanCorrectionOverrides,
 } from './financialPlanPresenter.js';
+
+// Plano no formato snake_case que o antigo modo financial_plan devolvia,
+// convertido para o que createPendingFinancialPlan recebe. Só monta a
+// fixture: a validação do contrato saiu junto com o modo (#80).
+function planoDeTeste(raw) {
+  return {
+    operations: (raw.operations ?? []).map((op) => ({
+      temporaryId: op.temporary_id,
+      operationType: op.operation_type,
+      amount: op.amount,
+      currency: 'BRL',
+      description: op.description ?? null,
+      dateExpression: op.date_expression ?? null,
+      sourceAccountReference: op.source_account_reference ?? null,
+      destinationAccountReference: op.destination_account_reference ?? null,
+      categoryReference: op.category_reference ?? null,
+      installments: op.installments
+        ? { count: op.installments.count, installmentAmount: op.installments.installment_amount, totalAmount: op.installments.total_amount }
+        : null,
+      recurrence: op.recurrence
+        ? {
+            frequency: op.recurrence.frequency,
+            interval: op.recurrence.interval,
+            dayOfMonth: op.recurrence.day_of_month,
+            startDate: op.recurrence.start_date,
+            endDate: op.recurrence.end_date,
+          }
+        : null,
+      confidence: op.confidence,
+      missingFields: op.missing_fields ?? [],
+      reason: op.reason ?? '',
+    })),
+    clarificationQuestion: raw.clarification_question ?? null,
+  };
+}
 
 const REFERENCE_DATE = '2026-07-29';
 const ACCOUNTS = [
@@ -45,16 +79,8 @@ function rawOperation(overrides = {}) {
 }
 
 function buildPlan(operations, extra = {}) {
-  const result = validateFinancialPlanResponse({
-    version: '1',
-    decision: operations.length > 1 ? 'multiple_operations' : 'single_operation',
-    operations,
-    global_confidence: 0.95,
-    ...extra,
-  });
-  assert.equal(result.valid, true, result.reason);
   return createPendingFinancialPlan({
-    plan: result.plan,
+    plan: planoDeTeste({ operations, ...extra }),
     phrase: 'teste',
     accounts: ACCOUNTS,
     accountTypes: ACCOUNT_TYPES,

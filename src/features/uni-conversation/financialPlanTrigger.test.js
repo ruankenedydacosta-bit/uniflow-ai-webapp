@@ -2,11 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   countMoneyMentions,
-  looksLikeComplexFinancialText,
   isUnsupportedIntentEligibleForPlan,
   looksLikeFreshFinancialStatement,
   looksLikeUnclassifiedFinancialStatement,
-  splitFinancialClauses,
 } from './financialPlanTrigger.js';
 
 test('countMoneyMentions conta menções em R$ e "reais"', () => {
@@ -17,76 +15,11 @@ test('countMoneyMentions conta menções em R$ e "reais"', () => {
   assert.equal(countMoneyMentions(null), 0);
 });
 
-test('looksLikeComplexFinancialText detecta duas operações na mesma frase (multioperação)', () => {
-  assert.equal(looksLikeComplexFinancialText('Gastei R$ 80 no mercado e R$ 50 de gasolina'), true);
-});
-
-test('looksLikeComplexFinancialText detecta receita + despesa na mesma frase', () => {
-  assert.equal(looksLikeComplexFinancialText('Recebi R$ 200 de salário e paguei R$ 40 de internet'), true);
-});
-
-test('looksLikeComplexFinancialText detecta parcelamento', () => {
-  assert.equal(looksLikeComplexFinancialText('Comprei um celular em 10x de R$ 350'), true);
-  assert.equal(looksLikeComplexFinancialText('Comprei um celular parcelado em 10 vezes'), true);
-});
-
-test('looksLikeComplexFinancialText detecta recorrência', () => {
-  assert.equal(looksLikeComplexFinancialText('Pago R$ 30 de academia todo mês'), true);
-  assert.equal(looksLikeComplexFinancialText('Recebo esse valor mensalmente'), true);
-});
-
-test('looksLikeComplexFinancialText detecta transferência mesmo sem verbo explícito de gasto', () => {
-  assert.equal(looksLikeComplexFinancialText('Fiz uma transferência de R$ 100 do Nubank para a Caixa'), true);
-});
-
-test('looksLikeComplexFinancialText NÃO dispara para uma única operação simples', () => {
-  assert.equal(looksLikeComplexFinancialText('Gastei R$ 80 no mercado'), false);
-  assert.equal(looksLikeComplexFinancialText('Recebi R$ 3000 de salário'), false);
-});
-
-test('looksLikeComplexFinancialText NÃO dispara para perguntas genéricas sem verbo financeiro', () => {
-  assert.equal(looksLikeComplexFinancialText('Quanto eu gastei esse mês?'), false);
-  assert.equal(looksLikeComplexFinancialText('Qual é o meu saldo?'), false);
-  assert.equal(looksLikeComplexFinancialText(''), false);
-  assert.equal(looksLikeComplexFinancialText(null), false);
-});
-
 test('isUnsupportedIntentEligibleForPlan só é true para register_transfer', () => {
   assert.equal(isUnsupportedIntentEligibleForPlan('register_transfer'), true);
   assert.equal(isUnsupportedIntentEligibleForPlan('create_goal'), false);
   assert.equal(isUnsupportedIntentEligibleForPlan('register_expense'), false);
   assert.equal(isUnsupportedIntentEligibleForPlan(undefined), false);
-});
-
-// ============================================================================
-// BUG REAL: "Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do
-// Brasil." tinha só um valor explícito para duas despesas -- a heurística
-// antiga só olhava contagem de menções de dinheiro (>=2) e nunca detectava
-// esse caso. Agora reconhece cláusulas encadeadas por conjunção com sinal
-// financeiro próprio (verbo, conta ou valor), mesmo com um valor só.
-// ============================================================================
-
-test('BUG REAL: "Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do Brasil" aciona o plano neural', () => {
-  assert.equal(
-    looksLikeComplexFinancialText('Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do Brasil.'),
-    true,
-  );
-});
-
-test('splitFinancialClauses separa por "e"/"também"/"depois"/"além disso"/"mas"/"enquanto" ("aí" não é mais um separador -- ver BUG REAL abaixo)', () => {
-  assert.deepEqual(
-    splitFinancialClauses('Gastei 50 no mercado e a gasolina eu paguei pelo Banco do Brasil'),
-    ['Gastei 50 no mercado', 'a gasolina eu paguei pelo Banco do Brasil'],
-  );
-  assert.deepEqual(
-    splitFinancialClauses('Paguei a luz e também paguei a água'),
-    ['Paguei a luz', 'também paguei a água'],
-  );
-  assert.equal(splitFinancialClauses(null).length, 0);
-});
-
-test('looksLikeComplexFinancialText NÃO dispara para uma cláusula financeira seguida de uma cláusula sem nenhum sinal', () => {
-  assert.equal(looksLikeComplexFinancialText('Gastei 50 reais no mercado e estou feliz com isso'), false);
 });
 
 test('looksLikeFreshFinancialStatement detecta um enunciado financeiro novo e autossuficiente (verbo + valor)', () => {
@@ -183,41 +116,3 @@ test('looksLikeUnclassifiedFinancialStatement NÃO dispara para consulta genéri
   assert.equal(looksLikeUnclassifiedFinancialStatement('Esse produto custa 200 reais a mais que o outro na loja'), false);
 });
 
-// ============================================================================
-// BUG REAL EM PRODUÇÃO (card de confirmação sumia): "aí" era tratado como
-// conjunção que encadeia duas cláusulas financeiras -- em "Registra pra mim
-// aí duzentos reais de gasolina.", uma frase de UMA operação só, "aí"
-// dividia o texto em "Registra pra mim" (tem verbo) + "duzentos reais de
-// gasolina" (tem valor), e as DUAS cláusulas "com sinal" faziam a frase
-// parecer multioperação. Isso desviava a frase inteira para a camada
-// neural (financial_plan), que responde só em texto -- nunca monta o card
-// estruturado -- mesmo o parser de uma única operação já reconhecendo
-// "registra" perfeitamente se tivesse chance de rodar.
-// ============================================================================
-
-test('BUG REAL: "aí" como muleta de discurso (não conjunção) NÃO faz a frase parecer multioperação', () => {
-  assert.equal(
-    looksLikeComplexFinancialText('Registra pra mim aí duzentos reais de gasolina.'),
-    false,
-  );
-  assert.equal(
-    looksLikeComplexFinancialText('Gastei 50 reais aí no mercado.'),
-    false,
-  );
-  assert.deepEqual(
-    splitFinancialClauses('Registra pra mim aí duzentos reais de gasolina.'),
-    ['Registra pra mim aí duzentos reais de gasolina.'],
-  );
-});
-
-test('remover "aí" do split não afeta a detecção real de multioperação por "e"/"também"/"mas"/"enquanto"/"além disso"', () => {
-  assert.equal(
-    looksLikeComplexFinancialText('Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do Brasil.'),
-    true,
-  );
-  assert.equal(looksLikeComplexFinancialText('Paguei a luz e também paguei a água'), true);
-  assert.equal(
-    looksLikeComplexFinancialText('Gastei R$ 50 no mercado, mas a gasolina eu paguei pelo Banco do Brasil.'),
-    true,
-  );
-});

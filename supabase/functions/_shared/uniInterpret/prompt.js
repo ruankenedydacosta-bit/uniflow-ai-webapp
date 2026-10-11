@@ -26,6 +26,8 @@ Uma frase pode ter várias operações ("paguei 40 de táxi e 25 de lanche" são
 - alternativas: apelidos de até 2 outras categorias do catálogo que também fariam sentido, da mais para a menos provável. Vazio se nenhuma fizer.
 - conta e conta_destino: apelido (k1, k2...), só se a frase cita a conta. conta_destino só em transferência.
 - confianca: de 0 a 1, o quanto você tem certeza da categoria escolhida.
+- parcelas: só quando a pessoa conta que dividiu uma compra em parcelas ("em 6x", "parcelei em doze vezes"). O valor é o total da compra: em "10x de 300", valor é 3000. Pagar uma parcela avulsa de algo não é parcelamento: parcelas é null. Só em saída.
+- recorrente: true só quando a pessoa diz que o valor se repete ("todo mês", "toda semana", "todo dia 10"). Pagar uma conta mensal uma vez não é recorrência. Nunca em transferência.
 - As memórias do usuário mostram como ele já classificou descrições parecidas. Siga-as quando a descrição corresponder.
 
 ## resposta

@@ -53,6 +53,8 @@ const CAPABILITY_PENDING_MESSAGES = Object.freeze({
 });
 
 function resolveOperationDate(operation, referenceDate) {
+  // Plano montado a partir do uni-interpret já traz a data resolvida.
+  if (operation.date) return operation.date;
   if (!operation.dateExpression) return referenceDate;
   const { resolvedDate } = resolveRelativeDateExpression(operation.dateExpression, referenceDate);
   return resolvedDate ?? referenceDate;
@@ -325,30 +327,3 @@ export function isPlanReadyForFinalConfirmation(planState) {
   return planState?.status === PLAN_STATUS.READY_FOR_CONFIRMATION;
 }
 
-/**
- * Resumo curto para reenviar como `pendingPlanSummary` na proxima chamada a
- * camada neural (financial_plan) -- nunca serializa o plano inteiro, nunca
- * inclui dados sensiveis, so o essencial para a IA entender uma correcao.
- */
-export function summarizePlanForNeuralContext(planState) {
-  const active = getActivePlanOperations(planState);
-  if (!active.length) {
-    // Plano ainda sem nenhuma operação formada (só a pergunta de
-    // esclarecimento, ex.: "qual foi o valor da gasolina?") -- a próxima
-    // resposta do usuário precisa desse contexto mínimo para a IA entender
-    // o que está sendo respondido, nunca o plano inteiro serializado.
-    if (planState.clarificationQuestion) {
-      return `Pergunta pendente: "${planState.clarificationQuestion}" (frase original: "${planState.phrase}")`;
-    }
-    return '';
-  }
-  return active
-    .map((op) => {
-      const raw = op.rawOperation;
-      const label = op.operationType === 'transfer'
-        ? `transferência de R$ ${raw.amount} de ${raw.sourceAccountReference ?? '?'} para ${raw.destinationAccountReference ?? '?'}`
-        : `${op.operationType === 'income' ? 'entrada' : 'saída'} de R$ ${raw.amount}${raw.description ? ` (${raw.description})` : ''}`;
-      return `${op.temporaryId}: ${label}, status ${op.status}`;
-    })
-    .join('; ');
-}

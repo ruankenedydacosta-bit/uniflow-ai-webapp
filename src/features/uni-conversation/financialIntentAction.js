@@ -249,7 +249,6 @@ export function buildFinancialIntentAction({
         excludedCategoryName: overrides.rejectedCategoryName,
         decision: overrides.categoryDecision,
         workspaceType,
-        aiInference: overrides.aiInference ?? null,
       });
   // BUG REAL (BUG 2): transferência precisa resolver a conta de DESTINO
   // ("para o Inter") além da origem. Só conta existente resolve
