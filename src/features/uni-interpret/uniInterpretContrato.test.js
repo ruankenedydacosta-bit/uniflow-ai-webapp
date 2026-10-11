@@ -201,6 +201,10 @@ test('agenda: título limpo e valor positivo; vazio ou inválido vira null', () 
   assert.deepEqual(agenda({ titulo: null, valor: null }).agenda, { titulo: null, valor: null });
   assert.deepEqual(agenda(undefined).agenda, { titulo: null, valor: null });
   assert.equal(agenda({ titulo: 'x'.repeat(200), valor: null }).agenda.titulo.length, MAX_TITULO_AGENDA);
+  const longo = agenda({ titulo: `Pagar ${'mensalidade '.repeat(10)}das escolas`, valor: null }).agenda.titulo;
+  assert.ok(longo.length <= MAX_TITULO_AGENDA);
+  assert.match(longo, /mensalidade$/, 'corta na palavra inteira');
+  assert.equal(agenda({ titulo: 'Dentista', valor: 0.004 }).agenda.valor, null);
 });
 
 test('mensagem do usuário traz data, catálogo, contas e a frase marcada como dado', () => {

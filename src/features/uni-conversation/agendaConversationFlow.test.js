@@ -3227,3 +3227,27 @@ test('criação com título interpretado: horário dito na frase continua valend
   assert.equal(calls[0].payload.is_all_day, false);
   assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
 });
+
+test('criação com título interpretado: pedido vago ainda pergunta o assunto', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await flow.handle({
+    text: 'Bota aquele negócio pra sexta',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { titulo: 'Compromisso' },
+  });
+  assert.match(result.text, /O que você quer que eu coloque na agenda/);
+  assert.equal(calls.length, 0);
+});
+
+test('criação com título interpretado: a descrição da regex não repete o assunto', async () => {
+  const { flow, calls } = makeHarness();
+  await flow.handle({
+    text: 'Marca reunião com o gerente amanhã às 15h para falar sobre o empréstimo',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { titulo: 'Reunião com o gerente sobre o empréstimo' },
+  });
+  assert.equal(calls[0].payload.title, 'Reunião com o gerente sobre o empréstimo');
+  assert.equal('description' in calls[0].payload, false);
+});

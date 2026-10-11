@@ -2051,9 +2051,14 @@ export function createAgendaConversationFlow({
       const content = extractAgendaContent(agendaText, timeAnalysis);
       const fields = {
         intent: classification.intent,
-        title: interpretado?.titulo
-          ?? (classification.signals.includes('agenda_vague_subject') ? null : content.title),
-        description: content.description,
+        // Pedido vago ("marca um compromisso pra sexta") pergunta o assunto
+        // mesmo que o modelo invente um título genérico.
+        title: classification.signals.includes('agenda_vague_subject')
+          ? null
+          : interpretado?.titulo ?? content.title,
+        // O título do modelo já resume a frase inteira; a descrição da regex
+        // repetiria o assunto.
+        description: interpretado?.titulo ? null : content.description,
         date: resolveAgendaDate(agendaText, referenceDate),
         time: timeAnalysis.time,
         allDay: /\b(?:o\s+)?dia\s+inteiro\b/.test(normalizeFinancialText(agendaText)),

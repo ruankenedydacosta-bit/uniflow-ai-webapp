@@ -292,6 +292,10 @@ test('agenda: título do modelo com o valor formatado', () => {
     { titulo: 'Pagar IPTU de R$ 300' },
     'não repete o valor que o título já traz',
   );
+  assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ titulo: 'Pagar aluguel de 1.200', valor: 1200 })),
+    { titulo: 'Pagar aluguel de 1.200' },
+  );
 });
 
 test('agenda: sem título do modelo, ou de uma função anterior ao contrato, a regex segue', () => {

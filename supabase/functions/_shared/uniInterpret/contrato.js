@@ -192,14 +192,15 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
 }
 
 // Título vazio vira null: o fluxo da agenda usa o parser próprio ou pergunta.
+// Título longo demais é cortado na última palavra inteira.
 function validarAgenda(bruta) {
+  const limpo = textoLimpo(bruta?.titulo, MAX_TITULO_AGENDA + 1);
+  const titulo = limpo.length > MAX_TITULO_AGENDA
+    ? limpo.slice(0, MAX_TITULO_AGENDA).replace(/\s+\S*$/, '')
+    : limpo;
   const valorBruto = Number(bruta?.valor);
-  return {
-    titulo: textoLimpo(bruta?.titulo, MAX_TITULO_AGENDA) || null,
-    valor: bruta?.valor !== null && Number.isFinite(valorBruto) && valorBruto > 0
-      ? Math.round(valorBruto * 100) / 100
-      : null,
-  };
+  const valor = Number.isFinite(valorBruto) ? Math.round(valorBruto * 100) / 100 : 0;
+  return { titulo: titulo || null, valor: valor > 0 ? valor : null };
 }
 
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:

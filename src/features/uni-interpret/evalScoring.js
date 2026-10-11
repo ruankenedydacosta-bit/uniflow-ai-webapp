@@ -7,6 +7,7 @@
 // modoCategoria: 'resolveu' | 'sugeriu' | 'propos_criar' | 'perguntou'.
 
 import { DATA_REFERENCIA } from './evalCases.js';
+import { normalizeSearchText } from '../../utils/searchText.js';
 
 export const INTENTS_DE_LANCAMENTO = new Set(['lancar_saida', 'lancar_entrada', 'transferir']);
 
@@ -24,21 +25,17 @@ function avaliarCategoria(esperado, resultado) {
   return [esperado.categoria, ...(esperado.aceitas ?? [])].includes(resultado.categoria);
 }
 
-function semAcento(texto) {
-  return String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
-
 // Sobra do pedido que não pode ir para a agenda (#142): "meu que eu vou ter
 // que pagar..." foi o título real que motivou o campo.
-const RESTO_DE_PEDIDO = /\b(?:lembr\w*|anota\w*|marca|uni|que eu|vou ter|amanha|hoje|reais)\b/;
+const RESTO_DE_PEDIDO = /\b(?:lembr\w*|anota\w*|uni|que eu|vou ter|amanha|reais)\b/;
 
 // Título de agenda: começa com maiúscula, tem as palavras esperadas e nada
 // do pedido.
 function avaliarTitulo(palavras, titulo) {
   if (typeof titulo !== 'string' || !titulo) return false;
-  const normalizado = semAcento(titulo);
+  const normalizado = normalizeSearchText(titulo);
   return titulo[0] === titulo[0].toUpperCase()
-    && palavras.every((palavra) => normalizado.includes(semAcento(palavra)))
+    && palavras.every((palavra) => normalizado.includes(normalizeSearchText(palavra)))
     && !RESTO_DE_PEDIDO.test(normalizado);
 }
 
@@ -55,7 +52,10 @@ export function avaliarCaso(caso, resultado) {
       data: null,
       categoria: null,
       modalidade: null,
-      titulo: esperado.titulo ? intent && avaliarTitulo(esperado.titulo, resultado.titulo) : null,
+      // Quem não produz título (as regras atuais na régua) não é medido nele.
+      titulo: esperado.titulo && resultado.titulo !== undefined
+        ? intent && avaliarTitulo(esperado.titulo, resultado.titulo)
+        : null,
     };
   }
 

@@ -138,6 +138,8 @@ test('título de agenda: palavras esperadas, inicial maiúscula e nada do pedido
   assert.equal(titulo('Meu que eu vou ter que pagar a escola'), false, 'sobrou o pedido');
   assert.equal(titulo(null), false);
   assert.equal(avaliarCaso(caso, { intent: 'consulta', titulo: 'Pagar a escola' }).titulo, false);
+  assert.equal(avaliarCaso(caso, { intent: 'agenda' }).titulo, null, 'quem não produz título não é medido nele');
+  assert.equal(titulo('Pagar a escola da marca X'), true, '"marca" como substantivo não é pedido');
 });
 
 test('casos de agenda com título esperado listam palavras', () => {
