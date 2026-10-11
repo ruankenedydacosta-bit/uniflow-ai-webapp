@@ -13,7 +13,9 @@ import {
   resolveRealtimeToolOutcome,
   resolveScreenActionOutcome,
   snapshotRealtimeToolTurn,
+  snapshotRealtimeToolReply,
   snapshotScreenActionTurn,
+  warnRepeatedRealtimeReply,
 } from './realtimeToolBridge.js';
 import { useRealtimeVoiceSession } from './useRealtimeVoiceSession.js';
 
@@ -55,6 +57,7 @@ export function useRealtimeUniConversation({
   const saveNamePronunciationRef = useRef(onSaveNamePronunciation);
   const pendingTurnRef = useRef(null);
   const screenActionRef = useRef(null);
+  const lastToolReplyRef = useRef(null);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -128,7 +131,10 @@ export function useRealtimeUniConversation({
     const pending = pendingTurnRef.current;
     if (!pending || isBusy) return;
     const output = resolveRealtimeToolOutcome(messages, pending.turn);
-    if (output) pending.finish(output);
+    if (!output) return;
+    const previousReply = lastToolReplyRef.current;
+    lastToolReplyRef.current = snapshotRealtimeToolReply(messages, pending.turn);
+    pending.finish(warnRepeatedRealtimeReply(output, previousReply, pending.turn));
   }, [messages, isBusy]);
 
   useEffect(() => () => {
@@ -142,7 +148,10 @@ export function useRealtimeUniConversation({
 
   useEffect(() => {
     isActiveRef.current = isActive;
-    if (!isActive) screenActionRef.current = null;
+    if (!isActive) {
+      screenActionRef.current = null;
+      lastToolReplyRef.current = null;
+    }
   }, [isActive]);
 
   // Com um turno da ferramenta aberto, a saída dele já conta o que houve.

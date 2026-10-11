@@ -21,7 +21,11 @@ test('categoria esperada existe no catálogo do workspace do caso, com o tipo ce
     const catalogo = catalogoDoWorkspace(caso.workspace ?? 'personal')
       .filter((category) => category.category_type === tipoPorIntent[caso.esperado.intent])
       .map((category) => category.name);
-    const nomes = [caso.esperado.categoria, ...(caso.esperado.aceitas ?? [])].filter((nome) => nome !== null);
+    const { novaCategoria } = caso.esperado;
+    assert.ok(caso.esperado.categoria !== undefined || novaCategoria, `${caso.id}: categoria esperada ausente`);
+    // Categoria nova é a que o card propõe criar: não pode estar no catálogo.
+    if (novaCategoria) assert.ok(!catalogo.includes(novaCategoria), `${caso.id}: "${novaCategoria}" já está no catálogo`);
+    const nomes = [caso.esperado.categoria, ...(caso.esperado.aceitas ?? [])].filter((nome) => nome !== null && nome !== undefined);
     for (const nome of nomes) {
       assert.ok(catalogo.includes(nome), `${caso.id}: "${nome}" fora do catálogo`);
     }
