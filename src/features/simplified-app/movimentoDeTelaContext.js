@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // #144: o SimplifiedAppShell publica aqui o navigate com transição de tela
@@ -7,7 +7,10 @@ import { useNavigate } from 'react-router-dom';
 export const MovimentoDeTelaContext = createContext(null);
 
 export function useNavegar() {
-  const navegar = useContext(MovimentoDeTelaContext);
+  const navegarComMovimento = useContext(MovimentoDeTelaContext);
   const navigate = useNavigate();
-  return navegar ?? navigate;
+  return useCallback((destino, opcoes) => {
+    if (navegarComMovimento) navegarComMovimento(destino, opcoes, navigate);
+    else navigate(destino, opcoes);
+  }, [navegarComMovimento, navigate]);
 }

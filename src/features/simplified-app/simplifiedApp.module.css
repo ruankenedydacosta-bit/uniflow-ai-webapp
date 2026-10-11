@@ -585,20 +585,20 @@ html[data-uf-transicao="aba"]::view-transition-new(uf-tela) {
 /* Abrir: a tela nova sobe 56px e cresce de 94% com a mola macio; a de
    trás encolhe e some. */
 html[data-uf-transicao="abrir"]::view-transition-old(uf-tela) {
-  animation: telaRecua var(--uf-motion-voltar) var(--uf-motion-curva-saida) both;
+  animation: telaRecua var(--uf-motion-tela) var(--uf-motion-curva-saida) both;
 }
 
 html[data-uf-transicao="abrir"]::view-transition-new(uf-tela) {
   animation:
     telaSobe var(--uf-motion-mola-macio-duracao) var(--uf-motion-mola-macio) both,
-    abaSurge var(--uf-motion-voltar) var(--uf-motion-curva-saida) both;
+    abaSurge var(--uf-motion-tela) var(--uf-motion-curva-saida) both;
 }
 
 /* Voltar: a tela sai descendo por cima da de trás, que volta com a mola
    macio. */
 html[data-uf-transicao="voltar"]::view-transition-old(uf-tela) {
   z-index: 1;
-  animation: telaDesce var(--uf-motion-voltar) var(--uf-motion-curva-acelera) both;
+  animation: telaDesce var(--uf-motion-tela) var(--uf-motion-curva-acelera) both;
 }
 
 html[data-uf-transicao="voltar"]::view-transition-new(uf-tela) {

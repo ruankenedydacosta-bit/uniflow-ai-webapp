@@ -42,29 +42,29 @@ export function abaDaRota(pathname) {
 // Telas fora da barra que abrem por cima de uma aba (pelo Mais ou pela Home).
 const TELAS_ABERTAS_POR_CIMA = [SIMPLIFIED_ROUTES.UNI, SIMPLIFIED_ROUTES.RELATORIO];
 
-function segmentosDepois(pathname, base) {
-  return pathname.slice(base.length).split('/').filter(Boolean).length;
+function telaPorCima(pathname) {
+  return TELAS_ABERTAS_POR_CIMA.find((path) => pathname === path || pathname.startsWith(`${path}/`)) ?? null;
 }
 
-// Nível da tela na pilha: raiz de aba é 0 e cada segmento a mais abre uma
-// tela por cima (/app/conta/pagamentos/historico é 2). Rota fora do app: null.
-export function profundidadeDaRota(pathname) {
-  const aba = abaDaRota(pathname);
-  if (aba) return segmentosDepois(pathname, aba.path);
-  const tela = TELAS_ABERTAS_POR_CIMA.find((path) => pathname === path || pathname.startsWith(`${path}/`));
-  return tela ? 1 + segmentosDepois(pathname, tela) : null;
+function estaDentro(pathname, base) {
+  return pathname.startsWith(`${base}/`);
 }
 
-// Transição de uma navegação comum: tela mais funda abre, mais rasa volta,
-// raiz de outra aba troca de aba. Entre telas do mesmo nível (abas de
-// Configurações, por exemplo) a troca é na hora.
+// Transição de uma navegação pela hierarquia das rotas: a tela-filha abre,
+// a tela-pai volta e a raiz de outra aba troca de aba. Telas lado a lado
+// (Histórico -> Suporte, abas de Configurações) trocam na hora.
 export function movimentoDaNavegacao(de, para) {
-  const nivelDe = profundidadeDaRota(de);
-  const nivelPara = profundidadeDaRota(para);
-  if (nivelDe === null || nivelPara === null) return null;
-  if (nivelPara > nivelDe) return 'abrir';
-  if (nivelPara < nivelDe) return 'voltar';
-  if (nivelPara === 0 && abaDaRota(de).id !== abaDaRota(para).id) return 'aba';
+  const abaDe = abaDaRota(de);
+  const abaPara = abaDaRota(para);
+  const telaDe = telaPorCima(de);
+  const telaPara = telaPorCima(para);
+  if ((!abaDe && !telaDe) || (!abaPara && !telaPara) || de === para) return null;
+  const paraRaizDeAba = abaPara?.path === para;
+  if (paraRaizDeAba && abaDe && abaDe.id !== abaPara.id) return 'aba';
+  if (estaDentro(de, para)) return 'voltar';
+  if (estaDentro(para, de)) return 'abrir';
+  if (telaDe && paraRaizDeAba) return 'voltar';
+  if (telaPara && telaPara !== telaDe) return 'abrir';
   return null;
 }
 
@@ -114,6 +114,7 @@ export function useMovimentoDeAba({ shellRef, mainContentRef }) {
   const abaAnteriorRef = useRef(abaDaRota(location.pathname));
   const rotaMontadaRef = useRef(null);
   const transicaoRef = useRef(null);
+  const aguardandoFotoRef = useRef(false);
 
   useLayoutEffect(() => {
     rotaMontadaRef.current?.();
@@ -129,16 +130,20 @@ export function useMovimentoDeAba({ shellRef, mainContentRef }) {
   }, [location.key, location.pathname, mainContentRef, shellRef]);
 
   // Navega dentro de uma View Transition: a tela antiga é fotografada antes
-  // da rota mudar, e o CSS de data-uf-transicao anima a troca.
+  // da rota mudar, e o CSS de data-uf-transicao anima a troca. Toque que
+  // chega antes da foto é ignorado (regra do épico #148): navegaria duas
+  // vezes. Depois da foto, o navegador já não entrega toque à página.
   const transicionar = useCallback((tipo, sentido, navegarDeFato) => {
     const raiz = document.documentElement;
     raiz.dataset.ufTransicao = tipo;
     raiz.style.setProperty('--uf-aba-sentido', String(sentido));
 
-    // Toque em outra tela antes da anterior montar: libera a espera dela.
+    // Transição anterior ainda esperando a rota montar: libera a espera dela.
     rotaMontadaRef.current?.();
 
+    aguardandoFotoRef.current = true;
     const transicao = document.startViewTransition(() => new Promise((resolver) => {
+      aguardandoFotoRef.current = false;
       rotaMontadaRef.current = resolver;
       navegarDeFato();
       window.setTimeout(() => {
@@ -159,49 +164,36 @@ export function useMovimentoDeAba({ shellRef, mainContentRef }) {
     });
   }, []);
 
+  // navigate() com a transição que a rota pede. Recebe o navigate da tela
+  // que chamou (useNavegar), para o destino resolver como antes. Só destino
+  // absoluto é classificado; número e caminho relativo navegam direto.
+  const navegar = useCallback((destino, opcoes, navigateDaTela = navigate) => {
+    if (aguardandoFotoRef.current) return;
+    const caminho = typeof destino === 'string' ? destino : destino?.pathname;
+    const tipo = caminho?.startsWith('/') && typeof document.startViewTransition === 'function'
+      ? movimentoDaNavegacao(location.pathname, resolvePath(destino).pathname)
+      : null;
+    if (!tipo) {
+      navigateDaTela(destino, opcoes);
+      return;
+    }
+    const sentido = tipo === 'aba'
+      ? sentidoDaAba(abaDaRota(location.pathname).id, abaDaRota(resolvePath(destino).pathname).id)
+      : 1;
+    transicionar(tipo, sentido, () => navigateDaTela(destino, opcoes));
+  }, [location.pathname, navigate, transicionar]);
+
   const irParaAba = useCallback((evento, item) => {
     if (
       evento.defaultPrevented
       || evento.button !== 0
       || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey
       || typeof document.startViewTransition !== 'function'
+      || !movimentoDaNavegacao(location.pathname, item.path)
     ) return;
-
-    const abaAtual = abaDaRota(location.pathname);
-    if (!abaAtual) return;
-    // A própria aba, vista de uma tela aberta nela (Plano -> Mais), volta.
-    if (abaAtual.id === item.id) {
-      if (!profundidadeDaRota(location.pathname)) return;
-      evento.preventDefault();
-      transicionar('voltar', 1, () => navigate(item.path));
-      return;
-    }
     evento.preventDefault();
-    transicionar('aba', sentidoDaAba(abaAtual.id, item.id), () => navigate(item.path));
-  }, [location.pathname, navigate, transicionar]);
-
-  // navigate() com a transição que a rota pede. Fica estável entre rotas
-  // (lê a rota atual por ref) para não reexecutar efeitos que dependem dele.
-  const rotaAtualRef = useRef(location.pathname);
-  useLayoutEffect(() => {
-    rotaAtualRef.current = location.pathname;
-  }, [location.pathname]);
-
-  const navegar = useCallback((destino, opcoes) => {
-    if (typeof destino === 'number' || typeof document.startViewTransition !== 'function') {
-      navigate(destino, opcoes);
-      return;
-    }
-    const de = rotaAtualRef.current;
-    const para = resolvePath(destino, de).pathname;
-    const tipo = movimentoDaNavegacao(de, para);
-    if (!tipo) {
-      navigate(destino, opcoes);
-      return;
-    }
-    const sentido = tipo === 'aba' ? sentidoDaAba(abaDaRota(de).id, abaDaRota(para).id) : 1;
-    transicionar(tipo, sentido, () => navigate(destino, opcoes));
-  }, [navigate, transicionar]);
+    navegar(item.path);
+  }, [location.pathname, navegar]);
 
   return { irParaAba, navegar };
 }
