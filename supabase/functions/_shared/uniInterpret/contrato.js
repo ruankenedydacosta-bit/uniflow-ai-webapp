@@ -16,6 +16,9 @@ export const INTENTS = Object.freeze([
   'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
+// Consulta que o app responde com os parâmetros (#80). 'outra' (meta, contas
+// a pagar, maior gasto, comparação...) segue para as regras de consulta.
+export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'outra']);
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -33,6 +36,7 @@ export const MAX_RESPOSTA = 240;
 // compra à vista.
 export const MIN_PARCELAS = 2;
 export const MAX_PARCELAS = 72;
+export const MAX_TERMO = 40;
 
 // Apelidos estáveis: ordem por tipo e nome, a mesma que o prompt mostra.
 export function indexarCatalogo({ categorias = [], contas = [] } = {}) {
@@ -70,16 +74,32 @@ const ESQUEMA_OPERACAO = {
   },
 };
 
+// Pergunta sobre os dados (#80). Fora de consulta, todos os campos são null.
+const ESQUEMA_CONSULTA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['tipo', 'inicio', 'fim', 'categoria', 'conta', 'termo'],
+  properties: {
+    tipo: { type: ['string', 'null'], enum: [...TIPOS_CONSULTA, null] },
+    inicio: { ...TEXTO_OU_NULO, description: 'AAAA-MM-DD' },
+    fim: { ...TEXTO_OU_NULO, description: 'AAAA-MM-DD' },
+    categoria: { ...TEXTO_OU_NULO, description: 'apelido do catálogo, ex.: c3' },
+    conta: { ...TEXTO_OU_NULO, description: 'apelido da conta, ex.: k1' },
+    termo: TEXTO_OU_NULO,
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'resposta'],
+  required: ['intent', 'operacoes', 'resposta', 'consulta'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
     resposta: { type: 'string' },
+    consulta: ESQUEMA_CONSULTA,
   },
 });
 
@@ -180,6 +200,50 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   };
 }
 
+const CATEGORY_TYPE_POR_TIPO_CONSULTA = Object.freeze({ saidas: 'expense', entradas: 'income' });
+
+// Período da consulta: os dois extremos válidos e em ordem, começando no
+// passado. Sem período, ou com período inválido, vale o mês atual (null).
+// "Desde agosto" chega sem fim e vai até hoje.
+function validarPeriodo(bruta, dataReferencia) {
+  const inicio = dataValida(bruta?.inicio) ? bruta.inicio : null;
+  const fim = dataValida(bruta?.fim) ? bruta.fim : (inicio ? dataReferencia : null);
+  if (!inicio || !fim || inicio > fim) return { inicio: null, fim: null, futuro: false };
+  return { inicio, fim, futuro: inicio > dataReferencia };
+}
+
+// Sem tipo, a consulta vira 'outra' e o app cai nas regras.
+function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataReferencia }) {
+  const ajustes = [];
+  let tipo = TIPOS_CONSULTA.includes(bruta?.tipo) ? bruta.tipo : 'outra';
+
+  const { inicio, fim, futuro } = validarPeriodo(bruta, dataReferencia);
+  // Pergunta sobre o futuro não tem movimentação para somar: as regras
+  // respondem sem inventar número.
+  if (futuro) {
+    tipo = 'outra';
+    ajustes.push('periodo_futuro');
+  }
+
+  // Categoria de outro tipo ("quanto gastei de salário") não filtra nada.
+  const categoriaBruta = categoriasPorApelido.get(bruta?.categoria) ?? null;
+  const categoryType = CATEGORY_TYPE_POR_TIPO_CONSULTA[tipo];
+  const categoria = categoriaBruta && categoryType && categoriaBruta.category_type === categoryType
+    ? categoriaBruta
+    : null;
+  if (bruta?.categoria && !categoria) ajustes.push('categoria_descartada');
+
+  return {
+    tipo,
+    inicio,
+    fim,
+    categoria,
+    conta: contasPorApelido.get(bruta?.conta) ?? null,
+    termo: textoLimpo(bruta?.termo, MAX_TERMO) || null,
+    ajustes,
+  };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -187,16 +251,19 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
   const intent = INTENTS.includes(bruta?.intent) ? bruta.intent : 'nao_entendi';
   const resposta = textoLimpo(bruta?.resposta, MAX_RESPOSTA);
 
-  if (intent !== 'lancamento' && intent !== 'correcao') {
-    return { intent, operacoes: [], resposta };
-  }
-
   const indice = indexarCatalogo({ categorias, contas });
   const contexto = {
     categoriasPorApelido: new Map(indice.categorias.map(({ apelido, registro }) => [apelido, registro])),
     contasPorApelido: new Map(indice.contas.map(({ apelido, registro }) => [apelido, registro])),
     dataReferencia,
   };
+
+  if (intent === 'consulta') {
+    return { intent, operacoes: [], resposta, consulta: validarConsulta(bruta?.consulta, contexto) };
+  }
+  if (intent !== 'lancamento' && intent !== 'correcao') {
+    return { intent, operacoes: [], resposta };
+  }
   const operacoes = (Array.isArray(bruta.operacoes) ? bruta.operacoes : [])
     .slice(0, MAX_OPERACOES)
     .map((operacao) => validarOperacao(operacao, contexto))

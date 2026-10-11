@@ -69,8 +69,19 @@ function paraCliente(registro) {
 
 // Formato que o frontend recebe: só ids e nomes, nunca o registro inteiro.
 function serializar(validada) {
+  const { consulta } = validada;
   return {
     intent: validada.intent,
+    ...(consulta ? {
+      consulta: {
+        tipo: consulta.tipo,
+        inicio: consulta.inicio,
+        fim: consulta.fim,
+        categoria: paraCliente(consulta.categoria),
+        conta: paraCliente(consulta.conta),
+        termo: consulta.termo,
+      },
+    } : {}),
     resposta: validada.resposta,
     operacoes: validada.operacoes.map((operacao) => ({
       tipo: operacao.tipo,

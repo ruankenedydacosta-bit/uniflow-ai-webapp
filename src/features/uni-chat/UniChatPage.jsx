@@ -87,6 +87,7 @@ import {
   interpretacaoParaPlano,
   interpretacaoParaRascunho,
 } from '../uni-interpret/uniInterpretRoteamento.js';
+import { consultaRespondivel, periodoDaConsulta, responderConsulta } from '../uni-interpret/uniInterpretConsulta.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
 import {
@@ -226,7 +227,12 @@ import {
 import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/financialCrud.mock';
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { executeConfirmedFinancialAction } from '../../services/confirmedFinancialActionService.js';
-import { getTransaction, listTransactions, updateTransaction } from '../../services/transactionService.js';
+import {
+  getTransaction,
+  listTransactions,
+  listTransactionsForPeriod,
+  updateTransaction,
+} from '../../services/transactionService.js';
 import {
   analisarAlvo,
   cardDaAlteracao,
@@ -4316,6 +4322,25 @@ export default function UniChatPage({ variant = 'full' }) {
     );
   }
 
+  // Consulta com os parâmetros do uni-interpret (#80). Busca o período inteiro
+  // no banco: o chat só carrega as movimentações mais recentes. null quando a
+  // busca falha.
+  async function responderConsultaDoModelo(consulta, dataDaFuncao) {
+    const dataReferencia = dataDaFuncao ?? getLocalIsoDate();
+    const periodo = periodoDaConsulta(consulta, dataReferencia);
+    try {
+      const { data, error } = await listTransactionsForPeriod(effectiveWorkspace.id, {
+        dateFrom: periodo.inicio,
+        dateTo: periodo.fim,
+        status: 'completed',
+      });
+      if (error) return null;
+      return responderConsulta({ consulta, transacoes: data, dataReferencia });
+    } catch {
+      return null;
+    }
+  }
+
   // #80: com a IA disponível, o uni-interpret decide o que a frase nova pede.
   // As regras fixas só rodam quando ele não devolve interpretação (resolve
   // false). Pedido de dinheiro nunca chega ao chat geral por aqui.
@@ -4375,10 +4400,22 @@ export default function UniChatPage({ variant = 'full' }) {
         // Sem deduplicar: pedida duas vezes por voz, a resposta é falada de novo.
         createAssistantResponse(TEXTO_META_SEM_CRIACAO, { deduplicateNarration: false });
         return true;
-      case ROTAS_INTERPRETACAO.CONSULTA:
+      case ROTAS_INTERPRETACAO.CONSULTA: {
+        if (consultaRespondivel(interpretacao.consulta)) {
+          const resposta = await responderConsultaDoModelo(interpretacao.consulta, interpretacao.dataReferencia);
+          if (uniTurnTokenRef.current !== turnToken) return true;
+          if (resposta) {
+            setIsTyping(false);
+            createAssistantResponse(resposta, { deduplicateNarration: false });
+            return true;
+          }
+        }
+        // Outra pergunta (meta, maior gasto, comparação) ou falha na busca:
+        // as regras de consulta respondem.
         setIsTyping(false);
         runDeterministicFinancialFlow(text, historySnapshot, true);
         return true;
+      }
       case ROTAS_INTERPRETACAO.AGENDA:
         setIsTyping(false);
         runAgendaTurn(agendaTurn);
