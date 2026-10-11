@@ -39,6 +39,10 @@ test('return path legado (ex.: /dashboard, /financeiro, /crm) nunca é aceito co
   }
 });
 
+test('Metas simplificada (/app/metas) é destino seguro', () => {
+  assert.equal(getSafeAuthReturnPath('/app/metas'), '/app/metas');
+});
+
 test('bloqueia redirects externos e URLs protocol-relative', () => {
   assert.equal(getSafeAuthReturnPath('https://evil.example/financeiro'), '/app/home');
   assert.equal(getSafeAuthReturnPath('//evil.example/financeiro'), '/app/home');

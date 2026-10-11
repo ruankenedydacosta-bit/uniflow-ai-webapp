@@ -358,7 +358,7 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
         const label = g.feasibility === 'attention' ? '⚠️ Atenção' : '❌ Inviável';
         return `• "${g.name}": ${label} — ${g.suggestedAction || 'Revise o valor ou prazo'}`;
       });
-      const msg = `${atRisk.length === 1 ? 'Meta' : 'Metas'} em risco:\n${lines.join('\n')}\n\n⚠️ Recomendo revisar essas metas em Objetivos ou ver a projeção completa em Visão de Futuro.`;
+      const msg = `${atRisk.length === 1 ? 'Meta' : 'Metas'} em risco:\n${lines.join('\n')}\n\n⚠️ Recomendo revisar essas metas em Metas ou ver a projeção completa em Visão de Futuro.`;
       return { text: msg, highlight: null };
     }
 

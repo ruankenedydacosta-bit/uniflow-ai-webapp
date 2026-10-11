@@ -146,17 +146,17 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
   },
   {
     id: 'goals',
-    title: 'Objetivos (metas financeiras)',
+    title: 'Metas',
     category: KNOWLEDGE_CATEGORIES.GOALS,
     version: MANIFEST_VERSION,
     file: 'docs/product-knowledge/goals.md',
-    routes: [],
+    routes: ['/app/metas'],
     workspaces: WORKSPACE_SCOPE.BOTH,
     keywords: ['meta', 'metas', 'objetivo', 'objetivos', 'reserva de emergência', 'aporte', 'contribuição', 'progresso da meta'],
-    status: KNOWLEDGE_STATUS.FUTURE,
+    status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Objetivos financeiros não estão expostos na interface simplificada atual. A Uni Suporte deve informar essa limitação com clareza e não direcionar o usuário para uma tela ou rota de Objetivos inexistente nessa experiência.',
+      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Pela conversa a Uni consulta as metas, mas ainda não cria meta nem registra aporte: isso é feito na tela de Metas.',
   },
   {
     id: 'crm-and-clients',
