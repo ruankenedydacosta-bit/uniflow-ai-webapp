@@ -3,9 +3,9 @@
 // Contrato: generateResponse({ system, messages }) -> { text, usage, tool_calls, error }
 // NUNCA lanca; sempre resolve com um objeto. Em qualquer falha retorna
 // { text: null, error: { code, message } } para o orquestrador cair no fallback.
-// `tool_calls` (Sprint 1 -- IA Conversacional) só é não-nulo quando a chamada
-// incluiu `tools` e a OpenAI decidiu usar alguma ferramenta. O chat não
-// envia `tools` desde a #80.
+// `tool_calls` (Sprint 1 -- IA Conversacional) só viria se a chamada levasse
+// `tools`; desde a #80 nem o chat manda nem a Edge Function aceita, então
+// fica sempre ausente.
 //
 // A chamada real ao provedor (ex.: OpenAI) acontece dentro da Edge Function
 // `uni-chat-llm`. Este provider apenas orquestra auth, timeout/cancelamento e
@@ -66,7 +66,7 @@ export function createUniLlmProvider({
     currentController?.abort('cancelled');
   }
 
-  async function performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens, tools }) {
+  async function performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens }) {
     const requestStartedAt = Date.now();
     const controller = new AbortController();
     currentController = controller;
@@ -79,8 +79,6 @@ export function createUniLlmProvider({
       // byte-identico ao de OPENAI1/OPENAI2: { system, messages }.
       // BLOCO A1: `maxOutputTokens` segue a mesma regra -- omitido quando
       // ausente, nunca quebra o formato ja validado.
-      // Sprint 1 (IA Conversacional): `tools` idem -- omitido (undefined)
-      // quando ausente; buildLlmPayload nunca o inclui.
       const response = await fetchImpl(`${supabaseUrl}/functions/v1/${UNI_LLM_FUNCTION_NAME}`, {
         method: 'POST',
         headers: {
@@ -88,7 +86,7 @@ export function createUniLlmProvider({
           apikey: supabaseAnonKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ system, messages, mode, productContext, maxOutputTokens, tools }),
+        body: JSON.stringify({ system, messages, mode, productContext, maxOutputTokens }),
         signal: controller.signal,
       });
       void telemetry.event('edge_function.lifecycle', {
@@ -130,7 +128,7 @@ export function createUniLlmProvider({
     }
   }
 
-  async function generateResponse({ system, messages, mode, productContext, maxOutputTokens, tools } = {}) {
+  async function generateResponse({ system, messages, mode, productContext, maxOutputTokens } = {}) {
     if (!isSupported()) {
       return { text: null, usage: null, error: { code: 'UNSUPPORTED', message: 'llm_unavailable' } };
     }
@@ -146,11 +144,11 @@ export function createUniLlmProvider({
       return { text: null, usage: null, error: { code: 'UNAUTHORIZED', message: 'llm_auth_required' } };
     }
 
-    let attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens, tools });
+    let attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens });
     let retries = 0;
     while (!attempt.ok && attempt.code === 'NETWORK' && retries < MAX_NETWORK_RETRIES) {
       retries += 1;
-      attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens, tools });
+      attempt = await performRequest({ system, messages, accessToken, mode, productContext, maxOutputTokens });
     }
 
     if (!attempt.ok) {

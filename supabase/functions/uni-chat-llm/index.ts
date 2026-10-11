@@ -71,45 +71,6 @@ const UNI_MODE = {
   PHRASE_FACT: 'phrase_fact',
 } as const;
 
-// Sprint 1 (IA Conversacional): allowlist fixa dos 6 tools de leitura já
-// aprovados (Fase 20.2). O servidor NUNCA aceita um nome de ferramenta fora
-// desta lista, mesmo que o cliente derive o schema de FINANCIAL_READ_TOOL_META
-// -- defesa em profundidade, mesmo padrão já usado para `payload.system`/
-// `payload.messages` nos outros modos isolados.
-const ALLOWED_TOOL_NAMES = new Set([
-  'get_financial_summary',
-  'get_expense_breakdown',
-  'compare_financial_periods',
-  'get_goal_progress',
-  'get_account_summary',
-  'get_recurring_expenses',
-]);
-
-function normalizeTools(raw: unknown): Array<Record<string, unknown>> {
-  if (!Array.isArray(raw)) return [];
-  const tools: Array<Record<string, unknown>> = [];
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue;
-    const record = item as Record<string, unknown>;
-    if (record.type !== 'function') continue;
-    const fn = record.function;
-    if (!fn || typeof fn !== 'object') continue;
-    const fnRecord = fn as Record<string, unknown>;
-    const name = typeof fnRecord.name === 'string' ? fnRecord.name : '';
-    if (!ALLOWED_TOOL_NAMES.has(name)) continue;
-    tools.push({
-      type: 'function',
-      function: {
-        name,
-        description: typeof fnRecord.description === 'string' ? fnRecord.description.slice(0, 500) : '',
-        parameters: fnRecord.parameters && typeof fnRecord.parameters === 'object'
-          ? fnRecord.parameters
-          : { type: 'object', properties: {} },
-      },
-    });
-  }
-  return tools;
-}
 const MAX_PRODUCT_CONTEXT_ENTRIES = 5;
 const MAX_PRODUCT_CONTEXT_ENTRY_CHARS = 700;
 const MAX_PRODUCT_CONTEXT_TOTAL_CHARS = 3000;
@@ -294,11 +255,10 @@ type AdapterOutcome =
 // unica forma oficial de diferenciar os dois), e erro do lado do provedor
 // (>=500) de erro de payload nosso (4xx que nao seja auth/quota).
 async function callOpenAiAdapter(
-  { apiKey, model, system, messages, signal, maxOutputTokens, tools = [] }:
+  { apiKey, model, system, messages, signal, maxOutputTokens }:
   {
     apiKey: string; model: string; system: string; messages: Array<{ role: string; content: string }>;
     signal: AbortSignal; maxOutputTokens: number;
-    tools?: Array<Record<string, unknown>>;
   },
 ): Promise<AdapterOutcome> {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -320,10 +280,6 @@ async function callOpenAiAdapter(
       // fixo unico.
       max_completion_tokens: maxOutputTokens,
       temperature: 0.5,
-      // Sprint 1 (IA Conversacional): `tools` só é incluído no corpo quando
-      // não-vazio -- payload byte-idêntico ao de antes desta sprint em
-      // qualquer chamada sem tools (todo tráfego hoje, flag desligada).
-      ...(tools.length > 0 ? { tools, tool_choice: 'auto' } : {}),
       // 'developer' e o role oficial atual para instrucoes de sistema na
       // familia de modelos GPT em uso (substitui 'system'; ver comentario
       // no topo do arquivo).
@@ -464,10 +420,8 @@ Deno.serve(async (request) => {
   let system: string;
   let messages: Array<{ role: string; content: string }>;
   let productContext: Array<{ id: string; title: string; content: string }> = [];
-  // Sprint 1 (IA Conversacional): só populado (e só repassado à OpenAI) no
-  // modo financeiro -- todo outro modo mantém tools=[] (comportamento
-  // idêntico ao de antes desta sprint, `tools` nunca vai no corpo).
-  const tools = mode === UNI_MODE.FINANCIAL ? normalizeTools(payload.tools) : [];
+  // #80: `tools` vindo do cliente é ignorado -- a OpenAI nunca recebe
+  // ferramentas desta função.
 
   if (mode === UNI_MODE.SUPPORT) {
     // Modo suporte: o `system` do cliente e ignorado por completo -- nunca
@@ -544,7 +498,6 @@ Deno.serve(async (request) => {
       messages,
       signal: controller.signal,
       maxOutputTokens,
-      tools,
     });
     if (result.usage) {
       await registrarCusto({
@@ -567,8 +520,8 @@ Deno.serve(async (request) => {
       return finish(429, result.reason, { error: 'Muitas solicitacoes. Tente em instantes.' });
     }
     // Sprint 1 (IA Conversacional): tool_calls (com ou sem texto) NUNCA cai
-    // no branch de "resposta vazia" abaixo -- só o modo financeiro chega
-    // aqui com `tools` não-vazio, então isso nunca afeta os outros modos.
+    // no branch de "resposta vazia" abaixo. Desde a #80 a chamada não leva
+    // `tools`, então a OpenAI não devolve tool_calls.
     if (result.status === 200 && result.toolCalls && result.toolCalls.length > 0) {
       return finish(200, 'tool_calls', {
         text: result.text ? clampText(result.text, 2000) || null : null,

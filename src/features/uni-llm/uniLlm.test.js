@@ -479,9 +479,9 @@ test('chamada em modo suporte inclui mode e productContext no corpo enviado', as
 });
 
 // ============================================================================
-// Sprint 1 (IA Conversacional) -- tools/tool_calls end-to-end. Desde a #80
-// buildLlmPayload nunca inclui `tools`. Os testes abaixo cobrem o
-// transporte (provider/orquestrador) quando `tools` é passado.
+// Sprint 1 (IA Conversacional) -- tools/tool_calls. Desde a #80 nem
+// buildLlmPayload nem o provider mandam `tools`. A leitura de tool_calls na
+// resposta continua coberta abaixo, como defesa.
 // ============================================================================
 
 test('Sprint 2: buildLlmPayload inclui a data de referencia no system prompt quando o snapshot a fornece', () => {
@@ -503,7 +503,7 @@ test('buildLlmPayload nao inclui tools', () => {
   assert.equal(payload.tools, undefined);
 });
 
-test('provider inclui tools no corpo quando fornecido, omite quando ausente', async () => {
+test('provider nunca manda tools no corpo, mesmo quando recebe', async () => {
   let capturedBody = null;
   const provider = makeProvider({
     fetchImpl: async (_url, init) => {
@@ -516,12 +516,6 @@ test('provider inclui tools no corpo quando fornecido, omite quando ausente', as
     messages: [{ role: 'user', content: 'qual meu saldo?' }],
     tools: [{ type: 'function', function: { name: 'get_financial_summary', description: 'x', parameters: { type: 'object', properties: {} } } }],
   });
-  const parsed = JSON.parse(capturedBody);
-  assert.equal(parsed.tools.length, 1);
-  assert.equal(parsed.tools[0].function.name, 'get_financial_summary');
-
-  capturedBody = null;
-  await provider.generateResponse({ system: 'sys', messages: [{ role: 'user', content: 'oi' }] });
   assert.equal('tools' in JSON.parse(capturedBody), false);
 });
 
