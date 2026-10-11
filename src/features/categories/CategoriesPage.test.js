@@ -117,7 +117,15 @@ test('CategoryCreateModal oferece nome, tipo e ícone e persiste a chave selecio
   assert.match(modal, /aria-label="Ícone da categoria"/);
   assert.match(modal, /getCategoryIconSections\(categoryType\)/);
   assert.match(modal, /section\.options\.map/);
-  assert.match(modal, /await onCreate\(\{ name: trimmed, category_type: categoryType, icon \}\)/);
+  assert.match(modal, /: \{ name: trimmed, category_type: categoryType, icon \}/);
+});
+
+test('CategoryCreateModal em edição preenche a categoria, fixa o tipo e ignora o próprio nome', async () => {
+  const modal = await source('components/CategoryCreateModal.jsx');
+  assert.match(modal, /setName\(category\?\.name \?\? ''\)/);
+  assert.match(modal, /isEditing \? null : \(\s*<Segmented/);
+  assert.match(modal, /isEditing\s*\? \{ name: trimmed, icon \}/);
+  assert.match(modal, /isDuplicateCategoryName\(categories, trimmed, categoryType, \{ excludeId: category\?\.id \}\)/);
 });
 
 test('CategoryCreateModal preserva escolha livre ao alternar Entrada/Saída', async () => {
@@ -210,11 +218,21 @@ test('getManageCategoriesTitle explica bloqueio sem depender de erro da RLS', as
   assert.match(page, /Aguarde a operação atual terminar\./);
 });
 
-test('nenhum codigo de edicao ou exclusao de categoria foi introduzido em CategoriesPage', async () => {
+test('CategoriesPage só oferece Editar/Excluir para categoria que o papel pode alterar', async () => {
   const page = await source('CategoriesPage.jsx');
-  assert.doesNotMatch(page, /removeCategory/);
-  assert.doesNotMatch(page, /handleEdit/);
-  assert.doesNotMatch(page, /handleDelete/);
+  assert.match(page, /canManageCategory\(selectedCategory, \{/);
+  assert.match(page, /\{canManageSelected \? \(/);
+  assert.match(page, /if \(!canManageSelected \|\| categoryState\.isMutating\) return;/);
+  assert.match(page, /categoryState\.saveCategory\(values, editingCategory\.id\)/);
+  assert.match(page, /categoryState\.removeCategory\(deletingCategory\.id\)/);
+});
+
+test('CategoryDeleteConfirmModal bloqueia fechamento e clique duplo durante mutacao', async () => {
+  const modal = await source('components/CategoryDeleteConfirmModal.jsx');
+  assert.match(modal, /function handleClose\(\) \{\s*if \(isMutating\) return;/);
+  assert.match(modal, /async function handleConfirm\(\) \{\s*if \(isMutating\) return;/);
+  assert.match(modal, /closeOnOverlayClick=\{!isMutating\}/);
+  assert.match(modal, /closeOnEsc=\{!isMutating\}/);
 });
 
 // --- Escopo: sem escrita de applies_to, sem dependencia de rotas/arquitetura

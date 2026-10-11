@@ -309,6 +309,44 @@
   font-weight: var(--uf-font-weight-semibold);
 }
 
+/* Ações da categoria selecionada */
+.selectionActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--uf-space-12);
+  margin-top: var(--uf-space-16);
+}
+
+.selectionButton {
+  min-height: var(--uf-space-48);
+  padding: var(--uf-space-12) var(--uf-space-16);
+  border: 1px solid var(--uf-color-border-default);
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-color-bg-surface);
+  color: var(--uf-color-text-primary);
+  font-size: var(--uf-text-button-size);
+  font-weight: var(--uf-font-weight-semibold);
+  cursor: pointer;
+}
+
+.selectionButton:hover:not(:disabled) {
+  background: var(--uf-color-bg-surface-hover);
+}
+
+.selectionButton:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.selectionButton:focus-visible {
+  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
+  outline-offset: var(--uf-focus-ring-offset);
+}
+
+.selectionButtonDanger {
+  color: var(--uf-color-danger);
+}
+
 /* Estados */
 .stateBox {
   display: flex;

@@ -66,6 +66,33 @@ export function isDuplicateCategoryName(categories, name, categoryType, { exclud
   });
 }
 
+/**
+ * Decide se o usuário pode editar e excluir a categoria. Espelha as policies
+ * categories_update/delete_owner_admin_or_creator: categoria do sistema nunca;
+ * do espaço, owner/admin sempre e member só a que ele mesmo criou.
+ */
+export function canManageCategory(category, { canUpdate, canDelete, userId } = {}) {
+  if (!category || category.is_system === true || !category.workspace_id) return false;
+  if (canDelete === true) return true;
+  return canUpdate === true && Boolean(userId) && category.created_by === userId;
+}
+
+/**
+ * Traduz o erro de criar, editar ou excluir categoria para texto de tela.
+ * Mensagem crua do Postgres/PostgREST nunca chega ao usuário.
+ */
+export function getCategoryErrorMessage(error, fallbackMessage) {
+  if (!error) return '';
+  if (error.code === '23505') return 'Já existe uma categoria com esse nome. Escolha outro nome.';
+  if (error.code === 'CATEGORY_NOT_FOUND') {
+    return 'Esta categoria não existe mais. Feche e confira a lista.';
+  }
+  if (error.code === 'CATEGORY_HAS_DEPENDENCIES' || error.code === 'INVALID_CATEGORY_REQUEST') {
+    return error.message;
+  }
+  return fallbackMessage;
+}
+
 /** Decide se a busca deve ser exibida para uma dada quantidade de itens. */
 export function shouldShowSearch(itemCount) {
   return Number(itemCount) >= SEARCH_MIN_ITEMS;

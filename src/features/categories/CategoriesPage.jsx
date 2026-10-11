@@ -8,7 +8,9 @@ import { notifyFinancialDataChanged } from '../../services/financialDataEvents.j
 import {
   CATEGORY_TYPES,
   buildUniNavigationState,
+  canManageCategory,
   filterCategoriesBySearch,
+  getCategoryErrorMessage,
   getUniButtonLabel,
   shouldShowSearch,
   splitCategoriesByType,
@@ -21,6 +23,7 @@ import {
   SparkIcon,
 } from './categoryIcons.jsx';
 import CategoryCreateModal from './components/CategoryCreateModal.jsx';
+import CategoryDeleteConfirmModal from './components/CategoryDeleteConfirmModal.jsx';
 import styles from './CategoriesPage.module.css';
 
 const TYPE_TABS = [
@@ -76,6 +79,10 @@ export default function CategoriesPage() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
+  // Cópia da categoria no momento do clique: a lista muda de referência a
+  // cada mutação e o formulário não pode resetar no meio da edição.
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [deletingCategory, setDeletingCategory] = useState(null);
 
   const buckets = useMemo(
     () => splitCategoriesByType(categoryState.categories),
@@ -89,6 +96,18 @@ export default function CategoriesPage() {
   );
 
   const selectedCategory = typeList.find((category) => category.id === selectedId) ?? null;
+  // A barra só vale para o bloco à vista: busca que esconde o bloco ou
+  // grade em carregamento tiram Editar/Excluir da tela.
+  const isSelectedVisible = visibleCategories.some((category) => category.id === selectedId);
+  const canManageSelected =
+    !workspaceRole.isLoading
+    && !categoryState.isLoading
+    && isSelectedVisible
+    && canManageCategory(selectedCategory, {
+      canUpdate: workspaceRole.canUpdate,
+      canDelete: workspaceRole.canDelete,
+      userId: user?.id,
+    });
 
   function handleChangeType(type) {
     if (type === activeType) return;
@@ -109,6 +128,43 @@ export default function CategoriesPage() {
   function handleOpenCreate() {
     if (!canManage) return;
     setCreateOpen(true);
+  }
+
+  function handleOpenEdit() {
+    if (!canManageSelected || categoryState.isMutating) return;
+    categoryState.clearError?.();
+    setEditingCategory({ ...selectedCategory });
+  }
+
+  function handleOpenDelete() {
+    if (!canManageSelected || categoryState.isMutating) return;
+    categoryState.clearError?.();
+    setDeletingCategory({ ...selectedCategory });
+  }
+
+  function handleCloseForm() {
+    categoryState.clearError?.();
+    setCreateOpen(false);
+    setEditingCategory(null);
+  }
+
+  async function handleEdit(values) {
+    if (!editingCategory) return;
+    const result = await categoryState.saveCategory(values, editingCategory.id);
+    if (!result.error) {
+      notifyFinancialDataChanged('categorias');
+      setEditingCategory(null);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deletingCategory) return;
+    const result = await categoryState.removeCategory(deletingCategory.id);
+    if (!result.error) {
+      notifyFinancialDataChanged('categorias');
+      setDeletingCategory(null);
+      setSelectedId(null);
+    }
   }
 
   async function handleCreate(values) {
@@ -275,20 +331,62 @@ export default function CategoriesPage() {
             </button>
           </div>
         )}
+
+        {canManageSelected ? (
+          <div className={styles.selectionActions} aria-label={`Ações de ${selectedCategory.name}`} role="group">
+            <button
+              type="button"
+              className={styles.selectionButton}
+              onClick={handleOpenEdit}
+              disabled={categoryState.isMutating}
+            >
+              Editar
+            </button>
+            <button
+              type="button"
+              className={`${styles.selectionButton} ${styles.selectionButtonDanger}`}
+              onClick={handleOpenDelete}
+              disabled={categoryState.isMutating}
+            >
+              Excluir
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <CategoryCreateModal
-        open={createOpen}
-        onClose={() => {
-          categoryState.clearError?.();
-          setCreateOpen(false);
-        }}
+        open={createOpen || Boolean(editingCategory)}
+        onClose={handleCloseForm}
         defaultType={activeType}
         categories={categoryState.categories}
-        onCreate={handleCreate}
+        category={editingCategory}
+        onCreate={editingCategory ? handleEdit : handleCreate}
         isMutating={categoryState.isMutating}
-        serverError={createOpen && categoryState.error ? categoryState.error.message : ''}
+        serverError={
+          createOpen || editingCategory
+            ? getCategoryErrorMessage(
+                categoryState.error,
+                'Não foi possível salvar a categoria. Tente novamente.',
+              )
+            : ''
+        }
       />
+
+      {deletingCategory ? (
+        <CategoryDeleteConfirmModal
+          category={deletingCategory}
+          isMutating={categoryState.isMutating}
+          serverError={getCategoryErrorMessage(
+            categoryState.error,
+            'Não foi possível excluir a categoria. Tente novamente.',
+          )}
+          onConfirm={handleDelete}
+          onClose={() => {
+            categoryState.clearError?.();
+            setDeletingCategory(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
