@@ -479,12 +479,9 @@ test('chamada em modo suporte inclui mode e productContext no corpo enviado', as
 });
 
 // ============================================================================
-// Sprint 1 (IA Conversacional) -- tools/tool_calls end-to-end. Sem a flag
-// VITE_UNI_LLM_TOOLS_ENABLED (default, sempre o caso neste ambiente de
-// teste Node puro -- import.meta.env não populado), buildLlmPayload nunca
-// inclui `tools`; o corpo continua byte-idêntico (já coberto acima). Os
-// testes abaixo cobrem o transporte (provider/orquestrador) assumindo que
-// `tools` FOI passado -- ou seja, o comportamento com a flag ligada.
+// Sprint 1 (IA Conversacional) -- tools/tool_calls. Desde a #80 nem
+// buildLlmPayload nem o provider mandam `tools`. A leitura de tool_calls na
+// resposta continua coberta abaixo, como defesa.
 // ============================================================================
 
 test('Sprint 2: buildLlmPayload inclui a data de referencia no system prompt quando o snapshot a fornece', () => {
@@ -501,12 +498,12 @@ test('Sprint 2: sem referenceDate no snapshot, o system prompt sai exatamente co
   assert.ok(!payload.system.includes('Data de referencia de hoje'));
 });
 
-test('buildLlmPayload nao inclui tools por padrao (flag desligada neste ambiente)', () => {
+test('buildLlmPayload nao inclui tools', () => {
   const payload = buildLlmPayload({ text: 'oi', messages: [], financialContext: { hasData: false } });
   assert.equal(payload.tools, undefined);
 });
 
-test('provider inclui tools no corpo quando fornecido, omite quando ausente', async () => {
+test('provider nunca manda tools no corpo, mesmo quando recebe', async () => {
   let capturedBody = null;
   const provider = makeProvider({
     fetchImpl: async (_url, init) => {
@@ -519,12 +516,6 @@ test('provider inclui tools no corpo quando fornecido, omite quando ausente', as
     messages: [{ role: 'user', content: 'qual meu saldo?' }],
     tools: [{ type: 'function', function: { name: 'get_financial_summary', description: 'x', parameters: { type: 'object', properties: {} } } }],
   });
-  const parsed = JSON.parse(capturedBody);
-  assert.equal(parsed.tools.length, 1);
-  assert.equal(parsed.tools[0].function.name, 'get_financial_summary');
-
-  capturedBody = null;
-  await provider.generateResponse({ system: 'sys', messages: [{ role: 'user', content: 'oi' }] });
   assert.equal('tools' in JSON.parse(capturedBody), false);
 });
 
