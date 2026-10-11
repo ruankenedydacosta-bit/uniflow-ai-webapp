@@ -75,22 +75,12 @@ adapter recebe apenas envelopes ja sanitizados e usa `beforeSend` como segunda
 barreira. Eventos que nao carregam a marca interna da fundacao sao descartados.
 
 O lote inicial cobre apenas erros globais/bootstrap, falhas tecnicas de
-sessao/auth e Supabase, voz/microfone, TTS, Edge Functions da voz/Uni e a
-orquestracao Shadow da Uni Engine. Latencias sao metricas tecnicas sem payload.
+sessao/auth e Supabase, voz/microfone, TTS e Edge Functions da voz/Uni.
+Latencias sao metricas tecnicas sem payload.
 Nenhum resultado altera UI, resposta, fluxo financeiro ou rollout.
 
 ## Migracao futura
 
-Os emissores existentes da Uni Engine, voz e runtime financeiro continuam
-intactos. A migracao deve ser incremental, dominio por dominio, atras de flags e
-com comparacao entre a telemetria antiga e a nova.
-
-## Pendencias obrigatorias antes do primeiro canario
-
-Corrigir, em lote separado, os imports relativos antigos de
-`uniEngineContracts.js` em:
-
-- `src/features/uni-engine/financial-runtime/canary/index.js`
-- `src/features/uni-engine/financial-runtime/fail-safe/rollbackFinancialRuntimeVisible.js`
-
-Essas pendencias nao foram corrigidas neste lote.
+Os emissores existentes da voz continuam intactos. A migracao deve ser
+incremental, dominio por dominio, atras de flags e com comparacao entre a
+telemetria antiga e a nova.
