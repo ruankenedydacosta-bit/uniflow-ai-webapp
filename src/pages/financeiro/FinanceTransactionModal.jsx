@@ -1,12 +1,15 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import Button from '../../components/ui/Button';
+import Field from '../../components/ui/Field';
+import IconBox from '../../components/ui/IconBox';
 import { createDownloadReadyNotification } from '../../features/notifications/notificationsService.js';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import OutlineButton from '../../components/ui/OutlineButton';
 import Segmented from '../../components/ui/Segmented/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
+import { PhCaretDownIcon, PhTrashIcon } from '../../features/simplified-app/SimplifiedIcons.jsx';
 import { cx } from '../../utils/cx';
 import { formatCurrency } from '../../utils/formatters';
 import styles from './FinanceTransactionModal.module.css';
@@ -103,6 +106,12 @@ const SHEET_SUBMIT_LABELS = {
 const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar lançamentos deste espaço.';
 const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir este lançamento.';
 
+// Confirmação de exclusão no molde da tela 22g: Modal compartilhado sem
+// cabeçalho (folha no celular), lixeira, pergunta e "Excluir
+// definitivamente" contornado acima de Cancelar. Enquanto ela está aberta o
+// Modal da movimentação fica inert e com Esc desligado, então Esc fecha só a
+// confirmação. Como antes, o foco abre em Cancelar e o Tab fica preso aqui
+// dentro.
 function DeleteConfirmationDialog({
   className,
   deleteScope,
@@ -118,24 +127,26 @@ function DeleteConfirmationDialog({
 }) {
   const titleId = useId();
   const descriptionId = useId();
-  const dialogRef = useRef(null);
+  const contentRef = useRef(null);
+
+  // Roda depois do efeito do Modal (o filho), que põe o foco no diálogo.
+  useEffect(() => {
+    if (open) contentRef.current?.querySelector('[data-delete-cancel]')?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
-    dialogRef.current?.querySelector('button:not(:disabled)')?.focus();
 
     function handleKeyDown(event) {
-      if (event.key === 'Escape' && !isLoading) {
-        event.preventDefault();
-        onCancel();
-        return;
-      }
       if (event.key !== 'Tab') return;
-      const focusable = [...(dialogRef.current?.querySelectorAll('button:not(:disabled), select:not(:disabled)') ?? [])];
+      const focusable = [...(contentRef.current?.querySelectorAll('button:not(:disabled), select:not(:disabled)') ?? [])];
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!contentRef.current.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -146,68 +157,79 @@ function DeleteConfirmationDialog({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isLoading, onCancel, open]);
+  }, [open]);
+
+  function handleCancel() {
+    if (isLoading) return;
+    onCancel();
+  }
 
   if (!open || !transaction) return null;
 
-  return createPortal(
-    <div
-      className={cx(styles.deleteConfirmOverlay, overlayClassName)}
-      onPointerDown={(event) => {
-        if (event.target === event.currentTarget && !isLoading) onCancel();
-      }}
+  return (
+    <Modal
+      open
+      onClose={handleCancel}
+      closeOnOverlayClick={!isLoading}
+      closeOnEsc={!isLoading}
+      hideCloseButton
+      role="alertdialog"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      size="sm"
+      className={cx(styles.deleteConfirmDialog, className)}
+      overlayClassName={cx(styles.deleteConfirmOverlay, overlayClassName)}
     >
-      <div
-        ref={dialogRef}
-        className={cx(styles.deleteConfirmCard, className)}
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descriptionId}
-      >
-        <span className={styles.deleteConfirmIcon} aria-hidden="true">!</span>
-        <div className={styles.deleteConfirmCopy}>
-          <h2 id={titleId}>Excluir lançamento?</h2>
-          <p id={descriptionId}>Essa ação não poderá ser desfeita.</p>
-          {transaction.description ? <strong>{transaction.description}</strong> : null}
+      <div ref={contentRef} className={styles.deleteConfirmContent}>
+        <div className={styles.deleteConfirmMessage}>
+          <IconBox size={44}><PhTrashIcon /></IconBox>
+          <div className={styles.deleteConfirmCopy}>
+            <h2 id={titleId}>
+              {transaction.description ? `Excluir “${transaction.description}”?` : 'Excluir movimentação?'}
+            </h2>
+            <p id={descriptionId}>A movimentação sai dos seus registros. Não é possível desfazer.</p>
+          </div>
         </div>
 
         {hasGroup ? (
-          <SelectField
-            id="finance-transaction-confirm-delete-scope"
-            label="Quais parcelas deseja excluir?"
-            value={deleteScope}
-            onChange={onDeleteScopeChange}
-            disabled={isLoading}
-          >
-            <option value="only">Somente esta parcela</option>
-            <option value="forward">Esta e as próximas</option>
-            <option value="all">Todas do grupo</option>
-          </SelectField>
+          <Field label="Quais parcelas você quer excluir?" trailing={<PhCaretDownIcon />}>
+            <select
+              id="finance-transaction-confirm-delete-scope"
+              value={deleteScope}
+              onChange={onDeleteScopeChange}
+              disabled={isLoading}
+            >
+              <option value="only">Somente esta parcela</option>
+              <option value="forward">Esta e as próximas</option>
+              <option value="all">Todas do grupo</option>
+            </select>
+          </Field>
         ) : null}
 
-        <FormMessage>
-          {getFinanceErrorMessage(
-            error,
-            'Não foi possível excluir o lançamento. Tente novamente.',
-          )}
-        </FormMessage>
+        {error ? (
+          <p className={styles.deleteConfirmError} role="alert">
+            {getFinanceErrorMessage(
+              error,
+              'Não foi possível excluir a movimentação. Tente novamente.',
+            )}
+          </p>
+        ) : null}
 
         <div className={styles.deleteConfirmActions}>
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            disabled={isLoading}
+          <OutlineButton
+            variant="secondary"
+            className={styles.deleteConfirmButton}
+            loading={isLoading}
+            onClick={onConfirm}
           >
+            Excluir definitivamente
+          </OutlineButton>
+          <OutlineButton variant="ghost" onClick={handleCancel} disabled={isLoading} data-delete-cancel>
             Cancelar
-          </Button>
-          <Button variant="danger" loading={isLoading} onClick={onConfirm}>
-            Confirmar exclusão
-          </Button>
+          </OutlineButton>
         </div>
       </div>
-    </div>,
-    document.body,
+    </Modal>
   );
 }
 
@@ -545,6 +567,24 @@ function FinanceTransactionModal({
 
   return (
     <>
+    {/* A confirmação vem antes do Modal da movimentação de propósito. Os
+        dois travam a rolagem da página e cada um devolve o valor que achou
+        ao abrir. Quando a exclusão fecha os dois no mesmo commit, o React
+        desmonta na ordem da árvore. Nesta ordem a confirmação devolve
+        primeiro e o Modal da movimentação, por último, libera a rolagem. */}
+    <DeleteConfirmationDialog
+      open={isDeleteConfirmOpen}
+      className={className}
+      overlayClassName={overlayClassName}
+      transaction={pendingDeleteTransaction}
+      hasGroup={pendingDeleteHasGroup}
+      deleteScope={deleteScope}
+      error={batchError}
+      isLoading={transactionState.isMutating}
+      onCancel={handleCancelDelete}
+      onConfirm={() => handleDelete(pendingDeleteId)}
+      onDeleteScopeChange={(event) => setDeleteScope(event.target.value)}
+    />
     <Modal
       open={open}
       onClose={handleClose}
@@ -1101,19 +1141,6 @@ function FinanceTransactionModal({
         ) : null}
       </div>
     </Modal>
-    <DeleteConfirmationDialog
-      open={isDeleteConfirmOpen}
-      className={className}
-      overlayClassName={overlayClassName}
-      transaction={pendingDeleteTransaction}
-      hasGroup={pendingDeleteHasGroup}
-      deleteScope={deleteScope}
-      error={batchError}
-      isLoading={transactionState.isMutating}
-      onCancel={handleCancelDelete}
-      onConfirm={() => handleDelete(pendingDeleteId)}
-      onDeleteScopeChange={(event) => setDeleteScope(event.target.value)}
-    />
     </>
   );
 }

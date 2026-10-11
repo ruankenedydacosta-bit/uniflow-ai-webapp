@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import OutlineButton from '../../components/ui/OutlineButton';
 import {
   amountToCents,
   centsToAmount,
@@ -10,7 +10,8 @@ import {
 import styles from './UpdateBalanceModal.module.css';
 
 // Teto mensal de uma categoria (#121). Mesmo visual e mesmo campo de valor
-// do "Atualizar saldo". O pai remonta o modal a cada abertura (key), então o
+// do "Atualizar saldo" (tela 22a): valor em destaque, ação principal
+// contornada em cima e a secundária embaixo. O pai remonta o modal a cada abertura (key), então o
 // estado nasce limpo com o teto atual.
 function CategoryBudgetModal({ open, categoryName, currentLimit, onSave, onRemove, onClose }) {
   const [cents, setCents] = useState(() => amountToCents(currentLimit ?? 0));
@@ -57,42 +58,44 @@ function CategoryBudgetModal({ open, categoryName, currentLimit, onSave, onRemov
     >
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.amountField}>
-          <label htmlFor="category-budget-amount">
-            <span>Teto mensal</span>
-            <input
-              id="category-budget-amount"
-              className={styles.amountInput}
-              inputMode="numeric"
-              autoComplete="off"
-              value={formatCentsAsCurrencyInput(cents)}
-              onChange={(event) => setCents(digitsToCents(event.target.value))}
-              placeholder="R$ 0,00"
-              required
-            />
-          </label>
+          <label htmlFor="category-budget-amount">Teto mensal</label>
+          <input
+            id="category-budget-amount"
+            className={styles.amountInput}
+            inputMode="numeric"
+            autoComplete="off"
+            value={formatCentsAsCurrencyInput(cents)}
+            onChange={(event) => setCents(digitsToCents(event.target.value))}
+            placeholder="R$ 0,00"
+            required
+          />
         </div>
 
         {error ? <p className={styles.errorMessage} role="alert">{error}</p> : null}
 
         <div className={styles.actions}>
+          <OutlineButton
+            type="submit"
+            className={styles.primaryAction}
+            disabled={amount <= 0 || isBusy}
+            loading={pending === 'save'}
+          >
+            Salvar teto
+          </OutlineButton>
           {currentLimit ? (
-            <Button
-              type="button"
+            <OutlineButton
               variant="ghost"
               onClick={() => void run('remove', onRemove)}
               loading={pending === 'remove'}
               disabled={isBusy}
             >
               Remover teto
-            </Button>
+            </OutlineButton>
           ) : (
-            <Button type="button" variant="ghost" onClick={handleClose} disabled={isBusy}>
+            <OutlineButton variant="ghost" onClick={handleClose} disabled={isBusy}>
               Cancelar
-            </Button>
+            </OutlineButton>
           )}
-          <Button type="submit" disabled={amount <= 0 || isBusy} loading={pending === 'save'}>
-            Salvar teto
-          </Button>
         </div>
       </form>
     </Modal>

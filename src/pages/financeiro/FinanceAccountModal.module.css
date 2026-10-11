@@ -1,100 +1,115 @@
+/* Tela 22. No celular o Modal vira a folha padrão; aqui ficam o conteúdo e
+   a largura do diálogo no desktop. */
 .accountDialog {
   max-width: 480px;
 }
 
 .accountContent,
-.accountForm,
-.accountList {
+.accountForm {
   display: flex;
   min-width: 0;
   flex-direction: column;
 }
 
 .accountContent {
-  gap: var(--uf-space-20);
+  gap: 18px;
 }
 
 .accountForm {
-  gap: var(--uf-space-16);
+  gap: 14px;
 }
 
-.accountList {
-  gap: var(--uf-space-8);
-}
-
-.typeField {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uf-space-8);
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-caption-size);
-  font-weight: var(--uf-font-weight-medium);
-}
-
-.typeSelect {
-  width: 100%;
-  min-height: var(--uf-tap-target-min);
-  padding: 0 var(--uf-space-16);
-  border: 1px solid var(--uf-color-border-default);
-  border-radius: var(--uf-radius-12);
-  background: var(--uf-color-bg-sunken);
-  color: var(--uf-color-text-primary);
-  font: inherit;
-}
-
-.typeSelect:focus-visible {
-  border-color: var(--uf-color-primary);
-  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
-  outline-offset: var(--uf-focus-ring-offset);
-}
-
-.typeField small {
-  color: var(--uf-color-text-secondary);
-  font-size: var(--uf-text-micro-size);
-  font-weight: var(--uf-text-micro-weight);
-  line-height: var(--uf-text-micro-lh);
+.formError {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
 }
 
 .accountActions {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
   flex-wrap: wrap;
   gap: var(--uf-space-8);
 }
 
-.emptyGuidance {
-  margin: 0;
-  padding: var(--uf-space-12);
-  border-radius: var(--uf-radius-12);
-  background: var(--uf-color-info-subtle);
-  color: var(--uf-color-text-secondary);
-  font-size: var(--uf-text-micro-size);
-  line-height: var(--uf-text-micro-lh);
+.primaryAction {
+  flex: 1;
 }
 
-@media (max-width: 767px) {
-  .accountDialog {
-    max-height: calc(100dvh - var(--uf-space-24));
-  }
+.accountList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
-  .accountDialog > div {
-    padding: var(--uf-space-12) var(--uf-space-16);
-  }
+.accountList:empty {
+  display: none;
+}
 
-  .accountContent {
-    gap: var(--uf-space-12);
-  }
+/* Linha no poço escuro com borda de card; a conta em edição leva a borda
+   violeta da seleção. */
+.accountRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8) var(--uf-space-12);
+  padding: var(--uf-space-12);
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+}
 
-  .accountForm {
-    gap: var(--uf-space-12);
-  }
+.accountRow[data-editing="true"] {
+  background: color-mix(in oklch, var(--uf-app-brand-violet) 8%, var(--uf-app-well));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 45%, transparent);
+}
 
-  .typeField {
-    gap: var(--uf-space-4);
-  }
+.accountText {
+  flex: 1 1 140px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
-  .accountActions > button:last-child {
-    width: 100%;
-  }
+.accountText strong {
+  overflow: hidden;
+  color: var(--uf-app-text);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-medium);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountText span {
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+}
+
+.accountRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--uf-space-8);
+  margin-left: auto;
+}
+
+.rowButton {
+  min-height: 32px;
+  padding-block: var(--uf-space-4);
+  font-size: 13px;
+}
+
+.emptyGuidance {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
 }

@@ -1,191 +1,174 @@
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(18, 20, 43, 0.32);
-  z-index: 30;
+/* Histórico de conversas. No celular o Modal vira a folha padrão (handoff
+   22); aqui ficam o conteúdo e o limite de altura do desktop. Só a lista
+   rola, então "Nova conversa" fica sempre à vista. */
+.dialog.dialog {
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  animation: uniFadeIn 0.2s ease-out;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.panel {
-  width: min(92%, 380px);
-  margin-top: 78px;
-  background: var(--uni-surface);
-  border-radius: var(--uni-radius-lg);
-  box-shadow: var(--uni-shadow-md);
-  padding: 16px;
-  max-height: 70vh;
-  overflow-y: auto;
-  animation: uniPanelIn 0.28s var(--uni-ease, ease-out);
+@media (min-width: 768px) {
+  .dialog.dialog {
+    max-width: 420px;
+    max-height: min(80dvh, 640px);
+  }
 }
 
-.panelHeader {
+.body {
+  min-height: 0;
+  flex: 1 1 auto;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
 }
 
-.panelTitle {
-  font-family: var(--uni-font-display);
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.closeBtn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: var(--uni-bg);
-  color: var(--uni-text-secondary);
-  cursor: pointer;
-}
-
-.newChatBtn {
+.newChat {
   width: 100%;
-  min-height: 46px;
-  border: none;
-  border-radius: var(--uni-radius-md);
-  background: var(--uni-gradient-soft);
-  color: var(--uni-blue-deep);
-  font-weight: 700;
-  font-family: var(--uni-font-display);
-  font-size: 14.5px;
-  cursor: pointer;
-  margin-bottom: 14px;
+  flex: 0 0 auto;
 }
 
 .list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  min-height: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  margin: 0;
+  /* Folga para o contorno de foco das linhas não ser cortado pela rolagem. */
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  list-style: none;
 }
 
+/* Linha no poço escuro com borda de card; a conversa aberta leva violeta a
+   8% e borda violeta a 45%, como a opção marcada do ChoiceRow. */
 .item {
-  position: relative;
-  border-radius: var(--uni-radius-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--uf-space-4);
+  padding-right: 6px;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
 }
 
-.itemActive {
-  background: var(--uni-gradient-soft);
-  border: 1px solid var(--uni-border);
+.item[data-active="true"] {
+  background: color-mix(in oklch, var(--uf-app-brand-violet) 8%, var(--uf-app-well));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--uf-app-brand-violet) 45%, transparent);
 }
 
 .itemBtn {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  padding: 12px 10px;
-  border: none;
+  padding: var(--uf-space-12);
+  border: 0;
+  border-radius: var(--uf-radius-8);
   background: transparent;
-  border-radius: var(--uni-radius-sm);
-  cursor: pointer;
+  color: var(--uf-app-text);
+  font: inherit;
   text-align: left;
+  cursor: pointer;
 }
 
-.itemBtn:hover {
-  background: var(--uni-bg);
-}
-
-.itemRow {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.itemBtn:focus-visible,
+.itemDelete:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
 }
 
 .itemTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--uni-text-primary);
+  width: 100%;
   overflow: hidden;
+  font-size: var(--uf-text-caption-size);
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
-  min-width: 0;
 }
 
 .itemDate {
-  font-size: 12px;
-  color: var(--uni-text-muted);
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+  font-variant-numeric: tabular-nums;
 }
 
 .itemDelete {
-  position: absolute;
-  top: 12px;
-  right: 10px;
-  z-index: 1;
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--uni-text-muted);
-  font-size: 10px;
-  cursor: pointer;
-  display: flex;
+  flex: 0 0 auto;
+  min-width: 36px;
+  height: 36px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s;
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-full);
+  background: transparent;
+  color: var(--uf-app-text-3);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--uf-duration-fast) ease, color var(--uf-duration-fast) ease;
 }
 
-.item:hover .itemDelete {
-  opacity: 1;
+.itemDelete svg {
+  width: 16px;
+  height: 16px;
 }
 
+.itemDelete:hover {
+  background: var(--uf-app-surface-2);
+  color: var(--uf-app-text);
+}
+
+/* Segundo toque: a lixeira vira o botão contornado "Excluir". */
 .itemDeleteConfirm {
-  width: auto;
-  height: auto;
-  padding: 3px 8px;
-  border-radius: var(--uni-radius-sm);
-  background: var(--uni-error);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  opacity: 1;
+  height: 32px;
+  padding: 0 var(--uf-space-12);
+  border-radius: var(--uf-radius-8);
+  box-shadow: inset 0 0 0 1px var(--uf-app-border-strong);
+  color: var(--uf-app-text);
+  font-size: 13px;
+  font-weight: var(--uf-font-weight-medium);
 }
 
 .emptyState {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 32px 16px;
+  gap: 6px;
+  padding: var(--uf-space-24) var(--uf-space-8) var(--uf-space-8);
+  text-align: center;
 }
 
-.emptyIcon {
-  font-size: 24px;
-  margin-bottom: 4px;
+.emptyState > :first-child {
+  margin-bottom: var(--uf-space-8);
+}
+
+.emptyText,
+.emptyHint {
+  margin: 0;
+  text-wrap: pretty;
 }
 
 .emptyText {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--uni-text-primary);
+  color: var(--uf-app-text);
+  font-size: var(--uf-text-caption-size);
+  font-weight: var(--uf-font-weight-medium);
 }
 
 .emptyHint {
-  font-size: 12px;
-  color: var(--uni-text-muted);
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-@keyframes uniFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes uniPanelIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .itemDelete {
+    transition: none;
+  }
 }

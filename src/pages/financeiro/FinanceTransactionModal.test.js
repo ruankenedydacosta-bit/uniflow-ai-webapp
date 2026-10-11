@@ -107,21 +107,26 @@ test('Bloco "Ação" oferece Excluir alinhado e abre a confirmação centralizad
   assert.doesNotMatch(slice, /pendingDeleteId === editingId/);
 });
 
-test('confirmação de exclusão usa alertdialog em portal, overlay com blur e somente ações Cancelar/Confirmar exclusão', async () => {
+// Tela 22g: a confirmação deixou o portal próprio (card centralizado com
+// "Confirmar exclusão" vermelho) e passou ao Modal compartilhado, que no
+// celular sobe como a folha padrão.
+test('confirmação de exclusão segue a 22g: Modal compartilhado sem cabeçalho, alertdialog e Excluir definitivamente/Cancelar', async () => {
   const modal = await source('./FinanceTransactionModal.jsx');
   const css = await source('./FinanceTransactionModal.module.css');
   const start = modal.indexOf('function DeleteConfirmationDialog(');
   const end = modal.indexOf('// `className`/`overlayClassName`', start);
   const slice = modal.slice(start, end);
-  assert.match(slice, /createPortal\(/);
-  assert.match(slice, /role="alertdialog"/);
-  assert.match(slice, /aria-modal="true"/);
-  assert.match(slice, /Excluir lançamento\?/);
-  assert.match(slice, /Essa ação não poderá ser desfeita\./);
+  assert.doesNotMatch(slice, /createPortal\(/);
+  assert.match(slice, /<Modal[\s\S]*?hideCloseButton[\s\S]*?role="alertdialog"/);
+  assert.match(slice, /closeOnEsc=\{!isLoading\}/);
+  assert.match(slice, /closeOnOverlayClick=\{!isLoading\}/);
+  assert.match(slice, /<IconBox size=\{44\}><PhTrashIcon \/><\/IconBox>/);
+  assert.match(slice, /Excluir movimentação\?/);
+  assert.match(slice, /Não é possível desfazer\./);
+  assert.match(slice, />\s*Excluir definitivamente\s*</);
   assert.match(slice, />\s*Cancelar\s*</);
-  assert.match(slice, />\s*Confirmar exclusão\s*</);
-  assert.match(css, /\.deleteConfirmOverlay \{[\s\S]*?backdrop-filter: blur\(10px\)/);
-  assert.match(css, /\.deleteConfirmCard \{[\s\S]*?place-items|\.deleteConfirmOverlay \{[\s\S]*?place-items: center/);
+  assert.doesNotMatch(slice, /variant="danger"/);
+  assert.match(css, /\.deleteConfirmOverlay\.deleteConfirmOverlay \{[\s\S]*?z-index: calc\(var\(--uf-z-modal\) \+ 1\)/);
 });
 
 test('Cancelar fecha somente a confirmação e preserva a edição; confirmar executa handleDelete real', async () => {

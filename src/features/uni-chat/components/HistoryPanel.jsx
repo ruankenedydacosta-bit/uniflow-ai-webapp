@@ -1,4 +1,9 @@
 import { useState } from 'react';
+import IconBox from '../../../components/ui/IconBox';
+import Modal from '../../../components/ui/Modal';
+import OutlineButton from '../../../components/ui/OutlineButton';
+import { cx } from '../../../utils/cx.js';
+import { PhChatCircleTextIcon, PhPlusIcon, PhTrashIcon } from '../../simplified-app/SimplifiedIcons.jsx';
 import styles from './HistoryPanel.module.css';
 
 function formatDate(isoString) {
@@ -15,13 +20,19 @@ function formatDate(isoString) {
   return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
 }
 
+// Histórico de conversas da Uni. Usa o Modal compartilhado: no celular sobe
+// como a folha padrão (handoff 22), com Esc, toque fora e foco no diálogo.
+// Excluir continua em dois toques: a lixeira vira "Excluir" e só o segundo
+// toque apaga.
 export default function HistoryPanel({ open, onClose, onNewChat, onSelect, onDelete, conversations, activeId }) {
   const [deletingId, setDeletingId] = useState(null);
 
-  if (!open) return null;
+  function handleClose() {
+    setDeletingId(null);
+    onClose();
+  }
 
-  function handleDelete(e, id) {
-    e.stopPropagation();
+  function handleDelete(id) {
     if (deletingId === id) {
       onDelete(id);
       setDeletingId(null);
@@ -32,60 +43,63 @@ export default function HistoryPanel({ open, onClose, onNewChat, onSelect, onDel
 
   function handleSelect(id) {
     onSelect(id);
-    onClose();
+    handleClose();
   }
 
   function handleNewChat() {
     onNewChat();
-    onClose();
-    setDeletingId(null);
+    handleClose();
   }
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Histórico de conversas">
-        <div className={styles.panelHeader}>
-          <span className={styles.panelTitle}>Histórico</span>
-          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Fechar histórico">
-            ✕
-          </button>
+    <Modal
+      open={Boolean(open)}
+      onClose={handleClose}
+      title="Histórico"
+      size="sm"
+      className={styles.dialog}
+      bodyClassName={styles.body}
+    >
+      <OutlineButton className={styles.newChat} onClick={handleNewChat}>
+        <PhPlusIcon />
+        Nova conversa
+      </OutlineButton>
+
+      {conversations.length === 0 ? (
+        <div className={styles.emptyState}>
+          <IconBox size={44}><PhChatCircleTextIcon /></IconBox>
+          <p className={styles.emptyText}>Você ainda não tem conversas salvas.</p>
+          <p className={styles.emptyHint}>Converse com a Uni e a conversa aparece aqui.</p>
         </div>
-
-        <button type="button" className={styles.newChatBtn} onClick={handleNewChat}>
-          + Nova conversa
-        </button>
-
-        {conversations.length === 0 ? (
-          <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>📋</span>
-            <span className={styles.emptyText}>Nenhuma conversa ainda</span>
-            <span className={styles.emptyHint}>Suas conversas aparecerão aqui</span>
-          </div>
-        ) : (
-          <ul className={styles.list}>
-            {conversations.map((conv) => {
-              const isActive = conv.id === activeId;
-              const isDeleting = deletingId === conv.id;
-              return (
-                <li key={conv.id} className={`${styles.item} ${isActive ? styles.itemActive : ''}`}>
-                  <button type="button" className={styles.itemBtn} onClick={() => handleSelect(conv.id)}>
-                    <span className={styles.itemTitle}>{conv.title || 'Nova conversa'}</span>
-                    <span className={styles.itemDate}>{formatDate(conv.updatedAt)}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.itemDelete} ${isDeleting ? styles.itemDeleteConfirm : ''}`}
-                    onClick={(e) => handleDelete(e, conv.id)}
-                    aria-label={isDeleting ? 'Confirmar exclusão' : 'Excluir conversa'}
-                  >
-                    {isDeleting ? 'Excluir?' : '✕'}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-    </div>
+      ) : (
+        <ul className={styles.list}>
+          {conversations.map((conv) => {
+            const isActive = conv.id === activeId;
+            const isDeleting = deletingId === conv.id;
+            return (
+              <li key={conv.id} className={styles.item} data-active={isActive}>
+                <button
+                  type="button"
+                  className={styles.itemBtn}
+                  onClick={() => handleSelect(conv.id)}
+                  aria-current={isActive ? 'true' : undefined}
+                >
+                  <span className={styles.itemTitle}>{conv.title || 'Nova conversa'}</span>
+                  <span className={styles.itemDate}>{formatDate(conv.updatedAt)}</span>
+                </button>
+                <button
+                  type="button"
+                  className={cx(styles.itemDelete, isDeleting && styles.itemDeleteConfirm)}
+                  onClick={() => handleDelete(conv.id)}
+                  aria-label={isDeleting ? 'Confirmar exclusão' : 'Excluir conversa'}
+                >
+                  {isDeleting ? 'Excluir' : <PhTrashIcon />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Modal>
   );
 }

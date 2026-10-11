@@ -569,7 +569,7 @@ test('FinanceAccountModal: cancelamento (Cancelar edição) fica bloqueado duran
   );
   assert.match(
     source,
-    /<Button variant="ghost" onClick=\{resetForm\} disabled=\{accountState\.isMutating\}>\s*\n\s*Cancelar edição/,
+    /<OutlineButton variant="ghost" onClick=\{resetForm\} disabled=\{accountState\.isMutating\}>\s*\n\s*Cancelar edição/,
   );
 });
 

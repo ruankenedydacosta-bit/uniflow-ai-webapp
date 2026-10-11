@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
+import Field from '../../components/ui/Field';
 import Modal from '../../components/ui/Modal';
+import OutlineButton from '../../components/ui/OutlineButton';
+import { PhCaretDownIcon } from '../../features/simplified-app/SimplifiedIcons.jsx';
 import { cx } from '../../utils/cx';
-import {
-  CrudRow,
-  DeleteActions,
-  FormMessage,
-} from './FinanceCrudPrimitives';
 import { getFinanceErrorMessage } from './financeUiUtils';
 import styles from './FinanceAccountModal.module.css';
 
@@ -32,6 +28,9 @@ const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir contas d
 // FinanceiroPage.jsx/SimplifiedMyAccountsPage.jsx, que continuam reativos ao
 // tema --uf-* do site (comportamento inalterado quando as props não são
 // passadas).
+// Tela 22: no celular o Modal vira a folha padrão. Campos de 44px (Field),
+// ação principal contornada e linhas no poço escuro, como nos outros modais
+// do app simplificado.
 function FinanceAccountModal({
   accountState,
   autoCloseOnCreate = false,
@@ -105,6 +104,15 @@ function FinanceAccountModal({
     }
   }
 
+  const errorMessage = getFinanceErrorMessage(
+    accountState.error,
+    'Não foi possível concluir a ação com esta conta. Tente novamente.',
+  );
+
+  function getAccountTypeName(code) {
+    return accountState.accountTypes.find((type) => type.code === code)?.name ?? code;
+  }
+
   return (
     <Modal
       open={open}
@@ -114,26 +122,28 @@ function FinanceAccountModal({
       title={isFirstAccount ? 'Crie sua primeira conta' : 'Contas'}
       description={isFirstAccount
         ? 'Comece por aqui para organizar os dados deste perfil.'
-        : 'Organize as fontes usadas nos lançamentos deste perfil.'}
+        : 'Crie, edite ou exclua as contas usadas nas suas movimentações.'}
       size="md"
       className={cx(styles.accountDialog, className)}
       overlayClassName={overlayClassName}
     >
       <div className={styles.accountContent}>
         <form className={styles.accountForm} onSubmit={handleSubmit}>
-          <Input
-            id="finance-account-name"
-            label="Nome da conta"
-            value={form.name}
-            onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            required
-            fullWidth
-          />
-          <label className={styles.typeField} htmlFor="finance-account-type">
-            <span>Tipo de conta</span>
+          <Field label="Nome da conta">
+            <input
+              id="finance-account-name"
+              value={form.name}
+              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field
+            label="Tipo de conta"
+            helper="Escolha a opção que melhor representa esta conta."
+            trailing={<PhCaretDownIcon />}
+          >
             <select
               id="finance-account-type"
-              className={styles.typeSelect}
               value={form.account_type}
               onChange={(event) =>
                 setForm((current) => ({ ...current, account_type: event.target.value }))
@@ -145,70 +155,89 @@ function FinanceAccountModal({
                 </option>
               ))}
             </select>
-            <small>Escolha a opção que melhor representa esta conta.</small>
-          </label>
-          <FormMessage>
-            {getFinanceErrorMessage(
-              accountState.error,
-              'Não foi possível concluir a ação com esta conta. Tente novamente.',
-            )}
-          </FormMessage>
+          </Field>
+          {errorMessage ? (
+            <p className={styles.formError} role="alert">{errorMessage}</p>
+          ) : null}
           <div className={styles.accountActions}>
-            {editingId ? (
-              <Button variant="ghost" onClick={resetForm} disabled={accountState.isMutating}>
-                Cancelar edição
-              </Button>
-            ) : null}
-            <Button
+            <OutlineButton
               type="submit"
+              className={styles.primaryAction}
               loading={accountState.isMutating}
               disabled={!canManage || accountState.isMutating || !form.name.trim()}
               title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
             >
               {editingId ? 'Salvar conta' : isFirstAccount ? 'Criar primeira conta' : 'Criar conta'}
-            </Button>
+            </OutlineButton>
+            {editingId ? (
+              <OutlineButton variant="ghost" onClick={resetForm} disabled={accountState.isMutating}>
+                Cancelar edição
+              </OutlineButton>
+            ) : null}
           </div>
         </form>
 
-        <div className={styles.accountList}>
-          {accountState.activeAccounts.map((account) => (
-            <CrudRow
-              key={account.id}
-              title={account.name}
-              detail={account.account_type}
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={accountState.isMutating || !canManage}
-                title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
-                onClick={() => handleEdit(account)}
-              >
-                Editar
-              </Button>
-              {canDelete ? (
-                <DeleteActions
-                  actionLabel="Excluir"
-                  confirmLabel="Confirmar exclusão"
-                  isConfirming={pendingDeleteId === account.id}
-                  isLoading={accountState.isMutating}
-                  onRequest={() => setPendingDeleteId(account.id)}
-                  onCancel={() => setPendingDeleteId(null)}
-                  onConfirm={() => handleDelete(account.id)}
-                />
-              ) : (
-                <Button variant="ghost" size="sm" disabled title={DELETE_BLOCKED_TITLE}>
-                  Excluir
-                </Button>
-              )}
-            </CrudRow>
-          ))}
-          {!accountState.activeAccounts.length ? (
-            <p className={styles.emptyGuidance} role="status">
-              Cadastre uma conta para começar a acompanhar seu dinheiro neste perfil.
-            </p>
-          ) : null}
-        </div>
+        <ul className={styles.accountList}>
+          {accountState.activeAccounts.map((account) => {
+            const isConfirmingDelete = pendingDeleteId === account.id;
+            return (
+              <li key={account.id} className={styles.accountRow} data-editing={editingId === account.id}>
+                <span className={styles.accountText}>
+                  <strong>{account.name}</strong>
+                  <span>{getAccountTypeName(account.account_type)}</span>
+                </span>
+                <span className={styles.accountRowActions}>
+                  {isConfirmingDelete ? (
+                    <>
+                      <OutlineButton
+                        variant="secondary"
+                        className={styles.rowButton}
+                        loading={accountState.isMutating}
+                        onClick={() => handleDelete(account.id)}
+                      >
+                        Confirmar exclusão
+                      </OutlineButton>
+                      <OutlineButton
+                        variant="ghost"
+                        className={styles.rowButton}
+                        disabled={accountState.isMutating}
+                        onClick={() => setPendingDeleteId(null)}
+                      >
+                        Cancelar
+                      </OutlineButton>
+                    </>
+                  ) : (
+                    <>
+                      <OutlineButton
+                        variant="secondary"
+                        className={styles.rowButton}
+                        disabled={accountState.isMutating || !canManage}
+                        title={!canManage ? MANAGE_BLOCKED_TITLE : undefined}
+                        onClick={() => handleEdit(account)}
+                      >
+                        Editar
+                      </OutlineButton>
+                      <OutlineButton
+                        variant="ghost"
+                        className={styles.rowButton}
+                        disabled={accountState.isMutating || !canDelete}
+                        title={!canDelete ? DELETE_BLOCKED_TITLE : undefined}
+                        onClick={() => setPendingDeleteId(account.id)}
+                      >
+                        Excluir
+                      </OutlineButton>
+                    </>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        {!accountState.activeAccounts.length ? (
+          <p className={styles.emptyGuidance} role="status">
+            Cadastre uma conta para começar a acompanhar seu dinheiro neste perfil.
+          </p>
+        ) : null}
       </div>
     </Modal>
   );
