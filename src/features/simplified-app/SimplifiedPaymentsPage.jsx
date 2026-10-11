@@ -5,7 +5,6 @@ import { getSubscription, listPayments } from '../../services/billingService.js'
 import { formatCurrency } from '../../utils/formatters.js';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
-import Modal from '../../components/ui/Modal/Modal.jsx';
 import {
   formatPlanPrice,
   PERSONAL_PLAN_PRICE_LABEL,
@@ -29,9 +28,12 @@ import {
   CrownIcon,
   HeadsetIcon,
   InfoIcon,
+  PhCreditCardIcon,
+  PhXCircleIcon,
   ReceiptIcon,
   XCircleIcon,
 } from './SimplifiedIcons.jsx';
+import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import styles from './simplifiedPayments.module.css';
 
 const HISTORY_SUMMARY_LIMIT = 3;
@@ -306,38 +308,28 @@ function SimplifiedPaymentsPage() {
         </section>
       ) : null}
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showManageModal}
         onClose={() => setShowManageModal(false)}
+        icon={<PhCreditCardIcon />}
         title="Gerenciar assinatura"
         description="A gestão completa da assinatura (alterar forma de pagamento, ver faturas ou trocar de plano) será disponibilizada após a integração de pagamento estar concluída."
-        footer={(
-          <>
-            <Button type="button" variant="secondary" onClick={() => { setShowManageModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}>
-              Falar com a Uni
-            </Button>
-            <Button type="button" variant="primary" onClick={() => setShowManageModal(false)}>
-              Entendi
-            </Button>
-          </>
-        )}
+        confirmLabel="Entendi"
+        onConfirm={() => setShowManageModal(false)}
+        cancelLabel="Falar com a Uni"
+        onCancel={() => { setShowManageModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}
+        closeButton
       />
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showCancelModal}
         onClose={() => setShowCancelModal(false)}
+        icon={<PhXCircleIcon />}
         title="Cancelar assinatura?"
         description="O cancelamento automático ainda não está disponível nesta versão. Nenhuma alteração foi feita na sua assinatura. Fale com a Uni ou nosso suporte para pedir ajuda com o cancelamento."
-        footer={(
-          <>
-            <Button type="button" variant="secondary" onClick={() => setShowCancelModal(false)}>
-              Manter assinatura
-            </Button>
-            <Button type="button" variant="danger" onClick={() => { setShowCancelModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}>
-              Falar com a Uni
-            </Button>
-          </>
-        )}
+        confirmLabel="Falar com a Uni"
+        onConfirm={() => { setShowCancelModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}
+        cancelLabel="Manter assinatura"
       />
     </div>
   );

@@ -9,7 +9,6 @@ import {
 import Avatar from '../../components/ui/Avatar/Avatar.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
-import Modal from '../../components/ui/Modal/Modal.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import UniCard from '../../components/ui/UniCard/index.js';
 import { cx } from '../../utils/cx.js';
@@ -20,7 +19,9 @@ import {
   PhCaretDownIcon,
   PhHouseIcon,
   PhTrashIcon,
+  PhWarningIcon,
 } from './SimplifiedIcons.jsx';
+import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import SimplifiedSettingsTabs from './SimplifiedSettingsTabs.jsx';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import groups from './simplifiedGroups.module.css';
@@ -443,48 +444,27 @@ function SimplifiedEditProfilePage() {
         <p>Converse com a Uni.</p>
       </UniCard>
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showRemovePhotoConfirm}
         onClose={() => setShowRemovePhotoConfirm(false)}
+        icon={<PhTrashIcon />}
         title="Remover foto de perfil?"
         description="A remoção será concluída quando você salvar as alterações."
-        footer={(
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setShowRemovePhotoConfirm(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              onClick={handleConfirmRemovePhoto}
-            >
-              Remover foto
-            </Button>
-          </>
-        )}
+        confirmLabel="Remover foto"
+        onConfirm={handleConfirmRemovePhoto}
       >
-        <p className={styles.fieldHint}>Você poderá selecionar uma nova foto antes de salvar.</p>
-      </Modal>
+        <p>Você poderá selecionar uma nova foto antes de salvar.</p>
+      </SimplifiedConfirmModal>
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showDiscardConfirm}
         onClose={handleKeepEditing}
+        icon={<PhWarningIcon />}
         title="Descartar alterações?"
         description="Você tem alterações não salvas nesta tela."
-        footer={(
-          <>
-            <Button type="button" variant="secondary" onClick={handleKeepEditing}>
-              Continuar editando
-            </Button>
-            <Button type="button" variant="danger" onClick={handleConfirmDiscard}>
-              Descartar
-            </Button>
-          </>
-        )}
+        confirmLabel="Descartar"
+        onConfirm={handleConfirmDiscard}
+        cancelLabel="Continuar editando"
       />
     </div>
   );

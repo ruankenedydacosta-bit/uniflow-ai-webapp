@@ -349,20 +349,40 @@ test('logout: não sai direto -- abre modal de confirmação (nunca window.confi
   assert.doesNotMatch(page, /window\.confirm/);
 });
 
-test('logout: modal usa o componente Modal compartilhado (Esc/X/foco já garantidos por ele)', async () => {
+test('logout: modal usa o aviso curto da tela 22g, montado sobre o Modal compartilhado (Esc/foco já garantidos por ele)', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /<Modal\s*\n\s*open=\{showLogoutConfirm\}/);
+  const confirmModal = await source('./SimplifiedConfirmModal.jsx');
+  assert.match(page, /<SimplifiedConfirmModal\s*\n\s*open=\{showLogoutConfirm\}/);
+  assert.match(confirmModal, /<Modal\b/);
   assert.match(page, /title="Deseja sair da sua conta\?"/);
   assert.match(page, /description="Você precisará entrar novamente para acessar a UniFlow\."/);
 });
 
 test('logout: "Continuar conectado" fecha o modal sem chamar signOut; "Sair da conta" chama signOut', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const modalBlock = page.slice(page.indexOf('<Modal'), page.indexOf('</Modal>'));
-  assert.match(modalBlock, /Continuar conectado/);
-  assert.match(modalBlock, /onClick=\{handleConfirmLogout\}/);
-  const continueButtonBlock = modalBlock.slice(modalBlock.indexOf('Continuar conectado') - 300, modalBlock.indexOf('Continuar conectado'));
-  assert.doesNotMatch(continueButtonBlock, /handleConfirmLogout/);
+  const start = page.indexOf('<SimplifiedConfirmModal');
+  const modalBlock = page.slice(start, page.indexOf('\n      />', start));
+  assert.match(modalBlock, /cancelLabel="Continuar conectado"/);
+  assert.match(modalBlock, /onConfirm=\{handleConfirmLogout\}/);
+  // Sem onCancel, "Continuar conectado" só chama o onClose, que fecha sem sair.
+  assert.doesNotMatch(modalBlock, /onCancel=/);
+  const onCloseLine = modalBlock.slice(modalBlock.indexOf('onClose='), modalBlock.indexOf('\n', modalBlock.indexOf('onClose=')));
+  assert.doesNotMatch(onCloseLine, /handleConfirmLogout|signOut/);
+});
+
+test('aviso curto: sem X por padrão, e toque fora, Esc e as duas ações travam enquanto a ação roda', async () => {
+  const confirmModal = await source('./SimplifiedConfirmModal.jsx');
+  assert.match(confirmModal, /hideCloseButton=\{!closeButton\}/);
+  assert.match(confirmModal, /closeButton = false,/);
+  assert.match(confirmModal, /closeOnOverlayClick=\{!busy\}/);
+  assert.match(confirmModal, /closeOnEsc=\{!busy\}/);
+  assert.match(confirmModal, /busy = loading,/);
+  const buttons = confirmModal.match(/<OutlineButton[^>]*>/g) ?? [];
+  assert.equal(buttons.length, 2);
+  for (const button of buttons) assert.match(button, /disabled=\{busy\}/);
+  assert.match(buttons[0], /onClick=\{onConfirm\}/);
+  assert.match(buttons[0], /loading=\{loading\}/);
+  assert.match(buttons[1], /onClick=\{onCancel \?\? onClose\}/);
 });
 
 test('logout: loading real durante signOut (botão "Sair da conta" com loading), erro exibido se falhar, sessão nunca apagada em caso de erro', async () => {

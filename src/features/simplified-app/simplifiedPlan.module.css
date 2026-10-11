@@ -454,72 +454,100 @@
   }
 }
 
-/* ---------- Troca de plano (épico #116) ---------- */
+/* ---------- Troca de plano (épico #116, tela 22) ---------- */
+
+.changePlanContent {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
 
 .tierOptions {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.tierOption {
-  position: relative;
+.tierPrice {
   display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--uf-app-border);
-  border-radius: 16px;
-  background: var(--uf-app-surface-2);
-  color: var(--uf-app-text);
-  cursor: pointer;
+  align-items: baseline;
+  gap: 2px;
 }
 
-.tierOption[data-selected='true'] {
-  border-color: var(--uf-app-primary);
-  background: var(--uf-app-primary-subtle);
+.tierPrice span {
+  font-size: 15px;
 }
 
-.tierOption:focus-within {
-  outline: 2px solid var(--uf-app-focus);
-  outline-offset: 2px;
+.tierPrice small {
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
 }
 
-.tierOption input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.tierOptionText {
-  display: grid;
-  gap: 4px;
-}
-
-.tierOptionText small {
-  color: var(--uf-app-text-2);
-  font-size: 14px;
+.tierNote,
+.upgradePixLabel {
+  margin: 0;
+  padding-top: 2px;
+  color: var(--uf-app-text-3);
+  font-size: var(--uf-text-micro-size);
+  line-height: 1.45;
+  text-wrap: pretty;
 }
 
 .upgradePix {
-  display: grid;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
-.upgradePix img {
-  border-radius: 12px;
-  background: var(--uf-app-surface);
+/* O QR Code fica sempre em fundo claro, só para o banco conseguir ler. */
+.upgradePixFrame {
+  width: 184px;
+  height: 184px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-white);
+}
+
+.upgradePixFrame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .upgradePixCode {
   max-width: 100%;
   padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--uf-app-surface-2);
+  border-radius: var(--uf-radius-8);
+  background: var(--uf-app-well);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
   color: var(--uf-app-text);
-  font-size: 12px;
+  font-size: var(--uf-text-micro-size);
   overflow-wrap: anywhere;
   user-select: all;
+}
+
+.changePlanError {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
+}
+
+.modalPrimaryAction {
+  flex: 1;
 }

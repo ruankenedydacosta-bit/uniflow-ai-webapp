@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { getPasswordResetRequestFeedback } from '../auth-mobile/passwordRecoveryUtils.js';
-import Button from '../../components/ui/Button/Button.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
-import Modal from '../../components/ui/Modal/Modal.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import { cx } from '../../utils/cx.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
@@ -21,6 +19,7 @@ import {
   PhWarningIcon,
   PhXCircleIcon,
 } from './SimplifiedIcons.jsx';
+import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import SimplifiedSettingsTabs from './SimplifiedSettingsTabs.jsx';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import groups from './simplifiedGroups.module.css';
@@ -283,34 +282,17 @@ function SimplifiedSecurityPage() {
         </div>
       </section>
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showEndSessionsConfirm}
         onClose={() => { if (!isEndingSessions) { setShowEndSessionsConfirm(false); setEndSessionsError(null); } }}
+        icon={<PhDeviceMobileIcon />}
         title="Encerrar todas as sessões?"
         description="Você e qualquer outro aparelho conectado serão desconectados. Será necessário entrar novamente."
-        footer={(
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => { setShowEndSessionsConfirm(false); setEndSessionsError(null); }}
-              disabled={isEndingSessions}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              onClick={handleConfirmEndSessions}
-              loading={isEndingSessions}
-            >
-              Encerrar todas as sessões
-            </Button>
-          </>
-        )}
-      >
-        {endSessionsError ? <p className={styles.errorBanner} role="alert">{endSessionsError}</p> : null}
-      </Modal>
+        confirmLabel="Encerrar todas as sessões"
+        onConfirm={handleConfirmEndSessions}
+        loading={isEndingSessions}
+        error={endSessionsError}
+      />
     </div>
   );
 }

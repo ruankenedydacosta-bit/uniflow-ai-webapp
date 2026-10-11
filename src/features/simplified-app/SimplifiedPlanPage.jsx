@@ -6,7 +6,9 @@ import { cancelSubscription, changePlan, getSubscription } from '../../services/
 import { getMyVoiceBalance } from '../../services/voiceQuotaService.js';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
+import ChoiceRow from '../../components/ui/ChoiceRow/ChoiceRow.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
+import OutlineButton from '../../components/ui/OutlineButton/OutlineButton.jsx';
 import {
   formatPlanPrice,
   PERSONAL_PLAN_PRICE_LABEL,
@@ -33,11 +35,14 @@ import {
   InfoIcon,
   ListIcon,
   MicIcon,
+  PhCreditCardIcon,
+  PhXCircleIcon,
   PieChartIcon,
   ReceiptIcon,
   SavingsIcon,
   XCircleIcon,
 } from './SimplifiedIcons.jsx';
+import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import styles from './simplifiedPlan.module.css';
 
 function BackIcon() {
@@ -384,37 +389,27 @@ function SimplifiedPlanPage() {
         </button>
       </div>
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showManageModal}
         onClose={() => setShowManageModal(false)}
+        icon={<PhCreditCardIcon />}
         title="Gerenciar assinatura"
         description={isManualPlan
           ? 'Seu plano foi liberado pela equipe da UniFlow e não gera cobrança. Para trocar ou encerrar, fale com o suporte.'
           : canCancel
             ? 'Você pode cancelar sua assinatura. Seu acesso continua até o fim do período já pago.'
             : 'A troca de forma de pagamento e a emissão de faturas ainda não estão disponíveis nesta versão.'}
-        footer={(
-          <>
-            <Button type="button" variant="secondary" onClick={() => { setShowManageModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}>
-              Falar com a Uni
-            </Button>
-            {canCancel ? (
-              <Button
-                type="button"
-                variant="danger"
-                onClick={() => { setShowManageModal(false); setShowCancelModal(true); }}
-              >
-                Cancelar assinatura
-              </Button>
-            ) : (
-              <Button type="button" variant="primary" onClick={() => setShowManageModal(false)}>
-                Entendi
-              </Button>
-            )}
-          </>
-        )}
+        confirmLabel={canCancel ? 'Cancelar assinatura' : 'Entendi'}
+        onConfirm={canCancel
+          ? () => { setShowManageModal(false); setShowCancelModal(true); }
+          : () => setShowManageModal(false)}
+        cancelLabel="Falar com a Uni"
+        onCancel={() => { setShowManageModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}
+        closeButton
       />
 
+      {/* Tela 22: folha com título e X. Os planos são linhas de seleção, como
+          no Plano Pessoal, e a ação principal vem antes do "Voltar". */}
       <Modal
         open={showChangePlanModal}
         onClose={handleCloseChangePlan}
@@ -422,73 +417,81 @@ function SimplifiedPlanPage() {
         description={upgradePix
           ? 'Pague o Pix abaixo. Os minutos do novo plano entram assim que o pagamento for confirmado.'
           : 'Escolha o plano. Registrar por texto não tem limite em nenhum deles.'}
-        footer={upgradePix ? (
-          <Button type="button" variant="primary" onClick={handleCloseChangePlan}>Fechar</Button>
-        ) : (
-          <>
-            <Button type="button" variant="secondary" onClick={handleCloseChangePlan} disabled={isChangingPlan}>
-              Voltar
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              loading={isChangingPlan}
-              disabled={!planChange || (planChange.kind === 'same' && !subscription?.pending_tier_id)}
-              onClick={handleConfirmChangePlan}
-            >
-              {planChange?.kind === 'same' && subscription?.pending_tier_id ? 'Manter o plano atual' : planChange?.confirmLabel ?? 'Trocar'}
-            </Button>
-          </>
-        )}
+        size="sm"
       >
-        {upgradePix ? (
-          <div className={styles.upgradePix}>
-            <img src={`data:image/png;base64,${upgradePix.encoded_image}`} alt="QR Code Pix da diferença" width="200" height="200" />
-            <p className={styles.hint}>Ou copie o código Pix:</p>
-            <code className={styles.upgradePixCode}>{upgradePix.payload}</code>
-          </div>
-        ) : (
-          <fieldset className={styles.tierOptions} disabled={isChangingPlan}>
-            <legend className="uf-sr-only">Planos</legend>
-            {PERSONAL_PLAN_TIERS.map((tier) => (
-              <label key={tier.id} className={styles.tierOption} data-selected={selectedTierId === tier.id}>
-                <input
-                  type="radio"
+        <div className={styles.changePlanContent}>
+          {upgradePix ? (
+            <div className={styles.upgradePix}>
+              <span className={styles.upgradePixFrame}>
+                <img src={`data:image/png;base64,${upgradePix.encoded_image}`} alt="QR Code Pix da diferença" width="184" height="184" />
+              </span>
+              <p className={styles.upgradePixLabel}>Ou copie o código Pix:</p>
+              <code className={styles.upgradePixCode}>{upgradePix.payload}</code>
+            </div>
+          ) : (
+            <fieldset className={styles.tierOptions} disabled={isChangingPlan}>
+              <legend className="uf-sr-only">Planos</legend>
+              {PERSONAL_PLAN_TIERS.map((tier) => (
+                <ChoiceRow
+                  key={tier.id}
                   name="change-plan-tier"
                   value={tier.id}
                   checked={selectedTierId === tier.id}
+                  disabled={isChangingPlan}
                   onChange={() => setSelectedTierId(tier.id)}
+                  title={`${tier.name}${tier.id === currentTierId ? ' (plano atual)' : ''}`}
+                  description={tier.voiceMinutesLabel}
+                  trailing={(
+                    <span className={styles.tierPrice}>
+                      <span>{tier.priceLabel}</span>
+                      <small>{PERSONAL_PLAN_PRICE_PERIOD}</small>
+                    </span>
+                  )}
                 />
-                <span className={styles.tierOptionText}>
-                  <strong>{tier.name}{tier.id === currentTierId ? ' (plano atual)' : ''}</strong>
-                  <small>{tier.priceLabel}{PERSONAL_PLAN_PRICE_PERIOD} · {tier.voiceMinutesLabel}</small>
-                </span>
-              </label>
-            ))}
-            {planChange ? <p className={styles.hint}>{planChange.text}</p> : null}
-          </fieldset>
-        )}
-        {changePlanError ? <p className={styles.errorBanner} role="alert">{changePlanError}</p> : null}
+              ))}
+              {planChange ? <p className={styles.tierNote}>{planChange.text}</p> : null}
+            </fieldset>
+          )}
+
+          {changePlanError ? <p className={styles.changePlanError} role="alert">{changePlanError}</p> : null}
+
+          <div className={styles.modalActions}>
+            {upgradePix ? (
+              <OutlineButton variant="secondary" className={styles.modalPrimaryAction} onClick={handleCloseChangePlan}>
+                Fechar
+              </OutlineButton>
+            ) : (
+              <>
+                <OutlineButton
+                  variant="secondary"
+                  className={styles.modalPrimaryAction}
+                  loading={isChangingPlan}
+                  disabled={!planChange || (planChange.kind === 'same' && !subscription?.pending_tier_id)}
+                  onClick={handleConfirmChangePlan}
+                >
+                  {planChange?.kind === 'same' && subscription?.pending_tier_id ? 'Manter o plano atual' : planChange?.confirmLabel ?? 'Trocar'}
+                </OutlineButton>
+                <OutlineButton variant="ghost" onClick={handleCloseChangePlan} disabled={isChangingPlan}>
+                  Voltar
+                </OutlineButton>
+              </>
+            )}
+          </div>
+        </div>
       </Modal>
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showCancelModal}
         onClose={() => { if (!isCancelling) setShowCancelModal(false); }}
+        icon={<PhXCircleIcon />}
         title="Cancelar assinatura"
         description="Seu acesso ao Plano Pessoal continua funcionando normalmente até o fim do período já pago. Depois disso, não haverá nova cobrança."
-        footer={(
-          <>
-            <Button type="button" variant="secondary" onClick={() => setShowCancelModal(false)} disabled={isCancelling}>
-              Manter assinatura
-            </Button>
-            <Button type="button" variant="danger" loading={isCancelling} onClick={handleConfirmCancel}>
-              Confirmar cancelamento
-            </Button>
-          </>
-        )}
-      >
-        {cancelError ? <p className={styles.errorBanner} role="alert">{cancelError}</p> : null}
-      </Modal>
+        confirmLabel="Confirmar cancelamento"
+        onConfirm={handleConfirmCancel}
+        loading={isCancelling}
+        cancelLabel="Manter assinatura"
+        error={cancelError}
+      />
     </div>
   );
 }

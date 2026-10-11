@@ -4,14 +4,13 @@ import { useSession } from '../../app/SessionContext.jsx';
 import { getSubscription } from '../../services/billingService.js';
 import Avatar from '../../components/ui/Avatar/Avatar.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
-import Modal from '../../components/ui/Modal/Modal.jsx';
-import Button from '../../components/ui/Button/Button.jsx';
 import { cx } from '../../utils/cx.js';
 import AnalyticsConsentPreferencesModal from '../analytics/AnalyticsConsentPreferencesModal.jsx';
 import { useAnalyticsConsent } from '../analytics/useAnalyticsConsent.js';
 import { PLATFORM_ADMIN_ROUTE } from '../platform-admin/platformAdminPresentation.js';
 import { useIsPlatformAdmin } from '../platform-admin/useIsPlatformAdmin.js';
 import SimplifiedAccountNotificationsRow from './SimplifiedAccountNotificationsRow.jsx';
+import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import {
   formatPlanPrice,
   PERSONAL_PLAN_PRICE_LABEL,
@@ -326,34 +325,18 @@ function SimplifiedAccountPage() {
         onClose={() => setShowAnalyticsPreferences(false)}
       />
 
-      <Modal
+      <SimplifiedConfirmModal
         open={showLogoutConfirm}
         onClose={() => { if (!isSigningOut) { setShowLogoutConfirm(false); setLogoutError(null); } }}
+        icon={<PhSignOutIcon />}
         title="Deseja sair da sua conta?"
         description="Você precisará entrar novamente para acessar a UniFlow."
-        footer={(
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => { setShowLogoutConfirm(false); setLogoutError(null); }}
-              disabled={isSigningOut}
-            >
-              Continuar conectado
-            </Button>
-            <Button
-              type="button"
-              variant="danger"
-              onClick={handleConfirmLogout}
-              loading={isSigningOut}
-            >
-              Sair da conta
-            </Button>
-          </>
-        )}
-      >
-        {logoutError ? <p className={styles.logoutError} role="alert">{logoutError}</p> : null}
-      </Modal>
+        confirmLabel="Sair da conta"
+        onConfirm={handleConfirmLogout}
+        loading={isSigningOut}
+        cancelLabel="Continuar conectado"
+        error={logoutError}
+      />
     </div>
   );
 }
