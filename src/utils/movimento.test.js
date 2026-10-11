@@ -5,6 +5,7 @@ import {
   LIMITE_DA_SEQUENCIA,
   atrasosDaSequencia,
   lerMilissegundos,
+  planoDaContagem,
   prefereMovimentoReduzido,
   trajetoriasDasFaiscas,
   valorDaContagem,
@@ -39,7 +40,7 @@ test('prefereMovimentoReduzido segue a preferência do sistema e tolera ambiente
 test('theme.css define as durações e curvas que o movimento lê', () => {
   for (const nome of [
     'toque', 'saida', 'entrada', 'navegar', 'contar', 'reduzido', 'sequencia',
-    'fundo', 'linha', 'brilho', 'faisca', 'anel',
+    'fundo', 'linha', 'brilho', 'faisca', 'anel', 'esqueleto',
   ]) {
     assert.match(token(nome) ?? '', /^\d+ms$/, `--uf-motion-${nome}`);
   }
@@ -89,4 +90,21 @@ test('trajetoriasDasFaiscas mantém a distância entre 70 e 150 px vezes a forç
     const distancia = Math.hypot(faisca.dx, faisca.dy);
     assert.ok(distancia >= 70 && distancia < 150.1, String(distancia));
   }
+});
+
+test('planoDaContagem: número à vista conta do valor antigo e pulsa; saído do esqueleto conta do zero sem pulsar', () => {
+  assert.deepEqual(planoDaContagem({ de: 700, para: 900, escondido: false, duracao: 800 }), { de: 700, duracao: 800, pulsa: true });
+  assert.deepEqual(planoDaContagem({ de: 700, para: 900, escondido: true, duracao: 800 }), { de: 0, duracao: 800, pulsa: false });
+  // Mesmo valor depois do esqueleto ainda conta do zero.
+  assert.deepEqual(planoDaContagem({ de: 900, para: 900, escondido: true, duracao: 800 }), { de: 0, duracao: 800, pulsa: false });
+});
+
+test('planoDaContagem troca direto quando nada muda, com Reduzir movimento ou valor que não é número', () => {
+  assert.deepEqual(planoDaContagem({ de: 900, para: 900, escondido: false, duracao: 800 }), { de: 900, duracao: 0, pulsa: false });
+  assert.deepEqual(planoDaContagem({ de: 0, para: 0, escondido: true, duracao: 800 }), { de: 0, duracao: 0, pulsa: false });
+  // Reduzir movimento chega como duração zero.
+  assert.deepEqual(planoDaContagem({ de: 700, para: 900, escondido: false, duracao: 0 }), { de: 700, duracao: 0, pulsa: false });
+  // Cache antigo da Home, sem o número cru.
+  assert.equal(planoDaContagem({ de: undefined, para: 900, escondido: false, duracao: 800 }).duracao, 0);
+  assert.equal(planoDaContagem({ de: 700, para: null, escondido: false, duracao: 800 }).duracao, 0);
 });

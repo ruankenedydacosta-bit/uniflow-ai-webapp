@@ -800,7 +800,7 @@
   border-radius: var(--uf-radius-16);
   background: linear-gradient(105deg, var(--uf-app-surface-2) 25%, var(--uf-app-surface-3) 42%, var(--uf-app-surface-2) 62%);
   background-size: 300% 100%;
-  animation: recordsLoading 1.3s ease infinite;
+  animation: recordsLoading var(--uf-motion-esqueleto) linear infinite;
 }
 
 .loadingState span:first-child {

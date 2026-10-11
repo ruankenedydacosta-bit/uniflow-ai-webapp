@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { resolvePath, useLocation, useNavigate } from 'react-router-dom';
 import {
   animar,
-  atrasosDaSequencia,
+  entrarEmSequencia,
   lerCurva,
   lerDuracao,
   lerMola,
@@ -83,29 +83,7 @@ function animarIconeDaAba(raiz) {
 function animarBlocosDaTela(conteudo) {
   const tela = conteudo?.querySelector(SELETOR_DA_TELA_DE_ABA);
   if (!tela) return;
-  // Bloco sem altura (título só para leitor de tela) não ocupa lugar na fila.
-  const blocos = [...tela.children].filter((bloco) => bloco.offsetHeight > 1);
-  const mola = lerMola('macio');
-  const duracaoDaOpacidade = lerDuracao('entrada');
-  const curvaDaOpacidade = lerCurva('saida');
-  const atrasos = atrasosDaSequencia(blocos.length, {
-    inicio: INICIO_DA_SEQUENCIA_MS,
-    intervalo: lerDuracao('sequencia'),
-  });
-  // Só o quadro inicial: cada bloco termina na opacidade e escala que o
-  // CSS dele já define (card esmaecido continua esmaecido).
-  atrasos.forEach((atraso, indice) => {
-    animar(blocos[indice], [{ translate: '0 20px', scale: '.98' }], {
-      duracao: mola.duracao,
-      curva: mola.curva,
-      atraso,
-    });
-    animar(blocos[indice], [{ opacity: 0 }], {
-      duracao: duracaoDaOpacidade,
-      curva: curvaDaOpacidade,
-      atraso,
-    });
-  });
+  entrarEmSequencia(tela.children, { inicio: INICIO_DA_SEQUENCIA_MS });
 }
 
 export function useMovimentoDeAba({ shellRef, mainContentRef }) {

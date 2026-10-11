@@ -53,11 +53,52 @@ export function atrasosDaSequencia(quantidade, { inicio, intervalo, limite = LIM
   return Array.from({ length: Math.min(quantidade, limite) }, (_, indice) => inicio + indice * intervalo);
 }
 
+// Os blocos sobem 20px e aparecem um depois do outro, com a mola macio.
+// Só o quadro inicial: cada bloco termina na opacidade e escala que o CSS
+// dele já define (card esmaecido continua esmaecido). Bloco sem altura
+// (título só para leitor de tela) não ocupa lugar na fila. Com Reduzir
+// movimento, todos aparecem juntos num fade curto.
+export function entrarEmSequencia(elementos, { inicio = 0 } = {}) {
+  const blocos = [...elementos].filter((bloco) => bloco.offsetHeight > 1);
+  if (prefereMovimentoReduzido()) {
+    const duracao = lerDuracao('reduzido');
+    blocos.forEach((bloco) => animar(bloco, [{ opacity: 0 }], { duracao }));
+    return;
+  }
+  const mola = lerMola('macio');
+  const duracaoDaOpacidade = lerDuracao('entrada');
+  const curvaDaOpacidade = lerCurva('saida');
+  const atrasos = atrasosDaSequencia(blocos.length, { inicio, intervalo: lerDuracao('sequencia') });
+  atrasos.forEach((atraso, indice) => {
+    animar(blocos[indice], [{ translate: '0 20px', scale: '.98' }], {
+      duracao: mola.duracao,
+      curva: mola.curva,
+      atraso,
+    });
+    animar(blocos[indice], [{ opacity: 0 }], {
+      duracao: duracaoDaOpacidade,
+      curva: curvaDaOpacidade,
+      atraso,
+    });
+  });
+}
+
 // Contagem de número: anda rápido no começo e assenta no valor final
 // (ease-out cúbica, como no protótipo do Salto).
 export function valorDaContagem(de, para, progresso) {
   const andado = Math.min(1, Math.max(0, progresso));
   return de + (para - de) * (1 - (1 - andado) ** 3);
+}
+
+// De onde a contagem sai, quanto dura e se o número pulsa no fim. Número
+// que estava escondido pelo esqueleto conta a partir de zero e não pulsa:
+// ele está entrando, não mudando. Valor que não é número troca direto.
+export function planoDaContagem({ de, para, escondido, duracao }) {
+  const inicio = escondido ? 0 : de;
+  if (!Number.isFinite(inicio) || !Number.isFinite(para) || inicio === para) {
+    return { de: para, duracao: 0, pulsa: false };
+  }
+  return { de: inicio, duracao, pulsa: !escondido && duracao > 0 };
 }
 
 // Folha é o diálogo encostado no pé da tela. No desktop o Modal é um

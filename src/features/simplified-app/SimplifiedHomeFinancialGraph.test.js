@@ -157,17 +157,17 @@ test('cache é lido de forma SÍNCRONA (useMemo, nunca useEffect) -- os números
   assert.doesNotMatch(graph, /useEffect\(\(\) => \{[\s\S]{0,120}readHomeFinancialCache/);
 });
 
-test('enquanto carrega, o cache manda; quando os dados frescos chegam, eles substituem', async () => {
+test('enquanto carrega, o último dado visto manda (fresco desta conta, senão o cache); quando os frescos chegam, eles substituem', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(
-    graph,
-    /const graphData = isLoadingFinancials && cachedData\s*\n\s*\? cachedData\s*\n\s*: pickCacheableHomeFinancialData\(freshGraphData, transactionState\.transactions\.length\);/,
-  );
+  assert.match(graph, /const knownData = lastFresh\?\.workspaceId === workspaceId \? lastFresh\.data : cachedData;/);
+  assert.match(graph, /const graphData = isLoadingFinancials \? knownData : freshData;/);
+  // Lista vazia por falta de conta (WORKSPACE_REQUIRED) não vira "último dado fresco".
+  assert.match(graph, /if \(!isLoadingFinancials && workspaceId && !transactionState\.error && lastFresh\?\.data !== freshData\)/);
 });
 
-test('sem cache, mostra skeleton -- nunca espaço vazio nem "R$ 0,00" piscando antes do dado real', async () => {
+test('sem nada visto, mostra skeleton -- nunca espaço vazio nem "R$ 0,00" piscando antes do dado real', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.match(graph, /const showSkeleton = isLoadingFinancials && !cachedData;/);
+  assert.match(graph, /const showSkeleton = !graphData;/);
   assert.match(graph, /if \(showSkeleton\) return <SimplifiedHomeFinancialGraphSkeleton \/>;/);
 });
 
