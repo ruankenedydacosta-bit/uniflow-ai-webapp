@@ -1525,13 +1525,17 @@ test('carregamento: esqueleto com brilho de 1,3 s, conteúdo do mês entra em se
   assert.match(homeCss, /animation: homeSkeletonWave var\(--uf-motion-esqueleto\) linear infinite/);
   assert.match(graphCss, /animation: homeGraphSkeletonWave var\(--uf-motion-esqueleto\) linear infinite/);
   // O esqueleto do Financeiro sai e o conteúdo do mês entra em sequência.
-  assert.match(records, /const showLoading = isLoading && !holdSummary;/);
+  // Esqueleto só na primeira carga do mês: recarga mantém o conteúdo e os números contam do antigo ao novo.
+  assert.match(records, /const showLoading = loadedMonthKey !== month\.dateFrom;/);
+  assert.match(records, /if \(isLoading\) \{\s*loadingMonthKeyRef\.current = month\.dateFrom;/);
   assert.match(records, /\{showLoading \? \(/);
-  assert.match(records, /if \(!leftLoading \|\| !monthSectionRef\.current\) return;\s*entrarEmSequencia\(/);
+  assert.match(records, /if \(!leftLoading \|\| holdSummary \|\| !monthSectionRef\.current\) return;\s*entrarEmSequencia\(/);
   assert.match(records, /<section ref=\{monthSectionRef\} className=\{styles\.monthSection\}/);
   // Entradas e Saídas da Home contam ao chegar o dado fresco, como ao voltar para a aba.
-  assert.match(graph, /useNumeroContado\(graphData\.expense, \{\s*segurar: isLoadingFinancials,\s*esqueleto: showSkeleton,\s*\}\)/);
-  assert.match(graph, /useNumeroContado\(graphData\.income, \{\s*segurar: isLoadingFinancials,\s*esqueleto: showSkeleton,\s*\}\)/);
+  assert.match(graph, /useNumeroContado\(graphData\?\.expense, \{ esqueleto: showSkeleton \}\)/);
+  assert.match(graph, /useNumeroContado\(graphData\?\.income, \{ esqueleto: showSkeleton \}\)/);
+  // Recarga fica no último dado fresco, sem voltar ao cache da montagem nem ao esqueleto.
+  assert.match(graph, /const graphData = isLoadingFinancials \? knownData : freshData;/);
   assert.match(graph, /ref=\{expenseValueRef\}/);
   assert.match(graph, /Number\.isFinite\(shownExpense\) \? formatCurrency\(shownExpense\) : graphData\.expenseLabel/);
 });

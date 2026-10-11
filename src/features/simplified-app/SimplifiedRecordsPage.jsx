@@ -9,6 +9,7 @@ import { CategoryIcon, PlusIcon } from '../categories/categoryIcons.jsx';
 import { useAccounts, useCategories, useCategoryBudgets, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
 import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionModal.jsx';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
+import { isSupabaseConfigured } from '../../services/supabaseClient.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { entrarEmSequencia } from '../../utils/movimento.js';
 import CategoryBudgetModal from './CategoryBudgetModal.jsx';
@@ -799,10 +800,23 @@ function SimplifiedRecordsPage() {
     || transactionState.isLoading
     || balanceState.isLoading
     || workspaceRole.isLoading;
-  // Com uma folha aberta, o resumo fica na tela durante a recarga, sem
-  // esqueleto: Entradas e Saídas param no valor de antes e contam até o novo
-  // quando ela fecha. Depois do esqueleto, contam a partir de zero.
-  const showLoading = isLoading && !holdSummary;
+  // Esqueleto só na primeira carga de cada mês (#146). Recarga depois de
+  // salvar, excluir ou de um aviso da Uni mantém o conteúdo na tela, e os
+  // números contam do valor antigo ao novo. O mês só conta como carregado
+  // depois de a recarga dele começar: logo após a troca, isLoading ainda é
+  // o do mês anterior.
+  const [loadedMonthKey, setLoadedMonthKey] = useState(null);
+  const loadingMonthKeyRef = useRef(null);
+  useEffect(() => {
+    if (isLoading) {
+      loadingMonthKeyRef.current = month.dateFrom;
+      return;
+    }
+    if (loadingMonthKeyRef.current === month.dateFrom || !isSupabaseConfigured) setLoadedMonthKey(month.dateFrom);
+  }, [isLoading, month.dateFrom]);
+  const showLoading = loadedMonthKey !== month.dateFrom;
+  // Com uma folha aberta, Entradas e Saídas param no valor de antes e contam
+  // até o novo quando ela fecha. Depois do esqueleto, contam a partir de zero.
   const [shownIncome, incomeValueRef] = useNumeroContado(summary.income, { segurar: holdSummary, esqueleto: showLoading });
   const [shownExpense, expenseValueRef] = useNumeroContado(summary.expense, { segurar: holdSummary, esqueleto: showLoading });
   // Quando o esqueleto sai, o conteúdo do mês entra em sequência (#146). O
@@ -812,9 +826,9 @@ function SimplifiedRecordsPage() {
   useLayoutEffect(() => {
     const leftLoading = showedLoadingRef.current && !showLoading;
     showedLoadingRef.current = showLoading;
-    if (!leftLoading || !monthSectionRef.current) return;
+    if (!leftLoading || holdSummary || !monthSectionRef.current) return;
     entrarEmSequencia([...monthSectionRef.current.children].filter((block) => !block.hasAttribute('data-offline-notice')));
-  }, [showLoading]);
+  }, [holdSummary, showLoading]);
   // A linha nova abre, entra pela esquerda e brilha quando a folha fecha e
   // a lista está carregada. Se ela não está à vista (outro filtro, data
   // antiga fora das recentes), nada anima.

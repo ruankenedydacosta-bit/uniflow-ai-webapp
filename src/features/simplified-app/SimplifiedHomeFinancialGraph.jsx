@@ -128,26 +128,33 @@ function SimplifiedHomeFinancialGraphContent() {
 
   const isLoadingFinancials = transactionState.isLoading;
 
-  // Enquanto os dados frescos não chegam, o que já foi visto manda. Sem
-  // cache, buildHomeFinancialGraphData sobre uma lista vazia produziria um
-  // estado "R$ 0,00" -- exatamente a piscada de valores errados que o
-  // carregamento progressivo tem que evitar; nesse caso vai skeleton.
-  const graphData = isLoadingFinancials && cachedData
-    ? cachedData
-    : pickCacheableHomeFinancialData(freshGraphData, transactionState.transactions.length);
+  const freshData = useMemo(
+    () => pickCacheableHomeFinancialData(freshGraphData, transactionState.transactions.length),
+    [freshGraphData, transactionState.transactions.length],
+  );
 
-  const showSkeleton = isLoadingFinancials && !cachedData;
+  // Último dado fresco desta conta. Numa recarga (app voltando do segundo
+  // plano, aviso de dado novo), o card fica nele em vez de voltar ao cache
+  // lido na montagem ou ao esqueleto. Sem conta ainda, a lista vazia com
+  // erro WORKSPACE_REQUIRED não conta como dado.
+  const [lastFresh, setLastFresh] = useState(null);
+  if (!isLoadingFinancials && workspaceId && !transactionState.error && lastFresh?.data !== freshData) {
+    setLastFresh({ workspaceId, data: freshData });
+  }
+  const knownData = lastFresh?.workspaceId === workspaceId ? lastFresh.data : cachedData;
+
+  // Enquanto os dados frescos não chegam, o que já foi visto manda. Sem
+  // nada visto, buildHomeFinancialGraphData sobre uma lista vazia produziria
+  // um estado "R$ 0,00" -- exatamente a piscada de valores errados que o
+  // carregamento progressivo tem que evitar; nesse caso vai skeleton.
+  const graphData = isLoadingFinancials ? knownData : freshData;
+
+  const showSkeleton = !graphData;
 
   // Entradas e Saídas contam do último valor visto ao fresco quando ele
   // chega (ao voltar para a aba, por exemplo), e do zero depois do esqueleto.
-  const [shownIncome, incomeValueRef] = useNumeroContado(graphData.income, {
-    segurar: isLoadingFinancials,
-    esqueleto: showSkeleton,
-  });
-  const [shownExpense, expenseValueRef] = useNumeroContado(graphData.expense, {
-    segurar: isLoadingFinancials,
-    esqueleto: showSkeleton,
-  });
+  const [shownIncome, incomeValueRef] = useNumeroContado(graphData?.income, { esqueleto: showSkeleton });
+  const [shownExpense, expenseValueRef] = useNumeroContado(graphData?.expense, { esqueleto: showSkeleton });
 
   // Persiste o último estado REAL (nunca o cache relido, nunca um estado
   // ainda carregando) para a próxima abertura do app.
@@ -157,16 +164,9 @@ function SimplifiedHomeFinancialGraphContent() {
       userId,
       workspaceId,
       periodKey,
-      data: pickCacheableHomeFinancialData(freshGraphData, transactionState.transactions.length),
+      data: freshData,
     });
-  }, [
-    isLoadingFinancials,
-    freshGraphData,
-    transactionState.transactions.length,
-    userId,
-    workspaceId,
-    periodKey,
-  ]);
+  }, [isLoadingFinancials, freshData, userId, workspaceId, periodKey]);
 
   if (showSkeleton) return <SimplifiedHomeFinancialGraphSkeleton />;
 

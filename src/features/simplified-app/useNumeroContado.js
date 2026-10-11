@@ -19,10 +19,25 @@ export function useNumeroContado(valor, { segurar = false, esqueleto = false } =
   const mostradoRef = useRef(null);
   const elementoRef = useRef(null);
 
-  if (esqueleto && !escondido) setEscondido(true);
+  // O esqueleto cobre o número: a contagem em andamento para e, quando ele
+  // sair, a próxima começa do zero.
+  if (esqueleto && !escondido) {
+    setEscondido(true);
+    setContado(null);
+  }
+  // O esqueleto saiu sem o dado novo (folha aberta, cache que chegou
+  // depois): o número aparece no valor de agora, sem contar.
+  if (escondido && !esqueleto && segurar) {
+    setEscondido(false);
+    setAssentado(valor);
+  }
 
   useEffect(() => {
-    if (segurar || esqueleto) return undefined;
+    if (esqueleto) {
+      mostradoRef.current = null;
+      return undefined;
+    }
+    if (segurar) return undefined;
     if (valor === assentado && !escondido && mostradoRef.current === null) return undefined;
     const plano = planoDaContagem({
       de: mostradoRef.current ?? assentado,
