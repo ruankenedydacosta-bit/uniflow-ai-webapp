@@ -25,6 +25,10 @@ export const MAX_ALTERNATIVAS = 2;
 export const MAX_DESCRICAO = 80;
 export const MAX_NOVA_CATEGORIA = 40;
 export const MAX_RESPOSTA = 240;
+// Parcelamento: de 2 a 72 parcelas. Fora disso é erro de leitura e vira
+// compra à vista.
+export const MIN_PARCELAS = 2;
+export const MAX_PARCELAS = 72;
 
 // Apelidos estáveis: ordem por tipo e nome, a mesma que o prompt mostra.
 export function indexarCatalogo({ categorias = [], contas = [] } = {}) {
@@ -44,7 +48,7 @@ const ESQUEMA_OPERACAO = {
   additionalProperties: false,
   required: [
     'tipo', 'valor', 'data', 'descricao', 'categoria', 'nova_categoria',
-    'alternativas', 'conta', 'conta_destino', 'confianca',
+    'alternativas', 'conta', 'conta_destino', 'confianca', 'parcelas', 'recorrente',
   ],
   properties: {
     tipo: { type: 'string', enum: [...TIPOS] },
@@ -57,6 +61,8 @@ const ESQUEMA_OPERACAO = {
     conta: { ...TEXTO_OU_NULO, description: 'apelido da conta, ex.: k1' },
     conta_destino: TEXTO_OU_NULO,
     confianca: { type: 'number' },
+    parcelas: { type: ['integer', 'null'], description: 'número de parcelas da compra parcelada' },
+    recorrente: { type: 'boolean' },
   },
 };
 
@@ -136,6 +142,14 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
     ajustes.push('conta_destino_igual');
   }
 
+  // Parcela e recorrência não valem em transferência; parcela só em saída.
+  const parcelasBrutas = Number(bruta.parcelas);
+  const parcelas = tipo === 'saida' && Number.isInteger(parcelasBrutas)
+    && parcelasBrutas >= MIN_PARCELAS && parcelasBrutas <= MAX_PARCELAS
+    ? parcelasBrutas
+    : null;
+  const recorrente = tipo !== 'transferencia' && !parcelas && bruta.recorrente === true;
+
   const confiancaBruta = Number(bruta.confianca);
   const confianca = Number.isFinite(confiancaBruta) ? Math.min(1, Math.max(0, confiancaBruta)) : 0;
 
@@ -155,6 +169,8 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
     conta,
     contaDestino,
     confianca,
+    parcelas,
+    recorrente,
     faltando,
     ajustes,
   };

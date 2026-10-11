@@ -150,6 +150,27 @@ test('transferência para a mesma conta perde o destino e passa a faltar conta',
   assert.deepEqual(primeira.ajustes, ['conta_destino_igual']);
 });
 
+test('parcelas: só em saída, inteiro de 2 a 72; fora disso vira compra à vista', () => {
+  const parcelas = (campos) => validarInterpretacao(lancamento(operacao(campos)), CONTEXTO).operacoes[0].parcelas;
+  assert.equal(parcelas({ parcelas: 12 }), 12);
+  assert.equal(parcelas({ parcelas: 1 }), null);
+  assert.equal(parcelas({ parcelas: 73 }), null);
+  assert.equal(parcelas({ parcelas: 2.5 }), null);
+  assert.equal(parcelas({ parcelas: null }), null);
+  assert.equal(parcelas({ tipo: 'entrada', categoria: C.sal, parcelas: 3 }), null);
+});
+
+test('recorrente: só com true explícito, nunca em transferência nem junto de parcelas', () => {
+  const validar = (campos) => validarInterpretacao(lancamento(operacao(campos)), CONTEXTO).operacoes[0];
+  assert.equal(validar({ recorrente: true }).recorrente, true);
+  assert.equal(validar({ recorrente: 'sim' }).recorrente, false);
+  assert.equal(validar({}).recorrente, false);
+  assert.equal(validar({ tipo: 'transferencia', categoria: null, conta: K.cc, conta_destino: K.pp, recorrente: true }).recorrente, false);
+  const parcelada = validar({ parcelas: 10, recorrente: true });
+  assert.equal(parcelada.parcelas, 10);
+  assert.equal(parcelada.recorrente, false);
+});
+
 test('resposta fora do contrato vira nao_entendi sem lançar', () => {
   for (const bruta of [null, {}, { intent: 'apagar_tudo' }, lancamento(), lancamento({ tipo: 'emprestimo' })]) {
     assert.deepEqual(validarInterpretacao(bruta, CONTEXTO).operacoes, []);
@@ -236,6 +257,7 @@ test('normalização para a régua: confiança baixa vira sugestão, nova catego
 
   assert.deepEqual(normalizarInterpretacao(validar({})), {
     intent: 'lancar_saida', valor: 300, data: '2026-10-02', categoria: 'Educação', modoCategoria: 'resolveu',
+    parcelas: null, recorrente: false,
   });
   assert.equal(normalizarInterpretacao(validar({ confianca: 0.4 })).modoCategoria, 'sugeriu');
   assert.equal(normalizarInterpretacao(validar({ categoria: null, nova_categoria: 'Pets' })).modoCategoria, 'propos_criar');

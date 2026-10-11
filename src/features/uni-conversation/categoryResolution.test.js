@@ -159,21 +159,15 @@ test('nome real exato tem prioridade sobre o alias -- "Gastei com Transporte" nu
   assert.equal(result.viaAlias, undefined, 'deveria resolver pelo nome exato, não pelo alias');
 });
 
-test('alias tem prioridade sobre a inferência de IA -- mesmo com aiInference presente, "mercado" nunca cai na IA', () => {
+test('alias inequívoco resolve sem perguntar: "mercado" vira Alimentação', () => {
   const result = resolveFinancialCategory({
     categories: PERSONAL_CATEGORIES,
     transactionType: 'expense',
     description: 'no mercado',
     normalizedInput: 'gastei 50 no mercado',
-    aiInference: {
-      decision: 'existing_category',
-      categoryId: 'cat-saude',
-      confidence: 0.99,
-      suggestedName: null,
-    },
   });
   assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-alimentacao', 'a IA nunca deveria sobrescrever um alias inequívoco');
+  assert.equal(result.category.id, 'cat-alimentacao');
 });
 
 test('termo sem alias e sem correspondência textual continua indo para NOT_FOUND (comportamento anterior preservado)', () => {

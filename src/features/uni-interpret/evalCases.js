@@ -25,6 +25,35 @@
 export const DATA_REFERENCIA = '2026-10-02';
 
 export const CASOS = [
+  // Parcelamento e recorrência (#80): a régua confere que o modelo marca
+  // compra parcelada e valor que se repete, e só eles.
+  {
+    id: 'geladeira-parcelada',
+    frase: 'Comprei uma geladeira de 3.600 em 12x no cartão',
+    esperado: { intent: 'lancar_saida', valor: 3600, categoria: 'Moradia', aceitas: ['Outras despesas'], parcelas: 12 },
+  },
+  {
+    id: 'celular-parcelas-de',
+    frase: 'peguei um celular novo, 10 parcelas de 250',
+    esperado: { intent: 'lancar_saida', valor: 2500, categoria: 'Outras despesas', parcelas: 10 },
+  },
+  {
+    id: 'terceira-parcela-notebook',
+    frase: 'paguei a terceira parcela do notebook, 400',
+    esperado: { intent: 'lancar_saida', valor: 400, categoria: 'Outras despesas', aceitas: ['Dívidas'] },
+  },
+  {
+    id: 'academia-todo-mes',
+    frase: 'pago 120 de academia todo mês',
+    esperado: { intent: 'lancar_saida', valor: 120, categoria: 'Saúde', aceitas: ['Lazer'], recorrente: true },
+  },
+  {
+    id: 'aluguel-recebido-todo-mes',
+    // Sem dia do mês: numa recorrência, "todo dia 5" não diz quando foi o
+    // lançamento, e a régua não tem como esperar uma data só.
+    frase: 'recebo 2.000 do aluguel do apartamento todo mês',
+    esperado: { intent: 'lancar_entrada', valor: 2000, categoria: 'Aluguel recebido', recorrente: true },
+  },
   // Falsos positivos conhecidos das regras de palavra-chave.
   {
     id: 'escola-das-criancas',

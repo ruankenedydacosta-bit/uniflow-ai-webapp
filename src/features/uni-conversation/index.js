@@ -92,7 +92,6 @@ export {
   markPlanOperationFailed,
   PLAN_OPERATION_STATUS,
   PLAN_STATUS,
-  summarizePlanForNeuralContext,
 } from './pendingFinancialPlan.js';
 export {
   buildOperationClarificationQuestion,
@@ -109,9 +108,8 @@ export {
   countMoneyMentions,
   hasAnyAmountMention,
   isUnsupportedIntentEligibleForPlan,
-  looksLikeComplexFinancialText,
   looksLikeFreshFinancialStatement,
   looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
-  splitFinancialClauses,
+  motivoParaNaoLerSemModelo,
 } from './financialPlanTrigger.js';

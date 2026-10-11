@@ -1,9 +1,4 @@
 import { normalizeFinancialText } from '../uni-intents/index.js';
-import {
-  CATEGORY_INFERENCE_DECISIONS,
-  CATEGORY_INFERENCE_HIGH_CONFIDENCE,
-  CATEGORY_INFERENCE_MID_CONFIDENCE,
-} from '../uni-category-inference/index.js';
 import { resolveCategoryAlias } from './categoryAliases.js';
 
 // BLOCO B: espelha accountResolution.js -- mesmo padrão (status enum,
@@ -41,61 +36,6 @@ function categorySimilarity(category, requestedName, normalizedInput) {
   return nameWords.some((word) => normalizedInput?.includes(word)) ? 2 : 0;
 }
 
-// BLOCO D: aplica a inferencia OpenAI JA VALIDADA (categoryInferenceContract.js)
-// -- so chega aqui quando a resolucao local (correspondencia exata/alias/
-// aproximacao por texto) nao encontrou NADA (ver o unico ponto de chamada
-// abaixo). A IA nunca escolhe sozinha: confianca alta vira uma resolucao
-// direta (ainda sujeita a confirmacao final da transacao, como qualquer
-// categoria exata); confianca media exige a mesma pergunta explicita ja
-// usada por uma aproximacao local ("Posso usar a categoria X?"); confianca
-// baixa ou decisao "uncertain" e tratada como se a IA nao tivesse sugerido
-// nada (cai no NOT_FOUND local). "create_category" nunca cria nada aqui --
-// so propoe um nome, que segue o MESMO fluxo assistido ja existente
-// (category_not_found -> CREATE_CATEGORY).
-function applyAiInference(aiInference, compatible, approved) {
-  if (!aiInference) return null;
-
-  if (aiInference.decision === CATEGORY_INFERENCE_DECISIONS.EXISTING_CATEGORY) {
-    const category = compatible.find((item) => item.id === aiInference.categoryId);
-    // ID nao esta (mais) entre as categorias compativeis -- por ter sido
-    // excluido (rejeitado pelo usuario) ou por qualquer outra divergencia.
-    // Nunca forca; cai no NOT_FOUND local normalmente.
-    if (!category) return null;
-
-    if (aiInference.confidence >= CATEGORY_INFERENCE_HIGH_CONFIDENCE || approved) {
-      return {
-        status: CATEGORY_RESOLUTION_STATUS.RESOLVED,
-        category,
-        candidates: compatible,
-        approximate: aiInference.confidence < CATEGORY_INFERENCE_HIGH_CONFIDENCE,
-      };
-    }
-    if (aiInference.confidence >= CATEGORY_INFERENCE_MID_CONFIDENCE) {
-      return {
-        status: CATEGORY_RESOLUTION_STATUS.PENDING_APPROXIMATE,
-        proposedCategory: category,
-        candidates: compatible,
-        explanation: `Esse gasto parece ser de ${category.name}. Posso usar essa categoria?`,
-      };
-    }
-    // Confianca baixa: nunca assume -- ignora a sugestao por completo.
-    return null;
-  }
-
-  if (aiInference.decision === CATEGORY_INFERENCE_DECISIONS.CREATE_CATEGORY && aiInference.suggestedName) {
-    return {
-      status: CATEGORY_RESOLUTION_STATUS.NOT_FOUND,
-      proposedCategoryName: aiInference.suggestedName,
-      candidates: compatible,
-      explanation: `A categoria ${aiInference.suggestedName} ainda não existe.`,
-    };
-  }
-
-  // "uncertain" (ou qualquer outro caso nao coberto acima): equivalente a
-  // nenhuma sugestao da IA.
-  return null;
-}
-
 export function resolveFinancialCategory({
   categories = [],
   transactionType,
@@ -108,7 +48,6 @@ export function resolveFinancialCategory({
   excludedCategoryName = null,
   decision,
   workspaceType = 'personal',
-  aiInference = null,
 } = {}) {
   const compatible = (Array.isArray(categories) ? categories : []).filter(
     (category) => category?.is_active !== false
@@ -123,16 +62,7 @@ export function resolveFinancialCategory({
       : { status: CATEGORY_RESOLUTION_STATUS.MISSING, candidates: compatible, incompatible: true };
   }
 
-  // BLOCO D: quando a IA recomendou criar uma categoria (decision:
-  // 'create_category'), o nome sugerido por ela tem prioridade sobre o
-  // palpite local mecânico (prefixo removido da descrição) -- é um nome
-  // pensado especificamente para o caso, não apenas a descrição
-  // capitalizada. Ainda assim, se a IA não sugeriu nada, o palpite local
-  // continua funcionando exatamente como antes.
-  const aiSuggestedName = aiInference?.decision === CATEGORY_INFERENCE_DECISIONS.CREATE_CATEGORY
-    ? aiInference.suggestedName
-    : null;
-  const rawProposedName = requestedName || aiSuggestedName || guessCategoryNameFromDescription(description);
+  const rawProposedName = requestedName || guessCategoryNameFromDescription(description);
   const proposedName = (
     rawProposedName
     && normalizeFinancialText(rawProposedName) !== normalizeFinancialText(excludedCategoryName ?? '')
@@ -237,12 +167,6 @@ export function resolveFinancialCategory({
       explanation: `Esse gasto parece ser de ${ranked[0].category.name}. Posso usar essa categoria?`,
     };
   }
-
-  // BLOCO D: a resolucao local (exata/alias/aproximacao por texto) nao
-  // encontrou nenhuma correspondencia -- SO agora, com o determinístico
-  // esgotado, a inferencia da IA (se houver e ja validada) e considerada.
-  const inferred = applyAiInference(aiInference, compatible, approved);
-  if (inferred) return inferred;
 
   return {
     status: CATEGORY_RESOLUTION_STATUS.NOT_FOUND,

@@ -45,19 +45,19 @@ import {
   markPlanOperationFailed,
   PLAN_OPERATION_STATUS,
   PLAN_STATUS,
-  summarizePlanForNeuralContext,
   buildPlanCancelledText,
   buildPlanOperationCancelledText,
   buildPlanResultText,
   buildPlanSummaryText,
+  describePlanOperation,
   findPlanOperationCancelTarget,
   getSingleReadyPlanAction,
   parsePlanCorrectionOverrides,
   isUnsupportedIntentEligibleForPlan,
-  looksLikeComplexFinancialText,
   looksLikeFreshFinancialStatement,
   looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
+  motivoParaNaoLerSemModelo,
   createConversationalMemory,
   classifyPendingActionRelation,
   createAgendaConversationFlow,
@@ -75,7 +75,6 @@ import { composeNaturalFinancialResponse } from './composeNaturalFinancialRespon
 import { composeFinancialResponseWithLlm } from './composeFinancialResponseWithLlm.js';
 import { buildFinancialOrchestratorTelemetryEntry, logFinancialOrchestratorTelemetry } from './financialOrchestratorTelemetry.js';
 import { recordFinancialValidationEvent } from './financialValidationTelemetry.js';
-import { createCategoryInferenceService } from '../uni-category-inference/index.js';
 import {
   createUniInterpretClient,
   interpretacaoParaOverrides,
@@ -85,9 +84,9 @@ import {
 import {
   ROTAS_INTERPRETACAO,
   escolherRotaDaInterpretacao,
+  interpretacaoParaPlano,
   interpretacaoParaRascunho,
 } from '../uni-interpret/uniInterpretRoteamento.js';
-import { createFinancialPlanService } from '../uni-financial-plan/index.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
 import {
@@ -290,6 +289,11 @@ const ACTION_STATEMENT_INTENTS = new Set([
   'register_transfer',
   'create_goal',
 ]);
+const TEXTO_SEM_MODELO = Object.freeze({
+  varias: 'Não consegui separar esses lançamentos agora. Diga um de cada vez, com o valor e do que se trata.',
+  parcela: 'Compra parcelada ainda não é registrada pela conversa. Lance pelo Financeiro.',
+});
+const TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO = 'Esse rascunho vale só para este lançamento. A Uni ainda não repete lançamentos sozinha.';
 const INTENTS_FORA_DO_INTERPRETADOR = new Set([
   'set_balance',
   'ambiguous_balance_or_income',
@@ -666,20 +670,6 @@ export default function UniChatPage({ variant = 'full' }) {
     });
   }
 
-  // BLOCO D: mesma Edge Function/flag do chat (uni-chat-llm,
-  // via uniLlm.enabled) -- nenhum novo secret, nenhuma nova variável de
-  // ambiente. Só é chamada quando a resolução determinística de categoria já
-  // esgotou (ver handlePendingConversationInput/sendText); nunca escolhe
-  // conta, nunca cria categoria, nunca persiste -- apenas sugere.
-  const categoryInferenceService = useMemo(
-    () => createCategoryInferenceService({
-      supabase,
-      supabaseUrl,
-      supabaseAnonKey,
-      enabled: uniLlm.enabled,
-    }),
-    [uniLlm.enabled],
-  );
   // Épico #76: a IA lê a frase inteira e escolhe valor, data, descrição,
   // conta e categoria entre os registros do próprio usuário. O resultado
   // corrige os campos do rascunho das regras; sem IA, ficam as regras.
@@ -692,59 +682,6 @@ export default function UniChatPage({ variant = 'full' }) {
     }),
     [uniLlm.enabled],
   );
-  // Evita chamar a IA mais de uma vez para a MESMA tentativa de registro
-  // (clientOperationId) -- se a IA já foi tentada e o resultado ainda assim
-  // ficou sem categoria (uncertain/baixa confiança/erro), as próximas
-  // correções (ex.: o usuário informa a conta) não repetem a chamada.
-  const aiCategoryAttemptRef = useRef(new Set());
-
-  async function attemptCategoryInference(result) {
-    const action = result?.action;
-    const issueCode = action?.issues?.[0]?.code;
-    const isCategoryNotFound = issueCode === 'category_not_found' || issueCode === 'category_required';
-    const operationId = action?.clientOperationId;
-
-    if (
-      !isCategoryNotFound
-      || !operationId
-      || aiCategoryAttemptRef.current.has(operationId)
-      || !categoryInferenceService.isSupported()
-    ) {
-      return result;
-    }
-
-    const compatibleCategories = categoryState.categories.filter(
-      (category) => category?.is_active !== false && category.category_type === action.transactionType,
-    );
-    if (compatibleCategories.length === 0) {
-      return result;
-    }
-
-    aiCategoryAttemptRef.current.add(operationId);
-
-    const { inference } = await categoryInferenceService.infer({
-      description: action.description,
-      transactionType: action.transactionType,
-      categories: compatibleCategories,
-    });
-    if (!inference) {
-      // Erro, timeout, resposta inválida etc. -- nunca bloqueia o fluxo:
-      // segue com o resultado determinístico original, sem a sugestão da IA.
-      return result;
-    }
-
-    // BUG REAL EM PRODUCAO: este provideInput roda no MESMO turno em que
-    // interpret() acabou de disparar o dispatch de NEEDS_CLARIFICATION --
-    // antes de qualquer re-render, o financialConversation.state ainda
-    // reflete o turno anterior (ou null, no primeiro turno da conversa), o
-    // que fazia correct() abortar com `if (!state.parsed) return null`.
-    // O resultado nulo se propagava até publishConversationResult(null),
-    // que caía no fallback genérico "Preciso de mais detalhes antes de
-    // preparar essa ação." -- descartando a categoria já resolvida
-    // (determinística OU pela IA) sem nenhum motivo real. Passar
-    // result.parsed explicitamente evita depender do commit do useReducer.
-    return financialConversation.provideInput({ aiInference: inference }, result.parsed);
-  }
 
   // Sprint 1 (IA Conversacional) -- ponte "fato estruturado -> frase
   // natural" para as perguntas de clarificação (conta/categoria faltando
@@ -1073,9 +1010,11 @@ export default function UniChatPage({ variant = 'full' }) {
   // Lançamento novo: a IA corrige os campos que as regras leram antes de o
   // card aparecer. "Mensalidade escolar das crianças" deixa de virar
   // Impostos pelo "das".
-  async function publishInterpretedResult(result, text, history) {
+  // modeloJaLeu: a frase já passou pelo uni-interpret neste turno (#80) e
+  // caiu nas regras; perguntar de novo só repete a chamada.
+  async function publishInterpretedResult(result, text, history, modeloJaLeu) {
     const conversationId = activeIdRef.current;
-    const overrides = await interpretWithAi(text, result?.action, { history });
+    const overrides = modeloJaLeu ? null : await interpretWithAi(text, result?.action, { history });
     if (activeIdRef.current !== conversationId) return;
     const interpreted = overrides ? financialConversation.provideInput(overrides, result.parsed) : null;
     await publishConversationResultWithInference(
@@ -1110,27 +1049,10 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   async function publishConversationResultWithInference(result) {
-    const categorized = await attemptCategoryInference(result);
-    const phrased = await attemptNaturalPhrasing(categorized);
+    const phrased = await attemptNaturalPhrasing(result);
     publishConversationResult(phrased);
   }
 
-  // BLOCO E: mesma Edge Function/flag do chat (uni-chat-llm),
-  // agora com mode='financial_plan' -- nenhum novo secret, nenhuma nova
-  // variável de ambiente (mesmo padrão do Bloco D). Só é chamada quando o
-  // texto parece complexo/multioperação/transferência (ver
-  // financialPlanTrigger.js); nunca substitui o parser determinístico de
-  // uma única operação -- se não houver plano válido, o fluxo atual segue
-  // normalmente.
-  const financialPlanService = useMemo(
-    () => createFinancialPlanService({
-      supabase,
-      supabaseUrl,
-      supabaseAnonKey,
-      enabled: uniLlm.enabled,
-    }),
-    [uniLlm.enabled],
-  );
   const [, setFinancialPlanState] = useState(null);
   const financialPlanRef = useRef(null);
   const financialAnalyticsOriginRef = useRef(GA4_PRODUCT_ORIGINS.MANUAL);
@@ -1192,26 +1114,10 @@ export default function UniChatPage({ variant = 'full' }) {
     financialPlanConfirmationMessageIdRef.current = null;
   }
 
-  async function attemptFinancialPlan(text) {
-    const turnTokenAtStart = uniTurnTokenRef.current;
-    if (!financialPlanService.isSupported()) return false;
-
-    const pendingPlanSummary = isFinancialPlanActive()
-      ? summarizePlanForNeuralContext(financialPlanRef.current)
-      : undefined;
-
-    const { plan } = await financialPlanService.interpret({
-      phrase: text,
-      pendingPlanSummary,
-      accounts: accountState.accounts,
-      categories: categoryState.categories,
-      referenceDate: getLocalIsoDate(),
-    });
-    // Sem plano válido (não suportado, erro, timeout, resposta fora do
-    // contrato) -- o chamador cai de volta no fluxo determinístico
-    // existente, sem quebrar o registro manual.
-    if (!plan) return false;
-
+  // Plano de várias operações, parcela, recorrência ou transferência, já
+  // lido pelo uni-interpret (#80): cada operação passa pelos resolutores de
+  // conta e categoria e vai para a revisão.
+  function iniciarPlanoFinanceiro(plan, text) {
     const createdPlan = createPendingFinancialPlan({
       plan,
       phrase: text,
@@ -1234,11 +1140,16 @@ export default function UniChatPage({ variant = 'full' }) {
           : operation.action,
       })),
     };
-    // S4: turno novo durante a chamada neural anula o plano antigo.
-    if (uniTurnTokenRef.current !== turnTokenAtStart) return false;
+    // Só parcela e recorrência: nada a confirmar, e um plano parado ali
+    // prenderia as próximas frases até expirar.
+    if (newPlan.operations.every((operation) => operation.capabilityPending)) {
+      createAssistantResponse(
+        `Entendi o seguinte:\n${newPlan.operations.map(describePlanOperation).join('\n')}\n\nNada foi registrado.`,
+      );
+      return;
+    }
     setFinancialPlan(newPlan);
     publishFinancialPlanReview(newPlan);
-    return true;
   }
 
   async function confirmFinancialPlan() {
@@ -1378,27 +1289,6 @@ export default function UniChatPage({ variant = 'full' }) {
         publishFinancialPlanReview(updated);
         return true;
       }
-    }
-
-    if (!active.length) {
-      // BUG REAL: um plano ainda sem nenhuma operação formada (só a
-      // pergunta de esclarecimento, ex.: "qual foi o valor da gasolina?")
-      // não tem uma operação local para aplicar a correção -- a resposta
-      // precisa voltar para a camada neural (com o resumo/pergunta
-      // pendente como contexto, ver summarizePlanForNeuralContext), nunca
-      // ser tratada como se não tivesse acontecido nada.
-      void (async () => {
-        financialAnalyticsOriginRef.current = plan.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL;
-        financialConversation.setAnalyticsOrigin(financialAnalyticsOriginRef.current);
-        const handled = await attemptFinancialPlan(text);
-        if (!handled) {
-          setFinancialPlan(null);
-          createAssistantResponse(
-            'Não consegui continuar esse lançamento agora. Pode registrar novamente quando quiser.',
-          );
-        }
-      })();
-      return true;
     }
 
     createAssistantResponse(
@@ -4217,7 +4107,7 @@ export default function UniChatPage({ variant = 'full' }) {
     return true;
   }
 
-  function runDeterministicFinancialFlow(text, historySnapshot) {
+  function runDeterministicFinancialFlow(text, historySnapshot, modeloJaLeu = false) {
       // Sprint 2 — Memória Conversacional: resolve referências ("essa
       // conta", "essa categoria", "isso", "ele"/"ela") para o valor literal
       // ANTES de qualquer parser. Nunca inventa: sem nada lembrado, o texto
@@ -4317,19 +4207,12 @@ export default function UniChatPage({ variant = 'full' }) {
       const result = financialConversation.interpret(text);
 
       if (!result.handled) {
-        // BLOCO E: transferência nunca é modelada pelo parser de uma única
-        // operação (só entende income/expense) -- em vez do aviso estático
-        // anterior, tentamos a camada neural (financial_plan) primeiro; só
-        // cai no aviso "ainda não suportado" se ela não devolver um plano
-        // válido (indisponível, erro, timeout, resposta fora do contrato).
+        // Transferência só é montada pelo uni-interpret (#80). Sem ele, o
+        // parser de uma operação não a modela.
         if (isUnsupportedIntentEligibleForPlan(result.parsed?.intent)) {
-          void (async () => {
-            const handled = await attemptFinancialPlan(text);
-            if (handled) return;
-            createAssistantResponse(
-              'Transferências ainda não podem ser registradas pela Uni. Use o Financeiro para manter origem e destino sob sua revisão.',
-            );
-          })();
+          createAssistantResponse(
+            'Transferências ainda não podem ser registradas pela Uni. Use o Financeiro para manter origem e destino sob sua revisão.',
+          );
           return;
         }
         if (result.parsed?.intent === 'create_goal') {
@@ -4356,17 +4239,12 @@ export default function UniChatPage({ variant = 'full' }) {
         // valor monetário real (R$/reais, inclusive por extenso) e um sinal
         // mínimo de lançamento (verbo financeiro OU "despesa/gasto/receita/
         // entrada/pagamento") NUNCA é tratada como chat geral, mesmo que o
-        // verbo específico não esteja catalogado em classifyIntent -- tenta
-        // a camada neural (financial_plan, mesmo caminho já usado para
-        // transferências) antes de qualquer resposta consultiva.
+        // verbo específico não esteja catalogado em classifyIntent -- pede
+        // para a pessoa reformular, em vez de qualquer resposta consultiva.
         if (looksLikeUnclassifiedFinancialStatement(text)) {
-          void (async () => {
-            const handled = await attemptFinancialPlan(text);
-            if (handled) return;
-            createAssistantResponse(
-              'Entendi que pode ser um lançamento financeiro, mas não consegui identificar todos os detalhes. Pode reformular dizendo o valor e do que se trata? Por exemplo: "Gastei R$ 50 no mercado."',
-            );
-          })();
+          createAssistantResponse(
+            'Entendi que pode ser um lançamento financeiro, mas não consegui identificar todos os detalhes. Pode reformular dizendo o valor e do que se trata? Por exemplo: "Gastei R$ 50 no mercado."',
+          );
           return;
         }
         // Sprint 3 (Interpretação Semântica): último passo determinístico
@@ -4398,7 +4276,7 @@ export default function UniChatPage({ variant = 'full' }) {
       ) {
         return;
       }
-      void publishInterpretedResult(result, text, historySnapshot);
+      void publishInterpretedResult(result, text, historySnapshot, modeloJaLeu);
   }
 
   function runAgendaTurn(turn) {
@@ -4446,17 +4324,13 @@ export default function UniChatPage({ variant = 'full' }) {
     });
     if (uniTurnTokenRef.current !== turnToken) return true;
 
-    let rota = escolherRotaDaInterpretacao(interpretacao);
+    const rota = escolherRotaDaInterpretacao(interpretacao);
     // Sem interpretação ou sem entender: as regras fixas tentam, com as
     // travas delas (consulta por dados reais, pergunta sobre o futuro), e só
     // então o chat geral.
     if (!rota || rota === ROTAS_INTERPRETACAO.NAO_ENTENDI) {
       setIsTyping(false);
       return false;
-    }
-    // Parcela e recorrência o uni-interpret não modela: o plano cuida.
-    if (rota === ROTAS_INTERPRETACAO.LANCAMENTO && looksLikeComplexFinancialText(text)) {
-      rota = ROTAS_INTERPRETACAO.PLANO;
     }
 
     switch (rota) {
@@ -4467,8 +4341,6 @@ export default function UniChatPage({ variant = 'full' }) {
           setIsTyping(false);
           return false;
         }
-        // A categoria já foi escolhida pelo modelo: a inferência de
-        // categoria do caminho das regras não roda aqui.
         const phrased = await attemptNaturalPhrasing(result);
         if (uniTurnTokenRef.current !== turnToken) {
           financialConversation.reset();
@@ -4476,19 +4348,18 @@ export default function UniChatPage({ variant = 'full' }) {
         }
         setIsTyping(false);
         publishConversationResult(phrased);
+        if (interpretacao.operacoes[0]?.recorrente === true) {
+          createAssistantResponse(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO, { deduplicateNarration: false });
+        }
         return true;
       }
-      case ROTAS_INTERPRETACAO.PLANO: {
-        const handled = await attemptFinancialPlan(text);
-        if (uniTurnTokenRef.current !== turnToken) return true;
+      case ROTAS_INTERPRETACAO.PLANO:
         setIsTyping(false);
-        // Sem plano, o parser de uma operação ainda tenta, como antes.
-        if (!handled) runDeterministicFinancialFlow(text, historySnapshot);
+        iniciarPlanoFinanceiro(interpretacaoParaPlano(interpretacao), text);
         return true;
-      }
       case ROTAS_INTERPRETACAO.CONSULTA:
         setIsTyping(false);
-        runDeterministicFinancialFlow(text, historySnapshot);
+        runDeterministicFinancialFlow(text, historySnapshot, true);
         return true;
       case ROTAS_INTERPRETACAO.AGENDA:
         setIsTyping(false);
@@ -4718,23 +4589,14 @@ export default function UniChatPage({ variant = 'full' }) {
     }, UNI_THINK_MIN_MS);
 
     function runRuleBasedFlow() {
-      // BLOCO E: heurística determinística (nunca IA) -- frases que
-      // parecem multioperação/parceladas/recorrentes/transferência tentam
-      // a camada neural (financial_plan) ANTES do parser de uma única
-      // operação. Se a IA não devolver um plano válido, cai de volta no
-      // fluxo determinístico normal (runDeterministicFinancialFlow), sem
-      // perder a mensagem do usuário.
-      if (looksLikeComplexFinancialText(functionalText)) {
-        void (async () => {
-          const handled = await attemptFinancialPlan(functionalText);
-          if (!handled) {
-            runDeterministicFinancialFlow(functionalText, historySnapshot);
-          }
-        })();
+      // Sem o modelo, o parser de uma operação leria só a primeira de várias
+      // ou trataria "12x" como compra avulsa: melhor pedir de outro jeito.
+      const motivo = motivoParaNaoLerSemModelo(functionalText);
+      if (motivo) {
+        createAssistantResponse(TEXTO_SEM_MODELO[motivo]);
         return;
       }
-
-      runDeterministicFinancialFlow(functionalText, historySnapshot);
+      runDeterministicFinancialFlow(functionalText, historySnapshot, roteiaPeloModelo);
     }
   }
 

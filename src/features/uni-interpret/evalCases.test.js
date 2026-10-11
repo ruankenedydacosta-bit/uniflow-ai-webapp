@@ -71,7 +71,7 @@ function resultado(campos) {
 
 test('acerta quando todos os campos batem, inclusive categoria aceita', () => {
   assert.deepEqual(avaliarCaso(CASO_ESCOLA, resultado()), {
-    intent: true, valor: true, data: true, categoria: true,
+    intent: true, valor: true, data: true, categoria: true, modalidade: true,
   });
   assert.equal(avaliarCaso(CASO_ESCOLA, resultado({ categoria: 'Outras despesas' })).categoria, true);
 });
@@ -89,26 +89,37 @@ test('caso sem base para categoria só acerta quando a Uni pergunta', () => {
 
 test('intent errado derruba os outros campos do lançamento', () => {
   assert.deepEqual(avaliarCaso(CASO_ESCOLA, resultado({ intent: 'consulta' })), {
-    intent: false, valor: false, data: false, categoria: false,
+    intent: false, valor: false, data: false, categoria: false, modalidade: false,
   });
 });
 
 test('casos que não são lançamento só medem o intent', () => {
   const caso = { id: 'saldo', frase: 'Qual meu saldo?', esperado: { intent: 'consulta' } };
   assert.deepEqual(avaliarCaso(caso, { intent: 'consulta' }), {
-    intent: true, valor: null, data: null, categoria: null,
+    intent: true, valor: null, data: null, categoria: null, modalidade: null,
   });
 });
 
 test('resumo ignora campos que não se aplicam', () => {
   const resumo = resumirAvaliacao([
-    { intent: true, valor: true, data: false, categoria: null },
-    { intent: false, valor: null, data: null, categoria: null },
+    { intent: true, valor: true, data: false, categoria: null, modalidade: true },
+    { intent: false, valor: null, data: null, categoria: null, modalidade: null },
   ]);
   assert.deepEqual(resumo, {
     intent: { acertos: 1, total: 2 },
     valor: { acertos: 1, total: 1 },
     data: { acertos: 0, total: 1 },
     categoria: { acertos: 0, total: 0 },
+    modalidade: { acertos: 1, total: 1 },
   });
+});
+
+test('modalidade: parcela avulsa não é parcelamento, e parcelamento ou recorrência esperados precisam vir', () => {
+  assert.equal(avaliarCaso(CASO_ESCOLA, resultado({ parcelas: 10 })).modalidade, false);
+  assert.equal(avaliarCaso(CASO_ESCOLA, resultado({ recorrente: true })).modalidade, false);
+  const parcelado = { ...CASO_ESCOLA, esperado: { ...CASO_ESCOLA.esperado, parcelas: 12 } };
+  assert.equal(avaliarCaso(parcelado, resultado({ parcelas: 12 })).modalidade, true);
+  assert.equal(avaliarCaso(parcelado, resultado()).modalidade, false);
+  const recorrente = { ...CASO_ESCOLA, esperado: { ...CASO_ESCOLA.esperado, recorrente: true } };
+  assert.equal(avaliarCaso(recorrente, resultado({ recorrente: true })).modalidade, true);
 });

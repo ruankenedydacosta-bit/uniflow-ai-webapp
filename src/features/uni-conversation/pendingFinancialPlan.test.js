@@ -12,10 +12,43 @@ import {
   isPlanReadyForFinalConfirmation,
   markPlanOperationConfirmed,
   markPlanOperationFailed,
-  summarizePlanForNeuralContext,
 } from './pendingFinancialPlan.js';
-import { validateFinancialPlanResponse } from '../uni-financial-plan/index.js';
 import { parsePlanCorrectionOverrides } from './financialPlanPresenter.js';
+
+// Plano no formato snake_case que o antigo modo financial_plan devolvia,
+// convertido para o que createPendingFinancialPlan recebe. Só monta a
+// fixture: a validação do contrato saiu junto com o modo (#80).
+function planoDeTeste(raw) {
+  return {
+    operations: (raw.operations ?? []).map((op) => ({
+      temporaryId: op.temporary_id,
+      operationType: op.operation_type,
+      amount: op.amount,
+      currency: 'BRL',
+      description: op.description ?? null,
+      dateExpression: op.date_expression ?? null,
+      sourceAccountReference: op.source_account_reference ?? null,
+      destinationAccountReference: op.destination_account_reference ?? null,
+      categoryReference: op.category_reference ?? null,
+      installments: op.installments
+        ? { count: op.installments.count, installmentAmount: op.installments.installment_amount, totalAmount: op.installments.total_amount }
+        : null,
+      recurrence: op.recurrence
+        ? {
+            frequency: op.recurrence.frequency,
+            interval: op.recurrence.interval,
+            dayOfMonth: op.recurrence.day_of_month,
+            startDate: op.recurrence.start_date,
+            endDate: op.recurrence.end_date,
+          }
+        : null,
+      confidence: op.confidence,
+      missingFields: op.missing_fields ?? [],
+      reason: op.reason ?? '',
+    })),
+    clarificationQuestion: raw.clarification_question ?? null,
+  };
+}
 
 const ACCOUNTS = [
   { id: 'account-nubank', name: 'Nubank', is_active: true },
@@ -54,7 +87,7 @@ function rawOperation(overrides = {}) {
 }
 
 function validatedPlan(operations, extra = {}) {
-  const result = validateFinancialPlanResponse({
+  const result = ({ valid: true, reason: null, plan: planoDeTeste({
     version: '1',
     decision: operations.length > 1 ? 'multiple_operations' : 'single_operation',
     operations: operations.map((op) => ({
@@ -86,7 +119,7 @@ function validatedPlan(operations, extra = {}) {
     clarification_question: null,
     global_confidence: 0.9,
     ...extra,
-  });
+  }) });
   assert.equal(result.valid, true, `plano de teste deveria ser válido: ${result.reason}`);
   return result.plan;
 }
@@ -299,17 +332,6 @@ test('cada operação preserva um client_operation_id próprio e único', () => 
   assert.ok(plan.operations[1].clientOperationId);
 });
 
-test('summarizePlanForNeuralContext produz um resumo curto sem serializar o plano inteiro', () => {
-  const plan = buildPlan([
-    rawOperation({ temporaryId: 'op_1', amount: 80, description: 'Mercado' }),
-    rawOperation({ temporaryId: 'op_2', amount: 50, description: 'Gasolina', categoryReference: 'Transporte' }),
-  ]);
-  const summary = summarizePlanForNeuralContext(plan);
-  assert.match(summary, /op_1/);
-  assert.match(summary, /op_2/);
-  assert.ok(summary.length < 300);
-});
-
 test('getPersistablePlanOperations exclui operações com capacidade pendente (parcelamento/recorrência)', () => {
   const plan = buildPlan([
     rawOperation({ temporaryId: 'op_1', amount: 80 }),
@@ -377,10 +399,8 @@ test('correção "não foi Nubank, foi No Bank" (variação garbled) ainda resol
 
 // ============================================================================
 // BUG REAL: "Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do
-// Brasil." -- duas despesas, um valor só. O contrato do plano exige
-// amount > 0 por operação (financialPlanContract.js), então a resposta
-// correta da IA para esse caso é decision='clarification_required' SEM
-// operações ainda, só a pergunta -- nunca uma operação inventando/
+// Brasil." -- duas despesas, um valor só. O antigo modo financial_plan
+// devolvia só a pergunta, SEM operações -- nunca uma operação inventando/
 // duplicando valor. Sem o fix, derivePlanStatus([]) tratava "zero
 // operações" como CANCELLED, descartando a pergunta de esclarecimento.
 // ============================================================================
@@ -403,26 +423,6 @@ test('BUG REAL: plano de esclarecimento sem operações (valor ambíguo entre du
   assert.equal(plan.status, PLAN_STATUS.AWAITING_CLARIFICATION);
   assert.equal(plan.operations.length, 0);
   assert.match(plan.clarificationQuestion, /gasolina/);
-});
-
-test('summarizePlanForNeuralContext inclui a pergunta pendente quando ainda não há nenhuma operação formada', () => {
-  const plan = createPendingFinancialPlan({
-    plan: {
-      version: '1',
-      decision: 'clarification_required',
-      operations: [],
-      clarificationQuestion: 'Qual foi o valor da gasolina?',
-      globalConfidence: 0.6,
-    },
-    phrase: 'Gastei 50 reais no mercado e a gasolina eu paguei pelo Banco do Brasil.',
-    accounts: ACCOUNTS,
-    accountTypes: ACCOUNT_TYPES,
-    categories: CATEGORIES,
-    referenceDate: REFERENCE_DATE,
-  });
-  const summary = summarizePlanForNeuralContext(plan);
-  assert.match(summary, /Qual foi o valor da gasolina\?/);
-  assert.match(summary, /Gastei 50 reais no mercado/);
 });
 
 test('BUG REAL: quando a IA já devolve as duas operações separadas (após a resposta do usuário), mercado e gasolina nunca se misturam', () => {
@@ -483,13 +483,13 @@ test('BLOCO F CASO REAL: mercado (R$ 50, Alimentação, Nubank) e gasolina (R$ 2
   // 1) Primeira chamada: valor da gasolina é ambíguo -- decision
   // clarification_required, SEM operações (o contrato exige amount > 0 em
   // toda operação incluída), só a pergunta.
-  const step1 = validateFinancialPlanResponse({
+  const step1 = ({ valid: true, reason: null, plan: planoDeTeste({
     version: '1',
     decision: 'clarification_required',
     operations: [],
     clarification_question: 'Entendi R$ 50 no mercado e uma despesa de gasolina paga pelo Banco do Brasil. Qual foi o valor da gasolina?',
     global_confidence: 0.9,
-  });
+  }) });
   assert.equal(step1.valid, true);
   let plan = createPendingFinancialPlan({
     plan: step1.plan,
@@ -505,7 +505,7 @@ test('BLOCO F CASO REAL: mercado (R$ 50, Alimentação, Nubank) e gasolina (R$ 2
 
   // 2) "A gasolina foi R$ 200." -- a IA (com o resumo/pergunta pendente
   // como contexto) devolve AS DUAS operações completas e separadas.
-  const step2 = validateFinancialPlanResponse({
+  const step2 = ({ valid: true, reason: null, plan: planoDeTeste({
     version: '1',
     decision: 'multiple_operations',
     operations: [
@@ -524,7 +524,7 @@ test('BLOCO F CASO REAL: mercado (R$ 50, Alimentação, Nubank) e gasolina (R$ 2
     ],
     clarification_question: null,
     global_confidence: 0.95,
-  });
+  }) });
   assert.equal(step2.valid, true, step2.reason);
   plan = createPendingFinancialPlan({
     plan: step2.plan,

@@ -11,15 +11,9 @@ export function isAgendaExpression(text) {
   return AGENDA_INTENT_SET.has(classifyIntent(text).intent);
 }
 
-// BLOCO E: heurística determinística (nunca IA) que decide QUANDO vale a
-// pena chamar a camada neural (financial_plan) em vez do parser de uma
-// única operação já existente -- section 2/6 da tarefa: "parser
-// determinístico tenta primeiro; se ... for multi-operação/ambíguo, chama
-// a camada neural". Falsos negativos aqui apenas mantêm o comportamento
-// ATUAL (parser de uma operação, ou a mensagem de "não suportado" já
-// existente) -- nunca quebram nada; falsos positivos apenas fazem uma
-// chamada extra à IA que, se não trouxer um plano válido, também cai de
-// volta no comportamento atual (ver financialPlanService.interpret).
+// Heurísticas determinísticas (nunca IA) do caminho por regras. Com o
+// uni-interpret disponível, quem decide a intenção é ele (#80); estas
+// funções só valem para pendências e para a reserva sem IA.
 // BUG REAL EM PRODUCAO: "Coloquei duzentos reais de gasolina." nao batia em
 // nenhum verbo aqui -- a frase acabava caindo no chat geral (ver
 // looksLikeUnclassifiedFinancialStatement abaixo, a barreira determinística
@@ -36,33 +30,6 @@ export function isAgendaExpression(text) {
 // mesma familia de verbo coloquial de lancamento, so no imperativo.
 const FINANCIAL_VERB_RE = /\b(gastei|gasto|paguei|pago|recebi|recebo|comprei|compro|transferi|transfiro|ganhei|ganho|investi|invisto|abasteci|coloquei|botei|coloca|bota|poe|entrou|caiu|entraram|cairam|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/i;
 const MONEY_MENTION_RE = /r\$\s*\d+(?:[.,]\d+)?|\b\d+(?:[.,]\d+)?\s*reais\b/gi;
-const INSTALLMENT_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]/i;
-const RECURRING_RE = /\btodo\s+m[eê]s\b|\brecorrente\b|\bmensalmente\b|\btodo\s+dia\b|\btoda\s+semana\b/i;
-const TRANSFER_RE = /\btransfer[iêeê]|\btransferência\b/i;
-// Conjunções que tipicamente encadeiam duas cláusulas financeiras distintas
-// na mesma frase -- "e", "também", "depois", "além disso", "mas",
-// "enquanto". Cada pedaço vira uma cláusula candidata; nunca decide sozinho
-// (uma cláusula sem nenhum sinal financeiro não conta).
-// BUG REAL EM PRODUÇÃO (card de confirmação sumia): "aí" chegou a fazer
-// parte desta lista, mas em português coloquial "aí" é quase sempre uma
-// muleta de discurso ("registra pra mim aí duzentos reais de gasolina"),
-// nunca uma conjunção que encadeia duas operações -- ao contrário de "e"/
-// "também"/"mas", nenhum "BUG REAL" documentado motivou sua inclusão
-// original. Com "aí" no split, essa frase virava DUAS cláusulas
-// ("registra pra mim" + "duzentos reais de gasolina"), cada uma com sinal
-// financeiro próprio (verbo / valor) -- looksLikeComplexFinancialText
-// classificava a frase como multioperação, o parser de uma única operação
-// (que já reconhece "registra") nunca chegava a rodar, e a mensagem ia
-// inteira para a camada neural (financial_plan), que só responde em texto
-// -- nunca monta o card estruturado (ver comentário no topo do arquivo:
-// a camada neural existe só para multioperação/ambiguidade real). Removida
-// -- "aí" nunca decide sozinho um split real de qualquer forma.
-const CLAUSE_SPLIT_RE = /\s+(?:e|tamb[eé]m|depois|al[eé]m disso|mas|enquanto)\s+/i;
-// Sinal de que uma conta/instituição foi mencionada na cláusula, mesmo sem
-// verbo financeiro próprio (ex.: "e a gasolina eu paguei pelo Banco do
-// Brasil" -- "pelo" já é sinal suficiente de conta associada a essa cláusula).
-const ACCOUNT_CUE_RE = /\b(pelo|pela|no banco|na conta|do banco|da conta|cart[aã]o)\b/i;
-
 export function countMoneyMentions(text) {
   if (typeof text !== 'string') return 0;
   const matches = text.match(MONEY_MENTION_RE);
@@ -81,63 +48,9 @@ export function hasAnyAmountMention(text) {
 }
 
 /**
- * Divide o texto em cláusulas candidatas por conjunção. Cada cláusula é
- * considerada "com sinal financeiro" se tiver verbo financeiro, menção a
- * valor ou uma referência de conta/instituição -- usado só para decidir se
- * a frase tem MAIS DE UMA operação (roteamento), nunca para extrair os
- * campos finais (isso continua sendo responsabilidade da camada neural/
- * pendingFinancialPlan, nunca duplicado aqui).
- */
-export function splitFinancialClauses(text) {
-  if (typeof text !== 'string') return [];
-  return text
-    .split(CLAUSE_SPLIT_RE)
-    .map((clause) => clause.trim())
-    .filter(Boolean);
-}
-
-function clauseHasFinancialSignal(clause) {
-  return FINANCIAL_VERB_RE.test(clause)
-    || TRANSFER_RE.test(clause)
-    || hasAnyAmountMention(clause)
-    || ACCOUNT_CUE_RE.test(clause);
-}
-
-/**
- * Retorna true quando o texto sugere uma frase financeira COMPLEXA --
- * multioperação, parcelamento, recorrência, transferência, ou duas
- * cláusulas encadeadas por conjunção com sinal financeiro próprio (mesmo
- * quando só uma delas tem valor explícito, ex.: "Gastei R$ 50 no mercado e
- * a gasolina eu paguei pelo Banco do Brasil") -- que o parser de uma única
- * transação não modela. Sempre exige um verbo financeiro (ou transferência)
- * em algum lugar da frase para evitar falsos positivos em perguntas
- * genéricas.
- */
-export function looksLikeComplexFinancialText(text) {
-  if (typeof text !== 'string' || !text.trim()) return false;
-  if (isAgendaExpression(text)) return false;
-  if (!FINANCIAL_VERB_RE.test(text) && !TRANSFER_RE.test(text)) return false;
-  // Transferência nunca é modelada pelo parser de uma única operação (que
-  // só entende income/expense) -- qualquer menção a transferência já basta
-  // para tentar a camada neural, mesmo com um único valor mencionado.
-  if (TRANSFER_RE.test(text)) return true;
-  if (countMoneyMentions(text) >= 2) return true;
-  if (INSTALLMENT_RE.test(text)) return true;
-  if (RECURRING_RE.test(text)) return true;
-
-  const clauses = splitFinancialClauses(text);
-  if (clauses.length >= 2) {
-    const clausesWithSignal = clauses.filter(clauseHasFinancialSignal);
-    if (clausesWithSignal.length >= 2) return true;
-  }
-
-  return false;
-}
-
-/**
  * Casos em que o parser determinístico JÁ rodou e devolveu um intent que o
- * chat não suporta hoje (ex.: transferência) -- em vez do aviso estático
- * "ainda não posso fazer isso", tentamos a camada neural primeiro.
+ * chat só registra pelo uni-interpret (ex.: transferência) -- sem ele, a
+ * Uni avisa que ainda não registra.
  */
 export function isUnsupportedIntentEligibleForPlan(intent) {
   return intent === 'register_transfer';
@@ -179,7 +92,7 @@ export function looksLikeFreshBalanceStatement(text) {
 // BUG REAL EM PRODUCAO: "Coloquei duzentos reais de gasolina." nao batia em
 // nenhum intent do parser determinístico de uma única operação (classifyIntent
 // em intentClassifier.js) -- o parser devolvia handled:false, e como o intent
-// resultante ('question') não era elegível para financial_plan (só
+// resultante ('question') não era elegível para o plano (só
 // register_transfer era, via isUnsupportedIntentEligibleForPlan) nem
 // create_goal nem uma pergunta sobre o futuro, a frase caía direto em
 // handleUnresolvedMessage (chat geral / modo SUPPORT), cujo prompt
@@ -191,9 +104,8 @@ export function looksLikeFreshBalanceStatement(text) {
 // monetário real (R$/reais, inclusive por extenso) E algum sinal mínimo de
 // lançamento (verbo financeiro OU substantivo "despesa/gasto/receita/
 // entrada/pagamento") NUNCA deve ser tratada como chat geral, mesmo que um
-// verbo futuro e ainda não catalogado apareça. Nesse caso o chamador deve
-// tentar financial_plan (camada neural) antes de qualquer resposta
-// consultiva -- nunca ir direto para handleUnresolvedMessage.
+// verbo futuro e ainda não catalogado apareça. Nesse caso o chamador pede
+// para a pessoa reformular -- nunca vai direto para handleUnresolvedMessage.
 //
 // BUG REAL EM PRODUCAO (voz): "Adicione 250 de despesas com gasolina" não
 // passava por aqui -- o plural "despesas", "saída" e os verbos de pedido
@@ -220,4 +132,19 @@ export function looksLikeUnclassifiedFinancialStatement(text) {
     || LAUNCH_NOUN_RE.test(text)
     || LAUNCH_REQUEST_VERB_RE.test(text)
     || (ENTRY_NOUN_RE.test(text) && !QUESTION_RE.test(text));
+}
+
+// Sem o uni-interpret (#80), o parser de uma operação não separa várias
+// operações nem entende parcela. Devolve o motivo para a Uni
+// pedir de outro jeito em vez de abrir um card errado; null quando a frase
+// cabe numa operação só.
+const PARCELAMENTO_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]|\b\d+\s+parcelas\b/i;
+
+export function motivoParaNaoLerSemModelo(text) {
+  if (typeof text !== 'string' || !text.trim() || isAgendaExpression(text)) return null;
+  // Sem valor, é pergunta ("quanto parcelei?"): segue para as regras.
+  if (!hasAnyAmountMention(text)) return null;
+  if (PARCELAMENTO_RE.test(text)) return 'parcela';
+  if (countMoneyMentions(text) >= 2) return 'varias';
+  return null;
 }

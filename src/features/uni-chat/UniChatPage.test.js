@@ -18,7 +18,7 @@ test('runtime: saudação pura é respondida antes de qualquer fluxo financeiro'
   const page = await source('./UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
   const commonIdx = body.indexOf("declaredIntent === 'conversation_common'");
-  const financialIdx = body.indexOf('runDeterministicFinancialFlow(functionalText, historySnapshot);');
+  const financialIdx = body.indexOf('runDeterministicFinancialFlow(functionalText, historySnapshot, roteiaPeloModelo);');
 
   assert.ok(commonIdx !== -1, 'gate de conversa comum precisa existir');
   assert.ok(financialIdx !== -1, 'fluxo financeiro funcional precisa continuar existindo');
@@ -35,7 +35,7 @@ test('runtime: saudação funcional é removida apenas da cópia usada pelos dom
   assert.match(body, /runAgendaTurn\(\{ functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot \}\);/);
   const { body: agenda } = extractFunctionBody(page, 'function runAgendaTurn(turn) {');
   assert.match(agenda, /agendaConversationRef\.current\.handle\(\{\s*text: functionalText,/);
-  assert.match(body, /runDeterministicFinancialFlow\(functionalText, historySnapshot\);/);
+  assert.match(body, /runDeterministicFinancialFlow\(functionalText, historySnapshot, roteiaPeloModelo\);/);
 });
 
 test('P1-D: transições invalidam Agenda sincronamente e liberam loading antes de qualquer await', async () => {
@@ -422,7 +422,7 @@ test('BUG REAL: barreira determinística intercepta frase financeira não classi
   assert.ok(barrierIdx < llmCallIdx, 'a barreira financeira deve ser verificada ANTES da chamada ao chat geral');
 });
 
-test('BUG REAL: barreira financeira tenta attemptFinancialPlan (nunca uma resposta de incapacidade) e só então pede reformulação', async () => {
+test('BUG REAL: barreira financeira pede reformulação, nunca uma resposta de incapacidade', async () => {
   const page = await source('UniChatPage.jsx');
   const resultBlock = page.slice(
     page.indexOf('const result = financialConversation.interpret(text);'),
@@ -432,8 +432,7 @@ test('BUG REAL: barreira financeira tenta attemptFinancialPlan (nunca uma respos
     resultBlock.indexOf('if (looksLikeUnclassifiedFinancialStatement(text)) {'),
     resultBlock.indexOf('void handleUnresolvedMessage(text, historySnapshot);'),
   );
-  assert.match(barrierBlock, /const handled = await attemptFinancialPlan\(text\);/);
-  assert.match(barrierBlock, /if \(handled\) return;/);
+  assert.match(barrierBlock, /Pode reformular dizendo o valor e do que se trata\?/);
   assert.doesNotMatch(barrierBlock, /não consigo registrar/i);
   assert.doesNotMatch(barrierBlock, /não posso criar ou alterar/i);
   assert.doesNotMatch(barrierBlock, /posso te orientar/i);
@@ -685,10 +684,8 @@ test('escritas do chat usam a RPC atômica e allowlist restrita, incluindo trans
   assert.match(page, /executeAtomicAction: executeConfirmedFinancialAction/);
   assert.match(page, /ALLOWED_CHAT_WRITE_INTENTS = Object\.freeze\(\[/);
   assert.match(page, /'register_income',\s+'register_expense',\s+'set_balance',[\s\S]*?'ambiguous_balance_or_income',[\s\S]*?'register_transfer',/);
-  // BLOCO E: transferência não é mais um bloqueio estático -- primeiro
-  // tenta a camada neural (financial_plan); só cai no aviso de "ainda não
-  // suportado" se ela não devolver um plano válido. create_goal continua
-  // bloqueado estaticamente (fora do escopo do Bloco E).
+  // Sem o uni-interpret, transferência e meta recebem aviso de que ainda
+  // não são registradas pela conversa.
   assert.match(page, /isUnsupportedIntentEligibleForPlan\(result\.parsed\?\.intent\)/);
   assert.match(page, /result\.parsed\?\.intent === 'create_goal'/);
 });
@@ -1130,47 +1127,19 @@ test('greeting.js e uniContextCopy.js são funções puras, sem React nem Supaba
 });
 
 // ============================================================================
-// BLOCO E -- wiring híbrido do Plano Financeiro (financial_plan) em
-// UniChatPage: parser determinístico tenta primeiro; frases complexas/
-// multioperação/transferência tentam a camada neural; corrigir/confirmar/
-// cancelar reaproveitam o mesmo texto livre já usado pela pendência de
-// uma única operação; persistência continua uma operação por vez pelo
-// RPC atômico já existente.
+// Plano financeiro em UniChatPage: o uni-interpret monta as operações
+// (#80); corrigir/confirmar/cancelar reaproveitam o mesmo texto livre já
+// usado pela pendência de uma única operação; persistência continua uma
+// operação por vez pelo RPC atômico já existente.
 // ============================================================================
 
-test('BLOCO E: financialPlanService usa a MESMA Edge Function/flag do chat, sem novo secret', async () => {
-  const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{ createFinancialPlanService \} from '\.\.\/uni-financial-plan\/index\.js';/);
-  assert.match(
-    page,
-    /createFinancialPlanService\(\{\s*supabase,\s*supabaseUrl,\s*supabaseAnonKey,\s*enabled: uniLlm\.enabled,\s*\}\)/,
-  );
-});
-
-test('BLOCO E: heurística determinística tenta o plano neural ANTES do parser de uma única operação para texto complexo', async () => {
-  const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{[\s\S]*?looksLikeComplexFinancialText[\s\S]*?\} from '\.\.\/uni-conversation';/);
-  const sendTextIdx = page.indexOf('function sendText(text, metadata) {');
-  const runDeterministicIdx = page.indexOf('runDeterministicFinancialFlow(functionalText, historySnapshot);', sendTextIdx);
-  assert.ok(sendTextIdx > -1 && runDeterministicIdx > -1);
-  const slice = page.slice(sendTextIdx, runDeterministicIdx);
-  assert.match(slice, /if \(looksLikeComplexFinancialText\(functionalText\)\) \{/);
-  assert.match(slice, /const handled = await attemptFinancialPlan\(functionalText\);/);
-});
-
-test('BLOCO E: transferência tenta o plano neural antes do aviso estático de "não suportado"', async () => {
+test('#80: sem o uni-interpret, transferência recebe o aviso de que ainda não é registrada pela Uni', async () => {
   const page = await source('UniChatPage.jsx');
   const idx = page.indexOf('if (isUnsupportedIntentEligibleForPlan(result.parsed?.intent)) {');
   assert.ok(idx > -1);
-  const slice = page.slice(idx, idx + 500);
-  assert.match(slice, /const handled = await attemptFinancialPlan\(text\);/);
-  assert.match(slice, /if \(handled\) return;/);
+  const slice = page.slice(idx, idx + 300);
   assert.match(slice, /Transferências ainda não podem ser registradas pela Uni\./);
-});
-
-test('BLOCO E: sem plano válido (não suportado/erro/timeout/fora do contrato), o fluxo determinístico atual é preservado', async () => {
-  const page = await source('UniChatPage.jsx');
-  assert.match(page, /if \(!plan\) return false;/);
+  assert.doesNotMatch(page, /attemptFinancialPlan|financialPlanService/);
 });
 
 test('BLOCO E: pendência de plano ativo entra no MESMO gate de hasPendingConversation e é roteada antes do fluxo padrão', async () => {
@@ -1367,21 +1336,6 @@ test('reset()/cancel() do useUniConversation também apagam o contexto de infer�
   assert.match(hook.slice(cancelIdx, cancelIdx + 600), /contextRef\.current = createConversationContext\(\);/);
 });
 
-test('BUG REAL: plano de esclarecimento sem operações reenvia a resposta do usuário à camada neural, nunca cai num fallback genérico', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body: slice, end } = extractFunctionBody(page, 'function handlePlanConversationInput(text) {');
-  assert.ok(end > -1, 'não foi possível localizar o corpo completo de handlePlanConversationInput');
-  assert.match(slice, /if \(!active\.length\) \{/);
-  assert.match(slice, /const handled = await attemptFinancialPlan\(text\);/);
-});
-
-test('heurística de roteamento detecta cláusulas encadeadas por conjunção com sinal financeiro próprio, mesmo com um único valor', async () => {
-  const trigger = await source('../uni-conversation/financialPlanTrigger.js');
-  assert.match(trigger, /export function splitFinancialClauses\(/);
-  assert.match(trigger, /export function looksLikeFreshFinancialStatement\(/);
-  assert.match(trigger, /clausesWithSignal\.length >= 2/);
-});
-
 // ============================================================================
 // BUG 2 REAL: "estado fantasma de confirmação" -- a Home podia continuar
 // mostrando um cartão Confirmar/Editar/Cancelar (ou o texto "CONFIRME A
@@ -1547,7 +1501,7 @@ test('BUG 1: o gate do engine responde consultas reconhecidas dentro do fluxo de
 
 test('CORREÇÃO URGENTE: runDeterministicFinancialFlow consulta os motores de consulta SOMENTE quando a frase não é uma ação financeira declarada', async () => {
   const page = await source('UniChatPage.jsx');
-  const { body: slice } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
+  const { body: slice } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot, modeloJaLeu = false) {');
   assert.ok(slice.length > 0, 'não foi possível localizar runDeterministicFinancialFlow');
   // Declarações/ações (set_balance, ambiguidade, receita, despesa,
   // transferência, meta) pulam o FinancialQueryEngine e o interpretador
@@ -1568,7 +1522,7 @@ test('CORREÇÃO URGENTE: runDeterministicFinancialFlow consulta os motores de c
 
 test('BUG 2: criação de conta por fallback pós-interpret exige que o texto NÃO seja uma pergunta (guard isLikelyFinancialQuestion no fallback 1896)', async () => {
   const page = await source('UniChatPage.jsx');
-  const { body: slice } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
+  const { body: slice } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot, modeloJaLeu = false) {');
   assert.match(
     slice,
     /if \(\s*result\.action\?\.proposedAccount\s*&&\s*!isLikelyFinancialQuestion\(text\)\s*&&\s*openAccountCreationDependency\(result\)\s*\)\s*\{\s*return;\s*\}/,
@@ -3498,31 +3452,14 @@ test('Sprint 1: falha/ausência de texto fraseado preserva o result original (fa
   assert.match(fnBody, /if \(!text\) \{[\s\S]{0,200}return result;/);
 });
 
-// BUG REAL EM PRODUCAO: attemptCategoryInference chamava
-// financialConversation.provideInput({ aiInference }) sem passar o `parsed`
-// recém-calculado. provideInput/correct (useUniConversation.js) lia
-// state.parsed do useReducer, que ainda refletia o turno ANTERIOR (ou null,
-// no primeiro turno) porque esta chamada roda no mesmo tick do
-// interpret() que a originou, antes de qualquer re-render -- o resultado
-// (a categoria já inferida, ou a pergunta certa) era descartado, e a
-// resposta caía no fallback genérico "Preciso de mais detalhes antes de
-// preparar essa ação.".
-test('BUG REAL: attemptCategoryInference passa result.parsed para provideInput -- nunca depende só de state.parsed (corrida com o commit do useReducer)', async () => {
-  const page = await source('./UniChatPage.jsx');
-  const fnBody = page.slice(
-    page.indexOf('async function attemptCategoryInference'),
-    page.indexOf('// Sprint 1 (IA Conversacional)'),
-  );
-  assert.match(fnBody, /financialConversation\.provideInput\(\{ aiInference: inference \}, result\.parsed\);/);
-});
-
-test('Sprint 1: publishConversationResultWithInference encadeia categoria (Fase D) depois fraseio natural, nessa ordem', async () => {
+test('Sprint 1: publishConversationResultWithInference fraseia e publica (a categoria vem do uni-interpret, #80)', async () => {
   const page = await source('UniChatPage.jsx');
   const fnBody = page.slice(
     page.indexOf('async function publishConversationResultWithInference'),
     page.indexOf('async function publishConversationResultWithInference') + 400,
   );
-  assert.match(fnBody, /const categorized = await attemptCategoryInference\(result\);\s*\n\s*const phrased = await attemptNaturalPhrasing\(categorized\);\s*\n\s*publishConversationResult\(phrased\);/);
+  assert.match(fnBody, /const phrased = await attemptNaturalPhrasing\(result\);\s*\n\s*publishConversationResult\(phrased\);/);
+  assert.doesNotMatch(page, /attemptCategoryInference|categoryInferenceService/);
 });
 
 test('Sprint 1: phraseStructuredFactService combina uniLlm.enabled com a flag adicional VITE_UNI_LLM_PHRASING_ENABLED', async () => {
@@ -3575,7 +3512,7 @@ test('Sprint 2: conversationalMemoryRef é resetado em switchConversation, junto
 
 test('Sprint 2: resolveReferences é chamado ANTES do motor de consultas em runDeterministicFinancialFlow', async () => {
   const page = await source('UniChatPage.jsx');
-  const { body } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
+  const { body } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot, modeloJaLeu = false) {');
   assert.notEqual(body, '');
   const resolveIndex = body.indexOf('conversationalMemoryRef.current.resolveReferences(text)');
   const engineIndex = body.indexOf('resolveFinancialQuery({');
@@ -3605,7 +3542,7 @@ test('Sprint 2/3/4: lastQuery da memória é repassado ao motor de consultas nos
 
 test('Sprint 2: consultas de período bem-sucedidas alimentam a memória (remember) sem duplicar a publicação da resposta', async () => {
   const page = await source('UniChatPage.jsx');
-  const { body: runBody } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot) {');
+  const { body: runBody } = extractFunctionBody(page, 'function runDeterministicFinancialFlow(text, historySnapshot, modeloJaLeu = false) {');
   const rememberIndex = runBody.indexOf('conversationalMemoryRef.current.remember({');
   const createAssistantIndex = runBody.indexOf('createAssistantResponse(\n            engineOutcome.response.text,');
   assert.ok(rememberIndex > -1);
@@ -3847,12 +3784,9 @@ test('S4: handleUnresolvedMessage aborta publicação se um novo turno começou 
   assert.match(page, /if \(uniTurnTokenRef\.current !== turnTokenAtStart\) return;\s*\n\s*const usedDeterministicFallback = !finalResponseText;\s*\n\s*createAssistantResponse/);
 });
 
-test('S4: attemptFinancialPlan e attemptSemanticFinancialQuery usam o mesmo token anti-stale', async () => {
+test('S4: attemptSemanticFinancialQuery usa o token anti-stale', async () => {
   const page = await source('UniChatPage.jsx');
-  await assert.doesNotReject(async () => {
-    assert.match(page, /async function attemptFinancialPlan\(text\) \{\s*\n\s*const turnTokenAtStart = uniTurnTokenRef\.current;/);
-    assert.match(page, /async function attemptSemanticFinancialQuery\(text, historySnapshot\) \{\s*\n\s*const turnTokenAtStart = uniTurnTokenRef\.current;/);
-  });
+  assert.match(page, /async function attemptSemanticFinancialQuery\(text, historySnapshot\) \{\s*\n\s*const turnTokenAtStart = uniTurnTokenRef\.current;/);
 });
 
 // ============================================================
@@ -3994,11 +3928,11 @@ test('#80: lançamento e plano interpretados pelo modelo nunca vão ao chat gera
   assert.notEqual(body, '');
   const lancamento = body.slice(body.indexOf('case ROTAS_INTERPRETACAO.LANCAMENTO:'), body.indexOf('case ROTAS_INTERPRETACAO.CONSULTA:'));
   assert.match(lancamento, /financialConversation\.startFromParsed\(parsed, overrides\)/);
-  assert.match(lancamento, /attemptFinancialPlan\(text\)/);
+  // O plano nasce da mesma interpretação: nenhuma segunda chamada à IA.
+  assert.match(body, /case ROTAS_INTERPRETACAO\.CONSULTA:\s*setIsTyping\(false\);\s*runDeterministicFinancialFlow\(text, historySnapshot, true\);/);
+  assert.match(lancamento, /iniciarPlanoFinanceiro\(interpretacaoParaPlano\(interpretacao\), text\);/);
   assert.doesNotMatch(lancamento, /handleUnresolvedMessage/);
   assert.doesNotMatch(lancamento, /não consigo registrar/i);
-  // Sem plano, o parser de uma operação ainda tenta.
-  assert.match(lancamento, /if \(!handled\) runDeterministicFinancialFlow\(text, historySnapshot\);/);
   // Turno trocado durante a frase natural não deixa rascunho invisível.
   assert.match(lancamento, /financialConversation\.reset\(\);/);
 });
@@ -4008,4 +3942,22 @@ test('#80: sem interpretação ou sem entender, as regras fixas tentam antes do 
   const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
   assert.match(body, /if \(!rota \|\| rota === ROTAS_INTERPRETACAO\.NAO_ENTENDI\) \{\s*setIsTyping\(false\);\s*return false;\s*\}/);
   assert.doesNotMatch(body, /handleUnresolvedMessage/);
+});
+
+test('#80: plano só com parcela ou recorrência não fica pendente prendendo as próximas frases', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function iniciarPlanoFinanceiro(plan, text) {');
+  assert.match(body, /if \(newPlan\.operations\.every\(\(operation\) => operation\.capabilityPending\)\) \{[\s\S]*?Nada foi registrado\.[\s\S]*?return;\s*\}\s*setFinancialPlan\(newPlan\);/);
+});
+
+test('#80: sem o modelo, várias operações ou parcela pedem outro jeito em vez de abrir um card errado', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function runRuleBasedFlow() {');
+  assert.match(body, /const motivo = motivoParaNaoLerSemModelo\(functionalText\);\s*if \(motivo\) \{\s*createAssistantResponse\(TEXTO_SEM_MODELO\[motivo\]\);\s*return;\s*\}/);
+});
+
+test('#80: recorrência numa operação só abre o card do mês e avisa que a repetição não é automática', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
+  assert.match(body, /publishConversationResult\(phrased\);\s*if \(interpretacao\.operacoes\[0\]\?\.recorrente === true\) \{\s*createAssistantResponse\(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO/);
 });
