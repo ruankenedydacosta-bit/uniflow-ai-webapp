@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { getSubscription } from '../../services/billingService.js';
 import Avatar from '../../components/ui/Avatar/Avatar.jsx';
@@ -39,6 +39,7 @@ import {
   PhUsersThreeIcon,
   UniMark,
 } from './SimplifiedIcons.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedAccount.module.css';
 
@@ -61,7 +62,7 @@ import styles from './simplifiedAccount.module.css';
  * abre por "Conversa com a Uni", o primeiro item de Produto.
  */
 function SimplifiedAccountPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { user, profile, workspace, signOut } = useSession();
   const workspaceId = workspace?.id;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -229,6 +230,13 @@ function SimplifiedAccountPage() {
           to={ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE].path}
           className={styles.headerAvatar}
           aria-label="Seu perfil"
+          onClick={(event) => {
+            // Clique comum abre o Perfil com a transição de tela (#144); com
+            // tecla modificadora, o link segue para nova aba ou janela.
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            goTo(ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE);
+          }}
         >
           <Avatar
             size="sm"

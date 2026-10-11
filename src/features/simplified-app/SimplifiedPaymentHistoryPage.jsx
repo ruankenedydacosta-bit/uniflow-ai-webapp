@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { listPayments } from '../../services/billingService.js';
 import { formatCurrency } from '../../utils/formatters.js';
@@ -7,6 +6,7 @@ import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRout
 import { formatDate, resolvePaymentMethodLabel } from './subscriptionPresentation.js';
 import { PAYMENT_DESCRIPTION, resolvePaymentStatusLabel, resolvePaymentStatusTone } from './paymentPresentation.js';
 import { HeadsetIcon, ReceiptIcon } from './SimplifiedIcons.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedPaymentHistory.module.css';
 
 function BackIcon() {
@@ -24,7 +24,7 @@ function BackIcon() {
 // -> leitura RLS direta de billing_payments (espelhado da Asaas pelo
 // webhook) -- nunca a Asaas diretamente, nunca um dado inventado.
 function SimplifiedPaymentHistoryPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
 

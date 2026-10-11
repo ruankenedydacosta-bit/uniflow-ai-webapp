@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { cx } from '../../utils/cx.js';
 import { THEME_IDS, THEME_OPTIONS, useTheme } from '../theme/index.js';
@@ -7,6 +6,7 @@ import SimplifiedSettingsTabs from './SimplifiedSettingsTabs.jsx';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedTheme.module.css';
 
@@ -25,7 +25,7 @@ const THEME_ORDER = Object.freeze([THEME_IDS.LIGHT, THEME_IDS.UNIFLOW]);
  * "Trocar senha por e-mail" só aparece para quem entra com senha.
  */
 function SimplifiedThemePage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { selectedTheme, setTheme } = useTheme();
   const { user } = useSession();
   const hasPasswordIdentity = Array.isArray(user?.identities)

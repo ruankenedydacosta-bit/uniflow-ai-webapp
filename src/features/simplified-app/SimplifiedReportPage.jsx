@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import { cx } from '../../utils/cx.js';
@@ -11,6 +10,7 @@ import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedReport.module.css';
 import { useMonthlyReport } from './useMonthlyReport.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 
 /**
  * RELATORIO-FLATTEN1: UMA ÚNICA tela -- resumo (4 indicadores) + botão
@@ -33,7 +33,7 @@ import { useMonthlyReport } from './useMonthlyReport.js';
  * de seis meses do handoff fica de fora: o relatório carrega um mês por vez.
  */
 function SimplifiedReportPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { user, workspace } = useSession();
   const { report, moveMonth } = useMonthlyReport();
   const [downloadState, setDownloadState] = useState('idle');

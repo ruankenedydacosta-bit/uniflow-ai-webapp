@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { listOwnSupportRequests } from '../uni-support/supportRequestService.js';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
@@ -15,6 +14,7 @@ import {
   ShieldIcon,
   WhatsAppIcon,
 } from './SimplifiedIcons.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedSupport.module.css';
 
 const PREVIEW_COUNT = 3;
@@ -71,7 +71,7 @@ function formatDateTime(value) {
  * WhatsApp.
  */
 function SimplifiedSupportPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const [requests, setRequests] = useState([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(true);
   const [requestsError, setRequestsError] = useState(null);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { resolvePath, useLocation, useNavigate } from 'react-router-dom';
 import {
   animar,
   atrasosDaSequencia,
@@ -8,12 +8,13 @@ import {
   lerMola,
   prefereMovimentoReduzido,
 } from '../../utils/movimento.js';
-import { SIMPLIFIED_NAVIGATION } from './simplifiedRoutes.js';
+import { SIMPLIFIED_NAVIGATION, SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 
-// Troca de aba e toque da direção 23b Salto (#143). A tela que sai e a que
-// entra são animadas pela View Transitions API (CSS em simplifiedApp.module.css);
-// o ícone da aba e os blocos da tela nova, por WAAPI com translate/scale
-// individuais, que se somam ao transform que o bloco já tenha.
+// Troca de aba e toque da direção 23b Salto (#143), abrir e voltar de tela
+// (#144). A tela que sai e a que entra são animadas pela View Transitions API
+// (CSS em simplifiedApp.module.css); o ícone da aba e os blocos da tela nova,
+// por WAAPI com translate/scale individuais, que se somam ao transform que o
+// bloco já tenha.
 
 const ABAS = SIMPLIFIED_NAVIGATION.filter((item) => item.path);
 
@@ -36,6 +37,35 @@ const ESPERA_MAXIMA_DA_ROTA_MS = 300;
 
 export function abaDaRota(pathname) {
   return ABAS.find((aba) => pathname === aba.path || pathname.startsWith(`${aba.path}/`)) ?? null;
+}
+
+// Telas fora da barra que abrem por cima de uma aba (pelo Mais ou pela Home).
+const TELAS_ABERTAS_POR_CIMA = [SIMPLIFIED_ROUTES.UNI, SIMPLIFIED_ROUTES.RELATORIO];
+
+function segmentosDepois(pathname, base) {
+  return pathname.slice(base.length).split('/').filter(Boolean).length;
+}
+
+// Nível da tela na pilha: raiz de aba é 0 e cada segmento a mais abre uma
+// tela por cima (/app/conta/pagamentos/historico é 2). Rota fora do app: null.
+export function profundidadeDaRota(pathname) {
+  const aba = abaDaRota(pathname);
+  if (aba) return segmentosDepois(pathname, aba.path);
+  const tela = TELAS_ABERTAS_POR_CIMA.find((path) => pathname === path || pathname.startsWith(`${path}/`));
+  return tela ? 1 + segmentosDepois(pathname, tela) : null;
+}
+
+// Transição de uma navegação comum: tela mais funda abre, mais rasa volta,
+// raiz de outra aba troca de aba. Entre telas do mesmo nível (abas de
+// Configurações, por exemplo) a troca é na hora.
+export function movimentoDaNavegacao(de, para) {
+  const nivelDe = profundidadeDaRota(de);
+  const nivelPara = profundidadeDaRota(para);
+  if (nivelDe === null || nivelPara === null) return null;
+  if (nivelPara > nivelDe) return 'abrir';
+  if (nivelPara < nivelDe) return 'voltar';
+  if (nivelPara === 0 && abaDaRota(de).id !== abaDaRota(para).id) return 'aba';
+  return null;
 }
 
 // 1 quando a aba nova fica à direita da antiga na barra, -1 à esquerda.
@@ -98,29 +128,19 @@ export function useMovimentoDeAba({ shellRef, mainContentRef }) {
     animarBlocosDaTela(mainContentRef.current);
   }, [location.key, location.pathname, mainContentRef, shellRef]);
 
-  const irParaAba = useCallback((evento, item) => {
-    if (
-      evento.defaultPrevented
-      || evento.button !== 0
-      || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey
-      || typeof document.startViewTransition !== 'function'
-    ) return;
-
-    // Voltar à raiz da própria aba (Plano -> Mais) não é troca de aba.
-    const abaAtual = abaDaRota(location.pathname);
-    if (!abaAtual || abaAtual.id === item.id) return;
-    evento.preventDefault();
-
+  // Navega dentro de uma View Transition: a tela antiga é fotografada antes
+  // da rota mudar, e o CSS de data-uf-transicao anima a troca.
+  const transicionar = useCallback((tipo, sentido, navegarDeFato) => {
     const raiz = document.documentElement;
-    raiz.dataset.ufTransicao = 'aba';
-    raiz.style.setProperty('--uf-aba-sentido', String(sentidoDaAba(abaAtual.id, item.id)));
+    raiz.dataset.ufTransicao = tipo;
+    raiz.style.setProperty('--uf-aba-sentido', String(sentido));
 
-    // Toque em outra aba antes da anterior montar: libera a espera dela.
+    // Toque em outra tela antes da anterior montar: libera a espera dela.
     rotaMontadaRef.current?.();
 
     const transicao = document.startViewTransition(() => new Promise((resolver) => {
       rotaMontadaRef.current = resolver;
-      navigate(item.path);
+      navegarDeFato();
       window.setTimeout(() => {
         if (rotaMontadaRef.current !== resolver) return;
         rotaMontadaRef.current = null;
@@ -137,9 +157,53 @@ export function useMovimentoDeAba({ shellRef, mainContentRef }) {
       delete raiz.dataset.ufTransicao;
       raiz.style.removeProperty('--uf-aba-sentido');
     });
-  }, [location.pathname, navigate]);
+  }, []);
 
-  return { irParaAba };
+  const irParaAba = useCallback((evento, item) => {
+    if (
+      evento.defaultPrevented
+      || evento.button !== 0
+      || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey
+      || typeof document.startViewTransition !== 'function'
+    ) return;
+
+    const abaAtual = abaDaRota(location.pathname);
+    if (!abaAtual) return;
+    // A própria aba, vista de uma tela aberta nela (Plano -> Mais), volta.
+    if (abaAtual.id === item.id) {
+      if (!profundidadeDaRota(location.pathname)) return;
+      evento.preventDefault();
+      transicionar('voltar', 1, () => navigate(item.path));
+      return;
+    }
+    evento.preventDefault();
+    transicionar('aba', sentidoDaAba(abaAtual.id, item.id), () => navigate(item.path));
+  }, [location.pathname, navigate, transicionar]);
+
+  // navigate() com a transição que a rota pede. Fica estável entre rotas
+  // (lê a rota atual por ref) para não reexecutar efeitos que dependem dele.
+  const rotaAtualRef = useRef(location.pathname);
+  useLayoutEffect(() => {
+    rotaAtualRef.current = location.pathname;
+  }, [location.pathname]);
+
+  const navegar = useCallback((destino, opcoes) => {
+    if (typeof destino === 'number' || typeof document.startViewTransition !== 'function') {
+      navigate(destino, opcoes);
+      return;
+    }
+    const de = rotaAtualRef.current;
+    const para = resolvePath(destino, de).pathname;
+    const tipo = movimentoDaNavegacao(de, para);
+    if (!tipo) {
+      navigate(destino, opcoes);
+      return;
+    }
+    const sentido = tipo === 'aba' ? sentidoDaAba(abaDaRota(de).id, abaDaRota(para).id) : 1;
+    transicionar(tipo, sentido, () => navigate(destino, opcoes));
+  }, [navigate, transicionar]);
+
+  return { irParaAba, navegar };
 }
 
 // Escala que o CSS já dá ao elemento. Escala diferente por eixo fica sem

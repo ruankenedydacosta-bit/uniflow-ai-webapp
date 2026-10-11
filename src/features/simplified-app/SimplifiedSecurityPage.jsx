@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { getPasswordResetRequestFeedback } from '../auth-mobile/passwordRecoveryUtils.js';
 import IconBox from '../../components/ui/IconBox/index.js';
@@ -22,6 +21,7 @@ import {
 import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import SimplifiedSettingsTabs from './SimplifiedSettingsTabs.jsx';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedSecurity.module.css';
 
@@ -58,7 +58,7 @@ function formatDateTime(value) {
  * ícone e etiquetas contornadas).
  */
 function SimplifiedSecurityPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { user, profile, signOut, requestPasswordReset } = useSession();
 
   const [isRequestingReset, setIsRequestingReset] = useState(false);

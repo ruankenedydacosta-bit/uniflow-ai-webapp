@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { useAccounts, useWorkspaceRole } from '../../hooks/index.js';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
@@ -14,6 +13,7 @@ import {
   SearchIcon,
   ShieldIcon,
 } from './SimplifiedIcons.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedMyAccounts.module.css';
 
 const EMPTY_RECORDS = Object.freeze([]);
@@ -60,7 +60,7 @@ function formatDateTime(value) {
  * FinanceiroPage.jsx), sem nenhum CRUD paralelo.
  */
 function SimplifiedMyAccountsPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
 

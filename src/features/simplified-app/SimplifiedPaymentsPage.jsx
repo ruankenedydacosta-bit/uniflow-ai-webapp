@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { getSubscription, listPayments } from '../../services/billingService.js';
 import { formatCurrency } from '../../utils/formatters.js';
@@ -34,6 +33,7 @@ import {
   XCircleIcon,
 } from './SimplifiedIcons.jsx';
 import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedPayments.module.css';
 
 const HISTORY_SUMMARY_LIMIT = 3;
@@ -61,7 +61,7 @@ function BackIcon() {
  * -- nunca um pagamento fictício, nunca inventado quando vazio.
  */
 function SimplifiedPaymentsPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
 

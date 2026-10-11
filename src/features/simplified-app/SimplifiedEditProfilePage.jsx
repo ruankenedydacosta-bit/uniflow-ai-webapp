@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import {
   removeProfileAvatar,
@@ -37,6 +36,7 @@ import {
   TREATMENT_OPTIONS,
   validateSimplifiedProfileForm,
 } from './simplifiedProfilePreferences.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 
 function localToday() {
   const today = new Date();
@@ -51,7 +51,7 @@ function localToday() {
  * visual (campos de 44px, grupos com rótulo e card da Uni para ajuda).
  */
 function SimplifiedEditProfilePage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { user, profile, updateOwnProfile } = useSession();
   const initialForm = createSimplifiedProfileForm(profile, user);
   const [form, setForm] = useState(initialForm);

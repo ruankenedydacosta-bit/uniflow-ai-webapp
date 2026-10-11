@@ -367,6 +367,7 @@
   --uf-motion-saida:     160ms; /* o que sai de cena */
   --uf-motion-entrada:   200ms; /* opacidade do que entra; o deslocamento segue a mola */
   --uf-motion-navegar:   380ms;
+  --uf-motion-voltar:    220ms; /* tela que sai ao voltar; também a opacidade de abrir */
   --uf-motion-contar:    800ms; /* números e anéis */
   --uf-motion-reduzido:  150ms; /* fade único com Reduzir movimento */
   --uf-motion-sequencia: 45ms;  /* intervalo entre blocos que entram em sequência */

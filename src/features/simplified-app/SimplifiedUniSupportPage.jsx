@@ -14,7 +14,6 @@
 //   simplifiedApp.module.css: .compactResponse/.transcript/.uniResponse),
 //   tokens --uf-* escuros já garantidos pela .shell.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAccess } from '../../app/AccessContext';
 import { useUniSupportChat } from '../uni-support/useUniSupportChat.js';
 import { SUPPORT_SUGGESTED_QUESTIONS } from '../uni-support/supportFaq.js';
@@ -26,6 +25,7 @@ import {
   VOICE_TTS_STATUS,
 } from '../uni-voice-tts/index.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedApp.module.css';
 import pageStyles from './simplifiedUniSupport.module.css';
 
@@ -62,7 +62,7 @@ function ErrorInline({ onRetry, variant }) {
 }
 
 export default function SimplifiedUniSupportPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { access } = useAccess();
   const workspaceId = access.currentWorkspaceId;
   const workspaceType = access.currentWorkspace;

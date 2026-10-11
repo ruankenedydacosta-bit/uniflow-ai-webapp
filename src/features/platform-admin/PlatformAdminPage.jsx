@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button/Button.jsx';
 import Input from '../../components/ui/Input/Input.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
@@ -27,6 +26,7 @@ import {
   resolveUserPlanSummary,
 } from './platformAdminPresentation.js';
 import { useIsPlatformAdmin } from './useIsPlatformAdmin.js';
+import { useNavegar } from '../simplified-app/movimentoDeTelaContext.js';
 import styles from './platformAdmin.module.css';
 
 const TIER_OPTIONS = SUBSCRIPTION_TIERS.map((tier) => ({ value: tier.id, label: tier.name }));
@@ -47,7 +47,7 @@ function resolveOriginLabel(user, summary) {
 // o acesso. Quem não é admin vê só o aviso de acesso negado; o bloqueio de
 // verdade está nas funções admin_* do banco (migrations 056 e 058).
 function PlatformAdminPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const accessStatus = useIsPlatformAdmin();
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
