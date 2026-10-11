@@ -118,7 +118,7 @@ test('contrato: lançamento financeiro novo é desviado pelo gateway antes do fl
   const abandonIndex = UNI_CHAT_SOURCE.indexOf(
     'void agendaConversationRef.current.abandonPending(agendaIdentity).catch(() => {});',
   );
-  const agendaHandleIndex = UNI_CHAT_SOURCE.indexOf('agendaConversationRef.current.handle({');
+  const agendaHandleIndex = UNI_CHAT_SOURCE.indexOf('runAgendaTurn({ functionalText');
   assert.ok(abandonIndex >= 0 && agendaHandleIndex > abandonIndex);
   assert.match(UNI_CHAT_SOURCE, /const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation/);
 });

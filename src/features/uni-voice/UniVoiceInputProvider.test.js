@@ -199,7 +199,7 @@ test('erro real no início notifica onCaptureEnd exatamente uma vez', async () =
   });
 
   await act(async () => {
-    renderer.root.findByProps({ 'aria-label': 'Falar com a Uni por voz' }).props.onClick();
+    renderer.root.findByProps({ 'aria-label': 'Falar' }).props.onClick();
     await Promise.resolve();
   });
 

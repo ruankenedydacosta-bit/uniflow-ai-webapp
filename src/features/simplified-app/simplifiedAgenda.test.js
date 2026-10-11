@@ -58,7 +58,7 @@ test('Lote D: rota de Agenda é SEMPRE registrada (acesso interno, não barra in
 
 test('Épico #99: Agenda entra na barra inferior; Suporte continua fora', async () => {
   const navigation = await source('./SimplifiedBottomNavigation.jsx');
-  assert.match(navigation, /CalendarIcon/);
+  assert.match(navigation, /PhCalendarBlankIcon/);
   assert.match(navigation, /--simplified-navigation-count/);
   assert.deepEqual(SIMPLIFIED_NAVIGATION.map(({ label }) => label), ['Hoje', 'Financeiro', 'Falar', 'Agenda', 'Mais']);
 });
