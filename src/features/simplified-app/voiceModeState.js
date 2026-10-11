@@ -9,6 +9,7 @@ export const VOICE_MODE_TONES = Object.freeze({
   LISTENING: 'listening',
   THINKING: 'thinking',
   READY: 'ready',
+  MUTED: 'muted',
   ERROR: 'error',
 });
 
@@ -95,6 +96,24 @@ export const VOICE_MODE_ACTION_LABELS = Object.freeze({
   [VOICE_MODE_ACTIONS.NONE]: Object.freeze({ label: 'Aguarde', aria: 'Aguarde a Uni terminar' }),
 });
 
+// Botão de mutar da conversa em tempo real. Só aparece com a conversa
+// conectada: antes disso não há microfone aberto.
+const REALTIME_MUTE_STATUSES = new Set([
+  REALTIME_STATUS.LISTENING,
+  REALTIME_STATUS.USER_SPEAKING,
+  REALTIME_STATUS.THINKING,
+  REALTIME_STATUS.SPEAKING,
+]);
+
+export function canMuteRealtimeConversation(realtimeStatus) {
+  return REALTIME_MUTE_STATUSES.has(realtimeStatus);
+}
+
+export const VOICE_MODE_MUTE_LABELS = Object.freeze({
+  muted: Object.freeze({ label: 'Desmutar', aria: 'Ligar o microfone' }),
+  unmuted: Object.freeze({ label: 'Mutar', aria: 'Desligar o microfone' }),
+});
+
 // Conversa em tempo real: a pessoa fala e interrompe a Uni com a voz, sem
 // botão de enviar. Enquanto a conversa está aberta, o botão central só
 // encerra.
@@ -157,8 +176,24 @@ const REALTIME_DRAFT_READY_STATUSES = new Set([
   REALTIME_STATUS.SPEAKING,
 ]);
 
-export function resolveRealtimeVoiceModeView(realtimeStatus, { hasPendingDraft = false } = {}) {
+// Microfone mutado: enquanto a Uni ouviria, a tela diz que ela não ouve. O
+// orb e as ondas param, porque não há voz chegando. A Uni falando continua
+// como está.
+const REALTIME_MUTED_STATUSES = new Set([
+  REALTIME_STATUS.LISTENING,
+  REALTIME_STATUS.USER_SPEAKING,
+]);
+
+const REALTIME_MUTED_VIEW = Object.freeze({
+  orb: UNI_RING_ORB_STATES.IDLE,
+  tone: VOICE_MODE_TONES.MUTED,
+  status: 'Microfone desligado',
+  action: VOICE_MODE_ACTIONS.END_CONVERSATION,
+});
+
+export function resolveRealtimeVoiceModeView(realtimeStatus, { hasPendingDraft = false, isMuted = false } = {}) {
   const view = REALTIME_VIEW_BY_STATUS[realtimeStatus] ?? REALTIME_VIEW_BY_STATUS[REALTIME_STATUS.IDLE];
+  if (isMuted && REALTIME_MUTED_STATUSES.has(realtimeStatus)) return REALTIME_MUTED_VIEW;
   if (!hasPendingDraft || !REALTIME_DRAFT_READY_STATUSES.has(realtimeStatus)) return view;
   return Object.freeze({ ...view, tone: VOICE_MODE_TONES.READY, status: 'Rascunho pronto' });
 }

@@ -6,6 +6,7 @@ import { SIMPLIFIED_UNI_STATES } from './simplifiedHomeState.js';
 import { buildVoiceModeUrl, SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.js';
 import { REALTIME_STATUS } from '../uni-voice-realtime/realtimeSessionModel.js';
 import {
+  canMuteRealtimeConversation,
   resolveRealtimeVoiceModeView,
   resolveVoiceModeStage,
   resolveVoiceModeView,
@@ -13,6 +14,7 @@ import {
   snapshotVoiceConversationStart,
   VOICE_MODE_ACTION_LABELS,
   VOICE_MODE_ACTIONS,
+  VOICE_MODE_MUTE_LABELS,
   VOICE_MODE_TONES,
 } from './voiceModeState.js';
 
@@ -144,8 +146,10 @@ test('tela de voz é um diálogo modal no body, fecha com Esc e devolve a rolage
 test('controles de voz ficam fora do reenvio da saudação e não iniciam captura duas vezes', async () => {
   const modal = await source('./SimplifiedVoiceMode.jsx');
   // O listener da saudação (retryAfterUserGesture) ignora toques em
-  // [data-uni-voice-control]; orb e botão central precisam da marcação.
-  assert.equal((modal.match(/data-uni-voice-control/g) ?? []).length, 2);
+  // [data-uni-voice-control]; orb, botão central e Mutar precisam da
+  // marcação. Mutar não sai da conversa, então o toque nele não pode tocar a
+  // saudação antiga.
+  assert.equal((modal.match(/data-uni-voice-control/g) ?? []).length, 3);
   assert.match(modal, /if \(!isActionDisabled\) onAction\(view\.action\);/);
   assert.doesNotMatch(modal, /onPointerDown|onTouchStart/);
 });
@@ -199,6 +203,48 @@ test('tela de voz segue o handoff: 34 barras, transcrição com cursor e Escreve
   assert.equal(VOICE_MODE_ACTION_LABELS[VOICE_MODE_ACTIONS.END_CONVERSATION].label, 'Parar');
   assert.match(css, /\.transcript \{[^}]*font-size: 22px;/);
   assert.match(css, /prefers-reduced-motion: reduce/);
+});
+
+test('microfone mutado: a tela diz que a Uni não ouve, sem ondas, e o botão continua encerrando', () => {
+  for (const status of [REALTIME_STATUS.LISTENING, REALTIME_STATUS.USER_SPEAKING]) {
+    const view = resolveRealtimeVoiceModeView(status, { isMuted: true, hasPendingDraft: true });
+    assert.equal(view.status, 'Microfone desligado', status);
+    assert.equal(view.tone, VOICE_MODE_TONES.MUTED, status);
+    assert.equal(view.orb, UNI_RING_ORB_STATES.IDLE, status);
+    assert.equal(view.action, VOICE_MODE_ACTIONS.END_CONVERSATION, status);
+    assert.equal(resolveVoiceModeStage({ view, isUserSpeaking: true }).showWaves, false, status);
+  }
+  // A Uni falando ou pensando segue igual com o microfone mutado.
+  assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.SPEAKING, { isMuted: true }).status, 'Falando');
+  assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.THINKING, { isMuted: true }).status, 'Entendendo');
+});
+
+test('Mutar só aparece com a conversa conectada', () => {
+  for (const status of [REALTIME_STATUS.LISTENING, REALTIME_STATUS.USER_SPEAKING, REALTIME_STATUS.THINKING, REALTIME_STATUS.SPEAKING]) {
+    assert.equal(canMuteRealtimeConversation(status), true, status);
+  }
+  for (const status of [REALTIME_STATUS.IDLE, REALTIME_STATUS.CONNECTING, REALTIME_STATUS.ENDED, REALTIME_STATUS.ERROR]) {
+    assert.equal(canMuteRealtimeConversation(status), false, status);
+  }
+  assert.equal(VOICE_MODE_MUTE_LABELS.unmuted.label, 'Mutar');
+  assert.equal(VOICE_MODE_MUTE_LABELS.muted.label, 'Desmutar');
+});
+
+test('Mutar desliga a trilha do microfone sem fechar a conversa e volta ligado na próxima', async () => {
+  const hook = await source('../uni-voice-realtime/useRealtimeVoiceSession.js');
+  assert.match(hook, /track\.enabled = !muted;/);
+  // Mutar durante a conexão vale para o microfone que abriu depois.
+  assert.match(hook, /ensureActive\(\);\s*\/\/[^\n]*\n\s*setLocalStreamMuted\(connection\.localStream, connection\.muted\);/);
+  // Encerrar zera o estado: a conversa seguinte abre com o microfone ligado.
+  assert.match(hook, /if \(connection\) closeConnection\(connection\);\s*setIsMuted\(false\);/);
+
+  const modal = await source('./SimplifiedVoiceMode.jsx');
+  assert.match(modal, /aria-pressed=\{microphone\.isMuted\}/);
+  assert.match(modal, /microphone\.isMuted \? <PhMicrophoneSlashIcon \/> : <PhMicrophoneIcon \/>/);
+
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /microphone=\{canMuteRealtimeConversation\(realtime\.state\.status\)/);
+  assert.match(home, /onToggle: \(\) => realtime\.setMuted\(!realtime\.isMuted\)/);
 });
 
 test('na tela de voz a resposta perde a caixa e o card de rascunho vai em vidro', async () => {
@@ -303,7 +349,7 @@ test('com a flag, a tela de voz abre a conversa em tempo real no mesmo toque e o
   assert.match(home, /function handleOpenRealtimeVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*if \(isVoiceMinutesOut\) refreshVoiceMinutes\(\);\s*else beginRealtimeConversation\(\);\s*\}/);
   assert.match(home, /if \(realtimeVoiceEnabled\) openVoiceModeRef\.current = handleOpenRealtimeVoiceMode;/);
   assert.match(home, /action === VOICE_MODE_ACTIONS\.END_CONVERSATION\) stopRealtime\('user'\)/);
-  assert.match(home, /view=\{resolveRealtimeVoiceModeView\(realtime\.state\.status, \{ hasPendingDraft: voiceHasPendingDraft \}\)\}/);
+  assert.match(home, /view=\{resolveRealtimeVoiceModeView\(realtime\.state\.status, \{\s*hasPendingDraft: voiceHasPendingDraft,\s*isMuted: realtime\.isMuted,\s*\}\)\}/);
 });
 
 test('fechar, ir para o chat ou deixar o app em segundo plano encerra a conversa em tempo real', async () => {

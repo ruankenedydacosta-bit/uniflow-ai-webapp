@@ -303,6 +303,13 @@
   color: var(--uf-app-text-2);
 }
 
+/* Microfone mutado: o botão fica marcado enquanto a Uni não ouve. */
+.secondaryButton[aria-pressed="true"] {
+  border-color: var(--uf-app-danger);
+  background: var(--uf-app-danger-subtle);
+  color: var(--uf-app-danger-text);
+}
+
 .primaryButton {
   width: 60px;
   height: 60px;

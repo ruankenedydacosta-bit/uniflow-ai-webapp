@@ -6,6 +6,7 @@ import {
   PhCrownIcon,
   PhKeyboardIcon,
   PhMicrophoneIcon,
+  PhMicrophoneSlashIcon,
   PhStopFillIcon,
   PhXIcon,
 } from './SimplifiedIcons.jsx';
@@ -14,6 +15,7 @@ import {
   resolveVoiceModeView,
   VOICE_MODE_ACTION_LABELS,
   VOICE_MODE_ACTIONS,
+  VOICE_MODE_MUTE_LABELS,
 } from './voiceModeState.js';
 import { describeVoiceMinutesChip, describeVoiceMinutesOut } from './voiceMinutesPresentation.js';
 import styles from './simplifiedVoiceMode.module.css';
@@ -83,6 +85,9 @@ function SimplifiedVoiceMode({
   // isVoiceMinutesOut sem conversa aberta.
   voiceMinutes = null,
   isVoiceMinutesOut = false,
+  // Conversa em tempo real conectada: { isMuted, onToggle }. O botão de
+  // mutar ocupa o lugar de Escrever, que leva ao mesmo chat que Conversa.
+  microphone = null,
   getVoiceStream,
   getVoiceSessionId,
   onAction,
@@ -103,6 +108,7 @@ function SimplifiedVoiceMode({
   const minutesChip = describeVoiceMinutesChip(voiceMinutes);
   const minutesOut = isVoiceMinutesOut ? describeVoiceMinutesOut(voiceMinutes) : null;
   const isMinutesOut = Boolean(minutesOut);
+  const muteCopy = microphone?.isMuted ? VOICE_MODE_MUTE_LABELS.muted : VOICE_MODE_MUTE_LABELS.unmuted;
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -229,6 +235,20 @@ function SimplifiedVoiceMode({
               <PhCrownIcon />
             </button>
             <span aria-hidden="true">Ver plano</span>
+          </div>
+        ) : microphone ? (
+          <div className={styles.control}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={microphone.onToggle}
+              aria-label={muteCopy.aria}
+              aria-pressed={microphone.isMuted}
+              data-uni-voice-control
+            >
+              {microphone.isMuted ? <PhMicrophoneSlashIcon /> : <PhMicrophoneIcon />}
+            </button>
+            <span aria-hidden="true">{muteCopy.label}</span>
           </div>
         ) : (
           <div className={styles.control}>
