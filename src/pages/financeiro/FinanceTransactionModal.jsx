@@ -110,7 +110,8 @@ const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir este lan
 // cabeçalho (folha no celular), lixeira, pergunta e "Excluir
 // definitivamente" contornado acima de Cancelar. Enquanto ela está aberta o
 // Modal da movimentação fica inert e com Esc desligado, então Esc fecha só a
-// confirmação. O Tab continua preso aqui dentro, como antes.
+// confirmação. Como antes, o foco abre em Cancelar e o Tab fica preso aqui
+// dentro.
 function DeleteConfirmationDialog({
   className,
   deleteScope,
@@ -127,6 +128,11 @@ function DeleteConfirmationDialog({
   const titleId = useId();
   const descriptionId = useId();
   const contentRef = useRef(null);
+
+  // Roda depois do efeito do Modal (o filho), que põe o foco no diálogo.
+  useEffect(() => {
+    if (open) contentRef.current?.querySelector('[data-delete-cancel]')?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -218,7 +224,7 @@ function DeleteConfirmationDialog({
           >
             Excluir definitivamente
           </OutlineButton>
-          <OutlineButton variant="ghost" onClick={handleCancel} disabled={isLoading}>
+          <OutlineButton variant="ghost" onClick={handleCancel} disabled={isLoading} data-delete-cancel>
             Cancelar
           </OutlineButton>
         </div>
@@ -561,6 +567,24 @@ function FinanceTransactionModal({
 
   return (
     <>
+    {/* A confirmação vem antes do Modal da movimentação de propósito. Os
+        dois travam a rolagem da página e cada um devolve o valor que achou
+        ao abrir. Quando a exclusão fecha os dois no mesmo commit, o React
+        desmonta na ordem da árvore. Nesta ordem a confirmação devolve
+        primeiro e o Modal da movimentação, por último, libera a rolagem. */}
+    <DeleteConfirmationDialog
+      open={isDeleteConfirmOpen}
+      className={className}
+      overlayClassName={overlayClassName}
+      transaction={pendingDeleteTransaction}
+      hasGroup={pendingDeleteHasGroup}
+      deleteScope={deleteScope}
+      error={batchError}
+      isLoading={transactionState.isMutating}
+      onCancel={handleCancelDelete}
+      onConfirm={() => handleDelete(pendingDeleteId)}
+      onDeleteScopeChange={(event) => setDeleteScope(event.target.value)}
+    />
     <Modal
       open={open}
       onClose={handleClose}
@@ -1117,19 +1141,6 @@ function FinanceTransactionModal({
         ) : null}
       </div>
     </Modal>
-    <DeleteConfirmationDialog
-      open={isDeleteConfirmOpen}
-      className={className}
-      overlayClassName={overlayClassName}
-      transaction={pendingDeleteTransaction}
-      hasGroup={pendingDeleteHasGroup}
-      deleteScope={deleteScope}
-      error={batchError}
-      isLoading={transactionState.isMutating}
-      onCancel={handleCancelDelete}
-      onConfirm={() => handleDelete(pendingDeleteId)}
-      onDeleteScopeChange={(event) => setDeleteScope(event.target.value)}
-    />
     </>
   );
 }

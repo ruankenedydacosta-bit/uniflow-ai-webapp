@@ -80,7 +80,7 @@
 .accountText strong {
   overflow: hidden;
   color: var(--uf-app-text);
-  font-size: 14px;
+  font-size: var(--uf-text-caption-size);
   font-weight: var(--uf-font-weight-medium);
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -102,7 +102,7 @@
 
 .rowButton {
   min-height: 32px;
-  padding-block: 4px;
+  padding-block: var(--uf-space-4);
   font-size: 13px;
 }
 

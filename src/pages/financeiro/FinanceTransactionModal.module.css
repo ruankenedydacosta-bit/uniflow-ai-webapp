@@ -90,7 +90,7 @@
 .deleteConfirmError {
   margin: 0;
   color: var(--uf-app-text-2);
-  font-size: 14px;
+  font-size: var(--uf-text-caption-size);
   line-height: 1.55;
   text-wrap: pretty;
 }

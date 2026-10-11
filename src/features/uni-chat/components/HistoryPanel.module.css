@@ -1,6 +1,6 @@
 /* Histórico de conversas. No celular o Modal vira a folha padrão (handoff
-   22); aqui ficam o conteúdo e o limite de altura do desktop. A lista rola
-   dentro da folha e "Nova conversa" fica sempre à vista. */
+   22); aqui ficam o conteúdo e o limite de altura do desktop. Só a lista
+   rola, então "Nova conversa" fica sempre à vista. */
 .dialog.dialog {
   display: flex;
   flex-direction: column;
@@ -20,8 +20,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
 }
 
 .newChat {
@@ -30,11 +29,17 @@
 }
 
 .list {
+  min-height: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin: 0;
-  padding: 0;
+  /* Folga para o contorno de foco das linhas não ser cortado pela rolagem. */
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
   list-style: none;
 }
 
@@ -43,7 +48,7 @@
 .item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--uf-space-4);
   padding-right: 6px;
   border-radius: var(--uf-radius-8);
   background: var(--uf-app-well);
@@ -62,7 +67,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  padding: 12px;
+  padding: var(--uf-space-12);
   border: 0;
   border-radius: var(--uf-radius-8);
   background: transparent;
@@ -81,7 +86,7 @@
 .itemTitle {
   width: 100%;
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--uf-text-caption-size);
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -123,7 +128,7 @@
 /* Segundo toque: a lixeira vira o botão contornado "Excluir". */
 .itemDeleteConfirm {
   height: 32px;
-  padding: 0 12px;
+  padding: 0 var(--uf-space-12);
   border-radius: var(--uf-radius-8);
   box-shadow: inset 0 0 0 1px var(--uf-app-border-strong);
   color: var(--uf-app-text);
@@ -136,12 +141,12 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 24px 8px 8px;
+  padding: var(--uf-space-24) var(--uf-space-8) var(--uf-space-8);
   text-align: center;
 }
 
 .emptyState > :first-child {
-  margin-bottom: 8px;
+  margin-bottom: var(--uf-space-8);
 }
 
 .emptyText,
@@ -152,7 +157,7 @@
 
 .emptyText {
   color: var(--uf-app-text);
-  font-size: 14px;
+  font-size: var(--uf-text-caption-size);
   font-weight: var(--uf-font-weight-medium);
 }
 
