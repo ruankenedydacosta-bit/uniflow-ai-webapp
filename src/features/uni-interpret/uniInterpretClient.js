@@ -150,3 +150,33 @@ export function interpretacaoParaOverrides(interpretacao, { transactionType } = 
   if (operacao.conta?.id) overrides.accountId = operacao.conta.id;
   return Object.keys(overrides).length ? overrides : null;
 }
+
+function valorNoRascunho(action, campo) {
+  if (campo === 'categoryId') return action?.category?.id ?? null;
+  if (campo === 'accountId') return action?.account?.id ?? null;
+  return action?.[campo] ?? null;
+}
+
+// Resposta ao rascunho lida pelo uni-interpret → o que muda nele: os campos
+// diferentes do rascunho e, se a pessoa pediu uma categoria fora do
+// catálogo, o nome dela. null quando a interpretação não corrige este
+// rascunho (outra intenção, outro tipo, várias operações, parcela) ou não
+// muda nada: aí as regras leem a frase.
+export function correcaoDoRascunho(interpretacao, action) {
+  if (interpretacao?.intent !== 'correcao') return null;
+  const operacoes = Array.isArray(interpretacao.operacoes) ? interpretacao.operacoes : [];
+  const [operacao] = operacoes;
+  const transactionType = action?.transactionType;
+  if (operacoes.length !== 1 || TRANSACAO_POR_TIPO[operacao?.tipo] !== transactionType || transactionType === 'transfer') return null;
+  if (operacao.parcelas) return null;
+
+  const overrides = Object.fromEntries(
+    Object.entries(interpretacaoParaOverrides(interpretacao, { transactionType }) ?? {})
+      .filter(([campo, valor]) => valor !== valorNoRascunho(action, campo)),
+  );
+  const novaCategoria = !operacao.categoria?.id && typeof operacao.novaCategoria === 'string' && operacao.novaCategoria.trim()
+    ? operacao.novaCategoria.trim()
+    : null;
+  if (!Object.keys(overrides).length && !novaCategoria) return null;
+  return { overrides, novaCategoria };
+}

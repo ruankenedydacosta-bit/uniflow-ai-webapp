@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  correcaoDoRascunho,
   createUniInterpretClient,
   interpretacaoParaOverrides,
   montarHistoricoParaInterpretacao,
@@ -145,4 +146,53 @@ test('rascunho e histórico vão no formato da função', () => {
 test('correção que vira compra parcelada não altera o card de uma operação', () => {
   const interpretacao = { intent: 'correcao', operacoes: [{ ...OPERACAO, valor: 3000, parcelas: 10 }], resposta: '' };
   assert.equal(interpretacaoParaOverrides(interpretacao, { transactionType: 'expense' }), null);
+});
+
+// Conversa por voz de 11/10/2026: com o rascunho esperando o valor, a frase
+// inteira com valor, data e categoria nova ia para as regras, que só liam a
+// categoria. Lida pelo modelo, a resposta muda só o que mudou.
+const RASCUNHO_IMPOSTOS = {
+  transactionType: 'expense',
+  amount: null,
+  date: '2026-10-11',
+  description: 'Impostos',
+  category: { id: 'cat-outras', name: 'Outras despesas' },
+  account: null,
+};
+const OPERACAO_IMPOSTOS = {
+  tipo: 'saida',
+  valor: 5500,
+  data: '2026-10-15',
+  descricao: 'Impostos',
+  categoria: null,
+  novaCategoria: 'Impostos',
+  conta: null,
+  contaDestino: null,
+  parcelas: null,
+};
+
+test('resposta ao rascunho: só os campos que mudaram e a categoria nova pedida', () => {
+  assert.deepEqual(
+    correcaoDoRascunho({ intent: 'correcao', operacoes: [OPERACAO_IMPOSTOS] }, RASCUNHO_IMPOSTOS),
+    { overrides: { amount: 5500, date: '2026-10-15' }, novaCategoria: 'Impostos' },
+  );
+  assert.deepEqual(
+    correcaoDoRascunho(
+      { intent: 'correcao', operacoes: [{ ...OPERACAO_IMPOSTOS, novaCategoria: null, categoria: { id: 'cat-outras', name: 'Outras despesas' }, data: '2026-10-11' }] },
+      RASCUNHO_IMPOSTOS,
+    ),
+    { overrides: { amount: 5500 }, novaCategoria: null },
+  );
+});
+
+test('resposta ao rascunho que não muda nada ou não é correção dele fica com as regras', () => {
+  const igual = { ...OPERACAO_IMPOSTOS, valor: null, data: '2026-10-11', novaCategoria: null, categoria: { id: 'cat-outras', name: 'Outras despesas' } };
+  assert.equal(correcaoDoRascunho({ intent: 'correcao', operacoes: [igual] }, RASCUNHO_IMPOSTOS), null);
+  assert.equal(correcaoDoRascunho({ intent: 'lancamento', operacoes: [OPERACAO_IMPOSTOS] }, RASCUNHO_IMPOSTOS), null);
+  assert.equal(correcaoDoRascunho({ intent: 'conversa', operacoes: [], resposta: 'Oi!' }, RASCUNHO_IMPOSTOS), null);
+  assert.equal(correcaoDoRascunho({ intent: 'correcao', operacoes: [OPERACAO_IMPOSTOS, OPERACAO_IMPOSTOS] }, RASCUNHO_IMPOSTOS), null);
+  // Troca de tipo e parcela ficam com as regras, que perguntam antes.
+  assert.equal(correcaoDoRascunho({ intent: 'correcao', operacoes: [{ ...OPERACAO_IMPOSTOS, tipo: 'entrada' }] }, RASCUNHO_IMPOSTOS), null);
+  assert.equal(correcaoDoRascunho({ intent: 'correcao', operacoes: [{ ...OPERACAO_IMPOSTOS, parcelas: 3 }] }, RASCUNHO_IMPOSTOS), null);
+  assert.equal(correcaoDoRascunho(null, RASCUNHO_IMPOSTOS), null);
 });
