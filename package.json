@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/prerender-legal.mjs",
     "lint": "eslint .",
-    "test": "node --test 'src/**/*.test.js' 'scripts/**/*.test.js'",
+    "test": "node --test \"src/**/*.test.js\" \"scripts/**/*.test.js\"",
     "test:uni-engine": "find src/features/uni-engine -name '*.test.js' -print0 | sort -z | xargs -0 node --test",
     "uni:eval": "node scripts/uni-eval/avaliar-regras-atuais.js",
     "uni:eval:modelo": "node --env-file-if-exists=.env.eval.local scripts/uni-eval/avaliar-modelo.js",

@@ -121,6 +121,8 @@ test('contrato: lançamento financeiro novo é desviado pelo gateway antes do fl
   const agendaHandleIndex = UNI_CHAT_SOURCE.indexOf('runAgendaTurn({ functionalText');
   assert.ok(abandonIndex >= 0 && agendaHandleIndex > abandonIndex);
   assert.match(UNI_CHAT_SOURCE, /const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation/);
+  // Com lançamento novo, a agenda pendente deixa de contar como conversa em curso.
+  assert.match(UNI_CHAT_SOURCE, /const hasAgendaConversation = !shouldAbandonAgendaForFinancial/);
 });
 
 test('adversarial: duas reuniões semelhantes e resposta vaga não selecionam a primeira', async () => {

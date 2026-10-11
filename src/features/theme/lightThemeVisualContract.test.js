@@ -58,7 +58,7 @@ test('Registros e Agenda usam cards claros no Claro e mantêm semântica por tok
     source('features/simplified-app/simplifiedRecords.module.css'),
     source('features/simplified-app/simplifiedAgenda.module.css'),
   ]);
-  // Fundo de cada regra vem de token do tema (ou é transparente), nunca de cor fixa.
+  // Fundo da regra base de cada seletor vem de token do tema (ou é transparente).
   const fundo = (css, seletor) => css.match(new RegExp(`(^|\\n)\\.${seletor}\\s*\\{([^}]*)\\}`))?.[2]
     .match(/background:\s*([^;]+);/)?.[1];
   assert.equal(fundo(records, 'categoryCard'), 'var(--uf-app-card-surface)');
@@ -66,6 +66,16 @@ test('Registros e Agenda usam cards claros no Claro e mantêm semântica por tok
   assert.equal(fundo(agenda, 'monthLabel'), 'transparent');
   assert.equal(fundo(agenda, 'itemButton'), 'transparent');
   assert.match(agenda, /color-scheme:\s*var\(--uf-app-color-scheme\)/);
+});
+
+test('Tema Claro e bolha do chat não sobrescrevem Escuro nem UniFlow por seletor de tema', async () => {
+  const [theme, bubble] = await Promise.all([
+    source('features/simplified-app/simplifiedTheme.module.css'),
+    source('features/uni-chat/components/MessageBubble.module.css'),
+  ]);
+  assert.doesNotMatch(theme, /:global\(\[data-theme='(?:dark|uniflow)'\]\)/);
+  assert.doesNotMatch(bubble, /:global\(\[data-theme='(?:dark|uniflow)'\]\) \.bubble/);
+  assert.match(bubble, /color:\s*inherit/);
 });
 
 test('tema Sistema foi removido -- resolver nunca mais depende de dispositivo/matchMedia', async () => {
