@@ -19,6 +19,10 @@ function mesmoValor(esperado, obtido) {
 }
 
 function avaliarCategoria(esperado, resultado) {
+  if (esperado.novaCategoria) {
+    return resultado.modoCategoria === 'propos_criar'
+      && normalizeSearchText(resultado.categoria ?? '') === normalizeSearchText(esperado.novaCategoria);
+  }
   if (esperado.categoria === null) {
     return resultado.modoCategoria === 'perguntou';
   }
