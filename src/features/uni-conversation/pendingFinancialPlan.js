@@ -84,6 +84,17 @@ function buildParsedDraft(operation, referenceDate) {
   };
 }
 
+// Conta, destino e categoria que o uni-interpret escolheu no catálogo vêm
+// por id: resolver pelo nome de novo perderia a escolha quando duas contas
+// têm a mesma identidade ("Nubank" e "Cartão Nubank").
+function idsEscolhidos(operation) {
+  const overrides = {};
+  if (operation.accountId) overrides.accountId = operation.accountId;
+  if (operation.destinationAccountId) overrides.destinationAccountId = operation.destinationAccountId;
+  if (operation.categoryId) overrides.categoryId = operation.categoryId;
+  return overrides;
+}
+
 function buildOperationState({
   operation, accounts, accountTypes, categories, referenceDate, workspaceType, overrides = {},
 }) {
@@ -210,14 +221,14 @@ export function createPendingFinancialPlan({
 } = {}) {
   const operations = (plan?.operations ?? []).map((operation) => buildOperationState({
     operation, accounts, accountTypes, categories, referenceDate, workspaceType,
+    overrides: idsEscolhidos(operation),
   }));
   const clarificationQuestion = plan?.clarificationQuestion ?? null;
   // BUG REAL: uma frase genuinamente ambígua (ex.: "Gastei R$ 50 no
   // mercado e a gasolina eu paguei pelo Banco do Brasil" -- só um valor
-  // para duas despesas) não forma nenhuma operação válida ainda (o
-  // contrato exige valor > 0 por operação -- ver financialPlanContract.js)
-  // -- a IA devolve decision='clarification_required' SEM operações, só a
-  // pergunta. Sem esse caso especial, derivePlanStatus([]) tratava "nenhuma
+  // para duas despesas) não formava nenhuma operação válida no antigo modo
+  // financial_plan, que devolvia só a pergunta, SEM operações. O
+  // uni-interpret (#80) sempre devolve operações, com o valor faltando. Sem esse caso especial, derivePlanStatus([]) tratava "nenhuma
   // operação ainda" como CANCELLED (mesma condição de um plano realmente
   // cancelado), descartando a pergunta de esclarecimento em vez de
   // apresentá-la.

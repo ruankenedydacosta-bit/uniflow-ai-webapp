@@ -103,10 +103,9 @@ function tipoDaOperacaoDoPlano(operacao) {
   return operacao.recorrente === true ? 'recurring_income' : 'income';
 }
 
-// Operações da interpretação → plano que createPendingFinancialPlan recebe
-// (o mesmo formato que o modo financial_plan devolvia). Conta e categoria vão
-// pelo nome do registro escolhido no catálogo, que os resolutores acham por
-// nome exato. null quando a interpretação não é um plano.
+// Operações da interpretação → plano que createPendingFinancialPlan recebe.
+// Conta e categoria vão pelo id escolhido no catálogo; o nome só aparece no
+// resumo. null quando a interpretação não é um plano.
 export function interpretacaoParaPlano(interpretacao) {
   if (escolherRotaDaInterpretacao(interpretacao) !== ROTAS_INTERPRETACAO.PLANO) return null;
   const operations = interpretacao.operacoes.map((operacao, indice) => {
@@ -116,20 +115,16 @@ export function interpretacaoParaPlano(interpretacao) {
       temporaryId: `op${indice + 1}`,
       operationType,
       amount: Number.isFinite(valor) && valor > 0 ? valor : null,
-      currency: 'BRL',
       description: typeof operacao.descricao === 'string' && operacao.descricao.trim() ? operacao.descricao.trim() : null,
       date: typeof operacao.data === 'string' && operacao.data ? operacao.data : null,
-      dateExpression: null,
       sourceAccountReference: operacao.conta?.name ?? null,
       destinationAccountReference: operacao.contaDestino?.name ?? null,
       categoryReference: operationType === 'transfer'
         ? null
         : operacao.categoria?.name ?? operacao.novaCategoria ?? null,
-      installments: operacao.parcelas ? { count: operacao.parcelas } : null,
-      recurrence: null,
-      confidence: Number.isFinite(Number(operacao.confianca)) ? Number(operacao.confianca) : 0,
-      missingFields: Array.isArray(operacao.faltando) ? operacao.faltando : [],
-      reason: '',
+      accountId: operacao.conta?.id ?? null,
+      destinationAccountId: operacao.contaDestino?.id ?? null,
+      categoryId: operationType === 'transfer' ? null : operacao.categoria?.id ?? null,
     };
   });
   return { operations, clarificationQuestion: null };

@@ -11,15 +11,9 @@ export function isAgendaExpression(text) {
   return AGENDA_INTENT_SET.has(classifyIntent(text).intent);
 }
 
-// BLOCO E: heurística determinística (nunca IA) que decide QUANDO vale a
-// pena chamar a camada neural (financial_plan) em vez do parser de uma
-// única operação já existente -- section 2/6 da tarefa: "parser
-// determinístico tenta primeiro; se ... for multi-operação/ambíguo, chama
-// a camada neural". Falsos negativos aqui apenas mantêm o comportamento
-// ATUAL (parser de uma operação, ou a mensagem de "não suportado" já
-// existente) -- nunca quebram nada; falsos positivos apenas fazem uma
-// chamada extra à IA que, se não trouxer um plano válido, também cai de
-// volta no comportamento atual (ver financialPlanService.interpret).
+// Heurísticas determinísticas (nunca IA) do caminho por regras. Com o
+// uni-interpret disponível, quem decide a intenção é ele (#80); estas
+// funções só valem para pendências e para a reserva sem IA.
 // BUG REAL EM PRODUCAO: "Coloquei duzentos reais de gasolina." nao batia em
 // nenhum verbo aqui -- a frase acabava caindo no chat geral (ver
 // looksLikeUnclassifiedFinancialStatement abaixo, a barreira determinística
@@ -98,7 +92,7 @@ export function looksLikeFreshBalanceStatement(text) {
 // BUG REAL EM PRODUCAO: "Coloquei duzentos reais de gasolina." nao batia em
 // nenhum intent do parser determinístico de uma única operação (classifyIntent
 // em intentClassifier.js) -- o parser devolvia handled:false, e como o intent
-// resultante ('question') não era elegível para financial_plan (só
+// resultante ('question') não era elegível para o plano (só
 // register_transfer era, via isUnsupportedIntentEligibleForPlan) nem
 // create_goal nem uma pergunta sobre o futuro, a frase caía direto em
 // handleUnresolvedMessage (chat geral / modo SUPPORT), cujo prompt
@@ -110,9 +104,8 @@ export function looksLikeFreshBalanceStatement(text) {
 // monetário real (R$/reais, inclusive por extenso) E algum sinal mínimo de
 // lançamento (verbo financeiro OU substantivo "despesa/gasto/receita/
 // entrada/pagamento") NUNCA deve ser tratada como chat geral, mesmo que um
-// verbo futuro e ainda não catalogado apareça. Nesse caso o chamador deve
-// tentar financial_plan (camada neural) antes de qualquer resposta
-// consultiva -- nunca ir direto para handleUnresolvedMessage.
+// verbo futuro e ainda não catalogado apareça. Nesse caso o chamador pede
+// para a pessoa reformular -- nunca vai direto para handleUnresolvedMessage.
 //
 // BUG REAL EM PRODUCAO (voz): "Adicione 250 de despesas com gasolina" não
 // passava por aqui -- o plural "despesas", "saída" e os verbos de pedido
@@ -139,4 +132,19 @@ export function looksLikeUnclassifiedFinancialStatement(text) {
     || LAUNCH_NOUN_RE.test(text)
     || LAUNCH_REQUEST_VERB_RE.test(text)
     || (ENTRY_NOUN_RE.test(text) && !QUESTION_RE.test(text));
+}
+
+// Sem o uni-interpret (#80), o parser de uma operação não separa várias
+// operações nem entende parcela e recorrência. Devolve o motivo para a Uni
+// pedir de outro jeito em vez de abrir um card errado; null quando a frase
+// cabe numa operação só.
+const PARCELA_OU_RECORRENCIA_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]|\b\d+\s+parcelas\b|todo\s+m[eê]s|toda\s+semana|mensalmente/i;
+
+export function motivoParaNaoLerSemModelo(text) {
+  if (typeof text !== 'string' || !text.trim() || isAgendaExpression(text)) return null;
+  // Sem valor, é pergunta ("quanto gasto todo mês?"): segue para as regras.
+  if (!hasAnyAmountMention(text)) return null;
+  if (PARCELA_OU_RECORRENCIA_RE.test(text)) return 'parcela_ou_recorrencia';
+  if (countMoneyMentions(text) >= 2) return 'varias';
+  return null;
 }

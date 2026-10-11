@@ -111,4 +111,5 @@ export {
   looksLikeFreshFinancialStatement,
   looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
+  motivoParaNaoLerSemModelo,
 } from './financialPlanTrigger.js';

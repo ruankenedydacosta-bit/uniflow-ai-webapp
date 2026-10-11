@@ -11,7 +11,8 @@ import { PLAN_OPERATION_STATUS, PLAN_STATUS } from './pendingFinancialPlan.js';
 
 function formatAmountBRL(amount) {
   const value = Number(amount);
-  if (!Number.isFinite(value)) return 'valor não informado';
+  // Number(null) é 0: operação sem valor não pode aparecer como R$ 0,00.
+  if (amount === null || amount === undefined || !Number.isFinite(value) || value <= 0) return 'valor não informado';
   return `R$ ${value.toFixed(2).replace('.', ',')}`;
 }
 
@@ -43,7 +44,8 @@ function matchCategoryByName(categories, text, transactionType) {
 
 export function describePlanOperation(op) {
   const raw = op.rawOperation ?? {};
-  const amountText = formatAmountBRL(raw.amount);
+  // Depois da correção, o valor informado está na ação, não no rawOperation.
+  const amountText = formatAmountBRL(op.action?.amount || raw.amount);
   const description = raw.description ? ` (${raw.description})` : '';
 
   if (op.capabilityPending) {

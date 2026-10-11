@@ -141,3 +141,10 @@ test('rascunho e histórico vão no formato da função', () => {
     { autor: 'uni', texto: 'Revise o lançamento.' },
   ]);
 });
+
+test('correção que vira compra parcelada ou recorrente não altera o card de uma operação', () => {
+  for (const extra of [{ parcelas: 10 }, { recorrente: true }]) {
+    const interpretacao = { intent: 'correcao', operacoes: [{ ...OPERACAO, valor: 3000, ...extra }], resposta: '' };
+    assert.equal(interpretacaoParaOverrides(interpretacao, { transactionType: 'expense' }), null);
+  }
+});

@@ -49,6 +49,7 @@ import {
   buildPlanOperationCancelledText,
   buildPlanResultText,
   buildPlanSummaryText,
+  describePlanOperation,
   findPlanOperationCancelTarget,
   getSingleReadyPlanAction,
   parsePlanCorrectionOverrides,
@@ -56,6 +57,7 @@ import {
   looksLikeFreshFinancialStatement,
   looksLikeFreshBalanceStatement,
   looksLikeUnclassifiedFinancialStatement,
+  motivoParaNaoLerSemModelo,
   createConversationalMemory,
   classifyPendingActionRelation,
   createAgendaConversationFlow,
@@ -287,6 +289,10 @@ const ACTION_STATEMENT_INTENTS = new Set([
   'register_transfer',
   'create_goal',
 ]);
+const TEXTO_SEM_MODELO = Object.freeze({
+  varias: 'Não consegui separar esses lançamentos agora. Diga um de cada vez, com o valor e do que se trata.',
+  parcela_ou_recorrencia: 'Compra parcelada e valor que se repete ainda não são registrados pela conversa. Lance pelo Financeiro.',
+});
 const INTENTS_FORA_DO_INTERPRETADOR = new Set([
   'set_balance',
   'ambiguous_balance_or_income',
@@ -1110,7 +1116,7 @@ export default function UniChatPage({ variant = 'full' }) {
   // Plano de várias operações, parcela, recorrência ou transferência, já
   // lido pelo uni-interpret (#80): cada operação passa pelos resolutores de
   // conta e categoria e vai para a revisão.
-  function startFinancialPlan(plan, text) {
+  function iniciarPlanoFinanceiro(plan, text) {
     const createdPlan = createPendingFinancialPlan({
       plan,
       phrase: text,
@@ -1133,6 +1139,14 @@ export default function UniChatPage({ variant = 'full' }) {
           : operation.action,
       })),
     };
+    // Só parcela e recorrência: nada a confirmar, e um plano parado ali
+    // prenderia as próximas frases até expirar.
+    if (newPlan.operations.every((operation) => operation.capabilityPending)) {
+      createAssistantResponse(
+        `Entendi o seguinte:\n${newPlan.operations.map(describePlanOperation).join('\n')}\n\nNada foi registrado.`,
+      );
+      return;
+    }
     setFinancialPlan(newPlan);
     publishFinancialPlanReview(newPlan);
   }
@@ -1274,12 +1288,6 @@ export default function UniChatPage({ variant = 'full' }) {
         publishFinancialPlanReview(updated);
         return true;
       }
-    }
-
-    if (!active.length) {
-      setFinancialPlan(null);
-      createAssistantResponse('Não consegui continuar esse lançamento. Pode registrar de novo quando quiser.');
-      return true;
     }
 
     createAssistantResponse(
@@ -4332,8 +4340,6 @@ export default function UniChatPage({ variant = 'full' }) {
           setIsTyping(false);
           return false;
         }
-        // A categoria já foi escolhida pelo modelo: a inferência de
-        // categoria do caminho das regras não roda aqui.
         const phrased = await attemptNaturalPhrasing(result);
         if (uniTurnTokenRef.current !== turnToken) {
           financialConversation.reset();
@@ -4345,7 +4351,7 @@ export default function UniChatPage({ variant = 'full' }) {
       }
       case ROTAS_INTERPRETACAO.PLANO:
         setIsTyping(false);
-        startFinancialPlan(interpretacaoParaPlano(interpretacao), text);
+        iniciarPlanoFinanceiro(interpretacaoParaPlano(interpretacao), text);
         return true;
       case ROTAS_INTERPRETACAO.CONSULTA:
         setIsTyping(false);
@@ -4579,6 +4585,13 @@ export default function UniChatPage({ variant = 'full' }) {
     }, UNI_THINK_MIN_MS);
 
     function runRuleBasedFlow() {
+      // Sem o modelo, o parser de uma operação leria só a primeira de várias
+      // ou trataria "12x" como compra avulsa: melhor pedir de outro jeito.
+      const motivo = motivoParaNaoLerSemModelo(functionalText);
+      if (motivo) {
+        createAssistantResponse(TEXTO_SEM_MODELO[motivo]);
+        return;
+      }
       runDeterministicFinancialFlow(functionalText, historySnapshot, roteiaPeloModelo);
     }
   }

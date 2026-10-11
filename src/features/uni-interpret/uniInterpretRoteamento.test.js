@@ -9,6 +9,7 @@ import {
 } from './uniInterpretRoteamento.js';
 import { buildFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { createPendingFinancialPlan, PLAN_OPERATION_STATUS } from '../uni-conversation/pendingFinancialPlan.js';
+import { describePlanOperation } from '../uni-conversation/financialPlanPresenter.js';
 
 const CATEGORIAS = [
   { id: 'cat-edu', name: 'Educação', category_type: 'expense' },
@@ -239,4 +240,39 @@ test('plano do modelo: parcela e recorrência viram operação entendida mas ain
 
 test('lançamento simples não vira plano', () => {
   assert.equal(interpretacaoParaPlano({ intent: 'lancamento', operacoes: [operacao()], resposta: '' }), null);
+});
+
+test('plano do modelo: conta escolhida vai por id, mesmo com duas contas de mesma identidade', () => {
+  const contas = [
+    { id: 'conta-nu', name: 'Nubank', account_type: 'checking', is_active: true, institution_name: 'Nubank' },
+    { id: 'cartao-nu', name: 'Cartão Nubank', account_type: 'credit_card', is_active: true, institution_name: 'Nubank' },
+  ];
+  const plano = interpretacaoParaPlano({
+    intent: 'lancamento',
+    operacoes: [
+      operacao({ valor: 40, conta: { id: 'conta-nu', name: 'Nubank' } }),
+      operacao({ valor: 25, conta: { id: 'cartao-nu', name: 'Cartão Nubank' } }),
+    ],
+    resposta: '',
+  });
+  const pendente = createPendingFinancialPlan({
+    plan: plano, phrase: 'x', accounts: contas, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-10',
+  });
+  assert.deepEqual(pendente.operations.map((item) => item.action.account?.id), ['conta-nu', 'cartao-nu']);
+  assert.ok(pendente.operations.every((item) => item.action.category?.id === 'cat-edu'));
+});
+
+test('plano do modelo: operação sem valor fica sem valor, nunca R$ 0,00', () => {
+  const plano = interpretacaoParaPlano({
+    intent: 'lancamento',
+    operacoes: [operacao({ valor: null, descricao: 'Táxi' }), operacao({ valor: 25 })],
+    resposta: '',
+  });
+  const pendente = createPendingFinancialPlan({
+    plan: plano, phrase: 'x', accounts: CONTAS, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-10',
+  });
+  const [taxi] = pendente.operations;
+  assert.equal(taxi.status, PLAN_OPERATION_STATUS.NEEDS_CLARIFICATION);
+  assert.doesNotMatch(describePlanOperation(taxi), /R\$ 0,00/);
+  assert.match(describePlanOperation(taxi), /valor não informado/);
 });

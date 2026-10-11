@@ -48,7 +48,7 @@ export const CASOS = [
     esperado: { intent: 'lancar_saida', valor: 120, categoria: 'Saúde', aceitas: ['Lazer'], recorrente: true },
   },
   {
-    id: 'aluguel-recebido-todo-dia',
+    id: 'aluguel-recebido-todo-mes',
     // Sem dia do mês: numa recorrência, "todo dia 5" não diz quando foi o
     // lançamento, e a régua não tem como esperar uma data só.
     frase: 'recebo 2.000 do aluguel do apartamento todo mês',

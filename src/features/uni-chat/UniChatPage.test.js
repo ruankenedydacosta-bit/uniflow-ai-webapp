@@ -1336,13 +1336,6 @@ test('reset()/cancel() do useUniConversation também apagam o contexto de infer�
   assert.match(hook.slice(cancelIdx, cancelIdx + 600), /contextRef\.current = createConversationContext\(\);/);
 });
 
-test('#80: plano sem operação ativa é encerrado com aviso, sem nova chamada à IA', async () => {
-  const page = await source('UniChatPage.jsx');
-  const { body: slice, end } = extractFunctionBody(page, 'function handlePlanConversationInput(text) {');
-  assert.ok(end > -1, 'não foi possível localizar o corpo completo de handlePlanConversationInput');
-  assert.match(slice, /if \(!active\.length\) \{\s*setFinancialPlan\(null\);/);
-});
-
 // ============================================================================
 // BUG 2 REAL: "estado fantasma de confirmação" -- a Home podia continuar
 // mostrando um cartão Confirmar/Editar/Cancelar (ou o texto "CONFIRME A
@@ -3937,7 +3930,7 @@ test('#80: lançamento e plano interpretados pelo modelo nunca vão ao chat gera
   assert.match(lancamento, /financialConversation\.startFromParsed\(parsed, overrides\)/);
   // O plano nasce da mesma interpretação: nenhuma segunda chamada à IA.
   assert.match(body, /case ROTAS_INTERPRETACAO\.CONSULTA:\s*setIsTyping\(false\);\s*runDeterministicFinancialFlow\(text, historySnapshot, true\);/);
-  assert.match(lancamento, /startFinancialPlan\(interpretacaoParaPlano\(interpretacao\), text\);/);
+  assert.match(lancamento, /iniciarPlanoFinanceiro\(interpretacaoParaPlano\(interpretacao\), text\);/);
   assert.doesNotMatch(lancamento, /handleUnresolvedMessage/);
   assert.doesNotMatch(lancamento, /não consigo registrar/i);
   // Turno trocado durante a frase natural não deixa rascunho invisível.
@@ -3949,4 +3942,16 @@ test('#80: sem interpretação ou sem entender, as regras fixas tentam antes do 
   const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
   assert.match(body, /if \(!rota \|\| rota === ROTAS_INTERPRETACAO\.NAO_ENTENDI\) \{\s*setIsTyping\(false\);\s*return false;\s*\}/);
   assert.doesNotMatch(body, /handleUnresolvedMessage/);
+});
+
+test('#80: plano só com parcela ou recorrência não fica pendente prendendo as próximas frases', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function iniciarPlanoFinanceiro(plan, text) {');
+  assert.match(body, /if \(newPlan\.operations\.every\(\(operation\) => operation\.capabilityPending\)\) \{[\s\S]*?Nada foi registrado\.[\s\S]*?return;\s*\}\s*setFinancialPlan\(newPlan\);/);
+});
+
+test('#80: sem o modelo, várias operações ou parcela pedem outro jeito em vez de abrir um card errado', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function runRuleBasedFlow() {');
+  assert.match(body, /const motivo = motivoParaNaoLerSemModelo\(functionalText\);\s*if \(motivo\) \{\s*createAssistantResponse\(TEXTO_SEM_MODELO\[motivo\]\);\s*return;\s*\}/);
 });

@@ -302,12 +302,9 @@ test('parsePlanCorrectionOverrides: sem operação ou texto vazio retorna null',
 // BUG REAL: quando falta o valor de UMA operação (código de issue
 // 'amount_required'), a resposta geralmente não usa nenhuma palavra de
 // correção ("na verdade", "foram"...) -- ex.: "a gasolina foi 200 reais"
-// ou só "200 reais". O contrato do plano (financialPlanContract.js) exige
-// amount > 0 em toda operação validada, então esse código de issue nunca
-// nasce de um plano real hoje -- a ambiguidade "duas despesas, um valor
-// só" vira decision='clarification_required' SEM operações (ver
-// pendingFinancialPlan.test.js). Testado aqui por unidade, isolado do
-// pipeline de validação, como camada defensiva -- nunca reaproveita o
+// ou só "200 reais". Com o uni-interpret (#80), uma operação sem valor
+// chega ao plano com amount null e nasce com esse código de issue.
+// Testado aqui por unidade, isolado do pipeline -- nunca reaproveita o
 // valor de outra operação, mesmo que esse caminho venha a ser alcançado
 // no futuro (ex.: uma correção manual que zera o valor de uma operação
 // já pronta).

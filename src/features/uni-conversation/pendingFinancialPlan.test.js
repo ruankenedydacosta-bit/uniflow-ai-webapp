@@ -399,10 +399,8 @@ test('correção "não foi Nubank, foi No Bank" (variação garbled) ainda resol
 
 // ============================================================================
 // BUG REAL: "Gastei R$ 50 no mercado e a gasolina eu paguei pelo Banco do
-// Brasil." -- duas despesas, um valor só. O contrato do plano exige
-// amount > 0 por operação (financialPlanContract.js), então a resposta
-// correta da IA para esse caso é decision='clarification_required' SEM
-// operações ainda, só a pergunta -- nunca uma operação inventando/
+// Brasil." -- duas despesas, um valor só. O antigo modo financial_plan
+// devolvia só a pergunta, SEM operações -- nunca uma operação inventando/
 // duplicando valor. Sem o fix, derivePlanStatus([]) tratava "zero
 // operações" como CANCELLED, descartando a pergunta de esclarecimento.
 // ============================================================================
