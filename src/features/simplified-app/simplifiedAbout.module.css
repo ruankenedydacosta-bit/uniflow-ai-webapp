@@ -428,10 +428,6 @@
   border-color: var(--uf-app-success-subtle);
 }
 
-.updateCompleteButton:active {
-  transform: scale(.98);
-}
-
 /* ---------- Agradecimento ---------- */
 
 .thanksCard {

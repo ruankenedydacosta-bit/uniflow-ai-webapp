@@ -50,7 +50,7 @@ test('cabeçalho próprio (← Relatórios) -- shell nunca duplica o header gen�
 test('IMERSIVA: bottom nav some SÓ nesta rota -- nenhuma outra rota é afetada', async () => {
   const shell = await source('./SimplifiedAppShell.jsx');
   assert.match(shell, /const isReportRoute = location\.pathname === SIMPLIFIED_ROUTES\.RELATORIO;/);
-  assert.match(shell, /<SimplifiedBottomNavigation hidden=\{isUniChatKeyboardOpen \|\| isReportRoute\} \/>/);
+  assert.match(shell, /<SimplifiedBottomNavigation\s+hidden=\{isUniChatKeyboardOpen \|\| isReportRoute\}\s/);
 });
 
 test('usa useMonthlyReport() -- fonte única, chamada UMA vez nesta página (nunca duas queries/listeners/reportData)', async () => {
