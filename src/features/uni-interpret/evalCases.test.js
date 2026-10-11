@@ -71,7 +71,7 @@ function resultado(campos) {
 
 test('acerta quando todos os campos batem, inclusive categoria aceita', () => {
   assert.deepEqual(avaliarCaso(CASO_ESCOLA, resultado()), {
-    intent: true, valor: true, data: true, categoria: true, modalidade: true, titulo: null,
+    intent: true, valor: true, data: true, categoria: true, modalidade: true, titulo: null, consulta: null,
   });
   assert.equal(avaliarCaso(CASO_ESCOLA, resultado({ categoria: 'Outras despesas' })).categoria, true);
 });
@@ -89,21 +89,21 @@ test('caso sem base para categoria só acerta quando a Uni pergunta', () => {
 
 test('intent errado derruba os outros campos do lançamento', () => {
   assert.deepEqual(avaliarCaso(CASO_ESCOLA, resultado({ intent: 'consulta' })), {
-    intent: false, valor: false, data: false, categoria: false, modalidade: false, titulo: null,
+    intent: false, valor: false, data: false, categoria: false, modalidade: false, titulo: null, consulta: null,
   });
 });
 
 test('casos que não são lançamento só medem o intent', () => {
   const caso = { id: 'saldo', frase: 'Qual meu saldo?', esperado: { intent: 'consulta' } };
   assert.deepEqual(avaliarCaso(caso, { intent: 'consulta' }), {
-    intent: true, valor: null, data: null, categoria: null, modalidade: null, titulo: null,
+    intent: true, valor: null, data: null, categoria: null, modalidade: null, titulo: null, consulta: null,
   });
 });
 
 test('resumo ignora campos que não se aplicam', () => {
   const resumo = resumirAvaliacao([
-    { intent: true, valor: true, data: false, categoria: null, modalidade: true, titulo: null },
-    { intent: false, valor: null, data: null, categoria: null, modalidade: null, titulo: true },
+    { intent: true, valor: true, data: false, categoria: null, modalidade: true, titulo: null, consulta: null },
+    { intent: false, valor: null, data: null, categoria: null, modalidade: null, titulo: true, consulta: null },
   ]);
   assert.deepEqual(resumo, {
     intent: { acertos: 1, total: 2 },
@@ -112,6 +112,7 @@ test('resumo ignora campos que não se aplicam', () => {
     categoria: { acertos: 0, total: 0 },
     modalidade: { acertos: 1, total: 1 },
     titulo: { acertos: 1, total: 1 },
+    consulta: { acertos: 0, total: 0 },
   });
 });
 
@@ -123,6 +124,60 @@ test('modalidade: parcela avulsa não é parcelamento, e parcelamento ou recorr�
   assert.equal(avaliarCaso(parcelado, resultado()).modalidade, false);
   const recorrente = { ...CASO_ESCOLA, esperado: { ...CASO_ESCOLA.esperado, recorrente: true } };
   assert.equal(avaliarCaso(recorrente, resultado({ recorrente: true })).modalidade, true);
+});
+
+// #80, etapa 2c: parâmetros da consulta.
+const CASO_FARMACIA = {
+  id: 'farmacia',
+  frase: 'Quanto gastei de farmácia em agosto?',
+  esperado: {
+    intent: 'consulta',
+    consulta: { tipo: 'saidas', inicio: '2026-08-01', fim: '2026-08-31', filtros: [{ termo: 'farmácia' }, { categoria: 'Saúde', termo: 'farmácia' }] },
+  },
+};
+
+function consultaObtida(campos) {
+  return {
+    intent: 'consulta',
+    consulta: { tipo: 'saidas', inicio: '2026-08-01', fim: '2026-08-31', categoria: null, termo: 'Farmacia', ...campos },
+  };
+}
+
+test('consulta: tipo, período e um dos filtros aceitos; termo sem acento nem caixa', () => {
+  assert.equal(avaliarCaso(CASO_FARMACIA, consultaObtida()).consulta, true);
+  assert.equal(avaliarCaso(CASO_FARMACIA, consultaObtida({ categoria: 'Saúde', termo: 'compras na farmácia' })).consulta, true);
+  assert.equal(avaliarCaso(CASO_FARMACIA, consultaObtida({ categoria: 'Saúde', termo: null })).consulta, false);
+  assert.equal(avaliarCaso(CASO_FARMACIA, consultaObtida({ tipo: 'entradas' })).consulta, false);
+  assert.equal(avaliarCaso(CASO_FARMACIA, consultaObtida({ fim: '2026-08-30' })).consulta, false);
+  assert.equal(avaliarCaso(CASO_FARMACIA, consultaObtida({ intent: 'agenda' })).consulta, true);
+  assert.equal(avaliarCaso(CASO_FARMACIA, { ...consultaObtida(), intent: 'agenda' }).consulta, false);
+});
+
+test('consulta: mês atual vale com ou sem datas, e fim no futuro aceita qualquer fim a partir de hoje', () => {
+  const caso = { id: 'mes', frase: 'Quanto gastei esse mês?', esperado: { intent: 'consulta', consulta: { tipo: 'saidas' } } };
+  assert.equal(avaliarCaso(caso, consultaObtida({ inicio: null, fim: null, termo: null })).consulta, true);
+  assert.equal(avaliarCaso(caso, consultaObtida({ inicio: '2026-10-01', fim: '2026-10-31', termo: null })).consulta, true);
+  assert.equal(avaliarCaso(caso, consultaObtida({ inicio: '2026-10-01', fim: '2026-10-02', termo: null })).consulta, true);
+  assert.equal(avaliarCaso(caso, consultaObtida({ inicio: '2026-10-01', fim: '2026-10-01', termo: null })).consulta, false);
+});
+
+test('consulta: outra só confere o tipo; quem não lê parâmetros não é medido', () => {
+  const caso = { id: 'meta', frase: 'Quanto falta pra meta?', esperado: { intent: 'consulta', consulta: { tipo: 'outra' } } };
+  assert.equal(avaliarCaso(caso, consultaObtida({ tipo: 'outra', inicio: '2026-01-01' })).consulta, true);
+  assert.equal(avaliarCaso(caso, { intent: 'consulta' }).consulta, null);
+});
+
+test('consulta esperada usa categoria do catálogo e período ISO em ordem', () => {
+  const nomes = new Set(catalogoDoWorkspace('personal').map((category) => category.name));
+  for (const caso of CASOS.filter((item) => item.esperado.consulta)) {
+    const { tipo, inicio, fim, filtros = [] } = caso.esperado.consulta;
+    assert.ok(['saidas', 'entradas', 'resumo', 'outra'].includes(tipo), `${caso.id}: tipo ${tipo}`);
+    assert.equal(Boolean(inicio), Boolean(fim), `${caso.id}: período pela metade`);
+    if (inicio) assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(inicio) && inicio <= fim, `${caso.id}: período inválido`);
+    for (const filtro of filtros) {
+      if (filtro.categoria) assert.ok(nomes.has(filtro.categoria), `${caso.id}: "${filtro.categoria}" fora do catálogo`);
+    }
+  }
 });
 
 test('título de agenda: palavras esperadas, inicial maiúscula e nada do pedido', () => {

@@ -3820,7 +3820,7 @@ test('#80: lançamento e plano interpretados pelo modelo nunca vão ao chat gera
   const lancamento = body.slice(body.indexOf('case ROTAS_INTERPRETACAO.LANCAMENTO:'), body.indexOf('case ROTAS_INTERPRETACAO.CONSULTA:'));
   assert.match(lancamento, /financialConversation\.startFromParsed\(parsed, overrides\)/);
   // O plano nasce da mesma interpretação: nenhuma segunda chamada à IA.
-  assert.match(body, /case ROTAS_INTERPRETACAO\.CONSULTA:\s*setIsTyping\(false\);\s*runDeterministicFinancialFlow\(text, historySnapshot, true\);/);
+  assert.match(body, /case ROTAS_INTERPRETACAO\.CONSULTA: \{[\s\S]*?runDeterministicFinancialFlow\(text, historySnapshot, true\);/);
   assert.match(lancamento, /iniciarPlanoFinanceiro\(interpretacaoParaPlano\(interpretacao\), text\);/);
   assert.doesNotMatch(lancamento, /handleUnresolvedMessage/);
   assert.doesNotMatch(lancamento, /não consigo registrar/i);
@@ -3840,6 +3840,23 @@ test('#80: saldo responde que o app não usa mais saldo e meta responde que aind
   assert.match(body, /case ROTAS_INTERPRETACAO\.META:\s*setIsTyping\(false\);[\s\S]*?createAssistantResponse\(TEXTO_META_SEM_CRIACAO, \{ deduplicateNarration: false \}\);\s*return true;/);
   // Sem o modelo, a meta recebe a mesma resposta pelas regras.
   assert.match(page, /result\.parsed\?\.intent === 'create_goal'\) \{\s*createAssistantResponse\(TEXTO_META_SEM_CRIACAO\);/);
+});
+
+test('#80: consulta com parâmetros soma o período inteiro no banco; outra pergunta ou falha vai para as regras', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
+  const consulta = body.slice(body.indexOf('case ROTAS_INTERPRETACAO.CONSULTA:'), body.indexOf('case ROTAS_INTERPRETACAO.AGENDA:'));
+  assert.match(consulta, /if \(consultaRespondivel\(interpretacao\.consulta\)\) \{\s*const resposta = await responderConsultaDoModelo\(interpretacao\.consulta, interpretacao\.dataReferencia\);\s*if \(uniTurnTokenRef\.current !== turnToken\) return true;/);
+  // A memória troca a última consulta: as regras não refinam uma pergunta anterior.
+  assert.match(consulta, /if \(resposta\) \{\s*setIsTyping\(false\);\s*conversationalMemoryRef\.current\.remember\(memoriaDaConsulta\(interpretacao\.consulta, resposta\)\);\s*createAssistantResponse\(resposta, \{ deduplicateNarration: false \}\);\s*return true;\s*\}/);
+  assert.match(consulta, /setIsTyping\(false\);\s*runDeterministicFinancialFlow\(text, historySnapshot, true\);\s*return true;\s*\}\s*$/);
+
+  // O chat só carrega as movimentações recentes: a soma vem do período
+  // inteiro, só das concluídas, e falha de busca devolve null.
+  const { body: busca } = extractFunctionBody(page, 'async function responderConsultaDoModelo(consulta, dataDaFuncao) {');
+  assert.match(busca, /listTransactionsForPeriod\(effectiveWorkspace\.id, \{\s*dateFrom: periodo\.inicio,\s*dateTo: periodo\.fim,\s*status: 'completed',\s*\}\)/);
+  assert.match(busca, /if \(error\) return null;/);
+  assert.match(busca, /catch \{\s*return null;\s*\}/);
 });
 
 test('#80: sem interpretação ou sem entender, as regras fixas tentam antes do chat geral', async () => {

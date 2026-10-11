@@ -116,6 +116,31 @@ test('sucesso: devolve a proposta com ids reais e data de referência, e o model
   assert.match(chamadas[0].mensagem, /Hoje: 2026-10-02 \(sexta-feira\)/);
 });
 
+test('consulta: devolve só ids e nomes dos registros filtrados', async () => {
+  const { chamarModelo } = modeloQueResponde({
+    intent: 'consulta',
+    operacoes: [],
+    resposta: '',
+    consulta: { tipo: 'saidas', inicio: '2026-09-01', fim: '2026-09-30', categoria: 'c2', conta: 'k1', termo: 'escola' },
+  });
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'quanto paguei de escola no Nubank em setembro' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo,
+    agora: AGORA,
+  });
+
+  assert.equal(resultado.status, 200);
+  assert.deepEqual(resultado.corpo.consulta, {
+    tipo: 'saidas',
+    inicio: '2026-09-01',
+    fim: '2026-09-30',
+    categoria: { id: 'cat-edu', name: 'Educação' },
+    conta: { id: 'conta-nu', name: 'Nubank' },
+    termo: 'escola',
+  });
+});
+
 // Sem parcelas na resposta, o app lançava "12x de 300" como compra à vista
 // de 3.600.
 test('parcelas e recorrência chegam ao app', async () => {

@@ -16,6 +16,9 @@ export const INTENTS = Object.freeze([
   'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
+// Consulta que o app responde com os parâmetros (#80). 'outra' (meta, contas
+// a pagar, maior gasto, comparação...) segue para as regras de consulta.
+export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'outra']);
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -34,6 +37,7 @@ export const MAX_TITULO_AGENDA = 80;
 // compra à vista.
 export const MIN_PARCELAS = 2;
 export const MAX_PARCELAS = 72;
+export const MAX_TERMO = 40;
 
 // Apelidos estáveis: ordem por tipo e nome, a mesma que o prompt mostra.
 export function indexarCatalogo({ categorias = [], contas = [] } = {}) {
@@ -71,6 +75,21 @@ const ESQUEMA_OPERACAO = {
   },
 };
 
+// Pergunta sobre os dados (#80). Fora de consulta, todos os campos são null.
+const ESQUEMA_CONSULTA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['tipo', 'inicio', 'fim', 'categoria', 'conta', 'termo'],
+  properties: {
+    tipo: { type: ['string', 'null'], enum: [...TIPOS_CONSULTA, null] },
+    inicio: { ...TEXTO_OU_NULO, description: 'AAAA-MM-DD' },
+    fim: { ...TEXTO_OU_NULO, description: 'AAAA-MM-DD' },
+    categoria: { ...TEXTO_OU_NULO, description: 'apelido do catálogo, ex.: c3' },
+    conta: { ...TEXTO_OU_NULO, description: 'apelido da conta, ex.: k1' },
+    termo: TEXTO_OU_NULO,
+  },
+};
+
 // Compromisso ou lembrete (#142). Data e hora continuam com o parser da
 // agenda no app; o modelo devolve o que a regex não consegue: o título como a
 // pessoa escreveria e o valor citado.
@@ -89,12 +108,13 @@ const ESQUEMA_AGENDA = {
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
     agenda: ESQUEMA_AGENDA,
     resposta: { type: 'string' },
+    consulta: ESQUEMA_CONSULTA,
   },
 });
 
@@ -195,6 +215,58 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   };
 }
 
+const CATEGORY_TYPE_POR_TIPO_CONSULTA = Object.freeze({ saidas: 'expense', entradas: 'income' });
+// Mais que isso é histórico inteiro: as regras respondem sem baixar anos de
+// movimentações para uma soma.
+export const MAX_DIAS_CONSULTA = 731;
+
+// Período da consulta. Os dois null valem o mês atual; "desde agosto" chega
+// sem fim e vai até hoje. Qualquer outro período que não dá para respeitar
+// (só o fim, data impossível, invertido, futuro, longo demais) devolve o
+// motivo, e a consulta vai para as regras em vez de responder outro período.
+function validarPeriodo(bruta, dataReferencia) {
+  const temInicio = bruta?.inicio !== null && bruta?.inicio !== undefined;
+  const temFim = bruta?.fim !== null && bruta?.fim !== undefined;
+  if (!temInicio && !temFim) return { inicio: null, fim: null, problema: null };
+
+  const inicio = dataValida(bruta.inicio) ? bruta.inicio : null;
+  const fim = temFim ? (dataValida(bruta.fim) ? bruta.fim : null) : (inicio ? dataReferencia : null);
+  if (!inicio || !fim || inicio > fim) return { inicio: inicio ?? null, fim: fim ?? null, problema: 'periodo_invalido' };
+  if (inicio > dataReferencia) return { inicio, fim, problema: 'periodo_futuro' };
+  if (distanciaEmDias(inicio, fim) > MAX_DIAS_CONSULTA) return { inicio, fim, problema: 'periodo_longo' };
+  return { inicio, fim, problema: null };
+}
+
+// Sem tipo, a consulta vira 'outra' e o app cai nas regras. Filtro que o app
+// não consegue aplicar também: responder o total sem ele pareceria a resposta
+// da pergunta.
+function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataReferencia }) {
+  const ajustes = [];
+  let tipo = TIPOS_CONSULTA.includes(bruta?.tipo) ? bruta.tipo : 'outra';
+
+  const { inicio, fim, problema } = validarPeriodo(bruta, dataReferencia);
+  if (problema) ajustes.push(problema);
+
+  // Categoria de outro tipo ("quanto gastei de salário") ou apelido inventado.
+  const categoriaBruta = categoriasPorApelido.get(bruta?.categoria) ?? null;
+  const categoryType = CATEGORY_TYPE_POR_TIPO_CONSULTA[tipo];
+  const categoria = categoriaBruta && categoryType && categoriaBruta.category_type === categoryType
+    ? categoriaBruta
+    : null;
+  if (bruta?.categoria && !categoria) ajustes.push('categoria_descartada');
+
+  const conta = contasPorApelido.get(bruta?.conta) ?? null;
+  if (bruta?.conta && !conta) ajustes.push('conta_descartada');
+
+  const termo = textoLimpo(bruta?.termo, MAX_TERMO) || null;
+  // O resumo soma tudo do período: não filtra por categoria nem por termo.
+  if (tipo === 'resumo' && termo) ajustes.push('termo_no_resumo');
+
+  if (ajustes.length > 0) tipo = 'outra';
+
+  return { tipo, inicio, fim, categoria, conta, termo, ajustes };
+}
+
 // Título vazio vira null: o fluxo da agenda usa o parser próprio ou pergunta.
 // Título longo demais é cortado na última palavra inteira.
 function validarAgenda(bruta) {
@@ -217,9 +289,6 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
   if (intent === 'agenda') {
     return { intent, operacoes: [], agenda: validarAgenda(bruta?.agenda), resposta };
   }
-  if (intent !== 'lancamento' && intent !== 'correcao') {
-    return { intent, operacoes: [], resposta };
-  }
 
   const indice = indexarCatalogo({ categorias, contas });
   const contexto = {
@@ -227,6 +296,13 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
     contasPorApelido: new Map(indice.contas.map(({ apelido, registro }) => [apelido, registro])),
     dataReferencia,
   };
+
+  if (intent === 'consulta') {
+    return { intent, operacoes: [], resposta, consulta: validarConsulta(bruta?.consulta, contexto) };
+  }
+  if (intent !== 'lancamento' && intent !== 'correcao') {
+    return { intent, operacoes: [], resposta };
+  }
   const operacoes = (Array.isArray(bruta.operacoes) ? bruta.operacoes : [])
     .slice(0, MAX_OPERACOES)
     .map((operacao) => validarOperacao(operacao, contexto))

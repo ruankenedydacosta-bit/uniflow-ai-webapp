@@ -347,7 +347,10 @@ export const CASOS = [
   {
     id: 'consulta-gasto-mes',
     frase: 'Quanto eu gastei com mercado esse mês?',
-    esperado: { intent: 'consulta' },
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'saidas', filtros: [{ termo: 'mercado' }, { categoria: 'Alimentação', termo: 'mercado' }] },
+    },
   },
   {
     id: 'consulta-saldo',
@@ -739,7 +742,13 @@ export const CASOS = [
   {
     id: 'consulta-uber-setembro',
     frase: 'quanto que eu gastei de uber em setembro',
-    esperado: { intent: 'consulta' },
+    esperado: {
+      intent: 'consulta',
+      consulta: {
+        tipo: 'saidas', inicio: '2026-09-01', fim: '2026-09-30',
+        filtros: [{ termo: 'uber' }, { categoria: 'Transporte', termo: 'uber' }],
+      },
+    },
   },
   {
     id: 'consulta-maior-gasto',
@@ -750,7 +759,7 @@ export const CASOS = [
   {
     id: 'consulta-conta-pendente',
     frase: 'tenho alguma conta pra pagar ainda?',
-    esperado: { intent: 'consulta' },
+    esperado: { intent: 'consulta', consulta: { tipo: 'outra' } },
   },
   {
     id: 'consulta-comparar-meses',
@@ -1011,7 +1020,7 @@ export const CASOS = [
   {
     id: 'meta-consulta',
     frase: 'quanto falta pra eu bater minha meta?',
-    esperado: { intent: 'consulta' },
+    esperado: { intent: 'consulta', consulta: { tipo: 'outra' } },
   },
   {
     id: 'saldo-carteira-agora',
@@ -1030,5 +1039,85 @@ export const CASOS = [
     reservado: true,
     frase: 'quero economizar uns 40 mil pra trocar de carro',
     esperado: { intent: 'meta' },
+  },
+  // Parâmetros de consulta (#80, etapa 2c): o app soma as movimentações do
+  // período com o filtro que o modelo devolve.
+  {
+    id: 'consulta-recebi-agosto',
+    frase: 'quanto eu recebi em agosto?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'entradas', inicio: '2026-08-01', fim: '2026-08-31' } },
+  },
+  {
+    id: 'consulta-resumo-mes-passado',
+    frase: 'me dá um resumo do mês passado',
+    esperado: { intent: 'consulta', consulta: { tipo: 'resumo', inicio: '2026-09-01', fim: '2026-09-30' } },
+  },
+  {
+    id: 'consulta-moradia-semana',
+    frase: 'quanto saiu com moradia essa semana',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'saidas', inicio: '2026-09-28', fim: '2026-10-04', filtros: [{ categoria: 'Moradia' }] },
+    },
+  },
+  {
+    id: 'consulta-salario-ano',
+    frase: 'quanto entrou de salário esse ano',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'entradas', inicio: '2026-01-01', fim: '2026-12-31', filtros: [{ categoria: 'Salário' }] },
+    },
+  },
+  {
+    id: 'consulta-desde-julho',
+    frase: 'quanto eu já gastei desde julho',
+    esperado: { intent: 'consulta', consulta: { tipo: 'saidas', inicio: '2026-07-01', fim: '2026-10-02' } },
+  },
+  {
+    id: 'consulta-ontem',
+    frase: 'quanto gastei ontem?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'saidas', inicio: '2026-10-01', fim: '2026-10-01' } },
+  },
+  {
+    id: 'consulta-farmacia-mes-passado',
+    frase: 'quanto deu de farmácia no mês passado',
+    esperado: {
+      intent: 'consulta',
+      consulta: {
+        tipo: 'saidas', inicio: '2026-09-01', fim: '2026-09-30',
+        filtros: [{ termo: 'farmácia' }, { categoria: 'Saúde', termo: 'farmácia' }],
+      },
+    },
+  },
+  {
+    id: 'consulta-mes-que-vem',
+    frase: 'quanto eu vou gastar mês que vem?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'outra' } },
+  },
+  {
+    id: 'consulta-ultima-compra',
+    frase: 'qual foi a última compra que eu lancei?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'outra' } },
+  },
+  {
+    id: 'consulta-entrou-semana-passada',
+    reservado: true,
+    frase: 'quanto entrou na semana passada',
+    esperado: { intent: 'consulta', consulta: { tipo: 'entradas', inicio: '2026-09-21', fim: '2026-09-27' } },
+  },
+  {
+    id: 'consulta-lazer-junho',
+    reservado: true,
+    frase: 'quanto eu torrei com lazer em junho',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'saidas', inicio: '2026-06-01', fim: '2026-06-30', filtros: [{ categoria: 'Lazer' }] },
+    },
+  },
+  {
+    id: 'consulta-como-foi-setembro',
+    reservado: true,
+    frase: 'como foi setembro pra mim, entrou mais do que saiu?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'resumo', inicio: '2026-09-01', fim: '2026-09-30' } },
   },
 ];

@@ -32,6 +32,15 @@ Uma frase pode ter várias operações ("paguei 40 de táxi e 25 de lanche" são
 - recorrente: true só quando a pessoa diz que o valor se repete ("todo mês", "toda semana", "todo dia 10"). Pagar uma conta mensal uma vez não é recorrência. Nunca em transferência.
 - As memórias do usuário mostram como ele já classificou descrições parecidas. Siga-as quando a descrição corresponder.
 
+## consulta
+Só quando o intent é consulta; nos outros, todos os campos são null.
+- tipo: saidas (quanto gastou ou pagou), entradas (quanto recebeu ou entrou), resumo (como foi o período, com entradas e saídas juntas) ou outra (qualquer outra pergunta: meta, contas a pagar, maior gasto, última movimentação, comparação entre períodos, previsão).
+- inicio e fim: o período perguntado, resolvido a partir de hoje, de AAAA-MM-DD a AAAA-MM-DD. Mês citado vai do dia 1 ao último dia; mês sem ano é o mais recente que já começou. Semana vai de segunda a domingo. "Desde março" termina hoje. Os dois são null quando a frase não fala de período: vale o mês atual.
+- categoria: apelido, só quando a pessoa pergunta por uma categoria do catálogo ou por um nome claro dela ("com saúde", "de transporte"), do tipo da pergunta.
+- termo: quando a pessoa pergunta por algo específico que não é uma categoria inteira (uma loja, um serviço, um item: "estacionamento", "Spotify"), a palavra como apareceria na descrição do lançamento. Nunca a categoria repetida. null nos outros casos.
+- conta: apelido, só se a frase cita a conta.
+- Pergunta curta que continua a anterior do histórico ("e no outro mês?", "só no cartão") repete os campos que não mudaram.
+
 ## agenda
 Só quando o intent é agenda; nos outros, titulo e valor são null. Em agenda, operacoes fica vazia.
 - titulo: o compromisso como a pessoa escreveria na própria agenda, começando pelo que vai fazer, com acentos e inicial maiúscula. Sem o pedido ("me lembra", "marca", "anota", "eu vou ter que"), sem data, sem hora e sem valor. "Anota aí que na terça eu preciso levar o carro na revisão" vira "Levar o carro na revisão". Nomes de pessoas e lugares ficam.

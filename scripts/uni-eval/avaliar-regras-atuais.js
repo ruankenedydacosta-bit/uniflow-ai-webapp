@@ -99,7 +99,7 @@ for (const caso of casosDoConjunto) {
 
   const esperado = caso.esperado.categoria === undefined ? '' : ` | esperado: ${caso.esperado.categoria ?? '(perguntar)'}`;
   console.log(
-    `${marca(veredito.intent).padEnd(2)} ${marca(veredito.valor).padEnd(2)} ${marca(veredito.data).padEnd(2)} ${marca(veredito.categoria).padEnd(2)} ${marca(veredito.modalidade).padEnd(2)}  ${caso.id}`,
+    `${marca(veredito.intent).padEnd(2)} ${marca(veredito.valor).padEnd(2)} ${marca(veredito.data).padEnd(2)} ${marca(veredito.categoria).padEnd(2)} ${marca(veredito.modalidade).padEnd(2)} ${marca(veredito.consulta).padEnd(2)}  ${caso.id}`,
   );
   console.log(
     `      ${resultado.intent} | ${resultado.valor ?? '-'} | ${resultado.data ?? '-'} | ${resultado.categoria ?? '-'} (${resultado.modoCategoria})${esperado} | "${resultado.descricao ?? ''}"`,

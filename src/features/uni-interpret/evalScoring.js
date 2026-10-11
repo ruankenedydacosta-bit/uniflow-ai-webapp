@@ -3,10 +3,13 @@
 // regras atuais e o uni-interpret sejam medidos exatamente do mesmo jeito.
 //
 // Resultado normalizado:
-//   { intent, valor, data, categoria, modoCategoria, parcelas, recorrente, titulo }
+//   { intent, valor, data, categoria, modoCategoria, parcelas, recorrente, titulo, consulta }
 // modoCategoria: 'resolveu' | 'sugeriu' | 'propos_criar' | 'perguntou'.
+// consulta: { tipo, inicio, fim, categoria, termo }; ausente em quem não lê
+// parâmetros de consulta (as regras atuais).
 
 import { DATA_REFERENCIA } from './evalCases.js';
+import { periodoDaConsulta } from './uniInterpretConsulta.js';
 import { normalizeSearchText } from '../../utils/searchText.js';
 
 export const INTENTS_DE_LANCAMENTO = new Set(['lancar_saida', 'lancar_entrada', 'transferir']);
@@ -23,6 +26,31 @@ function avaliarCategoria(esperado, resultado) {
     return false;
   }
   return [esperado.categoria, ...(esperado.aceitas ?? [])].includes(resultado.categoria);
+}
+
+// Fim no futuro vale qualquer fim a partir de hoje: não há movimentação
+// concluída depois de hoje, então "esse ano" até hoje ou até 31/12 somam igual.
+function mesmoPeriodo(esperado, obtido) {
+  const periodoEsperado = periodoDaConsulta(esperado, DATA_REFERENCIA);
+  const periodoObtido = periodoDaConsulta(obtido, DATA_REFERENCIA);
+  if (periodoEsperado.inicio !== periodoObtido.inicio) return false;
+  if (periodoEsperado.fim >= DATA_REFERENCIA) return periodoObtido.fim >= DATA_REFERENCIA;
+  return periodoEsperado.fim === periodoObtido.fim;
+}
+
+// filtros: os jeitos aceitos de filtrar ({ categoria, termo }); ausente,
+// a consulta não filtra nada. O termo vale com outras palavras em volta.
+function mesmoFiltro(filtros = [{}], obtido) {
+  return filtros.some((filtro) => (filtro.categoria ?? null) === obtido.categoria
+    && (filtro.termo
+      ? normalizeSearchText(obtido.termo).includes(normalizeSearchText(filtro.termo))
+      : obtido.termo === null));
+}
+
+function avaliarConsulta(esperado, obtido) {
+  if (!obtido || esperado.tipo !== obtido.tipo) return false;
+  if (esperado.tipo === 'outra') return true;
+  return mesmoPeriodo(esperado, obtido) && mesmoFiltro(esperado.filtros, obtido);
 }
 
 // Sobra do pedido que não pode ir para a agenda (#142): "meu que eu vou ter
@@ -56,6 +84,9 @@ export function avaliarCaso(caso, resultado) {
       titulo: esperado.titulo && resultado.titulo !== undefined
         ? intent && avaliarTitulo(esperado.titulo, resultado.titulo)
         : null,
+      consulta: esperado.consulta && resultado.consulta !== undefined
+        ? intent && avaliarConsulta(esperado.consulta, resultado.consulta)
+        : null,
     };
   }
 
@@ -70,11 +101,12 @@ export function avaliarCaso(caso, resultado) {
       && (resultado.parcelas ?? null) === (esperado.parcelas ?? null)
       && (resultado.recorrente === true) === (esperado.recorrente === true),
     titulo: null,
+    consulta: null,
   };
 }
 
 export function resumirAvaliacao(vereditos) {
-  const campos = ['intent', 'valor', 'data', 'categoria', 'modalidade', 'titulo'];
+  const campos = ['intent', 'valor', 'data', 'categoria', 'modalidade', 'titulo', 'consulta'];
   return Object.fromEntries(campos.map((campo) => {
     const aplicaveis = vereditos.filter((veredito) => veredito[campo] !== null);
     const acertos = aplicaveis.filter((veredito) => veredito[campo]).length;
@@ -103,6 +135,15 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
     : INTENT_DO_INTERPRETADOR[validada.intent] ?? validada.intent;
 
   if (!operacao) {
+    const consulta = validada.consulta
+      ? {
+        tipo: validada.consulta.tipo,
+        inicio: validada.consulta.inicio,
+        fim: validada.consulta.fim,
+        categoria: validada.consulta.categoria?.name ?? null,
+        termo: validada.consulta.termo,
+      }
+      : null;
     return {
       intent,
       valor: null,
@@ -112,6 +153,7 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
       parcelas: null,
       recorrente: false,
       titulo: validada.agenda?.titulo ?? null,
+      consulta,
     };
   }
 
@@ -131,5 +173,6 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
     parcelas: operacao.parcelas ?? null,
     recorrente: operacao.recorrente === true,
     titulo: null,
+    consulta: null,
   };
 }
