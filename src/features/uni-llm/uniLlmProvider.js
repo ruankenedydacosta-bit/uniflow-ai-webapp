@@ -4,8 +4,8 @@
 // NUNCA lanca; sempre resolve com um objeto. Em qualquer falha retorna
 // { text: null, error: { code, message } } para o orquestrador cair no fallback.
 // `tool_calls` (Sprint 1 -- IA Conversacional) só é não-nulo quando a chamada
-// incluiu `tools` (flag VITE_UNI_LLM_TOOLS_ENABLED) e a OpenAI decidiu usar
-// alguma ferramenta -- ausente/null em todo o resto do tráfego, hoje 100%.
+// incluiu `tools` e a OpenAI decidiu usar alguma ferramenta. O chat não
+// envia `tools` desde a #80.
 //
 // A chamada real ao provedor (ex.: OpenAI) acontece dentro da Edge Function
 // `uni-chat-llm`. Este provider apenas orquestra auth, timeout/cancelamento e
@@ -80,9 +80,7 @@ export function createUniLlmProvider({
       // BLOCO A1: `maxOutputTokens` segue a mesma regra -- omitido quando
       // ausente, nunca quebra o formato ja validado.
       // Sprint 1 (IA Conversacional): `tools` idem -- omitido (undefined)
-      // sempre que a flag VITE_UNI_LLM_TOOLS_ENABLED estiver desligada
-      // (buildLlmPayload nunca o inclui nesse caso), corpo continua
-      // byte-identico ao de antes desta sprint.
+      // quando ausente; buildLlmPayload nunca o inclui.
       const response = await fetchImpl(`${supabaseUrl}/functions/v1/${UNI_LLM_FUNCTION_NAME}`, {
         method: 'POST',
         headers: {

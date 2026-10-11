@@ -1,6 +1,6 @@
 export {
   resolveLlmConfig, isLlmBackendConfigured,
-  isLlmToolsFlagEnabled, isLlmPhrasingFlagEnabled, UNI_LLM_TOOLS_FLAG, UNI_LLM_PHRASING_FLAG,
+  isLlmPhrasingFlagEnabled, UNI_LLM_PHRASING_FLAG,
 } from './llmConfig.js';
 export {
   CONVERSATION_STYLES,
