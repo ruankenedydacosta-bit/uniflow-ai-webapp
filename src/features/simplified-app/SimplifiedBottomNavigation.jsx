@@ -25,7 +25,7 @@ const ICONS = Object.freeze({
   [SIMPLIFIED_ROUTE_IDS.ACCOUNT]: [PhDotsThreeIcon, PhDotsThreeFillIcon],
 });
 
-function SimplifiedBottomNavigation({ hidden = false }) {
+function SimplifiedBottomNavigation({ hidden = false, onNavigate }) {
   const navigate = useNavigate();
 
   return (
@@ -63,13 +63,14 @@ function SimplifiedBottomNavigation({ hidden = false }) {
             <NavLink
               key={item.id}
               to={item.path}
+              onClick={(evento) => onNavigate?.(evento, item)}
               className={({ isActive }) => (
                 `${styles.navigationItem} ${isActive ? styles.navigationItemActive : ''}`
               )}
             >
               {({ isActive }) => (
                 <>
-                  <span className={styles.navigationIcon}>
+                  <span className={styles.navigationIcon} data-movimento-icone>
                     {isActive ? <ActiveIcon /> : <Icon />}
                   </span>
                   <span>{item.label}</span>

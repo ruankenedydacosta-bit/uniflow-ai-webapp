@@ -528,6 +528,122 @@
   scrollbar-gutter: stable;
 }
 
+/* Troca de aba (#143) e abrir/voltar de tela (#144), direção 23b Salto.
+   Só a área de conteúdo se move; barra inferior e cabeçalho trocam na
+   hora, sem o fade padrão da raiz. O atributo (aba, abrir ou voltar) e
+   --uf-aba-sentido vêm de movimentoDeAba.js e só existem durante a
+   transição. */
+html[data-uf-transicao] .mainContent {
+  view-transition-name: uf-tela;
+}
+
+html[data-uf-transicao]::view-transition-old(root),
+html[data-uf-transicao]::view-transition-new(root) {
+  animation: none;
+}
+
+html[data-uf-transicao]::view-transition-old(uf-tela),
+html[data-uf-transicao]::view-transition-new(uf-tela) {
+  mix-blend-mode: normal;
+}
+
+html[data-uf-transicao="aba"]::view-transition-old(uf-tela) {
+  animation: abaSai var(--uf-motion-saida) var(--uf-motion-curva-acelera) both;
+}
+
+html[data-uf-transicao="aba"]::view-transition-new(uf-tela) {
+  animation:
+    abaDesliza var(--uf-motion-mola-macio-duracao) var(--uf-motion-mola-macio) 40ms both,
+    abaSurge var(--uf-motion-entrada) var(--uf-motion-curva-saida) 40ms both;
+}
+
+@keyframes abaSai {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--uf-aba-sentido, 1) * -24px));
+  }
+}
+
+@keyframes abaDesliza {
+  from {
+    transform: translateX(calc(var(--uf-aba-sentido, 1) * 56px));
+  }
+}
+
+@keyframes abaSurge {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes abaSome {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Abrir: a tela nova sobe 56px e cresce de 94% com a mola macio; a de
+   trás encolhe e some. */
+html[data-uf-transicao="abrir"]::view-transition-old(uf-tela) {
+  animation: telaRecua var(--uf-motion-tela) var(--uf-motion-curva-saida) both;
+}
+
+html[data-uf-transicao="abrir"]::view-transition-new(uf-tela) {
+  animation:
+    telaSobe var(--uf-motion-mola-macio-duracao) var(--uf-motion-mola-macio) both,
+    abaSurge var(--uf-motion-tela) var(--uf-motion-curva-saida) both;
+}
+
+/* Voltar: a tela sai descendo por cima da de trás, que volta com a mola
+   macio. */
+html[data-uf-transicao="voltar"]::view-transition-old(uf-tela) {
+  z-index: 1;
+  animation: telaDesce var(--uf-motion-tela) var(--uf-motion-curva-acelera) both;
+}
+
+html[data-uf-transicao="voltar"]::view-transition-new(uf-tela) {
+  animation: telaRetorna var(--uf-motion-mola-macio-duracao) var(--uf-motion-mola-macio) both;
+}
+
+@keyframes telaRecua {
+  to {
+    opacity: 0;
+    transform: scale(.94);
+  }
+}
+
+@keyframes telaSobe {
+  from {
+    transform: translateY(56px) scale(.94);
+  }
+}
+
+@keyframes telaDesce {
+  to {
+    opacity: 0;
+    transform: translateY(48px) scale(.96);
+  }
+}
+
+@keyframes telaRetorna {
+  from {
+    opacity: .3;
+    transform: scale(.94);
+  }
+}
+
+/* Depois das regras de cada transição: mesma especificidade, vence a
+   última. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-uf-transicao]::view-transition-old(uf-tela) {
+    animation: abaSome var(--uf-motion-reduzido) linear both;
+  }
+
+  html[data-uf-transicao]::view-transition-new(uf-tela) {
+    animation: abaSurge var(--uf-motion-reduzido) linear both;
+  }
+}
+
 .mainContent[data-uni-chat="true"] {
   overflow: hidden;
   padding-bottom: 0;
@@ -1093,10 +1209,6 @@
 .uniButton:hover {
   filter: brightness(1.08);
   transform: translateY(-2px);
-}
-
-.uniButton:active {
-  transform: scale(.985);
 }
 
 .uniButton:disabled {

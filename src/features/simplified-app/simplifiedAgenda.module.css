@@ -221,10 +221,6 @@
   height: 22px;
 }
 
-.addButton:active {
-  transform: scale(.96);
-}
-
 .stateMessage {
   margin: 0;
   color: var(--uf-app-text-3);

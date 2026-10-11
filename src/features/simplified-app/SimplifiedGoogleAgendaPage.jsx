@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
@@ -24,6 +24,7 @@ import { PhGoogleLogoIcon, PhXIcon } from './SimplifiedIcons.jsx';
 import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedGoogleAgenda.module.css';
 
@@ -51,7 +52,7 @@ function AvisoDispensavel({ aviso, onDismiss }) {
  * link foi aberto por outra conta, nada é conectado e a tela avisa.
  */
 function SimplifiedGoogleAgendaPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { user, workspace, isLoading: isSessionLoading } = useSession();
   const workspaceId = workspace?.id;
   const [searchParams, setSearchParams] = useSearchParams();

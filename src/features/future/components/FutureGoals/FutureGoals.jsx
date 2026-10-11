@@ -25,7 +25,7 @@ export default function FutureGoals({
         {hasData ? (
           <Card padding="md" className={styles.emptyCard}>
             <p className={styles.emptyText}>Nenhuma meta ativa para projetar.</p>
-            <p className={styles.emptyHint}>Crie metas em Objetivos para ver a projeção aqui.</p>
+            <p className={styles.emptyHint}>Crie uma meta para ver a projeção aqui.</p>
           </Card>
         ) : (
           <Card padding="md" className={styles.emptyCard}>

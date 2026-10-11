@@ -108,7 +108,7 @@ function ReportsPage() {
                 </div>
 
                 <div className={styles.indicatorItem}>
-                  <span>Progresso dos objetivos</span>
+                  <span>Progresso das metas</span>
                   <strong>{Math.round(snapshot.goalsProgress.averageProgress)}%</strong>
                   <Badge variant="primary" size="sm">
                     {snapshot.goalsProgress.activeGoalsCount}{' '}

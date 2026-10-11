@@ -5,7 +5,7 @@ import { MORE_MENU_ROUTES } from './shellRoutes.js';
 
 test('menu Mais possui todos os itens solicitados', () => {
   assert.deepEqual(MORE_MENU_ROUTES.map(({ label }) => label), [
-    'Perfil', 'Configurações', 'Segurança', 'Objetivos',
+    'Perfil', 'Configurações', 'Segurança', 'Metas',
     'Categorias', 'Notificações', 'Suporte', 'Sair',
   ]);
 });

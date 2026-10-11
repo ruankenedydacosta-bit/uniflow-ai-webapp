@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import {
   CONVERSATION_STYLES,
@@ -7,6 +6,7 @@ import {
 } from '../uni-llm/conversationStyle.js';
 import { VOICE_PROVIDER_IDS } from '../uni-voice-tts/voiceProviderRegistry.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedVoice.module.css';
 
 const STYLE_OPTIONS = Object.freeze([
@@ -37,7 +37,7 @@ function BackIcon() {
 }
 
 function SimplifiedVoicePage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { profile, updateVoicePreferences } = useSession();
   const activeStyle = resolveConversationStyle(profile?.conversation_style);
   const [selectedStyle, setSelectedStyle] = useState(activeStyle);

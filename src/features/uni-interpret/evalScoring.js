@@ -83,6 +83,8 @@ export function resumirAvaliacao(vereditos) {
 }
 
 const INTENT_DO_INTERPRETADOR = {
+  saldo: 'saldo',
+  meta: 'meta',
   consulta: 'consulta',
   agenda: 'agenda',
   conversa: 'conversa',

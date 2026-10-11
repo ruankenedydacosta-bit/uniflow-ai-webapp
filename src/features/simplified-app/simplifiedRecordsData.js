@@ -213,3 +213,9 @@ export function formatRelativeTransactionDate(value, referenceDate = new Date())
     month: 'short',
   }).format(transactionDate);
 }
+
+// O aviso fica o tempo de ler: 1,5 s de reação mais 50 ms por caractere,
+// entre 4 e 15 s. O X dispensa antes.
+export function transactionNoticeDuration(message) {
+  return Math.min(15000, Math.max(4000, 1500 + message.length * 50));
+}

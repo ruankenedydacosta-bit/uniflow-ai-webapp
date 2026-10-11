@@ -51,7 +51,8 @@
   cursor: pointer;
 }
 
-.retry:active {
+/* No app simplificado a escala vem do toque com mola (#143). */
+:global(body:not([data-simplified-app-mounted])) .retry:active {
   transform: scale(0.96);
 }
 

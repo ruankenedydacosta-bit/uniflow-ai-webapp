@@ -97,8 +97,9 @@
   cursor: default;
 }
 
-.sendBtn:not(:disabled):active,
-.voiceBtn:active {
+/* No app simplificado a escala vem do toque com mola (#143). */
+:global(body:not([data-simplified-app-mounted])) .sendBtn:not(:disabled):active,
+:global(body:not([data-simplified-app-mounted])) .voiceBtn:active {
   transform: scale(.94);
 }
 

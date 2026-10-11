@@ -76,8 +76,8 @@ function buildNextAction({ signals, onboardingData, hasTransactions, goals, work
   const primarySignal = signals[0];
 
   if (!primarySignal || primarySignal.id === 'building-history') return fallbackAction;
-  if (primarySignal.href === '/objetivos') {
-    return { title: 'Revisar o progresso da meta', cta: 'Ver objetivos', href: '/objetivos' };
+  if (primarySignal.href === '/metas') {
+    return { title: 'Revisar o progresso da meta', cta: 'Ver metas', href: '/metas' };
   }
 
   return {

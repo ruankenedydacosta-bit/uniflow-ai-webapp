@@ -10,7 +10,11 @@
 // contas vão no prompt com apelidos curtos (c1, c2, k1...) e a validação
 // traduz o apelido para o registro real, descartando apelido inventado.
 
-export const INTENTS = Object.freeze(['lancamento', 'consulta', 'agenda', 'correcao', 'conversa', 'nao_entendi']);
+// saldo e meta não levam operação: o app público não ajusta saldo nem cria
+// objetivo pela conversa, só responde (#80).
+export const INTENTS = Object.freeze([
+  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'conversa', 'nao_entendi',
+]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 
 // Tipo da operação → category_type da tabela categories.

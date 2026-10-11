@@ -83,6 +83,6 @@ test('próxima ação reutiliza a regra de onboarding quando não há alerta', (
     workspaceBalance: null,
   });
 
-  assert.equal(snapshot.nextAction.href, '/objetivos');
+  assert.equal(snapshot.nextAction.href, '/metas');
   assert.match(snapshot.nextAction.title, /reserva/i);
 });

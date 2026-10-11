@@ -359,6 +359,42 @@
   --uf-ease-accelerate: cubic-bezier(.4, 0, 1, 1);
   --uf-ease-smooth:     cubic-bezier(.22, 1, .36, 1); /* "Hover Smooth" oficial */
 
+  /* Movimento do app (épico #148, direção 23b Salto do redesign).
+     Durações por momento, curvas e molas. Cada mola é uma simulação de
+     massa 1 (rigidez / amortecimento) amostrada em linear(); a duração
+     dela é o tempo até assentar e vai sempre junto da curva. */
+  --uf-motion-toque:     120ms; /* pressionar card ou botão */
+  --uf-motion-saida:     160ms; /* o que sai de cena */
+  --uf-motion-entrada:   200ms; /* opacidade do que entra; o deslocamento segue a mola */
+  --uf-motion-navegar:   380ms;
+  --uf-motion-tela:      220ms; /* tela que sai ao voltar e opacidade da que abre */
+  --uf-motion-contar:    800ms; /* números e anéis */
+  --uf-motion-reduzido:  150ms; /* fade único com Reduzir movimento */
+  --uf-motion-sequencia: 45ms;  /* intervalo entre blocos que entram em sequência */
+  --uf-motion-fundo:     240ms; /* fundo que escurece atrás da folha */
+  --uf-motion-linha:     320ms; /* linha nova que abre na lista */
+  --uf-motion-brilho:    1600ms; /* brilho que se apaga na linha nova */
+  --uf-motion-faisca:    900ms; /* voo mais curto de uma faísca */
+  --uf-motion-anel:      720ms; /* anel que se expande ao salvar */
+
+  --uf-motion-curva-saida:   cubic-bezier(.2, .8, .2, 1);
+  --uf-motion-curva-navegar: cubic-bezier(.32, .72, 0, 1);
+  --uf-motion-curva-acelera: cubic-bezier(.4, 0, 1, 1);
+  --uf-motion-curva-faisca:  cubic-bezier(.15, .7, .3, 1);
+
+  /* salto 380/22, rebote de 11%: ícone da aba, check, aviso no topo */
+  --uf-motion-mola-salto: linear(0, 0.037, 0.15, 0.263, 0.388, 0.556, 0.674, 0.779, 0.871, 0.968, 1.022, 1.061, 1.094, 1.105, 1.108, 1.102, 1.093, 1.081, 1.067, 1.049, 1.036, 1.025, 1.012, 1.004, 0.998, 0.993, 0.99, 0.989, 0.988, 0.989, 0.99, 0.991, 0.993, 0.995, 0.996, 0.998, 0.999, 0.999, 1, 1.001, 1);
+  --uf-motion-mola-salto-duracao: 550ms;
+  /* macio 220/24, rebote de 1%: telas e blocos */
+  --uf-motion-mola-macio: linear(0, 0.021, 0.087, 0.153, 0.253, 0.332, 0.436, 0.509, 0.578, 0.662, 0.717, 0.781, 0.822, 0.868, 0.897, 0.921, 0.947, 0.962, 0.978, 0.987, 0.996, 1.001, 1.004, 1.007, 1.008, 1.009, 1.009, 1.009, 1.008, 1.008, 1.007, 1.006, 1.005, 1.005, 1.004, 1.003, 1.003, 1.002, 1.002, 1.001, 1);
+  --uf-motion-mola-macio-duracao: 570ms;
+  /* estalo 600/30, rebote de 8%: devolve o toque ao tamanho normal */
+  --uf-motion-mola-estalo: linear(0, 0.057, 0.129, 0.267, 0.42, 0.521, 0.662, 0.784, 0.853, 0.937, 0.998, 1.028, 1.058, 1.069, 1.077, 1.075, 1.071, 1.062, 1.05, 1.042, 1.031, 1.021, 1.015, 1.008, 1.002, 0.999, 0.997, 0.995, 0.994, 0.994, 0.994, 0.995, 0.996, 0.996, 0.997, 0.998, 0.999, 0.999, 1, 1, 1);
+  --uf-motion-mola-estalo-duracao: 440ms;
+  /* folha 260/22, rebote de 5%: folha que sobe */
+  --uf-motion-mola-folha: linear(0, 0.041, 0.104, 0.213, 0.305, 0.431, 0.523, 0.637, 0.713, 0.802, 0.874, 0.919, 0.965, 0.992, 1.018, 1.031, 1.041, 1.045, 1.047, 1.045, 1.042, 1.036, 1.032, 1.026, 1.022, 1.017, 1.013, 1.009, 1.006, 1.004, 1.002, 1, 0.999, 0.999, 0.998, 0.998, 0.998, 0.998, 0.998, 0.998, 1);
+  --uf-motion-mola-folha-duracao: 590ms;
+
 
   /* ==========================================================================
      10. Z-INDEX — não especificado no brandbook, mas essencial para não

@@ -303,3 +303,13 @@ test('agenda: sem título do modelo, ou de uma função anterior ao contrato, a 
   assert.equal(interpretacaoParaAgenda({ intent: 'agenda', operacoes: [], resposta: '' }), null);
   assert.equal(interpretacaoParaAgenda({ intent: 'consulta', operacoes: [], agenda: { titulo: 'X', valor: null }, resposta: '' }), null);
 });
+
+// #80, etapa 2b: saldo declarado e meta saem das regras fixas.
+test('saldo e meta têm rota própria e nunca viram rascunho nem plano', () => {
+  const comOperacao = [operacao({ tipo: 'entrada', valor: 1250 })];
+  for (const [intent, rota] of [['saldo', ROTAS_INTERPRETACAO.SALDO], ['meta', ROTAS_INTERPRETACAO.META]]) {
+    assert.equal(escolherRotaDaInterpretacao({ intent, operacoes: [], resposta: '' }), rota);
+    assert.equal(interpretacaoParaRascunho({ intent, operacoes: comOperacao, resposta: '' }, 'x'), null);
+    assert.equal(interpretacaoParaPlano({ intent, operacoes: comOperacao, resposta: '' }), null);
+  }
+});

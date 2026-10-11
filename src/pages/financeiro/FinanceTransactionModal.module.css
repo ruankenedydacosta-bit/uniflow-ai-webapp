@@ -144,6 +144,7 @@
   padding: 0 !important;
   background: color-mix(in oklch, var(--uf-app-canvas) 70%, transparent) !important;
   backdrop-filter: blur(6px) !important;
+  animation: fundoEscurece var(--uf-motion-fundo) var(--uf-motion-curva-saida) both;
 }
 
 .transactionDialog[data-presentation="sheet"] {
@@ -157,11 +158,42 @@
   box-shadow:
     inset 0 1px 0 color-mix(in oklch, var(--uf-app-brand-violet) 30%, transparent),
     var(--uf-shadow-lg);
-  animation: sheetUp var(--uf-duration-base) var(--uf-ease-decelerate);
+  animation: folhaSobe var(--uf-motion-mola-folha-duracao) var(--uf-motion-mola-folha) both;
 }
 
-@keyframes sheetUp {
-  from { transform: translateY(24px); opacity: 0; }
+/* Mesma entrada da folha do Modal base (#145): sobe inteira com a mola
+   folha enquanto o fundo escurece. */
+@keyframes folhaSobe {
+  from { transform: translateY(100%); }
+}
+
+@keyframes fundoEscurece {
+  from { opacity: 0; }
+}
+
+/* Rótulo e check do "Salvar …": o check espera escondido no centro do
+   botão e pula quando a movimentação é salva. */
+.transactionDialog[data-presentation="sheet"] .primaryActions > button[type="submit"] {
+  position: relative;
+}
+
+.saveLabel {
+  display: inline-block;
+}
+
+.saveCheck {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.saveCheck svg {
+  width: 18px;
+  height: 18px;
 }
 
 .transactionDialog[data-presentation="sheet"]::before {
@@ -307,8 +339,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .sheetOverlay,
   .transactionDialog[data-presentation="sheet"] {
-    animation: none;
+    animation: fundoEscurece var(--uf-motion-reduzido) linear both;
   }
 }
 

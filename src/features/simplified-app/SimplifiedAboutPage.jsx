@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PRIVACIDADE_ROUTE } from '../legal/politicaDePrivacidade.js';
 import { APP_NAME, APP_TAGLINE } from './appIdentity.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
@@ -21,6 +21,7 @@ import {
 } from './SimplifiedIcons.jsx';
 import { formatUpdateDate } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedAbout.module.css';
 
 function BackIcon() {
@@ -96,7 +97,7 @@ const FUTURE_ITEMS = [
 ];
 
 function SimplifiedAboutPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const [searchParams] = useSearchParams();
   const highlightedUpdateId = searchParams.get('novidade');
 

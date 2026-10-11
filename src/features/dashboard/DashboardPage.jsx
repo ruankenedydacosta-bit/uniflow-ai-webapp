@@ -19,7 +19,7 @@ import styles from './DashboardPage.module.css';
 const DASHBOARD_SHORTCUTS = Object.freeze([
   { label: 'Falar com a Uni', path: '/uni-ai', variant: 'primary' },
   { label: 'Ver Financeiro', path: '/financeiro', variant: 'outline' },
-  { label: 'Ver Objetivos', path: '/objetivos', variant: 'outline' },
+  { label: 'Ver Metas', path: '/metas', variant: 'outline' },
   { label: 'Ver Visão de Futuro', path: '/futuro', variant: 'outline' },
 ]);
 

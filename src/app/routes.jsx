@@ -432,11 +432,25 @@ export const appRoutes = [
     element: <OpenFinancePage />,
   },
   {
-    path: '/objetivos',
+    path: SIMPLIFIED_ROUTES.METAS,
     moduleId: MODULE_IDS.OBJETIVOS,
-    label: 'Objetivos',
-    title: 'Objetivos',
+    label: 'Metas',
+    title: 'Metas',
+    simplified: true,
     element: <ObjetivosPage />,
+  },
+  // Rotas antigas de Metas: mantêm links e bookmarks anteriores funcionando.
+  // `simplified` é necessário: só rotas simplificadas renderizam, o resto
+  // cai na Home antes de o redirect rodar.
+  {
+    path: '/objetivos',
+    simplified: true,
+    element: <Navigate to={SIMPLIFIED_ROUTES.METAS} replace />,
+  },
+  {
+    path: '/metas',
+    simplified: true,
+    element: <Navigate to={SIMPLIFIED_ROUTES.METAS} replace />,
   },
   {
     path: '/futuro',

@@ -23,8 +23,8 @@ test('encontra o documento de objetivos para "onde encontro meus objetivos"', ()
   const { results } = retrieveProductKnowledge('onde encontro meus objetivos');
   const entry = results.find((r) => r.id === 'goals');
   assert.ok(entry);
-  assert.equal(entry.status, KNOWLEDGE_STATUS.FUTURE);
-  assert.match(entry.content, /não estão expostos/);
+  assert.equal(entry.status, KNOWLEDGE_STATUS.AVAILABLE);
+  assert.match(entry.content, /Mais → Produto → Metas/);
 });
 
 for (const question of ['Como faço para agendar uma reunião?', 'Onde fica a Agenda?']) {
