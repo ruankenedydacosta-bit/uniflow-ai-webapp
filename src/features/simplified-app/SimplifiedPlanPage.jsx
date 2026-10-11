@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { useTransactions } from '../../hooks/index.js';
 import { cancelSubscription, changePlan, getSubscription } from '../../services/billingService.js';
@@ -43,6 +42,7 @@ import {
   XCircleIcon,
 } from './SimplifiedIcons.jsx';
 import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedPlan.module.css';
 
 function BackIcon() {
@@ -63,7 +63,7 @@ function todayISO() {
 }
 
 function SimplifiedPlanPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
 

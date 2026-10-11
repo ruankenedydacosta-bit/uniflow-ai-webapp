@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedAccount.module.css';
 
 /**
@@ -10,7 +10,7 @@ import styles from './simplifiedAccount.module.css';
  * futuras, usando as respectivas referências visuais aprovadas.
  */
 function SimplifiedAccountSubpagePlaceholder({ title, description }) {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
 
   function handleBack() {
     navigate(SIMPLIFIED_ROUTES.ACCOUNT);

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import IconBox from '../../components/ui/IconBox/index.js';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import { cx } from '../../utils/cx.js';
@@ -20,6 +19,7 @@ import {
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import { useSimplifiedNotifications } from './simplifiedNotificationsContext.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedNotifications.module.css';
 
@@ -48,7 +48,7 @@ function resolveTypePresentation(type) {
  * do sino (gesto de arrastar), que o handoff não traz nesta tela.
  */
 function SimplifiedNotificationsPage() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const {
     notifications, unreadCount, isLoading, error, refresh, markAsRead, markAllAsRead,
   } = useSimplifiedNotifications();

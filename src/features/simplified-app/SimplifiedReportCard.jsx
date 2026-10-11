@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { useAgenda } from '../../hooks/useAgenda.js';
 import { buildMonthRange } from './simplifiedAgendaCalendar.js';
 import { DocumentIcon } from './SimplifiedIcons.jsx';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './SimplifiedReportCard.module.css';
 
 function pluralize(count, singular, plural) {
@@ -21,7 +21,7 @@ function pluralize(count, singular, plural) {
  * hoje uma consulta "só contagem" mais leve que listAgendaItems.
  */
 function SimplifiedReportCard({ transactionCount = 0 }) {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
 

@@ -1,9 +1,9 @@
-import { useNavigate } from 'react-router-dom';
 import IconBox from '../../components/ui/IconBox/index.js';
 import { cx } from '../../utils/cx.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { useSimplifiedNotifications } from './simplifiedNotificationsContext.js';
 import { PhBellIcon, PhCaretRightIcon } from './SimplifiedIcons.jsx';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedAccount.module.css';
 
@@ -14,7 +14,7 @@ import styles from './simplifiedAccount.module.css';
  * no mesmo aviso usado pelo painel do sino.
  */
 function SimplifiedAccountNotificationsRow() {
-  const navigate = useNavigate();
+  const navigate = useNavegar();
   // Estado publicado pelo SimplifiedAppShell (uma só busca da lista).
   const { unreadCount } = useSimplifiedNotifications();
 
