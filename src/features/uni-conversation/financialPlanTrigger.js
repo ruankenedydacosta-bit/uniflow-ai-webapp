@@ -135,16 +135,16 @@ export function looksLikeUnclassifiedFinancialStatement(text) {
 }
 
 // Sem o uni-interpret (#80), o parser de uma operação não separa várias
-// operações nem entende parcela e recorrência. Devolve o motivo para a Uni
+// operações nem entende parcela. Devolve o motivo para a Uni
 // pedir de outro jeito em vez de abrir um card errado; null quando a frase
 // cabe numa operação só.
-const PARCELA_OU_RECORRENCIA_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]|\b\d+\s+parcelas\b|todo\s+m[eê]s|toda\s+semana|mensalmente/i;
+const PARCELAMENTO_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]|\b\d+\s+parcelas\b/i;
 
 export function motivoParaNaoLerSemModelo(text) {
   if (typeof text !== 'string' || !text.trim() || isAgendaExpression(text)) return null;
-  // Sem valor, é pergunta ("quanto gasto todo mês?"): segue para as regras.
+  // Sem valor, é pergunta ("quanto parcelei?"): segue para as regras.
   if (!hasAnyAmountMention(text)) return null;
-  if (PARCELA_OU_RECORRENCIA_RE.test(text)) return 'parcela_ou_recorrencia';
+  if (PARCELAMENTO_RE.test(text)) return 'parcela';
   if (countMoneyMentions(text) >= 2) return 'varias';
   return null;
 }

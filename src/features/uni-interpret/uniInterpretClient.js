@@ -138,9 +138,9 @@ export function interpretacaoParaOverrides(interpretacao, { transactionType } = 
   if (operacoes.length !== 1) return null;
   const [operacao] = operacoes;
   if (TRANSACAO_POR_TIPO[operacao?.tipo] !== transactionType || transactionType === 'transfer') return null;
-  // Parcela e recorrência não cabem no card de uma operação: o card não
-  // pode gravar como compra avulsa.
-  if (operacao.parcelas || operacao.recorrente === true) return null;
+  // Parcela não cabe no card de uma operação: o card não pode gravar o
+  // total como compra avulsa.
+  if (operacao.parcelas) return null;
 
   const overrides = {};
   if (Number(operacao.valor) > 0) overrides.amount = Number(operacao.valor);

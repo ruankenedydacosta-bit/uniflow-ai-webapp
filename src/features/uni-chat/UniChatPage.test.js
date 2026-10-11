@@ -3955,3 +3955,9 @@ test('#80: sem o modelo, várias operações ou parcela pedem outro jeito em vez
   const { body } = extractFunctionBody(page, 'function runRuleBasedFlow() {');
   assert.match(body, /const motivo = motivoParaNaoLerSemModelo\(functionalText\);\s*if \(motivo\) \{\s*createAssistantResponse\(TEXTO_SEM_MODELO\[motivo\]\);\s*return;\s*\}/);
 });
+
+test('#80: recorrência numa operação só abre o card do mês e avisa que a repetição não é automática', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
+  assert.match(body, /publishConversationResult\(phrased\);\s*if \(interpretacao\.operacoes\[0\]\?\.recorrente === true\) \{\s*createAssistantResponse\(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO/);
+});

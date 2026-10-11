@@ -19,8 +19,12 @@ export const ROTAS_INTERPRETACAO = Object.freeze({
 
 const INTENT_POR_TIPO = Object.freeze({ saida: 'register_expense', entrada: 'register_income' });
 
+// Recorrência numa operação só vira o card deste lançamento: quem diz "pago
+// 120 de academia todo mês" quase sempre quer lançar o mês, e um falso
+// positivo do modelo ("mensalidade do sistema") não pode bloquear o
+// registro. Parcela não: gravar o total como compra avulsa seria errado.
 function ehLancamentoSimples(operacao) {
-  return Object.hasOwn(INTENT_POR_TIPO, operacao?.tipo) && !operacao.parcelas && operacao.recorrente !== true;
+  return Object.hasOwn(INTENT_POR_TIPO, operacao?.tipo) && !operacao.parcelas;
 }
 
 // null quando não há interpretação utilizável: o chamador segue com as
@@ -33,8 +37,8 @@ export function escolherRotaDaInterpretacao(interpretacao) {
     case 'lancamento':
     case 'correcao':
       // Sem rascunho na tela, "correcao" é um lançamento novo. Mais de uma
-      // operação, transferência, parcela ou recorrência vão para o plano,
-      // que sabe revisar várias de uma vez.
+      // operação, transferência ou parcela vão para o plano, que sabe
+      // revisar várias de uma vez.
       if (operacoes.length === 1 && ehLancamentoSimples(operacoes[0])) {
         return ROTAS_INTERPRETACAO.LANCAMENTO;
       }

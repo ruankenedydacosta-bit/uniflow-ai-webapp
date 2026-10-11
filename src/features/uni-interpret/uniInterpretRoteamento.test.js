@@ -173,14 +173,16 @@ const CATEGORIAS_PLANO = [
   { id: 'cat-trf', name: 'Transferência', category_type: 'transfer' },
 ];
 
-test('parcela ou recorrência numa operação única vão para o plano', () => {
+test('parcela numa operação única vai para o plano; recorrência abre o card deste lançamento', () => {
   assert.equal(
     escolherRotaDaInterpretacao({ intent: 'lancamento', operacoes: [operacao({ parcelas: 12 })], resposta: '' }),
     ROTAS_INTERPRETACAO.PLANO,
   );
+  // Falso positivo de recorrência ("mensalidade do sistema 89") não pode
+  // bloquear o registro do mês.
   assert.equal(
     escolherRotaDaInterpretacao({ intent: 'lancamento', operacoes: [operacao({ recorrente: true })], resposta: '' }),
-    ROTAS_INTERPRETACAO.PLANO,
+    ROTAS_INTERPRETACAO.LANCAMENTO,
   );
 });
 

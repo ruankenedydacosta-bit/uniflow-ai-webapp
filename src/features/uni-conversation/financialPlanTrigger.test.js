@@ -120,12 +120,13 @@ test('looksLikeUnclassifiedFinancialStatement NÃO dispara para consulta genéri
 
 // #80: sem o uni-interpret, o parser de uma operação leria só a primeira de
 // várias, ou "12x" como compra avulsa. A Uni pede de outro jeito.
-test('motivoParaNaoLerSemModelo: várias operações, parcela e recorrência com valor', () => {
+test('motivoParaNaoLerSemModelo: várias operações e parcela com valor', () => {
   assert.equal(motivoParaNaoLerSemModelo('paguei 40 reais de táxi e 25 reais de lanche'), 'varias');
-  assert.equal(motivoParaNaoLerSemModelo('Comprei uma geladeira de 3.600 em 12x'), 'parcela_ou_recorrencia');
-  assert.equal(motivoParaNaoLerSemModelo('pago 120 reais de academia todo mês'), 'parcela_ou_recorrencia');
+  assert.equal(motivoParaNaoLerSemModelo('Comprei uma geladeira de 3.600 em 12x'), 'parcela');
+  // Recorrência numa operação só: o parser lança o valor do mês.
+  assert.equal(motivoParaNaoLerSemModelo('pago 120 reais de academia todo mês'), null);
   assert.equal(motivoParaNaoLerSemModelo('gastei 50 reais no mercado'), null);
   // Sem valor é pergunta e segue para as regras.
-  assert.equal(motivoParaNaoLerSemModelo('quanto gasto todo mês com mercado?'), null);
+  assert.equal(motivoParaNaoLerSemModelo('quanto falta pagar do que comprei parcelado?'), null);
   assert.equal(motivoParaNaoLerSemModelo(''), null);
 });

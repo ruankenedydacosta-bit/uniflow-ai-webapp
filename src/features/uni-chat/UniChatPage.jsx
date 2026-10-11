@@ -291,8 +291,9 @@ const ACTION_STATEMENT_INTENTS = new Set([
 ]);
 const TEXTO_SEM_MODELO = Object.freeze({
   varias: 'Não consegui separar esses lançamentos agora. Diga um de cada vez, com o valor e do que se trata.',
-  parcela_ou_recorrencia: 'Compra parcelada e valor que se repete ainda não são registrados pela conversa. Lance pelo Financeiro.',
+  parcela: 'Compra parcelada ainda não é registrada pela conversa. Lance pelo Financeiro.',
 });
+const TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO = 'Esse rascunho vale só para este lançamento. A Uni ainda não repete lançamentos sozinha.';
 const INTENTS_FORA_DO_INTERPRETADOR = new Set([
   'set_balance',
   'ambiguous_balance_or_income',
@@ -4347,6 +4348,9 @@ export default function UniChatPage({ variant = 'full' }) {
         }
         setIsTyping(false);
         publishConversationResult(phrased);
+        if (interpretacao.operacoes[0]?.recorrente === true) {
+          createAssistantResponse(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO, { deduplicateNarration: false });
+        }
         return true;
       }
       case ROTAS_INTERPRETACAO.PLANO:
