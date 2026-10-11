@@ -4303,6 +4303,19 @@ export default function UniChatPage({ variant = 'full' }) {
     });
   }
 
+  // Resposta pública para saldo e resumo: o app mostra entradas e saídas, e
+  // explica que o saldo saiu quando foi isso que a pessoa pediu.
+  function responderResumoSemSaldo(texto, comAvisoDeSaldo) {
+    createAssistantResponse(
+      buildPublicMovementSummaryResponse({
+        snapshot: financialContext.snapshot,
+        text: texto,
+        includeRetirementIntro: comAvisoDeSaldo,
+      }).text,
+      { deduplicateNarration: false },
+    );
+  }
+
   // #80: com a IA disponível, o uni-interpret decide o que a frase nova pede.
   // As regras fixas só rodam quando ele não devolve interpretação (resolve
   // false). Pedido de dinheiro nunca chega ao chat geral por aqui.
@@ -4351,22 +4364,16 @@ export default function UniChatPage({ variant = 'full' }) {
         setIsTyping(false);
         iniciarPlanoFinanceiro(interpretacaoParaPlano(interpretacao), text);
         return true;
-      // Saldo saiu do app público: a frase que a regex de saldo não pegou
-      // recebe a mesma resposta, e nunca vira entrada.
+      // Saldo saiu do app público: a frase que a trava por regex do sendText
+      // não pegou recebe a mesma resposta, e nunca vira entrada.
       case ROTAS_INTERPRETACAO.SALDO:
         setIsTyping(false);
-        createAssistantResponse(
-          buildPublicMovementSummaryResponse({
-            snapshot: financialContext.snapshot,
-            text,
-            includeRetirementIntro: true,
-          }).text,
-          { deduplicateNarration: false },
-        );
+        responderResumoSemSaldo(text, true);
         return true;
       case ROTAS_INTERPRETACAO.META:
         setIsTyping(false);
-        createAssistantResponse(TEXTO_META_SEM_CRIACAO);
+        // Sem deduplicar: pedida duas vezes por voz, a resposta é falada de novo.
+        createAssistantResponse(TEXTO_META_SEM_CRIACAO, { deduplicateNarration: false });
         return true;
       case ROTAS_INTERPRETACAO.CONSULTA:
         setIsTyping(false);
@@ -4499,14 +4506,7 @@ export default function UniChatPage({ variant = 'full' }) {
     if (isRetiredBalanceRequest || isPublicFinancialSummary) {
       if (hasPendingConversation) abandonStalePendingState();
       syncMessageToSupabase(userMsg);
-      createAssistantResponse(
-        buildPublicMovementSummaryResponse({
-          snapshot: financialContext.snapshot,
-          text: functionalText,
-          includeRetirementIntro: isRetiredBalanceRequest,
-        }).text,
-        { deduplicateNarration: false },
-      );
+      responderResumoSemSaldo(functionalText, isRetiredBalanceRequest);
       return;
     }
     // FASE 20.1 — Tool Calling: novo turno zera a deduplicação local (o

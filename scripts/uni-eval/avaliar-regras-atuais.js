@@ -27,7 +27,7 @@ const INTENT_PARA_GRUPO = {
   set_balance: 'saldo',
   ambiguous_balance_or_income: 'saldo',
   create_goal: 'meta',
-  check_balance: 'consulta',
+  check_balance: 'saldo',
   forecast: 'consulta',
   question: 'consulta',
   conversation_common: 'conversa',

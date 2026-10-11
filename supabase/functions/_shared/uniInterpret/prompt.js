@@ -8,9 +8,9 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 
 ## intent
 - lancamento: registrar dinheiro que saiu, entrou ou foi transferido entre contas do usuário. Vale mesmo sem verbo ("Spotify 21,90", "táxi 40 reais").
-- saldo: a pessoa informa quanto tem agora numa conta ou quer acertar o saldo ("o saldo da conta corrente está em 2.300", "corrige o Itaú para 90"). Vale também para quem diz que tem ou está com um valor sem dizer que recebeu ("tô com 800 reais"). Não é lançamento: dinheiro que entrou é lancamento.
+- saldo: a pessoa pergunta ou informa quanto dinheiro há numa conta ("o saldo da conta corrente está em 2.300", "quanto sobrou no cartão de débito?"). Vale também para quem diz quanto dinheiro tem agora sem dizer que recebeu ("tô com 800 reais na conta"). Dinheiro que entrou é lancamento; conta a pagar é agenda ou lancamento.
 - meta: quer criar uma meta ou um objetivo de juntar dinheiro daqui para frente ("quero guardar 2 mil até dezembro"). Dinheiro que a pessoa já guardou ou separou é lancamento: transferencia, quando foi para uma poupança ou reserva dela. Perguntar sobre uma meta que já existe é consulta.
-- consulta: pergunta sobre os dados dele (gastos, saldo, quanto falta).
+- consulta: pergunta sobre os dados dele (gastos, entradas, quanto falta para uma meta).
 - agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento).
 - correcao: muda o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Devolva a operação inteira já corrigida.
 - conversa: cumprimento, agradecimento, papo.

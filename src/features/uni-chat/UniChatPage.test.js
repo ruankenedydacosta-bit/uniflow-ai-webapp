@@ -3941,10 +3941,12 @@ test('#80: saldo responde que o app não usa mais saldo e meta responde que aind
   const page = await source('UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
   // A mesma resposta da trava de saldo do sendText, sem card de ajuste.
-  assert.match(body, /case ROTAS_INTERPRETACAO\.SALDO:\s*setIsTyping\(false\);\s*createAssistantResponse\(\s*buildPublicMovementSummaryResponse\(\{[\s\S]*?includeRetirementIntro: true,[\s\S]*?return true;/);
+  assert.match(body, /case ROTAS_INTERPRETACAO\.SALDO:\s*setIsTyping\(false\);\s*responderResumoSemSaldo\(text, true\);\s*return true;/);
+  const { body: sendText } = extractFunctionBody(page, 'function sendText(text, metadata) {');
+  assert.match(sendText, /responderResumoSemSaldo\(functionalText, isRetiredBalanceRequest\);/);
   const saldo = body.slice(body.indexOf('case ROTAS_INTERPRETACAO.SALDO:'), body.indexOf('case ROTAS_INTERPRETACAO.META:'));
   assert.doesNotMatch(saldo, /startFromParsed/);
-  assert.match(body, /case ROTAS_INTERPRETACAO\.META:\s*setIsTyping\(false\);\s*createAssistantResponse\(TEXTO_META_SEM_CRIACAO\);\s*return true;/);
+  assert.match(body, /case ROTAS_INTERPRETACAO\.META:\s*setIsTyping\(false\);[\s\S]*?createAssistantResponse\(TEXTO_META_SEM_CRIACAO, \{ deduplicateNarration: false \}\);\s*return true;/);
   // Sem o modelo, a meta recebe a mesma resposta pelas regras.
   assert.match(page, /result\.parsed\?\.intent === 'create_goal'\) \{\s*createAssistantResponse\(TEXTO_META_SEM_CRIACAO\);/);
 });

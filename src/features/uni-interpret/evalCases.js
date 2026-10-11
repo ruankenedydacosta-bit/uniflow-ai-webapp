@@ -351,7 +351,7 @@ export const CASOS = [
   {
     id: 'consulta-saldo',
     frase: 'Qual é o meu saldo?',
-    esperado: { intent: 'consulta' },
+    esperado: { intent: 'saldo' },
   },
   {
     id: 'agenda-dentista',
@@ -949,7 +949,29 @@ export const CASOS = [
   {
     id: 'consulta-saldo-conta',
     frase: 'quanto tenho de saldo no Inter?',
-    esperado: { intent: 'consulta' },
+    esperado: { intent: 'saldo' },
+  },
+  // Frases de saldo que a trava por regex do chat não reconhece: só o
+  // modelo as separa de um lançamento.
+  {
+    id: 'saldo-sem-palavra-nubank',
+    frase: 'o Nubank está com 1.200',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-sem-palavra-pergunta',
+    frase: 'qual o valor que está na minha conta do Inter?',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'saldo-sem-palavra-poupanca',
+    frase: 'na poupança tem 3 mil',
+    esperado: { intent: 'saldo' },
+  },
+  {
+    id: 'to-com-conta-a-pagar',
+    frase: 'to com 300 de conta de luz pra pagar sexta',
+    esperado: { intent: 'agenda' },
   },
   {
     id: 'meta-juntar',
