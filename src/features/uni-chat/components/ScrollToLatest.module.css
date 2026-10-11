@@ -20,7 +20,8 @@
   white-space: nowrap;
 }
 
-.btn:active {
+/* No app simplificado a escala vem do toque com mola (#143). */
+:global(body:not([data-simplified-app-mounted])) .btn:active {
   transform: translateX(-50%) scale(0.96);
 }
 

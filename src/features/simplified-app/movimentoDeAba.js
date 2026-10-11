@@ -29,9 +29,10 @@ const SELETOR_DO_TOQUE = 'button:not(:disabled), a[href], [role="button"]:not([a
 
 // Atraso da sequência depois da troca de aba (protótipo do Salto).
 const INICIO_DA_SEQUENCIA_MS = 90;
-// Tempo máximo que a transição espera a tela nova montar antes de animar
-// o que houver; evita congelar a tela se a rota demorar.
-const ESPERA_MAXIMA_DA_ROTA_MS = 500;
+// Tempo máximo que a transição espera a tela nova montar. Rota que demora
+// mais (Hoje é lazy e pode não ter baixado) troca sem a transição, para não
+// congelar a tela nem animar a tela antiga entrando de novo.
+const ESPERA_MAXIMA_DA_ROTA_MS = 300;
 
 export function abaDaRota(pathname) {
   return ABAS.find((aba) => pathname === aba.path || pathname.startsWith(`${aba.path}/`)) ?? null;
@@ -46,10 +47,7 @@ export function sentidoDaAba(idDe, idPara) {
 function animarIconeDaAba(raiz) {
   const icone = raiz?.querySelector('nav [aria-current="page"] [data-movimento-icone]');
   const mola = lerMola('salto');
-  animar(icone, [
-    { scale: '.55', translate: '0 4px' },
-    { scale: '1', translate: '0 0' },
-  ], { duracao: mola.duracao, curva: mola.curva });
+  animar(icone, [{ scale: '.55', translate: '0 4px' }], { duracao: mola.duracao, curva: mola.curva });
 }
 
 function animarBlocosDaTela(conteudo) {
@@ -58,18 +56,23 @@ function animarBlocosDaTela(conteudo) {
   // Bloco sem altura (título só para leitor de tela) não ocupa lugar na fila.
   const blocos = [...tela.children].filter((bloco) => bloco.offsetHeight > 1);
   const mola = lerMola('macio');
+  const duracaoDaOpacidade = lerDuracao('entrada');
+  const curvaDaOpacidade = lerCurva('saida');
   const atrasos = atrasosDaSequencia(blocos.length, {
     inicio: INICIO_DA_SEQUENCIA_MS,
     intervalo: lerDuracao('sequencia'),
   });
+  // Só o quadro inicial: cada bloco termina na opacidade e escala que o
+  // CSS dele já define (card esmaecido continua esmaecido).
   atrasos.forEach((atraso, indice) => {
-    animar(blocos[indice], [
-      { translate: '0 20px', scale: '.98' },
-      { translate: '0 0', scale: '1' },
-    ], { duracao: mola.duracao, curva: mola.curva, atraso });
-    animar(blocos[indice], [{ opacity: 0 }, { opacity: 1 }], {
-      duracao: lerDuracao('entrada'),
-      curva: lerCurva('saida'),
+    animar(blocos[indice], [{ translate: '0 20px', scale: '.98' }], {
+      duracao: mola.duracao,
+      curva: mola.curva,
+      atraso,
+    });
+    animar(blocos[indice], [{ opacity: 0 }], {
+      duracao: duracaoDaOpacidade,
+      curva: curvaDaOpacidade,
       atraso,
     });
   });
@@ -80,6 +83,7 @@ export function useMovimentoDeAba({ shellRef, mainContentRef }) {
   const navigate = useNavigate();
   const abaAnteriorRef = useRef(abaDaRota(location.pathname));
   const rotaMontadaRef = useRef(null);
+  const transicaoRef = useRef(null);
 
   useLayoutEffect(() => {
     rotaMontadaRef.current?.();
@@ -111,13 +115,25 @@ export function useMovimentoDeAba({ shellRef, mainContentRef }) {
     raiz.dataset.ufTransicao = 'aba';
     raiz.style.setProperty('--uf-aba-sentido', String(sentidoDaAba(abaAtual.id, item.id)));
 
+    // Toque em outra aba antes da anterior montar: libera a espera dela.
+    rotaMontadaRef.current?.();
+
     const transicao = document.startViewTransition(() => new Promise((resolver) => {
       rotaMontadaRef.current = resolver;
       navigate(item.path);
-      window.setTimeout(resolver, ESPERA_MAXIMA_DA_ROTA_MS);
+      window.setTimeout(() => {
+        if (rotaMontadaRef.current !== resolver) return;
+        rotaMontadaRef.current = null;
+        transicao.skipTransition();
+        resolver();
+      }, ESPERA_MAXIMA_DA_ROTA_MS);
     }));
+    transicaoRef.current = transicao;
     transicao.ready.catch(() => {});
     transicao.finished.catch(() => {}).finally(() => {
+      // Uma transição pulada por outra não apaga o estado da que a substituiu.
+      if (transicaoRef.current !== transicao) return;
+      transicaoRef.current = null;
       delete raiz.dataset.ufTransicao;
       raiz.style.removeProperty('--uf-aba-sentido');
     });
@@ -126,9 +142,19 @@ export function useMovimentoDeAba({ shellRef, mainContentRef }) {
   return { irParaAba };
 }
 
+// Escala que o CSS já dá ao elemento. Escala diferente por eixo fica sem
+// toque, para não deformar.
+function escalaDoCss(elemento) {
+  const valor = getComputedStyle(elemento).scale;
+  if (!valor || valor === 'none') return 1;
+  const [x, y = x] = valor.split(' ').map(Number);
+  return x === y && Number.isFinite(x) ? x : null;
+}
+
 // Toque: o que é tocável vai a 95% e volta com a mola estalo. Um ouvinte
 // só, no documento, cobre também modais abertos fora do shell. Áreas que
 // ocupam meia tela ou mais (tela de voz, fundo de modal) não encolhem.
+// A volta tem só o quadro inicial: termina na escala que o CSS der na hora.
 export function useToqueComMola() {
   useEffect(() => {
     let pressionado = null;
@@ -138,11 +164,11 @@ export function useToqueComMola() {
       const elemento = pressionado;
       if (!elemento) return;
       pressionado = null;
-      const escalaAtual = Number.parseFloat(getComputedStyle(elemento).scale) || 1;
+      const escalaAtual = getComputedStyle(elemento).scale;
       descida?.cancel();
       descida = null;
       const mola = lerMola('estalo');
-      animar(elemento, [{ scale: String(escalaAtual) }, { scale: '1' }], {
+      animar(elemento, [{ scale: escalaAtual }], {
         duracao: mola.duracao,
         curva: mola.curva,
       });
@@ -153,8 +179,10 @@ export function useToqueComMola() {
       const elemento = evento.target.closest?.(SELETOR_DO_TOQUE);
       if (!elemento || elemento.offsetHeight >= window.innerHeight / 2) return;
       soltar();
+      const escala = escalaDoCss(elemento);
+      if (escala === null) return;
       pressionado = elemento;
-      descida = animar(elemento, [{ scale: '1' }, { scale: '.95' }], {
+      descida = animar(elemento, [{ scale: String(escala) }, { scale: String(escala * 0.95) }], {
         duracao: lerDuracao('toque'),
         curva: lerCurva('saida'),
         preencher: 'forwards',
