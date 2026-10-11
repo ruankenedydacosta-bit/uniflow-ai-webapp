@@ -243,7 +243,7 @@ export async function deleteCategory(workspaceId, categoryId) {
   if (dependencyCount > 0) {
     return createResult(null, {
       code: 'CATEGORY_HAS_DEPENDENCIES',
-      message: 'Esta categoria possui lançamentos vinculados e não pode ser excluída.',
+      message: 'Esta categoria tem lançamentos. Troque a categoria desses lançamentos antes de excluir.',
     });
   }
 

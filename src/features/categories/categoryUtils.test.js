@@ -15,6 +15,8 @@ import {
   categoryAppliesToContext,
   filterCategoriesForContext,
   normalizeWorkspaceContext,
+  canManageCategory,
+  getCategoryErrorMessage,
 } from './categoryUtils.js';
 
 const SAMPLE = [
@@ -175,4 +177,37 @@ test('mapa de backfill só contém valores válidos', () => {
   for (const v of Object.values(DEFAULT_GLOBAL_CATEGORY_APPLIES_TO)) {
     assert.ok(valid.has(v), v);
   }
+});
+
+test('canManageCategory bloqueia categoria do sistema para qualquer papel', () => {
+  const global = { id: 'g', is_system: true, workspace_id: null };
+  assert.equal(canManageCategory(global, { canUpdate: true, canDelete: true, userId: 'u1' }), false);
+});
+
+test('canManageCategory libera owner/admin em qualquer categoria do espaço', () => {
+  const custom = { id: 'c', is_system: false, workspace_id: 'w', created_by: 'outro' };
+  assert.equal(canManageCategory(custom, { canUpdate: true, canDelete: true, userId: 'u1' }), true);
+});
+
+test('canManageCategory libera member só na categoria que ele criou', () => {
+  const role = { canUpdate: true, canDelete: false, userId: 'u1' };
+  assert.equal(canManageCategory({ is_system: false, workspace_id: 'w', created_by: 'u1' }, role), true);
+  assert.equal(canManageCategory({ is_system: false, workspace_id: 'w', created_by: 'u2' }, role), false);
+});
+
+test('canManageCategory bloqueia viewer e papel ainda desconhecido', () => {
+  const custom = { is_system: false, workspace_id: 'w', created_by: 'u1' };
+  assert.equal(canManageCategory(custom, { canUpdate: false, canDelete: false, userId: 'u1' }), false);
+  assert.equal(canManageCategory(custom), false);
+  assert.equal(canManageCategory(null, { canDelete: true }), false);
+});
+
+test('getCategoryErrorMessage nunca mostra erro cru do banco', () => {
+  const fallback = 'Não foi possível salvar a categoria. Tente novamente.';
+  assert.equal(getCategoryErrorMessage(null, fallback), '');
+  assert.match(getCategoryErrorMessage({ code: '23505', message: 'duplicate key value' }, fallback), /Já existe/);
+  assert.match(getCategoryErrorMessage({ code: 'CATEGORY_NOT_FOUND', message: 'nao encontrada' }, fallback), /não existe mais/);
+  assert.equal(getCategoryErrorMessage({ code: '42501', message: 'permission denied' }, fallback), fallback);
+  const dependency = { code: 'CATEGORY_HAS_DEPENDENCIES', message: 'Esta categoria tem lançamentos.' };
+  assert.equal(getCategoryErrorMessage(dependency, fallback), dependency.message);
 });

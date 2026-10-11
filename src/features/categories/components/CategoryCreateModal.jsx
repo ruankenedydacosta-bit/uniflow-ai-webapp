@@ -7,6 +7,7 @@ import { cx } from '../../../utils/cx.js';
 import {
   getCategoryIconSections,
   getDefaultCategoryIconKey,
+  resolveCategoryIconKey,
 } from '../categoryIconCatalog.js';
 import { CategoryIcon } from '../categoryIcons.jsx';
 import { CATEGORY_TYPES, isDuplicateCategoryName } from '../categoryUtils.js';
@@ -24,6 +25,9 @@ const TYPE_OPTIONS = [
  *
  * Tela 22h: folha padrão com o nome, Saída/Entrada e a grade de ícones em
  * cinco colunas, rolando por seção dentro da folha.
+ *
+ * Com `category`, a folha edita essa categoria: nome e ícone mudam, o tipo
+ * fica fixo para não deixar lançamentos já vinculados no tipo errado.
  */
 function CategoryCreateModal({
   open,
@@ -31,6 +35,7 @@ function CategoryCreateModal({
   defaultType,
   categories,
   onCreate,
+  category = null,
   isMutating,
   serverError,
   className,
@@ -46,16 +51,19 @@ function CategoryCreateModal({
     [categoryType],
   );
 
+  const isEditing = Boolean(category);
+
   useEffect(() => {
     if (open) {
+      const initialType = category?.category_type ?? defaultType;
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setName('');
-      setCategoryType(defaultType);
-      setIcon(getDefaultCategoryIconKey(defaultType));
+      setName(category?.name ?? '');
+      setCategoryType(initialType);
+      setIcon(category ? resolveCategoryIconKey(category) : getDefaultCategoryIconKey(initialType));
       setLocalError('');
       iconWasChosenRef.current = false;
     }
-  }, [open, defaultType]);
+  }, [open, defaultType, category]);
 
   function handleClose() {
     if (isMutating) return;
@@ -70,12 +78,16 @@ function CategoryCreateModal({
       setLocalError('Digite um nome para a categoria.');
       return;
     }
-    if (isDuplicateCategoryName(categories, trimmed, categoryType)) {
+    if (isDuplicateCategoryName(categories, trimmed, categoryType, { excludeId: category?.id })) {
       setLocalError('Já existe uma categoria com esse nome neste tipo.');
       return;
     }
     setLocalError('');
-    await onCreate({ name: trimmed, category_type: categoryType, icon });
+    await onCreate(
+      isEditing
+        ? { name: trimmed, icon }
+        : { name: trimmed, category_type: categoryType, icon },
+    );
   }
 
   function handleTypeChange(type) {
@@ -91,8 +103,12 @@ function CategoryCreateModal({
       onClose={handleClose}
       closeOnOverlayClick={!isMutating}
       closeOnEsc={!isMutating}
-      title="Nova categoria"
-      description="Dê um nome simples e escolha se é uma saída ou uma entrada."
+      title={isEditing ? 'Editar categoria' : 'Nova categoria'}
+      description={
+        isEditing
+          ? 'Mude o nome ou o ícone. Os lançamentos desta categoria acompanham a mudança.'
+          : 'Dê um nome simples e escolha se é uma saída ou uma entrada.'
+      }
       size="lg"
       className={cx(styles.categoryCreateDialog, className)}
       bodyClassName={styles.categoryCreateBody}
@@ -110,12 +126,14 @@ function CategoryCreateModal({
           />
         </Field>
 
-        <Segmented
-          label="Tipo da categoria"
-          options={TYPE_OPTIONS}
-          value={categoryType}
-          onChange={handleTypeChange}
-        />
+        {isEditing ? null : (
+          <Segmented
+            label="Tipo da categoria"
+            options={TYPE_OPTIONS}
+            value={categoryType}
+            onChange={handleTypeChange}
+          />
+        )}
 
         <fieldset className={styles.iconFieldset}>
           <legend>Ícone</legend>
@@ -159,7 +177,7 @@ function CategoryCreateModal({
 
         <div className={styles.formActions}>
           <OutlineButton className={styles.submitButton} type="submit" loading={isMutating} disabled={isMutating || !name.trim()}>
-            Criar categoria
+            {isEditing ? 'Salvar alterações' : 'Criar categoria'}
           </OutlineButton>
           <OutlineButton variant="ghost" type="button" onClick={handleClose} disabled={isMutating}>
             Cancelar
