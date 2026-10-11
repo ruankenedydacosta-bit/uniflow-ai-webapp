@@ -169,7 +169,11 @@ export function resolvePendingActionInput({
   // do campo e recebiam "informe o campo que deseja corrigir". Sem campo
   // pendente, ou com marcador de correção, a frase vale por todos os campos
   // que ela traz ("troca pra alimentação e a data pra anteontem").
+  // Frase que cita outro campo além do pendente também vale por todos: com a
+  // Uni perguntando o valor, "despesa de cinco mil reais com a categoria
+  // Impostos" entrega o valor junto com a categoria.
   const collected = !firstIssue || looksLikePendingCorrection(text)
+    || (explicitField !== null && explicitField !== firstIssue)
     ? collectCorrectionOverrides({ text, normalized, parsed, accounts, categories, workspaceId })
     : null;
   // Troca de tipo ("não é despesa, é receita"): ganha do campo pendente, que
@@ -242,19 +246,29 @@ const CATEGORY_NAME_TAIL = /(?:[,\s]+(?:por\s+favor|pra\s+mim|para\s+mim|agora|t
 const CATEGORY_REFERENCE_START = /^(?:do|da|dos|das|desse|dessa|deste|desta|disso|dele|dela|que|atual|certa|errada|outra|outro|diferente|ta|tá|esta|está|estava|ficou|nao|não)(?=\s|$)/i;
 const CATEGORY_NAME_MAX_LENGTH = 40;
 const CATEGORY_NAME_MAX_WORDS = 5;
+// BUG REAL EM PRODUÇÃO (voz, 11/10/2026): "Quero criar uma categoria chamada
+// 'Impostos' para vincular essa despesa." criou a categoria "Impostos' para
+// vincular essa despesa". Nome entre aspas é o nome inteiro; a finalidade
+// ("para vincular essa despesa", "pra esse gasto") não faz parte dele.
+// "Presentes para a família" continua inteiro.
+const CATEGORY_QUOTED_NAME = /^["“'‘]([^"“”'‘’]+)["”'’]/;
+const CATEGORY_NAME_PURPOSE = /\s+(?:para|pra)\s+(?:vincular|usar|colocar|lan[cç]ar|registrar|associar|ligar|classificar|esse|essa|este|esta|isso|ele|ela|o\s+(?:lan[cç]amento|gasto|registro|rascunho)|a\s+(?:despesa|receita|sa[ií]da|entrada|movimenta[cç][aã]o|compra))(?=\s|$).*$/i;
 
 export function extractRequestedCategoryName(value) {
   const text = typeof value === 'string' ? value : '';
   const match = text.match(/\bcategoria\b(.*)$/i);
   if (!match) return '';
-  const name = match[1]
+  const lead = match[1].trim().replace(CATEGORY_NAME_LEAD, '');
+  const quoted = lead.match(CATEGORY_QUOTED_NAME)?.[1];
+  const name = (quoted ?? lead
     // Outra oração ("e foi ontem", "e no Nubank") não faz parte do nome;
     // "Casa e Jardim" faz.
     .split(/[,;]|\s+e\s+(?=(?:o|a|os|as|foi|era|é|eh|no|na|pelo|pela|com|em|ontem|hoje|anteontem|data|valor|conta)(?:\s|$))/i)[0]
     .replace(/[.!?]+\s*$/g, '')
+    .replace(CATEGORY_NAME_PURPOSE, '')
     .trim()
     .replace(CATEGORY_NAME_LEAD, '')
-    .replace(CATEGORY_NAME_TAIL, '')
+    .replace(CATEGORY_NAME_TAIL, ''))
     .replace(/^["“”']+|["“”'.!?]+$/g, '')
     .trim();
   if (!name || CATEGORY_REFERENCE_START.test(name)) return '';

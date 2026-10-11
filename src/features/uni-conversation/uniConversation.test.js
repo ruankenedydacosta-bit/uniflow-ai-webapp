@@ -1300,6 +1300,15 @@ test('nome de categoria pedido no ajuste sai sem os conectivos', () => {
     ['A categoria é de lazer', 'lazer'],
     ['Muda pra categoria a Pets', 'Pets'],
     ['A categoria é Casa e Jardim', 'Casa e Jardim'],
+    // Conversa por voz de 11/10/2026: a IA repassou o nome entre aspas e com
+    // a finalidade, e a categoria criada foi "Impostos' para vincular essa
+    // despesa".
+    ["Quero criar uma categoria chamada 'Impostos' para vincular essa despesa.", 'Impostos'],
+    ['Cria a categoria "Viagem de férias" pra esse gasto', 'Viagem de férias'],
+    ['Quero criar uma categoria chamada Impostos para vincular essa despesa.', 'Impostos'],
+    ['A categoria é Impostos pra essa despesa', 'Impostos'],
+    ['Categoria Pets para usar nesse lançamento', 'Pets'],
+    ['A categoria é Presentes para a família', 'Presentes para a família'],
     // Palavra que só começa com um conectivo continua inteira.
     ['Categoria é Eletrônicos', 'Eletrônicos'],
     ['A categoria é Parafusos', 'Parafusos'],
@@ -1538,4 +1547,38 @@ test('correção de descrição usa só a descrição, sem o pedido nem o ponto 
     assert.equal(resolved.kind, 'correction', phrase);
     assert.equal(resolved.overrides.description, description, phrase);
   }
+});
+
+// BUG REAL EM PRODUÇÃO (voz, 11/10/2026): com a Uni perguntando o valor, a
+// frase inteira "Registrar uma despesa de cinco mil e quinhentos reais [...],
+// com a categoria Impostos" só era lida como resposta de categoria, porque
+// cita a palavra "categoria". O valor que ela traz se perdia e a Uni
+// perguntava "Qual foi o valor dessa movimentação?" de novo, quatro vezes.
+test('valor pendente: frase que cita a categoria também entrega o valor que traz', () => {
+  const action = createAction('Quero lançar uma despesa de mercado.');
+  assert.equal(action.issues[0]?.field, 'amount');
+  const frase = 'Registrar uma despesa de cinco mil e quinhentos reais no dia quinze de outubro, com a categoria Alimentação.';
+
+  const existente = resolvePendingActionInput({ value: frase, action, accounts, categories });
+  assert.equal(existente.kind, 'correction');
+  assert.equal(existente.overrides.amount, 5500);
+  assert.equal(existente.overrides.categoryId, 'category-food');
+
+  const inexistente = resolvePendingActionInput({
+    value: frase.replace('Alimentação', 'Impostos'),
+    action,
+    accounts,
+    categories,
+  });
+  assert.equal(inexistente.kind, 'category_not_found');
+  assert.equal(inexistente.requestedCategoryName, 'Impostos');
+  assert.equal(inexistente.overrides?.amount, 5500);
+});
+
+test('valor pendente: resposta só de categoria continua sem inventar valor', () => {
+  const action = createAction('Quero lançar uma despesa de mercado.');
+  const resultado = resolvePendingActionInput({ value: 'A categoria é Alimentação', action, accounts, categories });
+  assert.equal(resultado.kind, 'correction');
+  assert.equal(resultado.overrides.amount, undefined);
+  assert.equal(resultado.overrides.categoryId, 'category-food');
 });

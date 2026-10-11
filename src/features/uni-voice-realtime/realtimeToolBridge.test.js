@@ -20,6 +20,9 @@ import {
   REALTIME_DRAFT_REPLIES,
   readRealtimeDraftReply,
   buildEndConversationOutput,
+  AVISO_RESPOSTA_REPETIDA,
+  readRealtimeToolReply,
+  warnRepeatedRealtimeReply,
 } from './realtimeToolBridge.js';
 import { classifyPendingActionReply } from '../uni-conversation/pendingActionInput.js';
 import { isCancelEntirePendingFlow } from '../uni-conversation/financialPendingActionFlow.js';
@@ -290,4 +293,46 @@ test('a sessão manda alterar lançamento já registrado pelo mesmo caminho do c
 test('a sessão proíbe dizer que corrigiu, registrou ou cancelou sem a ferramenta confirmar', () => {
   assert.match(EDGE_SOURCE, /Só diga que registrou, corrigiu, alterou ou cancelou algo se a resposta da ferramenta, nesta vez, disser isso\./);
   assert.match(EDGE_SOURCE, /Nunca finja que deu certo\./);
+});
+
+// BUG REAL EM PRODUÇÃO (voz, 11/10/2026): "Qual foi o valor dessa
+// movimentação?" quatro vezes seguidas, e a IA reenviando a mesma frase.
+test('a mesma pergunta duas vezes seguidas vai com aviso para não reenviar', () => {
+  const pergunta = buildRealtimeToolOutput({ text: 'Qual foi o valor dessa movimentação?' });
+  assert.equal(readRealtimeToolReply(pergunta), 'Qual foi o valor dessa movimentação?');
+
+  const repetida = JSON.parse(warnRepeatedRealtimeReply(pergunta, 'Qual foi o valor dessa movimentação?'));
+  assert.equal(repetida.aviso, AVISO_RESPOSTA_REPETIDA);
+  assert.equal(repetida.resposta, 'Qual foi o valor dessa movimentação?');
+
+  assert.equal(warnRepeatedRealtimeReply(pergunta, null), pergunta);
+  assert.equal(warnRepeatedRealtimeReply(pergunta, 'Em qual conta?'), pergunta);
+});
+
+test('rascunho novo e resposta sem pergunta repetidos não ganham aviso', () => {
+  const rascunho = buildRealtimeToolOutput({
+    text: 'Perfeito. Revise as informações abaixo antes de registrar?',
+    confirmation: { status: 'pending' },
+  });
+  assert.equal(warnRepeatedRealtimeReply(rascunho, 'Perfeito. Revise as informações abaixo antes de registrar?'), rascunho);
+  const cancelado = buildRealtimeToolOutput({ text: 'Tudo bem. Não registrei nada.' });
+  assert.equal(warnRepeatedRealtimeReply(cancelado, 'Tudo bem. Não registrei nada.'), cancelado);
+  const erro = buildRealtimeToolErrorOutput('A Uni demorou para responder?');
+  assert.equal(warnRepeatedRealtimeReply(erro, 'A Uni demorou para responder?'), erro);
+});
+
+test('a sessão manda seguir o aviso da ferramenta', () => {
+  assert.match(EDGE_SOURCE, /Se a resposta da ferramenta trouxer um aviso, siga o aviso\./);
+});
+
+// BUG REAL EM PRODUÇÃO (voz, 11/10/2026): a IA repassou "categoria chamada
+// 'Impostos' para vincular essa despesa" e falou só "Impostos" ao pedir a
+// confirmação; a categoria foi criada com o nome errado.
+test('a sessão passa a frase sem aspas e fala o nome exato do que vai ser criado', () => {
+  assert.match(EDGE_SOURCE, /sem aspas e sem acrescentar explicação ou finalidade/);
+  assert.match(EDGE_SOURCE, /diga o nome exatamente como veio na resposta/);
+});
+
+test('a sessão diz onde criar, renomear ou excluir categoria fora de um lançamento', () => {
+  assert.match(EDGE_SOURCE, /abrir Categorias, no menu Mais/);
 });

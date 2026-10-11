@@ -64,11 +64,20 @@ export function isUnsupportedIntentEligibleForPlan(intent) {
  * resposta/correção a uma pergunta anterior. Uma correção real ("foi
  * ontem", "200 reais", "Nubank") nunca tem os dois ao mesmo tempo, então
  * nunca dispara isso -- só uma frase que já se descreve por completo.
+ *
+ * BUG REAL EM PRODUÇÃO (voz, 11/10/2026): "Registrar uma despesa de cinco mil
+ * e quinhentos reais no dia quinze de outubro" não era frase nova, porque o
+ * verbo de pedido ("registrar", "adicionar") não estava aqui. Com a Uni
+ * esperando o valor, ela virou resposta de campo, e as regras não leem "dia
+ * quinze de outubro". Pedido com verbo, valor e o nome do lançamento
+ * ("despesa", "gasto") também se descreve por completo.
  */
 export function looksLikeFreshFinancialStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
   if (isAgendaExpression(text)) return false;
-  return FINANCIAL_VERB_RE.test(text) && hasAnyAmountMention(text);
+  const hasLaunchSignal = FINANCIAL_VERB_RE.test(text)
+    || (LAUNCH_REQUEST_VERB_RE.test(text) && LAUNCH_NOUN_RE.test(text));
+  return hasLaunchSignal && hasAnyAmountMention(text);
 }
 
 /**
