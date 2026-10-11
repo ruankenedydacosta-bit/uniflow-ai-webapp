@@ -294,7 +294,7 @@ const TEXTO_SEM_MODELO = Object.freeze({
   parcela: 'Compra parcelada ainda não é registrada pela conversa. Lance pelo Financeiro.',
 });
 const TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO = 'Esse rascunho vale só para este lançamento. A Uni ainda não repete lançamentos sozinha.';
-const TEXTO_META_SEM_CRIACAO = 'Ainda não posso criar objetivos pela conversa com segurança. Posso consultar seus objetivos ou orientar você a criá-los na área de Objetivos.';
+const TEXTO_META_SEM_CRIACAO = 'Ainda não posso criar metas pela conversa com segurança. Posso consultar suas metas ou orientar você a criá-las na área de Metas.';
 const EMPTY_FINANCIAL_FALLBACK = Object.freeze({
   accounts: Object.freeze([]),
   categories: Object.freeze([]),

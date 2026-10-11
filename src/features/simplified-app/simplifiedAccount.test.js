@@ -152,11 +152,11 @@ test('grupo Conta: Perfil, Configurações e Segurança navegam para as rotas in
   assert.match(page, /navigate\(ACCOUNT_SUBROUTES\[subrouteId\]\.path\)/);
 });
 
-test('nenhum item do Mais leva a tela que o app simplificado não tem (Metas, Visão de futuro, Categorias, Open Finance)', async () => {
+test('nenhum item do Mais leva a tela que o app simplificado não tem (Visão de futuro, Categorias, Open Finance)', async () => {
   const page = (await source('./SimplifiedAccountPage.jsx'))
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/^\s*\/\/.*$/gm, '');
-  assert.doesNotMatch(page, /'Metas'|Visão de futuro|'Categorias'|Open Finance|Espaço ativo/);
+  assert.doesNotMatch(page, /Visão de futuro|'Categorias'|Open Finance|Espaço ativo/);
 });
 
 // ---------- Card do plano: fonte única, nunca dado inventado ----------

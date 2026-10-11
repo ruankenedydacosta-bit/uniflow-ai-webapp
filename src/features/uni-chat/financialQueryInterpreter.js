@@ -331,7 +331,7 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
     case 'goal_feasibility': {
       const { goalProjections } = options;
       if (!goalProjections || goalProjections.length === 0) {
-        const msg = `${capitalize(subject)} não tem metas ativas para avaliar. Crie uma meta em Objetivos para que eu possa analisar a viabilidade.`;
+        const msg = `${capitalize(subject)} não tem metas ativas para avaliar. Crie uma meta em Metas para que eu possa analisar a viabilidade.`;
         return { text: msg, highlight: null };
       }
       const lines = goalProjections.map((g) => {
@@ -358,14 +358,14 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
         const label = g.feasibility === 'attention' ? '⚠️ Atenção' : '❌ Inviável';
         return `• "${g.name}": ${label} — ${g.suggestedAction || 'Revise o valor ou prazo'}`;
       });
-      const msg = `${atRisk.length === 1 ? 'Meta' : 'Metas'} em risco:\n${lines.join('\n')}\n\n⚠️ Recomendo revisar essas metas em Objetivos ou ver a projeção completa em Visão de Futuro.`;
+      const msg = `${atRisk.length === 1 ? 'Meta' : 'Metas'} em risco:\n${lines.join('\n')}\n\n⚠️ Recomendo revisar essas metas em Metas ou ver a projeção completa em Visão de Futuro.`;
       return { text: msg, highlight: null };
     }
 
     case 'required_monthly': {
       const { goalProjections } = options;
       if (!goalProjections || goalProjections.length === 0) {
-        const msg = `${capitalize(subject)} não tem metas ativas. Crie uma meta em Objetivos para calcular quanto guardar por mês.`;
+        const msg = `${capitalize(subject)} não tem metas ativas. Crie uma meta em Metas para calcular quanto guardar por mês.`;
         return { text: msg, highlight: null };
       }
       const lines = goalProjections.map((g) => {

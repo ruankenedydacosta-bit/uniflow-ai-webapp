@@ -203,7 +203,7 @@ export default function FuturePage() {
           />
 
           <div className={styles.navLinks}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/objetivos')}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/metas')}>
               Ajustar metas
             </Button>
             <Button variant="outline" size="sm" onClick={() => navigate('/financeiro')}>

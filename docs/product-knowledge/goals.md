@@ -1,4 +1,4 @@
-# Objetivos (metas financeiras)
+# Metas
 
 ## Finalidade
 
@@ -6,7 +6,7 @@ Definir e acompanhar metas financeiras (ex.: reserva de emergência, uma viagem,
 
 ## Onde encontrar
 
-`/objetivos`.
+Mais → Produto → Metas (`/app/metas`). A rota antiga `/objetivos` redireciona para ela.
 
 ## Passo a passo
 
@@ -32,7 +32,7 @@ Nenhum além de ter um espaço ativo.
 
 ## Limitações atuais
 
-Nenhuma identificada além das gerais do produto.
+A Uni consulta as metas pela conversa, mas ainda não cria meta nem registra aporte.
 
 ## Mensagens de erro conhecidas
 

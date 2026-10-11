@@ -10,7 +10,7 @@ function GoalsProgressList({ goals = [], onViewAll, onCreate }) {
   return (
     <section className="homeMobileCard" aria-labelledby="home-mobile-goals-title">
       <div className="homeMobileSectionHeader">
-        <h2 id="home-mobile-goals-title">Objetivos</h2>
+        <h2 id="home-mobile-goals-title">Metas</h2>
         {goals.length ? (
           <button type="button" className="homeMobileTextAction" onClick={onViewAll}>
             Ver todos <span aria-hidden="true">→</span>
@@ -44,7 +44,7 @@ function GoalsProgressList({ goals = [], onViewAll, onCreate }) {
         </div>
       ) : (
         <HomeEmptyState
-          title="Seu primeiro objetivo começa aqui"
+          title="Sua primeira meta começa aqui"
           description="Crie uma meta para acompanhar seu avanço com clareza."
           actionLabel="Criar minha primeira meta"
           onAction={onCreate}
