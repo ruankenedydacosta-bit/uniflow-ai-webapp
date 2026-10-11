@@ -105,8 +105,7 @@ test('Sprint 3 (fuso horário): "este ano" (year_to_date) com referenceDate em 1
 });
 
 test('Sprint 3 (fuso horário): mês nomeado sem ano, próximo à virada de ano', () => {
-  // Em dezembro de 2026, "janeiro" (mês futuro) deve resolver para o ano
-  // ANTERIOR ao ano de referência (já passou, é o mais recente janeiro).
+  // Em dezembro de 2026, janeiro já passou neste ano: resolve para 2026.
   const result = resolveTemporalReferences('janeiro', '2026-12-15');
   assert.equal(result.resolved.year, 2026);
 });

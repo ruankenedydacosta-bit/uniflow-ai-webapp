@@ -84,12 +84,10 @@ function shiftDaysIso(dateStr, days) {
   return d.toISOString().slice(0, 10);
 }
 
-// "esta semana" / "semana passada" -- calculado aqui (nunca delegado ao
-// resolveTemporalExpression) porque aquele resolvedor usa `new Date(string)` +
-// getters em fuso LOCAL para achar o início da semana; em qualquer fuso com
-// offset negativo (ex.: America/Sao_Paulo) isso desloca o resultado em 1
-// dia. Aritmética 100% em UTC aqui evita o problema, sem tocar no arquivo
-// original (Fase 17, fora do escopo desta Sprint).
+// "esta semana" / "semana passada", de segunda a domingo, em UTC. Nasceu
+// quando resolveTemporalExpression ainda usava getters locais e deslocava a
+// semana em 1 dia no fuso de São Paulo; ele já foi corrigido, mas esta
+// função continua sendo a que responde por semana.
 function resolveWeekRange(text, referenceDate) {
   const n = normalizeText(text);
   const isThisWeek = /\besta\s+semana\b/.test(n);
@@ -199,7 +197,7 @@ function resolveSinceNamedMonth(text, referenceDate) {
 
 // resolveTemporalExpression só reconhece "este mês"/"esta semana"/"este ano";
 // "esse mês"/"essa semana"/"esse ano" (tão comuns na fala quanto "este") são
-// canonicalizados aqui ANTES de delegar -- sem alterar o arquivo original.
+// canonicalizados aqui ANTES de delegar.
 // BUG REAL (Sprint 2.1, BUG 3): "nesse mês"/"nessa semana" (contração "em
 // esse/essa") não eram reconhecidos -- só a forma sem contração.
 function canonicalizeDemonstratives(text) {

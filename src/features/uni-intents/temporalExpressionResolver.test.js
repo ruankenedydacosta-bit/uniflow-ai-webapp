@@ -186,3 +186,22 @@ test('Sprint 3 (fuso horário): "este ano"/"ano passado" com referenceDate em 31
   assert.equal(thisYear.start, '2026-01-01');
   assert.equal(thisYear.end, '2026-12-31');
 });
+
+// Reserva em resolveTemporalReferences: expressões que só ela cobre, com o
+// tipo traduzido para o vocabulário deste resolvedor.
+test('temporal: reserva cobre "fev", "ano atual" e "3 meses atrás"', () => {
+  const fev = resolveTemporalExpression('quanto gastei em fev', '2026-08-15');
+  assert.equal(fev.entity, 'specific_month');
+  assert.equal(fev.start, '2026-02-01');
+  assert.equal(fev.end, '2026-02-28');
+
+  const anoAtual = resolveTemporalExpression('ano atual', '2026-08-15');
+  assert.equal(anoAtual.entity, 'this_year');
+  assert.equal(anoAtual.start, '2026-01-01');
+  assert.equal(anoAtual.end, '2026-08-15');
+
+  const tresMeses = resolveTemporalExpression('3 meses atrás', '2026-08-15');
+  assert.equal(tresMeses.entity, 'last_n_months');
+  assert.equal(tresMeses.start, '2026-06-01');
+  assert.equal(tresMeses.end, '2026-08-31');
+});
