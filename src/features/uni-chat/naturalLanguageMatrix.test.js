@@ -1,29 +1,10 @@
-// Sprint 4 Ciclo 3 (Bloco 4.7) — Matriz de naturalidade e robustez.
-//
-// Objetivo: exercitar >= 50 frases reais em pt-BR, cobrindo as 22
-// categorias exigidas (consultas simples/compostas/semânticas,
-// ambiguidades, períodos, contas, categorias, receitas, despesas,
-// investimentos, patrimônio, metas, escrita+leitura na mesma frase,
-// informal, natural, longas, curtas, erros de digitação, sinônimos,
-// emoções, perguntas abertas, casos extremos) contra o pipeline REAL
-// (motor determinístico + orquestrador semântico + composer), sem
-// depender de uma chamada real à LLM -- o "cérebro" da interpretação
-// semântica (financial_intent) é sempre uma LLM externa; aqui simulamos
-// a SAÍDA que ela produziria (mesmo contrato validado por
-// financialIntentSchema.js) para provar que TUDO que vem depois dela
-// (orquestrador, guardrails, composer, fallback, memória, publicação)
-// se comporta com segurança para essas 50+ frases.
-//
-// Nenhum número/conta/categoria é aceito no teste sem vir do snapshot
-// real -- exatamente a mesma garantia cobrada do sistema em produção.
+// Matriz de naturalidade e robustez: frases reais em pt-BR, de 22
+// categorias, contra as regras de consulta (motor determinístico). Nenhum
+// valor é aceito sem vir do snapshot.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildFinancialSnapshot } from './financialSnapshot.js';
 import { resolveFinancialQuery } from './financialQueryEngine.js';
-import { runFinancialSemanticOrchestrator, buildOrchestratorCapabilityCatalog } from './financialSemanticOrchestrator.js';
-import { executeCapability } from './financialCapabilityRegistry.js';
-import { composeNaturalFinancialResponse, validateComposedResponse } from './composeNaturalFinancialResponse.js';
-import { composeFinancialResponseWithLlm } from './composeFinancialResponseWithLlm.js';
 import { classifyIntent } from '../uni-intents/index.js';
 import { resolveTemporalRange } from '../uni-intents/temporalRangeResolver.js';
 import { looksLikeFreshFinancialStatement } from '../uni-conversation/index.js';
@@ -61,32 +42,39 @@ function buildSnapshot(overrides = {}) {
   });
 }
 
-function baseInterpretation(overrides = {}) {
-  return {
-    status: 'resolved',
-    intent: 'total_expenses',
-    confidence: 0.9,
-    entities: {
-      transactionType: null, amount: null, account: null, category: null,
-      description: null, period: null, comparisonPeriod: null,
-    },
-    suggestedTool: null,
-    clarificationQuestion: null,
-    reasoningTags: [],
-    operation: null,
-    isCompound: false,
-    subIntents: [],
-    requestedCapabilities: [],
-    ...overrides,
-  };
+// "R$ 3.000,00" e "R$ 3.000" têm ponto de milhar; "R$ 3.5" tem ponto decimal.
+function valorEmReais(bruto) {
+  const limpo = bruto.replace(/^-?R\$\s?/, '');
+  let normalizado;
+  if (limpo.includes(',')) {
+    normalizado = limpo.replace(/\./g, '').replace(',', '.');
+  } else {
+    const grupos = limpo.split('.');
+    normalizado = grupos.length > 1 && grupos[grupos.length - 1].length === 3 ? grupos.join('') : limpo;
+  }
+  const valor = Number(normalizado);
+  if (!Number.isFinite(valor)) return null;
+  return bruto.trim().startsWith('-') ? -Math.abs(valor) : valor;
 }
 
-// Números/contas/categorias que NUNCA podem aparecer numa resposta --
-// prova de que o composer (real ou simulado) nunca inventa nada fora do
-// snapshot.
-function assertNoInventedValues(text, structuredResult) {
-  const guard = validateComposedResponse(text, structuredResult);
-  assert.equal(guard.valid, true, `resposta mencionou valor não presente nos fatos: ${JSON.stringify(guard.inventedValues)}`);
+// Valores em reais citados no texto. A captura termina em dígito, para não
+// engolir o ponto final da frase.
+function valoresEmReais(texto) {
+  return (texto.match(/-?R\$\s?-?\d+(?:[.,]\d+)*/g) ?? []).map(valorEmReais).filter((valor) => valor !== null);
+}
+
+function numerosDe(valor, saida = []) {
+  if (typeof valor === 'number' && Number.isFinite(valor)) saida.push(Math.round(valor * 100) / 100);
+  else if (Array.isArray(valor)) valor.forEach((item) => numerosDe(item, saida));
+  else if (valor && typeof valor === 'object') Object.values(valor).forEach((item) => numerosDe(item, saida));
+  return saida;
+}
+
+// Todo valor em reais da resposta existe em algum lugar dos fatos.
+function assertNoInventedValues(text, facts) {
+  const permitidos = numerosDe(facts);
+  const inventados = valoresEmReais(text).filter((valor) => !permitidos.some((p) => Math.abs(p - valor) < 0.01));
+  assert.deepEqual(inventados, [], `resposta mencionou valor não presente nos fatos: ${JSON.stringify(inventados)}`);
 }
 
 // ── PHRASE_MATRIX -- registro literal das >= 50 frases exigidas ─────────
@@ -195,42 +183,6 @@ test('Matriz [simples]: aliases antigos de saldo são resolvidos diretamente com
     assert.match(outcome.response.text, /Entradas e Saídas/);
     assert.doesNotMatch(outcome.response.text, /saldo|resultado/i);
   }
-
-  const result = executeCapability('total_balance', snapshot);
-  assert.equal(result.ok, true);
-  assertNoInventedValues(result.text, result.data);
-});
-
-// ── 2. Consultas compostas ───────────────────────────────────────────
-test('Matriz [compostas]: orquestrador resolve subIntents e produz texto único sem números inventados', () => {
-  const snapshot = buildSnapshot();
-  const interpretation = baseInterpretation({
-    isCompound: true,
-    intent: 'total_expenses',
-    subIntents: [
-      { intent: 'total_expenses', entities: { period: null } },
-      { intent: 'total_income', entities: { period: null } },
-    ],
-  });
-  const result = runFinancialSemanticOrchestrator({ interpretation, snapshot, referenceDate: REFERENCE_DATE });
-  assert.equal(result.status, 'handled');
-  assert.equal(result.executionPlan?.type, 'compound');
-  assertNoInventedValues(result.responseDraft, result.structuredResult);
-});
-
-// ── 3. Consultas semânticas (parafraseadas) ──────────────────────────
-test('Matriz [semânticas]: frase indireta é interpretada (simulação da LLM) e composta com segurança', async () => {
-  const snapshot = buildSnapshot();
-  const interpretation = baseInterpretation({ intent: 'financial_summary', reasoningTags: ['summary_query'] });
-  const result = runFinancialSemanticOrchestrator({ interpretation, snapshot, referenceDate: REFERENCE_DATE });
-  assert.equal(result.status, 'handled');
-  const deterministicText = composeNaturalFinancialResponse({ responseDraft: result.responseDraft, reasoningTags: interpretation.reasoningTags });
-  const composed = await composeFinancialResponseWithLlm({
-    composeFinancialResponseViaLlm: async () => ({ text: 'Esse mês seu resultado ficou positivo, com mais entradas do que saídas.', error: null }),
-    structuredFacts: result.structuredResult,
-    deterministicText,
-  });
-  assertNoInventedValues(composed.text, result.structuredResult);
 });
 
 // ── 4. Ambiguidades ───────────────────────────────────────────────────
@@ -280,46 +232,6 @@ test('Matriz [categoria]: gasto por categoria nomeada é resolvido com valor rea
   assert.equal(outcome.handled, true);
 });
 
-// ── 8/9. Receitas e despesas ──────────────────────────────────────────
-// "Quanto eu recebi esse mês?"/"Quais foram minhas maiores despesas?" são
-// resolvidas pela camada semântica (capacidades total_income/top_expenses
-// do Bloco 4.5, não pelo motor legado) -- exercitamos a capacidade real
-// diretamente, como o orquestrador faria com a interpretação da LLM.
-test('Matriz [receita]: total_income soma exclusivamente transações de entrada do período, valor real do snapshot', () => {
-  const snapshot = buildSnapshot();
-  const result = executeCapability('total_income', snapshot, { period: 'este mês' });
-  assert.equal(result.ok, true);
-  assert.equal(result.data.income, 3000);
-  assertNoInventedValues(result.text, result.data);
-});
-
-test('Matriz [despesa]: top_expenses devolve as maiores despesas reais, sem inventar nenhuma', () => {
-  const snapshot = buildSnapshot();
-  const result = executeCapability('top_expenses', snapshot, { period: 'este mês' });
-  assert.equal(result.ok, true);
-  assert.ok(result.data.items.length > 0);
-  assertNoInventedValues(result.text, result.data);
-});
-
-// ── 10/11. Investimentos e patrimônio (capacidade inexistente) ───────
-test('Matriz [investimento/patrimônio]: capacidade inexistente nunca é inventada -- catálogo real não a contém', () => {
-  const catalog = buildOrchestratorCapabilityCatalog();
-  const ids = catalog.map((c) => c.id);
-  assert.ok(!ids.includes('investments'));
-  assert.ok(!ids.includes('net_worth'));
-
-  // Simula a LLM devolvendo "unsupported" para essas frases (o catálogo
-  // real enviado a ela nunca contém investimentos/patrimônio, então uma
-  // interpretação honesta cai em unsupported -- nunca ela inventa dado).
-  const snapshot = buildSnapshot();
-  const result = runFinancialSemanticOrchestrator({
-    interpretation: baseInterpretation({ status: 'unsupported', intent: 'unsupported' }),
-    snapshot,
-  });
-  assert.equal(result.status, 'unsupported');
-  assert.equal(result.structuredResult, null);
-});
-
 // ── 12. Metas ──────────────────────────────────────────────────────────
 test('Matriz [meta]: declaração de criação de meta é reconhecida como escrita (nunca lida/consultada como leitura)', () => {
   const { intent } = classifyIntent('Quero criar uma meta de 5000 reais');
@@ -356,7 +268,7 @@ test('Matriz [longa/curta]: tamanho da frase não afeta a segurança do motor --
 });
 
 // ── 18. Erros de digitação ──────────────────────────────────────────────
-test('Matriz [erro de digitação]: typos nunca causam exceção -- o motor determinístico responde honestamente ou não reconhece (cai no fallback semântico em produção)', () => {
+test('Matriz [erro de digitação]: typos nunca causam exceção -- o motor determinístico responde honestamente ou não reconhece (cai no chat geral em produção)', () => {
   const snapshot = buildSnapshot();
   for (const { phrase } of PHRASE_MATRIX.filter((p) => p.category === 'erro_digitacao')) {
     assert.doesNotThrow(() => resolveFinancialQuery({ text: phrase, snapshot, referenceDate: REFERENCE_DATE }));
@@ -372,37 +284,6 @@ test('Matriz [sinônimo]: "grana"/"bufunfa"/"entrada" nunca lançam e, quando re
   }
 });
 
-// ── 20. Emoções ───────────────────────────────────────────────────────────
-test('Matriz [emoção]: sinal emocional simulado ativa acolhimento (determinístico) e é repassado ao composer via LLM sem alterar os números', async () => {
-  const snapshot = buildSnapshot();
-  const interpretation = baseInterpretation({ intent: 'total_expenses', reasoningTags: ['emotional_concern'] });
-  const result = runFinancialSemanticOrchestrator({ interpretation, snapshot, referenceDate: REFERENCE_DATE });
-  const deterministicText = composeNaturalFinancialResponse({ responseDraft: result.responseDraft, reasoningTags: interpretation.reasoningTags });
-  assert.match(deterministicText, /^Entendo a preocupação\. /);
-
-  let capturedEmotionalContext = null;
-  const composed = await composeFinancialResponseWithLlm({
-    composeFinancialResponseViaLlm: async ({ emotionalContext }) => {
-      capturedEmotionalContext = emotionalContext;
-      return { text: 'Entendo que isso pesa. Seus gastos esse mês somaram o valor que você já viu -- vamos acompanhar juntos.', error: null };
-    },
-    structuredFacts: result.structuredResult,
-    emotionalContext: true,
-    deterministicText,
-  });
-  assert.equal(capturedEmotionalContext, true);
-  assertNoInventedValues(composed.text, result.structuredResult);
-});
-
-// ── 21. Perguntas abertas ──────────────────────────────────────────────────
-test('Matriz [pergunta aberta]: "como estão minhas finanças" mapeia para financial_summary e nunca dá opinião fora dos fatos', () => {
-  const snapshot = buildSnapshot();
-  const interpretation = baseInterpretation({ intent: 'financial_summary' });
-  const result = runFinancialSemanticOrchestrator({ interpretation, snapshot, referenceDate: REFERENCE_DATE });
-  assert.equal(result.status, 'handled');
-  assertNoInventedValues(result.responseDraft, result.structuredResult);
-});
-
 // ── 22. Casos extremos ──────────────────────────────────────────────────────
 test('Matriz [extremo]: período fora de qualquer janela reconhecida, texto vazio e texto absurdamente longo nunca lançam', () => {
   const snapshot = buildSnapshot();
@@ -413,43 +294,4 @@ test('Matriz [extremo]: período fora de qualquer janela reconhecida, texto vazi
   // resposta honesta, nunca inventada.
   const range = resolveTemporalRange('em 1899', REFERENCE_DATE);
   assert.equal(range.status, 'not_recognized');
-});
-
-// ── Repetição: mesma intenção, 5+ frases diferentes, respostas não
-// mecanicamente idênticas quando o composer via LLM está ativo ─────────
-test('Matriz [repetição]: 5 frases diferentes para o mesmo intent produzem respostas distintas quando a LLM varia a construção (composer ligado)', async () => {
-  const snapshot = buildSnapshot();
-  const phrasings = [
-    'Quanto eu gastei esse mês?',
-    'Quanto foi que eu já gastei esse mês?',
-    'Me diz quanto gastei nesse mês',
-    'Total de gastos desse mês, por favor',
-    'E aí, quanto saiu esse mês?',
-  ];
-  const interpretation = baseInterpretation({ intent: 'total_expenses' });
-  const result = runFinancialSemanticOrchestrator({ interpretation, snapshot, referenceDate: REFERENCE_DATE });
-  const deterministicText = composeNaturalFinancialResponse({ responseDraft: result.responseDraft, reasoningTags: [] });
-
-  const responses = [];
-  for (const [index, phrase] of phrasings.entries()) {
-    const composed = await composeFinancialResponseWithLlm({
-      composeFinancialResponseViaLlm: async () => ({
-        text: `Variação ${index} para "${phrase}": seus gastos esse mês somaram o valor já calculado.`,
-        error: null,
-      }),
-      structuredFacts: result.structuredResult,
-      userIntent: phrase,
-      deterministicText,
-    });
-    assertNoInventedValues(composed.text, result.structuredResult);
-    responses.push(composed.text);
-  }
-  const uniqueResponses = new Set(responses);
-  assert.equal(uniqueResponses.size, responses.length, 'a LLM (real, em produção) deve variar a construção -- aqui provamos que o pipeline PRESERVA a variação em vez de normalizar tudo para o mesmo texto');
-
-  // Com o composer desligado (fallback determinístico), a mesma pergunta
-  // sempre produz o MESMO texto -- isso é esperado e documentado (Bloco
-  // 4.3.1): variação real de linguagem exige o composer via LLM ligado.
-  const deterministicOnly = phrasings.map(() => deterministicText);
-  assert.equal(new Set(deterministicOnly).size, 1);
 });
