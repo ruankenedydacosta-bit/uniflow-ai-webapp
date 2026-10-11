@@ -71,7 +71,7 @@ function resultado(campos) {
 
 test('acerta quando todos os campos batem, inclusive categoria aceita', () => {
   assert.deepEqual(avaliarCaso(CASO_ESCOLA, resultado()), {
-    intent: true, valor: true, data: true, categoria: true, modalidade: true,
+    intent: true, valor: true, data: true, categoria: true, modalidade: true, titulo: null,
   });
   assert.equal(avaliarCaso(CASO_ESCOLA, resultado({ categoria: 'Outras despesas' })).categoria, true);
 });
@@ -89,21 +89,21 @@ test('caso sem base para categoria só acerta quando a Uni pergunta', () => {
 
 test('intent errado derruba os outros campos do lançamento', () => {
   assert.deepEqual(avaliarCaso(CASO_ESCOLA, resultado({ intent: 'consulta' })), {
-    intent: false, valor: false, data: false, categoria: false, modalidade: false,
+    intent: false, valor: false, data: false, categoria: false, modalidade: false, titulo: null,
   });
 });
 
 test('casos que não são lançamento só medem o intent', () => {
   const caso = { id: 'saldo', frase: 'Qual meu saldo?', esperado: { intent: 'consulta' } };
   assert.deepEqual(avaliarCaso(caso, { intent: 'consulta' }), {
-    intent: true, valor: null, data: null, categoria: null, modalidade: null,
+    intent: true, valor: null, data: null, categoria: null, modalidade: null, titulo: null,
   });
 });
 
 test('resumo ignora campos que não se aplicam', () => {
   const resumo = resumirAvaliacao([
-    { intent: true, valor: true, data: false, categoria: null, modalidade: true },
-    { intent: false, valor: null, data: null, categoria: null, modalidade: null },
+    { intent: true, valor: true, data: false, categoria: null, modalidade: true, titulo: null },
+    { intent: false, valor: null, data: null, categoria: null, modalidade: null, titulo: true },
   ]);
   assert.deepEqual(resumo, {
     intent: { acertos: 1, total: 2 },
@@ -111,6 +111,7 @@ test('resumo ignora campos que não se aplicam', () => {
     data: { acertos: 0, total: 1 },
     categoria: { acertos: 0, total: 0 },
     modalidade: { acertos: 1, total: 1 },
+    titulo: { acertos: 1, total: 1 },
   });
 });
 
@@ -122,4 +123,26 @@ test('modalidade: parcela avulsa não é parcelamento, e parcelamento ou recorr�
   assert.equal(avaliarCaso(parcelado, resultado()).modalidade, false);
   const recorrente = { ...CASO_ESCOLA, esperado: { ...CASO_ESCOLA.esperado, recorrente: true } };
   assert.equal(avaliarCaso(recorrente, resultado({ recorrente: true })).modalidade, true);
+});
+
+test('título de agenda: palavras esperadas, inicial maiúscula e nada do pedido', () => {
+  const caso = {
+    id: 'agenda-escola',
+    frase: 'me lembra amanhã de pagar a escola',
+    esperado: { intent: 'agenda', titulo: ['pagar', 'escola'] },
+  };
+  const titulo = (valor) => avaliarCaso(caso, { intent: 'agenda', titulo: valor }).titulo;
+  assert.equal(titulo('Pagar a escola'), true);
+  assert.equal(titulo('pagar a escola'), false, 'minúscula no início');
+  assert.equal(titulo('Escola'), false, 'faltou palavra');
+  assert.equal(titulo('Meu que eu vou ter que pagar a escola'), false, 'sobrou o pedido');
+  assert.equal(titulo(null), false);
+  assert.equal(avaliarCaso(caso, { intent: 'consulta', titulo: 'Pagar a escola' }).titulo, false);
+});
+
+test('casos de agenda com título esperado listam palavras', () => {
+  for (const caso of CASOS.filter((item) => item.esperado.titulo)) {
+    assert.equal(caso.esperado.intent, 'agenda', caso.id);
+    assert.ok(Array.isArray(caso.esperado.titulo) && caso.esperado.titulo.length > 0, caso.id);
+  }
 });

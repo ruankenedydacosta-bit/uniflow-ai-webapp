@@ -10,6 +10,7 @@
 //   dá base para escolher e a Uni deve perguntar. `aceitas` lista outras
 //   respostas igualmente corretas.
 // esperado.data: ISO; ausente quando a frase não fala de data (vale hoje).
+// esperado.titulo: em agenda, palavras que o título precisa ter (#142).
 //
 // Data de referência de todos os casos: sexta, 02/10/2026.
 //
@@ -356,12 +357,24 @@ export const CASOS = [
   {
     id: 'agenda-dentista',
     frase: 'Marca dentista amanhã às 10',
-    esperado: { intent: 'agenda' },
+    esperado: { intent: 'agenda', titulo: ['dentista'] },
   },
   {
     id: 'agenda-lembrete-conta',
     frase: 'Me lembra de pagar a conta de luz dia 10',
-    esperado: { intent: 'agenda' },
+    esperado: { intent: 'agenda', titulo: ['pagar', 'conta de luz'] },
+  },
+  {
+    // Transcrição real (#142): "Uni" virou "O meu", e a regex gravou "meu que
+    // eu vou ter que pagar a mensalidade das escolas no valor de 2500 reais".
+    id: 'agenda-mensalidade-transcrita',
+    frase: 'O meu me lembra que amanhã eu vou ter que pagar a mensalidade das escolas no valor de 2500 reais.',
+    esperado: { intent: 'agenda', titulo: ['pagar', 'mensalidade', 'escolas'] },
+  },
+  {
+    id: 'agenda-vacina-cachorro',
+    frase: 'me lembra que daqui duas semanas o cachorro tem que tomar vacina',
+    esperado: { intent: 'agenda', titulo: ['vacina'] },
   },
   {
     id: 'conversa',
@@ -748,18 +761,30 @@ export const CASOS = [
   {
     id: 'agenda-iptu',
     frase: 'me lembra de pagar o IPTU dia 15',
-    esperado: { intent: 'agenda' },
+    esperado: { intent: 'agenda', titulo: ['pagar', 'iptu'] },
+  },
+  {
+    id: 'agenda-buscar-criancas',
+    reservado: true,
+    frase: 'Uni, sexta eu tenho que buscar as crianças na escola às cinco',
+    esperado: { intent: 'agenda', titulo: ['buscar', 'crianças'] },
+  },
+  {
+    id: 'agenda-aluguel-valor',
+    reservado: true,
+    frase: 'me avisa dia 5 pra pagar o aluguel de mil e duzentos',
+    esperado: { intent: 'agenda', titulo: ['pagar', 'aluguel'] },
   },
   {
     id: 'agenda-cobrar-rafael',
     reservado: true,
     frase: 'anota pra eu cobrar o Rafael dos 200 que ele me deve na segunda',
-    esperado: { intent: 'agenda' },
+    esperado: { intent: 'agenda', titulo: ['cobrar', 'rafael'] },
   },
   {
     id: 'agenda-gerente',
     frase: 'marca reunião com o gerente do banco quinta às 3',
-    esperado: { intent: 'agenda' },
+    esperado: { intent: 'agenda', titulo: ['reunião', 'gerente'] },
   },
   {
     id: 'agenda-vencimento-cartao',

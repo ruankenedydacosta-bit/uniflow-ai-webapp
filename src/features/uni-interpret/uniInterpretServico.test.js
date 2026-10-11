@@ -106,11 +106,48 @@ test('sucesso: devolve a proposta com ids reais e data de referência, e o model
     conta: { id: 'conta-nu', name: 'Nubank' },
     contaDestino: null,
     confianca: 0.95,
+    parcelas: null,
+    recorrente: false,
     faltando: [],
     ajustes: [],
   });
+  assert.equal('agenda' in resultado.corpo, false);
   assert.match(chamadas[0].mensagem, /- c2: Educação \(saída\)/);
   assert.match(chamadas[0].mensagem, /Hoje: 2026-10-02 \(sexta-feira\)/);
+});
+
+// Sem parcelas na resposta, o app lançava "12x de 300" como compra à vista
+// de 3.600.
+test('parcelas e recorrência chegam ao app', async () => {
+  const parcelado = {
+    ...LANCAMENTO_ESCOLA,
+    operacoes: [{ ...LANCAMENTO_ESCOLA.operacoes[0], valor: 3600, parcelas: 12, recorrente: false }],
+  };
+  const { chamarModelo } = modeloQueResponde(parcelado);
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'Comprei um notebook em 12x de 300' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo,
+  });
+  assert.equal(resultado.corpo.operacoes[0].parcelas, 12);
+  assert.equal(resultado.corpo.operacoes[0].recorrente, false);
+});
+
+test('agenda: devolve título e valor do compromisso', async () => {
+  const { chamarModelo } = modeloQueResponde({
+    intent: 'agenda',
+    operacoes: [],
+    agenda: { titulo: 'Pagar mensalidade das escolas', valor: 2500 },
+    resposta: '',
+  });
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'me lembra que amanhã eu vou ter que pagar a mensalidade das escolas no valor de 2500 reais' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo,
+  });
+  assert.equal(resultado.corpo.intent, 'agenda');
+  assert.deepEqual(resultado.corpo.agenda, { titulo: 'Pagar mensalidade das escolas', valor: 2500 });
+  assert.deepEqual(resultado.corpo.operacoes, []);
 });
 
 test('falha do provedor vira status próprio e a métrica não leva a frase', async () => {

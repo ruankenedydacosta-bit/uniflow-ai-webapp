@@ -3198,3 +3198,32 @@ test('falha de persistência direta nunca responde Pronto', async () => {
   assert.match(result.text, /Tente novamente/);
   assert.equal(calls.length, 1);
 });
+
+// #142: o título vem do uni-interpret; data e horário continuam do parser.
+test('criação com título interpretado: usa o título do modelo e mantém a data da frase', async () => {
+  const { flow, calls } = makeHarness();
+  const result = await flow.handle({
+    text: 'O meu me lembra que amanhã eu vou ter que pagar a mensalidade das escolas no valor de 2500 reais.',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { titulo: 'Pagar mensalidade das escolas no valor de R$ 2.500,00' },
+  });
+  assert.match(result.text, /Pronto/);
+  assert.equal(calls[0].operation, 'create');
+  assert.equal(calls[0].payload.title, 'Pagar mensalidade das escolas no valor de R$ 2.500,00');
+  assert.match(calls[0].payload.starts_at, /^2026-08-09T/);
+  assert.equal(calls[0].payload.is_all_day, true);
+});
+
+test('criação com título interpretado: horário dito na frase continua valendo', async () => {
+  const { flow, calls } = makeHarness();
+  await flow.handle({
+    text: 'Marca dentista amanhã às 15h',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { titulo: 'Dentista' },
+  });
+  assert.equal(calls[0].payload.title, 'Dentista');
+  assert.equal(calls[0].payload.is_all_day, false);
+  assert.equal(new Date(calls[0].payload.starts_at).getHours(), 15);
+});

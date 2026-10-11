@@ -3,7 +3,7 @@
 // regras atuais e o uni-interpret sejam medidos exatamente do mesmo jeito.
 //
 // Resultado normalizado:
-//   { intent, valor, data, categoria, modoCategoria, parcelas, recorrente }
+//   { intent, valor, data, categoria, modoCategoria, parcelas, recorrente, titulo }
 // modoCategoria: 'resolveu' | 'sugeriu' | 'propos_criar' | 'perguntou'.
 
 import { DATA_REFERENCIA } from './evalCases.js';
@@ -24,6 +24,24 @@ function avaliarCategoria(esperado, resultado) {
   return [esperado.categoria, ...(esperado.aceitas ?? [])].includes(resultado.categoria);
 }
 
+function semAcento(texto) {
+  return String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+// Sobra do pedido que não pode ir para a agenda (#142): "meu que eu vou ter
+// que pagar..." foi o título real que motivou o campo.
+const RESTO_DE_PEDIDO = /\b(?:lembr\w*|anota\w*|marca|uni|que eu|vou ter|amanha|hoje|reais)\b/;
+
+// Título de agenda: começa com maiúscula, tem as palavras esperadas e nada
+// do pedido.
+function avaliarTitulo(palavras, titulo) {
+  if (typeof titulo !== 'string' || !titulo) return false;
+  const normalizado = semAcento(titulo);
+  return titulo[0] === titulo[0].toUpperCase()
+    && palavras.every((palavra) => normalizado.includes(semAcento(palavra)))
+    && !RESTO_DE_PEDIDO.test(normalizado);
+}
+
 // Devolve um veredito por campo: true (acertou), false (errou) ou null
 // (o campo não se aplica ao caso).
 export function avaliarCaso(caso, resultado) {
@@ -31,7 +49,14 @@ export function avaliarCaso(caso, resultado) {
   const intent = resultado.intent === esperado.intent;
 
   if (!INTENTS_DE_LANCAMENTO.has(esperado.intent)) {
-    return { intent, valor: null, data: null, categoria: null, modalidade: null };
+    return {
+      intent,
+      valor: null,
+      data: null,
+      categoria: null,
+      modalidade: null,
+      titulo: esperado.titulo ? intent && avaliarTitulo(esperado.titulo, resultado.titulo) : null,
+    };
   }
 
   return {
@@ -44,11 +69,12 @@ export function avaliarCaso(caso, resultado) {
     modalidade: intent
       && (resultado.parcelas ?? null) === (esperado.parcelas ?? null)
       && (resultado.recorrente === true) === (esperado.recorrente === true),
+    titulo: null,
   };
 }
 
 export function resumirAvaliacao(vereditos) {
-  const campos = ['intent', 'valor', 'data', 'categoria', 'modalidade'];
+  const campos = ['intent', 'valor', 'data', 'categoria', 'modalidade', 'titulo'];
   return Object.fromEntries(campos.map((campo) => {
     const aplicaveis = vereditos.filter((veredito) => veredito[campo] !== null);
     const acertos = aplicaveis.filter((veredito) => veredito[campo]).length;
@@ -75,7 +101,16 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
     : INTENT_DO_INTERPRETADOR[validada.intent] ?? validada.intent;
 
   if (!operacao) {
-    return { intent, valor: null, data: null, categoria: null, modoCategoria: 'perguntou', parcelas: null, recorrente: false };
+    return {
+      intent,
+      valor: null,
+      data: null,
+      categoria: null,
+      modoCategoria: 'perguntou',
+      parcelas: null,
+      recorrente: false,
+      titulo: validada.agenda?.titulo ?? null,
+    };
   }
 
   let modoCategoria = 'perguntou';
@@ -93,5 +128,6 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
     modoCategoria,
     parcelas: operacao.parcelas ?? null,
     recorrente: operacao.recorrente === true,
+    titulo: null,
   };
 }

@@ -7,6 +7,7 @@
 // que respondia "não consigo registrar".
 
 import { normalizeFinancialText } from '../uni-intents/index.js';
+import { formatCurrency } from '../../utils/formatters.js';
 
 export const ROTAS_INTERPRETACAO = Object.freeze({
   LANCAMENTO: 'lancamento',
@@ -132,4 +133,19 @@ export function interpretacaoParaPlano(interpretacao) {
     };
   });
   return { operations, clarificationQuestion: null };
+}
+
+// Compromisso → campos que o fluxo da agenda usa no lugar da regex (#142).
+// O valor citado entra no título, que é o que aparece no Google Agenda e no
+// lembrete. null quando o modelo não deu título: a regex tenta ou a Uni
+// pergunta.
+export function interpretacaoParaAgenda(interpretacao) {
+  if (escolherRotaDaInterpretacao(interpretacao) !== ROTAS_INTERPRETACAO.AGENDA) return null;
+  const titulo = typeof interpretacao.agenda?.titulo === 'string' ? interpretacao.agenda.titulo.trim() : '';
+  if (!titulo) return null;
+  const valor = Number(interpretacao.agenda.valor);
+  if (Number.isFinite(valor) && valor > 0 && !/R\$/.test(titulo)) {
+    return { titulo: `${titulo} no valor de ${formatCurrency(valor)}` };
+  }
+  return { titulo };
 }
