@@ -495,10 +495,6 @@
   height: 22px;
 }
 
-.newRecordAction:active {
-  transform: scale(.96);
-}
-
 .newRecordAction:disabled {
   cursor: not-allowed;
   opacity: .45;

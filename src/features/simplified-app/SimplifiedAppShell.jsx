@@ -8,6 +8,7 @@ import { useCollapsibleHeaderOnScroll } from './collapsibleHeaderScroll.js';
 import { ensureAppFont } from './appFont.js';
 import SimplifiedBottomNavigation from './SimplifiedBottomNavigation.jsx';
 import SimplifiedHeader from './SimplifiedHeader.jsx';
+import { useMovimentoDeAba, useToqueComMola } from './movimentoDeAba.js';
 import { SimplifiedNotificationsContext } from './simplifiedNotificationsContext.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useVisualViewport, VisualViewportContext } from './useVisualViewport.js';
@@ -26,6 +27,8 @@ function SimplifiedAppShell({ children }) {
   const mainContentRef = useRef(null);
   const shellRef = useRef(null);
   const viewportState = useVisualViewport();
+  const { irParaAba } = useMovimentoDeAba({ shellRef, mainContentRef });
+  useToqueComMola();
   // Fase 3 (#90): única instância de useNotifications() do app. A página de
   // notificações e a linha do Mais consomem este mesmo estado por contexto.
   const notificationsState = useNotifications();
@@ -294,7 +297,10 @@ function SimplifiedAppShell({ children }) {
             </SimplifiedNotificationsContext.Provider>
           </VisualViewportContext.Provider>
         </main>
-        <SimplifiedBottomNavigation hidden={isUniChatKeyboardOpen || isReportRoute} />
+        <SimplifiedBottomNavigation
+          hidden={isUniChatKeyboardOpen || isReportRoute}
+          onNavigate={irParaAba}
+        />
       </div>
     </div>
   );

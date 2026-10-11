@@ -101,11 +101,13 @@ test('toque duplo no botao nunca dispara duas persistencias', async () => {
 // CSS -- fases 1 e 2 (feedback do toque e recolhimento)
 // ---------------------------------------------------------------------------
 
-test('FASE 1: o botao responde ao toque com scale ~0.97 e brilho interno discreto da marca', async () => {
+// A escala do toque vem do toque com mola do app (#143, movimentoDeAba.js);
+// o botão só acrescenta o brilho, sem escala própria que se somaria a ela.
+test('FASE 1: o botao responde ao toque com brilho interno discreto da marca, sem escala própria', async () => {
   const content = await css();
   const start = content.indexOf('.choiceButton:active');
   const activeBlock = content.slice(start, content.indexOf('}', start));
-  assert.match(activeBlock, /transform:\s*scale\(0\.97\);/);
+  assert.doesNotMatch(activeBlock, /transform:\s*scale/);
   assert.match(activeBlock, /inset 0 0 \d+px color-mix\(in srgb, var\(--uf-app-(primary|ai)\)/);
 });
 

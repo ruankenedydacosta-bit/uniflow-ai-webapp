@@ -148,7 +148,7 @@ test('Chat da Uni remove somente o header global e esconde a navegação apenas 
   // navegação no Relatório da Uni (isReportRoute, agora resumo+planilha
   // na mesma rota) -- nunca um segundo mecanismo, só mais uma condição
   // no mesmo booleano.
-  assert.match(shell, /<SimplifiedBottomNavigation hidden=\{isUniChatKeyboardOpen \|\| isReportRoute\} \/>/);
+  assert.match(shell, /<SimplifiedBottomNavigation\s+hidden=\{isUniChatKeyboardOpen \|\| isReportRoute\}\s/);
   assert.match(nav, /aria-hidden=\{hidden\}/);
   assert.match(nav, /inert=\{hidden\}/);
   assert.match(css, /\.bottomNavigationHidden \{[\s\S]*?max-height: 0;/);
