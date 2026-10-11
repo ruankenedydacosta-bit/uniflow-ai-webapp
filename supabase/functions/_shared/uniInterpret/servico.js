@@ -71,6 +71,7 @@ function paraCliente(registro) {
 function serializar(validada) {
   return {
     intent: validada.intent,
+    ...(validada.agenda ? { agenda: validada.agenda } : {}),
     resposta: validada.resposta,
     operacoes: validada.operacoes.map((operacao) => ({
       tipo: operacao.tipo,
@@ -83,6 +84,8 @@ function serializar(validada) {
       conta: paraCliente(operacao.conta),
       contaDestino: paraCliente(operacao.contaDestino),
       confianca: operacao.confianca,
+      parcelas: operacao.parcelas,
+      recorrente: operacao.recorrente,
       faltando: operacao.faltando,
       ajustes: operacao.ajustes,
     })),

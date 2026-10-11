@@ -75,6 +75,7 @@ import {
 import {
   ROTAS_INTERPRETACAO,
   escolherRotaDaInterpretacao,
+  interpretacaoParaAgenda,
   interpretacaoParaPlano,
   interpretacaoParaRascunho,
 } from '../uni-interpret/uniInterpretRoteamento.js';
@@ -3997,13 +3998,14 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function runAgendaTurn(turn) {
-    const { functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot } = turn;
+    const { functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot, interpretado } = turn;
     setIsTyping(true);
     void agendaConversationRef.current.handle({
       text: functionalText,
       identity: agendaIdentity,
       referenceDate: getLocalIsoDate(),
       origin: messageSource,
+      interpretado,
     }).then((result) => {
       if (!isAgendaRequestCurrent(agendaRequest)) return;
       setIsTyping(false);
@@ -4104,7 +4106,7 @@ export default function UniChatPage({ variant = 'full' }) {
         return true;
       case ROTAS_INTERPRETACAO.AGENDA:
         setIsTyping(false);
-        runAgendaTurn(agendaTurn);
+        runAgendaTurn({ ...agendaTurn, interpretado: interpretacaoParaAgenda(interpretacao) });
         return true;
       case ROTAS_INTERPRETACAO.CONVERSA:
         setIsTyping(false);

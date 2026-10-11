@@ -29,6 +29,7 @@ export const MAX_ALTERNATIVAS = 2;
 export const MAX_DESCRICAO = 80;
 export const MAX_NOVA_CATEGORIA = 40;
 export const MAX_RESPOSTA = 240;
+export const MAX_TITULO_AGENDA = 80;
 // Parcelamento: de 2 a 72 parcelas. Fora disso é erro de leitura e vira
 // compra à vista.
 export const MIN_PARCELAS = 2;
@@ -70,15 +71,29 @@ const ESQUEMA_OPERACAO = {
   },
 };
 
+// Compromisso ou lembrete (#142). Data e hora continuam com o parser da
+// agenda no app; o modelo devolve o que a regex não consegue: o título como a
+// pessoa escreveria e o valor citado.
+const ESQUEMA_AGENDA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['titulo', 'valor'],
+  properties: {
+    titulo: TEXTO_OU_NULO,
+    valor: { type: ['number', 'null'] },
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'resposta'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
+    agenda: ESQUEMA_AGENDA,
     resposta: { type: 'string' },
   },
 });
@@ -180,6 +195,18 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   };
 }
 
+// Título vazio vira null: o fluxo da agenda usa o parser próprio ou pergunta.
+// Título longo demais é cortado na última palavra inteira.
+function validarAgenda(bruta) {
+  const limpo = textoLimpo(bruta?.titulo, MAX_TITULO_AGENDA + 1);
+  const titulo = limpo.length > MAX_TITULO_AGENDA
+    ? limpo.slice(0, MAX_TITULO_AGENDA).replace(/\s+\S*$/, '')
+    : limpo;
+  const valorBruto = Number(bruta?.valor);
+  const valor = Number.isFinite(valorBruto) ? Math.round(valorBruto * 100) / 100 : 0;
+  return { titulo: titulo || null, valor: valor > 0 ? valor : null };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -187,6 +214,9 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
   const intent = INTENTS.includes(bruta?.intent) ? bruta.intent : 'nao_entendi';
   const resposta = textoLimpo(bruta?.resposta, MAX_RESPOSTA);
 
+  if (intent === 'agenda') {
+    return { intent, operacoes: [], agenda: validarAgenda(bruta?.agenda), resposta };
+  }
   if (intent !== 'lancamento' && intent !== 'correcao') {
     return { intent, operacoes: [], resposta };
   }
