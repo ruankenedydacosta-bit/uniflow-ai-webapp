@@ -66,7 +66,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     category: KNOWLEDGE_CATEGORIES.NAVIGATION,
     version: MANIFEST_VERSION,
     file: 'docs/product-knowledge/navigation-desktop.md',
-    routes: ['/dashboard', '/financeiro', '/categorias', '/open-finance', '/objetivos', '/futuro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/uni-ai', '/configuracoes'],
+    routes: ['/dashboard', '/financeiro', '/categorias', '/open-finance', '/metas', '/futuro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/uni-ai', '/configuracoes'],
     workspaces: WORKSPACE_SCOPE.BOTH,
     keywords: ['barra lateral', 'sidebar', 'menu desktop', 'navegar no computador', 'onde fica no desktop'],
     status: KNOWLEDGE_STATUS.AVAILABLE,

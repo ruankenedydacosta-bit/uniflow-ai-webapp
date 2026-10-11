@@ -59,7 +59,7 @@ test('getNextBestAction decide o melhor proximo passo', () => {
     hasGoals: false,
     currentWorkspace: 'personal',
   });
-  assert.equal(actionNew.href, '/objetivos');
+  assert.equal(actionNew.href, '/metas');
   assert.match(actionNew.title, /reserva/i);
 
   // Usuário já com transações e metas

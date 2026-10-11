@@ -26,7 +26,7 @@ const KNOWN_APP_ROUTES = new Set([
   '/', '/welcome', '/login', '/redefinir-senha', '/auth/callback',
   '/apresentacao', '/plano-pessoal', '/app/home', '/app/uni', '/app/registros', '/app/conta',
   '/app/agenda', '/app/conta/suporte', '/app/conta/voz',
-  '/dashboard', '/uni-ai', '/financeiro', '/categorias', '/open-finance', '/objetivos',
+  '/dashboard', '/uni-ai', '/financeiro', '/categorias', '/open-finance', '/metas',
   '/futuro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/configuracoes',
 ]);
 

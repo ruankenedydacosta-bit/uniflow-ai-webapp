@@ -36,7 +36,7 @@ export const MORE_MENU_ROUTES = deepFreeze([
   { id: 'clients', label: 'Clientes', icon: '◈', group: 'management', path: '/clientes', moduleId: MODULE_IDS.CLIENTES },
   { id: 'crm', label: 'CRM', icon: '◆', group: 'management', path: '/crm', moduleId: MODULE_IDS.CRM },
   { id: 'projects', label: 'Projetos', icon: '▤', group: 'management', path: '/projetos', moduleId: MODULE_IDS.PROJETOS },
-  { id: 'goals', label: 'Objetivos', icon: '○', group: 'product', path: '/objetivos', moduleId: MODULE_IDS.OBJETIVOS },
+  { id: 'goals', label: 'Metas', icon: '○', group: 'product', path: '/metas', moduleId: MODULE_IDS.OBJETIVOS },
   { id: 'future', label: 'Visão de Futuro', icon: '◎', group: 'product', path: '/futuro', moduleId: MODULE_IDS.FUTURO },
   { id: 'categories', label: 'Categorias', icon: '▦', group: 'product', path: '/categorias', moduleId: MODULE_IDS.CATEGORIAS },
   { id: 'open-finance', label: 'Open Finance', icon: '⇄', group: 'product', path: '/open-finance', moduleId: MODULE_IDS.OPEN_FINANCE },

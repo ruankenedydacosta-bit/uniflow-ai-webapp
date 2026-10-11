@@ -432,11 +432,16 @@ export const appRoutes = [
     element: <OpenFinancePage />,
   },
   {
-    path: '/objetivos',
+    path: '/metas',
     moduleId: MODULE_IDS.OBJETIVOS,
-    label: 'Objetivos',
-    title: 'Objetivos',
+    label: 'Metas',
+    title: 'Metas',
     element: <ObjetivosPage />,
+  },
+  // Rota antiga de Metas: mantém links e bookmarks anteriores funcionando.
+  {
+    path: '/objetivos',
+    element: <Navigate to="/metas" replace />,
   },
   {
     path: '/futuro',

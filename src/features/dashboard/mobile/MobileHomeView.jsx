@@ -27,7 +27,7 @@ const SKELETON_SECTIONS = Object.freeze([
   ['chart', 'Carregando entradas e saídas'],
   ['summary', 'Carregando resumo financeiro'],
   ['recent-transactions', 'Carregando transações recentes'],
-  ['goals', 'Carregando objetivos'],
+  ['goals', 'Carregando metas'],
   ['insights', 'Carregando insights'],
   ['actions', 'Carregando atalhos rápidos'],
 ]);
@@ -109,8 +109,8 @@ function MobileHomeView({ data, personalization = null, loading = false, error =
         </section>
         <GoalsProgressList
           goals={viewData.goals ?? []}
-          onViewAll={() => handleNavigate('/objetivos')}
-          onCreate={() => handleNavigate('/objetivos')}
+          onViewAll={() => handleNavigate('/metas')}
+          onCreate={() => handleNavigate('/metas')}
         />
         <InsightCarousel insights={viewData.insights ?? []} onSelect={(insight) => handleNavigate(insight.href)} />
         <QuickActionsGrid
@@ -230,8 +230,8 @@ function MobileHomeView({ data, personalization = null, loading = false, error =
       </section>
       <GoalsProgressList
         goals={viewData.goals ?? []}
-        onViewAll={() => handleNavigate('/objetivos')}
-        onCreate={() => handleNavigate('/objetivos')}
+        onViewAll={() => handleNavigate('/metas')}
+        onCreate={() => handleNavigate('/metas')}
       />
       <FutureHomePreview financialData={viewData.futureData ?? null} />
       <InsightCarousel insights={viewData.insights ?? []} onSelect={(insight) => handleNavigate(insight.href)} />

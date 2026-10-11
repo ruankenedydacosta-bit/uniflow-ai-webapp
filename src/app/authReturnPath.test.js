@@ -33,7 +33,7 @@ test('usa a Home simplificada (nunca o dashboard legado) sem destino ou para rot
 // crm, clientes, projetos, agenda, relatórios, configurações) é mais aceita
 // como destino seguro, mesmo estando registrada em routes.jsx/appRoutes.
 test('return path legado (ex.: /dashboard, /financeiro, /crm) nunca é aceito como destino -- sempre cai na Home simplificada', () => {
-  for (const legacyPath of ['/dashboard', '/financeiro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/configuracoes', '/uni-ai', '/objetivos', '/categorias', '/open-finance', '/futuro', '/suporte']) {
+  for (const legacyPath of ['/dashboard', '/financeiro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/configuracoes', '/uni-ai', '/objetivos', '/metas', '/categorias', '/open-finance', '/futuro', '/suporte']) {
     assert.equal(getSafeAuthReturnPath(legacyPath), '/app/home');
     assert.equal(getSafeAuthReturnPath(`${legacyPath}?from=old-session`), '/app/home');
   }

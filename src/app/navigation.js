@@ -79,8 +79,8 @@ export const navigationItems = [
     group: 'financeiro',
   },
   {
-    label: 'Objetivos',
-    path: '/objetivos',
+    label: 'Metas',
+    path: '/metas',
     moduleId: MODULE_IDS.OBJETIVOS,
     modes: ALL_MODES,
     plans: ALL_PLANS,

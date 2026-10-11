@@ -117,7 +117,7 @@ export function buildSignalCandidates({
       variant: 'success',
       tone: 'success',
       icon: '✓',
-      href: '/objetivos',
+      href: '/metas',
       priority: 40,
     });
   }

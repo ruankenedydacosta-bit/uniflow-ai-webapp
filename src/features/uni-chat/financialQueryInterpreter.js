@@ -331,7 +331,7 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
     case 'goal_feasibility': {
       const { goalProjections } = options;
       if (!goalProjections || goalProjections.length === 0) {
-        const msg = `${capitalize(subject)} não tem metas ativas para avaliar. Crie uma meta em Objetivos para que eu possa analisar a viabilidade.`;
+        const msg = `${capitalize(subject)} não tem metas ativas para avaliar. Crie uma meta em Metas para que eu possa analisar a viabilidade.`;
         return { text: msg, highlight: null };
       }
       const lines = goalProjections.map((g) => {
@@ -365,7 +365,7 @@ function buildQueryResponseRaw(queryType, ctx, mode, options = {}) {
     case 'required_monthly': {
       const { goalProjections } = options;
       if (!goalProjections || goalProjections.length === 0) {
-        const msg = `${capitalize(subject)} não tem metas ativas. Crie uma meta em Objetivos para calcular quanto guardar por mês.`;
+        const msg = `${capitalize(subject)} não tem metas ativas. Crie uma meta em Metas para calcular quanto guardar por mês.`;
         return { text: msg, highlight: null };
       }
       const lines = goalProjections.map((g) => {

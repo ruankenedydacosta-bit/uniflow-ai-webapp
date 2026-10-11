@@ -58,7 +58,7 @@ const REQUIRED_MODULE_PATHS = {
   [MODULE_IDS.RELATORIOS]: '/relatorios',
   [MODULE_IDS.OPEN_FINANCE]: '/open-finance',
   [MODULE_IDS.FUTURO]: '/futuro',
-  [MODULE_IDS.OBJETIVOS]: '/objetivos',
+  [MODULE_IDS.OBJETIVOS]: '/metas',
   [MODULE_IDS.UNI_AI]: '/uni-ai',
   [MODULE_IDS.SUPORTE]: '/suporte',
 };
