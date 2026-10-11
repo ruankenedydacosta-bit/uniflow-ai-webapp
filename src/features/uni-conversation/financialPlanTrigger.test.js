@@ -157,6 +157,15 @@ test('looksLikeUnclassifiedFinancialStatement detecta pedido falado com plural, 
   assert.equal(looksLikeUnclassifiedFinancialStatement('Quero adicionar uma conta nova'), false);
 });
 
+// BUG REAL EM PRODUCAO (voz, 10/10/2026): a Uni da conversa por voz disse
+// que não conseguia registrar movimentações.
+test('looksLikeUnclassifiedFinancialStatement detecta pedido com "lançamento" ou "movimentação" e verbo de criação', () => {
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Fazer um lançamento de teste: descrição “teste”, categoria “educação”, valor 350 reais, na data de cinco de outubro deste ano.'), true);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Faz um lançamento de 350 reais em educação'), true);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Cria uma movimentação de trezentos e cinquenta reais'), true);
+  assert.equal(looksLikeUnclassifiedFinancialStatement('Insere 80 reais de padaria'), true);
+});
+
 test('looksLikeUnclassifiedFinancialStatement NÃO dispara sem nenhum valor monetário real', () => {
   assert.equal(looksLikeUnclassifiedFinancialStatement('Oi, tudo bem?'), false);
   assert.equal(looksLikeUnclassifiedFinancialStatement('Coloquei uma música nova'), false);

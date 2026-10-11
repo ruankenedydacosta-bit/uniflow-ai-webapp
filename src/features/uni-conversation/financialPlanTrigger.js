@@ -200,8 +200,14 @@ export function looksLikeFreshBalanceStatement(text) {
 // ("adicione", "lançar", "incluir") ficavam de fora, e a frase ia para o chat
 // geral, que respondia "não consigo criar a movimentação por aqui". As
 // fronteiras são por letra Unicode porque \b não enxerga "í" de "saída".
-const LAUNCH_NOUN_RE = /(?:^|[^\p{L}])(?:despesas?|gastos?|receitas?|entradas?|pagamentos?|compras?|sa[íi]das?)(?=$|[^\p{L}])/iu;
-const LAUNCH_REQUEST_VERB_RE = /(?:^|[^\p{L}])(?:registrar|registre|lan[çc]ar|lan[çc]asse|adicionar|adiciona|adicione|incluir|inclua|anotar|anote)(?=$|[^\p{L}])/iu;
+//
+// BUG REAL EM PRODUCAO (voz, 10/10/2026): "Fazer um lançamento de teste:
+// descrição "teste", categoria "educação", valor 350 reais" ia para o chat
+// geral, que respondeu "não consigo registrar nem alterar lançamentos". A
+// palavra do próprio produto ("lançamento", "movimentação") não contava como
+// sinal de lançamento.
+const LAUNCH_NOUN_RE = /(?:^|[^\p{L}])(?:despesas?|gastos?|receitas?|entradas?|pagamentos?|compras?|sa[íi]das?|lan[çc]amentos?|movimenta[çc](?:[ãa]o|[õo]es)|transa[çc](?:[ãa]o|[õo]es))(?=$|[^\p{L}])/iu;
+const LAUNCH_REQUEST_VERB_RE = /(?:^|[^\p{L}])(?:registrar|registre|lan[çc]ar|lan[çc]asse|adicionar|adiciona|adicione|incluir|inclua|anotar|anote|criar|cria|crie|inserir|insere|insira|cadastrar|cadastra|cadastre)(?=$|[^\p{L}])/iu;
 
 export function looksLikeUnclassifiedFinancialStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;

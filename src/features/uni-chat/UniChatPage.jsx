@@ -82,6 +82,11 @@ import {
   montarHistoricoParaInterpretacao,
   montarRascunhoParaInterpretacao,
 } from '../uni-interpret/uniInterpretClient.js';
+import {
+  ROTAS_INTERPRETACAO,
+  escolherRotaDaInterpretacao,
+  interpretacaoParaRascunho,
+} from '../uni-interpret/uniInterpretRoteamento.js';
 import { createFinancialPlanService } from '../uni-financial-plan/index.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
@@ -4391,6 +4396,91 @@ export default function UniChatPage({ variant = 'full' }) {
       void publishInterpretedResult(result, text, historySnapshot);
   }
 
+  function runAgendaTurn(turn) {
+    const { functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot } = turn;
+    setIsTyping(true);
+    void agendaConversationRef.current.handle({
+      text: functionalText,
+      identity: agendaIdentity,
+      referenceDate: getLocalIsoDate(),
+      origin: messageSource,
+    }).then((result) => {
+      if (!isAgendaRequestCurrent(agendaRequest)) return;
+      setIsTyping(false);
+      if (result.route === 'financial' && result.financialText) {
+        financialAnalyticsOriginRef.current = result.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL;
+        financialConversation.setAnalyticsOrigin(financialAnalyticsOriginRef.current);
+        runDeterministicFinancialFlow(result.financialText, historySnapshot);
+        return;
+      }
+      if (result.handled && result.text) {
+        createAssistantResponse(result.text, { deduplicateNarration: false });
+      }
+    }).catch(() => {
+      if (!isAgendaRequestCurrent(agendaRequest)) return;
+      setIsTyping(false);
+      createAssistantResponse(
+        'Não consegui atualizar sua agenda agora. Tente novamente em instantes.',
+        { deduplicateNarration: false },
+      );
+    });
+  }
+
+  // #80: com a IA disponível, o uni-interpret decide o que a frase nova pede.
+  // As regras fixas só rodam quando ele não devolve interpretação (resolve
+  // false). Pedido de dinheiro nunca chega ao chat geral por aqui.
+  async function rotearPeloModelo(text, turn) {
+    const { historySnapshot, turnToken, agendaTurn } = turn;
+    setIsTyping(true);
+    let interpretacao;
+    try {
+      ({ interpretacao } = await uniInterpretClient.interpretar({
+        workspaceId: effectiveWorkspace.id,
+        frase: text,
+        historico: montarHistoricoParaInterpretacao(historySnapshot),
+      }));
+    } finally {
+      if (uniTurnTokenRef.current === turnToken) setIsTyping(false);
+    }
+    if (uniTurnTokenRef.current !== turnToken) return true;
+
+    let rota = escolherRotaDaInterpretacao(interpretacao);
+    if (!rota) return false;
+    // Parcela e recorrência o uni-interpret não modela: o plano cuida.
+    if (rota === ROTAS_INTERPRETACAO.LANCAMENTO && looksLikeComplexFinancialText(text)) {
+      rota = ROTAS_INTERPRETACAO.PLANO;
+    }
+
+    switch (rota) {
+      case ROTAS_INTERPRETACAO.LANCAMENTO: {
+        const { parsed, overrides } = interpretacaoParaRascunho(interpretacao, text);
+        const result = financialConversation.startFromParsed(parsed, overrides);
+        if (!result.handled) return false;
+        const phrased = await attemptNaturalPhrasing(result);
+        if (uniTurnTokenRef.current !== turnToken) return true;
+        publishConversationResult(phrased);
+        return true;
+      }
+      case ROTAS_INTERPRETACAO.PLANO: {
+        const handled = await attemptFinancialPlan(text);
+        if (handled || uniTurnTokenRef.current !== turnToken) return true;
+        createAssistantResponse('Não consegui montar esses lançamentos. Diga um de cada vez, com o valor e do que se trata.');
+        return true;
+      }
+      case ROTAS_INTERPRETACAO.CONSULTA:
+        runDeterministicFinancialFlow(text, historySnapshot);
+        return true;
+      case ROTAS_INTERPRETACAO.AGENDA:
+        runAgendaTurn(agendaTurn);
+        return true;
+      default:
+        // Conversa e o que o modelo não entendeu vão ao chat geral, que
+        // conhece o produto.
+        void handleUnresolvedMessage(text, historySnapshot);
+        return true;
+    }
+  }
+
   // BLOCO 1 — GATEWAY ÚNICO DE ENTRADA: voz (onFinalTranscript) e texto (onSend) convergem para o mesmo sendText, ponto único que alimenta o runUniEngineGateway em cada turno.
   function sendText(text, metadata) {
     if (!text.trim() || isTyping || isExecutingAction) return;
@@ -4424,6 +4514,9 @@ export default function UniChatPage({ variant = 'full' }) {
       mode,
     };
     const agendaRequest = { ...agendaIdentity, turnToken };
+    // #80: com o uni-interpret disponível, quem decide a intenção de uma
+    // frase nova é ele; a classificação por regex só vale sem IA.
+    const roteiaPeloModelo = Boolean(effectiveWorkspace?.id && uniInterpretClient.isSupported());
     const hasPendingAgendaConversation = agendaConversationRef.current.hasPending(agendaIdentity);
     const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation
       && !declaredIntent.startsWith('agenda_')
@@ -4438,7 +4531,7 @@ export default function UniChatPage({ variant = 'full' }) {
       void agendaConversationRef.current.abandonPending(agendaIdentity).catch(() => {});
     }
     const hasAgendaConversation = !shouldAbandonAgendaForFinancial
-      && (hasPendingAgendaConversation || declaredIntent.startsWith('agenda_'));
+      && (hasPendingAgendaConversation || (!roteiaPeloModelo && declaredIntent.startsWith('agenda_')));
     const hasPendingFinancialConversation = Boolean(
       pendingAction
       || isAccountCreationDependency(
@@ -4506,7 +4599,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // estado do módulo de integração é atualizado por messageId conforme o
     // fluxo avança, nunca no início do turno).
     lastToolCallingProcessedMessageIdRef.current = null;
-    if (declaredIntent === 'conversation_common') {
+    if (!roteiaPeloModelo && declaredIntent === 'conversation_common') {
       syncMessageToSupabase(userMsg);
       createAssistantResponse(
         resolveCommonConversationResponse(text),
@@ -4533,33 +4626,8 @@ export default function UniChatPage({ variant = 'full' }) {
       encerrarEdicao('expired');
     }
     if (hasAgendaConversation) {
-      setIsTyping(true);
       syncMessageToSupabase(userMsg);
-      void agendaConversationRef.current.handle({
-        text: functionalText,
-        identity: agendaIdentity,
-        referenceDate: getLocalIsoDate(),
-        origin: messageSource,
-      }).then((result) => {
-        if (!isAgendaRequestCurrent(agendaRequest)) return;
-        setIsTyping(false);
-        if (result.route === 'financial' && result.financialText) {
-          financialAnalyticsOriginRef.current = result.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL;
-          financialConversation.setAnalyticsOrigin(financialAnalyticsOriginRef.current);
-          runDeterministicFinancialFlow(result.financialText, historySnapshot);
-          return;
-        }
-        if (result.handled && result.text) {
-          createAssistantResponse(result.text, { deduplicateNarration: false });
-        }
-      }).catch(() => {
-        if (!isAgendaRequestCurrent(agendaRequest)) return;
-        setIsTyping(false);
-        createAssistantResponse(
-          'Não consegui atualizar sua agenda agora. Tente novamente em instantes.',
-          { deduplicateNarration: false },
-        );
-      });
+      runAgendaTurn({ functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot });
       return;
     }
     // REGRA GERAL: uma pendência incompatível nunca sequestra uma intenção
@@ -4602,6 +4670,17 @@ export default function UniChatPage({ variant = 'full' }) {
       if (uniTurnTokenRef.current !== turnToken) return;
       setIsTyping(false);
 
+      if (roteiaPeloModelo) {
+        const agendaTurn = { functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot };
+        void rotearPeloModelo(functionalText, { historySnapshot, turnToken, agendaTurn }).then((handled) => {
+          if (!handled) runRuleBasedFlow();
+        });
+        return;
+      }
+      runRuleBasedFlow();
+    }, UNI_THINK_MIN_MS);
+
+    function runRuleBasedFlow() {
       // BLOCO E: heurística determinística (nunca IA) -- frases que
       // parecem multioperação/parceladas/recorrentes/transferência tentam
       // a camada neural (financial_plan) ANTES do parser de uma única
@@ -4619,7 +4698,7 @@ export default function UniChatPage({ variant = 'full' }) {
       }
 
       runDeterministicFinancialFlow(functionalText, historySnapshot);
-    }, UNI_THINK_MIN_MS);
+    }
   }
 
   function handleSuggestionSelect(item) {

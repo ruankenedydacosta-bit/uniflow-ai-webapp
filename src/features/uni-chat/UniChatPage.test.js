@@ -6,9 +6,7 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 test('P1-09: resultado assíncrono da Agenda valida turno, conversa, usuário e workspace antes de publicar', async () => {
   const page = await source('./UniChatPage.jsx');
-  const start = page.indexOf('if (hasAgendaConversation) {');
-  const end = page.indexOf('if (hasPendingConversation) {', start);
-  const block = page.slice(start, end);
+  const { body: block } = extractFunctionBody(page, 'function runAgendaTurn(turn) {');
 
   assert.match(block, /isAgendaRequestCurrent\(agendaRequest\)/);
   assert.match(page, /const agendaRequest = \{ \.\.\.agendaIdentity, turnToken \};/);
@@ -34,7 +32,9 @@ test('runtime: saudação funcional é removida apenas da cópia usada pelos dom
 
   assert.match(body, /const functionalText = stripLeadingConversationalPrefix\(text\) \|\| text\.trim\(\);/);
   assert.match(body, /const userMsg = buildUserMessage\(text\);/);
-  assert.match(body, /agendaConversationRef\.current\.handle\(\{\s*text: functionalText,/);
+  assert.match(body, /runAgendaTurn\(\{ functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot \}\);/);
+  const { body: agenda } = extractFunctionBody(page, 'function runAgendaTurn(turn) {');
+  assert.match(agenda, /agendaConversationRef\.current\.handle\(\{\s*text: functionalText,/);
   assert.match(body, /runDeterministicFinancialFlow\(functionalText, historySnapshot\);/);
 });
 
@@ -3544,12 +3544,12 @@ test('Agenda voice-first usa o mesmo sendText e abandona pendência antes de uma
   const page = await source('UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
   assert.match(body, /metadata\?\.source === 'voice'/);
-  assert.match(body, /agendaConversationRef\.current\.handle\(\{/);
+  assert.match(body, /runAgendaTurn\(\{/);
   assert.match(body, /const shouldAbandonAgendaForFinancial = hasPendingAgendaConversation/);
   assert.match(body, /isRetiredBalanceRequest/);
   assert.match(body, /void agendaConversationRef\.current\.abandonPending\(agendaIdentity\)\.catch\(\(\) => \{\}\);/);
   const abandonIndex = body.indexOf('agendaConversationRef.current.abandonPending(agendaIdentity)');
-  const handleIndex = body.indexOf('agendaConversationRef.current.handle({');
+  const handleIndex = body.indexOf('runAgendaTurn({');
   assert.ok(abandonIndex >= 0 && handleIndex > abandonIndex);
   assert.match(body, /if \(hasAgendaConversation\)[\s\S]*return;[\s\S]*if \(hasPendingConversation\)/);
 });
@@ -3559,9 +3559,10 @@ test('Agenda voice-first usa identidade do workspace autenticado e o pipeline of
   const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
   assert.match(body, /workspaceId: effectiveWorkspace\?\.id/);
   assert.match(body, /conversationId: activeId \?\? 'local-conversation'/);
-  assert.match(body, /if \(result\.route === 'financial' && result\.financialText\)/);
-  assert.match(body, /runDeterministicFinancialFlow\(result\.financialText, historySnapshot\)/);
-  assert.match(body, /if \(result\.handled && result\.text\)[\s\S]*createAssistantResponse\(result\.text, \{ deduplicateNarration: false \}\)/);
+  const { body: agenda } = extractFunctionBody(page, 'function runAgendaTurn(turn) {');
+  assert.match(agenda, /if \(result\.route === 'financial' && result\.financialText\)/);
+  assert.match(agenda, /runDeterministicFinancialFlow\(result\.financialText, historySnapshot\)/);
+  assert.match(agenda, /if \(result\.handled && result\.text\)[\s\S]*createAssistantResponse\(result\.text, \{ deduplicateNarration: false \}\)/);
 });
 
 test('Sprint 2: conversationalMemoryRef é resetado em switchConversation, junto dos demais refs por conversa', async () => {
@@ -3874,10 +3875,7 @@ test('Preview R1: respostas e erros da Agenda podem narrar clarificações idên
     source('UniChatPage.jsx'),
     source('useUniResponsePipeline.js'),
   ]);
-  const agendaBlock = page.slice(
-    page.indexOf('if (hasAgendaConversation) {'),
-    page.indexOf('if (hasPendingConversation) {'),
-  );
+  const { body: agendaBlock } = extractFunctionBody(page, 'function runAgendaTurn(turn) {');
   assert.match(agendaBlock, /createAssistantResponse\(result\.text, \{ deduplicateNarration: false \}\)/);
   assert.match(agendaBlock, /deduplicateNarration: false/);
   assert.match(pipeline, /markSpoken\(userId, msg\.id\)/);
@@ -3897,8 +3895,8 @@ test('edição de lançamento salvo: pedido e resposta só são tratados sem ras
   assert.ok(desvio > -1);
   // Depois de conversa comum e antes da agenda: "muda a data do mercado pra
   // ontem" é classificado como agenda e precisa ser testado como edição antes.
-  assert.ok(desvio > page.indexOf("if (declaredIntent === 'conversation_common') {"));
-  assert.ok(desvio < page.indexOf('if (hasAgendaConversation) {\n      setIsTyping(true);'));
+  assert.ok(desvio > page.indexOf("if (!roteiaPeloModelo && declaredIntent === 'conversation_common') {"));
+  assert.ok(desvio < page.indexOf('if (hasAgendaConversation) {\n      syncMessageToSupabase(userMsg);'));
   const trecho = page.slice(desvio, desvio + 1400);
   assert.match(trecho, /if \(!hasPendingFinancialConversation && !hasPendingAgendaConversation\) \{/);
   assert.match(trecho, /if \(edicaoAtiva\(\) && tratarRespostaDaEdicao\(functionalText, userMsg, turnToken\)\) return;/);
@@ -3967,4 +3965,31 @@ test('pergunta sobre a categoria com o card na tela não vira categoria nova', a
     page,
     /if \(startCategoryDependency\(resolvedInput\.requestedCategoryName, draftAction\)\) \{\s*setMessages\([\s\S]{0,120}message\.id === draftCardId/,
   );
+});
+
+// #80, BUG REAL EM PRODUCAO (voz, 10/10/2026): "Fazer um lançamento de
+// teste… valor 350 reais" não casava com a regex de intenção, ia para o chat
+// geral, e a Uni respondia que não conseguia registrar.
+test('#80: com IA, o uni-interpret decide a frase nova antes das regras fixas', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
+  assert.match(body, /const roteiaPeloModelo = Boolean\(effectiveWorkspace\?\.id && uniInterpretClient\.isSupported\(\)\);/);
+  const modelIdx = body.indexOf('void rotearPeloModelo(functionalText,');
+  const rulesIdx = body.indexOf('function runRuleBasedFlow() {');
+  assert.ok(modelIdx > -1 && rulesIdx > modelIdx, 'o modelo roda antes das regras');
+  assert.match(body, /if \(!handled\) runRuleBasedFlow\(\);/);
+  // Atalhos de regex não decidem a intenção quando o modelo está disponível.
+  assert.match(body, /if \(!roteiaPeloModelo && declaredIntent === 'conversation_common'\) \{/);
+  assert.match(body, /\(!roteiaPeloModelo && declaredIntent\.startsWith\('agenda_'\)\)/);
+});
+
+test('#80: lançamento e plano interpretados pelo modelo nunca vão ao chat geral', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
+  assert.notEqual(body, '');
+  const lancamento = body.slice(body.indexOf('case ROTAS_INTERPRETACAO.LANCAMENTO:'), body.indexOf('case ROTAS_INTERPRETACAO.CONSULTA:'));
+  assert.match(lancamento, /financialConversation\.startFromParsed\(parsed, overrides\)/);
+  assert.match(lancamento, /attemptFinancialPlan\(text\)/);
+  assert.doesNotMatch(lancamento, /handleUnresolvedMessage/);
+  assert.doesNotMatch(lancamento, /não consigo registrar/i);
 });
