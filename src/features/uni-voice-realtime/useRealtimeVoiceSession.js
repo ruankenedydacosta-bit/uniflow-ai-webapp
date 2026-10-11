@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { supabase, supabaseAnonKey, supabaseUrl } from '../../services/supabaseClient.js';
 import {
   createRealtimeSessionState,
@@ -85,6 +85,12 @@ function sendEvent(channel, event) {
   if (channel?.readyState === 'open') channel.send(JSON.stringify(event));
 }
 
+function setLocalStreamMuted(stream, muted) {
+  stream?.getAudioTracks().forEach((track) => {
+    track.enabled = !muted;
+  });
+}
+
 function closeConnection(connection) {
   clearTimeout(connection.goodbyeTimer);
   closeVoiceReservation(connection.reservation);
@@ -136,6 +142,7 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
   const connectionRef = useRef(null);
   const onToolCallRef = useRef(onToolCall);
   const endSoundRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
     const previous = stateRef.current;
@@ -163,6 +170,7 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
     const connection = connectionRef.current;
     connectionRef.current = null;
     if (connection) closeConnection(connection);
+    setIsMuted(false);
   }, []);
 
   const stop = useCallback((reason = 'user') => {
@@ -234,6 +242,8 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       ensureActive();
+      // Mutar durante a conexão vale para o microfone que acabou de abrir.
+      setLocalStreamMuted(connection.localStream, connection.muted);
 
       const session = await requestClientSecret(eagerness);
       connection.reservation = createVoiceReservation({
@@ -380,6 +390,17 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
 
   const getLocalStream = useCallback(() => connectionRef.current?.localStream ?? null, []);
 
+  // Mutar desliga a trilha do microfone sem fechar a conversa: a OpenAI
+  // passa a receber silêncio e a Uni continua falando. Sem fala, a regra de
+  // inatividade segue valendo.
+  const setMuted = useCallback((muted) => {
+    const connection = connectionRef.current;
+    if (!connection) return;
+    connection.muted = Boolean(muted);
+    setLocalStreamMuted(connection.localStream, connection.muted);
+    setIsMuted(connection.muted);
+  }, []);
+
   // Conta à Uni algo que aconteceu na tela (ex.: toque no card) e pede que
   // ela fale. Entra no histórico da conversa como mensagem do sistema, para
   // a Uni lembrar depois que aquilo já foi resolvido.
@@ -393,5 +414,5 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
     return true;
   }, []);
 
-  return { state, now, start, stop, markFalseInterruption, getLocalStream, narrateScreenEvent };
+  return { state, now, start, stop, markFalseInterruption, getLocalStream, narrateScreenEvent, isMuted, setMuted };
 }

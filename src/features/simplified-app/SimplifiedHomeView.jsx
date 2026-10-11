@@ -48,6 +48,7 @@ import {
   writeDismissedVoiceMinutesNotice,
 } from './voiceMinutesPresentation.js';
 import {
+  canMuteRealtimeConversation,
   resolveRealtimeVoiceModeView,
   selectVoiceConversationMessages,
   snapshotVoiceConversationStart,
@@ -949,6 +950,9 @@ function SimplifiedHomeView({
     if (status === REALTIME_STATUS.CONNECTING) return 'Se o navegador pedir, permita o uso do microfone.';
     // Com a fala da pessoa já na tela, a dica genérica sai para não disputar
     // espaço com ela.
+    if (isRealtimeActive && realtime.isMuted) {
+      return 'Toque em Desmutar para voltar a falar. Sem fala por um minuto, a conversa é encerrada.';
+    }
     if (isRealtimeActive) {
       return realtimeTranscript ? null : 'Fale normalmente. Você pode interromper a Uni a qualquer momento.';
     }
@@ -1053,13 +1057,19 @@ function SimplifiedHomeView({
         <SimplifiedVoiceMode
           open={isVoiceModeOpen}
           interactionState={interactionState}
-          view={resolveRealtimeVoiceModeView(realtime.state.status, { hasPendingDraft: voiceHasPendingDraft })}
+          view={resolveRealtimeVoiceModeView(realtime.state.status, {
+            hasPendingDraft: voiceHasPendingDraft,
+            isMuted: realtime.isMuted,
+          })}
           hint={realtimeHint}
           response={isVoiceModeOpen ? compactResponse : null}
           transcript={realtimeTranscript}
           isUserSpeaking={isRealtimeUserSpeaking}
           hasReply={voiceHasReply}
           getVoiceStream={realtime.getLocalStream}
+          microphone={canMuteRealtimeConversation(realtime.state.status)
+            ? { isMuted: realtime.isMuted, onToggle: () => realtime.setMuted(!realtime.isMuted) }
+            : null}
           voiceMinutes={voiceMinutes}
           isVoiceMinutesOut={isVoiceMinutesOut}
           onAction={handleRealtimeVoiceModeAction}
