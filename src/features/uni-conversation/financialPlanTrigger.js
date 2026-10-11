@@ -200,12 +200,24 @@ export function looksLikeFreshBalanceStatement(text) {
 // ("adicione", "lançar", "incluir") ficavam de fora, e a frase ia para o chat
 // geral, que respondia "não consigo criar a movimentação por aqui". As
 // fronteiras são por letra Unicode porque \b não enxerga "í" de "saída".
+//
+// BUG REAL EM PRODUCAO (voz, 10/10/2026): "Fazer um lançamento de teste:
+// descrição "teste", categoria "educação", valor 350 reais" ia para o chat
+// geral, que respondeu "não consigo registrar nem alterar lançamentos". A
+// palavra do próprio produto ("lançamento", "movimentação") não contava como
+// sinal de lançamento. Ela só conta fora de pergunta: "quais lançamentos
+// acima de 200 reais?" é consulta.
 const LAUNCH_NOUN_RE = /(?:^|[^\p{L}])(?:despesas?|gastos?|receitas?|entradas?|pagamentos?|compras?|sa[íi]das?)(?=$|[^\p{L}])/iu;
-const LAUNCH_REQUEST_VERB_RE = /(?:^|[^\p{L}])(?:registrar|registre|lan[çc]ar|lan[çc]asse|adicionar|adiciona|adicione|incluir|inclua|anotar|anote)(?=$|[^\p{L}])/iu;
+const ENTRY_NOUN_RE = /(?:^|[^\p{L}])(?:lan[çc]amentos?|movimenta[çc](?:[ãa]o|[õo]es)|transa[çc](?:[ãa]o|[õo]es))(?=$|[^\p{L}])/iu;
+const QUESTION_RE = /\?\s*$|^\s*(?:quais|qual|quanto|quantos|quantas|quando|onde|como|me\s+mostra|mostra|mostre|lista|liste|listar|ver|veja)(?=$|[^\p{L}])/iu;
+const LAUNCH_REQUEST_VERB_RE = /(?:^|[^\p{L}])(?:registrar|registre|lan[çc]ar|lan[çc]asse|adicionar|adiciona|adicione|incluir|inclua|anotar|anote|inserir|insere|insira)(?=$|[^\p{L}])/iu;
 
 export function looksLikeUnclassifiedFinancialStatement(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
   if (isAgendaExpression(text)) return false;
   if (!hasAnyAmountMention(text)) return false;
-  return FINANCIAL_VERB_RE.test(text) || LAUNCH_NOUN_RE.test(text) || LAUNCH_REQUEST_VERB_RE.test(text);
+  return FINANCIAL_VERB_RE.test(text)
+    || LAUNCH_NOUN_RE.test(text)
+    || LAUNCH_REQUEST_VERB_RE.test(text)
+    || (ENTRY_NOUN_RE.test(text) && !QUESTION_RE.test(text));
 }

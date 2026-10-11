@@ -174,6 +174,37 @@ export function useUniConversation({
     return { handled: true, parsed: parsedForAction, action, response, memory };
   }, [accounts, buildAction, categories, profileId, referenceDate, resolveParsedMemory, responseOptions]);
 
+  // Rascunho montado a partir da interpretação do uni-interpret (#80): o
+  // parsed vem do modelo, não de parseFinancialText. A memória de
+  // classificação não entra aqui porque a função já a recebe no prompt.
+  const startFromParsed = useCallback((parsed, overrides = {}) => {
+    dispatch({ type: 'INTERPRET' });
+    contextRef.current = createConversationContext();
+    overridesRef.current = {
+      ...overrides,
+      clientOperationId: createClientOperationId(),
+      analyticsOrigin: analyticsOriginRef.current,
+    };
+    const action = buildAction(parsed, overridesRef.current);
+
+    if (action.status === 'unsupported') {
+      dispatch({ type: 'RESET' });
+      return { handled: false, parsed, action };
+    }
+
+    const response = action.status === 'ready'
+      ? buildConfirmationResponse(action, responseOptions)
+      : buildClarificationResponse(action, responseOptions);
+    dispatch({
+      type: action.status === 'ready' ? 'AWAIT_CONFIRMATION' : 'NEEDS_CLARIFICATION',
+      parsed,
+      action,
+      response: response.text,
+      memory: null,
+    });
+    return { handled: true, parsed, action, response, memory: null };
+  }, [buildAction, responseOptions]);
+
   // BUG REAL EM PRODUCAO: quando provideInput/correct é chamado NO MESMO
   // turno em que interpret() acabou de rodar (ex.: attemptCategoryInference
   // em UniChatPage.jsx, que faz isso de forma síncrona logo após o
@@ -322,6 +353,7 @@ export function useUniConversation({
   return {
     state,
     interpret,
+    startFromParsed,
     correct,
     provideInput,
     confirm,
