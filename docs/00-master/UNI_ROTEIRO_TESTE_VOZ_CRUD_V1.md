@@ -7,7 +7,7 @@ A conversa por voz não decide nada. Ela passa a frase ao chat (`enviar_para_uni
 ## Antes de começar
 
 - Janela anônima, usuário de teste, espaço Pessoal.
-- Pelo menos duas contas (ex.: Nubank e Itaú), três lançamentos recentes de Uber em dias diferentes, uma categoria sem uso (ex.: Pets) e uma meta em aberto sem valor inicial e sem aporte (ex.: Viagem).
+- Pelo menos duas contas (ex.: Nubank e Itaú), três lançamentos recentes de Uber em dias diferentes, uma categoria sem uso (ex.: Pets) e uma meta em aberto sem valor inicial e sem aporte (ex.: Viagem). Para aporte e retirada, outra meta ativa vinculada a uma conta (ex.: Reserva, vinculada à Poupança).
 - Confira em Conta → Seu plano que ainda há minutos de voz. Sem minutos, a conversa por voz não abre e o roteiro todo fica "não testado", não "falhou".
 - Abra a conversa por voz pelo orb da Uni na barra inferior. Fale com pausas naturais.
 - Registre o resultado de cada linha na issue #193: ok, falhou (com o que a Uni falou) ou não testado.
@@ -36,12 +36,19 @@ A conversa por voz não decide nada. Ela passa a frase ao chat (`enviar_para_uni
 
 | # | Diga | A Uni faz | A Uni fala |
 |---|---|---|---|
-| 9 | "Quero juntar 5 mil para a viagem até dezembro" | Card de criar meta com nome, valor e prazo. | Nome, valor e prazo, e pergunta se pode criar. Depois de criar, avisa que o aporte se registra na tela Metas. |
+| 9 | "Quero juntar 5 mil para a viagem até dezembro" | Card de criar meta com nome, valor e prazo. | Nome, valor e prazo, e pergunta se pode criar. Depois de criar, diz como registrar um aporte pela conversa. |
 | 10 | "Como está a meta da viagem?" | Responde sem card. | Quanto está guardado, quanto falta e o prazo. Sem alvo ("como estão as minhas metas?"), resume até 4 metas em aberto. |
 | 11 | "Muda a meta da viagem para 8 mil" | Card de alterar meta com antes e depois. | O que muda e pergunta se pode confirmar. |
 | 12 | "Apaga a meta da viagem" | Meta sem dinheiro guardado (sem aporte e sem valor inicial): card de excluir. Meta com dinheiro guardado: não exclui e manda para a tela Metas. | O nome e pergunta se pode excluir, ou explica que a meta tem dinheiro guardado e que a exclusão é na tela Metas. |
 
-Aporte e retirada pela conversa ficam para depois da #158.
+### Aporte e retirada (#161)
+
+| # | Diga | A Uni faz | A Uni fala |
+|---|---|---|---|
+| 12a | "Guardei 300 na reserva" | Com mais de uma conta além da Poupança: pergunta de qual saiu, sem card. | A pergunta com os nomes das contas. Diga "do Nubank". |
+| 12b | (depois de 12a) "Do Nubank" | Card "Registrar aporte": valor, data, transferência de Nubank para Poupança e quanto fica guardado. | O valor e a transferência, e pergunta se pode registrar. Depois de confirmar, o novo valor guardado. Confira a transferência no Financeiro. |
+| 12c | "Tirei 100 da reserva, só na meta" | Card "Retirar da meta" com Financeiro "Não lança". | O valor, sem lançar no Financeiro, e pergunta se pode registrar. |
+| 12d | "Tirei 50 mil da reserva" | Recusa sem card. | Que a retirada passa do valor guardado e quanto a meta tem. |
 
 ## Agenda
 

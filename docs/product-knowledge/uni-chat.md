@@ -36,7 +36,9 @@ A Uni procura a movimentação pelo nome, pelo dia, pelo valor ou pela conta que
 
 **Categorias**: a Uni cria, renomeia e exclui categorias pela conversa. Por exemplo, "cria a categoria Pets", "troca o nome de Moradia para Casa" ou "tira a categoria Dívidas". A Uni mostra um card com o que vai mudar e só salva depois de **Confirmar**. "Quais são as minhas categorias" lista as categorias por tipo. Categorias padrão do app não podem ser renomeadas nem excluídas.
 
-**Metas**: a Uni cria, altera, exclui e consulta metas. Por exemplo, "quero juntar 5 mil para a viagem até dezembro", "muda a meta da viagem para 8 mil", "apaga a meta do carro" ou "como está a meta da viagem". Criar, alterar e excluir passam por um card de confirmação. Uma meta que já tem dinheiro guardado (aporte ou valor inicial) só pode ser excluída na tela Metas. Registrar um aporte ainda é feito na tela Metas.
+**Metas**: a Uni cria, altera, exclui e consulta metas. Por exemplo, "quero juntar 5 mil para a viagem até dezembro", "muda a meta da viagem para 8 mil", "apaga a meta do carro" ou "como está a meta da viagem". Criar, alterar e excluir passam por um card de confirmação. Uma meta que já tem dinheiro guardado (aporte ou valor inicial) só pode ser excluída na tela Metas.
+
+**Aporte e retirada de meta**: diga quanto guardou ou tirou, como "guardei 400 na viagem" ou "tirei 200 do casamento". O card mostra o valor, a data, a transferência que entra no Financeiro e quanto fica guardado. Se houver mais de uma conta possível, a Uni pergunta de qual saiu o dinheiro. Para não lançar no Financeiro, diga "só na meta".
 
 **Agenda**: além de marcar um compromisso, a Uni remarca ("passa o dentista pra quinta"), cancela ("desmarca o almoço com a Carla"), conclui ("já fiz a reunião") e exclui ("apaga o lembrete da vacina"). Cancelar muda o status do item; excluir apaga. Antes de cancelar ou excluir, a Uni pergunta se pode. Responda "sim" ou "não". Compromisso não tem card.
 
@@ -68,7 +70,6 @@ Sessão autenticada. A geração de respostas por IA depende de configuração d
 - A Uni não acessa dados de outro espaço ou de outro usuário.
 - Pela conversa não dá para alterar ou excluir transferências, ajustes de saldo, parcelas nem movimentações importadas, nem trocar despesa por receita. Faça isso na tela Financeiro.
 - A Uni exclui uma movimentação por vez. Exclusão em lote só na tela Financeiro.
-- Aporte e retirada de meta ainda são feitos na tela Metas.
 - A Uni procura entre as movimentações mais recentes. Para uma movimentação mais antiga, diga o dia em que ela foi feita.
 - Não há memória psicológica ou perfil comportamental ilimitado sendo usado nas respostas do chat nesta fase.
 - O botão de atalho "Perguntar à Uni" em várias telas (CRM, Clientes, Agenda, Relatórios, Configurações, Projetos) ainda está desabilitado ("Disponível em breve") — hoje a conversa acontece na Home, na tela de voz e em `/app/uni`.

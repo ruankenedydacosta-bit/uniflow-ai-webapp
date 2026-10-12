@@ -32,7 +32,9 @@ Nenhum além de ter um espaço ativo.
 
 ## Limitações atuais
 
-Pela conversa e pela voz, a Uni cria, altera, exclui e consulta metas, sempre com um card de confirmação antes de salvar. Uma meta que já tem dinheiro guardado (aporte ou valor inicial) só pode ser excluída na tela Metas. Registrar aporte ou retirada ainda é feito na tela Metas.
+Pela conversa e pela voz, a Uni cria, altera, exclui e consulta metas, sempre com um card de confirmação antes de salvar. Uma meta que já tem dinheiro guardado (aporte ou valor inicial) só pode ser excluída na tela Metas.
+
+A Uni também registra aporte e retirada: "guardei 400 na viagem" ou "tirei 200 do casamento". O card mostra o valor, a data, a transferência que entra no Financeiro e quanto fica guardado. As regras são as mesmas da tela: a transferência vai da conta de onde saiu o dinheiro para a conta vinculada à meta (na retirada, o inverso). Quando há mais de uma conta possível, a Uni pergunta de qual saiu. Para não lançar no Financeiro, diga "só na meta". Meta sem conta vinculada recebe o aporte sem transferência. Retirada maior que o valor guardado e meta concluída são recusadas. Meta pausada só aceita retirada.
 
 ## Mensagens de erro conhecidas
 

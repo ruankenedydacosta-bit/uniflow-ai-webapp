@@ -119,8 +119,7 @@ um desses recursos estiver indisponível, a digitação continua funcionando.
 - Transferências e pagamentos não podem ser executados por voz nesta versão.
   Alterar ou excluir transferências, ajustes de saldo, parcelas e movimentações
   importadas também não.
-- A Uni exclui uma movimentação por vez. Aporte e retirada de meta ainda são
-  feitos na tela Metas.
+- A Uni exclui uma movimentação por vez.
 - O cache de áudio tem validade de 30 dias; depois disso, uma nova geração pode ocorrer mesmo para o mesmo texto.
 - Configurações adicionais de voz (além do interruptor liga/desliga) ainda não estão disponíveis ("Voz e interação" está marcado "em breve").
 
