@@ -11,7 +11,7 @@ import { AnelDeProgresso } from '../features/goals/components/GoalListCard';
 import { mensagemDoErroAoExcluir, MOVIMENTOS } from '../features/goals/aporteDaMeta.js';
 import { calcProgress } from '../features/goals/goalCalc.js';
 import { listContributions } from '../features/goals/goalService';
-import { FINANCIAL_DATA_CHANGED_EVENT } from '../services/financialDataEvents.js';
+import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../services/financialDataEvents.js';
 import { dataDoAporte, numerosDaMeta, precisaDeAjuste, previsaoDaUni } from '../features/goals/detalheDaMeta.js';
 import { linhaDeApoio, seloDaMeta } from '../features/goals/listaDeMetas.js';
 import SimplifiedConfirmModal from '../features/simplified-app/SimplifiedConfirmModal.jsx';
@@ -143,7 +143,9 @@ export default function MetaDetalhePage() {
     const resultado = await addGoalContribution(meta.id, values);
     if (resultado?.error) return resultado;
     setMovimento(null);
-    await carregarAportes();
+    // A transferência lançada junto muda saldos e lista do Financeiro; o
+    // aviso também recarrega os aportes desta tela.
+    notifyFinancialDataChanged('meta-aporte');
     return resultado;
   }
 
@@ -167,7 +169,7 @@ export default function MetaDetalhePage() {
       return;
     }
     setAporteParaExcluir(null);
-    await carregarAportes();
+    notifyFinancialDataChanged('meta-aporte');
   }
 
   return (
@@ -244,22 +246,32 @@ export default function MetaDetalhePage() {
           <ul className={styles.contributionList}>
             {aportes.map((aporte) => {
               const retirada = Number(aporte.amount) < 0;
+              const conteudo = (
+                <>
+                  <span className={styles.contributionText}>
+                    <span>{retirada ? `${dataDoAporte(aporte.contribution_date)} · Retirada` : dataDoAporte(aporte.contribution_date)}</span>
+                    {aporte.note ? <span className={styles.contributionNote}>{aporte.note}</span> : null}
+                  </span>
+                  <strong className={styles.contributionAmount}>
+                    {retirada ? `−${formatCurrency(Math.abs(aporte.amount))}` : formatCurrency(aporte.amount)}
+                  </strong>
+                </>
+              );
+              // Meta concluída não muda de valor: a lista fica só para leitura.
               return (
                 <li key={aporte.id}>
-                  <button
-                    type="button"
-                    className={styles.contribution}
-                    onClick={() => pedirExclusaoDoAporte(aporte)}
-                    aria-label={`${retirada ? 'Retirada' : 'Aporte'} de ${formatCurrency(Math.abs(aporte.amount))} em ${dataDoAporte(aporte.contribution_date)}. Tocar para excluir.`}
-                  >
-                    <span className={styles.contributionText}>
-                      <span>{retirada ? `${dataDoAporte(aporte.contribution_date)} · Retirada` : dataDoAporte(aporte.contribution_date)}</span>
-                      {aporte.note ? <span className={styles.contributionNote}>{aporte.note}</span> : null}
-                    </span>
-                    <strong className={styles.contributionAmount}>
-                      {retirada ? `−${formatCurrency(Math.abs(aporte.amount))}` : formatCurrency(aporte.amount)}
-                    </strong>
-                  </button>
+                  {concluida ? (
+                    <div className={styles.contribution}>{conteudo}</div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.contribution}
+                      onClick={() => pedirExclusaoDoAporte(aporte)}
+                      aria-label={`${retirada ? 'Retirada' : 'Aporte'} de ${formatCurrency(Math.abs(aporte.amount))} em ${dataDoAporte(aporte.contribution_date)}. Tocar para excluir.`}
+                    >
+                      {conteudo}
+                    </button>
+                  )}
                 </li>
               );
             })}
@@ -272,7 +284,7 @@ export default function MetaDetalhePage() {
           {!concluida ? (
             <>
               <OutlineButton variant="secondary" onClick={() => { setMenuAberto(false); setEditando(true); }}>Editar meta</OutlineButton>
-              {numeros.guardado > 0 ? (
+              {(ativa || pausada) && numeros.guardado > 0 ? (
                 <OutlineButton variant="secondary" onClick={() => abrirMovimento(MOVIMENTOS.RETIRADA)}>Retirar da meta</OutlineButton>
               ) : null}
               <OutlineButton variant="secondary" onClick={alternarPausa}>{pausada ? 'Retomar meta' : 'Pausar meta'}</OutlineButton>
@@ -289,7 +301,10 @@ export default function MetaDetalhePage() {
         title={confirmacao === 'concluir' ? 'Concluir a meta?' : 'Excluir a meta?'}
         description={confirmacao === 'concluir'
           ? `"${meta.name}" vai para Concluídas e para de receber aportes.`
-          : `"${meta.name}" e os aportes registrados nela serão apagados.`}
+          : [
+            `"${meta.name}" e os aportes registrados nela serão apagados.`,
+            aportes.some((aporte) => aporte.transaction_id) ? 'As transferências lançadas no Financeiro continuam lá.' : '',
+          ].join(' ').trim()}
         confirmLabel={confirmacao === 'concluir' ? 'Concluir meta' : 'Excluir meta'}
         onConfirm={confirmar}
         loading={processando}

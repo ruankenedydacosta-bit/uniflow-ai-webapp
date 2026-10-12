@@ -29,7 +29,12 @@ import styles from './GoalCreateFlow.module.css';
 export default function GoalContributionSheet({ meta, movimento, onClose, onSave }) {
   const formId = useId();
   const { workspace } = useSession();
-  const { activeAccounts, isLoading: carregandoContas } = useAccounts({ workspaceId: workspace?.id });
+  const {
+    activeAccounts,
+    isLoading: carregandoContas,
+    error: erroDasContas,
+    refresh: recarregarContas,
+  } = useAccounts({ workspaceId: workspace?.id });
   const retirada = movimento === MOVIMENTOS.RETIRADA;
 
   const [hoje] = useState(() => new Date());
@@ -48,8 +53,9 @@ export default function GoalContributionSheet({ meta, movimento, onClose, onSave
   const atalhos = atalhosDeValor(meta, movimento);
   const transferencia = transferenciaDaMeta(meta, activeAccounts);
   // Sem conta vinculada não há o que esperar. Com ela, salvar antes de as
-  // contas chegarem gravaria o aporte sem a transferência.
-  const esperandoContas = carregandoContas && Boolean(meta.linked_account_id);
+  // contas chegarem, ou com a lista que falhou, gravaria o aporte sem a
+  // transferência que a folha promete.
+  const esperandoContas = Boolean(meta.linked_account_id) && (carregandoContas || Boolean(erroDasContas));
   // Com uma conta só do outro lado, ela já vem escolhida.
   const contaEscolhida = contaId || (transferencia.contas.length === 1 ? transferencia.contas[0].id : '');
   const nomeDaConta = transferencia.contas.find((conta) => conta.id === contaEscolhida)?.name;
@@ -157,7 +163,12 @@ export default function GoalContributionSheet({ meta, movimento, onClose, onSave
           />
         </Field>
 
-        {esperandoContas ? null : transferencia.disponivel ? (
+        {erroDasContas && meta.linked_account_id && !carregandoContas ? (
+          <div className={styles.pushNotice}>
+            <p className={styles.helper}>Não foi possível carregar as contas para lançar a transferência no Financeiro.</p>
+            <OutlineButton variant="secondary" onClick={() => recarregarContas()}>Tentar de novo</OutlineButton>
+          </div>
+        ) : esperandoContas ? null : transferencia.disponivel ? (
           <>
             <div className={styles.toggleRow}>
               <span className={styles.toggleText}>

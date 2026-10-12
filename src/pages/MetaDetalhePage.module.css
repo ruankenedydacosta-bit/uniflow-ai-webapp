@@ -151,6 +151,10 @@
   cursor: pointer;
 }
 
+div.contribution {
+  cursor: default;
+}
+
 .contribution:focus-visible {
   outline: 2px solid var(--uf-app-focus);
   outline-offset: 2px;

@@ -155,7 +155,11 @@ $function$;
 -- ============================================================================
 -- excluir_movimento_da_meta: desfaz um aporte ou uma retirada, com a
 -- transferência que foi junto. Excluir um aporte não pode deixar o valor
--- guardado negativo (houve retirada depois dele).
+-- guardado negativo (houve retirada depois dele), e meta concluída não muda
+-- de valor, como na retirada. Se a RLS não deixar apagar a transferência,
+-- nada é excluído: o aporte não some deixando a transferência sozinha no
+-- Financeiro. Erros: aporte_nao_encontrado, meta_nao_encontrada,
+-- meta_concluida, retirada_maior_que_guardado, transferencia_nao_excluida.
 -- ============================================================================
 
 create or replace function public.excluir_movimento_da_meta(p_contribution_id uuid)
@@ -185,14 +189,23 @@ begin
     raise exception using errcode = 'P0001', message = 'meta_nao_encontrada';
   end if;
 
+  if v_meta.status = 'completed' then
+    raise exception using errcode = 'P0001', message = 'meta_concluida';
+  end if;
+
   if v_meta.current_amount - v_aporte.amount < 0 then
     raise exception using errcode = 'P0001', message = 'retirada_maior_que_guardado';
   end if;
 
   delete from public.goal_contributions where id = v_aporte.id;
 
+  -- Transferência já apagada no Financeiro deixou transaction_id nulo (on
+  -- delete set null); aqui ela ainda existe e precisa sair junto.
   if v_aporte.transaction_id is not null then
     delete from public.transactions where id = v_aporte.transaction_id;
+    if not found then
+      raise exception using errcode = 'P0001', message = 'transferencia_nao_excluida';
+    end if;
   end if;
 
   update public.financial_goals

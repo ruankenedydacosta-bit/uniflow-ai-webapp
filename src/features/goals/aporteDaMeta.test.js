@@ -77,8 +77,10 @@ test('transferência exige conta vinculada e outra conta para a ponta oposta', (
   assert.equal(semVinculada.disponivel, false);
   assert.match(semVinculada.motivo, /vincule uma conta à meta/);
 
-  // Conta vinculada desativada conta como sem conta vinculada.
-  assert.equal(transferenciaDaMeta(meta({ linked_account_id: 'antiga' }), CONTAS).disponivel, false);
+  // Conta vinculada arquivada sai das ativas: o motivo diz isso.
+  const arquivada = transferenciaDaMeta(meta({ linked_account_id: 'antiga' }), CONTAS);
+  assert.equal(arquivada.disponivel, false);
+  assert.match(arquivada.motivo, /foi arquivada/);
 
   const soAVinculada = transferenciaDaMeta(meta(), [CONTAS[1]]);
   assert.equal(soAVinculada.disponivel, false);
@@ -120,6 +122,8 @@ test('payload: retirada vai negativa; conta só segue com o Financeiro ligado', 
 test('erros do banco viram texto de tela; erro desconhecido pede nova tentativa', () => {
   assert.equal(mensagemDoErro({ message: 'meta_concluida' }), 'A meta está concluída e não recebe aporte nem retirada.');
   assert.equal(mensagemDoErro({ message: 'Failed to fetch' }, MOVIMENTOS.RETIRADA), 'Não foi possível registrar a retirada. Tente de novo.');
+  assert.equal(mensagemDoErro({ message: 'meta_nao_recebe_aporte' }, MOVIMENTOS.APORTE), 'Retome a meta para registrar um aporte.');
+  assert.equal(mensagemDoErro({ message: 'meta_nao_recebe_aporte' }, MOVIMENTOS.RETIRADA), 'Esta meta não aceita retirada.');
   assert.equal(mensagemDoErro(null, MOVIMENTOS.APORTE), 'Não foi possível registrar o aporte. Tente de novo.');
   assert.match(mensagemDoErroAoExcluir({ message: 'retirada_maior_que_guardado' }), /Exclua antes a retirada/);
   assert.equal(mensagemDoErroAoExcluir({ message: 'x' }), 'Não foi possível excluir. Tente de novo.');

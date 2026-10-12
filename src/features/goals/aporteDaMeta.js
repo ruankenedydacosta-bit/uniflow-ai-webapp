@@ -20,6 +20,7 @@ const MENSAGENS_DO_BANCO = {
   meta_sem_conta_vinculada: 'A meta não tem conta vinculada. Desligue "Registrar também no Financeiro" ou vincule uma conta em Editar meta.',
   conta_de_origem_invalida: 'Escolha uma conta diferente da conta vinculada à meta.',
   aporte_nao_encontrado: 'Este aporte já foi excluído.',
+  transferencia_nao_excluida: 'Você não tem permissão para excluir a transferência lançada no Financeiro. Peça a quem administra o espaço.',
 };
 
 function centavos(valor) {
@@ -57,7 +58,10 @@ export function transferenciaDaMeta(meta, contas) {
       disponivel: false,
       vinculada: null,
       contas: [],
-      motivo: 'Para lançar a transferência no Financeiro, vincule uma conta à meta em Editar meta.',
+      // Conta vinculada que sumiu das ativas foi arquivada ou excluída.
+      motivo: meta.linked_account_id
+        ? 'A conta vinculada à meta foi arquivada. Para lançar a transferência no Financeiro, escolha outra conta em Editar meta.'
+        : 'Para lançar a transferência no Financeiro, vincule uma conta à meta em Editar meta.',
     };
   }
   const outras = contas.filter((conta) => conta.id !== vinculada.id);
@@ -101,6 +105,10 @@ export function montarMovimento(formulario, clientOperationId) {
 }
 
 export function mensagemDoErro(error, movimento) {
+  // O banco usa o mesmo código para aporte e retirada em meta que não aceita.
+  if (error?.message === 'meta_nao_recebe_aporte' && movimento === MOVIMENTOS.RETIRADA) {
+    return 'Esta meta não aceita retirada.';
+  }
   const mensagem = MENSAGENS_DO_BANCO[error?.message];
   if (mensagem) return mensagem;
   return movimento === MOVIMENTOS.RETIRADA

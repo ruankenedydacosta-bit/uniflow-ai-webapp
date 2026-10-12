@@ -58,6 +58,9 @@ test('transferência só com conta vinculada; retirada inverte origem e destino'
 
 test('excluir desfaz o valor guardado e a transferência lançada junto', () => {
   const corpo = corpoDaFuncao('excluir_movimento_da_meta');
+  assert.match(corpo, /v_meta\.status = 'completed'[\s\S]*?meta_concluida/);
+  // RLS que barra o DELETE da transferência não pode deixar o aporte sumir sozinho.
+  assert.match(corpo, /delete from public\.transactions where id = v_aporte\.transaction_id;\s+if not found then[\s\S]*?transferencia_nao_excluida/);
   assert.match(corpo, /v_meta\.current_amount - v_aporte\.amount < 0[\s\S]*?retirada_maior_que_guardado/);
   assert.match(corpo, /delete from public\.transactions where id = v_aporte\.transaction_id;/);
   assert.match(corpo, /set current_amount = current_amount - v_aporte\.amount/);
