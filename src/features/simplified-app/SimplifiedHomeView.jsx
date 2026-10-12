@@ -899,6 +899,12 @@ function SimplifiedHomeView({
     onCancelAction(id);
   }
 
+  function handleCardUndo(id) {
+    realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.UNDO);
+    markHomeReply();
+    onUndoAction(id);
+  }
+
   function handleCardSaveEdit(id, overrides) {
     realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.EDIT);
     markHomeReply();
@@ -916,7 +922,7 @@ function SimplifiedHomeView({
       onConfirmAction={handleCardConfirm}
       onEditAction={() => navigate(SIMPLIFIED_ROUTES.UNI)}
       onCancelAction={handleCardCancel}
-      onUndoAction={onUndoAction}
+      onUndoAction={handleCardUndo}
       interactionState={interactionState}
       voiceStatus={voiceController.status}
       voiceCaptureStatus={voiceInput.status}

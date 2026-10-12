@@ -235,6 +235,9 @@ const ULTIMO_CONFIRMADO_TTL_MS = 30 * 60 * 1000;
 const TEXTO_EDICAO_VENCIDA = 'Essa alteração expirou e nada foi salvo. Peça de novo se ainda quiser alterar.';
 const TEXTO_CATEGORIA_VENCIDA = 'Esse pedido de categoria expirou e nada foi salvo. Peça de novo se ainda quiser.';
 const TEXTO_EXCLUSAO_VENCIDA = 'Esse pedido de exclusão expirou e nada foi apagado. Peça de novo se ainda quiser excluir.';
+// Depois que o prazo de desfazer passa, "desfazer" ainda recebe o aviso por
+// este tempo; depois disso a palavra volta a ser frase comum.
+const DESFAZER_AVISO_VENCIDO_MS = 5 * 60 * 1000;
 const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze([
   'register_income',
   'register_expense',
@@ -1101,6 +1104,7 @@ export default function UniChatPage({ variant = 'full' }) {
     setFinancialPlan(null);
     clearCurrentPendingAction();
     encerrarEdicao('expired');
+    encerrarExclusao('expired');
     encerrarPedidoDeCategoria('expired');
   }
 
@@ -1647,7 +1651,7 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!desfazivel) return;
     clearTimeout(desfazivel.timer);
     exclusaoDesfazivelRef.current = null;
-    if (status === 'expired') desfazerVencidoRef.current = { conversationId: desfazivel.conversationId };
+    if (status === 'expired') desfazerVencidoRef.current = { conversationId: desfazivel.conversationId, em: Date.now() };
     if (status) marcarDesfazer(desfazivel.messageId, status);
   }
 
@@ -1715,26 +1719,33 @@ export default function UniChatPage({ variant = 'full' }) {
       createAssistantResponse(TEXTO_EXCLUSAO_EM_LOTE, { deduplicateNarration: false });
       return;
     }
+    // Pedido novo: a exclusão anterior, pendente ou já vencida, não conta mais.
+    encerrarExclusao('expired');
+    desfazerVencidoRef.current = null;
     const contexto = contextoDaEdicao();
     const alvo = alvoDaExclusao(exclusao, contexto);
-    if (exclusao.ultimo) {
+    const ultimoId = exclusao.ultimo ? ultimoConfirmadoValido()?.id ?? null : null;
+    if (exclusao.ultimo && !alvo.criterios) {
       // "Esse último" é o que acabou de ser confirmado nesta conversa; sem
       // nada confirmado e sem outra pista, o lançamento mais recente.
-      const transacaoId = ultimoConfirmadoValido()?.id ?? (!alvo.criterios ? ultimoLancamentoCriado()?.id : null);
-      if (transacaoId) {
-        await prepararExclusao(transacaoId, turnToken);
-        return;
-      }
-      if (!alvo.criterios) {
+      const transacaoId = ultimoId ?? ultimoLancamentoCriado()?.id ?? null;
+      if (!transacaoId) {
         createAssistantResponse('Não achei um lançamento recente para excluir. Diga qual é, com o nome e o dia ou o valor.', { deduplicateNarration: false });
         return;
       }
+      await prepararExclusao(transacaoId, turnToken);
+      return;
     }
     if (!alvo.criterios) {
       createAssistantResponse(TEXTO_EXCLUSAO_SEM_ALVO, { deduplicateNarration: false });
       return;
     }
     let resultado = localizarLancamento(alvo, transactionsState.transactions, { categories: categoryState.categories });
+    // "Esse último Uber de 25": o último confirmado só vale se bater com a pista.
+    if (ultimoId && resultado.tipo === 'varios' && resultado.candidatos.some((candidato) => candidato.id === ultimoId)) {
+      await prepararExclusao(ultimoId, turnToken);
+      return;
+    }
     if (resultado.tipo === 'nenhum' && alvo.data) {
       // Fora dos carregados: com data dita, busca aquele dia no servidor.
       const conversationId = activeIdRef.current;
@@ -1926,6 +1937,41 @@ export default function UniChatPage({ variant = 'full' }) {
     void desfazerExclusao(messageId);
   }
 
+  // Sair da tela dentro do prazo: o relógio morre com a montagem e o botão
+  // que o histórico guardou expira na próxima (efeito de saneamento abaixo).
+  useEffect(() => () => {
+    const desfazivel = exclusaoDesfazivelRef.current;
+    if (desfazivel) clearTimeout(desfazivel.timer);
+    exclusaoDesfazivelRef.current = null;
+  }, []);
+
+  // Frase nova sem rascunho nem agenda em andamento. true quando ela já foi
+  // respondida aqui: resposta à lista ou ao card de exclusão, card vencido,
+  // ou "desfazer" logo depois de apagar (depois do prazo, o aviso, em vez
+  // de ir ao interpretador).
+  function tratarExclusaoNaFraseNova(texto, userMsg, turnToken) {
+    if (exclusaoPendenteRef.current && !exclusaoAtiva()) {
+      const vencida = exclusaoPendenteRef.current;
+      encerrarExclusao('expired');
+      if (vencida.etapa === 'confirmar' && respostaAoPedidoDeExclusao(texto, vencida.transacao) !== 'input') {
+        syncMessageToSupabase(userMsg);
+        createAssistantResponse(TEXTO_EXCLUSAO_VENCIDA, { deduplicateNarration: false });
+        return true;
+      }
+    }
+    if (exclusaoAtiva() && tratarRespostaDaExclusao(texto, userMsg, turnToken)) return true;
+    if (!ehPedidoDeDesfazer(texto)) return false;
+    const vencido = desfazerVencidoRef.current;
+    const avisaVencido = vencido
+      && vencido.conversationId === activeIdRef.current
+      && Date.now() - vencido.em <= DESFAZER_AVISO_VENCIDO_MS;
+    if (!exclusaoDesfazivelRef.current && !avisaVencido) return false;
+    desfazerVencidoRef.current = null;
+    syncMessageToSupabase(userMsg);
+    void desfazerExclusao(null);
+    return true;
+  }
+
   useEffect(() => {
     const conversationState = financialConversation.state;
     if (
@@ -2064,6 +2110,19 @@ export default function UniChatPage({ variant = 'full' }) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- isFinancialPlanActive lê financialPlanRef.current (ref, não estado); incluí-la recriaria o efeito a cada render sem mudar seu comportamento.
   }, [pendingHydrated, pendingAction, pendingActionStack, edicaoPendente, exclusaoPendente]);
+
+  // Botão Desfazer (#189) que o histórico trouxe de um reload ou de outra
+  // tela: o lançamento apagado vive no ref desta montagem, e sem ele não há
+  // o que desfazer.
+  useEffect(() => {
+    if (!pendingHydrated) return;
+    setMessages((current) => {
+      const orfao = (message) => message.undo?.status === 'available'
+        && exclusaoDesfazivelRef.current?.messageId !== message.id;
+      if (!current.some(orfao)) return current;
+      return current.map((message) => (orfao(message) ? { ...message, undo: { ...message.undo, status: 'expired' } } : message));
+    });
+  }, [pendingHydrated]);
 
   const reconcileConversations = useCallback(async () => {
     if (!effectiveWorkspace?.id) return;
@@ -3734,6 +3793,9 @@ export default function UniChatPage({ variant = 'full' }) {
     lastUserTurnTextRef.current = text;
     if (isRetiredBalanceRequest || isPublicFinancialSummary) {
       if (hasPendingConversation) abandonStalePendingState();
+      // A pergunta de fechamento da resposta ("quer mais alguma coisa?") não
+      // pode deixar um "sim" apagar o lançamento do card que ficou para trás.
+      encerrarExclusao('expired');
       syncMessageToSupabase(userMsg);
       responderResumoSemSaldo(functionalText, isRetiredBalanceRequest);
       return;
@@ -3741,6 +3803,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // Com algo pendente, o modelo não é consultado: o cumprimento é
     // respondido aqui para não virar resposta do rascunho ou da agenda.
     if (declaredIntent === 'conversation_common' && (!roteiaPeloModelo || hasPendingConversation)) {
+      encerrarExclusao('expired');
       syncMessageToSupabase(userMsg);
       createAssistantResponse(
         resolveCommonConversationResponse(text),
@@ -3763,27 +3826,10 @@ export default function UniChatPage({ variant = 'full' }) {
         }
       }
       if (edicaoAtiva() && tratarRespostaDaEdicao(functionalText, userMsg, turnToken)) return;
+      // Antes do pedido de edição: com o card de exclusão na tela, "corrige
+      // o mercado pra 50" descarta a exclusão em vez de deixá-la viva.
+      if (tratarExclusaoNaFraseNova(functionalText, userMsg, turnToken)) return;
       if (tentarPedidoDeEdicao(functionalText, userMsg, declaredIntent, turnToken)) return;
-      // Exclusão de lançamento salvo (#189): "desfazer" logo depois de
-      // apagar traz o lançamento de volta (depois do prazo, avisa em vez de
-      // ir ao interpretador); resposta à lista ou ao card de exclusão.
-      if (ehPedidoDeDesfazer(functionalText)
-        && (exclusaoDesfazivelRef.current || desfazerVencidoRef.current?.conversationId === activeIdRef.current)) {
-        desfazerVencidoRef.current = null;
-        syncMessageToSupabase(userMsg);
-        void desfazerExclusao(null);
-        return;
-      }
-      if (exclusaoPendenteRef.current && !exclusaoAtiva()) {
-        const vencida = exclusaoPendenteRef.current;
-        encerrarExclusao('expired');
-        if (vencida.etapa === 'confirmar' && respostaAoPedidoDeExclusao(functionalText, vencida.transacao) !== 'input') {
-          syncMessageToSupabase(userMsg);
-          createAssistantResponse(TEXTO_EXCLUSAO_VENCIDA, { deduplicateNarration: false });
-          return;
-        }
-      }
-      if (exclusaoAtiva() && tratarRespostaDaExclusao(functionalText, userMsg, turnToken)) return;
     } else {
       if (edicaoPendenteRef.current) encerrarEdicao('expired');
       if (exclusaoPendenteRef.current) encerrarExclusao('expired');
