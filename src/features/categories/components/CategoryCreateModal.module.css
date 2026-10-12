@@ -63,6 +63,8 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
+  /* Respiro para o anel de foco de 2px não ser cortado nas bordas. */
+  padding: 4px;
 }
 
 .iconSection + .iconSection {
