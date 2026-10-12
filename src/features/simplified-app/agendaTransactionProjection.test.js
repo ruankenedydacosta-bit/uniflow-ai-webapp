@@ -17,7 +17,7 @@ function transaction(overrides = {}) {
     id: 'tx-1',
     description: 'Aluguel',
     transaction_type: 'expense',
-    status: 'completed',
+    status: 'pending',
     transaction_date: '2026-10-09',
     created_at: localIso(2026, 10, 8),
     updated_at: localIso(2026, 10, 8),
@@ -25,7 +25,7 @@ function transaction(overrides = {}) {
   };
 }
 
-test('despesa lançada com data futura vira conta a pagar no dia da transação, mesmo com status concluído', () => {
+test('despesa prevista vira conta a pagar no dia da transação', () => {
   const [item] = buildScheduledTransactionAgendaItems([transaction()]);
 
   assert.equal(item.id, 'transaction:tx-1');
@@ -37,45 +37,36 @@ test('despesa lançada com data futura vira conta a pagar no dia da transação,
   assert.equal(isProjectedTransactionItem(item), true);
 });
 
-test('receita lançada com data futura vira recebimento', () => {
+test('receita prevista vira recebimento', () => {
   const [item] = buildScheduledTransactionAgendaItems([
     transaction({ transaction_type: 'income', description: 'Salário' }),
   ]);
   assert.equal(item.item_type, 'receivable');
 });
 
-test('lançamento com a data do próprio dia ou retroativo não é conta agendada', () => {
+test('lançamento realizado já aconteceu e não é conta agendada', () => {
   const items = buildScheduledTransactionAgendaItems([
-    transaction({ id: 'mesmo-dia', transaction_date: '2026-10-08' }),
-    transaction({ id: 'retroativo', transaction_date: '2026-10-01' }),
+    transaction({ id: 'pago', status: 'completed' }),
+    transaction({ id: 'pago-antigo', status: 'completed', transaction_date: '2026-10-01' }),
   ]);
   assert.deepEqual(items, []);
 });
 
-test('o critério é a data de registro em hora local, não o UTC', () => {
-  // 08/10 às 23h no fuso local pode ser 09/10 em UTC; continua sendo
-  // registro do dia 08, então a conta do dia 09 entra.
+test('previsto vencido e não confirmado continua na Agenda', () => {
   const items = buildScheduledTransactionAgendaItems([
-    transaction({ created_at: localIso(2026, 10, 8, 23) }),
+    transaction({ transaction_date: '2026-10-01' }),
   ]);
   assert.equal(items.length, 1);
 });
 
-test('cancelada, falha, transferência, ajuste e created_at inválido ficam fora', () => {
+test('cancelada, falha, transferência e ajuste ficam fora', () => {
   const items = buildScheduledTransactionAgendaItems([
     transaction({ id: 'a', status: 'canceled' }),
     transaction({ id: 'b', status: 'failed' }),
     transaction({ id: 'c', transaction_type: 'transfer' }),
     transaction({ id: 'd', transaction_type: 'adjustment' }),
-    transaction({ id: 'e', created_at: null }),
-    transaction({ id: 'f', created_at: 'data-invalida' }),
   ]);
   assert.deepEqual(items, []);
-});
-
-test('pendente lançada com data futura entra', () => {
-  const items = buildScheduledTransactionAgendaItems([transaction({ status: 'pending' })]);
-  assert.equal(items.length, 1);
 });
 
 test('item projetado cai no dia certo do calendário', () => {

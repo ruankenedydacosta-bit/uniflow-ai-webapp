@@ -245,10 +245,8 @@ const SCHEDULED_TRANSACTION_FIELDS =
   'id, description, transaction_type, status, transaction_date, created_at, updated_at';
 
 /**
- * Candidatas a conta na Agenda: despesas e receitas válidas do período, só
- * com os campos que a projeção usa. O filtro "lançada com antecedência"
- * (data depois do dia do registro) fica no cliente, porque compara duas
- * colunas no fuso local.
+ * Contas da Agenda: despesas e receitas previstas (status pending) do
+ * período, só com os campos que a projeção usa.
  */
 export async function listScheduledTransactionCandidates(
   workspaceId,
@@ -267,7 +265,7 @@ export async function listScheduledTransactionCandidates(
       .select(SCHEDULED_TRANSACTION_FIELDS)
       .eq('workspace_id', workspaceId)
       .in('transaction_type', ['expense', 'income'])
-      .not('status', 'in', '(canceled,failed)')
+      .eq('status', 'pending')
       .order('transaction_date', { ascending: true })
       .order('id', { ascending: true })
       .range(offset, offset + pageSize - 1);
