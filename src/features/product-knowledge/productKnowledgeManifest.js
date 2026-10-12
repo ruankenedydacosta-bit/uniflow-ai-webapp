@@ -128,7 +128,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A Home simplificada (rota /app/home) mostra a saudação, a interação principal com a Uni e a resposta compacta mais recente. Logo abaixo fica a Leitura do mês: até três frases sobre as saídas por categoria, escritas pela Uni com IA (Claude Haiku, da Anthropic) como uma analista de orçamento. A Uni recebe só os números do mês por categoria e o nome da categoria, nunca a descrição dos registros. A leitura fica guardada no aparelho até o fim do dia, e um registro novo faz a Uni escrever de novo; são até 10 por dia. Sem a Uni (sem conexão, limite do dia, demora), aparece uma leitura calculada pelo app. O orçamento de cada categoria é o teto mensal definido ou, sem teto, a média dos 3 meses anteriores. Para definir o teto: Financeiro, histórico, filtrar uma categoria de saída e tocar em Definir teto no cartão "Orçamento mensal"; Remover teto volta para a média. Tocar numa frase abre o Financeiro filtrado pela categoria. A Uni usa o espaço Pessoal/Empresa ativo e não deve cruzar dados entre espaços.',
+      'A Home simplificada (rota /app/home) mostra a saudação, a interação principal com a Uni e a resposta compacta mais recente. Logo abaixo fica a Leitura do mês: até três frases sobre as saídas por categoria, escritas pela Uni com IA (Claude Haiku, da Anthropic) como uma analista de orçamento. A Uni recebe só os números do mês por categoria e o nome da categoria, nunca a descrição dos registros. A leitura fica guardada no aparelho até o fim do dia, e um registro novo faz a Uni escrever de novo; são até 10 por dia. Sem a Uni (sem conexão, limite do dia, demora), aparece uma leitura calculada pelo app. O orçamento de cada categoria é o teto mensal definido ou, sem teto, a média dos 3 meses anteriores. Para definir o teto: Financeiro, histórico, filtrar uma categoria de saída e tocar em Definir teto no cartão "Orçamento mensal"; Remover teto volta para a média. Tocar numa frase abre o Financeiro filtrado pela categoria. Meta atrasada, em atenção ou que passou de 50% ou 100% no mês vira a primeira frase, e tocar abre a meta. A Uni usa o espaço Pessoal/Empresa ativo e não deve cruzar dados entre espaços.',
   },
   {
     id: 'financial-management',
@@ -152,11 +152,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/goals.md',
     routes: ['/app/metas'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['meta', 'metas', 'objetivo', 'objetivos', 'reserva de emergência', 'aporte', 'contribuição', 'progresso da meta', 'criar meta pela uni', 'excluir meta'],
+    keywords: ['meta', 'metas', 'objetivo', 'objetivos', 'reserva de emergência', 'aporte', 'contribuição', 'progresso da meta', 'criar meta pela uni', 'excluir meta', 'ajustar plano', 'meta atrasada'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Pela conversa e pela voz a Uni cria, altera, exclui e consulta metas, com card de confirmação antes de salvar. Meta com dinheiro guardado só é excluída na tela Metas. Aporte e retirada ainda são registrados na tela Metas.',
+      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Meta em atenção ou atrasada mostra "Ajustar plano" no detalhe: guardar mais por mês, mudar a data, reduzir a meta ou pausar. Pela conversa e pela voz a Uni cria, altera, exclui e consulta metas, com card de confirmação antes de salvar. Meta com dinheiro guardado só é excluída na tela Metas. Aporte e retirada ainda são registrados na tela Metas.',
   },
   {
     id: 'crm-and-clients',

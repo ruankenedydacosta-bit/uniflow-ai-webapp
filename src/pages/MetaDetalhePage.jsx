@@ -8,6 +8,7 @@ import { useGoals } from '../features/goals/useGoals';
 import GoalContributionSheet from '../features/goals/components/GoalContributionSheet';
 import GoalForm from '../features/goals/components/GoalForm';
 import GoalMilestoneCelebration from '../features/goals/components/GoalMilestoneCelebration';
+import GoalPlanAdjustSheet from '../features/goals/components/GoalPlanAdjustSheet';
 import { AnelDeProgresso } from '../features/goals/components/GoalListCard';
 import { mensagemDoErroAoExcluir, MOVIMENTOS } from '../features/goals/aporteDaMeta.js';
 import { calcProgress } from '../features/goals/goalCalc.js';
@@ -29,8 +30,8 @@ import styles from './MetaDetalhePage.module.css';
 // Detalhe da meta (handoff 08e, #157): anel, números do plano, ações,
 // previsão da Uni e aportes. O menu ⋯ guarda Editar, Retirar, Pausar,
 // Concluir e Excluir. Aporte e retirada abrem a mesma folha (#158); tocar
-// num aporte da lista oferece excluí-lo. Ajustar plano abre a edição até a
-// folha própria (#159) existir.
+// num aporte da lista oferece excluí-lo. Ajustar plano abre a folha de
+// ajuste (#159).
 export default function MetaDetalhePage() {
   const { id } = useParams();
   const navigate = useNavegar();
@@ -42,6 +43,7 @@ export default function MetaDetalhePage() {
   const [erroDosAportes, setErroDosAportes] = useState(null);
   const [menuAberto, setMenuAberto] = useState(false);
   const [editando, setEditando] = useState(false);
+  const [ajustando, setAjustando] = useState(false);
   const [movimento, setMovimento] = useState(null);
   const [aporteParaExcluir, setAporteParaExcluir] = useState(null);
   const [excluindoAporte, setExcluindoAporte] = useState(false);
@@ -109,6 +111,12 @@ export default function MetaDetalhePage() {
 
   async function salvarEdicao(values) {
     return editGoal(meta.id, values);
+  }
+
+  async function salvarAjuste(alteracoes) {
+    const resultado = await editGoal(meta.id, alteracoes);
+    if (!resultado?.error) setAjustando(false);
+    return resultado;
   }
 
   async function alternarPausa() {
@@ -234,7 +242,7 @@ export default function MetaDetalhePage() {
           ) : null}
           {pausada ? <OutlineButton onClick={alternarPausa}>Retomar meta</OutlineButton> : null}
           {precisaDeAjuste(meta) ? (
-            <OutlineButton variant="secondary" onClick={() => setEditando(true)}>Ajustar plano</OutlineButton>
+            <OutlineButton variant="secondary" onClick={() => setAjustando(true)}>Ajustar plano</OutlineButton>
           ) : null}
         </div>
       ) : null}
@@ -324,6 +332,10 @@ export default function MetaDetalhePage() {
 
       {editando ? (
         <GoalForm open onClose={() => setEditando(false)} goal={meta} onSave={salvarEdicao} />
+      ) : null}
+
+      {ajustando ? (
+        <GoalPlanAdjustSheet meta={meta} onClose={() => setAjustando(false)} onSave={salvarAjuste} />
       ) : null}
 
       <SimplifiedConfirmModal

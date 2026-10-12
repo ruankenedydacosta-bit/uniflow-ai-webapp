@@ -33,6 +33,15 @@ O orçamento de uma categoria é o teto mensal que você definiu. Sem teto, a Un
 
 A comparação com o mês anterior é sempre até o mesmo dia (no dia 8, de 1 a 8 de cada mês). Subida ou queda só aparece se for de pelo menos R$ 50 e 20%. Saída sem categoria conta no total do mês, mas não vira frase. Tocar numa frase abre o Financeiro no histórico, filtrado pela categoria. Sem saídas no mês até hoje, o bloco avisa que ainda não há saídas.
 
+Quando uma meta ativa precisa de você, a primeira frase da Leitura do mês é sobre ela. O aviso é calculado pelo app, não pela Uni, e aparece em um destes casos, nesta ordem:
+
+1. a meta está atrasada, com o valor por mês que falta guardar para chegar na data;
+2. a meta precisa de atenção (até 15 pontos abaixo do esperado para a data);
+3. um aporte deste mês fez a meta chegar a 100% do valor (o aviso pede para concluir a meta);
+4. um aporte deste mês fez a meta passar da metade.
+
+Aparece uma meta por vez, a mais urgente. Se outras também estiverem fora do ritmo, a frase diz quantas. Meta pausada não gera aviso, e sem meta fora do ritmo nem marco no mês não há frase de meta. Tocar no aviso abre o detalhe da meta.
+
 ### Definir o teto de uma categoria
 
 1. Abra o Financeiro e vá para o histórico.
