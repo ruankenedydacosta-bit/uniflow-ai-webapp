@@ -9,7 +9,7 @@ export function SelectField({ id, label, children, ...props }) {
       <span className="uf-text-primary">{label}</span>
       <select
         id={id}
-        className="uf-w-full uf-p-md uf-rounded-md uf-border uf-bg-sunken uf-focus-ring"
+        className="uf-w-full uf-p-md uf-rounded-md uf-border uf-bg-sunken"
         {...props}
       >
         {children}
