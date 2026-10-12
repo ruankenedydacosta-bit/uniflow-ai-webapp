@@ -499,10 +499,11 @@ test('meta: aportar e retirar levam alvo, valor, data até hoje, conta e "só na
   assert.equal(retirada.alvo.id, 'meta-cas');
   assert.equal(retirada.data, null);
   assert.equal(retirada.soNaMeta, true);
-  // Data no futuro ou a mais de um ano sai e fica marcada; conta inventada sai.
+  // Data no futuro sai e fica marcada; conta inventada sai.
   const futuro = validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'aportar', alvo: 'm2', valor: 1, data: '2026-10-03', conta: 'k9' }), CONTEXTO).meta;
   assert.deepEqual({ data: futuro.data, conta: futuro.conta, ajustes: futuro.ajustes }, { data: null, conta: null, ajustes: ['data_descartada'] });
-  assert.deepEqual(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'aportar', alvo: 'm2', valor: 1, data: '2025-09-01' }), CONTEXTO).meta.ajustes, ['data_descartada']);
+  // Mais de um ano para trás: entendida, mas marcada à parte.
+  assert.deepEqual(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'aportar', alvo: 'm2', valor: 1, data: '2025-09-01' }), CONTEXTO).meta.ajustes, ['data_antiga']);
   // Sem alvo, o nome dito fica, para a Uni dizer qual meta não achou.
   assert.equal(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'aportar', nome: 'Carro', valor: 1 }), CONTEXTO).meta.nome, 'Carro');
   // Conta e "só na meta" não valem fora do aporte e da retirada.

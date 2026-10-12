@@ -1206,6 +1206,16 @@ export const CASOS = [
     esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Viagem para o Chile', valor: 400, conta: 'Itaú' } },
   },
   {
+    id: 'meta-correcao-card',
+    contas: true,
+    historico: [
+      { autor: 'usuario', texto: 'guardei 400 na viagem' },
+      { autor: 'uni', texto: 'Vou registrar R$ 400,00 na meta Viagem para o Chile e lançar a transferência de Nubank para Poupança no Financeiro. Posso registrar?' },
+    ],
+    frase: 'não, foi do Itaú',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Viagem para o Chile', valor: 400, conta: 'Itaú' } },
+  },
+  {
     id: 'meta-depositei',
     reservado: true,
     frase: 'depositei 150 na meta do casamento',

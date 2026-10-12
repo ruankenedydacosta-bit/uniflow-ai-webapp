@@ -11,7 +11,12 @@
 import { normalizeSearchText } from '../../utils/searchText.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { calcRemaining, calcRequiredMonthlyAmount } from '../goals/goalCalc.js';
-import { mensagemDoErro, MOVIMENTOS, transferenciaDaMeta } from '../goals/aporteDaMeta.js';
+import {
+  mensagemDoErro,
+  montarMovimento as montarMovimentoDaFolha,
+  MOVIMENTOS,
+  transferenciaDaMeta,
+} from '../goals/aporteDaMeta.js';
 import { classifyPendingActionReply } from './pendingActionInput.js';
 import { formatarData } from './edicaoDeLancamento.js';
 
@@ -62,16 +67,19 @@ const ERRO_PRAZO = 'Não entendi o prazo. Diga uma data daqui para frente, como 
 
 // pedido: { acao, alvo: { id, name } | null, nome, valor, data, porMes,
 // conta, soNaMeta, ajustes } do uni-interpret. metas: as metas do espaço;
-// contas: as contas ativas, para a transferência do aporte. Devolve { erro }
-// com o texto para a pessoa, ou o pedido pronto para o card. Consultar não
-// passa por aqui: veja textoDaConsultaDeMetas.
-export function montarPedidoDeMeta(pedido, { metas = [], contas = [], hoje = null } = {}) {
+// contas: as contas ativas, para a transferência do aporte, ou null quando
+// ainda não foi possível lê-las; clientOperationId: a chave de idempotência
+// do aporte. Devolve { erro } com o texto para a pessoa, ou o pedido pronto
+// para o card. Consultar não passa por aqui: veja textoDaConsultaDeMetas.
+export function montarPedidoDeMeta(pedido, {
+  metas = [], contas = [], hoje = null, clientOperationId = null,
+} = {}) {
   const acao = pedido?.acao;
   const abertas = metasEmAberto(metas);
   const ajustes = Array.isArray(pedido?.ajustes) ? pedido.ajustes : [];
 
   if (acao === ACOES_DE_META.APORTAR || acao === ACOES_DE_META.RETIRAR) {
-    return montarMovimento(pedido, { metas, abertas, contas, hoje, ajustes });
+    return montarMovimentoDaConversa(pedido, { metas, abertas, contas, hoje, ajustes, clientOperationId });
   }
 
   if (acao === ACOES_DE_META.CRIAR) {
@@ -205,8 +213,9 @@ function perguntaDaConta(meta, retirada, candidatas) {
 }
 
 // Aporte ou retirada. Confere a meta, o valor, a data e a conta da
-// transferência antes do card; o banco confere tudo de novo ao gravar.
-function montarMovimento(pedido, { metas, abertas, contas, hoje, ajustes }) {
+// transferência antes do card; o banco confere tudo de novo ao gravar. O
+// payload sai do mesmo montarMovimento da folha da tela.
+function montarMovimentoDaConversa(pedido, { metas, abertas, contas, hoje, ajustes, clientOperationId }) {
   const { acao } = pedido;
   const retirada = acao === ACOES_DE_META.RETIRAR;
   const meta = abertas.find((item) => item.id === pedido.alvo?.id) ?? null;
@@ -226,7 +235,12 @@ function montarMovimento(pedido, { metas, abertas, contas, hoje, ajustes }) {
   if (!valor) {
     return { erro: retirada ? `Quanto você quer tirar da meta ${meta.name}?` : `Quanto você guardou na meta ${meta.name}?` };
   }
-  if (ajustes.includes('data_descartada')) {
+  if (ajustes.includes('data_antiga')) {
+    return { erro: 'Essa data tem mais de um ano. Para registrar um movimento tão antigo, use a tela Metas.' };
+  }
+  // O servidor confere a data no fuso de São Paulo; o aparelho pode estar
+  // num dia antes.
+  if (ajustes.includes('data_descartada') || (pedido.data && hoje && pedido.data > hoje)) {
     return { erro: 'Não entendi a data. Diga um dia até hoje, como "ontem" ou "dia 5".' };
   }
   const guardado = Number(meta.current_amount || 0);
@@ -235,22 +249,32 @@ function montarMovimento(pedido, { metas, abertas, contas, hoje, ajustes }) {
   }
   const data = pedido.data || hoje;
 
-  const transferencia = transferenciaDaMeta(meta, Array.isArray(contas) ? contas : []);
   let conta = null;
   let semFinanceiro = null;
+  let transferencia = null;
   if (pedido.soNaMeta) {
     semFinanceiro = 'sem lançar no Financeiro';
-  } else if (!transferencia.disponivel) {
-    semFinanceiro = `sem lançar no Financeiro: ${motivoSemTransferencia(meta, transferencia)}`;
+  } else if (contas === null && meta.linked_account_id) {
+    // Sem a lista, a conta vinculada pareceria arquivada e o aporte iria sem
+    // a transferência que a pessoa espera.
+    return { erro: 'Não consegui ler as suas contas agora. Tente de novo em instantes ou use a tela Metas.' };
   } else {
-    // A conta vinculada citada ("guardei na poupança") é o destino, não a
-    // ponta que falta. Com uma conta só do outro lado, ela já vem escolhida.
-    conta = transferencia.contas.find((item) => item.id === pedido.conta?.id)
-      ?? (transferencia.contas.length === 1 ? transferencia.contas[0] : null);
-    if (!conta) return { erro: perguntaDaConta(meta, retirada, transferencia.contas) };
+    transferencia = transferenciaDaMeta(meta, Array.isArray(contas) ? contas : []);
+    if (!transferencia.disponivel) {
+      semFinanceiro = `sem lançar no Financeiro: ${motivoSemTransferencia(meta, transferencia)}`;
+    } else if (pedido.conta) {
+      // Conta citada que não serve de outra ponta (a própria conta
+      // vinculada, ou uma arquivada): pergunta, em vez de trocar sem avisar.
+      conta = transferencia.contas.find((item) => item.id === pedido.conta.id) ?? null;
+    } else if (transferencia.contas.length === 1) {
+      // Com uma conta só do outro lado, ela já vem escolhida, como na folha.
+      [conta] = transferencia.contas;
+    }
+    if (transferencia.disponivel && !conta) return { erro: perguntaDaConta(meta, retirada, transferencia.contas) };
   }
 
-  const [origem, destino] = retirada ? [transferencia.vinculada, conta] : [conta, transferencia.vinculada];
+  const vinculada = transferencia?.vinculada ?? null;
+  const [origem, destino] = retirada ? [vinculada, conta] : [conta, vinculada];
   const depois = guardado + (retirada ? -valor : valor);
   const rows = [
     { label: 'Meta', value: meta.name },
@@ -273,12 +297,14 @@ function montarMovimento(pedido, { metas, abertas, contas, hoje, ajustes }) {
     conta,
     origem: conta ? origem : null,
     destino: conta ? destino : null,
-    payload: {
-      amount: retirada ? -valor : valor,
-      contribution_date: data,
-      ...(conta ? { linked_account_id: conta.id } : {}),
-      registrar_no_financeiro: Boolean(conta),
-    },
+    payload: montarMovimentoDaFolha({
+      movimento: retirada ? MOVIMENTOS.RETIRADA : MOVIMENTOS.APORTE,
+      centavos: Math.round(valor * 100),
+      data,
+      observacao: '',
+      registrarNoFinanceiro: Boolean(conta),
+      contaId: conta?.id ?? null,
+    }, clientOperationId),
     texto: `${oQue}${quando}${comoFica}. Posso registrar?`,
     card: card(acao, rows),
   };

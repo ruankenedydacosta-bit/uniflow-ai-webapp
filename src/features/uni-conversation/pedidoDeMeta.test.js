@@ -174,7 +174,7 @@ const CONTAS = [
   { id: 'conta-itau', name: 'Itaú' },
 ];
 const VIAGEM_VINCULADA = { ...METAS[0], linked_account_id: 'conta-poup' };
-const COM_CONTAS = { metas: [VIAGEM_VINCULADA, METAS[1], METAS[2]], contas: CONTAS, hoje: '2026-10-02' };
+const COM_CONTAS = { metas: [VIAGEM_VINCULADA, METAS[1], METAS[2]], contas: CONTAS, hoje: '2026-10-02', clientOperationId: 'op-1' };
 const APORTE = { ...VAZIO, acao: 'aportar', alvo: { id: 'meta-via', name: 'Viagem para o Chile' }, valor: 400, conta: null, soNaMeta: false };
 
 test('aportar: com a conta citada, card com a transferência para a conta vinculada e payload da folha', () => {
@@ -188,11 +188,14 @@ test('aportar: com a conta citada, card com a transferência para a conta vincul
     { label: 'Guardado depois', value: 'R$ 3.600,00 de R$ 8.000,00' },
   ]);
   assert.equal(pedido.card.title, 'Registrar aporte');
+  // Mesmo payload da folha da tela (montarMovimento de aporteDaMeta.js).
   assert.deepEqual(pedido.payload, {
     amount: 400,
     contribution_date: '2026-10-02',
+    note: undefined,
     linked_account_id: 'conta-nu',
     registrar_no_financeiro: true,
+    client_operation_id: 'op-1',
   });
   assert.equal(
     textoDoPedidoDeMetaFeito(pedido, { metaAtualizada: { current_amount: 3600, target_amount: 8000 } }),
@@ -207,12 +210,27 @@ test('aportar: várias contas e nenhuma citada pergunta a conta; a vinculada cit
   // Uma conta só do outro lado já vem escolhida, como na folha.
   const umaSo = montarPedidoDeMeta(APORTE, { ...COM_CONTAS, contas: CONTAS.slice(0, 2) });
   assert.equal(umaSo.payload.linked_account_id, 'conta-nu');
+  // Mas a conta citada que não serve (a própria vinculada) não é trocada
+  // pela outra sem avisar: a Uni pergunta.
+  const vinculadaCitada = montarPedidoDeMeta(
+    { ...APORTE, acao: 'retirar', valor: 100, conta: { id: 'conta-poup', name: 'Poupança' } },
+    { ...COM_CONTAS, contas: CONTAS.slice(0, 2) },
+  );
+  assert.match(vinculadaCitada.erro, /^Para qual conta foi o dinheiro da meta Viagem para o Chile: Nubank\?/);
+});
+
+test('aportar: contas ainda sem ler só bloqueiam quando a meta tem conta vinculada', () => {
+  assert.match(montarPedidoDeMeta(APORTE, { ...COM_CONTAS, contas: null }).erro, /^Não consegui ler as suas contas agora/);
+  assert.equal(montarPedidoDeMeta({ ...APORTE, soNaMeta: true }, { ...COM_CONTAS, contas: null }).payload.registrar_no_financeiro, false);
+  const semVinculada = montarPedidoDeMeta(APORTE, { ...COM_CONTAS, metas: METAS, contas: null });
+  assert.match(semVinculada.texto, /a meta não tem conta vinculada/);
 });
 
 test('aportar: só na meta, meta sem conta vinculada ou conta arquivada não lançam no Financeiro', () => {
   const soNaMeta = montarPedidoDeMeta({ ...APORTE, soNaMeta: true }, COM_CONTAS);
   assert.equal(soNaMeta.texto, 'Vou registrar R$ 400,00 na meta Viagem para o Chile, sem lançar no Financeiro. Posso registrar?');
-  assert.deepEqual(soNaMeta.payload, { amount: 400, contribution_date: '2026-10-02', registrar_no_financeiro: false });
+  assert.equal(soNaMeta.payload.registrar_no_financeiro, false);
+  assert.equal(soNaMeta.payload.linked_account_id, undefined);
   assert.equal(soNaMeta.card.rows[3].value, 'Não lança');
   const semVinculada = montarPedidoDeMeta(APORTE, { ...COM_CONTAS, metas: METAS });
   assert.match(semVinculada.texto, /, sem lançar no Financeiro: a meta não tem conta vinculada\. Posso registrar\?$/);
@@ -248,6 +266,9 @@ test('aportar e retirar: meta pausada, concluída, fora da lista, sem valor ou d
   assert.equal(montarPedidoDeMeta({ ...APORTE, valor: null }, COM_CONTAS).erro, 'Quanto você guardou na meta Viagem para o Chile?');
   assert.equal(montarPedidoDeMeta({ ...APORTE, acao: 'retirar', valor: null }, COM_CONTAS).erro, 'Quanto você quer tirar da meta Viagem para o Chile?');
   assert.match(montarPedidoDeMeta({ ...APORTE, ajustes: ['data_descartada'] }, COM_CONTAS).erro, /Não entendi a data/);
+  // Data de amanhã no aparelho (o servidor conferiu no fuso de São Paulo).
+  assert.match(montarPedidoDeMeta({ ...APORTE, data: '2026-10-03' }, COM_CONTAS).erro, /Diga um dia até hoje/);
+  assert.match(montarPedidoDeMeta({ ...APORTE, ajustes: ['data_antiga'] }, COM_CONTAS).erro, /^Essa data tem mais de um ano/);
 });
 
 test('aportar e retirar: resposta ao card e erro do banco na conversa', () => {

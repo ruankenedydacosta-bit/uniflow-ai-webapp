@@ -407,12 +407,15 @@ function validarMeta(bruta, { metasPorApelido, contasPorApelido, dataReferencia 
 
   let data = null;
   if (movimento) {
+    // Mais de um ano para trás é data entendida, mas antiga demais para a
+    // conversa: marcada à parte, para o app dizer o motivo.
     if (typeof bruta?.data === 'string' && bruta.data.trim()) {
-      if (dataValida(bruta.data) && bruta.data <= dataReferencia
-        && distanciaEmDias(bruta.data, dataReferencia) <= MAX_DIAS_MOVIMENTO_META) {
-        data = bruta.data;
-      } else {
+      if (!dataValida(bruta.data) || bruta.data > dataReferencia) {
         ajustes.push('data_descartada');
+      } else if (distanciaEmDias(bruta.data, dataReferencia) > MAX_DIAS_MOVIMENTO_META) {
+        ajustes.push('data_antiga');
+      } else {
+        data = bruta.data;
       }
     }
   } else if (acao === 'criar' || acao === 'editar') {

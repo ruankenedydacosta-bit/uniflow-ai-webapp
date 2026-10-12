@@ -79,6 +79,7 @@ import {
   textoDoPedidoFeito,
 } from '../uni-conversation/pedidoDeCategoria.js';
 import {
+  ACOES_DE_META,
   montarPedidoDeMeta,
   respostaAoPedidoDeMeta,
   textoDaConsultaDeMetas,
@@ -1639,6 +1640,10 @@ export default function UniChatPage({ variant = 'full' }) {
     metaPendenteRef.current = null;
   }
 
+  function ehMovimentoDeMeta(acao) {
+    return acao === ACOES_DE_META.APORTAR || acao === ACOES_DE_META.RETIRAR;
+  }
+
   // Consultar responde na hora; criar, alterar, excluir, aportar e retirar
   // montam o card. Meta com aporte não sai pela conversa: a tela Metas
   // mostra o que iria junto.
@@ -1659,17 +1664,18 @@ export default function UniChatPage({ variant = 'full' }) {
       createAssistantResponse(textoDaConsultaDeMetas(pedidoDoModelo, { metas: goalsState.goals }), { deduplicateNarration: false });
       return;
     }
-    const movimento = pedidoDoModelo?.acao === 'aportar' || pedidoDoModelo?.acao === 'retirar';
-    // A transferência do aporte depende das contas: sem elas, a conta
-    // vinculada pareceria arquivada e o aporte iria sem a transferência.
-    if (movimento && (accountState.isLoading || accountState.error)) {
-      createAssistantResponse('Não consegui ler as suas contas agora. Tente de novo em instantes ou registre o aporte na tela Metas.', { deduplicateNarration: false });
-      return;
-    }
+    const movimento = ehMovimentoDeMeta(pedidoDoModelo?.acao);
+    // A transferência do aporte depende das contas. Só a primeira carga
+    // conta como "sem contas": a recarga depois de um lançamento e o erro de
+    // uma gravação antiga mantêm a lista em mãos.
+    const contasSemLer = accountState.accounts.length === 0 && (accountState.isLoading || accountState.error);
     const pronto = montarPedidoDeMeta(pedidoDoModelo, {
       metas: goalsState.goals,
-      contas: accountState.activeAccounts,
+      contas: contasSemLer ? null : accountState.activeAccounts,
       hoje: getLocalIsoDate(),
+      // A mesma chave em toda tentativa deste card: um "sim" repetido ou uma
+      // nova tentativa depois de a resposta se perder não grava duas vezes.
+      clientOperationId: movimento ? globalThis.crypto?.randomUUID?.() ?? null : null,
     });
     if (pronto.erro) {
       createAssistantResponse(pronto.erro, { deduplicateNarration: false });
@@ -1696,9 +1702,6 @@ export default function UniChatPage({ variant = 'full' }) {
     });
     metaPendenteRef.current = {
       pronto,
-      // A mesma chave em toda tentativa deste card: um "sim" repetido ou uma
-      // nova tentativa depois de a resposta se perder não grava duas vezes.
-      clientOperationId: movimento ? `aporte-uni-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` : null,
       messageId: message?.id ?? null,
       workspaceId: effectiveWorkspace?.id,
       conversationId: activeIdRef.current,
@@ -1748,17 +1751,14 @@ export default function UniChatPage({ variant = 'full' }) {
     setIsExecutingAction(true);
     setExecutionError(null);
     try {
-      const movimento = pronto.acao === 'aportar' || pronto.acao === 'retirar';
+      const movimento = ehMovimentoDeMeta(pronto.acao);
       let resultado;
       if (pronto.acao === 'criar') {
         resultado = await goalsState.addGoal(pronto.payload);
       } else if (pronto.acao === 'editar') {
         resultado = await goalsState.editGoal(pronto.meta.id, pronto.payload);
       } else if (movimento) {
-        resultado = await goalsState.addGoalContribution(pronto.meta.id, {
-          ...pronto.payload,
-          client_operation_id: pendente.clientOperationId,
-        });
+        resultado = await goalsState.addGoalContribution(pronto.meta.id, pronto.payload);
       } else {
         resultado = await goalsState.removeGoal(pronto.meta.id);
       }
