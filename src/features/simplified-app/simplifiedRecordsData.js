@@ -1,4 +1,5 @@
 import { normalizeSearchText } from '../../utils/searchText.js';
+import { toDateKey } from './simplifiedAgendaCalendar.js';
 import {
   resolveCategoryIconKey,
   resolveCategoryTone,
@@ -167,6 +168,7 @@ export function filterRecordTransactions(
     categoryId = 'all',
     query = '',
     sort = 'recent',
+    status = 'completed',
     type = 'all',
   } = {},
 ) {
@@ -174,7 +176,7 @@ export function filterRecordTransactions(
   // helper compartilhado de src/utils/searchText.js.
   const normalizedQuery = normalizeSearchText(query);
   const filtered = transactions.filter((transaction) => {
-    if (transaction.status !== 'completed') return false;
+    if (transaction.status !== status) return false;
     if (type !== 'all' && transaction.transaction_type !== type) return false;
     if (categoryId !== 'all') {
       if (categoryId === 'uncategorized' && transaction.category_id) return false;
@@ -212,6 +214,54 @@ export function formatRelativeTransactionDate(value, referenceDate = new Date())
     day: '2-digit',
     month: 'short',
   }).format(transactionDate);
+}
+
+
+// Previsto cuja data é hoje ou já passou espera confirmação.
+export function isPlannedDue(transaction, referenceDate = new Date()) {
+  return String(transaction.transaction_date) <= toDateKey(referenceDate);
+}
+
+// Linha de apoio do previsto: data e categoria; se a data chegou, o aviso
+// para confirmar.
+export function describePlannedTransaction(transaction, categoryName, referenceDate = new Date()) {
+  const date = new Date(`${transaction.transaction_date}T12:00:00`);
+  const reference = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+    12,
+  );
+  const daysLate = Math.round((reference - date) / 86400000);
+
+  if (daysLate < 0) {
+    const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(date);
+    return { due: false, text: `${day} · ${categoryName}` };
+  }
+  if (daysLate === 0) return { due: true, text: 'Vence hoje · Confirme' };
+  if (daysLate === 1) return { due: true, text: 'Venceu ontem · Confirme' };
+  return { due: true, text: `Venceu há ${daysLate} dias · Confirme` };
+}
+
+// Saldo dos previstos: entradas somam, saídas subtraem, transferência não
+// muda o total.
+export function summarizePlannedBalance(transactions) {
+  return transactions.reduce((total, transaction) => {
+    const amount = Number(transaction.amount || 0);
+    if (transaction.transaction_type === 'income') return total + amount;
+    if (transaction.transaction_type === 'expense') return total - amount;
+    return total;
+  }, 0);
+}
+
+// Entradas e saídas previstas; transferência e ajuste ficam de fora.
+export function summarizePlannedTotals(transactions) {
+  return transactions.reduce((totals, transaction) => {
+    const amount = Number(transaction.amount || 0);
+    if (transaction.transaction_type === 'income') totals.income += amount;
+    if (transaction.transaction_type === 'expense') totals.expense += amount;
+    return totals;
+  }, { income: 0, expense: 0 });
 }
 
 // O aviso fica o tempo de ler: 1,5 s de reação mais 50 ms por caractere,

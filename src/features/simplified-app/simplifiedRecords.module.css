@@ -429,6 +429,68 @@
   fill: none;
 }
 
+.monthChartPlanned {
+  stroke-dasharray: 4 4;
+  stroke-opacity: .75;
+}
+
+.monthChartDotPlanned {
+  fill: var(--uf-app-canvas);
+  stroke-width: 1.5;
+}
+
+.monthChartLegend {
+  display: flex;
+  gap: 16px;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+}
+
+.monthChartLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendSolid,
+.legendDashed {
+  width: 16px;
+  height: 0;
+  border-top: 2px solid var(--uf-app-text-2);
+}
+
+.legendDashed {
+  border-top-style: dashed;
+}
+
+.summaryPlanned {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plannedConfirm {
+  min-height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--uf-app-brand-blue-text);
+  border-radius: var(--uf-radius-12);
+  background: transparent;
+  color: var(--uf-app-brand-blue-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.plannedConfirm:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
 .monthChartAxis {
   display: flex;
   justify-content: space-between;
@@ -689,6 +751,26 @@
   font-weight: var(--uf-font-weight-regular);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* Previsto: ícone tracejado e valor apagado marcam o que ainda não aconteceu. */
+.plannedIcon {
+  border: 1px dashed var(--uf-app-border-strong);
+  background: transparent;
+}
+
+.plannedAmount {
+  color: var(--uf-app-text-2);
+}
+
+.plannedDue {
+  color: var(--uf-app-brand-blue-text);
+}
+
+.plannedBalance {
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .positiveAmount { color: var(--uf-app-brand-green-text); }
