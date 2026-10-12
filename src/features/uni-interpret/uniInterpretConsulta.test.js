@@ -131,3 +131,53 @@ test('memória guarda conta e categoria e troca a última consulta', () => {
     response: 'Neste mês...',
   });
 });
+
+// #190: a pessoa quer ver os lançamentos, não o total.
+const CONTAS = [{ id: 'conta-nu', name: 'Nubank' }, { id: 'conta-it', name: 'Itaú' }];
+const COM_DATA = TRANSACOES.map((transacao, indice) => ({ ...transacao, transaction_date: `2026-10-0${indice + 1}` }));
+
+test('lancamentos: lista do mais recente ao mais antigo, com conta e total do mesmo tipo', () => {
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', categoria: SAUDE }), transacoes: COM_DATA, dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, encontrei 2 saídas com Saúde, que somam R$ 200,30. 02/10, Consulta, R$ 80,20, no Itaú; 01/10, Farmácia São João, R$ 120,10, no Nubank.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', termo: 'salario' }), transacoes: COM_DATA, dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, encontrei 1 entrada com salario: 04/10, Salário, R$ 5.000,00, no Itaú.',
+  );
+});
+
+test('lancamentos: tipos misturados não somam, e o que passa de 5 fica para a tela', () => {
+  const muitas = [...COM_DATA, ...COM_DATA.map((transacao) => ({ ...transacao, transaction_date: '2026-09-30' }))];
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos' }), transacoes: muitas, dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, encontrei 10 lançamentos. Os mais recentes: 05/10, Para a poupança, R$ 900,00, no Nubank; '
+    + '04/10, Salário, R$ 5.000,00, no Itaú; 03/10, Estacionamento, R$ 35,00, no Nubank; 02/10, Consulta, R$ 80,20, no Itaú; '
+    + '01/10, Farmácia São João, R$ 120,10, no Nubank. E mais 5 lançamentos, que você vê em Financeiro.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', termo: 'cinema', conta: NUBANK }), transacoes: COM_DATA, dataReferencia: HOJE }),
+    'Neste mês, não encontrei lançamentos com cinema na conta Nubank.',
+  );
+});
+
+test('categorias: lista o catálogo por tipo, sem ir ao banco', () => {
+  const categorias = [
+    { name: 'Transporte', category_type: 'expense' },
+    { name: 'Alimentação', category_type: 'expense' },
+    { name: 'Salário', category_type: 'income' },
+  ];
+  assert.equal(consultaRespondivel(consulta({ tipo: 'categorias' })), true);
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'categorias' }), transacoes: [], dataReferencia: HOJE, categorias }),
+    'Você tem 3 categorias: 2 categorias de saída: Alimentação e Transporte; e 1 de entrada: Salário.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'categorias' }), transacoes: [], dataReferencia: HOJE, categorias: categorias.slice(0, 1) }),
+    'Você tem 1 categoria de saída: Transporte.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'categorias' }), transacoes: [], dataReferencia: HOJE, categorias: [] }),
+    'Você ainda não tem categorias. Crie uma pela conversa ou em Categorias, no menu Mais.',
+  );
+});

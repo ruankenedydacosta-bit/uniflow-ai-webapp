@@ -16,9 +16,11 @@ export const INTENTS = Object.freeze([
   'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
-// Consulta que o app responde com os parâmetros (#80). 'outra' (meta, contas
-// a pagar, maior gasto, comparação...) segue para as regras de consulta.
-export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'outra']);
+// Consulta que o app responde com os parâmetros (#80). 'lancamentos' lista
+// os itens em vez de somar e 'categorias' lista o catálogo (#190). 'outra'
+// (meta, contas a pagar, maior gasto, comparação...) segue para as regras de
+// consulta.
+export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'lancamentos', 'categorias', 'outra']);
 // Criar, renomear ou excluir uma categoria pela conversa. O app confere
 // permissão, nome repetido e categoria padrão antes de mostrar o card.
 export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
@@ -265,11 +267,11 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   if (problema) ajustes.push(problema);
 
   // Categoria de outro tipo ("quanto gastei de salário") ou apelido inventado.
+  // A lista de lançamentos aceita categoria de qualquer tipo: ela não soma.
   const categoriaBruta = categoriasPorApelido.get(bruta?.categoria) ?? null;
   const categoryType = CATEGORY_TYPE_POR_TIPO_CONSULTA[tipo];
-  const categoria = categoriaBruta && categoryType && categoriaBruta.category_type === categoryType
-    ? categoriaBruta
-    : null;
+  const tipoCompativel = tipo === 'lancamentos' || (categoryType && categoriaBruta?.category_type === categoryType);
+  const categoria = categoriaBruta && tipoCompativel ? categoriaBruta : null;
   if (bruta?.categoria && !categoria) ajustes.push('categoria_descartada');
 
   const conta = contasPorApelido.get(bruta?.conta) ?? null;
@@ -278,6 +280,11 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   const termo = textoLimpo(bruta?.termo, MAX_TERMO) || null;
   // O resumo soma tudo do período: não filtra por categoria nem por termo.
   if (tipo === 'resumo' && termo) ajustes.push('termo_no_resumo');
+
+  // O catálogo não tem período nem filtro: o que vier junto é ignorado.
+  if (tipo === 'categorias') {
+    return { tipo, inicio: null, fim: null, categoria: null, conta: null, termo: null, ajustes: [] };
+  }
 
   if (ajustes.length > 0) tipo = 'outra';
 

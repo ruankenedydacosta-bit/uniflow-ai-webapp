@@ -53,7 +53,8 @@ function mesmoFiltro(filtros = [{}], obtido) {
 
 function avaliarConsulta(esperado, obtido) {
   if (!obtido || esperado.tipo !== obtido.tipo) return false;
-  if (esperado.tipo === 'outra') return true;
+  // outra vai para as regras e categorias não tem filtro: basta o tipo.
+  if (esperado.tipo === 'outra' || esperado.tipo === 'categorias') return true;
   return mesmoPeriodo(esperado, obtido) && mesmoFiltro(esperado.filtros, obtido);
 }
 

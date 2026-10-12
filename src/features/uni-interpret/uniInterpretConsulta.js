@@ -9,8 +9,14 @@ import { formatCurrency } from '../../utils/formatters.js';
 import { roundMoney } from '../uni-chat/financialSnapshot.js';
 import { normalizeSearchText } from '../../utils/searchText.js';
 
-const TIPOS_RESPONDIVEIS = new Set(['saidas', 'entradas', 'resumo']);
+const TIPOS_RESPONDIVEIS = new Set(['saidas', 'entradas', 'resumo', 'lancamentos', 'categorias']);
 const TRANSACTION_TYPE_POR_TIPO = Object.freeze({ saidas: 'expense', entradas: 'income' });
+
+// Quantos lançamentos a resposta lista por extenso. A voz lê a resposta
+// inteira; o resto fica na tela Financeiro.
+export const MAX_LANCAMENTOS_LISTADOS = 5;
+
+const ROTULO_DO_TIPO_DE_CATEGORIA = Object.freeze({ expense: 'de saída', income: 'de entrada', transfer: 'de transferência' });
 
 const NOME_DO_MES = new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: 'UTC' });
 
@@ -99,9 +105,10 @@ function parteDoResumo(transacoes, singular, plural) {
   return `${contagem(transacoes.length, singular, plural)}, ${verbo} ${formatCurrency(somar(transacoes))}`;
 }
 
+// Sem transactionType, vale qualquer lançamento (a lista não soma por tipo).
 function filtrar(transacoes, { transactionType, categoria, conta, termo }) {
   const termoNormalizado = termo ? normalizeSearchText(termo) : '';
-  return transacoes.filter((transacao) => transacao?.transaction_type === transactionType
+  return transacoes.filter((transacao) => (!transactionType || transacao?.transaction_type === transactionType)
     && (!categoria || transacao.category_id === categoria.id)
     && (!conta || transacao.account_id === conta.id)
     && (!termoNormalizado || normalizeSearchText(transacao.description).includes(termoNormalizado)));
@@ -111,8 +118,74 @@ function somar(transacoes) {
   return roundMoney(transacoes.reduce((total, transacao) => total + roundMoney(transacao.amount), 0));
 }
 
+// "Alimentação, Transporte e Saúde".
+function enumerar(nomes) {
+  if (nomes.length <= 1) return nomes.join('');
+  return `${nomes.slice(0, -1).join(', ')} e ${nomes.at(-1)}`;
+}
+
+// "Você tem 8 categorias de saída: ...; e 3 de entrada: ...". O catálogo é
+// o que o chat já carregou; não vai ao banco.
+function responderCategorias(categorias) {
+  const porTipo = ['expense', 'income', 'transfer']
+    .map((tipo) => ({
+      rotulo: ROTULO_DO_TIPO_DE_CATEGORIA[tipo],
+      nomes: categorias
+        .filter((categoria) => categoria?.category_type === tipo && categoria.name)
+        .map((categoria) => categoria.name)
+        .sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    }))
+    .filter((grupo) => grupo.nomes.length > 0);
+  if (porTipo.length === 0) return 'Você ainda não tem categorias. Crie uma pela conversa ou em Categorias, no menu Mais.';
+
+  const total = porTipo.reduce((soma, grupo) => soma + grupo.nomes.length, 0);
+  const partes = porTipo.map((grupo, indice) => {
+    const quantas = indice === 0 ? contagem(grupo.nomes.length, 'categoria', 'categorias') : grupo.nomes.length;
+    return `${quantas} ${grupo.rotulo}: ${enumerar(grupo.nomes)}`;
+  });
+  const abertura = porTipo.length === 1 ? 'Você tem ' : `Você tem ${total} categorias: `;
+  return `${abertura}${partes.join('; e ')}.`;
+}
+
+// "02/10, Uber, R$ 25,00, no Nubank".
+function linhaDoLancamento(transacao, contasPorId) {
+  const conta = contasPorId.get(transacao.account_id);
+  const descricao = String(transacao.description ?? '').trim() || 'sem descrição';
+  const data = typeof transacao.transaction_date === 'string' ? diaEMes(transacao.transaction_date.slice(0, 10), false) : '';
+  return [data, descricao, formatCurrency(roundMoney(transacao.amount)), conta ? `no ${conta.name}` : '']
+    .filter(Boolean)
+    .join(', ');
+}
+
+// Lista do mais recente ao mais antigo, com total quando todos são do mesmo
+// tipo (somar entrada com saída não diz nada).
+function responderLancamentos({ encontradas, quando, filtro, contas }) {
+  const tipos = new Set(encontradas.map((transacao) => transacao.transaction_type));
+  const [singular, plural] = tipos.size === 1 && tipos.has('expense') ? ['saída', 'saídas']
+    : tipos.size === 1 && tipos.has('income') ? ['entrada', 'entradas']
+      : ['lançamento', 'lançamentos'];
+  if (encontradas.length === 0) return `${quando}, não encontrei lançamentos${filtro}.`;
+
+  const contasPorId = new Map((Array.isArray(contas) ? contas : []).map((conta) => [conta.id, conta]));
+  const ordenadas = [...encontradas].sort((a, b) => String(b.transaction_date).localeCompare(String(a.transaction_date)));
+  const linhas = ordenadas.slice(0, MAX_LANCAMENTOS_LISTADOS).map((transacao) => linhaDoLancamento(transacao, contasPorId));
+  const soma = tipos.size === 1 && !tipos.has('transfer') ? `, que ${encontradas.length === 1 ? 'soma' : 'somam'} ${formatCurrency(somar(encontradas))}` : '';
+
+  if (encontradas.length === 1) return `${quando}, encontrei 1 ${singular}${filtro}: ${linhas[0]}.`;
+  const restantes = encontradas.length - linhas.length;
+  const abertura = restantes > 0 ? ' Os mais recentes: ' : ' ';
+  const fecho = restantes > 0
+    ? ` E mais ${contagem(restantes, 'lançamento', 'lançamentos')}, que você vê em Financeiro.`
+    : '';
+  return `${quando}, encontrei ${contagem(encontradas.length, singular, plural)}${filtro}${soma}.${abertura}${linhas.join('; ')}.${fecho}`;
+}
+
 // transacoes: as movimentações concluídas do período, já buscadas no banco.
-export function responderConsulta({ consulta, transacoes, dataReferencia }) {
+// categorias e contas: o catálogo que o chat já tem, para listar categorias e
+// dizer a conta de cada lançamento.
+export function responderConsulta({ consulta, transacoes, dataReferencia, categorias = [], contas = [] }) {
+  if (consulta.tipo === 'categorias') return responderCategorias(Array.isArray(categorias) ? categorias : []);
+
   const periodo = periodoDaConsulta(consulta, dataReferencia);
   const quando = comInicialMaiuscula(rotuloDoPeriodo(periodo, dataReferencia));
   const lista = Array.isArray(transacoes) ? transacoes : [];
@@ -143,6 +216,8 @@ export function responderConsulta({ consulta, transacoes, dataReferencia }) {
     ? `${comTermo}${comTermo ? ' em' : ' com'} ${consulta.categoria.name}`
     : comTermo;
   const filtro = `${doQue}${naConta}`;
+
+  if (consulta.tipo === 'lancamentos') return responderLancamentos({ encontradas, quando, filtro, contas });
 
   if (consulta.tipo === 'saidas') {
     if (encontradas.length === 0) return `${quando}, não encontrei saídas${filtro}.`;

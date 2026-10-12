@@ -754,6 +754,37 @@ export const CASOS = [
       },
     },
   },
+  // #190: ver os lançamentos em si, não o total.
+  {
+    id: 'consulta-lista-uber',
+    frase: 'quais foram meus gastos com uber esse mês?',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'lancamentos', filtros: [{ termo: 'uber' }, { categoria: 'Transporte', termo: 'uber' }] },
+    },
+  },
+  {
+    id: 'consulta-lista-ontem',
+    frase: 'o que eu paguei ontem?',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'lancamentos', inicio: '2026-10-01', fim: '2026-10-01' },
+    },
+  },
+  {
+    id: 'consulta-lista-entradas-setembro',
+    reservado: true,
+    frase: 'me mostra as entradas de setembro',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'lancamentos', inicio: '2026-09-01', fim: '2026-09-30' },
+    },
+  },
+  {
+    id: 'consulta-categorias',
+    frase: 'quais categorias eu tenho?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'categorias' } },
+  },
   {
     id: 'consulta-maior-gasto',
     reservado: true,
