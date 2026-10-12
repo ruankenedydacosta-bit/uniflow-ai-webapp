@@ -24,6 +24,9 @@ export function useCategoriasOrganizar() {
   });
 
   const podeCriar = role.canUpdate === true && !role.isLoading && !categoryState.isMutating;
+  // Ocultar e mostrar seguem as policies de workspace_hidden_categories
+  // (owner, admin e member), as mesmas de criar categoria.
+  const podeOcultar = role.canUpdate === true && !role.isLoading;
   const podeGerenciar = (categoria) => !role.isLoading && canManageCategory(categoria, {
     canUpdate: role.canUpdate,
     canDelete: role.canDelete,
@@ -35,6 +38,7 @@ export function useCategoriasOrganizar() {
     categoryState,
     transactionState,
     podeCriar,
+    podeOcultar,
     podeGerenciar,
     carregando: categoryState.isLoading || transactionState.isLoading,
   };

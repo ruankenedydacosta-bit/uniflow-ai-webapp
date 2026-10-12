@@ -66,21 +66,24 @@ async function lerComoUsuario(path: string, authorization: string, supabaseUrl: 
   return await response.json();
 }
 
-// As quatro leituras saem juntas (são a latência antes do modelo, no caminho
+// As cinco leituras saem juntas (são a latência antes do modelo, no caminho
 // da voz). applies_to é filtrado depois, quando o tipo do workspace já é
 // conhecido. Categorias de sistema vêm primeiro, para o limite nunca cortar
-// as genéricas ("Outras despesas", "Transferência"). Metas: só as que a tela
-// Metas mostra em aberto (ativas e pausadas), para a pessoa apontar qual.
+// as genéricas ("Outras despesas", "Transferência"). Categoria oculta no
+// espaço (#184) sai da lista: o modelo não sugere o que a pessoa escondeu.
+// Metas: só as que a tela Metas mostra em aberto (ativas e pausadas), para
+// a pessoa apontar qual.
 function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, anonKey: string) {
   return async (workspaceId: string) => {
     const ler = (path: string) => lerComoUsuario(path, authorization, supabaseUrl, anonKey);
-    const [workspaces, todasCategorias, contas, metas] = await Promise.all([
+    const [workspaces, todasCategorias, ocultas, contas, metas] = await Promise.all([
       ler(`workspaces?select=workspace_type&id=eq.${workspaceId}&limit=1`),
       ler(
         'categories?select=id,name,category_type,applies_to&is_active=eq.true'
           + `&or=(workspace_id.is.null,workspace_id.eq.${workspaceId})`
           + `&order=is_system.desc,name&limit=${MAX_CATEGORIAS}`,
       ),
+      ler(`workspace_hidden_categories?select=category_id&workspace_id=eq.${workspaceId}`),
       ler(`accounts?select=id,name&workspace_id=eq.${workspaceId}&is_active=eq.true&order=name&limit=${MAX_CONTAS}`),
       ler(
         `financial_goals?select=id,name&workspace_id=eq.${workspaceId}&archived_at=is.null`
@@ -90,8 +93,12 @@ function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, a
     const workspaceType = workspaces?.[0]?.workspace_type;
     if (workspaceType !== 'personal' && workspaceType !== 'business') return null;
 
+    const idsOcultos = new Set(
+      (ocultas as Array<Record<string, string>>).map((linha) => linha.category_id),
+    );
     const categorias = (todasCategorias as Array<Record<string, string>>)
       .filter((categoria) => categoria.applies_to === 'both' || categoria.applies_to === workspaceType)
+      .filter((categoria) => !idsOcultos.has(categoria.id))
       .map(({ id, name, category_type }) => ({ id, name, category_type }));
     return { workspaceType, categorias, contas, metas };
   };

@@ -5,10 +5,16 @@ import {
   deleteCategory,
   excluirCategoriaMovendoLancamentos,
   listCategories,
+  listarCategoriasOcultas,
+  ocultarCategoria as ocultarCategoriaNoServico,
+  reexibirCategoria as reexibirCategoriaNoServico,
   updateCategory,
 } from '../services/categoryService.js';
 import { isSupabaseConfigured } from '../services/supabaseClient.js';
-import { filterCategoriesForContext } from '../features/categories/categoryUtils.js';
+import {
+  filterCategoriesForContext,
+  separarCategoriasOcultas,
+} from '../features/categories/categoryUtils.js';
 import {
   cloneRecords,
   createDemoRecord,
@@ -27,6 +33,9 @@ export function useCategories({
   const [categories, setCategories] = useState(() =>
     cloneRecords(fallbackCategories),
   );
+  // Ids das categorias ocultas no espaço (#184). Saem de `categories` e
+  // entram em `categoriasOcultas`; no modo demo ficam só em memória.
+  const [idsOcultos, setIdsOcultos] = useState(EMPTY_ARRAY);
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
@@ -44,19 +53,26 @@ export function useCategories({
 
     if (!workspaceId) {
       setCategories([]);
+      setIdsOcultos(EMPTY_ARRAY);
       setError({ code: 'WORKSPACE_REQUIRED', message: 'Workspace financeiro ausente.' });
       setIsLoading(false);
       return null;
     }
 
     setIsLoading(true);
-    const result = await listCategories(workspaceId, { context });
+    const [result, ocultas] = await Promise.all([
+      listCategories(workspaceId, { context }),
+      listarCategoriasOcultas(workspaceId),
+    ]);
 
     if (requestId !== requestIdRef.current) {
       return null;
     }
 
     setCategories(result.data ?? []);
+    // Falha ao ler as ocultas não esconde a lista inteira: a categoria
+    // volta a aparecer até a próxima leitura.
+    setIdsOcultos(ocultas.error ? EMPTY_ARRAY : ocultas.data ?? EMPTY_ARRAY);
     setError(result.error);
     setIsLoading(false);
     return result;
@@ -166,19 +182,72 @@ export function useCategories({
     [workspaceId],
   );
 
+  // Oculta a categoria no espaço (#184). Vale também para categoria padrão
+  // do sistema, que a pessoa não edita nem exclui.
+  const ocultarCategoria = useCallback(
+    async (categoryId) => {
+      setIsMutating(true);
+      setError(null);
+      const result = !isSupabaseConfigured
+        ? createDemoResult({ id: categoryId })
+        : await ocultarCategoriaNoServico(workspaceId, categoryId);
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setIdsOcultos((current) => (current.includes(categoryId) ? current : [...current, categoryId]));
+      }
+
+      setIsMutating(false);
+      return result;
+    },
+    [workspaceId],
+  );
+
+  const reexibirCategoria = useCallback(
+    async (categoryId) => {
+      setIsMutating(true);
+      setError(null);
+      const result = !isSupabaseConfigured
+        ? createDemoResult({ id: categoryId })
+        : await reexibirCategoriaNoServico(workspaceId, categoryId);
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setIdsOcultos((current) => current.filter((id) => id !== categoryId));
+      }
+
+      setIsMutating(false);
+      return result;
+    },
+    [workspaceId],
+  );
+
   const visibleCategories = useMemo(
     () => (context ? filterCategoriesForContext(categories, context) : categories),
     [categories, context],
   );
+  // `categories` continua completa: relatórios, leituras do mês e nomes de
+  // lançamentos antigos precisam achar a categoria oculta. Seletor, lista de
+  // Organizar e sugestões da Uni usam `categoriasVisiveis`.
+  const { categoriasVisiveis, categoriasOcultas } = useMemo(() => {
+    const { visiveis, ocultas } = separarCategoriasOcultas(visibleCategories, idsOcultos);
+    return { categoriasVisiveis: visiveis, categoriasOcultas: ocultas };
+  }, [visibleCategories, idsOcultos]);
 
   return {
     categories: visibleCategories,
+    categoriasVisiveis,
+    categoriasOcultas,
     error,
     isDemoMode: !isSupabaseConfigured,
     isLoading,
     isMutating,
     refresh,
     contarLancamentos,
+    ocultarCategoria,
+    reexibirCategoria,
     removeCategory,
     removerCategoriaMovendoLancamentos,
     saveCategory,

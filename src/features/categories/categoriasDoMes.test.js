@@ -77,3 +77,26 @@ test('lançamentos e resumo da categoria vêm do mais recente', () => {
   assert.deepEqual(lancamentosDaCategoria(todos, 'c').map((t) => t.id), [1, 2]);
   assert.deepEqual(resumoDaCategoria(todos, 'c'), { valor: 150, quantidade: 2 });
 });
+
+test('ocultas (#184) saem das listas, voltam no grupo Ocultas e seguem no total', () => {
+  const visiveis = categories.filter((c) => c.id !== 'a' && c.id !== 'c');
+  const ocultas = categories.filter((c) => c.id === 'a' || c.id === 'c' || c.id === 'e');
+  const lista = montarListaDeCategorias({
+    categories: visiveis,
+    ocultas,
+    type: 'expense',
+    transactions: [lancamento(1, 'a', 300), lancamento(2, 'b', 100)],
+  });
+  assert.deepEqual(lista.comLancamento.map((l) => l.id), ['b']);
+  assert.deepEqual(lista.semLancamento.map((l) => l.id), ['d']);
+  // Só as do tipo, em ordem alfabética; Salário (entrada) fica de fora.
+  assert.deepEqual(lista.ocultas.map((l) => l.name), ['Moradia', 'Pet']);
+  assert.equal(lista.ocultas[0].valor, 300);
+  assert.equal(lista.total, 400);
+  assert.deepEqual(lista.semCategoria, { valor: 0, quantidade: 0 });
+});
+
+test('sem ocultas o grupo vem vazio', () => {
+  const lista = montarListaDeCategorias({ categories, type: 'expense', transactions: [] });
+  assert.deepEqual(lista.ocultas, []);
+});

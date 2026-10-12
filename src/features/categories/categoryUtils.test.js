@@ -18,8 +18,11 @@ import {
   canManageCategory,
   getCategoryErrorMessage,
   categoriasDestinoParaMover,
+  categoriasParaSeletor,
   lancamentosQueBloqueiam,
+  separarCategoriasOcultas,
 } from './categoryUtils.js';
+import { resolveFinancialCategory } from '../uni-conversation/categoryResolution.js';
 
 const SAMPLE = [
   { id: '1', name: 'Alimentação', category_type: 'expense', is_active: true },
@@ -245,4 +248,58 @@ test('categoriasDestinoParaMover devolve vazio sem categoria ou sem lista', () =
   assert.deepEqual(categoriasDestinoParaMover([{ id: 'x', category_type: 'expense' }], null), []);
   assert.deepEqual(categoriasDestinoParaMover(null, { id: 'a', category_type: 'expense' }), []);
   assert.deepEqual(categoriasDestinoParaMover([{ id: 'a', category_type: 'expense' }], { id: 'a', category_type: 'expense' }), []);
+});
+
+// #184: categoria oculta por espaço.
+const DO_ESPACO = [
+  { id: 'sis-mer', name: 'Alimentação', category_type: 'expense', is_system: true },
+  { id: 'sis-tra', name: 'Transporte', category_type: 'expense', is_system: true },
+  { id: 'pet', name: 'Pet', category_type: 'expense', workspace_id: 'w1' },
+  { id: 'sal', name: 'Salário', category_type: 'income', is_system: true },
+];
+
+test('separarCategoriasOcultas tira as ocultas e mantém a ordem', () => {
+  const { visiveis, ocultas } = separarCategoriasOcultas(DO_ESPACO, ['sis-tra', 'pet']);
+  assert.deepEqual(visiveis.map((c) => c.id), ['sis-mer', 'sal']);
+  assert.deepEqual(ocultas.map((c) => c.id), ['sis-tra', 'pet']);
+});
+
+test('separarCategoriasOcultas sem ocultas devolve a mesma lista', () => {
+  const { visiveis, ocultas } = separarCategoriasOcultas(DO_ESPACO, []);
+  assert.equal(visiveis, DO_ESPACO);
+  assert.deepEqual(ocultas, []);
+  assert.deepEqual(separarCategoriasOcultas(null, null), { visiveis: [], ocultas: [] });
+});
+
+test('categoriasParaSeletor esconde a oculta, menos a que o lançamento já usa', () => {
+  const { visiveis } = separarCategoriasOcultas(DO_ESPACO, ['pet']);
+  assert.deepEqual(
+    categoriasParaSeletor({ visiveis, todas: DO_ESPACO }).map((c) => c.id),
+    ['sis-mer', 'sis-tra', 'sal'],
+  );
+  assert.deepEqual(
+    categoriasParaSeletor({ visiveis, todas: DO_ESPACO, selecionadaId: 'pet' }).map((c) => c.id),
+    ['sis-mer', 'sis-tra', 'sal', 'pet'],
+  );
+  assert.equal(categoriasParaSeletor({ visiveis, todas: DO_ESPACO, selecionadaId: 'sis-mer' }), visiveis);
+  assert.equal(categoriasParaSeletor({ visiveis, todas: DO_ESPACO, selecionadaId: 'nao-existe' }), visiveis);
+});
+
+test('a Uni não sugere categoria oculta', () => {
+  const { visiveis } = separarCategoriasOcultas(DO_ESPACO, ['sis-tra']);
+  const pelaFrase = resolveFinancialCategory({
+    categories: visiveis,
+    transactionType: 'expense',
+    requestedName: 'Transporte',
+    normalizedInput: 'gastei 30 com transporte',
+  });
+  assert.notEqual(pelaFrase.category?.id, 'sis-tra');
+  assert.ok(!pelaFrase.candidates.some((c) => c.id === 'sis-tra'));
+
+  const pelaOutra = resolveFinancialCategory({
+    categories: visiveis,
+    transactionType: 'expense',
+    requestedName: 'Alimentação',
+  });
+  assert.equal(pelaOutra.category?.id, 'sis-mer');
 });

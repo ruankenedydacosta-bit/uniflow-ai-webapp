@@ -31,12 +31,16 @@ function formatarDia(data) {
 export default function CategoriaDetalhePage() {
   const { id } = useParams();
   const navigate = useNavegar();
-  const { mes, categoryState, transactionState, podeCriar, podeGerenciar, carregando } = useCategoriasOrganizar();
+  const {
+    mes, categoryState, transactionState, podeCriar, podeOcultar, podeGerenciar, carregando,
+  } = useCategoriasOrganizar();
   const [editando, setEditando] = useState(null);
   const [excluindo, setExcluindo] = useState(null);
   const [criando, setCriando] = useState(false);
 
+  // `categories` inclui as ocultas (#184): o detalhe é o lugar de mostrá-las de novo.
   const categoria = categoryState.categories.find((c) => c.id === id) ?? null;
+  const oculta = Boolean(categoria) && categoryState.categoriasOcultas.some((c) => c.id === id);
   const lancamentos = useMemo(
     () => lancamentosDaCategoria(transactionState.transactions, id),
     [transactionState.transactions, id],
@@ -83,6 +87,24 @@ export default function CategoriaDetalhePage() {
     setCriando(true);
   }
 
+  // Ocultar vale para qualquer categoria visível no espaço, inclusive as
+  // padrão. O erro fica na linha abaixo das ações, com o motivo.
+  const [erroDeOcultar, setErroDeOcultar] = useState('');
+  async function handleOcultarOuMostrar() {
+    setErroDeOcultar('');
+    categoryState.clearError?.();
+    const resultado = oculta
+      ? await categoryState.reexibirCategoria(categoria.id)
+      : await categoryState.ocultarCategoria(categoria.id);
+    if (resultado.error) {
+      setErroDeOcultar(oculta
+        ? 'Não foi possível mostrar a categoria. Confira sua conexão e tente de novo.'
+        : 'Não foi possível ocultar a categoria. Confira sua conexão e tente de novo.');
+      return;
+    }
+    notifyFinancialDataChanged('categorias');
+  }
+
   async function handleCriar(values) {
     const resultado = await categoryState.saveCategory(values);
     if (!resultado.error) {
@@ -123,8 +145,8 @@ export default function CategoriaDetalhePage() {
           <span className={styles.detailTitle}>
             <span className={styles.detailName}>{categoria.name}</span>
             <span className={styles.rowHint}>
-              {[ehSaida ? 'Saída' : 'Entrada', origem]
-                .join(' · ')}
+              {[ehSaida ? 'Saída' : 'Entrada', origem, oculta ? 'Oculta' : null]
+                .filter(Boolean).join(' · ')}
             </span>
           </span>
         </div>
@@ -170,6 +192,21 @@ export default function CategoriaDetalhePage() {
           >
             Ver no Financeiro
           </OutlineButton>
+          {podeOcultar ? (
+            <OutlineButton
+              variant="secondary"
+              disabled={categoryState.isMutating}
+              onClick={handleOcultarOuMostrar}
+            >
+              {oculta ? 'Mostrar categoria' : 'Ocultar categoria'}
+            </OutlineButton>
+          ) : null}
+          {erroDeOcultar ? <p className={styles.note} role="alert">{erroDeOcultar}</p> : null}
+          {oculta ? (
+            <p className={styles.note}>
+              Esta categoria não aparece ao registrar um lançamento nem nas sugestões da Uni. Os lançamentos já feitos continuam nela.
+            </p>
+          ) : null}
           {gerenciavel ? (
             <>
               <OutlineButton
@@ -223,7 +260,7 @@ export default function CategoriaDetalhePage() {
       {excluindo ? (
         <CategoryDeleteConfirmModal
           category={excluindo}
-          categories={categoryState.categories}
+          categories={categoryState.categoriasVisiveis}
           isMutating={categoryState.isMutating}
           error={categoryState.error}
           contarLancamentos={categoryState.contarLancamentos}
