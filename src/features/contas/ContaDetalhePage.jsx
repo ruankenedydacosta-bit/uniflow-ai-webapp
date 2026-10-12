@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import IconBox from '../../components/ui/IconBox';
 import Modal from '../../components/ui/Modal';
 import OutlineButton from '../../components/ui/OutlineButton';
+import ProgressBar from '../../components/ui/ProgressBar';
 import { getFinanceErrorMessage } from '../../pages/financeiro/financeUiUtils.js';
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { cx } from '../../utils/cx.js';
@@ -15,10 +16,15 @@ import { SIMPLIFIED_ROUTES } from '../simplified-app/simplifiedRoutes.js';
 import organizar from '../categories/organizar.module.css';
 import { ContaIcon } from './ContaIcon.jsx';
 import NovaContaModal from './NovaContaModal.jsx';
+import NovoCartaoModal from './NovoCartaoModal.jsx';
 import {
+  cicloDoCartao,
   ehCartao,
   ehContaDoOpenFinance,
+  faturaAberta,
+  formatarDiaCurto,
   lancamentosDaConta,
+  limiteUsado,
   resumoDaConta,
   rotuloDoTipo,
   saldoDaConta,
@@ -31,12 +37,6 @@ function plural(quantidade, singular, pluralForma) {
   return `${quantidade} ${quantidade === 1 ? singular : pluralForma}`;
 }
 
-function formatarDia(data) {
-  const [, mes, dia] = String(data).split('-');
-  const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-  return `${Number(dia)} ${meses[Number(mes) - 1] ?? ''}`.trim();
-}
-
 const DESCRICAO_PADRAO = Object.freeze({
   income: 'Entrada',
   expense: 'Saída',
@@ -46,19 +46,26 @@ const DESCRICAO_PADRAO = Object.freeze({
 
 // Detalhe da conta (handoff 10h): saldo, movimento do mês, lançamentos e as
 // ações. Conta do Open Finance não edita, não ajusta saldo nem exclui; a
-// nota abaixo das ações explica.
+// nota abaixo das ações explica. Cartão de crédito mostra a fatura aberta do
+// ciclo, o limite e as datas; a fatura mês a mês fica fora do épico #185.
 export default function ContaDetalhePage() {
   const { id } = useParams();
   const navigate = useNavegar();
   const {
-    mes, accountState, balanceState, transactionState, permissoes, carregandoPapel, carregando,
-  } = useContasOrganizar({ comLancamentos: true });
+    mes, accountState, balanceState, transactionState, cartoesState, carregandoCartoes,
+    permissoes, carregandoPapel, carregando,
+  } = useContasOrganizar({ comLancamentos: true, comCartoes: id });
   const [editando, setEditando] = useState(null);
   const [excluindo, setExcluindo] = useState(null);
   const [ajustando, setAjustando] = useState(false);
 
   const conta = accountState.accounts.find((c) => c.id === id && c.is_active !== false) ?? null;
   const saldo = conta ? saldoDaConta(conta, balanceState.accountBalances) : 0;
+  const cartao = conta && ehCartao(conta);
+  // Cálculo barato: fica sem useMemo para o React Compiler cuidar da memoização.
+  const ciclo = cartao ? cicloDoCartao(conta, mes.date) : null;
+  const fatura = ciclo ? faturaAberta(cartoesState.transactions, id, ciclo) : 0;
+  const limite = cartao ? limiteUsado(saldo, conta.credit_limit) : null;
   const lancamentos = useMemo(
     () => lancamentosDaConta(transactionState.transactions, id),
     [transactionState.transactions, id],
@@ -141,13 +148,27 @@ export default function ContaDetalhePage() {
         </div>
 
         <div className={organizar.months}>
-          <div className={organizar.monthCard}>
-            <span className={organizar.summaryLabel}>{ehCartao(conta) ? 'Fatura aberta' : 'Saldo atual'}</span>
-            <span className={cx(organizar.monthValue, saldo < 0 && styles.negativo)}>
-              {balanceState.isLoading ? '...' : formatCurrency(saldo)}
-            </span>
-            <span className={organizar.rowHint}>{openFinance ? 'Atualizado pelo banco' : 'Pelos lançamentos'}</span>
-          </div>
+          {cartao ? (
+            <div className={organizar.monthCard}>
+              <span className={organizar.summaryLabel}>Fatura aberta</span>
+              <span className={organizar.monthValue}>
+                {carregandoCartoes ? '...' : formatCurrency(fatura)}
+              </span>
+              <span className={organizar.rowHint}>
+                {conta.closing_day
+                  ? `Fecha ${formatarDiaCurto(ciclo.fechamento)}${ciclo.vencimento ? ` · Vence ${formatarDiaCurto(ciclo.vencimento)}` : ''}`
+                  : 'Sem dia de fechamento'}
+              </span>
+            </div>
+          ) : (
+            <div className={organizar.monthCard}>
+              <span className={organizar.summaryLabel}>Saldo atual</span>
+              <span className={cx(organizar.monthValue, saldo < 0 && styles.negativo)}>
+                {balanceState.isLoading ? '...' : formatCurrency(saldo)}
+              </span>
+              <span className={organizar.rowHint}>{openFinance ? 'Atualizado pelo banco' : 'Pelos lançamentos'}</span>
+            </div>
+          )}
           <div className={organizar.monthCard}>
             <span className={organizar.summaryLabel}>{mesRotulo}</span>
             <span className={cx(organizar.monthValue, movimento < 0 && styles.negativo, movimento > 0 && styles.positivo)}>
@@ -158,6 +179,25 @@ export default function ContaDetalhePage() {
             </span>
           </div>
         </div>
+
+        {cartao ? (
+          <div className={styles.limite}>
+            {limite.percentual === null ? (
+              <span className={styles.limiteTexto}>
+                {balanceState.isLoading ? '...' : `${formatCurrency(limite.usado)} em aberto · Sem limite cadastrado`}
+              </span>
+            ) : (
+              <>
+                <ProgressBar value={limite.percentual} label="Limite usado" />
+                <span className={cx(styles.limiteTexto, limite.disponivel < 0 && styles.negativo)}>
+                  {balanceState.isLoading
+                    ? '...'
+                    : `${formatCurrency(limite.usado)} de ${formatCurrency(limite.limite)} usados · ${formatCurrency(limite.disponivel)} disponível`}
+                </span>
+              </>
+            )}
+          </div>
+        ) : null}
 
         <h2 className={organizar.sectionTitle}>Lançamentos</h2>
         {transactionState.isLoading ? (
@@ -175,7 +215,7 @@ export default function ContaDetalhePage() {
                   <span />
                   <span className={organizar.rowText}>
                     <span className={organizar.rowTitle}>{t.description || DESCRICAO_PADRAO[t.transaction_type] || 'Lançamento'}</span>
-                    <span className={organizar.rowHint}>{formatarDia(t.transaction_date)}</span>
+                    <span className={organizar.rowHint}>{formatarDiaCurto(t.transaction_date)}</span>
                   </span>
                   <span className={cx(organizar.rowValue, sinal < 0 && styles.negativo)}>
                     {sinal < 0 ? '-' : '+'}{formatCurrency(Math.abs(Number(t.amount || 0)))}
@@ -187,7 +227,8 @@ export default function ContaDetalhePage() {
         )}
 
         <div className={organizar.actions}>
-          {pode.ajustarSaldo ? (
+          {/* O saldo do cartão é o que ele deve, e a folha de ajuste não aceita valor negativo: cartão não ajusta. */}
+          {pode.ajustarSaldo && !cartao ? (
             <OutlineButton variant="secondary" disabled={accountState.isMutating} onClick={() => setAjustando(true)}>
               Ajustar saldo
             </OutlineButton>
@@ -201,7 +242,7 @@ export default function ContaDetalhePage() {
                 setEditando({ ...conta });
               }}
             >
-              Editar conta
+              {cartao ? 'Editar cartão' : 'Editar conta'}
             </OutlineButton>
           ) : null}
           {pode.excluir ? (
@@ -228,19 +269,35 @@ export default function ContaDetalhePage() {
         </div>
       </div>
 
-      <NovaContaModal
-        open={Boolean(editando)}
-        conta={editando}
-        onClose={() => {
-          accountState.clearError();
-          setEditando(null);
-        }}
-        onSave={handleEditar}
-        isMutating={accountState.isMutating}
-        serverError={editando
-          ? getFinanceErrorMessage(accountState.error, 'Não foi possível salvar a conta. Tente novamente.')
-          : ''}
-      />
+      {cartao ? (
+        <NovoCartaoModal
+          open={Boolean(editando)}
+          cartao={editando}
+          onClose={() => {
+            accountState.clearError();
+            setEditando(null);
+          }}
+          onSave={handleEditar}
+          isMutating={accountState.isMutating}
+          serverError={editando
+            ? getFinanceErrorMessage(accountState.error, 'Não foi possível salvar o cartão. Tente novamente.')
+            : ''}
+        />
+      ) : (
+        <NovaContaModal
+          open={Boolean(editando)}
+          conta={editando}
+          onClose={() => {
+            accountState.clearError();
+            setEditando(null);
+          }}
+          onSave={handleEditar}
+          isMutating={accountState.isMutating}
+          serverError={editando
+            ? getFinanceErrorMessage(accountState.error, 'Não foi possível salvar a conta. Tente novamente.')
+            : ''}
+        />
+      )}
 
       {ajustando ? (
         <UpdateBalanceModal

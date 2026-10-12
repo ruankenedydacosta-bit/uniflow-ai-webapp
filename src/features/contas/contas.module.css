@@ -1,10 +1,30 @@
-/* Contas do Organizar (handoff 10g–10i). A lista e o detalhe usam as
-   classes de organizar.module.css; aqui fica só o que é da folha de conta
-   e do saldo negativo. */
+/* Contas e cartões do Organizar (handoff 10g–10k). A lista e o detalhe
+   usam as classes de organizar.module.css; aqui fica só o que é das folhas
+   de conta e de cartão, da barra de limite e do saldo negativo. */
 .form {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.dias {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--uf-space-8);
+}
+
+/* Limite usado na linha do cartão: barra fina com o texto abaixo. */
+.limite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-4);
+}
+
+.limiteTexto {
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
 }
 
 .formError {
