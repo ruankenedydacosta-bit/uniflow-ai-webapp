@@ -211,7 +211,7 @@ test('atalho público de Saldo foi substituído por Abrir agenda e navega para a
 test('UniChat resolve resumo financeiro antes de small talk e abandona pending de Agenda', async () => {
   const page = await readFile(new URL('./UniChatPage.jsx', import.meta.url), 'utf8');
   const summaryGate = page.indexOf('if (isRetiredBalanceRequest || isPublicFinancialSummary)');
-  const commonGate = page.indexOf("if (declaredIntent === 'conversation_common')", summaryGate);
+  const commonGate = page.indexOf("if (declaredIntent === 'conversation_common'", summaryGate);
   assert.ok(summaryGate >= 0);
   assert.ok(commonGate > summaryGate);
   assert.match(page, /shouldAbandonAgendaForFinancial[\s\S]*isPublicFinancialSummary/);

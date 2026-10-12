@@ -38,8 +38,10 @@ TanStack Query, sonner) **não** é a deste projeto. Aqui vale a seção "Stack"
 - CSS próprio em `src/styles`, com tokens em `theme.css`. Sem Tailwind, shadcn ou Radix.
   Componentes base em `src/components/ui`.
 - Supabase (`supabase-js`, Edge Functions em `supabase/`), deploy na Vercel.
-- Testes com `node --test`. O `npm test` roda uma **lista explícita** de arquivos:
-  teste novo só roda se entrar nessa lista no `package.json`.
+- Testes com `node --test`. O `npm test` roda todo `*.test.js` de `src/` e
+  `scripts/`: teste novo entra sozinho, sem mexer no `package.json`. Arquivo
+  `.test.jsx` não roda (o Node não lê JSX). O glob precisa de Node 22 ou mais
+  novo (`.nvmrc`).
 - Sem typecheck. A verificação é `npm run lint` + `npm test` + `npm run build`.
 
 ## Idioma
