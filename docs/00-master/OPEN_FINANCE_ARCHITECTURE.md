@@ -2,26 +2,18 @@
 
 ## Status
 
-Em 2026-07-11, a infraestrutura de dominio foi aplicada e validada somente no
-projeto Supabase `UniFlow DEV`.
+Em 2026-10-12 nenhuma instituicao financeira esta conectada e nenhum provedor
+foi escolhido.
 
-- A migration 004 foi aplicada com sucesso no DEV.
-- A validacao estatica concluiu 12/12 verificacoes.
-- Quatro tabelas, RLS, policies, FKs, indices e triggers foram confirmados.
-- Nenhuma escrita foi liberada ao frontend.
-- Nenhuma coluna proibida destinada a segredo foi encontrada.
-- Nenhuma instituicao financeira foi conectada.
+- As tabelas da migration 004 existem em producao (`egbqrhcfxtjqwgteaknp`),
+  aplicadas pela integracao Supabase-GitHub no merge, e estao vazias.
+- O projeto `UniFlow DEV` citado nas revisoes de julho saiu do fluxo. Toda
+  migration vai para producao no merge em `main`.
+- A migration 068 ajustou o nucleo financeiro ao app atual (ver "Conta e
+  lancamento do Open Finance no nucleo").
 - Nenhum token, certificado, segredo ou credencial bancaria foi criado.
-- Producao permanece sem alteracoes.
-- Paginas, CSS e mocks atuais permanecem inalterados.
-
-A migration aprovada no DEV e:
-
-`supabase/migrations/20260711_004_open_finance_infrastructure.sql`
-
-Ela depende das migrations de identidade, workspaces e nucleo financeiro. A
-aprovacao no DEV nao autoriza promocao para producao nem conexao de um
-provedor.
+- A tela `/open-finance` continua sendo demonstracao visual.
+- Os services e o hook `useOpenFinance` existem, mas nenhuma tela os usa.
 
 ## Principio do produto
 
@@ -204,6 +196,89 @@ A revogacao futura deve interromper novos jobs, revogar no provedor e aplicar a
 politica de retencao. Excluir historico financeiro normalizado nao deve ser uma
 consequencia implicita sem regra de produto e base legal claramente definidas.
 
+## Conta e lancamento do Open Finance no nucleo
+
+Conta e lancamento normalizados que vem do banco usam `source_type =
+'open_finance'` em `accounts` e `transactions`. So o backend grava esse valor:
+as policies de insert do app exigem `source_type = 'manual'`.
+
+Regras garantidas no banco pela migration 068:
+
+- **Saldo.** `get_derived_account_balances()` devolve, para conta do Open
+  Finance com `last_synced_at` preenchido, o `accounts.current_balance`
+  gravado pelo backend. O extrato importado cobre so os ultimos meses, entao
+  somar lancamentos nao reproduz o saldo do banco. Antes do primeiro saldo, a
+  conta segue derivada, para nao mostrar R$ 0 como se viesse do banco.
+- **Contrato do saldo.** O backend grava `current_balance` na convencao do
+  app, nao na do provedor: cartao fica negativo quando ha fatura a pagar (o
+  limite usado e `-saldo`). Grava `last_synced_at` junto.
+- **Conta protegida.** O app nao edita nome, tipo, instituicao, saldo,
+  limite, fechamento, vencimento nem `is_active`, e nao exclui. `metadata`
+  segue editavel. Ajuste de saldo numa conta do Open Finance e recusado por
+  qualquer caminho.
+- **Lancamento protegido.** O app nao edita valor, data, conta, tipo,
+  descricao, status, parcelas, recorrencia nem `metadata.auto_confirm`, e nao
+  exclui. Categoria, observacao, competencia e o resto de `metadata` seguem
+  editaveis: recategorizar e o trabalho da pessoa e da Uni.
+- **Quem e barrado.** A regra le o papel do JWT (`auth.role()`), que continua
+  `authenticated` dentro de RPC `security definer`. Por isso a Uni tambem e
+  barrada (ex.: reativar conta arquivada). Passam Edge Function com
+  `service_role`, job sem JWT e a cascata de FK ao excluir o espaco.
+- **Payload.** `transactions.raw_provider_data` saiu: era legivel por qualquer
+  membro e nenhum codigo usava. O payload sanitizado mora em
+  `external_transactions.sanitized_provider_data`, sem grant para o app.
+
+Roteiro de validacao: `supabase/tests/open_finance_saldo_do_banco_e_protecao_validation.sql`.
+
+### O que a interface ainda nao segue
+
+O banco recusa, mas a tela ainda oferece. Precisa ser fechado antes da primeira
+conexao, senao a pessoa ve o codigo cru do erro:
+
+- Contas (`ContaDetalhePage`) e a Uni ja bloqueiam editar, ajustar saldo e
+  excluir conta do Open Finance, e a Uni recusa editar ou excluir lancamento
+  importado.
+- Financeiro (`FinanceiroPage`, `FinanceTransactionModal`,
+  `FinanceAccountModal`) e Registros (`SimplifiedRecordsPage`) oferecem editar
+  e excluir lancamento e conta sem olhar `source_type`. A Uni manda a pessoa
+  para o Financeiro excluir lancamento importado, onde a acao falha.
+- O formulario de edicao reenvia a descricao normalizada (`trim`, texto
+  padrao quando vazia). Recategorizar um lancamento do banco precisa mandar so
+  os campos editaveis, senao a descricao "muda" e o banco recusa.
+- Os codigos `conta_do_open_finance_protegida` e
+  `lancamento_do_open_finance_protegido` nao tem mensagem na interface.
+
+## Decisoes pendentes antes do backend
+
+Nao dependem do provedor escolhido e precisam de resposta do dono antes da
+primeira Edge Function:
+
+1. **Conta manual que ja existe.** A pessoa registra a conta Nubank a mao ha
+   meses e conecta o Nubank. A conta manual vira a do Open Finance (mantendo
+   o historico) ou nasce uma conta nova e a manual e arquivada?
+2. **Lancamento manual duplicado.** O mesmo gasto lancado pela voz e importado
+   pelo banco. A conciliacao vincula o importado ao manual
+   (`external_transactions.normalized_transaction_id`) por valor, data e conta?
+   E o lancamento manual sem conta (`account_id` nulo, o caso comum hoje)?
+   Hoje o app ainda aceita lancamento manual numa conta do Open Finance: ele
+   nao mexe no saldo dela (que e o do banco), mas mexe na outra ponta. Uma
+   transferencia manual de R$ 500 da poupanca manual para a conta do banco
+   derruba o saldo do espaco em R$ 500 ate o banco mandar o credito. Decidir se
+   o app passa a recusar movimento manual em conta do Open Finance.
+3. **Transferencia entre contas proprias.** Duas contas conectadas mostram um
+   debito e um credito. Sem conciliacao, viram uma despesa e uma receita e
+   inflam os totais do mes.
+4. **Aporte de meta.** O aporte cria uma transferencia manual para a conta
+   vinculada (#158). Com a conta vinculada no Open Finance, o banco tambem
+   manda o credito. A #206 define o comportamento da meta.
+5. **Plano.** Cada conexao tem custo mensal no agregador. Definir em qual plano
+   o Open Finance entra e o limite de conexoes, imposto no banco por trigger.
+6. **Retencao.** `data_retention_until` existe, mas nenhum job apaga nada.
+   Definir prazo apos revogacao e o que acontece com os lancamentos
+   normalizados.
+7. **Politica de privacidade.** O agregador entra como subprocessador na mesma
+   PR da feature.
+
 ## Webhooks e Edge Functions
 
 Edge Functions ou backend seguro serao responsaveis por:
@@ -280,12 +355,13 @@ tokens, validacao de webhooks bancarios ou acesso privilegiado ao banco.
 2. Comparar PF/PJ, dados suportados, webhooks, seguranca, SLA e custos.
 3. Selecionar um provedor somente depois de uma matriz documentada.
 4. Definir requisitos regulatorios sem incluir credenciais no repositorio.
-5. Criar Edge Functions com secrets apenas no DEV.
-6. Implementar consentimento sandbox do provedor escolhido.
-7. Criar roteiro autenticado de leitura/RLS para o fluxo integrado.
-8. Validar idempotencia, retries, revogacao e expiracao.
-9. Conciliar contas e transacoes externas com o dominio normalizado.
-10. Conectar interface somente depois dos testes de seguranca.
+5. Responder as decisoes pendentes acima.
+6. Criar Edge Functions com secrets do sandbox do provedor.
+7. Implementar consentimento sandbox do provedor escolhido.
+8. Criar roteiro autenticado de leitura/RLS para o fluxo integrado.
+9. Validar idempotencia, retries, revogacao e expiracao.
+10. Conciliar contas e transacoes externas com o dominio normalizado.
+11. Conectar interface somente depois dos testes de seguranca.
 
 ## Criterios antes de producao
 
@@ -298,4 +374,5 @@ tokens, validacao de webhooks bancarios ou acesso privilegiado ao banco.
 - revogacao e expiracao testadas;
 - rate limit, retry e observabilidade ativos;
 - plano de incidente e rollback documentado;
-- nenhuma migration promovida sem passar antes pelo DEV.
+- toda migration validada antes do merge numa transacao com ROLLBACK contra
+  o banco, com o roteiro de teste em `supabase/tests/`.
