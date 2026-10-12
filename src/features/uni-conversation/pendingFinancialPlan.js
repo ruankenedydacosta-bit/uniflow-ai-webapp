@@ -2,6 +2,7 @@ import { normalizeFinancialText, resolveRelativeDateExpression } from '../uni-in
 import { resolveFinancialAccount } from './accountResolution.js';
 import { buildFinancialIntentAction } from './financialIntentAction.js';
 import { createClientOperationId } from './accountProvisioning.js';
+import { splitInstallmentAmounts } from '../../pages/financeiro/installmentUtils.js';
 
 // BLOCO E: "Pending Financial Plan" -- estende o padrao ja validado do
 // Bloco B (uma operacao financeira suspensa/retomada) para MULTIPLAS
@@ -35,22 +36,52 @@ const OPERATION_TYPE_TO_INTENT = Object.freeze({
   expense: 'register_expense',
   income: 'register_income',
   transfer: 'register_transfer',
-  // BLOCO E -- LIMITE DE ESCOPO EXPLICITO (secao 9/11/24 da tarefa): o
-  // backend ainda nao tem RPC/tabela para persistir parcelamento nem
-  // recorrencia. Estas duas continuam sendo COMPREENDIDAS e apresentadas
-  // para confirmacao (capabilityPending=true), mas nunca convertidas em
-  // uma transacao real -- nunca "simular" 10 lancamentos ou criar uma
-  // automacao silenciosa.
-  installment_purchase: null,
+  // Compra parcelada é uma saída com o total; a RPC registrar_compra_parcelada
+  // grava as parcelas (#221).
+  installment_purchase: 'register_expense',
+  // BLOCO E -- LIMITE DE ESCOPO EXPLICITO: o backend ainda nao gera os
+  // proximos lancamentos de uma recorrencia (#222). Ela continua sendo
+  // COMPREENDIDA e apresentada (capabilityPending=true), mas nunca vira
+  // uma transacao real nem uma automacao silenciosa.
   recurring_expense: null,
   recurring_income: null,
 });
 
 const CAPABILITY_PENDING_MESSAGES = Object.freeze({
-  installment_purchase: 'Ainda não consigo registrar compras parceladas automaticamente nesta versão -- entendi o parcelamento, mas o registro precisa ser feito manualmente.',
+  installment_purchase: 'Não entendi em quantas parcelas foi a compra. Diga de novo com o número de parcelas.',
   recurring_expense: 'Ainda não consigo criar recorrências automaticamente nesta versão -- entendi a recorrência, mas cada lançamento precisa ser feito manualmente.',
   recurring_income: 'Ainda não consigo criar recorrências automaticamente nesta versão -- entendi a recorrência, mas cada lançamento precisa ser feito manualmente.',
 });
+
+// Mesmo arredondamento da RPC: centavos, e a última parcela absorve a
+// diferença. null sem número de parcelas válido.
+function contarParcelas(operation) {
+  const count = Number(operation.installments?.count);
+  return Number.isInteger(count) && count >= 2 && count <= 360 ? count : null;
+}
+
+// Data da parcela como a RPC calcula: meses somados à primeira, com o dia
+// limitado ao fim do mês (31/01 → 28/02 → 31/03).
+function dataDaParcela(firstDate, index) {
+  const [year, month, day] = firstDate.split('-').map(Number);
+  const target = new Date(Date.UTC(year, month - 1 + index, 1));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(day, lastDay));
+  return target.toISOString().slice(0, 10);
+}
+
+// futureCount: parcelas com data depois de hoje, que nascem previstas.
+function resumirParcelas(total, count, firstDate, referenceDate) {
+  const futureCount = typeof firstDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(firstDate)
+    ? Array.from({ length: count }, (_, index) => dataDaParcela(firstDate, index))
+      .filter((date) => date > referenceDate).length
+    : null;
+  if (!(Number(total) > 0) || Math.round(Number(total) * 100) < count) {
+    return { count, installmentAmount: null, lastAmount: null, futureCount };
+  }
+  const valores = splitInstallmentAmounts(total, count);
+  return { count, installmentAmount: valores[0], lastAmount: valores[count - 1], futureCount };
+}
 
 function resolveOperationDate(operation, referenceDate) {
   // Plano montado a partir do uni-interpret já traz a data resolvida.
@@ -104,7 +135,11 @@ function buildOperationState({
     accounts, accountTypes, categories, referenceDate, workspaceType,
   });
 
-  if (!OPERATION_TYPE_TO_INTENT[operation.operationType]) {
+  const installmentCount = operation.operationType === 'installment_purchase' ? contarParcelas(operation) : null;
+  if (
+    !OPERATION_TYPE_TO_INTENT[operation.operationType]
+    || (operation.operationType === 'installment_purchase' && !installmentCount)
+  ) {
     return Object.freeze({
       temporaryId: operation.temporaryId,
       clientOperationId,
@@ -141,7 +176,7 @@ function buildOperationState({
     }
   }
 
-  const action = buildFinancialIntentAction({
+  const builtAction = buildFinancialIntentAction({
     parsed,
     accounts,
     accountTypes,
@@ -150,6 +185,9 @@ function buildOperationState({
     workspaceType,
     overrides: actionOverrides,
   });
+  const action = installmentCount
+    ? { ...builtAction, installments: resumirParcelas(builtAction.amount, installmentCount, builtAction.date, referenceDate) }
+    : builtAction;
 
   const needsDestinationClarification = operation.operationType === 'transfer'
     && destinationAccountResolution?.status !== 'resolved';

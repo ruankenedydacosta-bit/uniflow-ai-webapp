@@ -57,6 +57,12 @@ function resolvePublicTypeLabel(action) {
   return action?.typeLabel || null;
 }
 
+// "10x de R$ 300,00". O centavo do arredondamento vai na última parcela,
+// que ganha linha própria quando difere.
+function describeInstallments({ count, installmentAmount }) {
+  return installmentAmount == null ? `${count}x` : `${count}x de ${formatCurrency(installmentAmount)}`;
+}
+
 export function buildConfirmationFromAction(action) {
   if (!action) return null;
 
@@ -64,12 +70,13 @@ export function buildConfirmationFromAction(action) {
   const isBalanceAdjustment = action.balanceTarget != null && action.transactionType === 'adjustment';
   const isTransfer = action.transactionType === 'transfer';
   const publicTypeLabel = resolvePublicTypeLabel(action);
+  const installments = action.installments?.count ? action.installments : null;
 
   // BUG REAL (BUG 5): cada linha tem key estável semântica -- labels se
   // repetem (transferência mostra duas linhas de conta) e key={label}
   // duplicava a chave React ("Conta").
   if (publicTypeLabel) {
-    rows.push({ key: 'type', label: 'Tipo', value: publicTypeLabel });
+    rows.push({ key: 'type', label: 'Tipo', value: installments ? 'Compra parcelada' : publicTypeLabel });
   }
   if (action.account?.name) {
     rows.push({
@@ -99,20 +106,35 @@ export function buildConfirmationFromAction(action) {
       rows.push({ key: 'description', label: 'Descrição', value: action.description });
     }
     if (action.amount != null) {
-      rows.push({ key: 'amount', label: 'Valor', value: formatCurrency(action.amount), emphasis: true });
+      rows.push({
+        key: 'amount',
+        label: installments ? 'Valor total' : 'Valor',
+        value: formatCurrency(action.amount),
+        emphasis: !installments,
+      });
+    }
+    if (installments) {
+      rows.push({ key: 'installments', label: 'Parcelas', value: describeInstallments(installments), emphasis: true });
+      if (installments.lastAmount != null && installments.lastAmount !== installments.installmentAmount) {
+        rows.push({ key: 'last-installment', label: 'Última parcela', value: formatCurrency(installments.lastAmount) });
+      }
     }
   }
   if (action.date) {
-    rows.push({ key: 'date', label: 'Data', value: formatDate(action.date) });
+    rows.push({ key: 'date', label: installments ? 'Primeira parcela' : 'Data', value: formatDate(action.date) });
   }
-  if (action.planned) {
+  // Na compra parcelada só as parcelas com data futura ficam previstas: a
+  // linha "Previsto" diria que a compra inteira está.
+  if (action.planned && !installments) {
     rows.push({ key: 'status', label: 'Situação', value: 'Previsto' });
   }
 
+  let title = `Nova ${(publicTypeLabel || 'movimentação').toLowerCase()}`;
+  if (isBalanceAdjustment) title = 'Novo ajuste de saldo';
+  else if (installments) title = 'Nova compra parcelada';
+
   return {
-    title: isBalanceAdjustment
-      ? 'Novo ajuste de saldo'
-      : `Nova ${(publicTypeLabel || 'movimentação').toLowerCase()}`,
+    title,
     status: 'pending',
     // FASE ESTADOS DE PROCESSAMENTO: campo aditivo (não usado pelos
     // consumidores existentes de `rows`/`title`/`status`) que identifica o

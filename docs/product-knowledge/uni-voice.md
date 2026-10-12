@@ -49,6 +49,11 @@ Também dá para responder ao card só falando, sem tocar na tela:
 
 Se a resposta não estiver clara, a Uni pergunta antes de confirmar.
 
+Compra parcelada também vai pela voz: diga o total e o número de parcelas,
+como "comprei uma TV de três mil em dez vezes". A Uni fala o número de
+parcelas, o valor de cada uma e a data da primeira, e pergunta se pode
+confirmar. As parcelas com data depois de hoje ficam previstas.
+
 Também dá para alterar uma movimentação já salva falando, por exemplo
 "corrige o mercado de ontem pra cinquenta" ou "o Uber de segunda foi no
 Nubank". A Uni mostra o card "Alteração · rascunho" com o antes e o depois e

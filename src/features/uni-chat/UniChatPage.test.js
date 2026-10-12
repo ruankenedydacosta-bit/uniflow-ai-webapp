@@ -680,7 +680,7 @@ test('trocar de conversa, novo chat, trocar modo/workspace e excluir a conversa 
 
 test('escritas do chat usam a RPC atômica e allowlist restrita, incluindo transferência (BUG 2)', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{ executeConfirmedFinancialAction \}/);
+  assert.match(page, /import \{\s*executeConfirmedFinancialAction,\s*executeConfirmedInstallmentPurchase,\s*\}/);
   assert.match(page, /executeAtomicAction: executeConfirmedFinancialAction/);
   assert.match(page, /ALLOWED_CHAT_WRITE_INTENTS = Object\.freeze\(\[/);
   assert.match(page, /'register_income',\s+'register_expense',\s+'set_balance',[\s\S]*?'ambiguous_balance_or_income',[\s\S]*?'register_transfer',/);
@@ -1208,9 +1208,10 @@ test('BLOCO E: confirmação do plano persiste uma operação por vez pelo mesmo
   assert.ok(end > -1);
   assert.match(slice, /getPersistablePlanOperations\(workingPlan\)\s*\.filter\(\(op\) => op\.status === PLAN_OPERATION_STATUS\.READY\)/);
   assert.match(slice, /for \(const op of persistable\) \{/);
+  // Compra parcelada vai pela RPC que grava todas as parcelas de uma vez (#221).
   assert.match(
     slice,
-    /executeFinancialIntentAction\(op\.action, \{\s*executeAtomicAction: executeConfirmedFinancialAction,\s*\}\)/,
+    /executeFinancialIntentAction\(op\.action, \{\s*executeAtomicAction: op\.action\.installments\s*\? executeConfirmedInstallmentPurchase\s*: executeConfirmedFinancialAction,\s*\}\)/,
   );
   assert.match(slice, /markPlanOperationFailed\(workingPlan, op\.temporaryId\)/);
   assert.match(slice, /markPlanOperationConfirmed\(workingPlan, op\.temporaryId\)/);
@@ -1905,9 +1906,8 @@ test('Sprint 2: llmContext adiciona a data de referência ao system prompt de fo
 
 test('S6: confirmFinancialPlan libera isExecutingAction/confirmingPlanRef em finally (nunca trava após erro)', async () => {
   const page = await source('UniChatPage.jsx');
-  const idx = page.indexOf('async function confirmFinancialPlan() {');
-  assert.ok(idx > -1);
-  const slice = page.slice(idx, idx + 2600);
+  const { body: slice, end } = extractFunctionBody(page, 'async function confirmFinancialPlan() {');
+  assert.ok(end > -1);
   // o reset está dentro de um bloco finally que SEMPRE roda, sucesso ou erro
   assert.match(slice, /try \{/);
   assert.match(slice, /\} finally \{/);

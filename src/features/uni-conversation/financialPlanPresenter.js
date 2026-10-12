@@ -59,6 +59,12 @@ export function describePlanOperation(op) {
       ?? 'conta a definir';
     return `• Transferência de ${amountText} de ${originName} para ${destName}${describePlannedDate(op)}`;
   }
+  const installments = op.action?.installments;
+  if (op.operationType === 'installment_purchase' && installments) {
+    const categoryName = op.action?.category?.name;
+    const perInstallment = installments.installmentAmount == null ? '' : ` de ${formatAmountBRL(installments.installmentAmount)}`;
+    return `• Compra parcelada de ${amountText}${description} em ${installments.count}x${perInstallment}${categoryName ? `, em ${categoryName}` : ''}`;
+  }
   const label = op.operationType === 'income' ? 'Entrada' : 'Saída';
   const categoryName = op.action?.category?.name;
   return `• ${label} de ${amountText}${description}${categoryName ? ` em ${categoryName}` : ''}${describePlannedDate(op)}`;
@@ -161,13 +167,27 @@ export function buildPlanResultText(planState) {
   const blocked = planState.operations.filter((op) => op.capabilityPending && op.status !== PLAN_OPERATION_STATUS.CANCELLED);
 
   const parts = [];
-  if (confirmed.length) {
-    parts.push(`Registrei ${confirmed.length === 1 ? 'o lançamento' : `${confirmed.length} lançamentos`} com sucesso.`);
-    const planned = confirmed.filter((op) => op.action?.planned).length;
+  // Compra parcelada vira várias parcelas: o texto conta a compra, não os
+  // lançamentos, e avisa das parcelas futuras, que ficam previstas.
+  for (const op of confirmed.filter((item) => item.action?.installments)) {
+    const { count, futureCount } = op.action.installments;
+    parts.push(`Registrei a compra em ${count} parcelas.`);
+    if (futureCount === count) {
+      parts.push('Todas ficaram previstas. Confirme no Financeiro quando cada uma acontecer.');
+    } else if (futureCount === 1) {
+      parts.push('A última ficou prevista. Confirme no Financeiro quando ela acontecer.');
+    } else if (futureCount) {
+      parts.push(`As ${futureCount} próximas ficaram previstas. Confirme no Financeiro quando cada uma acontecer.`);
+    }
+  }
+  const single = confirmed.filter((op) => !op.action?.installments);
+  if (single.length) {
+    parts.push(`Registrei ${single.length === 1 ? 'o lançamento' : `${single.length} lançamentos`} com sucesso.`);
+    const planned = single.filter((op) => op.action?.planned).length;
     if (planned === 1) {
-      parts.push(`${confirmed.length === 1 ? 'Ele' : 'Um deles'} ficou previsto. Confirme no Financeiro quando acontecer.`);
+      parts.push(`${single.length === 1 ? 'Ele' : 'Um deles'} ficou previsto. Confirme no Financeiro quando acontecer.`);
     } else if (planned) {
-      parts.push(`${planned === confirmed.length ? 'Todos' : `${planned} deles`} ficaram previstos. Confirme no Financeiro quando acontecerem.`);
+      parts.push(`${planned === single.length ? 'Todos' : `${planned} deles`} ficaram previstos. Confirme no Financeiro quando acontecerem.`);
     }
   }
   if (failed.length) {
@@ -192,10 +212,12 @@ export function parsePlanCorrectionOverrides({
   const trimmed = text.trim();
   const normalized = normalizeFinancialText(trimmed);
   const isTransfer = operation.operationType === 'transfer';
+  // Compra parcelada é uma saída: a categoria corrigida vem das de saída.
+  const operationType = operation.operationType === 'installment_purchase' ? 'expense' : operation.operationType;
   const transactionType = isTransfer
     ? 'transfer'
-    : (operation.operationType === 'income' || operation.operationType === 'expense')
-      ? operation.operationType
+    : (operationType === 'income' || operationType === 'expense')
+      ? operationType
       : null;
 
   const accountSwapMatch = trimmed.match(

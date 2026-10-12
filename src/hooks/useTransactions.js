@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { isSupabaseConfigured } from '../services/supabaseClient.js';
 import {
   createTransaction,
+  createTransactions,
   deleteTransaction,
   listTransactions,
   listTransactionsForPeriod,
@@ -43,7 +44,7 @@ export function useTransactions({
   // e disparariam duas mutacoes. mutationRef fecha essa janela -- mesmo
   // padrao ja usado em useClients.js/useCrmPipeline.js/useAgenda.js.
   //
-  // Chamadas sequenciais aguardadas (ex.: o loop de criacao de parcelas em
+  // Chamadas sequenciais aguardadas (ex.: o loop de edicao de parcelas em
   // FinanceTransactionModal.jsx, que faz `await saveTransaction(...)` uma
   // vez por parcela dentro de um for) continuam funcionando sem alteracao:
   // a trava e liberada no `finally` de cada chamada ANTES da proxima
@@ -182,6 +183,31 @@ export function useTransactions({
     [performMutation, status, transactions, workspaceId],
   );
 
+  // Criação em lote (parcelas de uma compra): todas ou nenhuma. Conta como
+  // uma criação confirmada, não uma por parcela.
+  const saveTransactions = useCallback(
+    (valuesList, { origin = GA4_PRODUCT_ORIGINS.MANUAL } = {}) =>
+      performMutation(
+        async () => {
+          const result = !isSupabaseConfigured
+            ? createDemoResult(valuesList.map((values) => createDemoRecord('demo-transaction', values)))
+            : await createTransactions(workspaceId, valuesList);
+
+          trackGa4ConfirmedTransactionCreation({
+            confirmed: isSupabaseConfigured && !result?.error && Boolean(result?.data?.length),
+            transactionType: valuesList[0]?.transaction_type,
+            origin,
+          });
+          return result;
+        },
+        (data) => setTransactions((current) => data.reduce(
+          (list, item) => (status && item.status !== status ? list : upsertRecord(list, item)),
+          current,
+        )),
+      ),
+    [performMutation, status, workspaceId],
+  );
+
   const removeTransaction = useCallback(
     (transactionId) =>
       performMutation(
@@ -203,6 +229,7 @@ export function useTransactions({
     refresh,
     removeTransaction,
     saveTransaction,
+    saveTransactions,
     clearError: () => setError(null),
   };
 }
