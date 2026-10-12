@@ -1,0 +1,169 @@
+/* Detalhe da meta (handoff 08e, #157). O esqueleto da página (padding,
+   cabeçalho, estados) vem de ObjetivosPage.module.css; aqui ficam o anel
+   grande, os números, as ações e a lista de aportes. */
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Mesmo anel do card, em 112px: o viewBox de 56 escala junto o texto. */
+.hero .ring {
+  width: 112px;
+  height: 112px;
+}
+
+.heroText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.selo {
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--uf-radius-full);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.selo.verde {
+  color: var(--uf-app-brand-green-text);
+}
+
+.selo.violeta {
+  color: var(--uf-app-brand-violet-text);
+}
+
+.selo.neutro {
+  color: var(--uf-app-text-3);
+}
+
+.saved {
+  font-size: 30px;
+  font-weight: var(--uf-font-weight-medium);
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.ofTarget {
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.support {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--uf-space-8);
+  margin: 0;
+}
+
+.numbers > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-app-card-surface);
+  box-shadow: inset 0 0 0 1px var(--uf-app-card-edge);
+}
+
+.numbers dt {
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+}
+
+.numbers dd {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uf-space-8);
+}
+
+.error {
+  margin: 0;
+  color: var(--uf-app-danger-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.contributions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.empty {
+  margin: 0;
+  color: var(--uf-app-text-3);
+  font-size: 13px;
+}
+
+.contributionList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contribution {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uf-space-12);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--uf-app-border);
+  font-size: 14px;
+}
+
+.contribution:last-child {
+  border-bottom: 0;
+}
+
+.contributionText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.contributionNote {
+  overflow: hidden;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contributionAmount {
+  flex: 0 0 auto;
+  font-weight: var(--uf-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}

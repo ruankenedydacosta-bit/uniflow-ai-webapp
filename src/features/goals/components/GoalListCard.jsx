@@ -8,12 +8,13 @@ const RAIO = 22;
 const CIRCUNFERENCIA = 2 * Math.PI * RAIO;
 
 // Sem selo de ritmo (meta sem data-alvo), o anel fica no azul da marca.
-function AnelDeProgresso({ progresso, tom }) {
+// O detalhe da meta (#157) usa o mesmo anel, maior, pelo `className`.
+export function AnelDeProgresso({ progresso, tom, className }) {
   const preenchido = (progresso / 100) * CIRCUNFERENCIA;
   return (
     <svg
       viewBox="0 0 56 56"
-      className={cx(styles.ring, styles[tom ?? 'azul'])}
+      className={cx(styles.ring, styles[tom ?? 'azul'], className)}
       role="img"
       aria-label={`${progresso}% guardado`}
     >

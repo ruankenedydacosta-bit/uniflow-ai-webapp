@@ -9,6 +9,7 @@ import FinancePage from '../pages/FinancePage';
 import LoginPage from '../pages/LoginPage';
 import { WelcomeDecisionPage } from '../features/auth-mobile';
 import ObjetivosPage from '../pages/ObjetivosPage';
+import MetaDetalhePage from '../pages/MetaDetalhePage';
 import ProjectsPage from '../pages/ProjectsPage';
 import ReportsPage from '../pages/ReportsPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
@@ -465,6 +466,14 @@ export const appRoutes = [
     title: 'Metas',
     simplified: true,
     element: <ObjetivosPage />,
+  },
+  {
+    path: SIMPLIFIED_ROUTES.META,
+    moduleId: MODULE_IDS.OBJETIVOS,
+    label: 'Meta',
+    title: 'Meta',
+    simplified: true,
+    element: <MetaDetalhePage />,
   },
   // Rotas antigas de Metas: mantêm links e bookmarks anteriores funcionando.
   // `simplified` é necessário: só rotas simplificadas renderizam, o resto

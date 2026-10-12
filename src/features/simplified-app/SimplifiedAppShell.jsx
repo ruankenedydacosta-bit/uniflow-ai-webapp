@@ -73,6 +73,8 @@ function SimplifiedAppShell({ children }) {
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`)
     // #154: Metas é tela interna do Mais (seta voltar + "Criar meta").
     || location.pathname === SIMPLIFIED_ROUTES.METAS
+    // #157: o detalhe da meta também (seta voltar + menu ⋯).
+    || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.METAS}/`)
     // Organizar (handoff 10): hub, lista e detalhe de categoria têm cabeçalho próprio.
     || location.pathname === SIMPLIFIED_ROUTES.ORGANIZAR
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ORGANIZAR}/`)

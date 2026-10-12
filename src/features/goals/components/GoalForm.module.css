@@ -53,3 +53,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.error {
+  margin: 0;
+  color: var(--uf-color-danger);
+  font-size: var(--uf-text-caption-size);
+}

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { abaDaRota, movimentoDaNavegacao, sentidoDaAba } from './movimentoDeAba.js';
 import { ACCOUNT_SUBROUTE_IDS, ACCOUNT_SUBROUTES } from './simplifiedAccountRoutes.js';
-import { SIMPLIFIED_ROUTE_IDS, SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { metaPath, SIMPLIFIED_ROUTE_IDS, SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 
 test('abaDaRota acha a aba da rota e das sub-rotas dela', () => {
   assert.equal(abaDaRota(SIMPLIFIED_ROUTES.HOME)?.id, SIMPLIFIED_ROUTE_IDS.HOME);
@@ -43,6 +43,14 @@ test('movimentoDaNavegacao abre Uni e Relatório por cima e volta deles para a a
   assert.equal(movimentoDaNavegacao(SIMPLIFIED_ROUTES.ORGANIZAR, SIMPLIFIED_ROUTES.CATEGORIAS), 'abrir');
   assert.equal(movimentoDaNavegacao(SIMPLIFIED_ROUTES.CATEGORIAS, SIMPLIFIED_ROUTES.ORGANIZAR), 'voltar');
   assert.equal(movimentoDaNavegacao(SIMPLIFIED_ROUTES.ORGANIZAR, SIMPLIFIED_ROUTES.RECORDS), 'voltar');
+});
+
+test('movimentoDaNavegacao abre Metas pelo Mais e o detalhe da meta pela lista', () => {
+  const detalhe = metaPath('meta-1');
+  assert.equal(movimentoDaNavegacao(SIMPLIFIED_ROUTES.ACCOUNT, SIMPLIFIED_ROUTES.METAS), 'abrir');
+  assert.equal(movimentoDaNavegacao(SIMPLIFIED_ROUTES.METAS, detalhe), 'abrir');
+  assert.equal(movimentoDaNavegacao(detalhe, SIMPLIFIED_ROUTES.METAS), 'voltar');
+  assert.equal(movimentoDaNavegacao(SIMPLIFIED_ROUTES.METAS, SIMPLIFIED_ROUTES.ACCOUNT), 'voltar');
 });
 
 test('movimentoDaNavegacao troca de aba ao ir para a raiz de outra aba, mesmo de uma tela aberta', () => {
