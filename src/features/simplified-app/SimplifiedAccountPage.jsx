@@ -29,6 +29,7 @@ import {
   PhCreditCardIcon,
   PhCrownIcon,
   PhFlagIcon,
+  PhSquaresFourIcon,
   PhGearIcon,
   PhInfoIcon,
   PhLifebuoyIcon,
@@ -173,6 +174,13 @@ function SimplifiedAccountPage() {
       title: 'Metas',
       subtitle: 'Acompanhe o que você quer conquistar',
       to: SIMPLIFIED_ROUTES.METAS,
+    },
+    {
+      id: 'organizar',
+      Icon: PhSquaresFourIcon,
+      title: 'Contas e categorias',
+      subtitle: 'Onde seu dinheiro fica e como se agrupa',
+      to: SIMPLIFIED_ROUTES.ORGANIZAR,
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
