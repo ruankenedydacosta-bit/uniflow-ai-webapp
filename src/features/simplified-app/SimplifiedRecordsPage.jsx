@@ -45,6 +45,12 @@ import styles from './simplifiedRecords.module.css';
 
 const PAGE_SIZE = 20;
 const CATEGORY_PREVIEW_SIZE = 8;
+// Aviso de quem confirmou um previsto.
+const CONFIRMED_NOTICES = {
+  expense: 'Pagamento confirmado.',
+  income: 'Entrada recebida.',
+  transfer: 'Transferência confirmada.',
+};
 // Aviso de quem salvou uma movimentação nova pela folha (#145).
 const CREATED_NOTICES = {
   expense: 'Saída registrada.',
@@ -384,6 +390,8 @@ function TransactionRow({
   const plannedInfo = planned
     ? describePlannedTransaction(transaction, categoryPresentation?.name ?? 'Outros')
     : null;
+  // No Resumo, Confirmar ocupa o lugar do valor: o valor vai para a linha de apoio.
+  const showConfirm = Boolean(planned && onConfirmPlanned && plannedInfo.due);
   // BLOCO FINAL DO MVP (Saldo manual): "adjustment" pode ser positivo ou
   // negativo -- ao contrário de income/expense, o sinal correto vem de
   // adjustment_delta, nunca do tipo sozinho.
@@ -522,14 +530,16 @@ function TransactionRow({
         <span className={styles.transactionMain}>
           <strong>{transaction.description || categoryPresentation?.name || 'Outros'}</strong>
           {planned ? (
-            <small className={plannedInfo.due ? styles.plannedDue : undefined}>{plannedInfo.text}</small>
+            <small className={plannedInfo.due ? styles.plannedDue : undefined}>
+              {showConfirm ? `${plannedInfo.dueText} · ${formatCurrency(transaction.amount)}` : plannedInfo.text}
+            </small>
           ) : (
             <small>
               {`${formatRelativeTransactionDate(transaction.transaction_date)} · ${categoryPresentation?.name ?? 'Outros'}`}
             </small>
           )}
         </span>
-        {planned && onConfirmPlanned && plannedInfo.due ? (
+        {showConfirm ? (
           <span
             role="button"
             tabIndex={0}
@@ -753,6 +763,7 @@ function SimplifiedRecordsPage() {
   const [plannedError, setPlannedError] = useState(null);
   const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [transactionSuccessNotice, setTransactionSuccessNotice] = useState(null);
+  const [transactionNoticeIsError, setTransactionNoticeIsError] = useState(false);
   const transactionNoticeTimerRef = useRef(null);
   const recordsPageRef = useRef(null);
   // Movimentação nova a animar quando a folha fechar (#145).
@@ -884,7 +895,10 @@ function SimplifiedRecordsPage() {
   // O formulário edita pelo id: precisa achar também os previstos.
   const formTransactionState = useMemo(() => ({
     ...transactionState,
-    transactions: [...transactionState.transactions, ...plannedState.transactions],
+    // Depois de confirmar, o mesmo id pode estar nas duas listas até o refresh.
+    transactions: [...new Map(
+      [...plannedState.transactions, ...transactionState.transactions].map((item) => [item.id, item]),
+    ).values()],
   }), [plannedState.transactions, transactionState]);
   const accountsWithDerivedBalance = useMemo(() => {
     const balanceMap = new Map(
@@ -1000,13 +1014,11 @@ function SimplifiedRecordsPage() {
       const message = 'Não foi possível confirmar. Tente novamente.';
       setPlannedError(message);
       // Confirmar pela linha não abre o detalhe: o aviso vai para o toast.
-      if (!plannedDetail) showTransactionNotice(message);
+      if (!plannedDetail) showTransactionError(message);
       return false;
     }
     await refresh();
-    showTransactionNotice(
-      transaction.transaction_type === 'income' ? 'Entrada recebida.' : 'Pagamento confirmado.',
-    );
+    showTransactionNotice(CONFIRMED_NOTICES[transaction.transaction_type] ?? 'Lançamento confirmado.');
     return true;
   }
 
@@ -1054,12 +1066,19 @@ function SimplifiedRecordsPage() {
   }
 
   function showTransactionNotice(message) {
+    setTransactionNoticeIsError(false);
     setTransactionSuccessNotice(message);
     if (transactionNoticeTimerRef.current) window.clearTimeout(transactionNoticeTimerRef.current);
     transactionNoticeTimerRef.current = window.setTimeout(() => {
       transactionNoticeTimerRef.current = null;
       setTransactionSuccessNotice(null);
     }, transactionNoticeDuration(message));
+  }
+
+  // Mesmo toast, sem o ✓ e com a borda de erro.
+  function showTransactionError(message) {
+    showTransactionNotice(message);
+    setTransactionNoticeIsError(true);
   }
 
   function dismissTransactionNotice() {
@@ -1162,8 +1181,8 @@ function SimplifiedRecordsPage() {
   return (
     <>
       {transactionSuccessNotice ? (
-        <div className={styles.transactionSuccessToast} role="status" aria-live="polite">
-          <span aria-hidden="true">✓</span>
+        <div className={styles.transactionSuccessToast} role="status" aria-live="polite" data-tone={transactionNoticeIsError ? 'error' : undefined}>
+          {transactionNoticeIsError ? null : <span aria-hidden="true">✓</span>}
           {transactionSuccessNotice}
           <button
             type="button"
@@ -1228,7 +1247,7 @@ function SimplifiedRecordsPage() {
                     })}
                     onDelete={handleQuickDelete}
                     canDeleteTransaction={canDeleteTransaction}
-                    onConfirmPlanned={handleConfirmPlanned}
+                    onConfirmPlanned={canManage ? handleConfirmPlanned : undefined}
                     onOpenPlanned={openPlannedDetail}
                     onShowAll={() => setActiveTab('history')}
                     plannedTransactions={summaryPlanned}
@@ -1336,6 +1355,8 @@ function SimplifiedRecordsPage() {
             />
           )}
           busy={transactionState.isMutating}
+          canDelete={canDeleteTransaction(plannedDetail)}
+          canManage={canManage}
           error={plannedError}
           onClose={() => setPlannedDetail(null)}
           onConfirm={() => void handlePlannedFromDetail(() => handleConfirmPlanned(plannedDetail))}

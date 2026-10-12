@@ -17,9 +17,9 @@ test('previsto: data futura mostra data e categoria', () => {
 });
 
 test('previsto: hoje, ontem e atrasado pedem confirmação', () => {
-  assert.deepEqual(describePlannedTransaction({ transaction_date: '2026-10-12' }, 'X', HOJE), { due: true, text: 'Vence hoje · Confirme' });
-  assert.deepEqual(describePlannedTransaction({ transaction_date: '2026-10-11' }, 'X', HOJE), { due: true, text: 'Venceu ontem · Confirme' });
-  assert.deepEqual(describePlannedTransaction({ transaction_date: '2026-10-09' }, 'X', HOJE), { due: true, text: 'Venceu há 3 dias · Confirme' });
+  assert.deepEqual(describePlannedTransaction({ transaction_date: '2026-10-12' }, 'X', HOJE), { due: true, dueText: 'Vence hoje', text: 'Vence hoje · Confirme' });
+  assert.deepEqual(describePlannedTransaction({ transaction_date: '2026-10-11' }, 'X', HOJE), { due: true, dueText: 'Venceu ontem', text: 'Venceu ontem · Confirme' });
+  assert.deepEqual(describePlannedTransaction({ transaction_date: '2026-10-09' }, 'X', HOJE), { due: true, dueText: 'Venceu há 3 dias', text: 'Venceu há 3 dias · Confirme' });
 });
 
 test('isPlannedDue: só hoje ou antes', () => {
