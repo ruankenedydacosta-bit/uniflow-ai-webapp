@@ -215,7 +215,7 @@ export function formatRelativeTransactionDate(value, referenceDate = new Date())
   }).format(transactionDate);
 }
 
-function toDateKey(date) {
+export function toDateKey(date = new Date()) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
@@ -256,6 +256,16 @@ export function summarizePlannedBalance(transactions) {
     if (transaction.transaction_type === 'expense') return total - amount;
     return total;
   }, 0);
+}
+
+// Entradas e saídas previstas; transferência e ajuste ficam de fora.
+export function summarizePlannedTotals(transactions) {
+  return transactions.reduce((totals, transaction) => {
+    const amount = Number(transaction.amount || 0);
+    if (transaction.transaction_type === 'income') totals.income += amount;
+    if (transaction.transaction_type === 'expense') totals.expense += amount;
+    return totals;
+  }, { income: 0, expense: 0 });
 }
 
 // O aviso fica o tempo de ler: 1,5 s de reação mais 50 ms por caractere,

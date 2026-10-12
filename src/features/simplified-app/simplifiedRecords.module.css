@@ -429,6 +429,63 @@
   fill: none;
 }
 
+.monthChartPlanned {
+  stroke-dasharray: 4 4;
+  stroke-opacity: .75;
+}
+
+.monthChartDotPlanned {
+  fill: var(--uf-app-canvas);
+  stroke-width: 1.5;
+}
+
+.monthChartLegend {
+  display: flex;
+  gap: 16px;
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+}
+
+.monthChartLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendSolid,
+.legendDashed {
+  width: 16px;
+  height: 0;
+  border-top: 2px solid var(--uf-app-text-2);
+}
+
+.legendDashed {
+  border-top-style: dashed;
+}
+
+.summaryPlanned {
+  color: var(--uf-app-text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plannedConfirm {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--uf-radius-12);
+  background: var(--uf-app-brand-blue);
+  color: var(--uf-app-on-accent);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.plannedConfirm:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
 .monthChartAxis {
   display: flex;
   justify-content: space-between;

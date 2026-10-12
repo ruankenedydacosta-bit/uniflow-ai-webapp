@@ -45,3 +45,14 @@ test('filterRecordTransactions escolhe o status e ordena o previsto do mais pró
   assert.deepEqual(filterRecordTransactions(lista, { status: 'pending', sort: 'oldest' }).map((t) => t.id), ['b', 'a']);
   assert.deepEqual(filterRecordTransactions(lista).map((t) => t.id), ['c']);
 });
+
+import { summarizePlannedTotals } from './simplifiedRecordsData.js';
+
+test('totais previstos separam entradas e saídas e ignoram transferência', () => {
+  assert.deepEqual(summarizePlannedTotals([
+    { transaction_type: 'income', amount: '4000' },
+    { transaction_type: 'expense', amount: '3000' },
+    { transaction_type: 'expense', amount: '180' },
+    { transaction_type: 'transfer', amount: '500' },
+  ]), { income: 4000, expense: 3180 });
+});

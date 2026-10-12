@@ -51,3 +51,52 @@ test('sem movimentação completada, hasMovements é false e o gráfico não apa
   const model = buildMonthChartModel({ transactions: [], monthRange: MONTH, now: NOW });
   assert.equal(model.hasMovements, false);
 });
+
+const previsto = (overrides) => ({ status: 'pending', ...overrides });
+
+test('mês atual com previstos: tracejado parte de hoje e vai até o fim do mês', () => {
+  const model = buildMonthChartModel({
+    transactions: [transaction({ id: 'a', transaction_type: 'income', amount: 1000, transaction_date: '2026-10-05' })],
+    plannedTransactions: [previsto({ id: 'p', transaction_type: 'income', amount: 4000, transaction_date: '2026-10-25' })],
+    monthRange: MONTH,
+    now: NOW,
+  });
+  assert.equal(model.showRealized, true);
+  const pontos = model.plannedIncomePoints.split(' ');
+  assert.equal(pontos[0].split(',')[0], model.todayX.toFixed(1));
+  assert.equal(Number(pontos.at(-1).split(',')[0]), CHART_WIDTH);
+  assert.ok(model.endPlannedIncome.y < model.endIncome.y);
+});
+
+test('mês atual: só previsto já conta como movimento', () => {
+  const model = buildMonthChartModel({
+    transactions: [],
+    plannedTransactions: [previsto({ id: 'p', transaction_type: 'expense', amount: 90, transaction_date: '2026-10-28' })],
+    monthRange: MONTH,
+    now: NOW,
+  });
+  assert.equal(model.hasMovements, true);
+});
+
+test('mês futuro mostra só o tracejado, do dia 1 ao fim', () => {
+  const nov = getMonthRange(new Date(2026, 10, 10));
+  const model = buildMonthChartModel({
+    transactions: [],
+    plannedTransactions: [previsto({ id: 'p', transaction_type: 'expense', amount: 300, transaction_date: '2026-11-10' })],
+    monthRange: nov,
+    now: NOW,
+  });
+  assert.equal(model.showRealized, false);
+  assert.equal(model.plannedExpensePoints.split(' ')[0].split(',')[0], '0.0');
+});
+
+test('mês passado ignora previstos', () => {
+  const past = getMonthRange(new Date(2026, 8, 10));
+  const model = buildMonthChartModel({
+    transactions: [transaction({ id: 'a', transaction_type: 'expense', amount: 10, transaction_date: '2026-09-02' })],
+    plannedTransactions: [previsto({ id: 'p', transaction_type: 'expense', amount: 10, transaction_date: '2026-09-20' })],
+    monthRange: past,
+    now: NOW,
+  });
+  assert.equal(model.plannedIncomePoints, null);
+});

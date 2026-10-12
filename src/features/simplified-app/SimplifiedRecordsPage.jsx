@@ -35,6 +35,8 @@ import {
   getMonthRange,
   summarizeMonth,
   summarizePlannedBalance,
+  summarizePlannedTotals,
+  toDateKey,
   transactionNoticeDuration,
 } from './simplifiedRecordsData.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
@@ -162,7 +164,7 @@ function MonthSelector({ month, onChange }) {
 // gráfico acumulado. Não existe card público de Saldo.
 // `shownValues` e `valueRefs` vêm da página, que conta Entradas e Saídas
 // depois de salvar (#145). O rótulo de leitor de tela usa o valor real.
-function MonthlySummary({ onCardClick, shownValues, summary, transactions, monthRange, valueRefs }) {
+function MonthlySummary({ onCardClick, plannedTotals, plannedTransactions, shownValues, summary, transactions, monthRange, valueRefs }) {
   const cards = [
     { id: 'income', label: 'Entradas', value: summary.income, action: 'atualizar as entradas' },
     { id: 'expense', label: 'Saídas', value: summary.expense, action: 'atualizar as saídas' },
@@ -186,10 +188,15 @@ function MonthlySummary({ onCardClick, shownValues, summary, transactions, month
             <strong aria-hidden="true" ref={valueRefs[card.id]}>
               {card.id === 'agenda' ? card.detail : formatCurrency(shownValues[card.id])}
             </strong>
+            {plannedTotals?.[card.id] > 0 ? (
+              <small className={styles.summaryPlanned}>
+                {`+ ${formatCurrency(plannedTotals[card.id])} previsto`}
+              </small>
+            ) : null}
           </button>
         ))}
       </div>
-      <SimplifiedRecordsMonthChart transactions={transactions} monthRange={monthRange} />
+      <SimplifiedRecordsMonthChart transactions={transactions} monthRange={monthRange} plannedTransactions={plannedTransactions} />
     </section>
   );
 }
@@ -351,6 +358,7 @@ function TransactionRow({
   onEdit,
   onOpen,
   onRequestDelete,
+  onConfirmPlanned,
   planned = false,
   transaction,
 }) {
@@ -520,9 +528,26 @@ function TransactionRow({
             </small>
           )}
         </span>
-        <b className={planned ? styles.plannedAmount : isIncome || isPositiveAdjustment ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
-          {isIncome || isPositiveAdjustment ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
-        </b>
+        {planned && onConfirmPlanned && plannedInfo.due ? (
+          <span
+            role="button"
+            tabIndex={0}
+            className={styles.plannedConfirm}
+            onClick={(event) => { event.stopPropagation(); onConfirmPlanned(transaction); }}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              event.stopPropagation();
+              onConfirmPlanned(transaction);
+            }}
+          >
+            Confirmar
+          </span>
+        ) : (
+          <b className={planned ? styles.plannedAmount : isIncome || isPositiveAdjustment ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
+            {isIncome || isPositiveAdjustment ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
+          </b>
+        )}
         <button
           type="button"
           className={styles.rowMenuIcon}
@@ -545,6 +570,7 @@ function TransactionList({
   emptyMessage,
   onDelete,
   onEdit,
+  onConfirmPlanned,
   onShowAll,
   plannedTransactions = [],
   showAllAction,
@@ -604,6 +630,7 @@ function TransactionList({
         onEdit={(item) => { closeRow(); onEdit(item); }}
         onOpen={() => setOpenRowId(transaction.id)}
         onRequestDelete={() => handleRequestDelete(transaction)}
+        onConfirmPlanned={onConfirmPlanned}
         planned={planned}
         transaction={transaction}
       />
@@ -618,10 +645,16 @@ function TransactionList({
       {hasPlanned ? (
         <section className={styles.recordsSection} aria-labelledby="planned-transactions-title">
           <div className={styles.sectionHeading}>
-            <h2 id="planned-transactions-title">{`Previstos · ${plannedTransactions.length}`}</h2>
-            <span className={styles.plannedBalance}>
-              {`Saldo previsto ${plannedBalance < 0 ? '-' : '+'} ${formatCurrency(Math.abs(plannedBalance))}`}
-            </span>
+            <h2 id="planned-transactions-title">
+              {showAllAction ? 'Previstos' : `Previstos · ${plannedTransactions.length}`}
+            </h2>
+            {showAllAction ? (
+              <button type="button" onClick={onShowAll}>Ver todos</button>
+            ) : (
+              <span className={styles.plannedBalance}>
+                {`Saldo previsto ${plannedBalance < 0 ? '-' : '+'} ${formatCurrency(Math.abs(plannedBalance))}`}
+              </span>
+            )}
           </div>
           <div className={styles.transactionList}>
             {plannedTransactions.map((transaction) => renderRow(transaction, true))}
@@ -749,9 +782,12 @@ function SimplifiedRecordsPage() {
     dateTo: month.dateTo,
     status: 'completed',
   });
+  // Previstos vencidos de meses anteriores continuam esperando confirmação,
+  // então no mês atual e nos futuros a busca não tem data inicial.
+  const todayKey = toDateKey();
   const plannedState = useTransactions({
     workspaceId: workspace?.id,
-    dateFrom: month.dateFrom,
+    dateFrom: month.dateTo >= todayKey ? undefined : month.dateFrom,
     dateTo: month.dateTo,
     status: 'pending',
   });
@@ -825,6 +861,22 @@ function SimplifiedRecordsPage() {
   const filteredPlanned = useMemo(
     () => filterRecordTransactions(plannedState.transactions, { ...filters, sort: 'oldest', status: 'pending' }),
     [filters, plannedState.transactions],
+  );
+  const monthPlanned = useMemo(
+    () => plannedState.transactions.filter(
+      (transaction) => transaction.transaction_date >= month.dateFrom,
+    ),
+    [month.dateFrom, plannedState.transactions],
+  );
+  const plannedTotals = useMemo(() => summarizePlannedTotals(monthPlanned), [monthPlanned]);
+  // Resumo: os 3 primeiros por data, com os vencidos no topo.
+  const summaryPlanned = useMemo(
+    () => filterRecordTransactions(plannedState.transactions, {
+      ...EMPTY_FILTERS,
+      sort: 'oldest',
+      status: 'pending',
+    }).slice(0, 3),
+    [plannedState.transactions],
   );
   const accountsWithDerivedBalance = useMemo(() => {
     const balanceMap = new Map(
@@ -926,6 +978,20 @@ function SimplifiedRecordsPage() {
     if (transactionState.isMutating || !canDeleteTransaction(transaction)) return;
     const result = await transactionState.removeTransaction(transaction.id);
     if (!result.error) await refresh();
+  }
+
+  // Confirmar grava como realizado com a data de hoje.
+  async function handleConfirmPlanned(transaction) {
+    if (transactionState.isMutating || !canManage) return;
+    const result = await transactionState.saveTransaction(
+      { status: 'completed', transaction_date: toDateKey() },
+      transaction.id,
+    );
+    if (result.error) return;
+    await refresh();
+    showTransactionNotice(
+      transaction.transaction_type === 'income' ? 'Entrada recebida.' : 'Pagamento confirmado.',
+    );
   }
 
   function showTransactionNotice(message) {
@@ -1091,6 +1157,8 @@ function SimplifiedRecordsPage() {
                     onCardClick={openSummaryCard}
                     transactions={transactionState.transactions}
                     monthRange={month}
+                    plannedTotals={plannedTotals}
+                    plannedTransactions={monthPlanned}
                   />
                   <TransactionList
                     categories={categoryState.categories}
@@ -1101,7 +1169,9 @@ function SimplifiedRecordsPage() {
                     })}
                     onDelete={handleQuickDelete}
                     canDeleteTransaction={canDeleteTransaction}
+                    onConfirmPlanned={handleConfirmPlanned}
                     onShowAll={() => setActiveTab('history')}
+                    plannedTransactions={summaryPlanned}
                     showAllAction
                     transactions={recentTransactions}
                     visibleCount={4}
