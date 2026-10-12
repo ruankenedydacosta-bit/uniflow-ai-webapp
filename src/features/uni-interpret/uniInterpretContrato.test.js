@@ -246,7 +246,7 @@ test('saldo e meta descartam operações; meta leva o pedido (#192)', () => {
     intent: 'meta',
     operacoes: [],
     resposta: '',
-    meta: { acao: null, alvo: null, nome: null, valor: null, data: null, porMes: null, ajustes: [] },
+    meta: { acao: null, alvo: null, nome: null, valor: null, data: null, porMes: null, conta: null, soNaMeta: false, ajustes: [] },
   });
 });
 
@@ -436,14 +436,14 @@ test('categoria: renomear e excluir trocam o apelido pelo registro e usam o tipo
 
 // Meta pela conversa (#192).
 const pedidoDeMeta = (meta) => ({ intent: 'meta', operacoes: [], resposta: '', meta });
-const META_VAZIA = { acao: null, alvo: null, nome: null, valor: null, data: null, por_mes: null };
+const META_VAZIA = { acao: null, alvo: null, nome: null, valor: null, data: null, por_mes: null, conta: null, so_na_meta: false };
 
 test('meta: criar leva nome limpo, valor, prazo futuro e quanto por mês', () => {
   const meta = validarInterpretacao(pedidoDeMeta({
     ...META_VAZIA, acao: 'criar', nome: '  Viagem\nde férias ', valor: 8000.004, data: '2027-07-31', por_mes: 500,
   }), CONTEXTO).meta;
   assert.deepEqual(meta, {
-    acao: 'criar', alvo: null, nome: 'Viagem de férias', valor: 8000, data: '2027-07-31', porMes: 500, ajustes: [],
+    acao: 'criar', alvo: null, nome: 'Viagem de férias', valor: 8000, data: '2027-07-31', porMes: 500, conta: null, soNaMeta: false, ajustes: [],
   });
 });
 
@@ -463,7 +463,7 @@ test('meta: editar, excluir e consultar trocam o apelido pelo registro; apelido 
   assert.equal(editar.alvo.id, 'meta-via');
   assert.equal(editar.valor, 15000);
   const excluir = validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'excluir', alvo: 'm1', nome: 'Casamento', valor: 10 }), CONTEXTO).meta;
-  assert.deepEqual({ ...excluir, alvo: excluir.alvo.id }, { acao: 'excluir', alvo: 'meta-cas', nome: null, valor: null, data: null, porMes: null, ajustes: [] });
+  assert.deepEqual({ ...excluir, alvo: excluir.alvo.id }, { acao: 'excluir', alvo: 'meta-cas', nome: null, valor: null, data: null, porMes: null, conta: null, soNaMeta: false, ajustes: [] });
   const consultar = validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'consultar', alvo: 'm2' }), CONTEXTO).meta;
   assert.equal(consultar.alvo.id, 'meta-via');
   assert.equal(consultar.nome, null);
@@ -477,14 +477,39 @@ test('meta: editar, excluir e consultar trocam o apelido pelo registro; apelido 
 });
 
 test('meta: sem ação válida o intent segue meta com acao null; fora do intent não sai', () => {
-  assert.deepEqual(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'aportar', valor: 400 }), CONTEXTO).meta, {
-    acao: null, alvo: null, nome: null, valor: null, data: null, porMes: null, ajustes: [],
+  assert.deepEqual(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'arquivar', valor: 400 }), CONTEXTO).meta, {
+    acao: null, alvo: null, nome: null, valor: null, data: null, porMes: null, conta: null, soNaMeta: false, ajustes: [],
   });
   assert.equal(validarInterpretacao({ intent: 'meta', operacoes: [], resposta: '' }, CONTEXTO).intent, 'meta');
   assert.equal(validarInterpretacao(lancamento(operacao()), CONTEXTO).meta, undefined);
   // Apelidos de meta seguem a ordem por nome, como categorias e contas.
   const indice = indexarCatalogo({ metas: [...METAS].reverse() });
   assert.deepEqual(indice.metas.map(({ apelido, registro }) => `${apelido}:${registro.id}`), ['m1:meta-cas', 'm2:meta-via']);
+});
+
+// #161: aporte e retirada pela conversa.
+test('meta: aportar e retirar levam alvo, valor, data até hoje, conta e "só na meta"', () => {
+  const aporte = validarInterpretacao(pedidoDeMeta({
+    ...META_VAZIA, acao: 'aportar', alvo: 'm2', nome: 'Viagem', valor: 400.004, data: '2026-10-01', conta: K.cc, por_mes: 300,
+  }), CONTEXTO).meta;
+  assert.deepEqual({ ...aporte, alvo: aporte.alvo.id, conta: aporte.conta.id }, {
+    acao: 'aportar', alvo: 'meta-via', nome: null, valor: 400, data: '2026-10-01', porMes: null, conta: 'conta-cc', soNaMeta: false, ajustes: [],
+  });
+  const retirada = validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'retirar', alvo: 'm1', valor: 100, so_na_meta: true }), CONTEXTO).meta;
+  assert.equal(retirada.alvo.id, 'meta-cas');
+  assert.equal(retirada.data, null);
+  assert.equal(retirada.soNaMeta, true);
+  // Data no futuro ou a mais de um ano sai e fica marcada; conta inventada sai.
+  const futuro = validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'aportar', alvo: 'm2', valor: 1, data: '2026-10-03', conta: 'k9' }), CONTEXTO).meta;
+  assert.deepEqual({ data: futuro.data, conta: futuro.conta, ajustes: futuro.ajustes }, { data: null, conta: null, ajustes: ['data_descartada'] });
+  assert.deepEqual(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'aportar', alvo: 'm2', valor: 1, data: '2025-09-01' }), CONTEXTO).meta.ajustes, ['data_descartada']);
+  // Sem alvo, o nome dito fica, para a Uni dizer qual meta não achou.
+  assert.equal(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'aportar', nome: 'Carro', valor: 1 }), CONTEXTO).meta.nome, 'Carro');
+  // Conta e "só na meta" não valem fora do aporte e da retirada.
+  const editar = validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'editar', alvo: 'm2', valor: 9000, conta: K.cc, so_na_meta: true }), CONTEXTO).meta;
+  assert.deepEqual({ conta: editar.conta, soNaMeta: editar.soNaMeta }, { conta: null, soNaMeta: false });
+  assert.ok(ESQUEMA.properties.meta.properties.acao.enum.includes('aportar'));
+  assert.ok(ESQUEMA.properties.meta.properties.acao.enum.includes('retirar'));
 });
 
 test('mensagem do usuário lista as metas com apelido, nunca com o id', () => {

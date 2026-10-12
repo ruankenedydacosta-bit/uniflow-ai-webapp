@@ -85,6 +85,7 @@ import {
   metaTemDinheiro,
   textoDaMetaComAportes,
   textoDoPedidoDeMetaFeito,
+  textoDoErroDoMovimento,
 } from '../uni-conversation/pedidoDeMeta.js';
 import { listContributions } from '../goals/goalService.js';
 import { getCategoryErrorMessage } from '../categories/categoryUtils.js';
@@ -1634,8 +1635,9 @@ export default function UniChatPage({ variant = 'full' }) {
     metaPendenteRef.current = null;
   }
 
-  // Consultar responde na hora; criar, alterar e excluir montam o card. Meta
-  // com aporte não sai pela conversa: a tela Metas mostra o que iria junto.
+  // Consultar responde na hora; criar, alterar, excluir, aportar e retirar
+  // montam o card. Meta com aporte não sai pela conversa: a tela Metas
+  // mostra o que iria junto.
   async function iniciarPedidoDeMeta(pedidoDoModelo, turnToken) {
     // Toda confirmação no chat recarrega as metas (isLoading volta a true):
     // com a lista já em mãos, o pedido segue. Só a primeira carga espera.
@@ -1653,7 +1655,18 @@ export default function UniChatPage({ variant = 'full' }) {
       createAssistantResponse(textoDaConsultaDeMetas(pedidoDoModelo, { metas: goalsState.goals }), { deduplicateNarration: false });
       return;
     }
-    const pronto = montarPedidoDeMeta(pedidoDoModelo, { metas: goalsState.goals, hoje: getLocalIsoDate() });
+    const movimento = pedidoDoModelo?.acao === 'aportar' || pedidoDoModelo?.acao === 'retirar';
+    // A transferência do aporte depende das contas: sem elas, a conta
+    // vinculada pareceria arquivada e o aporte iria sem a transferência.
+    if (movimento && (accountState.isLoading || accountState.error)) {
+      createAssistantResponse('Não consegui ler as suas contas agora. Tente de novo em instantes ou registre o aporte na tela Metas.', { deduplicateNarration: false });
+      return;
+    }
+    const pronto = montarPedidoDeMeta(pedidoDoModelo, {
+      metas: goalsState.goals,
+      contas: accountState.activeAccounts,
+      hoje: getLocalIsoDate(),
+    });
     if (pronto.erro) {
       createAssistantResponse(pronto.erro, { deduplicateNarration: false });
       return;
@@ -1679,6 +1692,9 @@ export default function UniChatPage({ variant = 'full' }) {
     });
     metaPendenteRef.current = {
       pronto,
+      // A mesma chave em toda tentativa deste card: um "sim" repetido ou uma
+      // nova tentativa depois de a resposta se perder não grava duas vezes.
+      clientOperationId: movimento ? `aporte-uni-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` : null,
       messageId: message?.id ?? null,
       workspaceId: effectiveWorkspace?.id,
       conversationId: activeIdRef.current,
@@ -1728,16 +1744,30 @@ export default function UniChatPage({ variant = 'full' }) {
     setIsExecutingAction(true);
     setExecutionError(null);
     try {
+      const movimento = pronto.acao === 'aportar' || pronto.acao === 'retirar';
       let resultado;
       if (pronto.acao === 'criar') {
         resultado = await goalsState.addGoal(pronto.payload);
       } else if (pronto.acao === 'editar') {
         resultado = await goalsState.editGoal(pronto.meta.id, pronto.payload);
+      } else if (movimento) {
+        resultado = await goalsState.addGoalContribution(pronto.meta.id, {
+          ...pronto.payload,
+          client_operation_id: pendente.clientOperationId,
+        });
       } else {
         resultado = await goalsState.removeGoal(pronto.meta.id);
       }
       if (resultado?.error) {
-        reportConfirmationError(messageId, 'Não consegui salvar a meta. Tente de novo ou use a tela Metas.');
+        // O hook guarda o erro da gravação como se fosse da leitura: sem
+        // limpar, todo pedido de meta seguinte diria que não leu as metas.
+        goalsState.clearError();
+        reportConfirmationError(
+          messageId,
+          movimento
+            ? textoDoErroDoMovimento(resultado.error, pronto.acao)
+            : 'Não consegui salvar a meta. Tente de novo ou use a tela Metas.',
+        );
         return;
       }
       // Gravou: o pedido acaba mesmo que a pessoa tenha trocado de conversa
@@ -1750,7 +1780,7 @@ export default function UniChatPage({ variant = 'full' }) {
       )));
       notifyFinancialDataChanged('uni-chat');
       if (activeIdRef.current !== pendente.conversationId) return;
-      createAssistantResponse(withFollowUpQuestion(textoDoPedidoDeMetaFeito(pronto)));
+      createAssistantResponse(withFollowUpQuestion(textoDoPedidoDeMetaFeito(pronto, { metaAtualizada: resultado?.data?.meta ?? null })));
     } catch {
       reportConfirmationError(messageId, 'Ocorreu um erro inesperado. Tente novamente.');
     } finally {

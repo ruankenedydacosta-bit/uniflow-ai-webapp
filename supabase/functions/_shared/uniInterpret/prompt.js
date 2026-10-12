@@ -9,7 +9,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 ## intent
 - lancamento: registrar dinheiro que saiu, entrou ou foi transferido entre contas do usuário. Vale mesmo sem verbo ("Spotify 21,90", "táxi 40 reais").
 - saldo: a pessoa pergunta ou informa quanto dinheiro há numa conta ("o saldo da conta corrente está em 2.300", "quanto sobrou no cartão de débito?"). Vale também para quem diz quanto dinheiro tem agora sem dizer que recebeu ("tô com 800 reais na conta"). Dinheiro que entrou é lancamento; conta a pagar é agenda ou lancamento.
-- meta: criar, mudar, excluir ou consultar uma meta de juntar dinheiro ("quero guardar 2 mil até dezembro", "muda a meta da viagem para 10 mil", "apaga a meta do carro", "como está a meta da viagem?", "quanto falta pra bater minha meta?"). Dinheiro que a pessoa já guardou ou separou é lancamento: transferencia, quando foi para uma poupança ou reserva dela.
+- meta: criar, mudar, excluir ou consultar uma meta de juntar dinheiro ("quero guardar 2 mil até dezembro", "muda a meta da viagem para 10 mil", "apaga a meta do carro", "como está a meta da viagem?", "quanto falta pra bater minha meta?"). Vale também para dinheiro guardado numa meta que está na lista <metas>, ou tirado dela ("guardei 500 na viagem", "coloquei mais 200 no casamento"). Dinheiro guardado em algo que não está em <metas> (uma conta, uma poupança, uma reserva) é lancamento: transferencia ("passei 300 pra poupança").
 - consulta: pergunta sobre os dados dele (gastos, entradas, quais lançamentos ou categorias tem). Pergunta sobre uma meta é o intent meta, não consulta.
 - agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento). Vale também para remarcar, cancelar, concluir ou excluir um compromisso já marcado ("passa o dentista pra quinta", "desmarca o almoço com a Carla", "já fiz a reunião", "apaga o lembrete da vacina").
 - correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
@@ -63,12 +63,16 @@ Só quando o intent é categoria; nos outros, todos os campos são null.
 
 ## meta
 Só quando o intent é meta; nos outros, todos os campos são null.
-- acao: criar (meta nova), editar (mudar nome, valor, prazo ou quanto guardar por mês de uma meta que existe), excluir (apagar uma meta) ou consultar (saber como está uma meta ou todas).
-- alvo: em editar, excluir e consultar, o apelido (m1, m2...) da meta da lista <metas> de que a pessoa fala. null se a frase não aponta uma meta da lista ou se fala de todas. null em criar.
-- nome: em criar, o nome da meta como a pessoa chamaria ("Viagem para o Chile", "Reserva de emergência"), com acentos e inicial maiúscula, sem o pedido nem o valor; em editar, só o nome novo, quando a pessoa muda o nome. Em editar, excluir e consultar com alvo null porque a meta não está em <metas>, o nome como a pessoa chamou a meta ("Carro"), para a Uni dizer qual não achou. null nos outros casos.
-- valor: em criar e editar, quanto a pessoa quer juntar no total, em reais. null se não diz ou se não muda.
-- data: em criar e editar, o prazo resolvido a partir de hoje, AAAA-MM-DD. Mês sem dia é o último dia do mês; ano sem mês é 31 de dezembro. null se não diz.
+- acao: criar (meta nova), editar (mudar nome, valor, prazo ou quanto guardar por mês de uma meta que existe), excluir (apagar uma meta), consultar (saber como está uma meta ou todas), aportar (a pessoa guardou dinheiro na meta: "guardei", "coloquei", "separei", "depositei") ou retirar (a pessoa tirou dinheiro da meta: "tirei", "saquei", "peguei", "usei").
+- alvo: em editar, excluir, consultar, aportar e retirar, o apelido (m1, m2...) da meta da lista <metas> de que a pessoa fala. null se a frase não aponta uma meta da lista ou se fala de todas. null em criar.
+- Só use aportar ou retirar quando a pessoa fala de uma meta da lista <metas> ou diz a palavra meta ("guardei 300 na meta do carro"). Guardar dinheiro em algo com outro nome, fora da lista, é o intent lancamento: transferencia.
+- nome: em criar, o nome da meta como a pessoa chamaria ("Viagem para o Chile", "Reserva de emergência"), com acentos e inicial maiúscula, sem o pedido nem o valor; em editar, só o nome novo, quando a pessoa muda o nome. Nas outras ações com alvo null porque a meta não está em <metas>, o nome como a pessoa chamou a meta ("Carro"), para a Uni dizer qual não achou. null nos outros casos.
+- valor: em criar e editar, quanto a pessoa quer juntar no total, em reais. Em aportar e retirar, quanto guardou ou tirou agora. null se não diz ou se não muda.
+- data: em criar e editar, o prazo resolvido a partir de hoje, AAAA-MM-DD. Mês sem dia é o último dia do mês; ano sem mês é 31 de dezembro. Em aportar e retirar, o dia em que guardou ou tirou, só se a frase cita ("ontem", "dia 5"). null se não diz.
 - por_mes: em criar e editar, quanto a pessoa quer guardar por mês, em reais ("300 por mês"). null se não diz. Nunca calcule: só o que a frase traz.
+- conta: em aportar, o apelido (k1, k2...) da conta de onde saiu o dinheiro; em retirar, da conta para onde ele foi. Só se a frase cita a conta. null nas outras ações.
+- so_na_meta: true em aportar e retirar quando a pessoa pede para não lançar no Financeiro ("só na meta", "não lança no financeiro", "sem transferência"). false nos outros casos.
+- Quando a última fala da Uni no <historico> pergunta a conta ou o valor de um aporte ou de uma retirada, a resposta curta ("do Nubank", "só na meta", "foram 500") é o mesmo pedido de meta: repita acao, alvo, valor e data do histórico e acrescente o que a pessoa respondeu.
 
 ## exclusao
 Só quando o intent é exclusao; nos outros, alvo, data, valor e conta são null, e ultimo e lote são false. Em exclusao, operacoes fica vazia.

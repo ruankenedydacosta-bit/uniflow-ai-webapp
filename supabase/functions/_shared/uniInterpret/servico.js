@@ -84,6 +84,8 @@ function serializar(validada) {
         valor: meta.valor,
         data: meta.data,
         porMes: meta.porMes,
+        conta: paraCliente(meta.conta),
+        soNaMeta: meta.soNaMeta,
         ajustes: meta.ajustes,
       },
     } : {}),

@@ -207,9 +207,29 @@ test('meta: devolve a ação, o alvo só com id e nome, valor, prazo e por mês;
   });
   assert.equal(resultado.corpo.intent, 'meta');
   assert.deepEqual(resultado.corpo.meta, {
-    acao: 'editar', alvo: { id: 'meta-via', name: 'Viagem para o Chile' }, nome: null, valor: 15000, data: '2027-07-31', porMes: null, ajustes: [],
+    acao: 'editar', alvo: { id: 'meta-via', name: 'Viagem para o Chile' }, nome: null, valor: 15000, data: '2027-07-31', porMes: null, conta: null, soNaMeta: false, ajustes: [],
   });
   assert.match(chamadas[0].mensagem, /<metas>\n- m1: Viagem para o Chile\n<\/metas>/);
+});
+
+// #161: o aporte devolve a conta só com id e nome.
+test('meta: aportar devolve a conta da transferência só com id e nome', async () => {
+  const { chamarModelo } = modeloQueResponde({
+    intent: 'meta',
+    operacoes: [],
+    resposta: '',
+    meta: { acao: 'aportar', alvo: 'm1', nome: null, valor: 400, data: null, por_mes: null, conta: 'k1', so_na_meta: false },
+  });
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'guardei 400 do Nubank na viagem' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo,
+    agora: AGORA,
+  });
+  assert.deepEqual(resultado.corpo.meta, {
+    acao: 'aportar', alvo: { id: 'meta-via', name: 'Viagem para o Chile' }, nome: null, valor: 400, data: null, porMes: null,
+    conta: { id: 'conta-nu', name: 'Nubank' }, soNaMeta: false, ajustes: [],
+  });
 });
 
 test('contexto sem metas (função antiga) não quebra: a lista sai vazia', async () => {

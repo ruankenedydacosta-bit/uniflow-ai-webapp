@@ -73,13 +73,13 @@ function avaliarTitulo(palavras, titulo) {
 }
 
 // Pedido de categoria, de agenda, de exclusão ou de meta: a ação certa e,
-// quando o caso diz, o nome e o alvo, sem acento e caixa. Alvo em lista
+// quando o caso diz, o nome, o alvo e a conta (#161), sem acento e caixa. Alvo em lista
 // (#191) ou `palavras` (#189) são as palavras que o texto precisa ter: o
 // modelo chama o item como a pessoa chamou, não como está salvo. Valor
-// compara em centavos; data, ultimo e lote batem exatos.
+// compara em centavos; data, ultimo, lote e soNaMeta batem exatos.
 function avaliarPedido(esperado, obtido) {
   if (!obtido || obtido.acao !== esperado.acao) return false;
-  const textoIgual = ['nome', 'alvo'].every((campo) => {
+  const textoIgual = ['nome', 'alvo', 'conta'].every((campo) => {
     if (esperado[campo] === undefined) return true;
     const texto = normalizeSearchText(obtido[campo] ?? '');
     if (Array.isArray(esperado[campo])) {
@@ -91,7 +91,7 @@ function avaliarPedido(esperado, obtido) {
     || esperado.palavras.every((palavra) => normalizeSearchText(obtido.alvo ?? '').includes(normalizeSearchText(palavra)));
   const valor = esperado.valor === undefined
     || (esperado.valor === null ? (obtido.valor ?? null) === null : mesmoValor(esperado.valor, obtido.valor));
-  const exatos = ['data', 'ultimo', 'lote'].every((campo) => esperado[campo] === undefined
+  const exatos = ['data', 'ultimo', 'lote', 'soNaMeta'].every((campo) => esperado[campo] === undefined
     || (obtido[campo] ?? null) === esperado[campo]);
   return textoIgual && palavras && valor && exatos;
 }
@@ -166,8 +166,8 @@ function pedidoDaInterpretacao(validada) {
     return { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null };
   }
   if (validada.meta) {
-    const { acao, nome, alvo, valor, data } = validada.meta;
-    return { acao, nome, alvo: alvo?.name ?? null, valor, data };
+    const { acao, nome, alvo, valor, data, conta, soNaMeta } = validada.meta;
+    return { acao, nome, alvo: alvo?.name ?? null, valor, data, conta: conta?.name ?? null, soNaMeta };
   }
   if (validada.exclusao) {
     const { alvo, data, valor, conta, ultimo, lote } = validada.exclusao;
