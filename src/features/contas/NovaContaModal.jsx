@@ -9,7 +9,7 @@ import {
   digitsToCents,
   formatCentsAsCurrencyInput,
 } from '../simplified-app/balanceAdjustmentFormUtils.js';
-import { ACCOUNT_TYPE_LABELS, TIPOS_DE_CONTA, ehCartao } from './contasOrganizar.js';
+import { ACCOUNT_TYPE_LABELS, TIPOS_DE_CONTA } from './contasOrganizar.js';
 import styles from './contas.module.css';
 
 // No celular o teclado subiria com a folha e faria ela pular: só o desktop
@@ -25,7 +25,7 @@ const TIPO_PADRAO = 'checking';
  *
  * Com `conta`, a folha edita essa conta: nome e tipo mudam, o saldo não (o
  * saldo se corrige por "Ajustar saldo", que guarda o histórico). Cartão de
- * crédito não entra na lista de tipos ao criar: tem folha própria (#183).
+ * crédito não passa por aqui: cria e edita em NovoCartaoModal.
  */
 function NovaContaModal({ open, onClose, conta = null, onSave, isMutating, serverError }) {
   const [nome, setNome] = useState('');
@@ -43,10 +43,6 @@ function NovaContaModal({ open, onClose, conta = null, onSave, isMutating, serve
       setErroLocal('');
     }
   }, [open, conta]);
-
-  // Ao editar um cartão já existente o tipo fica fixo; nos demais, a lista
-  // completa de contas (sem cartão).
-  const tipos = editando && ehCartao(conta) ? [conta.account_type] : TIPOS_DE_CONTA;
 
   function handleClose() {
     if (isMutating) return;
@@ -96,10 +92,9 @@ function NovaContaModal({ open, onClose, conta = null, onSave, isMutating, serve
           <select
             id="conta-tipo"
             value={tipo}
-            disabled={tipos.length === 1}
             onChange={(event) => setTipo(event.target.value)}
           >
-            {tipos.map((codigo) => (
+            {TIPOS_DE_CONTA.map((codigo) => (
               <option key={codigo} value={codigo}>{ACCOUNT_TYPE_LABELS[codigo]}</option>
             ))}
           </select>

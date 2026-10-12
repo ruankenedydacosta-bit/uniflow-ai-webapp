@@ -118,3 +118,155 @@ export function resumoDaConta(transactions, accountId) {
   }
   return { entradas, saidas, quantidade: lista.length };
 }
+
+// ----- Cartões de crédito (handoff 10j–10k) -----
+
+const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+/** "2026-10-05" vira "5 out". */
+export function formatarDiaCurto(data) {
+  const [, mes, dia] = String(data).split('-');
+  return `${Number(dia)} ${MESES_CURTOS[Number(mes) - 1] ?? ''}`.trim();
+}
+
+function paraIso(ano, mes, dia) {
+  return `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+}
+
+function hojeIso(hoje) {
+  const data = hoje instanceof Date ? hoje : new Date(hoje ?? Date.now());
+  return paraIso(data.getFullYear(), data.getMonth() + 1, data.getDate());
+}
+
+/** Dia `dia` do mês (1-12) de `ano`, limitado ao último dia desse mês (dia 31 em abril vira 30). */
+function dataNoMes(ano, mes, dia) {
+  const ultimo = new Date(ano, mes, 0).getDate();
+  return paraIso(ano, mes, Math.min(Number(dia), ultimo));
+}
+
+function mesSeguinte(ano, mes) {
+  return mes === 12 ? [ano + 1, 1] : [ano, mes + 1];
+}
+
+function mesAnterior(ano, mes) {
+  return mes === 1 ? [ano - 1, 12] : [ano, mes - 1];
+}
+
+/**
+ * Ciclo aberto de um cartão: começa no dia seguinte ao último fechamento e
+ * termina no próximo fechamento (inclusive). O vencimento é o primeiro
+ * `due_day` depois do fechamento. Sem `closing_day`, o ciclo é o mês civil
+ * e o vencimento fica nulo. Datas em ISO (`YYYY-MM-DD`).
+ */
+export function cicloDoCartao(cartao, hoje = new Date()) {
+  const ref = hojeIso(hoje);
+  const ano = Number(ref.slice(0, 4));
+  const mes = Number(ref.slice(5, 7));
+  const closingDay = Number(cartao?.closing_day);
+  const dueDay = Number(cartao?.due_day);
+
+  if (!(closingDay >= 1 && closingDay <= 31)) {
+    const ultimo = new Date(ano, mes, 0).getDate();
+    return { inicio: paraIso(ano, mes, 1), fechamento: paraIso(ano, mes, ultimo), vencimento: null };
+  }
+
+  let fechamento = dataNoMes(ano, mes, closingDay);
+  let [anoFecha, mesFecha] = [ano, mes];
+  if (ref > fechamento) {
+    [anoFecha, mesFecha] = mesSeguinte(ano, mes);
+    fechamento = dataNoMes(anoFecha, mesFecha, closingDay);
+  }
+
+  const [anoAnterior, mesAnteriorNum] = mesAnterior(anoFecha, mesFecha);
+  const fechamentoAnterior = new Date(`${dataNoMes(anoAnterior, mesAnteriorNum, closingDay)}T00:00:00`);
+  fechamentoAnterior.setDate(fechamentoAnterior.getDate() + 1);
+  const inicio = paraIso(
+    fechamentoAnterior.getFullYear(),
+    fechamentoAnterior.getMonth() + 1,
+    fechamentoAnterior.getDate(),
+  );
+
+  let vencimento = null;
+  if (dueDay >= 1 && dueDay <= 31) {
+    vencimento = dueDay > closingDay
+      ? dataNoMes(anoFecha, mesFecha, dueDay)
+      : dataNoMes(...mesSeguinte(anoFecha, mesFecha), dueDay);
+  }
+
+  return { inicio, fechamento, vencimento };
+}
+
+/**
+ * Fatura aberta: o que saiu do cartão dentro do ciclo aberto, descontado o
+ * que entrou nele (pagamento feito antes do fechamento). Nunca negativa.
+ */
+export function faturaAberta(transactions, cartaoId, ciclo) {
+  let total = 0;
+  for (const t of lancamentosDaConta(transactions, cartaoId)) {
+    const data = String(t.transaction_date).slice(0, 10);
+    if (data < ciclo.inicio || data > ciclo.fechamento) continue;
+    total -= sinalDoLancamento(t, cartaoId) * Math.abs(Number(t.amount || 0));
+  }
+  return Math.max(0, total);
+}
+
+/**
+ * Limite usado: tudo o que o cartão deve (saldo derivado negativo) contra o
+ * limite. `percentual` fica nulo sem limite cadastrado e passa de 100 quando
+ * o cartão estoura.
+ */
+export function limiteUsado(saldo, creditLimit) {
+  const usado = Math.max(0, -Number(saldo || 0));
+  const limite = Number(creditLimit);
+  if (!(limite > 0)) return { usado, limite: null, disponivel: null, percentual: null };
+  return {
+    usado,
+    limite,
+    disponivel: limite - usado,
+    percentual: Math.round((usado / limite) * 100),
+  };
+}
+
+/**
+ * Linhas de cartão da lista (10j): fatura aberta pelo ciclo, limite usado e
+ * as datas de fechamento e vencimento. `cartoes` vem de montarListaDeContas.
+ */
+export function montarListaDeCartoes({ cartoes, transactions, hoje = new Date() }) {
+  return (Array.isArray(cartoes) ? cartoes : []).map((cartao) => {
+    const ciclo = cicloDoCartao(cartao, hoje);
+    return {
+      ...cartao,
+      ciclo,
+      fatura: faturaAberta(transactions, cartao.id, ciclo),
+      limite: limiteUsado(cartao.saldo, cartao.credit_limit),
+    };
+  });
+}
+
+/** Intervalo de datas que cobre o ciclo aberto de todos os cartões (para buscar os lançamentos). */
+export function periodoDosCartoes(cartoes, hoje = new Date()) {
+  const ciclos = (Array.isArray(cartoes) ? cartoes : []).map((cartao) => cicloDoCartao(cartao, hoje));
+  if (ciclos.length === 0) return null;
+  return {
+    dateFrom: ciclos.map((c) => c.inicio).sort()[0],
+    dateTo: ciclos.map((c) => c.fechamento).sort().at(-1),
+  };
+}
+
+function diaValido(valor) {
+  const dia = Number(valor);
+  return Number.isInteger(dia) && dia >= 1 && dia <= 31;
+}
+
+/**
+ * Valida a folha de cartão. Devolve a mensagem de erro ou null. Os limites
+ * seguem os CHECKs de accounts (credit_limit >= 0, dias entre 1 e 31).
+ */
+export function validarCartao({ nome, limite, fechamento, vencimento }) {
+  if (!String(nome ?? '').trim()) return 'Digite um nome para o cartão.';
+  if (!(Number(limite) >= 0)) return 'Informe o limite do cartão.';
+  if (!diaValido(fechamento)) return 'Informe o dia do fechamento, de 1 a 31.';
+  if (!diaValido(vencimento)) return 'Informe o dia do vencimento, de 1 a 31.';
+  if (Number(fechamento) === Number(vencimento)) return 'O vencimento precisa ser num dia diferente do fechamento.';
+  return null;
+}

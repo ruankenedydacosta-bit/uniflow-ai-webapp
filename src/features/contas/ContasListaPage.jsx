@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import IconBox from '../../components/ui/IconBox';
+import ProgressBar from '../../components/ui/ProgressBar';
 import { getFinanceErrorMessage } from '../../pages/financeiro/financeUiUtils.js';
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { cx } from '../../utils/cx.js';
@@ -11,7 +12,8 @@ import { SIMPLIFIED_ROUTES, contaPath } from '../simplified-app/simplifiedRoutes
 import organizar from '../categories/organizar.module.css';
 import { ContaIcon } from './ContaIcon.jsx';
 import NovaContaModal from './NovaContaModal.jsx';
-import { montarListaDeContas } from './contasOrganizar.js';
+import NovoCartaoModal from './NovoCartaoModal.jsx';
+import { formatarDiaCurto, montarListaDeCartoes, montarListaDeContas } from './contasOrganizar.js';
 import { useContasOrganizar } from './useContasOrganizar.js';
 import styles from './contas.module.css';
 
@@ -19,18 +21,28 @@ function plural(quantidade, singular, pluralForma) {
   return `${quantidade} ${quantidade === 1 ? singular : pluralForma}`;
 }
 
-// Lista de contas (handoff 10g): saldo total, uma linha por conta com tipo e
-// saldo. Cartões de crédito ficam num grupo à parte; a #183 troca esse grupo
-// pela lista de cartões com fatura e limite.
+// Lista de contas (handoff 10g) e de cartões (10j): saldo total, uma linha
+// por conta com tipo e saldo; uma linha por cartão com fatura aberta, limite
+// usado e as datas de fechamento e vencimento.
 export default function ContasListaPage() {
   const navigate = useNavegar();
-  const { accountState, balanceState, podeCriar, carregandoPapel, carregando } = useContasOrganizar();
-  const [criando, setCriando] = useState(false);
+  const {
+    mes, accountState, balanceState, cartoesState, carregandoCartoes, erroCartoes,
+    podeCriar, carregandoPapel, carregando,
+  } = useContasOrganizar({ comCartoes: true });
+  // 'conta' | 'cartao' | null
+  const [criando, setCriando] = useState(null);
 
   const lista = useMemo(() => montarListaDeContas({
     accounts: accountState.accounts,
     balances: balanceState.accountBalances,
   }), [accountState.accounts, balanceState.accountBalances]);
+
+  const cartoes = useMemo(() => montarListaDeCartoes({
+    cartoes: lista.cartoes,
+    transactions: cartoesState.transactions,
+    hoje: mes.date,
+  }), [lista.cartoes, cartoesState.transactions, mes.date]);
 
   const vazio = !carregando && lista.contas.length === 0 && lista.cartoes.length === 0;
 
@@ -39,8 +51,19 @@ export default function ContasListaPage() {
     if (!resultado.error) {
       notifyFinancialDataChanged('organizar-contas');
       await balanceState.refresh();
-      setCriando(false);
+      setCriando(null);
     }
+  }
+
+  // Um erro de carga ou de mutação anterior não é da folha: limpa ao abrir e ao fechar.
+  function abrirFolha(tipo) {
+    accountState.clearError();
+    setCriando(tipo);
+  }
+
+  function fecharFolha() {
+    accountState.clearError();
+    setCriando(null);
   }
 
   function renderLinha(conta) {
@@ -65,6 +88,50 @@ export default function ContasListaPage() {
     );
   }
 
+  function renderCartao(cartao) {
+    const datas = [
+      cartao.closing_day ? `Fecha ${formatarDiaCurto(cartao.ciclo.fechamento)}` : null,
+      cartao.ciclo.vencimento ? `Vence ${formatarDiaCurto(cartao.ciclo.vencimento)}` : null,
+      cartao.openFinance ? 'Open Finance' : null,
+    ].filter(Boolean);
+    return (
+      <button
+        key={cartao.id}
+        type="button"
+        className={organizar.row}
+        onClick={() => navigate(contaPath(cartao.id))}
+      >
+        <IconBox><ContaIcon conta={cartao} /></IconBox>
+        <span className={organizar.rowText}>
+          <span className={organizar.rowTitle}>{cartao.name}</span>
+          <span className={organizar.rowHint}>{datas.length > 0 ? datas.join(' · ') : 'Sem datas da fatura'}</span>
+        </span>
+        <span className={organizar.rowValue}>
+          {carregandoCartoes ? '...' : formatCurrency(cartao.fatura)}
+        </span>
+        <span className={styles.limite}>
+          {cartao.limite.percentual === null ? (
+            <span className={styles.limiteTexto}>Sem limite cadastrado</span>
+          ) : (
+            <>
+              <ProgressBar value={cartao.limite.percentual} label={`Limite usado de ${cartao.name}`} />
+              <span className={cx(styles.limiteTexto, cartao.limite.disponivel < 0 && styles.negativo)}>
+                {`${formatCurrency(cartao.limite.usado)} de ${formatCurrency(cartao.limite.limite)} usados`}
+              </span>
+            </>
+          )}
+        </span>
+      </button>
+    );
+  }
+
+  const botaoNovoCartao = podeCriar ? (
+    <button type="button" className={organizar.moreButton} onClick={() => abrirFolha('cartao')}>
+      <span>Novo cartão</span>
+      <PhPlusIcon />
+    </button>
+  ) : null;
+
   return (
     <div className={organizar.page}>
       <SimplifiedSubpageHeader title="Contas" onBack={() => navigate(SIMPLIFIED_ROUTES.ORGANIZAR)} />
@@ -74,11 +141,14 @@ export default function ContasListaPage() {
         ) : accountState.error ? (
           <p className={organizar.state} role="alert">Não foi possível carregar as contas. Tente de novo em instantes.</p>
         ) : vazio ? (
-          <p className={organizar.state}>
-            {podeCriar || carregandoPapel
-              ? 'Você ainda não tem contas. Toque em + para criar a primeira.'
-              : 'Este espaço ainda não tem contas. Só o administrador do espaço pode criar.'}
-          </p>
+          <>
+            <p className={organizar.state}>
+              {podeCriar || carregandoPapel
+                ? 'Você ainda não tem contas. Toque em + para criar a primeira.'
+                : 'Este espaço ainda não tem contas. Só o administrador do espaço pode criar.'}
+            </p>
+            {botaoNovoCartao}
+          </>
         ) : (
           <>
             <div className={organizar.summary}>
@@ -93,12 +163,20 @@ export default function ContasListaPage() {
               </span>
             </div>
             {lista.contas.length > 0 ? <div>{lista.contas.map(renderLinha)}</div> : null}
-            {lista.cartoes.length > 0 ? (
-              <>
-                <h2 className={organizar.sectionTitle}>Cartões de crédito</h2>
-                <div>{lista.cartoes.map(renderLinha)}</div>
-              </>
+            <h2 className={organizar.sectionTitle}>Cartões de crédito</h2>
+            {cartoes.length > 0 ? (
+              <div>{cartoes.map(renderCartao)}</div>
+            ) : (
+              <p className={organizar.lead}>
+                {podeCriar
+                  ? 'Cadastre um cartão para acompanhar a fatura aberta e o limite usado.'
+                  : 'Nenhum cartão cadastrado.'}
+              </p>
+            )}
+            {erroCartoes ? (
+              <p className={organizar.note} role="alert">Não foi possível carregar a fatura dos cartões.</p>
             ) : null}
+            {botaoNovoCartao}
           </>
         )}
       </div>
@@ -107,22 +185,29 @@ export default function ContasListaPage() {
         type="button"
         className={organizar.fab}
         aria-label="Nova conta"
-        onClick={() => setCriando(true)}
+        onClick={() => abrirFolha('conta')}
         disabled={!podeCriar}
       >
         <PhPlusIcon />
       </button>
 
       <NovaContaModal
-        open={criando}
-        onClose={() => {
-          accountState.clearError();
-          setCriando(false);
-        }}
+        open={criando === 'conta'}
+        onClose={fecharFolha}
         onSave={handleCriar}
         isMutating={accountState.isMutating}
-        serverError={criando
+        serverError={criando === 'conta'
           ? getFinanceErrorMessage(accountState.error, 'Não foi possível salvar a conta. Tente novamente.')
+          : ''}
+      />
+
+      <NovoCartaoModal
+        open={criando === 'cartao'}
+        onClose={fecharFolha}
+        onSave={handleCriar}
+        isMutating={accountState.isMutating}
+        serverError={criando === 'cartao'
+          ? getFinanceErrorMessage(accountState.error, 'Não foi possível salvar o cartão. Tente novamente.')
           : ''}
       />
     </div>
