@@ -19,6 +19,7 @@ import { registrarCusto, reservarChamada } from '../_shared/uniLlmCota.js';
 const TEMPO_LIMITE_MS = 15000;
 const MAX_CATEGORIAS = 200;
 const MAX_CONTAS = 60;
+const MAX_METAS = 40;
 
 function getAllowedOrigins() {
   return (Deno.env.get('APP_ALLOWED_ORIGINS') ?? '')
@@ -65,14 +66,15 @@ async function lerComoUsuario(path: string, authorization: string, supabaseUrl: 
   return await response.json();
 }
 
-// As três leituras saem juntas (são a latência antes do modelo, no caminho da
-// voz). applies_to é filtrado depois, quando o tipo do workspace já é
+// As quatro leituras saem juntas (são a latência antes do modelo, no caminho
+// da voz). applies_to é filtrado depois, quando o tipo do workspace já é
 // conhecido. Categorias de sistema vêm primeiro, para o limite nunca cortar
-// as genéricas ("Outras despesas", "Transferência").
+// as genéricas ("Outras despesas", "Transferência"). Metas: só as que a tela
+// Metas mostra em aberto (ativas e pausadas), para a pessoa apontar qual.
 function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, anonKey: string) {
   return async (workspaceId: string) => {
     const ler = (path: string) => lerComoUsuario(path, authorization, supabaseUrl, anonKey);
-    const [workspaces, todasCategorias, contas] = await Promise.all([
+    const [workspaces, todasCategorias, contas, metas] = await Promise.all([
       ler(`workspaces?select=workspace_type&id=eq.${workspaceId}&limit=1`),
       ler(
         'categories?select=id,name,category_type,applies_to&is_active=eq.true'
@@ -80,6 +82,10 @@ function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, a
           + `&order=is_system.desc,name&limit=${MAX_CATEGORIAS}`,
       ),
       ler(`accounts?select=id,name&workspace_id=eq.${workspaceId}&is_active=eq.true&order=name&limit=${MAX_CONTAS}`),
+      ler(
+        `financial_goals?select=id,name&workspace_id=eq.${workspaceId}&archived_at=is.null`
+          + `&status=in.(active,paused)&order=name&limit=${MAX_METAS}`,
+      ),
     ]);
     const workspaceType = workspaces?.[0]?.workspace_type;
     if (workspaceType !== 'personal' && workspaceType !== 'business') return null;
@@ -87,7 +93,7 @@ function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, a
     const categorias = (todasCategorias as Array<Record<string, string>>)
       .filter((categoria) => categoria.applies_to === 'both' || categoria.applies_to === workspaceType)
       .map(({ id, name, category_type }) => ({ id, name, category_type }));
-    return { workspaceType, categorias, contas };
+    return { workspaceType, categorias, contas, metas };
   };
 }
 

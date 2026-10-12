@@ -346,6 +346,14 @@ test('a sessão passa a frase sem aspas e fala o nome exato do que vai ser criad
   assert.match(EDGE_SOURCE, /diga o nome exatamente como veio na resposta/);
 });
 
+// #192: meta pela voz passa pelo mesmo caminho; o aporte ainda é na tela.
+test('a sessão manda criar, mudar, excluir ou consultar meta pelo chat, com card e confirmação', () => {
+  assert.match(EDGE_SOURCE, /Para criar, mudar ou excluir uma meta de juntar dinheiro, passe a frase com enviar_para_uni\./);
+  assert.match(EDGE_SOURCE, /Para saber como está uma meta, passe a pergunta com enviar_para_uni/);
+  assert.match(EDGE_SOURCE, /cria, altera, exclui e consulta metas/);
+  assert.match(EDGE_SOURCE, /o pedido de categoria ou o pedido de meta que está aguardando confirmação/);
+});
+
 test('a sessão manda criar, renomear ou excluir categoria pelo chat, com card e confirmação', () => {
   assert.match(EDGE_SOURCE, /Para criar, renomear ou excluir uma categoria, passe a frase com enviar_para_uni\./);
   assert.match(EDGE_SOURCE, /Quando a pessoa aceitar ou recusar, use responder_rascunho\./);

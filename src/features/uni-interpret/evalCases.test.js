@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { catalogoDoWorkspace } from './evalCatalog.js';
+import { catalogoDoWorkspace, metasDaAvaliacao } from './evalCatalog.js';
 import { CASOS } from './evalCases.js';
 import { avaliarCaso, INTENTS_DE_LANCAMENTO, resumirAvaliacao } from './evalScoring.js';
 
@@ -48,6 +48,20 @@ test('data esperada é ISO válida e não fica no futuro em lançamentos', () =>
   for (const caso of CASOS.filter((item) => item.esperado.data)) {
     assert.match(caso.esperado.data, /^\d{4}-\d{2}-\d{2}$/, caso.id);
     assert.ok(caso.esperado.data <= '2026-10-02', `${caso.id}: data no futuro`);
+  }
+});
+
+// #192: o alvo de um pedido de meta precisa ser uma meta que o modelo vê, e
+// a meta que um caso manda criar não pode já existir.
+test('pedido de meta: alvo existe em metasDaAvaliacao e nome a criar não existe', () => {
+  const nomes = metasDaAvaliacao().map((meta) => meta.name);
+  for (const caso of CASOS.filter((item) => item.esperado.intent === 'meta' && item.esperado.pedido)) {
+    const { pedido } = caso;
+    const { acao, alvo, nome } = caso.esperado.pedido;
+    assert.ok(['criar', 'editar', 'excluir', 'consultar'].includes(acao), `${caso.id}: ação ${acao}`);
+    if (alvo !== undefined) assert.ok(nomes.includes(alvo), `${caso.id}: "${alvo}" fora das metas da avaliação`);
+    if (acao === 'criar' && nome) assert.ok(!nomes.includes(nome), `${caso.id}: "${nome}" já existe`);
+    assert.equal(pedido, undefined);
   }
 });
 

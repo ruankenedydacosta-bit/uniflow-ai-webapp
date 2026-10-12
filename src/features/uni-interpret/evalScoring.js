@@ -71,12 +71,15 @@ function avaliarTitulo(palavras, titulo) {
     && !RESTO_DE_PEDIDO.test(normalizado);
 }
 
-// Pedido de categoria: a ação certa e, quando o caso diz, o nome e a
-// categoria que muda, sem acento e caixa.
+// Pedido de categoria ou de meta: a ação certa e, quando o caso diz, o nome
+// e o registro que muda (sem acento e caixa), o valor e a data.
 function avaliarPedido(esperado, obtido) {
   if (!obtido || obtido.acao !== esperado.acao) return false;
-  return ['nome', 'alvo'].every((campo) => esperado[campo] === undefined
+  const textos = ['nome', 'alvo'].every((campo) => esperado[campo] === undefined
     || normalizeSearchText(obtido[campo] ?? '') === normalizeSearchText(esperado[campo]));
+  const valor = esperado.valor === undefined || mesmoValor(esperado.valor, obtido.valor);
+  const data = esperado.data === undefined || obtido.data === esperado.data;
+  return textos && valor && data;
 }
 
 // Devolve um veredito por campo: true (acertou), false (errou) ou null
@@ -142,6 +145,18 @@ const INTENT_DO_INTERPRETADOR = {
 };
 const INTENT_POR_TIPO = { saida: 'lancar_saida', entrada: 'lancar_entrada', transferencia: 'transferir' };
 
+// Pedido de categoria ou de meta no formato que avaliarPedido lê.
+function pedidoNormalizado(validada) {
+  if (validada.categoria) {
+    return { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null };
+  }
+  if (validada.meta) {
+    const { acao, nome, alvo, valor, data } = validada.meta;
+    return { acao, nome, alvo: alvo?.name ?? null, valor, data };
+  }
+  return null;
+}
+
 // Converte a saída já validada do uni-interpret (validarInterpretacao) no
 // resultado normalizado da régua. Categoria com confiança abaixo do limiar
 // conta como sugestão: é o que o card mostra pedindo confirmação.
@@ -171,9 +186,7 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
       recorrente: false,
       titulo: validada.agenda?.titulo ?? null,
       consulta,
-      pedido: validada.categoria
-        ? { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null }
-        : null,
+      pedido: pedidoNormalizado(validada),
     };
   }
 

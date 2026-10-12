@@ -17,6 +17,7 @@ const CONTEXTO = {
     { id: 'cat-edu', name: 'Educação', category_type: 'expense' },
   ],
   contas: [{ id: 'conta-nu', name: 'Nubank' }],
+  metas: [{ id: 'meta-via', name: 'Viagem para o Chile' }],
 };
 // Sexta, 02/10/2026, 15h em São Paulo.
 const AGORA = new Date('2026-10-02T18:00:00Z');
@@ -189,6 +190,38 @@ test('categoria: devolve a ação, o tipo, o alvo só com id e nome, e o nome no
   });
   assert.equal(resultado.corpo.intent, 'categoria');
   assert.deepEqual(resultado.corpo.categoria, { acao: 'renomear', tipo: 'saida', alvo: { id: 'cat-edu', name: 'Educação' }, nome: 'Escola' });
+});
+
+test('meta: devolve a ação, o alvo só com id e nome, valor, prazo e por mês; o prompt lista as metas', async () => {
+  const { chamarModelo, chamadas } = modeloQueResponde({
+    intent: 'meta',
+    operacoes: [],
+    resposta: '',
+    meta: { acao: 'editar', alvo: 'm1', nome: null, valor: 15000, data: '2027-07-31', por_mes: null },
+  });
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'muda a meta da viagem pra 15 mil até julho do ano que vem' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo,
+    agora: AGORA,
+  });
+  assert.equal(resultado.corpo.intent, 'meta');
+  assert.deepEqual(resultado.corpo.meta, {
+    acao: 'editar', alvo: { id: 'meta-via', name: 'Viagem para o Chile' }, nome: null, valor: 15000, data: '2027-07-31', porMes: null, ajustes: [],
+  });
+  assert.match(chamadas[0].mensagem, /<metas>\n- m1: Viagem para o Chile\n<\/metas>/);
+});
+
+test('contexto sem metas (função antiga) não quebra: a lista sai vazia', async () => {
+  const { chamarModelo, chamadas } = modeloQueResponde({ intent: 'conversa', operacoes: [], resposta: 'Oi!' });
+  const semMetas = { workspaceType: CONTEXTO.workspaceType, categorias: CONTEXTO.categorias, contas: CONTEXTO.contas };
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'oi' },
+    carregarContexto: async () => semMetas,
+    chamarModelo,
+  });
+  assert.equal(resultado.status, 200);
+  assert.match(chamadas[0].mensagem, /\(nenhuma meta cadastrada\)/);
 });
 
 test('falha do provedor vira status próprio e a métrica não leva a frase', async () => {

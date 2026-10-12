@@ -78,6 +78,14 @@ import {
   respostaAoPedidoDeCategoria,
   textoDoPedidoFeito,
 } from '../uni-conversation/pedidoDeCategoria.js';
+import {
+  montarPedidoDeMeta,
+  respostaAoPedidoDeMeta,
+  textoDaConsultaDeMetas,
+  textoDaMetaComAportes,
+  textoDoPedidoDeMetaFeito,
+} from '../uni-conversation/pedidoDeMeta.js';
+import { listContributions } from '../goals/goalService.js';
 import { getCategoryErrorMessage } from '../categories/categoryUtils.js';
 import {
   ROTAS_INTERPRETACAO,
@@ -218,6 +226,7 @@ const EDICAO_TTL_MS = 15 * 60 * 1000;
 const ULTIMO_CONFIRMADO_TTL_MS = 30 * 60 * 1000;
 const TEXTO_EDICAO_VENCIDA = 'Essa alteração expirou e nada foi salvo. Peça de novo se ainda quiser alterar.';
 const TEXTO_CATEGORIA_VENCIDA = 'Esse pedido de categoria expirou e nada foi salvo. Peça de novo se ainda quiser.';
+const TEXTO_META_VENCIDA = 'Esse pedido de meta expirou e nada foi salvo. Peça de novo se ainda quiser.';
 const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze([
   'register_income',
   'register_expense',
@@ -1085,6 +1094,7 @@ export default function UniChatPage({ variant = 'full' }) {
     clearCurrentPendingAction();
     encerrarEdicao('expired');
     encerrarPedidoDeCategoria('expired');
+    encerrarPedidoDeMeta('expired');
   }
 
   // Edição de lançamento já salvo pedida em conversa ("corrige o mercado de
@@ -1573,6 +1583,161 @@ export default function UniChatPage({ variant = 'full' }) {
     categoriaPendenteRef.current = null;
     setExecutionError(null);
     createAssistantResponse(withFollowUpQuestion('Tudo bem. Não mudei nenhuma categoria.'));
+  }
+
+  // Pedido de meta (criar, alterar, excluir) esperando o Confirmar do card
+  // (#192). Mesma pendência paralela do pedido de categoria, com o mesmo
+  // prazo. Não sobrevive a recarregar a página.
+  const metaPendenteRef = useRef(null);
+
+  function pedidoDeMetaAtivo(pendente = metaPendenteRef.current) {
+    return Boolean(
+      pendente
+      && Date.now() - pendente.criadaEm <= EDICAO_TTL_MS
+      && pendente.conversationId === activeIdRef.current
+      && pendente.workspaceId === effectiveWorkspace?.id,
+    );
+  }
+
+  function encerrarPedidoDeMeta(status) {
+    const pendente = metaPendenteRef.current;
+    if (!pendente) return;
+    if (status && pendente.messageId) {
+      setMessages((current) => current.map((message) => (
+        message.id === pendente.messageId && message.confirmation?.status === 'pending'
+          ? { ...message, confirmation: { ...message.confirmation, status } }
+          : message
+      )));
+    }
+    metaPendenteRef.current = null;
+  }
+
+  // Consultar responde na hora; criar, alterar e excluir montam o card. Meta
+  // com aporte não sai pela conversa: a tela Metas mostra o que iria junto.
+  async function iniciarPedidoDeMeta(pedidoDoModelo, turnToken) {
+    if (goalsState.isLoading) {
+      createAssistantResponse('Ainda estou carregando as suas metas. Peça de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    if (pedidoDoModelo?.acao === 'consultar') {
+      createAssistantResponse(textoDaConsultaDeMetas(pedidoDoModelo, { metas: goalsState.goals }), { deduplicateNarration: false });
+      return;
+    }
+    const pronto = montarPedidoDeMeta(pedidoDoModelo, { metas: goalsState.goals, hoje: getLocalIsoDate() });
+    if (pronto.erro) {
+      createAssistantResponse(pronto.erro, { deduplicateNarration: false });
+      return;
+    }
+    if (pronto.acao === 'excluir') {
+      const aportes = await listContributions(pronto.meta.id);
+      if (uniTurnTokenRef.current !== turnToken) return;
+      if (aportes.error) {
+        createAssistantResponse('Não consegui conferir os aportes dessa meta agora. Tente de novo ou use a tela Metas.', { deduplicateNarration: false });
+        return;
+      }
+      if (aportes.data.length > 0) {
+        createAssistantResponse(textoDaMetaComAportes(pronto.meta, aportes.data.length), { deduplicateNarration: false });
+        return;
+      }
+    }
+    const message = createAssistantResponse(pronto.texto, {
+      type: 'confirmation',
+      confirmation: pronto.card,
+      deduplicateNarration: false,
+    });
+    metaPendenteRef.current = {
+      pronto,
+      messageId: message?.id ?? null,
+      workspaceId: effectiveWorkspace?.id,
+      conversationId: activeIdRef.current,
+      criadaEm: Date.now(),
+    };
+  }
+
+  // Frase nova com um pedido de meta guardado. true quando ela já foi
+  // respondida aqui.
+  function tratarPedidoDeMetaPendente(texto, userMsg) {
+    const pendente = metaPendenteRef.current;
+    if (!pendente) return false;
+    if (pedidoDeMetaAtivo(pendente)) return tratarRespostaDoPedidoDeMeta(texto, userMsg);
+    encerrarPedidoDeMeta('expired');
+    if (respostaAoPedidoDeMeta(texto, pendente.pronto) === 'input') return false;
+    syncMessageToSupabase(userMsg);
+    createAssistantResponse(TEXTO_META_VENCIDA, { deduplicateNarration: false });
+    return true;
+  }
+
+  // Resposta com o card de meta na tela. false quando a frase é outro
+  // assunto: o card expira e a frase segue o caminho de sempre.
+  function tratarRespostaDoPedidoDeMeta(texto, userMsg) {
+    const pendente = metaPendenteRef.current;
+    const resposta = respostaAoPedidoDeMeta(texto, pendente.pronto);
+    if (resposta === 'confirm') {
+      syncMessageToSupabase(userMsg);
+      void confirmarPedidoDeMeta(pendente.messageId);
+      return true;
+    }
+    if (resposta === 'cancel') {
+      syncMessageToSupabase(userMsg);
+      cancelarPedidoDeMeta(pendente.messageId);
+      return true;
+    }
+    encerrarPedidoDeMeta('expired');
+    return false;
+  }
+
+  // Grava pelo mesmo hook da tela Metas.
+  async function confirmarPedidoDeMeta(id) {
+    const pendente = metaPendenteRef.current;
+    if (!pedidoDeMetaAtivo(pendente) || confirmingRef.current) return;
+    const messageId = id ?? pendente.messageId;
+    const { pronto } = pendente;
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    setExecutionError(null);
+    try {
+      let resultado;
+      if (pronto.acao === 'criar') {
+        resultado = await goalsState.addGoal(pronto.payload);
+      } else if (pronto.acao === 'editar') {
+        resultado = await goalsState.editGoal(pronto.meta.id, pronto.payload);
+      } else {
+        resultado = await goalsState.removeGoal(pronto.meta.id);
+      }
+      if (resultado?.error) {
+        reportConfirmationError(messageId, 'Não consegui salvar a meta. Tente de novo ou use a tela Metas.');
+        return;
+      }
+      // Gravou: o pedido acaba mesmo que a pessoa tenha trocado de conversa
+      // durante a gravação, senão um "sim" depois gravaria de novo.
+      metaPendenteRef.current = null;
+      setMessages((current) => current.map((message) => (
+        message.id === messageId
+          ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
+          : message
+      )));
+      notifyFinancialDataChanged('uni-chat');
+      if (activeIdRef.current !== pendente.conversationId) return;
+      createAssistantResponse(withFollowUpQuestion(textoDoPedidoDeMetaFeito(pronto)));
+    } catch {
+      reportConfirmationError(messageId, 'Ocorreu um erro inesperado. Tente novamente.');
+    } finally {
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
+  }
+
+  function cancelarPedidoDeMeta(id) {
+    const pendente = metaPendenteRef.current;
+    if (!pendente) return;
+    setMessages((current) => current.map((message) => (
+      message.id === (id ?? pendente.messageId)
+        ? { ...message, confirmation: { ...message.confirmation, status: 'canceled' } }
+        : message
+    )));
+    metaPendenteRef.current = null;
+    setExecutionError(null);
+    createAssistantResponse(withFollowUpQuestion('Tudo bem. Não mudei nenhuma meta.'));
   }
 
   useEffect(() => {
@@ -3257,8 +3422,14 @@ export default function UniChatPage({ variant = 'full' }) {
         return true;
       case ROTAS_INTERPRETACAO.META:
         setIsTyping(false);
-        // Sem deduplicar: pedida duas vezes por voz, a resposta é falada de novo.
-        createAssistantResponse(TEXTO_META_SEM_CRIACAO, { deduplicateNarration: false });
+        // Sem ação (interpretação antiga ou pedido que o contrato não
+        // reconheceu), a resposta é a de antes. Sem deduplicar: pedida duas
+        // vezes por voz, a resposta é falada de novo.
+        if (!interpretacao.meta?.acao) {
+          createAssistantResponse(TEXTO_META_SEM_CRIACAO, { deduplicateNarration: false });
+          return true;
+        }
+        await iniciarPedidoDeMeta(interpretacao.meta, turnToken);
         return true;
       case ROTAS_INTERPRETACAO.CONSULTA: {
         if (consultaRespondivel(interpretacao.consulta)) {
@@ -3393,6 +3564,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // andamento, "corrige…" continua sendo deles.
     if (!hasPendingFinancialConversation && !hasPendingAgendaConversation) {
       if (tratarPedidoDeCategoriaPendente(functionalText, userMsg)) return;
+      if (tratarPedidoDeMetaPendente(functionalText, userMsg)) return;
       if (edicaoPendenteRef.current && !edicaoAtiva()) {
         const vencida = edicaoPendenteRef.current;
         encerrarEdicao('expired');
@@ -3407,6 +3579,7 @@ export default function UniChatPage({ variant = 'full' }) {
     } else {
       if (edicaoPendenteRef.current) encerrarEdicao('expired');
       encerrarPedidoDeCategoria('expired');
+      encerrarPedidoDeMeta('expired');
     }
     if (hasAgendaConversation) {
       syncMessageToSupabase(userMsg);
@@ -3619,6 +3792,15 @@ export default function UniChatPage({ variant = 'full' }) {
       } else {
         encerrarPedidoDeCategoria('expired');
         reportConfirmationError(id, TEXTO_CATEGORIA_VENCIDA);
+      }
+      return;
+    }
+    if (metaPendenteRef.current?.messageId === id) {
+      if (pedidoDeMetaAtivo()) {
+        await confirmarPedidoDeMeta(id);
+      } else {
+        encerrarPedidoDeMeta('expired');
+        reportConfirmationError(id, TEXTO_META_VENCIDA);
       }
       return;
     }
@@ -3981,6 +4163,10 @@ export default function UniChatPage({ variant = 'full' }) {
     if (confirmingRef.current) return;
     if (categoriaPendenteRef.current?.messageId === id) {
       cancelarPedidoDeCategoria(id);
+      return;
+    }
+    if (metaPendenteRef.current?.messageId === id) {
+      cancelarPedidoDeMeta(id);
       return;
     }
     if (edicaoPendenteRef.current?.messageId === id) {

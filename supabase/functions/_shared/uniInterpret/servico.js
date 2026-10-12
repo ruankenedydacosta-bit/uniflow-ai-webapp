@@ -69,12 +69,23 @@ function paraCliente(registro) {
 
 // Formato que o frontend recebe: só ids e nomes, nunca o registro inteiro.
 function serializar(validada) {
-  const { consulta, categoria } = validada;
+  const { consulta, categoria, meta } = validada;
   return {
     intent: validada.intent,
     ...(validada.agenda ? { agenda: validada.agenda } : {}),
     ...(categoria ? {
       categoria: { acao: categoria.acao, tipo: categoria.tipo, alvo: paraCliente(categoria.alvo), nome: categoria.nome },
+    } : {}),
+    ...(meta ? {
+      meta: {
+        acao: meta.acao,
+        alvo: paraCliente(meta.alvo),
+        nome: meta.nome,
+        valor: meta.valor,
+        data: meta.data,
+        porMes: meta.porMes,
+        ajustes: meta.ajustes,
+      },
     } : {}),
     ...(consulta ? {
       consulta: {
@@ -106,7 +117,7 @@ function serializar(validada) {
   };
 }
 
-// carregarContexto(workspaceId) → { workspaceType, categorias, contas } ou null
+// carregarContexto(workspaceId) → { workspaceType, categorias, contas, metas } ou null
 //   quando o usuário não enxerga o workspace (RLS).
 // chamarModelo({ instrucoes, mensagem }) → resultado de provedores.js.
 // Devolve { status, corpo, metrica }; metrica não carrega texto do usuário.
@@ -128,6 +139,7 @@ export async function interpretarFrase({ corpo, carregarContexto, chamarModelo, 
     workspaceType: contexto.workspaceType,
     categorias: contexto.categorias,
     contas: contexto.contas,
+    metas: contexto.metas ?? [],
     rascunho: entrada.rascunho,
     historico: entrada.historico,
   });
@@ -147,6 +159,7 @@ export async function interpretarFrase({ corpo, carregarContexto, chamarModelo, 
   const validada = validarInterpretacao(chamada.bruta, {
     categorias: contexto.categorias,
     contas: contexto.contas,
+    metas: contexto.metas ?? [],
     dataReferencia,
   });
 

@@ -55,3 +55,16 @@ export function catalogoDoWorkspace(workspaceType) {
     (category) => category.applies_to === 'both' || category.applies_to === workspaceType,
   );
 }
+
+// Metas em aberto do workspace da avaliação (#192): o que o modelo enxerga
+// em <metas> para apontar o alvo de editar, excluir e consultar. Nenhuma
+// coincide com as metas que os casos pedem para criar.
+const METAS = [
+  ['meta-01', 'Viagem para o Chile'],
+  ['meta-02', 'Casamento'],
+  ['meta-03', 'Notebook'],
+];
+
+export function metasDaAvaliacao() {
+  return METAS.map(([id, name]) => ({ id, name }));
+}
