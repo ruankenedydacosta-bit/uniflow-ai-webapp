@@ -16,10 +16,14 @@ import {
   upsertRecord,
 } from './financialHookUtils.js';
 
+// Padrão estável: um `[]` novo a cada render trocaria a identidade do
+// refresh, e o efeito abaixo buscaria as contas em loop.
+const SEM_REGISTROS = [];
+
 export function useAccounts({
   workspaceId,
-  fallbackAccounts = [],
-  fallbackAccountTypes = [],
+  fallbackAccounts = SEM_REGISTROS,
+  fallbackAccountTypes = SEM_REGISTROS,
 } = {}) {
   const [accounts, setAccounts] = useState(() => cloneRecords(fallbackAccounts));
   const [accountTypes, setAccountTypes] = useState(() =>

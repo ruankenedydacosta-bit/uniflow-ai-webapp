@@ -1,7 +1,7 @@
 import { isSupabaseConfigured, supabase } from '../../services/supabaseClient.js';
 
 const GOAL_FIELDS = 'id, user_id, workspace_id, name, description, category, target_amount, initial_amount, current_amount, planned_monthly_amount, start_date, target_date, priority, status, linked_account_id, reminder_day, completed_at, archived_at, created_at, updated_at';
-const CONTRIBUTION_FIELDS = 'id, user_id, workspace_id, goal_id, amount, contribution_date, note, linked_account_id, client_operation_id, created_at';
+const CONTRIBUTION_FIELDS = 'id, user_id, workspace_id, goal_id, amount, contribution_date, note, linked_account_id, client_operation_id, transaction_id, created_at';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function createResult(data, error = null) {
@@ -68,8 +68,10 @@ export async function listGoals(workspaceId, { status, comUltimoAporte = false }
 
   // Data do último aporte de cada meta, para a lista avisar "Sem aporte há
   // N meses" (#154). Só a tela de Metas pede; vem limitada a uma linha.
+  // Retirada (valor negativo, #158) não conta como aporte.
   if (comUltimoAporte) {
     query = query
+      .gt('ultimo_aporte.amount', 0)
       .order('contribution_date', { referencedTable: 'ultimo_aporte', ascending: false })
       .limit(1, { referencedTable: 'ultimo_aporte' });
   }
@@ -201,57 +203,46 @@ export async function listContributions(goalId) {
   return createResult(data ?? [], error);
 }
 
+// Aporte (valor positivo) ou retirada (negativo), pela função do banco
+// (#158): grava o aporte, atualiza o valor guardado e, com
+// `registrar_no_financeiro`, cria a transferência entre a conta escolhida e
+// a conta vinculada da meta, tudo na mesma transação. Devolve
+// `{ meta, aporte }`; o erro traz em `message` o código da função
+// (`retirada_maior_que_guardado`, `meta_concluida`...).
 export async function addContribution(workspaceId, goalId, contribution = {}) {
   if (!supabase) return createUnavailableResult(null);
   if (!isValidUuid(workspaceId) || !isValidUuid(goalId)) return createValidationResult('Workspace ou meta invalida.');
 
   const normalizedAmount = Number(contribution.amount);
-  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
-    return createValidationResult('Valor da contribuicao deve ser positivo.');
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount === 0) {
+    return createValidationResult('Valor da contribuicao deve ser diferente de zero.');
+  }
+  if (contribution.linked_account_id && !isValidUuid(contribution.linked_account_id)) {
+    return createValidationResult('Conta invalida.');
   }
 
-  const payload = {
-    workspace_id: workspaceId,
-    goal_id: goalId,
-    amount: normalizedAmount,
-    contribution_date: contribution.contribution_date || dataLocalDeHoje(),
-    note: contribution.note || null,
-    linked_account_id: contribution.linked_account_id || null,
-    client_operation_id: contribution.client_operation_id || null,
-  };
+  const { data, error } = await supabase.rpc('registrar_movimento_da_meta', {
+    p_goal_id: goalId,
+    p_valor: normalizedAmount,
+    p_data: contribution.contribution_date || dataLocalDeHoje(),
+    p_observacao: contribution.note || null,
+    p_conta_id: contribution.linked_account_id || null,
+    p_registrar_no_financeiro: Boolean(contribution.registrar_no_financeiro),
+    p_client_operation_id: contribution.client_operation_id || null,
+  });
 
-  const { data, error } = await supabase
-    .from('goal_contributions')
-    .insert(payload)
-    .select(CONTRIBUTION_FIELDS)
-    .single();
-
-  if (error) {
-    if (error.code === '23505') {
-      const { data: existing } = await supabase
-        .from('goal_contributions')
-        .select(CONTRIBUTION_FIELDS)
-        .eq('goal_id', goalId)
-        .eq('client_operation_id', payload.client_operation_id)
-        .maybeSingle();
-      if (existing) return createResult(existing);
-    }
-    return createResult(null, error);
-  }
-
-  return createResult(data, error);
+  return createResult(error ? null : data, error);
 }
 
+// Desfaz um aporte ou uma retirada, com a transferência criada junto.
+// Devolve `{ meta }` com o valor guardado já recalculado.
 export async function removeContribution(workspaceId, contributionId) {
   if (!supabase) return createUnavailableResult(null);
   if (!isValidUuid(workspaceId) || !isValidUuid(contributionId)) return createValidationResult('Workspace ou contribuicao invalida.');
 
-  const { data, error } = await supabase
-    .from('goal_contributions')
-    .delete()
-    .eq('id', contributionId)
-    .select('id')
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('excluir_movimento_da_meta', {
+    p_contribution_id: contributionId,
+  });
 
-  return normalizeSingleResult(data, error, 'Contribuicao nao encontrada para exclusao.');
+  return createResult(error ? null : data, error);
 }
