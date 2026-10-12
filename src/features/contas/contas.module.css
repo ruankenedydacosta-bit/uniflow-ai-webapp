@@ -1,0 +1,34 @@
+/* Contas do Organizar (handoff 10g–10i). A lista e o detalhe usam as
+   classes de organizar.module.css; aqui fica só o que é da folha de conta
+   e do saldo negativo. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formError {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uf-space-8);
+}
+
+.formActions > :first-child {
+  flex: 1;
+}
+
+.negativo {
+  color: var(--uf-app-danger-text);
+}
+
+.positivo {
+  color: var(--uf-app-brand-green-text);
+}

@@ -22,6 +22,7 @@ import {
   CategoriesPage,
   OrganizarPage,
 } from '../features/categories';
+import { ContaDetalhePage, ContasListaPage } from '../features/contas';
 import { FuturePage } from '../features/future';
 import { PresentationPage } from '../features/presentation';
 import { PERSONAL_PLAN_RETURN_ROUTE, PersonalPlanPage, PersonalPlanReturnPage } from '../features/personal-plan';
@@ -36,7 +37,6 @@ import {
   SimplifiedAccountSubpagePlaceholder,
   SimplifiedEditProfilePage,
   SimplifiedGoogleAgendaPage,
-  SimplifiedMyAccountsPage,
   SimplifiedNotificationsPage,
   SimplifiedPaymentHistoryPage,
   SimplifiedPaymentsPage,
@@ -304,12 +304,12 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedPaymentHistoryPage />,
   },
+  // #182: as contas vivem em Organizar. A rota antiga de minhas-contas só
+  // redireciona, para não quebrar link ou bookmark salvo.
   {
     path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path,
-    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].title,
-    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].title,
     simplified: true,
-    element: <SimplifiedMyAccountsPage />,
+    element: <Navigate to={SIMPLIFIED_ROUTES.CONTAS} replace />,
   },
   {
     path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path,
@@ -458,6 +458,20 @@ export const appRoutes = [
     title: 'Categoria',
     simplified: true,
     element: <CategoriaDetalhePage />,
+  },
+  {
+    path: SIMPLIFIED_ROUTES.CONTAS,
+    label: 'Contas',
+    title: 'Contas',
+    simplified: true,
+    element: <ContasListaPage />,
+  },
+  {
+    path: SIMPLIFIED_ROUTES.CONTA,
+    label: 'Conta',
+    title: 'Conta',
+    simplified: true,
+    element: <ContaDetalhePage />,
   },
   {
     path: SIMPLIFIED_ROUTES.METAS,

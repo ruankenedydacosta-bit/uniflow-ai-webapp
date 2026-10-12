@@ -2,10 +2,10 @@ import { useLocation } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext';
 import IconBox from '../../components/ui/IconBox';
 import { useAccounts, useCategories } from '../../hooks';
+import { ehCartao } from '../contas/contasOrganizar.js';
 import { PhCaretRightIcon, PhTagIcon, PhWalletIcon } from '../simplified-app/SimplifiedIcons.jsx';
 import SimplifiedSubpageHeader from '../simplified-app/SimplifiedSubpageHeader.jsx';
 import { useNavegar } from '../simplified-app/movimentoDeTelaContext.js';
-import { ACCOUNT_SUBROUTE_IDS, ACCOUNT_SUBROUTES } from '../simplified-app/simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/simplifiedRoutes.js';
 import styles from './organizar.module.css';
 
@@ -36,13 +36,20 @@ export default function OrganizarPage() {
     criadas > 0 ? plural(criadas, 'criada por você', 'criadas por você') : null,
   ].filter(Boolean).join(' · ');
 
+  // A lista de Contas separa cartões; o hub conta do mesmo jeito.
+  const cartoes = accountState.activeAccounts.filter(ehCartao).length;
+  const dicaDeContas = [
+    plural(accountState.activeAccounts.length - cartoes, 'conta', 'contas'),
+    cartoes > 0 ? plural(cartoes, 'cartão', 'cartões') : null,
+  ].filter(Boolean).join(' · ');
+
   const linhas = [
     {
       id: 'contas',
       Icon: PhWalletIcon,
       titulo: 'Contas',
-      dica: accountState.isLoading ? '' : plural(accountState.accounts.length, 'conta', 'contas'),
-      para: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path,
+      dica: accountState.isLoading ? '' : dicaDeContas,
+      para: SIMPLIFIED_ROUTES.CONTAS,
     },
     {
       id: 'categorias',
