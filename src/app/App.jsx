@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, matchPath, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AppBootScreen from './AppBootScreen.jsx';
 import AnalyticsConsentBanner from '../features/analytics/AnalyticsConsentBanner.jsx';
 import Ga4RouteTracker from '../features/analytics/ga4RouteTracker.jsx';
@@ -36,7 +36,7 @@ function AppContent() {
     workspace,
   } = useSession();
   const location = useLocation();
-  const activeRoute = appRoutes.find((route) => route.path === location.pathname);
+  const activeRoute = appRoutes.find((route) => matchPath({ path: route.path, end: true }, location.pathname));
   // A Vercel também serve /privacidade/ (com barra), e o React Router aceita
   // as duas formas. Sem normalizar, a política aberta com barra redirecionaria.
   const publicPathname = location.pathname.replace(/(.)\/+$/, '$1');

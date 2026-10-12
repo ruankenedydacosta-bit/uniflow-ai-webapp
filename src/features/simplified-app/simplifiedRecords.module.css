@@ -170,6 +170,39 @@
   object-fit: contain;
 }
 
+.recordsActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.organizeButton {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: transparent;
+  color: var(--uf-app-text-2);
+  cursor: pointer;
+}
+
+.organizeButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.organizeButton:hover {
+  background: var(--uf-app-surface-2);
+}
+
+.organizeButton:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
 .talkButton {
   gap: 6px;
   font-size: 13px;

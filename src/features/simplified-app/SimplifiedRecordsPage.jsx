@@ -20,6 +20,7 @@ import {
   PhCaretLeftIcon,
   PhCaretRightIcon,
   PhMicrophoneIcon,
+  PhSquaresFourIcon,
   PhPlusIcon,
   PhXIcon,
   UniMark,
@@ -57,17 +58,22 @@ const TYPE_FILTER_OPTIONS = Object.freeze([
 
 // Cabeçalho da tela (handoff 04): símbolo de 26px e título 17/500, como o
 // header padrão do shell. "Falar com a Uni" continua levando à conversa.
-function RecordsHeader({ onTalkToUni }) {
+function RecordsHeader({ onTalkToUni, onOrganize }) {
   return (
     <header className={styles.recordsHeader}>
       <div className={styles.recordsTitle}>
         <span className={styles.recordsMark} aria-hidden="true"><UniMark /></span>
         <h1>Financeiro</h1>
       </div>
-      <OutlineButton variant="ghost" className={styles.talkButton} onClick={onTalkToUni}>
-        <span className={styles.talkIcon} aria-hidden="true"><PhMicrophoneIcon /></span>
-        Falar com a Uni
-      </OutlineButton>
+      <div className={styles.recordsActions}>
+        <button type="button" className={styles.organizeButton} onClick={onOrganize} aria-label="Organizar contas e categorias">
+          <PhSquaresFourIcon />
+        </button>
+        <OutlineButton variant="ghost" className={styles.talkButton} onClick={onTalkToUni}>
+          <span className={styles.talkIcon} aria-hidden="true"><PhMicrophoneIcon /></span>
+          Falar com a Uni
+        </OutlineButton>
+      </div>
     </header>
   );
 }
@@ -1000,7 +1006,10 @@ function SimplifiedRecordsPage() {
         </div>
       ) : null}
       <div ref={recordsPageRef} className={styles.recordsPage} data-simplified-records>
-        <RecordsHeader onTalkToUni={() => navigate(SIMPLIFIED_ROUTES.UNI)} />
+        <RecordsHeader
+          onTalkToUni={() => navigate(SIMPLIFIED_ROUTES.UNI)}
+          onOrganize={() => navigate(SIMPLIFIED_ROUTES.ORGANIZAR, { state: { de: SIMPLIFIED_ROUTES.RECORDS } })}
+        />
 
         <div className={styles.periodBlock}>
           <RecordsTabs activeTab={activeTab} onChange={setActiveTab} />
