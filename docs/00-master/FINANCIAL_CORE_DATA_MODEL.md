@@ -222,9 +222,9 @@ Nao existem nesta etapa:
 - Edge Functions;
 - provider especifico.
 
-Tokens e segredos nunca devem entrar em `accounts`, `transactions`, `metadata` ou `raw_provider_data`. Conexoes reais exigirao backend seguro ou Edge Function, criptografia adequada e ciclo de consentimento com expiracao e revogacao.
+Tokens e segredos nunca devem entrar em `accounts`, `transactions`, `metadata` ou `external_transactions.sanitized_provider_data`. Conexoes reais exigirao backend seguro ou Edge Function, criptografia adequada e ciclo de consentimento com expiracao e revogacao.
 
-Dados externos devem ser normalizados antes de alimentar o dominio financeiro. A interface nunca deve consumir `raw_provider_data` diretamente.
+Dados externos devem ser normalizados antes de alimentar o dominio financeiro. O payload do provedor fica em `external_transactions.sanitized_provider_data`, sem grant para a interface; `transactions.raw_provider_data` foi removida na migration 068.
 
 O ciclo futuro de consentimento devera registrar finalidade, escopo, instituicao, expiracao e revogacao em uma camada propria. A sincronizacao devera ser idempotente e auditavel, sem expor tokens ao frontend, ao Obsidian ou a automacoes genericas.
 

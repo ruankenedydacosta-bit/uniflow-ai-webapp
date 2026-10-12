@@ -7,18 +7,21 @@ begin;
 -- 1. Saldo: a tela da conta diz "Atualizado pelo banco", mas o saldo vinha de
 --    get_derived_account_balances(), que soma saldo inicial + lançamentos. O
 --    banco só manda os últimos meses de extrato, então essa soma nunca bate.
---    Conta corrente, poupança etc. do Open Finance passam a usar o saldo que o
---    backend grava em accounts.current_balance. Cartão continua derivado: a
---    fatura sai dos lançamentos do ciclo, como no cartão manual.
+--    Conta do Open Finance já sincronizada (last_synced_at preenchido) passa
+--    a usar o saldo que o backend grava em accounts.current_balance, na
+--    convenção do app: cartão fica negativo quando há fatura a pagar. Antes
+--    do primeiro saldo, segue derivado, para não mostrar R$ 0 como se fosse
+--    do banco.
 -- 2. Proteção: a tela não deixa editar nem excluir conta ou lançamento do
 --    Open Finance, mas a RLS deixava. Os triggers abaixo travam no banco o que
 --    vem do banco. No lançamento, categoria, observação, competência e
 --    metadata continuam editáveis: recategorizar é o trabalho da pessoa e da
---    Uni. Backend (service_role) e RPC security definer passam.
--- 3. Payload: transactions.raw_provider_data é legível por qualquer membro
+--    Uni. Ajuste de saldo numa conta do Open Finance também é recusado: o
+--    saldo dela é o do banco.
+-- 3. Payload: transactions.raw_provider_data era legível por qualquer membro
 --    (grant de SELECT na tabela inteira). O payload do provedor fica em
---    external_transactions.sanitized_provider_data, sem grant para o app; a
---    coluna em transactions passa a ficar sempre vazia.
+--    external_transactions.sanitized_provider_data, sem grant para o app. A
+--    coluna sai: nenhum código lê ou grava, e nenhuma linha tem valor.
 
 create or replace function public.proteger_conta_do_open_finance()
 returns trigger
@@ -26,11 +29,13 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  -- Quem chega pelo PostgREST com a chave do app roda como authenticated ou
-  -- anon. Edge Function com service_role, RPC security definer e cascata de
-  -- FK (roda como dono da tabela) não.
+  -- O papel vem do JWT da requisição, que continua o mesmo dentro de RPC
+  -- security definer: o app (authenticated/anon) é barrado por qualquer
+  -- caminho. Edge Function com service_role e job sem JWT passam. A cascata
+  -- de FK (excluir o espaço) roda dentro de outro trigger e passa.
   if old.source_type <> 'open_finance'
-    or current_user not in ('authenticated', 'anon') then
+    or coalesce((select auth.role()), '') not in ('authenticated', 'anon')
+    or (tg_op = 'DELETE' and pg_trigger_depth() > 1) then
     return coalesce(new, old);
   end if;
 
@@ -64,11 +69,13 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  -- Quem chega pelo PostgREST com a chave do app roda como authenticated ou
-  -- anon. Edge Function com service_role, RPC security definer e cascata de
-  -- FK (roda como dono da tabela) não.
+  -- O papel vem do JWT da requisição, que continua o mesmo dentro de RPC
+  -- security definer: o app (authenticated/anon) é barrado por qualquer
+  -- caminho. Edge Function com service_role e job sem JWT passam. A cascata
+  -- de FK (excluir o espaço) roda dentro de outro trigger e passa.
   if old.source_type <> 'open_finance'
-    or current_user not in ('authenticated', 'anon') then
+    or coalesce((select auth.role()), '') not in ('authenticated', 'anon')
+    or (tg_op = 'DELETE' and pg_trigger_depth() > 1) then
     return coalesce(new, old);
   end if;
 
@@ -92,8 +99,31 @@ begin
     or new.source_type is distinct from old.source_type
     or new.external_provider is distinct from old.external_provider
     or new.external_transaction_id is distinct from old.external_transaction_id
-    or new.external_account_id is distinct from old.external_account_id then
+    or new.external_account_id is distinct from old.external_account_id
+    -- auto_confirm faz o job da 065 confirmar o previsto; quem confirma
+    -- lançamento do banco é o banco.
+    or new.metadata -> 'auto_confirm' is distinct from old.metadata -> 'auto_confirm' then
     raise exception using errcode = 'P0001', message = 'lancamento_do_open_finance_protegido';
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace function public.recusar_ajuste_em_conta_do_open_finance()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.transaction_type = 'adjustment'
+    and exists (
+      select 1
+      from public.accounts as account
+      where account.id = new.account_id
+        and account.source_type = 'open_finance'
+    ) then
+    raise exception using errcode = 'P0001', message = 'conta_do_open_finance_protegida';
   end if;
 
   return new;
@@ -110,19 +140,20 @@ create trigger transactions_proteger_open_finance
 before update or delete on public.transactions
 for each row execute function public.proteger_lancamento_do_open_finance();
 
+drop trigger if exists transactions_recusar_ajuste_open_finance on public.transactions;
+create trigger transactions_recusar_ajuste_open_finance
+before insert or update of transaction_type, account_id on public.transactions
+for each row execute function public.recusar_ajuste_em_conta_do_open_finance();
+
 revoke all on function public.proteger_conta_do_open_finance() from public, anon, authenticated;
 revoke all on function public.proteger_lancamento_do_open_finance() from public, anon, authenticated;
+revoke all on function public.recusar_ajuste_em_conta_do_open_finance() from public, anon, authenticated;
 
--- NOT VALID: vale para toda linha nova sem reler a tabela. Nenhuma linha
--- tem payload hoje.
-alter table public.transactions
-  drop constraint if exists transactions_raw_provider_data_fora_do_app;
-alter table public.transactions
-  add constraint transactions_raw_provider_data_fora_do_app
-  check (raw_provider_data is null) not valid;
+-- Leva junto transactions_raw_provider_data_object_check.
+alter table public.transactions drop column if exists raw_provider_data;
 
 -- Parte da 027 (última definição). Muda só o derived_balance da conta do
--- Open Finance que não é cartão.
+-- Open Finance já sincronizada.
 create or replace function public.get_derived_account_balances()
 returns table (
   account_id uuid,
@@ -173,7 +204,7 @@ begin
       account.current_balance,
       (
         account.source_type = 'open_finance'
-        and account.account_type <> 'credit_card'
+        and account.last_synced_at is not null
       ) as saldo_do_banco,
       coalesce(sum(transaction.amount) filter (
         where transaction.transaction_type = 'income'
@@ -214,7 +245,7 @@ begin
       account.initial_balance,
       account.current_balance,
       account.source_type,
-      account.account_type
+      account.last_synced_at
   )
   select
     movement.account_id,
@@ -250,10 +281,12 @@ grant execute on function public.get_derived_account_balances()
   to authenticated;
 
 comment on function public.get_derived_account_balances() is
-  'Saldo oficial por conta do workspace autenticado. Conta manual: derivado dos lancamentos completed, incluindo ajustes. Conta do Open Finance que nao e cartao: saldo informado pelo banco (current_balance, gravado pelo backend).';
+  'Saldo oficial por conta do workspace autenticado. Conta manual: derivado dos lancamentos completed, incluindo ajustes. Conta do Open Finance sincronizada: saldo informado pelo banco (current_balance, gravado pelo backend na convencao do app, cartao negativo quando ha fatura).';
 comment on function public.proteger_conta_do_open_finance() is
-  'Impede o app (authenticated/anon) de editar ou excluir dados que o banco mantem numa conta do Open Finance. Backend e RPC security definer passam.';
+  'Impede o app (JWT authenticated/anon, inclusive dentro de RPC security definer) de editar ou excluir dados que o banco mantem numa conta do Open Finance. service_role, job sem JWT e cascata de FK passam.';
 comment on function public.proteger_lancamento_do_open_finance() is
-  'Impede o app de editar valor, data, conta, tipo ou descricao, ou de excluir lancamento do Open Finance. Categoria, observacao, competencia e metadata seguem editaveis.';
+  'Impede o app de editar valor, data, conta, tipo, descricao ou auto_confirm, ou de excluir lancamento do Open Finance. Categoria, observacao, competencia e o resto de metadata seguem editaveis.';
+comment on function public.recusar_ajuste_em_conta_do_open_finance() is
+  'Recusa ajuste de saldo em conta do Open Finance: o saldo dela e o do banco.';
 
 commit;

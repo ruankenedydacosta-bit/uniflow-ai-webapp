@@ -141,7 +141,7 @@ Nao existe criacao automatica de workspace no cadastro nesta migration.
 - Policies privadas nao usam `USING (true)`.
 - A anon/publishable key acessa o nucleo financeiro somente conforme grants e RLS.
 - Tokens Open Finance, credenciais, certificados e segredos nunca ficam em `accounts`, `transactions`, `metadata` ou payload bruto.
-- `raw_provider_data` deve ser sanitizado e nunca consumido diretamente pela interface.
+- O payload do provedor fica em `external_transactions.sanitized_provider_data`, sanitizado e sem grant para a interface (`transactions.raw_provider_data` saiu na 068).
 - Integracoes Open Finance reais exigirao backend seguro ou Edge Function.
 - Consentimentos terao expiracao e revogacao em uma migration futura.
 
