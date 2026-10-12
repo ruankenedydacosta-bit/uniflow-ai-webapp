@@ -109,3 +109,8 @@ verify_jwt = false
 # segredo de private.goal_reminder_dispatch_secret.
 [functions.goal-reminder-push-dispatch]
 verify_jwt = false
+
+# Lembrete do vencimento do cartão (#184). Chamada pelo pg_cron com o
+# segredo de private.card_due_dispatch_secret.
+[functions.card-due-push-dispatch]
+verify_jwt = false

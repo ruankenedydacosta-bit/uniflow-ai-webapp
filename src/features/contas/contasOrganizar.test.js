@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  ANTECEDENCIA_DO_LEMBRETE_DIAS,
   TIPOS_DE_CONTA,
   cicloDoCartao,
+  dataDoLembreteDoCartao,
+  proximoVencimento,
   ehContaDoOpenFinance,
   faturaAberta,
   formatarDiaCurto,
@@ -16,6 +19,7 @@ import {
   rotuloDoTipo,
   saldoDaConta,
   sinalDoLancamento,
+  textoDoLembreteDoCartao,
   validarCartao,
 } from './contasOrganizar.js';
 
@@ -203,4 +207,49 @@ test('validarCartao cobre nome, limite e dias', () => {
 
 test('formatarDiaCurto', () => {
   assert.equal(formatarDiaCurto('2026-10-05'), '5 out');
+});
+
+// #184: lembrete do vencimento, espelho de proxima_data_de_vencimento (migration 067).
+test('proximoVencimento: este mês se ainda não passou, senão o seguinte; dia 31 vira o último dia', () => {
+  const hoje = new Date(2026, 9, 12);
+  assert.equal(proximoVencimento({ due_day: 5 }, hoje), '2026-11-05');
+  assert.equal(proximoVencimento({ due_day: 12 }, hoje), '2026-10-12');
+  assert.equal(proximoVencimento({ due_day: 20 }, hoje), '2026-10-20');
+  assert.equal(proximoVencimento({ due_day: 31 }, new Date(2026, 1, 10)), '2026-02-28');
+  assert.equal(proximoVencimento({ due_day: 31 }, new Date(2026, 3, 30)), '2026-04-30');
+  assert.equal(proximoVencimento({ due_day: 1 }, new Date(2026, 11, 15)), '2027-01-01');
+});
+
+test('dataDoLembreteDoCartao: 2 dias antes do próximo vencimento, atravessando o mês', () => {
+  assert.equal(ANTECEDENCIA_DO_LEMBRETE_DIAS, 2);
+  const hoje = new Date(2026, 9, 12);
+  assert.equal(dataDoLembreteDoCartao({ due_day: 20 }, hoje), '2026-10-18');
+  assert.equal(dataDoLembreteDoCartao({ due_day: 5 }, hoje), '2026-11-03');
+  assert.equal(dataDoLembreteDoCartao({ due_day: 1 }, hoje), '2026-10-30');
+  assert.equal(dataDoLembreteDoCartao({ due_day: 1 }, new Date(2026, 2, 5)), '2026-03-30');
+  // Vencimento hoje: o lembrete já passou (o worker cobre de 0 a 2 dias antes).
+  assert.equal(dataDoLembreteDoCartao({ due_day: 12 }, hoje), '2026-10-10');
+});
+
+test('textoDoLembreteDoCartao: dia do próximo aviso, só a regra depois do aviso, e como ativar', () => {
+  const hoje = new Date(2026, 9, 12);
+  assert.equal(
+    textoDoLembreteDoCartao({ due_day: 20 }, hoje),
+    'Com as notificações ativadas, você recebe um aviso 2 dias antes de cada vencimento. O próximo chega em 18 out.',
+  );
+  // Vence amanhã: o worker ainda envia hoje, então a linha não mostra data passada.
+  assert.equal(
+    textoDoLembreteDoCartao({ due_day: 13 }, hoje),
+    'Com as notificações ativadas, você recebe um aviso 2 dias antes de cada vencimento.',
+  );
+  assert.match(textoDoLembreteDoCartao({ due_day: null }, hoje), /Cadastre o dia do vencimento/);
+});
+
+test('cartão sem due_day não tem lembrete', () => {
+  const hoje = new Date(2026, 9, 12);
+  assert.equal(proximoVencimento({ due_day: null }, hoje), null);
+  assert.equal(dataDoLembreteDoCartao({}, hoje), null);
+  assert.equal(dataDoLembreteDoCartao({ due_day: 0 }, hoje), null);
+  assert.equal(dataDoLembreteDoCartao({ due_day: 32 }, hoje), null);
+  assert.equal(dataDoLembreteDoCartao(null, hoje), null);
 });

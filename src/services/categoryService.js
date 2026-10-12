@@ -277,6 +277,66 @@ export async function deleteCategory(workspaceId, categoryId) {
   return normalizeSingleResult(data, error, 'Categoria nao encontrada para exclusao.');
 }
 
+/**
+ * Ids das categorias que o espaço ocultou (tabela workspace_hidden_categories,
+ * migration 067). Vale para categoria do espaço e para categoria padrão.
+ */
+export async function listarCategoriasOcultas(workspaceId) {
+  if (!supabase) {
+    return createUnavailableResult([]);
+  }
+
+  if (!isValidUuid(workspaceId)) {
+    return createValidationResult('Workspace invalido para listar categorias ocultas.');
+  }
+
+  const { data, error } = await supabase
+    .from('workspace_hidden_categories')
+    .select('category_id')
+    .eq('workspace_id', workspaceId);
+
+  return createResult((data ?? []).map((linha) => linha.category_id), error);
+}
+
+/** Oculta a categoria no espaço. Ocultar de novo uma categoria já oculta não é erro. */
+export async function ocultarCategoria(workspaceId, categoryId) {
+  if (!supabase) {
+    return createUnavailableResult(null);
+  }
+
+  if (!isValidUuid(workspaceId) || !isValidUuid(categoryId)) {
+    return createValidationResult('Workspace ou categoria invalida.');
+  }
+
+  const { error } = await supabase
+    .from('workspace_hidden_categories')
+    .upsert({ workspace_id: workspaceId, category_id: categoryId }, {
+      onConflict: 'workspace_id,category_id',
+      ignoreDuplicates: true,
+    });
+
+  return createResult(error ? null : { id: categoryId }, error);
+}
+
+/** Volta a mostrar a categoria no espaço. */
+export async function reexibirCategoria(workspaceId, categoryId) {
+  if (!supabase) {
+    return createUnavailableResult(null);
+  }
+
+  if (!isValidUuid(workspaceId) || !isValidUuid(categoryId)) {
+    return createValidationResult('Workspace ou categoria invalida.');
+  }
+
+  const { error } = await supabase
+    .from('workspace_hidden_categories')
+    .delete()
+    .eq('workspace_id', workspaceId)
+    .eq('category_id', categoryId);
+
+  return createResult(error ? null : { id: categoryId }, error);
+}
+
 // Mensagens-código da função excluir_categoria_movendo_lancamentos (migration
 // 064) traduzidas para texto de tela. Qualquer outro erro segue cru para o
 // fallback da interface.

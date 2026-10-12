@@ -29,6 +29,7 @@ import {
   rotuloDoTipo,
   saldoDaConta,
   sinalDoLancamento,
+  textoDoLembreteDoCartao,
 } from './contasOrganizar.js';
 import { useContasOrganizar } from './useContasOrganizar.js';
 import styles from './contas.module.css';
@@ -198,6 +199,8 @@ export default function ContaDetalhePage() {
             )}
           </div>
         ) : null}
+
+        {cartao ? <p className={organizar.note}>{textoDoLembreteDoCartao(conta, mes.date)}</p> : null}
 
         <h2 className={organizar.sectionTitle}>Lançamentos</h2>
         {transactionState.isLoading ? (

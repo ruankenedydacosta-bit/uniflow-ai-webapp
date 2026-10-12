@@ -196,6 +196,54 @@ export function cicloDoCartao(cartao, hoje = new Date()) {
   return { inicio, fechamento, vencimento };
 }
 
+/** Dias antes do vencimento em que o lembrete do cartão é enviado (#184, migration 067). */
+export const ANTECEDENCIA_DO_LEMBRETE_DIAS = 2;
+
+/**
+ * Próximo vencimento a partir de `hoje`: o `due_day` deste mês se ainda não
+ * passou, senão o do mês seguinte. Espelha proxima_data_de_vencimento no
+ * banco. Sem `due_day` válido devolve null.
+ */
+export function proximoVencimento(cartao, hoje = new Date()) {
+  const dueDay = Number(cartao?.due_day);
+  if (!(dueDay >= 1 && dueDay <= 31)) return null;
+  const ref = hojeIso(hoje);
+  const ano = Number(ref.slice(0, 4));
+  const mes = Number(ref.slice(5, 7));
+  const nesteMes = dataNoMes(ano, mes, dueDay);
+  if (nesteMes >= ref) return nesteMes;
+  return dataNoMes(...mesSeguinte(ano, mes), dueDay);
+}
+
+/**
+ * Data em que a pessoa recebe o lembrete do próximo vencimento: 2 dias
+ * antes (`ANTECEDENCIA_DO_LEMBRETE_DIAS`). Cartão sem `due_day` não recebe
+ * lembrete e devolve null.
+ */
+export function dataDoLembreteDoCartao(cartao, hoje = new Date()) {
+  const vencimento = proximoVencimento(cartao, hoje);
+  if (!vencimento) return null;
+  const data = new Date(`${vencimento}T00:00:00`);
+  data.setDate(data.getDate() - ANTECEDENCIA_DO_LEMBRETE_DIAS);
+  return paraIso(data.getFullYear(), data.getMonth() + 1, data.getDate());
+}
+
+/**
+ * Linha do detalhe do cartão sobre o lembrete. Com a data do aviso ainda por
+ * vir, diz o dia. Entre a data do aviso e o vencimento, o worker ainda envia
+ * (de 0 a 2 dias antes), então a linha diz só a regra, sem data passada. Sem
+ * `due_day`, diz como ativar.
+ */
+export function textoDoLembreteDoCartao(cartao, hoje = new Date()) {
+  const lembrete = dataDoLembreteDoCartao(cartao, hoje);
+  if (!lembrete) {
+    return 'Cadastre o dia do vencimento em Editar cartão para receber um aviso antes da fatura vencer.';
+  }
+  const regra = `Com as notificações ativadas, você recebe um aviso ${ANTECEDENCIA_DO_LEMBRETE_DIAS} dias antes de cada vencimento.`;
+  if (lembrete < hojeIso(hoje)) return regra;
+  return `${regra} O próximo chega em ${formatarDiaCurto(lembrete)}.`;
+}
+
 /**
  * Fatura aberta: o que saiu do cartão dentro do ciclo aberto, descontado o
  * que entrou nele (pagamento feito antes do fechamento). Nunca negativa.

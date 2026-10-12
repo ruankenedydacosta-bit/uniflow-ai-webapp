@@ -480,6 +480,10 @@ export default function UniChatPage({ variant = 'full' }) {
     fallbackCategories: financialFallback.categories,
     context: financialWorkspaceType,
   });
+  // Categoria oculta no espaço (#184) não entra em sugestão, rascunho nem
+  // opção de correção. Consultas, relatórios e busca de lançamento antigo
+  // continuam com a lista completa (categoryState.categories).
+  const categoriasSugeriveis = categoryState.categoriasVisiveis;
 
   const transactionsState = useTransactions({
     workspaceId: effectiveWorkspace?.id,
@@ -521,7 +525,7 @@ export default function UniChatPage({ variant = 'full' }) {
   const financialConversation = useUniConversation({
     accounts: accountState.accounts,
     accountTypes: accountState.accountTypes,
-    categories: categoryState.categories,
+    categories: categoriasSugeriveis,
     executeAtomicAction: executeConfirmedFinancialAction,
     saveAccount: accountState.saveAccount,
     saveTransaction: saveVoiceTransaction,
@@ -678,7 +682,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // modelo não vale mais.
     if (rascunhoAtualRef.current !== action) return;
 
-    const correcao = correcaoDoRascunho(interpretacao, action, { categorias: categoryState.categories });
+    const correcao = correcaoDoRascunho(interpretacao, action, { categorias: categoriasSugeriveis });
     if (!correcao) {
       pelasRegras();
       return;
@@ -784,7 +788,7 @@ export default function UniChatPage({ variant = 'full' }) {
       phrase: text,
       accounts: accountState.accounts,
       accountTypes: accountState.accountTypes,
-      categories: categoryState.categories,
+      categories: categoriasSugeriveis,
       referenceDate: getLocalIsoDate(),
       workspaceType: financialWorkspaceType,
     });
@@ -941,7 +945,7 @@ export default function UniChatPage({ variant = 'full' }) {
         text,
         referenceDate: getLocalIsoDate(),
         accounts: accountState.accounts,
-        categories: categoryState.categories,
+        categories: categoriasSugeriveis,
         operation: current,
       });
       if (overrides) {
@@ -3149,7 +3153,7 @@ export default function UniChatPage({ variant = 'full' }) {
       value: text,
       action: parentSnapshot.action,
       accounts: accountState.accounts,
-      categories: categoryState.categories,
+      categories: categoriasSugeriveis,
       workspaceId: effectiveWorkspace?.id,
       referenceDate: getLocalIsoDate(),
     });
@@ -3493,7 +3497,7 @@ export default function UniChatPage({ variant = 'full' }) {
         value: text,
         action,
         accounts: accountState.accounts,
-        categories: categoryState.categories,
+        categories: categoriasSugeriveis,
         workspaceId: effectiveWorkspace?.id,
         referenceDate: getLocalIsoDate(),
       });
@@ -3517,7 +3521,7 @@ export default function UniChatPage({ variant = 'full' }) {
             userText: text,
             conversationContext: { referenceDate: getLocalIsoDate() },
             availableAccounts: accountState.accounts,
-            availableCategories: categoryState.categories,
+            availableCategories: categoriasSugeriveis,
           });
 
           if (relation.relation === 'changes_subject') {
@@ -4436,7 +4440,7 @@ export default function UniChatPage({ variant = 'full' }) {
       if (categoryDependencyActive) {
         const requestedCategory = activeStackAction.fields.category;
         const categoryResolution = resolveFinancialCategory({
-          categories: categoryState.categories,
+          categories: categoriasSugeriveis,
           transactionType: requestedCategory.category_type,
           requestedName: requestedCategory.name,
           normalizedInput: requestedCategory.name,
@@ -4796,10 +4800,10 @@ export default function UniChatPage({ variant = 'full' }) {
       ? buildConfirmationEditForm({
           action: pendingAction,
           accounts: accountState.accounts,
-          categories: categoryState.categories,
+          categories: categoriasSugeriveis,
         })
       : null),
-    [pendingAction, accountState.accounts, categoryState.categories],
+    [pendingAction, accountState.accounts, categoriasSugeriveis],
   );
   const chatProcessingState = isExecutingAction ? 'executing' : (isTyping ? 'interpreting' : 'idle');
   const chatProcessingMessage = useUniProcessingMessage(chatProcessingState, {

@@ -12,6 +12,7 @@ import Toggle from '../../components/ui/Toggle/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { PhCaretDownIcon, PhCheckIcon, PhTrashIcon } from '../../features/simplified-app/SimplifiedIcons.jsx';
 import { celebrarSalvar, fecharFolha } from '../../features/simplified-app/movimentoDeSalvar.js';
+import { categoriasParaSeletor } from '../../features/categories/categoryUtils.js';
 import { cx } from '../../utils/cx';
 import { formatCurrency } from '../../utils/formatters';
 import styles from './FinanceTransactionModal.module.css';
@@ -377,14 +378,20 @@ function FinanceTransactionModal({
     }
   }
 
+  // Categoria oculta no espaço (#184) não aparece no seletor, exceto a que o
+  // lançamento em edição já usa.
   const filteredCategories = useMemo(
     () =>
-      categoryState.categories.filter((category) =>
+      categoriasParaSeletor({
+        visiveis: categoryState.categoriasVisiveis,
+        todas: categoryState.categories,
+        selecionadaId: form.category_id,
+      }).filter((category) =>
         form.transaction_type === 'adjustment'
           ? category.category_type !== 'transfer'
           : category.category_type === form.transaction_type,
       ),
-    [categoryState.categories, form.transaction_type],
+    [categoryState.categoriasVisiveis, categoryState.categories, form.category_id, form.transaction_type],
   );
   const selectableAccounts = useMemo(
     () => getSelectableTransactionAccounts(accountState.accounts, editingId, form),

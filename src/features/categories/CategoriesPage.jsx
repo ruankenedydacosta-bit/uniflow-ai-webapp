@@ -391,7 +391,7 @@ export default function CategoriesPage() {
       {deletingCategory ? (
         <CategoryDeleteConfirmModal
           category={deletingCategory}
-          categories={categoryState.categories}
+          categories={categoryState.categoriasVisiveis}
           isMutating={categoryState.isMutating}
           error={categoryState.error}
           contarLancamentos={categoryState.contarLancamentos}
