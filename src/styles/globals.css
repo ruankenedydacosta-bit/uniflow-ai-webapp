@@ -121,7 +121,10 @@ input:-webkit-autofill:focus{
 /* ----------------------------------------------------------------------------
    5. FOCO & ACESSIBILIDADE — anel de foco visível e área mínima de clique
 ---------------------------------------------------------------------------- */
-:focus-visible{
+/* :where zera a especificidade: no build o CSS das telas carrega antes deste
+   arquivo, e um :focus-visible solto venceria o foco próprio de cada
+   componente (o campo ganhava dois anéis). */
+:where(:focus-visible){
   outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
   outline-offset: var(--uf-focus-ring-offset);
   border-radius: var(--uf-radius-8);
