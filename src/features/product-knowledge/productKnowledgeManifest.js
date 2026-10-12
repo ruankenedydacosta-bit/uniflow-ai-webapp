@@ -41,7 +41,7 @@ export const KNOWLEDGE_CATEGORIES = Object.freeze({
 });
 
 const MANIFEST_VERSION = 1;
-const UPDATED_AT = '2026-07-25';
+const UPDATED_AT = '2026-10-12';
 
 // id estável (nunca renomear um id existente -- criar um novo e marcar o
 // antigo como deprecated se o conteúdo for substituído).
@@ -152,11 +152,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/goals.md',
     routes: ['/app/metas'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['meta', 'metas', 'objetivo', 'objetivos', 'reserva de emergência', 'aporte', 'contribuição', 'progresso da meta'],
+    keywords: ['meta', 'metas', 'objetivo', 'objetivos', 'reserva de emergência', 'aporte', 'contribuição', 'progresso da meta', 'criar meta pela uni', 'excluir meta'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Pela conversa a Uni consulta as metas, mas ainda não cria meta nem registra aporte: isso é feito na tela de Metas.',
+      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Pela conversa e pela voz a Uni cria, altera, exclui e consulta metas, com card de confirmação antes de salvar. Meta com aportes só é excluída na tela Metas. Aporte e retirada ainda são registrados na tela Metas.',
   },
   {
     id: 'crm-and-clients',
@@ -180,11 +180,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/agenda-and-projects.md',
     routes: ['/app/agenda'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['agenda', 'agendar reunião', 'reunião', 'compromisso', 'tarefa', 'lembrete', 'projeto', 'prazo', 'contrato', 'documento'],
+    keywords: ['agenda', 'agendar reunião', 'reunião', 'compromisso', 'tarefa', 'lembrete', 'projeto', 'prazo', 'contrato', 'documento', 'remarcar', 'desmarcar', 'cancelar compromisso', 'excluir compromisso'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A Agenda está disponível nos espaços Pessoal e Empresa em Conta → Agenda e pela rota interna /app/agenda. A Uni também pode ajudar a consultar, criar e editar itens da Agenda, sempre no espaço ativo e com confirmação quando houver escrita. Não existe integração com Google Calendar nesta fase. Projetos, contratos e documentos não estão expostos na interface simplificada atual.',
+      'A Agenda está disponível nos espaços Pessoal e Empresa em Conta → Agenda e pela rota interna /app/agenda. A Uni também consulta, marca, remarca, cancela, conclui e exclui itens da Agenda pela conversa e pela voz, sempre no espaço ativo; antes de cancelar ou excluir ela pergunta se pode. Não existe integração com Google Calendar nesta fase. Projetos, contratos e documentos não estão expostos na interface simplificada atual.',
   },
   {
     id: 'notifications',
@@ -222,11 +222,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/uni-chat.md',
     routes: ['/app/home', '/app/uni', '/app/conta/voz'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['uni', 'chat', 'conversar com a uni', 'assistente', 'registrar por chat', 'apagar conversa', 'histórico de conversa'],
+    keywords: ['uni', 'chat', 'conversar com a uni', 'assistente', 'registrar por chat', 'apagar conversa', 'histórico de conversa', 'excluir movimentação', 'desfazer', 'criar categoria pela conversa', 'listar lançamentos', 'meta pela conversa'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Na conversa (/app/uni), a Uni responde perguntas financeiras com base em dados reais do espaço ativo e ajuda a registrar movimentações por linguagem natural. Para registrar, a Uni mostra um card de rascunho (ex.: "Saída · rascunho") com categoria, valor, conta, descrição e data, e nada é salvo antes de a pessoa tocar em Confirmar. Editar abre os campos no próprio card e Cancelar descarta o rascunho. A Uni nunca executa uma ação sem confirmação nem finge ter feito algo que não fez. Abra a conversa em Mais > "Conversa com a Uni" ou por "Conversa" na tela de voz. No topo ficam "Ver histórico" e "Nova conversa"; embaixo, o campo "Escreva ou fale com a Uni". Perguntas de previsão/tendência futura não são respondidas por texto livre da IA, para evitar números inventados. O histórico de conversa é salvo e sincronizado com a conta; em "Ver histórico" é possível abrir ou apagar uma conversa inteira. A Uni não acessa dados de outro espaço ou de outro usuário.',
+      'Na conversa (/app/uni), a Uni responde perguntas financeiras com dados reais do espaço ativo e registra movimentações por linguagem natural: mostra um card de rascunho (ex.: "Saída · rascunho") com categoria, valor, conta, descrição e data, e nada é salvo antes de Confirmar. Pela conversa e pela voz a Uni também altera e exclui movimentações salvas (Desfazer por 20 segundos depois de excluir, uma por vez), lista movimentações e categorias, cria, renomeia e exclui categorias e cria, altera, exclui e consulta metas, sempre com card de confirmação. Compromissos da agenda são marcados, remarcados, cancelados, concluídos e excluídos com uma pergunta de confirmação. A Uni nunca executa uma ação sem confirmação nem finge ter feito algo que não fez. Abra a conversa em Mais > "Conversa com a Uni" ou por "Conversa" na tela de voz. No topo ficam "Ver histórico" e "Nova conversa"; embaixo, o campo "Escreva ou fale com a Uni". Perguntas de previsão futura não são respondidas por texto livre da IA. O histórico fica salvo e sincronizado com a conta; em "Ver histórico" dá para abrir ou apagar uma conversa. A Uni não acessa dados de outro espaço ou de outro usuário.',
   },
   {
     id: 'uni-voice',

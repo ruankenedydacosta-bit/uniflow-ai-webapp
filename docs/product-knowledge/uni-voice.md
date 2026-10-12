@@ -57,6 +57,17 @@ diga o que muda. Se mais de uma movimentação combinar, a Uni lê a lista e
 pergunta qual. Responda com o número ou com um detalhe ("a de oitenta e
 cinco").
 
+Pela voz também dá para excluir uma movimentação ("apaga o Uber de ontem"),
+criar, renomear ou excluir uma categoria ("cria a categoria Pets"), criar,
+alterar, excluir ou consultar uma meta ("quero juntar 5 mil para a viagem até
+dezembro") e remarcar, cancelar, concluir ou excluir um compromisso ("desmarca
+o dentista"). Movimentação, categoria e meta passam por um card: a Uni lê o
+que vai mudar e pergunta se pode confirmar. Depois de excluir uma
+movimentação, diga "desfazer" em até 20 segundos para trazê-la de volta.
+Compromisso não tem card: a Uni pergunta se pode e você responde "sim" ou
+"não". Para ver os itens, pergunte por eles: "quais foram os gastos com Uber
+esse mês", "quais são as minhas categorias", "como estão as minhas metas".
+
 Os três botões de baixo fazem:
 
 - **Escrever**: fecha a voz e abre a conversa para você digitar.
@@ -105,9 +116,11 @@ um desses recursos estiver indisponível, a digitação continua funcionando.
 
 - Não há reprodução automática ao receber uma resposta — sempre exige toque do usuário.
 - Gravações são curtas e não são armazenadas pela aplicação.
-- Transferências, pagamentos, exclusões e criação de objetivo não podem ser
-  executados por voz nesta versão. Alterar transferências, ajustes de saldo,
-  parcelas e movimentações importadas também não.
+- Transferências e pagamentos não podem ser executados por voz nesta versão.
+  Alterar ou excluir transferências, ajustes de saldo, parcelas e movimentações
+  importadas também não.
+- A Uni exclui uma movimentação por vez. Aporte e retirada de meta ainda são
+  feitos na tela Metas.
 - O cache de áudio tem validade de 30 dias; depois disso, uma nova geração pode ocorrer mesmo para o mesmo texto.
 - Configurações adicionais de voz (além do interruptor liga/desliga) ainda não estão disponíveis ("Voz e interação" está marcado "em breve").
 

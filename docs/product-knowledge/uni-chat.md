@@ -26,6 +26,20 @@ A Uni procura a movimentação pelo nome, pelo dia, pelo valor ou pela conta que
 - Logo depois de confirmar uma movimentação, "corrige pra 50" ou "na verdade foi 50" altera essa mesma movimentação.
 - Dá para mudar valor, data, conta, categoria e descrição. A categoria nova precisa ser do mesmo tipo (despesa ou receita) e já existir.
 
+**Excluir uma movimentação já salva**: diga qual é, com o nome e o dia ou o valor. Por exemplo, "apaga o Uber de ontem" ou "tira esse último, foi engano". A Uni mostra um card com a movimentação, o valor, o dia e a conta. Toque em **Confirmar** para excluir ou em **Cancelar** para manter. Depois de excluir, o botão **Desfazer** fica disponível por 20 segundos e traz a movimentação de volta.
+
+- Se mais de uma movimentação combinar, a Uni lista até cinco e pergunta qual.
+- Pela conversa a Uni exclui uma movimentação por vez. Para apagar várias, use a tela Financeiro.
+- Transferências, ajustes de saldo, parcelas e movimentações importadas só podem ser excluídos na tela Financeiro.
+
+**Ver movimentações**: pergunte pelos itens, não só pelo total. Por exemplo, "quais foram os gastos com Uber esse mês" ou "o que eu paguei na sexta". A Uni lista até cinco movimentações com data, descrição, valor e conta, mais o total. "Quanto gastei" responde só o total.
+
+**Categorias**: a Uni cria, renomeia e exclui categorias pela conversa. Por exemplo, "cria a categoria Pets", "troca o nome de Moradia para Casa" ou "tira a categoria Dívidas". A Uni mostra um card com o que vai mudar e só salva depois de **Confirmar**. "Quais são as minhas categorias" lista as categorias por tipo. Categorias padrão do app não podem ser renomeadas nem excluídas.
+
+**Metas**: a Uni cria, altera, exclui e consulta metas. Por exemplo, "quero juntar 5 mil para a viagem até dezembro", "muda a meta da viagem para 8 mil", "apaga a meta do carro" ou "como está a meta da viagem". Criar, alterar e excluir passam por um card de confirmação. Uma meta que já tem aportes só pode ser excluída na tela Metas. Registrar um aporte ainda é feito na tela Metas.
+
+**Agenda**: além de marcar um compromisso, a Uni remarca ("passa o dentista pra quinta"), cancela ("desmarca o almoço com a Carla"), conclui ("já fiz a reunião") e exclui ("apaga o lembrete da vacina"). Cancelar muda o status do item; excluir apaga. Antes de cancelar ou excluir, a Uni pergunta se pode. Responda "sim" ou "não". Compromisso não tem card.
+
 **Perguntas financeiras** (saldo, gastos do mês, etc.) são respondidas com base nos dados reais do espaço ativo.
 
 **Perguntas sobre previsão/tendência futura** não são respondidas pela IA generativa — para evitar números inventados, esse tipo de pergunta é tratado de forma determinística ou direcionado para a tela de Visão de Futuro.
@@ -52,7 +66,9 @@ Sessão autenticada. A geração de respostas por IA depende de configuração d
 
 - A Uni não executa ações sozinha — sempre pede confirmação.
 - A Uni não acessa dados de outro espaço ou de outro usuário.
-- Pela conversa não dá para alterar transferências, ajustes de saldo, parcelas nem movimentações importadas, nem apagar movimentações ou trocar despesa por receita. Faça isso na tela Financeiro.
+- Pela conversa não dá para alterar ou excluir transferências, ajustes de saldo, parcelas nem movimentações importadas, nem trocar despesa por receita. Faça isso na tela Financeiro.
+- A Uni exclui uma movimentação por vez. Exclusão em lote só na tela Financeiro.
+- Aporte e retirada de meta ainda são feitos na tela Metas.
 - A Uni procura entre as movimentações mais recentes. Para uma movimentação mais antiga, diga o dia em que ela foi feita.
 - Não há memória psicológica ou perfil comportamental ilimitado sendo usado nas respostas do chat nesta fase.
 - O botão de atalho "Perguntar à Uni" em várias telas (CRM, Clientes, Agenda, Relatórios, Configurações, Projetos) ainda está desabilitado ("Disponível em breve") — hoje a conversa acontece na Home, na tela de voz e em `/app/uni`.
