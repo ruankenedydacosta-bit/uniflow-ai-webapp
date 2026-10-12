@@ -102,25 +102,31 @@ const READY_FOR_CONFIRMATION_TEXT = 'Perfeito. Revise as informações abaixo an
 
 // Lançamento com data futura fica como previsto. O texto diz isso antes e
 // depois de registrar: na voz, a Uni só fala o que está na resposta.
-function formatShortDate(isoDate) {
+export function formatShortDate(isoDate) {
   const [, month, day] = String(isoDate ?? '').split('-');
-  return month && day ? `${day}/${month}` : null;
+  return `${day}/${month}`;
 }
 
+function formatCurrency(value) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+// planned só é true com data válida (financialIntentAction).
 export function buildPlannedConfirmationText(action) {
-  const date = formatShortDate(action?.date);
-  return date
-    ? `Perfeito. Revise as informações abaixo. A data é ${date}, então o lançamento fica previsto até você confirmar.`
-    : 'Perfeito. Revise as informações abaixo. A data é futura, então o lançamento fica previsto até você confirmar.';
+  return `Perfeito. Revise as informações abaixo. A data é ${formatShortDate(action.date)}, então o lançamento fica previsto até você confirmar.`;
 }
 
 export function buildPlannedCompletionText(action) {
-  const date = formatShortDate(action?.date);
-  const when = date ? ` para ${date}` : '';
-  if (action?.transactionType === 'transfer') {
-    return `Pronto. A transferência ficou prevista${when}. Confirme no Financeiro quando ela acontecer.`;
+  const date = formatShortDate(action.date);
+  if (action.transactionType === 'transfer') {
+    const source = action.account?.name;
+    const destination = action.destinationAccount?.name;
+    const detail = action.amount != null && source && destination
+      ? ` de ${formatCurrency(action.amount)} de ${source} para ${destination}`
+      : '';
+    return `Pronto. A transferência${detail} ficou prevista para ${date}. Confirme no Financeiro quando ela acontecer.`;
   }
-  return `Pronto. O lançamento ficou previsto${when}. Confirme no Financeiro quando ele acontecer.`;
+  return `Pronto. O lançamento ficou previsto para ${date}. Confirme no Financeiro quando ele acontecer.`;
 }
 
 export function buildConfirmationResponse(action, options = {}) {

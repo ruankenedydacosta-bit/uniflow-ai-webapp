@@ -230,7 +230,7 @@ test('plano com operação de data futura mostra o dia previsto e avisa depois d
   };
   assert.equal(
     buildPlanResultText(confirmado),
-    'Registrei 2 lançamentos com sucesso. Um deles ficou previsto. Confirme no Financeiro quando acontecerem.',
+    'Registrei 2 lançamentos com sucesso. Um deles ficou previsto. Confirme no Financeiro quando acontecer.',
   );
   const soOFuturo = { ...confirmado, operations: [confirmado.operations[0]] };
   assert.equal(

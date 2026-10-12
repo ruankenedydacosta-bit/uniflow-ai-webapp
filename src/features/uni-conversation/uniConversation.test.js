@@ -548,12 +548,22 @@ test('lançamento de hoje ou do passado não fica previsto', () => {
   }
 });
 
+test('correção de data num rascunho previsto continua no futuro', () => {
+  const previsto = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: { date: '2026-07-20' } });
+  const realizado = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const corrigir = (action) => resolvePendingActionInput({
+    value: 'na verdade é dia 5', action, accounts, categories, referenceDate: REFERENCE_DATE,
+  }).overrides?.date;
+  assert.equal(corrigir(previsto), '2026-08-05');
+  assert.equal(corrigir(realizado), '2026-07-05');
+});
+
 test('transferência com data futura avisa que ficou prevista', () => {
   const action = createAction('Transferi 100 do Nubank para a Conta principal.', { overrides: { date: '2026-08-01' } });
   assert.equal(action.planned, true);
   assert.equal(
     buildCompletionResponse(action).text,
-    'Pronto. A transferência ficou prevista para 01/08. Confirme no Financeiro quando ela acontecer.',
+    'Pronto. A transferência de R$\u00a0100,00 de Nubank para Conta principal ficou prevista para 01/08. Confirme no Financeiro quando ela acontecer.',
   );
 });
 

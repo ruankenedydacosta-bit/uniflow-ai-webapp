@@ -480,9 +480,10 @@ export const CASOS = [
     esperado: { intent: 'lancar_saida', valor: 180, categoria: 'Moradia', data: '2026-10-20' },
   },
   {
-    id: 'futuro-salario-dia-5',
-    frase: 'meu salário de 4.200 cai dia 5',
-    esperado: { intent: 'lancar_entrada', valor: 4200, categoria: 'Salário', data: '2026-11-05' },
+    // Dia 1 já passou em outubro: a próxima ocorrência é em novembro.
+    id: 'futuro-salario-dia-1',
+    frase: 'meu salário de 4.200 cai dia 1',
+    esperado: { intent: 'lancar_entrada', valor: 4200, categoria: 'Salário', data: '2026-11-01' },
   },
   {
     id: 'futuro-seguro-mes-que-vem',
@@ -1149,10 +1150,10 @@ export const CASOS = [
   },
   {
     // Conta a pagar com valor e sem pedido de lembrete virou lançamento
-    // previsto. A referência é uma sexta: "sexta" no futuro é hoje.
+    // previsto. A referência é uma sexta: "sexta" no futuro é a que vem.
     id: 'to-com-conta-a-pagar',
     frase: 'to com 300 de conta de luz pra pagar sexta',
-    esperado: { intent: 'lancar_saida', valor: 300, categoria: 'Moradia', data: '2026-10-02' },
+    esperado: { intent: 'lancar_saida', valor: 300, categoria: 'Moradia', data: '2026-10-09' },
   },
   {
     id: 'meta-juntar',

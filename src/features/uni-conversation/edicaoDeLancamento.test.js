@@ -326,3 +326,15 @@ test('data de hoje ou passada não muda a situação', () => {
   const previsto = { ...mercadoOntem, status: 'pending', transaction_date: '2026-10-20' };
   assert.deepEqual(montarAlteracao(previsto, { date: '2026-10-25' }, contexto).alteracoes, { transaction_date: '2026-10-25' });
 });
+
+test('num previsto, "pra sexta" é a próxima sexta; num realizado, a última', () => {
+  // HOJE é quinta, 2026-10-08.
+  const pedido = interpretarPedidoDeEdicao('muda a data do condomínio pra sexta', contexto);
+  assert.equal(pedido.mudancas.date, '2026-10-02');
+  assert.equal(pedido.mudancas.datePlanned, '2026-10-09');
+
+  const previsto = lancamento({ id: 'c', description: 'Condomínio', amount: 650, transaction_date: '2026-10-20', status: 'pending' });
+  assert.deepEqual(montarAlteracao(previsto, pedido.mudancas, contexto).alteracoes, { transaction_date: '2026-10-09' });
+  const realizado = { ...previsto, status: 'completed', transaction_date: '2026-10-07' };
+  assert.deepEqual(montarAlteracao(realizado, pedido.mudancas, contexto).alteracoes, { transaction_date: '2026-10-02' });
+});

@@ -56,6 +56,23 @@ function resolveDayOfMonth(reference, day) {
   return candidatePreviousMonth;
 }
 
+// "Dia N" no futuro: o dia N deste mês se ainda não passou (hoje conta),
+// senão o do mês seguinte.
+function resolveNextDayOfMonth(reference, day) {
+  if (!Number.isInteger(day) || day < 1 || day > 31) return null;
+  const candidateThisMonth = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), day));
+  if (candidateThisMonth.getUTCMonth() === reference.getUTCMonth() && candidateThisMonth.getTime() >= reference.getTime()) {
+    return candidateThisMonth;
+  }
+  const nextMonth = (reference.getUTCMonth() + 1) % 12;
+  const candidateNextMonth = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth() + 1, day));
+  return candidateNextMonth.getUTCMonth() === nextMonth ? candidateNextMonth : null;
+}
+
+// Verbo no futuro ou conta a vencer: "dia N" e dia da semana sem
+// complemento olham para frente ("vou pagar dia 20", "vence sexta").
+const FUTURE_MARKERS = /\b(?:vou|vai|vamos|vao|vence|vencem|vencer|cai|caem|cair|a\s+pagar|a\s+receber|pra\s+pagar|para\s+pagar|pra\s+receber|para\s+receber)\b/;
+
 // Nome de dia da semana: "segunda" (bare) ou "segunda passada" -> ocorrencia
 // passada mais recente (inclui hoje, se hoje for o proprio dia). "segunda
 // que vem"/"proxima segunda" -> ocorrencia futura mais proxima.
@@ -77,10 +94,16 @@ function resolveWeekday(reference, weekdayIndex, direction) {
  * ruleId: null } quando a expressao e desconhecida/ambigua demais para
  * resolver com seguranca.
  */
-export function resolveRelativeDateExpression(expression, referenceDate) {
+//
+// options.lookAhead: "dia N" e dia da semana sem complemento vão para a
+// próxima ocorrência ("dia N" de hoje é hoje; o dia da semana de hoje é o
+// da semana que vem). Vale também quando a frase tem verbo no
+// futuro. Serve a lançamento previsto e à correção de um previsto.
+export function resolveRelativeDateExpression(expression, referenceDate, options = {}) {
   if (typeof expression !== 'string') return { resolvedDate: null, ruleId: null };
   const text = normalizeFinancialText(expression);
   if (!text) return { resolvedDate: null, ruleId: null };
+  const lookAhead = options?.lookAhead === true || FUTURE_MARKERS.test(text);
 
   // Data explicita (dd/mm/aaaa) nao depende de uma data de referencia --
   // resolvida independentemente, igual ao comportamento anterior.
@@ -130,14 +153,21 @@ export function resolveRelativeDateExpression(expression, referenceDate) {
 
   const dayOfMonthMatch = text.match(/\bdia\s+(\d{1,2})\b/);
   if (dayOfMonthMatch) {
-    const resolved = resolveDayOfMonth(reference, Number(dayOfMonthMatch[1]));
-    if (resolved) return { resolvedDate: toIsoDate(resolved), ruleId: 'day_of_month' };
+    const resolved = lookAhead
+      ? resolveNextDayOfMonth(reference, Number(dayOfMonthMatch[1]))
+      : resolveDayOfMonth(reference, Number(dayOfMonthMatch[1]));
+    if (resolved) return { resolvedDate: toIsoDate(resolved), ruleId: lookAhead ? 'next_day_of_month' : 'day_of_month' };
     return { resolvedDate: null, ruleId: null };
   }
 
   const weekdayIndex = WEEKDAY_NAMES.findIndex((name) => new RegExp(`\\b${name}(?:-feira)?\\b`).test(text));
   if (weekdayIndex >= 0) {
-    const direction = /\bque\s+vem\b|\bproxim[ao]\b/.test(text) ? 'next' : 'previous';
+    // No futuro, o dia da semana de hoje é o da semana que vem: quem vai
+    // pagar hoje diz "hoje".
+    const direction = /\bque\s+vem\b|\bproxim[ao]\b/.test(text)
+      || (lookAhead && !/\bpassad[ao]\b/.test(text))
+      ? 'next'
+      : 'previous';
     const resolved = resolveWeekday(reference, weekdayIndex, direction);
     return { resolvedDate: toIsoDate(resolved), ruleId: `weekday_${direction}` };
   }

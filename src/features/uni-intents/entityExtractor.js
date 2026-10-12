@@ -376,9 +376,9 @@ export function extractDestinationAccount(input) {
 // determinística usada para validar datas vindas da camada neural
 // (financial_plan), agora tambem cobrindo anteontem, dia da semana, "dia N",
 // fim/comeco do mes (antes so hoje/ontem/amanha/data explicita).
-export function extractDate(input, referenceDate = null) {
+export function extractDate(input, referenceDate = null, options = {}) {
   if (typeof input !== 'string') return null;
-  return resolveRelativeDateExpression(input, referenceDate).resolvedDate;
+  return resolveRelativeDateExpression(input, referenceDate, options).resolvedDate;
 }
 
 function extractDescription(input, intent, account, destinationAccount = null) {
@@ -466,7 +466,7 @@ function extractDescription(input, intent, account, destinationAccount = null) {
     )
     // A data já vai para o campo Data: "na data de ontem", "no dia de
     // hoje" e "hoje" no fim não fazem parte da descrição.
-    .replace(/\s+(?:(?:na\s+data|no\s+dia)\s+(?:de\s+)?|de\s+|para\s+)?(?:hoje|ontem|anteontem)$/iu, '')
+    .replace(/\s+(?:(?:na\s+data|no\s+dia)\s+(?:de\s+)?|de\s+|para\s+)?(?:hoje|ontem|anteontem|(?:depois\s+de\s+)?amanh[aã])$/iu, '')
     // BUG REAL: preposição pendurada após remover o valor ("Um Pix de",
     // "Gasolina no") -- descrição malformada nunca é exibida assim.
     .replace(/\s+(?:de|do|da|no|na|em|para|pra|pro)\s*$/iu, '')
@@ -480,6 +480,7 @@ export function extractEntities(input, options = {}) {
   const safeOptions = options && typeof options === 'object' ? options : {};
   const intent = safeOptions.intent ?? 'question';
   const referenceDate = safeOptions.referenceDate ?? null;
+  const dateOptions = { lookAhead: safeOptions.lookAhead === true };
 
   // CAMADA 0 (AGENDA): intents de agenda/lembrete NUNCA produzem entidades
   // monetárias -- números associados a compromissos ("reunião daqui 10
@@ -491,7 +492,7 @@ export function extractEntities(input, options = {}) {
       category: null,
       description: null,
       account: null,
-      date: extractDate(input, referenceDate),
+      date: extractDate(input, referenceDate, dateOptions),
     };
   }
 
@@ -515,6 +516,6 @@ export function extractEntities(input, options = {}) {
     description: extractDescription(input, intent, account, destinationAccount),
     account,
     ...(isTransfer ? { destinationAccount } : {}),
-    date: extractDate(input, referenceDate),
+    date: extractDate(input, referenceDate, dateOptions),
   };
 }

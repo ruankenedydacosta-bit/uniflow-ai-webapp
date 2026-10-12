@@ -95,6 +95,12 @@ export function lerMudanca(textoDaMudanca, campo, { accounts = [], categories = 
   const mudancas = Object.fromEntries(
     Object.entries(coletado).filter(([chave]) => !porCampo || porCampo.includes(chave)),
   );
+  // A data nova depende do lançamento, que ainda não foi achado: num previsto,
+  // "dia 20" ou "sexta" são os próximos. montarAlteracao escolhe.
+  if (mudancas.date) {
+    const datePlanned = parseFinancialText(texto, { referenceDate, lookAhead: true }).entities.date;
+    if (datePlanned && datePlanned !== mudancas.date) mudancas.datePlanned = datePlanned;
+  }
   if (Object.keys(mudancas).length) return { mudancas };
   if (campo === 'categoria') {
     const nome = extractRequestedCategoryName(`categoria ${texto}`) || texto;
@@ -383,12 +389,13 @@ export function montarAlteracao(transacao, mudancas, { accounts = [], categories
       campos.push({ campo: 'amount', antes: Number(transacao.amount), depois: valor });
     }
   }
-  if (pedidas.date !== undefined && pedidas.date !== transacao.transaction_date) {
-    alteracoes.transaction_date = pedidas.date;
-    campos.push({ campo: 'date', antes: transacao.transaction_date, depois: pedidas.date });
+  const novaData = transacao.status === 'pending' && pedidas.datePlanned ? pedidas.datePlanned : pedidas.date;
+  if (novaData !== undefined && novaData !== transacao.transaction_date) {
+    alteracoes.transaction_date = novaData;
+    campos.push({ campo: 'date', antes: transacao.transaction_date, depois: novaData });
     // Data depois de hoje é previsto, como no formulário: sai do saldo até
     // a pessoa confirmar. O card mostra a mudança.
-    if (transacao.status === 'completed' && referenceDate && pedidas.date > referenceDate) {
+    if (transacao.status === 'completed' && referenceDate && novaData > referenceDate) {
       alteracoes.status = 'pending';
       campos.push({ campo: 'status', antes: 'completed', depois: 'pending' });
     }

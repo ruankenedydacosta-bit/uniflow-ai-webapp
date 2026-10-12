@@ -1,5 +1,6 @@
 import { normalizeFinancialText, resolveRelativeDateExpression } from '../uni-intents/index.js';
 import { PLAN_OPERATION_STATUS, PLAN_STATUS } from './pendingFinancialPlan.js';
+import { formatShortDate } from './uniResponseBuilder.js';
 
 // BLOCO E: camada de apresentacao/entrada do Pending Financial Plan --
 // texto sempre curto e falavel (nunca le ID, JSON ou percentual de
@@ -65,9 +66,7 @@ export function describePlanOperation(op) {
 
 // Operação com data futura fica como previsto: o resumo mostra o dia.
 function describePlannedDate(op) {
-  if (!op.action?.planned) return '';
-  const [, month, day] = String(op.action.date ?? '').split('-');
-  return month && day ? `, prevista para ${day}/${month}` : ', prevista';
+  return op.action?.planned ? `, prevista para ${formatShortDate(op.action.date)}` : '';
 }
 
 export function buildOperationClarificationQuestion(op) {
@@ -165,11 +164,10 @@ export function buildPlanResultText(planState) {
   if (confirmed.length) {
     parts.push(`Registrei ${confirmed.length === 1 ? 'o lançamento' : `${confirmed.length} lançamentos`} com sucesso.`);
     const planned = confirmed.filter((op) => op.action?.planned).length;
-    if (planned === 1 && confirmed.length === 1) {
-      parts.push('Ele ficou previsto. Confirme no Financeiro quando acontecer.');
+    if (planned === 1) {
+      parts.push(`${confirmed.length === 1 ? 'Ele' : 'Um deles'} ficou previsto. Confirme no Financeiro quando acontecer.`);
     } else if (planned) {
-      const who = planned === confirmed.length ? 'Todos ficaram previstos' : planned === 1 ? 'Um deles ficou previsto' : `${planned} deles ficaram previstos`;
-      parts.push(`${who}. Confirme no Financeiro quando acontecerem.`);
+      parts.push(`${planned === confirmed.length ? 'Todos' : `${planned} deles`} ficaram previstos. Confirme no Financeiro quando acontecerem.`);
     }
   }
   if (failed.length) {
