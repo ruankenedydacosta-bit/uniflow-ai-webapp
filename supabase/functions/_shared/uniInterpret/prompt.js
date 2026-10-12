@@ -11,7 +11,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - saldo: a pessoa pergunta ou informa quanto dinheiro há numa conta ("o saldo da conta corrente está em 2.300", "quanto sobrou no cartão de débito?"). Vale também para quem diz quanto dinheiro tem agora sem dizer que recebeu ("tô com 800 reais na conta"). Dinheiro que entrou é lancamento; conta a pagar é agenda ou lancamento.
 - meta: quer criar uma meta ou um objetivo de juntar dinheiro daqui para frente ("quero guardar 2 mil até dezembro"). Dinheiro que a pessoa já guardou ou separou é lancamento: transferencia, quando foi para uma poupança ou reserva dela. Perguntar sobre uma meta que já existe é consulta.
 - consulta: pergunta sobre os dados dele (gastos, entradas, quanto falta para uma meta).
-- agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento).
+- agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento). Vale também para remarcar, cancelar, concluir ou excluir um compromisso já marcado ("passa o dentista pra quinta", "desmarca o almoço com a Carla", "já fiz a reunião", "apaga o lembrete da vacina").
 - correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
 - categoria: criar, renomear ou excluir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
 - conversa: cumprimento, agradecimento, papo.
@@ -43,9 +43,11 @@ Só quando o intent é consulta; nos outros, todos os campos são null.
 - Pergunta curta que continua a anterior do histórico ("e no outro mês?", "só no cartão") repete os campos que não mudaram.
 
 ## agenda
-Só quando o intent é agenda; nos outros, titulo e valor são null. Em agenda, operacoes fica vazia.
-- titulo: o compromisso como a pessoa escreveria na própria agenda, começando pelo que vai fazer, com acentos e inicial maiúscula. Sem o pedido ("me lembra", "marca", "anota", "eu vou ter que"), sem data, sem hora e sem valor. "Anota aí que na terça eu preciso levar o carro na revisão" vira "Levar o carro na revisão". Nomes de pessoas e lugares ficam.
-- Palavras no começo da frase que são o nome da Uni mal transcrito ("O meu", "Uni,") não entram no título.
+Só quando o intent é agenda; nos outros, todos os campos são null. Em agenda, operacoes fica vazia.
+- acao: criar quando marca algo novo. editar quando muda dia, horário ou nome de um compromisso já marcado ("remarca", "adia", "passa pra", "muda o horário"). cancelar quando desmarca ("cancela", "desmarca": o compromisso fica na agenda como cancelado). concluir quando a pessoa diz que já fez ("já fiz", "pode marcar como feito"). excluir quando pede para apagar ("apaga", "exclui", "tira da agenda").
+- alvo: em editar, cancelar, concluir e excluir, o compromisso que já existe, como a pessoa o chamou, com acentos e inicial maiúscula, sem o verbo, sem data e sem hora ("desmarca o almoço com a Carla de sexta" vira "Almoço com a Carla"). null em criar.
+- titulo: em criar, o compromisso como a pessoa escreveria na própria agenda, começando pelo que vai fazer, com acentos e inicial maiúscula. Sem o pedido ("me lembra", "marca", "anota", "eu vou ter que"), sem data, sem hora e sem valor. "Anota aí que na terça eu preciso levar o carro na revisão" vira "Levar o carro na revisão". Nomes de pessoas e lugares ficam. Em editar, só o nome novo quando a pessoa pede para mudar o nome do compromisso; senão null. Em cancelar, concluir e excluir, null.
+- Palavras no começo da frase que são o nome da Uni mal transcrito ("O meu", "Uni,") não entram no título nem no alvo.
 - titulo é null quando a frase não diz do que se trata ("marca um compromisso pra sexta"): a Uni vai perguntar.
 - valor: em reais, quando a frase cita quanto pagar ou receber. null se não cita.
 

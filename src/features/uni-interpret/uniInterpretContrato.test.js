@@ -194,17 +194,39 @@ test('agenda: título limpo e valor positivo; vazio ou inválido vira null', () 
   assert.deepEqual(agenda({ titulo: '  Pagar mensalidade\ndas escolas ', valor: 2500.004 }), {
     intent: 'agenda',
     operacoes: [],
-    agenda: { titulo: 'Pagar mensalidade das escolas', valor: 2500 },
+    agenda: { acao: null, alvo: null, titulo: 'Pagar mensalidade das escolas', valor: 2500 },
     resposta: '',
   });
-  assert.deepEqual(agenda({ titulo: '   ', valor: 0 }).agenda, { titulo: null, valor: null });
-  assert.deepEqual(agenda({ titulo: null, valor: null }).agenda, { titulo: null, valor: null });
-  assert.deepEqual(agenda(undefined).agenda, { titulo: null, valor: null });
+  const vazio = { acao: null, alvo: null, titulo: null, valor: null };
+  assert.deepEqual(agenda({ titulo: '   ', valor: 0 }).agenda, vazio);
+  assert.deepEqual(agenda({ titulo: null, valor: null }).agenda, vazio);
+  assert.deepEqual(agenda(undefined).agenda, vazio);
   assert.equal(agenda({ titulo: 'x'.repeat(200), valor: null }).agenda.titulo.length, MAX_TITULO_AGENDA);
   const longo = agenda({ titulo: `Pagar ${'mensalidade '.repeat(10)}das escolas`, valor: null }).agenda.titulo;
   assert.ok(longo.length <= MAX_TITULO_AGENDA);
   assert.match(longo, /mensalidade$/, 'corta na palavra inteira');
   assert.equal(agenda({ titulo: 'Dentista', valor: 0.004 }).agenda.valor, null);
+});
+
+// #191: ação sobre um compromisso que já existe e como a pessoa o chamou.
+test('agenda: ação da lista e alvo limpo; ação inventada vira null e criar não leva alvo', () => {
+  const agenda = (campos) => validarInterpretacao({ intent: 'agenda', operacoes: [], agenda: campos, resposta: '' }, CONTEXTO).agenda;
+  assert.deepEqual(agenda({ acao: 'cancelar', alvo: ' Almoço  com a\nCarla ', titulo: null, valor: null }), {
+    acao: 'cancelar', alvo: 'Almoço com a Carla', titulo: null, valor: null,
+  });
+  assert.deepEqual(agenda({ acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João', valor: null }), {
+    acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João', valor: null,
+  });
+  assert.deepEqual(agenda({ acao: 'criar', alvo: 'Dentista', titulo: 'Dentista', valor: null }), {
+    acao: 'criar', alvo: null, titulo: 'Dentista', valor: null,
+  });
+  assert.deepEqual(agenda({ acao: 'apagar', alvo: 'Dentista', titulo: null, valor: null }), {
+    acao: null, alvo: null, titulo: null, valor: null,
+  });
+  assert.equal(agenda({ acao: 'excluir', alvo: 'x'.repeat(200), titulo: null, valor: null }).alvo.length, MAX_TITULO_AGENDA);
+  assert.deepEqual(agenda({ acao: 'concluir', alvo: '  ', titulo: null, valor: null }), {
+    acao: 'concluir', alvo: null, titulo: null, valor: null,
+  });
 });
 
 // #80, etapa 2b: o app público não ajusta saldo nem cria meta pela

@@ -3251,3 +3251,134 @@ test('criação com título interpretado: a descrição da regex não repete o a
   assert.equal(calls[0].payload.title, 'Reunião com o gerente sobre o empréstimo');
   assert.equal('description' in calls[0].payload, false);
 });
+
+// #191: a ação e o alvo vêm do uni-interpret; a regex de verbo não decide o
+// ramo nem o compromisso.
+test('cancelamento interpretado: sem a palavra "compromisso", a regex não reconhece e a ação do modelo cancela', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'dentista', workspace_id: IDENTITY.workspaceId, title: 'Dentista', starts_at: '2026-08-13T12:00:00.000Z' },
+  ]);
+  const semModelo = await turn(flow, 'Desmarca o dentista');
+  assert.equal(semModelo.handled, false);
+
+  const first = await flow.handle({
+    text: 'Desmarca o dentista',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'cancelar', alvo: 'Dentista', titulo: null },
+  });
+  assert.match(first.text, /Quer mesmo cancelar Dentista/);
+  assert.equal(items[0].status, 'scheduled');
+  const second = await turn(flow, 'Pode cancelar.');
+  assert.match(second.text, /Cancelei/);
+  assert.equal(items[0].status, 'cancelled');
+});
+
+test('exclusão interpretada: "apaga" exclui de verdade depois da confirmação falada', async () => {
+  const { flow, calls, items } = makeHarness([
+    { id: 'vacina', workspace_id: IDENTITY.workspaceId, title: 'Vacina do cachorro', starts_at: '2026-08-20T12:00:00.000Z' },
+  ]);
+  const first = await flow.handle({
+    text: 'Apaga o lembrete da vacina do cachorro',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'excluir', alvo: 'Vacina do cachorro', titulo: null },
+  });
+  assert.match(first.text, /Quer mesmo excluir Vacina do cachorro/);
+  assert.equal(items.length, 1);
+  const naoEntendeu = await turn(flow, 'Hã?');
+  assert.match(naoEntendeu.text, /Quer mesmo excluir/);
+  const second = await turn(flow, 'Pode excluir');
+  assert.match(second.text, /Excluí/);
+  assert.equal(items.length, 0);
+  assert.equal(calls.at(-1).operation, 'delete');
+});
+
+test('recusa falada mantém o compromisso', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'dentista', workspace_id: IDENTITY.workspaceId, title: 'Dentista', starts_at: '2026-08-13T12:00:00.000Z' },
+  ]);
+  await flow.handle({
+    text: 'Cancela o dentista',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'cancelar', alvo: 'Dentista', titulo: null },
+  });
+  const result = await turn(flow, 'Não, deixa.');
+  assert.match(result.text, /Mantive/);
+  assert.equal(items[0].status, 'scheduled');
+  assert.equal(flow.hasPending(IDENTITY), false);
+});
+
+test('conclusão interpretada marca o compromisso sem pedir confirmação', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'reuniao', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-07T12:00:00.000Z' },
+  ]);
+  const result = await flow.handle({
+    text: 'Já fiz a reunião',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'concluir', alvo: 'Reunião', titulo: null },
+  });
+  assert.match(result.text, /concluído/);
+  assert.equal(items[0].status, 'completed');
+});
+
+test('edição interpretada: o alvo do modelo localiza o item e a frase dá a data e o horário', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'contador', workspace_id: IDENTITY.workspaceId, title: 'Reunião contador', starts_at: '2026-08-10T13:00:00.000Z' },
+  ]);
+  const result = await flow.handle({
+    text: 'Passa a reunião com o contador pra terça às 14h',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'editar', alvo: 'Reunião com o contador', titulo: null },
+  });
+  assert.match(result.text, /Atualizei/);
+  const atualizado = new Date(items[0].starts_at);
+  assert.equal(atualizado.getDay(), 2);
+  assert.equal(atualizado.getHours(), 14);
+});
+
+test('edição interpretada: o nome novo vem do modelo', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'reuniao', workspace_id: IDENTITY.workspaceId, title: 'Reunião', starts_at: '2026-08-10T13:00:00.000Z' },
+  ]);
+  const result = await flow.handle({
+    text: 'Troca o nome da reunião pra Reunião com o João',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João' },
+  });
+  assert.match(result.text, /Atualizei/);
+  assert.equal(items[0].title, 'Reunião com o João');
+});
+
+test('alvo interpretado ambíguo lista as opções sem mexer em nenhuma', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'a', workspace_id: IDENTITY.workspaceId, title: 'Reunião A', starts_at: '2026-08-14T12:00:00.000Z' },
+    { id: 'b', workspace_id: IDENTITY.workspaceId, title: 'Reunião B', starts_at: '2026-08-14T18:00:00.000Z' },
+  ]);
+  const result = await flow.handle({
+    text: 'Desmarca a reunião de sexta',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'cancelar', alvo: 'Reunião', titulo: null },
+  });
+  assert.match(result.text, /Encontrei mais de um/);
+  assert.ok(items.every((item) => item.status === 'scheduled'));
+  const escolha = await turn(flow, 'a segunda');
+  assert.match(escolha.text, /Quer mesmo cancelar Reunião B/);
+});
+
+test('alvo interpretado que não está na agenda responde sem inventar', async () => {
+  const { flow, calls } = makeHarness([]);
+  const result = await flow.handle({
+    text: 'Cancela o dentista',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'cancelar', alvo: 'Dentista', titulo: null },
+  });
+  assert.match(result.text, /Não encontrei esse compromisso/);
+  assert.ok(calls.every((call) => call.operation === 'list'));
+});
