@@ -2224,7 +2224,8 @@ test('#80: resposta ao rascunho vai ao uni-interpret antes das regras, que ficam
 
   const { body: leitura } = extractFunctionBody(page, 'async function lerRascunhoPeloModelo(text, action, pelasRegras) {');
   assert.match(leitura, /rascunho: montarRascunhoParaInterpretacao\(action\)/);
-  assert.match(leitura, /const correcao = correcaoDoRascunho\(interpretacao, action, \{ categorias: categoryState\.categories \}\);/);
+  // #184: a correção só escolhe entre as categorias visíveis (sem as ocultas).
+  assert.match(leitura, /const correcao = correcaoDoRascunho\(interpretacao, action, \{ categorias: categoriasSugeriveis \}\);/);
   // Toque no card durante a espera: a resposta do modelo é descartada.
   assert.match(leitura, /if \(rascunhoAtualRef\.current !== action\) return;/);
   assert.match(leitura, /if \(!correcao\) \{\s*pelasRegras\(\);/);

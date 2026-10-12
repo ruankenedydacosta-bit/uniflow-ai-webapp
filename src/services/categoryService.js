@@ -279,7 +279,7 @@ export async function deleteCategory(workspaceId, categoryId) {
 
 /**
  * Ids das categorias que o espaço ocultou (tabela workspace_hidden_categories,
- * migration 065). Vale para categoria do espaço e para categoria padrão.
+ * migration 067). Vale para categoria do espaço e para categoria padrão.
  */
 export async function listarCategoriasOcultas(workspaceId) {
   if (!supabase) {

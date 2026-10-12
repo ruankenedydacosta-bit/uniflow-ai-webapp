@@ -209,7 +209,7 @@ test('formatarDiaCurto', () => {
   assert.equal(formatarDiaCurto('2026-10-05'), '5 out');
 });
 
-// #184: lembrete do vencimento, espelho de proxima_data_de_vencimento (migration 065).
+// #184: lembrete do vencimento, espelho de proxima_data_de_vencimento (migration 067).
 test('proximoVencimento: este mês se ainda não passou, senão o seguinte; dia 31 vira o último dia', () => {
   const hoje = new Date(2026, 9, 12);
   assert.equal(proximoVencimento({ due_day: 5 }, hoje), '2026-11-05');

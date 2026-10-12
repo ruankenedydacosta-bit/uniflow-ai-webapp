@@ -1,7 +1,7 @@
 // Edge Function: card-due-push-dispatch
 //
 // #184: worker server-side (invocado por pg_cron de hora em hora, das 9h às
-// 19h em America/Sao_Paulo, ver migration 065) que envia por Web Push o
+// 19h em America/Sao_Paulo, ver migration 067) que envia por Web Push o
 // lembrete do vencimento da fatura do cartão de crédito, 2 dias antes do
 // due_day. Mesmo padrão de goal-reminder-push-dispatch (063): tabela de
 // idempotência (card_due_push_dispatches) e segredo

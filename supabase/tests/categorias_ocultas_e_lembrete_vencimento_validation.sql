@@ -1,9 +1,9 @@
--- Validação da migration 065 (categorias ocultas por espaço e lembrete do
+-- Validação da migration 067 (categorias ocultas por espaço e lembrete do
 -- vencimento do cartão, #184). Roda com a migration já aplicada na mesma
 -- transação ou no banco. Tudo fica dentro de um DO que termina em exceção:
 -- nenhum dado sobra, nem com commit automático do cliente. Sucesso = a
 -- exceção final começa com 'OK_ROLLBACK'.
--- Uso: psql "$DB_URL" -f supabase/migrations/<065>.sql -f este arquivo
+-- Uso: psql "$DB_URL" -f supabase/migrations/<067>.sql -f este arquivo
 --      (ou cole os dois, nesta ordem, numa query só no SQL editor).
 
 do $teste$

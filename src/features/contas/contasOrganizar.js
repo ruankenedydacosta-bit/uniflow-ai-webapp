@@ -196,7 +196,7 @@ export function cicloDoCartao(cartao, hoje = new Date()) {
   return { inicio, fechamento, vencimento };
 }
 
-/** Dias antes do vencimento em que o lembrete do cartão é enviado (#184, migration 065). */
+/** Dias antes do vencimento em que o lembrete do cartão é enviado (#184, migration 067). */
 export const ANTECEDENCIA_DO_LEMBRETE_DIAS = 2;
 
 /**
