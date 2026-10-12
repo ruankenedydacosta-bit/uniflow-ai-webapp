@@ -18,7 +18,8 @@ Registrar, organizar e analisar movimentações financeiras (receitas, despesas,
 
 - Os lançamentos dos próximos 3 meses já entram como previstos. Todo dia, o app cria os seguintes, até a data final.
 - No mensal, o dia é contado a partir do primeiro lançamento. Um aluguel no dia 31 cai no último dia dos meses mais curtos e volta ao 31 no mês seguinte.
-- Ligue "Confirmar automaticamente na data" para débito automático. Sem isso, confirme cada lançamento quando ele acontecer.
+- Se a data do primeiro lançamento já passou, os lançamentos até hoje entram como realizados.
+- Ligue "Confirmar automaticamente na data" para débito automático. Sem isso, os lançamentos futuros esperam você confirmar.
 - Ao editar ou excluir um lançamento da série, escolha o alcance: "Somente este", "Este e os próximos" ou "Todos da série". Mudar o valor, a descrição, a conta ou a categoria em "Este e os próximos" também vale para os lançamentos que a série ainda vai criar. Excluir "Este e os próximos" ou "Todos" encerra a série.
 - Transferência e ajuste de saldo não têm recorrência.
 

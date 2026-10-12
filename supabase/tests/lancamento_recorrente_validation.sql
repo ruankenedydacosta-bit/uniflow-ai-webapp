@@ -71,7 +71,7 @@ begin
   begin
     perform pg_temp.como_222(u_member);
     select * into r from public.criar_serie_recorrente(
-      '77777777-7777-4777-8777-777777777222', 'expense', v_conta, c_saida, ' Aluguel ', 1500, 'monthly', 1, v_hoje, null, false
+      v_ws, '77777777-7777-4777-8777-777777777222', 'expense', v_conta, c_saida, ' Aluguel ', 1500, 'monthly', 1, v_hoje, null, false
     );
     execute 'reset role';
   end;
@@ -79,7 +79,7 @@ begin
   if r.idempotent_replay or r.occurrences <> 4 or r.pending_occurrences <> 3 then raise exception 'FALHOU 1: retorno %', r; end if;
   if exists (select 1 from public.transactions where recurring_series_id = v_serie
     and (description <> 'Aluguel' or amount <> 1500 or not is_recurring or recurrence_rule->>'frequency' <> 'monthly'
-      or created_by <> u_member or metadata ? 'auto_confirm')) then
+      or created_by <> u_member or metadata ? 'auto_confirm' or metadata->>'recurring_series_id' <> v_serie::text)) then
     raise exception 'FALHOU 1: campos errados';
   end if;
   if (select status from public.transactions where id = r.first_transaction_id) <> 'completed'
@@ -91,11 +91,42 @@ begin
   begin
     perform pg_temp.como_222(u_member);
     select * into r from public.criar_serie_recorrente(
-      '77777777-7777-4777-8777-777777777222', 'expense', v_conta, c_saida, 'Aluguel', 1500, 'monthly', 1, v_hoje, null, false
+      v_ws, '77777777-7777-4777-8777-777777777222', 'expense', v_conta, c_saida, 'Aluguel', 1500, 'monthly', 1, v_hoje, null, false
     );
     execute 'reset role';
   end;
   if not r.idempotent_replay or r.series_id <> v_serie or r.occurrences <> 4 then raise exception 'FALHOU 2: %', r; end if;
+  begin
+    perform pg_temp.como_222(u_member);
+    perform public.criar_serie_recorrente(
+      v_ws, '77777777-7777-4777-8777-777777777222', 'expense', v_conta, c_saida, 'Aluguel', 1700, 'monthly', 1, v_hoje, null, false
+    );
+    raise exception 'FALHOU 2: mesma chave com outro valor devolveu a série antiga';
+  exception when others then
+    if sqlerrm like 'FALHOU%' then raise; end if;
+    if sqlerrm <> 'financial_action_idempotency_conflict' then raise exception 'FALHOU 2b: %', sqlerrm; end if;
+  end;
+  -- Sem categoria, como o formulário permite; e o espaço vem do parâmetro,
+  -- não do perfil (o do u_outro aponta para o espaço dele).
+  update public.profiles set current_workspace_id = v_ws_outro where id = u_owner;
+  begin
+    perform pg_temp.como_222(u_owner);
+    select * into r from public.criar_serie_recorrente(v_ws, null, 'expense', null, null, 'Diarista', 200, 'weekly', 1, v_hoje, null, false);
+    execute 'reset role';
+  end;
+  update public.profiles set current_workspace_id = v_ws where id = u_owner;
+  if (select workspace_id from public.recurring_series where id = r.series_id) <> v_ws
+    or exists (select 1 from public.transactions where recurring_series_id = r.series_id and (category_id is not null or workspace_id <> v_ws)) then
+    raise exception 'FALHOU 2c: série sem categoria ou espaço errado';
+  end if;
+  begin
+    perform pg_temp.como_222(u_owner);
+    perform public.criar_serie_recorrente(v_ws_outro, null, 'expense', null, null, 'Invasão', 200, 'weekly', 1, v_hoje, null, false);
+    raise exception 'FALHOU 2d: criou em espaço alheio';
+  exception when others then
+    if sqlerrm like 'FALHOU%' then raise; end if;
+    if sqlerrm <> 'financial_action_workspace_forbidden' then raise exception 'FALHOU 2d: %', sqlerrm; end if;
+  end;
 
   -- 3. job em dia não gera nada; janela adiante gera mais 3.
   if public.estender_series_recorrentes() <> 0 then raise exception 'FALHOU 3: job gerou com a janela em dia'; end if;
@@ -105,7 +136,7 @@ begin
   begin
     perform pg_temp.como_222(u_owner);
     select * into r from public.criar_serie_recorrente(
-      null, 'income', null, c_entrada, 'Salário', 5000, 'monthly', 1, make_date(extract(year from v_hoje)::int - 1, 1, 31), make_date(extract(year from v_hoje)::int - 1, 3, 31), true
+      v_ws, null, 'income', null, c_entrada, 'Salário', 5000, 'monthly', 1, make_date(extract(year from v_hoje)::int - 1, 1, 31), make_date(extract(year from v_hoje)::int - 1, 3, 31), true
     );
     execute 'reset role';
   end;
@@ -123,7 +154,7 @@ begin
   begin
     perform pg_temp.como_222(u_owner);
     select * into r from public.criar_serie_recorrente(
-      null, 'expense', null, c_saida, 'Feira', 80, 'weekly', 2, v_hoje, (v_hoje + 28), true
+      v_ws, null, 'expense', null, c_saida, 'Feira', 80, 'weekly', 2, v_hoje, (v_hoje + 28), true
     );
     execute 'reset role';
   end;
@@ -137,14 +168,28 @@ begin
   select id, transaction_date into v_alvo, v_alvo_data from public.transactions where recurring_series_id = v_serie order by transaction_date offset 1 limit 1;
   begin
     perform pg_temp.como_222(u_member);
-    v_n := public.alterar_lancamentos_da_serie(v_alvo, 'forward', v_conta, c_saida, 'Aluguel novo', 1600);
+    v_n := public.alterar_lancamentos_da_serie(v_alvo, 'forward', v_conta, c_saida, 'Aluguel novo', 1600, true);
     execute 'reset role';
   end;
   if v_n <> 6 then raise exception 'FALHOU 6: alterou %', v_n; end if;
   if (select amount from public.transactions where recurring_series_id = v_serie order by transaction_date limit 1) <> 1500 then
     raise exception 'FALHOU 6: mexeu na anterior';
   end if;
-  if (select amount from public.recurring_series where id = v_serie) <> 1600 then raise exception 'FALHOU 6: série não mudou'; end if;
+  if (select amount <> 1600 or not auto_confirm from public.recurring_series where id = v_serie) then raise exception 'FALHOU 6: série não mudou'; end if;
+  if exists (select 1 from public.transactions where recurring_series_id = v_serie and transaction_date >= v_alvo_data
+    and status = 'pending' and not coalesce((metadata->>'auto_confirm')::boolean, false)) then
+    raise exception 'FALHOU 6: auto_confirm não chegou aos previstos';
+  end if;
+  -- Sem p_auto_confirm, a opção da série não muda.
+  begin
+    perform pg_temp.como_222(u_member);
+    perform public.alterar_lancamentos_da_serie(v_alvo, 'forward', v_conta, c_saida, 'Aluguel novo', 1600, null);
+    execute 'reset role';
+  end;
+  if not (select auto_confirm from public.recurring_series where id = v_serie) then raise exception 'FALHOU 6: nulo desligou a confirmação automática'; end if;
+  if exists (select 1 from public.transactions where recurring_series_id = v_serie and metadata->>'recurring_series_id' <> v_serie::text) then
+    raise exception 'FALHOU 6: metadata perdeu a série';
+  end if;
   perform public.gerar_ocorrencias_da_serie(v_serie, (v_hoje + interval '7 months')::date);
   if (select amount from public.transactions where recurring_series_id = v_serie order by transaction_date desc limit 1) <> 1600 then
     raise exception 'FALHOU 6: ocorrência nova veio com o valor antigo';
@@ -153,7 +198,7 @@ begin
   -- 7. alterar "todas" com categoria de outro tipo é recusado.
   begin
     perform pg_temp.como_222(u_member);
-    perform public.alterar_lancamentos_da_serie(v_alvo, 'all', v_conta, c_entrada, 'Aluguel', 1600);
+    perform public.alterar_lancamentos_da_serie(v_alvo, 'all', v_conta, c_entrada, 'Aluguel', 1600, false);
     raise exception 'FALHOU 7: aceitou categoria de entrada';
   exception when others then
     if sqlerrm like 'FALHOU%' then raise; end if;
@@ -167,7 +212,7 @@ begin
     raise exception 'FALHOU 8: viewer excluiu';
   exception when others then
     if sqlerrm like 'FALHOU%' then raise; end if;
-    if sqlerrm <> 'financial_action_workspace_forbidden' then raise exception 'FALHOU 8: %', sqlerrm; end if;
+    if sqlerrm <> 'recurring_series_not_found' then raise exception 'FALHOU 8: %', sqlerrm; end if;
   end;
   begin
     perform pg_temp.como_222(u_member);
@@ -244,7 +289,7 @@ begin
     begin
       perform pg_temp.como_222(case when r.nome = 'viewer' then u_viewer else u_owner end);
       perform public.criar_serie_recorrente(
-        null, 'expense', null,
+        v_ws, null, 'expense', null,
         case r.nome when 'categoria de entrada' then c_entrada when 'categoria de outro espaço' then c_saida_outro else c_saida end,
         'Academia', 120,
         case when r.nome = 'diária desde muito antes' then 'daily' else 'monthly' end,
@@ -264,7 +309,7 @@ begin
   -- 13. anon não executa; authenticated não chama a geração direto.
   begin
     execute 'set local role anon';
-    perform public.criar_serie_recorrente(null, 'expense', null, c_saida, 'Academia', 120, 'monthly', 1, v_hoje, null, false);
+    perform public.criar_serie_recorrente(v_ws, null, 'expense', null, c_saida, 'Academia', 120, 'monthly', 1, v_hoje, null, false);
     raise exception 'FALHOU 13: anon executou';
   exception when others then
     if sqlerrm like 'FALHOU%' then raise; end if;

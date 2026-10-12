@@ -186,28 +186,24 @@ export function useTransactions({
   );
 
   // Série recorrente (#222): mexe em vários lançamentos, inclusive fora da
-  // lista carregada, então a lista é recarregada depois.
+  // lista carregada. Quem chama recarrega a lista (onChanged do modal).
   const runSeriesMutation = useCallback(
-    async (mutationFn) => {
-      const result = await performMutation(
-        () => (!isSupabaseConfigured
-          ? {
-              data: null,
-              error: { code: 'SUPABASE_NOT_CONFIGURED', message: 'Lançamento recorrente não funciona no modo demonstração.' },
-              isConfigured: false,
-            }
-          : mutationFn()),
-        () => {},
-      );
-      if (!result.error) await refresh();
-      return result;
-    },
-    [performMutation, refresh],
+    (mutationFn) => performMutation(
+      () => (!isSupabaseConfigured
+        ? {
+            data: null,
+            error: { code: 'SUPABASE_NOT_CONFIGURED', message: 'Lançamento recorrente não funciona no modo demonstração.' },
+            isConfigured: false,
+          }
+        : mutationFn()),
+      () => {},
+    ),
+    [performMutation],
   );
 
   const createSeries = useCallback(
     (series, { origin = GA4_PRODUCT_ORIGINS.MANUAL } = {}) => runSeriesMutation(async () => {
-      const result = await createRecurringSeries(series);
+      const result = await createRecurringSeries(workspaceId, series);
       trackGa4ConfirmedTransactionCreation({
         confirmed: !result.error && Boolean(result.data?.series_id),
         transactionType: series.transaction_type,
@@ -215,7 +211,7 @@ export function useTransactions({
       });
       return result;
     }),
-    [runSeriesMutation],
+    [runSeriesMutation, workspaceId],
   );
 
   const saveSeriesTransactions = useCallback(

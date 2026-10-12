@@ -434,7 +434,10 @@ test('sem usuário autenticado, nunca tenta criar a notificação (guard if (use
 test('recorrente cria a série pela RPC, e não um lançamento só marcado', async () => {
   const modal = await source('./FinanceTransactionModal.jsx');
   const submit = modal.slice(modal.indexOf('async function handleSubmit(event)'), modal.indexOf('async function concludeSave(onDone)'));
-  assert.match(submit, /if \(!editingId && isRecurringSeriesForm\(form\)\) \{\s*const result = await transactionState\.createSeries\(buildRecurringSeriesPayload\(form\)\);/);
+  assert.match(submit, /if \(!editingId && !transactionState\.isDemoMode && isRecurringSeriesForm\(form\)\) \{/);
+  assert.match(submit, /transactionState\.createSeries\(\{\s*\.\.\.buildRecurringSeriesPayload\(form\),\s*clientOperationId: seriesOperationIdRef\.current,\s*\}\)/);
+  // A chave só é trocada depois de dar certo: o retry devolve a mesma série.
+  assert.match(submit, /seriesOperationIdRef\.current \?\?= globalThis\.crypto\.randomUUID\(\);[\s\S]*?if \(result\.error\) \{[\s\S]*?return;\s*\}\s*seriesOperationIdRef\.current = null;/);
   assert.doesNotMatch(modal, /nenhuma ocorrência futura é\s+criada/);
 });
 
@@ -449,9 +452,21 @@ test('ocorrência de série: "este e os próximos" e "todos" vão pela RPC; "som
 
 test('bloco de recorrência só aparece na criação e traz a confirmação automática da série', async () => {
   const modal = await source('./FinanceTransactionModal.jsx');
-  const start = modal.indexOf('{!editingId && form.is_recurring ? (');
+  const start = modal.indexOf('{!editingId && isRecurringSeriesForm(form) ? (');
   assert.ok(start > -1);
   const slice = modal.slice(start, modal.indexOf('{editingId && editingGroupId ? (', start));
   assert.match(slice, /Confirmar automaticamente na data/);
   assert.match(slice, /próximos 3 meses já entram como previstos/);
+});
+
+test('ocorrência de série é reconhecida pelo id da série no metadata, não pelo rótulo antigo is_recurring', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  assert.match(modal, /const editingIsSeries = !editingGroupId && Boolean\(editingTransaction\?\.metadata\?\.recurring_series_id\);/);
+  assert.match(modal, /pendingDeleteTransaction\?\.metadata\?\.recurring_series_id\) pendingDeleteGroupKind = 'series'/);
+  assert.doesNotMatch(modal, /is_recurring === true/);
+});
+
+test('alcance da série só leva a confirmação automática quando a opção está na tela', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  assert.match(modal, /auto_confirm: isPlanned \? Boolean\(form\.auto_confirm\) : null/);
 });

@@ -326,6 +326,7 @@ function FinanceTransactionModal({
   // Salvou e a folha está comemorando e descendo: nada mais é aceito.
   const [concluindo, setConcluindo] = useState(false);
   const saveButtonRef = useRef(null);
+  const seriesOperationIdRef = useRef(null);
   const categoriesById = useMemo(
     () => new Map(categoryState.categories.map((category) => [category.id, category])),
     [categoryState.categories],
@@ -410,15 +411,17 @@ function FinanceTransactionModal({
     ? transactionState.transactions.find((t) => t.id === editingId)
     : null;
   const editingGroupId = editingTransaction?.metadata?.installment_group_id ?? null;
-  // Ocorrência de lançamento recorrente (#222): o alcance vai pela série.
-  const editingIsSeries = !editingGroupId && editingTransaction?.is_recurring === true;
+  // Ocorrência de lançamento recorrente (#222): o alcance vai pela série. O
+  // metadata traz o id da série; is_recurring sozinho também marca os
+  // lançamentos antigos, que eram só um rótulo.
+  const editingIsSeries = !editingGroupId && Boolean(editingTransaction?.metadata?.recurring_series_id);
   const pendingDeleteTransaction = pendingDeleteId
     ? transactionState.transactions.find((transaction) => transaction.id === pendingDeleteId)
       ?? pendingDeleteSnapshot
     : null;
   let pendingDeleteGroupKind = null;
   if (pendingDeleteTransaction?.metadata?.installment_group_id) pendingDeleteGroupKind = 'installments';
-  else if (pendingDeleteTransaction?.is_recurring === true) pendingDeleteGroupKind = 'series';
+  else if (pendingDeleteTransaction?.metadata?.recurring_series_id) pendingDeleteGroupKind = 'series';
   const isDeleteConfirmOpen = Boolean(pendingDeleteId && pendingDeleteTransaction);
 
   function resetForm() {
@@ -525,7 +528,8 @@ function FinanceTransactionModal({
     // a RPC muda os lançamentos e o modelo da série. Data e status ficam,
     // são de cada ocorrência.
     if (editingId && editingIsSeries && editScope !== 'only') {
-      const payload = buildTransactionMutationPayload(form);
+      // A confirmação automática só vai quando a opção está na tela (previsto).
+      const payload = { ...buildTransactionMutationPayload(form), auto_confirm: isPlanned ? Boolean(form.auto_confirm) : null };
       const result = await transactionState.saveSeriesTransactions(editingId, editScope, payload);
       if (result.error) {
         setBatchError(result.error);
@@ -537,14 +541,20 @@ function FinanceTransactionModal({
 
     // Novo lançamento recorrente: a série nasce com os previstos dos próximos
     // 3 meses, e o job diário cria os seguintes.
-    if (!editingId && isRecurringSeriesForm(form)) {
-      const result = await transactionState.createSeries(buildRecurringSeriesPayload(form));
+    // A chave fica a mesma até dar certo: repetir depois de uma resposta
+    // perdida devolve a série já criada, em vez de criar outra.
+    if (!editingId && !transactionState.isDemoMode && isRecurringSeriesForm(form)) {
+      seriesOperationIdRef.current ??= globalThis.crypto.randomUUID();
+      const result = await transactionState.createSeries({
+        ...buildRecurringSeriesPayload(form),
+        clientOperationId: seriesOperationIdRef.current,
+      });
       if (result.error) {
         setBatchError(result.error);
         return;
       }
-      const first = transactionState.transactions.find((item) => item.id === result.data?.first_transaction_id)
-        ?? { id: result.data?.first_transaction_id, ...buildTransactionMutationPayload(form) };
+      seriesOperationIdRef.current = null;
+      const first = { ...buildTransactionMutationPayload(form), id: result.data?.first_transaction_id };
       await concludeSave(onCreated && (() => onCreated(first)));
       return;
     }
@@ -626,7 +636,7 @@ function FinanceTransactionModal({
     if (transactionState.isMutating) return;
     const transaction = transactionState.transactions.find((t) => t.id === transactionId);
     if (!transaction || !canDeleteTransaction(transaction)) return;
-    if (transaction.is_recurring === true && !transaction.metadata?.installment_group_id && deleteScope !== 'only') {
+    if (transaction.metadata?.recurring_series_id && !transaction.metadata?.installment_group_id && deleteScope !== 'only') {
       const result = await transactionState.removeSeriesTransactions(transactionId, deleteScope);
       if (result.error) {
         setBatchError(result.error);
@@ -859,7 +869,7 @@ function FinanceTransactionModal({
             required
             fullWidth
           />
-          {isPlanned && !editingGroupId && !(!editingId && form.is_recurring) ? (
+          {isPlanned && !editingGroupId && !(!editingId && isRecurringSeriesForm(form)) ? (
             <>
               <div className={styles.plannedNotice} role="status">
                 <strong>Fica como previsto</strong>
@@ -931,7 +941,7 @@ function FinanceTransactionModal({
               <span className="uf-text-primary">Lançamento recorrente</span>
             </label>
           ) : null}
-          {!editingId && form.is_recurring ? (
+          {!editingId && isRecurringSeriesForm(form) ? (
             <div className="uf-flex uf-flex-column uf-gap-sm">
               <SelectField
                 id="finance-transaction-recurrence-frequency"
@@ -971,7 +981,7 @@ function FinanceTransactionModal({
               <div className={styles.autoConfirmRow}>
                 <div className={styles.autoConfirmText}>
                   <span>Confirmar automaticamente na data</span>
-                  <small>Use para débito automático. Sem isso, confirme cada lançamento quando ele acontecer.</small>
+                  <small>Use para débito automático. Sem isso, os lançamentos futuros esperam você confirmar.</small>
                 </div>
                 <Toggle
                   label="Confirmar automaticamente na data"

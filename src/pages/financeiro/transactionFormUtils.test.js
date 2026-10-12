@@ -140,3 +140,20 @@ test('série leva a regra, a primeira data e a confirmação automática do form
     notes: null,
   });
 });
+
+
+test('trocar para transferência depois de ligar a recorrência não grava a marca', () => {
+  const payload = buildTransactionMutationPayload({
+    transaction_type: 'transfer',
+    account_id: 'a',
+    destination_account_id: 'b',
+    amount: '100',
+    transaction_date: '2026-10-12',
+    is_recurring: true,
+    recurrence_frequency: 'monthly',
+    recurrence_interval: 1,
+    recurrence_end_date: '',
+  }, '2026-10-12');
+  assert.equal(payload.is_recurring, false);
+  assert.equal(payload.recurrence_rule, null);
+});

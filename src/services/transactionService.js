@@ -500,6 +500,7 @@ const SERIES_ERROR_MESSAGES = Object.freeze({
   financial_action_workspace_forbidden: 'Você não tem permissão para mudar esta série.',
   financial_action_amount_invalid: 'O valor precisa ser maior que zero.',
   financial_action_description_invalid: 'A descrição precisa ter de 2 a 160 caracteres.',
+  financial_action_idempotency_conflict: 'Esse lançamento recorrente já foi salvo com outros dados. Feche e confira a lista.',
 });
 
 function createSeriesResult(data, error) {
@@ -508,10 +509,12 @@ function createSeriesResult(data, error) {
   return token ? createValidationResult(SERIES_ERROR_MESSAGES[token]) : createResult(null, error);
 }
 
-export async function createRecurringSeries(series = {}) {
+export async function createRecurringSeries(workspaceId, series = {}) {
   if (!supabase) return createUnavailableResult(null);
+  if (!isValidUuid(workspaceId)) return createValidationResult('Workspace invalido para criar a transacao.');
   const { data, error } = await supabase
     .rpc('criar_serie_recorrente', {
+      p_workspace_id: workspaceId,
       p_client_operation_id: series.clientOperationId ?? null,
       p_transaction_type: series.transaction_type,
       p_account_id: series.account_id || null,
@@ -540,6 +543,8 @@ export async function updateSeriesTransactions(transactionId, scope, changes = {
     p_category_id: changes.category_id || null,
     p_description: changes.description,
     p_amount: Number(changes.amount),
+    // null: a opção não estava na tela (lançamento realizado) e não muda.
+    p_auto_confirm: typeof changes.auto_confirm === 'boolean' ? changes.auto_confirm : null,
     p_payment_method: changes.payment_method ?? null,
     p_notes: changes.notes ?? null,
   });

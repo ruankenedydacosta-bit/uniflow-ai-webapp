@@ -116,3 +116,11 @@ test('recriar: só os campos que o createTransaction aceita, sem id, datas de si
     metadata: { origem: 'voz' },
   });
 });
+
+test('Desfazer recria o lançamento fora da série recorrente (#222)', () => {
+  const campos = camposParaRecriar({
+    transaction_type: 'expense', amount: 1500, description: 'Aluguel', transaction_date: '2026-11-05',
+    is_recurring: true, metadata: { recurring_series_id: 'serie-1', auto_confirm: true },
+  });
+  assert.deepEqual(campos.metadata, { auto_confirm: true });
+});

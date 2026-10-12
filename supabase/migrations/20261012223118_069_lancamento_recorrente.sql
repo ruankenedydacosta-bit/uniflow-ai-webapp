@@ -8,7 +8,10 @@ begin;
 -- previstos ('pending') numa janela móvel de 3 meses à frente, e o job
 -- diário estende a janela. Ocorrência i (a partir de 0) cai em
 -- start_date + i * intervalo, sempre contada da primeira: no mensal, 31/01
--- vira 28/02 e volta a 31/03. A geração anda pelo contador
+-- vira 28/02 e volta a 31/03. O metadata da ocorrência repete o id da série
+-- (recurring_series_id): é por ele que a tela sabe que o lançamento é de uma
+-- série, sem depender da coluna nova no select do app. As RPCs só confiam na
+-- coluna. A geração anda pelo contador
 -- occurrences_generated, então excluir uma ocorrência não faz o job
 -- recriá-la.
 --
@@ -21,7 +24,7 @@ create table if not exists public.recurring_series (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references public.workspaces (id) on delete cascade,
   account_id uuid references public.accounts (id) on delete set null,
-  category_id uuid not null references public.categories (id),
+  category_id uuid references public.categories (id) on delete set null,
   transaction_type text not null check (transaction_type in ('income', 'expense')),
   description text not null check (pg_catalog.length(pg_catalog.btrim(description)) between 2 and 160),
   amount numeric(14, 2) not null check (amount > 0),
@@ -35,7 +38,7 @@ create table if not exists public.recurring_series (
   occurrences_generated integer not null default 0 check (occurrences_generated >= 0),
   ended_at timestamptz,
   client_operation_id uuid,
-  created_by uuid not null default auth.uid() references auth.users (id),
+  created_by uuid default auth.uid() references auth.users (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint recurring_series_end_after_start check (end_date is null or end_date >= start_date)
@@ -165,11 +168,12 @@ begin
       v_rule,
       v_series.id,
       'manual',
-      case
-        when v_series.auto_confirm and v_date > v_today
-        then pg_catalog.jsonb_build_object('auto_confirm', true)
-        else '{}'::jsonb
-      end,
+      pg_catalog.jsonb_build_object('recurring_series_id', v_series.id)
+        || case
+          when v_series.auto_confirm and v_date > v_today
+          then pg_catalog.jsonb_build_object('auto_confirm', true)
+          else '{}'::jsonb
+        end,
       v_series.created_by
     );
 
@@ -196,39 +200,36 @@ $function$;
 revoke all on function public.data_da_ocorrencia(date, text, integer, integer) from public, anon, authenticated;
 revoke all on function public.gerar_ocorrencias_da_serie(uuid, date) from public, anon, authenticated;
 
--- Espaço atual de quem chama, com papel que pode lançar.
-create or replace function public.espaco_para_lancar()
+-- Espaço em que a tela está, conferido contra o papel de quem chama. Vem da
+-- tela, e não do perfil: com duas abas em espaços diferentes, a série cairia
+-- no espaço da outra aba.
+create or replace function public.espaco_para_lancar(p_workspace_id uuid)
 returns uuid
 language plpgsql
 stable
 security definer
 set search_path to ''
 as $function$
-declare
-  v_user_id uuid := (select auth.uid());
-  v_workspace_id uuid;
 begin
-  if v_user_id is null then
+  if (select auth.uid()) is null then
     raise exception using errcode = 'P0001', message = 'financial_action_session_required';
   end if;
-  select profile.current_workspace_id into v_workspace_id
-  from public.profiles as profile
-  where profile.id = v_user_id;
-  if v_workspace_id is null then
+  if p_workspace_id is null then
     raise exception using errcode = 'P0001', message = 'financial_action_workspace_required';
   end if;
-  if not public.is_workspace_member(v_workspace_id, array['owner', 'admin', 'member']::text[]) then
+  if not public.is_workspace_member(p_workspace_id, array['owner', 'admin', 'member']::text[]) then
     raise exception using errcode = 'P0001', message = 'financial_action_workspace_forbidden';
   end if;
-  return v_workspace_id;
+  return p_workspace_id;
 end;
 $function$;
 
-revoke all on function public.espaco_para_lancar() from public, anon, authenticated;
+revoke all on function public.espaco_para_lancar(uuid) from public, anon, authenticated;
 
 -- Cria a série e as ocorrências até 3 meses à frente. Usada pela tela e
 -- pela Uni; p_client_operation_id torna o retry da mesma confirmação seguro.
 create or replace function public.criar_serie_recorrente(
+  p_workspace_id uuid,
   p_client_operation_id uuid,
   p_transaction_type text,
   p_account_id uuid,
@@ -249,7 +250,7 @@ security definer
 set search_path to ''
 as $function$
 declare
-  v_workspace_id uuid := public.espaco_para_lancar();
+  v_workspace_id uuid := public.espaco_para_lancar(p_workspace_id);
   v_user_id uuid := (select auth.uid());
   v_today date := (pg_catalog.now() at time zone 'America/Sao_Paulo')::date;
   v_series_id uuid;
@@ -282,6 +283,20 @@ begin
     where series.workspace_id = v_workspace_id
       and series.client_operation_id = p_client_operation_id;
     if found then
+      -- A mesma chave com outro pedido não devolve a série antiga como se
+      -- fosse o pedido novo.
+      if not exists (
+        select 1 from public.recurring_series as series
+        where series.id = v_series_id
+          and series.transaction_type = p_transaction_type
+          and series.amount = p_amount
+          and series.description = v_description
+          and series.frequency = p_frequency
+          and series.interval_count = p_interval
+          and series.start_date = p_start_date
+      ) then
+        raise exception using errcode = 'P0001', message = 'financial_action_idempotency_conflict';
+      end if;
       return query
       select
         v_series_id,
@@ -297,7 +312,7 @@ begin
     end if;
   end if;
 
-  if not exists (
+  if p_category_id is not null and not exists (
     select 1
     from public.categories as category
     where category.id = p_category_id
@@ -353,15 +368,13 @@ begin
 end;
 $function$;
 
--- Série do lançamento, conferida contra o espaço de quem chama.
+-- Série do lançamento, para quem pode lançar no espaço dele.
 create or replace function public.serie_do_lancamento(p_transaction_id uuid)
 returns table(series_id uuid, transaction_date date, workspace_id uuid)
 language plpgsql
 security definer
 set search_path to ''
 as $function$
-declare
-  v_workspace_id uuid := public.espaco_para_lancar();
 begin
   -- A série precisa ser do mesmo espaço: recurring_series_id apontando para
   -- a série de outro espaço não pode abrir caminho para mexer nela.
@@ -372,7 +385,7 @@ begin
     on series.id = transaction.recurring_series_id
     and series.workspace_id = transaction.workspace_id
   where transaction.id = p_transaction_id
-    and transaction.workspace_id = v_workspace_id;
+    and public.is_workspace_member(transaction.workspace_id, array['owner', 'admin', 'member']::text[]);
   if not found then
     raise exception using errcode = 'P0001', message = 'recurring_series_not_found';
   end if;
@@ -383,7 +396,8 @@ revoke all on function public.serie_do_lancamento(uuid) from public, anon, authe
 
 -- "Esta e as próximas" ou "todas": muda os lançamentos do alcance e o modelo
 -- da série, então as ocorrências que o job criar depois já vêm certas. Data
--- e status ficam: são de cada ocorrência.
+-- e status ficam: são de cada ocorrência. A confirmação automática muda nos
+-- previstos do alcance e na série; com p_auto_confirm nulo, fica como está.
 create or replace function public.alterar_lancamentos_da_serie(
   p_transaction_id uuid,
   p_scope text,
@@ -391,6 +405,7 @@ create or replace function public.alterar_lancamentos_da_serie(
   p_category_id uuid,
   p_description text,
   p_amount numeric,
+  p_auto_confirm boolean,
   p_payment_method text default null,
   p_notes text default null
 )
@@ -421,7 +436,7 @@ begin
   if v_description is null or pg_catalog.length(v_description) not between 2 and 160 then
     raise exception using errcode = 'P0001', message = 'financial_action_description_invalid';
   end if;
-  if not exists (
+  if p_category_id is not null and not exists (
     select 1 from public.categories as category
     where category.id = p_category_id
       and category.is_active = true
@@ -443,7 +458,13 @@ begin
       description = v_description,
       amount = p_amount,
       payment_method = nullif(pg_catalog.btrim(p_payment_method), ''),
-      notes = nullif(pg_catalog.btrim(p_notes), '')
+      notes = nullif(pg_catalog.btrim(p_notes), ''),
+      -- Confirmação automática só vale para previsto; nula, não muda.
+      metadata = case
+        when p_auto_confirm is null or transaction.status <> 'pending' then transaction.metadata
+        when p_auto_confirm then coalesce(transaction.metadata, '{}'::jsonb) || pg_catalog.jsonb_build_object('auto_confirm', true)
+        else coalesce(transaction.metadata, '{}'::jsonb) - 'auto_confirm'
+      end
   where transaction.recurring_series_id = v_target.series_id
     and transaction.workspace_id = v_target.workspace_id
     and (p_scope = 'all' or transaction.transaction_date >= v_target.transaction_date);
@@ -455,7 +476,8 @@ begin
       description = v_description,
       amount = p_amount,
       payment_method = nullif(pg_catalog.btrim(p_payment_method), ''),
-      notes = nullif(pg_catalog.btrim(p_notes), '')
+      notes = nullif(pg_catalog.btrim(p_notes), ''),
+      auto_confirm = coalesce(p_auto_confirm, series.auto_confirm)
   where series.id = v_target.series_id;
 
   return v_count;
@@ -536,10 +558,10 @@ begin
 end;
 $function$;
 
-revoke all on function public.criar_serie_recorrente(uuid, text, uuid, uuid, text, numeric, text, integer, date, date, boolean, text, text) from public, anon;
-grant execute on function public.criar_serie_recorrente(uuid, text, uuid, uuid, text, numeric, text, integer, date, date, boolean, text, text) to authenticated;
-revoke all on function public.alterar_lancamentos_da_serie(uuid, text, uuid, uuid, text, numeric, text, text) from public, anon;
-grant execute on function public.alterar_lancamentos_da_serie(uuid, text, uuid, uuid, text, numeric, text, text) to authenticated;
+revoke all on function public.criar_serie_recorrente(uuid, uuid, text, uuid, uuid, text, numeric, text, integer, date, date, boolean, text, text) from public, anon;
+grant execute on function public.criar_serie_recorrente(uuid, uuid, text, uuid, uuid, text, numeric, text, integer, date, date, boolean, text, text) to authenticated;
+revoke all on function public.alterar_lancamentos_da_serie(uuid, text, uuid, uuid, text, numeric, boolean, text, text) from public, anon;
+grant execute on function public.alterar_lancamentos_da_serie(uuid, text, uuid, uuid, text, numeric, boolean, text, text) to authenticated;
 revoke all on function public.excluir_lancamentos_da_serie(uuid, text) from public, anon;
 grant execute on function public.excluir_lancamentos_da_serie(uuid, text) to authenticated;
 revoke all on function public.estender_series_recorrentes() from public, anon, authenticated;

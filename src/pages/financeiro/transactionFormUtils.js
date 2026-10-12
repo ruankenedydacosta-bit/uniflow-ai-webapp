@@ -145,7 +145,9 @@ export function buildTransactionMutationPayload(form, today) {
   const metadata = resolveTransactionMetadata(form, payload.status);
   if (metadata !== undefined) payload.metadata = metadata;
 
-  if (form.is_recurring) {
+  // Transferência e ajuste não têm recorrência: a marca não fica pendurada
+  // se o tipo mudou depois de ligar "Lançamento recorrente".
+  if (form.is_recurring && (form.transaction_type === 'income' || form.transaction_type === 'expense')) {
     const rule = buildRecurrenceRule({
       frequency: form.recurrence_frequency,
       interval: form.recurrence_interval,
