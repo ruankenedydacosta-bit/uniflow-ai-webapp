@@ -40,6 +40,7 @@ import {
   transactionNoticeDuration,
 } from './simplifiedRecordsData.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import PlannedDetailModal from './PlannedDetailModal.jsx';
 import styles from './simplifiedRecords.module.css';
 
 const PAGE_SIZE = 20;
@@ -571,6 +572,7 @@ function TransactionList({
   onDelete,
   onEdit,
   onConfirmPlanned,
+  onOpenPlanned,
   onShowAll,
   plannedTransactions = [],
   showAllAction,
@@ -627,7 +629,7 @@ function TransactionList({
         onCancelDelete={() => setConfirmDeleteId(null)}
         onClose={closeRow}
         onConfirmDelete={() => handleConfirmDelete(transaction)}
-        onEdit={(item) => { closeRow(); onEdit(item); }}
+        onEdit={(item) => { closeRow(); if (planned && onOpenPlanned) onOpenPlanned(item); else onEdit(item); }}
         onOpen={() => setOpenRowId(transaction.id)}
         onRequestDelete={() => handleRequestDelete(transaction)}
         onConfirmPlanned={onConfirmPlanned}
@@ -747,6 +749,8 @@ function SimplifiedRecordsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
+  const [plannedDetail, setPlannedDetail] = useState(null);
+  const [plannedError, setPlannedError] = useState(null);
   const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [transactionSuccessNotice, setTransactionSuccessNotice] = useState(null);
   const transactionNoticeTimerRef = useRef(null);
@@ -982,16 +986,64 @@ function SimplifiedRecordsPage() {
 
   // Confirmar grava como realizado com a data de hoje.
   async function handleConfirmPlanned(transaction) {
-    if (transactionState.isMutating || !canManage) return;
+    if (transactionState.isMutating || !canManage) return false;
+    setPlannedError(null);
     const result = await transactionState.saveTransaction(
       { status: 'completed', transaction_date: toDateKey() },
       transaction.id,
     );
-    if (result.error) return;
+    if (result.error) {
+      setPlannedError('Não foi possível confirmar. Tente novamente.');
+      return false;
+    }
     await refresh();
     showTransactionNotice(
       transaction.transaction_type === 'income' ? 'Entrada recebida.' : 'Pagamento confirmado.',
     );
+    return true;
+  }
+
+  function openPlannedDetail(transaction) {
+    setPlannedError(null);
+    setPlannedDetail(transaction);
+  }
+
+  async function handlePlannedFromDetail(action) {
+    if (!(await action())) return;
+    setPlannedDetail(null);
+  }
+
+  async function handleChangePlannedDate(transaction, transactionDate) {
+    if (transactionState.isMutating || !canManage) return false;
+    setPlannedError(null);
+    const result = await transactionState.saveTransaction({ transaction_date: transactionDate }, transaction.id);
+    if (result.error) {
+      setPlannedError('Não foi possível mudar a data. Tente novamente.');
+      return false;
+    }
+    await refresh();
+    showTransactionNotice('Data atualizada.');
+    return true;
+  }
+
+  async function handleDeletePlanned(transaction) {
+    if (transactionState.isMutating || !canDeleteTransaction(transaction)) return false;
+    setPlannedError(null);
+    // Parcela precisa do escopo (só esta, próximas, todas), que só o
+    // formulário completo oferece.
+    if (transaction.metadata?.installment_group_id) {
+      setPlannedDetail(null);
+      setTransactionDialog({ type: transaction.transaction_type, transactionId: transaction.id });
+      return false;
+    }
+    const result = await transactionState.removeTransaction(transaction.id);
+    if (result.error) {
+      setPlannedError('Não foi possível excluir. Tente novamente.');
+      return false;
+    }
+    await refresh();
+    showTransactionNotice('Previsto excluído.');
+    return true;
   }
 
   function showTransactionNotice(message) {
@@ -1170,6 +1222,7 @@ function SimplifiedRecordsPage() {
                     onDelete={handleQuickDelete}
                     canDeleteTransaction={canDeleteTransaction}
                     onConfirmPlanned={handleConfirmPlanned}
+                    onOpenPlanned={openPlannedDetail}
                     onShowAll={() => setActiveTab('history')}
                     plannedTransactions={summaryPlanned}
                     showAllAction
@@ -1221,6 +1274,7 @@ function SimplifiedRecordsPage() {
                     onDelete={handleQuickDelete}
                     canDeleteTransaction={canDeleteTransaction}
                     showAllAction={false}
+                    onOpenPlanned={openPlannedDetail}
                     plannedTransactions={filteredPlanned}
                     transactions={filteredTransactions}
                     visibleCount={visibleCount}
@@ -1255,6 +1309,35 @@ function SimplifiedRecordsPage() {
           onSave={(amount) => budgetState.saveBudget(filteredBudgetCategory.id, amount)}
           onRemove={() => budgetState.removeBudget(filteredBudgetCategory.id)}
           onClose={() => setBudgetModalOpen(false)}
+        />
+      ) : null}
+
+      {plannedDetail ? (
+        <PlannedDetailModal
+          key={plannedDetail.id}
+          open
+          transaction={plannedDetail}
+          accountName={accountState.accounts.find((account) => account.id === plannedDetail.account_id)?.name}
+          categoryName={categoryState.categories.find((category) => category.id === plannedDetail.category_id)?.name
+            ?? (plannedDetail.transaction_type === 'transfer' ? 'Transferência' : 'Outros')}
+          icon={(
+            <CategoryIcon category={{
+              name: categoryState.categories.find((category) => category.id === plannedDetail.category_id)?.name,
+              category_type: plannedDetail.transaction_type,
+              icon: categoryState.categories.find((category) => category.id === plannedDetail.category_id)?.icon,
+            }}
+            />
+          )}
+          busy={transactionState.isMutating}
+          error={plannedError}
+          onClose={() => setPlannedDetail(null)}
+          onConfirm={() => void handlePlannedFromDetail(() => handleConfirmPlanned(plannedDetail))}
+          onChangeDate={(date) => void handlePlannedFromDetail(() => handleChangePlannedDate(plannedDetail, date))}
+          onDelete={() => void handlePlannedFromDetail(() => handleDeletePlanned(plannedDetail))}
+          onEdit={() => {
+            setTransactionDialog({ type: plannedDetail.transaction_type, transactionId: plannedDetail.id });
+            setPlannedDetail(null);
+          }}
         />
       ) : null}
 

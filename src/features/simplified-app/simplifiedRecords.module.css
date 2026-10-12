@@ -464,6 +464,9 @@
 }
 
 .summaryPlanned {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--uf-app-text-3);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -472,10 +475,12 @@
 .plannedConfirm {
   min-height: 36px;
   padding: 0 14px;
-  border: 0;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--uf-app-brand-blue-text);
   border-radius: var(--uf-radius-12);
-  background: var(--uf-app-brand-blue);
-  color: var(--uf-app-on-accent);
+  background: transparent;
+  color: var(--uf-app-brand-blue-text);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
