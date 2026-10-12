@@ -11,7 +11,7 @@ import GoalMilestoneCelebration from '../features/goals/components/GoalMilestone
 import { AnelDeProgresso } from '../features/goals/components/GoalListCard';
 import { mensagemDoErroAoExcluir, MOVIMENTOS } from '../features/goals/aporteDaMeta.js';
 import { calcProgress } from '../features/goals/goalCalc.js';
-import { celebracaoDoMarco, marcoCruzado } from '../features/goals/marcoDaMeta.js';
+import { celebracaoDoMarco, maiorValorJaGuardado, marcoCruzado } from '../features/goals/marcoDaMeta.js';
 import { listContributions } from '../features/goals/goalService';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../services/financialDataEvents.js';
 import { dataDoAporte, numerosDaMeta, precisaDeAjuste, previsaoDaUni } from '../features/goals/detalheDaMeta.js';
@@ -146,11 +146,13 @@ export default function MetaDetalhePage() {
     const resultado = await addGoalContribution(meta.id, values);
     if (resultado?.error) return resultado;
     setMovimento(null);
-    // Aporte que passa de 50% ou de 100% abre a celebração (#147).
+    // Aporte que passa de 50% ou de 100% pela primeira vez abre a
+    // celebração (#147). Sem a lista de aportes, vale o valor de antes.
     const depois = resultado?.data?.meta
       ? { ...meta, ...resultado.data.meta }
       : { ...meta, current_amount: Number(meta.current_amount || 0) + Number(values.amount) };
-    const marco = marcoCruzado({ antes: Number(meta.current_amount || 0), depois: depois.current_amount, alvo: meta.target_amount });
+    const antes = carregandoAportes || erroDosAportes ? Number(meta.current_amount || 0) : maiorValorJaGuardado(meta, aportes);
+    const marco = marcoCruzado({ antes, depois: depois.current_amount, alvo: meta.target_amount });
     if (marco) setCelebracao(celebracaoDoMarco(depois, marco));
     // A transferência lançada junto muda saldos e lista do Financeiro; o
     // aviso também recarrega os aportes desta tela.

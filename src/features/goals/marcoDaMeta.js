@@ -8,19 +8,42 @@ import { numerosDaMeta } from './detalheDaMeta.js';
 export const MARCOS_DA_META = Object.freeze([50, 100]);
 
 // Maior marco que o movimento cruzou: antes abaixo dele, depois nele ou
-// acima. Compara os valores em reais, e não o percentual arredondado, para
-// 49,6% não contar como 50%. Retirada não celebra, e reabrir a meta já
-// acima do marco também não, porque nada cruzou.
+// acima. Compara em centavos, e não pelo percentual arredondado, para 49,6%
+// não contar como 50% e a soma em ponto flutuante não perder o alvo exato.
+// Retirada não celebra. `antes` é o maior valor que a meta já teve (ver
+// maiorValorJaGuardado): voltar a um marco depois de uma retirada não
+// repete a festa.
 export function marcoCruzado({ antes, depois, alvo }) {
-  const de = Number(antes);
-  const para = Number(depois);
+  const de = Math.round(Number(antes) * 100);
+  const para = Math.round(Number(depois) * 100);
   const total = Number(alvo);
   if (!Number.isFinite(de) || !Number.isFinite(para) || !(total > 0) || para <= de) return null;
   const cruzados = MARCOS_DA_META.filter((marco) => {
-    const limite = (total * marco) / 100;
+    const limite = Math.round(total * marco);
     return de < limite && para >= limite;
   });
   return cruzados.length ? cruzados[cruzados.length - 1] : null;
+}
+
+// Maior valor guardado que a meta já teve, refazendo os aportes em ordem.
+// O que não veio de aporte (valor inicial, edição do valor guardado) entra
+// como ponto de partida. `aportes` vem do listContributions, do mais
+// recente para o mais antigo.
+export function maiorValorJaGuardado(meta, aportes = []) {
+  const atual = Number(meta.current_amount || 0);
+  const centavos = aportes.map((aporte) => Math.round(Number(aporte.amount || 0) * 100)).reverse();
+  const somaDosAportes = centavos.reduce((soma, valor) => soma + valor, 0);
+  let acumulado = Math.round(atual * 100) - somaDosAportes;
+  let maior = acumulado;
+  for (const valor of centavos) {
+    acumulado += valor;
+    maior = Math.max(maior, acumulado);
+  }
+  return maior / 100;
+}
+
+export function tomDoMarco(marco) {
+  return marco === 100 ? 'verde' : 'violeta';
 }
 
 // Textos da tela de celebração. `meta` já vem com o valor guardado depois

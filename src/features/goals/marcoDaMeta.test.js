@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { celebracaoDoMarco, marcoCruzado } from './marcoDaMeta.js';
+import { celebracaoDoMarco, maiorValorJaGuardado, marcoCruzado } from './marcoDaMeta.js';
 
 // formatCurrency separa "R$" do número com espaço não separável.
 function semEspacoFixo(texto) {
@@ -31,6 +31,11 @@ test('marcoCruzado não celebra quando nenhum marco foi cruzado', () => {
 test('marcoCruzado usa o valor em reais, não o percentual arredondado', () => {
   // 49,6% arredonda para 50%, mas ainda não é a metade.
   assert.equal(marcoCruzado({ antes: 1000, depois: 1984, alvo: 4000 }), null);
+});
+
+test('marcoCruzado compara em centavos e não perde o alvo exato', () => {
+  // 0,7 + 0,1 dá 0,7999999999999999 em ponto flutuante.
+  assert.equal(marcoCruzado({ antes: 0.7, depois: 0.7 + 0.1, alvo: 0.8 }), 100);
 });
 
 test('marcoCruzado não celebra retirada', () => {
@@ -65,4 +70,25 @@ test('celebracaoDoMarco de 100% leva a pessoa a concluir a meta', () => {
     semEspacoFixo(celebracao.texto),
     'Você guardou R$ 4.000,00 para Viagem. Toque em Concluir meta para movê-la para Concluídas.',
   );
+});
+
+test('maiorValorJaGuardado refaz os aportes do mais antigo ao mais recente', () => {
+  const meta = { current_amount: 1990 };
+  // Do mais recente para o mais antigo: retirada de 10 depois de chegar a 2.000.
+  const aportes = [{ amount: -10 }, { amount: 800 }, { amount: 1200 }];
+  assert.equal(maiorValorJaGuardado(meta, aportes), 2000);
+});
+
+test('maiorValorJaGuardado conta o valor que não veio de aporte', () => {
+  // A meta nasceu com 500 guardados e recebeu um aporte de 300.
+  assert.equal(maiorValorJaGuardado({ current_amount: 800 }, [{ amount: 300 }]), 800);
+  assert.equal(maiorValorJaGuardado({ current_amount: 500 }, []), 500);
+});
+
+test('voltar ao marco depois de uma retirada não celebra de novo', () => {
+  const meta = { current_amount: 1990 };
+  const aportes = [{ amount: -10 }, { amount: 2000 }];
+  const antes = maiorValorJaGuardado(meta, aportes);
+  assert.equal(marcoCruzado({ antes, depois: 2000, alvo: 4000 }), null);
+  assert.equal(marcoCruzado({ antes, depois: 4000, alvo: 4000 }), 100);
 });

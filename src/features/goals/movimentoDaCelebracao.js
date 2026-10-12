@@ -9,6 +9,7 @@ import {
   soltarFaiscas,
 } from '../../utils/movimento.js';
 import { pulsar } from '../simplified-app/movimentoDeSalvar.js';
+import { tomDoMarco } from './marcoDaMeta.js';
 
 // Tela de celebração do marco de meta, direção 23b Salto (#147). Os tempos
 // e as molas vêm dos tokens --uf-motion-*; quantidade e força das faíscas
@@ -22,9 +23,11 @@ export const FAISCAS_DO_MARCO = Object.freeze({
 // Mesmo tamanho do anel na tela: o halo nasce na borda dele.
 const ANEL_DO_MARCO_PX = 132;
 
-export function corDoMarco(marco) {
-  return marco === 100 ? 'var(--uf-app-brand-green-text)' : 'var(--uf-app-brand-violet-text)';
-}
+// Mesma cor do anel do marco (tomDoMarco).
+const CORES_DO_TOM = {
+  verde: 'var(--uf-app-brand-green-text)',
+  violeta: 'var(--uf-app-brand-violet-text)',
+};
 
 // O fundo escurece e o cartão salta de 72% com a mola salto. Com Reduzir
 // movimento, os dois só aparecem num fade curto.
@@ -48,7 +51,7 @@ export function estourarMarco(anel, marco) {
   const { quantidade, forca } = FAISCAS_DO_MARCO[marco] ?? FAISCAS_DO_MARCO[50];
   pulsar(anel);
   const { x, y } = centroDe(anel);
-  acenderAnel({ x, y, tamanho: ANEL_DO_MARCO_PX, cor: corDoMarco(marco) });
+  acenderAnel({ x, y, tamanho: ANEL_DO_MARCO_PX, cor: CORES_DO_TOM[tomDoMarco(marco)] });
   soltarFaiscas({ x, y, quantidade, forca });
 }
 
