@@ -9,7 +9,7 @@ export function SelectField({ id, label, children, ...props }) {
       <span className="uf-text-primary">{label}</span>
       <select
         id={id}
-        className="uf-w-full uf-p-md uf-rounded-md uf-border uf-bg-sunken uf-focus-ring"
+        className="uf-w-full uf-p-md uf-rounded-md uf-border uf-bg-sunken"
         {...props}
       >
         {children}
@@ -25,7 +25,7 @@ export function TextField({ id, label, error, ...props }) {
       <input
         id={id}
         type="text"
-        className="uf-w-full uf-p-md uf-rounded-md uf-border uf-bg-sunken uf-focus-ring"
+        className="uf-w-full uf-p-md uf-rounded-md uf-border uf-bg-sunken"
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
         {...props}
@@ -40,7 +40,7 @@ export function TextareaField({ id, label, ...props }) {
       <span className="uf-text-primary">{label}</span>
       <textarea
         id={id}
-        className="uf-w-full uf-p-md uf-rounded-md uf-border uf-bg-sunken uf-focus-ring"
+        className="uf-w-full uf-p-md uf-rounded-md uf-border uf-bg-sunken"
         rows={4}
         {...props}
       />
