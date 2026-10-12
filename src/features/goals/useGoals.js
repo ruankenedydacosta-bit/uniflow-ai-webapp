@@ -9,7 +9,7 @@ import { upsertRecord, removeRecord, createDemoRecord, createDemoResult } from '
 
 const EMPTY_ARRAY = [];
 
-export function useGoals({ workspaceId, comUltimoAporte = false } = {}) {
+export function useGoals({ workspaceId, comUltimoAporte = false, aportesDesde = null, status } = {}) {
   const [goals, setGoals] = useState(EMPTY_ARRAY);
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
   const [isMutating, setIsMutating] = useState(false);
@@ -34,7 +34,7 @@ export function useGoals({ workspaceId, comUltimoAporte = false } = {}) {
     }
 
     setIsLoading(true);
-    const result = await listGoals(workspaceId, { comUltimoAporte });
+    const result = await listGoals(workspaceId, { comUltimoAporte, aportesDesde, status });
 
     if (requestId !== requestIdRef.current) return null;
 
@@ -42,7 +42,7 @@ export function useGoals({ workspaceId, comUltimoAporte = false } = {}) {
     setError(result.error);
     setIsLoading(false);
     return result;
-  }, [workspaceId, comUltimoAporte]);
+  }, [workspaceId, comUltimoAporte, aportesDesde, status]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => refresh(), 0);

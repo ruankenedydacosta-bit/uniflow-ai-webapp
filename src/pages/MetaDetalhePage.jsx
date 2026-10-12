@@ -7,9 +7,12 @@ import UniCard from '../components/ui/UniCard/index.js';
 import { useGoals } from '../features/goals/useGoals';
 import GoalContributionSheet from '../features/goals/components/GoalContributionSheet';
 import GoalForm from '../features/goals/components/GoalForm';
+import GoalMilestoneCelebration from '../features/goals/components/GoalMilestoneCelebration';
+import GoalPlanAdjustSheet from '../features/goals/components/GoalPlanAdjustSheet';
 import { AnelDeProgresso } from '../features/goals/components/GoalListCard';
 import { mensagemDoErroAoExcluir, MOVIMENTOS } from '../features/goals/aporteDaMeta.js';
 import { calcProgress } from '../features/goals/goalCalc.js';
+import { celebracaoDoMarco, maiorValorJaGuardado, marcoCruzado } from '../features/goals/marcoDaMeta.js';
 import { listContributions } from '../features/goals/goalService';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../services/financialDataEvents.js';
 import { dataDoAporte, numerosDaMeta, precisaDeAjuste, previsaoDaUni } from '../features/goals/detalheDaMeta.js';
@@ -27,8 +30,8 @@ import styles from './MetaDetalhePage.module.css';
 // Detalhe da meta (handoff 08e, #157): anel, números do plano, ações,
 // previsão da Uni e aportes. O menu ⋯ guarda Editar, Retirar, Pausar,
 // Concluir e Excluir. Aporte e retirada abrem a mesma folha (#158); tocar
-// num aporte da lista oferece excluí-lo. Ajustar plano abre a edição até a
-// folha própria (#159) existir.
+// num aporte da lista oferece excluí-lo. Ajustar plano abre a folha de
+// ajuste (#159).
 export default function MetaDetalhePage() {
   const { id } = useParams();
   const navigate = useNavegar();
@@ -40,6 +43,7 @@ export default function MetaDetalhePage() {
   const [erroDosAportes, setErroDosAportes] = useState(null);
   const [menuAberto, setMenuAberto] = useState(false);
   const [editando, setEditando] = useState(false);
+  const [ajustando, setAjustando] = useState(false);
   const [movimento, setMovimento] = useState(null);
   const [aporteParaExcluir, setAporteParaExcluir] = useState(null);
   const [excluindoAporte, setExcluindoAporte] = useState(false);
@@ -49,6 +53,7 @@ export default function MetaDetalhePage() {
   const [erroDaConfirmacao, setErroDaConfirmacao] = useState(null);
   const [erroDaAcao, setErroDaAcao] = useState(null);
   const [metaExcluida, setMetaExcluida] = useState(null);
+  const [celebracao, setCelebracao] = useState(null);
   const tituloDosAportesId = useId();
 
   // Depois de excluir, a meta sai de `goals` antes de a navegação terminar.
@@ -108,6 +113,12 @@ export default function MetaDetalhePage() {
     return editGoal(meta.id, values);
   }
 
+  async function salvarAjuste(alteracoes) {
+    const resultado = await editGoal(meta.id, alteracoes);
+    if (!resultado?.error) setAjustando(false);
+    return resultado;
+  }
+
   async function alternarPausa() {
     setMenuAberto(false);
     setErroDaAcao(null);
@@ -143,6 +154,14 @@ export default function MetaDetalhePage() {
     const resultado = await addGoalContribution(meta.id, values);
     if (resultado?.error) return resultado;
     setMovimento(null);
+    // Aporte que passa de 50% ou de 100% pela primeira vez abre a
+    // celebração (#147). Sem a lista de aportes, vale o valor de antes.
+    const depois = resultado?.data?.meta
+      ? { ...meta, ...resultado.data.meta }
+      : { ...meta, current_amount: Number(meta.current_amount || 0) + Number(values.amount) };
+    const antes = carregandoAportes || erroDosAportes ? Number(meta.current_amount || 0) : maiorValorJaGuardado(meta, aportes);
+    const marco = marcoCruzado({ antes, depois: depois.current_amount, alvo: meta.target_amount });
+    if (marco) setCelebracao(celebracaoDoMarco(depois, marco));
     // A transferência lançada junto muda saldos e lista do Financeiro; o
     // aviso também recarrega os aportes desta tela.
     notifyFinancialDataChanged('meta-aporte');
@@ -223,7 +242,7 @@ export default function MetaDetalhePage() {
           ) : null}
           {pausada ? <OutlineButton onClick={alternarPausa}>Retomar meta</OutlineButton> : null}
           {precisaDeAjuste(meta) ? (
-            <OutlineButton variant="secondary" onClick={() => setEditando(true)}>Ajustar plano</OutlineButton>
+            <OutlineButton variant="secondary" onClick={() => setAjustando(true)}>Ajustar plano</OutlineButton>
           ) : null}
         </div>
       ) : null}
@@ -315,6 +334,10 @@ export default function MetaDetalhePage() {
         <GoalForm open onClose={() => setEditando(false)} goal={meta} onSave={salvarEdicao} />
       ) : null}
 
+      {ajustando ? (
+        <GoalPlanAdjustSheet meta={meta} onClose={() => setAjustando(false)} onSave={salvarAjuste} />
+      ) : null}
+
       <SimplifiedConfirmModal
         open={Boolean(aporteParaExcluir)}
         onClose={() => { if (!excluindoAporte) setAporteParaExcluir(null); }}
@@ -336,6 +359,10 @@ export default function MetaDetalhePage() {
           onClose={() => setMovimento(null)}
           onSave={registrarMovimento}
         />
+      ) : null}
+
+      {celebracao ? (
+        <GoalMilestoneCelebration celebracao={celebracao} onClose={() => setCelebracao(null)} />
       ) : null}
     </div>
   );

@@ -28,16 +28,6 @@ export function calcMonthsBetween(startDate, endDate) {
   return Math.max(months, 1);
 }
 
-export function calcRemainingMonths(targetDate) {
-  if (!targetDate) return null;
-  const now = new Date();
-  const target = new Date(targetDate);
-  if (target <= now) return 0;
-  const months = (target.getFullYear() - now.getFullYear()) * 12
-    + (target.getMonth() - now.getMonth());
-  return months;
-}
-
 export function calcRequiredMonthlyAmount(goal) {
   const remaining = calcRemaining(goal.current_amount, goal.target_amount);
   if (remaining <= 0) return 0;
@@ -49,28 +39,88 @@ export function calcRequiredMonthlyAmount(goal) {
   return null;
 }
 
-export function calcExpectedProgress(goal) {
-  if (!goal.start_date || !goal.target_date) return null;
-  if (goal.status === 'completed') return 100;
-  const now = new Date();
-  const start = new Date(goal.start_date);
-  const end = new Date(goal.target_date);
-  if (now >= end) return 100;
-  if (now <= start) return 0;
-  const totalMs = end.getTime() - start.getTime();
-  const elapsedMs = now.getTime() - start.getTime();
-  return Math.min(Math.round((elapsedMs / totalMs) * 100), 100);
+// "2026-12-01" vira meia-noite local, não UTC. Com `new Date(texto)` a data
+// pura cai no dia anterior em Brasília e o alvo de dezembro vira novembro.
+export function lerData(valor) {
+  if (!valor) return null;
+  if (valor instanceof Date) return valor;
+  const dataPura = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
+  if (dataPura) return new Date(Number(dataPura[1]), Number(dataPura[2]) - 1, Number(dataPura[3]));
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? null : data;
 }
 
-export function calcRhythmStatus(goal) {
+// Meses cheios entre duas datas.
+export function mesesEntre(inicio, fim) {
+  const de = lerData(inicio);
+  const ate = lerData(fim);
+  if (!de || !ate || ate <= de) return 0;
+  let meses = (ate.getFullYear() - de.getFullYear()) * 12 + (ate.getMonth() - de.getMonth());
+  if (ate.getDate() < de.getDate()) meses -= 1;
+  return Math.max(meses, 0);
+}
+
+// A data-alvo vale o dia inteiro: a meta só vence no dia seguinte.
+function venceu(alvo, hoje) {
+  return hoje >= new Date(alvo.getFullYear(), alvo.getMonth(), alvo.getDate() + 1);
+}
+
+// Meses de aporte que ainda cabem até a data-alvo, contando o mês do prazo
+// como o último: de outubro até março são 5, como na criação da meta
+// (#156). Data-alvo vencida dá 0.
+export function calcRemainingMonths(targetDate, hoje = new Date()) {
+  const alvo = lerData(targetDate);
+  if (!alvo) return null;
+  if (venceu(alvo, hoje)) return 0;
+  const meses = (alvo.getFullYear() - hoje.getFullYear()) * 12 + (alvo.getMonth() - hoje.getMonth());
+  return Math.max(meses, 1);
+}
+
+// Progresso esperado pelo tempo, em meses cheios desde o início. Contado
+// por dia, a meta criada hoje sem nada guardado já nascia em Atenção.
+export function calcExpectedProgress(goal, hoje = new Date()) {
+  if (!goal.start_date || !goal.target_date) return null;
+  if (goal.status === 'completed') return 100;
+  const start = lerData(goal.start_date);
+  const end = lerData(goal.target_date);
+  if (!start || !end) return null;
+  if (venceu(end, hoje)) return 100;
+  if (hoje <= start) return 0;
+  // O plano vai até o fim do dia da data-alvo: de 1º de janeiro a 31 de
+  // dezembro são 12 meses.
+  const fimDoPlano = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1);
+  const mesesDoPlano = Math.max(mesesEntre(start, fimDoPlano), 1);
+  return Math.min(Math.round((mesesEntre(start, hoje) / mesesDoPlano) * 100), 100);
+}
+
+// Ritmo pelo plano: quanto do que falta os aportes planejados até a data
+// não cobrem, em meses de aporte. Até um mês atrás é Atenção; mais que
+// isso, Atrasada. Assim o ajuste do plano (#159) põe a meta de volta no
+// ritmo. Meta sem valor por mês planejado segue o progresso esperado.
+function ritmoPeloPlano(goal, hoje) {
+  const planejado = Number(goal.planned_monthly_amount);
+  if (!(planejado > 0)) return undefined;
+  const meses = calcRemainingMonths(goal.target_date, hoje);
+  if (!meses) return undefined;
+  const faltaEmCentavos = Math.round(calcRemaining(Number(goal.current_amount || 0), Number(goal.target_amount || 0)) * 100);
+  const descoberto = faltaEmCentavos - Math.round(planejado * 100) * meses;
+  if (descoberto <= 0) return RHYTHM_STATUS.ON_TRACK;
+  return descoberto <= Math.round(planejado * 100) ? RHYTHM_STATUS.ATTENTION : RHYTHM_STATUS.LATE;
+}
+
+export function calcRhythmStatus(goal, hoje = new Date()) {
   if (goal.status === 'completed' || goal.status === 'canceled') return null;
-  const progress = calcProgress(goal.current_amount, goal.target_amount);
-  const expected = calcExpectedProgress(goal);
+  const expected = calcExpectedProgress(goal, hoje);
   if (expected === null) return null;
-  if (goal.target_date && new Date(goal.target_date) < new Date()) {
-    if (progress < 100) return RHYTHM_STATUS.LATE;
+  const alvo = lerData(goal.target_date);
+  // Vencida: o percentual arredondado mostraria 100% faltando centavos.
+  if (alvo && venceu(alvo, hoje)) {
+    if (calcRemaining(Number(goal.current_amount || 0), Number(goal.target_amount || 0)) > 0) return RHYTHM_STATUS.LATE;
     return RHYTHM_STATUS.ON_TRACK;
   }
+  const peloPlano = ritmoPeloPlano(goal, hoje);
+  if (peloPlano) return peloPlano;
+  const progress = calcProgress(goal.current_amount, goal.target_amount);
   if (progress >= expected) return RHYTHM_STATUS.ON_TRACK;
   const deficit = expected - progress;
   if (deficit <= 15) return RHYTHM_STATUS.ATTENTION;
