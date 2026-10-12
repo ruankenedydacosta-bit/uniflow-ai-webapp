@@ -89,6 +89,33 @@
   gap: 8px;
 }
 
+/* Tela 10d: os seis sugeridos numa linha só, com o mesmo respiro do anel
+   de foco que a grade completa usa. */
+.iconSuggestedGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  padding: 4px;
+}
+
+/* "Ver todos" e "Ver sugeridos" são texto na linha da dica, não botão. */
+.iconToggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--uf-app-brand-violet-text);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.iconToggle:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+  border-radius: var(--uf-radius-8);
+}
+
 /* Célula de 52px no poço escuro; a marcada leva violeta a 12% e borda
    violeta. O nome do ícone fica no rótulo acessível e na dica do mouse. */
 .iconOption {

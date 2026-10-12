@@ -6,8 +6,10 @@ import {
   CATEGORY_ICON_OPTIONS,
   getCategoryIconSections,
   getDefaultCategoryIconKey,
+  LIMITE_ICONES_SUGERIDOS,
   resolveCategoryIconKey,
   resolveCategoryTone,
+  sugerirIconesCategoria,
 } from './categoryIconCatalog.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -130,8 +132,77 @@ test('CategoryCreateModal em edição preenche a categoria, fixa o tipo e ignora
 
 test('CategoryCreateModal preserva escolha livre ao alternar Entrada/Saída', async () => {
   const modal = await source('components/CategoryCreateModal.jsx');
-  assert.match(modal, /iconWasChosenRef\.current = true;\s*setIcon\(option\.key\)/);
-  assert.match(modal, /if \(!iconWasChosenRef\.current\) \{\s*setIcon\(getDefaultCategoryIconKey\(type\)\)/);
+  assert.match(modal, /iconWasChosenRef\.current = true;\s*setIcon\(chave\)/);
+  assert.match(modal, /if \(!iconWasChosenRef\.current\) \{\s*setIcon\(iconePeloNome\(name, type\)\)/);
+});
+
+// Tela 10d: seis ícones sugeridos pelo nome e "Ver todos" para a grade completa.
+test('sugestão de ícone segue o nome sem acento e sem caixa', () => {
+  const mercado = sugerirIconesCategoria('MERCADO', 'expense');
+  assert.equal(mercado.porNome, true);
+  assert.equal(mercado.icones.length, LIMITE_ICONES_SUGERIDOS);
+  assert.equal(mercado.icones[0], 'groceries');
+  assert.ok(mercado.icones.includes('food'));
+  assert.ok(mercado.icones.includes('restaurant'));
+
+  const comAcento = sugerirIconesCategoria('Farmácia', 'expense');
+  const semAcento = sugerirIconesCategoria('farmacia', 'expense');
+  assert.deepEqual(comAcento.icones, semAcento.icones);
+  assert.equal(comAcento.icones[0], 'pharmacy');
+
+  assert.equal(sugerirIconesCategoria('Salário', 'income').icones[0], 'salary');
+  assert.equal(sugerirIconesCategoria('Presente', 'income').icones[0], 'gift-income');
+  assert.equal(sugerirIconesCategoria('Presente', 'expense').icones[0], 'gift');
+  assert.equal(sugerirIconesCategoria('Aluguel', 'income').icones[0], 'home-income');
+  // Sem ícone do tipo atual no nome, a ordem de afinidade fica: o primeiro
+  // não vira um genérico.
+  assert.equal(sugerirIconesCategoria('Investimento', 'expense').icones[0], 'investment');
+  assert.equal(sugerirIconesCategoria('Salário', 'expense').icones[0], 'salary');
+  assert.equal(sugerirIconesCategoria('Educação', 'expense').icones[0], 'education');
+});
+
+test('sugestão sem nome ou sem palavra conhecida traz os mais usados do tipo', () => {
+  const vazio = sugerirIconesCategoria('', 'expense');
+  assert.equal(vazio.porNome, false);
+  assert.deepEqual(vazio.icones, ['groceries', 'food', 'home', 'transport', 'health', 'leisure']);
+  assert.deepEqual(sugerirIconesCategoria(null, 'income').icones, ['salary', 'work', 'sales', 'investment', 'refund', 'other-income']);
+
+  const semMatch = sugerirIconesCategoria('Xyzzy', 'income');
+  assert.equal(semMatch.porNome, false);
+  assert.deepEqual(semMatch.icones, sugerirIconesCategoria('', 'income').icones);
+});
+
+test('sugestão não casa palavra curta no meio de outra e aceita digitação parcial', () => {
+  assert.equal(sugerirIconesCategoria('Gastos', 'expense').porNome, false);
+  assert.equal(sugerirIconesCategoria('Casamento', 'expense').porNome, false);
+  assert.equal(sugerirIconesCategoria('Alimentação', 'expense').icones.includes('investment'), false);
+  assert.equal(sugerirIconesCategoria('merc', 'expense').icones[0], 'groceries');
+  assert.equal(sugerirIconesCategoria('Gás', 'expense').icones[0], 'gas');
+});
+
+test('sugestão mantém o ícone já escolhido à vista e nunca repete', () => {
+  const { icones } = sugerirIconesCategoria('Mercado', 'expense', { manter: 'star' });
+  assert.equal(icones.length, LIMITE_ICONES_SUGERIDOS);
+  assert.ok(icones.includes('star'));
+  assert.equal(new Set(icones).size, icones.length);
+  for (const chave of icones) {
+    assert.ok(CATEGORY_ICON_OPTIONS.some(({ key }) => key === chave), chave);
+  }
+  const semManter = sugerirIconesCategoria('Mercado', 'expense', { manter: 'inexistente' });
+  assert.equal(semManter.icones.includes('inexistente'), false);
+});
+
+test('CategoryCreateModal mostra os sugeridos, abre a grade completa em Ver todos e o ícone segue o nome', async () => {
+  const modal = await source('components/CategoryCreateModal.jsx');
+  const css = await source('components/CategoryCreateModal.module.css');
+  assert.match(modal, /sugerirIconesCategoria\(name, categoryType, \{ manter: icon \}\)/);
+  assert.match(modal, /sugestao\.icones\.map\(\(chave\) => renderIconOption\(chave\)\)/);
+  assert.match(modal, /aria-expanded=\{mostrarTodos\}/);
+  assert.match(modal, /\{mostrarTodos \? 'Ver sugeridos' : 'Ver todos'\}/);
+  assert.match(modal, /setMostrarTodos\(false\);\s*\/\/[^\n]*\n\s*iconWasChosenRef\.current = Boolean\(category\)/);
+  assert.match(modal, /onChange=\{\(event\) => handleNameChange\(event\.target\.value\)\}/);
+  assert.match(modal, /if \(!iconWasChosenRef\.current\) \{\s*setIcon\(iconePeloNome\(value, categoryType\)\)/);
+  assert.match(css, /\.iconSuggestedGrid\s*\{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
 });
 
 // Tela 22h: no celular a Nova categoria é a folha padrão. A folha não passa
@@ -156,7 +227,7 @@ test('folha de Nova categoria rola só a grade de ícones e mantém as ações �
 test('ícones têm nome acessível e a seleção usa violeta, sem cor de perigo', async () => {
   const modal = await source('components/CategoryCreateModal.jsx');
   const css = await source('components/CategoryCreateModal.module.css');
-  assert.match(modal, /aria-label=\{option\.label\}/);
+  assert.match(modal, /aria-label=\{rotulo\}/);
   assert.match(modal, /aria-checked=\{selected\}/);
   assert.match(css, /\.iconOption\[aria-checked="true"\] \{[\s\S]*?var\(--uf-app-brand-violet\)/);
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b/i);

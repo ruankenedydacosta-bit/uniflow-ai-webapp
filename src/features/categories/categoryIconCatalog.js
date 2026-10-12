@@ -1,3 +1,4 @@
+import { normalizeSearchText } from '../../utils/searchText.js';
 import { normalizeText } from './categoryUtils.js';
 
 export const CATEGORY_ICON_GROUPS = Object.freeze({
@@ -105,6 +106,10 @@ const ICON_OPTIONS_BY_GROUP = Object.freeze({
   [CATEGORY_ICON_GROUPS.GENERIC]: GENERIC_ICONS,
 });
 
+const GRUPO_POR_ICONE = Object.freeze(Object.fromEntries(
+  CATEGORY_ICON_OPTIONS.map(({ key, group }) => [key, group]),
+));
+
 const LEGACY_ICON_KEYS = Object.freeze(['suppliers', 'operational']);
 const KNOWN_ICON_KEYS = new Set([
   ...CATEGORY_ICON_OPTIONS.map(({ key }) => key),
@@ -166,6 +171,145 @@ const KEYWORD_TO_ICON = Object.freeze([
   [['presente'], 'gift'],
   [['servico'], 'services'],
 ]);
+
+// Tela 10d: sugestões pelo nome. Cada palavra puxa vários ícones, em ordem
+// de afinidade; `KEYWORD_TO_ICON` completa com o ícone único de cada palavra.
+const PALAVRAS_PARA_SUGESTAO = Object.freeze([
+  [['mercado', 'supermercado', 'feira', 'hortifruti', 'padaria', 'acougue'], ['groceries', 'food', 'restaurant', 'shopping', 'store']],
+  [['aliment', 'comida', 'refeicao', 'almoco', 'jantar', 'cafe'], ['food', 'restaurant', 'groceries']],
+  [['restaurante', 'lanchonete', 'delivery', 'ifood', 'lanche', 'bar'], ['restaurant', 'food', 'groceries']],
+  [['moradia', 'casa', 'imovel', 'habitacao', 'lar'], ['home', 'rent', 'condo', 'home-maintenance', 'energy', 'water']],
+  [['aluguel', 'locacao'], ['rent', 'home', 'home-income', 'condo']],
+  [['condominio'], ['condo', 'home', 'rent']],
+  [['agua', 'saneamento'], ['water', 'home', 'energy']],
+  [['energia', 'eletricidade', 'luz'], ['energy', 'home', 'water']],
+  [['gas'], ['gas', 'home', 'energy']],
+  [['internet', 'wifi', 'fibra'], ['internet', 'phone', 'subscription', 'electronics']],
+  [['telefone', 'celular', 'chip'], ['phone', 'internet', 'subscription', 'electronics']],
+  [['transporte', 'uber', 'taxi', 'onibus', 'metro', 'carro', 'mobilidade', 'veiculo', 'moto'], ['transport', 'fuel', 'parking', 'toll', 'car-maintenance']],
+  [['combustivel', 'gasolina', 'etanol', 'diesel', 'posto'], ['fuel', 'transport', 'car-maintenance', 'toll']],
+  [['estacionamento'], ['parking', 'transport', 'toll']],
+  [['pedagio'], ['toll', 'transport', 'fuel']],
+  [['oficina', 'mecanico', 'revisao'], ['car-maintenance', 'transport', 'tool', 'fuel']],
+  [['saude', 'medico', 'consulta', 'dentista', 'exame', 'hospital'], ['health', 'pharmacy', 'health-plan', 'heart']],
+  [['farmacia', 'remedio', 'medicamento'], ['pharmacy', 'health', 'health-plan']],
+  [['plano de saude', 'convenio'], ['health-plan', 'health', 'insurance', 'pharmacy']],
+  [['beleza', 'cuidado', 'salao', 'cabelo', 'barbearia', 'estetica', 'academia'], ['personal-care', 'heart', 'shopping', 'health']],
+  [['roupa', 'vestuario', 'calcado', 'sapato', 'tenis', 'moda'], ['clothing', 'shopping', 'store', 'personal-care']],
+  [['educac', 'escola', 'curso', 'faculdade', 'estudo', 'livro', 'colegio'], ['education', 'school-material', 'document', 'subscription']],
+  [['material escolar', 'papelaria'], ['school-material', 'education', 'box']],
+  [['lazer', 'entretenimento', 'passeio', 'diversao', 'cinema', 'show', 'festa', 'balada'], ['leisure', 'games', 'travel', 'gift', 'restaurant']],
+  [['jogo', 'game', 'videogame'], ['games', 'leisure', 'electronics', 'subscription']],
+  [['viagem', 'passagem', 'hotel', 'ferias', 'turismo'], ['travel', 'leisure', 'transport', 'location']],
+  [['pet', 'pets', 'animal', 'veterinario', 'cachorro', 'gato', 'racao'], ['pets', 'heart', 'health', 'groceries']],
+  [['assinatura', 'streaming', 'mensalidade', 'recorrente', 'netflix', 'spotify', 'app'], ['subscription', 'internet', 'electronics', 'games', 'card']],
+  [['imposto', 'taxa', 'taxas', 'tributo', 'iptu', 'ipva', 'tarifa'], ['taxes', 'document', 'home', 'transport']],
+  [['divida', 'fatura', 'cartao'], ['debt', 'card', 'loan', 'wallet']],
+  [['emprestimo', 'financiamento', 'consorcio', 'banco'], ['loan', 'debt', 'home', 'transport', 'card']],
+  [['seguro'], ['insurance', 'health-plan', 'transport', 'home']],
+  [['presente', 'doacao', 'aniversario', 'natal'], ['gift', 'gift-income', 'heart', 'shopping']],
+  [['compra', 'shopping', 'loja'], ['shopping', 'store', 'clothing', 'electronics', 'card']],
+  [['eletronico', 'tecnologia', 'computador', 'notebook', 'informatica'], ['electronics', 'phone', 'internet', 'games']],
+  [['manutencao', 'reparo', 'reforma', 'conserto', 'obra'], ['home-maintenance', 'tool', 'car-maintenance', 'services']],
+  [['servico', 'faxina', 'diarista', 'profissional'], ['services', 'tool', 'person', 'briefcase']],
+  [['salario', 'folha', 'holerite', 'emprego', 'trabalho'], ['salary', 'work', 'briefcase', 'company', 'bonus']],
+  [['freelance', 'autonomo', 'bico', 'renda extra', 'projeto'], ['work', 'briefcase', 'salary', 'sales']],
+  [['venda', 'faturamento', 'cliente', 'pedido'], ['sales', 'store', 'tag', 'commission']],
+  [['comissao'], ['commission', 'sales', 'salary']],
+  [['bonus', 'premiacao', 'premio', 'plr'], ['bonus', 'salary', 'star']],
+  [['reembolso', 'estorno', 'devolucao'], ['refund', 'card', 'wallet']],
+  [['rendimento', 'juros', 'poupanca', 'cdb', 'tesouro'], ['yield', 'investment', 'dividends', 'coin']],
+  [['investimento', 'aplicacao', 'acao', 'acoes', 'fundo', 'cripto', 'bitcoin'], ['investment', 'yield', 'dividends', 'chart']],
+  [['dividendo', 'provento'], ['dividends', 'investment', 'yield']],
+  [['aposentadoria', 'inss'], ['retirement', 'pension', 'salary']],
+  [['beneficio', 'vale', 'auxilio', 'bolsa'], ['benefits', 'salary', 'card']],
+  [['pensao', 'mesada'], ['pension', 'person', 'people', 'transfer']],
+  [['transferencia', 'pix', 'ted'], ['transfer', 'wallet', 'card', 'coin']],
+  [['pessoa', 'familia', 'filho', 'crianca', 'bebe'], ['people', 'person', 'heart', 'gift']],
+  [['empresa', 'negocio', 'cnpj', 'mei'], ['company', 'briefcase', 'work', 'taxes']],
+]);
+
+// Sem nome, os ícones mais usados de cada tipo.
+const ICONES_COMUNS_POR_TIPO = Object.freeze({
+  income: Object.freeze(['salary', 'work', 'sales', 'investment', 'refund', 'other-income']),
+  expense: Object.freeze(['groceries', 'food', 'home', 'transport', 'health', 'leisure']),
+});
+
+export const LIMITE_ICONES_SUGERIDOS = 6;
+
+// Palavra curta ("gas", "luz", "casa") só casa inteira: "gastos" não é gás
+// nem "casamento" é moradia. Palavra longa casa como prefixo da palavra
+// digitada ("mercados", "alimentacao") e, a partir de 3 letras digitadas,
+// também o contrário ("merc" já sugere Mercado).
+const TAMANHO_PALAVRA_CURTA = 4;
+
+function palavraCasaComNome(palavra, nomeNormalizado, tokens) {
+  if (palavra.includes(' ')) return nomeNormalizado.includes(palavra);
+  return tokens.some((token) => {
+    if (palavra.length <= TAMANHO_PALAVRA_CURTA) {
+      return token === palavra || (token.length >= 3 && palavra.startsWith(token));
+    }
+    return token.startsWith(palavra) || (token.length >= 3 && palavra.startsWith(token));
+  });
+}
+
+/**
+ * Tela 10d: até seis ícones sugeridos a partir do nome digitado. Termo e
+ * palavras do mapa passam pela mesma normalização (sem acento, sem caixa).
+ * Sem nome ou sem palavra conhecida, devolve os ícones mais comuns do tipo.
+ * `manter` garante que o ícone já escolhido continue à vista.
+ *
+ * Retorna `{ icones, porNome }`: `porNome` diz se houve palavra conhecida,
+ * para a folha só trocar o ícone sozinha quando o nome aponta para um.
+ */
+export function sugerirIconesCategoria(nome, categoryType, { manter = null } = {}) {
+  const nomeNormalizado = normalizeSearchText(nome);
+  const tokens = nomeNormalizado ? nomeNormalizado.split(' ') : [];
+  const icones = [];
+  const adicionar = (chave) => {
+    if (!icones.includes(chave) && KNOWN_ICON_KEYS.has(chave)) icones.push(chave);
+  };
+
+  if (tokens.length > 0) {
+    for (const [palavras, chaves] of PALAVRAS_PARA_SUGESTAO) {
+      if (palavras.some((palavra) => palavraCasaComNome(normalizeSearchText(palavra), nomeNormalizado, tokens))) {
+        chaves.forEach(adicionar);
+      }
+    }
+    for (const [palavras, chave] of KEYWORD_TO_ICON) {
+      if (palavras.some((palavra) => palavraCasaComNome(normalizeSearchText(palavra), nomeNormalizado, tokens))) {
+        adicionar(chave);
+      }
+    }
+    for (const option of CATEGORY_ICON_OPTIONS) {
+      if (palavraCasaComNome(normalizeSearchText(option.label), nomeNormalizado, tokens)) {
+        adicionar(option.key);
+      }
+    }
+  }
+
+  const porNome = icones.length > 0;
+  // "Aluguel" como Entrada abre com Aluguel recebido, não com o de Saída: se o
+  // nome trouxe ícone do tipo atual, os do outro tipo vão para o fim. Se não
+  // trouxe ("Investimento" como Saída), a ordem de afinidade fica como está.
+  const grupoDoTipo = categoryType === 'income' ? CATEGORY_ICON_GROUPS.INCOME : CATEGORY_ICON_GROUPS.EXPENSE;
+  const grupoOposto = grupoDoTipo === CATEGORY_ICON_GROUPS.INCOME
+    ? CATEGORY_ICON_GROUPS.EXPENSE
+    : CATEGORY_ICON_GROUPS.INCOME;
+  if (icones.some((chave) => GRUPO_POR_ICONE[chave] === grupoDoTipo)) {
+    const doOutroTipo = (chave) => (GRUPO_POR_ICONE[chave] === grupoOposto ? 1 : 0);
+    icones.sort((a, b) => doOutroTipo(a) - doOutroTipo(b));
+  }
+
+  const comuns = ICONES_COMUNS_POR_TIPO[categoryType] ?? ICONES_COMUNS_POR_TIPO.expense;
+  comuns.forEach(adicionar);
+
+  const lista = icones.slice(0, LIMITE_ICONES_SUGERIDOS);
+  if (manter && KNOWN_ICON_KEYS.has(manter) && !lista.includes(manter)) {
+    lista[LIMITE_ICONES_SUGERIDOS - 1] = manter;
+  }
+  return Object.freeze({ icones: Object.freeze(lista), porNome });
+}
 
 const ICON_TONES = Object.freeze({
   food: 'orange', groceries: 'orange', restaurant: 'orange',
