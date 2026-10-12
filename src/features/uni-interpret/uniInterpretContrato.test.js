@@ -58,7 +58,7 @@ test('apelidos seguem a ordem por tipo e nome, independente da ordem recebida', 
 });
 
 test('schema é estrito: todo campo obrigatório e nenhum extra', () => {
-  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta];
+  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria];
   for (const objeto of objetos) {
     assert.equal(objeto.additionalProperties, false);
     assert.deepEqual([...objeto.required].sort(), Object.keys(objeto.properties).sort());
@@ -359,7 +359,7 @@ test('normalização para a régua: confiança baixa vira sugestão, nova catego
 
   assert.deepEqual(normalizarInterpretacao(validar({})), {
     intent: 'lancar_saida', valor: 300, data: '2026-10-02', categoria: 'Educação', modoCategoria: 'resolveu',
-    parcelas: null, recorrente: false, titulo: null, consulta: null,
+    parcelas: null, recorrente: false, titulo: null, consulta: null, pedido: null,
   });
   assert.equal(normalizarInterpretacao(validar({ confianca: 0.4 })).modoCategoria, 'sugeriu');
   assert.equal(normalizarInterpretacao(validar({ categoria: null, nova_categoria: 'Pets' })).modoCategoria, 'propos_criar');
@@ -373,4 +373,34 @@ test('normalização para a régua: confiança baixa vira sugestão, nova catego
     normalizarInterpretacao({ intent: 'agenda', operacoes: [], agenda: { titulo: 'Dentista', valor: null }, resposta: '' }).titulo,
     'Dentista',
   );
+});
+
+// Conversa por voz de 11/10/2026: "criar uma categoria chamada Impostos" virava
+// lançamento sem valor. Pedido de categoria tem intent próprio.
+test('categoria: criar leva nome limpo e tipo; sem tipo vale saída', () => {
+  const pedido = (categoria) => ({ intent: 'categoria', operacoes: [], resposta: '', categoria });
+  assert.deepEqual(
+    validarInterpretacao(pedido({ acao: 'criar', tipo: null, alvo: null, nome: '  Impostos\n' }), CONTEXTO).categoria,
+    { acao: 'criar', tipo: 'saida', alvo: null, nome: 'Impostos' },
+  );
+  assert.equal(validarInterpretacao(pedido({ acao: 'criar', tipo: 'entrada', alvo: C.ali, nome: 'Bicos' }), CONTEXTO).categoria.tipo, 'entrada');
+  assert.equal(validarInterpretacao(pedido({ acao: 'criar', tipo: 'entrada', alvo: C.ali, nome: 'Bicos' }), CONTEXTO).categoria.alvo, null);
+});
+
+test('categoria: renomear e excluir trocam o apelido pelo registro e usam o tipo dele', () => {
+  const pedido = (categoria) => ({ intent: 'categoria', operacoes: [], resposta: '', categoria });
+  const renomear = validarInterpretacao(pedido({ acao: 'renomear', tipo: 'entrada', alvo: C.edu, nome: 'Escola' }), CONTEXTO).categoria;
+  assert.equal(renomear.alvo.id, 'cat-edu');
+  assert.equal(renomear.tipo, 'saida');
+  assert.equal(renomear.nome, 'Escola');
+  const excluir = validarInterpretacao(pedido({ acao: 'excluir', tipo: null, alvo: C.sal, nome: 'Salário' }), CONTEXTO).categoria;
+  assert.deepEqual({ ...excluir, alvo: excluir.alvo.id }, { acao: 'excluir', tipo: 'entrada', alvo: 'cat-sal', nome: null });
+  // Apelido inventado: o app diz que não achou.
+  assert.equal(validarInterpretacao(pedido({ acao: 'excluir', tipo: null, alvo: 'c99', nome: null }), CONTEXTO).categoria.alvo, null);
+});
+
+test('categoria: ação fora do contrato vira nao_entendi; fora do intent não sai', () => {
+  assert.equal(validarInterpretacao({ intent: 'categoria', operacoes: [], resposta: '', categoria: { acao: 'mover', tipo: null, alvo: null, nome: 'X' } }, CONTEXTO).intent, 'nao_entendi');
+  assert.equal(validarInterpretacao({ intent: 'categoria', operacoes: [], resposta: '' }, CONTEXTO).intent, 'nao_entendi');
+  assert.equal(validarInterpretacao(lancamento(operacao()), CONTEXTO).categoria, undefined);
 });

@@ -175,6 +175,22 @@ test('agenda: devolve título e valor do compromisso', async () => {
   assert.deepEqual(resultado.corpo.operacoes, []);
 });
 
+test('categoria: devolve a ação, o tipo, o alvo só com id e nome, e o nome novo', async () => {
+  const { chamarModelo } = modeloQueResponde({
+    intent: 'categoria',
+    operacoes: [],
+    resposta: '',
+    categoria: { acao: 'renomear', tipo: null, alvo: 'c2', nome: 'Escola' },
+  });
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'renomeia a categoria Educação para Escola' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo,
+  });
+  assert.equal(resultado.corpo.intent, 'categoria');
+  assert.deepEqual(resultado.corpo.categoria, { acao: 'renomear', tipo: 'saida', alvo: { id: 'cat-edu', name: 'Educação' }, nome: 'Escola' });
+});
+
 test('falha do provedor vira status próprio e a métrica não leva a frase', async () => {
   const casos = [['limite', 429], ['tempo_esgotado', 504], ['sem_cota', 503], ['recusa', 502], ['desconhecido', 502]];
   for (const [motivo, status] of casos) {

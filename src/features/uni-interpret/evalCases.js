@@ -5,7 +5,7 @@
 // os modelos candidatos do uni-interpret com a mesma régua.
 //
 // esperado.intent: lancar_saida | lancar_entrada | transferir | saldo |
-//   meta | consulta | agenda | conversa.
+//   meta | consulta | agenda | categoria | conversa.
 // esperado.categoria: nome do catálogo do workspace; null quando a frase não
 //   dá base para escolher e a Uni deve perguntar. `aceitas` lista outras
 //   respostas igualmente corretas.
@@ -13,6 +13,8 @@
 //   pede pelo nome uma categoria que não está no catálogo.
 // esperado.data: ISO; ausente quando a frase não fala de data (vale hoje).
 // esperado.titulo: em agenda, palavras que o título precisa ter (#142).
+// esperado.pedido: em categoria, a ação (criar, renomear, excluir) e,
+//   quando importa, o nome e o alvo, sem acento e caixa.
 //
 // Data de referência de todos os casos: sexta, 02/10/2026.
 //
@@ -819,12 +821,23 @@ export const CASOS = [
   {
     id: 'categoria-criar-sem-valor',
     frase: 'Vamos criar uma categoria chamada Impostos.',
-    esperado: { intent: 'conversa' },
+    esperado: { intent: 'categoria', pedido: { acao: 'criar', nome: 'Impostos' } },
   },
   {
     id: 'categoria-renomear',
-    frase: 'renomeia a categoria Carro para Veículo',
-    esperado: { intent: 'conversa' },
+    frase: 'renomeia a categoria Lazer para Diversão',
+    esperado: { intent: 'categoria', pedido: { acao: 'renomear', alvo: 'Lazer', nome: 'Diversão' } },
+  },
+  {
+    id: 'categoria-excluir',
+    frase: 'pode apagar a categoria Educação',
+    esperado: { intent: 'categoria', pedido: { acao: 'excluir', alvo: 'Educação' } },
+  },
+  {
+    id: 'categoria-criar-entrada',
+    reservado: true,
+    frase: 'quero uma categoria nova de receita chamada Aulas particulares',
+    esperado: { intent: 'categoria', pedido: { acao: 'criar', nome: 'Aulas particulares' } },
   },
   {
     id: 'categoria-nova-com-valor',
