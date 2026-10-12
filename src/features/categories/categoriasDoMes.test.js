@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   lancamentosDaCategoria,
+  maioresCategoriasDoMes,
   montarListaDeCategorias,
   resumoDaCategoria,
 } from './categoriasDoMes.js';
@@ -102,4 +103,70 @@ test('ocultas (#184) saem das listas, voltam no grupo Ocultas e seguem no total'
 test('sem ocultas o grupo vem vazio', () => {
   const lista = montarListaDeCategorias({ categories, type: 'expense', transactions: [] });
   assert.deepEqual(lista.ocultas, []);
+});
+
+test('Resumo (handoff 25): até 5 maiores, sem valor zero, fatia do total do tipo', () => {
+  const muitas = [
+    ...categories,
+    { id: 'g', name: 'Transporte', category_type: 'expense', is_system: true },
+    { id: 'h', name: 'Educação', category_type: 'expense', is_system: true },
+    { id: 'i', name: 'Saúde', category_type: 'expense', is_system: true },
+  ];
+  const resumo = maioresCategoriasDoMes({
+    categories: muitas,
+    type: 'expense',
+    transactions: [
+      lancamento(1, 'a', 3000),
+      lancamento(2, 'd', 430),
+      lancamento(3, 'g', 300),
+      lancamento(4, 'g', 75),
+      lancamento(5, 'b', 302.4),
+      lancamento(6, 'h', 150),
+      lancamento(7, 'i', 40),
+      lancamento(8, 'c', 0),
+      lancamento(9, 'b', 99, { status: 'pending' }),
+      lancamento(10, 'e', 2500, { transaction_type: 'income' }),
+    ],
+  });
+  assert.deepEqual(resumo.linhas.map((l) => l.name), ['Moradia', 'Lazer', 'Transporte', 'Alimentação', 'Educação']);
+  assert.equal(resumo.linhas[2].quantidade, 2);
+  // O total conta a sexta categoria, que ficou fora da lista.
+  assert.equal(resumo.total, 4297.4);
+  assert.equal(resumo.linhas[0].fatia, 3000 / 4297.4);
+});
+
+test('Resumo: oculta e sem categoria entram pelo valor', () => {
+  const resumo = maioresCategoriasDoMes({
+    categories: categories.filter((c) => c.id !== 'a'),
+    ocultas: categories.filter((c) => c.id === 'a'),
+    type: 'expense',
+    transactions: [lancamento(1, 'a', 300), lancamento(2, null, 200), lancamento(3, 'b', 100)],
+  });
+  assert.deepEqual(resumo.linhas.map((l) => l.name), ['Moradia', 'Sem categoria', 'Alimentação']);
+  assert.equal(resumo.linhas[1].semCategoria, true);
+  assert.equal(resumo.total, 600);
+});
+
+test('Resumo: o total do card (com ajuste de saldo) vira a base das fatias', () => {
+  const resumo = maioresCategoriasDoMes({
+    categories,
+    type: 'expense',
+    transactions: [lancamento(1, 'a', 300), lancamento(2, 'b', 100)],
+    totalDoMes: 500,
+  });
+  assert.equal(resumo.total, 500);
+  assert.equal(resumo.linhas[0].fatia, 0.6);
+  // Ajuste negativo que deixa o card menor que uma categoria: a barra para no cheio.
+  const menor = maioresCategoriasDoMes({
+    categories,
+    type: 'expense',
+    transactions: [lancamento(1, 'a', 300)],
+    totalDoMes: 200,
+  });
+  assert.equal(menor.linhas[0].fatia, 1);
+});
+
+test('Resumo: mês sem lançamento do tipo vem vazio', () => {
+  const resumo = maioresCategoriasDoMes({ categories, type: 'income', transactions: [lancamento(1, 'a', 10)] });
+  assert.deepEqual(resumo, { total: 0, linhas: [] });
 });
